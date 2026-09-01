@@ -82,7 +82,31 @@
       <span class="text-[11px] text-cinnabar">参详 →</span>
     </RouterLink>
 
-    <RouterLink to="/titles" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
+    <!-- 修行画像(Phase 31.2:历史行为归纳,纯描述无数值) -->
+    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="identityOpen = !identityOpen">
+      <span class="grid h-9 w-9 place-items-center rounded-md bg-ink/80 font-kai text-[17px] text-paper">像</span>
+      <span class="min-w-0 grow">
+        <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">修行画像</span>
+        <span class="block truncate text-[10px] text-ink-faint">「{{ identity?.epithet ?? '云隐散人' }}」 · {{ identity?.narrative ?? '足迹尚浅' }}</span>
+      </span>
+      <span class="shrink-0 text-[11px] text-ink-soft">{{ identityOpen ? '收起' : '展卷 →' }}</span>
+    </button>
+    <div v-if="identityOpen && identity" class="card-ink space-y-2 px-4 py-3">
+      <p class="font-kai text-[15px] tracking-[0.3em] text-ink">「{{ identity.epithet }}」</p>
+      <p class="text-[12px] leading-relaxed text-ink-soft">{{ identity.narrative }}</p>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+        <p class="flex justify-between"><span class="text-ink-faint">师承</span><span class="text-ink-soft">{{ identity.roots.mentor?.name ?? '未定' }}</span></p>
+        <p class="flex justify-between"><span class="text-ink-faint">道途</span><span class="text-ink-soft">{{ identity.roots.daoPath ?? '未立' }}</span></p>
+        <p class="flex justify-between"><span class="text-ink-faint">流派</span><span class="text-ink-soft">{{ identity.roots.build ?? '未成' }}</span></p>
+        <p class="flex justify-between"><span class="text-ink-faint">悟道</span><span class="text-ink-soft">{{ identity.roots.branches.join('、') || '未定' }}</span></p>
+      </div>
+      <p v-if="identity.roots.fortunes.length" class="text-[11px] text-ink-faint">
+        机缘印记:{{ identity.roots.fortunes.map(f => f.title).join(' · ') }}
+      </p>
+      <p class="text-[10px] text-ink-ghost">画像基于真实选择归纳——你玩成了什么样,它便描述什么。</p>
+    </div>
+
+    <RouterLink to="/build" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
       <span class="grid h-9 w-9 place-items-center rounded-md bg-jade/85 font-kai text-[17px] text-paper">号</span>
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">名号与灵兽</span>
@@ -237,6 +261,7 @@
   import { fruitMarginalInfo } from '@/core/resourceGuidance'
   import { mentorVerdict, mentorChoices } from '@/core/mentorService'
   import { mentorHint } from '@/core/fortuneChain'
+  import { buildIdentity } from '@/core/identityService'
   import { formatGN, formatPercent, formatYears } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
   import { STAT_NAMES } from '@/ui/statNames'
@@ -298,6 +323,9 @@
   const mentorVer = computed(() => mentorVerdict(player.mentor))
   // Phase 31.1 机缘链:机缘取/弃记忆 → 师承推荐
   const hintMentor = computed(() => mentorHint())
+  // Phase 31.2 修行画像
+  const identityOpen = ref(false)
+  const identity = computed(() => buildIdentity())
 
   function rebirth(): void {
     if (!canRebirth.value) {
