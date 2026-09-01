@@ -5,6 +5,7 @@ import type { BuffInstance, CombatSkill, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { gongfaDef } from '@/data/gongfa'
 import { buffDef } from '@/data/buffs'
+import { gongfaBranchDef } from '@/data/gongfaBranches'
 import { mergeMods } from '@/core/statsCalc'
 
 /** 功法在某等级下的属性 */
@@ -31,6 +32,8 @@ export const useCultivationStore = defineStore(
     const mainGongfa = ref<string | null>(null)
     const subGongfa = ref<string[]>([])
     const buffs = ref<BuffInstance[]>([])
+    /** Phase 31 A3:功法悟道分支(gongfaId → branchId,满级后择一) */
+    const gongfaBranch = ref<Record<string, string>>({})
 
     const gongfaMods = computed<StatMods>(() => {
       const sources: StatMods[] = []
@@ -39,6 +42,11 @@ export const useCultivationStore = defineStore(
       }
       for (const id of subGongfa.value) {
         if (learned.value[id]) sources.push(gongfaModsAt(id, learned.value[id]!))
+      }
+      // Phase 31 A3:悟道分支追加词条(选过的功法)
+      for (const [gid, bid] of Object.entries(gongfaBranch.value)) {
+        const def = gongfaBranchDef(bid)
+        if (def?.gongfaId === gid) sources.push(def.mods)
       }
       return mergeMods(sources)
     })
@@ -118,11 +126,22 @@ export const useCultivationStore = defineStore(
       buffs.value = buffs.value.filter(b => buffDef(b.defId)?.kind !== 'injury')
     }
 
+    // Phase 31 A3:选择功法悟道分支(满级后一次,不可改)
+    function chooseBranch(gongfaId: string, branchId: string): boolean {
+      const full = (learned.value[gongfaId] ?? 0) >= (gongfaDef(gongfaId)?.maxLevel ?? 9)
+      const def = gongfaBranchDef(branchId)
+      if (!full || !def || def.gongfaId !== gongfaId) return false
+      if (gongfaBranch.value[gongfaId]) return false
+      gongfaBranch.value = { ...gongfaBranch.value, [gongfaId]: branchId }
+      return true
+    }
+
     return {
       learned,
       mainGongfa,
       subGongfa,
       buffs,
+      gongfaBranch,
       gongfaMods,
       buffMods,
       mainSkill,
@@ -133,7 +152,8 @@ export const useCultivationStore = defineStore(
       addBuff,
       hasBuff,
       pruneBuffs,
-      clearNegativeBuffs
+      clearNegativeBuffs,
+      chooseBranch
     }
   },
   { persist: persistConfig('cultivation') }

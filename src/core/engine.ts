@@ -16,6 +16,7 @@ import { settleOffline, sanitizeOfflineInputs } from './offline'
 import { checkStateAchievements, rolloverDailyIfNeeded } from './progress'
 import { mayTriggerEnlightenment, mayTriggerCaveEvent } from './earlyGameService'
 import { settleSuppressedRegions } from './suppress'
+import { todayWeather } from './weather'
 
 const PERIODIC_CHECK_SEC = 30
 
@@ -117,10 +118,14 @@ class GameEngine {
     const cultivation = useCultivationStore()
 
     if (!player.dead) {
-      // 修为增长
-      player.gainExp(mulN(gn(player.cultPerSec), dt))
-      // 灵气恢复
-      resources.setQi(resources.qi + player.qiRegenPerSec * dt, player.qiCapValue)
+      // Phase 31 A1:天时环境(当天天时,确定性)
+      const weather = todayWeather()
+      const weatherCult = 1 + (weather.mods.cultivationSpeed ?? 0)
+      const weatherQi = 1 + (weather.mods.qiRegen ?? 0)
+      // 修为增长(天时修正)
+      player.gainExp(mulN(gn(player.cultPerSec), dt * weatherCult))
+      // 灵气恢复(天时修正)
+      resources.setQi(resources.qi + player.qiRegenPerSec * weatherQi * dt, player.qiCapValue)
       // 建筑产出
       dongfu.produce(dt)
       // Buff 过期

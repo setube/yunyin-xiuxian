@@ -166,6 +166,12 @@ export function resolveCombat(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: R
       shieldBroken = isZero(target.shield)
     }
     target.hp = subClamp(target.hp, remain)
+    // Phase 31 S5:铁壁共鸣 —— 近致命伤首次保命(保留 1 点气血,一次性)
+    if (isZero(target.hp) && target.snap.ironwallBrace && target.snap.isPlayer) {
+      target.snap.ironwallBrace = false
+      target.hp = { m: 1, e: 0 }
+      push('proc', 'p', `${target.snap.name}气血将尽,铁壁共鸣铮然作响——性命保住了!`)
+    }
     // 遥测
     target.stats.taken = add(target.stats.taken, dmg)
     if (bypassShield) target.stats.pierceTaken = add(target.stats.pierceTaken, dmg)

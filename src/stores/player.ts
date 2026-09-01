@@ -8,6 +8,7 @@ import { realmDef, realmLabel, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
 import { SUB_LEVELS, START_AGE } from '@/data/constants'
 import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
+import { mentorDef } from '@/data/mentors'
 import { talentDef } from '@/data/talents'
 import { baseCultPerSec, baseQiRegen, expRequirement, qiCap } from '@/core/formulas'
 import { computeFinalStats, modOf } from '@/core/statsCalc'
@@ -49,6 +50,15 @@ export const usePlayerStore = defineStore(
     /** 镇压时间戳:区域 → 镇压开始的时刻(供复苏判定) */
     const suppressedSince = ref<Record<string, number>>({})
 
+    // Phase 31 师承:凡界修行者的额外成长思想(跨世保留)
+    const mentor = ref<import('@/data/mentors').MentorId | null>(null)
+
+    // Phase 31 A2 区域动态事件(单区域内一次一个,自动过期)
+    const regionEvent = ref<import('@/core/regionEvent').RegionEventState | null>(null)
+
+    // Phase 31 S3 短期秘境(一次性内容容器,进行中状态)
+    const secretRealm = ref<import('@/core/secretRealm').SecretRealmState | null>(null)
+
     // Phase 30.9 世界记忆
     /** 宿敌列表(同一敌人败我 ≥3 次) */
     const nemeses = ref<import('@/types').NemesisRecord[]>([])
@@ -68,6 +78,10 @@ export const usePlayerStore = defineStore(
     // ---------- 属性汇总 ----------
     const talentMods = computed<StatMods[]>(() => reincarnation.value.talents.map(id => talentDef(id)?.mods ?? {}))
     const titleMods = computed<StatMods>(() => (titleId.value ? (titleDef(titleId.value)?.mods ?? {}) : {}))
+    const mentorMods = computed<StatMods>(() => {
+      if (!mentor.value) return {}
+      return mentorDef(mentor.value)?.mods ?? {}
+    })
     const petMods = computed<StatMods>(() => {
       if (!petId.value) return {}
       const def = petDef(petId.value)
@@ -95,6 +109,7 @@ export const usePlayerStore = defineStore(
           dongfu.buildingMods,
           dongfu.veinMods,
           titleMods.value,
+          mentorMods.value,
           petMods.value,
           ...talentMods.value
         ],
@@ -287,6 +302,23 @@ export const usePlayerStore = defineStore(
       nemeses.value = list
     }
 
+    // ---------- Phase 31 师承 ----------
+    /** 拜入师门(一经确立,不再更改;转世保留) */
+    function adoptMentor(id: import('@/data/mentors').MentorId): void {
+      if (mentor.value !== null) return
+      mentor.value = id
+    }
+
+    // ---------- Phase 31 A2 区域事件 ----------
+    function setRegionEvent(ev: import('@/core/regionEvent').RegionEventState | null): void {
+      regionEvent.value = ev
+    }
+
+    // ---------- Phase 31 S3 短期秘境 ----------
+    function setSecretRealm(state: import('@/core/secretRealm').SecretRealmState | null): void {
+      secretRealm.value = state
+    }
+
     return {
       name,
       linggen,
@@ -309,6 +341,9 @@ export const usePlayerStore = defineStore(
       suppressedSince,
       nemeses,
       regionWins,
+      mentor,
+      regionEvent,
+      secretRealm,
       realm,
       realmName,
       subName,
@@ -347,7 +382,10 @@ export const usePlayerStore = defineStore(
       suppressRegion,
       unsuppressRegion,
       recordRegionWin,
-      setNemeses
+      setNemeses,
+      adoptMentor,
+      setRegionEvent,
+      setSecretRealm
     }
   },
   { persist: persistConfig('player') }

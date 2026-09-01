@@ -129,6 +129,11 @@
           >
             <span class="font-kai text-[13px]" :style="{ color: qualityDef(def!.quality).color }">{{ def!.name }}</span>
             <span class="text-[10px] text-ink-faint">{{ cultivation.learned[def!.id] }} 层</span>
+            <!-- Phase 31 A3:满级可悟道,已选分支则显示分支名 -->
+            <span v-if="cultivation.gongfaBranch[def!.id]" class="text-[10px] text-gold-ink">
+              {{ gongfaBranchDef(cultivation.gongfaBranch[def!.id])?.name }}
+            </span>
+            <span v-else-if="cultivation.learned[def!.id] >= (def!.maxLevel ?? 9)" class="text-[10px] text-azure">可悟道</span>
             <span class="ml-auto text-[10px]" :class="equipStateOf(def!.id) ? 'text-jade' : 'text-ink-ghost'">
               {{ equipStateOf(def!.id) || '未装配' }}
             </span>
@@ -156,6 +161,7 @@
   import { usePill } from '@/core/pillService'
   import { useNow } from '@/composables/useNow'
   import { gongfaDef } from '@/data/gongfa'
+  import { gongfaBranchDef } from '@/data/gongfaBranches'
   import { buffDef } from '@/data/buffs'
   import { pillDef } from '@/data/pills'
   import { COMPREHEND_PAGE_COST } from '@/data/constants'

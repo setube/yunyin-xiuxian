@@ -876,6 +876,86 @@ export const EVENTS: EventDef[] = [
   )
 ]
 
+/**
+ * 机缘事件(Phase 31.0 S2)——— 极低概率、带代价选择、影响构筑方向
+ * 与普通事件池分离:触发概率低,遇后必须面临"取 / 弃"的决策
+ */
+export const FORTUNE_EVENTS: EventDef[] = [
+  ev(
+    'ft_sword_remnant',
+    '上古剑痕',
+    '荒山石壁上留着三道剑痕,每一道都深可没指,剑气未散。',
+    ['general', 'ruin'],
+    [
+      c('参悟剑痕', [
+        o(65, '剑意入怀,你只觉得剑之一道豁然开朗。', { type: 'gongfa', id: 's_lianxi' }),
+        o(20, '剑气反噬,你吐出一口血,却记下了几分剑理。', { type: 'buff', id: 'injury' }, { type: 'material', id: 'page', amount: 12 }),
+        o(15, '剑痕只是一道残影,你看罢两手空空。', { type: 'nothing' })
+      ]),
+      c('绕道而行', [o(1, '剑气凛冽,你压下好奇,转身离去。')], { isDefault: true })
+    ]
+  ),
+  ev(
+    'ft_ancient_elixir',
+    '失传丹方',
+    '一座荒废丹房,案上摊着一卷泛黄的丹方,墨迹犹新。',
+    ['general'],
+    [
+      c('记下丹方', [
+        o(60, '丹方奥妙无穷,你收下残页,悟得炼丹真意。', { type: 'material', id: 'wudao', amount: 10 }, { type: 'material', id: 'page', amount: 6 }),
+        o(40, '丹方后半已被虫蛀,只得残缺几字。', { type: 'material', id: 'page', amount: 12 })
+      ]),
+      c('放回原处', [o(1, '前人遗物,你不敢轻动,悄然离开。')], { isDefault: true })
+    ]
+  ),
+  ev(
+    'ft_beast_pledge',
+    '妖兽认主',
+    '一头通体雪白的幼兽从草丛探出头,竟不惧人,蹭着你的裤脚不放。',
+    ['general', 'forest'],
+    [
+      c('带它同行', [
+        o(70, '幼兽灵气盎然,愿意追随于你——喜得一灵兽!', { type: 'pet' }),
+        o(30, '幼兽随了一段路便跑开了,你只留下一段记忆。', { type: 'material', id: 'herb', amount: 6 })
+      ]),
+      c('轻轻放它离去', [o(1, '你摆摆手,幼兽一步三回头地走了。')], { isDefault: true })
+    ]
+  ),
+  ev(
+    'ft_reclusive_elder',
+    '隐世高人',
+    '竹屋前一位老翁在打坐,袈裟破旧,气息却深如渊海。',
+    ['general', 'mountain'],
+    [
+      c('上前叩拜', [
+        o(55, '老翁抬眸只瞥了你一眼,一缕道韵没入你眉心。', { type: 'exp', reqPct: 0.15 }),
+        o(25, '老翁递来一枚丹药,转身已不见踪影。', { type: 'pill', count: 2 }),
+        o(20, '老翁摇摇头:「你缘未至。」你悻悻而返。', { type: 'nothing' })
+      ]),
+      c('不去打扰', [o(1, '高人清修,你静立片刻,悄然离去。')], { isDefault: true })
+    ]
+  ),
+  ev(
+    'ft_blood_contract',
+    '残缺秘术',
+    '一块染血的龟甲横陈路中,上面的纹路似是一种秘术。',
+    ['general', 'dark'],
+    [
+      c('读取秘术', [
+        o(50, '秘术艰深,你气血翻涌,却强记下来。', { type: 'buff', id: 'injury' }, { type: 'material', id: 'wudao', amount: 12 }),
+        o(50, '龟甲上的血纹竟是一段禁法,你看了便心悸。', { type: 'buff', id: 'curse_xinmo' })
+      ]),
+      c('掩埋龟甲', [o(1, '此物不祥,你掘土掩埋,心念一清。')], { isDefault: true })
+    ]
+  )
+]
+
+const FORTUNE_BY_ID = new Map(FORTUNE_EVENTS.map(x => [x.id, x]))
+
+export function fortuneEventDef(id: string): EventDef | undefined {
+  return FORTUNE_BY_ID.get(id)
+}
+
 const BY_ID = new Map(EVENTS.map(x => [x.id, x]))
 
 export function eventDef(id: string): EventDef | undefined {

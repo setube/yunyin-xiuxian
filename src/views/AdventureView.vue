@@ -7,6 +7,25 @@
 
     <!-- 选择区域 -->
     <template v-else>
+      <!-- 短期秘境(Phase 31 S3):一次性、随机规则、3 层探索 -->
+      <div v-if="realmUnlocked" class="card-ink flex items-center gap-3 border-violet-ink/30 px-4 py-3">
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-violet-ink/15 text-violet-ink">
+          <GameIcon name="sparkles" :size="18" />
+        </span>
+        <div class="min-w-0 grow">
+          <p class="font-kai text-[14px] tracking-[0.2em] text-ink">
+            秘 境
+            <span v-if="realmActive" class="ml-1 text-[11px] text-violet-ink">· {{ realmState?.layer }} 层行进中</span>
+          </p>
+          <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
+            进入一次、规则随机、结束后消失。适合想找点新鲜刺激的时候。
+          </p>
+          <p v-if="realmState" class="mt-1 text-[10px] text-azure">规则:{{ realmState.rules.join(' · ') }}</p>
+        </div>
+        <button v-if="!realmState" class="btn-seal shrink-0 px-3! py-1.5! text-[12px]!" @click="enterRealm()">探 秘</button>
+        <button v-else class="btn-ghost shrink-0 px-3! py-1.5! text-[12px]!" @click="abandonRealm()">离 开</button>
+      </div>
+
       <SectionTitle title="历练" hint="行万里路,炼一颗心" />
       <div class="space-y-2.5">
         <div
@@ -140,6 +159,7 @@
   import { startExploration } from '@/core/exploration'
   import { stoneByTier } from '@/core/formulas'
   import { regionRecallFor, prosperityName, isReviving } from '@/core/worldMemory'
+  import { createSecretRealm, abandonRealm, currentRealm, realmUnlock } from '@/core/secretRealm'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, ecologyChips, ECO_LEVEL_NAMES, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { formatDuration, formatGN } from '@/utils/format'
@@ -161,6 +181,23 @@
   ]
 
   const currentBuild = computed(() => detectBuild(player.finalStats.mods))
+
+  // Phase 31 S3 短期秘境
+  const realmUnlocked = computed(() => realmUnlock())
+  const realmState = computed(() => currentRealm())
+
+  function enterRealm(): void {
+    if (!realmUnlocked.value) {
+      ui.toast('元婴境方可踏足秘境', 'warn')
+      return
+    }
+    if (realmState.value) {
+      ui.toast('秘境已在途中', 'info')
+      return
+    }
+    createSecretRealm()
+    ui.toast('秘境开启——规则随机,三朝探宝,量力而行。', 'rare')
+  }
 
   const regionRows = computed(() =>
     REGIONS.map(r => {

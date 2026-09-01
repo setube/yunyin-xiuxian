@@ -26,6 +26,30 @@
         <p v-if="upCost" class="mt-3 text-right text-[11px] text-ink-faint tabular">
           进修需 悟道点×{{ upCost.wudao }} · 残页×{{ upCost.page }}
         </p>
+        <!-- Phase 31 A3:满级悟道,择一分支 -->
+        <div v-if="fullLevel && branches.length" class="mt-3">
+          <p class="mb-1.5 font-kai text-[12px] tracking-[0.2em] text-ink-faint">
+            功行圆满,可择一悟道方向({{ branchPicked ? '已选' : '不可更改' }})
+          </p>
+          <div v-if="branchPicked" class="rounded-md bg-paper-deep/70 px-3 py-2">
+            <span class="font-kai text-[13px] text-gold-ink">{{ branchPicked.name }}</span>
+            <span class="ml-2 text-[11px] text-ink-faint">{{ branchPicked.desc }}</span>
+          </div>
+          <div v-else class="space-y-1.5">
+            <button
+              v-for="b in branches"
+              :key="b.id"
+              class="flex w-full items-center justify-between rounded-md border border-ink/20 px-3 py-2 text-left active:scale-98"
+              @click="choose(b.id)"
+            >
+              <span>
+                <span class="font-kai text-[13px] text-ink">{{ b.name }}</span>
+                <span class="ml-2 text-[11px] text-ink-faint">{{ b.desc }}</span>
+              </span>
+              <span class="text-[10px] text-azure">选 →</span>
+            </button>
+          </div>
+        </div>
       </template>
       <p v-else class="text-[12px] text-ink-faint">尚未习得此功法。</p>
     </div>
@@ -51,6 +75,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { gongfaDef, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import { ELEMENTS } from '@/data/linggen'
+  import { branchesFor, gongfaBranchDef } from '@/data/gongfaBranches'
   import { gongfaUpgradeCost, upgradeGongfa } from '@/core/gongfaService'
   import { gongfaModsAt } from '@/stores/cultivation'
   import { formatPercent } from '@/utils/format'
@@ -80,6 +105,22 @@
 
   const isMain = computed(() => def.value && cultivation.mainGongfa === def.value.id)
   const isSub = computed(() => def.value && cultivation.subGongfa.includes(def.value.id))
+
+  // Phase 31 A3:满级悟道分支
+  const fullLevel = computed(() => (def.value ? level.value >= (def.value.maxLevel ?? 9) : false))
+  const branches = computed(() => (def.value ? branchesFor(def.value.id) : []))
+  const branchPicked = computed(() => {
+    if (!def.value) return undefined
+    const id = cultivation.gongfaBranch[def.value.id]
+    return id ? gongfaBranchDef(id) : undefined
+  })
+
+  function choose(branchId: string): void {
+    if (!def.value) return
+    if (cultivation.chooseBranch(def.value.id, branchId)) {
+      ui.toast(`已悟道「${gongfaBranchDef(branchId)?.name ?? ''}」`, 'rare')
+    }
+  }
 
   function close(): void {
     ui.gongfaDetailId = null

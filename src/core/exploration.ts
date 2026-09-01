@@ -21,6 +21,8 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { useUiStore } from '@/stores/ui'
 import { checkSuppression } from './suppress'
 import { recordLoss, isNemesis, markAvenged } from './worldMemory'
+import { personalityEffects } from './petPersonality'
+import { currentRegionEvent, regionEventDef, rollRegionEvent } from './regionEvent'
 
 /** 区域是否可解锁(前置首领已清) */
 export function regionAvailable(regionId: string): boolean {
@@ -41,11 +43,14 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
   const now = Date.now()
   const modeDef = EXPLORE_MODES[mode]
   const speed = 1 + modOf(player.finalStats.mods, 'explorationSpeed')
+  // Phase 31 S4:灵兽性格影响探索时长(慢稳更久)
+  const petEff = personalityEffects(player.petId)
+  const durationSec = Math.round(modeDef.durationSec * petEff.exploreDurMult)
   const session: AdventureSession = {
     regionId,
     mode,
     startedAt: now,
-    endsAt: now + modeDef.durationSec * 1000,
+    endsAt: now + durationSec * 1000,
     nextBattleAt: now + (EXPLORE_BATTLE_INTERVAL * 1000) / speed,
     wins: 0,
     losses: 0,
@@ -56,6 +61,12 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
   }
   adventure.setSession(session)
   ui.toast(`你动身前往${region.name},开始${modeDef.name}`, 'info')
+  // Phase 31 A2:出发时低频判定区域事件(妖潮等,30~120 分钟)
+  const ev = rollRegionEvent(region)
+  if (ev) {
+    const def = regionEventDef(ev.eventId)
+    ui.toast(`${region.name}风云突变——${def?.name ?? '异象'}!`, 'warn')
+  }
   return true
 }
 
@@ -83,6 +94,7 @@ export function stopExploration(reason: 'manual' | 'defeat' | 'complete'): void 
 function runBattle(now: number): void {
   const adventure = useAdventureStore()
   const cultivation = useCultivationStore()
+  const player = usePlayerStore()
   const s = adventure.session
   if (!s) return
   const region = regionDef(s.regionId)
@@ -96,7 +108,12 @@ function runBattle(now: number): void {
   const eDef = enemyDef(eDefId)
   if (!eDef) return
 
-  const dangerFactor = modeDef.dangerMult * (1 + (region.danger - 1) * 0.05)
+  // Phase 31 S4:灵兽性格修正危险(好战更高,谨慎更低)
+  const petEff = personalityEffects(player.petId)
+  // Phase 31 A2:区域事件修正危险(妖潮更险)
+  const regEv = currentRegionEvent(region.id)
+  const regEventDanger = regEv ? (regionEventDef(regEv.eventId)?.dangerMult ?? 1) : 1
+  const dangerFactor = modeDef.dangerMult * (1 + (region.danger - 1) * 0.05) * petEff.dangerMult * regEventDanger
   const pSnap = buildPlayerSnap()
   const eSnap = makeEnemySnap(eDef, region.tier, dangerFactor)
   // 道途在世,一切战斗皆循此规则
@@ -114,7 +131,9 @@ function runBattle(now: number): void {
 
   if (result.win) {
     track('kills')
-    const drops = afterWin(region, modeDef.rewardMult, Boolean(eDef.isBoss))
+    // Phase 31 A2:区域事件掉落修正(妖潮/古墓/商队更丰)
+    const regReward = regEv ? (regionEventDef(regEv.eventId)?.rewardMult ?? 1) : 1
+    const drops = afterWin(region, modeDef.rewardMult * regReward, Boolean(eDef.isBoss))
     adventure.setSession({
       ...s,
       wins: s.wins + 1,

@@ -5,7 +5,7 @@ import type { EventChoice, EventDef, EventEffect, RegionDef } from '@/types'
 import { rng } from '@/utils/random'
 import { mulN, gte } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
-import { EVENTS, eventDef } from '@/data/events'
+import { EVENTS, FORTUNE_EVENTS, eventDef } from '@/data/events'
 import { pillDef, PILLS } from '@/data/pills'
 import { buffDef } from '@/data/buffs'
 import { PETS, petDef } from '@/data/pets'
@@ -26,10 +26,18 @@ import { useQuestsStore } from '@/stores/quests'
 
 const MATERIAL_NAMES = { herb: '灵草', ore: '玄铁', page: '功法残页', dust: '器灵尘', wudao: '悟道点' } as const
 
+/** 机缘事件触发概率(每次事件判定,极低) */
+const FORTUNE_CHANCE = 0.02
+
 /** 为区域挑选一个事件 */
 export function pickEventFor(region: RegionDef): EventDef | null {
   const player = usePlayerStore()
   const adventure = useAdventureStore()
+  // Phase 31 S2:极小概率先判机缘事件(带代价选择)
+  if (rng.chance(FORTUNE_CHANCE)) {
+    const fortune = FORTUNE_EVENTS.filter(ev => ev.tags.some(t => region.eventTags.includes(t)))
+    if (fortune.length > 0) return rng.pick(fortune)
+  }
   const pool = EVENTS.filter(ev => {
     if (ev.minRealm !== undefined && player.major < ev.minRealm) return false
     if (ev.once && adventure.seenOnceEvents.includes(ev.id)) return false

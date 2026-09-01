@@ -9,6 +9,7 @@ import { useEndgameStore } from '@/stores/endgame'
 import { modOf } from './statsCalc'
 import { detectBuild } from './buildDetect'
 import { stackedMods, swordPurity, SWORD_LAYER_MODS } from './daoDepth'
+import { hasActiveSet } from './equipSet'
 
 export function buildPlayerSnap(): CombatantSnap {
   const player = usePlayerStore()
@@ -44,6 +45,8 @@ export function buildPlayerSnap(): CombatantSnap {
     mods,
     skills: cultivation.mainSkill ? [cultivation.mainSkill] : [],
     artifacts,
-    comboArt
+    comboArt,
+    // Phase 31 S5:铁壁共鸣(同套 2 件 → 首次致命伤保命)
+    ironwallBrace: hasActiveSet(inventory.equippedItems, 'ironwall')
   }
 }

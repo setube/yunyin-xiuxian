@@ -93,6 +93,18 @@
       <span class="text-[11px] text-jade">整理 →</span>
     </RouterLink>
 
+    <!-- 师承(Phase 31 S1):修行理念 + 师尊评价 -->
+    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="mentorDialog = true">
+      <span class="grid h-9 w-9 place-items-center rounded-md bg-azure/85 font-kai text-[17px] text-paper">师</span>
+      <span class="min-w-0 grow">
+        <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">师 承</span>
+        <span class="block truncate text-[10px] text-ink-faint">
+          {{ mentorVer ? `${mentorVer.mentor?.name ?? ''}·${mentorVer.mentor?.title ?? ''} | ${mentorVer.line}` : '尚未拜师,可寻一位师尊' }}
+        </span>
+      </span>
+      <span class="shrink-0 text-[11px] text-azure">{{ mentorVer ? '求教 →' : '拜师 →' }}</span>
+    </button>
+
     <RouterLink to="/collection" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
       <span class="grid h-9 w-9 place-items-center rounded-md bg-gold-ink/85 font-kai text-[17px] text-paper">鉴</span>
       <span class="min-w-0 grow">
@@ -159,6 +171,46 @@
         <button class="btn-ghost w-full text-[12px]!" @click="rebirth">兵解转世</button>
       </template>
     </BaseModal>
+
+    <!-- 师承弹窗:拜师 / 师尊评价
+        (Phase 31 S1:四种师承理念,拜后不改,转世保留,纯叙事反馈) -->
+    <BaseModal :open="mentorDialog" :title="mentorVer ? `师承 · ${mentorVer.mentor?.name ?? ''}` : '拜师'" @close="mentorDialog = false">
+      <div v-if="mentorVer" class="space-y-3">
+        <p class="font-kai text-[14px] text-ink">{{ mentorVer.mentor?.master }}</p>
+        <p class="text-[12px] leading-relaxed text-ink-soft">
+          「{{ mentorVer.line }}」
+        </p>
+        <p class="text-[11px] text-ink-faint tabular">
+          契合度
+          <span :class="mentorVer.affinity > 0.2 ? 'text-jade' : mentorVer.affinity < -0.2 ? 'text-cinnabar' : 'text-ink-faint'">
+            {{ mentorVer.affinity.toFixed(2) }}
+          </span>
+        </p>
+        <p class="text-[11px] leading-relaxed text-ink-faint">
+          师承词条(并入终局属性):{{ Object.values(mentorVer.mentor?.mods ?? {}).join(' · ') || '—' }}
+        </p>
+      </div>
+      <div v-else class="space-y-2.5">
+        <p class="text-[12px] leading-relaxed text-ink-faint">师承是凡界修行者给你的"额外成长思想"。拜入师门,获一条方向性词条;行为与师承相合,师尊自有嘉许,不设惩罚。</p>
+        <button
+          v-for="m in mentorChoices()"
+          :key="m!.id"
+          class="w-full rounded-lg border px-3 py-2.5 text-left transition-all active:scale-98"
+          :class="'border-ink/20'"
+          @click="player.adoptMentor(m!.id)"
+        >
+          <p class="flex items-baseline gap-2">
+            <span class="font-kai text-[14px] text-ink">{{ m!.name }}</span>
+            <span class="text-[11px] text-azure">{{ m!.title }}</span>
+            <span class="ml-auto text-[10px] text-ink-faint">{{ m!.master }}</span>
+          </p>
+          <p class="mt-0.5 text-[11px] text-ink-faint">{{ m!.desc }}</p>
+        </button>
+      </div>
+      <template #footer>
+        <button class="btn-seal w-full" @click="mentorDialog = false">知道了</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -182,6 +234,7 @@
   import { useLoadoutsStore } from '@/stores/loadouts'
   import { modOf } from '@/core/statsCalc'
   import { fruitMarginalInfo } from '@/core/resourceGuidance'
+  import { mentorVerdict, mentorChoices } from '@/core/mentorService'
   import { formatGN, formatPercent, formatYears } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
   import { STAT_NAMES } from '@/ui/statNames'
@@ -237,6 +290,10 @@
   // ---- 轮回 ----
   const rebirthOpen = ref(false)
   const canRebirth = computed(() => player.major >= MANUAL_REBIRTH_MIN_MAJOR)
+
+  // Phase 31 S1 师承
+  const mentorDialog = ref(false)
+  const mentorVer = computed(() => mentorVerdict(player.mentor))
 
   function rebirth(): void {
     if (!canRebirth.value) {

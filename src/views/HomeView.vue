@@ -78,6 +78,13 @@
       </div>
     </div>
 
+    <!-- 今日天时(Phase 31 A1):确定性环境,影响当日产出与渡劫 -->
+    <div class="card-ink flex items-center gap-2 px-4 py-2">
+      <GameIcon name="sparkles" :size="14" class="text-gold-ink" />
+      <span class="font-kai text-[12px] tracking-widest text-ink">今日天时 · {{ weather.name }}</span>
+      <span class="ml-auto text-[10px] text-ink-faint">{{ weather.desc }}</span>
+    </div>
+
     <!-- 修行志(任务) -->
     <section>
       <SectionTitle title="修行志" />
@@ -125,6 +132,7 @@
   import { BUILDINGS } from '@/data/buildings'
   import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
   import { formatNum, formatYears } from '@/utils/format'
+  import { todayWeather } from '@/core/weather'
   import { generateCurrentGoal } from '@/core/goal'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
@@ -145,6 +153,9 @@
     if (cultivation.hasBuff('injury')) return '疗伤中'
     return '闭关修炼中'
   })
+
+  // Phase 31 A1:今日天时(确定性,refreshed 每游戏日)
+  const weather = computed(() => todayWeather())
 
   const currentGoal = computed(() => generateCurrentGoal(player))
 

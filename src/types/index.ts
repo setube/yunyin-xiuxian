@@ -189,6 +189,8 @@ export interface EquipmentTemplate {
   fixedMods?: StatMods
   /** 出现的最低掉落层级 */
   minTier: number
+  /** Phase 31.0 S5:装备套装/共鸣组(同组多件触发机制效果,非数值堆叠) */
+  set?: string
 }
 
 export type AffixRarity = 'common' | 'rare' | 'epic' | 'legendary'
@@ -534,6 +536,8 @@ export interface PetDef {
   icon: string
   quality: QualityId
   mods: StatMods
+  /** Phase 31.0 S4:灵兽性格(贪宝/慢稳/好战/谨慎),影响探索行为倾向 */
+  personality: 'greedy' | 'steady' | 'fierce' | 'cautious'
 }
 
 // ============ 成就 / 任务 ============
@@ -616,6 +620,8 @@ export interface CombatantSnap {
   phases?: BossPhase[]
   /** Boss 机制家族(Phase 30.7) */
   archetype?: BossArchetype
+  /** Phase 31.0 S5:铁壁共鸣(首次致命伤保留 1 点气血,未用标记) */
+  ironwallBrace?: boolean
 }
 
 export interface CombatLogEntry {
