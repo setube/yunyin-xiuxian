@@ -106,8 +106,7 @@
       <p class="text-[10px] text-ink-ghost">画像基于真实选择归纳——你玩成了什么样,它便描述什么。</p>
     </div>
 
-    <RouterLink to="/build" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
-      <span class="grid h-9 w-9 place-items-center rounded-md bg-jade/85 font-kai text-[17px] text-paper">号</span>
+    <RouterLink to="/titles" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">名号与灵兽</span>
         <span class="block truncate text-[10px] text-ink-faint">

@@ -7,6 +7,8 @@ import { realmDef, realmLabel } from '@/data/realms'
 import { BT_FAIL_EXP_LOSS, BT_QI_COST_RATIO, TRIBULATION_BASE_WAVES } from '@/data/constants'
 import { breakthroughBaseRate, clampRate, tribulationWaveDamage } from './formulas'
 import { modOf } from './statsCalc'
+import { rollTribulation } from './tribulationDecision'
+import { tribulationDef } from '@/data/tribulations'
 import { track, trackRealm, checkStateAchievements } from './progress'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -91,19 +93,25 @@ export function breakthroughInfo(): BreakthroughInfo {
   }
 }
 
-/** 模拟渡劫:返回(是否渡过, 战报) */
+/** 模拟渡劫:返回(是否渡过, 战报)
+ * Phase 32.0:劫型修正(与 tribulationDecision 同数学) */
 function runTribulation(targetMajor: number): { survived: boolean; log: string[] } {
   const player = usePlayerStore()
   const mods = player.finalStats.mods
   const waves = TRIBULATION_BASE_WAVES + targetMajor
+  const kind = rollTribulation(targetMajor)
+  const tDef = tribulationDef(kind)
   const resist = Math.min(0.8, modOf(mods, 'tribulationResist'))
   const reduction = Math.min(0.6, modOf(mods, 'damageReduction'))
   const lowHpRed = Math.min(0.6, modOf(mods, 'lowHpReduction'))
-  let hpLeft = 1 + modOf(mods, 'shieldOnStart')
-  const regen = modOf(mods, 'regenPerRound')
-  const log: string[] = [`乌云压顶,${realmDef(targetMajor).name}劫将至——共 ${waves} 道天雷!`]
+  const regen = modOf(mods, 'regenPerRound') * tDef.healMult
+  let hpLeft = 1 + modOf(mods, 'shieldOnStart') * tDef.shieldMult
+  const crit = modOf(mods, 'critRate') + modOf(mods, 'damageBonus') * 0.5
+  const log: string[] = [`乌云压顶,${realmDef(targetMajor).name}劫将至——${tDef.name}之劫,共 ${waves} 道!`]
   for (let w = 1; w <= waves; w += 1) {
-    let dmg = tribulationWaveDamage(targetMajor, w, resist) * (1 - reduction) * rng.float(0.85, 1.15)
+    let dmg = tribulationWaveDamage(targetMajor, w, resist) * (1 - reduction) * tDef.dmgMult * rng.float(0.85, 1.15)
+    // 裂魂:较足爆发可略微消劫
+    if (kind === 'soulrend' && crit >= 0.4) dmg *= 0.92
     // 濒危减伤(背水路数)在气血垂危时同样护持渡劫
     if (hpLeft < 0.3) dmg *= 1 - lowHpRed
     hpLeft = hpLeft - dmg + regen

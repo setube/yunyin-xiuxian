@@ -30,18 +30,38 @@
       </div>
       <div class="mt-2 grid grid-cols-2 gap-2">
         <div class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
-          <p class="text-[10px] text-ink-faint">突破成功率</p>
+          <p class="text-[10px] text-ink-faint">突破成功率(进阶)</p>
           <p class="tabular text-[16px] font-kai leading-tight" :class="btInfo.rate >= 0.7 ? 'text-jade' : 'text-cinnabar'">
             {{ btInfo.rateText }}
           </p>
         </div>
         <div class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
-          <p class="text-[10px] text-ink-faint">渡劫成功率</p>
-          <p v-if="btInfo.tribRate !== null" class="tabular text-[16px] font-kai leading-tight" :class="btInfo.tribRate >= 0.7 ? 'text-jade' : 'text-violet-ink'">
-            {{ formatPercent(btInfo.tribRate, 0) }}
-          </p>
+          <p class="text-[10px] text-ink-faint">{{ btInfo.needTribulation ? '此劫' : '渡劫' }}</p>
+          <template v-if="tribPlan">
+            <p class="tabular text-[16px] font-kai leading-tight" :class="PLAN_COLOR[tribPlan.verdict]">
+              {{ tribPlan.title }}
+            </p>
+            <p class="text-[10px] text-ink-faint">
+              劫势:{{ verdictLabel(tribPlan.verdict) }}
+              <template v-if="tribPlan.risks.length"> · {{ tribPlan.risks[0] }}</template>
+            </p>
+          </template>
           <p v-else class="text-[16px] font-kai leading-tight text-ink-ghost">非大关</p>
         </div>
+      </div>
+
+      <!-- Phase 32.0 劫势详情(决意前评估:风险维度 + 建议,信息给足,决定留给玩家) -->
+      <div v-if="tribPlan" class="mt-2 rounded-md border border-violet-ink/25 bg-violet-ink/5 px-3 py-2">
+        <p class="text-[11px] text-violet-ink">{{ tribPlan.desc }}</p>
+        <p class="mt-1.5 text-[10px] text-ink-faint tabular">
+          准备:
+          <span class="text-ink-soft">{{ PREP_NAMES.guard }} {{ PREP_STARS[tribPlan.prep.guard] }}</span>
+          · {{ PREP_NAMES.sustain }} {{ PREP_STARS[tribPlan.prep.sustain] }}
+          · {{ PREP_NAMES.resist }} {{ PREP_STARS[tribPlan.prep.resist] }}
+          · {{ PREP_NAMES.burst }} {{ PREP_STARS[tribPlan.prep.burst] }}
+        </p>
+        <p class="mt-1 text-[10px] text-ink-soft">主要风险:<span class="text-cinnabar/80">{{ tribPlan.risks.join('; ') }}</span></p>
+        <p class="mt-1 text-[10px] text-ink-faint">{{ tribPlan.advice }}</p>
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
         耗灵气 {{ formatNum(btInfo.qiCost) }}
@@ -157,6 +177,7 @@
   import { useInventoryStore } from '@/stores/inventory'
   import { useUiStore } from '@/stores/ui'
   import { attemptBreakthrough, breakthroughInfo } from '@/core/breakthrough'
+  import { currentTribulationPlan, verdictLabel, type TribulationPlan } from '@/core/tribulationDecision'
   import { comprehendGongfa } from '@/core/gongfaService'
   import { usePill } from '@/core/pillService'
   import { useNow } from '@/composables/useNow'
@@ -165,7 +186,7 @@
   import { buffDef } from '@/data/buffs'
   import { pillDef } from '@/data/pills'
   import { COMPREHEND_PAGE_COST } from '@/data/constants'
-  import { formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
+  import { formatDuration, formatGN, formatNum, formatRate } from '@/utils/format'
   import { qualityDef } from '@/data/qualities'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
@@ -181,6 +202,17 @@
   const now = useNow()
 
   const btInfo = computed(() => breakthroughInfo())
+
+  // Phase 32.0 天劫决策:劫型 + 准备度(仅大关天劫时)
+  const PLAN_COLOR: Record<TribulationPlan['verdict'], string> = {
+    danger: 'text-cinnabar',
+    hard: 'text-amber-ink',
+    ok: 'text-azure',
+    easy: 'text-jade'
+  }
+  const PREP_NAMES = { guard: '护持', sustain: '恢复', resist: '抗性', burst: '爆发' } as const
+  const PREP_STARS = ['·', '✧', '✧✧', '✧✧✧'] as const
+  const tribPlan = computed(() => (btInfo.value.needTribulation ? currentTribulationPlan() : null))
 
   const activeBuffs = computed(() =>
     cultivation.buffs
