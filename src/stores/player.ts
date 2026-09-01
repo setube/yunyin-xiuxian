@@ -59,6 +59,9 @@ export const usePlayerStore = defineStore(
     // Phase 31 S3 短期秘境(一次性内容容器,进行中状态)
     const secretRealm = ref<import('@/core/secretRealm').SecretRealmState | null>(null)
 
+    // Phase 31.1 机缘链:机缘选择记忆(取/弃),影响师承推荐与未来同类机缘
+    const fortuneChoices = ref<Record<string, string>>({})
+
     // Phase 30.9 世界记忆
     /** 宿敌列表(同一敌人败我 ≥3 次) */
     const nemeses = ref<import('@/types').NemesisRecord[]>([])
@@ -319,6 +322,11 @@ export const usePlayerStore = defineStore(
       secretRealm.value = state
     }
 
+    // ---------- Phase 31.1 机缘链 ----------
+    function setFortuneChoices(choices: Record<string, string>): void {
+      fortuneChoices.value = choices
+    }
+
     return {
       name,
       linggen,
@@ -344,6 +352,7 @@ export const usePlayerStore = defineStore(
       mentor,
       regionEvent,
       secretRealm,
+      fortuneChoices,
       realm,
       realmName,
       subName,
@@ -385,7 +394,8 @@ export const usePlayerStore = defineStore(
       setNemeses,
       adoptMentor,
       setRegionEvent,
-      setSecretRealm
+      setSecretRealm,
+      setFortuneChoices
     }
   },
   { persist: persistConfig('player') }

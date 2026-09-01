@@ -196,12 +196,13 @@
           v-for="m in mentorChoices()"
           :key="m!.id"
           class="w-full rounded-lg border px-3 py-2.5 text-left transition-all active:scale-98"
-          :class="'border-ink/20'"
+          :class="hintMentor === m!.id ? 'border-cinnabar/60 bg-cinnabar/5' : 'border-ink/20'"
           @click="player.adoptMentor(m!.id)"
         >
           <p class="flex items-baseline gap-2">
             <span class="font-kai text-[14px] text-ink">{{ m!.name }}</span>
             <span class="text-[11px] text-azure">{{ m!.title }}</span>
+            <span v-if="hintMentor === m!.id" class="chip-ink ml-1 border-cinnabar/50 text-[9px] text-cinnabar">机缘引荐</span>
             <span class="ml-auto text-[10px] text-ink-faint">{{ m!.master }}</span>
           </p>
           <p class="mt-0.5 text-[11px] text-ink-faint">{{ m!.desc }}</p>
@@ -235,6 +236,7 @@
   import { modOf } from '@/core/statsCalc'
   import { fruitMarginalInfo } from '@/core/resourceGuidance'
   import { mentorVerdict, mentorChoices } from '@/core/mentorService'
+  import { mentorHint } from '@/core/fortuneChain'
   import { formatGN, formatPercent, formatYears } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
   import { STAT_NAMES } from '@/ui/statNames'
@@ -294,6 +296,8 @@
   // Phase 31 S1 师承
   const mentorDialog = ref(false)
   const mentorVer = computed(() => mentorVerdict(player.mentor))
+  // Phase 31.1 机缘链:机缘取/弃记忆 → 师承推荐
+  const hintMentor = computed(() => mentorHint())
 
   function rebirth(): void {
     if (!canRebirth.value) {

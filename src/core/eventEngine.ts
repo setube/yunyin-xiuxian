@@ -16,6 +16,7 @@ import { acquireArtifact, acquireEquipment, randomDropArtifact } from './loot'
 import { learnRandomGongfa } from './gongfaService'
 import { collect, track } from './progress'
 import { recordEvent } from './worldMemory'
+import { recordFortuneChoice } from './fortuneChain'
 import { modOf } from './statsCalc'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -168,6 +169,11 @@ export function resolveEventChoice(def: EventDef, choiceIdx: number, tier: numbe
 
   // Phase 30.9 S3:记录事件记忆(完成的余波后,未来再遇时有机会触发余波文本)
   adventure.eventMemories = recordEvent(adventure.eventMemories, def.id, choiceIdx, Date.now())
+  // Phase 31.1 机缘链:机缘选择记入世界记忆(取/弃,影响未来)
+  if (def.id.startsWith('ft_')) {
+    const isDefault = def.choices[choiceIdx]?.isDefault ?? false
+    recordFortuneChoice(def.id, isDefault ? 'leave' : 'take')
+  }
   return { outcomeText: outcome.text, lines }
 }
 
