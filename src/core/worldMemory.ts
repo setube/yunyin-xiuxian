@@ -197,3 +197,30 @@ export function regionRecallFor(regionId: string): RegionRecall {
 export function nemesisFor(nemeses: NemesisRecord[], enemyId: string): NemesisRecord | undefined {
   return nemeses.find(n => n.enemyId === enemyId)
 }
+
+// ============ 宿敌残魂(Phase 31.4)============
+
+/** 残魂再现概率(低,3%) */
+export const ECHO_GHOST_CHANCE = 0.03
+
+/**
+ * 宿敌残魂:已雪耻的宿敌以"历史形态"再现。
+ * 纯叙事:改变战报前缀与敌人名冠("残魂"字样),不改属性与奖励。
+ * 每次遭遇独立判定,低概率。
+ */
+export function ghostOf(nemeses: NemesisRecord[], enemyId: string): NemesisRecord | null {
+  const n = nemeses.find(x => x.enemyId === enemyId)
+  // 只有已雪耻(avengedAt)的宿敌才有残魂形态
+  if (!n || n.avengedAt === undefined) return null
+  return n
+}
+
+/** 残魂战报前缀(叙事) */
+export function ghostTitle(n: NemesisRecord): string {
+  return `残魂·${n.enemyName}`
+}
+
+/** 残魂引导语 (战报第一行前) */
+export function ghostLeadIn(n: NemesisRecord): string {
+  return `你曾${n.lossCount}败于此,又将此敌斩于剑下。如今一道残魂再度拦路——它似乎仍记得你。`
+}

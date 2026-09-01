@@ -19,8 +19,8 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useUiStore } from '@/stores/ui'
-import { checkSuppression } from './suppress'
-import { recordLoss, isNemesis, markAvenged } from './worldMemory'
+import { checkSuppression, memorialLine, MEMORIAL_CHANCE } from './suppress'
+import { recordLoss, isNemesis, markAvenged, ghostOf, ghostTitle, ghostLeadIn, ECHO_GHOST_CHANCE } from './worldMemory'
 import { personalityEffects } from './petPersonality'
 import { currentRegionEvent, regionEventDef, rollRegionEvent } from './regionEvent'
 
@@ -67,6 +67,11 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
     const def = regionEventDef(ev.eventId)
     ui.toast(`${region.name}风云突变——${def?.name ?? '异象'}!`, 'warn')
   }
+  // Phase 31.4 区域凭吊:重访已镇压之地,低概率世界说起你的旧事
+  if (player.suppressedRegions.includes(region.id) && rng.chance(MEMORIAL_CHANCE)) {
+    const line = memorialLine(region.id, player)
+    if (line) ui.toast(line, 'info')
+  }
   return true
 }
 
@@ -108,6 +113,14 @@ function runBattle(now: number): void {
   const eDef = enemyDef(eDefId)
   if (!eDef) return
 
+  // Phase 31.4 宿敌残魂:已雪耻宿敌低概率(3%)以历史形态再现(纯叙事)
+  let ghostLead = ''
+  const ghost = rng.chance(ECHO_GHOST_CHANCE) ? ghostOf(player.nemeses, eDef.id) : null
+  if (ghost) {
+    ghostLead = ghostLeadIn(ghost)
+    useUiStore().toast(ghostLead, 'info')
+  }
+
   // Phase 31 S4:灵兽性格修正危险(好战更高,谨慎更低)
   const petEff = personalityEffects(player.petId)
   // Phase 31 A2:区域事件修正危险(妖潮更险)
@@ -120,7 +133,7 @@ function runBattle(now: number): void {
   const result = resolveCombat(pSnap, eSnap, rng, currentDaoRules())
 
   adventure.recordBattle({
-    enemyName: eDef.name,
+    enemyName: ghost ? ghostTitle(ghost) : eDef.name,
     enemyIcon: eDef.icon,
     enemyId: eDef.id,
     isBoss: Boolean(eDef.isBoss),

@@ -120,3 +120,25 @@ export function settleSuppressedRegions(dt: number): SuppressedYield | null {
 
   return total
 }
+
+// ============ 区域凭吊叙事(Phase 31.4)============
+
+/** 凭吊触发概率(低,4%) */
+export const MEMORIAL_CHANCE = 0.04
+
+/**
+ * 待念:进入已被你镇压的区域时,低概率触发一段"世界记得你"的叙事。
+ * 纯文案,无奖励无属性。
+ */
+export function memorialLine(regionId: string, player: ReturnType<typeof usePlayerStore>): string | null {
+  const since = player.suppressedSince[regionId]
+  if (since === undefined) return null
+  const region = regionDef(regionId)
+  if (!region) return null
+  const years = Math.max(1, Math.floor((Date.now() - since) / 31_536_000)) // 现实秒 → ~年
+  return [
+    `行至${region.name},山道两侧立着两块石碑——一块刻着你的道号,另一块是空的。`,
+    `你镇压此地已逾${years}载,此方妖邪至今不敢再聚。`,
+    `守道的山民见你,愣了愣,拱手道:「是你。上回一别,已是多年。」`
+  ].join('')
+}
