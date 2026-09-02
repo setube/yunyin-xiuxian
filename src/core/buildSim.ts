@@ -7,10 +7,10 @@ import type { CombatantSnap, StatMods } from '@/types'
 import { gn } from '@/utils/gnum'
 import { mulberry32, RandomService } from '@/utils/random'
 import { ARTIFACT_LEVEL_BONUS, artifactDef } from '@/data/artifacts'
-import { TRIBULATION_BASE_WAVES } from '@/data/constants'
+import { tribulationDef, TRIBULATIONS, type TribulationKind } from '@/data/tribulations'
 import { resolveCombat } from './combat'
-import { tribulationWaveDamage } from './formulas'
-import { mergeMods, modOf } from './statsCalc'
+import { traceTribulation } from './tribulationDecision'
+import { mergeMods } from './statsCalc'
 
 // ---------- 流派构筑(中期典型成型度:词条×3~4 + 功法 + 天赋 + 法宝被动) ----------
 
@@ -214,20 +214,25 @@ export function fullMatrix(n = 80): MatrixRow[] {
 
 // ---------- 天劫存活(期望值推演) ----------
 
-/** 按流派词条推演天劫存活(不含随机浮动,期望值口径;濒危时计入背水减伤) */
-export function tribulationSurvives(profile: BuildProfile, targetMajor: number): boolean {
+/**
+ * 该流派在此境界能渡过哪几种劫型(期望值口径,无随机浮动)。
+ *
+ * Phase 32.1:并入 tribulationDecision 的共享内核,不再自带一份天劫数学——
+ * 此前这里少算劫型修正与吸血,审计结论与玩家实际渡劫会对不上。
+ */
+export function tribulationSolvableKinds(profile: BuildProfile, targetMajor: number): TribulationKind[] {
   const snap = buildSnap(profile)
-  const waves = TRIBULATION_BASE_WAVES + targetMajor
-  const resist = Math.min(0.8, modOf(snap.mods, 'tribulationResist'))
-  const reduction = Math.min(0.6, modOf(snap.mods, 'damageReduction'))
-  const lowHpRed = Math.min(0.6, modOf(snap.mods, 'lowHpReduction'))
-  const regen = modOf(snap.mods, 'regenPerRound')
-  let hpLeft = 1 + modOf(snap.mods, 'shieldOnStart')
-  for (let w = 1; w <= waves; w += 1) {
-    let dmg = tribulationWaveDamage(targetMajor, w, resist) * (1 - reduction)
-    if (hpLeft < 0.3) dmg *= 1 - lowHpRed
-    hpLeft = hpLeft - dmg + regen
-    if (hpLeft <= 0) return false
-  }
-  return true
+  return TRIBULATIONS.filter(def => traceTribulation(def, snap.mods, targetMajor).survived).map(def => def.id)
+}
+
+/**
+ * 按流派词条推演天劫存活。
+ *
+ * 指定 kind 时针对该劫型;不指定则取"五种劫型皆可渡"的严格口径
+ * ——即"不必挑天时也稳过"。只能渡部分劫型不算稳过,那是"择时而渡"。
+ */
+export function tribulationSurvives(profile: BuildProfile, targetMajor: number, kind?: TribulationKind): boolean {
+  const snap = buildSnap(profile)
+  if (kind) return traceTribulation(tribulationDef(kind), snap.mods, targetMajor).survived
+  return TRIBULATIONS.every(def => traceTribulation(def, snap.mods, targetMajor).survived)
 }

@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { tribulationSuccessRate, breakthroughInfo } from './breakthrough'
+import { buildTribulationPlan, currentTribulationPlan } from './tribulationDecision'
 import type { StatMods } from '@/types'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -48,7 +49,7 @@ describe('渡劫成功率推演', () => {
     expect(low).toBeGreaterThan(high)
   })
 
-  it('breakthroughInfo:大境界(渡劫)场景返回独立 tribRate', () => {
+  it('breakthroughInfo:渡劫场景不再吐出单一成功率,而是给出劫型与四维准备度', () => {
     const player = usePlayerStore()
     const resources = useResourcesStore()
     // 模拟炼气·十层(SUB_LEVELS=10,sub=9 时 isMajorStep)
@@ -57,33 +58,39 @@ describe('渡劫成功率推演', () => {
     // 强制修为圆满:exp >= expRequirement(0,9)
     player.$patch({ exp: { m: 1e12, e: 0 } })
     const info = breakthroughInfo()
-    console.log(
-      `境界=${player.realmName} major→${info.targetLabel} needTribulation=${info.needTribulation} rate=${info.rateText} tribRate=${info.tribRate}`
-    )
+    console.log(`境界=${player.realmName} major→${info.targetLabel} needTribulation=${info.needTribulation} rate=${info.rateText}`)
 
-    // 炼气→筑基应需渡劫(多数大境界有天劫),tribRate 应为一个 (0,1) 概率
+    // Phase 32.0:突破面板只承载"基础突破率",天劫另走决策面板;
+    // 若哪天 BreakthroughInfo 上又长出一个渡劫成功率字段,说明系统正在退回"堆成功率"。
+    expect(Object.keys(info)).not.toContain('tribRate')
+
     if (info.needTribulation) {
-      expect(info.tribRate).not.toBeNull()
-      expect(info.tribRate!).toBeGreaterThan(0)
-      expect(info.tribRate!).toBeLessThanOrEqual(1)
-    } else {
-      expect(info.tribRate).toBeNull()
+      const plan = currentTribulationPlan()
+      expect(plan.kind).toBeTruthy()
+      expect(plan.risks.length).toBeGreaterThan(0)
+      for (const dim of ['guard', 'sustain', 'resist', 'burst'] as const) {
+        expect(plan.prep[dim]).toBeGreaterThanOrEqual(0)
+        expect(plan.prep[dim]).toBeLessThanOrEqual(3)
+      }
+      console.log(`  劫型=${plan.title} 档=${plan.verdict} 准备度=${JSON.stringify(plan.prep)}`)
     }
   })
 
-  it('breakthroughInfo:渡劫场景 tribRate 与纯函数一致', () => {
-    const player = usePlayerStore()
-    const resources = useResourcesStore()
-    player.$patch({ major: 0, sub: 9 })
-    resources.$patch({ qi: 999999 })
-    player.$patch({ exp: { m: 1e12, e: 0 } })
-    const info = breakthroughInfo()
-    if (info.needTribulation && info.tribRate !== null) {
-      const mods = player.finalStats.mods
-      const expected = tribulationSuccessRate(1, mods)
-      expect(info.tribRate).toBeCloseTo(expected, 2)
-    } else {
-      console.log('此境界突破不需渡劫(境界定义中无天劫)')
+  it('UI 预览与实际结算同向:推演更好的构筑,采样成功率也必须更高', () => {
+    // Phase 32.1 口径纪律:决策面板告诉玩家"这套构筑更稳",
+    // 结算就不能给出相反结论——否则玩家会觉得系统在骗人。
+    const weak: StatMods = { regenPerRound: 0.01 }
+    const strong: StatMods = { regenPerRound: 0.08, damageReduction: 0.35, shieldOnStart: 0.5 }
+    for (const kind of ['thunder', 'counterflow', 'soulrend', 'ironbody', 'heavyrush'] as const) {
+      const previewWeak = buildTribulationPlan(3, weak, kind).expectedRate
+      const previewStrong = buildTribulationPlan(3, strong, kind).expectedRate
+      const actualWeak = tribulationSuccessRate(3, weak, kind)
+      const actualStrong = tribulationSuccessRate(3, strong, kind)
+      console.log(
+        `${kind}:预览 ${previewWeak.toFixed(3)}→${previewStrong.toFixed(3)} 采样 ${actualWeak.toFixed(3)}→${actualStrong.toFixed(3)}`
+      )
+      expect(previewStrong, `${kind}:预览未反映构筑改善`).toBeGreaterThan(previewWeak)
+      expect(actualStrong, `${kind}:预览说变好了,结算却没有——UI 与结算口径分裂`).toBeGreaterThan(actualWeak)
     }
   })
 })

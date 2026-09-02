@@ -1,6 +1,6 @@
 /* eslint-disable no-console -- 模拟器体检报告的正式输出(npm run test:report 依赖) */
 import { describe, expect, it } from 'vitest'
-import { BUILD_PROFILES, ENEMY_ARCHETYPES, fullMatrix, tribulationSurvives, type MatrixRow } from './buildSim'
+import { BUILD_PROFILES, ENEMY_ARCHETYPES, fullMatrix, tribulationSurvives, tribulationSolvableKinds, type MatrixRow } from './buildSim'
 
 const N = 80
 
@@ -19,9 +19,12 @@ describe('流派对战审计(Phase 16)', () => {
       const cells = ENEMY_ARCHETYPES.map(a => `${Math.round(row.cells[a.id]!.winRate * 100)}%`.padStart(4, ' '))
       console.log(`  ${row.build.name} | ${cells.join(' | ')} | ${Math.round(row.avgWinRate * 100)}%`)
     }
-    console.log('\n—— 天劫期望存活(筑基劫 / 金丹劫) ——')
+    console.log('\n—— 天劫天时窗口(可渡劫型数 / 共 5 种;筑基劫 · 金丹劫) ——')
     for (const b of BUILD_PROFILES) {
-      console.log(`  ${b.name}: ${tribulationSurvives(b, 1) ? '渡' : '殒'} / ${tribulationSurvives(b, 2) ? '渡' : '殒'}`)
+      const w1 = tribulationSolvableKinds(b, 1).length
+      const w2 = tribulationSolvableKinds(b, 2).length
+      const mark = (n: number): string => (n === 5 ? '稳渡' : n > 0 ? '择时' : '无解')
+      console.log(`  ${b.name}: ${w1}/5 ${mark(w1)} · ${w2}/5 ${mark(w2)}`)
     }
     expect(rows.length).toBe(6)
   })
@@ -77,19 +80,26 @@ describe('流派对战审计(Phase 16)', () => {
     expect(best - cell(rows, 'gangdun', 'pierce')).toBeGreaterThan(0.12)
   })
 
-  it('天劫存活分化:护持路数稳过金丹劫,纯攻流须借丹药外力', () => {
-    const survives = (id: string, m: number): boolean =>
-      tribulationSurvives(
-        BUILD_PROFILES.find(b => b.id === id)!,
-        m
-      )
-    // 筑基劫对所有流派友好(首劫保护)
+  it('天劫存活分化:护持路数天时窗口更宽,纯攻流须择时而渡', () => {
+    // Phase 32.1:天劫已类型化,分化不再是"能不能渡",而是"能渡哪几种劫"。
+    // 纯攻流不是被堵死,而是要挑劫型——"今天渡不渡"由此成为真实决策。
+    const kinds = (id: string, m: number): string[] => tribulationSolvableKinds(BUILD_PROFILES.find(b => b.id === id)!, m)
+
+    // 首劫:任何流派都得有至少一个窗口,否则天劫成了硬墙
     for (const b of BUILD_PROFILES) {
-      expect(tribulationSurvives(b, 1), b.name).toBe(true)
+      const ks = tribulationSolvableKinds(b, 1)
+      console.log(`  ${b.name}:首劫可渡 ${ks.length}/5 [${ks.join('、')}]`)
+      expect(ks.length, `${b.name}:首劫无劫可渡,天劫成了硬墙而非决策`).toBeGreaterThan(0)
     }
-    // 金丹劫开始分化
-    expect(survives('gangdun', 2)).toBe(true)
-    expect(survives('lianji', 2)).toBe(false)
-    expect(survives('fengmang', 2)).toBe(false)
+    // 护持路数的窗口应宽于纯攻流
+    expect(kinds('gangdun', 1).length).toBeGreaterThan(kinds('fengmang', 1).length)
+
+    // 金丹劫开始收窄:罡盾仍有多个窗口,纯攻流则须借丹药外力
+    expect(kinds('gangdun', 2).length).toBeGreaterThanOrEqual(3)
+    expect(kinds('lianji', 2).length).toBe(0)
+    expect(kinds('fengmang', 2).length).toBe(0)
+    // 严格口径(不挑天时也稳过)只有护持路数在首劫做得到
+    expect(tribulationSurvives(BUILD_PROFILES.find(b => b.id === 'gangdun')!, 1)).toBe(true)
+    expect(tribulationSurvives(BUILD_PROFILES.find(b => b.id === 'fengmang')!, 1)).toBe(false)
   })
 })

@@ -4,11 +4,11 @@
 import { mulberry32, rng } from '@/utils/random'
 import { formatPercent } from '@/utils/format'
 import { realmDef, realmLabel } from '@/data/realms'
-import { BT_FAIL_EXP_LOSS, BT_QI_COST_RATIO, TRIBULATION_BASE_WAVES } from '@/data/constants'
-import { breakthroughBaseRate, clampRate, tribulationWaveDamage } from './formulas'
+import { BT_FAIL_EXP_LOSS, BT_QI_COST_RATIO } from '@/data/constants'
+import { breakthroughBaseRate, clampRate } from './formulas'
 import { modOf } from './statsCalc'
-import { rollTribulation } from './tribulationDecision'
-import { tribulationDef } from '@/data/tribulations'
+import { rollTribulation, sustainScore, guardScore, waveDamage, tribulationWaves } from './tribulationDecision'
+import { tribulationDef, TRIBULATIONS, type TribulationKind } from '@/data/tribulations'
 import { track, trackRealm, checkStateAchievements } from './progress'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -24,8 +24,6 @@ export interface BreakthroughInfo {
   /** 修炼突破的基础成功率(未计天劫) */
   rate: number
   rateText: string
-  /** 渡劫成功率(大境界天劫才需要,与 rate 独立) */
-  tribRate: number | null
   qiCost: number
   isMajor: boolean
   needTribulation: boolean
@@ -35,26 +33,34 @@ export interface BreakthroughInfo {
 /** 蒙特卡洛采样次数:渡劫波次少(4~15),几千次也在毫秒级 */
 const TRIB_SAMPLE = 4000
 
-/** 按玩家词条推演渡劫成功率(与 runTribulation 同逻辑,固定种子保证 deterministic,可无 Pinia 测试) */
-export function tribulationSuccessRate(targetMajor: number, mods: StatMods): number {
+/**
+ * 按玩家词条推演渡劫成功率(审计口径,非 UI 展示口径)。
+ *
+ * Phase 32.0 起,玩家看到的是"劫型 + 四维准备度 + 风险",不再是单一成功率数字;
+ * 本函数只服务于平衡审计与回归测试。不传 kind 时取五种劫型的平均,
+ * 代表"不挑天时的长期基线",不代表任何一次具体渡劫。
+ *
+ * 数学主干与实际结算 runTribulation 共用 tribulationDecision 的度量函数。
+ */
+export function tribulationSuccessRate(targetMajor: number, mods: StatMods, kind?: TribulationKind): number {
+  const kinds = kind ? [tribulationDef(kind)] : TRIBULATIONS
   const rand = mulberry32(0x5eed)
-  const waves = TRIBULATION_BASE_WAVES + targetMajor
-  const resist = Math.min(0.8, modOf(mods, 'tribulationResist'))
-  const reduction = Math.min(0.6, modOf(mods, 'damageReduction'))
-  const lowHpRed = Math.min(0.6, modOf(mods, 'lowHpReduction'))
-  const regen = modOf(mods, 'regenPerRound')
+  const waves = tribulationWaves(targetMajor)
   let survived = 0
-  for (let s = 0; s < TRIB_SAMPLE; s += 1) {
-    let hpLeft = 1 + modOf(mods, 'shieldOnStart')
-    for (let w = 1; w <= waves; w += 1) {
-      let dmg = tribulationWaveDamage(targetMajor, w, resist) * (1 - reduction) * (0.85 + rand() * 0.3)
-      if (hpLeft < 0.3) dmg *= 1 - lowHpRed
-      hpLeft = hpLeft - dmg + regen
-      if (hpLeft <= 0) break
+  let total = 0
+  for (const def of kinds) {
+    const regen = sustainScore(mods, def)
+    for (let s = 0; s < TRIB_SAMPLE; s += 1) {
+      let hpLeft = 1 + guardScore(mods, def)
+      for (let w = 1; w <= waves; w += 1) {
+        hpLeft = hpLeft - waveDamage(def, mods, targetMajor, w, hpLeft) * (0.85 + rand() * 0.3) + regen
+        if (hpLeft <= 0) break
+      }
+      if (hpLeft > 0) survived += 1
+      total += 1
     }
-    if (hpLeft > 0) survived += 1
   }
-  return survived / TRIB_SAMPLE
+  return survived / total
 }
 
 export function breakthroughInfo(): BreakthroughInfo {
@@ -79,13 +85,11 @@ export function breakthroughInfo(): BreakthroughInfo {
     ready = false
     reason = '灵气不足'
   }
-  const tribRate = needTribulation ? tribulationSuccessRate(nextMajor, mods) : null
   return {
     ready,
     reason,
     rate,
     rateText: formatPercent(rate, 0),
-    tribRate: tribRate === null ? null : Math.min(1, Math.max(0, tribRate)),
     qiCost,
     isMajor,
     needTribulation,
@@ -94,27 +98,18 @@ export function breakthroughInfo(): BreakthroughInfo {
 }
 
 /** 模拟渡劫:返回(是否渡过, 战报)
- * Phase 32.0:劫型修正(与 tribulationDecision 同数学) */
+ * Phase 32.1:与 tribulationDecision 共用度量函数,预览与结算不可能分叉 */
 function runTribulation(targetMajor: number): { survived: boolean; log: string[] } {
   const player = usePlayerStore()
   const mods = player.finalStats.mods
-  const waves = TRIBULATION_BASE_WAVES + targetMajor
+  const waves = tribulationWaves(targetMajor)
   const kind = rollTribulation(targetMajor)
   const tDef = tribulationDef(kind)
-  const resist = Math.min(0.8, modOf(mods, 'tribulationResist'))
-  const reduction = Math.min(0.6, modOf(mods, 'damageReduction'))
-  const lowHpRed = Math.min(0.6, modOf(mods, 'lowHpReduction'))
-  const regen = modOf(mods, 'regenPerRound') * tDef.healMult
-  let hpLeft = 1 + modOf(mods, 'shieldOnStart') * tDef.shieldMult
-  const crit = modOf(mods, 'critRate') + modOf(mods, 'damageBonus') * 0.5
+  const regen = sustainScore(mods, tDef)
+  let hpLeft = 1 + guardScore(mods, tDef)
   const log: string[] = [`乌云压顶,${realmDef(targetMajor).name}劫将至——${tDef.name}之劫,共 ${waves} 道!`]
   for (let w = 1; w <= waves; w += 1) {
-    let dmg = tribulationWaveDamage(targetMajor, w, resist) * (1 - reduction) * tDef.dmgMult * rng.float(0.85, 1.15)
-    // 裂魂:较足爆发可略微消劫
-    if (kind === 'soulrend' && crit >= 0.4) dmg *= 0.92
-    // 濒危减伤(背水路数)在气血垂危时同样护持渡劫
-    if (hpLeft < 0.3) dmg *= 1 - lowHpRed
-    hpLeft = hpLeft - dmg + regen
+    hpLeft = hpLeft - waveDamage(tDef, mods, targetMajor, w, hpLeft) * rng.float(0.85, 1.15) + regen
     if (hpLeft <= 0) {
       log.push(`第 ${w} 道天雷轰然落下,你护体灵光崩碎,重伤坠地……`)
       return { survived: false, log }
