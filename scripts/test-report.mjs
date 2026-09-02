@@ -10,7 +10,7 @@ const CATEGORIES = [
   { name: 'Combat      战斗规则', match: ['combat.spec'] },
   { name: 'Balance     流派与生态', match: ['buildSim', 'buildSearch', 'buildDetect', 'buildAdvisor'] },
   { name: 'Progression 成长曲线', match: ['progressionSim'] },
-  { name: 'Economy     资源经济', match: ['economySim', 'lootSim'] },
+  { name: 'Economy     资源经济', match: ['economySim', 'lootSim', 'pillValue'] },
   { name: 'Regression  服务与归因', match: ['loadoutService', 'battleAnalysis'] },
   { name: 'Celestial   真仙终局', match: ['celestialSim', 'endgameService', 'phase21'] },
   { name: 'Decision    决策质量', match: ['decisionAudit', 'synergyScan', 'worldGen', 'ruleUniverse', 'playerLab', 'legacy', 'identity', 'samsara'] }

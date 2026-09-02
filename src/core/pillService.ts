@@ -87,8 +87,12 @@ export function availableRecipes(): string[] {
   return knownRecipes().map(p => p.id)
 }
 
-/** 失手时按技艺随机保下的残料比例:手越稳,赔得越少 */
-function salvageRatio(skill: number): number {
+/**
+ * 失手时按技艺随机保下的残料比例:手越稳,赔得越少。
+ *
+ * 导出供 core/pillValue.ts 折算炼制代价 —— 那边若另抄一份,两处口径迟早分叉。
+ */
+export function salvageRatio(skill: number): number {
   return 0.2 + 0.3 * Math.min(1, skill / 100)
 }
 
