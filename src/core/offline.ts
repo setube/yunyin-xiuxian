@@ -28,6 +28,7 @@ import { autoResolveEvent } from './eventEngine'
 import { clearRegionAndUnlockNext } from './exploration'
 import { stoneByTier } from './formulas'
 import { settleSuppressedRegions } from './suppress'
+import { harvestMaterials, studyTick } from './loreService'
 import { modOf } from './statsCalc'
 import { track } from './progress'
 import { equipmentTemplate } from '@/data/equipment'
@@ -37,6 +38,7 @@ import { useDongfuStore } from '@/stores/dongfu'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useAdventureStore } from '@/stores/adventure'
 import { useGameStore } from '@/stores/game'
+import { useLoreStore } from '@/stores/lore'
 import { useUiStore } from '@/stores/ui'
 
 /**
@@ -73,6 +75,9 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   const oreBefore = resources.ore
   const wudaoBefore = resources.wudao
   dongfu.produce(effSec)
+
+  // ---- 藏经阁被动钻研(与在线同源,只是 dt 不同) ----
+  studyTick(effSec)
 
   // ---- 镇压区域被动收益(不受离线效率折扣,是统治该区域的补偿) ----
   const suppressYield = settleSuppressedRegions(dtSec)
@@ -116,9 +121,13 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         const stoneGain = stoneByTier(region.tier, 10 * wins * modeDef.rewardMult * (1 + modOf(mods, 'spiritStoneGain')))
         resources.addStone(stoneGain)
         player.gainExp(mulN(player.expReq, BATTLE_EXP_REQ_PCT * wins * modeDef.rewardMult * (1 + modOf(mods, 'expGain'))))
-        // 材料
-        resources.addSmall('herb', Math.round(wins * 1.0))
-        resources.addSmall('ore', Math.round(wins * 0.5))
+        // 材料 —— 离线也会撞见新灵材,只是次数封顶,免得回来一屏 toast
+        const herbGain = Math.round(wins * 1.0)
+        const oreGain = Math.round(wins * 0.5)
+        resources.addSmall('herb', herbGain)
+        resources.addSmall('ore', oreGain)
+        harvestMaterials(region.tier, 'herb', herbGain)
+        harvestMaterials(region.tier, 'ore', oreGain)
         resources.addSmall('page', Math.round(wins * 0.15))
         resources.addSmall('dust', Math.round(wins * 0.3))
         // 装备:最多实际生成 6 件,其余折算为器灵尘
@@ -217,4 +226,5 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
 export function sanitizeOfflineInputs(): void {
   usePlayerStore().sanitize()
   useResourcesStore().sanitize()
+  useLoreStore().sanitize()
 }

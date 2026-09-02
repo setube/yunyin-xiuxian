@@ -72,6 +72,7 @@
   import { generateEquipment } from '@/core/equipGen'
   import { acquireEquipment } from '@/core/loot'
   import { trackRealm } from '@/core/progress'
+  import { seedLoreIfNeeded } from '@/core/loreService'
   import { equipmentTemplate } from '@/data/equipment'
   import { useGameStore } from '@/stores/game'
   import { usePlayerStore } from '@/stores/player'
@@ -118,6 +119,8 @@
     const tpl = equipmentTemplate(starter.templateId)
     if (tpl) inventory.equip(starter.uid, tpl.slot)
     inventory.addPill('p_jvqisan', 3)
+    // 开局所知:三张入门丹方与方中药材(见 core/loreService.ts)
+    seedLoreIfNeeded()
     game.markStarted()
     trackRealm()
     ui.toast('云深不知处,仙路自此始', 'rare')

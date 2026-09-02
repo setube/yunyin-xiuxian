@@ -75,16 +75,27 @@
 
       <SectionTitle title="开炉炼丹" class="mt-5" :hint="`灵草 ${resources.herb}`" />
       <div v-if="recipes.length" class="mt-2 space-y-2">
-        <div v-for="r in recipes" :key="r.def.id" class="card-ink flex items-center gap-3 px-3.5 py-2.5">
-          <GameIcon :name="r.def.icon" :size="18" :style="{ color: qualityDef(r.def.quality).color }" />
-          <div class="min-w-0 grow">
-            <p class="font-kai text-[13px] text-ink">{{ r.def.name }}</p>
-            <p class="text-[11px] text-ink-faint tabular">灵草×{{ r.cost!.herb }} · 灵石 {{ formatGN(r.cost!.stone) }}</p>
+        <div v-for="r in recipes" :key="r.def.id" class="card-ink px-3.5 py-2.5">
+          <div class="flex items-center gap-3">
+            <GameIcon :name="r.def.icon" :size="18" :style="{ color: qualityDef(r.def.quality).color }" />
+            <div class="min-w-0 grow">
+              <p class="flex items-center gap-2">
+                <span class="font-kai text-[13px] text-ink">{{ r.def.name }}</span>
+                <span class="text-[10px] text-ink-ghost">{{ r.able.rank }} 阶</span>
+                <span v-if="r.able.overReach > 0" class="text-[10px] text-crimson-ink">越阶 {{ r.able.overReach }}</span>
+              </p>
+              <p class="text-[11px] text-ink-faint tabular">灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
+            </div>
+            <div class="shrink-0 text-right">
+              <p class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</p>
+              <p class="text-[10px] text-ink-ghost">成丹把握</p>
+            </div>
+            <button class="btn-seal shrink-0 px-3! py-1.5! text-[12px]!" @click="craftPill(r.def.id)">炼制</button>
           </div>
-          <button class="btn-seal shrink-0 px-3! py-1.5! text-[12px]!" @click="craftPill(r.def.id)">炼制</button>
+          <p v-for="w in r.able.weakness" :key="w" class="mt-1 pl-7 text-[10px] text-ink-ghost">· {{ w }}</p>
         </div>
       </div>
-      <p v-else class="mt-2 px-1 text-[11px] text-ink-faint">尚无可用丹方,提升洞府炼丹炉等级可解锁。</p>
+      <p v-else class="mt-2 px-1 text-[11px] text-ink-faint">你还不知道任何丹方。多采多看多打听,方子自会找上门来。</p>
     </template>
 
     <!-- 材料 -->
@@ -253,11 +264,12 @@
   import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
   import { usePill, availableRecipes, craftPill, pillCraftCost } from '@/core/pillService'
+  import { craftability, type Craftability } from '@/core/craftability'
   import { decomposeByRanks, decomposeEquipment, artifactUpCost, upgradeArtifact } from '@/core/forge'
   import { keepVerdict } from '@/core/smartKeep'
   import { formatGN, formatPercent } from '@/utils/format'
   import { STAT_NAMES } from '@/ui/statNames'
-  import type { AnyStatKey, EquipSlot } from '@/types'
+  import type { AnyStatKey, EquipSlot, GNum, PillDef } from '@/types'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -346,9 +358,18 @@
 
   const recipes = computed(() =>
     availableRecipes()
-      .map(id => ({ def: pillDef(id)!, cost: pillCraftCost(id) }))
-      .filter(x => x.cost !== null)
+      .map(id => ({ def: pillDef(id), cost: pillCraftCost(id), able: craftability(id) }))
+      .filter((x): x is { def: PillDef; cost: { herb: number; stone: GNum }; able: Craftability } =>
+        x.def !== undefined && x.cost !== null && x.able !== null)
+      .sort((a, b) => a.able.rank - b.able.rank)
   )
+
+  /** 把握度配色:七成以上放心开炉,三成以下是在赌 */
+  function rateClass(rate: number): string {
+    if (rate >= 0.7) return 'text-jade-ink'
+    if (rate >= 0.3) return 'text-gold-ink'
+    return 'text-crimson-ink'
+  }
 
   const materialRows = computed(() => [
     { icon: 'leaf', name: '灵草', desc: '炼丹的根本', value: resources.herb },

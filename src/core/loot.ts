@@ -21,6 +21,7 @@ import { stoneByTier } from './formulas'
 import { modOf } from './statsCalc'
 import { keepVerdict, smartKeepEnabled } from './smartKeep'
 import { checkQualityAchievement, collect, track } from './progress'
+import { harvestMaterials } from './loreService'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -118,9 +119,17 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
   const expPct = BATTLE_EXP_REQ_PCT * rewardMult * (isBoss ? 4 : 1) * doubled * (1 + modOf(mods, 'expGain'))
   player.gainExp(mulN(player.expReq, expPct))
 
-  // 材料
-  if (rng.chance(0.5)) resources.addSmall('herb', rng.int(1, 3) * doubled)
-  if (rng.chance(0.35)) resources.addSmall('ore', rng.int(1, 2) * doubled)
+  // 材料 —— 数量进标量库存,同时抽出"你到底捡到了什么"推进认知
+  if (rng.chance(0.5)) {
+    const n = rng.int(1, 3) * doubled
+    resources.addSmall('herb', n)
+    harvestMaterials(tier, 'herb', n)
+  }
+  if (rng.chance(0.35)) {
+    const n = rng.int(1, 2) * doubled
+    resources.addSmall('ore', n)
+    harvestMaterials(tier, 'ore', n)
+  }
   if (rng.chance(PAGE_DROP_CHANCE * rewardMult)) {
     const n = rng.int(1, 2) * doubled
     resources.addSmall('page', n)

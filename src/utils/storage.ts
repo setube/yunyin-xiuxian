@@ -21,7 +21,8 @@ export const PERSISTED_STORES = [
   'quests',
   'settings',
   'loadouts',
-  'endgame'
+  'endgame',
+  'lore'
 ] as const
 
 export function storageKey(storeId: string): string {

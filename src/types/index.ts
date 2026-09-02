@@ -557,6 +557,7 @@ export type CounterKey =
   | 'upgrades'
   | 'pillsUsed'
   | 'pillsCrafted'
+  | 'pillsFailed'
   | 'gongfaLearned'
   | 'reincarnations'
   | 'tribulations'

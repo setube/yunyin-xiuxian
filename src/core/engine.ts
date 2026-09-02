@@ -16,6 +16,7 @@ import { settleOffline, sanitizeOfflineInputs } from './offline'
 import { checkStateAchievements, rolloverDailyIfNeeded } from './progress'
 import { mayTriggerEnlightenment, mayTriggerCaveEvent } from './earlyGameService'
 import { settleSuppressedRegions } from './suppress'
+import { studyTick, seedLoreIfNeeded } from './loreService'
 import { todayWeather } from './weather'
 
 const PERIODIC_CHECK_SEC = 30
@@ -33,6 +34,8 @@ class GameEngine {
     const game = useGameStore()
     try {
       sanitizeOfflineInputs()
+      // 旧存档补种:把过去凭丹炉等级"能炼"的方子折算成掌握度(幂等)
+      if (game.started) seedLoreIfNeeded()
       if (game.started && game.lastActiveAt > 0) {
         settleOffline(now)
       }
@@ -136,6 +139,8 @@ class GameEngine {
       mayTriggerEnlightenment()
       // Phase 30: 镇压区域被动收益
       settleSuppressedRegions(dt)
+      // Phase 32.3: 藏经阁日夜翻检,学问自己在长
+      studyTick(dt)
       // 寿元流逝
       player.addAge((dt / 3600) * AGE_YEARS_PER_HOUR)
       this.checkDeath()
