@@ -40,7 +40,7 @@
               <span class="font-kai text-[13px] text-gold-ink">{{ branchPicked.name }}</span>
               <span class="ml-2 text-[11px] text-ink-faint">{{ branchPicked.desc }}</span>
             </p>
-            <p class="tabular mt-0.5 text-[11px] text-azure">{{ modText(branchPicked.mods) }}</p>
+            <p class="tabular mt-0.5 text-[11px] text-azure">{{ modsText(branchPicked.mods) }}</p>
           </div>
           <div v-else class="space-y-1.5">
             <button
@@ -52,7 +52,7 @@
               <span class="min-w-0">
                 <span class="font-kai text-[13px] text-ink">{{ b.name }}</span>
                 <span class="ml-2 text-[11px] text-ink-faint">{{ b.desc }}</span>
-                <span class="tabular mt-0.5 block text-[11px] text-azure">{{ modText(b.mods) }}</span>
+                <span class="tabular mt-0.5 block text-[11px] text-azure">{{ modsText(b.mods) }}</span>
               </span>
               <span class="shrink-0 text-[10px] text-azure">择此道 →</span>
             </button>
@@ -90,8 +90,8 @@
   import { gongfaAffinity, rootElements } from '@/core/linggenAffinity'
   import { gongfaModsAt } from '@/stores/cultivation'
   import { formatPercent } from '@/utils/format'
-  import { STAT_NAMES } from '@/ui/statNames'
-  import type { AnyStatKey, StatMods } from '@/types'
+  import { STAT_NAMES, modsText } from '@/ui/statNames'
+  import type { AnyStatKey } from '@/types'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
 
@@ -128,13 +128,6 @@
     const id = cultivation.gongfaBranch[def.value.id]
     return id ? gongfaBranchDef(id) : undefined
   })
-
-  /** 把词条表摊成一行可读文案 —— 择道给什么,得在按下之前就摆在眼前 */
-  function modText(mods: StatMods): string {
-    return Object.entries(mods)
-      .map(([k, v]) => `${STAT_NAMES[k as AnyStatKey] ?? k} +${formatPercent(v as number)}`)
-      .join(' · ')
-  }
 
   function choose(branchId: string): void {
     if (!def.value) return

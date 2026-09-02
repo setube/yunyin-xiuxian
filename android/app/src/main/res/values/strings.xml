@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="app_name">云隐修仙录</string>
+  <string name="title_activity_main">云隐修仙录</string>
+  <string name="package_name">com.games.wenzi.yunyin</string>
+  <string name="custom_url_scheme">com.games.wenzi.yunyin</string>
+</resources>

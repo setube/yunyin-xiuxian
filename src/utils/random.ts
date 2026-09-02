@@ -17,7 +17,12 @@ export function mulberry32(seed: number): RandFn {
 }
 
 export class RandomService {
-  constructor(private readonly rand: RandFn = Math.random) {}
+  /** 显式声明 + 构造体内赋值:参数属性(`constructor(private rand)`)不是可擦除语法,过不了 erasableSyntaxOnly */
+  private readonly rand: RandFn
+
+  constructor(rand: RandFn = Math.random) {
+    this.rand = rand
+  }
 
   next(): number {
     return this.rand()

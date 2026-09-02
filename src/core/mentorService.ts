@@ -70,6 +70,6 @@ export function mentorVerdict(mentorId: MentorId | null): MentorVerdict | null {
 }
 
 /** 可选师承列表(人物页展示用) */
-export function mentorChoices(): ReturnType<typeof mentorDef>[] {
+export function mentorChoices(): NonNullable<ReturnType<typeof mentorDef>>[] {
   return MENTORS.map(m => mentorDef(m.id)).filter((x): x is NonNullable<typeof x> => x !== undefined)
 }

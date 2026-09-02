@@ -36,7 +36,8 @@ export const BUILDINGS: BuildingDef[] = [
     unlockRealm: 0,
     costBase: 100,
     costOre: 10,
-    effectText: lv => `解锁 ${lv} 阶丹方,炼丹产出 +${lv * 5}%`,
+    // Phase 32.3 之后丹方不再由炉火高低"解锁",炉子只管出丹多寡 —— 成与不成看所知与手上功夫
+    effectText: lv => `炼丹产出 +${lv * 5}% —— 炉子只管出丹多寡,成与不成看你懂多少`,
     mods: (lv): StatMods => ({ alchemyYield: lv * 0.05 })
   },
   {
@@ -71,7 +72,9 @@ export const BUILDINGS: BuildingDef[] = [
     unlockRealm: 1,
     costBase: 120,
     costOre: 12,
-    effectText: lv => `每小时产悟道点 ${(lv * LIBRARY_WUDAO_PER_HOUR).toFixed(1)},辅修栏 ${1 + Math.floor(lv / 3)} 个`,
+    // 钻研丹方是藏经阁的第三桩职能(见 core/loreService.ts studyTick),不写出来玩家无从得知
+    effectText: lv =>
+      `每小时产悟道点 ${(lv * LIBRARY_WUDAO_PER_HOUR).toFixed(1)},辅修栏 ${1 + Math.floor(lv / 3)} 个;日夜翻检,读熟手上丹方,进而翻出新方`,
     mods: (lv): StatMods => ({ expGain: lv * 0.03 })
   },
   {

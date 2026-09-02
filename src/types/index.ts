@@ -589,7 +589,6 @@ export interface AchievementDef {
   desc: string
   cond: AchvCond
   reward?: RewardBundle
-  hidden?: boolean
 }
 
 export interface QuestDef {

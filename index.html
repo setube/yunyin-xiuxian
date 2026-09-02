@@ -1,12 +1,45 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content=" 一款文字版修仙放置游戏。一念修行 · 云深不知处。" />
+    <meta name="keywords" content="云隐修仙录,云隐,云隐修仙,修仙,修仙游戏,文字游戏,文字修仙,放置修仙,放置游戏" />
     <meta name="theme-color" content="#F3EFE4" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='10' fill='%23A83F39'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' fill='%23F3EFE4' font-family='KaiTi,serif'%3E%E9%81%93%3C/text%3E%3C/svg%3E" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="云隐修仙录" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="云隐修仙录 — 一念修行 · 云深不知处" />
+    <meta property="og:description" content="文字版修仙放置游戏" />
+    <!-- 必须显式声明且用相对路径:浏览器隐式请求的 /favicon.ico 永远打站点根,不受 vite base:'./' 影响,
+         在 Electron(file://)与 GitHub Pages 子路径下都会 404 -->
+    <link rel="icon" href="./favicon.ico" />
     <title>云隐修仙录</title>
+    <style>
+      html,
+      body {
+        background: linear-gradient(160deg, #34312a, #4a463d 45%, #2d2b25);
+        margin: 0;
+      }
+
+      #app:empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        color: #8b949e;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+
+      #app:empty::after {
+        content: '游戏加载中...';
+      }
+    </style>
   </head>
 
   <body>

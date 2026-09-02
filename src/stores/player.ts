@@ -13,6 +13,7 @@ import { mentorDef } from '@/data/mentors'
 import { talentDef } from '@/data/talents'
 import { baseCultPerSec, baseQiRegen, expRequirement, qiCap } from '@/core/formulas'
 import { computeFinalStats, modOf } from '@/core/statsCalc'
+import type { FortuneChoice } from '@/core/fortuneChain'
 import { useInventoryStore } from './inventory'
 import { useCultivationStore } from './cultivation'
 import { useDongfuStore } from './dongfu'
@@ -76,7 +77,7 @@ export const usePlayerStore = defineStore(
     const secretRealm = ref<import('@/core/secretRealm').SecretRealmState | null>(null)
 
     // Phase 31.1 机缘链:机缘选择记忆(取/弃),影响师承推荐与未来同类机缘
-    const fortuneChoices = ref<Record<string, string>>({})
+    const fortuneChoices = ref<Record<string, FortuneChoice>>({})
 
     // Phase 30.9 世界记忆
     /** 宿敌列表(同一敌人败我 ≥3 次) */
@@ -373,7 +374,7 @@ export const usePlayerStore = defineStore(
     }
 
     // ---------- Phase 31.1 机缘链 ----------
-    function setFortuneChoices(choices: Record<string, string>): void {
+    function setFortuneChoices(choices: Record<string, FortuneChoice>): void {
       fortuneChoices.value = choices
     }
 

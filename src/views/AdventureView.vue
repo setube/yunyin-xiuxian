@@ -15,7 +15,7 @@
         <div class="min-w-0 grow">
           <p class="font-kai text-[14px] tracking-[0.2em] text-ink">
             秘 境
-            <span v-if="realmActive" class="ml-1 text-[11px] text-violet-ink">· {{ realmState?.layer }} 层行进中</span>
+            <span v-if="realmState" class="ml-1 text-[11px] text-violet-ink">· {{ realmState.layer }} 层行进中</span>
           </p>
           <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
             进入一次、规则随机、结束后消失。适合想找点新鲜刺激的时候。

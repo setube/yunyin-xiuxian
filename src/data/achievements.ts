@@ -1,12 +1,17 @@
-/** 成就库 —— 50 个,长期目标 */
+/**
+ * 成就库 —— 50 个,长期目标
+ *
+ * 未达成者在界面上一律以「???」示人(见 views/CollectionView.vue),
+ * 所以此表不再有"隐藏成就"一说 —— 五十个位子人人平等,成了才现名目。
+ */
 import type { AchievementDef, AchvCond, CounterKey, RewardBundle } from '@/types'
 
 function counter(key: CounterKey, value: number): AchvCond {
   return { type: 'counter', key, value }
 }
 
-function ac(id: string, name: string, desc: string, cond: AchvCond, reward?: RewardBundle, hidden?: boolean): AchievementDef {
-  return { id, name, desc, cond, reward, hidden }
+function ac(id: string, name: string, desc: string, cond: AchvCond, reward?: RewardBundle): AchievementDef {
+  return { id, name, desc, cond, reward }
 }
 
 export const ACHIEVEMENTS: AchievementDef[] = [
@@ -25,7 +30,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   ac('a_bt10', '拾级而上', '累计突破 10 次', counter('breakthroughs', 10), { stoneTier: 30 }),
   ac('a_bt30', '道途不辍', '累计突破 30 次', counter('breakthroughs', 30), { wudao: 20 }),
   ac('a_bt60', '百折不挠', '累计突破 60 次', counter('breakthroughs', 60), { wudao: 40 }),
-  ac('a_btf5', '道阻且长', '突破失败 5 次', counter('breakthroughFails', 5), { herb: 20 }, true),
+  ac('a_btf5', '道阻且长', '突破失败 5 次', counter('breakthroughFails', 5), { herb: 20 }),
   ac('a_trib3', '劫后余生', '渡过 3 次天劫', counter('tribulations', 3), { wudao: 30 }),
   // ---- 战斗 ----
   ac('a_k50', '初试锋芒', '击败 50 个敌人', counter('kills', 50), { stoneTier: 25 }),
@@ -68,7 +73,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   ac('a_off5', '闭关有成', '领取 5 次离线收益', counter('offlineClaims', 5), { stoneTier: 30 }),
   ac('a_off30', '闭关狂人', '领取 30 次离线收益', counter('offlineClaims', 30), { stoneTier: 100 }),
   // ---- 特殊 ----
-  ac('a_lifelow', '寿元将尽', '寿元只剩不到一成', { type: 'custom', key: 'lifespanLow' }, { herb: 50 }, true),
+  ac('a_lifelow', '寿元将尽', '寿元只剩不到一成', { type: 'custom', key: 'lifespanLow' }, { herb: 50 }),
   ac('a_lifespan', '万古长生', '寿元上限超过一万载', { type: 'custom', key: 'lifespan10k' }, { titleId: 'ti_changsheng' }),
   ac('a_rich', '富可敌国', '持有灵石超过一百万', { type: 'custom', key: 'stone1m' }, { wudao: 30 })
 ]

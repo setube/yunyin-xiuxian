@@ -10,9 +10,9 @@
 
     <TopStatusBar v-if="game.started && route.name !== 'create'" />
 
-    <main class="relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+    <main ref="scrollHost" class="relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
       <RouterView v-slot="{ Component }">
-        <Transition name="page-fade" mode="out-in">
+        <Transition name="page-fade" mode="out-in" @before-enter="resetScroll">
           <component :is="Component" />
         </Transition>
       </RouterView>
@@ -27,11 +27,12 @@
     <EventDialog v-if="game.started" />
     <ReincarnationDialog />
     <EquipmentDetailDialog />
+    <ExitConfirmDialog />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, onUnmounted, watch } from 'vue'
+  import { onMounted, onUnmounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { useGameStore } from '@/stores/game'
   import { useSettingsStore } from '@/stores/settings'
@@ -46,10 +47,26 @@
   import EventDialog from '@/components/adventure/EventDialog.vue'
   import ReincarnationDialog from '@/components/character/ReincarnationDialog.vue'
   import EquipmentDetailDialog from '@/components/equipment/EquipmentDetailDialog.vue'
+  import ExitConfirmDialog from '@/components/common/ExitConfirmDialog.vue'
 
   const game = useGameStore()
   const settings = useSettingsStore()
   const route = useRoute()
+
+  /** 内容区滚动宿主(滚动条挂在这个常驻的 main 上,不是 window) */
+  const scrollHost = ref<HTMLElement | null>(null)
+
+  /**
+   * 切页时把内容区滚动位置归零。
+   * main 是常驻元素,路由切换只替换它的子组件,它自身从不重建,scrollTop 会被
+   * 下一个页面原样继承。router 的 scrollBehavior 在这里不顶用——那个 API 操作
+   * 的是 window,而外层 h-dvh + overflow-hidden 让 window 根本不产生滚动。
+   * 挂在 before-enter 而非 watch(route):out-in 模式下这一刻旧页面已完全离场,
+   * 归零不会让正在播离场动画的旧页面突然跳回顶部。
+   */
+  function resetScroll(): void {
+    if (scrollHost.value) scrollHost.value.scrollTop = 0
+  }
 
   let unsubscribeTheme: () => void = () => undefined
 

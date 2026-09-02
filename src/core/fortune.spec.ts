@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Phase 31.0 S2:机缘 —— 低概率触发、带代价选择
  */

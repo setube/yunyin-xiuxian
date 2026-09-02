@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Phase 31.0 S5:装备共鸣 —— 机制组合而非数值堆叠
  */

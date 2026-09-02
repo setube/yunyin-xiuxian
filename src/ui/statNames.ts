@@ -1,5 +1,6 @@
 /** 属性中文名映射(展示层共用) */
-import type { AnyStatKey } from '@/types'
+import { formatPercent } from '@/utils/format'
+import type { AnyStatKey, StatMods } from '@/types'
 
 export const STAT_NAMES: Record<AnyStatKey, string> = {
   attackPct: '攻击',
@@ -42,4 +43,16 @@ export const STAT_NAMES: Record<AnyStatKey, string> = {
   comboDamage: '追击威力',
   counterDamage: '反击威力',
   overhealShield: '溢疗成盾'
+}
+
+/**
+ * 把一组词条摊成一行人话。
+ *
+ * 功法分支的词条既在择道界面出现,也在悟道录里出现 ——
+ * 两处若各写一份格式化,措辞迟早分叉。
+ */
+export function modsText(mods: StatMods): string {
+  return Object.entries(mods)
+    .map(([k, v]) => `${STAT_NAMES[k as AnyStatKey] ?? k} +${formatPercent(v as number)}`)
+    .join(' · ')
 }

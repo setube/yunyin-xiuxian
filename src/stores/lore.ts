@@ -29,7 +29,13 @@ export const useLoreStore = defineStore(
     const materialSeen = ref<Record<string, number>>({})
     /** 丹方掌握度 0~1 */
     const recipeLore = ref<Record<string, number>>({})
-    /** 图纸掌握度 0~1(炼器,Phase 32.6 接入打造) */
+    /**
+     * 图纸掌握度 0~1 —— 炼器道的预留字段,眼下尚无内容也无获取路径。
+     *
+     * 别照着丹方的样子给它加消费点:一旦有代码开始读 blueprintMastery,
+     * 而 studyBlueprint 仍无调用点,就又是一条"看得见拿不到"的死内容。
+     * contentReachabilityAudit.spec.ts 钉着这一条,两头要接一起接。
+     */
     const blueprintLore = ref<Record<string, number>>({})
     /** 技艺累积经验 */
     const skillExp = ref<Record<SkillId, number>>(emptySkillExp())

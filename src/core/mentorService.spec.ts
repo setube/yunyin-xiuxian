@@ -17,7 +17,7 @@ describe('师承(mentor)', () => {
   it('数据表完整:四种师承、各有词条与叙事', () => {
     const list = mentorChoices()
     expect(list.length).toBe(4)
-    for (const m of list!) {
+    for (const m of list) {
       expect(m.mods).toBeTruthy()
       expect(m.narrative.aligned).toBeTruthy()
       expect(m.narrative.unaligned).toBeTruthy()

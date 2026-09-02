@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Phase 31.1:新玩法联动审计
  *

@@ -7,7 +7,7 @@
         <div class="root-bg-orb root-bg-2" />
 
         <!-- 上升粒子(灵根探查的气息) -->
-        <div class="root-particles" v-if="animating">
+        <div v-if="animating" class="root-particles">
           <div v-for="i in 20" :key="i" class="root-particle" />
         </div>
 
@@ -23,7 +23,7 @@
         </div>
 
         <!-- 检测文字 -->
-        <div class="root-text" v-if="animating">
+        <div v-if="animating" class="root-text">
           <p class="root-title">正在测定灵根……</p>
           <p class="root-temp" :style="{ color: currentColor }">{{ currentName }}</p>
         </div>

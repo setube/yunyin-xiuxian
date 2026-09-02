@@ -16,8 +16,10 @@
     <div class="mt-6 flex items-center gap-3 text-[11px] text-ink-ghost">
       <button class="active:text-ink-soft" @click="privacyOpen = true">隐私政策</button>
       <span class="text-ink-ghost/40">·</span>
-      <button class="active:text-ink-soft" @click="importOpen = true">导入存档</button>
-      <span class="text-ink-ghost/40">·</span>
+      <template v-if="!Capacitor.isNativePlatform()">
+        <button class="active:text-ink-soft" @click="importOpen = true">导入存档</button>
+        <span class="text-ink-ghost/40">·</span>
+      </template>
       <button class="active:text-ink-soft" @click="aboutOpen = true">关于我们</button>
     </div>
     <input ref="fileInput" type="file" accept="application/json,.save" class="hidden" @change="onFilePicked" />
@@ -75,6 +77,7 @@
   import PrivacyDialog from '@/components/common/PrivacyDialog.vue'
   import AboutDialog from '@/components/common/AboutDialog.vue'
   import WarpPortal from '@/components/common/WarpPortal.vue'
+  import { Capacitor } from '@capacitor/core'
 
   const router = useRouter()
   const settings = useSettingsStore()

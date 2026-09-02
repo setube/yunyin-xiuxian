@@ -5,11 +5,13 @@
  * 它来自照面(采到过)、来自动手(炼过/砸过)、来自失手(炸过炉)、来自交手(打过/被打过)、
  * 来自藏经阁的日夜翻检。因此这里没有一个叫 unlock() 的函数——只有 encounter / note / study。
  */
+import type { PillDef } from '@/types'
 import { rng } from '@/utils/random'
 import { LORE_MAX, materialDef, materialsNearRank, type MaterialBucket, type MaterialDef } from '@/data/materials'
 import { recipeCraft, type SkillId } from '@/data/crafting'
 import { pillDef, PILLS } from '@/data/pills'
 import { enemyDef } from '@/data/enemies'
+import { bearableRank } from './craftability'
 import { ENEMY_LORE_MAX, useLoreStore } from '@/stores/lore'
 import { useDongfuStore } from '@/stores/dongfu'
 import { usePlayerStore } from '@/stores/player'
@@ -17,8 +19,27 @@ import { useUiStore } from '@/stores/ui'
 
 /** 认知层 1→2 所需的照面次数 */
 export const SEEN_FOR_NATURE = 4
-/** 藏经阁每级每小时推进的丹方掌握度 */
-export const STUDY_MASTERY_PER_HOUR = 0.006
+/**
+ * 藏经阁每级每小时推进的丹方掌握度。
+ *
+ * 原值 0.006 是按"只补熟旧存档折算下来那几张半生方子"定的。自 studyTick 兼管
+ * 求索新方之后,它扛的是整条丹方获取线——按旧值,一级藏经阁翻出一张方子要四十
+ * 余个时辰,再读通它又是一百四十个,高阶丹依旧等同于拿不到。故按新职能重定。
+ *
+ * 现值下:六级藏经阁约三个时辰翻出一张新方,再五个时辰把它读通。
+ */
+export const STUDY_MASTERY_PER_HOUR = 0.05
+/**
+ * 翻出一张全新丹方所需的钻研量。
+ *
+ * 比读熟一张(0→1)省力得多 —— 听说有这么一张方子,与真把它读通,本就是两回事。
+ * 但也绝非唾手可得:一级藏经阁要熬四十来个时辰才翻得出一张。
+ */
+export const NEW_RECIPE_COST = 0.25
+/** 新翻到的方子只是"抄下来了",火候节点仍全靠猜 */
+export const NEW_RECIPE_START = 0.15
+/** 藏经阁翻得动的上限:够得着的,再往上够一阶 */
+export const STUDY_REACH_OVER = 1
 
 /**
  * 敌人认知的三道门槛(以「有效交手次数」计)。
@@ -179,9 +200,27 @@ export function gainSkill(id: SkillId, exp: number): void {
 }
 
 /**
- * 藏经阁被动钻研:每次心跳推进"已知丹方里最生的那一张"。
+ * 藏经阁此刻翻得到的方子 —— 按阶位从低到高,先易后难。
+ *
+ * 两道限制都不是"解锁开关"(那是 Phase 32.3 废掉的旧口径):
+ * 准入境界说的是这张方子写给谁看,阶位上限说的是你现在读不读得懂。
+ * 够一够能到的高一阶也收进来,免得境界卡在半途时架上无书可读。
+ */
+export function studiableRecipes(major: number, masteryOf: (id: string) => number): PillDef[] {
+  const ceiling = bearableRank(major) + STUDY_REACH_OVER
+  const rankOf = (p: PillDef): number => recipeCraft(p)?.rank ?? Number.MAX_SAFE_INTEGER
+  return PILLS.filter(p => p.recipe && masteryOf(p.id) <= 0 && p.minRealm <= major && rankOf(p) <= ceiling).sort(
+    (a, b) => rankOf(a) - rankOf(b) || a.minRealm - b.minRealm
+  )
+}
+
+/**
+ * 藏经阁被动钻研:每次心跳先补熟手头的方子,都读通了才向外求索。
  * 放着不管也在长学问——这是本体系与放置节奏的接缝,不需要玩家点任何按钮。
  * 在线与离线共用此函数,只是 dtSec 不同。
+ *
+ * 「翻出新方子」这一支是丹方的唯一持续来源。少了它,开局播种的那几张
+ * 就是玩家这辈子会的全部——高阶丹会全部沦为看得见炼不出的死内容。
  */
 export function studyTick(dtSec: number): void {
   const dongfu = useDongfuStore()
@@ -191,7 +230,7 @@ export function studyTick(dtSec: number): void {
   lore.studyFrac += (libLv * STUDY_MASTERY_PER_HOUR * dtSec) / 3600
   if (lore.studyFrac < 0.001) return
 
-  // 挑一张已知但未通的方子,专补最生的
+  // 先专精:挑一张已知但未通的方子,专补最生的那张
   let target: string | null = null
   let lowest = 1
   for (const [id, v] of Object.entries(lore.recipeLore)) {
@@ -200,13 +239,24 @@ export function studyTick(dtSec: number): void {
       target = id
     }
   }
-  if (target === null) {
+  if (target !== null) {
+    const gain = lore.studyFrac
+    lore.studyFrac = 0
+    lore.addRecipeMastery(target, gain)
+    return
+  }
+
+  // 手头的都读通了,才谈得上求索新方
+  if (lore.studyFrac < NEW_RECIPE_COST) return
+  const found = studiableRecipes(usePlayerStore().major, id => lore.recipeMastery(id))[0]
+  if (!found) {
+    // 够得着的方子都已在手,再积也无书可翻
     lore.studyFrac = 0
     return
   }
-  const gain = lore.studyFrac
-  lore.studyFrac = 0
-  lore.addRecipeMastery(target, gain)
+  lore.studyFrac -= NEW_RECIPE_COST
+  studyRecipe(found.id, NEW_RECIPE_START)
+  useUiStore().toast(`藏经阁中翻出一张丹方:「${found.name}」`, 'rare')
 }
 
 /** 入门修士都会的三张方子 —— 不会做这几样,连炉都开不了 */

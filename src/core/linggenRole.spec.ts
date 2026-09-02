@@ -41,8 +41,9 @@ import { effectiveDaoFruit, modOf } from './statsCalc'
 
 /** 聚灵阵:审计对照物(玩家反馈中"覆盖了灵根"的那个系统) */
 const ARRAY_DEF = BUILDINGS.find(b => b.id === 'array')!
-const ARRAY_PER_LEVEL = modOf(ARRAY_DEF.mods(1), 'cultivationSpeed')
-const ARRAY_MAX_BONUS = modOf(ARRAY_DEF.mods(ARRAY_DEF.maxLevel), 'cultivationSpeed')
+const ARRAY_MODS = ARRAY_DEF.mods!
+const ARRAY_PER_LEVEL = modOf(ARRAY_MODS(1), 'cultivationSpeed')
+const ARRAY_MAX_BONUS = modOf(ARRAY_MODS(ARRAY_DEF.maxLevel), 'cultivationSpeed')
 
 /** 各档灵根的代表倍率(取自 linggenGen 的实际取值域) */
 const LINGGEN_TIERS = [

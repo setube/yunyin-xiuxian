@@ -154,8 +154,8 @@
             <span class="font-kai text-[13px]" :style="{ color: qualityDef(def!.quality).color }">{{ def!.name }}</span>
             <span class="text-[10px] text-ink-faint">{{ cultivation.learned[def!.id] }} 层</span>
             <!-- Phase 31 A3:已选分支显示道名;确有歧路可择时才招手,否则只报「圆满」 -->
-            <span v-if="cultivation.gongfaBranch[def!.id]" class="text-[10px] text-gold-ink">
-              {{ gongfaBranchDef(cultivation.gongfaBranch[def!.id])?.name }}
+            <span v-if="branchName(def!.id)" class="text-[10px] text-gold-ink">
+              {{ branchName(def!.id) }}
             </span>
             <span v-else-if="canEnlighten(def!.id)" class="text-[10px] text-azure">待悟道 →</span>
             <span v-else-if="isFull(def!.id)" class="text-[10px] text-ink-ghost">圆满</span>
@@ -264,5 +264,11 @@
   /** 是否真能悟道(判据取自 gongfaBranches,界面提示与实际可选项同源) */
   function canEnlighten(id: string): boolean {
     return canEnlightenGongfa(id, cultivation.learned[id] ?? 0)
+  }
+
+  /** 已择分支的道名;未择、或旧存档留着一个已下线的分支 id,都算没有 */
+  function branchName(id: string): string | undefined {
+    const branchId = cultivation.gongfaBranch[id]
+    return branchId ? gongfaBranchDef(branchId)?.name : undefined
   }
 </script>
