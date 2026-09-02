@@ -43,6 +43,13 @@
         修行倍率
         <span :key="rerollsLeft" class="tabular text-[14px] text-ink animate-ink-pop">×{{ profile.growthMult.toFixed(2) }}</span>
       </p>
+      <!-- 天然牌面(Phase 32.2):重掷时要权衡的不止倍率,还有这一世哪条路走得顺 -->
+      <div v-if="tendencies.length" :key="`tend-${rerollsLeft}`" class="stagger-in mt-3 space-y-1.5 border-t border-ink/10 pt-3">
+        <p v-for="t in tendencies" :key="t.element" class="flex gap-2 text-[11px] leading-relaxed text-ink-soft">
+          <span class="shrink-0 font-kai" :style="{ color: ELEMENTS[t.element].color }">{{ ELEMENTS[t.element].char }}</span>
+          <span>{{ t.text }}</span>
+        </p>
+      </div>
       <button class="btn-ghost mt-4 w-full" :disabled="rerollsLeft <= 0" @click="reroll">逆天改命(余 {{ rerollsLeft }} 次)</button>
     </div>
 
@@ -55,13 +62,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { rng } from '@/utils/random'
   import { rollLinggen } from '@/core/linggenGen'
+  import { rootElements, tendencyLines } from '@/core/linggenAffinity'
   import { randomDaoName } from '@/data/names'
   import { ELEMENTS } from '@/data/linggen'
-  import { CREATE_REROLL_LIMIT } from '@/data/constants'
   import { generateEquipment } from '@/core/equipGen'
   import { acquireEquipment } from '@/core/loot'
   import { trackRealm } from '@/core/progress'
@@ -82,14 +89,18 @@
   const ui = useUiStore()
 
   const name = ref(randomDaoName(rng))
-  const profile = ref(rollLinggen(rng))
-  const rerollsLeft = ref(CREATE_REROLL_LIMIT)
+  // 建号草稿放在 game store 里持久化:刷新页面既不该白拿一次重掷,也不该洗掉已花掉的次数
+  if (!game.createProfile) game.setCreateProfile(rollLinggen(rng))
+  const profile = computed(() => game.createProfile!)
+  const rerollsLeft = computed(() => game.createRerolls)
   const revealRef = ref<InstanceType<typeof SpiritRootReveal> | null>(null)
 
+  /** 这一世的天然牌面(倾向文案,不含任何数值) */
+  const tendencies = computed(() => tendencyLines(rootElements(profile.value.roots)))
+
   function reroll(): void {
-    if (rerollsLeft.value <= 0) return
-    rerollsLeft.value -= 1
-    profile.value = rollLinggen(rng)
+    if (!game.spendCreateReroll()) return
+    game.setCreateProfile(rollLinggen(rng))
   }
 
   function randomName(): void {

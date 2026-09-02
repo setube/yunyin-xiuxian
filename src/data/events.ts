@@ -15,9 +15,9 @@ function ev(
   text: string,
   tags: string[],
   choices: EventChoice[],
-  opts: Partial<Pick<EventDef, 'minRealm' | 'once' | 'weight'>> = {}
+  opts: Partial<Pick<EventDef, 'minRealm' | 'once' | 'weight' | 'element'>> = {}
 ): EventDef {
-  return { id, title, text, tags, choices, weight: opts.weight ?? 100, minRealm: opts.minRealm, once: opts.once }
+  return { id, title, text, tags, choices, weight: opts.weight ?? 100, minRealm: opts.minRealm, once: opts.once, element: opts.element }
 }
 
 const leave = (text = '你摇了摇头,转身离去。') => c('离开', [o(1, text)], { isDefault: true })
@@ -879,6 +879,10 @@ export const EVENTS: EventDef[] = [
 /**
  * 机缘事件(Phase 31.0 S2)——— 极低概率、带代价选择、影响构筑方向
  * 与普通事件池分离:触发概率低,遇后必须面临"取 / 弃"的决策
+ *
+ * Phase 32.2:部分机缘带元素倾向,同源灵根更容易撞见。
+ * 刻意留下无元素的中性机缘(妖兽认主 / 隐世高人)——
+ * 若条条机缘都认灵根,灵根就从"倾向"变成了"分配职业"。
  */
 export const FORTUNE_EVENTS: EventDef[] = [
   ev(
@@ -893,7 +897,8 @@ export const FORTUNE_EVENTS: EventDef[] = [
         o(15, '剑痕只是一道残影,你看罢两手空空。', { type: 'nothing' })
       ]),
       c('绕道而行', [o(1, '剑气凛冽,你压下好奇,转身离去。')], { isDefault: true })
-    ]
+    ],
+    { element: 'metal' }
   ),
   ev(
     'ft_ancient_elixir',
@@ -906,7 +911,8 @@ export const FORTUNE_EVENTS: EventDef[] = [
         o(40, '丹方后半已被虫蛀,只得残缺几字。', { type: 'material', id: 'page', amount: 12 })
       ]),
       c('放回原处', [o(1, '前人遗物,你不敢轻动,悄然离开。')], { isDefault: true })
-    ]
+    ],
+    { element: 'wood' }
   ),
   ev(
     'ft_beast_pledge',
@@ -946,7 +952,8 @@ export const FORTUNE_EVENTS: EventDef[] = [
         o(50, '龟甲上的血纹竟是一段禁法,你看了便心悸。', { type: 'buff', id: 'curse_xinmo' })
       ]),
       c('掩埋龟甲', [o(1, '此物不祥,你掘土掩埋,心念一清。')], { isDefault: true })
-    ]
+    ],
+    { element: 'dark' }
   )
 ]
 

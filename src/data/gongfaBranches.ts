@@ -7,6 +7,7 @@
  * 分支一经选择不可更改(转世保留)。
  */
 import type { StatMods } from '@/types'
+import { gongfaDef } from './gongfa'
 
 export interface GongfaBranchDef {
   /** 所属功法 */
@@ -78,4 +79,17 @@ export function gongfaBranchDef(id: string): GongfaBranchDef | undefined {
 
 export function branchesFor(gongfaId: string): GongfaBranchDef[] {
   return GONGFA_BRANCHES.filter(b => b.gongfaId === gongfaId)
+}
+
+/**
+ * 该功法此刻是否真能悟道。
+ *
+ * 满级只是前提,还须确有歧路可择 —— 全书功法只有寥寥数部写了分支,
+ * 若只判满级,余下几十部都会在界面上挂出一个点开即空的「可悟道」,
+ * 玩家看得见却哪儿也去不了。判据集中在此,界面提示与实际可选项不会分叉。
+ */
+export function canEnlighten(gongfaId: string, level: number): boolean {
+  const def = gongfaDef(gongfaId)
+  if (!def) return false
+  return level >= (def.maxLevel ?? 9) && branchesFor(gongfaId).length > 0
 }

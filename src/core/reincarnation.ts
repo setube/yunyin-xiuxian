@@ -13,6 +13,7 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useAdventureStore } from '@/stores/adventure'
 import { useEndgameStore } from '@/stores/endgame'
+import { useGameStore } from '@/stores/game'
 import { useUiStore } from '@/stores/ui'
 import type { ReincarnationView } from '@/stores/ui'
 import type { BuildingId, GNum } from '@/types'
@@ -103,6 +104,8 @@ export function confirmReincarnation(chosenTalentId: string | null): void {
 
   const floor = REINCARNATE_APTITUDE_FLOOR * (player.reincarnation.count + 1)
   player.rebirth(rollLinggen(rng, floor))
+  // 新的一世:上一世的建号草稿作废,「逆天改命」额度归满
+  useGameStore().resetCreateDraft()
   // 道途归还天地,道源与道痕随神魂不灭
   useEndgameStore().onRebirth()
   recordMilestone('first_rebirth')

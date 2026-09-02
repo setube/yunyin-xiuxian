@@ -33,6 +33,13 @@
         </div>
         <span class="ml-auto text-[11px] text-ink-faint tabular">×{{ player.linggen?.growthMult.toFixed(2) }}</span>
       </div>
+      <!-- 天然牌面(Phase 32.2):转世发下的这张牌决定路好不好走,而非走得多快 -->
+      <div v-if="tendencies.length" class="mt-2 space-y-1">
+        <p v-for="t in tendencies" :key="t.element" class="flex gap-1.5 text-[11px] leading-relaxed text-ink-faint">
+          <span class="shrink-0 font-kai" :style="{ color: ELEMENTS[t.element].color }">{{ ELEMENTS[t.element].char }}</span>
+          <span>{{ t.text }}</span>
+        </p>
+      </div>
     </div>
 
     <!-- 属性 -->
@@ -67,9 +74,6 @@
 
     <!-- 各处入口 -->
     <RouterLink to="/build" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
-      <span class="grid h-9 w-9 place-items-center rounded-md bg-cinnabar/90 font-kai text-[17px] text-paper">
-        {{ build?.style.seal ?? '道' }}
-      </span>
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">流 派</span>
         <span class="block truncate text-[10px] text-ink-faint tabular">
@@ -83,28 +87,13 @@
     </RouterLink>
 
     <!-- 修行画像(Phase 31.2:历史行为归纳,纯描述无数值) -->
-    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="identityOpen = !identityOpen">
-      <span class="grid h-9 w-9 place-items-center rounded-md bg-ink/80 font-kai text-[17px] text-paper">像</span>
+    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="identityOpen = true">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">修行画像</span>
         <span class="block truncate text-[10px] text-ink-faint">「{{ identity?.epithet ?? '云隐散人' }}」 · {{ identity?.narrative ?? '足迹尚浅' }}</span>
       </span>
-      <span class="shrink-0 text-[11px] text-ink-soft">{{ identityOpen ? '收起' : '展卷 →' }}</span>
+      <span class="shrink-0 text-[11px] text-ink-soft">展卷 →</span>
     </button>
-    <div v-if="identityOpen && identity" class="card-ink space-y-2 px-4 py-3">
-      <p class="font-kai text-[15px] tracking-[0.3em] text-ink">「{{ identity.epithet }}」</p>
-      <p class="text-[12px] leading-relaxed text-ink-soft">{{ identity.narrative }}</p>
-      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-        <p class="flex justify-between"><span class="text-ink-faint">师承</span><span class="text-ink-soft">{{ identity.roots.mentor?.name ?? '未定' }}</span></p>
-        <p class="flex justify-between"><span class="text-ink-faint">道途</span><span class="text-ink-soft">{{ identity.roots.daoPath ?? '未立' }}</span></p>
-        <p class="flex justify-between"><span class="text-ink-faint">流派</span><span class="text-ink-soft">{{ identity.roots.build ?? '未成' }}</span></p>
-        <p class="flex justify-between"><span class="text-ink-faint">悟道</span><span class="text-ink-soft">{{ identity.roots.branches.join('、') || '未定' }}</span></p>
-      </div>
-      <p v-if="identity.roots.fortunes.length" class="text-[11px] text-ink-faint">
-        机缘印记:{{ identity.roots.fortunes.map(f => f.title).join(' · ') }}
-      </p>
-      <p class="text-[10px] text-ink-ghost">画像基于真实选择归纳——你玩成了什么样,它便描述什么。</p>
-    </div>
 
     <RouterLink to="/titles" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
       <span class="min-w-0 grow">
@@ -118,7 +107,6 @@
 
     <!-- 师承(Phase 31 S1):修行理念 + 师尊评价 -->
     <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="mentorDialog = true">
-      <span class="grid h-9 w-9 place-items-center rounded-md bg-azure/85 font-kai text-[17px] text-paper">师</span>
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">师 承</span>
         <span class="block truncate text-[10px] text-ink-faint">
@@ -129,7 +117,6 @@
     </button>
 
     <RouterLink to="/collection" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
-      <span class="grid h-9 w-9 place-items-center rounded-md bg-gold-ink/85 font-kai text-[17px] text-paper">鉴</span>
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">藏珍与成就</span>
         <span class="block text-[10px] text-ink-faint tabular">
@@ -140,7 +127,6 @@
     </RouterLink>
 
     <RouterLink to="/legacy" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
-      <span class="grid h-9 w-9 place-items-center rounded-md bg-ink/85 font-kai text-[17px] text-paper">录</span>
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">修仙录</span>
         <span class="block truncate text-[10px] text-ink-faint tabular">画像 · 节点 · 我的纪录——这一部只写你自己</span>
@@ -149,7 +135,6 @@
     </RouterLink>
 
     <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="rebirthOpen = true">
-      <span class="grid h-9 w-9 place-items-center rounded-md bg-violet-ink/85 font-kai text-[17px] text-paper">轮</span>
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">轮 回</span>
         <span class="block text-[10px] text-ink-faint tabular">
@@ -159,6 +144,26 @@
       </span>
       <span class="text-[11px] text-violet-ink">观想 →</span>
     </button>
+
+    <!-- 修行画像弹窗(Phase 31.2) -->
+    <BaseModal :open="identityOpen" :title="`修行画像 · 「${identity?.epithet ?? '云隐散人'}」`" @close="identityOpen = false">
+      <div v-if="identity" class="space-y-2.5">
+        <p class="text-[12px] leading-relaxed text-ink-soft">{{ identity.narrative }}</p>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+          <p class="flex justify-between"><span class="text-ink-faint">师承</span><span class="text-ink-soft">{{ identity.roots.mentor?.name ?? '未定' }}</span></p>
+          <p class="flex justify-between"><span class="text-ink-faint">道途</span><span class="text-ink-soft">{{ identity.roots.daoPath ?? '未立' }}</span></p>
+          <p class="flex justify-between"><span class="text-ink-faint">流派</span><span class="text-ink-soft">{{ identity.roots.build ?? '未成' }}</span></p>
+          <p class="flex justify-between"><span class="text-ink-faint">悟道</span><span class="text-ink-soft">{{ identity.roots.branches.join('、') || '未定' }}</span></p>
+        </div>
+        <p v-if="identity.roots.fortunes.length" class="text-[11px] text-ink-faint">
+          机缘印记:{{ identity.roots.fortunes.map(f => f.title).join(' · ') }}
+        </p>
+        <p class="text-[10px] leading-relaxed text-ink-ghost">画像基于真实选择归纳——你玩成了什么样,它便描述什么。</p>
+      </div>
+      <template #footer>
+        <button class="btn-seal w-full" @click="identityOpen = false">收 卷</button>
+      </template>
+    </BaseModal>
 
     <!-- 轮回弹窗 -->
     <BaseModal :open="rebirthOpen" title="轮回" @close="rebirthOpen = false">
@@ -261,6 +266,7 @@
   import { mentorVerdict, mentorChoices } from '@/core/mentorService'
   import { mentorHint } from '@/core/fortuneChain'
   import { buildIdentity } from '@/core/identityService'
+  import { rootElements, tendencyLines } from '@/core/linggenAffinity'
   import { formatGN, formatPercent, formatYears } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
   import { STAT_NAMES } from '@/ui/statNames'
@@ -276,6 +282,9 @@
   const loadouts = useLoadoutsStore()
 
   const stats = computed(() => player.finalStats)
+
+  /** 灵根的天然牌面(倾向文案,不含任何数值) */
+  const tendencies = computed(() => tendencyLines(rootElements(player.linggen?.roots)))
 
   const MOD_KEYS: AnyStatKey[] = [
     'cultivationSpeed',

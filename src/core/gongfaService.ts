@@ -6,6 +6,7 @@ import { GONGFA, gongfaDef } from '@/data/gongfa'
 import { qualityDef } from '@/data/qualities'
 import { COMPREHEND_PAGE_COST } from '@/data/constants'
 import { gongfaUpCost } from './formulas'
+import { gongfaAffinity, rootElements } from './linggenAffinity'
 import { collect, track } from './progress'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -28,7 +29,10 @@ export function learnRandomGongfa(specificId?: string): string | null {
   }
   const pool = GONGFA.filter(g => g.minRealm <= player.major + 1 && !cultivation.learned[g.id])
   if (pool.length === 0) return null
-  const picked = rng.weighted(pool, g => 100 / (1 + qualityDef(g.quality).rank * 1.5))
+  // Phase 32.2:同源功法更容易参悟到(倾向,非独占)——
+  // 无对应灵根者权重仍为原值,任何功法都拿得到,只是撞见的概率不同。
+  const elements = rootElements(player.linggen?.roots)
+  const picked = rng.weighted(pool, g => (100 / (1 + qualityDef(g.quality).rank * 1.5)) * gongfaAffinity(g.element, elements))
   cultivation.learn(picked.id)
   collect('gongfa', picked.id)
   track('gongfaLearned')

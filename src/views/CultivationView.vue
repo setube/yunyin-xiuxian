@@ -62,6 +62,10 @@
         </p>
         <p class="mt-1 text-[10px] text-ink-soft">主要风险:<span class="text-cinnabar/80">{{ tribPlan.risks.join('; ') }}</span></p>
         <p class="mt-1 text-[10px] text-ink-faint">{{ tribPlan.advice }}</p>
+        <!-- Phase 32.2:灵根解开的那条路——说明这道劫为何对你不太一样(留一线,不是免死) -->
+        <p v-if="reliefRoots.length" class="mt-1 text-[10px] text-jade">
+          灵根相应:{{ reliefRoots.map(e => ELEMENTS[e].name).join('、') }}——此劫为你留了一线,能走到哪一步仍看自身准备
+        </p>
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
         耗灵气 {{ formatNum(btInfo.qiCost) }}
@@ -149,11 +153,12 @@
           >
             <span class="font-kai text-[13px]" :style="{ color: qualityDef(def!.quality).color }">{{ def!.name }}</span>
             <span class="text-[10px] text-ink-faint">{{ cultivation.learned[def!.id] }} 层</span>
-            <!-- Phase 31 A3:满级可悟道,已选分支则显示分支名 -->
+            <!-- Phase 31 A3:已选分支显示道名;确有歧路可择时才招手,否则只报「圆满」 -->
             <span v-if="cultivation.gongfaBranch[def!.id]" class="text-[10px] text-gold-ink">
               {{ gongfaBranchDef(cultivation.gongfaBranch[def!.id])?.name }}
             </span>
-            <span v-else-if="cultivation.learned[def!.id] >= (def!.maxLevel ?? 9)" class="text-[10px] text-azure">可悟道</span>
+            <span v-else-if="canEnlighten(def!.id)" class="text-[10px] text-azure">待悟道 →</span>
+            <span v-else-if="isFull(def!.id)" class="text-[10px] text-ink-ghost">圆满</span>
             <span class="ml-auto text-[10px]" :class="equipStateOf(def!.id) ? 'text-jade' : 'text-ink-ghost'">
               {{ equipStateOf(def!.id) || '未装配' }}
             </span>
@@ -178,11 +183,13 @@
   import { useUiStore } from '@/stores/ui'
   import { attemptBreakthrough, breakthroughInfo } from '@/core/breakthrough'
   import { currentTribulationPlan, verdictLabel, type TribulationPlan } from '@/core/tribulationDecision'
+  import { reliefElements, rootElements } from '@/core/linggenAffinity'
   import { comprehendGongfa } from '@/core/gongfaService'
   import { usePill } from '@/core/pillService'
   import { useNow } from '@/composables/useNow'
   import { gongfaDef } from '@/data/gongfa'
-  import { gongfaBranchDef } from '@/data/gongfaBranches'
+  import { ELEMENTS } from '@/data/linggen'
+  import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import { buffDef } from '@/data/buffs'
   import { pillDef } from '@/data/pills'
   import { COMPREHEND_PAGE_COST } from '@/data/constants'
@@ -214,6 +221,11 @@
   const PREP_STARS = ['·', '✧', '✧✧', '✧✧✧'] as const
   const tribPlan = computed(() => (btInfo.value.needTribulation ? currentTribulationPlan() : null))
 
+  /** Phase 32.2 与此劫气机相应的灵根:判据取自 tribulationRelief,界面说的与结算做的同源 */
+  const reliefRoots = computed(() =>
+    tribPlan.value ? reliefElements(rootElements(player.linggen?.roots), tribPlan.value.kind) : []
+  )
+
   const activeBuffs = computed(() =>
     cultivation.buffs
       .map(b => ({ def: buffDef(b.defId), remain: Math.max(0, (b.endsAt - now.value) / 1000) }))
@@ -242,5 +254,15 @@
     if (cultivation.mainGongfa === id) return '主修'
     if (cultivation.subGongfa.includes(id)) return '辅修'
     return ''
+  }
+
+  /** 功行是否已至顶层 */
+  function isFull(id: string): boolean {
+    return (cultivation.learned[id] ?? 0) >= (gongfaDef(id)?.maxLevel ?? 9)
+  }
+
+  /** 是否真能悟道(判据取自 gongfaBranches,界面提示与实际可选项同源) */
+  function canEnlighten(id: string): boolean {
+    return canEnlightenGongfa(id, cultivation.learned[id] ?? 0)
   }
 </script>

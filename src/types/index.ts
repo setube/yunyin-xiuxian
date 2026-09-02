@@ -486,6 +486,11 @@ export interface EventDef {
   once?: boolean
   weight: number
   choices: EventChoice[]
+  /**
+   * 机缘的元素倾向(Phase 32.2)。
+   * 同源灵根更容易撞见,但无此灵根者照样能遇到——是倾向,不是门槛。
+   */
+  element?: ElementId
 }
 
 // ============ 资源 ============

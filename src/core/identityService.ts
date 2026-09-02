@@ -70,7 +70,7 @@ const MENTOR_EPITHETS: Record<MentorId, string> = {
 const DAO_EPITHETS: Record<string, string> = {
   sword: '问剑',
   longevity: '长生',
-  celestial: '天机',
+  fate: '天机',
   slaughter: '杀伐'
 }
 
@@ -108,12 +108,15 @@ export function buildIdentity(): CultivatorIdentity {
 
   // ---- 称谓 ----
   const daoKey = endgame.daoPath
+  // 道途一律先转成中文名再往下传:叙事句和画像面板必须同一份文案,
+  // 否则会写出「行slaughter」这种把内部 id 漏给玩家的句子
+  const daoName = daoKey ? (daoPathDef(daoKey)?.name ?? null) : null
   const daoEpi = daoKey ? (DAO_EPITHETS[daoKey] ?? '问道') : null
   const mentorEpi = mentor ? MENTOR_EPITHETS[mentor.id] : null
   const epithet = [daoEpi, mentorEpi].filter(Boolean).slice(0, 2).join('') || '云隐散人'
 
   const narrative = buildNarrative(
-    { fortunes, mentor, daoPath: daoKey, build: build?.displayName ?? null, branches },
+    { fortunes, mentor, daoPath: daoName, build: build?.displayName ?? null, branches },
     adjectives,
     riskBias
   )
@@ -122,7 +125,7 @@ export function buildIdentity(): CultivatorIdentity {
     roots: {
       fortunes,
       mentor: mentor ? { name: mentor.name, title: mentor.title } : null,
-      daoPath: daoKey ? daoPathDef(daoKey)?.name ?? daoKey : null,
+      daoPath: daoName,
       branches,
       petTemp: player.petId ? '随行' : null,
       build: build?.displayName ?? null

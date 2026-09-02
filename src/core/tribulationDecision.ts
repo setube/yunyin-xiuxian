@@ -17,6 +17,8 @@
 import type { StatMods } from '@/types'
 import { modOf } from './statsCalc'
 import { tribulationDef, TRIBULATIONS, type TribulationDef, type TribulationKind } from '@/data/tribulations'
+import { NO_RELIEF, type TribulationRelief } from '@/data/linggenAffinity'
+import { rootElements, tribulationRelief } from './linggenAffinity'
 import { todayWeather } from './weather'
 import { TRIBULATION_BASE_WAVES } from '@/data/constants'
 import { tribulationWaveDamage } from './formulas'
@@ -104,38 +106,82 @@ export function burstScore(mods: StatMods): number {
   return modOf(mods, 'critRate') + modOf(mods, 'damageBonus') * 0.5
 }
 
+/**
+ * 劫型折扣的回拉:向常态(1)靠拢多少。
+ *
+ * 只回拉"折扣"(base<1),不放大"加成"(base>1)——
+ * 灵根解开的是这道劫特意关掉的那扇门,不是普涨。
+ */
+function easeDiscount(base: number, restore: number): number {
+  return Math.max(base, base + (1 - base) * Math.min(1, Math.max(0, restore)))
+}
+
+/**
+ * 裂魂劫的有效爆发档。
+ *
+ * 灵根只能把"已经有的攻势"再推一档,推不动零:
+ * 无爆发词条者拿不到任何减免。这条是放大你的选择,不是白送减伤。
+ */
+export function effectiveBurstTier(mods: StatMods, relief: TribulationRelief = NO_RELIEF): number {
+  const base = prepTier('burst', burstScore(mods))
+  if (base <= 0) return 0
+  return Math.min(3, base + relief.burstTierBonus)
+}
+
 /** 每波恢复量(prep.sustain 与结算共用;吸血按三成折算为持续恢复) */
-export function sustainScore(mods: StatMods, def: TribulationDef): number {
-  return (modOf(mods, 'regenPerRound') + modOf(mods, 'lifesteal') * 0.3) * def.healMult
+export function sustainScore(mods: StatMods, def: TribulationDef, relief: TribulationRelief = NO_RELIEF): number {
+  return (modOf(mods, 'regenPerRound') + modOf(mods, 'lifesteal') * 0.3) * easeDiscount(def.healMult, relief.healRestore)
 }
 
 /** 起始护持水位(1 = 满血;护盾按劫型倍率折算) */
-export function guardScore(mods: StatMods, def: TribulationDef): number {
-  return modOf(mods, 'shieldOnStart') * def.shieldMult
+export function guardScore(mods: StatMods, def: TribulationDef, relief: TribulationRelief = NO_RELIEF): number {
+  return modOf(mods, 'shieldOnStart') * easeDiscount(def.shieldMult, relief.shieldRestore)
+}
+
+/** 减伤可折算为天劫抗性的比例(雷鸣劫本有五成;同源灵根再添几分) */
+function reductionToResistRate(def: TribulationDef, relief: TribulationRelief): number {
+  return (def.id === 'thunder' ? 0.5 : 0) + relief.reductionToResist
 }
 
 /** 天劫抗性度量(雷鸣劫下减伤也能顶一部分抗性缺口) */
-export function resistScore(mods: StatMods, def: TribulationDef): number {
-  return modOf(mods, 'tribulationResist') + (def.id === 'thunder' ? modOf(mods, 'damageReduction') * 0.5 : 0)
+export function resistScore(mods: StatMods, def: TribulationDef, relief: TribulationRelief = NO_RELIEF): number {
+  return modOf(mods, 'tribulationResist') + modOf(mods, 'damageReduction') * reductionToResistRate(def, relief)
 }
 
-/** 劫型波形:第 wave 波相对基础伤害的倍率(含 dmgMult) */
-export function waveMultiplier(def: TribulationDef, wave: number): number {
-  if (def.waveShape === 'frontLoaded') {
-    // 重压:起手两击雷霆万钧,其后转缓——总量相近,但把压力全压在开局
-    return def.dmgMult * (wave <= 2 ? 1.7 : 0.8)
-  }
-  return def.dmgMult
+/**
+ * 劫型波形:第 wave 波相对基础伤害的倍率(含 dmgMult)。
+ *
+ * 灵根的"卸力"不做减伤——削掉的起手伤害要平摊回后续波次,总量守恒。
+ * 它改变的是"这道劫要求你怎么活下来":
+ * 从"首轮必须扛住爆发"变为"可以靠续航磨过去"。
+ */
+export function waveMultiplier(def: TribulationDef, wave: number, waves: number, relief: TribulationRelief = NO_RELIEF): number {
+  if (def.waveShape !== 'frontLoaded') return def.dmgMult
+  // 重压:起手两击雷霆万钧,其后转缓——总量相近,但把压力全压在开局
+  const FRONT = 2
+  const cut = (1.7 - 1.0) * Math.min(1, Math.max(0, relief.frontLoadEase))
+  if (wave <= FRONT) return def.dmgMult * (1.7 - cut)
+  const spread = waves > FRONT ? (cut * FRONT) / (waves - FRONT) : 0
+  return def.dmgMult * (0.8 + spread)
 }
 
 /** 单波实际伤害(占最大生命比例);UI 与结算共用 */
-export function waveDamage(def: TribulationDef, mods: StatMods, targetMajor: number, wave: number, hpLeft: number): number {
-  const resist = Math.min(0.8, modOf(mods, 'tribulationResist'))
+export function waveDamage(
+  def: TribulationDef,
+  mods: StatMods,
+  targetMajor: number,
+  wave: number,
+  hpLeft: number,
+  relief: TribulationRelief = NO_RELIEF
+): number {
   const reduction = Math.min(0.6, modOf(mods, 'damageReduction'))
+  // 厚土分担天罚:减伤按灵根亲和折算一部分为天劫抗性(无减伤者折算为零)
+  const resist = Math.min(0.8, modOf(mods, 'tribulationResist') + reduction * relief.reductionToResist)
   const lowHpRed = Math.min(0.6, modOf(mods, 'lowHpReduction'))
-  let dmg = tribulationWaveDamage(targetMajor, wave, resist) * (1 - reduction) * waveMultiplier(def, wave)
+  const waves = tribulationWaves(targetMajor)
+  let dmg = tribulationWaveDamage(targetMajor, wave, resist) * (1 - reduction) * waveMultiplier(def, wave, waves, relief)
   // 裂魂:攻势足者可硬生生削去几分劫威(减免按 prep.burst 星级查表,UI 星级即结算输入)
-  if (def.id === 'soulrend') dmg *= 1 - SOULREND_BURST_RELIEF[prepTier('burst', burstScore(mods))]!
+  if (def.id === 'soulrend') dmg *= 1 - SOULREND_BURST_RELIEF[effectiveBurstTier(mods, relief)]!
   // 濒危减伤(背水路数)在气血垂危时同样护持渡劫
   if (hpLeft < 0.3) dmg *= 1 - lowHpRed
   return dmg
@@ -155,13 +201,18 @@ export interface TribulationTrace {
  * 期望值推演(无随机浮动)。
  * 结算 runTribulation 在此之上叠加 ±15% 波动,数学主干完全一致。
  */
-export function traceTribulation(def: TribulationDef, mods: StatMods, targetMajor: number): TribulationTrace {
+export function traceTribulation(
+  def: TribulationDef,
+  mods: StatMods,
+  targetMajor: number,
+  relief: TribulationRelief = NO_RELIEF
+): TribulationTrace {
   const waves = tribulationWaves(targetMajor)
-  const regen = sustainScore(mods, def)
-  let hpLeft = 1 + guardScore(mods, def)
+  const regen = sustainScore(mods, def, relief)
+  let hpLeft = 1 + guardScore(mods, def, relief)
   let minHp = hpLeft
   for (let w = 1; w <= waves; w += 1) {
-    hpLeft = hpLeft - waveDamage(def, mods, targetMajor, w, hpLeft) + regen
+    hpLeft = hpLeft - waveDamage(def, mods, targetMajor, w, hpLeft, relief) + regen
     if (hpLeft < minHp) minHp = hpLeft
     if (hpLeft <= 0) return { survived: false, hpLeft, minHp, fellAt: w }
   }
@@ -187,22 +238,28 @@ function failedRate(trace: TribulationTrace, waves: number): number {
 /**
  * 生成突破前的渡劫计划(信息层,不替玩家决定)
  * kind 可注入(测试/固定劫型);默认按境界×天时派生
+ * relief 为灵根解法通道;缺省即"无灵根之利"的基线
  */
-export function buildTribulationPlan(targetMajor: number, mods: StatMods, kindIn?: TribulationKind): TribulationPlan {
+export function buildTribulationPlan(
+  targetMajor: number,
+  mods: StatMods,
+  kindIn?: TribulationKind,
+  relief: TribulationRelief = NO_RELIEF
+): TribulationPlan {
   const kind = kindIn ?? rollTribulation(targetMajor)
   const def = tribulationDef(kind)
 
   // 四维准备度(词条 → 维度;均为"这道劫下如何"的解读)
   const prep = {
-    guard: prepTier('guard', guardScore(mods, def)),
-    sustain: prepTier('sustain', sustainScore(mods, def)),
-    resist: prepTier('resist', resistScore(mods, def)),
+    guard: prepTier('guard', guardScore(mods, def, relief)),
+    sustain: prepTier('sustain', sustainScore(mods, def, relief)),
+    resist: prepTier('resist', resistScore(mods, def, relief)),
     burst: prepTier('burst', burstScore(mods))
   }
 
   // 决策档以"全程最低水位"为准:险过与稳过必须分得开,
   // 否则所有幸存者都挤在同一档,玩家只能靠堆满四维来跨线。
-  const trace = traceTribulation(def, mods, targetMajor)
+  const trace = traceTribulation(def, mods, targetMajor, relief)
   const expectedRate = trace.survived
     ? Math.min(0.95, 0.55 + Math.min(1, trace.minHp / 0.45) * 0.4)
     : failedRate(trace, tribulationWaves(targetMajor))
@@ -220,7 +277,7 @@ export function buildTribulationPlan(targetMajor: number, mods: StatMods, kindIn
     desc: def.desc,
     expectedRate,
     prep,
-    risks: riskLines(def, prep, trace),
+    risks: riskLines(def, prep, trace, relief),
     verdict,
     advice: adviceFor(verdict)
   }
@@ -240,18 +297,24 @@ function adviceFor(verdict: TribulationPlan['verdict']): string {
   }
 }
 
-/** 风险识别:哪个维度最弱,即"主要风险点" */
+/**
+ * 风险识别:哪个维度最弱,即"主要风险点"
+ *
+ * 灵根已解开的那条通道不再报警——若仍照报,玩家会去补一个
+ * 自己天生就不缺的短板,那等于把"牌面"变成了噪音。
+ */
 function riskLines(
   def: TribulationDef,
   prep: { guard: number; sustain: number; resist: number; burst: number },
-  trace: TribulationTrace
+  trace: TribulationTrace,
+  relief: TribulationRelief = NO_RELIEF
 ): string[] {
   const risks: string[] = []
   // 劫型专属短板优先:它才是"今天这一劫"的信息
-  if (def.id === 'counterflow' && prep.sustain >= 1) risks.push('逆流:治疗恢复大减,恢复流在此劫失效')
-  if (def.id === 'thunder' && prep.guard >= 1) risks.push('雷鸣:雷光破盾,护持打折')
-  if (def.id === 'ironbody' && prep.guard >= 2) risks.push('铁躯:钝压碾盾,护体灵光几乎无用')
-  if (def.id === 'heavyrush' && prep.guard <= 1) risks.push('重压:起手两击极重,首轮护持不足恐当场坠劫')
+  if (def.id === 'counterflow' && prep.sustain >= 1 && relief.healRestore <= 0) risks.push('逆流:治疗恢复大减,恢复流在此劫失效')
+  if (def.id === 'thunder' && prep.guard >= 1 && relief.reductionToResist <= 0) risks.push('雷鸣:雷光破盾,护持打折')
+  if (def.id === 'ironbody' && prep.guard >= 2 && relief.shieldRestore <= 0) risks.push('铁躯:钝压碾盾,护体灵光几乎无用')
+  if (def.id === 'heavyrush' && prep.guard <= 1 && relief.frontLoadEase <= 0) risks.push('重压:起手两击极重,首轮护持不足恐当场坠劫')
   if (def.id === 'soulrend' && prep.burst <= 1) risks.push('裂魂:攻势不足,削不动劫威')
   // 通用短板
   if (prep.guard <= 1) risks.push('首轮承伤压力较大(护持不足)')
@@ -262,9 +325,21 @@ function riskLines(
   return risks.slice(0, 3)
 }
 
-/** 供 UI:当前玩家(含天时)的渡劫计划 */
+/**
+ * 当前玩家灵根在此劫型下解开的通道。
+ *
+ * 预览(currentTribulationPlan)与结算(breakthrough.runTribulation)
+ * 都必须经这一个入口取 relief——否则又会出现"看的一套、算的一套"。
+ */
+export function currentTribulationRelief(kind: TribulationKind): TribulationRelief {
+  const player = usePlayerStore()
+  return tribulationRelief(rootElements(player.linggen?.roots), kind)
+}
+
+/** 供 UI:当前玩家(含天时、灵根)的渡劫计划 */
 export function currentTribulationPlan(): TribulationPlan {
   const player = usePlayerStore()
   const nextMajor = player.isMajorStep ? player.major + 1 : player.major
-  return buildTribulationPlan(nextMajor, player.finalStats.mods)
+  const kind = rollTribulation(nextMajor)
+  return buildTribulationPlan(nextMajor, player.finalStats.mods, kind, currentTribulationRelief(kind))
 }

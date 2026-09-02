@@ -7,8 +7,10 @@ import { realmDef, realmLabel } from '@/data/realms'
 import { BT_FAIL_EXP_LOSS, BT_QI_COST_RATIO } from '@/data/constants'
 import { breakthroughBaseRate, clampRate } from './formulas'
 import { modOf } from './statsCalc'
-import { rollTribulation, sustainScore, guardScore, waveDamage, tribulationWaves } from './tribulationDecision'
+import { rollTribulation, sustainScore, guardScore, waveDamage, tribulationWaves, currentTribulationRelief } from './tribulationDecision'
 import { tribulationDef, TRIBULATIONS, type TribulationKind } from '@/data/tribulations'
+import { NO_RELIEF, type TribulationRelief } from '@/data/linggenAffinity'
+import { reliefFelt } from './linggenAffinity'
 import { track, trackRealm, checkStateAchievements } from './progress'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -42,18 +44,23 @@ const TRIB_SAMPLE = 4000
  *
  * 数学主干与实际结算 runTribulation 共用 tribulationDecision 的度量函数。
  */
-export function tribulationSuccessRate(targetMajor: number, mods: StatMods, kind?: TribulationKind): number {
+export function tribulationSuccessRate(
+  targetMajor: number,
+  mods: StatMods,
+  kind?: TribulationKind,
+  relief: TribulationRelief = NO_RELIEF
+): number {
   const kinds = kind ? [tribulationDef(kind)] : TRIBULATIONS
   const rand = mulberry32(0x5eed)
   const waves = tribulationWaves(targetMajor)
   let survived = 0
   let total = 0
   for (const def of kinds) {
-    const regen = sustainScore(mods, def)
+    const regen = sustainScore(mods, def, relief)
     for (let s = 0; s < TRIB_SAMPLE; s += 1) {
-      let hpLeft = 1 + guardScore(mods, def)
+      let hpLeft = 1 + guardScore(mods, def, relief)
       for (let w = 1; w <= waves; w += 1) {
-        hpLeft = hpLeft - waveDamage(def, mods, targetMajor, w, hpLeft) * (0.85 + rand() * 0.3) + regen
+        hpLeft = hpLeft - waveDamage(def, mods, targetMajor, w, hpLeft, relief) * (0.85 + rand() * 0.3) + regen
         if (hpLeft <= 0) break
       }
       if (hpLeft > 0) survived += 1
@@ -98,18 +105,21 @@ export function breakthroughInfo(): BreakthroughInfo {
 }
 
 /** 模拟渡劫:返回(是否渡过, 战报)
- * Phase 32.1:与 tribulationDecision 共用度量函数,预览与结算不可能分叉 */
+ * Phase 32.1:与 tribulationDecision 共用度量函数,预览与结算不可能分叉
+ * Phase 32.2:灵根解法通道同样经 currentTribulationRelief 取,与预览同源 */
 function runTribulation(targetMajor: number): { survived: boolean; log: string[] } {
   const player = usePlayerStore()
   const mods = player.finalStats.mods
   const waves = tribulationWaves(targetMajor)
   const kind = rollTribulation(targetMajor)
   const tDef = tribulationDef(kind)
-  const regen = sustainScore(mods, tDef)
-  let hpLeft = 1 + guardScore(mods, tDef)
+  const relief = currentTribulationRelief(kind)
+  const regen = sustainScore(mods, tDef, relief)
+  let hpLeft = 1 + guardScore(mods, tDef, relief)
   const log: string[] = [`乌云压顶,${realmDef(targetMajor).name}劫将至——${tDef.name}之劫,共 ${waves} 道!`]
+  if (reliefFelt(relief)) log.push('你体内灵根与此劫气机隐隐相应,自有一线生路。')
   for (let w = 1; w <= waves; w += 1) {
-    hpLeft = hpLeft - waveDamage(tDef, mods, targetMajor, w, hpLeft) * rng.float(0.85, 1.15) + regen
+    hpLeft = hpLeft - waveDamage(tDef, mods, targetMajor, w, hpLeft, relief) * rng.float(0.85, 1.15) + regen
     if (hpLeft <= 0) {
       log.push(`第 ${w} 道天雷轰然落下,你护体灵光崩碎,重伤坠地……`)
       return { survived: false, log }

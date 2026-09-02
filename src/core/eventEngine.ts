@@ -14,6 +14,7 @@ import { stoneByTier } from './formulas'
 import { generateEquipment } from './equipGen'
 import { acquireArtifact, acquireEquipment, randomDropArtifact } from './loot'
 import { learnRandomGongfa } from './gongfaService'
+import { fortuneAffinity, rootElements } from './linggenAffinity'
 import { collect, track } from './progress'
 import { recordEvent } from './worldMemory'
 import { recordFortuneChoice } from './fortuneChain'
@@ -37,7 +38,12 @@ export function pickEventFor(region: RegionDef): EventDef | null {
   // Phase 31 S2:极小概率先判机缘事件(带代价选择)
   if (rng.chance(FORTUNE_CHANCE)) {
     const fortune = FORTUNE_EVENTS.filter(ev => ev.tags.some(t => region.eventTags.includes(t)))
-    if (fortune.length > 0) return rng.pick(fortune)
+    // Phase 32.2:同源机缘更容易撞见——灵根在此接入"机缘 → 师承 → 流派"的因果链起点。
+    // 非同源机缘权重不变(仍是 ev.weight),没有一条路被灵根关掉。
+    if (fortune.length > 0) {
+      const elements = rootElements(player.linggen?.roots)
+      return rng.weighted(fortune, ev => ev.weight * fortuneAffinity(ev.element, elements))
+    }
   }
   const pool = EVENTS.filter(ev => {
     if (ev.minRealm !== undefined && player.major < ev.minRealm) return false
