@@ -23,6 +23,9 @@ import { checkSuppression, memorialLine, MEMORIAL_CHANCE } from './suppress'
 import { recordLoss, isNemesis, markAvenged, ghostOf, ghostTitle, ghostLeadIn, ECHO_GHOST_CHANCE } from './worldMemory'
 import { personalityEffects } from './petPersonality'
 import { currentRegionEvent, regionEventDef, rollRegionEvent } from './regionEvent'
+import { noteEnemy } from './loreService'
+import { noteTaboo } from './samsaraService'
+import { useInventoryStore } from '@/stores/inventory'
 
 /** 区域是否可解锁(前置首领已清) */
 export function regionAvailable(regionId: string): boolean {
@@ -131,6 +134,8 @@ function runBattle(now: number): void {
   const eSnap = makeEnemySnap(eDef, region.tier, dangerFactor)
   // 道途在世,一切战斗皆循此规则
   const result = resolveCombat(pSnap, eSnap, rng, currentDaoRules())
+  // Phase 32.5:「独行」之誓看的是有没有真的祭出法宝,不是有没有法宝在身
+  if (useInventoryStore().equippedArtifacts.length > 0) noteTaboo('artifact')
 
   adventure.recordBattle({
     enemyName: ghost ? ghostTitle(ghost) : eDef.name,
@@ -141,6 +146,8 @@ function runBattle(now: number): void {
     at: now
   })
   track('battles')
+  // Phase 32.5:交过手才谈得上认识它 —— 这份认知随神魂转世不灭
+  noteEnemy(eDef.id, result.win)
 
   if (result.win) {
     track('kills')

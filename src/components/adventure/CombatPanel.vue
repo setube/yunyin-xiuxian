@@ -38,7 +38,7 @@
               </template>
               <span v-if="battle?.isBoss" class="chip-ink border-cinnabar/60 text-[9px] text-cinnabar">首领</span>
               <span v-if="isNemesisFoe" class="chip-ink border-cinnabar/80 bg-cinnabar/10 text-[9px] text-cinnabar">宿敌</span>
-              <span v-for="t in foeTraits" :key="t" class="chip-ink border-violet-ink/50 text-[9px] text-violet-ink">
+              <span v-for="t in shownTraits" :key="t" class="chip-ink border-violet-ink/50 text-[9px] text-violet-ink">
                 {{ TRAIT_NAMES[t] }}
               </span>
               <span
@@ -97,10 +97,35 @@
       <!-- 战斗后统计 + 分析入口 -->
       <p v-if="battleSummary" class="mt-2 flex items-center justify-center gap-2 text-center text-[10px] text-ink-faint tabular">
         {{ battleSummary }}
+        <button v-if="lore" class="text-violet-ink active:opacity-60" @click="showLore = !showLore">
+          {{ showLore ? '收起所知' : '此物所知 »' }}
+        </button>
         <button v-if="analysis" class="text-azure active:opacity-60" @click="showAnalysis = !showAnalysis">
           {{ showAnalysis ? '收起分析' : '战斗分析 »' }}
         </button>
       </p>
+      <!-- 此物所知(Phase 32.5:交手越多,战前看得越清楚) -->
+      <div v-if="showLore && lore" class="mt-2 rounded-md bg-ink/4 px-3 py-2.5">
+        <p class="flex items-center gap-2">
+          <span class="font-kai text-[12px] tracking-wider text-ink">{{ battle?.enemyName }}</span>
+          <span class="chip-ink border-violet-ink/50 text-[9px] text-violet-ink">{{ lore.stageName }}</span>
+          <span v-if="lore.boosted" class="text-[10px] text-gold-ink">宿慧照见</span>
+        </p>
+        <p v-if="lore.elementName || lore.frame.length" class="mt-1 text-[11px] text-ink-soft">
+          <span v-if="lore.elementName" class="mr-1.5 text-azure">{{ lore.elementName }}属</span>
+          {{ lore.frame.join(' · ') }}
+        </p>
+        <p v-for="s in lore.skills" :key="s.name" class="mt-1 text-[11px] leading-relaxed text-ink-soft">
+          ·
+          <span class="text-ink">{{ s.name }}</span>
+          ——{{ s.note }}
+        </p>
+        <p v-for="ph in lore.phases" :key="ph.at" class="mt-1 text-[11px] leading-relaxed text-cinnabar">
+          · {{ ph.at }}时{{ ph.label }}
+        </p>
+        <p v-if="lore.archetype" class="mt-1.5 text-[11px] leading-relaxed text-gold-ink">{{ lore.archetype }}</p>
+        <p v-if="lore.hint" class="mt-1.5 text-[10px] text-ink-ghost">{{ lore.hint }}</p>
+      </div>
       <!-- 战斗分析(战败自动展开;硬核数据供研究) -->
       <div v-if="showAnalysis && analysis" class="mt-2 rounded-md bg-ink/4 px-3 py-2.5">
         <p class="font-kai text-[12px] tracking-wider" :class="battle?.result.win ? 'text-jade' : 'text-cinnabar'">
@@ -143,6 +168,7 @@
   import { isNemesis } from '@/core/worldMemory'
   import { playSfx } from '@/core/audio'
   import { enemyDef } from '@/data/enemies'
+  import { enemyLoreView } from '@/ui/enemyLore'
   import type { CombatLogEntry } from '@/types'
   import ProgressBar from '@/components/common/ProgressBar.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -177,6 +203,20 @@
     return def ? enemyTraits(def) : []
   })
 
+  /** 此物所知(Phase 32.5)—— 战前情报由认知层决定,不是白送的 */
+  const lore = computed(() => {
+    const id = battle.value?.enemyId
+    return id ? enemyLoreView(id) : null
+  })
+
+  /**
+   * 认得它,才谈得上"知道它会怎么打"。
+   * 交过一场手即达「眼熟」,所以这道门只挡第一次照面 —— 那一次本就该是未知的。
+   */
+  const foeKnown = computed(() => (lore.value?.stage ?? 0) >= 1)
+
+  const shownTraits = computed(() => (foeKnown.value ? foeTraits.value : []))
+
   /** 宿敌标记:此敌曾败我 ≥3 次且尚未雪耻 */
   const isNemesisFoe = computed(() => {
     const id = battle.value?.enemyId
@@ -186,7 +226,7 @@
   /** 当前构筑对此敌的适配(战力之外的胜负参考) */
   const foeAdaptation = computed(() => {
     const b = battle.value
-    if (!b) return null
+    if (!b || !foeKnown.value) return null
     const build = detectBuild(player.finalStats.mods)
     if (!build) return null
     const eco: RegionEcology = { burst: 0, multi: 0, pierce: 0, dodge: 0 }
@@ -204,6 +244,7 @@
 
   // ---- 战斗分析(第三层信息) ----
   const showAnalysis = ref(false)
+  const showLore = ref(false)
 
   const analysis = computed(() => {
     const b = battle.value

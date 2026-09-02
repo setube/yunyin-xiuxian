@@ -13,7 +13,7 @@ const CATEGORIES = [
   { name: 'Economy     资源经济', match: ['economySim', 'lootSim'] },
   { name: 'Regression  服务与归因', match: ['loadoutService', 'battleAnalysis'] },
   { name: 'Celestial   真仙终局', match: ['celestialSim', 'endgameService', 'phase21'] },
-  { name: 'Decision    决策质量', match: ['decisionAudit', 'synergyScan', 'worldGen', 'ruleUniverse', 'playerLab', 'legacy', 'identity'] }
+  { name: 'Decision    决策质量', match: ['decisionAudit', 'synergyScan', 'worldGen', 'ruleUniverse', 'playerLab', 'legacy', 'identity', 'samsara'] }
 ]
 
 const OUT = '.vitest-report.json'

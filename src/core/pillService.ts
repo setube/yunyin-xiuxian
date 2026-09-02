@@ -13,6 +13,7 @@ import { collect, track } from './progress'
 import { modOf } from './statsCalc'
 import { craftability, knownRecipes } from './craftability'
 import { noteMaterialUsed } from './loreService'
+import { noteTaboo } from './samsaraService'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -62,6 +63,8 @@ export function usePill(id: string): boolean {
     lines.push('药力化开,状态加身')
   }
   track('pillsUsed')
+  // Phase 32.5:「不假外物」之誓在按下这一刻就落空,不必等到转世才被告知
+  noteTaboo('pill')
   collect('pill', id)
   playSfx('success')
   ui.toast(`服下「${def.name}」,${lines.join(',') || '药力温养周身'}`, 'success')

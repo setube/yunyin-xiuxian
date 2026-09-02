@@ -2,14 +2,15 @@
  * 所知服务(Phase 32.3)—— 认知怎么长、技艺怎么长
  *
  * 设计要点:知识不靠点击"学习"按钮获得。
- * 它来自照面(采到过)、来自动手(炼过/砸过)、来自失手(炸过炉)、来自藏经阁的日夜翻检。
- * 因此这里没有一个叫 unlock() 的函数——只有 encounter / note / study。
+ * 它来自照面(采到过)、来自动手(炼过/砸过)、来自失手(炸过炉)、来自交手(打过/被打过)、
+ * 来自藏经阁的日夜翻检。因此这里没有一个叫 unlock() 的函数——只有 encounter / note / study。
  */
 import { rng } from '@/utils/random'
 import { LORE_MAX, materialDef, materialsNearRank, type MaterialBucket, type MaterialDef } from '@/data/materials'
 import { recipeCraft, type SkillId } from '@/data/crafting'
 import { pillDef, PILLS } from '@/data/pills'
-import { useLoreStore } from '@/stores/lore'
+import { enemyDef } from '@/data/enemies'
+import { ENEMY_LORE_MAX, useLoreStore } from '@/stores/lore'
 import { useDongfuStore } from '@/stores/dongfu'
 import { usePlayerStore } from '@/stores/player'
 import { useUiStore } from '@/stores/ui'
@@ -18,6 +19,19 @@ import { useUiStore } from '@/stores/ui'
 export const SEEN_FOR_NATURE = 4
 /** 藏经阁每级每小时推进的丹方掌握度 */
 export const STUDY_MASTERY_PER_HOUR = 0.006
+
+/**
+ * 敌人认知的三道门槛(以「有效交手次数」计)。
+ *
+ * 1 眼熟:打过一次就记得它长什么样、有多硬。
+ * 2 知其路数:交手够多,它惯用哪几招你已经数得出来。
+ * 3 洞悉:连它残血变阵的那一手都在你意料之中。
+ */
+export const ENEMY_LORE_THRESHOLDS = [0, 1, 5, 14] as const
+/** 首领机制繁复,认知门槛加倍 */
+export const ENEMY_LORE_BOSS_MULT = 2
+/** 败在它手里,一次抵得上打赢数次 —— 疼过才记得牢 */
+export const ENEMY_LORE_LOSS_WEIGHT = 3
 
 // ============ 认知检定(纯函数,可独立测试) ============
 
@@ -120,6 +134,34 @@ export function noteMaterialUsed(id: string, succeeded: boolean): void {
     lore.addSkillExp(craftSkillOf(def), 6 + def.rank * 2)
     useUiStore().toast(`已通晓「${def.name}」的用法`, 'rare')
   }
+}
+
+/**
+ * 与一头敌人交手 —— 敌人认知的唯一来源(Phase 32.5)。
+ *
+ * 认知层不给任何属性,它给的是"知道它会怎么打":
+ * 遭遇与战报界面据此逐层揭示元素、招式、残血变阵(见 ui/enemyLore.ts)。
+ * 这份认知随神魂转世不灭 —— 第五世的你确实已经知道哪头妖物残血才发狂。
+ *
+ * @param win 本场是否取胜。败绩加倍计入:被打疼过的敌人记得最牢。
+ * @returns 本次是否推进了认知层
+ */
+export function noteEnemy(enemyId: string, win: boolean): boolean {
+  const def = enemyDef(enemyId)
+  if (!def) return false
+  const lore = useLoreStore()
+  lore.markEnemySeen(enemyId, win ? 1 : ENEMY_LORE_LOSS_WEIGHT)
+
+  const cur = lore.enemyLoreOf(enemyId)
+  if (cur >= ENEMY_LORE_MAX) return false
+  const mult = def.isBoss ? ENEMY_LORE_BOSS_MULT : 1
+  if (lore.enemySeenOf(enemyId) < ENEMY_LORE_THRESHOLDS[cur + 1]! * mult) return false
+  if (!lore.advanceEnemyLore(enemyId, cur + 1)) return false
+
+  const ui = useUiStore()
+  if (cur + 1 >= ENEMY_LORE_MAX) ui.toast(`你已洞悉「${def.name}」的路数`, 'rare')
+  else if (cur + 1 === 2) ui.toast(`你摸清了「${def.name}」惯用的招式`, 'info')
+  return true
 }
 
 /** 研读丹方(典籍、师承、事件都走这里) */

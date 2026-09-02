@@ -11,6 +11,11 @@ import { LORE_MAX } from '@/data/materials'
 import { SKILL_IDS, skillLevelFromExp, type SkillId } from '@/data/crafting'
 import { persistConfig } from '@/utils/storage'
 
+/** 敌人认知层上限:0 未识 / 1 眼熟 / 2 知路数 / 3 洞悉 */
+export const ENEMY_LORE_MAX = 3
+
+export const ENEMY_LORE_STAGE_NAMES = ['未识', '眼熟', '知其路数', '洞悉'] as const
+
 function emptySkillExp(): Record<SkillId, number> {
   return Object.fromEntries(SKILL_IDS.map(id => [id, 0])) as Record<SkillId, number>
 }
@@ -28,6 +33,10 @@ export const useLoreStore = defineStore(
     const blueprintLore = ref<Record<string, number>>({})
     /** 技艺累积经验 */
     const skillExp = ref<Record<SkillId, number>>(emptySkillExp())
+    /** 敌人认知层 0~3(Phase 32.5)—— 交过手才谈得上认识 */
+    const enemyLore = ref<Record<string, number>>({})
+    /** 与某敌交手的次数 */
+    const enemySeen = ref<Record<string, number>>({})
     /** 藏经阁被动钻研的小数累积器 */
     const studyFrac = ref(0)
     /** 入门丹方是否已播种(旧存档首次进入本体系时补发,幂等) */
@@ -35,8 +44,14 @@ export const useLoreStore = defineStore(
 
     /** 已辨识(认知层 ≥1)的灵材数 */
     const knownMaterialCount = computed(() => Object.values(materialLore.value).filter(v => v >= 1).length)
+    /** 已通晓用法(认知层 = 上限)的灵材数 */
+    const masteredMaterialCount = computed(() => Object.values(materialLore.value).filter(v => v >= LORE_MAX).length)
     /** 已知(掌握度 >0)的丹方数 */
     const knownRecipeCount = computed(() => Object.values(recipeLore.value).filter(v => v > 0).length)
+    /** 已通晓(掌握度满)的丹方数 */
+    const masteredRecipeCount = computed(() => Object.values(recipeLore.value).filter(v => v >= 1).length)
+    /** 已洞悉(认知层 = 上限)的敌人种数 */
+    const masteredEnemyCount = computed(() => Object.values(enemyLore.value).filter(v => v >= ENEMY_LORE_MAX).length)
 
     function loreOf(id: string): number {
       return materialLore.value[id] ?? 0
@@ -93,6 +108,27 @@ export const useLoreStore = defineStore(
       skillExp.value = { ...skillExp.value, [id]: expOf(id) + n }
     }
 
+    function enemyLoreOf(id: string): number {
+      return enemyLore.value[id] ?? 0
+    }
+
+    function enemySeenOf(id: string): number {
+      return enemySeen.value[id] ?? 0
+    }
+
+    function markEnemySeen(id: string, n = 1): void {
+      enemySeen.value = { ...enemySeen.value, [id]: enemySeenOf(id) + n }
+    }
+
+    /** 推进敌人认知层;返回是否真的进了一层 */
+    function advanceEnemyLore(id: string, to: number): boolean {
+      const cur = enemyLoreOf(id)
+      const next = Math.min(ENEMY_LORE_MAX, Math.max(cur, Math.floor(to)))
+      if (next <= cur) return false
+      enemyLore.value = { ...enemyLore.value, [id]: next }
+      return true
+    }
+
     /** 存档修复:补齐新增技艺键、夹紧越界值 */
     function sanitize(): void {
       const fixedExp: Record<string, number> = {}
@@ -112,6 +148,9 @@ export const useLoreStore = defineStore(
       materialSeen.value = clampMap(materialSeen.value, 0, Number.MAX_SAFE_INTEGER)
       recipeLore.value = clampMap(recipeLore.value, 0, 1)
       blueprintLore.value = clampMap(blueprintLore.value, 0, 1)
+      // 旧存档没有这两张表,?? {} 保证补齐而非留 undefined
+      enemyLore.value = clampMap(enemyLore.value ?? {}, 0, ENEMY_LORE_MAX)
+      enemySeen.value = clampMap(enemySeen.value ?? {}, 0, Number.MAX_SAFE_INTEGER)
       if (!Number.isFinite(studyFrac.value)) studyFrac.value = 0
     }
 
@@ -121,10 +160,15 @@ export const useLoreStore = defineStore(
       recipeLore,
       blueprintLore,
       skillExp,
+      enemyLore,
+      enemySeen,
       studyFrac,
       seeded,
       knownMaterialCount,
+      masteredMaterialCount,
       knownRecipeCount,
+      masteredRecipeCount,
+      masteredEnemyCount,
       loreOf,
       seenOf,
       markSeen,
@@ -136,6 +180,10 @@ export const useLoreStore = defineStore(
       expOf,
       skillLevel,
       addSkillExp,
+      enemyLoreOf,
+      enemySeenOf,
+      markEnemySeen,
+      advanceEnemyLore,
       sanitize
     }
   },

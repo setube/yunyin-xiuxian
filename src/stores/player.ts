@@ -6,6 +6,7 @@ import { gn, gnMin, gnZero, add, gte, mulN, progress, subClamp } from '@/utils/g
 import { persistConfig } from '@/utils/storage'
 import { realmDef, realmLabel, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
 import { SUB_LEVELS, START_AGE } from '@/data/constants'
+import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
 import { mentorDef } from '@/data/mentors'
@@ -35,7 +36,22 @@ export const usePlayerStore = defineStore(
     const titleId = ref<string | null>(null)
     const petId = ref<string | null>(null)
     const dead = ref(false)
-    const reincarnation = ref({ count: 0, daoFruit: 0, talents: [] as string[] })
+    /**
+     * 轮回(Phase 32.5 重构)。
+     *
+     * count 从此只是历史计数,不再承担成长职责;
+     * insight(宿慧)才是分阶依据,lives 是历世履历,vow 是这一世立下的题。
+     * 注意 insight 只存「过去发生过的事」(历世阅历 + 已达成的命题);
+     * 由认知折算的那一份是现量,每次从 lore store 实时算(见 core/samsaraService.ts)。
+     */
+    const reincarnation = ref({
+      count: 0,
+      daoFruit: 0,
+      talents: [] as string[],
+      insight: 0,
+      lives: [] as import('@/data/samsara').LifeRecord[],
+      vow: null as import('@/data/samsara').LifeVow | null
+    })
 
     // Phase 28 前期玩法状态
     const eventChains = ref<Record<string, number>>({}) // 奇遇连锁进度
@@ -197,6 +213,29 @@ export const usePlayerStore = defineStore(
       reincarnation.value = { ...reincarnation.value, daoFruit: reincarnation.value.daoFruit + n }
     }
 
+    /** 记入宿慧(历世阅历与达成的命题都走这里) */
+    function addInsight(n: number): void {
+      if (!(n > 0)) return
+      reincarnation.value = { ...reincarnation.value, insight: reincarnation.value.insight + n }
+    }
+
+    /** 立下这一世的题(null 为不立题) */
+    function setVow(vow: import('@/data/samsara').LifeVow | null): void {
+      reincarnation.value = { ...reincarnation.value, vow }
+    }
+
+    /** 破题:犯了忌讳。不扣任何东西,只是这一世的话没说到底 */
+    function breakVow(): void {
+      const cur = reincarnation.value.vow
+      if (!cur || cur.broken) return
+      reincarnation.value = { ...reincarnation.value, vow: { ...cur, broken: true } }
+    }
+
+    /** 归档一世履历 */
+    function recordLife(rec: import('@/data/samsara').LifeRecord): void {
+      reincarnation.value = { ...reincarnation.value, lives: [...reincarnation.value.lives, rec] }
+    }
+
     function markDead(): void {
       dead.value = true
     }
@@ -219,6 +258,17 @@ export const usePlayerStore = defineStore(
       if (!Number.isFinite(age.value)) age.value = START_AGE
       if (!Number.isFinite(major.value) || major.value < 0) major.value = 0
       if (!Number.isFinite(sub.value) || sub.value < 0) sub.value = 0
+      // Phase 32.5:旧存档没有宿慧/履历/命题三项,按转世次数折算补齐,不让老玩家凭空掉档
+      const r = reincarnation.value
+      const count = Number.isFinite(r?.count) ? Math.max(0, r.count) : 0
+      reincarnation.value = {
+        count,
+        daoFruit: Number.isFinite(r?.daoFruit) ? Math.max(0, r.daoFruit) : 0,
+        talents: Array.isArray(r?.talents) ? r.talents : [],
+        insight: Number.isFinite(r?.insight) ? Math.max(0, r.insight) : legacyInsightOf(count),
+        lives: Array.isArray(r?.lives) ? r.lives : [],
+        vow: r?.vow ?? null
+      }
     }
 
     // Phase 28 前期玩法动作
@@ -378,6 +428,10 @@ export const usePlayerStore = defineStore(
       setPet,
       addTalent,
       addDaoFruit,
+      addInsight,
+      setVow,
+      breakVow,
+      recordLife,
       markDead,
       rebirth,
       sanitize,
