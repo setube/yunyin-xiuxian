@@ -52,6 +52,11 @@
 
   /* 明暗通用阴影色(暗色主题下重定义) */
   --shadow-ink: rgb(41 39 34);
+  /* Chrome 91 兼容:color-mix() 需要 Chrome 111+,改用通道值变量
+     --shadow-ink-rgb 供 rgb(var(--shadow-ink-rgb) / alpha) 用
+     --color-paper-lifted-rgb 预计算 paper 92% + white 8% */
+  --shadow-ink-rgb: 41 39 34;
+  --color-paper-lifted-rgb: 244 240 230;
 }
 
 @keyframes rise-in {
@@ -259,7 +264,7 @@
   }
   25% {
     box-shadow: 0 0 18px 3px rgb(156 122 60 / 0.42);
-    border-color: color-mix(in srgb, var(--color-gold-ink) 55%, transparent);
+    border-color: rgb(var(--color-gold-ink-rgb) / 0.55);
   }
   100% {
     box-shadow:
@@ -366,10 +371,13 @@ html[data-theme='dark'] {
   --color-violet-ink-rgb: 169 143 211;
   --color-amber-ink-rgb: 207 154 69;
   --shadow-ink: rgb(8 7 5);
+  --shadow-ink-rgb: 8 7 5;
+  /* 暗色 paper 92% + white 8% 预计算 */
+  --color-paper-lifted-rgb: 51 49 46;
 }
 
 #app {
-  height: 100dvh;
+  height: 100vh;
 }
 
 /* 宣纸颗粒 */
@@ -386,12 +394,12 @@ html[data-theme='dark'] {
 /* ================= 组件层 ================= */
 .card-ink {
   position: relative;
-  background: color-mix(in srgb, var(--color-paper) 92%, white 8%);
-  border: 1px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
+  background: rgb(var(--color-paper-lifted-rgb));
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.14);
   border-radius: 10px;
   box-shadow:
-    0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent),
-    0 4px 14px color-mix(in srgb, var(--shadow-ink) 5%, transparent);
+    0 1px 2px rgb(var(--shadow-ink-rgb) / 0.06),
+    0 4px 14px rgb(var(--shadow-ink-rgb) / 0.05);
 }
 
 .btn-seal {
@@ -430,7 +438,7 @@ html[data-theme='dark'] {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border: 1px solid color-mix(in srgb, var(--color-ink) 30%, transparent);
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.30);
   color: var(--color-ink-soft);
   font-family: var(--font-kai);
   border-radius: 8px;
@@ -444,7 +452,7 @@ html[data-theme='dark'] {
 
 .btn-ghost:active:not(:disabled) {
   transform: scale(0.96);
-  background: color-mix(in srgb, var(--shadow-ink) 6%, transparent);
+  background: rgb(var(--shadow-ink-rgb) / 0.06);
 }
 
 .btn-ghost:disabled {
@@ -465,11 +473,11 @@ html[data-theme='dark'] {
 
 .ink-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--shadow-ink) 22%, transparent), transparent);
+  background: linear-gradient(90deg, transparent, rgb(var(--shadow-ink-rgb) / 0.22), transparent);
 }
 
 .track-ink {
-  background: color-mix(in srgb, var(--shadow-ink) 10%, transparent);
+  background: rgb(var(--shadow-ink-rgb) / 0.10);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -646,13 +654,13 @@ html[data-theme='dark'] {
   margin-top: -65vmin;
   border-radius: 999px;
   pointer-events: none;
-  background: radial-gradient(circle, transparent 30%, rgb(168 63 57 / 0.28) 46%, color-mix(in srgb, var(--shadow-ink) 22%, transparent) 60%, transparent 72%);
+  background: radial-gradient(circle, transparent 30%, rgb(168 63 57 / 0.28) 46%, rgb(var(--shadow-ink-rgb) / 0.22) 60%, transparent 72%);
   animation: ink-wave 1.15s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 
 /* 修为圆满:境界卡蓄势微光呼吸(保留卡片底影) */
 .card-charged {
-  border-color: color-mix(in srgb, var(--color-cinnabar) 38%, transparent);
+  border-color: rgb(var(--color-cinnabar-rgb) / 0.38);
   animation: card-glow 2.6s ease-in-out infinite;
 }
 
@@ -735,7 +743,7 @@ html[data-theme='dark'] {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--shadow-ink) 18%, transparent);
+  background: rgb(var(--shadow-ink-rgb) / 0.18);
   border-radius: 2px;
 }
 

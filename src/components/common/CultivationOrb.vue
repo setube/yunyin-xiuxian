@@ -99,8 +99,8 @@
     border-radius: 50%;
     background: radial-gradient(
       circle,
-      color-mix(in srgb, var(--color-gold-ink) 80%, transparent) 0%,
-      color-mix(in srgb, var(--color-cinnabar) 50%, transparent) 60%,
+      rgb(var(--color-gold-ink-rgb) / 0.80) 0%,
+      rgb(var(--color-cinnabar-rgb) / 0.50) 60%,
       transparent 100%
     );
     left: 50%;
@@ -153,19 +153,19 @@
 
   .ring-a {
     inset: 10px;
-    border-color: color-mix(in srgb, var(--color-gold-ink) 40%, transparent);
+    border-color: rgb(var(--color-gold-ink-rgb) / 0.40);
     animation: rot-cw 20s linear infinite;
   }
 
   .ring-b {
     inset: 2px;
-    border-color: color-mix(in srgb, var(--color-jade) 30%, transparent);
+    border-color: rgb(var(--color-jade-rgb) / 0.30);
     animation: rot-ccw 25s linear infinite;
   }
 
   .ring-c {
     inset: -8px;
-    border-color: color-mix(in srgb, var(--color-violet-ink) 20%, transparent);
+    border-color: rgb(var(--color-violet-ink-rgb) / 0.20);
     animation: rot-cw 30s linear infinite;
   }
 
@@ -201,14 +201,14 @@
     border-radius: 50%;
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--color-jade) 30%, transparent) 0%,
-      color-mix(in srgb, var(--color-ink) 40%, transparent) 100%
+      rgb(var(--color-jade-rgb) / 0.30) 0%,
+      rgb(var(--color-ink-rgb) / 0.40) 100%
     );
-    border: 2px solid color-mix(in srgb, var(--color-gold-ink) 40%, transparent);
+    border: 2px solid rgb(var(--color-gold-ink-rgb) / 0.40);
     box-shadow:
-      inset 0 0 22px color-mix(in srgb, var(--color-ink) 50%, transparent),
-      inset 0 0 10px color-mix(in srgb, var(--color-gold-ink) 10%, transparent),
-      0 0 16px color-mix(in srgb, var(--color-jade) 20%, transparent);
+      inset 0 0 22px rgb(var(--color-ink-rgb) / 0.50),
+      inset 0 0 10px rgb(var(--color-gold-ink-rgb) / 0.10),
+      0 0 16px rgb(var(--color-jade-rgb) / 0.20);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -219,7 +219,7 @@
   }
 
   .orb-body.pulsing {
-    border-color: color-mix(in srgb, var(--color-gold-ink) 65%, transparent);
+    border-color: rgb(var(--color-gold-ink-rgb) / 0.65);
     animation: orb-pulse 2s ease-in-out infinite;
   }
 
@@ -227,13 +227,13 @@
     0%,
     100% {
       box-shadow:
-        inset 0 0 22px color-mix(in srgb, var(--color-ink) 50%, transparent),
-        0 0 20px color-mix(in srgb, var(--color-gold-ink) 30%, transparent);
+        inset 0 0 22px rgb(var(--color-ink-rgb) / 0.50),
+        0 0 20px rgb(var(--color-gold-ink-rgb) / 0.30);
     }
     50% {
       box-shadow:
-        inset 0 0 22px color-mix(in srgb, var(--color-ink) 30%, transparent),
-        0 0 36px color-mix(in srgb, var(--color-gold-ink) 55%, transparent);
+        inset 0 0 22px rgb(var(--color-ink-rgb) / 0.30),
+        0 0 36px rgb(var(--color-gold-ink-rgb) / 0.55);
     }
   }
 
@@ -248,7 +248,7 @@
     position: absolute;
     width: 3px;
     height: 3px;
-    background: color-mix(in srgb, var(--color-gold-ink) 80%, transparent);
+    background: rgb(var(--color-gold-ink-rgb) / 0.80);
     border-radius: 50%;
     left: 50%;
     top: 50%;
@@ -283,7 +283,7 @@
     z-index: 3;
     font-size: 1.5rem;
     color: var(--color-gold-ink);
-    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-gold-ink) 55%, transparent));
+    filter: drop-shadow(0 0 6px rgb(var(--color-gold-ink-rgb) / 0.55));
     animation: icon-float 3s ease-in-out infinite;
   }
 
@@ -308,7 +308,7 @@
 
   .prog-bg {
     fill: none;
-    stroke: color-mix(in srgb, var(--color-jade) 20%, transparent);
+    stroke: rgb(var(--color-jade-rgb) / 0.20);
     stroke-width: 4;
   }
 
@@ -319,22 +319,22 @@
     stroke-linecap: round;
     stroke-dasharray: 339.292;
     transition: stroke-dashoffset 0.5s ease;
-    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--color-jade) 40%, transparent));
+    filter: drop-shadow(0 0 3px rgb(var(--color-jade-rgb) / 0.40));
   }
 
   .prog-bar.full {
     stroke: var(--color-gold-ink);
     animation: ring-glow 2s ease-in-out infinite;
-    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--color-gold-ink) 65%, transparent));
+    filter: drop-shadow(0 0 7px rgb(var(--color-gold-ink-rgb) / 0.65));
   }
 
   @keyframes ring-glow {
     0%,
     100% {
-      filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-gold-ink) 40%, transparent));
+      filter: drop-shadow(0 0 4px rgb(var(--color-gold-ink-rgb) / 0.40));
     }
     50% {
-      filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-gold-ink) 80%, transparent));
+      filter: drop-shadow(0 0 12px rgb(var(--color-gold-ink-rgb) / 0.80));
     }
   }
 
@@ -350,14 +350,14 @@
     left: 50%;
     top: 50%;
     font-size: 10px;
-    color: color-mix(in srgb, var(--color-gold-ink) 28%, transparent);
+    color: rgb(var(--color-gold-ink-rgb) / 0.28);
     transform: translate(-50%, -50%) rotate(var(--ang)) translateY(-72px) rotate(calc(-1 * var(--ang)));
     transition: color 0.3s ease;
   }
 
   .bagua-wrap .bagua-sym {
-    color: color-mix(in srgb, var(--color-gold-ink) 65%, transparent);
-    text-shadow: 0 0 8px color-mix(in srgb, var(--color-gold-ink) 50%, transparent);
+    color: rgb(var(--color-gold-ink-rgb) / 0.65);
+    text-shadow: 0 0 8px rgb(var(--color-gold-ink-rgb) / 0.50);
   }
 
   /* 突破就绪:额外缩放呼吸 */

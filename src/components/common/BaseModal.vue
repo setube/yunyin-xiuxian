@@ -8,7 +8,7 @@
         @click.self="onBackdrop"
       >
         <div
-          class="modal-panel paper-grain relative w-full max-h-[82dvh] flex flex-col overflow-hidden rounded-xl border border-ink/20 bg-paper shadow-2xl"
+          class="modal-panel paper-grain relative w-full max-h-[82vh] flex flex-col overflow-hidden rounded-xl border border-ink/20 bg-paper shadow-2xl"
           :class="props.wide ? 'max-w-100' : 'max-w-90'"
         >
           <!-- 卷轴上缘 -->

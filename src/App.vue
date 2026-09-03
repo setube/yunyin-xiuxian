@@ -1,7 +1,7 @@
 <template>
   <!-- 桌面端外框:居中手机区域 -->
   <div
-    class="mx-auto flex h-dvh max-w-107.5 flex-col overflow-hidden bg-paper shadow-[0_0_60px_rgba(0,0,0,0.45)] relative paper-grain"
+    class="mx-auto flex h-screen max-w-107.5 flex-col overflow-hidden bg-paper shadow-[0_0_60px_rgba(0,0,0,0.45)] relative paper-grain"
     :class="{ 'reduce-motion': settings.reduceMotion }"
   >
     <!-- 云雾装饰 -->
