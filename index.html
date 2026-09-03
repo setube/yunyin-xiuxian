@@ -13,33 +13,8 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="云隐修仙录 — 一念修行 · 云深不知处" />
     <meta property="og:description" content="文字版修仙放置游戏" />
-    <!-- 必须显式声明且用相对路径:浏览器隐式请求的 /favicon.ico 永远打站点根,不受 vite base:'./' 影响,
-         在 Electron(file://)与 GitHub Pages 子路径下都会 404 -->
     <link rel="icon" href="./favicon.ico" />
     <title>云隐修仙录</title>
-    <style>
-      html,
-      body {
-        background: linear-gradient(160deg, #34312a, #4a463d 45%, #2d2b25);
-        margin: 0;
-      }
-
-      #app:empty {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        color: #8b949e;
-        font-family:
-          system-ui,
-          -apple-system,
-          sans-serif;
-      }
-
-      #app:empty::after {
-        content: '游戏加载中...';
-      }
-    </style>
   </head>
 
   <body>
