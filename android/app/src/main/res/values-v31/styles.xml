@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- 启动主题(Android 12+)
+       12 起系统启动画面由平台强制接管,无法真正关掉,只能让它「看不出来」:
+       图标换成全透明 drawable(不显示任何图案),背景取 #0d1117——
+       与 activity_main 加载层同色,于是整个启动过程只是一块纯色,
+       观感上等同于没有启动画面。
+       postSplashScreenTheme 指定 splash 结束后切回的正常主题 -->
   <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
     <item name="android:windowSplashScreenBackground">#0d1117</item>
     <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_transparent</item>
+    <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
   </style>
 </resources>
