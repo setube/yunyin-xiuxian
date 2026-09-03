@@ -1,7 +1,7 @@
 <template>
   <header
     class="relative z-20 flex shrink-0 items-center justify-between border-b border-ink/10 bg-paper-deep/90 px-4 py-2 backdrop-blur"
-    style="padding-top: max(env(safe-area-inset-top), 8px)"
+    :style="`padding-top: max(env(safe-area-inset-top), ${Capacitor.isNativePlatform() ? `16px` : `8px`})`"
   >
     <div class="flex items-center gap-2 min-w-0">
       <div class="min-w-0 leading-tight">
@@ -29,6 +29,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
   import { formatGN, formatNum } from '@/utils/format'
+  import { Capacitor } from '@capacitor/core'
   import GameIcon from './GameIcon.vue'
 
   const player = usePlayerStore()
