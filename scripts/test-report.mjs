@@ -21,7 +21,7 @@ const CATEGORIES = [
     name: 'Balance     流派与生态',
     match: ['buildSim', 'buildSearch', 'buildDetect', 'buildAdvisor', 'equipSet', 'gongfaBranch', 'softCapAudit', 'linggenAffinity', 'linggenRole']
   },
-  { name: 'Progression 成长曲线', match: ['progressionSim', 'breakthrough'] },
+  { name: 'Progression 成长曲线', match: ['progressionSim', 'breakthrough', 'inflationAudit'] },
   { name: 'Economy     资源经济', match: ['economySim', 'lootSim', 'pillValue', 'veinEconomyAudit', 'resourceGuidance'] },
   {
     name: 'Regression  服务与归因',
