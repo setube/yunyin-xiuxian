@@ -78,7 +78,7 @@
             {{ lo.seal }}
           </span>
           <span class="min-w-0 grow truncate font-kai text-[12px] text-ink">{{ lo.name }}</span>
-          <button class="btn-ghost px-2.5! py-1! text-[11px]!" @click="applyLoadout(lo.id)">换装</button>
+          <button class="btn-ghost !px-2.5 !py-1 !text-[11px]" @click="applyLoadout(lo.id)">换装</button>
           <button class="p-1 text-ink-ghost active:text-cinnabar" @click="deleteLoadout(lo.id)">
             <GameIcon name="trash" :size="12" />
           </button>

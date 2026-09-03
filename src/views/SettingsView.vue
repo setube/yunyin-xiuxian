@@ -66,12 +66,12 @@
       <p class="text-[11px] text-ink-faint tabular">存档版本 v{{ SAVE_VERSION }} · 修行时长 {{ formatDuration(game.totalPlaySec) }}</p>
       <template v-if="!Capacitor.isNativePlatform()">
         <div class="grid grid-cols-2 gap-2">
-          <button class="btn-ghost text-[12px]!" @click="downloadSave()">导出存档</button>
-          <button class="btn-ghost text-[12px]!" @click="triggerImport">导入存档</button>
+          <button class="btn-ghost !text-[12px]" @click="downloadSave()">导出存档</button>
+          <button class="btn-ghost !text-[12px]" @click="triggerImport">导入存档</button>
           <input ref="fileInput" type="file" accept="application/json,.save" class="hidden" @change="onFilePicked" />
         </div>
       </template>
-      <button class="btn-ghost w-full border-cinnabar/40! text-[12px]! text-cinnabar!" @click="openReset">
+      <button class="btn-ghost w-full !border-cinnabar/40 !text-[12px] !text-cinnabar" @click="openReset">
         散尽修为,重入轮回(清空存档)
       </button>
     </div>
@@ -105,7 +105,7 @@
       <template #footer>
         <div class="flex gap-2">
           <button class="btn-ghost flex-1" @click="closeReset">再想想</button>
-          <button class="btn-seal flex-1 bg-cinnabar-deep!" @click="confirmReset">道心已决</button>
+          <button class="btn-seal flex-1 !bg-cinnabar-deep" @click="confirmReset">道心已决</button>
         </div>
       </template>
     </BaseModal>

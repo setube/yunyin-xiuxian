@@ -13,7 +13,7 @@
     <div class="space-y-2">
       <div v-for="v in VEINS" :key="v.id" class="flex items-center gap-2">
         <button
-          class="btn-ghost flex-1 justify-between py-1.5! text-[12px]!"
+          class="btn-ghost flex-1 justify-between !py-1.5 !text-[12px]"
           :disabled="!canInvest(v.id)"
           @click="doInvest(v.id)"
         >

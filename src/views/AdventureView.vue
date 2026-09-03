@@ -22,8 +22,8 @@
           </p>
           <p v-if="realmState" class="mt-1 text-[10px] text-azure">规则:{{ realmState.rules.join(' · ') }}</p>
         </div>
-        <button v-if="!realmState" class="btn-seal shrink-0 px-3! py-1.5! text-[12px]!" @click="enterRealm()">探 秘</button>
-        <button v-else class="btn-ghost shrink-0 px-3! py-1.5! text-[12px]!" @click="abandonRealm()">离 开</button>
+        <button v-if="!realmState" class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="enterRealm()">探 秘</button>
+        <button v-else class="btn-ghost shrink-0 !px-3 !py-1.5 !text-[12px]" @click="abandonRealm()">离 开</button>
       </div>
 
       <SectionTitle title="历练" hint="行万里路,炼一颗心" />
@@ -32,7 +32,7 @@
           v-for="row in visibleRows"
           :key="row.def.id"
           class="card-ink px-4 py-3"
-          :class="{ 'opacity-70': !row.unlocked, 'border-gold-ink/30! bg-gold-ink/5': row.suppressed }"
+          :class="{ 'opacity-70': !row.unlocked, '!border-gold-ink/30 bg-gold-ink/5': row.suppressed }"
         >
           <div class="flex items-center gap-3">
             <span
@@ -62,7 +62,7 @@
                 <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界尚浅,恐有性命之忧</span>
               </p>
             </div>
-            <button v-if="row.unlocked && (!row.suppressed || row.revived)" class="btn-seal shrink-0 px-4! py-2! text-[13px]!" @click="chooseMode(row.def)">出发</button>
+            <button v-if="row.unlocked && (!row.suppressed || row.revived)" class="btn-seal shrink-0 !px-4 !py-2 !text-[13px]" @click="chooseMode(row.def)">出发</button>
             <div v-else-if="row.suppressed" class="shrink-0 text-right">
               <span class="block text-[11px] text-gold-ink">
                 自动产出中 · {{ rateText(row.def) }}/时
@@ -83,7 +83,7 @@
             <span
               v-for="chip in row.chips"
               :key="chip.trait"
-              class="chip-ink text-[10px]!"
+              class="chip-ink !text-[10px]"
               :class="chip.level >= 3 ? 'border-cinnabar/50 text-cinnabar' : 'border-ink/25 text-ink-faint'"
             >
               {{ chip.name }}·{{ ECO_LEVEL_NAMES[chip.level] }}

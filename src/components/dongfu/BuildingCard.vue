@@ -12,7 +12,7 @@
     <p class="mt-2 grow text-[11px] leading-relaxed text-ink-faint">
       {{ level > 0 ? props.def.effectText(level) : props.def.desc }}
     </p>
-    <button class="btn-ghost mt-2 w-full py-1.5! text-[12px]!" :disabled="!info.canUpgrade" @click="upgradeBuilding(props.def.id)">
+    <button class="btn-ghost mt-2 w-full !py-1.5 !text-[12px]" :disabled="!info.canUpgrade" @click="upgradeBuilding(props.def.id)">
       <template v-if="info.canUpgrade">{{ level > 0 ? '升级' : '建造' }} · {{ formatGN(info.stone) }}石 {{ info.ore }}铁</template>
       <template v-else>{{ info.reason }}</template>
     </button>

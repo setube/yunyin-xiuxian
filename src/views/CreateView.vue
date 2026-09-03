@@ -16,7 +16,7 @@
           class="w-full rounded-md border border-ink/20 bg-paper-deep/60 px-3 py-2 font-kai text-[15px] tracking-widest text-ink outline-none focus:border-cinnabar/50"
           placeholder="取一个道号"
         />
-        <button class="btn-ghost shrink-0 px-3!" @click="randomName">
+        <button class="btn-ghost shrink-0 !px-3" @click="randomName">
           <GameIcon name="refresh" :size="15" />
         </button>
       </div>
@@ -54,7 +54,7 @@
     </div>
 
     <div class="grow" />
-    <button class="btn-seal mt-8 w-full py-3! text-[16px]" @click="begin">踏 入 仙 途</button>
+    <button class="btn-seal mt-8 w-full !py-3 text-[16px]" @click="begin">踏 入 仙 途</button>
 
     <!-- 灵根鉴定动画(踏入仙途后播放) -->
     <SpiritRootReveal ref="revealRef" />

@@ -76,7 +76,7 @@
         <template v-else-if="btInfo.isMajor">· 大境界之槛</template>
       </p>
       <button
-        class="btn-seal mt-3 w-full py-3!"
+        class="btn-seal mt-3 w-full !py-3"
         :class="{ 'animate-glow-pulse pulse-ready': btInfo.ready }"
         :disabled="!btInfo.ready"
         @click="attemptBreakthrough()"

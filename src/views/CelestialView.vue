@@ -73,20 +73,20 @@
           <div class="card-ink mt-2 divide-y divide-ink/7 px-4">
             <div v-for="row in furnaceRows" :key="row.rate.resource" class="flex items-center justify-between py-2.5">
               <span class="text-[12px] text-ink-soft">{{ row.rate.name }}(存 {{ formatNum(row.have) }})</span>
-              <button class="btn-ghost px-3! py-1! text-[11px]! tabular" @click="furnaceConvert(row.rate)">
+              <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="furnaceConvert(row.rate)">
                 {{ row.rate.per }} → 1 道源
               </button>
             </div>
             <div class="flex items-center justify-between py-2.5">
               <span class="text-[12px] text-ink-soft">灵石(存 {{ formatGN(resources.spiritStone) }})</span>
-              <button class="btn-ghost px-3! py-1! text-[11px]! tabular" @click="furnaceConvertStone()">
+              <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="furnaceConvertStone()">
                 {{ formatGN(furnaceStoneCost()) }} → 5 道源
               </button>
             </div>
             <div class="py-2.5">
               <div class="flex items-center justify-between">
                 <span class="text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
-                <button class="btn-ghost px-3! py-1! text-[11px]! tabular" @click="condenseDaoFruit()">
+                <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="condenseDaoFruit()">
                   {{ DAO_SOURCE_PER_FRUIT }} 道源 → 道果 +1
                 </button>
               </div>
@@ -161,11 +161,11 @@
               <p v-if="guardianPreview" class="mb-1.5 text-[10px] text-violet-ink">
                 天机:{{ guardianPreview.winText }} · {{ guardianPreview.skillLines.join(' / ') }}
               </p>
-              <button class="btn-seal w-full py-2! text-[13px]! pulse-ready animate-glow-pulse" @click="fightBoss">
+              <button class="btn-seal w-full !py-2 !text-[13px] pulse-ready animate-glow-pulse" @click="fightBoss">
                 决战 · {{ runWorld.guardian.name }}
               </button>
             </template>
-            <button class="btn-ghost mt-2 w-full py-1.5! text-[11px]! text-ink-faint!" @click="abandonRun">中道而返(道源不退)</button>
+            <button class="btn-ghost mt-2 w-full !py-1.5 !text-[11px] !text-ink-faint" @click="abandonRun">中道而返(道源不退)</button>
           </div>
         </section>
 
@@ -188,7 +188,7 @@
               <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
                 <span v-for="(r, i) in world.ruleText" :key="i">{{ r }}</span>
               </p>
-              <button class="btn-seal mt-2.5 w-full py-2! text-[13px]!" :disabled="run !== null" @click="openPrep(world.id)">
+              <button class="btn-seal mt-2.5 w-full !py-2 !text-[13px]" :disabled="run !== null" @click="openPrep(world.id)">
                 {{ run ? '远征在途' : `启 程(道源 ${world.entryCost} · 破界底赏 ${world.rewardDaoSource})` }}
               </button>
             </div>
@@ -216,17 +216,17 @@
                   盘踞:{{ endgame.voidWorld.foes.map(f => f.name).join('、') }} · 界主「{{ endgame.voidWorld.guardian.name }}」
                 </p>
                 <div class="mt-2.5 flex gap-2">
-                  <button class="btn-seal flex-1 py-2! text-[13px]!" :disabled="run !== null" @click="openPrep('void')">
+                  <button class="btn-seal flex-1 !py-2 !text-[13px]" :disabled="run !== null" @click="openPrep('void')">
                     {{ run ? '远征在途' : `启 程(破界底赏 ${endgame.voidWorld.rewardDaoSource})` }}
                   </button>
-                  <button class="btn-ghost px-3! text-[12px]!" @click="rerollVoidWorld()">再窥({{ VOID_REROLL_COST }})</button>
+                  <button class="btn-ghost !px-3 !text-[12px]" @click="rerollVoidWorld()">再窥({{ VOID_REROLL_COST }})</button>
                 </div>
               </template>
               <template v-else>
                 <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">
                   天道以变数织界:随机规则、随机敌阵、随机路线,经天机推演过审方能成形——每一座虚界都独一无二。
                 </p>
-                <button class="btn-ghost mt-2.5 w-full py-2! text-[12px]!" @click="rerollVoidWorld()">
+                <button class="btn-ghost mt-2.5 w-full !py-2 !text-[12px]" @click="rerollVoidWorld()">
                   窥探虚界(道源 {{ VOID_REROLL_COST }})
                 </button>
               </template>
@@ -249,7 +249,7 @@
               <span v-for="m in dailyMutators" :key="m!.id">◇ {{ m!.name }}:{{ m!.text }}</span>
               <span v-if="dailyPact" class="text-cinnabar">契·{{ dailyPact.name }}</span>
             </p>
-            <button class="btn-seal mt-2 w-full py-1.5! text-[12px]!" :disabled="endgame.dailyDoneDay === daily.day" @click="goDaily">
+            <button class="btn-seal mt-2 w-full !py-1.5 !text-[12px]" :disabled="endgame.dailyDoneDay === daily.day" @click="goDaily">
               {{ endgame.dailyDoneDay === daily.day ? '今日已成,明日再会' : `应 战(道源 ${CHALLENGE_ENTRY_COST})` }}
             </button>
           </div>
@@ -262,15 +262,15 @@
             <template v-if="mutationDraw.length">
               <p v-for="m in mutationRows" :key="m!.id" class="text-[11px] text-violet-ink">◇ {{ m!.name }}:{{ m!.text }}</p>
               <div class="mt-2 flex gap-2">
-                <button class="btn-seal flex-1 py-2! text-[12px]!" @click="goMutation">
+                <button class="btn-seal flex-1 !py-2 !text-[12px]" @click="goMutation">
                   应 战(道源 {{ MUTATION_ENTRY_COST }} · 破解得 {{ MUTATION_BASE_REWARD }})
                 </button>
-                <button class="btn-ghost px-3! text-[12px]!" @click="mutationDraw = rollMutators()">再探</button>
+                <button class="btn-ghost !px-3 !text-[12px]" @click="mutationDraw = rollMutators()">再探</button>
               </div>
             </template>
             <template v-else>
               <p class="text-[11px] leading-relaxed text-ink-faint">天道无常,规则无定。窥探本次变数,再决定是否应战——六连战,规则叠加。</p>
-              <button class="btn-ghost mt-2 w-full py-2! text-[12px]!" @click="mutationDraw = rollMutators()">窥探变数</button>
+              <button class="btn-ghost mt-2 w-full !py-2 !text-[12px]" @click="mutationDraw = rollMutators()">窥探变数</button>
             </template>
           </div>
         </section>
@@ -293,7 +293,7 @@
               <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
                 <span v-for="(r, i) in trial.ruleText" :key="i">{{ r }}</span>
               </p>
-              <button class="btn-ghost mt-2.5 w-full py-2! text-[13px]!" @click="goTrial(trial.id)">
+              <button class="btn-ghost mt-2.5 w-full !py-2 !text-[13px]" @click="goTrial(trial.id)">
                 应 试(道源 {{ trial.entryCost }} · 功成得 {{ trial.rewardDaoSource }})
               </button>
             </div>
@@ -365,8 +365,8 @@
               <p v-else class="text-[11px] text-cinnabar">{{ challengeVerdict.reason }}</p>
             </div>
             <div class="mt-2 flex gap-2">
-              <button class="btn-ghost flex-1 py-1.5! text-[12px]!" @click="doVerify">验 约</button>
-              <button class="btn-seal flex-1 py-1.5! text-[12px]!" :disabled="!challengeVerdict?.ok || run !== null" @click="doUndertake">
+              <button class="btn-ghost flex-1 !py-1.5 !text-[12px]" @click="doVerify">验 约</button>
+              <button class="btn-seal flex-1 !py-1.5 !text-[12px]" :disabled="!challengeVerdict?.ok || run !== null" @click="doUndertake">
                 立 约(道源 {{ CHALLENGE_ENTRY_COST }})
               </button>
             </div>

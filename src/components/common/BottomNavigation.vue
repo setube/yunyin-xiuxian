@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="relative z-20 shrink-0 border-t border-ink/15 bg-paper-deep/95 backdrop-blur-sm"
+    class="relative z-20 shrink-0 border-t border-ink/15 bg-paper-deep/95 backdrop-blur"
     style="padding-bottom: env(safe-area-inset-bottom)"
   >
     <div class="ink-divider absolute -top-px inset-x-0" />

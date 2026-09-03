@@ -68,7 +68,7 @@
             </p>
             <p class="truncate text-[11px] text-ink-faint">{{ row.def!.desc }}</p>
           </div>
-          <button class="btn-ghost shrink-0 px-3! py-1.5! text-[12px]!" @click="usePill(row.def!.id)">服用</button>
+          <button class="btn-ghost shrink-0 !px-3 !py-1.5 !text-[12px]" @click="usePill(row.def!.id)">服用</button>
         </div>
       </div>
       <p v-else class="mt-10 text-center text-[12px] text-ink-ghost">丹匣空空</p>
@@ -90,7 +90,7 @@
               <p class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</p>
               <p class="text-[10px] text-ink-ghost">成丹把握</p>
             </div>
-            <button class="btn-seal shrink-0 px-3! py-1.5! text-[12px]!" @click="craftPill(r.def.id)">炼制</button>
+            <button class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
           </div>
           <p v-for="w in r.able.weakness" :key="w" class="mt-1 pl-7 text-[10px] text-ink-ghost">· {{ w }}</p>
         </div>
@@ -139,13 +139,13 @@
           <p class="mt-1 text-[11px] text-violet-ink">神通「{{ row.def.active.name }}」:{{ row.def.active.desc }}</p>
           <div class="mt-2.5 flex gap-2">
             <button
-              class="btn-seal flex-1 py-1.5! text-[12px]!"
-              :class="{ 'bg-ink-faint!': row.equipped }"
+              class="btn-seal flex-1 !py-1.5 !text-[12px]"
+              :class="{ '!bg-ink-faint': row.equipped }"
               @click="toggleArtifact(row.def.id)"
             >
               {{ row.equipped ? '收回法宝' : '祭炼随身' }}
             </button>
-            <button v-if="row.upCost" class="btn-ghost flex-1 py-1.5! text-[12px]! tabular" @click="upgradeArtifact(row.def.id)">
+            <button v-if="row.upCost" class="btn-ghost flex-1 !py-1.5 !text-[12px] tabular" @click="upgradeArtifact(row.def.id)">
               炼化(悟道{{ row.upCost.wudao }})
             </button>
           </div>
@@ -178,8 +178,8 @@
               {{ qualityDef(row.item.quality).name }} · {{ row.item.tier }} 阶 · {{ row.item.affixes.length }} 词条
             </span>
           </button>
-          <button v-if="row.equipped" class="btn-ghost shrink-0 px-2.5! py-1! text-[11px]!" @click="unequipSlot()">卸下</button>
-          <button v-else class="btn-seal shrink-0 px-2.5! py-1! text-[11px]!" @click="equipItem(row.item.uid)">换上</button>
+          <button v-if="row.equipped" class="btn-ghost shrink-0 !px-2.5 !py-1 !text-[11px]" @click="unequipSlot()">卸下</button>
+          <button v-else class="btn-seal shrink-0 !px-2.5 !py-1 !text-[11px]" @click="equipItem(row.item.uid)">换上</button>
         </div>
       </div>
       <p v-else class="py-8 text-center text-[12px] text-ink-ghost">此部位尚无藏品,去历练中寻些机缘吧</p>
@@ -245,7 +245,7 @@
         <input v-model="settings.smartKeep.keepComboPiece" type="checkbox" class="h-4 w-4 accent-cinnabar" />
       </label>
       <template #footer>
-        <button class="btn-ghost w-full text-[12px]!" @click="smartClean">依此规则清理行囊(未锁定的无缘之物化尘)</button>
+        <button class="btn-ghost w-full !text-[12px]" @click="smartClean">依此规则清理行囊(未锁定的无缘之物化尘)</button>
       </template>
     </BaseModal>
   </div>

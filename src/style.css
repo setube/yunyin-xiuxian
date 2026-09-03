@@ -1,40 +1,57 @@
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  /* —— 水墨设计系统 —— */
-  --color-paper: #f3efe4;
-  --color-paper-deep: #eae4d3;
-  --color-paper-dark: #ddd5c2;
-  --color-ink: #292722;
-  --color-ink-soft: #4a463d;
-  --color-ink-faint: #857f70;
-  --color-ink-ghost: #b9b2a0;
-  --color-cinnabar: #a83f39;
-  --color-cinnabar-deep: #8c332e;
-  --color-qinghua: #4f7699;
-  --color-qinghua-light: #6db1c9;
-  --color-indigo-ink: #3e5c63;
-  --color-gold-ink: #9c7a3c;
-  --color-jade: #6e8b74;
-  --color-azure: #4f7699;
-  --color-violet-ink: #7b5ea7;
-  --color-amber-ink: #b07d2b;
+/* ================= 水墨设计系统调色板 =================
+   每个颜色存两份:
+   --color-x-rgb  裸 RGB 通道值,供 tailwind.config.js 合成 rgb(通道 / alpha),
+                  这是 bg-ink/10 这类斜杠透明度能工作的前提
+   --color-x      由通道值派生的完整颜色,供 color-mix() 与模板里的
+                  var(--color-*) 直接使用
+   夜间主题只需覆盖 -rgb 通道值(见下方 html[data-theme='dark']),
+   派生变量自动跟随,两条路径同时换肤 */
+:root {
+  --color-paper-rgb: 243 239 228;
+  --color-paper-deep-rgb: 234 228 211;
+  --color-paper-dark-rgb: 221 213 194;
+  --color-ink-rgb: 41 39 34;
+  --color-ink-soft-rgb: 74 70 61;
+  --color-ink-faint-rgb: 133 127 112;
+  --color-ink-ghost-rgb: 185 178 160;
+  --color-cinnabar-rgb: 168 63 57;
+  --color-cinnabar-deep-rgb: 140 51 46;
+  --color-qinghua-rgb: 79 118 153;
+  --color-qinghua-light-rgb: 109 177 201;
+  --color-indigo-ink-rgb: 62 92 99;
+  --color-gold-ink-rgb: 156 122 60;
+  --color-jade-rgb: 110 139 116;
+  --color-azure-rgb: 79 118 153;
+  --color-violet-ink-rgb: 123 94 167;
+  --color-amber-ink-rgb: 176 125 43;
+
+  --color-paper: rgb(var(--color-paper-rgb));
+  --color-paper-deep: rgb(var(--color-paper-deep-rgb));
+  --color-paper-dark: rgb(var(--color-paper-dark-rgb));
+  --color-ink: rgb(var(--color-ink-rgb));
+  --color-ink-soft: rgb(var(--color-ink-soft-rgb));
+  --color-ink-faint: rgb(var(--color-ink-faint-rgb));
+  --color-ink-ghost: rgb(var(--color-ink-ghost-rgb));
+  --color-cinnabar: rgb(var(--color-cinnabar-rgb));
+  --color-cinnabar-deep: rgb(var(--color-cinnabar-deep-rgb));
+  --color-qinghua: rgb(var(--color-qinghua-rgb));
+  --color-qinghua-light: rgb(var(--color-qinghua-light-rgb));
+  --color-indigo-ink: rgb(var(--color-indigo-ink-rgb));
+  --color-gold-ink: rgb(var(--color-gold-ink-rgb));
+  --color-jade: rgb(var(--color-jade-rgb));
+  --color-azure: rgb(var(--color-azure-rgb));
+  --color-violet-ink: rgb(var(--color-violet-ink-rgb));
+  --color-amber-ink: rgb(var(--color-amber-ink-rgb));
 
   --font-kai: 'Kaiti SC', 'STKaiti', KaiTi, 'LXGW WenKai', 'Noto Serif SC', serif;
   --font-song: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', SimSun, 'Kaiti SC', serif;
 
   /* 明暗通用阴影色(暗色主题下重定义) */
   --shadow-ink: rgb(41 39 34);
-
-  --animate-mist: mist 26s ease-in-out infinite alternate;
-  --animate-mist-slow: mist 40s ease-in-out infinite alternate-reverse;
-  --animate-breathe: breathe 4.5s ease-in-out infinite;
-  --animate-float-dmg: float-dmg 0.9s ease-out forwards;
-  --animate-float-crit: float-crit 0.9s ease-out forwards;
-  --animate-ink-pop: ink-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  --animate-glow-pulse: glow-pulse 2.4s ease-in-out infinite;
-  --animate-spin-slow: spin-slow 14s linear infinite;
-  --animate-spin-slower: spin-slower 22s linear infinite;
 }
 
 @keyframes rise-in {
@@ -327,27 +344,27 @@ body {
 }
 
 /* ================= 夜间主题 =================
-   通过 html[data-theme='dark']'覆盖 @theme 调色板;
-   Tailwind 工具类(text-ink / bg-paper 等)与组件层的 color-mix
-   全部基于这些变量,覆写后整体自动换肤,无需逐个组件改动 */
+   只覆盖 -rgb 通道值:Tailwind 工具类(text-ink / bg-paper 等)读的是通道值,
+   :root 里的派生变量 --color-x 也是从通道值算出来的,组件层的 color-mix
+   与模板里的 var(--color-*) 随之自动更新,整体换肤无需逐个组件改动 */
 html[data-theme='dark'] {
-  --color-paper: #211f1c;
-  --color-paper-deep: #292622;
-  --color-paper-dark: #33302b;
-  --color-ink: #e8e2d2;
-  --color-ink-soft: #c6bfa9;
-  --color-ink-faint: #97907b;
-  --color-ink-ghost: #6b6557;
-  --color-cinnabar: #c9554e;
-  --color-cinnabar-deep: #d4695f;
-  --color-qinghua: #7c9fc3;
-  --color-qinghua-light: #8fc3d9;
-  --color-indigo-ink: #93b3b9;
-  --color-gold-ink: #c8a35a;
-  --color-jade: #93af95;
-  --color-azure: #7c9fc3;
-  --color-violet-ink: #a98fd3;
-  --color-amber-ink: #cf9a45;
+  --color-paper-rgb: 33 31 28;
+  --color-paper-deep-rgb: 41 38 34;
+  --color-paper-dark-rgb: 51 48 43;
+  --color-ink-rgb: 232 226 210;
+  --color-ink-soft-rgb: 198 191 169;
+  --color-ink-faint-rgb: 151 144 123;
+  --color-ink-ghost-rgb: 107 101 87;
+  --color-cinnabar-rgb: 201 85 78;
+  --color-cinnabar-deep-rgb: 212 105 95;
+  --color-qinghua-rgb: 124 159 195;
+  --color-qinghua-light-rgb: 143 195 217;
+  --color-indigo-ink-rgb: 147 179 185;
+  --color-gold-ink-rgb: 200 163 90;
+  --color-jade-rgb: 147 175 149;
+  --color-azure-rgb: 124 159 195;
+  --color-violet-ink-rgb: 169 143 211;
+  --color-amber-ink-rgb: 207 154 69;
   --shadow-ink: rgb(8 7 5);
 }
 

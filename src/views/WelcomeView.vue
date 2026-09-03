@@ -10,7 +10,7 @@
     <p class="mt-2 text-[12px] tracking-[0.5em] text-ink-faint">一念修行 · 云深不知处</p>
 
     <!-- 开始按钮 -->
-    <button class="btn-seal mt-10 w-full max-w-72 py-3.5! text-[17px] tracking-[0.3em]" @click="onStart">开 始 游 戏</button>
+    <button class="btn-seal mt-10 w-full max-w-72 !py-3.5 text-[17px] tracking-[0.3em]" @click="onStart">开 始 游 戏</button>
 
     <!-- 底部:隐私政策 / 导出导入恢复 / 关于 -->
     <div class="mt-6 flex items-center gap-3 text-[11px] text-ink-ghost">

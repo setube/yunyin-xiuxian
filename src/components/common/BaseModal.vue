@@ -12,7 +12,7 @@
           :class="props.wide ? 'max-w-100' : 'max-w-90'"
         >
           <!-- 卷轴上缘 -->
-          <div class="h-1.5 shrink-0 bg-linear-to-r from-ink/25 via-ink/45 to-ink/25" />
+          <div class="h-1.5 shrink-0 bg-gradient-to-r from-ink/25 via-ink/45 to-ink/25" />
           <header v-if="props.title || props.closable" class="relative z-10 flex items-center justify-between px-5 pt-4 pb-1 shrink-0">
             <h3 class="font-kai text-lg tracking-[0.2em] text-ink">{{ props.title }}</h3>
             <button v-if="props.closable" class="p-1 -m-1 text-ink-faint active:scale-90" @click="emit('close')">
@@ -25,7 +25,7 @@
           <footer v-if="$slots.footer" class="relative z-10 px-5 pb-5 pt-2 shrink-0">
             <slot name="footer" />
           </footer>
-          <div class="h-1.5 shrink-0 bg-linear-to-r from-ink/25 via-ink/45 to-ink/25" />
+          <div class="h-1.5 shrink-0 bg-gradient-to-r from-ink/25 via-ink/45 to-ink/25" />
         </div>
       </div>
     </Transition>

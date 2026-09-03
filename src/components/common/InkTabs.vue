@@ -2,7 +2,7 @@
   <div class="card-ink relative flex overflow-hidden p-1">
     <!-- 墨块滑动指示:随选中页签平滑游走 -->
     <span
-      class="pointer-events-none absolute inset-y-1 left-1 rounded-md bg-ink shadow-sm transition-transform duration-300"
+      class="pointer-events-none absolute inset-y-1 left-1 rounded-md bg-ink shadow transition-transform duration-300"
       :style="{
         width: `calc((100% - 8px) / ${tabs.length})`,
         transform: `translateX(${activeIdx * 100}%)`,

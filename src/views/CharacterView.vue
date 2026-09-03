@@ -196,7 +196,7 @@
       </div>
       <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">兵解转世保留道果 / 天赋 / 法宝,功法折半,余者归尘。金丹境方可自行兵解。</p>
       <template #footer>
-        <button class="btn-ghost w-full text-[12px]!" @click="rebirth">兵解转世</button>
+        <button class="btn-ghost w-full !text-[12px]" @click="rebirth">兵解转世</button>
       </template>
     </BaseModal>
 

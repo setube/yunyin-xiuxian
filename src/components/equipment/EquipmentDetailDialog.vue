@@ -77,7 +77,7 @@
       <!-- 修士实验室:反事实换装推演(真仙可用) -->
       <template v-if="canWhatIf">
         <div class="ink-divider my-3" />
-        <button v-if="!whatIf" class="btn-ghost w-full py-1.5! text-[12px]!" @click="runWhatIf">天机推演 · 若换此装,四天局面如何?</button>
+        <button v-if="!whatIf" class="btn-ghost w-full !py-1.5 !text-[12px]" @click="runWhatIf">天机推演 · 若换此装,四天局面如何?</button>
         <template v-else>
           <p class="mb-1.5 font-kai text-[12px] tracking-[0.3em] text-ink-faint">天机推演</p>
           <p class="text-[11px] text-ink-soft tabular">
@@ -109,7 +109,7 @@
         <!-- 重铸与封存 (Phase 30.1) -->
         <template v-if="reforgeCostVal || sealCostVal">
           <div class="flex gap-2 text-[11px]">
-            <button v-if="reforgeCostVal" class="btn-ghost flex-1 py-1!" @click="doReforge">
+            <button v-if="reforgeCostVal" class="btn-ghost flex-1 !py-1" @click="doReforge">
               重铸随机词条
               <span class="ml-1 tabular text-[10px] text-ink-faint">
                 {{ formatGN(reforgeCostVal.stone) }} · 尘×{{ reforgeCostVal.dust }}
