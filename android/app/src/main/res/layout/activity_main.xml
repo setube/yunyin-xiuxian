@@ -19,7 +19,7 @@
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:text="云隐修仙录"
-      android:textColor="#c8a45c"
+      android:textColor="#c9554e"
       android:textSize="28sp"
       android:textStyle="bold"
       android:layout_marginBottom="8dp" />
@@ -37,7 +37,7 @@
     <ProgressBar
       android:layout_width="32dp"
       android:layout_height="32dp"
-      android:indeterminateTint="#c8a45c"
+      android:indeterminateTint="#c9554e"
       android:layout_marginBottom="12dp" />
 
     <!-- 加载文字 -->
