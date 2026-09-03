@@ -12,7 +12,7 @@ import { STAT_NAMES } from '@/ui/statNames'
 import { buildPlayerSnap } from './playerSnap'
 import { detectBuild, type BuildDetection } from './buildDetect'
 import { resolveEquipStats } from './equipGen'
-import { mergeRules, runGauntlet, worldFoeSnap } from './gauntlet'
+import { celestialDepthScale, mergeRules, runGauntlet, worldFoeSnap } from './gauntlet'
 import { currentDaoRules } from './endgameService'
 import { useInventoryStore } from '@/stores/inventory'
 
@@ -51,9 +51,11 @@ function applyModDelta(base: StatMods, source: StatMods | undefined, sign: 1 | -
 
 function worldRate(world: (typeof CELESTIAL_WORLDS)[number], snap: CombatantSnap, seed: number): number {
   const ref = { attack: snap.attack, defense: snap.defense, maxHp: snap.maxHp }
+  // 词条对称与实战同口径,否则推演读数会比真打更乐观
+  const depth = celestialDepthScale(snap.mods)
   const foes: CombatantSnap[] = []
-  for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, ref))
-  foes.push(worldFoeSnap(world.guardian, ref))
+  for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, ref, 1, depth))
+  foes.push(worldFoeSnap(world.guardian, ref, 1, depth))
   const rules = mergeRules(currentDaoRules(), world.rules)
   const rng = new RandomService(mulberry32(seed))
   let clears = 0

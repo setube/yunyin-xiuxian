@@ -14,8 +14,7 @@ import {
   CULT_MAJOR_SPEED_GROWTH,
   CULT_SUB_SPEED_GROWTH,
   ENEMY_GEAR_BASE,
-  ENEMY_GEAR_MAX,
-  ENEMY_GEAR_STEP,
+  ENEMY_GEAR_GROWTH,
   EXP_BASE,
   EXP_MAJOR_GROWTH,
   EXP_SUB_GROWTH,
@@ -146,9 +145,9 @@ export function tribulationWaveDamage(targetMajor: number, wave: number, resist:
   return Math.max(0.04, base * (1 - resist))
 }
 
-/** 敌人装备补偿系数:随层级渐进逼近上限 */
+/** 敌人装备补偿系数:随层级指数跟随玩家装备成长(Phase 33.2 去封顶) */
 export function enemyGearFactor(tier: number): number {
-  return Math.min(ENEMY_GEAR_MAX, ENEMY_GEAR_BASE + ENEMY_GEAR_STEP * Math.max(0, tier - 1))
+  return ENEMY_GEAR_BASE * Math.pow(ENEMY_GEAR_GROWTH, Math.max(0, tier - 1))
 }
 
 /** 转世凝结的道果数 */

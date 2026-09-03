@@ -8,7 +8,7 @@ import { gnZero, mulN, add } from '@/utils/gnum'
 import { AFFIXES, affixDef, affixValue } from '@/data/affixes'
 import { EQUIPMENT_TEMPLATES, equipmentTemplate } from '@/data/equipment'
 import { QUALITIES, qualityDef } from '@/data/qualities'
-import { EQUIP_BASE_FACTOR, EQUIP_LEVEL_BONUS, QUALITY_TIER_SHIFT } from '@/data/constants'
+import { EQUIP_BASE_FACTOR, EQUIP_LEVEL_BONUS, EQUIP_QUALITY_FLAT_EXP, QUALITY_TIER_SHIFT } from '@/data/constants'
 import { powerScale } from './formulas'
 
 export interface GenOptions {
@@ -89,7 +89,9 @@ export function resolveEquipStats(inst: EquipmentInstance): ResolvedEquipStats {
 
   const q = qualityDef(inst.quality)
   const scale = powerScale(inst.tier)
-  const factor = EQUIP_BASE_FACTOR * q.mult * (1 + inst.level * EQUIP_LEVEL_BONUS)
+  // 品质对平铺按 EQUIP_QUALITY_FLAT_EXP 压缩:高品质的价值主要体现在词条数量上,
+  // 而不是把平铺数值再翻几倍(Phase 33.2,详见常量处注释)
+  const factor = EQUIP_BASE_FACTOR * Math.pow(q.mult, EQUIP_QUALITY_FLAT_EXP) * (1 + inst.level * EQUIP_LEVEL_BONUS)
 
   for (const key of ['attack', 'defense', 'maxHp'] as const) {
     const weight = template.base[key]

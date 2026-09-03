@@ -146,12 +146,16 @@ export const REFORGE_DUST_STEP = 15
 export const SEAL_STONE_BASE = 200
 
 /**
- * 敌人相对玩家裸装的补偿系数:随层级渐进
- * 前期玩家装备寥寥,敌人偏弱;后期默认玩家已成体系
+ * 敌人相对玩家裸装的补偿系数:随层级指数跟随。
+ *
+ * Phase 33.2:原为 0.9 + 0.18×(tier-1) 且封顶 2.2,tier 9 之后完全冻结——
+ * 玩家装备乘区(品质 1.0→9.5 × 强化 +120%)一路涨到 20.9 倍,敌人却只涨 2.44 倍,
+ * 后 12 个层级是单方面碾压,这是「炼虚推完全图」的结构性成因(见 inflationAudit)。
+ * 改为指数跟随后,敌人补偿与玩家装备成长走同一条逻辑,全程不脱节。
+ * 增速刻意低于玩家(玩家仍能靠构筑取得优势),但不再有封顶的断崖
  */
 export const ENEMY_GEAR_BASE = 0.9
-export const ENEMY_GEAR_STEP = 0.18
-export const ENEMY_GEAR_MAX = 2.2
+export const ENEMY_GEAR_GROWTH = 1.105
 /** 防御减伤上限 */
 export const MITIGATION_CAP = 0.75
 /** 减伤公式系数:red = def / (def + atk × K) */
@@ -162,8 +166,27 @@ export const DAMAGE_VARIANCE = 0.1
 // ============ 装备 ============
 /** 每掉落层级数值倍率 */
 export const EQUIP_TIER_GROWTH = 2.05
-/** 装备基础属性整体系数 */
-export const EQUIP_BASE_FACTOR = 1.0
+/**
+ * 装备基础属性整体系数(Phase 33.2:1.0 → 0.6)。
+ *
+ * 九个槽位的平铺权重相加约为 40,而玩家境界基础攻击只有 COMBAT_ATK_BASE=12,
+ * 装备平铺因此一项独占战力 57~65%,突破带来的境界成长反被稀释到个位数百分比。
+ * 降低整体系数是把战力权重还给「境界 + 构筑」,不是削弱装备本身——
+ * 装备的词条、套装、法宝一律未动,它依然是构筑的核心载体
+ */
+export const EQUIP_BASE_FACTOR = 0.6
+/**
+ * 品质对「平铺数值」的放大指数(Phase 33.2)。
+ *
+ * 品质倍率 q.mult 从凡品 1.0 到神品 9.5,原样乘进平铺后,装备平铺一项就占了
+ * 玩家战力的 57~65%,远超 40% 的单一来源危险线,境界基础反被稀释到 4.4%
+ * (见 inflationAudit)。玩家于是只需刷装备,不必观察生态、调整构筑。
+ *
+ * 这里把品质对平铺的影响压成 q.mult^0.6(神品 9.5→3.77),而词条数量与词条数值
+ * 完全不动——高品质依旧珍贵,但珍贵在「多一条词条、多一种构筑可能」,
+ * 而不是「平铺数值再翻一倍」。这是把成长从数值转换成构筑,不是砍数值
+ */
+export const EQUIP_QUALITY_FLAT_EXP = 0.6
 /** 每强化一级基础属性 +12% */
 export const EQUIP_LEVEL_BONUS = 0.12
 export const EQUIP_MAX_LEVEL_BASE = 10

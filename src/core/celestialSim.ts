@@ -8,7 +8,7 @@ import { mulberry32, RandomService } from '@/utils/random'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { BUILD_PROFILES, buildSnap, type BuildProfile } from './buildSim'
 import { randomBuild } from './buildSearch'
-import { mergeRules, runGauntlet, worldFoeSnap, type ReferenceStats } from './gauntlet'
+import { celestialDepthScale, mergeRules, runGauntlet, worldFoeSnap, type ReferenceStats } from './gauntlet'
 
 /** 模拟参照属性(与 buildSim 基准一致) */
 export const SIM_REFERENCE: ReferenceStats = {
@@ -17,19 +17,21 @@ export const SIM_REFERENCE: ReferenceStats = {
   maxHp: gn(1400)
 }
 
-function worldFoes(world: CelestialWorldDef): CombatantSnap[] {
+function worldFoes(world: CelestialWorldDef, snap: CombatantSnap): CombatantSnap[] {
+  // 词条对称与实战同口径:审计基准若不随被测构筑加厚,厚构筑会被高估
+  const depth = celestialDepthScale(snap.mods)
   const foes: CombatantSnap[] = []
   for (let i = 0; i < world.fights - 1; i += 1) {
-    foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, SIM_REFERENCE))
+    foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, SIM_REFERENCE, 1, depth))
   }
-  foes.push(worldFoeSnap(world.guardian, SIM_REFERENCE))
+  foes.push(worldFoeSnap(world.guardian, SIM_REFERENCE, 1, depth))
   return foes
 }
 
 /** 某构筑在某世界的通关率 */
 export function worldClearRate(world: CelestialWorldDef, snap: CombatantSnap, runs: number, seed: number): number {
   const rng = new RandomService(mulberry32(seed))
-  const foes = worldFoes(world)
+  const foes = worldFoes(world, snap)
   let clears = 0
   for (let i = 0; i < runs; i += 1) {
     if (runGauntlet(snap, foes, world.rules, world.healBetweenPct, rng).cleared) clears += 1

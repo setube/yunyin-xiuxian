@@ -1,5 +1,5 @@
 /**
- * 战力膨胀审计(Phase 32.8「天道膨胀审计」)
+ * 战力膨胀审计(Phase 33.1「天道膨胀审计」)
  *
  * 起因是玩家反馈:金丹后升级过快、炼虚即可推完全图、真仙入天界仍是一脚踹死。
  * 这三条症状指向同一件事——成长曲线与内容曲线脱节,而不是数值绝对值偏高。
@@ -18,14 +18,15 @@
 import type { EquipmentInstance, FinalStats, StatMods } from '@/types'
 import { toNum } from '@/utils/gnum'
 import { mulberry32, RandomService } from '@/utils/random'
-import { COMBAT_ATK_BASE, COMBAT_DEF_BASE, COMBAT_HP_BASE } from '@/data/constants'
+import { COMBAT_ATK_BASE, COMBAT_DEF_BASE, COMBAT_HP_BASE, EQUIP_QUALITY_FLAT_EXP } from '@/data/constants'
 import { GONGFA } from '@/data/gongfa'
 import { REGIONS } from '@/data/regions'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { MAX_MAJOR } from '@/data/realms'
 import { enemyGearFactor, powerScale, powerScore, realmScale } from './formulas'
 import { generateEquipment, resolveEquipStats } from './equipGen'
-import { computeFinalStats, mergeMods } from './statsCalc'
+import { celestialDepthScale } from './gauntlet'
+import { computeFinalStats, mergeMods, modDepth } from './statsCalc'
 
 /** 区域层级总数(与 regions.ts 同步) */
 export const MAX_TIER = 20
@@ -314,31 +315,27 @@ export function powerSourceAudit(major: number, profile: GearProfile): SourceRow
 
 // ---------------- 4. 天界携带审计 ----------------
 
-/** 词条深度:所有正向词条的数值总和(基础三维百分比不计,那部分在天界已等比抵消) */
-export function modDepth(mods: StatMods): number {
-  let sum = 0
-  for (const k in mods) {
-    const key = k as keyof StatMods
-    if (key === 'attackPct' || key === 'defensePct' || key === 'maxHpPct' || key === 'cultivationSpeed') continue
-    const v = mods[key]
-    if (typeof v === 'number' && v > 0) sum += v
-  }
-  return sum
-}
+/** 词条深度:所有正向构筑词条的数值总和(实现在 statsCalc,与生产同源) */
+export { modDepth }
 
 export interface CelestialCarryRow {
   major: number
   /** 玩家携带的构筑深度 */
   playerDepth: number
-  /** 天界敌人的平均构筑深度 */
+  /** 天界敌人的原始构筑深度 */
   foeDepth: number
-  /** 不对称倍数 */
+  /** 对称前的不对称倍数 */
   asymmetry: number
+  /** Phase 33.2 守关者加厚系数 */
+  depthScale: number
+  /** 对称后实际生效的不对称倍数 */
+  effectiveAsymmetry: number
 }
 
 /**
  * 天界的基础三维按玩家等比缩放(worldFoeSnap),数值本身已互相抵消——
- * 真正决定胜负的是词条深度。这里量化玩家带进天界的词条总量与守关者的差距
+ * Phase 33.2 起词条也纳入抵消(celestialDepthScale),这里量化对称前后的差距:
+ * playerDepth/foeDepth 是原始携带量,effectiveAsymmetry 才是实际生效的不对称
  */
 export function celestialCarryAudit(profile: GearProfile): CelestialCarryRow[] {
   const foeDepths: number[] = []
@@ -350,8 +347,17 @@ export function celestialCarryAudit(profile: GearProfile): CelestialCarryRow[] {
 
   const rows: CelestialCarryRow[] = []
   for (let m = 5; m <= MAX_MAJOR; m += 1) {
-    const playerDepth = modDepth(modelPlayer(m, 9, profile).stats.mods)
-    rows.push({ major: m, playerDepth, foeDepth, asymmetry: foeDepth > 0 ? playerDepth / foeDepth : Infinity })
+    const mods = modelPlayer(m, 9, profile).stats.mods
+    const playerDepth = modDepth(mods)
+    const scale = celestialDepthScale(mods)
+    rows.push({
+      major: m,
+      playerDepth,
+      foeDepth,
+      asymmetry: foeDepth > 0 ? playerDepth / foeDepth : Infinity,
+      depthScale: scale,
+      effectiveAsymmetry: foeDepth > 0 ? playerDepth / (foeDepth * scale) : Infinity
+    })
   }
   return rows
 }
@@ -373,8 +379,8 @@ export interface GearAsymmetry {
  * 这两条线本应同速,一旦分叉,后期必然出现数值碾压
  */
 export function gearAsymmetry(): GearAsymmetry {
-  const playerLow = 1.0 * (1 + 0 * 0.12)
-  const playerHigh = 9.5 * (1 + 10 * 0.12)
+  const playerLow = Math.pow(1.0, EQUIP_QUALITY_FLAT_EXP) * (1 + 0 * 0.12)
+  const playerHigh = Math.pow(9.5, EQUIP_QUALITY_FLAT_EXP) * (1 + 10 * 0.12)
   const enemyLow = enemyGearFactor(1)
   const enemyHigh = enemyGearFactor(MAX_TIER)
   const playerGearGrowth = playerHigh / playerLow

@@ -80,6 +80,23 @@ export function isSoftCapped(mods: StatMods, key: AnyStatKey): boolean {
   return rule !== undefined && (mods[key] ?? 0) >= rule.cap
 }
 
+/**
+ * 构筑深度:所有正向「构筑词条」的数值总和。
+ *
+ * 基础三维百分比与修炼速度不计——前者在天界已由 worldFoeSnap 等比抵消,
+ * 后者不参与战斗。剩下的暴击、闪避、吸血、反击、护盾等才是构筑的实际厚度
+ */
+export function modDepth(mods: StatMods): number {
+  let sum = 0
+  for (const k in mods) {
+    const key = k as AnyStatKey
+    if (key === 'attackPct' || key === 'defensePct' || key === 'maxHpPct' || key === 'cultivationSpeed') continue
+    const v = mods[key]
+    if (typeof v === 'number' && v > 0) sum += v
+  }
+  return sum
+}
+
 export function modOf(mods: StatMods, key: AnyStatKey): number {
   return mods[key] ?? 0
 }

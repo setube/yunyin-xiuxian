@@ -4,6 +4,7 @@
 import type { CombatantSnap, CombatRules, GNum, StatMods, WorldFoeShape } from '@/types'
 import type { RandomService } from '@/utils/random'
 import { mulN } from '@/utils/gnum'
+import { modDepth } from './statsCalc'
 import { resolveCombat } from './combat'
 
 export interface ReferenceStats {
@@ -13,9 +14,42 @@ export interface ReferenceStats {
 }
 
 /**
- * 按参照属性生成天界敌人 —— 数值成长在天界互相抵消,只有构筑形状决定胜负
+ * 天界词条对称基准(Phase 33.2)。
+ *
+ * 取值依据:六大标准流派(buildSim)的构筑深度为 1.02~2.43,天界平衡门本就是
+ * 照着它们校准的,这个区间内不能被判为膨胀——否则标准构筑反被加厚,
+ * 世界生成的「可行流派≥3」门会被误伤。基准设在流派上沿之上,
+ * 只吸收人间进程带来的超额堆叠(实测真仙常规档深度 4.76)。
+ *
+ * 原本 worldFoeSnap 只对基础三维做等比抵消,词条乘区被玩家整份带进天界,
+ * 实测不对称达 29~57 倍(见 inflationAudit),于是「一脚踹死」。
+ * 补上词条这一半后,「数值成长在天界互相抵消」才真正成立:
+ * 堆得再厚也换不来碾压,胜负重新回到构筑形状本身
  */
-export function worldFoeSnap(shape: WorldFoeShape, ref: ReferenceStats, escalation = 1): CombatantSnap {
+export const CELESTIAL_BASE_DEPTH = 2.6
+/** 加厚指数 <1:守关者跟随但不完全追平,留给玩家构筑优化的收益空间 */
+export const CELESTIAL_DEPTH_EXP = 0.85
+
+/** 玩家构筑深度对应的守关者加厚系数(不低于 1,浅构筑不会反被削) */
+export function celestialDepthScale(playerMods: StatMods): number {
+  const depth = modDepth(playerMods)
+  if (depth <= CELESTIAL_BASE_DEPTH) return 1
+  return Math.pow(depth / CELESTIAL_BASE_DEPTH, CELESTIAL_DEPTH_EXP)
+}
+
+/**
+ * 按参照属性生成天界敌人 —— 数值成长在天界互相抵消,只有构筑形状决定胜负。
+ * depthScale 让词条与三维一样参与抵消(见 celestialDepthScale)
+ */
+export function worldFoeSnap(shape: WorldFoeShape, ref: ReferenceStats, escalation = 1, depthScale = 1): CombatantSnap {
+  const mods: StatMods = {}
+  if (shape.mods) {
+    for (const k in shape.mods) {
+      const key = k as keyof StatMods
+      const v = shape.mods[key]
+      mods[key] = typeof v === 'number' ? v * depthScale : v
+    }
+  }
   return {
     name: shape.name,
     icon: shape.icon,
@@ -24,7 +58,7 @@ export function worldFoeSnap(shape: WorldFoeShape, ref: ReferenceStats, escalati
     defense: mulN(ref.defense, shape.defR * escalation),
     maxHp: mulN(ref.maxHp, shape.hpR * escalation),
     speed: shape.speed,
-    mods: shape.mods ? { ...shape.mods } : {},
+    mods,
     skills: shape.skills.map(s => ({ ...s }))
   }
 }
