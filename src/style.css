@@ -48,7 +48,6 @@
   --color-amber-ink: rgb(var(--color-amber-ink-rgb));
 
   --font-kai: 'Kaiti SC', 'STKaiti', KaiTi, 'LXGW WenKai', 'Noto Serif SC', serif;
-  --font-song: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', SimSun, 'Kaiti SC', serif;
 
   /* 明暗通用阴影色(暗色主题下重定义) */
   --shadow-ink: rgb(41 39 34);
@@ -341,7 +340,6 @@ body {
 
 body {
   margin: 0;
-  font-family: var(--font-song);
   color: var(--color-ink);
   background: linear-gradient(160deg, #34312a 0%, #4a463d 45%, #2d2b25 100%);
   -webkit-font-smoothing: antialiased;

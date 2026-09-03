@@ -17,23 +17,19 @@
         />
       </svg>
       <div class="relative z-10 flex items-start justify-between">
-        <div>
-          <h1 class="font-kai text-[26px] tracking-[0.2em] text-ink">{{ player.name }}</h1>
-          <p class="mt-1 flex items-center gap-2">
-            <span class="chip-ink border-cinnabar/60 font-kai text-cinnabar">{{ player.realmName }}</span>
-            <span v-if="player.reincarnation.count > 0" class="chip-ink border-violet-ink/50 text-violet-ink">
-              {{ player.reincarnation.count }} 世
-            </span>
-          </p>
-          <p class="mt-2 text-[11px] text-ink-faint tabular">
-            {{ Math.floor(player.age) }} 岁 / 寿元 {{ formatYears(player.lifespanMax) }}
-          </p>
-          <p class="mt-0.5 text-[11px]" :class="player.lifespanRatio < 0.15 ? 'text-cinnabar' : 'text-ink-faint'">
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px]" :class="player.lifespanRatio < 0.15 ? 'text-cinnabar' : 'text-ink-faint'">
             {{ statusText }}
           </p>
+          <!-- 今日天时:确定性环境,影响当日产出与渡劫 -->
+          <div class="mt-3 flex items-center gap-1.5">
+            <GameIcon name="sparkles" :size="13" class="shrink-0 text-gold-ink" />
+            <span class="font-kai text-[12px] tracking-widest text-ink">{{ weather.name }}</span>
+          </div>
+          <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">{{ weather.desc }}</p>
         </div>
         <!-- 修炼法球 · 灵气法阵环绕 -->
-        <div class="relative mr-1 -mt-1 h-35 w-35">
+        <div class="relative mr-1 -mt-1 h-35 w-35 shrink-0">
           <CultivationOrb :active="true" :full="player.expFull" :progress="player.expProgress">
             <span class="text-[17px]">☯</span>
           </CultivationOrb>
@@ -54,21 +50,6 @@
       </span>
       <span class="text-[11px] text-cinnabar">踏天 →</span>
     </RouterLink>
-
-    <!-- 材料一览 -->
-    <div class="card-ink flex justify-between px-4 py-2.5">
-      <div v-for="m in materials" :key="m.name" class="flex flex-col items-center gap-0.5" :title="m.name">
-        <GameIcon :name="m.icon" :size="15" class="text-ink-faint" />
-        <span class="tabular text-[11px] text-ink-soft">{{ formatNum(m.value) }}</span>
-      </div>
-    </div>
-
-    <!-- 今日天时(Phase 31 A1):确定性环境,影响当日产出与渡劫 -->
-    <div class="card-ink flex items-center gap-2 px-4 py-2">
-      <GameIcon name="sparkles" :size="14" class="text-gold-ink" />
-      <span class="font-kai text-[12px] tracking-widest text-ink">今日天时 · {{ weather.name }}</span>
-      <span class="ml-auto text-[10px] text-ink-faint">{{ weather.desc }}</span>
-    </div>
 
     <!-- 修行志(任务) -->
     <section>
@@ -94,38 +75,56 @@
       </div>
     </section>
 
-    <!-- 洞府建筑 -->
-    <section>
-      <SectionTitle title="洞府" hint="经营家业,道途更稳" />
-      <div class="mt-2 grid grid-cols-2 gap-2.5">
-        <BuildingCard v-for="def in BUILDINGS" :key="def.id" :def="def" />
-      </div>
-    </section>
+    <!-- 洞府入口 -->
+    <RouterLink to="/dongfu" class="card-ink flex items-center justify-between gap-3 px-4 py-3 active:scale-99">
+      <span class="min-w-0 flex-1">
+        <span class="block font-kai text-[14px] tracking-widest text-ink">洞府营造</span>
+        <span class="block truncate text-[10px] leading-relaxed text-ink-faint">经营家业,道途更稳</span>
+      </span>
+      <span class="shrink-0 text-[12px] text-ink-faint">›</span>
+    </RouterLink>
 
-    <!-- 灵脉投资 (Phase 30.3,解虚境解锁) -->
-    <VeinInvestCard v-if="player.major >= 2" />
+    <!-- 灵脉投资:金丹后开放,紧随洞府营造 -->
+    <button
+      v-if="player.major >= VEIN_UNLOCK_MAJOR"
+      class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-99"
+      @click="veinOpen = true"
+    >
+      <span class="min-w-0 flex-1">
+        <span class="block font-kai text-[14px] tracking-widest text-ink">灵脉投资</span>
+        <span class="block truncate text-[10px] leading-relaxed text-ink-faint">引地脉入洞府,择一主脉而修</span>
+      </span>
+      <span class="shrink-0 text-[12px] text-ink-faint">›</span>
+    </button>
+
+    <!-- 灵脉弹窗:组件自带标题卡,弹窗标题留空避免重复 -->
+    <BaseModal :open="veinOpen" title="" wide @close="veinOpen = false">
+      <VeinInvestCard />
+      <template #footer>
+        <button class="btn-seal w-full" @click="veinOpen = false">收 起</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
-  import { useResourcesStore } from '@/stores/resources'
   import { useAdventureStore } from '@/stores/adventure'
   import { useCultivationStore } from '@/stores/cultivation'
   import { useQuestsStore } from '@/stores/quests'
-  import { BUILDINGS } from '@/data/buildings'
   import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
-  import { formatNum, formatYears } from '@/utils/format'
+  import { VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { todayWeather } from '@/core/weather'
   import SectionTitle from '@/components/common/SectionTitle.vue'
-  import GameIcon from '@/components/common/GameIcon.vue'
-  import BuildingCard from '@/components/dongfu/BuildingCard.vue'
+  import BaseModal from '@/components/common/BaseModal.vue'
   import VeinInvestCard from '@/components/dongfu/VeinInvestCard.vue'
+  import GameIcon from '@/components/common/GameIcon.vue'
   import CultivationOrb from '@/components/common/CultivationOrb.vue'
 
   const player = usePlayerStore()
-  const resources = useResourcesStore()
+  /** 灵脉投资弹窗 —— 卡片自洞府页移来,紧随洞府营造 */
+  const veinOpen = ref(false)
   const adventure = useAdventureStore()
   const cultivation = useCultivationStore()
   const quests = useQuestsStore()
@@ -149,12 +148,4 @@
       done: quests.daily.done.includes(t.id)
     }))
   )
-
-  const materials = computed(() => [
-    { icon: 'leaf', name: '灵草', value: resources.herb },
-    { icon: 'mountain', name: '玄铁', value: resources.ore },
-    { icon: 'scroll', name: '残页', value: resources.page },
-    { icon: 'sparkles', name: '器灵尘', value: resources.dust },
-    { icon: 'book', name: '悟道点', value: resources.wudao }
-  ])
 </script>

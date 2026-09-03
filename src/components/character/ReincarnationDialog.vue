@@ -91,6 +91,9 @@
         枚,来世修行更进一步。
       </p>
       <p class="mt-3 font-kai text-[13px] tracking-widest text-ink">择一先天之姿</p>
+      <p v-if="view.talentChoices.length === 0" class="mt-2 text-[11px] leading-relaxed text-ink-faint">
+        先天之姿已尽数为你所有,此番再无可择——直取轮回便是。
+      </p>
       <div class="mt-2 space-y-2">
         <button
           v-for="id in view.talentChoices"
@@ -143,7 +146,7 @@
       </template>
     </div>
     <template #footer>
-      <button class="btn-seal w-full" :disabled="!chosen" @click="confirm">踏入轮回</button>
+      <button class="btn-seal w-full" :disabled="!canConfirm" @click="confirm">踏入轮回</button>
     </template>
   </BaseModal>
 </template>
@@ -181,6 +184,13 @@
   const view = computed(() => ui.reincarnation)
   const reviewTheme = computed(() => (view.value?.review.themeId ? lifeThemeDef(view.value.review.themeId) : undefined))
   const themeDefs = computed(() => (view.value?.themeChoices ?? []).flatMap(id => lifeThemeDef(id) ?? []))
+
+  /**
+   * 天赋池会被抽空(可选天赋有限,多周目后 talentChoices 可能为空)。
+   * 那种情况下没有可选项,却仍要能踏入轮回——否则玩家被永久卡死在此弹窗。
+   * 只有「确有天赋可选却尚未择定」时才拦
+   */
+  const canConfirm = computed(() => (view.value?.talentChoices.length ?? 0) === 0 || chosen.value !== null)
 
   // 每次新开轮回界面都从"回顾"这一程重新走起
   watch(view, v => {

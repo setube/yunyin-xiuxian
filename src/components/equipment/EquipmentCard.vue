@@ -1,20 +1,26 @@
 <template>
   <button
-    class="card-ink relative flex flex-col items-center gap-1 px-2 py-2.5 active:scale-95 transition-transform"
-    :style="{ borderColor: quality.color + '66' }"
+    class="relative aspect-square rounded-md border transition-transform active:scale-95"
+    :style="{ borderColor: quality.color + '55', background: quality.color + '0f' }"
     @click="emit('open', props.item.uid)"
   >
-    <span v-if="props.equipped" class="absolute left-1 top-1 text-[8px] text-jade font-kai">佩</span>
-    <span v-if="props.item.locked" class="absolute right-1 top-1 text-ink-faint"><GameIcon name="lock" :size="9" /></span>
-    <span class="grid h-9 w-9 place-items-center rounded-md" :style="{ color: quality.color, background: quality.color + '14' }">
-      <GameIcon :name="template?.icon ?? 'sword'" :size="18" />
+    <!-- 角标:佩戴 / 上锁 -->
+    <span v-if="props.equipped" class="absolute left-0.5 top-0.5 font-kai text-[8px] leading-none text-jade">佩</span>
+    <span v-if="props.item.locked" class="absolute right-0.5 top-0.5 leading-none text-ink-faint">
+      <GameIcon name="lock" :size="8" />
     </span>
-    <span class="w-full truncate text-center font-kai text-[11px]" :style="{ color: quality.color }">
-      {{ template?.name ?? '?' }}
+
+    <!-- 主图标 -->
+    <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
+      <GameIcon :name="template?.icon ?? 'sword'" :size="20" :style="{ color: quality.color }" />
+      <span class="w-full truncate text-center text-[9px] leading-tight" :style="{ color: quality.color }">
+        {{ template?.name ?? '?' }}
+      </span>
     </span>
-    <span class="text-[9px] text-ink-faint tabular">
-      {{ quality.name }}
-      <template v-if="props.item.level > 0">+{{ props.item.level }}</template>
+
+    <!-- 强化等级:右下角,格子背包的惯例位置 -->
+    <span v-if="props.item.level > 0" class="absolute bottom-0.5 right-1 text-[9px] leading-none text-gold-ink tabular">
+      +{{ props.item.level }}
     </span>
   </button>
 </template>

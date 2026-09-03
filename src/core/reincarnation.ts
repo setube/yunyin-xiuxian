@@ -191,7 +191,10 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
   inventory.items = []
   inventory.equipped = {}
   inventory.pills = {}
-  // 法宝随神魂转世保留;已习功法保留但层数折半(顶阶可留一门不折)
+  // 法宝亦是外物,随皮囊一同散去——留下的只有认知(丹方、药性、器纹皆在 lore)
+  inventory.artifacts = []
+  inventory.equippedArtifacts = []
+  // 已习功法保留但层数折半(顶阶可留一门不折)
   const stage = stageAt(view.insightAfter)
   cultivation.learned = carryGongfa(cultivation.learned, stage.keepOneGongfa)
   cultivation.buffs = []

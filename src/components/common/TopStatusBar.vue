@@ -6,7 +6,15 @@
     <div class="flex items-center gap-2 min-w-0">
       <div class="min-w-0 leading-tight">
         <p class="truncate font-kai text-[13px] tracking-wider text-ink">{{ player.name }}</p>
-        <p class="text-[10px] text-ink-faint">{{ player.realmName }}</p>
+        <p class="flex items-center gap-1.5 text-[10px] text-ink-faint">
+          <span>{{ player.realmName }}</span>
+          <!-- 年龄:寿元将尽时转朱砂,顶栏常驻便于随时察觉 -->
+          <span class="tabular" :class="player.lifespanRatio < 0.15 ? 'text-cinnabar' : ''">
+            {{ Math.floor(player.age) }}/{{ formatYears(player.lifespanMax) }}
+          </span>
+          <!-- 轮回次数:从主页人物卡移来,置于全局顶栏常驻 -->
+          <span v-if="player.reincarnation.count > 0" class="text-violet-ink">{{ player.reincarnation.count }} 世</span>
+        </p>
       </div>
     </div>
     <div class="flex items-center gap-3 text-[11px] text-ink-soft tabular">
@@ -28,7 +36,7 @@
 <script setup lang="ts">
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
-  import { formatGN, formatNum } from '@/utils/format'
+  import { formatGN, formatNum, formatYears } from '@/utils/format'
   import { Capacitor } from '@capacitor/core'
   import GameIcon from './GameIcon.vue'
 

@@ -43,14 +43,9 @@
       <!-- 全部藏品(含佩戴中):部位槽之下的完整清单 -->
       <div v-if="allItems.length" class="mt-4">
         <SectionTitle title="全部藏品" :hint="`${allItems.length} 件 · 行囊 ${inventory.bagItems.length}/${BAG_CAPACITY}`" />
-        <div class="mt-2 grid grid-cols-3 gap-2">
-          <EquipmentCard
-            v-for="row in allItems"
-            :key="row.item.uid"
-            :item="row.item"
-            :equipped="row.equipped"
-            @open="openDetail"
-          />
+        <!-- 方格背包:五列格子 + 空槽占位,一眼看出还剩多少地方 -->
+        <div class="mt-2 grid grid-cols-5 gap-1.5">
+          <EquipmentCard v-for="row in allItems" :key="row.item.uid" :item="row.item" :equipped="row.equipped" @open="openDetail" />
         </div>
       </div>
       <p v-else class="mt-8 text-center text-[12px] text-ink-ghost">行囊空空,去历练中寻些机缘吧</p>
@@ -58,65 +53,57 @@
 
     <!-- 丹药 -->
     <template v-else-if="tab === 'pill'">
-      <div v-if="pillRows.length" class="mt-3 space-y-2">
-        <div v-for="row in pillRows" :key="row.def!.id" class="card-ink flex items-center gap-3 px-3.5 py-2.5">
-          <GameIcon :name="row.def!.icon" :size="18" :style="{ color: qualityDef(row.def!.quality).color }" />
-          <div class="min-w-0 grow">
-            <p class="flex items-center gap-2">
-              <span class="font-kai text-[13px] text-ink">{{ row.def!.name }}</span>
-              <span class="text-[10px] text-ink-faint tabular">×{{ row.count }}</span>
-            </p>
-            <p class="truncate text-[11px] text-ink-faint">{{ row.def!.desc }}</p>
-          </div>
-          <button class="btn-ghost shrink-0 !px-3 !py-1.5 !text-[12px]" @click="usePill(row.def!.id)">服用</button>
-        </div>
+      <!-- 开炉炼丹:入口置顶,点开弹窗 -->
+      <button
+        class="card-ink mt-3 flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-99"
+        @click="craftOpen = true"
+      >
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/85 font-kai text-[19px] text-paper">炉</span>
+        <span class="min-w-0 flex-1">
+          <span class="block font-kai text-[14px] tracking-widest text-ink">开炉炼丹</span>
+          <span class="block truncate text-[10px] leading-relaxed text-ink-faint">
+            {{ recipes.length > 0 ? `已知丹方 ${recipes.length} 种 · 灵草 ${resources.herb}` : '尚不知任何丹方' }}
+          </span>
+        </span>
+        <span class="shrink-0 text-[12px] text-ink-faint">›</span>
+      </button>
+
+      <!-- 丹匣:格子只给图标与名号,详情看弹窗 -->
+      <div v-if="pillRows.length" class="mt-3 grid grid-cols-4 gap-1.5">
+        <button
+          v-for="row in pillRows"
+          :key="row.def!.id"
+          class="relative aspect-square rounded-md border transition-transform active:scale-95"
+          :style="{ borderColor: qualityDef(row.def!.quality).color + '55', background: qualityDef(row.def!.quality).color + '0f' }"
+          @click="pillDetail = row.def!.id"
+        >
+          <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
+            <GameIcon :name="row.def!.icon" :size="20" :style="{ color: qualityDef(row.def!.quality).color }" />
+            <span class="w-full truncate text-center text-[9px] leading-tight" :style="{ color: qualityDef(row.def!.quality).color }">
+              {{ row.def!.name }}
+            </span>
+          </span>
+          <span class="absolute bottom-0.5 right-1 text-[9px] leading-none text-ink-soft tabular">×{{ row.count }}</span>
+        </button>
       </div>
       <p v-else class="mt-10 text-center text-[12px] text-ink-ghost">丹匣空空</p>
-
-      <SectionTitle title="开炉炼丹" class="mt-5" :hint="`灵草 ${resources.herb}`" />
-      <div v-if="recipes.length" class="mt-2 space-y-2">
-        <div v-for="r in recipes" :key="r.def.id" class="card-ink px-3.5 py-2.5">
-          <div class="flex items-center gap-3">
-            <GameIcon :name="r.def.icon" :size="18" :style="{ color: qualityDef(r.def.quality).color }" />
-            <div class="min-w-0 grow">
-              <p class="flex items-center gap-2">
-                <span class="font-kai text-[13px] text-ink">{{ r.def.name }}</span>
-                <span class="text-[10px] text-ink-ghost">{{ r.able.rank }} 阶</span>
-                <span v-if="r.able.overReach > 0" class="text-[10px] text-crimson-ink">越阶 {{ r.able.overReach }}</span>
-              </p>
-              <p class="text-[11px] text-ink-faint tabular">灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
-            </div>
-            <div class="shrink-0 text-right">
-              <p class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</p>
-              <p class="text-[10px] text-ink-ghost">成丹把握</p>
-            </div>
-            <button class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
-          </div>
-          <p v-for="w in r.able.weakness" :key="w" class="mt-1 pl-7 text-[10px] text-ink-ghost">· {{ w }}</p>
-        </div>
-      </div>
-      <p v-else class="mt-2 px-1 text-[11px] text-ink-faint">你还不知道任何丹方。多采多看多打听,方子自会找上门来。</p>
     </template>
 
     <!-- 材料 -->
     <template v-else-if="tab === 'material'">
-      <div class="mt-3 space-y-2">
-        <div v-for="m in materialRows" :key="m.name" class="card-ink flex items-center gap-3 px-3.5 py-3">
-          <GameIcon :name="m.icon" :size="18" class="text-ink-soft" />
-          <div class="grow">
-            <p class="font-kai text-[13px] text-ink">{{ m.name }}</p>
-            <p class="text-[11px] text-ink-faint">{{ m.desc }}</p>
-          </div>
-          <span class="tabular text-[15px] text-ink">{{ m.value }}</span>
-        </div>
-        <div class="card-ink flex items-center gap-3 px-3.5 py-3">
-          <GameIcon name="gem" :size="18" class="text-gold-ink" />
-          <div class="grow">
-            <p class="font-kai text-[13px] text-ink">灵石</p>
-            <p class="text-[11px] text-ink-faint">修行界的通行货币</p>
-          </div>
-          <span class="tabular text-[15px] text-ink">{{ formatGN(resources.spiritStone) }}</span>
-        </div>
+      <div class="mt-3 grid grid-cols-4 gap-1.5">
+        <button
+          v-for="m in materialGrid"
+          :key="m.key"
+          class="relative aspect-square rounded-md border border-ink/15 bg-ink/[0.03] transition-transform active:scale-95"
+          @click="materialDetail = m.key"
+        >
+          <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
+            <GameIcon :name="m.icon" :size="20" :class="m.color" />
+            <span class="w-full truncate text-center text-[9px] leading-tight text-ink-soft">{{ m.name }}</span>
+          </span>
+          <span class="absolute bottom-0.5 right-1 text-[9px] leading-none text-ink-soft tabular">{{ m.display }}</span>
+        </button>
       </div>
     </template>
 
@@ -158,6 +145,83 @@
       </p>
       <p v-if="player.petId" class="mt-4 text-center text-[11px] text-ink-faint">灵兽相伴,可前往「人物」页查看</p>
     </template>
+
+    <!-- 丹药详情 -->
+    <BaseModal :open="currentPill !== null" :title="currentPill?.def?.name ?? ''" @close="pillDetail = null">
+      <template v-if="currentPill?.def">
+        <div class="flex items-center gap-3">
+          <span
+            class="grid h-12 w-12 shrink-0 place-items-center rounded-md"
+            :style="{ color: qualityDef(currentPill.def.quality).color, background: qualityDef(currentPill.def.quality).color + '14' }"
+          >
+            <GameIcon :name="currentPill.def.icon" :size="24" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-[11px]" :style="{ color: qualityDef(currentPill.def.quality).color }">
+              {{ qualityDef(currentPill.def.quality).name }}
+            </p>
+            <p class="text-[11px] text-ink-faint tabular">持有 ×{{ currentPill.count }}</p>
+          </div>
+        </div>
+        <p class="mt-3 text-[12px] leading-relaxed text-ink-soft">{{ currentPill.def.desc }}</p>
+      </template>
+      <template #footer>
+        <button class="btn-seal w-full" @click="onUsePill()">服 用</button>
+      </template>
+    </BaseModal>
+
+    <!-- 材料详情 -->
+    <BaseModal :open="currentMaterial !== null" :title="currentMaterial?.name ?? ''" @close="materialDetail = null">
+      <template v-if="currentMaterial">
+        <div class="flex items-center gap-3">
+          <span class="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-ink/5">
+            <GameIcon :name="currentMaterial.icon" :size="24" :class="currentMaterial.color" />
+          </span>
+          <div class="min-w-0">
+            <p class="font-kai text-[15px] text-ink tabular">{{ currentMaterial.full }}</p>
+            <p class="text-[10px] text-ink-ghost">现有</p>
+          </div>
+        </div>
+        <p class="mt-3 text-[12px] leading-relaxed text-ink-soft">{{ currentMaterial.desc }}</p>
+      </template>
+      <template #footer>
+        <button class="btn-seal w-full" @click="materialDetail = null">收 起</button>
+      </template>
+    </BaseModal>
+
+    <!-- 开炉炼丹 -->
+    <BaseModal :open="craftOpen" title="开炉炼丹" wide @close="craftOpen = false">
+      <p class="mb-2 text-[11px] text-ink-faint tabular">灵草 {{ resources.herb }} · 灵石 {{ formatGN(resources.spiritStone) }}</p>
+      <div v-if="recipes.length" class="max-h-64 space-y-2 overflow-y-auto">
+        <div v-for="r in recipes" :key="r.def.id" class="card-ink px-3.5 py-2.5">
+          <div class="flex items-center gap-3">
+            <GameIcon :name="r.def.icon" :size="18" :style="{ color: qualityDef(r.def.quality).color }" />
+            <div class="min-w-0 grow">
+              <p class="flex items-center gap-2">
+                <span class="font-kai text-[13px] text-ink">{{ r.def.name }}</span>
+                <span class="text-[10px] text-ink-ghost">{{ r.able.rank }} 阶</span>
+                <span v-if="r.able.overReach > 0" class="text-[10px] text-cinnabar">越阶 {{ r.able.overReach }}</span>
+              </p>
+              <p class="text-[11px] text-ink-faint tabular">灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
+            </div>
+            <div class="shrink-0 text-right">
+              <p class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</p>
+              <p class="text-[10px] text-ink-ghost">把握</p>
+            </div>
+            <button class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
+          </div>
+          <p v-for="w in r.able.weakness" :key="w" class="mt-1 pl-7 text-[10px] text-ink-ghost">· {{ w }}</p>
+        </div>
+      </div>
+      <p v-else class="px-1 py-6 text-center text-[11px] leading-relaxed text-ink-faint">
+        你还不知道任何丹方。
+        <br />
+        <span class="text-[10px]">多采多看多打听,方子自会找上门来</span>
+      </p>
+      <template #footer>
+        <button class="btn-seal w-full" @click="craftOpen = false">收 炉</button>
+      </template>
+    </BaseModal>
 
     <!-- 部位候选列表 -->
     <BaseModal :open="pickerSlot !== null" :title="pickerSlot ? EQUIP_SLOT_NAMES[pickerSlot] : ''" @close="pickerSlot = null">
@@ -267,7 +331,7 @@
   import { craftability, type Craftability } from '@/core/craftability'
   import { decomposeByRanks, decomposeEquipment, artifactUpCost, upgradeArtifact } from '@/core/forge'
   import { keepVerdict } from '@/core/smartKeep'
-  import { formatGN, formatPercent } from '@/utils/format'
+  import { formatGN, formatNum, formatPercent } from '@/utils/format'
   import { STAT_NAMES } from '@/ui/statNames'
   import type { AnyStatKey, EquipSlot, GNum, PillDef } from '@/types'
   import SectionTitle from '@/components/common/SectionTitle.vue'
@@ -359,8 +423,10 @@
   const recipes = computed(() =>
     availableRecipes()
       .map(id => ({ def: pillDef(id), cost: pillCraftCost(id), able: craftability(id) }))
-      .filter((x): x is { def: PillDef; cost: { herb: number; stone: GNum }; able: Craftability } =>
-        x.def !== undefined && x.cost !== null && x.able !== null)
+      .filter(
+        (x): x is { def: PillDef; cost: { herb: number; stone: GNum }; able: Craftability } =>
+          x.def !== undefined && x.cost !== null && x.able !== null
+      )
       .sort((a, b) => a.able.rank - b.able.rank)
   )
 
@@ -378,6 +444,44 @@
     { icon: 'sparkles', name: '器灵尘', desc: '强化装备的灵性之尘', value: resources.dust },
     { icon: 'book', name: '悟道点', desc: '功法进修与法宝炼化所需', value: resources.wudao }
   ])
+
+  /** 材料格子:含灵石一并展示,数量走 formatNum 免得格子被长数字撑破 */
+  const materialGrid = computed(() => [
+    ...materialRows.value.map(m => ({
+      key: m.name,
+      icon: m.icon,
+      name: m.name,
+      desc: m.desc,
+      color: 'text-ink-soft',
+      display: formatNum(m.value),
+      full: String(m.value)
+    })),
+    {
+      key: '灵石',
+      icon: 'gem',
+      name: '灵石',
+      desc: '修行界的通行货币',
+      color: 'text-gold-ink',
+      display: formatGN(resources.spiritStone),
+      full: formatGN(resources.spiritStone)
+    }
+  ])
+
+  const materialDetail = ref<string | null>(null)
+  const currentMaterial = computed(() => materialGrid.value.find(m => m.key === materialDetail.value) ?? null)
+
+  const pillDetail = ref<string | null>(null)
+  const currentPill = computed(() => (pillDetail.value ? (pillRows.value.find(r => r.def?.id === pillDetail.value) ?? null) : null))
+
+  const craftOpen = ref(false)
+
+  /** 服用后若已吃完最后一枚,顺手关掉详情——否则弹窗会停在一个不存在的丹药上 */
+  function onUsePill(): void {
+    const id = pillDetail.value
+    if (!id) return
+    usePill(id)
+    if (!pillRows.value.some(r => r.def?.id === id)) pillDetail.value = null
+  }
 
   const artifactSlots = computed(() => (player.major >= 3 ? 2 : 1))
 

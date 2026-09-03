@@ -22,7 +22,7 @@ const CATEGORIES = [
     match: ['buildSim', 'buildSearch', 'buildDetect', 'buildAdvisor', 'equipSet', 'gongfaBranch', 'softCapAudit', 'linggenAffinity', 'linggenRole']
   },
   { name: 'Progression 成长曲线', match: ['progressionSim', 'breakthrough', 'inflationAudit'] },
-  { name: 'Economy     资源经济', match: ['economySim', 'lootSim', 'pillValue', 'veinEconomyAudit', 'resourceGuidance'] },
+  { name: 'Economy     资源经济', match: ['economySim', 'lootSim', 'pillValue', 'veinEconomyAudit', 'veinVisibility', 'resourceGuidance'] },
   {
     name: 'Regression  服务与归因',
     match: ['loadoutService', 'battleAnalysis', 'loreService', 'contentReachability', 'mentorService', 'worldMemory', 'phase31LinkAudit', 'suppress', 'game.spec']

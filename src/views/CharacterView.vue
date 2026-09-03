@@ -1,19 +1,10 @@
 <template>
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
-    <!-- 基本信息 -->
+    <!-- 基本信息:名号、境界、年龄、世数皆在全局顶栏常驻,此处不再重复 -->
     <div class="card-ink px-4 py-4">
       <div class="flex items-center justify-between">
-        <div>
-          <p class="font-kai text-[22px] tracking-[0.2em] text-ink">{{ player.name }}</p>
-          <p class="mt-1 text-[11px] text-ink-faint tabular">
-            {{ player.realmName }} · {{ Math.floor(player.age) }} 岁 / {{ formatYears(player.lifespanMax) }}
-            <template v-if="player.reincarnation.count">· 第 {{ player.reincarnation.count + 1 }} 世</template>
-          </p>
-        </div>
-        <div class="text-right">
-          <p class="text-[10px] tracking-[0.3em] text-ink-faint">战 力</p>
-          <p class="font-kai text-[18px] text-cinnabar tabular">{{ formatGN(stats.power) }}</p>
-        </div>
+        <span class="text-[10px] tracking-[0.3em] text-ink-faint">战 力</span>
+        <span class="font-kai text-[18px] text-cinnabar tabular">{{ formatGN(stats.power) }}</span>
       </div>
       <div class="ink-divider my-3" />
       <!-- 灵根 -->
@@ -267,7 +258,7 @@
   import { mentorHint } from '@/core/fortuneChain'
   import { buildIdentity } from '@/core/identityService'
   import { rootElements, tendencyLines } from '@/core/linggenAffinity'
-  import { formatGN, formatPercent, formatYears } from '@/utils/format'
+  import { formatGN, formatPercent } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
   import { STAT_NAMES } from '@/ui/statNames'
   import SectionTitle from '@/components/common/SectionTitle.vue'

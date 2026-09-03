@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>隐私政策 · 云隐修仙录</title>
+    <meta name="description" content="《云隐修仙录》隐私政策 " />
+    <meta name="robots" content="index, follow" />
+    <link rel="icon" href="./favicon.ico" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="隐私政策 · 云隐修仙录" />
+    <meta property="og:description" content="存档只保存在你自己的设备上，不上传、不同步。" />
+    <style>
+      /* 水墨色板 —— 与游戏内 style.css 的 @theme 保持一致 */
+      :root {
+        --paper: rgb(243 239 228);
+        --paper-deep: rgb(234 228 211);
+        --paper-dark: rgb(221 213 194);
+        --ink: rgb(41 39 34);
+        --ink-soft: rgb(74 70 61);
+        --ink-faint: rgb(133 127 112);
+        --ink-ghost: rgb(185 178 160);
+        --cinnabar: rgb(168 63 57);
+        --qinghua: rgb(79 118 153);
+        --gold-ink: rgb(156 122 60);
+        --jade: rgb(110 139 116);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--paper);
+        color: var(--ink-soft);
+        font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+        font-size: 15px;
+        line-height: 1.9;
+        /* 宣纸纹理：两层极淡的径向渐变叠出不均匀的纸面 */
+        background-image:
+          radial-gradient(circle at 20% 15%, rgb(255 255 255 / 0.5) 0%, transparent 45%),
+          radial-gradient(circle at 80% 70%, rgb(221 213 194 / 0.35) 0%, transparent 50%);
+        background-attachment: fixed;
+      }
+
+      .scroll {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 3rem 1.25rem 4rem;
+      }
+
+      /* ── 页眉 ── */
+      header {
+        text-align: center;
+        padding-bottom: 1.75rem;
+        border-bottom: 1px solid var(--paper-dark);
+        margin-bottom: 2.25rem;
+      }
+
+      .seal {
+        display: inline-block;
+        padding: 0.25rem 0.85rem;
+        margin-bottom: 1rem;
+        background: var(--cinnabar);
+        color: var(--paper);
+        font-size: 0.8rem;
+        letter-spacing: 0.35em;
+        text-indent: 0.35em;
+        border-radius: 2px;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-family: 'STKaiti', 'KaiTi', 'Kaiti SC', serif;
+        font-size: clamp(1.75rem, 5vw, 2.4rem);
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: 0.12em;
+      }
+
+      .subtitle {
+        margin: 0 0 1.25rem;
+        color: var(--ink-faint);
+        font-size: 0.9rem;
+        letter-spacing: 0.05em;
+      }
+
+      .dates {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem 1.5rem;
+        color: var(--ink-ghost);
+        font-size: 0.8rem;
+      }
+
+      /* ── 核心结论 ── */
+      .creed {
+        margin: 0 0 2.5rem;
+        padding: 1.25rem 1.5rem;
+        background: var(--paper-deep);
+        border-left: 3px solid var(--cinnabar);
+        border-radius: 3px;
+      }
+
+      .creed p {
+        margin: 0;
+        color: var(--ink);
+        font-size: 1.02rem;
+      }
+
+      .creed strong {
+        color: var(--cinnabar);
+        font-weight: 600;
+      }
+
+      /* ── 章节 ── */
+      section {
+        margin-bottom: 2.5rem;
+      }
+
+      h2 {
+        margin: 0 0 0.9rem;
+        padding-left: 0.75rem;
+        border-left: 3px solid var(--gold-ink);
+        font-family: 'STKaiti', 'KaiTi', 'Kaiti SC', serif;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: 0.06em;
+      }
+
+      h3 {
+        margin: 1.5rem 0 0.6rem;
+        font-size: 0.98rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      p {
+        margin: 0 0 0.85rem;
+      }
+
+      ul {
+        margin: 0 0 0.85rem;
+        padding-left: 1.35rem;
+      }
+
+      li {
+        margin-bottom: 0.3rem;
+      }
+
+      li::marker {
+        color: var(--ink-ghost);
+      }
+
+      strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      a {
+        color: var(--qinghua);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        overflow-wrap: anywhere;
+      }
+
+      a:hover,
+      a:focus-visible {
+        color: var(--cinnabar);
+      }
+
+      code {
+        padding: 0.1em 0.4em;
+        background: var(--paper-deep);
+        border-radius: 3px;
+        font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+        font-size: 0.86em;
+        color: var(--ink);
+      }
+
+      /* ── 表格 ── */
+      .table-wrap {
+        overflow-x: auto;
+        margin-bottom: 0.85rem;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+        min-width: 22rem;
+      }
+
+      th,
+      td {
+        padding: 0.6rem 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--paper-dark);
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--paper-deep);
+        color: var(--ink);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      /* ── 提示块 ── */
+      .note {
+        margin: 0 0 0.85rem;
+        padding: 0.85rem 1.1rem;
+        background: var(--paper-deep);
+        border-left: 3px solid var(--qinghua);
+        border-radius: 3px;
+        font-size: 0.92rem;
+      }
+
+      .note.warn {
+        border-left-color: var(--gold-ink);
+      }
+
+      .note :last-child {
+        margin-bottom: 0;
+      }
+
+      /* ── 页脚 ── */
+      footer {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--paper-dark);
+        text-align: center;
+        color: var(--ink-ghost);
+        font-size: 0.82rem;
+      }
+
+      footer p {
+        margin: 0 0 0.4rem;
+      }
+
+      .yes {
+        color: var(--cinnabar);
+        font-weight: 600;
+      }
+
+      .no {
+        color: var(--jade);
+        font-weight: 600;
+      }
+
+      @media (max-width: 480px) {
+        .scroll {
+          padding: 2rem 1rem 3rem;
+        }
+        body {
+          font-size: 14.5px;
+        }
+      }
+
+      @media print {
+        body {
+          background: #fff;
+          background-image: none;
+        }
+        .scroll {
+          max-width: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="scroll">
+      <header>
+        <div class="seal">云隐修仙录</div>
+        <h1>隐私政策</h1>
+        <p class="subtitle">适用于网页版 · Windows 桌面版 · Android 版</p>
+        <div class="dates">
+          <span>生效日期：2026 年 9 月 4 日</span>
+          <span>最后更新：2026 年 9 月 4 日</span>
+        </div>
+      </header>
+
+      <div class="creed">
+        <p>本政策的核心结论：<strong>你的游戏存档只存在你自己的设备上，我们不收集、也无法读取它。</strong></p>
+        <p style="margin-top: 0.6rem; font-size: 0.94rem">游戏没有账号体系，不上传存档，不做云同步。需要如实告知的是：接入了第三方流量统计服务，用于了解访问来源与访问量——它不接触你的任何游戏数据，详见<a href="#third-party">第六节</a>。</p>
+      </div>
+
+      <section>
+        <h2>一、简介</h2>
+        <p>《云隐修仙录》是一款<strong>纯单机</strong>的文字修仙放置游戏。我们尊重并保护你的隐私。</p>
+        <p>本政策说明游戏如何处理（以及为何几乎不处理）你的数据。游戏为开源项目，你可以在 <a href="https://github.com/setube/yunyin-xiuxian" target="_blank" rel="noopener noreferrer">GitHub 仓库</a> 中逐行核对本政策的每一条声明。</p>
+      </section>
+
+      <section>
+        <h2>二、我们不收集哪些信息</h2>
+        <p>游戏<strong>不会</strong>收集、也不会向我们发送以下任何信息：</p>
+        <ul>
+          <li>姓名、手机号、邮箱、身份证件等身份信息</li>
+          <li>设备标识符（IMEI、Android ID、广告 ID、MAC 地址等）</li>
+          <li>精确位置信息</li>
+          <li>通讯录、短信、通话记录</li>
+          <li>相册、摄像头、麦克风</li>
+          <li>应用列表、剪贴板内容</li>
+          <li>你的游戏存档内容（道号、境界、装备、进度等一概不上传）</li>
+        </ul>
+        <p>游戏不要求注册或登录，不存在账号，我们没有任何可以标识到你个人的资料。</p>
+        <div class="note">
+          <p>唯一的例外是网页访问层面的流量统计——它统计的是「有多少人从哪里访问了这个站点」，不涉及上述任何一项，也不涉及你的游戏内容。完整说明见<a href="#third-party">第六节</a>。</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>三、游戏在你设备上保存了什么</h2>
+        <p>游戏需要记住你的存档，这些数据<strong>只写在你自己的设备上</strong>：</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>类别</th>
+                <th>具体内容</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>游戏进度</td>
+                <td>道号、境界、修为、寿元、灵根、天赋、装备、功法、洞府、灵兽、任务、成就、图鉴、转世与终局进度</td>
+              </tr>
+              <tr>
+                <td>游戏设置</td>
+                <td>音量、音效开关、动效强度、战报播放速度、界面偏好等</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>这些内容全部由你自己在游戏中产生，其中「道号」由你自行输入——请不要填写真实姓名或任何个人敏感信息，游戏不需要它们。</p>
+      </section>
+
+      <section>
+        <h2>四、数据存储在哪里</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>平台</th>
+                <th>存储位置</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>网页版</td>
+                <td>浏览器的 <code>localStorage</code>（属于你访问游戏所用的那个浏览器）</td>
+              </tr>
+              <tr>
+                <td>Windows 版</td>
+                <td>应用自身的用户数据目录（Electron 本地存储，不出本机）</td>
+              </tr>
+              <tr>
+                <td>Android 版</td>
+                <td>应用私有目录内的 WebView 本地存储（其他应用无法读取）</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>补充说明：</p>
+        <ul>
+          <li>存档在写入前会经 <strong>AES 加密</strong>处理，避免被随意翻阅或篡改。</li>
+          <li>存档<strong>不会</strong>上传到任何服务器，也不会在你的多个设备之间同步。</li>
+        </ul>
+        <div class="note warn">
+          <p><strong>清除浏览器缓存 / 站点数据会删除网页版存档；卸载客户端会删除本地存档。</strong>请在游戏「设置」中定期导出备份。</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>五、游戏本体不与服务器通信</h2>
+        <p>游戏的<strong>玩法逻辑完全在你的设备上运行</strong>，不需要联网：</p>
+        <ul>
+          <li>游戏代码不向任何服务器发送请求（无 <code>fetch</code>、无 <code>XMLHttpRequest</code>、无第三方请求库）。</li>
+          <li>没有账号服务器、没有排行榜服务器、没有云存档服务器。</li>
+          <li>不做在线校验。断网后除下述统计脚本无法加载外，<strong>全部游戏功能正常</strong>——修炼、战斗、历练、存读档都不受影响。</li>
+          <li>游戏素材（图片、音频、字体）全部随包提供，不从外部 CDN 加载。</li>
+        </ul>
+        <div class="note">
+          <p>页面本身会加载一个第三方流量统计脚本（见<a href="#third-party">第六节</a>）；Android 版首次启动时还会做一次只在设备内部进行的存档迁移（见<a href="#platforms">第七节</a>）。除这两项外，游戏不产生任何网络通信。</p>
+        </div>
+      </section>
+
+      <section id="third-party">
+        <h2>六、第三方流量统计</h2>
+        <p>为了了解有多少人在玩、从哪里知道这个游戏，站点接入了 <strong>51.LA 网站统计</strong>（<a href="https://www.51.la/" target="_blank" rel="noopener noreferrer">www.51.la</a>）。这是本游戏唯一接入的第三方服务。</p>
+
+        <h3>生效范围</h3>
+        <p>网页版、Android 版、Windows 桌面版<strong>三个平台均会进行该统计</strong>。</p>
+
+        <h3>统计了什么</h3>
+        <p>统计的对象是<strong>「访问」这件事本身</strong>，而非你在游戏里做了什么。当页面被打开、或你在游戏内切换界面时，会向 51.LA 发送一条访问记录，其中包含：</p>
+        <ul>
+          <li>访问来路（你从哪个网站、搜索引擎或链接进入）</li>
+          <li>访问的页面路径与访问时间、停留时长</li>
+          <li>你的 IP 地址，以及由此推断的大致地区（省 / 市级别）</li>
+          <li>浏览器类型、操作系统、屏幕分辨率、系统语言</li>
+          <li>一个由 51.LA 生成的匿名访客标识，用于区分新访客与回访者</li>
+        </ul>
+
+        <h3>没有统计什么</h3>
+        <ul>
+          <li><strong>不包含你的任何游戏数据</strong>——道号、境界、修为、装备、存档内容一概不在其中，统计脚本也读不到它们。</li>
+          <li>不包含你的姓名、手机号、邮箱等身份信息，我们从未向 51.LA 提供过这些（我们本就没有）。</li>
+          <li>我们只能看到聚合后的访问量与来源分布，无法据此定位到某一个具体的人。</li>
+        </ul>
+
+        <div class="note warn">
+          <p>这些数据由 51.LA 依据其自身的隐私政策处理与存储。若你不希望被统计，可以在浏览器中启用广告 / 追踪拦截扩展，或在系统层面拦截对 <code>51.la</code> 域名的访问——拦截后游戏功能不受任何影响，全部玩法照常运行。</p>
+        </div>
+
+        <p>除此之外，游戏<strong>不接入</strong>任何广告、推送 SDK，不使用用户画像或个性化推荐，也不会向任何第三方出售、共享或转让你的信息。</p>
+      </section>
+
+      <section id="platforms">
+        <h2>七、各平台的补充说明</h2>
+
+        <h3>Android 版关于网络权限</h3>
+        <p>安装包中声明了以下两项权限：</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>权限</th>
+                <th>是否实际使用</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>INTERNET</code></td>
+                <td><span class="yes">是</span></td>
+                <td>两处用途：① 加载第六节所述的流量统计脚本；② 首次启动的本地存档迁移（见下）</td>
+              </tr>
+              <tr>
+                <td><code>ACCESS_NETWORK_STATE</code></td>
+                <td><span class="no">否</span></td>
+                <td>打包框架（Capacitor）模板的默认声明，游戏未读取网络状态</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>关于首次启动的存档迁移</strong>：为了让早期版本的玩家不丢失进度，应用在首次启动时会执行一次存档迁移——在你的设备内部临时启动一个<strong>只监听本机回环地址（localhost）</strong>的服务，读取旧版本遗留的存档数据，随即关闭。</p>
+        <p>需要如实说明的几点：</p>
+        <ul>
+          <li>整个过程<strong>完全在你的设备内部完成</strong>，数据不经过任何外部网络，不发送给我们，也不发送给任何第三方。</li>
+          <li>Android 系统规定，即使只监听本机回环地址也必须声明 <code>INTERNET</code> 权限。</li>
+          <li>迁移<strong>只执行一次</strong>，完成后不再启动；全新安装且无旧存档的用户会直接跳过该流程。</li>
+        </ul>
+        <p>除上述两项外，游戏不进行任何其他网络通信。你可以自行验证：断网后除统计脚本无法加载外，全部游戏功能正常。</p>
+        <p>游戏未申请存储、位置、相机、麦克风、通讯录、电话等任何敏感权限。</p>
+
+        <h3>Windows 桌面版</h3>
+        <p>由 Electron 打包为本地应用，<strong>不含自动更新、不含崩溃上报</strong>。存档等全部游戏数据留在本机。与另两个平台一样，页面会加载第六节所述的流量统计脚本。</p>
+
+        <h3>网页版的托管说明</h3>
+        <p>网页版是纯静态站点。除第六节所述的流量统计外，还需如实告知：当你用浏览器访问任何网站时，承载该网站的服务器与网络服务商可能按照行业惯例产生标准的服务器访问日志（例如 IP 地址、访问时间、浏览器 User-Agent）。这属于 Web 访问的固有技术特性，<strong>游戏代码本身不读取、不采集、不使用这类数据</strong>，我们也不会将其与你的游戏内容关联。</p>
+      </section>
+
+      <section>
+        <h2>八、你对数据的控制权</h2>
+        <p>你对自己的存档拥有完全控制权，随时可在游戏「设置」中：</p>
+        <ul>
+          <li><strong>导出存档</strong> —— 生成 <code>yunyin-xiuxian-&lt;时间戳&gt;.save</code> 文件保存到你的设备，用于备份或迁移。</li>
+          <li><strong>导入存档</strong> —— 从之前导出的文件恢复进度。</li>
+          <li><strong>清空数据</strong> —— 一键删除全部游戏数据，操作立即生效且不可撤销。</li>
+        </ul>
+        <p>此外，你也可以通过清除浏览器站点数据（网页版）或卸载应用（客户端）来彻底删除全部数据。<strong>数据删除后不可恢复，我们也没有任何副本可供找回。</strong></p>
+      </section>
+
+      <section>
+        <h2>九、未成年人保护</h2>
+        <p>游戏不收集可识别到个人的信息，不要求注册、不索取身份资料，因此不存在需要监护人单独同意的个人信息处理行为。第六节所述的流量统计不区分访客年龄，也不针对任何人做画像。</p>
+        <p>我们不针对未成年人进行任何形式的定向推送或数据采集。若监护人对本游戏的数据处理有任何疑问，欢迎通过下方渠道联系我们。</p>
+      </section>
+
+      <section>
+        <h2>十、政策的更新</h2>
+        <p>若本政策发生变更，我们会更新本页面顶部的「最后更新」日期。由于本页面随开源仓库一同发布，你可以在 <a href="https://github.com/setube/yunyin-xiuxian/commits/main/public/privacy.html" target="_blank" rel="noopener noreferrer">提交历史</a> 中查看本政策的全部修订记录，逐字比对每一次改动。</p>
+      </section>
+
+      <section>
+        <h2>十一、联系我们</h2>
+        <p>若你对本隐私政策有任何疑问、意见或投诉，可通过以下方式联系：</p>
+        <ul>
+          <li><strong>GitHub Issues</strong>：<a href="https://github.com/setube/yunyin-xiuxian/issues" target="_blank" rel="noopener noreferrer">github.com/setube/yunyin-xiuxian/issues</a></li>
+          <li><strong>QQ 交流群</strong>：920930589</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>《云隐修仙录》—— 一念修行 · 云深不知处</p>
+        <p><a href="./">返回游戏</a></p>
+      </footer>
+    </main>
+  </body>
+</html>
