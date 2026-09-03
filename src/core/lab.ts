@@ -12,7 +12,7 @@ import { STAT_NAMES } from '@/ui/statNames'
 import { buildPlayerSnap } from './playerSnap'
 import { detectBuild, type BuildDetection } from './buildDetect'
 import { resolveEquipStats } from './equipGen'
-import { celestialDepthScale, mergeRules, runGauntlet, worldFoeSnap } from './gauntlet'
+import { celestialDepthScale, forgeSoul, mergeRules, runGauntlet, worldFoeSnap } from './gauntlet'
 import { currentDaoRules } from './endgameService'
 import { useInventoryStore } from '@/stores/inventory'
 
@@ -77,16 +77,30 @@ export function whatIfEquip(uid: string): WhatIfReport | null {
   const currentUid = inventory.equipped[template.slot]
   if (currentUid === uid) return null
 
-  const before = buildPlayerSnap()
+  const before = buildPlayerSnap(true)
   const gain = resolveEquipStats(item)
-  let mods = applyModDelta(before.mods, gain.mods, 1)
+  const currentItem = currentUid ? inventory.findItem(currentUid) : undefined
+  const lose = currentItem ? resolveEquipStats(currentItem) : undefined
+
+  // 器魂口径下的词条变化(Phase 33.3):换装后重新凝炼器魂,再取差值。
+  // 不能把未压缩的词条直接加到已压缩的基底上——器魂容量固定,那样会高估收益,
+  // 甚至把「换了更高品质但方向不变」误报成变强(实际在天界毫无变化)
+  const rawEquip = inventory.equipMods
+  const nextEquip = applyModDelta(applyModDelta(rawEquip, gain.mods, 1), lose?.mods, -1)
+  const soulBefore = forgeSoul(rawEquip)
+  const soulAfter = forgeSoul(nextEquip)
+  const mods: StatMods = { ...before.mods }
+  for (const k of new Set([...Object.keys(soulBefore), ...Object.keys(soulAfter)])) {
+    const key = k as AnyStatKey
+    const d = (soulAfter[key] ?? 0) - (soulBefore[key] ?? 0)
+    if (d !== 0) mods[key] = (mods[key] ?? 0) + d
+  }
+
+  // 平铺数值不受器魂约束(天界敌人本就按三维等比缩放,已互相抵消)
   let attack = add(before.attack, gain.flats.attack)
   let defense = add(before.defense, gain.flats.defense)
   let maxHp = add(before.maxHp, gain.flats.maxHp)
-  const currentItem = currentUid ? inventory.findItem(currentUid) : undefined
-  if (currentItem) {
-    const lose = resolveEquipStats(currentItem)
-    mods = applyModDelta(mods, lose.mods, -1)
+  if (lose) {
     attack = subClamp(attack, lose.flats.attack)
     defense = subClamp(defense, lose.flats.defense)
     maxHp = subClamp(maxHp, lose.flats.maxHp)

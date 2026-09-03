@@ -278,7 +278,7 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
     return null
   }
   const player = usePlayerStore()
-  const stats = player.finalStats
+  const stats = player.celestialStats
   const ref = { attack: stats.attack, defense: stats.defense, maxHp: stats.maxHp }
   const depth = celestialDepthScale(stats.mods)
   const foes = []
@@ -293,7 +293,7 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
   // 环境按当年(道途取今世——重写是今日之你应当年之局)
   const rules = mergeRules(currentDaoRules(), markRules({ ...mark, daoPathId: null }, world, trial))
   const perWin = endgame.daoPath === 'sword' ? SWORD_PER_WIN : endgame.daoPath === 'slaughter' ? SLAUGHTER_PER_WIN : undefined
-  const report = runGauntlet(buildPlayerSnap(), foes, rules, 'healBetweenPct' in target ? target.healBetweenPct : 0.5, rng, {
+  const report = runGauntlet(buildPlayerSnap(true), foes, rules, 'healBetweenPct' in target ? target.healBetweenPct : 0.5, rng, {
     perWinPlayerMods: perWin
   })
   const beaten = report.cleared && report.totalRounds < mark.rounds
@@ -334,7 +334,7 @@ export function challengeWorld(worldId: string): ExpeditionResult | null {
     ui.toast(`道源不足 ${world.entryCost}(天道熔炉可献祭闲置资财)`, 'warn')
     return null
   }
-  const stats = player.finalStats
+  const stats = player.celestialStats
   const ref = { attack: stats.attack, defense: stats.defense, maxHp: stats.maxHp }
   const depth = celestialDepthScale(stats.mods)
   const foes = []
@@ -343,7 +343,7 @@ export function challengeWorld(worldId: string): ExpeditionResult | null {
   }
   foes.push(worldFoeSnap(world.guardian, ref, 1, depth))
   const rules = mergeRules(currentDaoRules(), world.rules)
-  const report = runGauntlet(buildPlayerSnap(), foes, rules, world.healBetweenPct, rng)
+  const report = runGauntlet(buildPlayerSnap(true), foes, rules, world.healBetweenPct, rng)
 
   let reward = 0
   if (report.cleared) {
@@ -378,7 +378,7 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
     ui.toast(`道源不足 ${trial.entryCost}`, 'warn')
     return null
   }
-  const stats = player.finalStats
+  const stats = player.celestialStats
   const ref = { attack: stats.attack, defense: stats.defense, maxHp: stats.maxHp }
   const depth = celestialDepthScale(stats.mods)
   const foes = []
@@ -387,7 +387,7 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
   }
   const rules = mergeRules(currentDaoRules(), trial.rules)
   const perWin = endgame.daoPath === 'sword' ? SWORD_PER_WIN : endgame.daoPath === 'slaughter' ? SLAUGHTER_PER_WIN : undefined
-  const report = runGauntlet(buildPlayerSnap(), foes, rules, trial.healBetweenPct, rng, { perWinPlayerMods: perWin })
+  const report = runGauntlet(buildPlayerSnap(true), foes, rules, trial.healBetweenPct, rng, { perWinPlayerMods: perWin })
 
   let reward = 0
   if (report.cleared) {

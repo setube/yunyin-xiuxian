@@ -27,7 +27,7 @@ const CATEGORIES = [
     name: 'Regression  服务与归因',
     match: ['loadoutService', 'battleAnalysis', 'loreService', 'contentReachability', 'mentorService', 'worldMemory', 'phase31LinkAudit', 'suppress', 'game.spec']
   },
-  { name: 'Celestial   真仙终局', match: ['celestialSim', 'endgameService', 'phase21'] },
+  { name: 'Celestial   真仙终局', match: ['celestialSim', 'endgameService', 'phase21', 'soulForge', 'souls.spec'] },
   {
     name: 'Decision    决策质量',
     match: [

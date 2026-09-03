@@ -72,7 +72,7 @@ function pactRules(pact: PactDef | undefined): CombatRules | undefined {
 
 /** 远征玩家快照:现取现算(层间换装立即生效)+ 契约与道途修饰 */
 function runSnap(run: WorldRunState): CombatantSnap {
-  const snap = buildPlayerSnap()
+  const snap = buildPlayerSnap(true)
   const pact = run.pactId ? pactDef(run.pactId) : undefined
   let mods = snap.mods
   if (run.sealedMods) mods = stackedMods(mods, run.sealedMods, 1)
@@ -287,7 +287,7 @@ export function previewFight(foeShape: WorldFoeShape, node?: WorldRouteNode): Fi
   const heavy = foeShape.skills.find(sk => sk.mult >= 2)
   if (heavy) riskLines.push(`【${heavy.name}】足以重创,留足气血以备不测`)
   if ((rules?.healMult ?? 1) < 0.7) riskLines.push('此地生机稀薄,回血难以为继')
-  const snap = run ? runSnap(run) : buildPlayerSnap()
+  const snap = run ? runSnap(run) : buildPlayerSnap(true)
   const rate = sampleWinRate(snap, foe, rng, 3, rules)
   const winText = rate >= 0.9 ? '胜算在握' : rate >= 0.6 ? '约有七成胜算' : rate >= 0.35 ? '五五之数,凶险参半' : '凶多吉少'
   return { skillLines, riskLines, winText }
@@ -338,7 +338,7 @@ export function challengeMutation(mutatorIds: string[]): MutationResult | null {
   for (let i = 0; i < MUTATION_FIGHTS; i += 1) {
     foes.push(worldFoeSnap(MUTATION_FOES[i % MUTATION_FOES.length]!, ref, Math.pow(MUTATION_ESCALATION, i)))
   }
-  const report = runGauntlet(buildPlayerSnap(), foes, rules, 0.4, rng, { perWinPlayerMods: perWinMods() })
+  const report = runGauntlet(buildPlayerSnap(true), foes, rules, 0.4, rng, { perWinPlayerMods: perWinMods() })
   let reward = 0
   if (report.cleared) {
     reward = MUTATION_BASE_REWARD
@@ -421,7 +421,7 @@ export function forecastExpedition(worldId: string, pactId: string | null): Expe
   const player = usePlayerStore()
   const stats = player.finalStats
   const pRef = { attack: stats.attack, defense: stats.defense, maxHp: stats.maxHp }
-  let snap = buildPlayerSnap()
+  let snap = buildPlayerSnap(true)
   if (pact?.special === 'soloArtifact') snap = { ...snap, artifacts: (snap.artifacts ?? []).slice(0, 1) }
   if (pact?.special === 'sealCore') {
     const sealed = sealCoreMods()

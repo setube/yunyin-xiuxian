@@ -13,11 +13,13 @@ import { mentorDef } from '@/data/mentors'
 import { talentDef } from '@/data/talents'
 import { baseCultPerSec, baseQiRegen, expRequirement, qiCap } from '@/core/formulas'
 import { computeFinalStats, modOf } from '@/core/statsCalc'
+import { forgeSoul } from '@/core/gauntlet'
 import type { FortuneChoice } from '@/core/fortuneChain'
 import { useInventoryStore } from './inventory'
 import { useCultivationStore } from './cultivation'
 import { useDongfuStore } from './dongfu'
 import { useResourcesStore } from './resources'
+import { useEndgameStore } from './endgame'
 
 export const usePlayerStore = defineStore(
   'player',
@@ -138,6 +140,39 @@ export const usePlayerStore = defineStore(
         qiRich: qiRich.value
       })
     )
+
+    /**
+     * 天界口径属性(Phase 33.3)——凡器入天界,数值尽去,只余形意。
+     *
+     * 装配了器魂:装备词条完全不计,改用器魂词条(玩家主动凝炼、主动取舍的那三缕形意)。
+     * 一枚未凝:退化为 forgeSoul 兜底,把装备词条等比压到器魂容量——
+     * 不至于让没接触过器魂系统的玩家直接裸装进天界,但也拿不到凝炼者的方向红利。
+     *
+     * 功法、洞府、称号、师承、灵兽、天赋皆属修士自身之道,不受此约束
+     */
+    const celestialStats = computed<FinalStats>(() => {
+      const endgame = useEndgameStore()
+      const equipSide = endgame.activeSouls.length > 0 ? endgame.soulMods : forgeSoul(inventory.equipMods)
+      return computeFinalStats({
+        major: major.value,
+        sub: sub.value,
+        linggenMult: linggen.value?.growthMult ?? 1,
+        modSources: [
+          equipSide,
+          cultivation.gongfaMods,
+          cultivation.buffMods,
+          dongfu.buildingMods,
+          dongfu.veinMods,
+          titleMods.value,
+          mentorMods.value,
+          petMods.value,
+          ...talentMods.value
+        ],
+        equipFlats: inventory.equipFlats,
+        daoFruit: reincarnation.value.daoFruit,
+        qiRich: qiRich.value
+      })
+    })
 
     /** 修为增速(每秒) */
     const cultPerSec = computed(
@@ -415,6 +450,7 @@ export const usePlayerStore = defineStore(
       qiCapValue,
       qiRich,
       finalStats,
+      celestialStats,
       cultPerSec,
       qiRegenPerSec,
       lifespanMax,

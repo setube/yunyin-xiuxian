@@ -231,13 +231,24 @@ describe('膨胀治理 · 天界词条对称', () => {
     expect(deep).toBeGreaterThan(1)
   })
 
-  it('加厚不完全追平,构筑优化仍有正收益', () => {
-    // 指数 <1:玩家深度翻倍时守关者加厚不足一倍,优化构筑依旧划算——
-    // 目的是吸收膨胀,不是把玩家的努力清零
-    const base = celestialDepthScale({ critRate: CELESTIAL_BASE_DEPTH * 2 })
-    const doubled = celestialDepthScale({ critRate: CELESTIAL_BASE_DEPTH * 4 })
-    expect(doubled / base).toBeLessThan(2)
-    expect(doubled).toBeGreaterThan(base)
+  it('加厚严格等比,堆厚度的净收益归零(堵死「不靠器魂堆到赢」)', () => {
+    // 曾用指数 0.85,理由是「留给构筑优化的收益空间」——那是设计错误:
+    // 指数 <1 时净优势随深度单调增长,功法/灵脉/天赋/称号这些不受器魂约束的来源
+    // (占真仙玩家词条深度六成)只要堆够就能碾过天界。
+    // 改为严格等比后,无论堆到多深,净优势恒定
+    const ratios = [2, 4, 8, 32, 128].map(k => {
+      const depth = CELESTIAL_BASE_DEPTH * k
+      return depth / (CELESTIAL_BASE_DEPTH * celestialDepthScale({ critRate: depth }))
+    })
+    for (const r of ratios) expect(r).toBeCloseTo(1, 6)
+    console.log(`\n深度翻 2→128 倍,净优势恒为 ${ratios[0]!.toFixed(3)} —— 堆厚度不再有任何收益`)
+  })
+
+  it('基准以下不加厚,六大标准流派完全不受影响', () => {
+    // 流派深度 1.02~2.43 全在基准 2.6 以下,天界平衡门照旧
+    for (const d of [1.02, 1.6, 2.43]) {
+      expect(celestialDepthScale({ critRate: d })).toBe(1)
+    }
   })
 })
 

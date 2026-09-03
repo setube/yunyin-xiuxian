@@ -67,37 +67,30 @@
           </div>
         </section>
 
-        <!-- 天道熔炉 -->
-        <section>
-          <SectionTitle title="天道熔炉" hint="前尘俗物,皆可熔作道源" />
-          <div class="card-ink mt-2 divide-y divide-ink/7 px-4">
-            <div v-for="row in furnaceRows" :key="row.rate.resource" class="flex items-center justify-between py-2.5">
-              <span class="text-[12px] text-ink-soft">{{ row.rate.name }}(存 {{ formatNum(row.have) }})</span>
-              <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="furnaceConvert(row.rate)">
-                {{ row.rate.per }} → 1 道源
-              </button>
-            </div>
-            <div class="flex items-center justify-between py-2.5">
-              <span class="text-[12px] text-ink-soft">灵石(存 {{ formatGN(resources.spiritStone) }})</span>
-              <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="furnaceConvertStone()">
-                {{ formatGN(furnaceStoneCost()) }} → 5 道源
-              </button>
-            </div>
-            <div class="py-2.5">
-              <div class="flex items-center justify-between">
-                <span class="text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
-                <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="condenseDaoFruit()">
-                  {{ DAO_SOURCE_PER_FRUIT }} 道源 → 道果 +1
-                </button>
-              </div>
-              <!-- S3 链路:本次凝聚后,下世收益变化 -->
-              <p class="mt-1 text-[10px] leading-relaxed text-ink-faint tabular">
-                当前 {{ fruitInfo.total }} 枚 · 有效 {{ fruitInfo.effective.toFixed(0) }} 枚
-                <span class="text-gold-ink">→ 凝后 {{ fruitInfo.nextEffective.toFixed(0) }} 枚(+{{ fruitInfo.deltaPct }}%)</span>
-                · 边际收益渐减
-              </p>
-            </div>
-          </div>
+        <!-- 天道熔炉 / 器魂:两处入口 -->
+        <section class="space-y-2">
+          <button
+            class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-99"
+            @click="furnaceOpen = true"
+          >
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/85 font-kai text-[19px] text-paper">炉</span>
+            <span class="min-w-0 flex-1">
+              <span class="block font-kai text-[14px] tracking-widest text-ink">天道熔炉</span>
+              <span class="block truncate text-[10px] leading-relaxed text-ink-faint">前尘俗物,皆可熔作道源</span>
+            </span>
+            <span class="shrink-0 text-[12px] text-ink-faint">›</span>
+          </button>
+
+          <button class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-99" @click="goSouls()">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-gold-ink/85 font-kai text-[19px] text-paper">魂</span>
+            <span class="min-w-0 flex-1">
+              <span class="block font-kai text-[14px] tracking-widest text-ink">器 魂</span>
+              <span class="block truncate text-[10px] leading-relaxed text-ink-faint">
+                凡器承不住天道,只余形意 · 已凝 {{ endgame.activeSouls.length }}/{{ SOUL_SLOTS }}
+              </span>
+            </span>
+            <span class="shrink-0 text-[12px] text-ink-faint">›</span>
+          </button>
         </section>
       </template>
 
@@ -483,7 +476,14 @@
         <p class="font-kai text-[13px] tracking-wider" :class="expedition.cleared ? 'text-jade' : 'text-cinnabar'">
           {{ expedition.markText }}
         </p>
-        <div class="mt-2 space-y-1">
+
+        <!-- 战斗过程:与历练同样逐回合播放 -->
+        <div class="mt-2">
+          <GauntletPanel :rows="expedition.rows" :player-name="player.name" />
+        </div>
+
+        <!-- 逐场摘要:场次多时限高滚动,不把弹窗撑到 82vh 上限 -->
+        <div class="mt-2 max-h-40 space-y-1 overflow-y-auto">
           <p
             v-for="(row, i) in expedition.rows"
             :key="i"
@@ -502,6 +502,42 @@
       </template>
       <template #footer>
         <button class="btn-seal w-full" @click="expedition = null">收 卷</button>
+      </template>
+    </BaseModal>
+
+    <!-- 天道熔炉 -->
+    <BaseModal :open="furnaceOpen" title="天道熔炉" @close="furnaceOpen = false">
+      <p class="mb-2 text-[11px] leading-relaxed text-ink-faint">前尘俗物,皆可熔作道源。</p>
+      <div class="card-ink divide-y divide-ink/7 px-4">
+        <div v-for="row in furnaceRows" :key="row.rate.resource" class="flex items-center justify-between py-2.5">
+          <span class="text-[12px] text-ink-soft">{{ row.rate.name }}(存 {{ formatNum(row.have) }})</span>
+          <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="furnaceConvert(row.rate)">
+            {{ row.rate.per }} → 1 道源
+          </button>
+        </div>
+        <div class="flex items-center justify-between py-2.5">
+          <span class="text-[12px] text-ink-soft">灵石(存 {{ formatGN(resources.spiritStone) }})</span>
+          <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="furnaceConvertStone()">
+            {{ formatGN(furnaceStoneCost()) }} → 5 道源
+          </button>
+        </div>
+        <div class="py-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
+            <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="condenseDaoFruit()">
+              {{ DAO_SOURCE_PER_FRUIT }} 道源 → 道果 +1
+            </button>
+          </div>
+          <!-- S3 链路:本次凝聚后,下世收益变化 -->
+          <p class="mt-1 text-[10px] leading-relaxed text-ink-faint tabular">
+            当前 {{ fruitInfo.total }} 枚 · 有效 {{ fruitInfo.effective.toFixed(0) }} 枚
+            <span class="text-gold-ink">→ 凝后 {{ fruitInfo.nextEffective.toFixed(0) }} 枚(+{{ fruitInfo.deltaPct }}%)</span>
+            · 边际收益渐减
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-seal w-full" @click="furnaceOpen = false">收 炉</button>
       </template>
     </BaseModal>
 
@@ -530,18 +566,27 @@
     <BaseModal :open="tutorialOpen" title="登临真仙" :closable="false">
       <div class="space-y-2.5 text-[13px] leading-relaxed">
         <p class="font-kai text-ink">凡间所得,终有尽时。</p>
-        <p class="text-ink-soft">玄铁、残页、灵石……到了此境,皆可献入<a
-          class="text-azure"
-          @click="tutorialOpen = false"
-        >天道熔炉</a>,熔作道源。</p>
         <p class="text-ink-soft">
-          道源,助你<b class="text-cinnabar">此世</b>问道——叩天界、立契约、踏试炼。
+          玄铁、残页、灵石……到了此境,皆可献入
+          <a class="text-azure" @click="tutorialOpen = false">天道熔炉</a>
+          ,熔作道源。
         </p>
         <p class="text-ink-soft">
-          道源又可凝作道果,道果随神魂不灭,助你<b class="text-violet-ink">来世</b>更进一步。
+          道源,助你
+          <b class="text-cinnabar">此世</b>
+          问道——叩天界、立契约、踏试炼。
+        </p>
+        <p class="text-ink-soft">
+          道源又可凝作道果,道果随神魂不灭,助你
+          <b class="text-violet-ink">来世</b>
+          更进一步。
         </p>
         <p class="mt-2 text-[11px] text-ink-faint">
-          一句话:<span class="text-cinnabar">道源是此世拿来折腾的</span>,<span class="text-violet-ink">道果是几世以后仍受益的财富</span>。
+          一句话:
+          <span class="text-cinnabar">道源是此世拿来折腾的</span>
+          ,
+          <span class="text-violet-ink">道果是几世以后仍受益的财富</span>
+          。
         </p>
       </div>
       <template #footer>
@@ -553,10 +598,12 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
   import { useResourcesStore } from '@/stores/resources'
   import { usePlayerStore } from '@/stores/player'
   import { useInventoryStore } from '@/stores/inventory'
   import { useEndgameStore } from '@/stores/endgame'
+  import { SOUL_SLOTS } from '@/data/souls'
   import { DAO_PATHS, CELESTIAL_WORLDS, TRIALS, FURNACE_RATES, DAO_SOURCE_PER_FRUIT, daoPathDef } from '@/data/endgame'
   import { PACTS, pactDef } from '@/data/pacts'
   import { MUTATORS, mutatorDef } from '@/data/mutators'
@@ -605,8 +652,15 @@
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
+  import GauntletPanel from '@/components/celestial/GauntletPanel.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
-  import { daoSourceDialog, fruitMarginalInfo, shouldShowEndgameTutorial, markEndgameTutorialSeen, markResourceDialogSeen } from '@/core/resourceGuidance'
+  import {
+    daoSourceDialog,
+    fruitMarginalInfo,
+    shouldShowEndgameTutorial,
+    markEndgameTutorialSeen,
+    markResourceDialogSeen
+  } from '@/core/resourceGuidance'
 
   const resources = useResourcesStore()
   const player = usePlayerStore()
@@ -615,8 +669,14 @@
 
   const unlocked = computed(() => endgameUnlocked())
 
+  const router = useRouter()
+  function goSouls(): void {
+    router.push({ name: 'souls' })
+  }
+
   // Phase 30.9:道源说明弹窗 / 道果链路 / 首次终局教学
   const daoSourceDialogOpen = ref(false)
+  const furnaceOpen = ref(false)
   const tutorialOpen = ref(false)
   const fruitInfo = computed(() => fruitMarginalInfo())
   // 首次进入天界(已解锁且未见过教学):自动弹终局导览

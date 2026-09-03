@@ -562,6 +562,7 @@ export type CounterKey =
   | 'reincarnations'
   | 'tribulations'
   | 'decomposed'
+  | 'soulsRefined'
   | 'offlineClaims'
   | 'bossKills'
   | 'buildingUpgrades'

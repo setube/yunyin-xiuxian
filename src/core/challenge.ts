@@ -114,7 +114,7 @@ export function undertakeChallenge(draft: ChallengeDraft, verdict: ChallengeVerd
     perWinPlayerMods: endgame.daoPath === 'sword' ? SWORD_PER_WIN : endgame.daoPath === 'slaughter' ? SLAUGHTER_PER_WIN : undefined
   }
   const name = draft.name.trim() || '无名之约'
-  const report = runGauntlet(buildPlayerSnap(), draftFoes(draft.worldId, ref), rules, world.healBetweenPct, rng, opts)
+  const report = runGauntlet(buildPlayerSnap(true), draftFoes(draft.worldId, ref), rules, world.healBetweenPct, rng, opts)
   let reward = 0
   if (report.cleared) {
     reward = verdict.reward

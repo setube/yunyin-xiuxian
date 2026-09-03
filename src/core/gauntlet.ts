@@ -1,7 +1,7 @@
 /**
  * 连战解算(纯函数)—— 特殊世界与天道试炼共用,亦被终局模拟器直接验证
  */
-import type { CombatantSnap, CombatRules, GNum, StatMods, WorldFoeShape } from '@/types'
+import type { CombatantSnap, CombatLogEntry, CombatRules, GNum, StatMods, WorldFoeShape } from '@/types'
 import type { RandomService } from '@/utils/random'
 import { mulN } from '@/utils/gnum'
 import { modDepth } from './statsCalc'
@@ -11,6 +11,45 @@ export interface ReferenceStats {
   attack: GNum
   defense: GNum
   maxHp: GNum
+}
+
+/**
+ * 天界器魂容量(Phase 33.3)。
+ *
+ * 凡器入天界,数值尽去,只余器魂——装备贡献的词条被归一化到这个总深度,
+ * 但各词条的**相对比例完全保留**。也就是说:你在人间选的构筑方向原样带进天界,
+ * 变的只是「堆了多少件、堆了多高品质」不再算数。
+ *
+ * 这样刷装备的价值从「累加总量」变成「调整方向」:九件神品与三件精品若方向相同,
+ * 在天界是同一个构筑;想变强只能改方向,不能靠更厚的数值。
+ *
+ * 容量取 1.3:必须**低于**满配器魂的合计深度(三枚化真约 1.52),
+ * 否则不凝器魂反而更强,系统等于没人用。
+ * 语义上也说得通——不凝就是被动挨天道压制,压得更狠;
+ * 凝了是主动掌控形意,略占便宜。这份便宜是「主动经营」的报酬,不是数值红利
+ */
+export const SOUL_CAPACITY = 1.3
+
+/** 基础三维百分比与修速:前者已由 worldFoeSnap 等比抵消,后者不参与战斗,均不入器魂 */
+const BASE_PCT_KEYS = new Set<keyof StatMods>(['attackPct', 'defensePct', 'maxHpPct', 'cultivationSpeed'])
+
+/**
+ * 器魂凝炼:把装备来源的词条等比压缩到 SOUL_CAPACITY。
+ * 未超出容量的原样保留(轻装玩家不受影响),超出则整体等比缩放——
+ * 等比是关键,它保证「形状不变、总量归一」
+ */
+export function forgeSoul(equipMods: StatMods): StatMods {
+  const depth = modDepth(equipMods)
+  if (depth <= SOUL_CAPACITY) return equipMods
+  const scale = SOUL_CAPACITY / depth
+  const out: StatMods = {}
+  for (const k in equipMods) {
+    const key = k as keyof StatMods
+    const v = equipMods[key]
+    // 只压缩正向构筑词条;负向词条(构筑代价)若一并压缩,反而是变相加强
+    out[key] = typeof v === 'number' && v > 0 && !BASE_PCT_KEYS.has(key) ? v * scale : v
+  }
+  return out
 }
 
 /**
@@ -27,8 +66,21 @@ export interface ReferenceStats {
  * 堆得再厚也换不来碾压,胜负重新回到构筑形状本身
  */
 export const CELESTIAL_BASE_DEPTH = 2.6
-/** 加厚指数 <1:守关者跟随但不完全追平,留给玩家构筑优化的收益空间 */
-export const CELESTIAL_DEPTH_EXP = 0.85
+/**
+ * 加厚指数。
+ *
+ * 必须是 1.0(严格等比)。曾误设 0.85,理由是「留给玩家构筑优化的收益空间」——
+ * 这个理由站不住:构筑优化的收益应当来自**形状**,不是来自**厚度**。
+ * 指数 <1 时净优势 = D^(1-exp) × BASE^exp,随玩家深度 D 单调增长,
+ * 等于给「堆厚度」开了后门:功法、灵脉、天赋、称号这些不受器魂约束的来源
+ * (实测占真仙玩家词条深度的六成)只要堆够,就能不靠器魂直接碾过天界。
+ *
+ * 取 1.0 后净优势恒为 CELESTIAL_BASE_DEPTH,与玩家堆了多少完全无关——
+ * 这才是「数值成长在天界互相抵消」的严格实现。
+ * 注意六大标准流派深度 1.02~2.43 全在基准以下,scale 恒为 1,平衡门不受影响;
+ * 加厚只对越过基准的堆叠生效,不惩罚正常构筑
+ */
+export const CELESTIAL_DEPTH_EXP = 1.0
 
 /** 玩家构筑深度对应的守关者加厚系数(不低于 1,浅构筑不会反被削) */
 export function celestialDepthScale(playerMods: StatMods): number {
@@ -98,6 +150,14 @@ export interface GauntletFightRow {
   win: boolean
   rounds: number
   hpLeftPct: number
+  /**
+   * 该场的逐回合战报。
+   * 仅供即时播放,**不可写入道痕等持久化结构**——道痕存的是构筑快照(replay),
+   * 每场几十条日志乘上 60 条道痕会把存档撑爆
+   */
+  logs?: CombatLogEntry[]
+  /** 该场敌人快照(播放时显示血条与名号) */
+  foe?: CombatantSnap
 }
 
 export interface GauntletReport {
@@ -151,7 +211,7 @@ export function runGauntlet(
     const fightRules: CombatRules = { ...(rules ?? {}), playerStartHpPct: Math.min(startCap, carried) }
     const result = resolveCombat(snap, foe, rng, fightRules)
     totalRounds += result.rounds
-    rows.push({ foeName: foe.name, win: result.win, rounds: result.rounds, hpLeftPct: result.playerHpPct })
+    rows.push({ foeName: foe.name, win: result.win, rounds: result.rounds, hpLeftPct: result.playerHpPct, logs: result.log, foe })
     if (!result.win) {
       return { cleared: false, fightsWon, totalRounds, rows }
     }

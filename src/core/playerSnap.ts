@@ -11,12 +11,19 @@ import { detectBuild } from './buildDetect'
 import { stackedMods, swordPurity, SWORD_LAYER_MODS } from './daoDepth'
 import { hasActiveSet } from './equipSet'
 
-export function buildPlayerSnap(): CombatantSnap {
+/**
+ * 构建玩家战斗快照。
+ *
+ * celestial=true 时走天界口径(Phase 33.3):装备贡献的词条先经 forgeSoul 凝为器魂
+ * ——凡器入天界数值尽去,只余器魂。构筑方向原样保留,堆叠总量不再算数。
+ * 基础三维不变(天界敌人本就按它等比缩放,已互相抵消)
+ */
+export function buildPlayerSnap(celestial = false): CombatantSnap {
   const player = usePlayerStore()
   const cultivation = useCultivationStore()
   const inventory = useInventoryStore()
   const endgame = useEndgameStore()
-  const stats = player.finalStats
+  const stats = celestial ? player.celestialStats : player.finalStats
   const artifacts = inventory.currentArtifacts
     .map(a => ({ def: artifactDef(a.defId), level: a.level }))
     .filter((x): x is { def: ArtifactDef; level: number } => x.def !== undefined)

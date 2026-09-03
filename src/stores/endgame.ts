@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { CelestialWorldDef, DaoMark, DaoPathId, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
+import { mergeMods } from '@/core/statsCalc'
+import { SOUL_SLOTS, soulMods as soulModsOf, type SoulInstance } from '@/data/souls'
 
 export interface TrialRecord {
   clears: number
@@ -54,6 +56,51 @@ export const useEndgameStore = defineStore(
     const endgameTutorialSeen = ref(false)
     const daoFruitTutorialSeen = ref(false)
     const resourceDialogSeen = ref(false)
+    /** 器魂:凡器在天界的形意。持有池 + 已装配(至多 SOUL_SLOTS 枚) */
+    const souls = ref<SoulInstance[]>([])
+    const equippedSouls = ref<string[]>([])
+    const soulTutorialSeen = ref(false)
+
+    /** 已装配器魂(过滤掉已不存在的 uid) */
+    const activeSouls = computed<SoulInstance[]>(() => {
+      // 防御两个数组字段:器魂是后加的 state,若存档来自旧版本、经过外部迁移或被手工改坏,
+      // 恢复后这里可能不是数组。直接 .map 会在**渲染期**抛 TypeError,
+      // 而 Vue 会不断重试渲染 —— 表现就是「出现异常,已记录」的 toast 反复弹出
+      const equipped = equippedSouls.value
+      const pool = souls.value
+      if (!Array.isArray(equipped) || !Array.isArray(pool)) return []
+      return equipped.map(id => pool.find(s => s.uid === id)).filter((s): s is SoulInstance => s !== undefined)
+    })
+
+    /** 持有的器魂(同上,保证调用方永远拿到数组) */
+    const soulList = computed<SoulInstance[]>(() => (Array.isArray(souls.value) ? souls.value : []))
+
+    /** 已装配器魂提供的词条合计(天界生效) */
+    const soulMods = computed<StatMods>(() => mergeMods(activeSouls.value.map(soulModsOf)))
+
+    function addSoul(soul: SoulInstance): void {
+      souls.value = [...soulList.value, soul]
+    }
+
+    /** 装配器魂;槽位已满或已装配则返回 false */
+    function equipSoul(uid: string): boolean {
+      const equipped = Array.isArray(equippedSouls.value) ? equippedSouls.value : []
+      if (equipped.includes(uid)) return false
+      if (equipped.length >= SOUL_SLOTS) return false
+      if (!soulList.value.some(s => s.uid === uid)) return false
+      equippedSouls.value = [...equipped, uid]
+      return true
+    }
+
+    function unequipSoul(uid: string): void {
+      equippedSouls.value = (Array.isArray(equippedSouls.value) ? equippedSouls.value : []).filter(id => id !== uid)
+    }
+
+    /** 散去器魂(不可逆:原器早已毁去,散了就没了) */
+    function dissolveSoul(uid: string): void {
+      souls.value = soulList.value.filter(s => s.uid !== uid)
+      equippedSouls.value = (Array.isArray(equippedSouls.value) ? equippedSouls.value : []).filter(id => id !== uid)
+    }
 
     const totalClears = computed(
       () =>
@@ -132,6 +179,16 @@ export const useEndgameStore = defineStore(
       milestones,
       records,
       endgameTutorialSeen,
+      souls,
+      equippedSouls,
+      soulTutorialSeen,
+      activeSouls,
+      soulList,
+      soulMods,
+      addSoul,
+      equipSoul,
+      unequipSoul,
+      dissolveSoul,
       daoFruitTutorialSeen,
       resourceDialogSeen,
       totalClears,
