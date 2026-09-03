@@ -148,6 +148,27 @@ export function applyImportPayload(payload: ExportPayload): void {
 
 export function clearAllSave(): void {
   for (const id of PERSISTED_STORES) {
-    localStorage.removeItem(storageKey(id))
+    try {
+      localStorage.removeItem(storageKey(id))
+    } catch {
+      // 单键失败不阻断其余键,残留交由下面的兜底处理
+    }
+  }
+  // 校验删除结果:removeItem 在个别 WebView 实现上会静默失效,
+  // 只要还剩任何一片就整体清空——半清的存档比清干净更糟,
+  // 会出现「game 分片还在、player 分片没了」这种卡在主页的空角色
+  const leftover = PERSISTED_STORES.some(id => {
+    try {
+      return localStorage.getItem(storageKey(id)) !== null
+    } catch {
+      return false
+    }
+  })
+  if (leftover) {
+    try {
+      localStorage.clear()
+    } catch {
+      // 存储完全不可用,交由重载后的路由守卫兜底
+    }
   }
 }

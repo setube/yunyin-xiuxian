@@ -11,6 +11,7 @@ import {
   type ExportPayload
 } from '@/utils/storage'
 import { encryptSave, readSaveText } from '@/utils/crypto'
+import { useGameStore } from '@/stores/game'
 import { engine } from './engine'
 import { saveAs } from 'file-saver'
 
@@ -63,31 +64,56 @@ export function importSaveText(text: string): string | null {
  * 注意:必须在「导入写盘完成之后」调用——它会把 setItem 置为 noop,先调用会吞掉导入的写入
  */
 export function sealStorageWrites(): void {
+  const noop = (): undefined => undefined
+  // 主路径:改写 Storage.prototype。它是普通 JS 对象,defineProperty 行为可预期,
+  // 且对所有 Storage 实例生效
   try {
-    Object.defineProperty(window.localStorage, 'setItem', { value: () => undefined, configurable: true })
+    Object.defineProperty(Storage.prototype, 'setItem', { value: noop, configurable: true, writable: true })
+  } catch {
+    // 原型被冻结时降级到下面的实例路径
+  }
+  // 备用路径:直接改实例。仅在原型改写失败时才有意义——
+  // Storage 是 WebIDL legacy platform object,带命名属性 setter,部分 WebView
+  // (实测 Android WebView 91)会把这次 defineProperty 解释成「存一条 key 为
+  // setItem 的记录」,原方法毫发无损,封存静默失效。因此它不能作为唯一手段
+  try {
+    Object.defineProperty(window.localStorage, 'setItem', { value: noop, configurable: true })
   } catch {
     // 存储不可用时无事可做
   }
 }
 
 /**
- * 清空全部存档并回到首页。
+ * 清空全部存档并回到欢迎页。
  * 顺序:停引擎(去掉 beforeunload 写档)→ 封存写盘(丢弃排队刷盘)→ 清档 → 重载
+ *
+ * 不碰 location.hash:改 hash 会先触发一次 SPA 路由导航,守卫与新页面挂载期间
+ * 内存里的 store 仍是旧状态,persist 订阅会把刚清掉的分片回写。实测 Android
+ * WebView 上封存失效时,game 分片被写回 started:true 而 player 分片没被写回,
+ * 重载后就卡在主页、角色是默认的无名散修。清档后 game.started 为 false,
+ * 守卫会把任何路由都弹回 welcome,目标页无需在这里指定
  */
 export function resetGame(): void {
   engine.stop()
   sealStorageWrites()
   clearAllSave()
-  window.location.hash = '#/'
+  // 内存兜底:reload 是异步的,卸载前页面仍在跑。万一两条封存路径都失效,
+  // 排队刷盘写回的也是 started:false,守卫照样把人送回 welcome
+  try {
+    useGameStore().started = false
+  } catch {
+    // Pinia 未激活时(理论上不会走到)忽略
+  }
   window.location.reload()
 }
 
-/** 重载(导入存档后调用)。封存写盘,防止排队刷盘在卸载前覆盖刚导入的分片 */
+/**
+ * 重载(导入存档后调用)。封存写盘,防止排队刷盘在卸载前覆盖刚导入的分片。
+ * 同样不碰 hash:导入只写了 localStorage,内存 store 还是旧存档,
+ * 一旦触发 SPA 导航引发回写,覆盖的正是刚导入的数据
+ */
 export function reloadGame(): void {
   engine.stop()
   sealStorageWrites()
-  // 直接落到主页:导入的存档 game.started=true,守卫对 home 放行;
-  // 若导入异常(started 为 false),守卫仍会兜底转回 welcome
-  window.location.hash = '#/'
   window.location.reload()
 }
