@@ -351,9 +351,16 @@
     transition: color 0.1s;
   }
 
-  /* 过渡 */
+  /* 过渡
+     遮罩层只淡入,绝不加 transform:它是 position:fixed + inset:0 的全屏底板,
+     一旦 scale 就会先缩成视口的一小块、四周露出底下的页面,再撑满——
+     看起来是「黑底放大」而不是「直接显示」。缩放挪到内部的检测光球上 */
   .reveal-enter-active {
-    animation: reveal-in 0.5s ease-out;
+    animation: reveal-in 0.4s ease-out;
+  }
+
+  .reveal-enter-active .root-orb {
+    animation: reveal-orb-in 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .reveal-leave-active {
@@ -363,10 +370,17 @@
   @keyframes reveal-in {
     0% {
       opacity: 0;
-      transform: scale(0.85);
     }
     100% {
       opacity: 1;
+    }
+  }
+
+  @keyframes reveal-orb-in {
+    0% {
+      transform: scale(0.85);
+    }
+    100% {
       transform: scale(1);
     }
   }

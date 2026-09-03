@@ -300,9 +300,16 @@
     }
   }
 
-  /* 过渡动画 */
+  /* 过渡动画
+     遮罩层只淡入,绝不加 transform:它是 position:fixed + inset:0 的全屏底板,
+     一旦 scale 就会先缩成视口的一小块、四周露出底下的页面,再撑满——
+     看起来是「黑底放大」而不是「直接显示」。缩放挪到内部的中心光圈上 */
   .warp-enter-active {
-    animation: warp-in 0.5s ease-out;
+    animation: warp-in 0.4s ease-out;
+  }
+
+  .warp-enter-active .warp-center {
+    animation: warp-center-in 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .warp-leave-active {
@@ -312,10 +319,17 @@
   @keyframes warp-in {
     0% {
       opacity: 0;
-      transform: scale(0.8);
     }
     100% {
       opacity: 1;
+    }
+  }
+
+  @keyframes warp-center-in {
+    0% {
+      transform: scale(0.8);
+    }
+    100% {
       transform: scale(1);
     }
   }
