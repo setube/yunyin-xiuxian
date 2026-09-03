@@ -135,6 +135,8 @@ export interface LifeRecord {
   themeResult: 'done' | 'unfinished' | 'broken' | null
   /** 本世所得宿慧 */
   insight: number
+  /** 本世签下的逆旅契;未签为 null(老存档无此字段) */
+  trialId?: string | null
   /** 归档时刻 */
   at: number
 }

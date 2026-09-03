@@ -8,6 +8,8 @@ import { enemyDef } from '@/data/enemies'
 import { regionDef, REGIONS } from '@/data/regions'
 import { EVENT_AUTO_RESOLVE_SECONDS, EXPLORE_BATTLE_INTERVAL, EXPLORE_EVENT_CHANCE, EXPLORE_MODES } from '@/data/constants'
 import { makeEnemySnap, resolveCombat } from './combat'
+import { mergeRules } from './gauntlet'
+import { lifeTrialRules } from './lifeTrialService'
 import { buildPlayerSnap } from './playerSnap'
 import { currentDaoRules } from './endgameService'
 import { afterWin } from './loot'
@@ -133,7 +135,8 @@ function runBattle(now: number): void {
   const pSnap = buildPlayerSnap()
   const eSnap = makeEnemySnap(eDef, region.tier, dangerFactor)
   // 道途在世,一切战斗皆循此规则
-  const result = resolveCombat(pSnap, eSnap, rng, currentDaoRules())
+  // 逆旅契:本世签下的契对每一场历练战斗生效(道果的非效率出口)
+  const result = resolveCombat(pSnap, eSnap, rng, mergeRules(currentDaoRules(), lifeTrialRules()))
   // Phase 32.5:「独行」之誓看的是有没有真的祭出法宝,不是有没有法宝在身
   if (useInventoryStore().equippedArtifacts.length > 0) noteTaboo('artifact')
 

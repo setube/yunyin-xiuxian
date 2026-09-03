@@ -53,7 +53,9 @@ export const usePlayerStore = defineStore(
       talents: [] as string[],
       insight: 0,
       lives: [] as import('@/data/samsara').LifeRecord[],
-      vow: null as import('@/data/samsara').LifeVow | null
+      vow: null as import('@/data/samsara').LifeVow | null,
+      /** 这一世签下的逆旅契(道果的第一个非效率出口);转世时清空 */
+      trial: null as import('@/data/lifeTrials').LifeTrialState | null
     })
 
     // Phase 28 前期玩法状态
@@ -249,6 +251,26 @@ export const usePlayerStore = defineStore(
       reincarnation.value = { ...reincarnation.value, daoFruit: reincarnation.value.daoFruit + n }
     }
 
+    /**
+     * 花掉道果。
+     *
+     * 余额**真的减少** —— 不是记一笔「已花费」了事。
+     * 道果此前只进不出,任何固定定价终将被无上限的余额淹没(见 core/fruitOutlets.ts),
+     * 所以出口必须让余额下降,「积累 → 判断 → 花费」才成立
+     *
+     * @returns 余额不足时返回 false,不做任何改动
+     */
+    function spendDaoFruit(n: number): boolean {
+      if (!(n > 0) || reincarnation.value.daoFruit < n) return false
+      reincarnation.value = { ...reincarnation.value, daoFruit: reincarnation.value.daoFruit - n }
+      return true
+    }
+
+    /** 签下这一世的逆旅契(null 为解除) */
+    function setLifeTrial(trial: import('@/data/lifeTrials').LifeTrialState | null): void {
+      reincarnation.value = { ...reincarnation.value, trial }
+    }
+
     /** 记入宿慧(历世阅历与达成的命题都走这里) */
     function addInsight(n: number): void {
       if (!(n > 0)) return
@@ -303,7 +325,8 @@ export const usePlayerStore = defineStore(
         talents: Array.isArray(r?.talents) ? r.talents : [],
         insight: Number.isFinite(r?.insight) ? Math.max(0, r.insight) : legacyInsightOf(count),
         lives: Array.isArray(r?.lives) ? r.lives : [],
-        vow: r?.vow ?? null
+        vow: r?.vow ?? null,
+        trial: r?.trial ?? null
       }
     }
 
@@ -466,6 +489,8 @@ export const usePlayerStore = defineStore(
       addTalent,
       addDaoFruit,
       addInsight,
+      spendDaoFruit,
+      setLifeTrial,
       setVow,
       breakVow,
       recordLife,

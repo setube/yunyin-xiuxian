@@ -43,6 +43,7 @@ export const MANUAL_REBIRTH_MIN_MAJOR = 2
 
 export { daoFruitGain } from './formulas'
 import { daoFruitGain } from './formulas'
+import { archiveLifeTrial } from './lifeTrialService'
 
 function drawTalents(count: number, exclude: Set<string>): string[] {
   const out: string[] = []
@@ -176,9 +177,13 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
     themeId: r.themeId,
     themeResult: r.themeResult,
     insight: r.insightGained,
+    // 逆旅契入履历 —— 这是契约唯一的回报:被记住,且不进任何计算
+    trialId: archiveLifeTrial(),
     at: Date.now()
   })
   player.addInsight(r.insightGained)
+  // 契随皮囊一同散去,下一世要签得重新花道果
+  player.setLifeTrial(null)
 
   // 重置今生
   resources.spiritStone = gnZero() as GNum

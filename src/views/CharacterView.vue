@@ -173,6 +173,19 @@
         (边际渐减)·
         {{ fruitInfo.total > 0 ? `当前修行 +${Math.round(fruitInfo.effective * 3)}%` : '' }}
       </p>
+      <!-- 逆旅契:道果的第一个消费出口。花道果换一世逆境,回报只有履历 -->
+      <p class="mt-2 flex items-center justify-between text-[12px]">
+        <span class="text-ink-soft">
+          逆旅契
+          <span class="ml-1 text-[10px] text-violet-ink">【本世 · 消耗道果】</span>
+          <span class="block text-[10px] text-ink-faint">
+            {{ signedTrial ? `此生已立「${signedTrial.name}」·${signedTrial.ruleText}` : '以道果换一世逆境,所得唯有履历一笔' }}
+          </span>
+        </span>
+        <button v-if="!signedTrial" class="shrink-0 text-[12px] text-gold-ink underline underline-offset-2 active:text-cinnabar" @click="trialOpen = true">立契</button>
+        <span v-else class="shrink-0 font-kai text-[15px] text-cinnabar">{{ signedTrial.seal }}</span>
+      </p>
+
       <div class="mt-2 flex flex-wrap gap-1.5">
         <span
           v-for="t in ownedTalents"
@@ -189,6 +202,33 @@
       <template #footer>
         <button class="btn-ghost w-full !text-[12px]" @click="rebirth">兵解转世</button>
       </template>
+    </BaseModal>
+
+    <!-- 逆旅契弹窗:一世一份,签下不可解除;只加难度,不给任何属性或资源 -->
+    <BaseModal :open="trialOpen" title="逆旅契" @close="trialOpen = false">
+      <p class="text-[11px] leading-relaxed text-ink-faint">
+        道果本是历世所积,却一向只堆在身上。立一份契,把它押在这一世的逆境里——
+        契不予你分毫气力,只把路走窄。走完了,它会留在你的履历上。
+      </p>
+      <div class="mt-3 space-y-2">
+        <button
+          v-for="t in LIFE_TRIALS"
+          :key="t.id"
+          class="card-ink w-full px-3 py-2 text-left disabled:opacity-40"
+          :disabled="!canSignLifeTrial(t.id)"
+          @click="signTrial(t.id)"
+        >
+          <span class="flex items-baseline justify-between">
+            <span class="font-kai text-[14px] text-ink">{{ t.seal }} · {{ t.name }}</span>
+            <span class="tabular text-[12px]" :class="player.reincarnation.daoFruit >= t.cost ? 'text-cinnabar' : 'text-ink-ghost'">
+              {{ t.cost }} 道果
+            </span>
+          </span>
+          <span class="mt-0.5 block text-[11px] leading-relaxed text-ink-soft">{{ t.desc }}</span>
+          <span class="mt-0.5 block text-[10px] text-ink-faint">{{ t.ruleText }}</span>
+        </button>
+      </div>
+      <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">一世只可立一契,立下不可解。转世时契随皮囊散去,履历长存。</p>
     </BaseModal>
 
     <!-- 师承弹窗:拜师 / 师尊评价
@@ -237,6 +277,8 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
+  import { LIFE_TRIALS } from '@/data/lifeTrials'
+  import { activeLifeTrial, canSignLifeTrial, signLifeTrial } from '@/core/lifeTrialService'
   import { useQuestsStore } from '@/stores/quests'
   import { useUiStore } from '@/stores/ui'
   import { ELEMENTS } from '@/data/linggen'
@@ -315,6 +357,12 @@
 
   // ---- 轮回 ----
   const rebirthOpen = ref(false)
+  const trialOpen = ref(false)
+  /** 本世已立的逆旅契;未立为 null */
+  const signedTrial = computed(() => activeLifeTrial())
+  function signTrial(id: string): void {
+    if (signLifeTrial(id)) trialOpen.value = false
+  }
   const canRebirth = computed(() => player.major >= MANUAL_REBIRTH_MIN_MAJOR)
 
   // Phase 31 S1 师承
