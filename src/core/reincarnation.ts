@@ -44,6 +44,7 @@ export const MANUAL_REBIRTH_MIN_MAJOR = 2
 export { daoFruitGain } from './formulas'
 import { daoFruitGain } from './formulas'
 import { archiveLifeTrial } from './lifeTrialService'
+import { rerollMortalWorld } from './mortalWorldService'
 
 function drawTalents(count: number, exclude: Set<string>): string[] {
   const out: string[] = []
@@ -206,6 +207,8 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
   adventure.setSession(null)
   adventure.setPendingEvent(null, 0)
   adventure.unlocked = ['qingyun']
+  // 新的一世,新的天地:换一个本世之界(与上一世去重)
+  rerollMortalWorld()
   adventure.cleared = []
   adventure.lastBattle = null
   // 建筑折半留存

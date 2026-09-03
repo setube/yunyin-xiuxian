@@ -7,24 +7,17 @@
 
     <!-- 选择区域 -->
     <template v-else>
-      <!-- 短期秘境(Phase 31 S3):一次性、随机规则、3 层探索 -->
-      <div v-if="realmUnlocked" class="card-ink flex items-center gap-3 border-violet-ink/30 px-4 py-3">
-        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-violet-ink/15 text-violet-ink">
-          <GameIcon name="sparkles" :size="18" />
+      <!-- 本世之界:链接入口,详情另开一页。历练地图仍在下方,照旧可走 -->
+      <RouterLink to="/world" class="card-ink flex items-center gap-3 border-azure/30 px-4 py-3 active:scale-99">
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-azure/15 text-azure">
+          <GameIcon name="cloud" :size="18" />
         </span>
-        <div class="min-w-0 grow">
-          <p class="font-kai text-[14px] tracking-[0.2em] text-ink">
-            秘 境
-            <span v-if="realmState" class="ml-1 text-[11px] text-violet-ink">· {{ realmState.layer }} 层行进中</span>
-          </p>
-          <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
-            进入一次、规则随机、结束后消失。适合想找点新鲜刺激的时候。
-          </p>
-          <p v-if="realmState" class="mt-1 text-[10px] text-azure">规则:{{ realmState.rules.join(' · ') }}</p>
-        </div>
-        <button v-if="!realmState" class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="enterRealm()">探 秘</button>
-        <button v-else class="btn-ghost shrink-0 !px-3 !py-1.5 !text-[12px]" @click="abandonRealm()">离 开</button>
-      </div>
+        <span class="min-w-0 grow">
+          <span class="block font-kai text-[14px] tracking-[0.2em] text-ink">本世之界</span>
+          <span class="block truncate text-[10px] leading-relaxed text-ink-faint">{{ worldBrief }}</span>
+        </span>
+        <span class="shrink-0 text-[11px] text-azure">观 象 →</span>
+      </RouterLink>
 
       <SectionTitle title="历练" hint="行万里路,炼一颗心" />
       <div class="space-y-2.5">
@@ -62,7 +55,17 @@
                 <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界尚浅,恐有性命之忧</span>
               </p>
             </div>
-            <button v-if="row.unlocked && (!row.suppressed || row.revived)" class="btn-seal shrink-0 !px-4 !py-2 !text-[13px]" @click="chooseMode(row.def)">出发</button>
+            <!--
+              已通关的地界仍可再历 —— 「已靖」只是标记,不是封路。
+              首领已清之后进去仍能刷杂兵、拾遗、碰机缘
+            -->
+            <button
+              v-if="row.unlocked && (!row.suppressed || row.revived)"
+              class="btn-seal shrink-0 !px-4 !py-2 !text-[13px]"
+              @click="chooseMode(row.def)"
+            >
+              出发
+            </button>
             <div v-else-if="row.suppressed" class="shrink-0 text-right">
               <span class="block text-[11px] text-gold-ink">
                 自动产出中 · {{ rateText(row.def) }}/时
@@ -148,31 +151,56 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import type { ExploreMode, RegionDef } from '@/types'
   import { useAdventureStore } from '@/stores/adventure'
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
   import { REGIONS, regionDef, DANGER_NAMES } from '@/data/regions'
+  import SectionTitle from '@/components/common/SectionTitle.vue'
+  import { worldView } from '@/core/mortalWorldService'
   import { REALMS } from '@/data/realms'
   import { EXPLORE_MODES } from '@/data/constants'
   import { startExploration } from '@/core/exploration'
   import { stoneByTier } from '@/core/formulas'
   import { regionRecallFor, prosperityName, isReviving } from '@/core/worldMemory'
-  import { createSecretRealm, abandonRealm, currentRealm, realmUnlock } from '@/core/secretRealm'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, ecologyChips, ECO_LEVEL_NAMES, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { formatDuration, formatGN } from '@/utils/format'
-  import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import CombatPanel from '@/components/adventure/CombatPanel.vue'
 
   const adventure = useAdventureStore()
+  const route = useRoute()
+  const router = useRouter()
   const player = usePlayerStore()
   const ui = useUiStore()
 
   const modeTarget = ref<RegionDef | null>(null)
+
+  /** 顶部链接的一句话:说清这一世是什么世界 */
+  const worldBrief = computed(() => {
+    const w = adventure.mortalWorld
+    if (!w) return '此世气象未明,一观便知'
+    const view = worldView(w, id => id)
+    return view.title
+  })
+
+  /**
+   * 从本世之界页带回来的地界 —— 直接打开出行方式弹窗。
+   *
+   * 模式选择连着适配预览与流派推荐,只此一处实现;
+   * 世界页只负责把「去哪」交回来
+   */
+  onMounted(() => {
+    const go = route.query.go
+    if (typeof go !== 'string') return
+    const r = regionDef(go)
+    if (r) modeTarget.value = r
+    router.replace({ path: '/adventure' })
+  })
 
   const MODE_LIST: { id: ExploreMode; risk: string }[] = [
     { id: 'normal', risk: '安稳' },
@@ -181,23 +209,6 @@
   ]
 
   const currentBuild = computed(() => detectBuild(player.finalStats.mods))
-
-  // Phase 31 S3 短期秘境
-  const realmUnlocked = computed(() => realmUnlock())
-  const realmState = computed(() => currentRealm())
-
-  function enterRealm(): void {
-    if (!realmUnlocked.value) {
-      ui.toast('元婴境方可踏足秘境', 'warn')
-      return
-    }
-    if (realmState.value) {
-      ui.toast('秘境已在途中', 'info')
-      return
-    }
-    createSecretRealm()
-    ui.toast('秘境开启——规则随机,三朝探宝,量力而行。', 'rare')
-  }
 
   const regionRows = computed(() =>
     REGIONS.map(r => {

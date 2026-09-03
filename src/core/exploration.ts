@@ -28,14 +28,29 @@ import { currentRegionEvent, regionEventDef, rollRegionEvent } from './regionEve
 import { noteEnemy } from './loreService'
 import { noteTaboo } from './samsaraService'
 import { useInventoryStore } from '@/stores/inventory'
+import { advanceRoute, canEnterNode, placeContent } from './mortalWorldService'
 
-/** 区域是否可解锁(前置首领已清) */
-export function regionAvailable(regionId: string): boolean {
+/**
+ * 该区域这一世能否进入。
+ *
+ * 有本世之界时**只认路线** —— 必要性审计证明:全解锁的老存档
+ * 可以用诸界总览逐个绕开路线上锁着的段,把「本世路线决定本世可达性」
+ * 整条绕掉。堵在守卫层而非只藏按钮,绕过路径才真正关闭。
+ *
+ * 无本世之界(生成失败或极老存档)时退回旧链,保证仍可历练
+ */
+function routeAllows(regionId: string): boolean {
   const adventure = useAdventureStore()
-  const def = regionDef(regionId)
-  if (!def) return false
-  if (!def.requireCleared) return true
-  return adventure.cleared.includes(def.requireCleared)
+  const w = adventure.mortalWorld
+  const node = w?.chain.find(p => p.fromId === regionId)
+  // 在本世路线内:由路线顺序决定
+  if (node) return canEnterNode(node.nodeId)
+  // 不在路线内:仍走旧解锁链。
+  //
+  // 曾经这里直接 return false,于是本世之界一旦生成,诸界总览里的
+  // 十四处地界全部点不动 —— 玩家反馈「历练没法打了」正是这个。
+  // 本世路线是**主线**,不是**唯一入口**:旧地图仍要能走
+  return adventure.unlocked.includes(regionId)
 }
 
 export function startExploration(regionId: string, mode: ExploreMode): boolean {
@@ -44,7 +59,8 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
   const ui = useUiStore()
   const region = regionDef(regionId)
   if (!region || player.dead || adventure.session) return false
-  if (!adventure.unlocked.includes(regionId)) return false
+  // 本世路线决定本世可达性
+  if (!routeAllows(regionId)) return false
   const now = Date.now()
   const modeDef = EXPLORE_MODES[mode]
   const speed = 1 + modOf(player.finalStats.mods, 'explorationSpeed')
@@ -114,7 +130,10 @@ function runBattle(now: number): void {
   const notCleared = !adventure.cleared.includes(region.id)
   // 每积累 10 胜,方有资格挑战区域之主(避免开局撞见首领)
   const bossDue = notCleared && s.wins >= 10
-  const eDefId = bossDue ? region.boss : rng.pick(region.enemies)
+  // 敌群与首领取自**本世路线节点**,不是 REGIONS ——
+  // 同一处地界放进不同世界,遇到的就该是不同的东西
+  const content = placeContent(region.id)
+  const eDefId = bossDue ? content.boss : rng.pick([...content.enemies])
   const eDef = enemyDef(eDefId)
   if (!eDef) return
 
@@ -211,6 +230,9 @@ export function clearRegionAndUnlockNext(regionId: string): void {
   if (!adventure.markCleared(regionId)) return
   const region = regionDef(regionId)
   ui.toast(`你击败了${region?.name ?? ''}之主!`, 'rare')
+  // 本世路线推进:通过这一段,下一段自开
+  const nextPlace = advanceRoute(regionId)
+  if (nextPlace) ui.toast(`此世前路已明——${nextPlace}`, 'rare')
   for (const r of REGIONS) {
     if (r.requireCleared === regionId && adventure.unlock(r.id)) {
       ui.toast(`新的历练之地已开放——${r.name}`, 'rare')
@@ -253,7 +275,8 @@ export function tickExploration(now: number): void {
     if (!region) return
     const eventLuck = modOf(player.finalStats.mods, 'eventLuck')
     if (rng.chance(EXPLORE_EVENT_CHANCE * (1 + eventLuck))) {
-      const ev = pickEventFor(region)
+      // 事件标签同样走本世内容
+      const ev = pickEventFor({ ...region, eventTags: [...placeContent(region.id).eventTags] })
       if (ev) {
         adventure.setPendingEvent(ev.id, now)
         return

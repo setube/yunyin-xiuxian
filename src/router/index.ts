@@ -10,6 +10,7 @@ export const router = createRouter({
     { path: '/', name: 'home', component: () => import('@/views/HomeView.vue') },
     { path: '/cultivation', name: 'cultivation', component: () => import('@/views/CultivationView.vue') },
     { path: '/adventure', name: 'adventure', component: () => import('@/views/AdventureView.vue') },
+    { path: '/world', name: 'world', component: () => import('@/views/MortalWorldView.vue') },
     { path: '/inventory', name: 'inventory', component: () => import('@/views/InventoryView.vue') },
     { path: '/character', name: 'character', component: () => import('@/views/CharacterView.vue') },
     { path: '/celestial', name: 'celestial', component: () => import('@/views/CelestialView.vue') },

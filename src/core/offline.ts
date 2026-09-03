@@ -26,6 +26,7 @@ import { generateEquipment } from './equipGen'
 import { acquireEquipment, afterWin } from './loot'
 import { autoResolveEvent } from './eventEngine'
 import { clearRegionAndUnlockNext } from './exploration'
+import { placeContent } from './mortalWorldService'
 import { stoneByTier } from './formulas'
 import { settleSuppressedRegions } from './suppress'
 import { harvestMaterials, studyTick } from './loreService'
@@ -109,7 +110,8 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
       battles = Math.max(0, encounters - events)
 
       if (battles > 0) {
-        const mobId = rng.pick(region.enemies)
+        // 与在线同源:敌群取自本世路线节点
+        const mobId = rng.pick([...placeContent(region.id).enemies])
         const mobDef = enemyDef(mobId)
         const dangerFactor = modeDef.dangerMult * (1 + (region.danger - 1) * 0.05)
         const winRate = mobDef
@@ -161,7 +163,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
       }
       // 离线自动挑战区域首领(收益折损,胜则连锁解锁)
       if (!adventure.cleared.includes(region.id) && wins >= 5) {
-        const bossDef = enemyDef(region.boss)
+        const bossDef = enemyDef(placeContent(region.id).boss)
         if (bossDef) {
           const dangerFactor = modeDef.dangerMult * (1 + (region.danger - 1) * 0.05)
           const bossResult = resolveCombat(buildPlayerSnap(), makeEnemySnap(bossDef, region.tier, dangerFactor), rng, currentDaoRules())

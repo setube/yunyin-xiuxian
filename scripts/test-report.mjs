@@ -21,7 +21,7 @@ const CATEGORIES = [
     name: 'Balance     流派与生态',
     match: ['buildSim', 'buildSearch', 'buildDetect', 'buildAdvisor', 'equipSet', 'gongfaBranch', 'softCapAudit', 'linggenAffinity', 'linggenRole']
   },
-  { name: 'Progression 成长曲线', match: ['progressionSim', 'breakthrough', 'inflationAudit', 'samsaraAudit', 'daoFruitCurve', 'saveCalibration', 'rebirthRoi', 'deepCultivationRoi', 'contentGateAudit', 'shallowRebirthGains', 'narrowingImpact', 'impactSurface', 'compoundingAudit', 'daoFruitRoles', 'fruitOutlets', 'lifeTrialService', 'trialMotivation', 'motivationType'] },
+  { name: 'Progression 成长曲线', match: ['progressionSim', 'breakthrough', 'inflationAudit', 'samsaraAudit', 'daoFruitCurve', 'saveCalibration', 'rebirthRoi', 'deepCultivationRoi', 'contentGateAudit', 'shallowRebirthGains', 'narrowingImpact', 'impactSurface', 'compoundingAudit', 'daoFruitRoles', 'fruitOutlets', 'lifeTrialService', 'trialMotivation', 'motivationType', 'mortalWorldGen', 'mortalIdentity', 'mortalGate', 'mortalRouteAccess', 'overviewNecessity', 'contentTakeover', 'bossUnique', 'worldNaming', 'worldSemantics'] },
   { name: 'Economy     资源经济', match: ['economySim', 'lootSim', 'pillValue', 'veinEconomyAudit', 'veinVisibility', 'resourceGuidance'] },
   {
     name: 'Regression  服务与归因',
