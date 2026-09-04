@@ -55,8 +55,23 @@ export const usePlayerStore = defineStore(
       lives: [] as import('@/data/samsara').LifeRecord[],
       vow: null as import('@/data/samsara').LifeVow | null,
       /** 这一世签下的逆旅契(道果的第一个非效率出口);转世时清空 */
-      trial: null as import('@/data/lifeTrials').LifeTrialState | null
+      trial: null as import('@/data/lifeTrials').LifeTrialState | null,
+      /**
+       * 历世的关系履历(Phase 33.8)。
+       *
+       * 跨轮回**只留历史,不留人**:下一世不会自动带回同一个道侣,
+       * 但「曾与谁走到哪一步」会记在这里,并成为宿缘重逢的依据
+       */
+      bonds: [] as import('@/core/daoluService').BondRecord[]
     })
+
+    /**
+     * 这一世的关系(Phase 33.8)。
+     *
+     * 与 reincarnation.bonds 分开:那是历史,这是当下。
+     * 转世时清空 —— 人不跨世继承
+     */
+    const bond = ref<import('@/core/daoluService').BondState | null>(null)
 
     // Phase 28 前期玩法状态
     const eventChains = ref<Record<string, number>>({}) // 奇遇连锁进度
@@ -271,6 +286,25 @@ export const usePlayerStore = defineStore(
       reincarnation.value = { ...reincarnation.value, trial }
     }
 
+    function setBond(b: import('@/core/daoluService').BondState | null): void {
+      // 老存档的 bond 可能缺 34.0 新增的机会点字段,补默认值
+      bond.value = b
+        ? {
+            ...b,
+            doneEvents: b.doneEvents ?? [],
+            opportunities: b.opportunities ?? 0,
+            nextEventAt: b.nextEventAt ?? 0,
+            pendingEventId: b.pendingEventId ?? null,
+            lastKind: b.lastKind ?? null
+          }
+        : null
+    }
+
+    /** 把一世的关系结局记入履历(只记事,不给任何资源) */
+    function recordBond(r: import('@/core/daoluService').BondRecord): void {
+      reincarnation.value = { ...reincarnation.value, bonds: [...reincarnation.value.bonds, r] }
+    }
+
     /** 记入宿慧(历世阅历与达成的命题都走这里) */
     function addInsight(n: number): void {
       if (!(n > 0)) return
@@ -326,7 +360,8 @@ export const usePlayerStore = defineStore(
         insight: Number.isFinite(r?.insight) ? Math.max(0, r.insight) : legacyInsightOf(count),
         lives: Array.isArray(r?.lives) ? r.lives : [],
         vow: r?.vow ?? null,
-        trial: r?.trial ?? null
+        trial: r?.trial ?? null,
+        bonds: Array.isArray(r?.bonds) ? r.bonds : []
       }
     }
 
@@ -489,6 +524,9 @@ export const usePlayerStore = defineStore(
       addTalent,
       addDaoFruit,
       addInsight,
+      bond,
+      setBond,
+      recordBond,
       spendDaoFruit,
       setLifeTrial,
       setVow,

@@ -107,6 +107,23 @@
       <span class="shrink-0 text-[11px] text-azure">{{ mentorVer ? '求教 →' : '拜师 →' }}</span>
     </button>
 
+    <!-- 道侣(Phase 33.8):这一世遇见的人。只记关系与经历,不给任何属性 -->
+    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="bondDialog = true">
+      <span class="min-w-0 grow">
+        <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">道 侣</span>
+        <span class="block truncate text-[10px] text-ink-faint">
+          {{
+            bondDef && bond
+              ? `${bondDef.name}·${STAGE_NAMES[bond.stage]}${bond.fallen ? '(已殁)' : ''} | ${bondDef.brief}`
+              : pastBonds.length
+                ? `此生尚未遇见,历世曾有 ${pastBonds.length} 段同行`
+                : '此生尚未遇见谁'
+          }}
+        </span>
+      </span>
+      <span class="shrink-0 text-[11px] text-azure">{{ bondDef ? '相知 →' : '履历 →' }}</span>
+    </button>
+
     <RouterLink to="/collection" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">藏珍与成就</span>
@@ -231,6 +248,93 @@
       <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">一世只可立一契,立下不可解。转世时契随皮囊散去,履历长存。</p>
     </BaseModal>
 
+    <!-- 道侣弹窗:这一世的关系与历世的同行 -->
+    <BaseModal :open="bondDialog" :title="bondDef ? `道侣 · ${bondDef.name}` : '道侣'" @close="bondDialog = false">
+      <template v-if="bondDef && bond">
+        <p class="font-kai text-[14px] text-ink">{{ bondDef.name }}</p>
+        <p class="mt-0.5 text-[11px] leading-relaxed text-ink-faint">{{ bondDef.brief }}</p>
+        <p class="mt-2 text-[11px] text-ink-soft">
+          {{ TEMPER_NAMES[bondDef.temper] }} · {{ LEAN_NAMES[bondDef.lean] }}道
+          <span class="ml-1 text-azure">{{ STAGE_NAMES[bond.stage] }}</span>
+          <span v-if="bond.fallen" class="ml-1 text-cinnabar">已殁</span>
+        </p>
+
+        <!-- 三维只影响关系推进,不进任何属性 -->
+        <div class="mt-3 space-y-1.5">
+          <p v-for="m in bondMeters" :key="m.label" class="flex items-center gap-2 text-[11px]">
+            <span class="w-10 shrink-0 text-ink-faint">{{ m.label }}</span>
+            <span class="h-1 grow rounded-full bg-ink/10">
+              <span class="block h-1 rounded-full bg-azure/70" :style="{ width: `${m.v}%` }" />
+            </span>
+            <span class="w-8 shrink-0 text-right tabular text-ink-soft">{{ m.v }}</span>
+          </p>
+        </div>
+        <p class="mt-2 text-[11px] text-ink-faint">共历 {{ bond.shared }} 次</p>
+
+        <p class="mt-3 text-[11px] leading-relaxed text-ink-soft">她所求:{{ bondDef.pursuit }}</p>
+        <p class="mt-0.5 text-[11px] leading-relaxed text-ink-faint">她不越的线:{{ bondDef.taboo }}</p>
+
+        <p v-if="gateHint" class="mt-3 text-[11px] text-gold-ink">
+          离「{{ STAGE_NAMES[gateHint.stage] }}」尚差:{{ gateHint.lacking.join('、') }}
+        </p>
+
+        <!-- 她自己提出的事(Phase 34.1):不是世界安排的事件,是她开的口 -->
+        <template v-if="herIntent">
+          <div class="mt-4 border-t border-ink/10 pt-3">
+            <p class="text-[12px] leading-relaxed text-gold-ink">{{ herIntent.line }}</p>
+            <p class="mt-1 text-[10px] text-ink-faint">她所求:{{ herIntent.wish }}</p>
+            <div class="mt-2.5 flex gap-2">
+              <button
+                v-for="r in INTENT_CHOICES"
+                :key="r.id"
+                class="card-ink grow px-2 py-2 text-center text-[12px] text-ink-soft active:scale-99"
+                @click="answerIntent(r.id)"
+              >
+                {{ r.label }}
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <!-- 共同事件:她的诉求与底线在此第一次被玩家看见并回应 -->
+        <template v-if="pendingEvent && !bond.fallen && !bond.departed">
+          <div class="mt-4 border-t border-ink/10 pt-3">
+            <p class="font-kai text-[13px] tracking-widest text-ink">{{ pendingEvent.title }}</p>
+            <p class="mt-1 text-[11px] leading-relaxed text-ink-soft">{{ pendingEvent.text }}</p>
+            <p class="mt-1.5 text-[11px] text-azure">{{ pendingEvent.herWish }}</p>
+            <p class="text-[10px] text-ink-faint">{{ pendingEvent.herLimit }}</p>
+            <p v-if="herLine" class="mt-1.5 text-[11px] text-gold-ink">{{ herLine }}</p>
+            <div class="mt-2.5 space-y-1.5">
+              <button
+                v-for="ch in pendingEvent.choices"
+                :key="ch.id"
+                class="card-ink w-full px-3 py-2 text-left text-[12px] text-ink-soft active:scale-99"
+                @click="pickChoice(ch.id)"
+              >
+                {{ ch.label }}
+              </button>
+            </div>
+          </div>
+        </template>
+        <p v-else-if="lastEventText" class="mt-4 border-t border-ink/10 pt-3 text-[11px] leading-relaxed text-ink-soft">
+          {{ lastEventText }}
+        </p>
+      </template>
+      <p v-else class="text-[12px] leading-relaxed text-ink-faint">
+        此生尚未遇见谁。人是在路上碰到的,不是挑出来的 —— 多走几处地界,或许自有相逢。
+      </p>
+
+      <template v-if="pastBonds.length">
+        <p class="mt-4 font-kai text-[13px] tracking-widest text-ink-soft">历世同行</p>
+        <div class="mt-2 max-h-40 space-y-1.5 overflow-y-auto">
+          <p v-for="(r, i) in pastBonds" :key="i" class="flex justify-between text-[11px]">
+            <span class="text-ink-soft">{{ r.name }}</span>
+            <span class="text-ink-faint">{{ STAGE_NAMES[r.stage] }} · {{ ENDING_NAMES[r.ending] }}</span>
+          </p>
+        </div>
+      </template>
+    </BaseModal>
+
     <!-- 师承弹窗:拜师 / 师尊评价
         (Phase 31 S1:四种师承理念,拜后不改,转世保留,纯叙事反馈) -->
     <BaseModal :open="mentorDialog" :title="mentorVer ? `师承 · ${mentorVer.mentor?.name ?? ''}` : '拜师'" @close="mentorDialog = false">
@@ -275,8 +379,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { usePlayerStore } from '@/stores/player'
+  import { ENDING_NAMES, LEAN_NAMES, STAGE_NAMES, TEMPER_NAMES, daoluDef } from '@/data/daolu'
+  import { chooseBondEvent, herStance, nextGateHint, pendingBondEvent, pendingIntent, respondIntent } from '@/core/daoluService'
   import { LIFE_TRIALS } from '@/data/lifeTrials'
   import { activeLifeTrial, canSignLifeTrial, signLifeTrial } from '@/core/lifeTrialService'
   import { useQuestsStore } from '@/stores/quests'
@@ -357,6 +463,49 @@
 
   // ---- 轮回 ----
   const rebirthOpen = ref(false)
+  const bondDialog = ref(false)
+  const bond = computed(() => player.bond)
+  const bondDef = computed(() => (bond.value ? (daoluDef(bond.value.daoluId) ?? null) : null))
+  const bondMeters = computed(() =>
+    bond.value
+      ? [
+          { label: '缘分', v: bond.value.fate },
+          { label: '信任', v: bond.value.trust },
+          { label: '契合', v: bond.value.accord }
+        ]
+      : []
+  )
+  const gateHint = computed(() => nextGateHint())
+  const pastBonds = computed(() => player.reincarnation.bonds)
+  /**
+   * 待决的共同事件 —— 由历练情境写入关系状态,界面只读取。
+   *
+   * 34.0 之前是「打开弹窗才抽一个」:内容是真的,时机是假的。
+   * 现在事件在历练途中就已发生,弹窗只是去看它
+   */
+  const pendingEvent = computed(() => pendingBondEvent())
+  const lastEventText = ref('')
+  const herLine = computed(() => (pendingEvent.value ? herStance(pendingEvent.value) : null))
+  watch(bondDialog, open => {
+    if (open) lastEventText.value = ''
+  })
+  function pickChoice(choiceId: string): void {
+    if (!pendingEvent.value) return
+    const r = chooseBondEvent(pendingEvent.value.id, choiceId)
+    lastEventText.value = r?.text ?? ''
+  }
+
+  /** 她主动提出的事(34.1);三种回应,忽略不等于回绝 */
+  const herIntent = computed(() => pendingIntent())
+  const INTENT_CHOICES = [
+    { id: 'accept' as const, label: '与她同去' },
+    { id: 'refuse' as const, label: '婉言谢绝' },
+    { id: 'ignore' as const, label: '不作声' }
+  ]
+  function answerIntent(r: 'accept' | 'refuse' | 'ignore'): void {
+    const a = respondIntent(r)
+    lastEventText.value = a?.text ?? ''
+  }
   const trialOpen = ref(false)
   /** 本世已立的逆旅契;未立为 null */
   const signedTrial = computed(() => activeLifeTrial())

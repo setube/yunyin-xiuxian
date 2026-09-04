@@ -45,6 +45,7 @@ export { daoFruitGain } from './formulas'
 import { daoFruitGain } from './formulas'
 import { archiveLifeTrial } from './lifeTrialService'
 import { rerollMortalWorld } from './mortalWorldService'
+import { archiveBond } from './daoluService'
 
 function drawTalents(count: number, exclude: Set<string>): string[] {
   const out: string[] = []
@@ -209,6 +210,9 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
   adventure.unlocked = ['qingyun']
   // 新的一世,新的天地:换一个本世之界(与上一世去重)
   rerollMortalWorld()
+  // 关系归档:历史留下,人不留下。只写一条记录,不产出任何资源
+  const bondRec = archiveBond()
+  if (bondRec) player.recordBond(bondRec)
   adventure.cleared = []
   adventure.lastBattle = null
   // 建筑折半留存

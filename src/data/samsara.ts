@@ -137,6 +137,8 @@ export interface LifeRecord {
   insight: number
   /** 本世签下的逆旅契;未签为 null(老存档无此字段) */
   trialId?: string | null
+  /** 本世的关系结局(Phase 33.8);未遇见任何人为 null */
+  bond?: { name: string; stage: string; ending: string } | null
   /** 归档时刻 */
   at: number
 }

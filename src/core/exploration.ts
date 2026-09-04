@@ -29,6 +29,16 @@ import { noteEnemy } from './loreService'
 import { noteTaboo } from './samsaraService'
 import { useInventoryStore } from '@/stores/inventory'
 import { advanceRoute, canEnterNode, placeContent } from './mortalWorldService'
+import { terrainOf } from './mortalIdentity'
+import {
+  advanceBond,
+  candidatesFor,
+  destinedCandidate,
+  meet,
+  offerBondEvent,
+  sparkIntent,
+  speakIntent
+} from './daoluService'
 
 /**
  * 该区域这一世能否进入。
@@ -61,6 +71,8 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
   if (!region || player.dead || adventure.session) return false
   // 本世路线决定本世可达性
   if (!routeAllows(regionId)) return false
+  // 踏入一处新地界 —— 眼前是没走过的路,她可能有话要说
+  offerBondEvent('enterPlace')
   const now = Date.now()
   const modeDef = EXPLORE_MODES[mode]
   const speed = 1 + modOf(player.finalStats.mods, 'explorationSpeed')
@@ -159,6 +171,13 @@ function runBattle(now: number): void {
   // Phase 32.5:「独行」之誓看的是有没有真的祭出法宝,不是有没有法宝在身
   if (useInventoryStore().equippedArtifacts.length > 0) noteTaboo('artifact')
 
+  maybeEncounter(s.regionId)
+  // 战斗情境 → 关系事件:首胜之后是「刀下」,濒死之际是「重伤」
+  if (result.win) {
+    if (s.wins === 0) offerBondEvent('firstVictory')
+  } else {
+    offerBondEvent('nearDeath')
+  }
   adventure.recordBattle({
     enemyName: ghost ? ghostTitle(ghost) : eDef.name,
     enemyIcon: eDef.icon,
@@ -223,6 +242,46 @@ function runBattle(now: number): void {
   }
 }
 
+/** 一次历练遭遇里,相遇发生的概率 */
+const MEET_CHANCE = 0.06
+
+/**
+ * 途中可能遇见一个人。
+ *
+ * 相遇是**世界里的事**:她偏好的地貌须在这一世的路线上。
+ * 世界不同 → 路径不同 → 遇见谁不同 —— 轮回与世界生成由此连上。
+ *
+ * 注意这里只推进关系,不发放任何东西
+ */
+function maybeEncounter(regionId: string): void {
+  const player = usePlayerStore()
+  const w = useAdventureStore().mortalWorld
+  if (!w) return
+  const bond = player.bond
+  if (bond) {
+    // 已相识:并肩走过一段险路,缘分与信任增长,契合另算
+    if (!bond.fallen && rng.chance(MEET_CHANCE)) {
+      advanceBond({ fate: 3, trust: 2, shared: true })
+      // 又一次并肩 —— 她心里那件事又近了一点
+      sparkIntent('shared')
+    }
+    // 她想说的时候就说,不必等世界给一个情境位
+    speakIntent()
+    return
+  }
+  if (!rng.chance(MEET_CHANCE)) return
+  const terrains = w.chain.map(p => terrainOf(p.fromId))
+  // 宿缘优先:上一世走得深的人有机会再遇,但绝不保证
+  const destined = destinedCandidate(player.reincarnation.bonds, terrains)
+  const pool = destined ? [destined] : candidatesFor(terrains)
+  if (pool.length === 0) return
+  const here = regionDef(regionId)
+  // 同地貌的人更可能在此处照面
+  const local = here ? pool.filter(d => d.terrains.length === 0 || d.terrains.includes(terrainOf(regionId))) : pool
+  const pick = (local.length > 0 ? local : pool)[rng.int(0, (local.length > 0 ? local : pool).length - 1)]!
+  meet(pick.id)
+}
+
 /** 标记区域首领已清并连锁解锁后续区域(在线/离线共用) */
 export function clearRegionAndUnlockNext(regionId: string): void {
   const adventure = useAdventureStore()
@@ -230,6 +289,10 @@ export function clearRegionAndUnlockNext(regionId: string): void {
   if (!adventure.markCleared(regionId)) return
   const region = regionDef(regionId)
   ui.toast(`你击败了${region?.name ?? ''}之主!`, 'rare')
+  // 击破首领 —— 打开了本不该开的地方
+  offerBondEvent('bossDefeated')
+  // 也可能翻出与她未了之事有关的东西
+  if (rng.chance(0.5)) sparkIntent('omen')
   // 本世路线推进:通过这一段,下一段自开
   const nextPlace = advanceRoute(regionId)
   if (nextPlace) ui.toast(`此世前路已明——${nextPlace}`, 'rare')
