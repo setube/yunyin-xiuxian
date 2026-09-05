@@ -18,6 +18,7 @@ import { mayTriggerEnlightenment, mayTriggerCaveEvent } from './earlyGameService
 import { settleSuppressedRegions } from './suppress'
 import { studyTick, seedLoreIfNeeded } from './loreService'
 import { todayWeather } from './weather'
+import { flushSaveWrites } from '@/utils/storage'
 
 const PERIODIC_CHECK_SEC = 30
 
@@ -67,6 +68,9 @@ class GameEngine {
     const game = useGameStore()
     if (document.visibilityState === 'hidden') {
       if (!this.paused) game.stampActive(Date.now())
+      // 盖完时间戳再刷盘。storage 模块也监听了 visibilitychange,但它注册得更早,
+      // 先跑完就轮到这里盖章,那一次盖章会留在待刷队列里没人写
+      flushSaveWrites()
     } else {
       this.tickSafe()
     }
@@ -74,6 +78,7 @@ class GameEngine {
 
   private onUnload = (): void => {
     useGameStore().stampActive(Date.now())
+    flushSaveWrites()
   }
 
   private tickSafe(): void {

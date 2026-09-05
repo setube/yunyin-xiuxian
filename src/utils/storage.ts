@@ -29,15 +29,111 @@ export function storageKey(storeId: string): string {
   return SAVE_PREFIX + storeId
 }
 
-/** pinia-plugin-persistedstate 序列化器:写入加密,读取兼容旧明文 */
+/**
+ * 刷盘间隔 —— 存档写入从「每次变更」改为「定期批量」。
+ *
+ * 起因是玩家反馈手机越玩越烫。实测引擎跑起来后仅 game/player/resources
+ * 三片就是**每秒 3 次** localStorage 写入(真实游玩加上 adventure、dongfu、
+ * quests 会到 4~6 次),每次都要 JSON 序列化 + 全片 AES 加密 + 主线程同步
+ * 磁盘写。挂机一天约 26 万次 —— crypto-js 是纯 JS 实现,localStorage.setItem
+ * 在 Android WebView 上又是同步落盘,两者叠加就是持续发热。
+ *
+ * 丢数据的风险很低且能自愈:引擎是时间戳驱动的,少写几秒只意味着
+ * lastActiveAt 稍旧,下次进游戏由离线结算把这段时间补回来
+ */
+export const SAVE_FLUSH_MS = 5000
+
+/** 待落盘的分片(明文 JSON;加密推迟到 flush,避免每次变更都跑一遍 AES) */
+const pending = new Map<string, string>()
+let flushTimer: ReturnType<typeof setTimeout> | undefined
+
+/** 立即把待落盘内容写出去 */
+export function flushSaveWrites(): void {
+  if (flushTimer !== undefined) {
+    clearTimeout(flushTimer)
+    flushTimer = undefined
+  }
+  if (pending.size === 0) return
+  for (const [key, plain] of pending) {
+    try {
+      // 加密只在这里做一次,而不是每次 store 变更都做
+      localStorage.setItem(key, encryptSave(plain))
+    } catch {
+      // 单键失败不阻断其余键
+    }
+  }
+  pending.clear()
+}
+
+/** 丢弃待落盘内容 —— 清档/导入前必须调用,否则排队的旧数据会把新状态覆盖回去 */
+export function dropPendingWrites(): void {
+  if (flushTimer !== undefined) {
+    clearTimeout(flushTimer)
+    flushTimer = undefined
+  }
+  pending.clear()
+}
+
+/**
+ * 节流存储层:变更先入队,到点批量加密落盘。
+ *
+ * getItem 必须优先读队列,否则「刚写又读」会拿到磁盘上的旧值
+ */
+const THROTTLED_STORAGE = {
+  getItem: (key: string): string | null => {
+    const queued = pending.get(key)
+    if (queued !== undefined) return queued
+    try {
+      return localStorage.getItem(key)
+    } catch {
+      return null
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    pending.set(key, value)
+    if (flushTimer === undefined) flushTimer = setTimeout(flushSaveWrites, SAVE_FLUSH_MS)
+  },
+  removeItem: (key: string): void => {
+    pending.delete(key)
+    try {
+      localStorage.removeItem(key)
+    } catch {
+      // 存储不可用时忽略
+    }
+  }
+}
+
+// 页面离开/切后台时立刻落盘 —— 手机上 beforeunload 常不触发,pagehide 才可靠。
+// 注册在模块内,不依赖引擎是否启动;测试环境无 DOM,故两者都要判
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', flushSaveWrites)
+  window.addEventListener('beforeunload', flushSaveWrites)
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushSaveWrites()
+  })
+}
+
+/**
+ * pinia-plugin-persistedstate 序列化器。
+ *
+ * serialize 只做 JSON,**不加密** —— 加密推迟到 flushSaveWrites。
+ * deserialize 端无需区分:readSaveText 是 `decryptSave(raw) ?? raw`,
+ * 明文(来自待刷队列)与密文(来自磁盘)都能解析
+ */
 export const SAVE_SERIALIZER = {
-  serialize: (data: StateTree): string => encryptSave(JSON.stringify(data)),
+  serialize: (data: StateTree): string => JSON.stringify(data),
   deserialize: (raw: string): StateTree => JSON.parse(readSaveText(raw)) as StateTree
 }
 
 /** 各 store 统一的持久化配置 */
-export function persistConfig(storeId: string): { key: string; serializer: typeof SAVE_SERIALIZER } {
-  return { key: storageKey(storeId), serializer: SAVE_SERIALIZER }
+export function persistConfig(storeId: string): {
+  key: string
+  serializer: typeof SAVE_SERIALIZER
+  storage: typeof THROTTLED_STORAGE
+} {
+  return { key: storageKey(storeId), serializer: SAVE_SERIALIZER, storage: THROTTLED_STORAGE }
 }
 
 /**
@@ -104,6 +200,8 @@ export interface ExportPayload {
 }
 
 export function buildExportPayload(): ExportPayload {
+  // 导出直接读 localStorage,故必须先把待落盘内容写出去,否则导出的是旧档
+  flushSaveWrites()
   const data: Record<string, unknown> = {}
   for (const id of PERSISTED_STORES) {
     const raw = localStorage.getItem(storageKey(id))
@@ -147,6 +245,8 @@ export function applyImportPayload(payload: ExportPayload): void {
 }
 
 export function clearAllSave(): void {
+  // 先丢弃待落盘队列 —— 否则清完档之后那次 flush 会把旧数据原样写回来
+  dropPendingWrites()
   for (const id of PERSISTED_STORES) {
     try {
       localStorage.removeItem(storageKey(id))
