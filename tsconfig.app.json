@@ -3,6 +3,17 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     /*
+     * lib 钉回 ES2020,与 browserslist / legacy 插件的 Chrome >= 51 对齐。
+     *
+     * @vue/tsconfig 0.9.1 把基类的 lib 抬到了 ES2022「以对齐 Vite」,
+     * 但本项目用 @vitejs/plugin-legacy 显式把目标压到 Chrome 51 / Android 7,
+     * Vite 的默认目标不适用。实测抬到 ES2022 的后果:
+     *   `arr.at(-1)`、`Object.hasOwn()` 通过类型检查 → 原样进 legacy 分片
+     *   → 而 polyfill bundle 里并没有这两个方法 → 老浏览器直接 TypeError。
+     * 类型系统是这里唯一的防线,不能跟着基类一起抬。
+     */
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    /*
      * node 必须显式列出:本项目的 include 覆盖 src/**,其中的 *.spec.ts 会用
      * node:fs / node:path / __dirname 读取源码做审计。Vite 7 的 client.d.ts
      * 带 `/// <reference types="node" />`,这些类型是顺着它进来的;
@@ -15,6 +26,14 @@
 
     /* Linting */
     "strict": true,
+    /*
+     * noUncheckedIndexedAccess 必须由本项目自己声明。
+     * 它原本来自 @vue/tsconfig 的基类,但 0.9.1 把它移除了 ——
+     * 本代码库是在该选项下写成的(满屏 `chain[i - 1]!`、`WEATHERS[4]!`
+     * 这类非空断言就是证据),跟着基类一起丢掉等于静默放松全库的下标检查。
+     * 实测:不写这一行时 `const a: string[] = []; a[0].length` 能通过编译。
+     */
+    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
