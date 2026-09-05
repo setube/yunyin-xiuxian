@@ -1,4 +1,4 @@
-/* eslint-disable no-console -- 模拟器体检报告的正式输出(npm run test:report 依赖) */
+/* eslint-disable no-console -- 模拟器体检报告的正式输出(bun run test:report 依赖) */
 /**
  * Phase 25 规则宇宙稳定性审计
  * 局部正确性此前各 spec 已管;本卷审计全局:

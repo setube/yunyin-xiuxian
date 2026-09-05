@@ -20,17 +20,14 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
-      - name: 安装 pnpm
-        uses: pnpm/action-setup@v4
-      - name: 安装 Node
-        uses: actions/setup-node@v4
+      - name: 安装 Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: pnpm
+          bun-version: latest
       - name: 安装依赖
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
       - name: 构建
-        run: pnpm run build
+        run: bun run build
       - name: 配置 Pages
         uses: actions/configure-pages@v5
       - name: 上传构建产物

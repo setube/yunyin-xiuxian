@@ -1,4 +1,4 @@
-/* eslint-disable no-console -- 模拟器体检报告的正式输出(npm run test:report 依赖) */
+/* eslint-disable no-console -- 模拟器体检报告的正式输出(bun run test:report 依赖) */
 /**
  * 程序化世界生成器裁判(Phase 23)
  * 生成的每一座虚界都必须过 P20/P22 的门:有解、无近必胜、不塌缩、奖励由难度定价

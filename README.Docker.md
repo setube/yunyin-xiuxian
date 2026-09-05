@@ -174,15 +174,15 @@ deploy:
 开发环境(热重载):
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 生产构建测试:
 
 ```bash
 # 本地构建
-npm run build
-npm run preview
+bun run build
+bun run preview
 
 # Docker 构建
 docker build -t yunyin-xiuxian:dev .

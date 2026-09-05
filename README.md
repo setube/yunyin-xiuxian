@@ -44,42 +44,43 @@
 
 ## 快速开始
 
-需要 Node 20.19+ 或 22.12+。
+需要 [Bun](https://bun.sh) 1.2+。
 
 ```bash
 # 安装依赖
-pnpm install
+bun install
 
 # 启动开发服务器
-pnpm dev
+bun dev
 
 # 类型检查 + 生产构建
-pnpm build
+bun run build
 
 # 预览构建结果
-pnpm preview
+bun preview
 
 # 全量测试（数值/战斗/流派/曲线/经济/终局）
-pnpm test
+# 注意用 bun run test,不能用 bun test —— 后者会调 Bun 自带的测试器而非 Vitest
+bun run test
 
 # 按系统分类的测试摘要
-pnpm test:report
+bun run test:report
 
 # ESLint
-pnpm lint
+bun lint
 ```
 
 ### 多端构建
 
 ```bash
 # Windows 桌面客户端（Electron，输出 pkg/*.zip）
-pnpm build:electron
+bun run build:electron
 
 # 同步 Web 产物到 Android 工程（Capacitor）
-pnpm build:android
+bun run build:android
 
 # 直接出 Release APK（需 android/keystore.properties 提供签名）
-pnpm build:apk
+bun run build:apk
 ```
 
 ### Docker 部署

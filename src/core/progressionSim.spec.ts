@@ -1,4 +1,4 @@
-/* eslint-disable no-console -- 模拟器体检报告的正式输出(npm run test:report 依赖) */
+/* eslint-disable no-console -- 模拟器体检报告的正式输出(bun run test:report 依赖) */
 import { describe, expect, it } from 'vitest'
 import { REALMS } from '@/data/realms'
 import { firstLifeMilestones, multiLifeTable, secondsForMajor } from './progressionSim'

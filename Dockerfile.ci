@@ -1,6 +1,6 @@
 # ===== CI 专用镜像 =====
 # 与根目录 Dockerfile 的区别：不在容器内构建。
-# 前端产物由 GitHub Actions 在 runner 上用 pnpm 构建好后直接复制进来，
+# 前端产物由 GitHub Actions 在 runner 上用 bun 构建好后直接复制进来，
 # 这样多架构镜像 (amd64/arm64) 无需在 QEMU 模拟环境里重跑 vue-tsc 与 vite。
 
 FROM nginx:alpine

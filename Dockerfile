@@ -1,20 +1,20 @@
 # ===== Stage 1: 构建阶段 =====
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
 
 # 复制依赖文件
-COPY package.json package-lock.json* ./
+COPY package.json bun.lock* ./
 
-# 安装依赖(使用 npm ci 保证依赖锁定)
-RUN npm ci --legacy-peer-deps
+# 安装依赖(--frozen-lockfile 保证依赖锁定)
+RUN bun install --frozen-lockfile
 
 # 复制源代码
 COPY . .
 
 # 构建生产版本
-RUN npm run build
+RUN bun run build
 
 # ===== Stage 2: 生产阶段(Nginx 服务) =====
 FROM nginx:alpine

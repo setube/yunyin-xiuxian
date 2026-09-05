@@ -1,7 +1,7 @@
 /**
  * Build 模拟器(Phase 16 自动数值平衡)
  * 六大流派 × 七种敌人原型批量对战,输出克制矩阵;
- * 配套 spec 对矩阵设置断言:任何改动打破克制格局都会在 npm test 中暴露
+ * 配套 spec 对矩阵设置断言:任何改动打破克制格局都会在 bun run test 中暴露
  */
 import type { CombatantSnap, StatMods } from '@/types'
 import { gn } from '@/utils/gnum'

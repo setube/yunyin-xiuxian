@@ -1,6 +1,6 @@
 /**
  * 分类测试报告 —— 按系统输出 PASS/FAIL,而非只看总数
- * 用法: npm run test:report
+ * 用法: bun run test:report
  */
 import { execSync } from 'node:child_process'
 import { readFileSync, rmSync } from 'node:fs'
@@ -40,7 +40,7 @@ const CATEGORIES = [
 const OUT = '.vitest-report.json'
 
 try {
-  execSync(`npx vitest run --reporter=json --outputFile=${OUT}`, { stdio: 'pipe' })
+  execSync(`bunx vitest run --reporter=json --outputFile=${OUT}`, { stdio: 'pipe' })
 } catch {
   // 有测试失败时 vitest 以非零码退出,报告文件仍会生成
 }
@@ -49,7 +49,7 @@ let report
 try {
   report = JSON.parse(readFileSync(OUT, 'utf8'))
 } catch {
-  console.error('未能读取测试报告,请先确认 npx vitest run 可正常执行')
+  console.error('未能读取测试报告,请先确认 bunx vitest run 可正常执行')
   process.exit(1)
 }
 rmSync(OUT, { force: true })

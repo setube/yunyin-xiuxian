@@ -34,6 +34,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.spec.ts']
+    include: ['src/**/*.spec.ts'],
+    // 平衡审计类用例(buildSim / celestialSim / synergyScan / worldGen 等)
+    // 单个要跑上万次模拟,单独执行约 2 秒,但 97 个文件并行时互相抢 CPU 会顶到
+    // vitest 的 5 秒默认上限 —— 切到 bun 后并行度更高,synergyScan 实测 5227ms 超时。
+    // 放宽的是**并行竞争的余量**,不是掩盖变慢:该用例单跑仍是 1.8~2.0 秒
+    testTimeout: 20000
   }
 })

@@ -1,4 +1,4 @@
-/* eslint-disable no-console -- 模拟器体检报告的正式输出(npm run test:report 依赖) */
+/* eslint-disable no-console -- 模拟器体检报告的正式输出(bun run test:report 依赖) */
 /**
  * Phase 23 组合协同爆炸检测
  * 危险的不是某个词条太强,而是两个各自合理的机制组合出非线性收益。
