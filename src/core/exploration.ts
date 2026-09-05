@@ -28,7 +28,7 @@ import { currentRegionEvent, regionEventDef, rollRegionEvent } from './regionEve
 import { noteEnemy } from './loreService'
 import { noteTaboo } from './samsaraService'
 import { useInventoryStore } from '@/stores/inventory'
-import { advanceRoute, canEnterNode, placeContent } from './mortalWorldService'
+import { advanceRoute, canEnterRegion, entryBlockReason, placeContent } from './mortalWorldService'
 import { terrainOf } from './mortalIdentity'
 import {
   advanceBond,
@@ -43,24 +43,13 @@ import {
 /**
  * 该区域这一世能否进入。
  *
- * 有本世之界时**只认路线** —— 必要性审计证明:全解锁的老存档
- * 可以用诸界总览逐个绕开路线上锁着的段,把「本世路线决定本世可达性」
- * 整条绕掉。堵在守卫层而非只藏按钮,绕过路径才真正关闭。
- *
- * 无本世之界(生成失败或极老存档)时退回旧链,保证仍可历练
+ * 判据本体已收进 mortalWorldService.canEnterRegion —— 界面按钮与这里
+ * 必须共用同一个谓词。曾经界面自己按 adventure.unlocked 算了一套,
+ * 于是路线上未轮到的地界按钮亮着却进不来(玩家反馈「显示了进入按钮
+ * 但依旧进不去」)。判据只留一份,分叉才不会重来
  */
 function routeAllows(regionId: string): boolean {
-  const adventure = useAdventureStore()
-  const w = adventure.mortalWorld
-  const node = w?.chain.find(p => p.fromId === regionId)
-  // 在本世路线内:由路线顺序决定
-  if (node) return canEnterNode(node.nodeId)
-  // 不在路线内:仍走旧解锁链。
-  //
-  // 曾经这里直接 return false,于是本世之界一旦生成,诸界总览里的
-  // 十四处地界全部点不动 —— 玩家反馈「历练没法打了」正是这个。
-  // 本世路线是**主线**,不是**唯一入口**:旧地图仍要能走
-  return adventure.unlocked.includes(regionId)
+  return canEnterRegion(regionId)
 }
 
 export function startExploration(regionId: string, mode: ExploreMode): boolean {
@@ -68,9 +57,16 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
   const player = usePlayerStore()
   const ui = useUiStore()
   const region = regionDef(regionId)
-  if (!region || player.dead || adventure.session) return false
-  // 本世路线决定本世可达性
-  if (!routeAllows(regionId)) return false
+  if (!region || player.dead) return false
+  // 拒绝必须让玩家看见 —— 静默 return false 在界面上等同于「点了没反应」
+  if (adventure.session) {
+    ui.toast('你正在历练途中,先了结眼下这一程', 'warn')
+    return false
+  }
+  if (!routeAllows(regionId)) {
+    ui.toast(entryBlockReason(regionId) ?? `${region.name}此时去不得`, 'warn')
+    return false
+  }
   // 踏入一处新地界 —— 眼前是没走过的路,她可能有话要说
   offerBondEvent('enterPlace')
   const now = Date.now()

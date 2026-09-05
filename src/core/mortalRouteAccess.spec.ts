@@ -20,7 +20,7 @@
  */
 import { describe, expect, it, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { advanceRoute, canEnterNode, ensureMortalWorld, isNodeCleared, rerollMortalWorld } from './mortalWorldService'
+import { advanceRoute, canEnterNode, canEnterRegion, ensureMortalWorld, entryBlockReason, isNodeCleared, rerollMortalWorld } from './mortalWorldService'
 import { generateMortalWorld } from './mortalWorldGen'
 import { useAdventureStore } from '@/stores/adventure'
 import { REGIONS, regionDef } from '@/data/regions'
@@ -240,6 +240,104 @@ describe('路线可达性 · 本世路线是主线,不是唯一入口', () => {
         `\n路线外「${outside.name}」旧链已开 → 可进` +
         '\n两套规则互不越界'
     )
+  })
+})
+
+/**
+ * 界面与守卫必须共用同一个准入谓词。
+ *
+ * 玩家反馈:「历练的地图虽然显示了进入按钮,但是在选择完难度后依旧进不去」。
+ *
+ * 根因是判据分了两份:地图按钮读 adventure.unlocked,而准入在地界属于
+ * 本世路线时只看 canEnterNode。于是「旧链已开 + 在路线上但前一段未通」
+ * 的地界,按钮亮着、点进去被拒,且拒绝是静默的。
+ *
+ * 这里钉的不是「某个地界能不能进」,而是不变量:
+ *
+ *   **凡是界面给出出发按钮的地界,守卫都必须放行。**
+ *
+ * 判据落在谓词一致性上,任何一侧再分叉出第二套算法都会先红
+ */
+describe('路线可达性 · 界面与守卫共用一个谓词', () => {
+  it('回归:旧链全开的老存档,路线中段不得「按钮亮着却进不去」', () => {
+    const adventure = useAdventureStore()
+    adventure.unlocked = REGIONS.map(r => r.id)
+    adventure.cleared = []
+    const w = ensureMortalWorld()!
+    const mid = w.chain[1]!
+
+    // 曾经的分叉:旧链说可进(按钮亮),守卫说不可进(选完难度被拒)
+    expect(adventure.unlocked.includes(mid.fromId)).toBe(true)
+    expect(canEnterRegion(mid.fromId)).toBe(false)
+    expect(startExploration(mid.fromId, 'normal')).toBe(false)
+    // 界面此刻必须也说「进不去」,否则就是那个 bug
+    expect(canEnterRegion(mid.fromId)).toBe(startExploration(mid.fromId, 'normal'))
+    console.log(
+      `\n旧链全开时「${mid.name}」仍未轮到:界面与守卫都判为不可进` +
+        '\n—— 按钮不再承诺守卫兑现不了的事'
+    )
+  })
+
+  it('全地界扫描:界面谓词与守卫结论逐处一致', () => {
+    const adventure = useAdventureStore()
+    adventure.unlocked = REGIONS.map(r => r.id)
+    adventure.cleared = []
+    ensureMortalWorld()
+    let enterable = 0
+    for (const r of REGIONS) {
+      const uiSays = canEnterRegion(r.id)
+      const guardSays = startExploration(r.id, 'normal')
+      expect(guardSays, `${r.name}:界面说 ${uiSays},守卫说 ${guardSays}`).toBe(uiSays)
+      if (guardSays) {
+        enterable += 1
+        adventure.setSession(null)
+      }
+    }
+    console.log(`\n${REGIONS.length} 处地界逐个比对,界面与守卫结论完全一致(其中 ${enterable} 处可进)`)
+  })
+
+  it('故障注入:任一侧改回旧算法,一致性立刻被打破', () => {
+    const adventure = useAdventureStore()
+    adventure.unlocked = REGIONS.map(r => r.id)
+    adventure.cleared = []
+    const w = ensureMortalWorld()!
+    // 复刻界面曾经用的那套判据
+    const oldUiPredicate = (id: string): boolean => adventure.unlocked.includes(id)
+    const diverged = REGIONS.filter(r => oldUiPredicate(r.id) !== canEnterRegion(r.id))
+    // 若这里为空,说明上面两条一致性断言是「恰好都为真」而非在起作用
+    expect(diverged.length).toBeGreaterThan(0)
+    console.log(
+      `\n用旧的界面判据(adventure.unlocked)比对,${diverged.length} 处结论不同:` +
+        `\n  ${diverged.slice(0, 5).map(r => r.name).join('、')}${diverged.length > 5 ? '…' : ''}` +
+        `\n这些正是当初「按钮亮着却进不去」的地界(本世路线含 ${w.chain.length} 段)`
+    )
+  })
+
+  it('拒绝不再静默:进不去时给得出理由', () => {
+    const adventure = useAdventureStore()
+    adventure.unlocked = REGIONS.map(r => r.id)
+    adventure.cleared = []
+    const w = ensureMortalWorld()!
+    const mid = w.chain[1]!
+    const reason = entryBlockReason(mid.fromId)
+    expect(reason).not.toBeNull()
+    expect(reason).toContain(w.chain[0]!.name)
+    // 可进的地界没有理由可言
+    expect(entryBlockReason(w.chain[0]!.fromId)).toBeNull()
+    console.log(`\n「${mid.name}」被拒的理由:${reason}`)
+  })
+
+  it('理由只对路线内的拦截给出:路线外仍用旧链那句话', () => {
+    const adventure = useAdventureStore()
+    adventure.unlocked = ['qingyun']
+    adventure.cleared = []
+    const w = ensureMortalWorld()!
+    const inRoute = new Set(w.chain.map(p => p.fromId))
+    const outsideLocked = REGIONS.find(r => !inRoute.has(r.id) && !adventure.unlocked.includes(r.id))!
+    // 路线外的未解锁地界:理由留空,界面沿用「需先击败某某之主」
+    expect(canEnterRegion(outsideLocked.id)).toBe(false)
+    expect(entryBlockReason(outsideLocked.id)).toBeNull()
+    console.log(`\n路线外的「${outsideLocked.name}」仍走旧链话术,不与本世路线的理由混淆`)
   })
 })
 

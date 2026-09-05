@@ -84,6 +84,41 @@ export function isNodeCleared(nodeId: string): boolean {
 }
 
 /**
+ * 一处地界当下能否进入 —— **准入判定的唯一出口**。
+ *
+ * 语义与上一轮必要性审计一致:有本世之界时,路线内的地界**只认路线顺序**,
+ * 旧解锁链不能绕过它(堵在守卫层,而不是只藏按钮);路线外的地界仍走旧链。
+ *
+ * 之所以要单独导出,是因为界面此前另算了一套:地图按钮看 adventure.unlocked,
+ * 准入却走上面这套规则。于是「旧链已开 + 在路线上但前一段未通」的地界
+ * 按钮亮着、选完难度进不去,失败还是静默的 ——
+ * 玩家反馈「显示了进入按钮但依旧进不去」就是这一格。
+ * 界面与守卫必须共用这一个谓词,判据只有一份才不会再次分叉。
+ */
+export function canEnterRegion(regionId: string): boolean {
+  const adventure = useAdventureStore()
+  const node = adventure.mortalWorld?.chain.find(p => p.fromId === regionId)
+  if (node) return canEnterNode(node.nodeId)
+  return adventure.unlocked.includes(regionId)
+}
+
+/**
+ * 进不去的原因 —— 可进入时返回 null。
+ *
+ * 路线内与路线外的拦截理由完全不同,不能共用一句话:
+ * 老玩家早已打穿的地界若因本世路线未至而上锁,再显示
+ * 「需先击败某某之主」会让人以为存档坏了。
+ */
+export function entryBlockReason(regionId: string): string | null {
+  if (canEnterRegion(regionId)) return null
+  const adventure = useAdventureStore()
+  const w = adventure.mortalWorld
+  const i = w ? w.chain.findIndex(p => p.fromId === regionId) : -1
+  if (i > 0) return `本世路线尚未行至此处,需先走通「${w!.chain[i - 1]!.name}」。`
+  return null
+}
+
+/**
  * 通关某处地界后推进本世路线。
  *
  * 由 exploration.clearRegionAndUnlockNext 调用(在线/离线共用)。

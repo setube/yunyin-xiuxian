@@ -60,7 +60,7 @@
               首领已清之后进去仍能刷杂兵、拾遗、碰机缘
             -->
             <button
-              v-if="row.unlocked && (!row.suppressed || row.revived)"
+              v-if="row.canEnter && (!row.suppressed || row.revived)"
               class="btn-seal shrink-0 !px-4 !py-2 !text-[13px]"
               @click="chooseMode(row.def)"
             >
@@ -82,6 +82,8 @@
             <template v-if="row.unlocked">{{ row.def.desc }}</template>
             <template v-else>需先击败{{ prevRegionName(row.def) }}之主,方可踏足此地。</template>
           </p>
+          <!-- 已发现却仍去不得:本世路线还没走到这里。理由要写出来,不能只是按钮消失 -->
+          <p v-if="row.blockReason" class="mt-1 text-[11px] text-cinnabar">{{ row.blockReason }}</p>
           <div v-if="row.unlocked && (row.chips.length || row.adaptation)" class="mt-2 flex flex-wrap items-center gap-1.5">
             <span
               v-for="chip in row.chips"
@@ -159,7 +161,7 @@
   import { useUiStore } from '@/stores/ui'
   import { REGIONS, regionDef, DANGER_NAMES } from '@/data/regions'
   import SectionTitle from '@/components/common/SectionTitle.vue'
-  import { worldView } from '@/core/mortalWorldService'
+  import { canEnterRegion, entryBlockReason, worldView } from '@/core/mortalWorldService'
   import { REALMS } from '@/data/realms'
   import { EXPLORE_MODES } from '@/data/constants'
   import { startExploration } from '@/core/exploration'
@@ -218,7 +220,13 @@
       const revived = suppressed && isReviving(player.suppressedSince[r.id], Date.now())
       return {
         def: r,
+        // 旧链:这处地界是否**已被发现** —— 决定列表可见性、锁图标与简介
         unlocked: adventure.unlocked.includes(r.id),
+        // 统一准入谓词:此刻**能否进去** —— 决定出发按钮。
+        // 两者必须分开:visibleRows 按「已发现」截断列表,
+        // 若拿准入当可见性,路线上未轮到的地界会把后面能进的一并藏掉
+        canEnter: canEnterRegion(r.id),
+        blockReason: entryBlockReason(r.id),
         cleared: adventure.cleared.includes(r.id),
         suppressed,
         revived,
