@@ -103,7 +103,17 @@ describe('总览必要性 · 退路的前提是否成立', () => {
     adventure.setMortalWorld(WORLD)
     expect(canEnterNode(WORLD.chain[0]!.nodeId)).toBe(true)
     expect(escapeRouteNeeded(WORLD)).toBe(false)
-    console.log('\n旧链清空也能进首段 —— 「脱困退路」的前提不成立')
+    console.log(
+      '\n旧链清空也能进首段 —— 「脱困退路」的前提不成立。' +
+        '\n\n【事后更正】这条结论被玩家实测证伪,原因是本条判据没测它宣称要测的东西:' +
+        '\n它验的是「首段谓词是否为真」,而不是「玩家是否走得动」。' +
+        '\n首段确实可进,但历练页按旧解锁链截断可见范围,首段常排在截断线之外 ——' +
+        '\n可进却不可见,玩家看到的是整页 0 个出发按钮,以及一串' +
+        '\n「进甲要先通乙、进乙要先通丙」的推诿。' +
+        '\n\n据此结论定下的「路线内只认段序、堵在守卫层」已被推翻:' +
+        '\n现在 canEnterRegion 会回落旧解锁链(见 mortalRouteAccess.spec.ts)。' +
+        '\n可达性判据必须连同**可见性**一起验,只验谓词会漏掉这一整类死锁'
+    )
   })
 
   it('唯一残留情形是首段打不过,但那是难度问题', () => {

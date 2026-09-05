@@ -86,36 +86,45 @@ export function isNodeCleared(nodeId: string): boolean {
 /**
  * 一处地界当下能否进入 —— **准入判定的唯一出口**。
  *
- * 语义与上一轮必要性审计一致:有本世之界时,路线内的地界**只认路线顺序**,
- * 旧解锁链不能绕过它(堵在守卫层,而不是只藏按钮);路线外的地界仍走旧链。
+ * 规则:本世路线只**追加**可达性,从不**收回**旧解锁链已给出的权限。
+ * 所以首段无需旧链即可进(追加),路线中段若旧链早已解锁也不上锁(不收回)。
  *
- * 之所以要单独导出,是因为界面此前另算了一套:地图按钮看 adventure.unlocked,
- * 准入却走上面这套规则。于是「旧链已开 + 在路线上但前一段未通」的地界
- * 按钮亮着、选完难度进不去,失败还是静默的 ——
- * 玩家反馈「显示了进入按钮但依旧进不去」就是这一格。
- * 界面与守卫必须共用这一个谓词,判据只有一份才不会再次分叉。
+ * 这条规则是被实测逼出来的。此前路线内「只认段序、旧链不得绕过」,
+ * 后果有二:
+ *
+ * 1. 新号旧链只开一处,而路线首段往往排在地界表靠后的位置、
+ *    被历练页按旧链截断挡在可见范围外 —— 实测出现**整页 0 个出发按钮**,
+ *    历练完全无法开始。
+ * 2. 拦截理由指向路线前一段,而前一段可能也被拦,于是玩家读到
+ *    「进甲要先通乙、进乙要先通丙」的一串推诿(玩家原话)。
+ *
+ * 「堵在守卫层」那条旧结论默认玩家总能走到路线首段,
+ * 但历练页的可见性一直是旧链算的,两套判据从没对齐过。
+ * 代价是老存档可以绕开路线顺序 —— 相比走不动的死锁,这个代价可以接受。
+ * 路线顺序对旧链为空的新号仍然完全生效,那才是它该起作用的地方。
  */
 export function canEnterRegion(regionId: string): boolean {
   const adventure = useAdventureStore()
   const node = adventure.mortalWorld?.chain.find(p => p.fromId === regionId)
-  if (node) return canEnterNode(node.nodeId)
+  if (node && canEnterNode(node.nodeId)) return true
   return adventure.unlocked.includes(regionId)
 }
 
 /**
  * 进不去的原因 —— 可进入时返回 null。
  *
- * 路线内与路线外的拦截理由完全不同,不能共用一句话:
- * 老玩家早已打穿的地界若因本世路线未至而上锁,再显示
- * 「需先击败某某之主」会让人以为存档坏了。
+ * 指向**眼下就能去的那一段**,而不是这处地界在路线上的前一段:
+ * 前者可以立刻行动,后者常常自己也被拦着,连起来就是那串
+ * 「进甲要先通乙、进乙要先通丙」的推诿。
+ *
+ * 路线外的地界返回 null,由界面沿用旧链话术「需先击败某某之主」
  */
 export function entryBlockReason(regionId: string): string | null {
   if (canEnterRegion(regionId)) return null
-  const adventure = useAdventureStore()
-  const w = adventure.mortalWorld
-  const i = w ? w.chain.findIndex(p => p.fromId === regionId) : -1
-  if (i > 0) return `本世路线尚未行至此处,需先走通「${w!.chain[i - 1]!.name}」。`
-  return null
+  const w = useAdventureStore().mortalWorld
+  if (!w || !w.chain.some(p => p.fromId === regionId)) return null
+  const next = w.chain.find(p => canEnterNode(p.nodeId) && !isNodeCleared(p.nodeId))
+  return next ? `本世路线尚未行至此处,眼下该往「${next.name}」。` : null
 }
 
 /**

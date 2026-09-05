@@ -25,14 +25,14 @@
           v-for="row in visibleRows"
           :key="row.def.id"
           class="card-ink px-4 py-3"
-          :class="{ 'opacity-70': !row.unlocked, '!border-gold-ink/30 bg-gold-ink/5': row.suppressed }"
+          :class="{ 'opacity-70': !row.canEnter, '!border-gold-ink/30 bg-gold-ink/5': row.suppressed }"
         >
           <div class="flex items-center gap-3">
             <span
               class="grid h-10 w-10 shrink-0 place-items-center rounded-md"
-              :class="row.suppressed ? 'bg-gold-ink/15 text-gold-ink' : row.unlocked ? 'bg-indigo-ink/10 text-indigo-ink' : 'bg-ink/6 text-ink-ghost'"
+              :class="row.suppressed ? 'bg-gold-ink/15 text-gold-ink' : row.canEnter ? 'bg-indigo-ink/10 text-indigo-ink' : 'bg-ink/6 text-ink-ghost'"
             >
-              <GameIcon :name="row.suppressed ? 'shield-check' : row.unlocked ? row.def.icon : 'lock'" :size="18" />
+              <GameIcon :name="row.suppressed ? 'shield-check' : row.canEnter ? row.def.icon : 'lock'" :size="18" />
             </span>
             <div class="min-w-0 grow">
               <p class="flex items-center gap-2">
@@ -79,12 +79,12 @@
             </div>
           </div>
           <p class="mt-2 text-[11px] leading-relaxed text-ink-faint">
-            <template v-if="row.unlocked">{{ row.def.desc }}</template>
+            <template v-if="row.canEnter">{{ row.def.desc }}</template>
             <template v-else>需先击败{{ prevRegionName(row.def) }}之主,方可踏足此地。</template>
           </p>
-          <!-- 已发现却仍去不得:本世路线还没走到这里。理由要写出来,不能只是按钮消失 -->
+          <!-- 进不去时,理由指向眼下就能去的那一段,不让玩家自己排先后 -->
           <p v-if="row.blockReason" class="mt-1 text-[11px] text-cinnabar">{{ row.blockReason }}</p>
-          <div v-if="row.unlocked && (row.chips.length || row.adaptation)" class="mt-2 flex flex-wrap items-center gap-1.5">
+          <div v-if="row.canEnter && (row.chips.length || row.adaptation)" class="mt-2 flex flex-wrap items-center gap-1.5">
             <span
               v-for="chip in row.chips"
               :key="chip.trait"
@@ -248,10 +248,15 @@
     return { mine, recs }
   })
 
-  /** 只展示到「第一个未解锁」为止再多一个,保持神秘感 */
+  /**
+   * 只展示到「第一个既未发现、也进不去」为止再多一个,保持神秘感。
+   *
+   * 截断条件必须带上 canEnter:本世路线的首段可能排在地界表靠后的位置,
+   * 若只按旧链截断,它会被挡在可见范围外 —— 实测新号因此整页 0 个出发按钮
+   */
   const visibleRows = computed(() => {
     const rows = regionRows.value
-    const firstLocked = rows.findIndex(r => !r.unlocked)
+    const firstLocked = rows.findIndex(r => !r.unlocked && !r.canEnter)
     return firstLocked < 0 ? rows : rows.slice(0, firstLocked + 1)
   })
 

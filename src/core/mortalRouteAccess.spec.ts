@@ -145,7 +145,7 @@ describe('路线可达性 · 旧存档与换界', () => {
     console.log('\n旧解锁状态不会把路线中段提前打开')
   })
 
-  it('旧存档全部解锁:路线也不会整条敞开', () => {
+  it('旧存档全部解锁:本世路线的**进度**仍要逐段推,不会整条通关', () => {
     const adventure = useAdventureStore()
     adventure.unlocked = REGIONS.map(r => r.id)
     adventure.cleared = REGIONS.map(r => r.id)
@@ -153,7 +153,12 @@ describe('路线可达性 · 旧存档与换界', () => {
     for (let i = 1; i < w.chain.length; i += 1) {
       expect(canEnterNode(w.chain[i]!.nodeId)).toBe(false)
     }
-    console.log('\n全解锁的老存档进入新世界,仍须逐段走 —— 世界有自己的生命周期')
+    console.log(
+      '\n全解锁的老存档进入新世界,路线进度(canEnterNode)仍从第一段起算。' +
+        '\n注意区分两件事:**路线进度**要逐段推,但**地界准入**(canEnterRegion)' +
+        '\n会回落旧解锁链,所以老存档确实能不按路线顺序去打那些地界。' +
+        '\n这是为了避免新号「整页 0 个按钮」而付出的代价,不是疏漏'
+    )
   })
 
   it('换界即换路:本世进度不跨界继承', () => {
@@ -224,61 +229,57 @@ describe('路线可达性 · 本世路线是主线,不是唯一入口', () => {
     console.log(`\n「${locked.name}」既不在本世路线、旧链也未开 → 仍进不去`)
   })
 
-  it('两套规则各管各的:路线内按段序,路线外按旧链', () => {
+  it('路线只追加可达性,不收回旧链已给出的权限', () => {
     const adventure = useAdventureStore()
     adventure.unlocked = REGIONS.map(r => r.id)
     adventure.cleared = []
     const w = ensureMortalWorld()!
-    // 路线内的第二段:旧链全开也进不去(要先通第一段)
-    expect(startExploration(w.chain[1]!.fromId, 'normal')).toBe(false)
+    // 路线中段:旧链已开,故仍可进 —— 路线不没收既有权限
+    expect(startExploration(w.chain[1]!.fromId, 'normal')).toBe(true)
+    adventure.setSession(null)
     // 路线外的地界:旧链开了就能进
     const outside = REGIONS.find(r => !w.chain.some(p => p.fromId === r.id))!
     expect(startExploration(outside.id, 'normal')).toBe(true)
     adventure.setSession(null)
     console.log(
-      `\n路线第二段「${w.chain[1]!.name}」未通前一段 → 进不去` +
-        `\n路线外「${outside.name}」旧链已开 → 可进` +
-        '\n两套规则互不越界'
+      `\n旧链全开的老存档:路线中段「${w.chain[1]!.name}」与路线外「${outside.name}」都可进` +
+        '\n代价是老存档能绕开路线顺序;换来的是不会走不动'
     )
+  })
+
+  it('旧链为空时路线顺序完全生效 —— 该起作用的地方没被削弱', () => {
+    const adventure = useAdventureStore()
+    adventure.unlocked = []
+    adventure.cleared = []
+    const w = ensureMortalWorld()!
+    expect(startExploration(w.chain[0]!.fromId, 'normal')).toBe(true)
+    adventure.setSession(null)
+    for (let i = 1; i < w.chain.length; i += 1) {
+      expect(startExploration(w.chain[i]!.fromId, 'normal')).toBe(false)
+    }
+    console.log(`\n新号:仅首段「${w.chain[0]!.name}」可进,其余 ${w.chain.length - 1} 段仍须逐段走`)
   })
 })
 
 /**
- * 界面与守卫必须共用同一个准入谓词。
+ * 界面与守卫必须共用同一个准入谓词,且任何状态下都走得动。
  *
- * 玩家反馈:「历练的地图虽然显示了进入按钮,但是在选择完难度后依旧进不去」。
+ * 两次玩家反馈把这条不变量逼了出来:
  *
- * 根因是判据分了两份:地图按钮读 adventure.unlocked,而准入在地界属于
- * 本世路线时只看 canEnterNode。于是「旧链已开 + 在路线上但前一段未通」
- * 的地界,按钮亮着、点进去被拒,且拒绝是静默的。
+ * 1.「显示了进入按钮但依旧进不去」—— 判据分了两份:地图按钮读
+ *    adventure.unlocked,守卫在地界属于本世路线时只看 canEnterNode。
+ * 2.「进甲要先解锁乙,进乙要先解锁丙」—— 把界面改成服从守卫之后,
+ *    路线内「只认段序」的语义暴露出更严重的后果:新号旧链只开一处,
+ *    而路线首段常排在地界表靠后、被按旧链截断的可见范围挡住,
+ *    实测**整页 0 个出发按钮**;拦截理由又指向同样被拦的前一段,
+ *    连成一串推诿。
  *
- * 这里钉的不是「某个地界能不能进」,而是不变量:
- *
+ * 所以这里钉两条:
  *   **凡是界面给出出发按钮的地界,守卫都必须放行。**
- *
- * 判据落在谓词一致性上,任何一侧再分叉出第二套算法都会先红
+ *   **任何存档状态下,至少有一处地界可进。**
  */
 describe('路线可达性 · 界面与守卫共用一个谓词', () => {
-  it('回归:旧链全开的老存档,路线中段不得「按钮亮着却进不去」', () => {
-    const adventure = useAdventureStore()
-    adventure.unlocked = REGIONS.map(r => r.id)
-    adventure.cleared = []
-    const w = ensureMortalWorld()!
-    const mid = w.chain[1]!
-
-    // 曾经的分叉:旧链说可进(按钮亮),守卫说不可进(选完难度被拒)
-    expect(adventure.unlocked.includes(mid.fromId)).toBe(true)
-    expect(canEnterRegion(mid.fromId)).toBe(false)
-    expect(startExploration(mid.fromId, 'normal')).toBe(false)
-    // 界面此刻必须也说「进不去」,否则就是那个 bug
-    expect(canEnterRegion(mid.fromId)).toBe(startExploration(mid.fromId, 'normal'))
-    console.log(
-      `\n旧链全开时「${mid.name}」仍未轮到:界面与守卫都判为不可进` +
-        '\n—— 按钮不再承诺守卫兑现不了的事'
-    )
-  })
-
-  it('全地界扫描:界面谓词与守卫结论逐处一致', () => {
+  it('回归:界面谓词与守卫结论逐处一致', () => {
     const adventure = useAdventureStore()
     adventure.unlocked = REGIONS.map(r => r.id)
     adventure.cleared = []
@@ -296,45 +297,103 @@ describe('路线可达性 · 界面与守卫共用一个谓词', () => {
     console.log(`\n${REGIONS.length} 处地界逐个比对,界面与守卫结论完全一致(其中 ${enterable} 处可进)`)
   })
 
-  it('故障注入:任一侧改回旧算法,一致性立刻被打破', () => {
+  it('回归:任何旧链进度下都至少有一处可进 —— 不会整页 0 个按钮', () => {
+    // 玩家反馈「进甲要先解锁乙,进乙要先解锁丙」的根因就是这条不成立:
+    // 新号旧链只开一处时实测 0 个出发按钮
+    console.log('\n旧链已开  可进处数  路线首段')
+    for (const open of [0, 1, 2, 3, 5, 8, 13, REGIONS.length]) {
+      setActivePinia(createPinia())
+      const adventure = useAdventureStore()
+      adventure.unlocked = REGIONS.slice(0, open).map(r => r.id)
+      adventure.cleared = []
+      const w = ensureMortalWorld()!
+      const openable = REGIONS.filter(r => canEnterRegion(r.id))
+      console.log(`${String(open).padStart(6)} ${String(openable.length).padStart(9)}    ${w.chain[0]!.name}`)
+      expect(openable.length, `旧链开 ${open} 处时无处可去`).toBeGreaterThan(0)
+    }
+  })
+
+  it('故障注入:还原旧的两套判据,新号的历练页确实一个按钮都没有', () => {
+    // 上一条若只统计「可进的地界数」会得出旧语义也没问题的错误结论 ——
+    // 路线首段在旧语义下**是可进的**,只是被历练页按旧链截断的可见范围挡住了。
+    // 死锁出在可见性,不在谓词,所以这里必须照着视图的算法数**可见的按钮**。
+    const OPEN = 1
+    // 死锁的成立条件比「首段靠后」更严格:旧链开着的那几处必须**全是**
+    // 路线成员且都还没轮到,此时它们在旧语义下逐个被路线拦住,
+    // 而路线首段又在可见范围之外 —— 于是一个能点的都不剩
+    let world = null
+    for (let seed = 1; seed < 3000 && !world; seed += 1) {
+      const w = generateMortalWorld(seed * 7919)
+      const headPos = REGIONS.findIndex(r => r.id === w.chain[0]!.fromId)
+      const openAllBlocked = REGIONS.slice(0, OPEN).every(r => {
+        const at = w.chain.findIndex(p => p.fromId === r.id)
+        return at > 0
+      })
+      if (headPos > OPEN && openAllBlocked) world = w
+    }
+    expect(world, '未找到能复现死锁的路线').not.toBeNull()
+
+    setActivePinia(createPinia())
     const adventure = useAdventureStore()
-    adventure.unlocked = REGIONS.map(r => r.id)
+    adventure.unlocked = REGIONS.slice(0, OPEN).map(r => r.id)
     adventure.cleared = []
-    const w = ensureMortalWorld()!
-    // 复刻界面曾经用的那套判据
-    const oldUiPredicate = (id: string): boolean => adventure.unlocked.includes(id)
-    const diverged = REGIONS.filter(r => oldUiPredicate(r.id) !== canEnterRegion(r.id))
-    // 若这里为空,说明上面两条一致性断言是「恰好都为真」而非在起作用
-    expect(diverged.length).toBeGreaterThan(0)
+    adventure.setMortalWorld(world)
+
+    // 旧语义:路线内只认段序;历练页按「未解锁」截断
+    const oldCanEnter = (id: string): boolean => {
+      const node = world!.chain.find(p => p.fromId === id)
+      if (node) return canEnterNode(node.nodeId)
+      return adventure.unlocked.includes(id)
+    }
+    const oldRows = REGIONS.map(r => ({ unlocked: adventure.unlocked.includes(r.id), canEnter: oldCanEnter(r.id) }))
+    const oldCut = oldRows.findIndex(r => !r.unlocked)
+    const oldVisible = oldCut < 0 ? oldRows : oldRows.slice(0, oldCut + 1)
+    const oldButtons = oldVisible.filter(r => r.canEnter).length
+
+    // 现语义:路线回落旧链;截断条件带上 canEnter
+    const newRows = REGIONS.map(r => ({ unlocked: adventure.unlocked.includes(r.id), canEnter: canEnterRegion(r.id) }))
+    const newCut = newRows.findIndex(r => !r.unlocked && !r.canEnter)
+    const newVisible = newCut < 0 ? newRows : newRows.slice(0, newCut + 1)
+    const newButtons = newVisible.filter(r => r.canEnter).length
+
+    expect(oldButtons, '旧语义应当复现出「整页 0 个按钮」').toBe(0)
+    expect(newButtons).toBeGreaterThan(0)
     console.log(
-      `\n用旧的界面判据(adventure.unlocked)比对,${diverged.length} 处结论不同:` +
-        `\n  ${diverged.slice(0, 5).map(r => r.name).join('、')}${diverged.length > 5 ? '…' : ''}` +
-        `\n这些正是当初「按钮亮着却进不去」的地界(本世路线含 ${w.chain.length} 段)`
+      `\n路线首段「${world!.chain[0]!.name}」排在地界表第 ${REGIONS.findIndex(r => r.id === world!.chain[0]!.fromId) + 1} 位,` +
+        `旧链只开 ${OPEN} 处` +
+        `\n  旧语义:可见 ${oldVisible.length} 行,出发按钮 ${oldButtons} 个 ← 玩家卡死在这里` +
+        `\n  现语义:可见 ${newVisible.length} 行,出发按钮 ${newButtons} 个`
     )
   })
 
-  it('拒绝不再静默:进不去时给得出理由', () => {
+  it('拒绝不再静默,且理由指向眼下就能去的那一段', () => {
+    setActivePinia(createPinia())
     const adventure = useAdventureStore()
-    adventure.unlocked = REGIONS.map(r => r.id)
+    adventure.unlocked = []
     adventure.cleared = []
     const w = ensureMortalWorld()!
-    const mid = w.chain[1]!
+    const mid = w.chain[2]!
     const reason = entryBlockReason(mid.fromId)
     expect(reason).not.toBeNull()
+    // 关键:指向首段(眼下可去),而不是 mid 在路线上的前一段(它自己也被拦着)
     expect(reason).toContain(w.chain[0]!.name)
-    // 可进的地界没有理由可言
+    expect(reason).not.toContain(w.chain[1]!.name)
     expect(entryBlockReason(w.chain[0]!.fromId)).toBeNull()
-    console.log(`\n「${mid.name}」被拒的理由:${reason}`)
+    console.log(
+      `\n「${mid.name}」被拒的理由:${reason}` +
+        `\n它在路线上的前一段是「${w.chain[1]!.name}」,但那一段自己也进不去,` +
+        '\n所以理由不提它 —— 一串「先通乙、乙要先通丙」正是这么来的'
+    )
   })
 
   it('理由只对路线内的拦截给出:路线外仍用旧链那句话', () => {
+    setActivePinia(createPinia())
     const adventure = useAdventureStore()
     adventure.unlocked = ['qingyun']
     adventure.cleared = []
     const w = ensureMortalWorld()!
     const inRoute = new Set(w.chain.map(p => p.fromId))
     const outsideLocked = REGIONS.find(r => !inRoute.has(r.id) && !adventure.unlocked.includes(r.id))!
-    // 路线外的未解锁地界:理由留空,界面沿用「需先击败某某之主」
     expect(canEnterRegion(outsideLocked.id)).toBe(false)
     expect(entryBlockReason(outsideLocked.id)).toBeNull()
     console.log(`\n路线外的「${outsideLocked.name}」仍走旧链话术,不与本世路线的理由混淆`)
