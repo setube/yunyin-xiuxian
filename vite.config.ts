@@ -29,7 +29,9 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
+      // 用 import.meta.dirname 而非 __dirname:Vite 8 的 configLoader: 'native'
+      // (未来版本的默认值)不提供 CJS 那套变量,继续用 __dirname 会在切换后报错
+      '@': resolve(import.meta.dirname, 'src')
     }
   },
   test: {

@@ -2,7 +2,13 @@
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "types": ["vite/client"],
+    /*
+     * node 必须显式列出:本项目的 include 覆盖 src/**,其中的 *.spec.ts 会用
+     * node:fs / node:path / __dirname 读取源码做审计。Vite 7 的 client.d.ts
+     * 带 `/// <reference types="node" />`,这些类型是顺着它进来的;
+     * Vite 8 去掉了那条引用,不写出来就会报 TS2307 / TS2304。
+     */
+    "types": ["vite/client", "node"],
     "paths": {
       "@/*": ["./src/*"]
     },
