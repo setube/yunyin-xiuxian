@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 209,
+  "round": 210,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-17T15:42:45+00:00",
+  "updated_at": "2026-09-18T05:20:34+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 204,
+      "touched_round": 210,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -12476,6 +12476,102 @@
       "touched_round": 209,
       "rationale": "稀有度的承诺是三条:不被支配、期望更强、各有领地。budgetOfMods 是机制复杂度会计(它自己的注释写着\"不是玩家资源\"),按战斗口径定参考档,会把条件类战斗词条算重、运气与进阶率算轻 —— 拿它当强度阶梯就会得出错误的平衡结论。故判定:ISS-216 不是缺陷,判据按三条真承诺重写,数值不动。",
       "alternatives_rejected": "①按预算重排 33 件数值:为一把错的尺子改动数据,会把真平衡改坏(且会连带抽取权重的体感);②按预算重新分等:等于让\"复杂度\"决定稀缺度,与\"稀有=强\"的玩家认知相反;③无视这条告警:下次还会有人重新发现并再判一遍。"
+    },
+    "COMP-027": {
+      "id": "COMP-027",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-18T05:20:11+00:00",
+      "updated_at": "2026-09-18T05:20:11+00:00",
+      "touched_round": 210,
+      "summary": "区域解锁链(data/regions 的 requireCleared 链与 unlockClosure 闭包 + adventure store 的 unlocked/cleared 与读档补票 + exploration 的开放与推进)"
+    },
+    "ISS-217": {
+      "id": "ISS-217",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-09-18T05:20:11+00:00",
+      "updated_at": "2026-09-18T05:20:11+00:00",
+      "touched_round": 210,
+      "severity": 0.9,
+      "confidence": 0.95,
+      "effort": 1.5,
+      "summary": "用户反馈「鸿蒙裂隙之主始终刷不到」,实为扩界后旧档的解锁链缺票:解锁只在击败那一刻发生(exploration.clearRegionAndUnlockNext),而云海仙门是 v1.34.0 才长出来的下游(requireCleared = 鸿蒙裂隙)——扩界前就靖了鸿蒙裂隙的通关档,那句「需先击败鸿蒙裂隙之主,方可踏足此地」永远无法满足:鸿蒙裂隙已靖、首领不复现(runBattle 的 bossDue 只认 adventure.cleared),unlock() 没有第二次机会。仙界 / 神界 / 混沌海 24 处地界、12 大境界对这份存档整体不可达。"
+    },
+    "HYP-099": {
+      "id": "HYP-099",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-18T05:20:14+00:00",
+      "updated_at": "2026-09-18T05:20:14+00:00",
+      "touched_round": 210,
+      "confidence": 0.95,
+      "summary": "根因不在「首领的出现概率」,而在解锁的语义:它是一次性事件,不是不变量。凡「下游在击败之后才进数据表」都会永久卡住 —— 判据(前置已靖 → 此地已开)只写进了击败那一刻的那次调用,没有写进读档。"
+    },
+    "EV-194": {
+      "id": "EV-194",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-18T05:20:15+00:00",
+      "updated_at": "2026-09-18T05:20:15+00:00",
+      "touched_round": 210,
+      "source": "src/core/unlockChainSelfHeal.spec.ts(9 例,含故障注入)",
+      "summary": "复现与验收:把 adventure 置成扩界前的通关档(cleared = unlocked = 人间界 20 处)后 canEnterRegion(yunhai) = false;补票后可进,并真跑一次 startExploration(yunhai) 成功。故障注入(摘掉 sanitize 里的 unlockClosure 调用)实测打红 3 条(读档补票 / 只补该补的 / 不吞新号开荒)。补票幂等,不会把整张表全开。",
+      "confidence": 1.0
+    },
+    "EV-195": {
+      "id": "EV-195",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-18T05:20:15+00:00",
+      "updated_at": "2026-09-18T05:20:15+00:00",
+      "touched_round": 210,
+      "source": "git show 8fd3110~1:src/data/regions.ts",
+      "summary": "数据考古:扩界前区域表正好 20 处,鸿蒙裂隙(tier 20)是最后一处,没有任何地界的 requireCleared 指向它 —— 即「已靖下游」在当时并不存在,旧档的 unlocked 里不可能有云海仙门;而按 requireCleared 链,不补票就永远补不上。",
+      "confidence": 1.0
+    },
+    "TASK-196": {
+      "id": "TASK-196",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-09-18T05:20:17+00:00",
+      "updated_at": "2026-09-18T05:20:17+00:00",
+      "touched_round": 210,
+      "category": "correctness",
+      "severity": 0.9,
+      "confidence": 0.95,
+      "effort": 1.5,
+      "unlock_factor": 1.0,
+      "summary": "把「前置已靖 → 此地已开」从一次性事件补成读档不变量:新增 data/regions.unlockClosure(幂等、保留不认识的历史 id、按数据表顺序补齐),在读档修复口 adventure.sanitize() 补票(engine.start → sanitizeOfflineInputs 调用,与 seedLoreIfNeeded 同类);「击败即开放」的链路与提示一行不动。"
+    },
+    "DEC-053": {
+      "id": "DEC-053",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-18T05:20:19+00:00",
+      "updated_at": "2026-09-18T05:20:19+00:00",
+      "touched_round": 210,
+      "summary": "解锁的语义定为不变量:前置已靖即已开放,读档时按 cleared 补闭包,而不是再补一次「击败那一刻」的事件。",
+      "rationale": "数据表会长出新下游(境界扩界就是),而「击败」这个时刻只发生一次,且已靖地界的首领不再复现(见 runBattle 的 bossDue)——事件式解锁对旧档必然漏票。修法选「读档时按 cleared 补闭包」:engine.start → sanitizeOfflineInputs 是所有旧档共用的唯一入口,幂等、可重放、不改变在线语义与提示,也不需要为每次扩界写一份一次性迁移。",
+      "alternatives_rejected": "①改 clearRegionAndUnlockNext 不再提前返回 —— 治不了旧档:首领不复现,那段代码对已靖地界永远不会再跑;②让已靖地界的首领按妖气复聚重现 —— 改的是「已靖 = 无首领」的既有设计与界面语义,属另一件事;③再发一次 SAVE_VERSION 一次性迁移 —— 这类「数据表长出下游」每次扩界都会重演,一次性迁移要写无数份,而闭包是同一句话。"
+    },
+    "CHG-247": {
+      "id": "CHG-247",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-18T05:20:29+00:00",
+      "updated_at": "2026-09-18T05:20:29+00:00",
+      "touched_round": 210,
+      "commit": "73a7614",
+      "summary": "旧档补票:data/regions.ts 新增 unlockClosure(前置已靖 → 此地已开,幂等、保留历史 id),读档修复口 adventure.sanitize() 调用它(engine.start → sanitizeOfflineInputs → 与 seedLoreIfNeeded 同类);新增 src/core/unlockChainSelfHeal.spec.ts 9 例(扩界前通关档真开一程云海仙门 / 只补该补的 / 幂等 / 不吞新号开荒),故障注入实测打红 3 条。"
     }
   },
   "edges": [
@@ -18605,6 +18701,54 @@
       "to": "ISS-216",
       "type": "resolves",
       "created_at": "2026-09-17T15:42:45+00:00"
+    },
+    {
+      "from": "ISS-217",
+      "to": "COMP-027",
+      "type": "located_in",
+      "created_at": "2026-09-18T05:20:31+00:00"
+    },
+    {
+      "from": "COMP-027",
+      "to": "COMP-006",
+      "type": "part_of",
+      "created_at": "2026-09-18T05:20:31+00:00"
+    },
+    {
+      "from": "TASK-196",
+      "to": "ISS-217",
+      "type": "addresses",
+      "created_at": "2026-09-18T05:20:31+00:00"
+    },
+    {
+      "from": "EV-194",
+      "to": "HYP-099",
+      "type": "validates",
+      "created_at": "2026-09-18T05:20:31+00:00"
+    },
+    {
+      "from": "EV-195",
+      "to": "HYP-099",
+      "type": "validates",
+      "created_at": "2026-09-18T05:20:33+00:00"
+    },
+    {
+      "from": "CHG-247",
+      "to": "TASK-196",
+      "type": "implements",
+      "created_at": "2026-09-18T05:20:33+00:00"
+    },
+    {
+      "from": "CHG-247",
+      "to": "ISS-217",
+      "type": "resolves",
+      "created_at": "2026-09-18T05:20:34+00:00"
+    },
+    {
+      "from": "DEC-053",
+      "to": "COMP-027",
+      "type": "governs",
+      "created_at": "2026-09-18T05:20:34+00:00"
     }
   ]
 }
