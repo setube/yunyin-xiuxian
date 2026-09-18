@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { AdventureSession, CombatResult } from '@/types'
 import { persistConfig } from '@/utils/storage'
-import { regionDef } from '@/data/regions'
+import { regionDef, unlockClosure } from '@/data/regions'
 import { gn } from '@/utils/gnum'
 import { asFiniteNumber, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
 
@@ -57,6 +57,16 @@ export const useAdventureStore = defineStore(
       if (unlocked.value.length === 0) unlocked.value = ['qingyun']
       mortalCleared.value = asStringArray(mortalCleared.value)
       cleared.value = asStringArray(cleared.value)
+      /**
+       * 旧档补票(境界扩界)—— 「前置已靖 → 此地已开」。
+       *
+       * 解锁从前只在击败那一刻发生,故数据表后来长出来的下游(仙界 21 起)
+       * 对旧档永远开不了:鸿蒙裂隙已靖、首领不复现,而云海仙门还挂着
+       * 「需先击败鸿蒙裂隙之主」。这不是「写坏了」,是**新版本欠旧档一张票**,
+       * 与 engine 里的 seedLoreIfNeeded 同类,故放在同一个读档修复口上。
+       * 幂等:重复读档不重复补。
+       */
+      unlocked.value = unlockClosure(unlocked.value, cleared.value)
       session.value = asObjectOrNull<AdventureSession>(session.value)
       /**
        * 历练会话是引擎每 tick 都要读的活状态:endsAt/nextBattleAt 若为 NaN,

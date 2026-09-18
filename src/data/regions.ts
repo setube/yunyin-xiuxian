@@ -320,4 +320,39 @@ export function regionDef(id: string): RegionDef | undefined {
   return BY_ID.get(id)
 }
 
+/**
+ * 解锁链闭包 —— 「前置已靖 → 此地已开」。
+ *
+ * 解锁原本是一次性**事件**:击败某地之主的那一刻,才把
+ * `requireCleared === 此地` 的下游写进 adventure.unlocked
+ * (见 exploration.clearRegionAndUnlockNext)。于是数据表后来才长出来的下游,
+ * 对旧档永远开不了 —— 已靖的地界首领不复现(见 runBattle 的 bossDue),
+ * 那个 unlock() 也就没有第二次机会。v1.34.0 的境界扩界正是这个形状:
+ * 云海仙门 requireCleared = 鸿蒙裂隙,而在扩界之前就靖了鸿蒙裂隙的通关档,
+ * 进入新版本后既刷不到鸿蒙裂隙之主,也开不了仙界 24 处新地界。
+ *
+ * 所以这里把「事件」补成「不变量」:凡前置已靖的地界,一律算已开放;
+ * 已靖的地界本身也算已发现 —— 它当然进得去,不该被解锁表漏掉而藏起来。
+ *
+ * 幂等;原表里不认识的历史 id 原样保留,新补的按数据表顺序接在后面。
+ */
+export function unlockClosure(unlocked: readonly string[], cleared: readonly string[]): string[] {
+  const clearedSet = new Set(cleared)
+  const open = new Set(unlocked)
+  for (const id of cleared) open.add(id)
+  // 判据只看「前置靖没靖」,与被开出来的那些是否也已靖无关,
+  // 故一趟扫完即可(它不构成新的开锁条件)
+  for (const r of REGIONS) {
+    if (r.requireCleared && clearedSet.has(r.requireCleared)) open.add(r.id)
+  }
+  const out = [...new Set(unlocked)]
+  for (const r of REGIONS) {
+    if (open.has(r.id) && !out.includes(r.id)) out.push(r.id)
+  }
+  for (const id of cleared) {
+    if (!out.includes(id)) out.push(id)
+  }
+  return out
+}
+
 export const DANGER_NAMES = ['', '平缓', '寻常', '凶险', '大凶', '绝地'] as const
