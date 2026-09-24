@@ -35,6 +35,38 @@
  */
 import type { EquipmentTemplate, EquipSlot, StatMods } from '@/types'
 
+/**
+ * 图标由名字挑,不再同槽清一色(玩家反馈:「武器都是剑、头冠都是王冠、衣物都是衬衫」)。
+ *
+ * 兵刃、头面、衣甲各有各的形状 —— 同槽一律默认剑/王冠/衬衫,看着就是复制粘贴。
+ * 这里按名字里的字眼给更贴身的图标:甲铠是盾、头盔是盔、簪钗是光、刀剑是剑、
+ * 衣袍还是衫。只补没显式指定的(defaultIcon 兜底),手挑过的(opts.icon)一家不动。
+ */
+const NAME_ICONS: [RegExp, string][] = [
+  [/斧/, 'axe'],
+  [/锤/, 'hammer'],
+  [/钩|爪/, 'anchor'],
+  [/杖|杵|拂/, 'wand'],
+  [/剑|刃|刀/, 'sword'],
+  [/甲|铠/, 'shield'],
+  [/盔/, 'hardhat'],
+  [/簪|钗/, 'sparkles'],
+  [/巾|纱/, 'cloud'],
+  [/袍|衣|裳|衫/, 'shirt'],
+  [/符|令/, 'scroll'],
+  [/戒/, 'circle-dot'],
+  [/链|坠|珠/, 'gem'],
+  [/镯/, 'link'],
+  [/靴|履|鞋/, 'footprints']
+]
+
+function iconFromName(name: string, slot: EquipSlot, defaultIcon: Record<EquipSlot, string>): string {
+  for (const [re, icon] of NAME_ICONS) {
+    if (re.test(name)) return icon
+  }
+  return defaultIcon[slot]
+}
+
 function t(
   id: string,
   name: string,
@@ -56,7 +88,17 @@ function t(
     artifact: 'sparkles',
     talisman: 'scroll'
   }
-  return { id, name, slot, tier, base, desc, icon: opts.icon ?? defaultIcon[slot], fixedMods: opts.fixedMods, set: opts.set }
+  return {
+    id,
+    name,
+    slot,
+    tier,
+    base,
+    desc,
+    icon: opts.icon ?? iconFromName(name, slot, defaultIcon),
+    fixedMods: opts.fixedMods,
+    set: opts.set
+  }
 }
 
 export const EQUIPMENT_TEMPLATES: EquipmentTemplate[] = [
