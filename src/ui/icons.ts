@@ -1,6 +1,7 @@
 /** 图标注册表 —— 数据层用字符串键引用,统一在此映射 */
 import type { Component } from 'vue'
 import {
+  Anchor,
   Axe,
   Backpack,
   Bell,
@@ -20,6 +21,7 @@ import {
   Gem,
   Ghost,
   Hammer,
+  HardHat,
   Home,
   Leaf,
   Link,
@@ -54,6 +56,7 @@ import {
 } from 'lucide-vue-next'
 
 export const ICONS: Record<string, Component> = {
+  anchor: Anchor,
   axe: Axe,
   backpack: Backpack,
   bell: Bell,
@@ -73,6 +76,7 @@ export const ICONS: Record<string, Component> = {
   gem: Gem,
   ghost: Ghost,
   hammer: Hammer,
+  hardhat: HardHat,
   home: Home,
   leaf: Leaf,
   link: Link,
