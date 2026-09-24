@@ -8,6 +8,7 @@
  * 永不触碰 Filesystem(那正是旧实现用 v-if 把按钮藏起来的根因),
  * 且成功返回 null。
  */
+import { createPinia, setActivePinia } from 'pinia'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 /** node 测试环境无 localStorage,导出路径内部(buildExportPayload)要读它,补一个最小桩 */
@@ -56,6 +57,8 @@ import { Capacitor } from '@capacitor/core'
 
 describe('savePlatform(Web 分支)', () => {
   beforeEach(() => {
+    // Web 成功路径现在也会 toast(旧的只是静默返回),给足 Pinia
+    setActivePinia(createPinia())
     mocks.writeFile.mockClear()
     mocks.requestPermissions.mockClear()
   })
