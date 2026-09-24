@@ -490,7 +490,10 @@ export const EVENT_AUTO_RESOLVE_SECONDS = 120
 export const EXPLORE_MODES = {
   normal: { name: '寻常游历', durationSec: 1800, rewardMult: 1, dangerMult: 1 },
   deep: { name: '深入探寻', durationSec: 3600, rewardMult: 1.4, dangerMult: 1.45 },
-  risky: { name: '涉险求机', durationSec: 7200, rewardMult: 1.9, dangerMult: 2.1 }
+  risky: { name: '涉险求机', durationSec: 7200, rewardMult: 1.9, dangerMult: 2.1 },
+  // 玩家反馈「挂机1小时2小时可以有更长时间的选择」:档位曲线顺延一步(2h→4h)。
+  // 凶险比奖励涨得更快(2.6 > 2.4),长挂不白嫖 —— 与既有档位同一套取舍
+  prolonged: { name: '长线云游', durationSec: 14400, rewardMult: 2.4, dangerMult: 2.6 }
 } as const
 /** 战败重伤 Buff 持续秒数 */
 export const INJURY_DURATION = 150

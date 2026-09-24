@@ -48,6 +48,8 @@
         </button>
       </div>
       <p class="mt-2 text-center text-[10px] text-ink-faint">点击部位查看候选,行囊满时新掉落自动折作器灵尘</p>
+      <!-- 玩家反馈「一键装备最高阶级品质装备快捷键」:每槽换上当前最强,已是则不动 -->
+      <button class="btn-ghost mt-2 w-full !py-1.5 !text-[11px]" @click="onEquipAllBest">一键 · 各部位换上当前最强</button>
 
       <!-- 全部藏品(含佩戴中):部位槽之下的完整清单 -->
       <div v-if="allItems.length" class="mt-4">
@@ -445,6 +447,7 @@
   } from '@/core/forge'
   import { keepVerdict } from '@/core/smartKeep'
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
+  import { equipAllBest } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
   import { cnNumber, formatGN, formatNum, formatPercent } from '@/utils/format'
@@ -662,6 +665,12 @@
   function batchDecompose(): void {
     // 总账那一条由服务自己报(逐件弹提示只会互相顶掉)
     if (decomposeByRanks(settings.decomposeRanks) === 0) ui.toast(decomposeEmptyToast(), 'info')
+  }
+
+  /** 一键换装:每槽换上当前最强,报一句换了多少 */
+  function onEquipAllBest(): void {
+    const changed = equipAllBest()
+    ui.toast(changed > 0 ? `已自动换上 ${changed} 件当前最强(品质→阶级→强化)` : '已是当前最强', changed > 0 ? 'success' : 'info')
   }
 
   // ---- 一键分解弹窗 ----
