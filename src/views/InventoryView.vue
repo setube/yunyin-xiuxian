@@ -204,7 +204,11 @@
         </p>
       </template>
       <template #footer>
-        <button class="btn-seal w-full" @click="onUsePill()">服 用</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="btn-seal" @click="onUsePill()">服 用</button>
+          <!-- 玩家反馈「批量吃丹」:存量够几枚就连服几枚,结果与连点一致 -->
+          <button class="btn-ghost" @click="onUsePillBatch()">连服 ×5</button>
+        </div>
       </template>
     </BaseModal>
 
@@ -260,7 +264,11 @@
               <p class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</p>
               <p class="text-[10px] text-ink-ghost">把握</p>
             </div>
-            <button class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
+            <div class="flex shrink-0 flex-col gap-1">
+              <!-- 玩家反馈「批量炼丹」:材料够几炉就连开几炉,结果与连点一致 -->
+              <button class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
+              <button class="btn-ghost shrink-0 !px-3 !py-1 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
+            </div>
           </div>
           <p v-for="w in r.able.weakness" :key="w" class="mt-1 pl-7 text-[10px] text-ink-ghost">· {{ w }}</p>
         </div>
@@ -425,7 +433,7 @@
   import { REALMS } from '@/data/realms'
   import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
-  import { usePill, availableRecipes, craftPill, pillCraftCost } from '@/core/pillService'
+  import { usePill, usePillBatch, availableRecipes, craftPill, craftPillBatch, pillCraftCost } from '@/core/pillService'
   import { craftability, type Craftability } from '@/core/craftability'
   import {
     batchYieldText,
@@ -614,6 +622,14 @@
     const id = pillDetail.value
     if (!id) return
     usePill(id)
+    if (!pillRows.value.some(r => r.def?.id === id)) pillDetail.value = null
+  }
+
+  /** 批量服丹(连服 ×5):存量够几枚连吃几枚,吃完顺手关详情 */
+  function onUsePillBatch(): void {
+    const id = pillDetail.value
+    if (!id) return
+    usePillBatch(id, 5)
     if (!pillRows.value.some(r => r.def?.id === id)) pillDetail.value = null
   }
 
