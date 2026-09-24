@@ -25,6 +25,7 @@ import {
 } from '@/data/constants'
 import { stoneByTier } from './formulas'
 import { track } from './progress'
+import { noteSmithingUsed } from './loreService'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
@@ -130,6 +131,8 @@ export function reforgeEquipment(uid: string): boolean {
   const before = inst.affixes.length
   inventory.replaceItem({ ...inst, affixes, reforgeCount: (inst.reforgeCount ?? 0) + 1 })
   track('upgrades')
+  // 重铸也是炼器:上头一味矿材作「上手过」(矿石通晓/锻造技艺的唯一活水)
+  noteSmithingUsed(inst.tier, true)
 
   const sealedNote = reforgeSealedNote(kept.length)
   const countNote = before === affixes.length ? `${affixes.length} 条` : `${before} → ${affixes.length} 条`

@@ -23,6 +23,7 @@ import {
 import { salvageOf, salvageRefundPhrase } from './salvage'
 import { modOf } from './statsCalc'
 import { track } from './progress'
+import { noteSmithingUsed } from './loreService'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -70,6 +71,8 @@ export function upgradeEquipment(uid: string): boolean {
   const t = equipmentTemplate(inst.templateId)
   // 强化过也算「亲手用过」——图鉴那一档由玩家自己推进,不看运气
   useLoreStore().noteEquipUsed(inst.templateId)
+  // 强化即炼器:上头的一味矿材作「上手过」(矿石进通晓/锻造技艺的唯一活水)
+  noteSmithingUsed(inst.tier, true)
   ui.toast(upgradeDoneToast(t?.name ?? '此器', inst.level + 1), 'success')
   return true
 }
