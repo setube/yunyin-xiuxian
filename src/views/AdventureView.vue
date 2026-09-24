@@ -427,10 +427,18 @@
     return firstLocked < 0 ? rows : rows.slice(0, firstLocked + 1)
   })
 
-  /** 按界域分组展示:人间界/仙界/神界/混沌海的历练地界各自成段,便于在高界导航 */
+  /**
+   * 按界域分组展示:人间界/仙界/神界/混沌海的历练地界各自成段,便于在高界导航。
+   *
+   * 展示序 = 倒序(玩家反馈:「历练列表应该倒序排列,每次都要往下活动很久」)。
+   * 进阶路线上每次新解锁的地界排在最上 —— 高界玩家常年只在列表底部那两格的苦,
+   * 就是「新地界追着玩家跑」而不是要玩家去捞它。判定截断(visibleRows)仍在
+   * **数据序**(由低到高)上算:谜一样的「下一个地界」谁也不提前剧透,
+   * 只是摆出来的时候反着排罢了。
+   */
   const groupedRows = computed(() => {
     const groups: { world: WorldDef; rows: typeof regionRows.value }[] = []
-    for (const row of visibleRows.value) {
+    for (const row of [...visibleRows.value].reverse()) {
       const world = worldOf(row.def.minRealm)
       const hit = groups.find(g => g.world.id === world.id)
       if (hit) hit.rows.push(row)

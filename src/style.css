@@ -374,6 +374,14 @@ html,
 body {
   height: var(--app-shell-height);
   overscroll-behavior: none;
+  /*
+   * 文档层**永不可滚**(玩家反馈, iOS 网页 + 装到桌面):
+   * 双击把页面拽到顶、露出底下一截白条 —— 那截白条就是「100vh/100dvh 比可视区
+   * 高一截,文档多出可滚余量」的现形;而启发式布局脚本口径(scripts/layout-check.mjs
+   * 「两栏钉死」)测的是"别再把可滚区间造出来",这里直接堵死 —— 双层保险。
+   * 真正能滚的只有 main(它自己 overflow-y-auto),文档层从此永不越轨。
+   */
+  overflow: hidden;
 }
 
 body {
@@ -382,6 +390,13 @@ body {
   background: linear-gradient(160deg, #34312a 0%, #4a463d 45%, #2d2b25 100%);
   -webkit-font-smoothing: antialiased;
   user-select: none;
+  /*
+   * iOS Safari / 装到主页的双击缩放与 300ms 点击延时:快速连点会被吞成一次双击
+   * (玩家反馈「快速点击时容易误触」)。manipulation = 保留平移、只禁双击缩放,
+   * 连点不再有「等第二下」的窗口;点按直发 click。滚动区(main)不受影响。
+   */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ================= 夜间主题 =================
