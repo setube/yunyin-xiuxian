@@ -10,6 +10,7 @@ import { qualityDef } from '@/data/qualities'
 import { equipmentTemplate } from '@/data/equipment'
 import { PILLS } from '@/data/pills'
 import { ARTIFACTS, artifactDef } from '@/data/artifacts'
+import { lifeThemeDef } from '@/data/lifeThemes'
 import {
   ARTIFACT_DROP_CHANCE,
   BATTLE_EXP_SECS,
@@ -125,7 +126,13 @@ export function acquireEquipment(inst: EquipmentInstance, opts: { quiet?: boolea
   return { line: label, bagged: true, dust: 0, stone: gnZero() }
 }
 
-/** 获得法宝:重复则折算悟道点 */
+/**
+ * 获得法宝:重复则折算悟道点。
+ *
+ * 本世立下「整世不祭法宝」(taboo=artifact)之题时,到手法宝只入囊、不自动祭上 ——
+ * 否则系统替他祭出第一件,等于他一句话没说到底(玩家反馈:默认装备打破逆旅契)。
+ * 破题必须是他自己的选择:想用,自己去祭炼,那由 exploration 的 taboo 判定负责。
+ */
 export function acquireArtifact(defId: string, quiet = false): string {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
@@ -133,7 +140,10 @@ export function acquireArtifact(defId: string, quiet = false): string {
   const def = artifactDef(defId)
   if (!def) return ''
   collect('artifact', defId)
-  if (!inventory.addArtifact(defId)) {
+  const player = usePlayerStore()
+  const vow = player.reincarnation.vow
+  const forbidArtifact = Boolean(vow && !vow.broken && lifeThemeDef(vow.themeId)?.taboo === 'artifact')
+  if (!inventory.addArtifact(defId, !forbidArtifact)) {
     resources.addSmall('wudao', 10)
     return `法宝「${def.name}」(已拥有,化作悟道点×10)`
   }
