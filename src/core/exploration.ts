@@ -32,6 +32,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import type { LastBattleView } from '@/stores/adventure'
 import { useCultivationStore } from '@/stores/cultivation'
+import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
 import { checkSuppression, memorialLine, MEMORIAL_CHANCE } from './suppress'
 import { recordLoss, isNemesis, markAvenged, ghostOf, ghostTitle, ghostLeadIn, ECHO_GHOST_CHANCE } from './worldMemory'
@@ -491,6 +492,17 @@ export function tickExploration(now: number): void {
     if (rng.chance(exploreEventChance(region.id, player.finalStats.mods))) {
       // 事件标签同样走本世内容
       const ev = pickEventFor({ ...region, eventTags: [...placeContent(region.id).eventTags] })
+      if (ev && useSettingsStore().dndEvents) {
+        /*
+         * 遇事勿扰(玩家反馈「手动关闭际遇事件触发」)关闭弹窗:
+         * 撞见际遇/机缘/奇缘时按超时同一条路(默认好愿)当场结清 ——
+         * 奖励照拿、不卡手、也不把这一 Tick 的战斗窗口吞掉。
+         */
+        autoResolveEvent(ev.id, region.tier)
+        const cur = adventure.session
+        if (cur) adventure.setSession({ ...cur, events: cur.events + 1, nextBattleAt: nextBattleTime(now) })
+        return
+      }
       if (ev) {
         adventure.setPendingEvent(ev.id, now)
         /**
