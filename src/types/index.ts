@@ -264,6 +264,11 @@ export interface EquipmentInstance {
   sealedAffixIds?: string[]
   /** 累计强化投入(分解时按八成返还;老档无此账,按标价补算) */
   invested?: { dust: number; stone: GNum }
+  /**
+   * 玩家自定的短标记(玩家反馈:「同名装备想按不同流派区分」)。
+   * 至多 4 个汉字,详情弹窗里改;格卡与部位行都带出。老档/未标记件为 undefined。
+   */
+  note?: string
 }
 
 // ============ 法宝 ============

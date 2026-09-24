@@ -31,6 +31,13 @@
     <span v-if="props.item.level > 0" class="absolute bottom-0.5 right-1 text-[9px] leading-none text-gold-ink tabular">
       +{{ props.item.level }}
     </span>
+    <!-- 自定标记:格子背包里也认得出「这件是哪个流派」(玩家反馈,≤4字) -->
+    <span
+      v-if="props.item.note"
+      class="absolute bottom-0.5 left-1/2 max-w-[80%] -translate-x-1/2 truncate text-center text-[8px] leading-none text-ink-faint"
+    >
+      {{ props.item.note }}
+    </span>
   </button>
 </template>
 

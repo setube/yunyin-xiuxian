@@ -39,6 +39,7 @@
             <span class="w-full truncate text-center font-kai text-[10px]" :style="{ color: qualityDef(row.item.quality).color }">
               {{ row.template.name }}
               <template v-if="row.item.level > 0">+{{ row.item.level }}</template>
+              <template v-if="row.item.note">·{{ row.item.note }}</template>
             </span>
           </template>
           <template v-else>
