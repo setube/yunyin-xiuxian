@@ -119,11 +119,17 @@ export const useInventoryStore = defineStore(
       return true
     }
 
-    /** 获得法宝;重复返回 false(由调用方折算) */
-    function addArtifact(defId: string): boolean {
+    /**
+     * 获得法宝;重复返回 false(由调用方折算)。
+     *
+     * autoEquip=false 时只入囊、不自动祭上 —— 玩家本世立下「整世不祭法宝」之题时
+     * 走这条路,否则系统替他祭出第一件,等于他一句话没说到底(玩家反馈两条)。
+     * 手动祭炼(loot.ts)才交给 taboo 判定,破题必须是玩家自己的选择。
+     */
+    function addArtifact(defId: string, autoEquip = true): boolean {
       if (artifacts.value.some(a => a.defId === defId)) return false
       artifacts.value = [...artifacts.value, { defId, level: 0 }]
-      if (equippedArtifacts.value.length === 0) equippedArtifacts.value = [defId]
+      if (autoEquip && equippedArtifacts.value.length === 0) equippedArtifacts.value = [defId]
       return true
     }
 

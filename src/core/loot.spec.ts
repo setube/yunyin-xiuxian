@@ -9,6 +9,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { rng } from '@/utils/random'
 import {
   afterWin,
+  acquireArtifact,
   acquireEquipment,
   ARTIFACT_NEAR_BONUS,
   ARTIFACT_NEAR_WINDOW,
@@ -325,5 +326,50 @@ describe('装备见闻 · 入账那一刻就记下成色', () => {
     inv.items = [...inv.items, { uid: 'used-2', templateId: 'w_qingshuang', quality: 'heaven', tier: 3, level: 0, affixes: [] }]
     expect(upgradeEquipment('used-2'), '强化应当成功(素材已给足)').toBe(true)
     expect(lore.equipSeen('w_qingshuang')?.u, '强化过也算上手').toBe(1)
+  })
 })
+
+/**
+ * 逆旅「独行」· 到手法宝默认祭上的问题(玩家反馈,两条):
+ * 「PC网页版转世立契,一世不用法器,但是解锁法器的时候系统会默认装备,契约直接失效了」
+ * 「轮回时选择'整世不祭炼一件法宝'契约,下一世得到第一个法宝会默认装备,
+ *   就算没有手动祭炼也会打破契约」
+ *
+ * 立下 artifact 禁忌之题时,系统不该替他「祭出」第一个法宝 ——
+ * 破题必须是玩家自己的选择,不能是默认装备替他说了算。
+ */
+describe('逆旅「独行」· 到手法宝不默认祭上', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  function vow(broken = false): import('@/data/samsara').LifeVow {
+    return { themeId: 'lt_zejian', at: 0, base: {}, baseBranches: 0, baseAvenged: 0, broken }
+  }
+
+  it('未立题时,首个法宝照旧自动祭上(原行为)', () => {
+    acquireArtifact('af_muyu')
+    const inv = useInventoryStore()
+    expect(inv.artifacts).toHaveLength(1)
+    expect(inv.equippedArtifacts, '首个法宝默认祭上').toEqual(['af_muyu'])
+  })
+
+  it('立下「整世不祭法宝」之题后,到手法宝只入囊、不默认祭上', () => {
+    usePlayerStore().setVow(vow(false))
+    acquireArtifact('af_muyu')
+    const inv = useInventoryStore()
+    expect(inv.artifacts, '法宝在囊中').toHaveLength(1)
+    expect(inv.equippedArtifacts, '立誓不祭法宝时不得自动祭上').toEqual([])
+  })
+
+  it('已破题或题目不忌法宝:照旧自动祭上(不得好心办坏事)', () => {
+    usePlayerStore().setVow(vow(true))
+    acquireArtifact('af_muyu')
+    expect(useInventoryStore().equippedArtifacts, '破题后恢复默认行为').toEqual(['af_muyu'])
+
+    setActivePinia(createPinia())
+    usePlayerStore().setVow({ ...vow(false), themeId: 'lt_feisheng' }) // 不忌法宝的题
+    acquireArtifact('af_muyu')
+    expect(useInventoryStore().equippedArtifacts, '题目无关法宝时照常祭上').toEqual(['af_muyu'])
+  })
 })
