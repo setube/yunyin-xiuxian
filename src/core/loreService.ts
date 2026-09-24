@@ -158,6 +158,24 @@ export function noteMaterialUsed(id: string, succeeded: boolean): void {
 }
 
 /**
+ * 炼器(强化/重铸)算作"上手过"一味矿材 —— 矿石进「通晓」的渠道。
+ *
+ * 玩家反馈:「识材部分矿物无法达到通晓」「大量强化装备或重铸却看不见熟练度提升」。
+ * 根因:通晓(第 3 层)只由 noteMaterialUsed 可达,而它此前只在炼丹路径被调,
+ * 炼器从不登记 —— 矿石永远卡在 2 层,锻造技艺也原地踏步。
+ * 这里当作「这批料里有一味被真上手」:取一件与装备层级相称的矿石登记(判据与
+ * 丹药同源),并像炼丹那样按次给锻造技艺经验 —— 熟练度开始看得见地涨。
+ */
+export function noteSmithingUsed(tier: number, succeeded: boolean): void {
+  const pool = materialsNearRank(Math.max(1, Math.ceil(tier / 2)), 'ore')
+  if (pool.length === 0) return
+  const def = rng.pick(pool)
+  const lore = useLoreStore()
+  lore.addSkillExp('smithing', (succeeded ? 10 : 6) * (1 + def.rank * 0.35))
+  noteMaterialUsed(def.id, succeeded)
+}
+
+/**
  * 与一头敌人交手 —— 敌人认知的唯一来源(Phase 32.5)。
  *
  * 认知层不给任何属性,它给的是"知道它会怎么打":
