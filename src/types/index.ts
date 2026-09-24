@@ -480,7 +480,7 @@ export interface EnemyDef {
 }
 
 // ============ 区域 ============
-export type ExploreMode = 'normal' | 'deep' | 'risky'
+export type ExploreMode = 'normal' | 'deep' | 'risky' | 'prolonged'
 
 export interface RegionDef {
   id: string

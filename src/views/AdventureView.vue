@@ -262,7 +262,7 @@
         >
           <span>
             <span class="font-kai text-[14px] tracking-widest text-ink">{{ EXPLORE_MODES[m.id].name }}</span>
-            <span class="ml-2 text-[11px]" :class="m.id === 'risky' ? 'text-cinnabar' : 'text-ink-faint'">{{ m.risk }}</span>
+            <span class="ml-2 text-[11px]" :class="m.id === 'risky' || m.id === 'prolonged' ? 'text-cinnabar' : 'text-ink-faint'">{{ m.risk }}</span>
           </span>
           <!--
             收益一直是亮着的,危险却是暗的:三档里敌人差了 2.1 倍,玩家却只看得到钱。
@@ -366,7 +366,8 @@
   const MODE_LIST: { id: ExploreMode; risk: string }[] = [
     { id: 'normal', risk: '安稳' },
     { id: 'deep', risk: '小险' },
-    { id: 'risky', risk: '大凶' }
+    { id: 'risky', risk: '大凶' },
+    { id: 'prolonged', risk: '极险' }
   ]
 
   const currentBuild = computed(() => detectBuild(player.finalStats.mods))

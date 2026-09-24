@@ -82,7 +82,7 @@ export const useAdventureStore = defineStore(
         } else {
           session.value = {
             ...s,
-            mode: s.mode === 'deep' || s.mode === 'risky' ? s.mode : 'normal',
+            mode: s.mode === 'deep' || s.mode === 'risky' || s.mode === 'prolonged' ? s.mode : 'normal',
             startedAt: asFiniteNumber(s.startedAt, 0, 0),
             endsAt,
             nextBattleAt: asFiniteNumber(s.nextBattleAt, 0, 0),
