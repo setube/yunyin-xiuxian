@@ -260,7 +260,8 @@
 
     <!-- 功法 -->
     <section>
-      <SectionTitle title="功法" :hint="`残页 ${resources.page}`" />
+      <!-- 玩家反馈:看功法列表时只报残页,悟道点要开弹窗才看得见 —— 这里一并报 -->
+      <SectionTitle title="功法" :hint="`残页 ${resources.page} · 悟道点 ${formatGN(resources.wudao)}`" />
       <div class="mt-2 space-y-2">
         <!-- 主修 -->
         <button
