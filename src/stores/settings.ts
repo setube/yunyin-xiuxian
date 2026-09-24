@@ -13,6 +13,11 @@ export const useSettingsStore = defineStore(
     const musicVol = ref(50)
     const sfxVol = ref(70)
     const reduceMotion = ref(false)
+    /**
+     * 遇事勿扰(玩家反馈「手动关闭际遇事件触发」):历练撞见际遇/机缘/奇缘时,
+     * 不再弹窗 —— 立刻按默认好愿了结(与超时自动处置同一条路),奖励照拿、不卡手。
+     */
+    const dndEvents = ref(false)
     /** 战报播放速度倍率 */
     const battleSpeed = ref<1 | 2 | 4>(1)
     /** 一键分解勾选的品质 rank 列表(持久化,免得每次重勾) */
@@ -46,6 +51,7 @@ export const useSettingsStore = defineStore(
       sfxVol.value = Math.min(100, asFiniteNumber(sfxVol.value, 70, 0))
       if (![1, 2, 4].includes(battleSpeed.value)) battleSpeed.value = 1
       if (!['auto', 'light', 'dark'].includes(theme.value)) theme.value = 'auto'
+      dndEvents.value = dndEvents.value === true
       lastExportAt.value = asFiniteNumber(lastExportAt.value, 0, 0)
       installNoticeDismissed.value = installNoticeDismissed.value === true
       decomposeRanks.value = asArray<number>(decomposeRanks.value).filter(n => typeof n === 'number' && Number.isFinite(n))
@@ -66,6 +72,7 @@ export const useSettingsStore = defineStore(
       musicVol,
       sfxVol,
       reduceMotion,
+      dndEvents,
       battleSpeed,
       decomposeRanks,
       smartKeep,
