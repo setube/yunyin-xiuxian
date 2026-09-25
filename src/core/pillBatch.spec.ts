@@ -72,6 +72,15 @@ describe('批量服丹', () => {
   it('一枚都没有:返回 0', () => {
     expect(usePillBatch(ID, 5)).toBe(0)
   })
+
+  it('要求 0 枚:一枚也不动(不借单次路径偷吃)', () => {
+    const inv = useInventoryStore()
+    inv.addPill(ID, 3)
+    expect(usePillBatch(ID, 0), '0 枚不应消耗任何丹药').toBe(0)
+    expect(inv.pills[ID]).toBe(3)
+    expect(usePillBatch(ID, -1), '负数同样不可消耗').toBe(0)
+    expect(inv.pills[ID]).toBe(3)
+  })
 })
 
 describe('批量炼丹', () => {
@@ -98,5 +107,13 @@ describe('批量炼丹', () => {
     const res = craftPillBatch(ID, 5)
     expect(res.rounds, '材料见底就停,不空转').toBe(1)
     expect(useResourcesStore().herb).toBe(0)
+  })
+
+  it('要求 0 炉:一炉也不开(不借单次路径偷炼)', () => {
+    giveMaterials()
+    expect(craftPillBatch(ID, 0)).toEqual({ rounds: 0, made: 0, failed: 0 })
+    expect(useResourcesStore().herb, '材料不应被扣').toBe(400)
+    expect(craftPillBatch(ID, -1)).toEqual({ rounds: 0, made: 0, failed: 0 })
+    expect(useResourcesStore().herb, '负数同样不扣材料').toBe(400)
   })
 })

@@ -98,7 +98,8 @@ export function usePill(id: string, quiet = false): boolean {
  * @returns 实际服下的枚数(0 表示一枚没服下)
  */
 export function usePillBatch(id: string, count: number): number {
-  if (count <= 1) return usePill(id) ? 1 : 0
+  if (count < 1) return 0 // 没要求服,一枚也不许动
+  if (count === 1) return usePill(id) ? 1 : 0
   let eaten = 0
   for (let i = 0; i < count; i += 1) {
     if (!usePill(id, true)) break
@@ -240,7 +241,8 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
  * @returns 成丹数 / 炸炉数
  */
 export function craftPillBatch(id: string, count: number): { rounds: number; made: number; failed: number } {
-  if (count <= 1) {
+  if (count < 1) return { rounds: 0, made: 0, failed: 0 } // 没要求炼,一炉也不许开
+  if (count === 1) {
     const first = craftPill(id)
     return { rounds: first.ok ? 1 : 1, made: first.ok ? first.count : 0, failed: first.ok ? 0 : 1 }
   }

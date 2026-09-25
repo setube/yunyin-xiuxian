@@ -229,6 +229,10 @@ export function autoReforge(uid: string, targets: readonly ReforgeTarget[], maxR
   const resources = useResourcesStore()
   let stone = gnZero()
   let dust = 0
+  // 一个目标都没给:收手,不烧预算 —— 面板上按钮禁用只是挡层,服务本身不当
+  if (targets.length === 0) {
+    return { rolls: 0, stone, dust, stop: 'budget', hit: null, affixIds: [] }
+  }
   // 装备已含目标词条:分文不动,直接收手 —— 别花一次重铸把已到手的条件洗没
   const initial = inventory.findItem(uid)
   if (initial) {
