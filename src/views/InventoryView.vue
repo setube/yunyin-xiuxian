@@ -8,10 +8,12 @@
       <!-- 装备共鸣:机制是活的,玩家却看不见 —— 同组两件即共鸣,（2/2）亮起 -->
       <div v-if="setRows.length" class="card-ink mt-3 px-4 py-2.5">
         <p class="text-[10px] text-ink-faint">装备共鸣(同组两件即共鸣,机制不叠数值)</p>
-        <p v-for="s in setRows" :key="s.def.id" class="mt-1 flex items-baseline gap-2 text-[11px]">
-          <span class="font-kai" :class="s.active ? 'text-jade' : 'text-ink-soft'">{{ s.def.name }}</span>
-          <span class="tabular" :class="s.active ? 'text-jade' : 'text-ink-faint'">{{ s.count }}/{{ s.def.required }}</span>
-          <span class="min-w-0 text-[10px] leading-relaxed text-ink-faint">{{ s.def.effectDesc }}</span>
+        <p v-for="s in setRows" :key="s.def.id" class="mt-1 flex items-center gap-2 text-[11px]">
+          <span class="font-kai shrink-0" :class="s.active ? 'text-jade' : 'text-ink-soft'">{{ s.def.name }}</span>
+          <span class="tabular shrink-0" :class="s.active ? 'text-jade' : 'text-ink-faint'">{{ s.count }}/{{ s.def.required }}</span>
+          <span class="min-w-0 grow text-[10px] leading-relaxed text-ink-faint">{{ s.def.effectDesc }}</span>
+          <!-- 玩家反馈「穿套装」:一键穿齐该套已持有的件,已穿更强的则不换 -->
+          <button class="shrink-0 text-[10px] text-azure/90 active:opacity-60" @click="onEquipSet(s.def.id)">穿齐 →</button>
         </p>
       </div>
       <div class="mt-3 flex items-center justify-between px-1">
@@ -448,7 +450,7 @@
   } from '@/core/forge'
   import { keepVerdict } from '@/core/smartKeep'
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
-  import { equipAllBest } from '@/core/equipBest'
+  import { equipAllBest, equipSetCombo } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
   import { cnNumber, formatGN, formatNum, formatPercent } from '@/utils/format'
@@ -672,6 +674,12 @@
   function onEquipAllBest(): void {
     const changed = equipAllBest()
     ui.toast(changed > 0 ? `已自动换上 ${changed} 件当前最强(品质→阶级→强化)` : '已是当前最强', changed > 0 ? 'success' : 'info')
+  }
+
+  /** 一键穿齐套装:换上该套已持有的件,已穿更强的则不换 */
+  function onEquipSet(setId: string): void {
+    const changed = equipSetCombo(setId)
+    ui.toast(changed > 0 ? `穿齐该套:换上 ${changed} 件(更强的没动)` : '该套已穿齐,或没有更合适的件', changed > 0 ? 'success' : 'info')
   }
 
   // ---- 一键分解弹窗 ----

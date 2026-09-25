@@ -6,7 +6,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
-import { equipAllBest, equipBestFor, bestEquipFor, betterEquip } from './equipBest'
+import { equipAllBest, equipBestFor, bestEquipFor, betterEquip, equipSetCombo } from './equipBest'
 import { equipmentTemplate } from '@/data/equipment'
 import type { EquipmentInstance, EquipSlot, QualityId } from '@/types'
 
@@ -92,5 +92,41 @@ describe('一键换装', () => {
     for (const slot of ['head', 'body', 'necklace', 'weapon'] as EquipSlot[]) {
       expect(inv.equipped[slot], `${slot} 槽应已穿上`).toBeTruthy()
     }
+  })
+})
+
+/**
+ * 一键穿齐共鸣套:各槽换上该套已持有里的最强,已穿更强的那件不动。
+ * 铁壁套 s_tiebi = 玄铁重剑(weapon)+ 玄铁冠(head)。
+ */
+describe('一键穿齐套装', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('空槽换上套装里更强的一件,已穿更强的非套件不动', () => {
+    const inv = useInventoryStore()
+    const pieces: EquipmentInstance[] = [
+      { uid: 'sa', templateId: 'w_xuantie', quality: 'fine', tier: 2, level: 0, affixes: [] },
+      { uid: 'sb', templateId: 'w_xuantie', quality: 'heaven', tier: 4, level: 0, affixes: [] },
+      { uid: 'sc', templateId: 'h_xuantie', quality: 'excellent', tier: 4, level: 0, affixes: [] },
+      { uid: 'sd', templateId: 'h_xuantie', quality: 'divine', tier: 5, level: 0, affixes: [] }
+    ]
+    inv.items = pieces
+    inv.equip('sd', 'head') // 头已穿更强的 divine
+    const changed = equipSetCombo('s_tiebi')
+    expect(changed, '只该换武器槽').toBe(1)
+    expect(inv.equipped['weapon'], '换上天品重剑').toBe('sb')
+    expect(inv.equipped['head'], '已穿更强 divine 不该被降级').toBe('sd')
+  })
+
+  it('已穿齐:再点一次不动(幂等)', () => {
+    const inv = useInventoryStore()
+    const a: EquipmentInstance = { uid: 'sa', templateId: 'w_xuantie', quality: 'heaven', tier: 4, level: 0, affixes: [] }
+    const b: EquipmentInstance = { uid: 'sc', templateId: 'h_xuantie', quality: 'heaven', tier: 4, level: 0, affixes: [] }
+    inv.items = [a, b]
+    inv.equip(a.uid, 'weapon')
+    inv.equip(b.uid, 'head')
+    expect(equipSetCombo('s_tiebi'), '已穿齐,不应再动').toBe(0)
   })
 })
