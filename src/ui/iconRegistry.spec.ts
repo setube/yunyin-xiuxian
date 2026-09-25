@@ -27,7 +27,12 @@ const SOURCES: { label: string; items: { name?: string; icon?: string }[] }[] = 
   { label: '增益', items: BUFFS },
   { label: '丹药', items: PILLS },
   { label: '法宝', items: ARTIFACTS },
-  { label: '天道各界的敌人', items: CELESTIAL_WORLDS.flatMap(w => w.foes) },
+  // 一界可达的敌人不止 foes:守界的天道守护者(guardian)与路线树每个节点的
+  // 镇守 foe 同样是渲染口 —— 只查 foes 会漏掉它们身上的死键(Sourcery 审查指出)。
+  {
+    label: '天道各界的敌人',
+    items: CELESTIAL_WORLDS.flatMap(w => [...w.foes, w.guardian, ...w.routes.flat().map(n => n.foe)])
+  },
   { label: '试炼之敌', items: TRIAL_FOES }
 ]
 
