@@ -26,7 +26,9 @@ import {
 import { stoneByTier } from './formulas'
 import { track } from './progress'
 import { noteSmithingUsed } from './loreService'
+import { add, gnZero } from '@/utils/gnum'
 import { useInventoryStore } from '@/stores/inventory'
+import { useLoreStore } from '@/stores/lore'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -84,7 +86,10 @@ export function sealCapacity(inst: EquipmentInstance): number {
  *   封存的原样留着,其余全部换成新词条、新掷点。
  * 品质、阶数、强化等级一概不动 —— 重铸的是一件的「词条构成」,不是它的出身。
  */
-export function reforgeEquipment(uid: string): boolean {
+/**
+ * 重铸一键(quiet=true 供自动重铸用:逐次洗照常结算,提示由自动那层合为一次)。
+ */
+export function reforgeEquipment(uid: string, quiet = false): boolean {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
   const ui = useUiStore()
@@ -92,11 +97,11 @@ export function reforgeEquipment(uid: string): boolean {
   if (!inst) return false
   const cost = reforgeCost(inst)
   if (!cost) {
-    ui.toast(reforgeEmptyToast(), 'warn')
+    if (!quiet) ui.toast(reforgeEmptyToast(), 'warn')
     return false
   }
   if (!resources.hasStone(cost.stone) || !resources.hasSmall('dust', cost.dust)) {
-    ui.toast(reforgeShortToast(), 'warn')
+    if (!quiet) ui.toast(reforgeShortToast(), 'warn')
     return false
   }
 
@@ -131,12 +136,15 @@ export function reforgeEquipment(uid: string): boolean {
   const before = inst.affixes.length
   inventory.replaceItem({ ...inst, affixes, reforgeCount: (inst.reforgeCount ?? 0) + 1 })
   track('upgrades')
-  // 重铸也是炼器:上头一味矿材作「上手过」(矿石通晓/锻造技艺的唯一活水)
+  // 重铸也是炼器:上头一味矿材作「上手过」(矿石通晓/锻造技艺的唯一活水);
+  // 重铸更是刻纹 —— 铭纹技艺此前定义了却从没人涨过(玩家反馈「铭纹熟练度老版本为0,
+  // 新版本没看到新系统」),真正「刻纹引灵」的活儿就该长这门手艺
   noteSmithingUsed(inst.tier, true)
+  useLoreStore().addSkillExp('inscribe', 10 * (1 + inst.tier * 0.2))
 
   const sealedNote = reforgeSealedNote(kept.length)
   const countNote = before === affixes.length ? `${affixes.length} 条` : `${before} → ${affixes.length} 条`
-  ui.toast(reforgeDoneToast(countNote, sealedNote), 'success')
+  if (!quiet) ui.toast(reforgeDoneToast(countNote, sealedNote), 'success')
   return true
 }
 
@@ -171,4 +179,80 @@ export function sealAffix(uid: string, affixId: string): boolean {
   const name = affixDef(affixId)?.name ?? '词条'
   ui.toast(sealDoneToast(name), 'success')
   return true
+}
+
+// ---------- 自动重铸(玩家反馈:一键重铸多次,洗到指定词条就停) ----------
+
+/** 自动重铸的停止条件:出现「id 命中且 roll ≥ minRoll(未给则任意值)」即收手 */
+export interface ReforgeTarget {
+  affixId: string
+  /** 要求的最低 roll(0~1;不填 = 只要出现这个词条就行) */
+  minRoll?: number
+}
+
+/** 这件装备当前是否命中任一目标;命中返回那一条 */
+export function refRoleMatches(inst: EquipmentInstance, targets: readonly ReforgeTarget[]): { id: string; roll: number } | null {
+  for (const t of targets) {
+    const hit = inst.affixes.find(a => a.id === t.affixId && (t.minRoll === undefined || a.roll >= t.minRoll))
+    if (hit) return { id: hit.id, roll: hit.roll }
+  }
+  return null
+}
+
+export type AutoReforgeStop = 'target' | 'budget' | 'broke' | 'frozen'
+
+export interface AutoReforgeOutcome {
+  /** 实际洗了几次 */
+  rolls: number
+  /** 这几次的灵石账 */
+  stone: GNum
+  /** 这几次的器灵尘账 */
+  dust: number
+  stop: AutoReforgeStop
+  /** 命中目标的那一条(null = 没洗到,撞了预算/没钱/无位可洗) */
+  hit: { id: string; roll: number } | null
+  /** 收手时这件装备的词条 id 全表 */
+  affixIds: string[]
+}
+
+/**
+ * 自动重铸:至多重铸 maxRolls 次,洗出任一目标词条(可带最低 roll)即停。
+ * 逐次与手动连点完全等价 —— 每洗一次照常消耗与长技艺,只是提示合成一条。
+ * 停法:
+ * - target  洗出目标,收手;
+ * - budget  洗满预算也没出,收手(不硬刷);
+ * - broke   灵石/器灵尘见底,收手;
+ * - frozen  这件已无位可洗(全封存)或已不存在。
+ */
+export function autoReforge(uid: string, targets: readonly ReforgeTarget[], maxRolls: number): AutoReforgeOutcome {
+  const inventory = useInventoryStore()
+  const resources = useResourcesStore()
+  let stone = gnZero()
+  let dust = 0
+  for (let i = 0; i < maxRolls; i += 1) {
+    const inst = inventory.findItem(uid)
+    const cost = inst && reforgeCost(inst)
+    if (!inst || !cost) return { rolls: i, stone, dust, stop: 'frozen', hit: null, affixIds: [] }
+    if (!resources.hasStone(cost.stone) || !resources.hasSmall('dust', cost.dust)) {
+      return { rolls: i, stone, dust, stop: 'broke', hit: null, affixIds: inst.affixes.map(a => a.id) }
+    }
+    if (!reforgeEquipment(uid, true)) {
+      return { rolls: i, stone, dust, stop: 'frozen', hit: null, affixIds: inst.affixes.map(a => a.id) }
+    }
+    stone = add(stone, cost.stone)
+    dust += cost.dust
+    const after = inventory.findItem(uid)
+    if (!after) return { rolls: i + 1, stone, dust, stop: 'frozen', hit: null, affixIds: [] }
+    const hit = refRoleMatches(after, targets)
+    if (hit) return { rolls: i + 1, stone, dust, stop: 'target', hit, affixIds: after.affixes.map(a => a.id) }
+  }
+  const last = inventory.findItem(uid)
+  return {
+    rolls: maxRolls,
+    stone,
+    dust,
+    stop: 'budget',
+    hit: null,
+    affixIds: last ? last.affixes.map(a => a.id) : []
+  }
 }

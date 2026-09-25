@@ -59,3 +59,28 @@ export function equipAllBest(): number {
   }
   return changed
 }
+
+/**
+ * 一键穿齐某共鸣套(玩家反馈:「能不能装备按照套装排序,或者穿套装」)。
+ * 每槽换上该套**已持有里最强**的一件(品质→层级→强化,同 betterEquip);
+ * 已穿的那件更强就不动 —— 穿套装绝不降级。返回换上几件。
+ */
+export function equipSetCombo(setId: string): number {
+  const inventory = useInventoryStore()
+  const bestPerSlot = new Map<EquipSlot, EquipmentInstance>()
+  for (const it of inventory.items) {
+    const tpl = equipmentTemplate(it.templateId)
+    if (!tpl || tpl.set !== setId) continue
+    const cur = bestPerSlot.get(tpl.slot)
+    if (!cur || betterEquip(it, cur)) bestPerSlot.set(tpl.slot, it)
+  }
+  let changed = 0
+  for (const [slot, piece] of bestPerSlot) {
+    if (inventory.equipped[slot] === piece.uid) continue
+    const occupant = inventory.equipped[slot] ? inventory.findItem(inventory.equipped[slot]!) : undefined
+    if (occupant && betterEquip(occupant, piece)) continue
+    inventory.equip(piece.uid, slot)
+    changed += 1
+  }
+  return changed
+}

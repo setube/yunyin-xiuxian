@@ -176,6 +176,41 @@
           </p>
           <p class="mt-0.5 text-[10px] text-ink-faint">推演只述局面,不替你定夺。</p>
         </template>
+
+        <!-- 自动重铸:洗到指定词条即停(玩家反馈,可多选、可给最低值) -->
+        <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
+          <p class="mb-1 text-[11px] text-ink-soft">洗到这些词条出现就停(任一命中即停,至多 3 条)</p>
+          <div class="grid max-h-36 grid-cols-3 gap-1 overflow-y-auto">
+            <button
+              v-for="af in affixOptions"
+              :key="af.id"
+              class="rounded px-1 py-1 text-[10px] leading-tight"
+              :class="isAutoTarget(af.id) ? 'border border-cinnabar text-cinnabar' : 'bg-ink/4 text-ink-faint'"
+              @click="toggleAutoTarget(af.id)"
+            >
+              {{ af.name }}
+            </button>
+          </div>
+          <div v-if="autoTargets.length" class="mt-1.5 space-y-0.5">
+            <p v-for="t in autoTargets" :key="t.affixId" class="flex items-center gap-2 text-[10px] text-ink-faint">
+              <span class="w-10 shrink-0 font-kai text-ink-soft">{{ affixDef(t.affixId)?.name ?? t.affixId }}</span>
+              <input v-model.number="t.minRoll" type="range" min="0" max="1" step="0.05" class="grow accent-cinnabar" />
+              <span class="w-12 shrink-0 text-right tabular">≥{{ Math.round((t.minRoll ?? 0) * 100) }}%</span>
+            </p>
+          </div>
+          <div class="mt-1.5 flex items-center gap-2">
+            <span class="text-[10px] text-ink-faint tabular">预算</span>
+            <input
+              v-model.number="autoBudget"
+              type="number"
+              min="1"
+              max="500"
+              class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
+            />
+            <span class="text-[10px] text-ink-ghost tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
+            <button class="btn-seal ml-auto !px-3 !py-1 !text-[11px]" @click="runAutoReforge">开 洗</button>
+          </div>
+        </div>
       </template>
     </div>
     <template #footer>
@@ -203,6 +238,9 @@
           <p v-if="inst" class="text-center text-[10px] text-ink-ghost tabular">
             已重铸 {{ inst.reforgeCount ?? 0 }} 次 · 已封存 {{ (inst.sealedAffixIds ?? []).length }}/{{ sealCapacity(inst) }}
           </p>
+          <button v-if="reforgeCostVal" class="btn-ghost w-full !py-1 !text-[11px]" @click="autoOpen = !autoOpen">
+            {{ autoOpen ? '收起自动重铸' : '自动重铸 · 洗到指定词条即停' }}
+          </button>
         </template>
         <div class="flex gap-2">
           <button class="btn-seal flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
@@ -242,7 +280,8 @@
   import { detectBuild } from '@/core/buildDetect'
   import { endgameUnlocked } from '@/core/endgameService'
   import { whatIfEquip, type WhatIfReport } from '@/core/lab'
-  import { reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost } from '@/core/reforge'
+  import { autoReforge, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, type ReforgeTarget } from '@/core/reforge'
+  import { AFFIXES, affixDef } from '@/data/affixes'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
   import { formatGN } from '@/utils/format'
@@ -323,6 +362,54 @@
 
   function doReforge(): void {
     if (inst.value) reforgeEquipment(inst.value.uid)
+  }
+
+  // ---- 自动重铸(玩家反馈:一键重铸多次,洗到指定词条就停) ----
+  const autoOpen = ref(false)
+  const autoBudget = ref(50)
+  /** 停止条件:任一命中即停;minRoll 给「数值范围」那一嘴 */
+  const autoTargets = ref<ReforgeTarget[]>([])
+
+  /** 可选的停止词条:全词条表,不该有的槽位也照列 —— 洗不出来自然不触发,不误导 */
+  const affixOptions = computed(() =>
+    [...AFFIXES].sort((a, b) => b.weight - a.weight).slice(0, 24)
+  )
+
+  function isAutoTarget(id: string): boolean {
+    return autoTargets.value.some(t => t.affixId === id)
+  }
+
+  function toggleAutoTarget(id: string): void {
+    if (isAutoTarget(id)) autoTargets.value = autoTargets.value.filter(t => t.affixId !== id)
+    // 默认先求「高值」(≥50%);拉到底 0% 即回到「出现就行」
+    else if (autoTargets.value.length < 3) autoTargets.value = [...autoTargets.value, { affixId: id, minRoll: 0.5 }]
+  }
+
+  function closeAuto(): void {
+    autoOpen.value = false
+    autoTargets.value = []
+  }
+
+  function runAutoReforge(): void {
+    if (!inst.value) return
+    const targets = autoTargets.value
+    const budget = Math.min(500, Math.max(1, Math.floor(autoBudget.value || 0)))
+    const out = autoReforge(inst.value.uid, targets, budget)
+    const cost = `花 ${formatGN(out.stone)} · 尘×${out.dust}`
+    if (out.stop === 'target' && out.hit) {
+      ui.toast(
+        `洗出「${affixDef(out.hit.id)?.name ?? out.hit.id}」值 ${Math.round(out.hit.roll * 100)}% —— 共洗 ${out.rolls} 次,${cost}`,
+        'success'
+      )
+    } else if (out.stop === 'budget') {
+      ui.toast(`洗了 ${out.rolls} 次没出目标(预算用尽),${cost}`, 'warn')
+    } else if (out.stop === 'broke') {
+      ui.toast(`灵石/器灵尘见底,只洗了 ${out.rolls} 次,${cost}`, 'warn')
+    } else {
+      ui.toast('这件目前没洗动(全封存或已不在)', 'info')
+    }
+    // 结账即收板:结果已写在 toast 与装备词条上,想再调条件重开一次即可
+    closeAuto()
   }
 
   // ---- 修士实验室:反事实换装推演 ----
