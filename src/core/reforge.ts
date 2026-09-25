@@ -229,6 +229,12 @@ export function autoReforge(uid: string, targets: readonly ReforgeTarget[], maxR
   const resources = useResourcesStore()
   let stone = gnZero()
   let dust = 0
+  // 装备已含目标词条:分文不动,直接收手 —— 别花一次重铸把已到手的条件洗没
+  const initial = inventory.findItem(uid)
+  if (initial) {
+    const hit = refRoleMatches(initial, targets)
+    if (hit) return { rolls: 0, stone, dust, stop: 'target', hit, affixIds: initial.affixes.map(a => a.id) }
+  }
   for (let i = 0; i < maxRolls; i += 1) {
     const inst = inventory.findItem(uid)
     const cost = inst && reforgeCost(inst)

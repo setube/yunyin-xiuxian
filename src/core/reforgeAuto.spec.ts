@@ -2,8 +2,9 @@
  * 自动重铸(玩家反馈:「一键快速重铸多次,且洗到指定词条就停,可指定数值范围」)。
  *
  * 判据与手动连点完全等价:逐次照常消耗/长技艺,只把提示合成一条。
- * 这里用「封存一条 = 它必被保留」这一确定性,把「洗出目标」钉成可测的:
- * 目标词条用封存锁住,首次重铸必命中 → 应在 1 次内收手。
+ * rng 全 mock 成确定性(0.64 / 取池首项),于是「洗出哪个词条」可预测:
+ *   - atk1(锋锐)在词条池最前,武器/无槽位限制 → 一次重铸必抽到它;
+ *   - 0.64 够不着 >=0.9 那条线 → 带 minRoll 的高要求不会误触发。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -60,20 +61,30 @@ describe('自动重铸', () => {
     setActivePinia(createPinia())
   })
 
-  it('封存的目标词条必被保留:首次重铸即命中,1 次收手并记账', () => {
-    giveWealth()
-    const uid = forgeWeapon()
+  it('装备已含目标词条:分文不动,立即收手(不多洗这一下)', () => {
+    const uid = forgeWeapon() // 已带 atk2(0.5)
     const out = autoReforge(uid, [{ affixId: 'atk2' }], 20)
     expect(out.stop).toBe('target')
+    expect(out.rolls, '已到手的目标不该再花一次重铸').toBe(0)
+    expect(out.stone).toEqual(gn(0))
+    expect(out.dust).toBe(0)
+    expect(out.hit?.roll, '报的是已有词条的实际值').toBe(0.5)
+  })
+
+  it('洗到目标才停:没有的词条要真滚出来(重铸一次必抽到 atk1)', () => {
+    giveWealth()
+    const uid = forgeWeapon() // 初始只有 atk2/def2,没有 atk1
+    const out = autoReforge(uid, [{ affixId: 'atk1' }], 20)
+    expect(out.stop).toBe('target')
     expect(out.rolls).toBe(1)
-    expect(out.hit?.id).toBe('atk2')
+    expect(out.hit?.id).toBe('atk1')
     expect(out.dust).toBeGreaterThan(0)
-    expect(out.affixIds).toContain('atk2')
   })
 
   it('带最低 roll 的目标:命中线过了才算(0.9 的要求对 0.64 不出手)', () => {
     giveWealth()
     const uid = forgeWeapon()
+    // atk2 已封存保留,但 roll 恒 0.5/0.64,够不着 0.9
     const out = autoReforge(uid, [{ affixId: 'atk2', minRoll: 0.9 }], 3)
     expect(out.stop, '0.64 够不着 0.9,应撞预算').toBe('budget')
     expect(out.rolls).toBe(3)
@@ -121,7 +132,7 @@ describe('自动重铸', () => {
     giveWealth()
     const uid = forgeWeapon()
     const before = useLoreStore().skillLevel('inscribe')
-    autoReforge(uid, [{ affixId: 'atk2' }], 20)
+    autoReforge(uid, [{ affixId: 'atk1' }], 20) // 真滚一次
     expect(useLoreStore().skillLevel('inscribe')).toBeGreaterThan(before)
   })
 })

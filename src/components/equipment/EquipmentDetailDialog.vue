@@ -208,7 +208,14 @@
               class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
             />
             <span class="text-[10px] text-ink-ghost tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
-            <button class="btn-seal ml-auto !px-3 !py-1 !text-[11px]" @click="runAutoReforge">开 洗</button>
+            <button
+              class="btn-seal ml-auto !px-3 !py-1 !text-[11px]"
+              :disabled="!autoTargets.length"
+              :title="autoTargets.length ? undefined : '先点一条要洗到的词条'"
+              @click="runAutoReforge"
+            >
+              开 洗
+            </button>
           </div>
         </div>
       </template>
@@ -370,10 +377,25 @@
   /** 停止条件:任一命中即停;minRoll 给「数值范围」那一嘴 */
   const autoTargets = ref<ReforgeTarget[]>([])
 
-  /** 可选的停止词条:全词条表,不该有的槽位也照列 —— 洗不出来自然不触发,不误导 */
-  const affixOptions = computed(() =>
-    [...AFFIXES].sort((a, b) => b.weight - a.weight).slice(0, 24)
-  )
+  /**
+   * 可选的停止词条:当前装备**真能洗到**的那些 —— 与重铸抽取池同规则
+   * (槽位匹配 + 品质门槛不高于当前),而不是全 113 条里按权重取前 24。
+   * 否则连「想洗的词条在 24 名开外」都选不进去,自动重铸就等于承诺了
+   * 一份它兑现不了的面板。
+   */
+  const affixOptions = computed(() => {
+    if (!inst.value) return []
+    const tpl = equipmentTemplate(inst.value.templateId)
+    const q = inst.value && qualityDef(inst.value.quality)
+    if (!tpl || !q) return []
+    return [...AFFIXES]
+      .filter(
+        a =>
+          (a.slots === undefined || a.slots.includes(tpl.slot)) &&
+          (a.minRank === undefined || q.rank >= a.minRank)
+      )
+      .sort((a, b) => b.weight - a.weight)
+  })
 
   function isAutoTarget(id: string): boolean {
     return autoTargets.value.some(t => t.affixId === id)
