@@ -41,28 +41,33 @@ import type { EquipmentTemplate, EquipSlot, StatMods } from '@/types'
  * 兵刃、头面、衣甲各有各的形状 —— 同槽一律默认剑/王冠/衬衫,看着就是复制粘贴。
  * 这里按名字里的字眼给更贴身的图标:甲铠是盾、头盔是盔、簪钗是光、刀剑是剑、
  * 衣袍还是衫。只补没显式指定的(defaultIcon 兜底),手挑过的(opts.icon)一家不动。
+ *
+ * 每个词条还带一个「只作用于哪个槽」的约束 —— 名字里的字眼不能抢别的槽的形状:
+ * 「甲」只让衣袍成盾,不会把「魔渊腕甲」这类护腕也变成胸甲盾;
+ * 「剑」只让兵刃成剑,不会把「剑痕衣」「剑魄坠」这些带剑字花样的一并变成一排剑
+ * (10 阶剑冢整行全剑的教训)。
  */
-const NAME_ICONS: [RegExp, string][] = [
-  [/斧/, 'axe'],
-  [/锤/, 'hammer'],
-  [/钩|爪/, 'anchor'],
-  [/杖|杵|拂/, 'wand'],
-  [/剑|刃|刀/, 'sword'],
-  [/甲|铠/, 'shield'],
-  [/盔/, 'hardhat'],
-  [/簪|钗/, 'sparkles'],
-  [/巾|纱/, 'cloud'],
-  [/袍|衣|裳|衫/, 'shirt'],
-  [/符|令/, 'scroll'],
-  [/戒/, 'circle-dot'],
-  [/链|坠|珠/, 'gem'],
-  [/镯/, 'link'],
-  [/靴|履|鞋/, 'footprints']
+const NAME_ICONS: [RegExp, string, EquipSlot][] = [
+  [/斧|钺|戈/, 'axe', 'weapon'],
+  [/锤/, 'hammer', 'weapon'],
+  [/钩|爪/, 'anchor', 'weapon'],
+  [/杖|杵|拂/, 'wand', 'weapon'],
+  [/剑|刃|刀/, 'sword', 'weapon'],
+  [/甲|铠/, 'shield', 'body'],
+  [/盔/, 'hardhat', 'head'],
+  [/簪|钗/, 'sparkles', 'head'],
+  [/巾|纱/, 'cloud', 'head'],
+  [/袍|衣|裳|衫/, 'shirt', 'body'],
+  [/符|令/, 'scroll', 'talisman'],
+  [/戒/, 'circle-dot', 'ring'],
+  [/链|坠|珠/, 'gem', 'necklace'],
+  [/镯/, 'link', 'belt'],
+  [/靴|履|鞋/, 'footprints', 'boots']
 ]
 
 function iconFromName(name: string, slot: EquipSlot, defaultIcon: Record<EquipSlot, string>): string {
-  for (const [re, icon] of NAME_ICONS) {
-    if (re.test(name)) return icon
+  for (const [re, icon, targetSlot] of NAME_ICONS) {
+    if (slot === targetSlot && re.test(name)) return icon
   }
   return defaultIcon[slot]
 }
@@ -200,7 +205,7 @@ export const EQUIPMENT_TEMPLATES: EquipmentTemplate[] = [
 
   // ---- 8 阶 · 幽冥海 ----
   t('w_youhai', '幽海钩', 'weapon', 8, { attack: 14 }, '海沟里捞起的弯钩,锈色发青', {
-    icon: 'wand',
+    icon: 'anchor',
     fixedMods: { lifesteal: 0.02 }
   }),
   t('h_xingchen', '星辰冠', 'head', 8, { defense: 6, maxHp: 24 }, '嵌有陨星碎屑,夜里微光流动', {
