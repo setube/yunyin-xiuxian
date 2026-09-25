@@ -15,6 +15,9 @@
     "test:report": "bun scripts/test-report.mjs",
     "type-check": "vue-tsc -b",
     "check": "bun run type-check && bun run lint",
+    "smoke": "bun run build && bun scripts/ui-smoke.mjs",
+    "layout-check": "bun run build && node scripts/layout-check.mjs",
+    "offline-check": "bun run build && bun scripts/offline-check.mjs",
     "build:electron": "vue-tsc -b && vite build && esbuild electron/main.js --bundle --platform=node --format=esm --outfile=dist-electron/main.js --external:electron && esbuild electron/preload.js --bundle --platform=node --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never",
     "build:android": "bun run build && bunx cap sync android",
     "build:apk": "bun run build:android && cd android && ./gradlew assembleRelease"
