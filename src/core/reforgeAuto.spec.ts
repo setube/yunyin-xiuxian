@@ -90,22 +90,24 @@ describe('自动重铸', () => {
     expect(out.rolls).toBe(3)
   })
 
-  it('预算用光没洗到:按预算次数收手,不硬刷', () => {
+  it('一个目标都不给:分文不动,直接收手(服务层也不烧预算)', () => {
     giveWealth()
     const uid = forgeWeapon()
     const out = autoReforge(uid, [], 5)
     expect(out.stop).toBe('budget')
-    expect(out.rolls).toBe(5)
+    expect(out.rolls, '空目标不该浪费任何一次重铸').toBe(0)
+    expect(out.stone).toEqual(gn(0))
+    expect(out.dust).toBe(0)
   })
 
   it('灵石见底:洗到没钱就停,不负债', () => {
     const uid = forgeWeapon()
-    // 只给刚好一次重铸的灵石
+    // 只给刚好一次重铸的灵石;目标 atk1 洗不出(它还没有),于是下一轮就撞墙
     const item = useInventoryStore().findItem(uid)!
     const cost = reforgeCost(item)!
     useResourcesStore().addStone(cost.stone)
     useResourcesStore().addSmall('dust', cost.dust)
-    const out = autoReforge(uid, [], 50)
+    const out = autoReforge(uid, [{ affixId: 'def3', minRoll: 0.9 }], 50)
     expect(out.stop).toBe('broke')
     expect(out.rolls).toBe(1)
   })
