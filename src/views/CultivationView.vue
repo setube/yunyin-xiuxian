@@ -2,15 +2,21 @@
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <!-- 境界与突破(修为圆满时整卡蓄势充能) -->
     <div class="card-ink px-4 py-4" :class="player.expFull ? 'card-charged' : ''">
-      <div class="text-center">
-        <p class="font-kai text-[11px] tracking-[0.5em] text-ink-faint">{{ player.worldName }}</p>
-        <p class="font-kai text-[30px] tracking-[0.3em] text-ink">{{ player.realm.name }}</p>
-        <p class="mt-0.5 font-kai text-[14px] tracking-[0.4em] text-cinnabar">{{ player.subName }}</p>
-        <p class="mt-1 text-[11px] text-ink-faint">{{ player.realm.desc }}</p>
-        <!-- 可解释性:这一境取自何处、因何承接(典籍 / 网文常用 / 道家本源) -->
-        <p class="mt-1 text-[10px] leading-relaxed text-ink-ghost">
-          「{{ player.realm.basis }}」{{ player.realm.lore }}
-        </p>
+      <!-- 法球主视觉:修为环随修行转动,闭关时点亮、圆满时蓄势 —— 第一眼就是"这一页在干什么" -->
+      <div class="flex flex-col items-center gap-3">
+        <CultivationOrb :active="retreating" :full="player.expFull" :progress="player.expProgress">
+          <span class="font-kai text-[18px]">道</span>
+        </CultivationOrb>
+        <div class="text-center">
+          <p class="font-kai text-[11px] tracking-[0.5em] text-ink-faint">{{ player.worldName }}</p>
+          <p class="font-kai text-[30px] tracking-[0.3em] text-ink">{{ player.realm.name }}</p>
+          <p class="mt-0.5 font-kai text-[14px] tracking-[0.4em] text-cinnabar">{{ player.subName }}</p>
+          <p class="mt-1 text-[11px] text-ink-faint">{{ player.realm.desc }}</p>
+          <!-- 可解释性:这一境取自何处、因何承接(典籍 / 网文常用 / 道家本源) -->
+          <p class="mt-1 text-[10px] leading-relaxed text-ink-ghost">
+            「{{ player.realm.basis }}」{{ player.realm.lore }}
+          </p>
+        </div>
       </div>
       <div class="mt-4">
         <div class="mb-1 flex justify-between text-[11px] text-ink-faint tabular">
@@ -354,6 +360,7 @@
   import { computed, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
+  import CultivationOrb from '@/components/common/CultivationOrb.vue'
   import { useCultivationStore } from '@/stores/cultivation'
   import { useInventoryStore } from '@/stores/inventory'
   import { useUiStore } from '@/stores/ui'
