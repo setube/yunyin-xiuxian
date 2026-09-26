@@ -11,11 +11,12 @@
       <span class="text-[10px] text-ink-ghost">经营家业,道途更稳</span>
     </div>
 
-    <!-- 建筑 -->
+    <!-- 建筑:洞府是全局闸门,独自横贯一排;其余六座在其辖下成格 -->
     <section>
       <SectionTitle title="营造" hint="各司其职,日夜不辍" />
-      <div class="mt-2 grid grid-cols-2 gap-2.5">
-        <BuildingCard v-for="def in BUILDINGS" :key="def.id" :def="def" />
+      <BuildingCard :def="mansionDef" featured class="mt-2" />
+      <div class="mt-2.5 grid grid-cols-2 gap-2.5">
+        <BuildingCard v-for="def in otherBuildings" :key="def.id" :def="def" />
       </div>
     </section>
 
@@ -23,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+  import { computed } from 'vue'
   import { useRouter } from 'vue-router'
   import { goBack } from '@/router/goBack'
   import { BUILDINGS } from '@/data/buildings'
@@ -30,4 +32,9 @@
   import BuildingCard from '@/components/dongfu/BuildingCard.vue'
 
   const router = useRouter()
+
+  /** 洞府:全局闸门,单独把守头条 */
+  const mansionDef = computed(() => BUILDINGS.find(b => b.id === 'mansion')!)
+  /** 其余六座在其辖下成格 */
+  const otherBuildings = computed(() => BUILDINGS.filter(b => b.id !== 'mansion'))
 </script>

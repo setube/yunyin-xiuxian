@@ -1,12 +1,12 @@
 <template>
-  <div class="card-ink flex flex-col px-3 py-3" :class="flashing ? 'card-flash' : ''" @animationend.self="flashing = false">
+  <div class="card-ink flex flex-col px-3 py-3" :class="[flashing ? 'card-flash' : '', featured ? 'px-4 py-3.5' : '']" @animationend.self="flashing = false">
     <div class="flex items-center gap-2.5">
       <!-- 建筑印章:每座建筑在数据里都配了图标(home/wind/flame/hammer/sprout/book/paw),此前一张都没画 -->
       <span
-        class="grid h-9 w-9 shrink-0 place-items-center rounded-md transition-colors"
-        :class="level > 0 ? 'bg-cinnabar/10 text-cinnabar' : 'bg-ink/5 text-ink-faint'"
-      ><GameIcon :name="props.def.icon" :size="18" /></span>
-      <p class="min-w-0 grow truncate font-kai text-[14px] tracking-wider" :class="level > 0 ? 'text-ink' : 'text-ink-soft'">{{ props.def.name }}</p>
+        class="grid shrink-0 place-items-center rounded-md transition-colors"
+        :class="[level > 0 ? 'bg-cinnabar/10 text-cinnabar' : 'bg-ink/5 text-ink-faint', featured ? 'h-11 w-11' : 'h-9 w-9']"
+      ><GameIcon :name="props.def.icon" :size="featured ? 22 : 18" /></span>
+      <p class="min-w-0 grow truncate font-kai tracking-wider" :class="[featured ? 'text-[15px]' : 'text-[14px]', level > 0 ? 'text-ink' : 'text-ink-soft']">{{ props.def.name }}</p>
       <p :key="level" class="shrink-0 text-[10px] text-ink-faint animate-ink-pop">
         {{ level > 0 ? `${level}/${cap} 级` : '未启用' }}
       </p>
@@ -48,7 +48,7 @@
   import { buildingActLabel } from '@/ui/buildingText'
   import { formatGN } from '@/utils/format'
 
-  const props = defineProps<{ def: BuildingDef }>()
+  const props = withDefaults(defineProps<{ def: BuildingDef; featured?: boolean }>(), { featured: false })
 
   const dongfu = useDongfuStore()
 
