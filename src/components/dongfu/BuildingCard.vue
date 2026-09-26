@@ -3,9 +3,13 @@
     <div class="flex items-center gap-2.5">
       <!-- 建筑印章:每座建筑在数据里都配了图标(home/wind/flame/hammer/sprout/book/paw),此前一张都没画 -->
       <span
-        class="grid shrink-0 place-items-center rounded-md transition-colors"
-        :class="[level > 0 ? 'bg-cinnabar/10 text-cinnabar' : 'bg-ink/5 text-ink-faint', featured ? 'h-11 w-11' : 'h-9 w-9']"
-      ><GameIcon :name="props.def.icon" :size="featured ? 22 : 18" /></span>
+        class="relative grid shrink-0 place-items-center rounded-md transition-colors"
+        :class="[sealCls, featured ? 'h-11 w-11' : 'h-9 w-9']"
+      >
+        <GameIcon :name="props.def.icon" :size="featured ? 22 : 18" />
+        <!-- 境界闸门未开:右上角落一把小锁,整印转金灰 -->
+        <GameIcon v-if="locked" name="lock" :size="9" class="absolute -bottom-0.5 -right-0.5 rounded-full bg-paper p-[1px] text-gold-ink/80" />
+      </span>
       <p class="min-w-0 grow truncate font-kai tracking-wider" :class="[featured ? 'text-[15px]' : 'text-[14px]', level > 0 ? 'text-ink' : 'text-ink-soft']">{{ props.def.name }}</p>
       <p :key="level" class="shrink-0 text-[10px] text-ink-faint animate-ink-pop">
         {{ level > 0 ? `${level}/${cap} 级` : '未启用' }}
@@ -33,7 +37,10 @@
           <span v-if="info.ore > 0" class="whitespace-nowrap">· {{ info.ore }} 铁</span>
         </span>
       </template>
-      <template v-else>{{ info.reason }}</template>
+      <template v-else>
+        <span v-if="locked" class="inline-flex items-center gap-1.5"><GameIcon name="lock" :size="11" />{{ info.reason }}</span>
+        <template v-else>{{ info.reason }}</template>
+      </template>
     </button>
   </div>
 </template>
@@ -56,6 +63,13 @@
   /** 实际可达上限:洞府全局闸门与自身品类上限取小,洞府卡展现的是"提升到什么档"的依据 */
   const cap = computed(() => dongfu.buildingCap(props.def.id))
   const info = computed(() => buildingUpgradeInfo(props.def.id))
+  /** 未建且不可升 = 被境界闸门锁着(等级 0 时不可升只可能是境界不足,满级/辖限都要求 lv>0) */
+  const locked = computed(() => level.value === 0 && !info.value.canUpgrade)
+  /** 印章三态:已建朱砂 / 未建墨灰 / 被锁金灰 */
+  const sealCls = computed(() => {
+    if (locked.value) return 'bg-gold-ink/8 text-gold-ink/50'
+    return level.value > 0 ? 'bg-cinnabar/10 text-cinnabar' : 'bg-ink/5 text-ink-faint'
+  })
   /** 这一级真正进属性的词条。只在已建造时显示,避免和未启用时的 desc 叠在一起。 */
   const modLine = computed(() => {
     if (level.value <= 0 || !props.def.mods) return ''
