@@ -31,13 +31,22 @@
     <!-- 灵兽:同样的列表式 -->
     <template v-else>
       <SectionTitle title="灵兽" :hint="`${petRows.length}/${PETS.length} · 伴一只`" />
-      <div v-if="petRows.length" class="card-ink divide-y divide-ink/6 px-4">
-        <div v-for="row in petRows" :key="row.def.id" class="flex items-center gap-3 py-2.5">
-          <GameIcon :name="row.def.icon" :size="18" :style="{ color: qualityDef(row.def.quality).color }" />
+      <div v-if="petRows.length" class="space-y-2">
+        <div
+          v-for="row in petRows"
+          :key="row.def.id"
+          class="card-ink flex items-center gap-2.5 px-3 py-2.5"
+        >
+          <!-- 灵兽印章:从一行小图标长成一块色底印章;相伴时转玉色光晕 -->
+          <span
+            class="grid h-10 w-10 shrink-0 place-items-center rounded-md transition-colors"
+            :class="row.active ? 'bg-jade/12 text-jade' : 'bg-ink/5 text-ink-soft'"
+          ><GameIcon :name="row.def.icon" :size="20" /></span>
           <div class="min-w-0 grow">
-            <p class="flex items-center gap-2">
-              <span class="font-kai text-[13px]" :style="{ color: qualityDef(row.def.quality).color }">{{ row.def.name }}</span>
-              <span v-if="row.active" class="text-[10px] text-jade">相伴中</span>
+            <p class="flex flex-wrap items-center gap-1.5">
+              <span class="truncate font-kai text-[13px]" :style="{ color: qualityDef(row.def.quality).color }">{{ row.def.name }}</span>
+              <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px]" :style="{ color: qualityDef(row.def.quality).color }">{{ qualityDef(row.def.quality).name }}</span>
+              <span v-if="row.active" class="shrink-0 rounded bg-jade/15 px-1.5 py-0.5 text-[10px] text-jade">相伴</span>
             </p>
             <p class="truncate text-[10px] text-ink-ghost">{{ row.def.desc }}</p>
             <p v-if="row.modText" class="text-[10px] text-azure tabular">{{ row.modText }}</p>
@@ -57,6 +66,10 @@
         尚无灵兽相伴
         <br />
         <span class="text-[11px]">灵兽多在历练际遇中结缘</span>
+      </p>
+      <!-- 集齐路上的念想:还差几只、去哪找,一句带过 -->
+      <p v-if="petRows.length > 0 && petRows.length < PETS.length" class="mt-2.5 text-center text-[10px] text-ink-ghost">
+        尚有 {{ PETS.length - petRows.length }} 只灵兽散落于历练际遇 —— 结缘即归此册
       </p>
     </template>
   </div>
