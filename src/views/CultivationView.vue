@@ -258,6 +258,7 @@
           v-for="p in quickPills"
           :key="p.def!.id"
           class="card-ink flex items-center gap-2 px-3 py-2 text-left active:scale-98"
+          :style="{ borderLeft: `2px solid ${qualityDef(p.def!.quality).color}` }"
           @click="usePill(p.def!.id)"
         >
           <GameIcon :name="p.def!.icon" :size="16" :style="{ color: qualityDef(p.def!.quality).color }" />
