@@ -176,8 +176,35 @@ async function hitClear(href) {
     const r = a.getBoundingClientRect()
     const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
     if (a === el || a.contains(el)) return 'clear'
-    return (el?.className || el?.tagName || '?').toString().slice(0, 40)
+    // SVG 元素的 .className 是 SVGAnimatedString,toString 会变 "[object …]";用 getAttribute 拿可读类名
+    return (el?.getAttribute?.('class') || el?.tagName || '?').toString().slice(0, 40)
   }, href)
+}
+/**
+ * 点击后的安定等待 —— 替代魔法数字超时。
+ *
+ * page-fade 是 out-in(离场 0.18s + 入场 0.18s),路由切换动画总长约 360ms,再加动态路由
+ * chunk 导入与 Vue 挂载时长不固定 —— 固定 160/350ms 都是赌时长,慢机器上照样踩在过渡中途
+ * 采样(`/world 出发`、`/dongfu 返回` 被误报「没反应」的抖动就来自这)。这里等的是「状态」
+ * 而不是「时间」:过渡 active 类消失且指纹连续两次一致才算安定,2s 封顶。
+ *
+ * 仅一个 260ms 起始下限:给「点击→路由 hash 更新→chunk 导入→新页挂载」留触发窗,免得在
+ * chunk 导入前的静默空隙里就被判安定 —— 那时还是旧页指纹,真导航会被误读成「没反应」。
+ */
+async function settle() {
+  await page.waitForTimeout(260)
+  const deadline = Date.now() + 2000
+  for (;;) {
+    // Vue Transition 把 active/leave 类挂在「正在切换」的元素上;退出条件:没在切换 && 指纹稳定
+    const busy = await page.evaluate(
+      () => document.querySelector('.page-fade-enter-active, .page-fade-leave-active') !== null
+    )
+    const a = await fingerprint()
+    await page.waitForTimeout(60)
+    const b = await fingerprint()
+    if (!busy && a === b) return
+    if (Date.now() > deadline) return
+  }
 }
 page.on('pageerror', e => errors.push({ where: 'boot', msg: String(e).slice(0, 300) }))
 
@@ -204,10 +231,13 @@ async function clickInsideModal(route) {
     if (!(await b.isVisible().catch(() => false))) continue
     if (await b.isDisabled().catch(() => false)) continue
     const before = errors.length
+    const beforeFp = await fingerprint()
     await b.click({ timeout: 800 }).catch(() => {})
     clicked += 1
-    await page.waitForTimeout(160)
+    await settle()
     if (errors.length > before) errors[errors.length - 1].where = `${route} 弹窗内点「${label}」`
+    // 弹窗按钮此前只查了 pageerror,点了没反应的同样会被静默吞掉 —— 一并纳入指纹判定
+    else if ((await fingerprint()) === beforeFp) silent.push(`${route} 弹窗内点「${label}」`)
   }
 }
 
@@ -231,7 +261,7 @@ for (const route of ROUTES) {
     const beforeFp = await fingerprint()
     await b.click({ timeout: 800 }).catch(() => {})
     clicked += 1
-    await page.waitForTimeout(160)
+    await settle()
     if (errors.length > before) errors[errors.length - 1].where = `${route} 点「${label}」`
     else if ((await fingerprint()) === beforeFp) silent.push(`${route} 点「${label}」`)
     await clickInsideModal(route)
