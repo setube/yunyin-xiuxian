@@ -161,14 +161,18 @@
             />
           </div>
           <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">{{ row.def.desc }}</p>
-          <p class="mt-1 text-[11px] text-azure">{{ passiveLines(row.def.id, row.owned.level).join(' · ') }}</p>
+          <p class="mt-1 flex items-baseline gap-1.5 text-[11px]">
+            <span class="shrink-0 rounded bg-azure/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-azure">被动</span>
+            <span class="text-azure">{{ passiveLines(row.def.id, row.owned.level).join(' · ') }}</span>
+          </p>
           <!--
             神通说明按品阶与祭炼等级现算:效果随「品阶 × (1+0.08×重数)」走,
             文案不能停在基线那一句
             (见 data/artifacts.artifactActiveText —— 战斗与这句话读的是同一个函数)
           -->
-          <p class="mt-1 text-[11px] text-violet-ink">
-            神通「{{ row.def.active.name }}」:{{ artifactActiveText(row.def, row.owned.level) }}
+          <p class="mt-1 flex items-baseline gap-1.5 text-[11px]">
+            <span class="shrink-0 rounded bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-violet-ink">神通</span>
+            <span class="text-violet-ink">「{{ row.def.active.name }}」:{{ artifactActiveText(row.def, row.owned.level) }}</span>
           </p>
           <!--
             下一重给多少:按钮只报代价,玩家得自己按 ×1.08 心算 —— 而「值不值」
