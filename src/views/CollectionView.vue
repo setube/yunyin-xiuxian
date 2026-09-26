@@ -34,10 +34,11 @@
           <template v-for="entry in cat.entries" :key="entry.id">
             <button
               v-if="entry.stage >= 1"
-              class="chip-ink active:scale-95"
+              class="chip-ink flex items-center gap-1 active:scale-95"
               :style="{ color: entry.color }"
               @click="openDetail(cat, entry)"
             >
+              <GameIcon v-if="entry.icon" :name="entry.icon" :size="11" />
               {{ entry.name }}
               <span v-if="entry.badge" class="text-[9px] opacity-70">{{ entry.badge }}</span>
             </button>
@@ -101,6 +102,7 @@
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
+  import GameIcon from '@/components/common/GameIcon.vue'
 
   const quests = useQuestsStore()
 
@@ -198,6 +200,7 @@
           name: p.name,
           desc: [p.desc, petFuncText(p)].filter(Boolean).join('\n'),
           meta: qualityDef(p.quality).name,
+          icon: p.icon,
           color: qualityDef(p.quality).color
         }))
       ),

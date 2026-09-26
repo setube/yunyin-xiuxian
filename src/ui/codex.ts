@@ -45,6 +45,8 @@ export interface CodexEntry {
   desc: string
   /** 一行补充信息(阶位 / 所属功法等) */
   meta: string
+  /** 章形图标(灵兽册/法宝谱改用图标章,不再是一串干文字) */
+  icon?: string
   color?: string
   /** 收录深度:0 未收录,≥1 已收录 */
   stage: number
