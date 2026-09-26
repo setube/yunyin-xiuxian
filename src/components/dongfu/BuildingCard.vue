@@ -11,8 +11,12 @@
         <GameIcon v-if="locked" name="lock" :size="9" class="absolute -bottom-0.5 -right-0.5 rounded-full bg-paper p-[1px] text-gold-ink/80" />
       </span>
       <p class="min-w-0 grow truncate font-kai tracking-wider" :class="[featured ? 'text-[15px]' : 'text-[14px]', level > 0 ? 'text-ink' : 'text-ink-soft']">{{ props.def.name }}</p>
-      <p :key="level" class="shrink-0 text-[10px] text-ink-faint animate-ink-pop">
-        {{ level > 0 ? `${level}/${cap} 级` : '未启用' }}
+      <p
+        :key="level"
+        class="shrink-0 rounded px-1.5 py-0.5 text-[10px] animate-ink-pop"
+        :class="level > 0 ? (atMax ? 'bg-gold-ink/10 text-gold-ink' : atGateCap ? 'bg-amber-ink/10 text-amber-ink' : 'text-ink-faint') : 'text-ink-faint'"
+      >
+        {{ level > 0 ? `${level}/${cap} 级` + (atMax ? '·圆满' : atGateCap ? '·辖限' : '') : '未启用' }}
       </p>
     </div>
     <p class="mt-2 grow text-[11px] leading-relaxed text-ink-faint">
@@ -65,6 +69,10 @@
   const info = computed(() => buildingUpgradeInfo(props.def.id))
   /** 未建且不可升 = 被境界闸门锁着(等级 0 时不可升只可能是境界不足,满级/辖限都要求 lv>0) */
   const locked = computed(() => level.value === 0 && !info.value.canUpgrade)
+  /** 品类满级:金彩「圆满」 */
+  const atMax = computed(() => level.value > 0 && level.value >= props.def.maxLevel)
+  /** 被洞府辖限(没到品类上限但已到 mansion 抬的档):琥珀「辖限」 */
+  const atGateCap = computed(() => level.value > 0 && !atMax.value && level.value >= cap.value)
   /** 印章三态:已建朱砂 / 未建墨灰 / 被锁金灰 */
   const sealCls = computed(() => {
     if (locked.value) return 'bg-gold-ink/8 text-gold-ink/50'
