@@ -105,51 +105,60 @@
 
       <!-- Phase 32.0 劫势详情(决意前评估:风险维度 + 建议,信息给足,决定留给玩家) -->
       <div v-if="tribPlan" class="mt-2 rounded-md border border-violet-ink/25 bg-violet-ink/5 px-3 py-2">
-        <p class="text-[11px] text-violet-ink">{{ tribPlan.desc }}</p>
-        <p class="mt-1.5 text-[10px] text-ink-faint tabular">
-          准备:
-          <span class="text-ink-soft">{{ PREP_NAMES.guard }} {{ PREP_STARS[tribPlan.prep.guard] }}</span>
-          · {{ PREP_NAMES.sustain }} {{ PREP_STARS[tribPlan.prep.sustain] }}
-          · {{ PREP_NAMES.resist }} {{ PREP_STARS[tribPlan.prep.resist] }}
-          · {{ PREP_NAMES.burst }} {{ PREP_STARS[tribPlan.prep.burst] }}
-        </p>
-        <!--
-          天劫是**按最大生命百分比**扣血的(见 core/formulas.tribulationWaveDamage),
-          攻伐不进公式;防御与气血只能按「本境裸修为」折算成抗性与开劫水位,且两条都有上限。
-          摊开读数是因为玩家最容易在这里误判:一身厚血厚防站在劫前,却不知道自己缺什么。
-        -->
-        <p class="mt-1 text-[10px] text-ink-faint tabular">
-          此劫只认百分比 —— 天劫抗性 {{ formatPercent(tribLedger.resist, 0) }}(防御折算
-          {{ formatPercent(tribLedger.statResist, 0) }})· 减伤 {{ formatPercent(tribLedger.reduction, 0) }} · 每波恢复
-          {{ formatPercent(tribLedger.sustain, 1) }} · 开劫护持 {{ formatPercent(tribLedger.guard, 0) }}(气血折算
-          {{ formatPercent(tribLedger.statGuard, 0) }})
-        </p>
-        <p class="mt-0.5 text-[10px] text-ink-ghost">
-          攻伐不进天劫公式;防御与气血按本境裸修为折算成上面的抗性与护持,各有上限 —— 血再厚也只能硬抗一部分,剩下的仍要抗性/减伤/恢复来补。进阶成功率与突破准备也只作用于小进阶,大关不看它们。
-        </p>
-        <!--
-          界膜之劫:这一版对跨界那一关的规则加难(见 data/constants 的
-          TRIB_WORLD_STEP_STAT_FOLD)。必须**在决意之前**说清楚 ——
-          上一版玩家吃过"护持明明写着有,过劫时却像没有"的亏,
-          那种误会不该靠失败去发现。
-        -->
-        <div v-if="worldStep" class="mt-2 rounded-md border border-cinnabar/30 bg-cinnabar/5 px-2.5 py-2">
-          <p class="text-[10px] leading-relaxed text-cinnabar/90">
-            界膜之劫:跨界这一关血肉之厚一概不算 —— 防御与气血折算出的抗性、开劫护持在此作废,只认词条与准备。
+        <!-- 总评:劫名一眼可读,形态(逐道加重/起手最重)挪到行尾 —— 不再以十行小字开场 -->
+        <div class="flex items-baseline gap-2">
+          <p class="grow text-[12px] font-kai leading-snug text-violet-ink">{{ tribPlan.desc }}</p>
+          <span class="shrink-0 text-[10px] text-ink-ghost">{{ tribPlan.def.waveShape === 'frontLoaded' ? '起手两道最重' : '逐道加重' }}</span>
+        </div>
+
+        <!-- 准备四维:一行四格星级槽,缺口一眼可见(0 星置灰,不熟也不糊弄) -->
+        <div class="mt-2 grid grid-cols-4 gap-1.5">
+          <div v-for="(name, key) in PREP_NAMES" :key="key" class="rounded bg-paper-deep/60 px-0.5 py-1 text-center">
+            <p class="text-[9px] text-ink-faint">{{ name }}</p>
+            <p class="tabular text-[12px] font-kai" :class="tribPlan.prep[key] === 0 ? 'text-ink-ghost' : 'text-ink-soft'">{{ PREP_STARS[tribPlan.prep[key]] }}</p>
+          </div>
+        </div>
+
+        <div class="ink-divider my-2" />
+        <!-- 此劫账单:四项百分比指标两两并排,别有十逗号长句了 -->
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
+          <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
+            <span class="text-ink-faint">天劫抗性</span>
+            <span class="text-ink-soft">{{ formatPercent(tribLedger.resist, 0) }}<span class="text-ink-ghost">(防御折 {{ formatPercent(tribLedger.statResist, 0) }})</span></span>
+          </p>
+          <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
+            <span class="text-ink-faint">每波恢复</span>
+            <span class="text-ink-soft">{{ formatPercent(tribLedger.sustain, 1) }}</span>
+          </p>
+          <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
+            <span class="text-ink-faint">减伤</span>
+            <span class="text-ink-soft">{{ formatPercent(tribLedger.reduction, 0) }}</span>
+          </p>
+          <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
+            <span class="text-ink-faint">开劫护持</span>
+            <span class="text-ink-soft">{{ formatPercent(tribLedger.guard, 0) }}<span class="text-ink-ghost">(气血折 {{ formatPercent(tribLedger.statGuard, 0) }})</span></span>
           </p>
         </div>
-        <!-- 天威本身的长相:道数随境界涨、单波逐道加重,摊出来才知道护持该留到哪一段 -->
-        <p v-if="tribWeatherLine" class="mt-0.5 text-[10px] text-cinnabar/80">{{ tribWeatherLine }}</p>
-        <p v-if="tribWave" class="mt-0.5 text-[10px] text-ink-faint tabular">
-          共 {{ tribWave.waves }} 道,单波 {{ formatPercent(tribWave.min, 0) }}–{{ formatPercent(tribWave.max, 0) }} 最大生命(合计约
-          {{ formatPercent(tribWave.total, 0) }}),
-          {{ tribPlan.def.waveShape === 'frontLoaded' ? '起手两道最重' : '逐道加重' }}
+        <p class="mt-2 text-[9px] leading-relaxed text-ink-ghost">
+          攻伐不进天劫公式;防御与气血按本境裸修为折算,各有上限 —— 血再厚也只能硬抗一部分,剩下的靠抗性/减伤/恢复补;进阶成功率与突破准备只作用于小进阶,大关不看。
         </p>
-        <p class="mt-1 text-[10px] text-ink-soft">主要风险:<span class="text-cinnabar/80">{{ tribPlan.risks.join('; ') }}</span></p>
-        <p class="mt-1 text-[10px] text-ink-faint">{{ tribPlan.advice }}</p>
+
+        <!-- 界膜之劫:跨界规则加难(见 TRIB_WORLD_STEP_STAT_FOLD),决意之前必须说清 -->
+        <div v-if="worldStep" class="mt-2 rounded-md border border-cinnabar/30 bg-cinnabar/5 px-2.5 py-2">
+          <p class="text-[10px] leading-relaxed text-cinnabar/90">界膜之劫:跨界这一关血肉之厚一概不算 —— 防御与气血折算出的抗性、开劫护持在此作废,只认词条与准备。</p>
+        </div>
+        <!-- 天威长相:道数随境界涨、单波逐道加重,摊出来才知道护持该留到哪一段 -->
+        <p v-if="tribWeatherLine" class="mt-1.5 text-[10px] leading-relaxed text-cinnabar/80">{{ tribWeatherLine }}</p>
+        <p v-if="tribWave" class="mt-1 text-[10px] text-ink-faint tabular">
+          共 {{ tribWave.waves }} 道,单波 {{ formatPercent(tribWave.min, 0) }}–{{ formatPercent(tribWave.max, 0) }} 最大生命(合计约 {{ formatPercent(tribWave.total, 0) }})
+        </p>
+
+        <div class="ink-divider my-1.5" />
+        <p class="text-[10px] leading-relaxed text-ink-faint"><span class="text-ink-soft">主要风险:</span>{{ tribPlan.risks.join('; ') }}</p>
+        <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">{{ tribPlan.advice }}</p>
         <!-- Phase 32.2:灵根解开的那条路——说明这道劫为何对你不太一样(留一线,不是免死) -->
-        <p v-if="reliefRoots.length" class="mt-1 text-[10px] text-jade">
-          灵根相应:{{ reliefRoots.map(e => ELEMENTS[e].name).join('、') }}——此劫为你留了一线,能走到哪一步仍看自身准备
+        <p v-if="reliefRoots.length" class="mt-1.5 text-[10px] leading-relaxed text-jade">
+          灵根相应:{{ reliefRoots.map(e => ELEMENTS[e].name).join('、') }} —— 此劫为你留了一线,能走到哪一步仍看自身准备。
         </p>
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
@@ -162,8 +171,11 @@
       </p>
 
       <!-- Phase 28 突破准备:静坐调息 / 服聚气丹(无劫突破时,一次性加成) -->
-      <div v-if="!btInfo.needTribulation" class="mt-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
-        <div class="flex items-center justify-between text-[10px] text-ink-faint">
+      <div v-if="!btInfo.needTribulation" class="mt-2 flex items-start gap-2.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+        <!-- 备:与全页印章同语言,一眼认出这是突破前的准备板 -->
+        <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-jade/15 font-kai text-[12px] text-jade">备</span>
+        <div class="min-w-0 grow">
+          <div class="flex items-center justify-between text-[10px] text-ink-faint">
           <span>突破准备(一次有效)</span>
           <!--
             倒计时一律走 formatCountdown(定宽),不用 formatDuration:
@@ -186,6 +198,7 @@
           <button type="button" class="chip-ink !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
             {{ prepPill.label }} · {{ prepPillCost }}灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
           </button>
+        </div>
         </div>
       </div>
       <button
