@@ -46,6 +46,19 @@
       </div>
     </section>
 
+    <!-- 灵脉:金丹后炼化灵石永久砥砺洞府。此前它只缩在首页弹窗里,本页毫无踪迹 -->
+    <section>
+      <SectionTitle title="灵脉" :hint="veinsUnlocked ? '炼化灵石,永久砥砺' : '金丹境解锁'" />
+      <VeinInvestCard v-if="veinsUnlocked" class="mt-2" />
+      <!-- 未达门槛:一句前瞻即可,不摆禁用控件 -->
+      <div v-else class="mt-2 flex items-center gap-2.5 rounded-md border border-dashed border-gold-ink/25 bg-gold-ink/4 px-3 py-2.5">
+        <GameIcon name="gem" :size="16" class="shrink-0 text-gold-ink/60" />
+        <p class="text-[10px] leading-relaxed text-ink-faint">
+          灵脉 —— 炼化灵石永久强化洞府,得全局属性加成。金丹境方开,届时与此页相会。
+        </p>
+      </div>
+    </section>
+
   </div>
 </template>
 
@@ -54,13 +67,20 @@
   import { useRouter } from 'vue-router'
   import { goBack } from '@/router/goBack'
   import { BUILDINGS, ARRAY_QI_CAP_PER_LEVEL } from '@/data/buildings'
-  import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, LIBRARY_WUDAO_PER_HOUR } from '@/data/constants'
+  import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, LIBRARY_WUDAO_PER_HOUR, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { useDongfuStore } from '@/stores/dongfu'
+  import { usePlayerStore } from '@/stores/player'
   import SectionTitle from '@/components/common/SectionTitle.vue'
+  import GameIcon from '@/components/common/GameIcon.vue'
   import BuildingCard from '@/components/dongfu/BuildingCard.vue'
+  import VeinInvestCard from '@/components/dongfu/VeinInvestCard.vue'
 
   const router = useRouter()
   const dongfu = useDongfuStore()
+  const player = usePlayerStore()
+
+  /** 灵脉金丹解锁;未达门槛时只给一句前瞻,别让新人面对一整张禁用按钮 */
+  const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
 
   /** 洞府:全局闸门,单独把守头条 */
   const mansionDef = computed(() => BUILDINGS.find(b => b.id === 'mansion')!)
