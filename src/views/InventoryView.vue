@@ -150,6 +150,16 @@
             <!-- 「重」而不是「阶」:阶是地界与装备层级的词,法宝这一头说的是祭炼了几重 -->
             <span class="ml-auto tabular text-[11px] text-gold-ink">{{ artifactLevelLabel(row.owned.level) }}</span>
           </div>
+          <!-- 祭炼进度:九段横条,练几重亮几格;满九整条转金 —— 进度不再只是一枚数字标签 -->
+          <div class="mt-1.5 flex items-center gap-1.5">
+            <span class="shrink-0 text-[10px] text-ink-faint">祭炼</span>
+            <span
+              v-for="n in ARTIFACT_MAX_LEVEL"
+              :key="n"
+              class="h-1.5 grow rounded-full transition-colors"
+              :class="n <= row.owned.level ? (row.owned.level >= ARTIFACT_MAX_LEVEL ? 'bg-gold-ink' : 'bg-cinnabar/80') : 'bg-ink/6 border border-ink/15'"
+            />
+          </div>
           <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">{{ row.def.desc }}</p>
           <p class="mt-1 text-[11px] text-azure">{{ passiveLines(row.def.id, row.owned.level).join(' · ') }}</p>
           <!--
