@@ -199,19 +199,26 @@
     </div>
 
     <!-- Phase 28 闭关:5 分钟 +150% 修炼,期间禁止历练(数值唯一来源 = buffs.ts retreat + earlyGameService) -->
-    <div class="card-ink px-4 py-3">
-      <div class="flex items-center justify-between">
-        <span class="text-[11px] text-ink-soft">闭关参悟</span>
-        <span v-if="retreating" class="text-[10px] text-amber-ink tabular">
-          闭关中 · <span class="countdown-slot">{{ formatCountdown(retreatRemaining) }}</span>
-        </span>
+    <div class="card-ink flex items-start gap-3 px-4 py-3" :class="retreating ? 'bg-amber-ink/6' : ''">
+      <!-- 静修印:与全页印章同一块语言;闭关中转为琥珀并在原地呼吸,静而有觉 -->
+      <span
+        class="grid h-9 w-9 shrink-0 place-items-center rounded-md font-kai text-[15px]"
+        :class="retreating ? 'animate-breathe bg-amber-ink/15 text-amber-ink' : 'bg-jade/15 text-jade'"
+      >静</span>
+      <div class="min-w-0 grow">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] text-ink-soft">闭关参悟</span>
+          <span v-if="retreating" class="text-[10px] text-amber-ink tabular">
+            闭关中 · <span class="countdown-slot">{{ formatCountdown(retreatRemaining) }}</span>
+          </span>
+        </div>
+        <p class="mt-0.5 text-[10px] text-ink-faint">
+          静坐一炷香({{ retreatMinutes }} 分钟),修炼速度 +{{ retreatPct }}%;闭关期间无法外出历练。
+        </p>
+        <button v-if="!retreating" type="button" class="chip-ink mt-2 w-full !py-1.5 text-[11px]" @click="beginRetreat">
+          闭关 · {{ retreatMinutes }}分钟 修炼 +{{ retreatPct }}%(期间无法历练)
+        </button>
       </div>
-      <p class="mt-0.5 text-[10px] text-ink-faint">
-        静坐一炷香({{ retreatMinutes }} 分钟),修炼速度 +{{ retreatPct }}%;闭关期间无法外出历练。
-      </p>
-      <button v-if="!retreating" type="button" class="chip-ink mt-2 w-full !py-1.5 text-[11px]" @click="beginRetreat">
-        闭关 · {{ retreatMinutes }}分钟 修炼 +{{ retreatPct }}%(期间无法历练)
-      </button>
     </div>
 
     <!-- 状态 -->
