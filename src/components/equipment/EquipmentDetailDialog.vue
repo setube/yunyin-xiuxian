@@ -176,9 +176,15 @@
           </p>
           <p class="mt-0.5 text-[10px] text-ink-faint">推演只述局面,不替你定夺。</p>
         </template>
+      </template>
 
-        <!-- 自动重铸:洗到指定词条即停(玩家反馈,可多选、可给最低值) -->
-        <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
+      <!--
+        自动重铸:洗到指定词条即停(玩家反馈,可多选、可给最低值)。
+        注意它**不属于**上方的天机推演(修士实验室) —— 那是真仙+未装备才有的
+        v-if="canWhatIf" 段;重铸是凡人也在用的功能,若嵌在里面,普通玩家点开
+        开关只会变字、词条格子与「开洗」永远不渲染(实测即玩家反馈的「没生效」)。
+      -->
+      <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
           <p class="mb-1 text-[11px] text-ink-soft">洗到这些词条出现就停(任一命中即停,至多 3 条)</p>
           <div class="grid max-h-36 grid-cols-3 gap-1 overflow-y-auto">
             <button
@@ -218,7 +224,6 @@
             </button>
           </div>
         </div>
-      </template>
     </div>
     <template #footer>
       <div class="flex flex-col gap-2">
