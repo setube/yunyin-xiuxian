@@ -279,23 +279,29 @@
           <GameIcon name="flame" :size="15" class="text-cinnabar/70" />
         </button>
 
-        <!-- 已习得列表(限高滚动,功法过多不撑爆页面) -->
+        <!-- 已习得列表(限高滚动,功法过多不撑爆页面);行首门类印章 + 品质条目,不再是一排裸文字 -->
         <div class="card-ink max-h-64 divide-y divide-ink/7 overflow-y-auto px-1">
           <button
             v-for="def in learnedList"
             :key="def!.id"
-            class="flex w-full items-center gap-3 px-2.5 py-2.5 text-left active:bg-ink/4"
+            class="flex w-full items-center gap-2.5 px-2.5 py-2 text-left active:bg-ink/4"
             @click="ui.gongfaDetailId = def!.id"
           >
-            <span class="font-kai text-[13px]" :style="{ color: qualityDef(def!.quality).color }">{{ def!.name }}</span>
-            <span class="text-[10px] text-ink-faint">{{ cultivation.learned[def!.id] }} 层</span>
+            <!-- 门类印章:与主修卡「主」字同一块语言,辅/秘一眼可辨 -->
+            <span
+              class="grid h-8 w-8 shrink-0 place-items-center rounded-md font-kai text-[13px]"
+              :class="def!.type === 'secret' ? 'bg-violet-ink/15 text-violet-ink' : def!.type === 'main' ? 'bg-cinnabar/10 text-cinnabar' : 'bg-jade/15 text-jade'"
+            >{{ def!.type === 'secret' ? '秘' : def!.type === 'main' ? '主' : '辅' }}</span>
+            <!-- 品质染名的功法名 -->
+            <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: qualityDef(def!.quality).color }">{{ def!.name }}</span>
+            <span class="shrink-0 text-[10px] text-ink-faint">{{ cultivation.learned[def!.id] }} 层</span>
             <!-- Phase 31 A3:已选分支显示道名;确有歧路可择时才招手,否则只报「圆满」 -->
-            <span v-if="branchName(def!.id)" class="text-[10px] text-gold-ink">
+            <span v-if="branchName(def!.id)" class="max-w-24 shrink-0 truncate rounded bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-gold-ink">
               {{ branchName(def!.id) }}
             </span>
-            <span v-else-if="canEnlighten(def!.id)" class="text-[10px] text-azure">待悟道 →</span>
-            <span v-else-if="isFull(def!.id)" class="text-[10px] text-ink-ghost">圆满</span>
-            <span class="ml-auto text-[10px]" :class="equipStateOf(def!.id) ? 'text-jade' : 'text-ink-ghost'">
+            <span v-else-if="canEnlighten(def!.id)" class="shrink-0 rounded bg-azure/10 px-1.5 py-0.5 text-[10px] text-azure">待悟道 →</span>
+            <span v-else-if="isFull(def!.id)" class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] text-ink-ghost">圆满</span>
+            <span class="shrink-0 text-[10px]" :class="equipStateOf(def!.id) ? 'text-jade' : 'text-ink-ghost'">
               {{ equipStateOf(def!.id) || '未装配' }}
             </span>
           </button>
