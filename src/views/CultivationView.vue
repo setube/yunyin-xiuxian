@@ -221,10 +221,10 @@
       </div>
     </div>
 
-    <!-- 状态 -->
-    <section v-if="activeBuffs.length">
+    <!-- 状态:无增益时给出空态,不再整段消失(会让玩家以为这功能不存在) -->
+    <section>
       <SectionTitle title="状态" />
-      <div class="mt-2 flex flex-wrap gap-2">
+      <div v-if="activeBuffs.length" class="mt-2 flex flex-wrap gap-2">
         <!--
           状态胶囊每秒刷新一次,倒数文本必须定宽:formatCountdown 逐位补零,
           再给它一个固定宽度的槽位(文字右对齐)—— 否则「10分0秒 → 10分1秒」
@@ -242,6 +242,11 @@
           {{ b.def!.name }}
           <span class="countdown-slot">{{ formatCountdown(b.remain) }}</span>
         </button>
+      </div>
+      <!-- 空态:什么状态都没有时,告诉玩家这个区域存在、以及怎么点亮它 -->
+      <div v-else class="mt-2 flex items-center gap-2 rounded-md border border-dashed border-ink/15 bg-ink/3 px-3 py-2">
+        <GameIcon name="sparkles" :size="12" class="shrink-0 text-ink-ghost" />
+        <span class="text-[10px] leading-relaxed text-ink-faint">暂无增益加身 —— 服丹药 · 修功法 · 遇奇缘,都会为这段道途续上状态。</span>
       </div>
     </section>
 
