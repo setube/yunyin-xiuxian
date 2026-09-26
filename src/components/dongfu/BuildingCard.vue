@@ -24,6 +24,10 @@
     </p>
     <!-- 词条不写进 effectText:洞府的修速、藏经阁的战斗修为曾经因此漏掉 -->
     <p v-if="modLine" class="mt-1 text-[11px] leading-relaxed text-azure tabular">{{ modLine }}</p>
+    <!-- 灵兽园:把当前相伴的灵兽报在园子里 —— 别的建筑都是数值,这里是活物 -->
+    <p v-if="beastCompanionName" class="mt-1 flex items-center gap-1 text-[10px] text-jade">
+      <GameIcon name="paw" :size="11" />居园相伴 · {{ beastCompanionName }}
+    </p>
     <button class="btn-ghost mt-2 w-full !py-1.5 !text-[12px]" :disabled="!info.canUpgrade" @click="upgradeBuilding(props.def.id)">
       <!--
         数与量词必须黏在一起:窄屏(320)上卡片只有 ~140px,浏览器会在数字与「石」之间断行,
@@ -53,6 +57,8 @@
   import { computed, ref, watch } from 'vue'
   import type { BuildingDef } from '@/types'
   import { useDongfuStore } from '@/stores/dongfu'
+  import { usePlayerStore } from '@/stores/player'
+  import { petDef } from '@/data/pets'
   import GameIcon from '@/components/common/GameIcon.vue'
   import { buildingUpgradeInfo, upgradeBuilding } from '@/core/buildingService'
   import { modsText } from '@/ui/statNames'
@@ -69,6 +75,11 @@
   const info = computed(() => buildingUpgradeInfo(props.def.id))
   /** 未建且不可升 = 被境界闸门锁着(等级 0 时不可升只可能是境界不足,满级/辖限都要求 lv>0) */
   const locked = computed(() => level.value === 0 && !info.value.canUpgrade)
+  /** 灵兽园联动:洞府与宠物两系统彼此看见(只对 beast 这一座特例,其它建筑不理会) */
+  const player = usePlayerStore()
+  const beastCompanionName = computed(() =>
+    props.def.id === 'beast' && player.petId ? petDef(player.petId)?.name : undefined
+  )
   /** 品类满级:金彩「圆满」 */
   const atMax = computed(() => level.value > 0 && level.value >= props.def.maxLevel)
   /** 被洞府辖限(没到品类上限但已到 mansion 抬的档):琥珀「辖限」 */
