@@ -126,16 +126,12 @@
       <!-- 随身法宝槽:装着谁、空着哪一格,一眼即知 —— 不再只是一个 "x/2" 数字 -->
       <div class="mt-3 flex items-center gap-2 px-1">
         <span class="shrink-0 text-[11px] text-ink-soft">随身</span>
-        <div
-          v-for="i in artifactSlots"
-          :key="i"
-          class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-dashed border-ink/20 bg-paper-deep/50"
-        >
-          <template v-if="equippedRows[i - 1]">
-            <GameIcon :name="equippedRows[i - 1].def.icon" :size="20" :style="{ color: qualityDef(equippedRows[i - 1].def.quality).color }" />
-          </template>
-          <span v-else class="font-kai text-[11px] text-ink-ghost">空</span>
-        </div>
+        <template v-for="(row, k) in artifactSlotRows" :key="k">
+          <div class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-dashed border-ink/20 bg-paper-deep/50">
+            <GameIcon v-if="row" :name="row.def.icon" :size="20" :style="{ color: qualityDef(row.def.quality).color }" />
+            <span v-else class="font-kai text-[11px] text-ink-ghost">空</span>
+          </div>
+        </template>
         <span v-if="artifactSlots < ARTIFACT_MAX_SLOTS" class="text-[10px] text-ink-faint">
           · {{ artifactUnlockRealm }}境开第{{ cnNumber(ARTIFACT_MAX_SLOTS) }}位
         </span>
@@ -655,6 +651,10 @@
   const artifactSlots = computed(() => artifactSlotsFor(player.major))
   /** 已祭炼随身的法宝行(槽位按此顺序填充) */
   const equippedRows = computed(() => artifactRows.value.filter(r => r.equipped))
+  /** 逐槽映射:第 k 格对应的随身法宝;不足 slots 的补 undefined,画空位 */
+  const artifactSlotRows = computed(() =>
+    Array.from({ length: artifactSlots.value }, (_, k) => equippedRows.value[k])
+  )
   /** 开第二法宝位的那一境的名字 —— 门槛挪动时文案跟着走,不手写「元婴」 */
   const artifactUnlockRealm = computed(() => REALMS[ARTIFACT_SLOT_UNLOCK_MAJOR]?.name ?? '')
 
