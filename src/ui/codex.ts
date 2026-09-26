@@ -417,6 +417,7 @@ export function artifactCodex(): CodexCat {
   const levelOf = new Map(inventory.artifacts.map(a => [a.defId, a.level]))
   const entries = ARTIFACTS.map(def => ({
     ...describeArtifact(def, levelOf.get(def.id) ?? 0, owned.has(def.id)),
+    icon: def.icon,
     foot: { label: '收录时间', value: collectedTimeText(quests.collectedAt[`artifact:${def.id}`]) }
   })).sort((a, b) => b.stage - a.stage)
   const seen = entries.filter(e => e.stage >= 1).length
