@@ -1,7 +1,12 @@
 <template>
   <div class="card-ink flex flex-col px-3 py-3" :class="flashing ? 'card-flash' : ''" @animationend.self="flashing = false">
-    <div class="flex items-start justify-between gap-2">
-      <p class="min-w-0 truncate font-kai text-[14px] tracking-wider text-ink">{{ props.def.name }}</p>
+    <div class="flex items-center gap-2.5">
+      <!-- 建筑印章:每座建筑在数据里都配了图标(home/wind/flame/hammer/sprout/book/paw),此前一张都没画 -->
+      <span
+        class="grid h-9 w-9 shrink-0 place-items-center rounded-md transition-colors"
+        :class="level > 0 ? 'bg-cinnabar/10 text-cinnabar' : 'bg-ink/5 text-ink-faint'"
+      ><GameIcon :name="props.def.icon" :size="18" /></span>
+      <p class="min-w-0 grow truncate font-kai text-[14px] tracking-wider" :class="level > 0 ? 'text-ink' : 'text-ink-soft'">{{ props.def.name }}</p>
       <p :key="level" class="shrink-0 text-[10px] text-ink-faint animate-ink-pop">
         {{ level > 0 ? `${level}/${cap} 级` : '未启用' }}
       </p>
@@ -37,6 +42,7 @@
   import { computed, ref, watch } from 'vue'
   import type { BuildingDef } from '@/types'
   import { useDongfuStore } from '@/stores/dongfu'
+  import GameIcon from '@/components/common/GameIcon.vue'
   import { buildingUpgradeInfo, upgradeBuilding } from '@/core/buildingService'
   import { modsText } from '@/ui/statNames'
   import { buildingActLabel } from '@/ui/buildingText'
