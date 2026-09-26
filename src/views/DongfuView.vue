@@ -11,6 +11,11 @@
       <span class="text-[10px] text-ink-ghost">经营家业,道途更稳</span>
     </div>
 
+    <!-- 新府初成:先修谁一句话点透,别让新人在七张卡里找路 -->
+    <p v-if="dongfu.levels.mansion === 0" class="text-[11px] leading-relaxed text-ink-faint">
+      府库初立 —— 先修「洞府」本体:其余建筑的等级上限与离线收益都压在它身上。
+    </p>
+
     <!-- 洞府纪要:产出与上限一眼汇总(只读,不替代任何建筑卡的详情) -->
     <div class="rounded-md border border-ink/10 bg-paper-deep/50 px-3 py-2.5">
       <div class="flex items-center justify-between">
