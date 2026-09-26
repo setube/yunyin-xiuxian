@@ -1,6 +1,8 @@
 /* eslint-disable no-console -- 自检脚本的产出就是给人看的报告 */
 /**
- * 界面冒烟 —— 把每个页面上的按钮都点一遍,看有没有运行时异常
+ * 界面冒烟 —— 把每个页面上的按钮、以及站内导航链接都点一遍,看有没有运行时异常
+ * (导航入口是 RouterLink(<a>) 渲染的,不在 getByRole('button') 里 —— 单独走一条 pass,
+ *  否则「点入口没反应」这类 bug 在冒烟里永远看不见)
  *
  * 与 layout-check 的分工:那边量排版,这边戳交互。
  * 静态审计能查「有没有接线」,查不出「点下去会不会炸」——比如某个弹窗打开时
@@ -119,6 +121,10 @@ const errors = []
  * 一屏里要是冒出十几个,那就说明有一批入口在静默失败。
  */
 const silent = []
+/** 已成功走过的导航链接(去重:同 href 全站只点一次;失败/被挡的不计入,留待后续路由重试) */
+const navClicked = new Set()
+/** 已报过「未达目标/被浮层挡住」读数的链接(同 href 只报一次,避免跨路由刷屏) */
+const navBlockedOnce = new Set()
 async function fingerprint() {
   return page.evaluate(() => {
     const text = document.body.innerText.replace(/\s+/g, ' ').slice(0, 4000)
@@ -143,6 +149,35 @@ async function fingerprint() {
     const theme = document.documentElement.getAttribute('data-theme') ?? ''
     return `${text.length}:${full.length}:${hash}|${theme}|${pressed}|${document.querySelectorAll('.modal-panel').length}|${document.querySelectorAll('[class*=toast]').length}`
   })
+}
+/**
+ * 正文数字体检:找出正文里的 NaN / Infinity / undefined 泄漏点。
+ * (本页体检与导航落地页体检共用,统一格式。)
+ */
+async function numericLeak() {
+  return page.evaluate((patterns) => {
+    const text = document.body.innerText
+    return patterns.filter(p => text.includes(p)).map(p => {
+      const i = text.indexOf(p)
+      return `${p}@…${text.slice(Math.max(0, i - 24), i + 24).replace(/\n/g, '↵')}…`
+    })
+  }, NUMERIC_LEAK)
+}
+/**
+ * 命中测试:导航链接中心点此刻归谁?
+ * - 'clear':链接自己(或其子节点)占据 —— 可以安全 dispatch,箭头不会点错对象;
+ * - 'gone':链接不在页面上;
+ * - 其它:盖住它的元素的 className 片段 —— 此刻点下去会吃错元素(如成就横幅)。
+ */
+async function hitClear(href) {
+  return page.evaluate((h) => {
+    const a = document.querySelector(`a[href="${h}"]`)
+    if (!a) return 'gone'
+    const r = a.getBoundingClientRect()
+    const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+    if (a === el || a.contains(el)) return 'clear'
+    return (el?.className || el?.tagName || '?').toString().slice(0, 40)
+  }, href)
 }
 page.on('pageerror', e => errors.push({ where: 'boot', msg: String(e).slice(0, 300) }))
 
@@ -184,13 +219,7 @@ for (const route of ROUTES) {
    * 这类泄漏在单元测试里看不出来(函数返回了"数字"),到了百万级数值与
    * 除法密集的后期界面才现形 —— 后期夹具正是为它准备的。
    */
-  const leaked = await page.evaluate((patterns) => {
-    const text = document.body.innerText
-    return patterns.filter(p => text.includes(p)).map(p => {
-      const i = text.indexOf(p)
-      return `${p}@…${text.slice(Math.max(0, i - 24), i + 24).replace(/\n/g, '↵')}…`
-    })
-  }, NUMERIC_LEAK)
+  const leaked = await numericLeak()
   for (const l of leaked) errors.push({ where: `${route} 正文泄漏`, msg: l })
   const buttons = await page.getByRole('button').all()
   for (const b of buttons.slice(0, DEPTH)) {
@@ -210,10 +239,72 @@ for (const route of ROUTES) {
     await page.keyboard.press('Escape').catch(() => {})
     await page.waitForTimeout(80)
   }
+
+  /**
+   * 真·导航图:底部五页签 / 顶栏设置齿轮 / 各页内入口全是 RouterLink(<a>),不是 button ——
+   * 上面的按钮 pass 一根都戳不到。「点入口没反应」这类 bug(点击导航却原地不动)
+   * 正藏在这层。这里把每根 in-app 导航边都真实点一遍(成功的边同 href 全站只点一次,
+   * 被挡/未达标的保留下来等后续路由重试);落地页同样做数字体检 —— 出跳后目标页
+   * 有没有炸,单看本页按钮看不出端倪。
+   */
+  const linkHrefs = await page.evaluate(() =>
+    [...document.querySelectorAll('a[href^="#/"]')]
+      .map(a => a.getAttribute('href'))
+      .filter(h => !!h)
+  )
+  for (const href of [...new Set(linkHrefs)]) {
+    if (navClicked.has(href)) continue
+    // 点当前页自己的页签 = 原地踏步,不是一次导航,跳过
+    if (href === '#' + route) continue
+    // 回到本 route 再点:上一根链接可能已把页面带到别处,保证落在链接所属页面
+    await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
+    await page.waitForTimeout(300)
+    const link = page.locator(`a[href="${href}"]`).first()
+    if (!(await link.isVisible().catch(() => false))) continue
+    const before = errors.length
+    // 先滚到视口中央再命中:卡片堆在首屏外时,它中心点的 elementFromPoint 是 null(视口外),
+    // 会被误判成「被挡住」—— 真实首因不是遮挡而是没滚动。滚到中央后,叠在上面的真浮层
+    // (成就横幅/弹窗)才会在命中测试里现形。
+    await page.evaluate(h => document.querySelector(`a[href="${h}"]`)?.scrollIntoView({ block: 'center' }), href)
+    await page.waitForTimeout(120)
+    // 再命中再点:动画重页(洞府卡)上普通 click 会被可操作性等待卡到超时、一帧都不派发
+    // (那条边于是从没被真点过);而纯 force 又会穿透瞬时浮层吃错元素,两条路都不可信。
+    // 中心点归链接(或其子节点)才 dispatch;被浮层挡就 Esc + 稍候让开。
+    let blocker = await hitClear(href)
+    if (blocker !== 'clear') {
+      await page.keyboard.press('Escape').catch(() => {})
+      await page.waitForTimeout(600)
+      blocker = await hitClear(href)
+    }
+    if (blocker === 'clear') {
+      await link.click({ force: true, timeout: 800 }).catch(() => {})
+    } else if (blocker === 'gone') {
+      continue
+    }
+    await page.waitForTimeout(300)
+    // 导航专用断言:「跳没跳过去」看 hash 落点,不信页面指纹 —— 指纹是噪声的重灾区。
+    const landedHash = await page.evaluate(() => location.hash)
+    if (errors.length > before) {
+      // 有 pageerror:这条边确实被点过(Bug 已由报错钉死),以报错为准,标覆盖不再重试
+      errors[errors.length - 1].where = `${route} 导航「${href}」`
+      navClicked.add(href)
+    } else if (landedHash === href) {
+      // 真正到达目标:才是一次成功导航,落地页数字体检此时才有意义
+      clicked += 1
+      navClicked.add(href)
+      const landedLeak = await numericLeak()
+      for (const l of landedLeak) errors.push({ where: `${href} 落地页泄漏`, msg: l })
+    } else if (!navBlockedOnce.has(href)) {
+      // 没到目标也没报错:读数且同 href 只报一次;但不标覆盖 —— 浮层让开后,a 若还出现在
+      // 别的路由,会重新尝试这条边,而不是被全局去重永久跳过
+      navBlockedOnce.add(href)
+      silent.push(`${route} 导航「${href}」${blocker === 'clear' ? '未到达目标(可能被重定向)' : '被浮层挡住(' + blocker + ')'}->仍在 ${landedHash || '(原页)'}`)
+    }
+  }
 }
 
 await browser.close()
-console.log(`\n界面冒烟:${ROUTES.length} 页,点击 ${clicked} 次(每页上限 ${DEPTH})`)
+console.log(`\n界面冒烟:${ROUTES.length} 页,点击 ${clicked} 次(导航 ${navClicked.size} 条边;按钮每页上限 ${DEPTH})`)
 if (silent.length) {
   console.log(`点了没反应 ${silent.length} 处(读数,不判失败):`)
   for (const s of silent.slice(0, 20)) console.log(`  · ${s}`)
