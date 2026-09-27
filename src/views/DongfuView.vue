@@ -15,9 +15,9 @@
     <div v-if="mansionLv === 0" class="rounded-md border border-amber-ink/25 bg-amber-ink/5 px-3 py-2.5">
       <p class="font-kai text-[11px] tracking-wider text-amber-ink">新府初成</p>
       <ul class="mt-1 space-y-0.5 text-[10px] leading-relaxed text-ink-faint">
-        <li>· 先修「洞府」本体 —— 其余建筑的等级上限与离线收益都压在它身上。</li>
+        <li>· 先修「洞府」本体 —— 其余建筑能造到多高、离线能存多久,都压在它身上。</li>
         <li>· {{ offlineLaunchLine }}</li>
-        <li>· 洞府每级把其余建筑等级上限抬高 5(各再受自身品类上限约束)。</li>
+        <li>· 洞府每上一层,其余建筑能建的层巅便抬高一程,各筑另有自己的尽头。</li>
       </ul>
     </div>
 

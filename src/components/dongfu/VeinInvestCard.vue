@@ -51,7 +51,7 @@
             </div>
             <!-- 原主脉迁出后超额部分保留(效果不失,不可再投) -->
             <p v-if="surplusPoints(v.id) > 0" class="mt-0.5 text-[10px] leading-relaxed text-gold-ink">
-              原主脉的 {{ surplusPoints(v.id) }} 点超额保留,效果不减,唯不再可投
+              作主脉时多投的 {{ surplusPoints(v.id) }} 点仍在账上,其效分毫不减,只是不能再添
             </p>
           </div>
           <!-- 投点单列:主动权放右边,说明体不再整行抢点击 -->
