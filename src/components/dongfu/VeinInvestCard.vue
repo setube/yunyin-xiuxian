@@ -10,6 +10,10 @@
       <span class="text-cinnabar">{{ VEIN_MAIN_CAPACITY }} 点</span>,副脉各
       <span class="text-cinnabar">{{ VEIN_SIDE_CAP }} 点</span>;总容量有限,方向即取舍。
     </p>
+    <!-- 总容量分度:金色条一眼看用了几成,取舍这个词落到画面上 -->
+    <div class="mt-2 flex h-1.5 w-full items-center overflow-hidden rounded-full bg-ink/6">
+      <div class="h-full rounded-full bg-gold-ink/70 transition-all" :style="{ width: totalPct + '%' }"></div>
+    </div>
 
     <div class="mt-3 space-y-2">
       <div
@@ -34,6 +38,15 @@
             <p class="mt-0.5 text-[10px] leading-relaxed text-azure">
               {{ currentLevel(v.id) > 0 ? veinEffectText(v, currentLevel(v.id)) : `每点 ${veinEffectText(v, 1)}` }}
             </p>
+            <!-- 单脉进度:已投/该脉上限,着脉色;超额时条列满、数字转金 -->
+            <div class="mt-1.5 flex items-center gap-2">
+              <div class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-ink/6">
+                <div class="h-full rounded-full transition-all" :class="TONES[v.id].bar" :style="{ width: capPct(v.id) + '%' }"></div>
+              </div>
+              <span class="shrink-0 text-[10px] tabular" :class="surplusPoints(v.id) > 0 ? 'text-gold-ink' : 'text-ink-faint'">
+                {{ currentLevel(v.id) }}/{{ cap(v.id) }}
+              </span>
+            </div>
             <!-- 原主脉迁出后超额部分保留(效果不失,不可再投) -->
             <p v-if="surplusPoints(v.id) > 0" class="mt-0.5 text-[10px] leading-relaxed text-gold-ink">
               原主脉的 {{ surplusPoints(v.id) }} 点超额保留,效果不减,唯不再可投
@@ -108,6 +121,9 @@
     return parts.join(' · ')
   })
 
+  /** 总容量已用之百分比(卡头分度条) */
+  const totalPct = computed(() => Math.round((veinTotal.value / VEIN_TOTAL_CAPACITY) * 100))
+
   function isMain(veinId: VeinId): boolean {
     return dongfu.veinMain === veinId
   }
@@ -115,6 +131,12 @@
   /** 该脉实际可投上限:主脉 70,副脉 30 */
   function cap(veinId: VeinId): number {
     return isMain(veinId) ? VEIN_MAIN_CAPACITY : VEIN_SIDE_CAP
+  }
+
+  /** 单脉已投 / 该脉上限;迁出的超额部分封顶百分百,条列满但数字照实报 */
+  function capPct(veinId: VeinId): number {
+    const c = cap(veinId)
+    return c <= 0 ? 0 : Math.min(100, Math.round((currentLevel(veinId) / c) * 100))
   }
 
   function currentLevel(veinId: VeinId): number {
