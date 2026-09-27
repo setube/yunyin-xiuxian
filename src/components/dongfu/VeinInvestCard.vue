@@ -12,10 +12,15 @@
     </p>
 
     <div class="mt-3 space-y-2">
-      <div v-for="v in VEINS" :key="v.id" class="rounded-lg border border-ink/8 bg-paper-deep/40 px-2.5 py-2.5">
+      <div
+        v-for="v in VEINS"
+        :key="v.id"
+        class="rounded-lg border px-2.5 py-2.5"
+        :class="isMain(v.id) ? TONES[v.id].row : 'border-ink/8 bg-paper-deep/40'"
+      >
         <div class="flex items-start gap-2.5">
-          <!-- 脉章:方印托一字,与建筑卡同一套印章语言 -->
-          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-ink/6 font-kai text-[15px] leading-none text-ink-soft">
+          <!-- 脉章:方印托一字,与建筑卡同一套印章语言;字色随脉系 -->
+          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md font-kai text-[15px] leading-none" :class="TONES[v.id].seal">
             <span class="translate-y-[1px]">{{ v.seal }}</span>
           </span>
           <div class="min-w-0 grow">
@@ -69,6 +74,18 @@
 
   const dongfu = useDongfuStore()
   const player = usePlayerStore()
+
+  /**
+   * 四脉各配一色系。字面量类串,不许拼 —— Tailwind 的 JIT 只认源码里写全的类;
+   * 章、行描边、进度条、列账圆点全部从这里取,同一脉只一个色相,全书不乱。
+   * dot/bar 由进度条与列账用,seal/row 行内即刻生效。
+   */
+  const TONES: Record<VeinId, { seal: string; row: string; dot: string; bar: string }> = {
+    gather: { seal: 'bg-jade/12 text-jade', row: 'border-jade/35 bg-jade/5', dot: 'bg-jade', bar: 'bg-jade' },
+    craft: { seal: 'bg-cinnabar/12 text-cinnabar', row: 'border-cinnabar/35 bg-cinnabar/6', dot: 'bg-cinnabar', bar: 'bg-cinnabar' },
+    alchemy: { seal: 'bg-gold-ink/12 text-gold-ink', row: 'border-gold-ink/35 bg-gold-ink/6', dot: 'bg-gold-ink', bar: 'bg-gold-ink' },
+    insight: { seal: 'bg-violet-ink/14 text-violet-ink', row: 'border-violet-ink/40 bg-violet-ink/7', dot: 'bg-violet-ink', bar: 'bg-violet-ink' }
+  }
 
   const investCost = computed(() => veinPointCost())
   const switchCost = computed(() => veinSwitchCost())
