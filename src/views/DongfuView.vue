@@ -62,7 +62,13 @@
         <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-gold-ink/10 text-gold-ink"><GameIcon name="gem" :size="18" /></span>
         <span class="min-w-0 grow">
           <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">灵脉投资</span>
-          <span class="block truncate text-[10px] text-ink-faint tabular">{{ veinSummary }}</span>
+          <span class="mt-0.5 flex items-center gap-1.5">
+            <!-- 折叠态也带迷你容量条:不点开也知已投几成 -->
+            <span class="h-1 w-12 shrink-0 overflow-hidden rounded-full bg-ink/6">
+              <span class="block h-full rounded-full bg-gold-ink/70" :style="{ width: foldPct + '%' }"></span>
+            </span>
+            <span class="min-w-0 truncate text-[10px] text-ink-faint tabular">{{ veinSummary }}</span>
+          </span>
         </span>
         <span class="shrink-0 text-[12px] text-gold-ink transition-transform" :class="veinExpanded ? 'rotate-90' : ''">›</span>
       </button>
@@ -106,6 +112,8 @@
     const main = dongfu.veinMain ? VEINS.find(v => v.id === dongfu.veinMain)?.name : undefined
     return `已投 ${dongfu.veinTotal}/${VEIN_TOTAL_CAPACITY} · 主脉 ${main ?? '未立'}`
   })
+  /** 折叠态迷你容量条宽度(百分比) */
+  const foldPct = computed(() => Math.round((dongfu.veinTotal / VEIN_TOTAL_CAPACITY) * 100))
 
   /** 洞府:全局闸门,单独把守头条 */
   const mansionDef = computed(() => BUILDINGS.find(b => b.id === 'mansion')!)
