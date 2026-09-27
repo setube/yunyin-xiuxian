@@ -84,6 +84,8 @@
         v-if="veinsUnlocked"
         type="button"
         class="card-ink flex w-full items-center gap-2.5 px-3.5 py-3 text-left active:scale-99"
+        :aria-expanded="veinExpanded"
+        aria-controls="vein-panel"
         @click="veinExpanded = !veinExpanded"
       >
         <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-gold-ink/10 text-gold-ink"><GameIcon name="gem" :size="18" /></span>
@@ -104,9 +106,9 @@
         <GameIcon name="gem" :size="16" class="shrink-0 text-gold-ink/60" />
         <p class="text-[10px] leading-relaxed text-ink-faint">灵脉 —— 炼化灵石永久强化洞府,得全局属性加成。金丹境方开,届时与此页相会。</p>
       </div>
-      <!-- 展开/收起:高度 + 透明度过渡,不像生硬裁切 -->
+      <!-- 展开/收起:高度 + 透明度过渡,不像生硬裁切;id 与折叠头 aria-controls 对应 -->
       <Transition name="vein-drop">
-        <div v-if="veinsUnlocked && veinExpanded" class="overflow-hidden">
+        <div id="vein-panel" v-if="veinsUnlocked && veinExpanded" class="overflow-hidden">
           <VeinInvestCard />
         </div>
       </Transition>
