@@ -11,10 +11,15 @@
       <span class="text-[10px] text-ink-ghost">经营家业,道途更稳</span>
     </div>
 
-    <!-- 新府初成:先修谁一句话点透,别让新人在七张卡里找路 -->
-    <p v-if="dongfu.levels.mansion === 0" class="text-[11px] leading-relaxed text-ink-faint">
-      府库初立 —— 先修「洞府」本体:其余建筑的等级上限与离线收益都压在它身上。
-    </p>
+    <!-- 新府初成:先修谁、升一级能怎样,不给抽象告诫只给具体路径 -->
+    <div v-if="mansionLv === 0" class="rounded-md border border-amber-ink/25 bg-amber-ink/5 px-3 py-2.5">
+      <p class="font-kai text-[11px] tracking-wider text-amber-ink">新府初成</p>
+      <ul class="mt-1 space-y-0.5 text-[10px] leading-relaxed text-ink-faint">
+        <li>· 先修「洞府」本体 —— 其余建筑的等级上限与离线收益都压在它身上。</li>
+        <li>· {{ offlineLaunchLine }}</li>
+        <li>· 洞府每级把其余建筑等级上限抬高 5(各再受自身品类上限约束)。</li>
+      </ul>
+    </div>
 
     <!-- 洞府纪要:产出与上限一眼汇总(只读,不替代任何建筑卡的详情) -->
     <div class="rounded-md border border-ink/10 bg-paper-deep/50 px-3 py-2.5">
@@ -121,6 +126,12 @@
 
   /** 洞府等级,作离线档位条的当前档(0..4) */
   const mansionLv = computed(() => dongfu.levels.mansion ?? 0)
+  /** 新府引导里的离线数字随 OFFLINE_CAP_HOURS 现算,不写死成 8 时/12 时 */
+  const offlineLaunchLine = computed(() => {
+    const now = OFFLINE_CAP_HOURS[0]
+    const next = OFFLINE_CAP_HOURS[1]
+    return `离线可攒现为 ${now} 时,洞府升至 1 级即 ${next} 时`
+  })
 
   /** 灵脉金丹解锁;未达门槛时只给一句前瞻,别让新人面对一整张禁用按钮 */
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
