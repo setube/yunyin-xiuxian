@@ -380,48 +380,72 @@
       </template>
     </BaseModal>
 
-    <!-- 智能收纳弹窗入口共用分解弹窗下方 -->
-    <BaseModal :open="smartOpen" title="智能收纳" @close="smartOpen = false">
+    <!-- 智能收纳:独立的自动取舍策略 —— 与「一键分解」的手动动作井水不犯河水 -->
+    <BaseModal :open="smartOpen" title="智能收纳(自动)" @close="smartOpen = false">
       <p class="text-[11px] leading-relaxed text-ink-faint">
-        开启后,新掉落先过智能裁决:无缘之物直接化尘不入包;行囊满时,值得收藏的新件会挤掉包内最弱的无缘旧物(品质低的先走,同档看层级与词条)。识别不只看品质:流派核心词条、组合技部件、成套共鸣件、条条近满的词条都算值得留。
+        开启后,新掉落先过自动裁决:该留的入包、判无缘的直接化尘;行囊满时,值得留的新件挤掉包内最弱的无缘旧物。
       </p>
-      <p class="mt-1 text-[11px] leading-relaxed text-ink-ghost">
-        你强化过、重铸过、封存过词条的件,自动收纳一律不动 —— 要扔得你自己动手(单件分解,或勾选该品质的一键分解)。
-      </p>
-      <label class="mt-2 flex items-center justify-between py-1.5">
-        <span class="text-[13px] text-ink-soft">启用智能收纳</span>
-        <input v-model="settings.smartKeep.enabled" type="checkbox" class="h-4 w-4 accent-cinnabar" />
-      </label>
-      <div class="flex items-center justify-between py-1.5">
-        <span class="text-[12px] text-ink-soft">此品质起一律保留</span>
-        <div class="flex gap-1">
-          <button
-            v-for="q in KEEP_QUALITY_CHOICES"
-            :key="q.rank"
-            class="chip-ink"
-            :class="settings.smartKeep.minQuality === q.rank ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
-            @click="settings.smartKeep.minQuality = q.rank"
-          >
-            {{ q.name }}
-          </button>
+      <!-- 状态一眼:策略一段话说清,不必把六个开关拼起来读 -->
+      <div
+        class="mt-2.5 rounded-md px-3 py-2 text-[10px] leading-relaxed"
+        :class="settings.smartKeep.enabled ? 'bg-jade/8 text-jade' : 'bg-ink/4 text-ink-ghost'"
+      >
+        {{ smartStatusLine }}
+      </div>
+
+      <!-- 规则 · 门槛:总开关 + 保留线 -->
+      <p class="mb-1 mt-3 font-kai text-[11px] tracking-wider text-ink-soft">规则 · 门槛</p>
+      <div class="rounded-md border border-ink/8 bg-paper-deep/40 px-2.5 py-1">
+        <label class="flex items-center justify-between py-1.5">
+          <span class="text-[13px] text-ink-soft">启用智能收纳</span>
+          <input v-model="settings.smartKeep.enabled" type="checkbox" class="h-4 w-4 accent-cinnabar" />
+        </label>
+        <div class="flex items-center justify-between gap-2 py-1.5">
+          <span class="text-[12px] text-ink-soft">此品质起一律保留</span>
+          <div class="flex gap-1">
+            <button
+              v-for="q in KEEP_QUALITY_CHOICES"
+              :key="q.rank"
+              class="chip-ink"
+              :class="settings.smartKeep.minQuality === q.rank ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
+              @click="settings.smartKeep.minQuality = q.rank"
+            >
+              {{ q.name }}
+            </button>
+          </div>
         </div>
       </div>
-      <label class="flex items-center justify-between py-1.5">
-        <span class="text-[12px] text-ink-soft">保留主流派核心词条件</span>
-        <input v-model="settings.smartKeep.keepCoreAffix" type="checkbox" class="h-4 w-4 accent-cinnabar" />
-      </label>
-      <label class="flex items-center justify-between py-1.5">
-        <span class="text-[12px] text-ink-soft">保留组合技部件(副体系词条)</span>
-        <input v-model="settings.smartKeep.keepComboPiece" type="checkbox" class="h-4 w-4 accent-cinnabar" />
-      </label>
-      <label class="flex items-center justify-between py-1.5">
-        <span class="text-[12px] text-ink-soft">保留成套共鸣件(机制优先)</span>
-        <input v-model="settings.smartKeep.keepSetPiece" type="checkbox" class="h-4 w-4 accent-cinnabar" />
-      </label>
-      <label class="flex items-center justify-between py-1.5">
-        <span class="text-[12px] text-ink-soft">保留词条近满件</span>
-        <input v-model="settings.smartKeep.keepPerfectRolls" type="checkbox" class="h-4 w-4 accent-cinnabar" />
-      </label>
+
+      <!-- 识宝 · 单看品质不够:这四项认「值得」,不认「贵贱」 -->
+      <p class="mb-1 mt-3 font-kai text-[11px] tracking-wider text-ink-soft">识宝 · 品质之外的值得</p>
+      <div class="rounded-md border border-ink/8 bg-paper-deep/40 px-2.5 py-1">
+        <label class="flex items-center justify-between py-1.5">
+          <span class="text-[12px] text-ink-soft">主流派核心词条件</span>
+          <input v-model="settings.smartKeep.keepCoreAffix" type="checkbox" class="h-4 w-4 accent-cinnabar" />
+        </label>
+        <label class="flex items-center justify-between py-1.5">
+          <span class="text-[12px] text-ink-soft">组合技部件(副体系词条)</span>
+          <input v-model="settings.smartKeep.keepComboPiece" type="checkbox" class="h-4 w-4 accent-cinnabar" />
+        </label>
+        <label class="flex items-center justify-between py-1.5">
+          <span class="text-[12px] text-ink-soft">成套共鸣件(机制优先)</span>
+          <input v-model="settings.smartKeep.keepSetPiece" type="checkbox" class="h-4 w-4 accent-cinnabar" />
+        </label>
+        <label class="flex items-center justify-between py-1.5">
+          <span class="text-[12px] text-ink-soft">词条近满件</span>
+          <input v-model="settings.smartKeep.keepPerfectRolls" type="checkbox" class="h-4 w-4 accent-cinnabar" />
+        </label>
+      </div>
+      <p class="mt-1.5 text-[10px] leading-relaxed text-ink-ghost">
+        强化过、重铸过、封存过词条的件,任凭上面怎么设都不动 —— 要扔得你自己动手。
+      </p>
+
+      <!-- 划界 · 与「一键分解」互不读钩 -->
+      <p class="mb-1 mt-3 font-kai text-[11px] tracking-wider text-ink-soft">划界 · 与「一键分解」</p>
+      <p class="text-[10px] leading-relaxed text-ink-ghost">
+        「一键分解」只管行囊里已存的件,是一次手动批量动作;本页只管掉落之后的去留 ——
+        两边各读各的勾选,改任何一边,另一边都不动。
+      </p>
       <template #footer>
         <!-- 一键清理二步确认:整包报废,按一下不该就此了结 -->
         <template v-if="!cleanConfirm">
@@ -742,7 +766,7 @@
       ? [...settings.decomposeRanks, rank].sort((a, b) => a - b)
       : settings.decomposeRanks.filter(r => r !== rank)
     // 勾选只是「标记该档为废料」——行囊内现存同类不在此刻销毁,待玩家点「分 解」确认。
-    // (智能收纳开启后,拾取到该档才会自动回收——那是不占行囊的入包裁决,与行囊内已存之物无关;未开启则照常入包。)
+    // 此勾选与「智能收纳」互不相干:掉落去哪儿由智能收纳的保留线与智能规则独立裁决。
   }
 
   function confirmDecompose(): void {
@@ -760,6 +784,24 @@
 
   /** 待清理件数(确认提示用) */
   const cleanCount = computed(() => inventory.bagItems.filter(it => !it.locked && !keepVerdict(it).keep).length)
+
+  /**
+   * 当前策略一句话:门槛 + 识宝命中 + 余者化尘。把六个开关拼成一句人话,
+   * 玩家不必心读这页才知道「自动」到底会怎么做。
+   */
+  const smartStatusLine = computed(() => {
+    const sk = settings.smartKeep
+    if (!sk.enabled) return '未启用 —— 掉落照常入包,此页规则暂不出手'
+    const keepName = KEEP_QUALITY_CHOICES.find(q => q.rank === sk.minQuality)?.name ?? '灵品'
+    const smart = [
+      sk.keepCoreAffix && '核心',
+      sk.keepComboPiece && '组合',
+      sk.keepSetPiece && '成套',
+      sk.keepPerfectRolls && '近满'
+    ].filter(Boolean)
+    const tail = smart.length ? `;命中${smart.join('/')},一律当藏` : ''
+    return `${keepName}起一律保留${tail};其余判无缘者,落包即化尘`
+  })
 
   /** 清理确认态:按一次按钮先落在「再想想/清理化尘」上 */
   const cleanConfirm = ref(false)
