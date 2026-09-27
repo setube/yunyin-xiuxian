@@ -382,7 +382,7 @@
     <!-- 智能收纳:独立的自动取舍策略 —— 与「一键分解」的手动动作井水不犯河水 -->
     <BaseModal :open="smartOpen" title="智能收纳(自动)" @close="smartOpen = false">
       <p class="text-[11px] leading-relaxed text-ink-faint">
-        开启后,新落之物在入行囊前先过一关:值得留的留下,无缘的一缕化尘;行囊将满时,新至的宝物还会顶掉包里最弱的一件旧物。
+        开启后,新落之物在入行囊前先过一关:值得留的留下,无缘的一缕化尘;行囊已满且有无缘旧物时,新至的宝物会顶走包里最弱的一件,无可顶者便也化尘。
       </p>
       <!-- 状态一眼:策略一段话说清,不必把六个开关拼起来读 -->
       <div
@@ -799,7 +799,7 @@
       sk.keepPerfectRolls && '近满'
     ].filter(Boolean)
     const grace = tags.length ? `;带${tags.join('或')}之器,一并留藏` : ''
-    return `${keepName}以上尽数珍藏${grace};余者无缘,落袋即化作器灵尘`
+    return `${keepName}以上尽数珍藏${grace};余者无缘,落地便化作器灵尘`
   })
 
   /** 清理确认态:按一次按钮先落在「再想想/清理化尘」上 */
