@@ -343,7 +343,7 @@
     <!-- 一键分解:勾选品质(记忆勾选)。纯手动批量动作 —— 与「智能收纳」的自动取舍互不干扰 -->
     <BaseModal :open="decomposeOpen" title="一键分解(手动)" @close="decomposeOpen = false">
       <p class="text-[11px] leading-relaxed text-ink-faint">
-        勾选要化掉的血品,只筛
+        勾选要化掉的品质,只筛
         <span class="text-ink-soft">行囊中已存</span>
         的件;已佩戴与上锁的装备不受影响。这是一次手动动作 —— 勾选会被记住,但
         <span class="text-ink-soft">只在下文「分 解」时生效</span>,

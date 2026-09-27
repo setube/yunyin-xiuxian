@@ -380,13 +380,18 @@ export function configureAudio(p: AudioPrefs): void {
   applyPrefs()
 }
 
+/** 一次启动的 Promise:首取未定局期间,再来的交互直接让位,不各自挂回执 */
+let startPromise: Promise<void> | null = null
+
 /**
  * 恢复音频上下文。Tone.start() 的 Promise 在此吞掉失败,并把整段音频标记为
  * 已死 —— 设备没就绪不是能重试的,每次点击再试只会制造一屏未处理拒绝。
+ * 在途护栏:全局 onPointerDown 每次交互都会进来,若正在启动就让位给那一次
+ * 共享尝试,失败只由它记一记(单次告警、单次置死)。
  */
 function safeStart(): void {
-  if (!T || audioDead) return
-  T.start()
+  if (!T || audioDead || startPromise) return
+  startPromise = T.start()
     .then(() => {
       // 恢复成功才让循环起声;失败走 catch 直接置死
       if (prefs.musicOn) startBgm()
@@ -396,6 +401,9 @@ function safeStart(): void {
       bgmPlaying = false
       // 降级为静音续行:一句警告入日志,不再进 diag 留档
       console.warn('[音频] 音频设备未就绪,静音续行(配乐与音效停用)')
+    })
+    .finally(() => {
+      startPromise = null
     })
 }
 
