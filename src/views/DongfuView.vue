@@ -93,14 +93,17 @@
         </span>
         <span class="shrink-0 text-[12px] text-gold-ink transition-transform" :class="veinExpanded ? 'rotate-90' : ''">›</span>
       </button>
-      <template v-if="veinsUnlocked && veinExpanded">
-        <VeinInvestCard />
-      </template>
       <!-- 未达门槛:整块就是一句前瞻,没有可展开的内容 -->
-      <div v-else-if="!veinsUnlocked" class="flex items-center gap-2.5 rounded-md border border-dashed border-gold-ink/25 bg-gold-ink/4 px-3 py-2.5">
+      <div v-if="!veinsUnlocked" class="flex items-center gap-2.5 rounded-md border border-dashed border-gold-ink/25 bg-gold-ink/4 px-3 py-2.5">
         <GameIcon name="gem" :size="16" class="shrink-0 text-gold-ink/60" />
         <p class="text-[10px] leading-relaxed text-ink-faint">灵脉 —— 炼化灵石永久强化洞府,得全局属性加成。金丹境方开,届时与此页相会。</p>
       </div>
+      <!-- 展开/收起:高度 + 透明度过渡,不像生硬裁切 -->
+      <Transition name="vein-drop">
+        <div v-if="veinsUnlocked && veinExpanded" class="overflow-hidden">
+          <VeinInvestCard />
+        </div>
+      </Transition>
     </section>
 
   </div>
@@ -172,3 +175,22 @@
     }
   })
 </script>
+
+<style scoped>
+  /* 灵脉展开/收起:max-height 爬坡 + 淡入淡出。上界取足,四条脉 + 图例撑不满 */
+  .vein-drop-enter-active,
+  .vein-drop-leave-active {
+    transition:
+      opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+      max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .vein-drop-enter-from,
+  .vein-drop-leave-to {
+    opacity: 0;
+    max-height: 0;
+  }
+  .vein-drop-enter-to,
+  .vein-drop-leave-from {
+    max-height: 52rem;
+  }
+</style>
