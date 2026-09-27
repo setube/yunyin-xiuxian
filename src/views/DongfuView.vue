@@ -51,16 +51,28 @@
       </div>
     </section>
 
-    <!-- 灵脉:金丹后炼化灵石永久砥砺洞府。此前它只缩在首页弹窗里,本页毫无踪迹 -->
-    <section>
-      <SectionTitle title="灵脉" :hint="veinsUnlocked ? '炼化灵石,永久砥砺' : '金丹境解锁'" />
-      <VeinInvestCard v-if="veinsUnlocked" class="mt-2" />
-      <!-- 未达门槛:一句前瞻即可,不摆禁用控件 -->
-      <div v-else class="mt-2 flex items-center gap-2.5 rounded-md border border-dashed border-gold-ink/25 bg-gold-ink/4 px-3 py-2.5">
+    <!-- 灵脉:全部统合在本页。信息量大(四脉·各注·投资/换向),默认折成一行摘要,点开才见详情 -->
+    <section class="space-y-2">
+      <button
+        v-if="veinsUnlocked"
+        type="button"
+        class="card-ink flex w-full items-center gap-2.5 px-3.5 py-3 text-left active:scale-99"
+        @click="veinExpanded = !veinExpanded"
+      >
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-gold-ink/10 text-gold-ink"><GameIcon name="gem" :size="18" /></span>
+        <span class="min-w-0 grow">
+          <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">灵脉投资</span>
+          <span class="block truncate text-[10px] text-ink-faint tabular">{{ veinSummary }}</span>
+        </span>
+        <span class="shrink-0 text-[12px] text-gold-ink transition-transform" :class="veinExpanded ? 'rotate-90' : ''">›</span>
+      </button>
+      <template v-if="veinsUnlocked && veinExpanded">
+        <VeinInvestCard />
+      </template>
+      <!-- 未达门槛:整块就是一句前瞻,没有可展开的内容 -->
+      <div v-else-if="!veinsUnlocked" class="flex items-center gap-2.5 rounded-md border border-dashed border-gold-ink/25 bg-gold-ink/4 px-3 py-2.5">
         <GameIcon name="gem" :size="16" class="shrink-0 text-gold-ink/60" />
-        <p class="text-[10px] leading-relaxed text-ink-faint">
-          灵脉 —— 炼化灵石永久强化洞府,得全局属性加成。金丹境方开,届时与此页相会。
-        </p>
+        <p class="text-[10px] leading-relaxed text-ink-faint">灵脉 —— 炼化灵石永久强化洞府,得全局属性加成。金丹境方开,届时与此页相会。</p>
       </div>
     </section>
 
@@ -68,11 +80,12 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { goBack } from '@/router/goBack'
   import { BUILDINGS, ARRAY_QI_CAP_PER_LEVEL } from '@/data/buildings'
-  import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, LIBRARY_WUDAO_PER_HOUR, VEIN_UNLOCK_MAJOR } from '@/data/constants'
+  import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, LIBRARY_WUDAO_PER_HOUR, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
+  import { VEINS } from '@/data/veins'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
   import SectionTitle from '@/components/common/SectionTitle.vue'
@@ -86,6 +99,13 @@
 
   /** 灵脉金丹解锁;未达门槛时只给一句前瞻,别让新人面对一整张禁用按钮 */
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
+  /** 灵脉信息量大,默认折成一行;点开展开四脉详情 */
+  const veinExpanded = ref(false)
+  /** 折叠态摘要:已投点数 + 主脉名(未立主脉给提示) */
+  const veinSummary = computed(() => {
+    const main = dongfu.veinMain ? VEINS.find(v => v.id === dongfu.veinMain)?.name : undefined
+    return `已投 ${dongfu.veinTotal}/${VEIN_TOTAL_CAPACITY} · 主脉 ${main ?? '未立'}`
+  })
 
   /** 洞府:全局闸门,单独把守头条 */
   const mansionDef = computed(() => BUILDINGS.find(b => b.id === 'mansion')!)
