@@ -105,46 +105,24 @@
       </div>
     </section>
 
-    <!-- 洞府入口 -->
+    <!-- 洞府入口(灵脉已统合进洞府页,入口副题带上一句免得找不到) -->
     <RouterLink to="/dongfu" class="card-ink flex items-center justify-between gap-3 px-4 py-3 active:scale-99">
       <span class="min-w-0 flex-1">
         <span class="block font-kai text-[14px] tracking-widest text-ink">洞府营造</span>
-        <span class="block truncate text-[10px] leading-relaxed text-ink-faint">经营家业,道途更稳</span>
+        <span class="block truncate text-[10px] leading-relaxed text-ink-faint">灵脉 · 经营家业,道途更稳</span>
       </span>
       <span class="shrink-0 text-[12px] text-ink-faint">›</span>
     </RouterLink>
-
-    <!-- 灵脉投资:金丹后开放,紧随洞府营造 -->
-    <button
-      v-if="player.major >= VEIN_UNLOCK_MAJOR"
-      class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-99"
-      @click="veinOpen = true"
-    >
-      <span class="min-w-0 flex-1">
-        <span class="block font-kai text-[14px] tracking-widest text-ink">灵脉投资</span>
-        <span class="block truncate text-[10px] leading-relaxed text-ink-faint">引灵脉入洞府,择一主脉而修</span>
-      </span>
-      <span class="shrink-0 text-[12px] text-ink-faint">›</span>
-    </button>
-
-    <!-- 灵脉弹窗:组件自带标题卡,故不画标题;但对话框自己仍要有可访问名 -->
-    <BaseModal :open="veinOpen" title="" aria-label="灵脉" wide @close="veinOpen = false">
-      <VeinInvestCard />
-      <template #footer>
-        <button class="btn-seal w-full" @click="veinOpen = false">收 起</button>
-      </template>
-    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed } from 'vue'
   import { usePlayerStore } from '@/stores/player'
   import { useAdventureStore } from '@/stores/adventure'
   import { useCultivationStore } from '@/stores/cultivation'
   import { useQuestsStore } from '@/stores/quests'
   import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
-  import { VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { LIFESPAN_WARN_RATIO } from '@/data/constants'
   import { WORLD_BREAK_MAJOR } from '@/data/realms'
   import { todayWeather } from '@/core/weather'
@@ -154,15 +132,11 @@
   import { weatherEffectText } from '@/ui/weatherText'
   import { generateCurrentGoal, type Goal } from '@/core/goal'
   import SectionTitle from '@/components/common/SectionTitle.vue'
-  import BaseModal from '@/components/common/BaseModal.vue'
-  import VeinInvestCard from '@/components/dongfu/VeinInvestCard.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import CultivationOrb from '@/components/common/CultivationOrb.vue'
   import InstallToHomeNotice from '@/components/common/InstallToHomeNotice.vue'
 
   const player = usePlayerStore()
-  /** 灵脉投资弹窗 —— 卡片自洞府页移来,紧随洞府营造 */
-  const veinOpen = ref(false)
   const adventure = useAdventureStore()
   const cultivation = useCultivationStore()
   const quests = useQuestsStore()
