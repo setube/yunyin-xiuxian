@@ -105,11 +105,15 @@
       </div>
     </section>
 
-    <!-- 洞府入口(灵脉已统合进洞府页,入口副题带上一句免得找不到) -->
+    <!-- 洞府入口(灵脉已统合进洞府页,入口副题带上一句免得找不到);右侧带实况:离线可攒 + 已营座数 -->
     <RouterLink to="/dongfu" class="card-ink flex items-center justify-between gap-3 px-4 py-3 active:scale-99">
       <span class="min-w-0 flex-1">
         <span class="block font-kai text-[14px] tracking-widest text-ink">洞府营造</span>
         <span class="block truncate text-[10px] leading-relaxed text-ink-faint">灵脉 · 经营家业,道途更稳</span>
+      </span>
+      <span class="flex shrink-0 flex-col items-end gap-0.5 text-[10px]">
+        <span class="tabular text-gold-ink">离线 {{ offlineHrs }} 时</span>
+        <span class="tabular text-ink-faint">已营 {{ builtCount }}/{{ BUILDINGS.length }}</span>
       </span>
       <span class="shrink-0 text-[12px] text-ink-faint">›</span>
     </RouterLink>
@@ -119,9 +123,11 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { usePlayerStore } from '@/stores/player'
+  import { useDongfuStore } from '@/stores/dongfu'
   import { useAdventureStore } from '@/stores/adventure'
   import { useCultivationStore } from '@/stores/cultivation'
   import { useQuestsStore } from '@/stores/quests'
+  import { BUILDINGS } from '@/data/buildings'
   import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
   import { LIFESPAN_WARN_RATIO } from '@/data/constants'
   import { WORLD_BREAK_MAJOR } from '@/data/realms'
@@ -137,9 +143,14 @@
   import InstallToHomeNotice from '@/components/common/InstallToHomeNotice.vue'
 
   const player = usePlayerStore()
+  const dongfu = useDongfuStore()
   const adventure = useAdventureStore()
   const cultivation = useCultivationStore()
   const quests = useQuestsStore()
+
+  /** 洞府入口右侧实况:离线可攒小时 + 已营座数(与洞府页纪要同源现算) */
+  const offlineHrs = computed(() => dongfu.offlineCapHours)
+  const builtCount = computed(() => BUILDINGS.filter(b => (dongfu.levels[b.id] ?? 0) > 0).length)
 
   // Phase 29 修行目标:只给方向,不替玩家做决定(goal.ts 此前零展示,接线摆上主页)
   const currentGoal = computed<Goal | null>(() => generateCurrentGoal(player))
