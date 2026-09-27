@@ -45,9 +45,15 @@
           <p class="tabular font-kai text-[14px] leading-tight" :class="summary.libLv ? 'text-gold-ink' : 'text-ink-ghost'">{{ summary.libLv ? summary.wudaoHr : '—' }}</p>
         </div>
       </div>
-      <div class="mt-1.5 flex items-center justify-between text-[10px] text-ink-faint">
-        <span>灵气上限 <span class="tabular" :class="summary.arrayLv ? 'text-azure' : 'text-ink-ghost'">{{ summary.arrayLv ? summary.qiCapPct : '—' }}</span></span>
-        <span>辅修栏 <span class="tabular text-ink-soft">{{ summary.subSlots }}</span></span>
+      <div class="mt-1.5 flex items-center justify-between gap-2">
+        <span class="flex items-center gap-1 rounded bg-paper-deep/60 px-2 py-1 text-[10px] text-ink-faint">
+          <GameIcon name="droplets" :size="12" class="text-azure/70" />
+          灵气上限 <span class="tabular" :class="summary.arrayLv ? 'text-azure' : 'text-ink-ghost'">{{ summary.arrayLv ? summary.qiCapPct : '—' }}</span>
+        </span>
+        <span class="flex items-center gap-1 rounded bg-paper-deep/60 px-2 py-1 text-[10px] text-ink-faint">
+          <GameIcon name="scroll" :size="12" class="text-gold-ink/70" />
+          辅修栏 <span class="tabular text-ink-soft">{{ summary.subSlots }}</span>
+        </span>
       </div>
       <!-- 离线档位:5 段一览,现在第几档、升洞府能到哪一档,不看向来只报一个数 -->
       <div class="mt-1.5 flex items-center gap-1">
