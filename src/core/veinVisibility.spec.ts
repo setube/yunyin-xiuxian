@@ -48,6 +48,10 @@ function stripComments(src: string): string {
 const CARD_SRC = stripComments(
   readFileSync(resolve(__dirname, '../components/dongfu/VeinInvestCard.vue'), 'utf8')
 )
+/** 效果行唯一出口:perPoint 与专用通道都在 veinEffectText 里并入(见下) */
+const VEIN_TEXT_SRC = stripComments(
+  readFileSync(resolve(__dirname, '../ui/veinText.ts'), 'utf8')
+)
 
 describe('灵脉可见性 · 通道归属', () => {
   it('每条脉都有可观测通道,不存在「投了点什么都不变」的脉', () => {
@@ -92,12 +96,15 @@ describe('灵脉可见性 · 通道本身是活的', () => {
 })
 
 describe('灵脉可见性 · 展示层覆盖全部通道', () => {
-  it('卡片的加成展示同时读取 veinMods 与每一条专用通道', () => {
-    expect(CARD_SRC).toContain('veinMods')
-    for (const [veinId, getter] of Object.entries(DEDICATED_CHANNELS)) {
-      expect(CARD_SRC, `${veinId} 的通道 ${getter} 没有出现在卡片代码里`).toContain(getter)
-    }
-    console.log(`\n卡片已接入 veinMods + ${Object.values(DEDICATED_CHANNELS).join('、')}`)
+  it('列账覆盖全部通道:遍历全部灵脉,效果行走 veinEffectText(专用通道并入其中)', () => {
+    // 卡片以 v-for 遍历 VEINS 渲染列账 —— 新增一脉自动进展示,不存在「投了点不显示」的脉
+    expect(CARD_SRC, '列账必须遍历全部灵脉').toMatch(/v-for="v in VEINS"/)
+    expect(CARD_SRC, '效果行没有走 veinEffectText').toContain('veinEffectText(')
+    // 效果行走唯一出口 veinEffectText,perPoint 与专用通道(参悟省耗)都在它内部并入
+    expect(VEIN_TEXT_SRC, 'veinEffectText 没有并入专用通道').toContain('INSIGHT_EFFECT_NAME')
+    // 措辞同源:与词条 caveat 同一套 statNames
+    expect(VEIN_TEXT_SRC, '效果行措辞没有与词条 caveat 同源').toContain('modsText(')
+    console.log('\n列账遍历全部灵脉,效果行原产于 veinEffectText(参悟省耗并入),措辞与 caveat 同源')
   })
 
   it('每条脉的作用说明必须渲染出来,不能只显示名字和价格', () => {
@@ -105,7 +112,6 @@ describe('灵脉可见性 · 展示层覆盖全部通道', () => {
     // veins.ts 里 desc 与 effectText 都写好了,但此前只有审计测试在读,页面从未渲染
     expect(CARD_SRC, '卡片没有渲染灵脉的 desc').toMatch(/\.desc/)
     expect(CARD_SRC, '卡片没有渲染灵脉效果行').toContain('veinEffectText(')
-    expect(CARD_SRC, '当前加成应走 modsText,与词条 caveat 同源').toContain('modsText(')
     expect(CARD_SRC, '零点时也要能看见每点加成,不能等投了才说').toContain('每点')
   })
 

@@ -176,7 +176,8 @@ describe('signedPercent', () => {
     expect(equip).toContain('statValueText(k, v as number)')
     expect(bag).toContain('statModPhrase(k, v as number)')
     const vein = readFileSync(resolve(__dirname, '../components/dongfu/VeinInvestCard.vue'), 'utf8')
-    expect(vein).toContain('modsText(dongfu.veinMods)')
+    // 灵脉卡的效果行原产自 veinEffectText —— 卡片不手写加号,内部走 modsText 同源句
+    expect(vein).toContain('veinEffectText(')
     const buff = readFileSync(resolve(__dirname, '../components/cultivation/BuffDialog.vue'), 'utf8')
     expect(buff).toContain('statValueText(key, v)')
     expect(buff).toContain('STAT_NAMES')
