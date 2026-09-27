@@ -231,6 +231,8 @@
         <!--
           空皮先交代去向:一件凡品掷出零条、或全封存的装备,重铸与封存整块会一起消失 ——
           玩家找不到「自动重铸」,只会觉得它没生效。这里把「为什么没有」说破。
+          正常玩法封不完整(每件至少留一个可重掷位),词条全封的那一格是给
+          旧档/异常数据兜底,别把「一颗词条也无」错安到它有词条的头上。
         -->
         <template v-if="reforgeCostVal || sealCostVal">
           <div class="flex gap-2 text-[11px]">
@@ -260,7 +262,7 @@
         </template>
         <template v-else-if="inst">
           <p class="text-center text-[10px] leading-relaxed text-ink-faint">
-            此物一颗词条也无,无从重铸,也无可封存。想炼它,先有纹可刻。
+            {{ inst.affixes.length === 0 ? '此物一颗词条也无,无从重铸,也无可封存。想炼它,先有纹可刻。' : '词条已尽数封存,无从重铸' }}
           </p>
         </template>
         <div class="flex gap-2">
@@ -449,7 +451,9 @@
         ui.toast(`灵石/器灵尘见底,洗了 ${out.rolls} 次即止;今一身为 ${now},${cost}`, 'warn')
       }
     } else {
-      ui.toast('此物已无未封存词条,无从重铸', 'info')
+      // frozen 一档兼两种收法:无位可洗(全封存/无词条),或装备已不在行囊
+      const gone = inst.value !== undefined && !inventory.findItem(inst.value.uid)
+      ui.toast(gone ? '此物已不在行囊,重铸无从谈起' : '此物已无未封存词条,无从重铸', 'info')
     }
     // 结账即收板:结果已写在 toast 与装备词条上,想再调条件重开一次即可
     closeAuto()
