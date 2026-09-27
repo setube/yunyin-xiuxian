@@ -44,6 +44,18 @@
         <span>灵气上限 <span class="tabular" :class="summary.arrayLv ? 'text-azure' : 'text-ink-ghost'">{{ summary.arrayLv ? summary.qiCapPct : '—' }}</span></span>
         <span>辅修栏 <span class="tabular text-ink-soft">{{ summary.subSlots }}</span></span>
       </div>
+      <!-- 离线档位:5 段一览,现在第几档、升洞府能到哪一档,不看向来只报一个数 -->
+      <div class="mt-1.5 flex items-center gap-1">
+        <span class="mr-0.5 shrink-0 text-[9px] text-ink-faint">离线可攒</span>
+        <span
+          v-for="(hr, i) in OFFLINE_CAP_HOURS"
+          :key="hr"
+          class="h-1.5 flex-1 rounded-full transition-colors"
+          :class="i <= mansionLv ? 'bg-gold-ink/70' : 'bg-ink/8'"
+          :title="`洞府 ${i} 级 · 离线可攒 ${hr} 时`"
+        ></span>
+        <span class="ml-0.5 shrink-0 text-[9px] font-kai tabular text-gold-ink">{{ summary.offlineHrs }}</span>
+      </div>
     </div>
 
     <!-- 建筑:洞府是全局闸门,独自横贯一排;其余六座在其辖下成格 -->
@@ -94,7 +106,7 @@
   import { useRouter } from 'vue-router'
   import { goBack } from '@/router/goBack'
   import { BUILDINGS, ARRAY_QI_CAP_PER_LEVEL } from '@/data/buildings'
-  import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, LIBRARY_WUDAO_PER_HOUR, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
+  import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, LIBRARY_WUDAO_PER_HOUR, OFFLINE_CAP_HOURS, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { VEINS } from '@/data/veins'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
@@ -106,6 +118,9 @@
   const router = useRouter()
   const dongfu = useDongfuStore()
   const player = usePlayerStore()
+
+  /** 洞府等级,作离线档位条的当前档(0..4) */
+  const mansionLv = computed(() => dongfu.levels.mansion ?? 0)
 
   /** 灵脉金丹解锁;未达门槛时只给一句前瞻,别让新人面对一整张禁用按钮 */
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
