@@ -228,6 +228,10 @@
     <template #footer>
       <div class="flex flex-col gap-2">
         <!-- 重铸与封存 (Phase 30.1) -->
+        <!--
+          空皮先交代去向:一件凡品掷出零条、或全封存的装备,重铸与封存整块会一起消失 ——
+          玩家找不到「自动重铸」,只会觉得它没生效。这里把「为什么没有」说破。
+        -->
         <template v-if="reforgeCostVal || sealCostVal">
           <div class="flex gap-2 text-[11px]">
             <button v-if="reforgeCostVal" class="btn-ghost flex-1 !py-1" @click="doReforge">
@@ -253,6 +257,11 @@
           <button v-if="reforgeCostVal" class="btn-ghost w-full !py-1 !text-[11px]" @click="autoOpen = !autoOpen">
             {{ autoOpen ? '收起自动重铸' : '自动重铸 · 洗到指定词条即停' }}
           </button>
+        </template>
+        <template v-else-if="inst">
+          <p class="text-center text-[10px] leading-relaxed text-ink-faint">
+            此物一颗词条也无,无从重铸,也无可封存。想炼它,先有纹可刻。
+          </p>
         </template>
         <div class="flex gap-2">
           <button class="btn-seal flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
@@ -423,17 +432,24 @@
     const budget = Math.min(500, Math.max(1, Math.floor(autoBudget.value || 0)))
     const out = autoReforge(inst.value.uid, targets, budget)
     const cost = `花 ${formatGN(out.stone)} · 尘×${out.dust}`
+    // 「没洗到目标」不等于「没洗动」:每次重铸词条都尽数重掷,结账要报清现在这一身落在哪
+    const wanted = autoTargets.value.map(t => affixDef(t.affixId)?.name ?? t.affixId).join('、')
+    const now = out.affixIds.map(id => affixDef(id)?.name ?? id).join('、') || '空'
     if (out.stop === 'target' && out.hit) {
       ui.toast(
         `洗出「${affixDef(out.hit.id)?.name ?? out.hit.id}」值 ${Math.round(out.hit.roll * 100)}% —— 共洗 ${out.rolls} 次,${cost}`,
         'success'
       )
     } else if (out.stop === 'budget') {
-      ui.toast(`洗了 ${out.rolls} 次没出目标(预算用尽),${cost}`, 'warn')
+      ui.toast(`预算用尽:连洗 ${out.rolls} 次,词条尽数重掷,未撞上「${wanted}」;今一身为 ${now},${cost}`, 'warn')
     } else if (out.stop === 'broke') {
-      ui.toast(`灵石/器灵尘见底,只洗了 ${out.rolls} 次,${cost}`, 'warn')
+      if (out.rolls === 0) {
+        ui.toast(`灵石或器灵尘未足,难开这一炉,${cost}`, 'warn')
+      } else {
+        ui.toast(`灵石/器灵尘见底,洗了 ${out.rolls} 次即止;今一身为 ${now},${cost}`, 'warn')
+      }
     } else {
-      ui.toast('这件目前没洗动(全封存或已不在)', 'info')
+      ui.toast('此物已无未封存词条,无从重铸', 'info')
     }
     // 结账即收板:结果已写在 toast 与装备词条上,想再调条件重开一次即可
     closeAuto()
