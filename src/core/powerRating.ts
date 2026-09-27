@@ -5,7 +5,7 @@
  * 进攻 / 生存 / 身法 / 恢复 / 机制。
  * 星级基于词条合计的定性分段,不做精确排名——两个 4 星构筑谁强,由环境与相性决定。
  */
-import type { FinalStats, StatMods } from '@/types'
+import type { AnyStatKey, FinalStats, StatMods } from '@/types'
 import { STAT_NAMES } from '@/ui/statNames'
 import { detectBuild } from './buildDetect'
 import { modOf } from './statsCalc'
@@ -64,6 +64,42 @@ const DIM_NAMES: Record<PowerDimKey, string> = {
   speed: '身法',
   recovery: '恢复',
   mechanics: '机制'
+}
+
+/**
+ * 词条战力权重 —— 五维得分的线性项系数,单一来源。
+ *
+ * 战力面板的每一点分都标过理由(terms 之和 = 得分);一键换装选「最强」时用的是
+ * 同一个口径(equipBest 的 equippablePower),权重从这里取,两边不会各编一套数字。
+ * 两个特例不进表:critRate 按「会心 ×(1+会心伤)」计,critDamage 只在那一条里成值。
+ */
+export const POWER_STAT_WEIGHTS: Partial<Record<AnyStatKey, number>> = {
+  // 进攻
+  attackPct: 1,
+  damageBonus: 1,
+  armorPen: 0.8,
+  executeDamage: 0.5,
+  lowHpDamage: 0.5,
+  fullHpDamage: 0.5,
+  comboDamage: 0.4,
+  counterDamage: 0.4,
+  // 生存
+  defensePct: 1,
+  maxHpPct: 1,
+  damageReduction: 2,
+  shieldOnStart: 1,
+  shieldPower: 0.5,
+  dodgeRate: 1.5,
+  // 身法
+  speed: 2,
+  firstStrike: 1,
+  comboRate: 1.5,
+  counterRate: 1.2,
+  // 恢复
+  lifesteal: 8,
+  regenPerRound: 20,
+  overhealShield: 0.6,
+  lowHpReduction: 0.8
 }
 
 /**
@@ -146,21 +182,15 @@ export function ratePower(stats: FinalStats): PowerRating {
    * 成了同义反复:删掉一条词条,两边一起少,audit 永远红不了。
    * 这里刻意让两条路各走各的,它们对不上就是有人改了算式没改明细。
    */
+  const linear = (keys: AnyStatKey[]): number => keys.reduce((s, k) => s + (POWER_STAT_WEIGHTS[k] ?? 0) * v(k), 0)
   const scores: Record<PowerDimKey, number> = {
+    // 会心是「会心×(1+会心伤)」的联乘,不进线性权重表;其余进攻项全走表
     attack:
-      v('attackPct') +
-      v('damageBonus') +
       v('critRate') * (1 + v('critDamage')) +
-      v('armorPen') * 0.8 +
-      v('executeDamage') * 0.5 +
-      v('lowHpDamage') * 0.5 +
-      v('fullHpDamage') * 0.5 +
-      v('comboDamage') * 0.4 +
-      v('counterDamage') * 0.4,
-    survival:
-      v('defensePct') + v('maxHpPct') + v('damageReduction') * 2 + v('shieldOnStart') + v('shieldPower') * 0.5 + v('dodgeRate') * 1.5,
-    speed: v('speed') * 2 + v('firstStrike') + v('comboRate') * 1.5 + v('counterRate') * 1.2,
-    recovery: v('lifesteal') * 8 + v('regenPerRound') * 20 + v('overhealShield') * 0.6 + v('lowHpReduction') * 0.8,
+      linear(['attackPct', 'damageBonus', 'armorPen', 'executeDamage', 'lowHpDamage', 'fullHpDamage', 'comboDamage', 'counterDamage']),
+    survival: linear(['defensePct', 'maxHpPct', 'damageReduction', 'shieldOnStart', 'shieldPower', 'dodgeRate']),
+    speed: linear(['speed', 'firstStrike', 'comboRate', 'counterRate']),
+    recovery: linear(['lifesteal', 'regenPerRound', 'overhealShield', 'lowHpReduction']),
     mechanics: build ? build.affinity + (build.secondary?.affinity ?? 0) * 0.6 : 0
   }
   const labels: PowerDimension[] = (Object.keys(DIM_NAMES) as PowerDimKey[]).map(key => {
