@@ -340,9 +340,16 @@
       <p class="mt-2 text-center text-[10px] text-ink-ghost">点名称可查看详情与对比</p>
     </BaseModal>
 
-    <!-- 一键分解:勾选品质(记忆勾选) -->
-    <BaseModal :open="decomposeOpen" title="一键分解" @close="decomposeOpen = false">
-      <p class="text-[11px] text-ink-faint">勾选要分解的品质,已佩戴与上锁的装备不受影响。勾选会被记住;开启智能收纳后,拾取到所选品质的装备将自动回收为器灵尘,不再占行囊;未开启智能收纳时,拾取照常入包,此勾选仅在下方「分 解」时作为筛选。行囊中已存的同类须点下方「分 解」方才化尘。</p>
+    <!-- 一键分解:勾选品质(记忆勾选)。纯手动批量动作 —— 与「智能收纳」的自动取舍互不干扰 -->
+    <BaseModal :open="decomposeOpen" title="一键分解(手动)" @close="decomposeOpen = false">
+      <p class="text-[11px] leading-relaxed text-ink-faint">
+        勾选要化掉的血品,只筛
+        <span class="text-ink-soft">行囊中已存</span>
+        的件;已佩戴与上锁的装备不受影响。这是一次手动动作 —— 勾选会被记住,但
+        <span class="text-ink-soft">只在下文「分 解」时生效</span>,
+        与「智能收纳」的自动取舍互不干扰:掉落去哪儿,由智能收纳页的保留线与智能规则独立裁决,
+        不看这里的勾选。
+      </p>
       <div class="mt-2 space-y-1">
         <label
           v-for="row in decomposeRows"
