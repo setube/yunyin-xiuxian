@@ -11,19 +11,36 @@
         <GameIcon v-if="locked" name="lock" :size="9" class="absolute -bottom-0.5 -right-0.5 rounded-full bg-paper p-[1px] text-gold-ink/80" />
       </span>
       <div class="min-w-0 grow">
-        <p class="flex items-start justify-between gap-2">
-          <!--
-            名字不做 truncate:满级/辖限徽标(「·圆满/·辖限」)会把窄卡行宽吃光,
-            聚灵阵、炼丹炉这类名字就缩成「聚…」 —— 宁可换行,不许省略(用户反馈)。
-          -->
-          <span class="min-w-0 grow font-kai leading-snug" :class="[featured ? 'text-[15px]' : 'text-[14px]', level > 0 ? 'text-ink' : 'text-ink-soft']">{{ props.def.name }}</span>
+        <!--
+          名字独占整行:满级/辖限徽标挪到第二行 meta,宽徽标再也吃不到标题的宽度。
+          上一版把徽标与名字挤在同一行,「15/20 级·辖限」这类宽签在窄卡(约
+          115px 内宽)上把聚灵阵、炼丹炉的名字挤成两行 —— 换行本身也不好看
+          (用户反馈)。占满整行后,三五个字的筑名永远单行,也不需省略。
+        -->
+        <p
+          class="truncate font-kai leading-snug"
+          :class="[featured ? 'text-[15px]' : 'text-[14px]', level > 0 ? 'text-ink' : 'text-ink-soft']"
+          :title="props.def.name"
+        >
+          {{ props.def.name }}
+        </p>
+        <!-- 等级 meta 行:左侧级数着状态色,右侧「圆满/辖限」独立小签 -->
+        <p class="mt-0.5 flex items-center justify-between gap-2">
           <span
             :key="level"
-            class="shrink-0 rounded px-1.5 py-0.5 text-[10px] animate-ink-pop"
-            :class="level > 0 ? (atMax ? 'bg-gold-ink/10 text-gold-ink' : atGateCap ? 'bg-amber-ink/10 text-amber-ink' : 'text-ink-faint') : 'text-ink-faint'"
+            class="tabular text-[10px] animate-ink-pop"
+            :class="level > 0 ? (atMax ? 'text-gold-ink' : atGateCap ? 'text-amber-ink' : 'text-ink-faint') : 'text-ink-faint'"
           >
-            {{ level > 0 ? `${level}/${cap} 级` + (atMax ? '·圆满' : atGateCap ? '·辖限' : '') : '未启用' }}
+            {{ level > 0 ? `${level}/${cap} 级` : '未启用' }}
           </span>
+          <span
+            v-if="atMax"
+            class="shrink-0 rounded bg-gold-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-gold-ink"
+          >圆满</span>
+          <span
+            v-else-if="atGateCap"
+            class="shrink-0 rounded bg-amber-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-amber-ink"
+          >辖限</span>
         </p>
       </div>
     </div>
