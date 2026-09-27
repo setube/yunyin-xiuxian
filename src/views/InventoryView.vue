@@ -343,12 +343,11 @@
     <!-- 一键分解:勾选品质(记忆勾选)。纯手动批量动作 —— 与「智能收纳」的自动取舍互不干扰 -->
     <BaseModal :open="decomposeOpen" title="一键分解(手动)" @close="decomposeOpen = false">
       <p class="text-[11px] leading-relaxed text-ink-faint">
-        勾选要化掉的品质,只筛
-        <span class="text-ink-soft">行囊中已存</span>
-        的件;已佩戴与上锁的装备不受影响。这是一次手动动作 —— 勾选会被记住,但
-        <span class="text-ink-soft">只在下文「分 解」时生效</span>,
-        与「智能收纳」的自动取舍互不干扰:掉落去哪儿,由智能收纳页的保留线与智能规则独立裁决,
-        不看这里的勾选。
+        勾选要化掉的品质,只管
+        <span class="text-ink-soft">行囊里现存</span>
+        之物;已佩戴与上锁的装备不受影响。这份勾选会留作下次,却只在
+        <span class="text-ink-soft">下文「分 解」时作数</span>
+        —— 历练中掉落的装备不在此列,去留另由「智能收纳」的尺度把持。
       </p>
       <div class="mt-2 space-y-1">
         <label
@@ -383,7 +382,7 @@
     <!-- 智能收纳:独立的自动取舍策略 —— 与「一键分解」的手动动作井水不犯河水 -->
     <BaseModal :open="smartOpen" title="智能收纳(自动)" @close="smartOpen = false">
       <p class="text-[11px] leading-relaxed text-ink-faint">
-        开启后,新掉落先过自动裁决:该留的入包、判无缘的直接化尘;行囊满时,值得留的新件挤掉包内最弱的无缘旧物。
+        开启后,新落之物在入行囊前先过一关:值得留的留下,无缘的一缕化尘;行囊将满时,新至的宝物还会顶掉包里最弱的一件旧物。
       </p>
       <!-- 状态一眼:策略一段话说清,不必把六个开关拼起来读 -->
       <div
@@ -441,10 +440,10 @@
       </p>
 
       <!-- 划界 · 与「一键分解」互不读钩 -->
-      <p class="mb-1 mt-3 font-kai text-[11px] tracking-wider text-ink-soft">划界 · 与「一键分解」</p>
+      <p class="mb-1 mt-3 font-kai text-[11px] tracking-wider text-ink-soft">与「一键分解」各归各帐</p>
       <p class="text-[10px] leading-relaxed text-ink-ghost">
-        「一键分解」只管行囊里已存的件,是一次手动批量动作;本页只管掉落之后的去留 ——
-        两边各读各的勾选,改任何一边,另一边都不动。
+        「一键分解」只处置行囊里现存之物,须你亲手动;这里只判掉落之后的去留 ——
+        两件事各归各管,调了这一头,那一头不受牵连。
       </p>
       <template #footer>
         <!-- 一键清理二步确认:整包报废,按一下不该就此了结 -->
@@ -791,16 +790,16 @@
    */
   const smartStatusLine = computed(() => {
     const sk = settings.smartKeep
-    if (!sk.enabled) return '未启用 —— 掉落照常入包,此页规则暂不出手'
+    if (!sk.enabled) return '未启用 —— 掉落照常入包,此间的尺度暂且不用'
     const keepName = KEEP_QUALITY_CHOICES.find(q => q.rank === sk.minQuality)?.name ?? '灵品'
-    const smart = [
+    const tags = [
       sk.keepCoreAffix && '核心',
       sk.keepComboPiece && '组合',
       sk.keepSetPiece && '成套',
       sk.keepPerfectRolls && '近满'
     ].filter(Boolean)
-    const tail = smart.length ? `;命中${smart.join('/')},一律当藏` : ''
-    return `${keepName}起一律保留${tail};其余判无缘者,落包即化尘`
+    const grace = tags.length ? `;带${tags.join('或')}之器,一并留藏` : ''
+    return `${keepName}以上尽数珍藏${grace};余者无缘,落袋即化作器灵尘`
   })
 
   /** 清理确认态:按一次按钮先落在「再想想/清理化尘」上 */
