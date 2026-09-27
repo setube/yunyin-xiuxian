@@ -733,7 +733,7 @@
   /** 一键换装:每槽换上当前最强,报一句换了多少 */
   function onEquipAllBest(): void {
     const changed = equipAllBest()
-    ui.toast(changed > 0 ? `已自动换上 ${changed} 件当前最强(品质→阶级→强化)` : '已是当前最强', changed > 0 ? 'success' : 'info')
+    ui.toast(changed > 0 ? `已自动换上 ${changed} 件当下最能打的(按真实战力挑)` : '已是更能打的一身', changed > 0 ? 'success' : 'info')
   }
 
   /** 一键穿齐套装:换上该套已持有的件,已穿更强的则不换 */
