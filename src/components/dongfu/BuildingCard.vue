@@ -79,8 +79,9 @@
         </span>
       </template>
       <template v-else>
+        <!-- 锁卡:保留完整拒因(境界闸);圆满/辖限:头部已有彩签,按钮只给短态 -->
         <span v-if="locked" class="inline-flex items-center gap-1.5"><GameIcon name="lock" :size="11" />{{ info.reason }}</span>
-        <template v-else>{{ info.reason }}</template>
+        <template v-else>{{ atMax ? '已圆满' : atGateCap ? '辖于洞府' : info.reason }}</template>
       </template>
     </button>
   </div>
