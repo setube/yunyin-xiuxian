@@ -1,6 +1,6 @@
 <template>
   <div class="card-ink flex flex-col px-3 py-3" :class="[flashing ? 'card-flash' : '', featured ? 'px-4 py-3.5' : '']" @animationend.self="flashing = false">
-    <div class="flex items-center gap-2.5">
+    <div class="flex items-start gap-2.5">
       <!-- 建筑印章:每座建筑在数据里都配了图标(home/wind/flame/hammer/sprout/book/paw),此前一张都没画 -->
       <span
         class="relative grid shrink-0 place-items-center rounded-md transition-colors"
@@ -10,14 +10,22 @@
         <!-- 境界闸门未开:右上角落一把小锁,整印转金灰 -->
         <GameIcon v-if="locked" name="lock" :size="9" class="absolute -bottom-0.5 -right-0.5 rounded-full bg-paper p-[1px] text-gold-ink/80" />
       </span>
-      <p class="min-w-0 grow truncate font-kai tracking-wider" :class="[featured ? 'text-[15px]' : 'text-[14px]', level > 0 ? 'text-ink' : 'text-ink-soft']">{{ props.def.name }}</p>
-      <p
-        :key="level"
-        class="shrink-0 rounded px-1.5 py-0.5 text-[10px] animate-ink-pop"
-        :class="level > 0 ? (atMax ? 'bg-gold-ink/10 text-gold-ink' : atGateCap ? 'bg-amber-ink/10 text-amber-ink' : 'text-ink-faint') : 'text-ink-faint'"
-      >
-        {{ level > 0 ? `${level}/${cap} 级` + (atMax ? '·圆满' : atGateCap ? '·辖限' : '') : '未启用' }}
-      </p>
+      <div class="min-w-0 grow">
+        <p class="flex items-start justify-between gap-2">
+          <!--
+            名字不做 truncate:满级/辖限徽标(「·圆满/·辖限」)会把窄卡行宽吃光,
+            聚灵阵、炼丹炉这类名字就缩成「聚…」 —— 宁可换行,不许省略(用户反馈)。
+          -->
+          <span class="min-w-0 grow font-kai leading-snug" :class="[featured ? 'text-[15px]' : 'text-[14px]', level > 0 ? 'text-ink' : 'text-ink-soft']">{{ props.def.name }}</span>
+          <span
+            :key="level"
+            class="shrink-0 rounded px-1.5 py-0.5 text-[10px] animate-ink-pop"
+            :class="level > 0 ? (atMax ? 'bg-gold-ink/10 text-gold-ink' : atGateCap ? 'bg-amber-ink/10 text-amber-ink' : 'text-ink-faint') : 'text-ink-faint'"
+          >
+            {{ level > 0 ? `${level}/${cap} 级` + (atMax ? '·圆满' : atGateCap ? '·辖限' : '') : '未启用' }}
+          </span>
+        </p>
+      </div>
     </div>
     <p class="mt-2 grow text-[11px] leading-relaxed text-ink-faint">
       {{ level > 0 ? props.def.effectText(level) : props.def.desc }}
