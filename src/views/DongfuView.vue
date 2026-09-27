@@ -106,9 +106,14 @@
         <GameIcon name="gem" :size="16" class="shrink-0 text-gold-ink/60" />
         <p class="text-[10px] leading-relaxed text-ink-faint">灵脉 —— 炼化灵石永久强化洞府,得全局属性加成。金丹境方开,届时与此页相会。</p>
       </div>
-      <!-- 展开/收起:高度 + 透明度过渡,不像生硬裁切;id 与折叠头 aria-controls 对应 -->
+      <!--
+        展开/收起:高度 + 透明度过渡,不像生硬裁切。
+        v-show 而非 v-if:折叠时面板仍在 DOM 里(仅 display:none),折叠头的
+        aria-controls=vein-panel 任何时候都解析得到 —— v-if 会在默认折叠态
+        把目标元素整个卸掉,关联悬空(辅助技术与自动化都读不到)。
+      -->
       <Transition name="vein-drop">
-        <div id="vein-panel" v-if="veinsUnlocked && veinExpanded" class="overflow-hidden">
+        <div id="vein-panel" v-show="veinsUnlocked && veinExpanded" class="overflow-hidden">
           <VeinInvestCard />
         </div>
       </Transition>
