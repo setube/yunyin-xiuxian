@@ -14,6 +14,8 @@
     <div class="mt-2 flex h-1.5 w-full items-center overflow-hidden rounded-full bg-ink/6">
       <div class="h-full rounded-full bg-gold-ink/70 transition-all" :style="{ width: totalPct + '%' }"></div>
     </div>
+    <!-- 一点未投时的开门话:主脉不是凭空选的,首投那一下就是答案 -->
+    <p v-if="veinTotal === 0" class="mt-1 text-[9px] text-ink-ghost">尚未注力 —— 首投自成主脉,择一而始</p>
 
     <div class="mt-3 space-y-2">
       <div
@@ -58,19 +60,31 @@
               <template v-if="canInvest(v.id)">投一点 · {{ formatGN(investCost) }} 石</template>
               <template v-else>{{ investedStateLabel(v.id) }}</template>
             </button>
-            <button v-if="canSwitchTo(v.id)" class="px-0.5 text-[10px] text-cinnabar/80 active:opacity-60" @click="doSwitch(v.id)">
-              改立主脉 · {{ formatGN(switchCost) }}
+            <button
+              v-if="canSwitchTo(v.id)"
+              class="mt-0.5 inline-flex items-center gap-1 rounded-full border border-cinnabar/40 px-2 py-0.5 text-[10px] leading-none text-cinnabar active:scale-95"
+              @click="doSwitch(v.id)"
+            >
+              改立主脉 · {{ formatGN(switchCost) }} 石
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <p class="mt-3 border-t border-ink/6 pt-2.5 text-[10px] text-azure">
-      当前加成:
-      <span v-if="!bonusLine" class="ml-1 text-ink-faint">尚无</span>
-      <span v-else class="ml-1">{{ bonusLine }}</span>
-    </p>
+    <!-- 加成列账:四条脉各归一行,投了的报当期效果、没投的一句见灰 —— 谁在出力,一眼可辨 -->
+    <div class="mt-3 border-t border-ink/6 pt-2.5">
+      <p class="text-[10px] text-ink-faint">当前加成 · 四脉各记一账</p>
+      <div class="mt-1.5 space-y-1">
+        <div v-for="v in VEINS" :key="v.id" class="flex items-center gap-2">
+          <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="currentLevel(v.id) > 0 ? TONES[v.id].dot : 'bg-ink/15'"></span>
+          <span class="w-14 shrink-0 text-[10px] text-ink-soft">{{ v.name }}</span>
+          <span class="min-w-0 truncate text-[10px] tabular" :class="currentLevel(v.id) > 0 ? 'text-ink' : 'text-ink-ghost'">
+            {{ ledgerText(v.id) }}
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -78,12 +92,11 @@
   import { computed } from 'vue'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
-  import { VEINS, INSIGHT_EFFECT_NAME, type VeinId } from '@/data/veins'
+  import { VEINS, veinDef, type VeinId } from '@/data/veins'
   import { veinEffectText } from '@/ui/veinText'
   import { investVein, veinPointCost, veinSwitchCost, switchMainVein } from '@/core/veinService'
   import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
-  import { modsText } from '@/ui/statNames'
-  import { formatGN, formatPercent } from '@/utils/format'
+  import { formatGN } from '@/utils/format'
 
   const dongfu = useDongfuStore()
   const player = usePlayerStore()
@@ -104,22 +117,20 @@
   const switchCost = computed(() => veinSwitchCost())
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
   const veinTotal = computed(() => dongfu.veinTotal)
+
   /**
-   * 当前加成 —— 必须把不走 StatMods 的那一条也算进来。
+   * 列账文字 —— 必须把不走 StatMods 的那一条也算进来。
    *
-   * 寒冥灵脉的 perPoint 是空对象:它的效果是「功法参悟省悟道点」,
-   * 走 dongfu.insightDiscount,不进 veinMods。此前这里只读 veinMods,
-   * 于是投了满脉也一个字都不显示 —— 玩家因此不知道它有没有用
+   * 寒冥灵脉的 perPoint 是空对象:它的效果是「参悟省耗」,
+   * 走 dongfu.insightDiscount,不进 veinMods。此前加成只有一坨拼出来的
+   * StatMods 文字,寒冥脉投了满脉也一个字不显示 —— 玩家因此不知道它有没有用。
+   * 列账后四条脉各占一行,谁在出力、出力几许,一眼可辨。
+   * veinEffectText 内部已把参悟省耗并入,此处不必再单独凑。
    */
-  const bonusLine = computed(() => {
-    const parts: string[] = []
-    const mods = modsText(dongfu.veinMods)
-    if (mods) parts.push(mods)
-    if (dongfu.insightDiscount > 0) {
-      parts.push(`${INSIGHT_EFFECT_NAME} −${formatPercent(Math.min(0.5, dongfu.insightDiscount))}`)
-    }
-    return parts.join(' · ')
-  })
+  function ledgerText(veinId: VeinId): string {
+    const lv = currentLevel(veinId)
+    return lv > 0 ? `${lv} 点 · ${veinEffectText(veinDef(veinId), lv)}` : '未投'
+  }
 
   /** 总容量已用之百分比(卡头分度条) */
   const totalPct = computed(() => Math.round((veinTotal.value / VEIN_TOTAL_CAPACITY) * 100))
