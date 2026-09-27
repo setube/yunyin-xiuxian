@@ -65,7 +65,7 @@
 
     <!-- 建筑:洞府是全局闸门,独自横贯一排;其余六座在其辖下成格 -->
     <section>
-      <SectionTitle title="营造" hint="各司其职,日夜不辍" />
+      <SectionTitle title="营造" :hint="`已启 ${builtCount}/${BUILDINGS.length} · 各司其职`" />
       <BuildingCard :def="mansionDef" featured class="mt-2" />
       <div class="mt-2.5 grid grid-cols-2 gap-2.5">
         <BuildingCard v-for="def in otherBuildings" :key="def.id" :def="def" />
@@ -148,6 +148,8 @@
   /** 折叠态迷你容量条宽度(百分比) */
   const foldPct = computed(() => Math.round((dongfu.veinTotal / VEIN_TOTAL_CAPACITY) * 100))
 
+  /** 已启用建筑数(等级 > 0),营造区标题旁报数 */
+  const builtCount = computed(() => BUILDINGS.filter(b => (dongfu.levels[b.id] ?? 0) > 0).length)
   /** 洞府:全局闸门,单独把守头条 */
   const mansionDef = computed(() => BUILDINGS.find(b => b.id === 'mansion')!)
   /** 其余六座在其辖下成格 */
