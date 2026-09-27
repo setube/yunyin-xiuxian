@@ -69,7 +69,7 @@ describe('自动回收 · 装备入包前的第一道闸', () => {
     }
   })
 
-  it('智能收纳开启时,凡良(分解勾选档)拾取即化尘,不入行囊,器灵尘到账', () => {
+  it('智能收纳开启时,低于保留线的凡良拾取即化尘,不入行囊,器灵尘到账', () => {
     useSettingsStore().smartKeep.enabled = true
     const resources = useResourcesStore()
     for (const q of ['mortal', 'fine'] as const) {
@@ -83,7 +83,7 @@ describe('自动回收 · 装备入包前的第一道闸', () => {
     }
   })
 
-  it('总闸:智能收纳未开启时,凡良(默认分解勾选档)照常入包,不再自动回收', () => {
+  it('总闸:智能收纳未开启时,任何时候凡良都照常入包,不再自动回收', () => {
     expect(useSettingsStore().smartKeep.enabled).toBe(false)
     for (const q of ['mortal', 'fine'] as const) {
       const item = mk(q)
@@ -108,19 +108,23 @@ describe('自动回收 · 装备入包前的第一道闸', () => {
   it('智能收纳开启后,低于保留线又无核心词条的精品也会化尘', () => {
     useSettingsStore().smartKeep.enabled = true
     const resources = useResourcesStore()
-    const item = mk('excellent') // 精品 rank2,非勾选档 → 交由智能收纳裁决
+    const item = mk('excellent') // 精品 rank2,低于保留线 → 交由智能收纳裁决
     const got = acquireEquipment(item)
     expect(bagUids()).not.toContain(item.uid)
     expect(got.line).toContain('道途未成')
     expect(resources.dust).toBeGreaterThanOrEqual(DECOMPOSE_DUST[2] ?? 1)
   })
 
-  it('勾选档回收要写明是所勾品质,不写成与道无缘', () => {
-    useSettingsStore().smartKeep.enabled = true
-    const item = mk('mortal')
-    const got = acquireEquipment(item)
-    expect(got.line).toContain(`所勾${qualityDef('mortal').name}`)
-    expect(got.line).not.toContain('与道无缘')
+  it('手动「一键分解」勾到全套,也不影响自动收纳的取舍 —— 该留的照留', () => {
+    const settings = useSettingsStore()
+    settings.smartKeep.enabled = true
+    settings.decomposeRanks = [0, 1, 2, 3, 4, 5]
+    for (const q of ['spirit', 'profound'] as const) {
+      const item = mk(q) // 灵/玄品 ≥ 保留线(灵品):手动勾选档再宽也动它不得
+      const got = acquireEquipment(item)
+      expect(bagUids(), q).toContain(item.uid)
+      expect(got.line, q).not.toContain('自动回收')
+    }
   })
 
   it('新手馈赠(forceKeep)不受回收规则影响,必入包', () => {

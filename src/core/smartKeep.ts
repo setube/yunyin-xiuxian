@@ -41,9 +41,13 @@ export interface KeepVerdict {
 /**
  * 自动回收裁决 —— 装备进包前的第一道闸
  * **智能收纳是总闸**:没开,装备一律不替你扔 —— 历练/挂机掉落的凡俗之物也照常入包。
- * 开启后,命中任一条、该件不入行囊、直接化尘(在线离线统一):
- *   1. 玩家在「一键分解」里勾选的品质档(显式废料声明,开启收纳后才生效)
- *   2. 判「与道无缘」
+ * 开启后,由 keepVerdict 一条线说了算,命中任一条、该件不入行囊、直接化尘:
+ *   1. 品质达保留线、或命中任何智能规则(核心/组合/成套/近满)→ 留;
+ *   2. 练过的件 → 留,待本人定夺;
+ *   3. 其余 → 与道无缘,化尘。
+ * 「一键分解」勾选的品质档**只作用于行囊内已存之件的手动批量分解**,不参与落包
+ * 裁决 —— 手动筛手动,自动裁自动,两套井水不犯河水(玩家反馈:手动选了分解
+ * 高品档,结果自动收纳把该留的件也化掉了。)
  * 上锁者豁免。
  */
 export function shouldAutoRecycle(item: EquipmentInstance): boolean {
@@ -52,14 +56,13 @@ export function shouldAutoRecycle(item: EquipmentInstance): boolean {
 
 /**
  * 自动回收时该告诉玩家的那一句。
- * 所勾品质与「与道无缘」不是同一件事,账上不能只写自动回收。
+ * 理由只可能出自智能收纳自身的规则(与道无缘等),没有「所勾品质」这类说法了 ——
+ * 那不是自动裁决的理由,那是手动勾的档。
  */
 export function autoRecycleReason(item: EquipmentInstance): string | null {
   if (item.locked) return null
   const settings = useSettingsStore()
   if (!settings.smartKeep.enabled) return null
-  const q = qualityDef(item.quality)
-  if (settings.decomposeRanks.includes(q.rank)) return `所勾${q.name}`
   const verdict = keepVerdict(item)
   return verdict.keep ? null : verdict.reason
 }

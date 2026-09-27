@@ -91,13 +91,17 @@ describe('智能收纳 · 自动裁决的边界', () => {
     expect(keepVerdict(perfect).keep).toBe(false)
   })
 
-  it('智能收纳开启时,「一键分解」勾选的品质档仍优先 —— 显式废料声明压过保留规则', () => {
-    useSettingsStore().decomposeRanks = [0]
-    const setPiece = mk('set2', 'mortal', { templateId: 'w_xuantie', level: 3 })
-    expect(shouldAutoRecycle(setPiece)).toBe(true)
+  it('「一键分解」勾选的品质档与自动裁决彻底隔离 —— 手动筛的是行囊,落包不看它', () => {
+    // 即便手动把「全套分解」勾满,智能收纳要留的件一个也不会被勾选档卷走
+    useSettingsStore().decomposeRanks = [0, 1, 2, 3, 4, 5]
+    // 练过的成套件:是玩家投入又命中套件 —— 手动档再宽也碰不得
+    const invested = mk('set2', 'mortal', { templateId: 'w_xuantie', level: 3 })
+    expect(shouldAutoRecycle(invested)).toBe(false)
+    // 素而无缘的件仍归自动回收 —— 那是智能收纳自己的裁决,与勾选档无关
+    expect(shouldAutoRecycle(mk('plain'))).toBe(true)
   })
 
-  it('总闸:智能收纳未启用时,一键分解勾选档也不自动回收', () => {
+  it('总闸:智能收纳未启用时,什么都不会被自动回收(手动勾选档也无从借道)', () => {
     const settings = useSettingsStore()
     settings.smartKeep.enabled = false
     settings.decomposeRanks = [0, 1]
