@@ -20,19 +20,23 @@
     <div class="rounded-md border border-ink/10 bg-paper-deep/50 px-3 py-2.5">
       <div class="flex items-center justify-between">
         <span class="font-kai text-[12px] tracking-wider text-ink-soft">洞府纪要</span>
-        <span class="text-[10px] text-ink-ghost">离线上限 {{ summary.offlineHrs }} 时</span>
+        <span class="rounded-full border border-gold-ink/30 px-2 py-0.5 text-[10px] text-gold-ink">离线上限 {{ summary.offlineHrs }} 时</span>
       </div>
       <div class="mt-1.5 grid grid-cols-3 gap-1.5">
+        <!-- 三格各配一枚小章:灵草叶 / 玄铁斧 / 悟道书,图比字先被眼睛接住 -->
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
-          <p class="text-[9px] text-ink-faint">灵草 / 时</p>
+          <GameIcon name="leaf" :size="13" class="mx-auto text-jade/70" />
+          <p class="mt-0.5 text-[9px] text-ink-faint">灵草 / 时</p>
           <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-jade' : 'text-ink-ghost'">{{ summary.fieldLv ? summary.herbHr : '—' }}</p>
         </div>
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
-          <p class="text-[9px] text-ink-faint">玄铁 / 时</p>
+          <GameIcon name="axe" :size="13" class="mx-auto text-ink-soft/70" />
+          <p class="mt-0.5 text-[9px] text-ink-faint">玄铁 / 时</p>
           <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-ink-soft' : 'text-ink-ghost'">{{ summary.fieldLv ? summary.oreHr : '—' }}</p>
         </div>
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
-          <p class="text-[9px] text-ink-faint">悟道 / 时</p>
+          <GameIcon name="book" :size="13" class="mx-auto text-gold-ink/80" />
+          <p class="mt-0.5 text-[9px] text-ink-faint">悟道 / 时</p>
           <p class="tabular font-kai text-[14px] leading-tight" :class="summary.libLv ? 'text-gold-ink' : 'text-ink-ghost'">{{ summary.libLv ? summary.wudaoHr : '—' }}</p>
         </div>
       </div>
