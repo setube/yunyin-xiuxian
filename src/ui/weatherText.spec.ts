@@ -49,7 +49,7 @@ describe('天时效果行与定义同源', () => {
     const line = weatherTribulationLine(leiming)!
     expect(line).toContain('雷鸣')
     expect(line).toContain(formatPercent(leiming.tribulationMult - 1))
-    expect(line).toContain('引劫同轨')
+    expect(line).toContain('同涨共落')
     const xianjie = WORLD_WEATHERS.immortal.find(w => w.id === 'xianjie')!
     expect(weatherTribulationLine(xianjie)).toContain(formatPercent(xianjie.tribulationMult - 1))
   })

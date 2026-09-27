@@ -30,5 +30,5 @@ export function weatherTribulationLine(w: WeatherDef): string | null {
   const delta = w.tribulationMult - 1
   const pct = formatPercent(Math.abs(delta))
   const tilt = delta > 0 ? `天威更盛 ${pct}` : `天威稍敛 ${pct}`
-  return `今日「${w.name}」,${tilt}。下方天威已按此日乘数摊开,与引劫同轨。`
+  return `今日「${w.name}」,${tilt}。下方所陈劫数,已随今日天时同涨共落。`
 }
