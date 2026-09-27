@@ -32,6 +32,10 @@
     </p>
     <!-- 词条不写进 effectText:洞府的修速、藏经阁的战斗修为曾经因此漏掉 -->
     <p v-if="modLine" class="mt-1 text-[11px] leading-relaxed text-azure tabular">{{ modLine }}</p>
+    <!-- 再进净得:本级词条到下一级的增量,买前预览;不可点时不给(不能对着画不了的饼招手) -->
+    <p v-if="nextGain" class="mt-1 text-[10px] leading-relaxed text-ink-ghost">
+      再进 → <span class="tabular text-azure/75">{{ nextGain }}</span>
+    </p>
     <!-- 灵兽园:把当前相伴的灵兽报在园子里 —— 别的建筑都是数值,这里是活物 -->
     <p v-if="beastCompanionName" class="mt-1 flex items-center gap-1 text-[10px] text-jade">
       <GameIcon name="paw" :size="11" />居园相伴 · {{ beastCompanionName }}
@@ -63,7 +67,7 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
-  import type { BuildingDef } from '@/types'
+  import type { BuildingDef, StatMods } from '@/types'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
   import { petDef } from '@/data/pets'
@@ -101,6 +105,22 @@
   const modLine = computed(() => {
     if (level.value <= 0 || !props.def.mods) return ''
     return modsText(props.def.mods(level.value))
+  })
+
+  /**
+   * 升级净得:本级与下一级词条的逐键差。买前把「再进 = 多拿什么」摊在眼前;
+   * 满了或不可点时返回空,免得对画不了的饼招手。
+   */
+  const nextGain = computed(() => {
+    if (!props.def.mods || level.value >= props.def.maxLevel || !info.value.canUpgrade) return ''
+    const cur: StatMods = level.value > 0 ? props.def.mods(level.value) : {}
+    const nxt = props.def.mods(level.value + 1)
+    const delta: StatMods = {}
+    for (const k of Object.keys(nxt) as (keyof StatMods)[]) {
+      const diff = (nxt[k] ?? 0) - (cur[k] ?? 0)
+      if (typeof diff === 'number' && diff !== 0) delta[k] = diff
+    }
+    return modsText(delta)
   })
 
   // 升级落成:整卡金光一闪(动画播完自清)
