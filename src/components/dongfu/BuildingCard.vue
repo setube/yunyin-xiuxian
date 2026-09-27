@@ -41,6 +41,10 @@
             v-else-if="atGateCap"
             class="shrink-0 rounded bg-amber-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-amber-ink"
           >辖限</span>
+          <span
+            v-else-if="locked"
+            class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] leading-none text-ink-faint"
+          >至{{ gateName }}境</span>
         </p>
       </div>
     </div>
@@ -104,6 +108,8 @@
   const info = computed(() => buildingUpgradeInfo(props.def.id))
   /** 未建且不可升 = 被境界闸门锁着(等级 0 时不可升只可能是境界不足,满级/辖限都要求 lv>0) */
   const locked = computed(() => level.value === 0 && !info.value.canUpgrade)
+  /** 境界闸名(meta 行的「至 X 境」):数据里 unlockRealm 0/1/2 ↔ 炼气/筑基/金丹 */
+  const gateName = computed(() => ['炼气', '筑基', '金丹'][props.def.unlockRealm] ?? '更高')
   /** 灵兽园联动:洞府与宠物两系统彼此看见(只对 beast 这一座特例,其它建筑不理会) */
   const player = usePlayerStore()
   const beastCompanionName = computed(() =>
