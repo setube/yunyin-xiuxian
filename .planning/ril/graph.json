@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T07:34:18+00:00",
+  "updated_at": "2026-09-28T07:46:41+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 210,
+      "touched_round": 230,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -13739,6 +13739,44 @@
       "summary": "layout-check 全量重跑:失败集 8 条与基线一致(时序脆弱,不入 CI:settings 存档写失败静默+存读/收纳/分解/营造/锻造/落盘场景);「可点元素过小 15px 穿齐 →」一条已从失败集清零 —— TASK-225 修复被排版自检实证捕获",
       "validates": "2026-09-28T15:40:00Z",
       "confidence": 1.0
+    },
+    "TASK-226": {
+      "id": "TASK-226",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-09-28T07:40:09+00:00",
+      "updated_at": "2026-09-28T07:46:17+00:00",
+      "touched_round": 230,
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 0.9,
+      "effort": 2,
+      "priority": 7,
+      "summary": "离线历练装备掉落漏乘探险模式倍率(explorationMode.rewardMult):灵石/修为都乘了 modeDef.rewardMult*regionEventReward,唯装备行只有 regionEventReward —— 进取/疾驰模式对离线装备掉落无效,挂机装备数系统性偏低,违反「与在线同源」;offlineParity.spec.ts:81 的文本断言还将此 bug 固化"
+    },
+    "CHG-252": {
+      "id": "CHG-252",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T07:46:17+00:00",
+      "updated_at": "2026-09-28T07:46:17+00:00",
+      "touched_round": 230,
+      "commit": "b5d2a25",
+      "summary": "offline.ts 装备掉落行补乘 modeDef.rewardMult,离线普通战装备与灵石/修为/在线 afterWin 同源;offlineParity.spec 断言收紧为含模式倍率的完整乘式(先红后绿)"
+    },
+    "ISS-244": {
+      "id": "ISS-244",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T07:46:41+00:00",
+      "updated_at": "2026-09-28T07:46:41+00:00",
+      "touched_round": 230,
+      "severity": 0.5,
+      "summary": "离线历练普通战装备掉落漏乘探险模式倍率:灵石/修为都乘 modeDef.rewardMult*regionEventReward,唯装备行只有 regionEventReward,高收益探索模式对离线装备掉落无效(在线/离线不同源)",
+      "component": "COMP-006"
     }
   },
   "edges": [
@@ -20144,6 +20182,30 @@
       "to": "ISS-243",
       "type": "resolves",
       "created_at": "2026-09-28T07:15:23+00:00"
+    },
+    {
+      "from": "CHG-252",
+      "to": "TASK-226",
+      "type": "implements",
+      "created_at": "2026-09-28T07:46:17+00:00"
+    },
+    {
+      "from": "TASK-226",
+      "to": "ISS-244",
+      "type": "addresses",
+      "created_at": "2026-09-28T07:46:41+00:00"
+    },
+    {
+      "from": "CHG-252",
+      "to": "ISS-244",
+      "type": "resolves",
+      "created_at": "2026-09-28T07:46:41+00:00"
+    },
+    {
+      "from": "ISS-244",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-09-28T07:46:41+00:00"
     }
   ]
 }
