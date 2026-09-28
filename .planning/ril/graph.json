@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T08:56:01+00:00",
+  "updated_at": "2026-09-28T09:28:35+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13826,6 +13826,29 @@
       "touched_round": 230,
       "rationale": "离线材料掉落保持写死的简化期望(herb 1.0、ore 0.5):在线 herb 概率 0.5×均值2=1.0 恰好一致,ore 0.35×均值1.5=0.525 与离线 0.5 差 5%;在线概率是 loot.ts 硬编码(无常量),要真同源须先提炼 HERB/ORE_DROP_CHANCE 常量并联动两处 —— 收益仅 5% 玄铁偏差,投入不成比例;且材料行历史自创建来即此近似,非破损(对比:装备/残页漏模式倍率是结构性缺失,已修)",
       "alternatives_rejected": "对齐 ore 期望 0.525(风险:动量测试/loot 引用未抽常量,牵一发动全身);把 herb/ore/page 全部同源化重构(超出单轮收敛范围)"
+    },
+    "CHG-254": {
+      "id": "CHG-254",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T09:28:35+00:00",
+      "updated_at": "2026-09-28T09:28:35+00:00",
+      "touched_round": 230,
+      "commit": "bcd327b",
+      "summary": "新增 offlineModeReward.spec.ts:真跑 settleOffline 断言残页随 deep 模式(×1.4)≥ normal(×1),补文本契约盲区 —— TASK-226/227 修复的数值回归锁"
+    },
+    "EV-225": {
+      "id": "EV-225",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T09:28:35+00:00",
+      "updated_at": "2026-09-28T09:28:35+00:00",
+      "touched_round": 230,
+      "source": "vitest offlineModeReward.spec",
+      "summary": "真跑验证:deep 模式离线残页累计 ≥ normal(修复前相等)—— 模式倍率修复在行为层生效,不止字面",
+      "confidence": 1.0
     }
   },
   "edges": [
@@ -20285,6 +20308,18 @@
       "to": "TASK-227",
       "type": "governs",
       "created_at": "2026-09-28T08:56:01+00:00"
+    },
+    {
+      "from": "CHG-254",
+      "to": "TASK-226",
+      "type": "implements",
+      "created_at": "2026-09-28T09:28:35+00:00"
+    },
+    {
+      "from": "CHG-254",
+      "to": "TASK-227",
+      "type": "implements",
+      "created_at": "2026-09-28T09:28:35+00:00"
     }
   ]
 }
