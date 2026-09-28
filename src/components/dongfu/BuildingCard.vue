@@ -24,11 +24,16 @@
         >
           {{ props.def.name }}
         </p>
-        <!-- 等级 meta 行:左侧级数着状态色,右侧「圆满/辖限」独立小签 -->
-        <p class="mt-0.5 flex items-center justify-between gap-2">
+        <!--
+          等级 meta 行:左侧级数着状态色,右侧「圆满/辖限」独立小签。
+          flex-wrap 必须开:窄卡(320 下内宽 ~115px)里「未启用」+「至筑基境」并排
+          放不下时,justify-between 会把左侧文字压到极窄逐字竖排(实测 w=10 h=45);
+          允许徽标换行到下一行,左侧的级数/「未启用」永远完整成行。
+        -->
+        <p class="mt-0.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
           <span
             :key="level"
-            class="tabular text-[10px] animate-ink-pop"
+            class="shrink-0 tabular text-[10px] animate-ink-pop"
             :class="level > 0 ? (atMax ? 'text-gold-ink' : atGateCap ? 'text-amber-ink' : 'text-ink-faint') : 'text-ink-faint'"
           >
             {{ level > 0 ? `${level}/${cap} 级` : '未启用' }}
