@@ -12,8 +12,12 @@
           <span class="font-kai shrink-0" :class="s.active ? 'text-jade' : 'text-ink-soft'">{{ s.def.name }}</span>
           <span class="tabular shrink-0" :class="s.active ? 'text-jade' : 'text-ink-faint'">{{ s.count }}/{{ s.def.required }}</span>
           <span class="min-w-0 grow text-[10px] leading-relaxed text-ink-faint">{{ s.def.effectDesc }}</span>
-          <!-- 玩家反馈「穿套装」:一键穿齐该套已持有的件,已穿更强的则不换 -->
-          <button class="shrink-0 text-[10px] text-azure/90 active:opacity-60" @click="onEquipSet(s.def.id)">穿齐 →</button>
+          <!--
+            玩家反馈「穿套装」:一键穿齐该套已持有的件,已穿更强的则不换。
+            触控靶面:纯 10px 文字行高 15px,拇指点不中(layout-check 报 27px < 28);
+            负外边距配正内边距同升到 8px,盒高 31px 达标,流中占位仍只 15px 行高(同页收纳/分解同法)。
+          -->
+          <button class="-my-2 shrink-0 px-1 py-2 text-[10px] text-azure/90 active:opacity-60" @click="onEquipSet(s.def.id)">穿齐 →</button>
         </p>
       </div>
       <div class="mt-3 flex items-center justify-between px-1">

@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T06:19:40+00:00",
+  "updated_at": "2026-09-28T07:14:39+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -1545,7 +1545,7 @@
       "version": 1,
       "created_at": "2026-09-11T02:43:18+00:00",
       "updated_at": "2026-09-11T02:43:18+00:00",
-      "touched_round": 204,
+      "touched_round": 230,
       "summary": "掉落/拾取系统(loot.ts + equipGen + smartKeep)"
     },
     "TASK-027": {
@@ -13676,6 +13676,45 @@
       "touched_round": 230,
       "commit": "e5a6aa2",
       "summary": "BuildingCard meta 行 flex-wrap + shrink-0,修 320px 竖排(被 layout-check 抓到、探针实证)"
+    },
+    "TASK-225": {
+      "id": "TASK-225",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-09-28T07:10:13+00:00",
+      "updated_at": "2026-09-28T07:10:37+00:00",
+      "touched_round": 230,
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.95,
+      "effort": 1,
+      "priority": 5,
+      "summary": "Inventory 一键穿齐「穿齐 →」触控靶面:纯 10px 文字行高 15px,盒高 27px 低于 28px 阈值(layout-check 报 27px);负外边距配正内边距同升到 8px,盒高 31px,流中占位仍 15px"
+    },
+    "EV-223": {
+      "id": "EV-223",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T07:10:26+00:00",
+      "updated_at": "2026-09-28T07:10:26+00:00",
+      "touched_round": 230,
+      "source": "scripts/probe-touch.mjs 探针",
+      "summary": "playwright 探针实测「穿齐 →」按钮 boundingBox 高度:修复前 py-1.5 为 27px(viewport 390×844);改 py-2/-my-2 后 31px,≥28px 阈值;按钮在种子档(已装备 h_xuantie 玄铁冠 s_tiebi 套装件)下浮现",
+      "confidence": 1.0
+    },
+    "ISS-243": {
+      "id": "ISS-243",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T07:11:39+00:00",
+      "updated_at": "2026-09-28T07:11:39+00:00",
+      "touched_round": 230,
+      "severity": 0.5,
+      "summary": "Inventory 一键穿齐「穿齐 →」触控靶面不足:text-[10px] 行高 15px、py-1.5 使盒高仅 27px,低于 28px 可点阈值;负外边距-正内边距方案使命中区与行高脱钩",
+      "component": "InventoryView"
     }
   },
   "edges": [
@@ -20057,6 +20096,18 @@
       "to": "TASK-224",
       "type": "implements",
       "created_at": "2026-09-28T06:19:40+00:00"
+    },
+    {
+      "from": "TASK-225",
+      "to": "ISS-243",
+      "type": "addresses",
+      "created_at": "2026-09-28T07:12:03+00:00"
+    },
+    {
+      "from": "ISS-243",
+      "to": "COMP-010",
+      "type": "located_in",
+      "created_at": "2026-09-28T07:14:39+00:00"
     }
   ]
 }
