@@ -82,5 +82,8 @@ describe('离线历练 · 区域事件加丰与加难成对(regReward)', () => {
     // 在线 afterWin 把 mode×regReward 全折进 rewardMult 参数,离线普通战若只并 regReward,
     // 「进取/疾驰」这类高收益模式对离线装备掉落就落空(曾经正是如此)
     expect(offline).toContain('EQUIP_DROP_CHANCE * modeDef.rewardMult * regionEventReward')
+    // 残页与在线同源:在线 page 掉落判定是 rng.chance(PAGE_DROP_CHANCE * rewardMult),
+    // rewardMult 参数含 mode×reg —— 离线残页若只写死 0.15、不吃模式倍率,高收益模式赌残页就落空
+    expect(offline).toContain('PAGE_DROP_CHANCE * 1.5 * modeDef.rewardMult * regionEventReward')
   })
 })
