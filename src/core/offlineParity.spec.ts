@@ -78,6 +78,9 @@ describe('离线历练 · 区域事件加丰与加难成对(regReward)', () => {
       /afterWin\(region, modeDef\.rewardMult \* OFFLINE_BOSS_REWARD_MULT \* regionEventReward, true\)/
     )
     expect(offline).toContain('modeDef.rewardMult * regionEventReward')
-    expect(offline).toContain('EQUIP_DROP_CHANCE * regionEventReward')
+    // 装备掉落与灵石/修为同源:模式倍率也要进掉落数。
+    // 在线 afterWin 把 mode×regReward 全折进 rewardMult 参数,离线普通战若只并 regReward,
+    // 「进取/疾驰」这类高收益模式对离线装备掉落就落空(曾经正是如此)
+    expect(offline).toContain('EQUIP_DROP_CHANCE * modeDef.rewardMult * regionEventReward')
   })
 })

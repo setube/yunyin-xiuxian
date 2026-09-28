@@ -206,8 +206,10 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         harvestMaterials(region.tier, 'ore', oreGain)
         resources.addSmall('page', Math.round(wins * 0.15 * doubleMult))
         resources.addSmall('dust', Math.round(wins * 0.3 * doubleMult))
-        // 装备:最多实际生成 6 件,其余折算为器灵尘(掉落数与在线同源,乘事件加丰与福缘)
-        const equipCount = Math.round(wins * EQUIP_DROP_CHANCE * regionEventReward * (1 + modOf(mods, 'dropRate')) * doubleMult)
+        // 装备:最多实际生成 6 件,其余折算为器灵尘(掉落数与在线同源,乘模式倍率 × 事件加丰 × 福缘 ——
+        // 在线 afterWin 把 mode×regReward 全折进 rewardMult 参数,这里缺了 modeDef.rewardMult,
+        // 「进取 / 疾驰」的 +40% / +90% 就对离线装备掉落完全落空,与灵石/修为两行不同源
+        const equipCount = Math.round(wins * EQUIP_DROP_CHANCE * modeDef.rewardMult * regionEventReward * (1 + modOf(mods, 'dropRate')) * doubleMult)
         const realCount = Math.min(6, equipCount)
         for (let i = 0; i < realCount; i += 1) {
           // 灵兽性格同样管离线掉落:贪宝更易稀出,谨慎稍稍寻常(与在线 afterWin 同源)
