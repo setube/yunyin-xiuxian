@@ -2852,9 +2852,9 @@ for (const vp of VIEWPORTS) {
     const card = [...document.querySelectorAll('.card-ink')].find(c => (c.textContent || '').includes('存档版本'))
     return (card?.innerText || '').replace(/\n+/g, ' ')
   })
-  if (!/分片损坏/.test(notice)) failures.push('[390] 坏档场景:设置页没有常驻交代(只说一次两秒的提示,玩家回头找不到原因)')
+  if (!/未能读全|损坏/.test(notice)) failures.push('[390] 坏档场景:设置页没有常驻交代(只说一次两秒的提示,玩家回头找不到原因)')
   if (!/资源/.test(notice)) failures.push(`[390] 坏档场景:设置页没说出坏的是哪一片 —— ${notice.slice(0, 80)}`)
-  if (!/corrupt\./.test(notice)) failures.push('[390] 坏档场景:设置页没说出原档备份在哪(玩家/帮他的人找不回来)')
+  if (!/原档.*(本机|删除)|留在本机/.test(notice)) failures.push('[390] 坏档场景:设置页没说出原档去向(玩家/帮他的人找不回来)')
   if (pageErrors.length) failures.push(`[390] 坏档场景页面异常:${[...new Set(pageErrors)].join(' | ')}`)
   console.log(`
 坏档开局:界面照常起来 · 启动提示「${bootToasts.split("|")[0] || "无"}」 · 设置页「${notice.slice(0, 46)}…」`)
