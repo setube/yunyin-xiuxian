@@ -158,13 +158,12 @@
   // 否则容器(纯 CSS 断点)已缩、法球(JS size)仍是 140px,两者脱节会溢出。
   const narrower = ref(false)
   const orbSize = computed<number>(() => (narrower.value ? 108 : 140))
-  {
-    const mq = window.matchMedia('(max-width: 380px)')
-    narrower.value = mq.matches
-    mq.addEventListener('change', e => {
-      narrower.value = e.matches
-    })
-  }
+  // 直接平铺、不用 {} 作用域块 —— 该块内容在 script setup 里会被编译器提升重排,花括号反而碍事
+  const orbMq = window.matchMedia('(max-width: 380px)')
+  narrower.value = orbMq.matches
+  orbMq.addEventListener('change', e => {
+    narrower.value = e.matches
+  })
 
   /** 洞府入口右侧实况:离线可攒小时 + 已营座数(与洞府页纪要同源现算) */
   const offlineHrs = computed(() => dongfu.offlineCapHours)

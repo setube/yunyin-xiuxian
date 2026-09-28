@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 229,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T03:41:29+00:00",
+  "updated_at": "2026-09-28T04:59:33+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13616,6 +13616,29 @@
       "touched_round": 229,
       "commit": "b46d605",
       "summary": "排版视觉打磨一批(TASK-223):法球 size prop/闭关按钮/角标/灵脉操作列/圆角一致/图鉴降噪/突破印章/离线档位/输入框可选字"
+    },
+    "HYP-104": {
+      "id": "HYP-104",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T04:58:47+00:00",
+      "updated_at": "2026-09-28T04:58:47+00:00",
+      "touched_round": 229,
+      "confidence": 0.9,
+      "summary": "ui-smoke 崩溃根因:home 的 orbSize 用了 <script setup> 顶层裸 {} 花括号块做 matchMedia 副作用初始化 —— 被编译器提升重排后在某归档状态下把组件初始化打崩(44c9826 引入、平铺修复)"
+    },
+    "EV-221": {
+      "id": "EV-221",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T04:59:09+00:00",
+      "updated_at": "2026-09-28T04:59:09+00:00",
+      "touched_round": 229,
+      "source": "ui-smoke-15pages",
+      "summary": "修复后 ui-smoke 全绿「无运行时异常」(15 页 74 次点击);基线 94f5717/b46d605/cccc1ed 均绿,仅 43c9826 崩溃",
+      "confidence": 1.0
     }
   },
   "edges": [
@@ -19973,6 +19996,12 @@
       "to": "HYP-103",
       "type": "validates",
       "created_at": "2026-09-19T08:20:11+00:00"
+    },
+    {
+      "from": "EV-221",
+      "to": "HYP-104",
+      "type": "validates",
+      "created_at": "2026-09-28T04:59:33+00:00"
     }
   ]
 }
