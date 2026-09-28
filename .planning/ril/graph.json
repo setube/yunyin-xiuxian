@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T06:14:51+00:00",
+  "updated_at": "2026-09-28T06:19:40+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13643,10 +13643,10 @@
     "TASK-224": {
       "id": "TASK-224",
       "type": "task",
-      "status": "active",
-      "version": 1,
+      "status": "resolved",
+      "version": 2,
       "created_at": "2026-09-28T06:14:51+00:00",
-      "updated_at": "2026-09-28T06:14:51+00:00",
+      "updated_at": "2026-09-28T06:17:06+00:00",
       "touched_round": 230,
       "category": "correctness",
       "severity": 0.6,
@@ -13665,6 +13665,17 @@
       "source": "probe-dongfu",
       "summary": "探针实测:修复前最后一张锁卡 span w=10 h=45(flex 0 1 auto),修复后全部 span w=30 h=15(flex 0 0 auto),竖排消失",
       "confidence": 1.0
+    },
+    "CHG-250": {
+      "id": "CHG-250",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T06:17:06+00:00",
+      "updated_at": "2026-09-28T06:17:06+00:00",
+      "touched_round": 230,
+      "commit": "e5a6aa2",
+      "summary": "BuildingCard meta 行 flex-wrap + shrink-0,修 320px 竖排(被 layout-check 抓到、探针实证)"
     }
   },
   "edges": [
@@ -20040,6 +20051,12 @@
       "to": "TASK-223",
       "type": "implements",
       "created_at": "2026-09-28T05:39:59+00:00"
+    },
+    {
+      "from": "CHG-250",
+      "to": "TASK-224",
+      "type": "implements",
+      "created_at": "2026-09-28T06:19:40+00:00"
     }
   ]
 }
