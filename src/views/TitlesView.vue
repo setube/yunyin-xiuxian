@@ -19,7 +19,7 @@
           <div class="min-w-0 grow">
             <p class="font-kai text-[13px]" :class="row.owned ? 'text-ink' : 'text-ink-faint'">{{ row.def.name }}</p>
             <p class="truncate text-[10px] text-ink-ghost">{{ row.def.desc }}</p>
-            <p v-if="row.owned && row.modText" class="text-[10px] text-azure tabular">{{ row.modText }}</p>
+            <p v-if="row.owned && row.modText" class="truncate text-[10px] text-azure tabular" :title="row.modText">{{ row.modText }}</p>
           </div>
           <button v-if="row.owned" class="btn-ghost shrink-0 !px-2.5 !py-1.5 !text-[11px]" @click="toggleTitle(row.def.id)">
             {{ row.worn ? '卸下' : '佩戴' }}
