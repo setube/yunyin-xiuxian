@@ -1,25 +1,56 @@
 /**
- * 离线普通战产出的模式倍率 —— 数值层回归(TASK-226/227 的需求落地)。
+ * 离线普通战产出的模式倍率 —— 行为层回归(TASK-226/227)。
  *
- * offlineParity.spec 是**文本契约**(断言源码含某串),只保证「乘式字面还在」。
- * 这里真跑 settleOffline,验证模式倍率真的进产出:同一角色同一时长,唯一变量是
- * mode —— 「深入探寻」(×1.4) 的灵石/残页/装备累计应显著高于「寻常游历」(×1)。
- * 多次结算取累计,吸收战绩 RNG 的抖动(winRate 是随机的)。
- * 灵石/装备判据不设:mode 与 dangerMult 耦合(deep 1.45 / risky 2.1),
- * 高倍率换高危险,胜率下降会吃掉加成,总额未必单调 —— 只有残页这类
- * 「每胜必有、倍率纯加」的产出的相对次序是稳定的,拿来当数值探针。
+ * offlineParity.spec 是文本契约(断言源码含某串),只管「乘式字面还在」;
+ * 这里真跑 settleOffline,验证模式倍率**真的进产出**。
+ *
+ * 确定性怎么来:settleOffline 的产出全正比于 wins,而 wins 来自
+ * winRate(sampleWinRate,含 rng)。我们把 rng 与 sampleWinRate 都 mock 成
+ * 固定响应,于是整条链路(encounters→battles→wins)每一步都确定——
+ * 残页/装备的产出就只差 modeDef.rewardMult 一个因子:
+ *   deep(×1.4)/normal(×1) = 1.4,与 RNG 无关,断言便不 flaky。
+ *
+ * 注意:cheat 掉 sampleWinRate 意味着深探/寻常的「危险差」不再改变胜率——
+ * 那不是本测试要守的东西(危险耦合由 offlineScope/battleFactor 守),
+ * 本测试只专注「倍率进产出」这一件事。
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { settleOffline } from './offline'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
+import { useResourcesStore } from '@/stores/resources'
 import { EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
+
+// rng 全响应固定:概率判定处处 0.5、pick 恒取首项 —— 序列确定
+vi.mock('@/utils/random', async importOriginal => {
+  const mod = await importOriginal<typeof import('@/utils/random')>()
+  return {
+    ...mod,
+    rng: {
+      next: () => 0.5,
+      int: (a: number, _b: number) => a,
+      float: (a: number, _b: number) => a,
+      pick: <T,>(arr: readonly T[]): T => arr[0]!,
+      weighted: <T,>(arr: readonly T[]): T => arr[0]!,
+      chance: (): boolean => true
+    }
+  }
+})
+
+// 胜率 mock 成固定 0.5:wins = round(battles×0.5),与 mode 的危险差无关。
+// 否则 deep 危险高→胜率低→wins 少,会把倍率差淹没(初版测试正是栽在这)
+vi.mock('./combat', async importOriginal => {
+  const mod = await importOriginal<typeof import('./combat')>()
+  return {
+    ...mod,
+    sampleWinRate: () => 0.5
+  }
+})
 
 const SESSION_HOURS = 2
 
-/** 修好后:mode='deep' 离线的产出 > 'normal'。RNG 吸收:每档跑多局累计。 */
 function seedSession(mode: 'normal' | 'deep'): void {
   const game = useGameStore()
   const player = usePlayerStore()
@@ -31,7 +62,7 @@ function seedSession(mode: 'normal' | 'deep'): void {
   player.major = 2 // 筑基境,打得动一阶区域
   player.exp = { m: 0, e: 0 }
   adventure.setSession({
-    regionId: 'qingshan',
+    regionId: 'qingyun',
     mode,
     startedAt: started,
     endsAt: started + SESSION_HOURS * 3600 * 1000,
@@ -45,31 +76,50 @@ function seedSession(mode: 'normal' | 'deep'): void {
   })
 }
 
-function runPageOnce(): number {
-  const before = useResourcesStore().page
-  settleOffline(Date.now())
-  return Math.max(0, useResourcesStore().page - before)
+interface Yields {
+  page: number
+  equipChanceCount: number
 }
 
-import { useResourcesStore } from '@/stores/resources'
+/** mock 后全链路确定:同输入必得同产出 */
+function runOnce(mode: 'normal' | 'deep'): Yields {
+  setActivePinia(createPinia())
+  seedSession(mode)
+  const beforePage = useResourcesStore().page
+  const beforeDust = useResourcesStore().dust
+  settleOffline(Date.now())
+  return {
+    page: Math.max(0, useResourcesStore().page - beforePage),
+    // 装备按期望计件(equipCount),实际生成受 rng 与 6 件 cap 约束;取器灵尘增量对比最稳
+    equipChanceCount: Math.max(0, useResourcesStore().dust - beforeDust)
+  }
+}
 
-describe('离线普通战产出吃模式倍率', () => {
+describe('离线普通战产出吃模式倍率(确定性)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
-  it('「深入探寻」离线功法残页累计不输「寻常游历」(倍率同样生效)', () => {
-    let deep = 0
-    let normal = 0
-    for (let i = 0; i < 30; i += 1) {
-      setActivePinia(createPinia())
-      seedSession('deep')
-      deep += runPageOnce()
-      setActivePinia(createPinia())
-      seedSession('normal')
-      normal += runPageOnce()
-    }
-    // 残页量级小,放宽判据:deep 至少不低于 normal(修复前 deep 与 normal 相等,此断言必现形)
-    expect(deep).toBeGreaterThanOrEqual(normal)
+  /**
+   * 断言「deep 约为 normal 的 1.4 倍」。这里用区间而非精确比:
+   * 产出都过 Math.round(整数取整),1.4 倍因子落在 ±1 取整噪声里,
+   * 精确 1.4 断言会因 round 错位而假红。区间 [×1.3, ×1.5] 把 round 噪声包住,
+   * 又足以区分「倍率生效(≈1.4)」与「倍率缺失(=1)」两个世界。
+   * 确定性依然成立:同一 mock(固定响应)下每次跑 wins/battles 恒定,结果可复现。
+   */
+  it('「深入探寻」(×1.4) 残页产出约为「寻常游历」(×1) 的 1.4 倍(±取整噪声)', () => {
+    const deep = runOnce('deep')
+    const normal = runOnce('normal')
+    expect(normal.page).toBeGreaterThan(0)
+    expect(deep.page).toBeGreaterThanOrEqual(Math.round(normal.page * 1.3))
+    expect(deep.page).toBeLessThanOrEqual(Math.round(normal.page * 1.5))
+  })
+
+  it('装备掉落同样按模式倍率约 1.4 放大', () => {
+    const deep = runOnce('deep')
+    const normal = runOnce('normal')
+    expect(normal.equipChanceCount).toBeGreaterThan(0)
+    expect(deep.equipChanceCount).toBeGreaterThanOrEqual(Math.round(normal.equipChanceCount * 1.3))
+    expect(deep.equipChanceCount).toBeLessThanOrEqual(Math.round(normal.equipChanceCount * 1.5))
   })
 })
