@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T10:38:05+00:00",
+  "updated_at": "2026-09-28T10:39:42+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13883,6 +13883,18 @@
       "touched_round": 230,
       "source": "主线程静态交叉核对 2026-09-28",
       "summary": "成就系统四类判定全闭合,无「永远无法达成」的成就:counter 键(pillsCrafted←pillService:228,含双参数 track)✓realm_ 系 custom(progress.ts evalCond regex)✓lifespanLow/lifespan10k/stone1m 由 checkStateAchievements(:145-147)显式触发✓quality 由 checkQuality✓ —— 初判悬空的六个键全部澄清,非死成就",
+      "confidence": 1.0
+    },
+    "EV-228": {
+      "id": "EV-228",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T10:39:42+00:00",
+      "updated_at": "2026-09-28T10:39:42+00:00",
+      "touched_round": 230,
+      "source": "layout-check 全量回归 2026-09-28(第三轮)",
+      "summary": "离线装备/残页倍率改动后 layout-check 失败集 8 条与既往基线完全一致(时序脆弱场景:settings 缺失提示+六场景),无新增布局/场景回归 —— 核心结算改动布局侧安全",
       "confidence": 1.0
     }
   },
