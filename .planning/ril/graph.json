@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 229,
+  "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T04:59:33+00:00",
+  "updated_at": "2026-09-28T05:39:59+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13574,7 +13574,7 @@
       "version": 2,
       "created_at": "2026-09-28T03:01:33+00:00",
       "updated_at": "2026-09-28T03:04:17+00:00",
-      "touched_round": 229,
+      "touched_round": 230,
       "category": "maintainability",
       "severity": 0.6,
       "confidence": 0.9,
@@ -13588,7 +13588,7 @@
       "version": 1,
       "created_at": "2026-09-28T03:04:17+00:00",
       "updated_at": "2026-09-28T03:04:17+00:00",
-      "touched_round": 229,
+      "touched_round": 230,
       "commit": "cccc1ed",
       "summary": "开发者腔文案收口 19 处(TASK-222):装备详情/数值体系/渡劫/设置/图鉴/流派,去工程术语,含 BuildView 阈值不虚构"
     },
@@ -13599,7 +13599,7 @@
       "version": 2,
       "created_at": "2026-09-28T03:40:30+00:00",
       "updated_at": "2026-09-28T03:41:29+00:00",
-      "touched_round": 229,
+      "touched_round": 230,
       "category": "maintainability",
       "severity": 0.55,
       "confidence": 0.9,
@@ -13613,7 +13613,7 @@
       "version": 1,
       "created_at": "2026-09-28T03:41:29+00:00",
       "updated_at": "2026-09-28T03:41:29+00:00",
-      "touched_round": 229,
+      "touched_round": 230,
       "commit": "b46d605",
       "summary": "排版视觉打磨一批(TASK-223):法球 size prop/闭关按钮/角标/灵脉操作列/圆角一致/图鉴降噪/突破印章/离线档位/输入框可选字"
     },
@@ -20002,6 +20002,18 @@
       "to": "HYP-104",
       "type": "validates",
       "created_at": "2026-09-28T04:59:33+00:00"
+    },
+    {
+      "from": "CHG-248",
+      "to": "TASK-222",
+      "type": "implements",
+      "created_at": "2026-09-28T05:39:59+00:00"
+    },
+    {
+      "from": "CHG-249",
+      "to": "TASK-223",
+      "type": "implements",
+      "created_at": "2026-09-28T05:39:59+00:00"
     }
   ]
 }
