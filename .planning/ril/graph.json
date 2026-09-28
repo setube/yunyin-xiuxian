@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T07:46:41+00:00",
+  "updated_at": "2026-09-28T08:52:29+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13777,6 +13777,44 @@
       "severity": 0.5,
       "summary": "离线历练普通战装备掉落漏乘探险模式倍率:灵石/修为都乘 modeDef.rewardMult*regionEventReward,唯装备行只有 regionEventReward,高收益探索模式对离线装备掉落无效(在线/离线不同源)",
       "component": "COMP-006"
+    },
+    "TASK-227": {
+      "id": "TASK-227",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-09-28T07:47:55+00:00",
+      "updated_at": "2026-09-28T08:52:06+00:00",
+      "touched_round": 230,
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 0.9,
+      "effort": 2,
+      "priority": 6,
+      "summary": "离线历练材料掉落欠同源:功法残页(page)在线 afterWin 乘 rewardMult(=mode×regEvent,0.12×mode×reg),离线只乘 doubleMult(wins×0.15)——「进取/疾驰」模式同样对离线残页无效;另 herb 离线期望1.0 vs 在线0.5、ore 离线0.5 vs 在线0.35,概率与在线不同源但可能是刻意简化,残页漏 rewardMult 是真欠同源"
+    },
+    "CHG-253": {
+      "id": "CHG-253",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T08:52:06+00:00",
+      "updated_at": "2026-09-28T08:52:06+00:00",
+      "touched_round": 230,
+      "commit": "bc14795",
+      "summary": "offline.ts 残页掉落补乘模式倍率(PAGE_DROP_CHANCE*1.5*modeDef.rewardMult*regionEventReward*doubleMult),与在线 page 期望同源;补 PAGE_DROP_CHANCE import;offlineParity.spec 增断言先红后绿"
+    },
+    "ISS-245": {
+      "id": "ISS-245",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T08:52:06+00:00",
+      "updated_at": "2026-09-28T08:52:06+00:00",
+      "touched_round": 230,
+      "severity": 0.4,
+      "summary": "离线普通战功法残页掉落漏乘模式倍率与期望量(写死0.15,无 mode×reg;在线为 0.12×mode×reg×1.5)",
+      "component": "COMP-006"
     }
   },
   "edges": [
@@ -20206,6 +20244,30 @@
       "to": "COMP-006",
       "type": "located_in",
       "created_at": "2026-09-28T07:46:41+00:00"
+    },
+    {
+      "from": "CHG-253",
+      "to": "TASK-227",
+      "type": "implements",
+      "created_at": "2026-09-28T08:52:06+00:00"
+    },
+    {
+      "from": "TASK-227",
+      "to": "ISS-245",
+      "type": "addresses",
+      "created_at": "2026-09-28T08:52:29+00:00"
+    },
+    {
+      "from": "CHG-253",
+      "to": "ISS-245",
+      "type": "resolves",
+      "created_at": "2026-09-28T08:52:29+00:00"
+    },
+    {
+      "from": "ISS-245",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-09-28T08:52:29+00:00"
     }
   ]
 }
