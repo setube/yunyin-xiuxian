@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T10:22:31+00:00",
+  "updated_at": "2026-09-28T10:27:02+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13861,6 +13861,17 @@
       "source": "主线程于 2026-09-28 人工自查(巡检 subagent 冻结后)",
       "summary": "五类正确性巡检无新缺陷:①离线/在线灵气回复同源(player.qiRegenPerSec 共用,engine.ts:137=offline.ts:106)②类型系统+字典兜底保证 id 引用闭合(eventEngine buffDef判空返回null)③写失败机制完整(storage.ts 四层:检测/订阅/重试/恢复)④藏经阁独立常数非失守⑤突破失败 toast 反馈覆盖 —— 上一轮深挖后的防护在",
       "confidence": 1.0
+    },
+    "DEC-055": {
+      "id": "DEC-055",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T10:27:02+00:00",
+      "updated_at": "2026-09-28T10:27:02+00:00",
+      "touched_round": 230,
+      "rationale": "sw.js networkFirst 的 503 fallback「离线且无缓存副本」虽是工程腔,但仅在对玩家从未缓存+无网络的极端路径出现,语义已正确;改一句文案需 bump CACHE_VERSION 触发全量重缓存,风险>收益,保留现状",
+      "alternatives_rejected": "人话化该文案并 bump CACHE_VERSION(回归风险);额外包一层 offline.html(过度设计)"
     }
   },
   "edges": [
