@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T13:43:41+00:00",
+  "updated_at": "2026-09-28T13:48:14+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13930,6 +13930,18 @@
       "touched_round": 230,
       "rationale": "凡 settleOffline 这类含模块级 rng(Math.random 不可种)的结算,数值断言必须 vi.mock 固定 rng+胜率,使链路确定;断言用区间(包 Math.round 取整噪声)而非精确比;regionId 等 seed 参数要先核数据表,防假绿",
       "alternatives_rejected": "保留 30 局累计赌概率(flexky);给 settleOffline 加 rng 注入参数(动核心 API);精确 1.4 断言(round 假红)"
+    },
+    "EV-230": {
+      "id": "EV-230",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T13:48:14+00:00",
+      "updated_at": "2026-09-28T13:48:14+00:00",
+      "touched_round": 230,
+      "source": "全仓同类测试排查 2026-09-28(grep settleOffline/tickExploration/afterWin 调用 facet + 断言类型甄别)",
+      "summary": "12 个真跑含 rng 内核却无随机控制的 spec 逐个澄清:文本契约(offlineParity/offlineScope/offlineCap/battleFactor/highTierSmoke/offlineLedger/singleSourceAudit)或纯函数断言(petLuck mock equipGen 断 luck 参数/PDF pillValue 静态数据/pillValue toBe 数据完整性/dangerFactorFor 纯数学)—— 全仓无第二处依赖 rng 结果做确定性断言且不可控的假绿/flaky 测试,DEC-056 纪律已闭环",
+      "confidence": 1.0
     }
   },
   "edges": [
