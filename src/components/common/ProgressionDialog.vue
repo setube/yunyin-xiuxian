@@ -34,7 +34,7 @@
       <!-- 积余:卡境不浪费 -->
       <!-- 花费同样复利:不是线性涨价 -->
       <div class="card-ink px-3 py-2">
-        <p class="text-[10px] text-ink-faint">花费曲线(同为复利,非线性)</p>
+        <p class="text-[10px] text-ink-faint">花费同按倍率逐级加码(越到后头越重,并非固定加价)</p>
         <div class="mt-1.5 space-y-1">
           <div v-for="c in COST_CURVES" :key="c.id" class="flex items-start gap-2">
             <span class="w-[92px] shrink-0 text-ink-soft">{{ c.name }}</span>
