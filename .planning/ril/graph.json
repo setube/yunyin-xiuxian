@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 229,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T03:40:30+00:00",
+  "updated_at": "2026-09-28T03:41:29+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13595,16 +13595,27 @@
     "TASK-223": {
       "id": "TASK-223",
       "type": "task",
-      "status": "active",
-      "version": 1,
+      "status": "resolved",
+      "version": 2,
       "created_at": "2026-09-28T03:40:30+00:00",
-      "updated_at": "2026-09-28T03:40:30+00:00",
+      "updated_at": "2026-09-28T03:41:29+00:00",
       "touched_round": 229,
       "category": "maintainability",
       "severity": 0.55,
       "confidence": 0.9,
       "effort": 2,
       "summary": "排版/视觉打磨:闭关按钮溢出、首页法球窄屏挤压、装备角标叠盖、灵脉操作列挤压、圆角一致性、图鉴占位降噪、天劫账单换行、突破印章、离线档位拆行、输入框可选字、chip-ink-wrap 覆写类"
+    },
+    "CHG-249": {
+      "id": "CHG-249",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T03:41:29+00:00",
+      "updated_at": "2026-09-28T03:41:29+00:00",
+      "touched_round": 229,
+      "commit": "b46d605",
+      "summary": "排版视觉打磨一批(TASK-223):法球 size prop/闭关按钮/角标/灵脉操作列/圆角一致/图鉴降噪/突破印章/离线档位/输入框可选字"
     }
   },
   "edges": [

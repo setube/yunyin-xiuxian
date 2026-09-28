@@ -126,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
   import { useDongfuStore } from '@/stores/dongfu'
   import { useAdventureStore } from '@/stores/adventure'
@@ -153,8 +153,18 @@
   const cultivation = useCultivationStore()
   const quests = useQuestsStore()
 
-  // 法球尺寸:380px 以下卡片内宽骤减,法球随 CSS 断点同步缩到 108px(与模板容器 max-[380px] 断点对应)
-  const orbSize = computed<number>(() => (window.matchMedia('(max-width: 380px)').matches ? 108 : 140))
+  // 法球尺寸:380px 以下卡片内宽骤减,法球随断点同步缩到 108px(与模板容器 max-[380px] 一致)。
+  // 不能只算一次:横竖屏切换、窗口拖拽都会改 matchMedia 结果,故监听 change 让 orbSize 跟着变,
+  // 否则容器(纯 CSS 断点)已缩、法球(JS size)仍是 140px,两者脱节会溢出。
+  const narrower = ref(false)
+  const orbSize = computed<number>(() => (narrower.value ? 108 : 140))
+  {
+    const mq = window.matchMedia('(max-width: 380px)')
+    narrower.value = mq.matches
+    mq.addEventListener('change', e => {
+      narrower.value = e.matches
+    })
+  }
 
   /** 洞府入口右侧实况:离线可攒小时 + 已营座数(与洞府页纪要同源现算) */
   const offlineHrs = computed(() => dongfu.offlineCapHours)
