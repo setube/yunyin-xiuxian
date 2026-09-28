@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T07:15:23+00:00",
+  "updated_at": "2026-09-28T07:34:18+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13681,9 +13681,9 @@
       "id": "TASK-225",
       "type": "task",
       "status": "resolved",
-      "version": 2,
+      "version": 3,
       "created_at": "2026-09-28T07:10:13+00:00",
-      "updated_at": "2026-09-28T07:10:37+00:00",
+      "updated_at": "2026-09-28T07:34:18+00:00",
       "touched_round": 230,
       "category": "correctness",
       "severity": 0.5,
@@ -13726,6 +13726,19 @@
       "touched_round": 230,
       "commit": "fc59497",
       "summary": "Inventory 一键穿齐触控靶面:py-1.5→py-2 + -my-1.5→-my-2,盒高 27→31px 过 28px 判据;探针 + ui-smoke 实证无回归"
+    },
+    "EV-224": {
+      "id": "EV-224",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T07:34:05+00:00",
+      "updated_at": "2026-09-28T07:34:05+00:00",
+      "touched_round": 230,
+      "source": "scripts/layout-check.mjs 全量运行",
+      "summary": "layout-check 全量重跑:失败集 8 条与基线一致(时序脆弱,不入 CI:settings 存档写失败静默+存读/收纳/分解/营造/锻造/落盘场景);「可点元素过小 15px 穿齐 →」一条已从失败集清零 —— TASK-225 修复被排版自检实证捕获",
+      "validates": "2026-09-28T15:40:00Z",
+      "confidence": 1.0
     }
   },
   "edges": [
