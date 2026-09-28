@@ -108,7 +108,7 @@
           </p>
         </div>
         <p v-if="softCappedNotes.length" class="mt-1.5 text-[10px] leading-relaxed text-cinnabar/80">
-          标「软」者已达软上限:{{ softCappedNotes.join('、') }}。极限堆叠到此后收益递减,不是面板被削。
+          标「软」的,已堆到好处将尽之处:{{ softCappedNotes.join('、') }}。再叠上去收效渐微,并非面板出了岔子。
         </p>
       </div>
     </section>

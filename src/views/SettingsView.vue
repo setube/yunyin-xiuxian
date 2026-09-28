@@ -87,7 +87,7 @@
       </p>
       <!-- 写盘失败时这里必须说话:玩家可能正玩得兴起,却不知道进度没进档 -->
       <p v-if="saveFailed" class="rounded-md border border-cinnabar/40 bg-cinnabar/8 px-2 py-1.5 text-[11px] leading-relaxed text-cinnabar">
-        上次写入存档失败 —— 浏览器存储可能已满。请先「导出存档」留一份,再清理浏览器数据或换设备导入。
+        上次存档没能存下 —— 本机容量可能已满。请先「导出存档」留一份,再清理本机空间或换设备导入。
       </p>
       <!--
         坏掉的分片只说一次(启动时一条 2.4 秒的提示)是不够的:
@@ -98,10 +98,9 @@
         v-if="corruptedNotice.length"
         class="rounded-md border border-cinnabar/40 bg-cinnabar/8 px-2 py-1.5 text-[11px] leading-relaxed text-cinnabar"
       >
-        启动时发现 {{ corruptedNotice.length }} 个存档分片损坏,已隔离修复:{{
+        启动时发现有档案未能读全,已尽力修复,损失的只是未能同步的那一段:{{
           corruptedNotice.map(id => STORE_NAMES[id] ?? id).join('、')
-        }}。损坏的原档没有删除,仍留在本机(键名
-        <span class="break-all">{{ corruptKeys }}</span>)—— 若手上还有导出的备份,可在此导入恢复。
+        }}。原档并未删除,仍留在本机 —— 若有导出备份,可在下方导入复原。
         <button class="mt-1 block text-ink-faint underline" @click="ui.corruptedNotice = []">知道了</button>
       </p>
       <div class="grid grid-cols-2 gap-2">
@@ -123,8 +122,8 @@
     <SectionTitle title="诊断" />
     <div class="card-ink space-y-2 px-4 py-3">
       <p class="text-[11px] leading-relaxed text-ink-faint">
-        <template v-if="diag.errors.length">最近记录了 {{ diag.errors.length }} 条异常(最多留 {{ DIAG_MAX }} 条)</template>
-        <template v-else>未记录到异常。真出问题时这里会自动留一条,可连同「导出存档」一起发给我们。</template>
+        <template v-if="diag.errors.length">最近留存的差错 {{ diag.errors.length }} 笔(至多 {{ DIAG_MAX }} 笔)</template>
+        <template v-else>还没出过岔子。若有意外,这里会自行记下一笔,可连同「导出存档」一起发给我们。</template>
       </p>
       <p v-if="latestError" class="rounded-md bg-ink/4 px-2 py-1.5 text-[10px] leading-relaxed text-ink-soft">
         <span class="tabular text-ink-faint">{{ formatClock(latestError.at) }}</span>
@@ -133,8 +132,8 @@
         <span v-if="latestError.route" class="ml-1 text-ink-ghost">{{ latestError.route }}</span>
       </p>
       <div v-if="diag.errors.length" class="grid grid-cols-2 gap-2">
-        <button class="btn-ghost !text-[12px]" @click="copyDiag">复制异常记录</button>
-        <button class="btn-ghost !text-[12px]" @click="diag.clear()">清空记录</button>
+        <button class="btn-ghost !text-[12px]" @click="copyDiag">复制差错留档</button>
+        <button class="btn-ghost !text-[12px]" @click="diag.clear()">清空留档</button>
       </div>
     </div>
 
@@ -194,7 +193,7 @@
   import { exportSaveToDevice } from '@/core/savePlatform'
   import { formatLastExport, shouldPromptBackup } from '@/core/saveBackup'
   import { formatDuration } from '@/utils/format'
-  import { SAVE_VERSION, STORE_NAMES, saveWriteFailure, storageKey, subscribeSaveWriteFailure } from '@/utils/storage'
+  import { SAVE_VERSION, STORE_NAMES, saveWriteFailure, subscribeSaveWriteFailure } from '@/utils/storage'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import PrivacyDialog from '@/components/common/PrivacyDialog.vue'
@@ -212,8 +211,6 @@
   const saveFailed = ref(saveWriteFailure() !== null)
   /** 被隔离的分片(启动时 preflightScan 记下的那份) */
   const corruptedNotice = computed<string[]>(() => ui.corruptedNotice)
-  /** 原档留在哪些备份键里 —— 说得出键名,玩家(或帮他的人)才找得回来 */
-  const corruptKeys = computed(() => corruptedNotice.value.map(id => `corrupt.${storageKey(id)}`).join('、'))
 
   /** 最近一条异常(诊断块里只展示这一条,其余随复制/导出带走) */
   const latestError = computed(() => diag.errors[diag.errors.length - 1] ?? null)

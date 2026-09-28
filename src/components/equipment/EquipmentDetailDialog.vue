@@ -108,7 +108,7 @@
           </li>
         </ul>
         <p class="mt-1 text-[10px] leading-relaxed text-ink-ghost">
-          排序:稀有度(传世 → 常见)→ 掷点;左侧色边即这一条的成色
+          这条儿按珍贵而排,左侧色边即它的成色
         </p>
       </template>
       <template v-if="buildPreview">
@@ -205,7 +205,7 @@
             </p>
           </div>
           <div class="mt-1.5 flex items-center gap-2">
-            <span class="text-[10px] text-ink-faint tabular">预算</span>
+            <span class="text-[10px] text-ink-faint tabular">至多洗</span>
             <input
               v-model.number="autoBudget"
               type="number"
@@ -443,7 +443,7 @@
         'success'
       )
     } else if (out.stop === 'budget') {
-      ui.toast(`预算用尽:连洗 ${out.rolls} 次,词条尽数重掷,未撞上「${wanted}」;今一身为 ${now},${cost}`, 'warn')
+      ui.toast(`定好的次数用完了:连洗 ${out.rolls} 次,未能撞上「${wanted}」。如今这一身是:${now},${cost}`, 'warn')
     } else if (out.stop === 'broke') {
       if (out.rolls === 0) {
         ui.toast(`灵石或器灵尘未足,难开这一炉,${cost}`, 'warn')

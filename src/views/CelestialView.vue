@@ -309,7 +309,7 @@
 
           <SectionTitle title="天道挑战书" hint="你定规则,天道定赏" />
           <div class="card-ink mt-2 px-4 py-3">
-            <p class="text-[11px] text-ink-faint">选界 · 叠变数(至多三条)· 立契 · 命名。赏格由天道实测难度定价,无从作弊。</p>
+            <p class="text-[11px] text-ink-faint">选界 · 叠变数(至多三条)· 立契 · 命名。天道观你出题之难,赏格随之而定,绝无虚价。</p>
             <div class="mt-2 flex flex-wrap gap-1.5">
               <button
                 v-for="w in CELESTIAL_WORLDS"
@@ -395,7 +395,7 @@
           <SectionTitle title="道痕" :hint="`历代修行履历 · ${endgame.marks.length} 则`" />
           <div class="mt-2 flex items-center justify-between px-1">
             <p class="text-[10px] tabular text-ink-ghost">
-              规则纪元 {{ RULESET_VERSION }} · 天道共改过 {{ RULESET_CHANGELOG.length }} 次
+              天道历 {{ RULESET_VERSION }} 世 · 天地规矩易过 {{ RULESET_CHANGELOG.length }} 回
             </p>
             <button class="font-kai text-[10px] text-azure active:scale-95" @click="openEra(null)">纪元变迁史 →</button>
           </div>
@@ -723,7 +723,7 @@
         如今再忆,规矩已换。
       </p>
       <p v-else class="text-[11px] leading-relaxed text-ink-soft">
-        纪元变迁史只记改变战斗规则本身的变更,内容增删不入此列。
+        纪元变迁,只记改了规矩的大事变;寻常增减,不记在此册。
       </p>
       <div class="mt-2.5 space-y-2">
         <div v-for="c in eraChanges" :key="c.version" class="card-ink px-3 py-2">

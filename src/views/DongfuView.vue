@@ -113,7 +113,7 @@
         把目标元素整个卸掉,关联悬空(辅助技术与自动化都读不到)。
       -->
       <Transition name="vein-drop">
-        <div id="vein-panel" v-show="veinsUnlocked && veinExpanded" class="overflow-hidden">
+        <div v-show="veinsUnlocked && veinExpanded" id="vein-panel" class="overflow-hidden">
           <VeinInvestCard />
         </div>
       </Transition>

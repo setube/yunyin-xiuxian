@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 228,
+  "round": 229,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-19T08:20:22+00:00",
+  "updated_at": "2026-09-28T03:01:33+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -3597,10 +3597,10 @@
     "HYP-015": {
       "id": "HYP-015",
       "type": "hypothesis",
-      "status": "active",
-      "version": 3,
+      "status": "stale",
+      "version": 4,
       "created_at": "2026-09-11T17:31:16+00:00",
-      "updated_at": "2026-09-15T10:55:24+00:00",
+      "updated_at": "2026-09-28T02:42:55+00:00",
       "touched_round": 186,
       "confidence": 0.95,
       "summary": "凡是同一件事有两处算法(在线/离线、预估/实战、展示/结算),新机制接进来时必漏一处 —— 判据:抽成一个函数,并让「另一处不得再出现原常数」成为红线"
@@ -12001,10 +12001,10 @@
     "HYP-096": {
       "id": "HYP-096",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-17T13:52:34+00:00",
-      "updated_at": "2026-09-17T13:52:34+00:00",
+      "updated_at": "2026-09-28T02:42:55+00:00",
       "touched_round": 209,
       "confidence": 0.95,
       "summary": "历练修为失效挂机的根因是「按玩家自身数值缩放」的百分比口径 × 遭遇自动高频:奖励随需求指数上涨,而遭遇的代价(12 秒)恒定 —— 与丹药那处同源(已改),故同一把尺子(等效闭关时长)可以同时治两处。"
@@ -12098,10 +12098,10 @@
     "TASK-193": {
       "id": "TASK-193",
       "type": "task",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-17T14:05:43+00:00",
-      "updated_at": "2026-09-17T14:05:43+00:00",
+      "updated_at": "2026-09-28T02:42:55+00:00",
       "touched_round": 204,
       "category": "maintainability",
       "severity": 0.3,
@@ -12173,10 +12173,10 @@
     "HYP-097": {
       "id": "HYP-097",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-17T14:20:52+00:00",
-      "updated_at": "2026-09-17T14:20:52+00:00",
+      "updated_at": "2026-09-28T02:42:55+00:00",
       "touched_round": 205,
       "confidence": 0.7,
       "summary": "界外十二境的高闲置/瓶颈读数的根因是审计口径缺一环:只算了建筑升级与装备强化两个出口,没算天道熔炉(界外唯一成规模的资源出口 → 道源),而不是界外资源真的没人要。"
@@ -12184,10 +12184,10 @@
     "HYP-098": {
       "id": "HYP-098",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-17T14:20:52+00:00",
-      "updated_at": "2026-09-17T14:20:52+00:00",
+      "updated_at": "2026-09-28T02:42:55+00:00",
       "touched_round": 205,
       "confidence": 0.75,
       "summary": "界外灵石被读成瓶颈的根因是丹方计价层级(2×minRealm+1,最高 41)越过了区域层级上限(32),而非灵石收入不足:把丹方价格按同一层级重折后,界外灵石收支会回到收入侧。"
@@ -12503,10 +12503,10 @@
     "HYP-099": {
       "id": "HYP-099",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-18T05:20:14+00:00",
-      "updated_at": "2026-09-18T05:20:14+00:00",
+      "updated_at": "2026-09-28T02:42:55+00:00",
       "touched_round": 210,
       "confidence": 0.95,
       "summary": "根因不在「首领的出现概率」,而在解锁的语义:它是一次性事件,不是不变量。凡「下游在击败之后才进数据表」都会永久卡住 —— 判据(前置已靖 → 此地已开)只写进了击败那一刻的那次调用,没有写进读档。"
@@ -13566,6 +13566,20 @@
       "source": "src/ui/signedPercent.spec.ts",
       "summary": "modsText 历练遇敌带不缩短行程;exploration 时长与间隔分列",
       "confidence": 1
+    },
+    "TASK-222": {
+      "id": "TASK-222",
+      "type": "task",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T03:01:33+00:00",
+      "updated_at": "2026-09-28T03:01:33+00:00",
+      "touched_round": 229,
+      "category": "maintainability",
+      "severity": 0.6,
+      "confidence": 0.9,
+      "effort": 2,
+      "summary": "开发者腔文案收口第二波:装备详情/数值体系/渡劫说明/设置页/图鉴/流派得分等 19 处「给程序员看的口吻」改说人话,并修掉 BuildView 里会随阈值暴露的格式"
     }
   },
   "edges": [

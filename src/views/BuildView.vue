@@ -59,7 +59,7 @@
               </span>
               <span v-if="dimKey === l.key" class="mt-1 block rounded-md bg-paper/70 px-2 py-1.5">
                 <span class="block text-[10px] text-ink-soft">
-                  {{ l.name }}得分 {{ l.score.toFixed(2) }} · 跨 {{ powerRating.thresholds[l.key].join(' / ') }} 逐级加星
+                  {{ l.name }}得分 {{ l.score.toFixed(2) }} · 一至五星,分高星足
                 </span>
                 <span v-for="t in l.terms" :key="t.label" class="mt-0.5 flex justify-between text-[10px]">
                   <span class="text-ink-faint">{{ t.label }}</span>
@@ -67,7 +67,7 @@
                 </span>
                 <span v-if="!l.terms.length" class="block text-[10px] text-ink-ghost">这一维还没有词条撑着。</span>
                 <span class="mt-1 block text-[9px] leading-relaxed text-ink-ghost">
-                  贡献之和就是得分 —— 星级只看得分跨过哪一档。
+                  底下各项相加,便得出这一维的得分;星随得分而升。
                 </span>
               </span>
             </button>

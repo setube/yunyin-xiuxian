@@ -213,20 +213,20 @@
         </div>
       </div>
       <p class="mt-2 text-[10px] leading-relaxed text-ink-ghost">
-        门的效果全部用既有的战斗规则表达,不另造字段 —— 不择门(走常道)时,规则与从前逐字相同。
+        八门并非新的规则,只是换了打法 —— 不择门时,一切与从前无异。
       </p>
     </section>
     </template>
 
     <template v-if="codexTab === 'todo' && PLANNED_SCHOOLS.length">
-      <SectionTitle title="待续" hint="已列入路线、尚未实装的经典门类" />
+      <SectionTitle title="待续" hint="已在构思、尚未成书的门类" />
       <section class="card-ink divide-y divide-ink/7 px-4">
       <div v-for="p in PLANNED_SCHOOLS" :key="p.name" class="flex items-start gap-2 py-2.5">
         <span class="w-[104px] shrink-0 font-kai text-[12px] text-ink-soft">{{ p.name }}</span>
         <span class="text-[11px] leading-relaxed text-ink-faint">{{ p.note }}</span>
       </div>
       <p class="py-2.5 text-[10px] leading-relaxed text-ink-ghost">
-        这里只列尚未动的门类,不写空话 —— 真接上之后,它们会带着自己的典籍与玩法搬进来。
+        已有构思、尚未成书的门类 —— 待它接好,自会带典籍与玩法入此册。
       </p>
       </section>
     </template>
