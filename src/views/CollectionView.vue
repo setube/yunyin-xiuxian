@@ -42,7 +42,16 @@
               {{ entry.name }}
               <span v-if="entry.badge" class="text-[9px] opacity-70">{{ entry.badge }}</span>
             </button>
-            <span v-else class="chip-ink border-ink/15 text-ink-ghost" :title="`尚未收录 · ${cat.source}`">???</span>
+            <!--
+              未收录的条目降噪:已收是彩签,未收若也用同样粗的实线边框「???」,
+              收藏一多就成了整片灰点、压过真内容。改用更细的虚线框 + 更小的
+              圆点占位,一眼分清「已收的」与「还没的」,又不至于喧宾夺主。
+            -->
+            <span
+              v-else
+              class="inline-flex items-center rounded-full border border-dashed border-ink/15 px-2 py-0.5 text-[10px] leading-snug text-ink-ghost/60"
+              :title="`尚未收录 · ${cat.source}`"
+            >???</span>
           </template>
         </div>
       </section>

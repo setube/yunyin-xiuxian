@@ -1,6 +1,6 @@
 <template>
   <!-- 修炼法球:三层反向旋转环 + 外圈能量粒子 + 八卦符文 + SVG 进度环 + 内圈轨道粒子 配色改为水墨朱砂金 -->
-  <div class="orb-root" :class="{ cultivating: active, breakthrough: full }">
+  <div class="orb-root" :style="sizeStyle" :class="{ cultivating: active, breakthrough: full }">
     <!-- 背景能量粒子(外圈,12 颗,随相位散布) -->
     <div class="particle-ring">
       <div v-for="i in 12" :key="i" class="orb-particle" :style="particleStyle(i)" />
@@ -46,14 +46,29 @@
 <script setup lang="ts">
   import { computed } from 'vue'
 
-  const props = defineProps<{
-    /** 修炼激活(加速粒子/点亮光环) */
-    active: boolean
-    /** 修为圆满(突破就绪) */
-    full: boolean
-    /** 进度 0~1(控制 SVG 环) */
-    progress: number
-  }>()
+  const props = withDefaults(
+    defineProps<{
+      /** 修炼激活(加速粒子/点亮光环) */
+      active: boolean
+      /** 修为圆满(突破就绪) */
+      full: boolean
+      /** 进度 0~1(控制 SVG 环) */
+      progress: number
+      /** 法球直径(px)。窄屏并排布局用更小的法球,免得挤到旁边的文本 */
+      size?: number
+    }>(),
+    { size: 140 }
+  )
+
+  /** 法球整体尺寸:直径 + 内部各绝对定位距离都按比例缩放,不能只改外框(粒子的散布、八卦环的半径都是绝对 px) */
+  const sizeStyle = computed(() => {
+    const s = props.size
+    const k = s / 140 // 缩放系数 —— 一圈代码里的绝对 px 都乘它,法球才不会缩小后粒子散到圈外
+    return {
+      '--orb-size': `${s}px`,
+      '--orb-k': String(k)
+    }
+  })
 
   const BAGUA = ['☰', '☱', '☲', '☳', '☴', '☵', '☶', '☷']
   const CIRCUMFERENCE = 2 * Math.PI * 54 // r=54
@@ -69,7 +84,8 @@
       '--ang': `${angle}deg`,
       '--delay': `${delay}s`,
       '--dur': `${duration}s`,
-      '--dist': `${distance}px`
+      // 粒子散布半径跟着法球缩放:基线 60~90px 乘 --orb-k,避免小法球的粒子散到圈外
+      '--dist': `calc((${distance}px) * var(--orb-k, 1))`
     }
   }
 </script>
@@ -77,8 +93,8 @@
 <style scoped>
   .orb-root {
     position: relative;
-    width: 140px;
-    height: 140px;
+    width: var(--orb-size, 140px);
+    height: var(--orb-size, 140px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -115,11 +131,11 @@
     0%,
     100% {
       opacity: 0;
-      transform: translate(-50%, -50%) rotate(var(--ang)) translateY(calc(var(--dist) + 14px)) scale(0.4);
+      transform: translate(-50%, -50%) rotate(var(--ang)) translateY(calc(var(--dist) + (14px * var(--orb-k, 1)))) scale(0.4);
     }
     50% {
       opacity: 0.8;
-      transform: translate(-50%, -50%) rotate(var(--ang)) translateY(calc(var(--dist) - 6px)) scale(1);
+      transform: translate(-50%, -50%) rotate(var(--ang)) translateY(calc(var(--dist) - (6px * var(--orb-k, 1)))) scale(1);
     }
   }
 
@@ -152,19 +168,19 @@
   }
 
   .ring-a {
-    inset: 10px;
+    inset: calc(10px * var(--orb-k, 1));
     border-color: rgb(var(--color-gold-ink-rgb) / 0.40);
     animation: rot-cw 20s linear infinite;
   }
 
   .ring-b {
-    inset: 2px;
+    inset: calc(2px * var(--orb-k, 1));
     border-color: rgb(var(--color-jade-rgb) / 0.30);
     animation: rot-ccw 25s linear infinite;
   }
 
   .ring-c {
-    inset: -8px;
+    inset: calc(-8px * var(--orb-k, 1));
     border-color: rgb(var(--color-violet-ink-rgb) / 0.20);
     animation: rot-cw 30s linear infinite;
   }
@@ -196,8 +212,9 @@
   .orb-body {
     position: relative;
     z-index: 2;
-    width: 68px;
-    height: 68px;
+    width: calc(68px * var(--orb-k, 1));
+    height: calc(68px * var(--orb-k, 1));
+    border-radius: 50%;
     border-radius: 50%;
     background: linear-gradient(
       135deg,
@@ -258,15 +275,15 @@
 
   @keyframes inner-orbit {
     0% {
-      transform: translate(-50%, -50%) rotate(0deg) translateX(20px) scale(0.5);
+      transform: translate(-50%, -50%) rotate(0deg) translateX(calc(20px * var(--orb-k, 1))) scale(0.5);
       opacity: 0.3;
     }
     50% {
-      transform: translate(-50%, -50%) rotate(180deg) translateX(24px) scale(1);
+      transform: translate(-50%, -50%) rotate(180deg) translateX(calc(24px * var(--orb-k, 1))) scale(1);
       opacity: 1;
     }
     100% {
-      transform: translate(-50%, -50%) rotate(360deg) translateX(20px) scale(0.5);
+      transform: translate(-50%, -50%) rotate(360deg) translateX(calc(20px * var(--orb-k, 1))) scale(0.5);
       opacity: 0.3;
     }
   }
@@ -349,9 +366,9 @@
     position: absolute;
     left: 50%;
     top: 50%;
-    font-size: 10px;
+    font-size: calc(10px * var(--orb-k, 1));
     color: rgb(var(--color-gold-ink-rgb) / 0.28);
-    transform: translate(-50%, -50%) rotate(var(--ang)) translateY(-72px) rotate(calc(-1 * var(--ang)));
+    transform: translate(-50%, -50%) rotate(var(--ang)) translateY(calc(-72px * var(--orb-k, 1))) rotate(calc(-1 * var(--ang)));
     transition: color 0.3s ease;
   }
 

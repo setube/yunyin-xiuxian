@@ -399,6 +399,17 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+ * body 全局禁选是给游戏界面用的,但别把输入框也卷进去:
+ * 「加个标记」「自动重铸次数」这些字的选取/光标拖动,在禁选下一部分
+ * webview 会失灵(尤其安卓内嵌),玩家打完的字想改一改都难。
+ */
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 /* ================= 夜间主题 =================
    只覆盖 -rgb 通道值:Tailwind 工具类(text-ink / bg-paper 等)读的是通道值,
    :root 里的派生变量 --color-x 也是从通道值算出来的,组件层的 color-mix
@@ -601,6 +612,18 @@ html[data-theme='dark'] {
   border: 1px solid currentColor;
   line-height: 1.5;
   white-space: nowrap;
+}
+
+/*
+ * chip-ink 默认 nowrap 是防「你/好」被拆断;可真要占满整行时(如闭关按钮,
+ * 卡片内宽 ~208px 塞不下「闭关 · 5分钟 修炼 +150%」一长串),钉死不换行就会
+ * 让文字戳破圆角胶囊的两端。这里给一个显式换行覆写:需要长文案占行时
+ * 加 .chip-ink-wrap,并把「数+量词」各自 nowrap,换行只发生在分隔符处。
+ */
+.chip-ink-wrap {
+  white-space: normal;
+  text-align: left;
+  justify-content: flex-start;
 }
 
 /*

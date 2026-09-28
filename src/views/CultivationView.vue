@@ -128,9 +128,12 @@
         <div class="ink-divider my-2" />
         <!-- 此劫账单:四项百分比指标两两并排,别有十逗号长句了 -->
         <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
-          <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
+          <p class="flex flex-col gap-0.5 text-[10px] tabular">
             <span class="text-ink-faint">天劫抗性</span>
-            <span class="text-ink-soft">{{ formatPercent(tribLedger.resist, 0) }}<span class="text-ink-ghost">(防御折 {{ formatPercent(tribLedger.statResist, 0) }})</span></span>
+            <span class="text-ink-soft leading-tight">
+              {{ formatPercent(tribLedger.resist, 0) }}
+              <span class="text-ink-ghost">(防御折 {{ formatPercent(tribLedger.statResist, 0) }})</span>
+            </span>
           </p>
           <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
             <span class="text-ink-faint">每波恢复</span>
@@ -140,9 +143,12 @@
             <span class="text-ink-faint">减伤</span>
             <span class="text-ink-soft">{{ formatPercent(tribLedger.reduction, 0) }}</span>
           </p>
-          <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
+          <p class="flex flex-col gap-0.5 text-[10px] tabular">
             <span class="text-ink-faint">开劫护持</span>
-            <span class="text-ink-soft">{{ formatPercent(tribLedger.guard, 0) }}<span class="text-ink-ghost">(气血折 {{ formatPercent(tribLedger.statGuard, 0) }})</span></span>
+            <span class="text-ink-soft leading-tight">
+              {{ formatPercent(tribLedger.guard, 0) }}
+              <span class="text-ink-ghost">(气血折 {{ formatPercent(tribLedger.statGuard, 0) }})</span>
+            </span>
           </p>
         </div>
         <p class="mt-2 text-[9px] leading-relaxed text-ink-ghost">
@@ -167,13 +173,15 @@
           灵根相应:{{ reliefRoots.map(e => ELEMENTS[e].name).join('、') }} —— 此劫为你留了一线,能走到哪一步仍看自身准备。
         </p>
       </div>
-      <p class="mt-1 text-[11px] text-ink-faint tabular">
+      <p class="mt-1 flex items-center gap-1.5 text-[11px] text-ink-faint tabular">
         耗灵气 {{ formatNum(btInfo.qiCost) }}
-        <template v-if="btInfo.needTribulation">
-          ·
-          <span class="text-violet-ink">此乃大关,需渡天劫</span>
-        </template>
-        <template v-else-if="btInfo.isMajor">· 大境界之槛</template>
+        <!-- 大关/大槛落在小印章上,与全页「静/备/主/秘」一套印章语言呼应,不再是一行朱砂裸字 -->
+        <span v-if="btInfo.needTribulation" class="rounded bg-violet-ink/12 px-1.5 py-0.5 text-[10px] leading-none text-violet-ink">
+          大关 · 渡劫
+        </span>
+        <span v-else-if="btInfo.isMajor" class="rounded bg-ink/6 px-1.5 py-0.5 text-[10px] leading-none text-ink-faint">
+          大境界之槛
+        </span>
       </p>
 
       <!-- Phase 28 突破准备:静坐调息 / 服聚气丹(无劫突破时,一次性加成) -->
@@ -235,7 +243,7 @@
           静坐一炷香({{ retreatMinutes }} 分钟),修炼速度 +{{ retreatPct }}%;闭关期间无法外出历练。
         </p>
         <button v-if="!retreating" type="button" class="chip-ink mt-2 w-full !py-1.5 text-[11px]" @click="beginRetreat">
-          闭关 · {{ retreatMinutes }}分钟 修炼 +{{ retreatPct }}%(期间无法历练)
+          闭关 · {{ retreatMinutes }}分钟 修炼 +{{ retreatPct }}%
         </button>
       </div>
     </div>

@@ -35,7 +35,7 @@
         <div
           v-for="row in petRows"
           :key="row.def.id"
-          class="card-ink flex items-center gap-2.5 px-3 py-2.5"
+          class="card-ink flex items-center gap-2.5 px-4 py-2.5"
         >
           <!-- 灵兽印章:从一行小图标长成一块色底印章;相伴时转玉色光晕 -->
           <span

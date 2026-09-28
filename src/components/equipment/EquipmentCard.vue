@@ -31,10 +31,15 @@
     <span v-if="props.item.level > 0" class="absolute bottom-0.5 right-1 text-[9px] leading-none text-gold-ink tabular">
       +{{ props.item.level }}
     </span>
-    <!-- 自定标记:格子背包里也认得出「这件是哪个流派」(玩家反馈,≤4字) -->
+    <!--
+      自定标记:格子背包里也认得出「这件是哪个流派」(玩家反馈,≤4字)。
+      三枚底角标(共 / 标记 / +N)共处底边,标记不再是居中飘 80% 宽 —— 那会把
+      左「共」右「+N」都盖住(共鸣件 + 强化 + 带标记一件集齐时糊成一团)。
+      改为左右各让出 24px(left-6/right-6),文字居中截断,三枚各就各位。
+    -->
     <span
       v-if="props.item.note"
-      class="absolute bottom-0.5 left-1/2 max-w-[80%] -translate-x-1/2 truncate text-center text-[8px] leading-none text-ink-faint"
+      class="absolute bottom-0.5 left-6 right-6 truncate text-center text-[8px] leading-none text-ink-faint"
     >
       {{ props.item.note }}
     </span>

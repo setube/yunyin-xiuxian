@@ -54,18 +54,26 @@
               作主脉时多投的 {{ surplusPoints(v.id) }} 点仍在账上,其效分毫不减,只是不能再添
             </p>
           </div>
-          <!-- 投点单列:主动权放右边,说明体不再整行抢点击 -->
+          <!--
+            投点单列:主动权放右边,说明体不再整行抢点击。
+            窄屏别让它吃掉整行:投点钮不再写死 nowrap(320 宽下「投一点 · 123,456 石」
+            单钮就有 ~110px,连着「改立主脉」会把脉名/说明压成极窄高列、长句碎行);
+            按钮文字在窄屏省略「一点」,并允许折行兜底 —— 拆开的永远是「数+量词」整体。
+          -->
           <div class="flex shrink-0 flex-col items-end gap-1 self-start">
-            <button class="btn-ghost whitespace-nowrap !px-2.5 !py-1.5 !text-[11px]" :disabled="!canInvest(v.id)" @click="doInvest(v.id)">
-              <template v-if="canInvest(v.id)">投一点 · {{ formatGN(investCost) }} 石</template>
+            <button class="btn-ghost whitespace-normal !px-2.5 !py-1.5 !text-[11px]" :disabled="!canInvest(v.id)" @click="doInvest(v.id)">
+              <template v-if="canInvest(v.id)">
+                <span class="hidden min-[400px]:inline">投一点 · </span>
+                <span class="whitespace-nowrap">{{ formatGN(investCost) }} 石</span>
+              </template>
               <template v-else>{{ investedStateLabel(v.id) }}</template>
             </button>
             <button
               v-if="canSwitchTo(v.id)"
-              class="mt-0.5 inline-flex items-center gap-1 rounded-full border border-cinnabar/40 px-2 py-0.5 text-[10px] leading-none text-cinnabar active:scale-95"
+              class="btn-ghost mt-0.5 !px-2.5 !py-1 !text-[10px]"
               @click="doSwitch(v.id)"
             >
-              改立主脉 · {{ formatGN(switchCost) }} 石
+              改立主脉 · <span class="whitespace-nowrap">{{ formatGN(switchCost) }} 石</span>
             </button>
           </div>
         </div>

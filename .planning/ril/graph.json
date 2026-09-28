@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 229,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T03:01:33+00:00",
+  "updated_at": "2026-09-28T03:40:30+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13570,16 +13570,41 @@
     "TASK-222": {
       "id": "TASK-222",
       "type": "task",
-      "status": "active",
-      "version": 1,
+      "status": "resolved",
+      "version": 2,
       "created_at": "2026-09-28T03:01:33+00:00",
-      "updated_at": "2026-09-28T03:01:33+00:00",
+      "updated_at": "2026-09-28T03:04:17+00:00",
       "touched_round": 229,
       "category": "maintainability",
       "severity": 0.6,
       "confidence": 0.9,
       "effort": 2,
       "summary": "开发者腔文案收口第二波:装备详情/数值体系/渡劫说明/设置页/图鉴/流派得分等 19 处「给程序员看的口吻」改说人话,并修掉 BuildView 里会随阈值暴露的格式"
+    },
+    "CHG-248": {
+      "id": "CHG-248",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T03:04:17+00:00",
+      "updated_at": "2026-09-28T03:04:17+00:00",
+      "touched_round": 229,
+      "commit": "cccc1ed",
+      "summary": "开发者腔文案收口 19 处(TASK-222):装备详情/数值体系/渡劫/设置/图鉴/流派,去工程术语,含 BuildView 阈值不虚构"
+    },
+    "TASK-223": {
+      "id": "TASK-223",
+      "type": "task",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-28T03:40:30+00:00",
+      "updated_at": "2026-09-28T03:40:30+00:00",
+      "touched_round": 229,
+      "category": "maintainability",
+      "severity": 0.55,
+      "confidence": 0.9,
+      "effort": 2,
+      "summary": "排版/视觉打磨:闭关按钮溢出、首页法球窄屏挤压、装备角标叠盖、灵脉操作列挤压、圆角一致性、图鉴占位降噪、天劫账单换行、突破印章、离线档位拆行、输入框可选字、chip-ink-wrap 覆写类"
     }
   },
   "edges": [

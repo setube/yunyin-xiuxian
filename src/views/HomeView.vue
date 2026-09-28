@@ -36,10 +36,15 @@
           <!-- 风味句不负责报数:加减从天时定义现算,避免「火属 / 雷属」这类并未生效的承诺 -->
           <p class="mt-0.5 text-[10px] leading-relaxed text-ink-soft tabular">{{ weatherLine }}</p>
         </div>
-        <!-- 修炼法球 · 灵气法阵环绕 -->
-        <div class="relative mr-1 -mt-1 h-35 w-35 shrink-0">
-          <CultivationOrb :active="true" :full="player.expFull" :progress="player.expProgress">
-            <span class="text-[17px]">☯</span>
+        <!--
+          修炼法球 · 灵气法阵环绕。
+          窄屏并排时 140px 的法球会占到主卡大半宽,把左侧的天气/风味句压成极窄高列;
+          380px 以下改用 108px 法球(内部粒子/八卦环随 size 比例缩放,不是简单 blur),
+          给左侧文本让出地方。
+        -->
+        <div class="relative mr-1 -mt-1 h-35 w-35 shrink-0 max-[380px]:h-[108px] max-[380px]:w-[108px]">
+          <CultivationOrb :active="true" :full="player.expFull" :progress="player.expProgress" :size="orbSize">
+            <span class="text-[17px] max-[380px]:text-[13px]">☯</span>
           </CultivationOrb>
         </div>
       </div>
@@ -147,6 +152,9 @@
   const adventure = useAdventureStore()
   const cultivation = useCultivationStore()
   const quests = useQuestsStore()
+
+  // 法球尺寸:380px 以下卡片内宽骤减,法球随 CSS 断点同步缩到 108px(与模板容器 max-[380px] 断点对应)
+  const orbSize = computed<number>(() => (window.matchMedia('(max-width: 380px)').matches ? 108 : 140))
 
   /** 洞府入口右侧实况:离线可攒小时 + 已营座数(与洞府页纪要同源现算) */
   const offlineHrs = computed(() => dongfu.offlineCapHours)

@@ -25,7 +25,7 @@
     <div class="rounded-md border border-ink/10 bg-paper-deep/50 px-3 py-2.5">
       <div class="flex items-center justify-between">
         <span class="font-kai text-[12px] tracking-wider text-ink-soft">洞府纪要</span>
-        <span class="rounded-full border border-gold-ink/30 px-2 py-0.5 text-[10px] text-gold-ink">离线上限 {{ summary.offlineHrs }} 时</span>
+        <span class="rounded border border-gold-ink/30 px-2 py-0.5 text-[10px] text-gold-ink">离线上限 {{ summary.offlineHrs }} 时</span>
       </div>
       <div class="mt-1.5 grid grid-cols-3 gap-1.5">
         <!-- 三格各配一枚小章:灵草叶 / 玄铁斧 / 悟道书,图比字先被眼睛接住 -->
@@ -55,9 +55,16 @@
           辅修栏 <span class="tabular text-ink-soft">{{ summary.subSlots }}</span>
         </span>
       </div>
-      <!-- 离线档位:5 段一览,现在第几档、升洞府能到哪一档,不看向来只报一个数 -->
-      <div class="mt-1.5 flex items-center gap-1">
-        <span class="mr-0.5 shrink-0 text-[9px] text-ink-faint">离线可攒</span>
+      <!--
+        离线档位:5 段一览,现在第几档、升洞府能到哪一档,不看向来只报一个数。
+        标签与档数不再和段条挤同一行 —— 那样三种字号(9px 标签 / 6px 段条 / 楷体数字)
+        竖直混排,细碎得像一行乱码。改成两行:上有标签与数,段条单独占一整行。
+      -->
+      <div class="mt-1.5 flex items-baseline justify-between">
+        <span class="text-[9px] text-ink-faint">离线可攒</span>
+        <span class="font-kai text-[10px] tabular text-gold-ink">{{ summary.offlineHrs }} 时</span>
+      </div>
+      <div class="mt-1 flex items-center gap-1">
         <span
           v-for="(hr, i) in OFFLINE_CAP_HOURS"
           :key="hr"
@@ -65,7 +72,6 @@
           :class="i <= mansionLv ? 'bg-gold-ink/70' : 'bg-ink/8'"
           :title="`洞府 ${i} 级 · 离线可攒 ${hr} 时`"
         ></span>
-        <span class="ml-0.5 shrink-0 text-[9px] font-kai tabular text-gold-ink">{{ summary.offlineHrs }}</span>
       </div>
     </div>
 

@@ -137,11 +137,18 @@
     </button>
 
     <RouterLink to="/titles" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
-      <!-- 相伴灵兽的"脸":有伴时亮出一枚玉印,未伴时留个虚位 -->
+      <!--
+        相伴灵兽的"脸":有伴时亮出一枚玉印,未伴时也留一枚灰底虚位印 ——
+        9 张入口卡里只有这一张带前导图标,若用 v-if 直接消失,无宠物时的
+        文字起点会偏左、与同组其它卡对不齐(排版上像缺了一块)。
+      -->
       <span
-        v-if="currentPetIcon"
-        class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-jade/10 text-jade"
-      ><GameIcon :name="currentPetIcon" :size="18" /></span>
+        class="grid h-9 w-9 shrink-0 place-items-center rounded-md"
+        :class="currentPetIcon ? 'bg-jade/10 text-jade' : 'bg-ink/5 text-ink-ghost'"
+      >
+        <GameIcon v-if="currentPetIcon" :name="currentPetIcon" :size="18" />
+        <span v-else class="font-kai text-[13px]">未</span>
+      </span>
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">名号与灵兽</span>
         <span class="block truncate text-[10px] text-ink-faint">
