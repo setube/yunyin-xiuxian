@@ -27,8 +27,7 @@ export default {
         ink: {
           DEFAULT: withAlpha('--color-ink-rgb'),
           soft: withAlpha('--color-ink-soft-rgb'),
-          faint: withAlpha('--color-ink-faint-rgb'),
-          ghost: withAlpha('--color-ink-ghost-rgb')
+          faint: withAlpha('--color-ink-faint-rgb')
         },
         cinnabar: {
           DEFAULT: withAlpha('--color-cinnabar-rgb'),

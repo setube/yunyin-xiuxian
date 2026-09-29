@@ -9,11 +9,10 @@
  * 三 **浅/夜两套对不上**:夜间主题只覆盖通道值,却不许只在一边定义 token。
  * 四 **小字读不清**:每一档颜色按它**自己的角色**过线 ——
  *    正文承载档(墨四阶里的三阶 + 紫)在浅/夜里都要 ≥4.5:1;
- *    强调档(朱/深朱/玉/青/金/琥珀/靛)是标题、图标、大字的主场,守 ≥3:1(大字 AA),
- *    提过 4.5 的那几枚即可挪进正文档;
- *    印面(ink-ghost)两张纸上都 <3,只准装饰、不许当正文 —— 它正是「纸上的墨放不下
- *    第四档还能读的字」,应随改版逐步撤走(账目见注释末尾)。顺带防一层级回退:
- *    墨必须越来越淡(ghost < faint < soft < ink)。
+ *    强调档(朱/深朱)是按钮、大字的主场,守 ≥3:1(大字 AA);
+ *    dark 朱作按钮底时托奶油白字仅 3.81,印面方案待建(TASK-232)。
+ *    纸上的墨只有三档:第四档 ink-ghost(浅色仅 1.66:1,托不住能读的字)已撤,
+ *    原先承载次要小字的 134 处全迁 ink-faint,判据断言"不得复活"。
  * 五 **手抄回流**:浏览器 chrome 色(theme.ts)、index.html 首帧 meta、独立成篇的
  *    public/privacy.html 不能引用 CSS 变量,只能抄;用判据代替人眼盯账。
  *
@@ -23,10 +22,10 @@
  *          jade 4.51/5.44 · indigo-ink 5.67/5.80
  *   强调档:cinnabar 4.81/3.02(dark 朱作按钮底时托白字仅 3.81,印面方案待建,勿下移)
  *          cinnabar-deep 6.29/3.70
- *   印面:ink-ghost 1.66/2.24(纯装饰;全仓仍有 text-ink-ghost 处用法,分批撤)
+ *   墨档:ink-ghost 已撤(浅 1.66:1 读不清,134 处 text-ink-ghost 全迁 ink-faint)
  */
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const ROOT = resolve(__dirname, '../..')
@@ -81,8 +80,6 @@ function surfacesOf(theme: 'light' | 'dark'): Rgb[] {
 const STRONG = ['ink', 'ink-soft', 'ink-faint', 'violet-ink', 'azure', 'gold-ink', 'amber-ink', 'jade', 'indigo-ink']
 /** 强调档(标题/图标/大字):≥3 大字 AA;提过 4.5 后挪进 STRONG */
 const WEAK = ['cinnabar', 'cinnabar-deep']
-/** 印面:纸上的第四档墨,只准装饰 */
-const GHOST = 'ink-ghost'
 
 function channel(c: number): number {
   const v = c / 255
@@ -106,6 +103,22 @@ function worst(name: string, theme: 'light' | 'dark'): number {
 
 function hexOf(rgb: Rgb): string {
   return '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()
+}
+
+/** 扫源码文本,回报命中的文件(用于"某某名字不该再出现"这类判据) */
+function filesMatching(dir: string, pattern: RegExp, ext: RegExp): string[] {
+  const hits: string[] = []
+  const walk = (d: string): void => {
+    for (const entry of readdirSync(d, { withFileTypes: true })) {
+      const path = resolve(d, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else if (ext.test(entry.name) && !entry.name.endsWith('.spec.ts') && pattern.test(readFileSync(path, 'utf-8'))) {
+        hits.push(path.slice(ROOT.length + 1))
+      }
+    }
+  }
+  walk(dir)
+  return hits
 }
 
 describe('调色板 · 一份事实源', () => {
@@ -157,14 +170,12 @@ describe('调色板 · 承载文字的色都过线', () => {
     expect(bad, '强调档也承载文字,跌破 3:1 就真的看不见了').toEqual([])
   })
 
-  it('印面是不是文字档:它两张纸上都 <3,且层级单调(墨必须越来越淡)', () => {
-    // ghost 这一档的存在意义是「退场的信息」,若哪天它比 faint 还深,层级就倒挂了
-    for (const theme of ['light', 'dark'] as const) {
-      const ladder = [GHOST, 'ink-faint', 'ink-soft', 'ink'].map(n => worst(n!, theme))
-      expect(ladder, `${theme} 主题的墨阶没有严格递增(ghost<faint<soft<ink)`).toEqual([...ladder].sort((a, b) => a - b))
-    }
-    expect(worst(GHOST, 'light')).toBeLessThan(3)
-    expect(worst(GHOST, 'dark')).toBeLessThan(3)
+  it('纸上的墨只有三档:ink-ghost 已撤档,四处都不得请它回来', () => {
+    expect(LIGHT.has('ink-ghost'), 'ghost 档已撤,不许作为 token 复活').toBe(false)
+    expect(TAILWIND).not.toContain('ink-ghost')
+    expect(PRIVACY).not.toContain('ink-ghost')
+    // src 里的 .vue/.ts 也不许再手写这个类名(没有 token 就不生成样式,写了等于隐形文字)
+    expect(filesMatching(resolve(ROOT, 'src'), /ink-ghost/, /\.(vue|ts)$/)).toEqual([])
   })
 })
 

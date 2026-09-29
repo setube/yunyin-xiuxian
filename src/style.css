@@ -17,7 +17,6 @@
   --color-ink-rgb: 41 39 34;
   --color-ink-soft-rgb: 74 70 61;
   --color-ink-faint-rgb: 104 99 88;
-  --color-ink-ghost-rgb: 185 178 160;
   --color-cinnabar-rgb: 168 63 57;
   --color-cinnabar-deep-rgb: 140 51 46;
   --color-indigo-ink-rgb: 62 92 99;
@@ -33,7 +32,6 @@
   --color-ink: rgb(var(--color-ink-rgb));
   --color-ink-soft: rgb(var(--color-ink-soft-rgb));
   --color-ink-faint: rgb(var(--color-ink-faint-rgb));
-  --color-ink-ghost: rgb(var(--color-ink-ghost-rgb));
   --color-cinnabar: rgb(var(--color-cinnabar-rgb));
   --color-cinnabar-deep: rgb(var(--color-cinnabar-deep-rgb));
   --color-indigo-ink: rgb(var(--color-indigo-ink-rgb));
@@ -417,7 +415,6 @@ html[data-theme='dark'] {
   --color-ink-rgb: 232 226 210;
   --color-ink-soft-rgb: 198 191 169;
   --color-ink-faint-rgb: 168 161 140;
-  --color-ink-ghost-rgb: 107 101 87;
   --color-cinnabar-rgb: 201 85 78;
   --color-cinnabar-deep-rgb: 212 105 95;
   --color-indigo-ink-rgb: 147 179 185;
