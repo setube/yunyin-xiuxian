@@ -1,7 +1,7 @@
 <template>
   <button
     class="relative aspect-square rounded-md border transition-transform active:scale-95"
-    :style="{ borderColor: quality.color + '55', background: quality.color + '0f' }"
+    :style="{ borderColor: tint(quality.color, 0.33), background: tint(quality.color, 0.06) }"
     :data-uid="props.item.uid"
     @click="emit('open', props.item.uid)"
   >
@@ -51,6 +51,7 @@
   import type { EquipmentInstance } from '@/types'
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef } from '@/data/qualities'
+  import { tint } from '@/utils/colorToken'
   import { equipSetDef } from '@/core/equipSet'
   import GameIcon from '@/components/common/GameIcon.vue'
 

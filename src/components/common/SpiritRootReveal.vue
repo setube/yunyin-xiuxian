@@ -45,12 +45,12 @@
   const GRADES: { name: string; color: string }[] = [
     { name: '杂灵根', color: '#857f70' },
     { name: '伪灵根', color: '#857f70' },
-    { name: '真灵根', color: '#6e8b74' },
-    { name: '上灵根', color: '#4f7699' },
-    { name: '异灵根', color: '#7b5ea7' },
-    { name: '变异灵根', color: '#7b5ea7' },
+    { name: '真灵根', color: 'var(--color-jade)' },
+    { name: '上灵根', color: 'var(--color-azure)' },
+    { name: '异灵根', color: 'var(--color-violet-ink)' },
+    { name: '变异灵根', color: 'var(--color-violet-ink)' },
     { name: '天灵根', color: '#c9a227' },
-    { name: '混沌灵根', color: '#a83f39' }
+    { name: '混沌灵根', color: 'var(--color-cinnabar)' }
   ]
 
   /** 当前轮换位置(轮换中随机,结束时定格为真实灵根;必须用 ref 才能触发 computed 重算) */

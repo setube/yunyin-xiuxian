@@ -92,7 +92,7 @@
           v-for="row in pillRows"
           :key="row.def!.id"
           class="relative aspect-square rounded-md border transition-transform active:scale-95"
-          :style="{ borderColor: qualityDef(row.def!.quality).color + '55', background: qualityDef(row.def!.quality).color + '0f' }"
+          :style="{ borderColor: tint(qualityDef(row.def!.quality).color, 0.33), background: tint(qualityDef(row.def!.quality).color, 0.06) }"
           @click="pillDetail = row.def!.id"
         >
           <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
@@ -217,7 +217,7 @@
         <div class="flex items-center gap-3">
           <span
             class="grid h-12 w-12 shrink-0 place-items-center rounded-md"
-            :style="{ color: qualityDef(currentPill.def.quality).color, background: qualityDef(currentPill.def.quality).color + '14' }"
+            :style="{ color: qualityDef(currentPill.def.quality).color, background: tint(qualityDef(currentPill.def.quality).color, 0.08) }"
           >
             <GameIcon :name="currentPill.def.icon" :size="24" />
           </span>
@@ -511,6 +511,7 @@
   import { useLoreStore } from '@/stores/lore'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
   import { cnNumber, formatGN, formatNum, formatPercent } from '@/utils/format'
+  import { tint } from '@/utils/colorToken'
   import { STAT_NAMES, statCaveat, statModPhrase } from '@/ui/statNames'
   import {
     artifactSlotReplacedToast,

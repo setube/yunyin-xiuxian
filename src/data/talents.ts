@@ -49,4 +49,4 @@ export function talentDef(id: string): TalentDef | undefined {
 }
 
 export const TALENT_GRADE_NAMES = ['', '凡赋', '灵赋', '天赋', '道赋'] as const
-export const TALENT_GRADE_COLORS = ['', '#857F70', '#4F7699', '#7B5EA7', '#C9A227'] as const
+export const TALENT_GRADE_COLORS = ['', '#857F70', 'var(--color-azure)', 'var(--color-violet-ink)', '#C9A227'] as const
