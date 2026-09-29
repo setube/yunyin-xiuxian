@@ -130,9 +130,11 @@ export const useCultivationStore = defineStore(
       const existing = buffs.value.find(b => b.defId === defId)
       if (existing) {
         const endsAt = Math.max(existing.endsAt, now) + add
-        buffs.value = buffs.value.map(b => (b.defId === defId ? { ...b, endsAt } : b))
+        // added 随施加累加,UI 报叠 N 的凭据;旧档实例没有 added 时按「已有一份」起算
+        const added = (existing.added ?? add) + add
+        buffs.value = buffs.value.map(b => (b.defId === defId ? { ...b, endsAt, added } : b))
       } else {
-        buffs.value = [...buffs.value, { defId, endsAt: now + add }]
+        buffs.value = [...buffs.value, { defId, endsAt: now + add, added: add }]
       }
     }
 

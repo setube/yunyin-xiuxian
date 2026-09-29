@@ -405,6 +405,12 @@ export interface BuffDef {
 export interface BuffInstance {
   defId: string
   endsAt: number
+  /**
+   * 本命累积时长(毫秒):同一状态重复施加时 endsAt 是叠加后的终点,
+   * 但「到底叠了几份」单看 endsAt 算不出(过去每一份已流逝多少不得而知)。
+   * added 在每次施加时累加单份时长,UI 得以报「已叠 N 份」;旧档无此字段时缺省。
+   */
+  added?: number
 }
 
 // ============ 境界 ============

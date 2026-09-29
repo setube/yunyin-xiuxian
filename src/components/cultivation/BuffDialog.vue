@@ -30,9 +30,14 @@
         <!-- 剩余每秒在走:定宽(见 utils/format.formatCountdown),否则这一行的数字一直在跳 -->
         <span class="countdown-slot tabular">{{ formatCountdown(remainSec) }}</span>
       </p>
+      <p v-if="stackCount > 1" class="mt-1 flex justify-between text-[13px]">
+        <span class="text-ink-soft">已叠</span>
+        <span class="tabular text-ink-faint">{{ stackCount }} 份</span>
+      </p>
       <p class="mt-1 flex justify-between text-[13px]">
         <span class="text-ink-soft">全程</span>
-        <span class="tabular text-ink-faint">{{ formatDuration(def.durationSec) }}</span>
+        <!-- formatDuration 收秒;totalMs 是毫秒,转一下 -->
+        <span class="tabular text-ink-faint">{{ formatDuration(totalMs / 1000) }}</span>
       </p>
       <ProgressBar class="mt-2" :value="remainRatio" :color="isInjury ? 'var(--color-cinnabar)' : 'var(--color-jade)'" :height="6" />
     </template>
@@ -67,16 +72,38 @@
   const kindText = computed(() => KIND_TEXT[def.value?.kind ?? ''] ?? '')
 
   /** 剩余秒数(随引擎实时递减) */
+  /** 当前打开的这条 buff 实例(老档案可能没有 added,回退按单份计) */
+  const inst = computed(() =>
+    ui.buffDetailId ? cultivation.buffs.find(b => b.defId === ui.buffDetailId) ?? null : null
+  )
+
+  /** 剩余秒数(随引擎实时递减) */
   const remainSec = computed(() => {
-    const id = ui.buffDetailId
-    if (!id) return 0
-    const inst = cultivation.buffs.find(b => b.defId === id)
-    return inst ? Math.max(0, (inst.endsAt - now.value) / 1000) : 0
+    if (!inst.value) return 0
+    return Math.max(0, (inst.value.endsAt - now.value) / 1000)
+  })
+
+  /**
+   * 本条实例的累计时长(毫秒):有时长叠加(同一状态卒过多次)时它是
+   * 叠起来的本命 total(added),兜底才是单份 durationSec —— 「全程」与
+   * 进度条都按这份算,叠 2 份时不会看剩 40 分钟却显示全程 20 分钟。
+   */
+  const totalMs = computed(() => {
+    const dur = def.value?.durationSec ?? 0
+    if (dur <= 0) return 0
+    return (inst.value?.added ?? dur * 1000)
+  })
+
+  /** 已叠份数(向上取整防 1.06 份这种只差几秒的误判;老档无 added → 恒 1) */
+  const stackCount = computed(() => {
+    const dur = def.value?.durationSec ?? 0
+    if (dur <= 0) return 1
+    return Math.max(1, Math.round(totalMs.value / 1000 / dur))
   })
 
   const remainRatio = computed(() => {
-    const total = def.value?.durationSec ?? 0
-    return total > 0 ? Math.min(1, remainSec.value / total) : 0
+    const total = totalMs.value
+    return total > 0 ? Math.min(1, remainSec.value * 1000 / total) : 0
   })
 
   /** Buff 词条全为比率;正向增益记绿,减益记朱 */

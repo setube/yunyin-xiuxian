@@ -60,6 +60,16 @@ describe('状态时长叠加(addBuff)', () => {
     expect(remainSec).toBe(juling!.durationSec * 3)
   })
 
+  it('同一实例随身携带 added(本命累积毫秒):首施=单份,连服 N 次=N 份', () => {
+    const cultivation = useCultivationStore()
+    const t0 = 5_000_000
+    cultivation.addBuff('buff_juling', t0)
+    expect(cultivation.buffs[0]!.added).toBe(juling!.durationSec * 1000)
+    // mid-effective 再加,added 在原值上累加,不随 now 归零
+    cultivation.addBuff('buff_juling', t0 + 60_000)
+    expect(cultivation.buffs[0]!.added).toBe(juling!.durationSec * 1000 * 2)
+  })
+
   it('过期实例再施加:以 now 为基准,不吞历史负剩余', () => {
     const cultivation = useCultivationStore()
     const t0 = 1_000_000
