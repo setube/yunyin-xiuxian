@@ -13,7 +13,7 @@
           <p class="mt-0.5 font-kai text-[14px] tracking-[0.4em] text-cinnabar">{{ player.subName }}</p>
           <p class="mt-1 text-[11px] text-ink-faint">{{ player.realm.desc }}</p>
           <!-- 可解释性:这一境取自何处、因何承接(典籍 / 网文常用 / 道家本源) -->
-          <p class="mt-1 text-[10px] leading-relaxed text-ink-ghost">
+          <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
             「{{ player.realm.basis }}」{{ player.realm.lore }}
           </p>
         </div>
@@ -47,7 +47,7 @@
             {{ signedPercent(row.value) }}
           </span>
         </p>
-        <p class="mt-1 text-[9px] leading-relaxed text-ink-ghost">
+        <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">
           这些都是修炼速度的百分比加成,相加后乘在基础上 —— 与人物页属性明细同源。
         </p>
       </div>
@@ -105,7 +105,7 @@
               <template v-if="tribPlan.risks.length"> · {{ tribPlan.risks[0] }}</template>
             </p>
           </template>
-          <p v-else class="text-[16px] font-kai leading-tight text-ink-ghost">非大关</p>
+          <p v-else class="text-[16px] font-kai leading-tight text-ink-faint">非大关</p>
         </div>
       </div>
 
@@ -114,14 +114,14 @@
         <!-- 总评:劫名一眼可读,形态(逐道加重/起手最重)挪到行尾 —— 不再以十行小字开场 -->
         <div class="flex items-baseline gap-2">
           <p class="grow text-[12px] font-kai leading-snug text-violet-ink">{{ tribPlan.desc }}</p>
-          <span class="shrink-0 text-[10px] text-ink-ghost">{{ tribPlan.def.waveShape === 'frontLoaded' ? '起手两道最重' : '逐道加重' }}</span>
+          <span class="shrink-0 text-[10px] text-ink-faint">{{ tribPlan.def.waveShape === 'frontLoaded' ? '起手两道最重' : '逐道加重' }}</span>
         </div>
 
         <!-- 准备四维:一行四格星级槽,缺口一眼可见(0 星置灰,不熟也不糊弄) -->
         <div class="mt-2 grid grid-cols-4 gap-1.5">
           <div v-for="(name, key) in PREP_NAMES" :key="key" class="rounded bg-paper-deep/60 px-0.5 py-1 text-center">
             <p class="text-[9px] text-ink-faint">{{ name }}</p>
-            <p class="tabular text-[12px] font-kai" :class="tribPlan.prep[key] === 0 ? 'text-ink-ghost' : 'text-ink-soft'">{{ PREP_STARS[tribPlan.prep[key]] }}</p>
+            <p class="tabular text-[12px] font-kai" :class="tribPlan.prep[key] === 0 ? 'text-ink-faint' : 'text-ink-soft'">{{ PREP_STARS[tribPlan.prep[key]] }}</p>
           </div>
         </div>
 
@@ -132,7 +132,7 @@
             <span class="text-ink-faint">天劫抗性</span>
             <span class="text-ink-soft leading-tight">
               {{ formatPercent(tribLedger.resist, 0) }}
-              <span class="text-ink-ghost">(防御折 {{ formatPercent(tribLedger.statResist, 0) }})</span>
+              <span class="text-ink-faint">(防御折 {{ formatPercent(tribLedger.statResist, 0) }})</span>
             </span>
           </p>
           <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
@@ -147,11 +147,11 @@
             <span class="text-ink-faint">开劫护持</span>
             <span class="text-ink-soft leading-tight">
               {{ formatPercent(tribLedger.guard, 0) }}
-              <span class="text-ink-ghost">(气血折 {{ formatPercent(tribLedger.statGuard, 0) }})</span>
+              <span class="text-ink-faint">(气血折 {{ formatPercent(tribLedger.statGuard, 0) }})</span>
             </span>
           </p>
         </div>
-        <p class="mt-2 text-[9px] leading-relaxed text-ink-ghost">
+        <p class="mt-2 text-[9px] leading-relaxed text-ink-faint">
           攻伐之力不助渡劫;防御与气血按当下境界另算,再厚也只能硬抗一隅,余者靠抗性、减伤与恢复;晋升与准备只能帮小进阶,渡劫大关不认。
         </p>
 
@@ -272,7 +272,7 @@
       </div>
       <!-- 空态:什么状态都没有时,告诉玩家这个区域存在、以及怎么点亮它 -->
       <div v-else class="mt-2 flex items-center gap-2 rounded-md border border-dashed border-ink/15 bg-ink/3 px-3 py-2">
-        <GameIcon name="sparkles" :size="12" class="shrink-0 text-ink-ghost" />
+        <GameIcon name="sparkles" :size="12" class="shrink-0 text-ink-faint" />
         <span class="text-[10px] leading-relaxed text-ink-faint">暂无增益加身 —— 服丹药 · 修功法 · 遇奇缘,都会为这段道途续上状态。</span>
       </div>
     </section>
@@ -340,8 +340,8 @@
               {{ branchName(def!.id) }}
             </span>
             <span v-else-if="canEnlighten(def!.id)" class="shrink-0 rounded bg-azure/10 px-1.5 py-0.5 text-[10px] text-azure">待悟道 →</span>
-            <span v-else-if="isFull(def!.id)" class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] text-ink-ghost">圆满</span>
-            <span class="shrink-0 text-[10px]" :class="equipStateOf(def!.id) ? 'text-jade' : 'text-ink-ghost'">
+            <span v-else-if="isFull(def!.id)" class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] text-ink-faint">圆满</span>
+            <span class="shrink-0 text-[10px]" :class="equipStateOf(def!.id) ? 'text-jade' : 'text-ink-faint'">
               {{ equipStateOf(def!.id) || '未装配' }}
             </span>
           </button>

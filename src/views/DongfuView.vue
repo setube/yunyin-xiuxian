@@ -8,7 +8,7 @@
       -->
       <button class="-my-1.5 py-1.5 text-left text-[12px] text-ink-faint" @click="goBack(router, { name: 'home' })">← 返回</button>
       <p class="font-kai text-[15px] tracking-[0.3em] text-ink">洞府营造</p>
-      <span class="text-[10px] text-ink-ghost">经营家业,道途更稳</span>
+      <span class="text-[10px] text-ink-faint">经营家业,道途更稳</span>
     </div>
 
     <!-- 新府初成:先修谁、升一级能怎样,不给抽象告诫只给具体路径 -->
@@ -32,23 +32,23 @@
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
           <GameIcon name="leaf" :size="13" class="mx-auto text-jade/70" />
           <p class="mt-0.5 text-[9px] text-ink-faint">灵草 / 时</p>
-          <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-jade' : 'text-ink-ghost'">{{ summary.fieldLv ? summary.herbHr : '—' }}</p>
+          <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-jade' : 'text-ink-faint'">{{ summary.fieldLv ? summary.herbHr : '—' }}</p>
         </div>
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
           <GameIcon name="axe" :size="13" class="mx-auto text-ink-soft/70" />
           <p class="mt-0.5 text-[9px] text-ink-faint">玄铁 / 时</p>
-          <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-ink-soft' : 'text-ink-ghost'">{{ summary.fieldLv ? summary.oreHr : '—' }}</p>
+          <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-ink-soft' : 'text-ink-faint'">{{ summary.fieldLv ? summary.oreHr : '—' }}</p>
         </div>
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
           <GameIcon name="book" :size="13" class="mx-auto text-gold-ink/80" />
           <p class="mt-0.5 text-[9px] text-ink-faint">悟道 / 时</p>
-          <p class="tabular font-kai text-[14px] leading-tight" :class="summary.libLv ? 'text-gold-ink' : 'text-ink-ghost'">{{ summary.libLv ? summary.wudaoHr : '—' }}</p>
+          <p class="tabular font-kai text-[14px] leading-tight" :class="summary.libLv ? 'text-gold-ink' : 'text-ink-faint'">{{ summary.libLv ? summary.wudaoHr : '—' }}</p>
         </div>
       </div>
       <div class="mt-1.5 flex items-center justify-between gap-2">
         <span class="flex items-center gap-1 rounded bg-paper-deep/60 px-2 py-1 text-[10px] text-ink-faint">
           <GameIcon name="droplets" :size="12" class="text-azure/70" />
-          灵气上限 <span class="tabular" :class="summary.arrayLv ? 'text-azure' : 'text-ink-ghost'">{{ summary.arrayLv ? summary.qiCapPct : '—' }}</span>
+          灵气上限 <span class="tabular" :class="summary.arrayLv ? 'text-azure' : 'text-ink-faint'">{{ summary.arrayLv ? summary.qiCapPct : '—' }}</span>
         </span>
         <span class="flex items-center gap-1 rounded bg-paper-deep/60 px-2 py-1 text-[10px] text-ink-faint">
           <GameIcon name="scroll" :size="12" class="text-gold-ink/70" />

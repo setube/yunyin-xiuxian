@@ -11,14 +11,14 @@
           <span
             class="grid h-6 w-6 shrink-0 place-items-center rounded-full border text-[11px] font-kai"
             :class="
-              row.worn ? 'border-cinnabar text-cinnabar' : row.owned ? 'border-gold-ink text-gold-ink' : 'border-ink/15 text-ink-ghost'
+              row.worn ? 'border-cinnabar text-cinnabar' : row.owned ? 'border-gold-ink text-gold-ink' : 'border-ink/15 text-ink-faint'
             "
           >
             {{ row.worn ? '佩' : row.owned ? '藏' : '未' }}
           </span>
           <div class="min-w-0 grow">
             <p class="font-kai text-[13px]" :class="row.owned ? 'text-ink' : 'text-ink-faint'">{{ row.def.name }}</p>
-            <p class="truncate text-[10px] text-ink-ghost">{{ row.def.desc }}</p>
+            <p class="truncate text-[10px] text-ink-faint">{{ row.def.desc }}</p>
             <p v-if="row.owned && row.modText" class="truncate text-[10px] text-azure tabular" :title="row.modText">{{ row.modText }}</p>
           </div>
           <button v-if="row.owned" class="btn-ghost shrink-0 !px-2.5 !py-1.5 !text-[11px]" @click="toggleTitle(row.def.id)">
@@ -48,7 +48,7 @@
               <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px]" :style="{ color: qualityDef(row.def.quality).color }">{{ qualityDef(row.def.quality).name }}</span>
               <span v-if="row.active" class="shrink-0 rounded bg-jade/15 px-1.5 py-0.5 text-[10px] text-jade">相伴</span>
             </p>
-            <p class="truncate text-[10px] text-ink-ghost">{{ row.def.desc }}</p>
+            <p class="truncate text-[10px] text-ink-faint">{{ row.def.desc }}</p>
             <p v-if="row.modText" class="text-[10px] text-azure tabular">{{ row.modText }}</p>
             <!-- 性格是灵兽的"人味":它在历练里怎么表现,得让玩家看得见,而不是只看数值 -->
             <p class="text-[10px] text-violet-ink">
@@ -62,13 +62,13 @@
           </button>
         </div>
       </div>
-      <p v-else class="mt-10 text-center text-[12px] text-ink-ghost">
+      <p v-else class="mt-10 text-center text-[12px] text-ink-faint">
         尚无灵兽相伴
         <br />
         <span class="text-[11px]">灵兽多在历练际遇中结缘</span>
       </p>
       <!-- 集齐路上的念想:还差几只、去哪找,一句带过 -->
-      <p v-if="petRows.length > 0 && petRows.length < PETS.length" class="mt-2.5 text-center text-[10px] text-ink-ghost">
+      <p v-if="petRows.length > 0 && petRows.length < PETS.length" class="mt-2.5 text-center text-[10px] text-ink-faint">
         尚有 {{ PETS.length - petRows.length }} 只灵兽散落于历练际遇 —— 结缘即归此册
       </p>
     </template>

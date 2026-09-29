@@ -41,12 +41,12 @@
       <p v-for="(entry, i) in displayed" :key="i" class="py-0.5 text-[11px] leading-relaxed" :class="KIND_COLOR[entry.t]">
         {{ entry.text }}
       </p>
-      <p v-if="displayed.length === 0" class="py-2 text-center text-[11px] text-ink-ghost">此战无录</p>
+      <p v-if="displayed.length === 0" class="py-2 text-center text-[11px] text-ink-faint">此战无录</p>
     </div>
 
     <!-- 播放控制 -->
     <div class="mt-2 flex items-center justify-between gap-2">
-      <span class="text-[10px] text-ink-ghost">{{ displayed.length }} / {{ logs.length }}</span>
+      <span class="text-[10px] text-ink-faint">{{ displayed.length }} / {{ logs.length }}</span>
       <div class="flex gap-1">
         <button v-if="!finished" class="btn-ghost !px-2.5 !py-1 !text-[11px]" @click="skip()">略过</button>
         <button v-else class="btn-ghost !px-2.5 !py-1 !text-[11px]" @click="replay()">重播</button>

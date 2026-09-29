@@ -13,11 +13,11 @@
     <button class="btn-seal mt-10 w-full max-w-72 !py-3.5 text-[17px] tracking-[0.3em]" @click="onStart">开 始 游 戏</button>
 
     <!-- 底部:隐私政策 / 导出导入恢复 / 关于 -->
-    <div class="mt-6 flex items-center gap-3 text-[11px] text-ink-ghost">
+    <div class="mt-6 flex items-center gap-3 text-[11px] text-ink-faint">
       <button class="active:text-ink-soft" @click="privacyOpen = true">隐私政策</button>
-      <span class="text-ink-ghost/40">·</span>
+      <span class="text-ink-faint/40">·</span>
       <button class="active:text-ink-soft" @click="importOpen = true">导入存档</button>
-      <span class="text-ink-ghost/40">·</span>
+      <span class="text-ink-faint/40">·</span>
       <button class="active:text-ink-soft" @click="aboutOpen = true">关于我们</button>
     </div>
     <input ref="fileInput" type="file" accept="application/json,.save" class="hidden" @change="onFilePicked" />

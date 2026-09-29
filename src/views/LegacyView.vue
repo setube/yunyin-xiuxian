@@ -51,7 +51,7 @@
       <p class="flex items-center gap-2">
         <span class="font-kai text-[14px] tracking-widest text-ink">{{ stage.name }}</span>
         <span class="text-[10px] text-ink-faint tabular">第 {{ player.reincarnation.count + 1 }} 世</span>
-        <span v-if="toNextStage !== null" class="ml-auto shrink-0 text-[10px] text-ink-ghost tabular">
+        <span v-if="toNextStage !== null" class="ml-auto shrink-0 text-[10px] text-ink-faint tabular">
           再积 {{ toNextStage }} 宿慧入下一境地
         </span>
         <span v-else class="ml-auto shrink-0 text-[10px] text-gold-ink">此道已至尽头</span>
@@ -100,7 +100,7 @@
         <p v-for="l in lifeRows" :key="l.index" class="flex items-center gap-2 py-2 text-[12px]">
           <span class="w-11 shrink-0 font-kai text-ink-faint tabular">第{{ l.index }}世</span>
           <span class="text-ink-soft">{{ l.realmLabel }}</span>
-          <span class="text-[10px] text-ink-ghost tabular">寿 {{ l.age }} 载</span>
+          <span class="text-[10px] text-ink-faint tabular">寿 {{ l.age }} 载</span>
           <span v-if="l.themeName" class="text-[10px]" :class="l.resultColor">{{ l.themeName }}·{{ l.resultText }}</span>
           <span class="ml-auto shrink-0 tabular text-[10px] text-gold-ink">宿慧 +{{ l.insight }}</span>
         </p>
@@ -156,12 +156,12 @@
     <div class="card-ink divide-y divide-ink/6 px-4">
       <template v-if="lossRows.length">
         <p v-for="l in lossRows" :key="l.eventId + l.at" class="flex items-center gap-2 py-2 text-[12px]">
-          <span class="text-[10px] text-ink-ghost">{{ formatDate(l.at) }}</span>
+          <span class="text-[10px] text-ink-faint">{{ formatDate(l.at) }}</span>
           <span class="text-ink-soft">{{ l.eventName }}</span>
           <span class="ml-auto shrink-0 text-[10px] text-ink-faint">{{ l.note }}</span>
         </p>
       </template>
-      <p v-else class="py-4 text-center text-[11px] text-ink-ghost">世界尚未记住你的足迹。</p>
+      <p v-else class="py-4 text-center text-[11px] text-ink-faint">世界尚未记住你的足迹。</p>
     </div>
 
     <!-- 我的纪录 -->
@@ -171,7 +171,7 @@
         <p v-for="r in recordRows" :key="r.id" class="flex items-center gap-2 py-2 text-[12px]">
           <span class="text-ink-faint">{{ r.name }}</span>
           <span class="ml-auto tabular font-kai text-[13px] text-gold-ink">{{ r.valueText }}</span>
-          <span class="shrink-0 text-[10px] text-ink-ghost">第{{ r.life }}世 · {{ r.note }}</span>
+          <span class="shrink-0 text-[10px] text-ink-faint">第{{ r.life }}世 · {{ r.note }}</span>
         </p>
       </template>
       <p v-else class="py-4 text-center text-[11px] text-ink-faint">纪录待创。破界之时,自见分晓。</p>
@@ -224,7 +224,7 @@
   }
   const RESULT_COLORS: Record<'done' | 'unfinished' | 'broken', string> = {
     done: 'text-cinnabar',
-    unfinished: 'text-ink-ghost',
+    unfinished: 'text-ink-faint',
     broken: 'text-amber-ink'
   }
 

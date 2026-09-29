@@ -88,7 +88,7 @@
         <p
           v-for="note in panelCaveats"
           :key="note.key"
-          class="mt-0.5 text-[9px] leading-relaxed text-ink-ghost"
+          class="mt-0.5 text-[9px] leading-relaxed text-ink-faint"
         >
           {{ note.label }}:{{ note.caveat }}
         </p>
@@ -103,7 +103,7 @@
               {{ signedPercent(c.value) }}
             </span>
           </p>
-          <p class="mt-1 text-[9px] leading-relaxed text-ink-ghost">
+          <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">
             明细之和就是上面那个数;标「另乘」的不并入百分比,而是单独乘在攻防血上。
           </p>
         </div>
@@ -144,7 +144,7 @@
       -->
       <span
         class="grid h-9 w-9 shrink-0 place-items-center rounded-md"
-        :class="currentPetIcon ? 'bg-jade/10 text-jade' : 'bg-ink/5 text-ink-ghost'"
+        :class="currentPetIcon ? 'bg-jade/10 text-jade' : 'bg-ink/5 text-ink-faint'"
       >
         <GameIcon v-if="currentPetIcon" :name="currentPetIcon" :size="18" />
         <span v-else class="font-kai text-[13px]">未</span>
@@ -303,7 +303,7 @@
           >
             {{ t!.name }}
           </button>
-          <span v-if="!ownedTalents.length" class="text-[11px] text-ink-ghost">转世后可觉醒先天之姿</span>
+          <span v-if="!ownedTalents.length" class="text-[11px] text-ink-faint">转世后可觉醒先天之姿</span>
         </div>
         <p v-if="talentTap && tappedTalent" class="mt-1.5 text-[10px] leading-relaxed text-ink-faint">
           <span :style="{ color: TALENT_GRADE_COLORS[tappedTalent.grade] }">{{ tappedTalent.name }}</span>
@@ -333,7 +333,7 @@
         >
           <span class="flex items-baseline justify-between">
             <span class="font-kai text-[14px] text-ink">{{ t.seal }} · {{ t.name }}</span>
-            <span class="tabular text-[12px]" :class="player.reincarnation.daoFruit >= t.cost ? 'text-cinnabar' : 'text-ink-ghost'">
+            <span class="tabular text-[12px]" :class="player.reincarnation.daoFruit >= t.cost ? 'text-cinnabar' : 'text-ink-faint'">
               {{ t.cost }} 道果
             </span>
           </span>
@@ -381,7 +381,7 @@
             <p class="text-[12px] leading-relaxed text-gold-ink">{{ herIntent.line }}</p>
             <p class="mt-1 text-[10px] text-ink-faint">她所求:{{ herIntent.wish }}</p>
             <!-- 意图由经历催生,不是凭空的:把「因何而起」摆出来 -->
-            <p v-if="herIntentSparks" class="text-[10px] text-ink-ghost">因何而起:{{ herIntentSparks }}</p>
+            <p v-if="herIntentSparks" class="text-[10px] text-ink-faint">因何而起:{{ herIntentSparks }}</p>
             <div class="mt-2.5 flex gap-2">
               <button
                 v-for="r in INTENT_CHOICES"
@@ -399,7 +399,7 @@
         <template v-if="pendingEvent && !bond.fallen && !bond.departed">
           <div class="mt-4 border-t border-ink/10 pt-3">
             <p class="font-kai text-[13px] tracking-widest text-ink">{{ pendingEvent.title }}</p>
-            <p class="text-[10px] text-ink-ghost">因何而来:{{ pendingEventTriggers }}</p>
+            <p class="text-[10px] text-ink-faint">因何而来:{{ pendingEventTriggers }}</p>
             <p class="mt-1 text-[11px] leading-relaxed text-ink-soft">{{ pendingEvent.text }}</p>
             <p class="mt-1.5 text-[11px] text-azure">{{ pendingEvent.herWish }}</p>
             <p class="text-[10px] text-ink-faint">{{ pendingEvent.herLimit }}</p>

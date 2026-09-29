@@ -14,7 +14,7 @@
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
         胜 {{ session?.wins ?? 0 }} 场 · 际遇 {{ session?.events ?? 0 }} 次 · 拾获 {{ session?.itemGain ?? 0 }} 件
-        <span v-if="huntIn > 0.4" class="text-ink-ghost"> · 下一场 {{ formatCountdown(huntIn) }}</span>
+        <span v-if="huntIn > 0.4" class="text-ink-faint"> · 下一场 {{ formatCountdown(huntIn) }}</span>
       </p>
       <!-- 本次所得:石头与修为此前只在挂机总结里出现,在线历练中玩家看不到这一趟赚了什么 -->
       <p v-if="gains" class="mt-0.5 text-[10px] text-ink-faint tabular">
@@ -117,7 +117,7 @@
             {{ entry.text }}
             <span v-if="entry.dmg" class="tabular" :class="entry.t === 'crit' ? 'text-cinnabar' : ''">{{ entry.dmg }}</span>
           </p>
-          <p v-if="displayed.length === 0" class="pt-16 text-center text-[12px] text-ink-ghost">山风掠过,四下无声……</p>
+          <p v-if="displayed.length === 0" class="pt-16 text-center text-[12px] text-ink-faint">山风掠过,四下无声……</p>
         </div>
       </div>
 
@@ -194,7 +194,7 @@
           </span>
           {{ lore.archetype }}
         </p>
-        <p v-if="lore.hint" class="mt-1.5 text-[10px] text-ink-ghost">{{ lore.hint }}</p>
+        <p v-if="lore.hint" class="mt-1.5 text-[10px] text-ink-faint">{{ lore.hint }}</p>
       </div>
       <!-- 战斗分析(战败自动展开;硬核数据供研究) -->
       <div v-if="showAnalysis && analysis" class="mt-2 rounded-md bg-ink/4 px-3 py-2.5">
@@ -212,7 +212,7 @@
         </p>
         <div v-if="analysis.dataRows.length" class="mt-2 grid grid-cols-2 gap-x-4 gap-y-0.5 border-t border-ink/10 pt-1.5">
           <p v-for="row in analysis.dataRows" :key="row.label" class="flex justify-between text-[10px] tabular">
-            <span class="text-ink-ghost">{{ row.label }}</span>
+            <span class="text-ink-faint">{{ row.label }}</span>
             <span class="text-ink-soft">{{ row.value }}</span>
           </p>
         </div>

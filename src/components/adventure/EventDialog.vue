@@ -33,7 +33,7 @@
           v-for="(choice, idx) in def.choices"
           :key="idx"
           class="w-full rounded-lg border px-4 py-2.5 text-left font-kai text-[14px] tracking-widest transition-all"
-          :class="choiceAvailable(choice, tier) ? 'border-ink/25 text-ink active:scale-98 active:bg-ink/5' : 'border-ink/10 text-ink-ghost'"
+          :class="choiceAvailable(choice, tier) ? 'border-ink/25 text-ink active:scale-98 active:bg-ink/5' : 'border-ink/10 text-ink-faint'"
           :disabled="!choiceAvailable(choice, tier)"
           @click="choose(idx)"
         >

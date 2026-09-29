@@ -23,7 +23,7 @@
           v-model="noteDraft"
           :maxlength="4"
           placeholder="加个标记区分流派(≤4字)"
-          class="min-w-0 grow rounded-md border border-ink/15 bg-paper-deep/60 px-2 py-1 text-[12px] text-ink outline-none placeholder:text-ink-ghost focus:border-azure"
+          class="min-w-0 grow rounded-md border border-ink/15 bg-paper-deep/60 px-2 py-1 text-[12px] text-ink outline-none placeholder:text-ink-faint focus:border-azure"
           @change="applyNote"
         />
         <button v-if="noteDraft" class="-my-1 px-1 py-1 text-[11px] text-ink-faint active:opacity-60" @click="clearNote">清除</button>
@@ -64,7 +64,7 @@
           <span>词 条</span>
           <span class="text-[10px] tracking-normal tabular">
             {{ inst.affixes.length }} / {{ affixCap }} 条
-            <span class="ml-1 text-ink-ghost">({{ qualityName }}上限)</span>
+            <span class="ml-1 text-ink-faint">({{ qualityName }}上限)</span>
           </span>
         </p>
         <!--
@@ -107,7 +107,7 @@
             </span>
           </li>
         </ul>
-        <p class="mt-1 text-[10px] leading-relaxed text-ink-ghost">
+        <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
           这条儿按珍贵而排,左侧色边即它的成色
         </p>
       </template>
@@ -119,8 +119,8 @@
             <template v-if="buildPreview.before">
               <span class="text-ink-soft">{{ buildPreview.before.displayName }} {{ Math.round(buildPreview.before.affinity * 100) }}%</span>
             </template>
-            <template v-else><span class="text-ink-ghost">未成路</span></template>
-            <span class="mx-1 text-ink-ghost">→</span>
+            <template v-else><span class="text-ink-faint">未成路</span></template>
+            <span class="mx-1 text-ink-faint">→</span>
             <template v-if="buildPreview.after">
               <span
                 class="font-kai"
@@ -141,7 +141,7 @@
         </p>
         <p class="mt-1 text-[11px] tabular text-azure">{{ equipNextLevelText(inst.level) }}</p>
       </template>
-      <p v-if="salvage" class="mt-1 flex items-center justify-between text-[11px] text-ink-ghost">
+      <p v-if="salvage" class="mt-1 flex items-center justify-between text-[11px] text-ink-faint">
         <span>分解返还{{ inst.level > 0 ? `(${salvageRefundPhrase()})` : '' }}</span>
         <span class="tabular">
           器灵尘×{{ salvage.dust }}
@@ -156,15 +156,15 @@
           <p class="mb-1.5 font-kai text-[12px] tracking-[0.3em] text-ink-faint">天机推演</p>
           <p class="text-[11px] text-ink-soft tabular">
             构筑:{{ whatIf.buildBefore?.displayName ?? '未成路' }}
-            <span class="text-ink-ghost">→</span>
+            <span class="text-ink-faint">→</span>
             {{ whatIf.buildAfter?.displayName ?? '流派散去' }}
           </p>
           <div class="mt-1 space-y-0.5">
             <p v-for="w in whatIf.worlds" :key="w.name" class="flex justify-between text-[11px]">
               <span class="text-ink-faint">{{ w.name }}</span>
               <span class="tabular">
-                <span class="text-ink-ghost">{{ w.beforeText }}</span>
-                <span class="mx-1 text-ink-ghost">→</span>
+                <span class="text-ink-faint">{{ w.beforeText }}</span>
+                <span class="mx-1 text-ink-faint">→</span>
                 <span :class="w.trend === 'up' ? 'text-jade' : w.trend === 'down' ? 'text-cinnabar' : 'text-ink-soft'">
                   {{ w.afterText }}
                 </span>
@@ -213,7 +213,7 @@
             max="500"
             class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
           />
-          <span class="text-[10px] text-ink-ghost tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
+          <span class="text-[10px] text-ink-faint tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
           <button
             class="btn-seal ml-auto !px-3 !py-1 !text-[11px]"
             :disabled="!autoTargets.length"
@@ -253,7 +253,7 @@
           <p v-if="reforgeCostVal" class="text-center text-[10px] leading-relaxed text-ink-faint">
             重掷未封存的词条:条数(≤{{ affixCap }} 条)与数值一并重掷,封存的不动 · 不限次数,成本随阶数与封存数走
           </p>
-          <p v-if="inst" class="text-center text-[10px] text-ink-ghost tabular">
+          <p v-if="inst" class="text-center text-[10px] text-ink-faint tabular">
             已重铸 {{ inst.reforgeCount ?? 0 }} 次 · 已封存 {{ (inst.sealedAffixIds ?? []).length }}/{{ sealCapacity(inst) }}
           </p>
           <button v-if="reforgeCostVal" class="btn-ghost w-full !py-1 !text-[11px]" @click="autoOpen = !autoOpen">

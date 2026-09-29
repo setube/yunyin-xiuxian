@@ -10,18 +10,18 @@
         <div v-for="row in achievementRows" :key="row.id" class="flex items-center gap-3 py-2.5">
           <span
             class="grid h-6 w-6 shrink-0 place-items-center rounded-full border text-[11px] font-kai"
-            :class="row.done ? 'border-gold-ink text-gold-ink' : 'border-ink/15 text-ink-ghost'"
+            :class="row.done ? 'border-gold-ink text-gold-ink' : 'border-ink/15 text-ink-faint'"
           >
             {{ row.done ? '成' : '未' }}
           </span>
           <div class="min-w-0">
-            <p class="font-kai text-[12px]" :class="row.done ? 'text-ink' : 'text-ink-ghost'">{{ row.name }}</p>
-            <p class="text-[10px] text-ink-ghost">{{ row.desc }}</p>
+            <p class="font-kai text-[12px]" :class="row.done ? 'text-ink' : 'text-ink-faint'">{{ row.name }}</p>
+            <p class="text-[10px] text-ink-faint">{{ row.desc }}</p>
             <p v-if="row.reward" class="mt-0.5 text-[10px] tabular text-azure">{{ row.reward }}</p>
           </div>
         </div>
       </div>
-      <p class="text-center text-[10px] text-ink-ghost">功成之日,名目自现</p>
+      <p class="text-center text-[10px] text-ink-faint">功成之日,名目自现</p>
     </template>
 
     <!-- 收藏图鉴 -->
@@ -29,7 +29,7 @@
       <section v-for="cat in collectionCats" :key="cat.key">
         <SectionTitle :title="cat.name" :hint="cat.hint" />
         <!-- 未收录的条目只是一片「???」—— 得告诉玩家去哪儿找,否则这一册只能干瞪眼 -->
-        <p class="mt-1 text-[10px] text-ink-ghost">{{ cat.source }}</p>
+        <p class="mt-1 text-[10px] text-ink-faint">{{ cat.source }}</p>
         <div class="card-ink mt-2 flex flex-wrap gap-1.5 px-3.5 py-3">
           <template v-for="entry in cat.entries" :key="entry.id">
             <button
@@ -49,7 +49,7 @@
             -->
             <span
               v-else
-              class="inline-flex items-center rounded-full border border-dashed border-ink/15 px-2 py-0.5 text-[10px] leading-snug text-ink-ghost/60"
+              class="inline-flex items-center rounded-full border border-dashed border-ink/15 px-2 py-0.5 text-[10px] leading-snug text-ink-faint/60"
               :title="`尚未收录 · ${cat.source}`"
             >???</span>
           </template>
@@ -71,7 +71,7 @@
         <p class="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">
           {{ detail.entry.desc || '此物玄妙,难以言表。' }}
         </p>
-        <p v-if="detail.entry.hint" class="mt-2 text-[11px] text-ink-ghost">{{ detail.entry.hint }}</p>
+        <p v-if="detail.entry.hint" class="mt-2 text-[11px] text-ink-faint">{{ detail.entry.hint }}</p>
         <div class="ink-divider my-3" />
         <p class="flex justify-between text-[11px]">
           <span class="text-ink-faint">{{ detail.entry.foot.label }}</span>

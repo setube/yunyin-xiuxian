@@ -59,7 +59,7 @@
     <!-- 词条不写进 effectText:洞府的修速、藏经阁的战斗修为曾经因此漏掉 -->
     <p v-if="modLine" class="mt-1 text-[11px] leading-relaxed text-azure tabular">{{ modLine }}</p>
     <!-- 再进净得:本级词条到下一级的增量,买前预览;不可点时不给(不能对着画不了的饼招手) -->
-    <p v-if="nextGain" class="mt-1 text-[10px] leading-relaxed text-ink-ghost">
+    <p v-if="nextGain" class="mt-1 text-[10px] leading-relaxed text-ink-faint">
       再升一层,又添 <span class="tabular text-azure/75">{{ nextGain }}</span>
     </p>
     <!-- 灵兽园:把当前相伴的灵兽报在园子里 —— 别的建筑都是数值,这里是活物 -->

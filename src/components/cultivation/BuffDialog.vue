@@ -15,7 +15,7 @@
 
       <div class="ink-divider my-3" />
 
-      <p class="mb-1.5 text-[11px] tracking-widest text-ink-ghost">效果</p>
+      <p class="mb-1.5 text-[11px] tracking-widest text-ink-faint">效果</p>
       <div class="space-y-1">
         <p v-for="row in modRows" :key="row.key" class="flex justify-between text-[13px]">
           <span class="text-ink-soft">{{ row.label }}</span>

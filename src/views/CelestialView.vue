@@ -19,7 +19,7 @@
         <div class="flex items-center gap-2">
           <span class="chip-ink border-cinnabar/50 text-[9px] text-cinnabar">此世消耗</span>
           <button class="text-left" @click="openDaoSourceDialog()">
-            <span class="block text-[10px] leading-tight text-ink-ghost">叩问天道·试一试</span>
+            <span class="block text-[10px] leading-tight text-ink-faint">叩问天道·试一试</span>
             <span class="block tabular font-kai text-[17px] leading-tight text-cinnabar">{{ formatNum(endgame.daoSource) }}</span>
           </button>
         </div>
@@ -105,7 +105,7 @@
                 <span v-if="i > 0" class="h-px min-w-3 grow transition-colors" :class="i <= run.layer ? 'bg-cinnabar/45' : 'bg-ink/15'" />
                 <span
                   class="flex items-center gap-1 text-[10px]"
-                  :class="i < run.layer ? 'text-ink-soft' : i === run.layer ? 'font-kai text-cinnabar' : 'text-ink-ghost'"
+                  :class="i < run.layer ? 'text-ink-soft' : i === run.layer ? 'font-kai text-cinnabar' : 'text-ink-faint'"
                 >
                   <span
                     class="inline-block h-1.5 w-1.5 rounded-full"
@@ -126,7 +126,7 @@
                 <span :class="row.win ? 'text-ink-soft' : 'text-cinnabar'">
                   第{{ i + 1 }}战 {{ row.foeName }} · {{ row.win ? '胜' : '负' }}
                 </span>
-                <span class="tabular text-ink-ghost">{{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%</span>
+                <span class="tabular text-ink-faint">{{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%</span>
               </p>
             </div>
             <div class="ink-divider my-2.5" />
@@ -182,7 +182,7 @@
                 未至此境者会被**境界压制**(守关者额外增伤)。名字从境界表取,不手写 ——
                 哪天梯子挪了,这句自己跟上。
               -->
-              <p class="mt-0.5 text-[10px]" :class="player.major < anchorMajorOf(world.anchorTier) ? 'text-cinnabar/80' : 'text-ink-ghost'">
+              <p class="mt-0.5 text-[10px]" :class="player.major < anchorMajorOf(world.anchorTier) ? 'text-cinnabar/80' : 'text-ink-faint'">
                 此界宜 {{ REALMS[anchorMajorOf(world.anchorTier)]?.name ?? '' }} 及以上
                 <template v-if="player.major < anchorMajorOf(world.anchorTier)"> · 你尚在此境之下,受境界压制</template>
               </p>
@@ -214,7 +214,7 @@
                 <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
                   <span v-for="(r, i) in endgame.voidWorld.ruleText" :key="i">{{ r }}</span>
                 </p>
-                <p class="mt-1 text-[10px] text-ink-ghost">
+                <p class="mt-1 text-[10px] text-ink-faint">
                   盘踞:{{ endgame.voidWorld.foes.map(f => f.name).join('、') }} · 界主「{{ endgame.voidWorld.guardian.name }}」
                 </p>
                 <div class="mt-2.5 flex gap-2">
@@ -394,7 +394,7 @@
         <section>
           <SectionTitle title="道痕" :hint="`历代修行履历 · ${endgame.marks.length} 则`" />
           <div class="mt-2 flex items-center justify-between px-1">
-            <p class="text-[10px] tabular text-ink-ghost">
+            <p class="text-[10px] tabular text-ink-faint">
               天道历 {{ RULESET_VERSION }} 世 · 天地规矩易过 {{ RULESET_CHANGELOG.length }} 回
             </p>
             <button class="font-kai text-[10px] text-azure active:scale-95" @click="openEra(null)">纪元变迁史 →</button>
@@ -405,7 +405,7 @@
             <div v-for="lc in legacy" :key="lc.targetName" class="mb-2 last:mb-0">
               <p class="text-[12px] text-ink-soft tabular">
                 {{ lc.targetName }}:第{{ lc.earlyLife }}世({{ lc.earlyBuild }}){{ lc.earlyText }}
-                <span class="mx-1 text-ink-ghost">→</span>
+                <span class="mx-1 text-ink-faint">→</span>
                 第{{ lc.lateLife }}世({{ lc.lateBuild }})
                 <span class="text-jade">{{ lc.lateText }}</span>
               </p>
@@ -416,7 +416,7 @@
             <div v-for="(mark, i) in endgame.marks" :key="i" class="flex items-center gap-2 py-2">
               <span class="shrink-0 font-kai text-[11px] text-ink-faint">第{{ mark.life }}世</span>
               <span class="shrink-0 text-[11px] text-violet-ink">{{ mark.daoPathId ? daoPathDef(mark.daoPathId)?.name : '无道' }}</span>
-              <span class="min-w-0 truncate font-kai text-[12px]" :class="mark.cleared ? 'text-ink' : 'text-ink-ghost'">
+              <span class="min-w-0 truncate font-kai text-[12px]" :class="mark.cleared ? 'text-ink' : 'text-ink-faint'">
                 {{ mark.targetName }}{{ mark.cleared ? '·破' : '·殁' }}
               </span>
               <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">{{ mark.rounds }}回合 · {{ mark.buildName }}</span>
@@ -479,7 +479,7 @@
             @click="prepPact = null"
           >
             <span class="text-[12px] text-ink-soft">不立契约</span>
-            <span class="ml-auto text-[10px] text-ink-ghost">道源 ×1.0</span>
+            <span class="ml-auto text-[10px] text-ink-faint">道源 ×1.0</span>
           </button>
           <button
             v-for="pact in PACTS"
@@ -516,12 +516,12 @@
             @click="prepGate = g.id"
           >
             <span class="font-kai text-[13px]">{{ g.name }}</span>
-            <span class="ml-0.5 text-[9px]" :class="g.kind === '凶' ? 'text-cinnabar/80' : g.kind === '吉' ? 'text-jade' : 'text-ink-ghost'">{{ g.kind }}</span>
+            <span class="ml-0.5 text-[9px]" :class="g.kind === '凶' ? 'text-cinnabar/80' : g.kind === '吉' ? 'text-jade' : 'text-ink-faint'">{{ g.kind }}</span>
           </button>
         </div>
         <p v-if="selectedGate" class="mt-1.5 rounded-md bg-paper-deep/70 px-3 py-2 text-[10px] leading-relaxed text-ink-soft">
           <span class="font-kai text-ink">{{ selectedGate.fullName }}</span>
-          <span class="text-ink-ghost"> · {{ selectedGate.gua }}{{ selectedGate.direction }}{{ selectedGate.palace }}宫 · {{ selectedGate.kind }}</span>
+          <span class="text-ink-faint"> · {{ selectedGate.gua }}{{ selectedGate.direction }}{{ selectedGate.palace }}宫 · {{ selectedGate.kind }}</span>
           <br />
           {{ selectedGate.desc }}
           <br />
@@ -730,7 +730,7 @@
           <p class="font-kai text-[12px] tabular text-cinnabar">纪元 {{ c.version }}</p>
           <p class="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{{ c.note }}</p>
         </div>
-        <p v-if="!eraChanges.length" class="card-ink px-3 py-3 text-center text-[11px] text-ink-ghost">
+        <p v-if="!eraChanges.length" class="card-ink px-3 py-3 text-center text-[11px] text-ink-faint">
           {{ eraMark ? '此后天道未再改过规矩 —— 当年的打法,今日依旧算数。' : '尚无变更记录。' }}
         </p>
       </div>

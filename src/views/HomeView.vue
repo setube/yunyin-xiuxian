@@ -97,7 +97,7 @@
         <div class="space-y-1.5">
           <div v-for="t in dailyRows" :key="t.id" class="flex items-start justify-between gap-2 text-[12px]">
             <span class="min-w-0">
-              <span :class="t.done ? 'text-ink-ghost line-through' : 'text-ink-soft'">{{ t.desc }}</span>
+              <span :class="t.done ? 'text-ink-faint line-through' : 'text-ink-soft'">{{ t.desc }}</span>
               <span v-if="!t.done && rewardPreview(t.reward)" class="mt-0.5 block text-[10px] tabular text-azure">
                 {{ rewardPreview(t.reward) }}
               </span>

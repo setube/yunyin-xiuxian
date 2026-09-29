@@ -33,7 +33,7 @@
           <p
             v-for="note in coreCaveats"
             :key="note.key"
-            class="text-[9px] leading-relaxed text-ink-ghost"
+            class="text-[9px] leading-relaxed text-ink-faint"
           >
             {{ note.label }}:{{ note.caveat }}
           </p>
@@ -65,29 +65,29 @@
                   <span class="text-ink-faint">{{ t.label }}</span>
                   <span class="tabular text-azure">+{{ t.contribution.toFixed(2) }}</span>
                 </span>
-                <span v-if="!l.terms.length" class="block text-[10px] text-ink-ghost">这一维还没有词条撑着。</span>
-                <span class="mt-1 block text-[9px] leading-relaxed text-ink-ghost">
+                <span v-if="!l.terms.length" class="block text-[10px] text-ink-faint">这一维还没有词条撑着。</span>
+                <span class="mt-1 block text-[9px] leading-relaxed text-ink-faint">
                   底下各项相加,便得出这一维的得分;星随得分而升。
                 </span>
               </span>
             </button>
           </div>
           <p class="mt-1 text-[10px] text-ink-faint">点一维看它由哪些词条凑出来。</p>
-          <p class="mt-1 text-[10px] leading-relaxed text-ink-ghost">
+          <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
             同一星级的两个构筑谁更强,由环境与相性决定 —— 所以这里给的是形状,不是名次。
           </p>
         </div>
         <!-- 组合技:两条道路交汇处的一式神通 -->
         <div v-if="comboInfo" class="mt-2.5 rounded-md px-3 py-2" :class="comboInfo.active ? 'bg-violet-ink/8' : 'bg-ink/4'">
           <p class="flex items-center gap-2">
-            <span class="font-kai text-[13px]" :class="comboInfo.active ? 'text-violet-ink' : 'text-ink-ghost'">
+            <span class="font-kai text-[13px]" :class="comboInfo.active ? 'text-violet-ink' : 'text-ink-faint'">
               组合技「{{ comboInfo.art.name }}」
             </span>
-            <span class="text-[10px]" :class="comboInfo.active ? 'text-jade' : 'text-ink-ghost'">
+            <span class="text-[10px]" :class="comboInfo.active ? 'text-jade' : 'text-ink-faint'">
               {{ comboInfo.active ? '已成' : `副体系至 ${Math.round(COMBO_SECONDARY_MIN * 100)}% 契合可成` }}
             </span>
           </p>
-          <p class="mt-0.5 text-[11px] leading-relaxed" :class="comboInfo.active ? 'text-ink-soft' : 'text-ink-ghost'">
+          <p class="mt-0.5 text-[11px] leading-relaxed" :class="comboInfo.active ? 'text-ink-soft' : 'text-ink-faint'">
             {{ comboInfo.art.desc }}
           </p>
           <p class="mt-0.5 text-[10px] text-cinnabar/80">代价:{{ comboInfo.art.costText }}</p>
@@ -101,7 +101,7 @@
           -->
           <p class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px]">
             <span class="font-kai whitespace-nowrap text-ink-soft">构筑韧性</span>
-            <span class="text-[10px] text-ink-ghost">(主派核心封印之下)</span>
+            <span class="text-[10px] text-ink-faint">(主派核心封印之下)</span>
             <span
               class="ml-auto shrink-0 whitespace-nowrap tabular"
               :class="resilience.retention >= 0.45 ? 'text-jade' : 'text-cinnabar'"
@@ -136,7 +136,7 @@
           <!-- 删除二步确认:一套构筑是心血,误触垃圾桶不该直接没 -->
           <template v-if="confirmDelete !== lo.id">
             <button
-              class="-m-1.5 flex min-h-[28px] min-w-[28px] items-center justify-center p-1.5 text-ink-ghost active:text-cinnabar"
+              class="-m-1.5 flex min-h-[28px] min-w-[28px] items-center justify-center p-1.5 text-ink-faint active:text-cinnabar"
               aria-label="删除构筑"
               @click="confirmDelete = lo.id"
             >
@@ -174,8 +174,8 @@
               <span class="text-ink-faint">{{ row.worldName }}</span>
               <span class="tabular">
                 <span class="text-ink-soft">今 {{ row.aText }}</span>
-                <span class="mx-1 text-ink-ghost">|</span>
-                <span :class="row.trend === 'down' ? 'text-jade' : row.trend === 'up' ? 'text-cinnabar' : 'text-ink-ghost'">
+                <span class="mx-1 text-ink-faint">|</span>
+                <span :class="row.trend === 'down' ? 'text-jade' : row.trend === 'up' ? 'text-cinnabar' : 'text-ink-faint'">
                   彼 {{ row.bText }}
                 </span>
               </span>

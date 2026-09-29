@@ -10,7 +10,7 @@
           <input v-model="settings.musicOn" type="checkbox" class="h-4 w-4 accent-cinnabar" />
         </label>
         <div v-if="settings.musicOn" class="mt-2 flex items-center gap-2">
-          <span class="text-[10px] text-ink-ghost">轻</span>
+          <span class="text-[10px] text-ink-faint">轻</span>
           <input v-model.number="settings.musicVol" type="range" min="0" max="100" aria-label="背景音乐音量" class="grow accent-cinnabar" />
           <span class="w-7 text-right text-[10px] tabular text-ink-faint">{{ settings.musicVol }}</span>
         </div>
@@ -21,7 +21,7 @@
           <input v-model="settings.sfxOn" type="checkbox" class="h-4 w-4 accent-cinnabar" />
         </label>
         <div v-if="settings.sfxOn" class="mt-2 flex items-center gap-2">
-          <span class="text-[10px] text-ink-ghost">轻</span>
+          <span class="text-[10px] text-ink-faint">轻</span>
           <input v-model.number="settings.sfxVol" type="range" min="0" max="100" aria-label="音效音量" class="grow accent-cinnabar" />
           <span class="w-7 text-right text-[10px] tabular text-ink-faint">{{ settings.sfxVol }}</span>
         </div>
@@ -129,7 +129,7 @@
         <span class="tabular text-ink-faint">{{ formatClock(latestError.at) }}</span>
         <span v-if="latestError.count > 1" class="ml-1 text-ink-faint">×{{ latestError.count }}</span>
         <span class="ml-1 break-all">{{ latestError.message }}</span>
-        <span v-if="latestError.route" class="ml-1 text-ink-ghost">{{ latestError.route }}</span>
+        <span v-if="latestError.route" class="ml-1 text-ink-faint">{{ latestError.route }}</span>
       </p>
       <div v-if="diag.errors.length" class="grid grid-cols-2 gap-2">
         <button class="btn-ghost !text-[12px]" @click="copyDiag">复制差错留档</button>

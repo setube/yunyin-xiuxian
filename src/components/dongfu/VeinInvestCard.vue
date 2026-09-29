@@ -15,7 +15,7 @@
       <div class="h-full rounded-full bg-gold-ink/70 transition-all" :style="{ width: totalPct + '%' }"></div>
     </div>
     <!-- 一点未投时的开门话:主脉不是凭空选的,首投那一下就是答案 -->
-    <p v-if="veinTotal === 0" class="mt-1 text-[9px] text-ink-ghost">尚未注力 —— 首投自成主脉,择一而始</p>
+    <p v-if="veinTotal === 0" class="mt-1 text-[9px] text-ink-faint">尚未注力 —— 首投自成主脉,择一而始</p>
 
     <div class="mt-3 space-y-2">
       <div
@@ -33,7 +33,7 @@
             <p class="flex flex-wrap items-center gap-1.5">
               <span class="truncate font-kai text-[13px] text-ink">{{ v.name }}</span>
               <span v-if="isMain(v.id)" class="shrink-0 rounded bg-cinnabar/15 px-1 py-0.5 text-[10px] leading-none text-cinnabar">主脉</span>
-              <span v-else-if="dongfu.veinMain === null" class="shrink-0 text-[10px] text-ink-ghost">首投成主</span>
+              <span v-else-if="dongfu.veinMain === null" class="shrink-0 text-[10px] text-ink-faint">首投成主</span>
             </p>
             <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">{{ v.desc }}</p>
             <!-- 每条脉都要自陈作用:此前只显示名字与价格,玩家无从判断该投哪条 -->
@@ -87,7 +87,7 @@
         <div v-for="v in VEINS" :key="v.id" class="flex items-center gap-2">
           <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="currentLevel(v.id) > 0 ? TONES[v.id].dot : 'bg-ink/15'"></span>
           <span class="w-14 shrink-0 text-[10px] text-ink-soft">{{ v.name }}</span>
-          <span class="min-w-0 truncate text-[10px] tabular" :class="currentLevel(v.id) > 0 ? 'text-ink' : 'text-ink-ghost'">
+          <span class="min-w-0 truncate text-[10px] tabular" :class="currentLevel(v.id) > 0 ? 'text-ink' : 'text-ink-faint'">
             {{ ledgerText(v.id) }}
           </span>
         </div>

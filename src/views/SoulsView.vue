@@ -19,7 +19,7 @@
         <button class="-my-1.5 py-1.5 text-left text-[12px] text-ink-faint" @click="goBack(router, { name: 'celestial' })">← 天界</button>
         <p class="font-kai text-[15px] tracking-[0.3em] text-ink">器 魂</p>
         <div class="text-right">
-          <span class="block text-[10px] leading-tight text-ink-ghost">道源</span>
+          <span class="block text-[10px] leading-tight text-ink-faint">道源</span>
           <span class="block tabular font-kai text-[15px] leading-tight text-cinnabar">{{ formatNum(endgame.daoSource) }}</span>
         </div>
       </div>
@@ -63,7 +63,7 @@
                 卸下
               </button>
             </template>
-            <span v-else class="text-[10px] text-ink-ghost">空</span>
+            <span v-else class="text-[10px] text-ink-faint">空</span>
           </div>
         </div>
         <p v-if="activeModText" class="mt-2 px-1 text-[10px] leading-relaxed text-gold-ink">合计:{{ activeModText }}</p>
@@ -121,7 +121,7 @@
           </div>
         </div>
       </div>
-      <p v-else class="px-4 py-6 text-center text-[11px] leading-relaxed text-ink-ghost">
+      <p v-else class="px-4 py-6 text-center text-[11px] leading-relaxed text-ink-faint">
         并无闲置形意。
         <br />
         <span class="text-[10px]">凝出的器魂若已尽数装配,此处便空着</span>
@@ -157,7 +157,7 @@
           </div>
         </div>
       </div>
-      <p v-else class="px-4 py-6 text-center text-[11px] leading-relaxed text-ink-ghost">
+      <p v-else class="px-4 py-6 text-center text-[11px] leading-relaxed text-ink-faint">
         行囊中无可凝之器。
         <br />
         <span class="text-[10px]">已穿戴、已上锁、或无任何词条的法器都入不得炉</span>

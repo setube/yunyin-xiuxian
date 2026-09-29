@@ -18,7 +18,7 @@
             :cx="p.x"
             :cy="p.y"
             :r="p.r"
-            :class="cleared(p.nodeId) ? 'text-jade' : unlocked(p.nodeId) ? 'text-azure' : 'text-ink-ghost'"
+            :class="cleared(p.nodeId) ? 'text-jade' : unlocked(p.nodeId) ? 'text-azure' : 'text-ink-faint'"
             fill="currentColor"
             :fill-opacity="unlocked(p.nodeId) ? 0.85 : 0.35"
           />
@@ -36,7 +36,7 @@
         >
           <span
             class="grid h-9 w-9 shrink-0 place-items-center rounded-md"
-            :class="unlocked(p.nodeId) ? 'bg-azure/10 text-azure' : 'bg-ink/6 text-ink-ghost'"
+            :class="unlocked(p.nodeId) ? 'bg-azure/10 text-azure' : 'bg-ink/6 text-ink-faint'"
           >
             <GameIcon :name="unlocked(p.nodeId) ? (regionDef(p.regionId)?.icon ?? 'mountain') : 'lock'" :size="16" />
           </span>

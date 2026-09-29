@@ -36,7 +36,7 @@
           class="card-ink flex flex-col items-center gap-1 px-2 py-2.5 active:scale-95"
           @click="pickerSlot = row.slot"
         >
-          <span class="text-[9px] text-ink-ghost">
+          <span class="text-[9px] text-ink-faint">
             {{ row.name }}
             <template v-if="row.stock">· {{ row.stock }}</template>
           </span>
@@ -49,8 +49,8 @@
             </span>
           </template>
           <template v-else>
-            <span class="grid h-4 w-4 place-items-center text-ink-ghost">·</span>
-            <span class="text-[10px] text-ink-ghost">空悬</span>
+            <span class="grid h-4 w-4 place-items-center text-ink-faint">·</span>
+            <span class="text-[10px] text-ink-faint">空悬</span>
           </template>
         </button>
       </div>
@@ -104,7 +104,7 @@
           <span class="absolute bottom-0.5 right-1 text-[9px] leading-none text-ink-soft tabular">×{{ row.count }}</span>
         </button>
       </div>
-      <p v-else class="mt-10 text-center text-[12px] text-ink-ghost">丹匣空空</p>
+      <p v-else class="mt-10 text-center text-[12px] text-ink-faint">丹匣空空</p>
     </template>
 
     <!-- 材料 -->
@@ -133,7 +133,7 @@
         <template v-for="(row, k) in artifactSlotRows" :key="k">
           <div class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-dashed border-ink/20 bg-paper-deep/50">
             <GameIcon v-if="row" :name="row.def.icon" :size="20" :style="{ color: qualityDef(row.def.quality).color }" />
-            <span v-else class="font-kai text-[11px] text-ink-ghost">空</span>
+            <span v-else class="font-kai text-[11px] text-ink-faint">空</span>
           </div>
         </template>
         <span v-if="artifactSlots < ARTIFACT_MAX_SLOTS" class="text-[10px] text-ink-faint">
@@ -141,7 +141,7 @@
         </span>
       </div>
       <!-- 祭炼到底给什么:数值都从上界常数来,不在界面里再写一份 -->
-      <p class="mt-1 px-1 text-[10px] text-ink-ghost">
+      <p class="mt-1 px-1 text-[10px] text-ink-faint">
         祭炼一重,被动与神通各强 {{ formatPercent(ARTIFACT_LEVEL_BONUS) }},至多 {{ cnNumber(ARTIFACT_MAX_LEVEL) }} 重 ——
         顶到封顶的不再涨,卡片上标着
       </p>
@@ -203,7 +203,7 @@
           </div>
         </div>
       </div>
-      <p v-else class="mt-16 text-center text-[12px] text-ink-ghost">
+      <p v-else class="mt-16 text-center text-[12px] text-ink-faint">
         尚无法宝随身
         <br />
         <span class="text-[11px]">法宝多出自际遇与强敌之手</span>
@@ -253,7 +253,7 @@
           </span>
           <div class="min-w-0">
             <p class="font-kai text-[15px] text-ink tabular">{{ currentMaterial.full }}</p>
-            <p class="text-[10px] text-ink-ghost">现有</p>
+            <p class="text-[10px] text-ink-faint">现有</p>
           </div>
         </div>
         <p class="mt-3 text-[12px] leading-relaxed text-ink-soft">{{ currentMaterial.desc }}</p>
@@ -273,7 +273,7 @@
           <p v-for="s in skillRows" :key="s.id" class="flex items-baseline gap-2 text-[11px]">
             <span class="w-14 shrink-0 text-ink-faint">{{ s.daoName }}</span>
             <span class="w-12 shrink-0 font-kai text-ink-soft">{{ s.name }}</span>
-            <span class="w-12 shrink-0" :class="s.stage === '生疏' ? 'text-ink-ghost' : 'text-jade'">{{ s.stage }}</span>
+            <span class="w-12 shrink-0" :class="s.stage === '生疏' ? 'text-ink-faint' : 'text-jade'">{{ s.stage }}</span>
             <span class="min-w-0 text-[10px] leading-relaxed text-ink-faint">{{ s.desc }}</span>
           </p>
         </div>
@@ -285,7 +285,7 @@
             <div class="min-w-0 grow">
               <p class="flex items-center gap-2">
                 <span class="font-kai text-[13px] text-ink">{{ r.def.name }}</span>
-                <span class="text-[10px] text-ink-ghost">{{ r.able.rank }} 阶</span>
+                <span class="text-[10px] text-ink-faint">{{ r.able.rank }} 阶</span>
                 <span v-if="r.able.overReach > 0" class="text-[10px] text-cinnabar">越阶 {{ r.able.overReach }}</span>
               </p>
               <p class="text-[11px] text-ink-faint tabular">灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
@@ -294,7 +294,7 @@
             </div>
             <div class="shrink-0 text-right">
               <p class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</p>
-              <p class="text-[10px] text-ink-ghost">把握</p>
+              <p class="text-[10px] text-ink-faint">把握</p>
             </div>
             <div class="flex shrink-0 flex-col gap-1">
               <!-- 玩家反馈「批量炼丹」:材料够几炉就连开几炉,结果与连点一致 -->
@@ -302,7 +302,7 @@
               <button class="btn-ghost shrink-0 !px-3 !py-1 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
             </div>
           </div>
-          <p v-for="w in r.able.weakness" :key="w" class="mt-1 pl-7 text-[10px] text-ink-ghost">· {{ w }}</p>
+          <p v-for="w in r.able.weakness" :key="w" class="mt-1 pl-7 text-[10px] text-ink-faint">· {{ w }}</p>
         </div>
       </div>
       <p v-else class="px-1 py-6 text-center text-[11px] leading-relaxed text-ink-faint">
@@ -341,7 +341,7 @@
         </div>
       </div>
       <p v-else class="py-8 text-center text-[12px] text-ink-faint">此部位尚无藏品,去历练中寻些机缘吧</p>
-      <p class="mt-2 text-center text-[10px] text-ink-ghost">点名称可查看详情与对比</p>
+      <p class="mt-2 text-center text-[10px] text-ink-faint">点名称可查看详情与对比</p>
     </BaseModal>
 
     <!-- 一键分解:勾选品质(记忆勾选)。纯手动批量动作 —— 与「智能收纳」的自动取舍互不干扰 -->
@@ -391,7 +391,7 @@
       <!-- 状态一眼:策略一段话说清,不必把六个开关拼起来读 -->
       <div
         class="mt-2.5 rounded-md px-3 py-2 text-[10px] leading-relaxed"
-        :class="settings.smartKeep.enabled ? 'bg-jade/8 text-jade' : 'bg-ink/4 text-ink-ghost'"
+        :class="settings.smartKeep.enabled ? 'bg-jade/8 text-jade' : 'bg-ink/4 text-ink-faint'"
       >
         {{ smartStatusLine }}
       </div>
@@ -439,13 +439,13 @@
           <input v-model="settings.smartKeep.keepPerfectRolls" type="checkbox" class="h-4 w-4 accent-cinnabar" />
         </label>
       </div>
-      <p class="mt-1.5 text-[10px] leading-relaxed text-ink-ghost">
+      <p class="mt-1.5 text-[10px] leading-relaxed text-ink-faint">
         强化过、重铸过、封存过词条的件,任凭上面怎么设都不动 —— 要扔得你自己动手。
       </p>
 
       <!-- 划界 · 与「一键分解」互不读钩 -->
       <p class="mb-1 mt-3 font-kai text-[11px] tracking-wider text-ink-soft">与「一键分解」各归各帐</p>
-      <p class="text-[10px] leading-relaxed text-ink-ghost">
+      <p class="text-[10px] leading-relaxed text-ink-faint">
         「一键分解」只处置行囊里现存之物,须你亲手动;这里只判掉落之后的去留 ——
         两件事各归各管,调了这一头,那一头不受牵连。
       </p>

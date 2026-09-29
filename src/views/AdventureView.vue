@@ -56,7 +56,7 @@
           <div class="flex items-center gap-2 pt-1">
             <span class="font-kai text-[11px] tracking-[0.3em] text-ink-soft">{{ group.world.name }}</span>
             <span class="h-px grow bg-ink/10" />
-            <span class="text-[10px] text-ink-ghost">{{ group.rows.length }} 处</span>
+            <span class="text-[10px] text-ink-faint">{{ group.rows.length }} 处</span>
           </div>
         <div
           v-for="row in group.rows"
@@ -75,7 +75,7 @@
           <div class="flex items-start gap-3">
             <span
               class="grid h-10 w-10 shrink-0 place-items-center rounded-md"
-              :class="row.suppressed ? 'bg-gold-ink/15 text-gold-ink' : row.canEnter ? 'bg-indigo-ink/10 text-indigo-ink' : 'bg-ink/6 text-ink-ghost'"
+              :class="row.suppressed ? 'bg-gold-ink/15 text-gold-ink' : row.canEnter ? 'bg-indigo-ink/10 text-indigo-ink' : 'bg-ink/6 text-ink-faint'"
             >
               <GameIcon :name="row.suppressed ? 'shield-check' : row.canEnter ? row.def.icon : 'lock'" :size="18" />
             </span>
@@ -104,7 +104,7 @@
                 敌人的「层级补偿」此前只落在数值里:玩家看到的只是一只小怪,打起来却像换了一身装备。
                 此处与战后归因同源(regionFoeOrigin)—— 出行方式与灵兽之性那一半在出行弹窗里摊开。
               -->
-              <p v-if="row.foeOrigin.parts.length" data-region-foe-origin class="mt-0.5 text-[10px] leading-relaxed text-ink-ghost">
+              <p v-if="row.foeOrigin.parts.length" data-region-foe-origin class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
                 此地之敌:{{ foeOriginPartsText(row.foeOrigin) }}
               </p>
             </div>
@@ -190,7 +190,7 @@
                 均受伤 {{ Math.round(row.progress.avgDamagePct * 100) }}%(需≤{{ Math.round(row.progress.maxAvgDamagePct * 100) }}%)
               </span>
             </template>
-            <span v-else class="ml-1.5 text-ink-ghost">尚无战绩</span>
+            <span v-else class="ml-1.5 text-ink-faint">尚无战绩</span>
           </p>
           <!-- 进不去时,理由指向眼下就能去的那一段,不让玩家自己排先后 -->
           <p v-if="row.blockReason" class="mt-1 text-[11px] text-cinnabar">{{ row.blockReason }}</p>
@@ -247,12 +247,12 @@
             <span class="text-gold-ink">{{ starsText(rec.adaptation.stars) }}</span>
           </span>
         </p>
-        <p class="mt-1.5 text-[10px] text-ink-ghost tabular">
+        <p class="mt-1.5 text-[10px] text-ink-faint tabular">
           战力 {{ formatGN(player.finalStats.power) }} · 装备成色、词条与临场随机仍定成败
         </p>
       </div>
       <p class="text-[12px] text-ink-faint">此行欲作何打算?</p>
-      <p class="mt-1 text-[10px] leading-relaxed text-ink-ghost">行程论这一程走多久;「历练遇敌」只令同程妖踪更密,不能缩地成寸。</p>
+      <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">行程论这一程走多久;「历练遇敌」只令同程妖踪更密,不能缩地成寸。</p>
       <div class="mt-3 space-y-2">
         <button
           v-for="m in MODE_LIST"
