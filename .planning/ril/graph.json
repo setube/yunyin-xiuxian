@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-29T05:53:09+00:00",
+  "updated_at": "2026-09-29T07:18:52+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13994,6 +13994,92 @@
       "touched_round": 230,
       "commit": "dc4b18e",
       "summary": "BuffInstance 加可选 added,addBuff 累加;BuffDialog 新增「已叠 N 份」+全程/进度条改用累计(TDD cultivation.spec 先红后绿,全量 1978 绿)"
+    },
+    "ISS-246": {
+      "id": "ISS-246",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:17:14+00:00",
+      "updated_at": "2026-09-29T07:17:14+00:00",
+      "touched_round": 230,
+      "summary": "正文弱化档与强调色在浅色卡片底上欠对比度(ink-faint 3.47 jade 2.95 amber 2.84 azure 3.77 violet 4.13 均<4.5;qinghua 与 azure 同值异名是死token),已随 palette 判据上线提档修复",
+      "severity": 0.75
+    },
+    "ISS-247": {
+      "id": "ISS-247",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:17:32+00:00",
+      "updated_at": "2026-09-29T07:17:32+00:00",
+      "touched_round": 230,
+      "summary": "调色板遗留对比度欠账:ghost 档在纸上 <3(1.66/2.24)却仍以 text-ink-ghost 承载 134 处小字;强调档 azure 3.77/jade/gold/amber 在浅色卡片底只达大字AA,小字仍读不清;dark 下 cinnabar 作按钮底托奶油白字仅 3.81",
+      "severity": 0.62
+    },
+    "TASK-230": {
+      "id": "TASK-230",
+      "type": "task",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:17:54+00:00",
+      "updated_at": "2026-09-29T07:17:54+00:00",
+      "touched_round": 230,
+      "category": "correctness",
+      "summary": "printtext-ink-ghost 134 处是「纸上的第四档墨」:承载可读小字处(如 BuffDialog 效果标题、BuildingCard 下次产出)提为 ink-faint(4.71/5.03);纯装饰占位(空态/箭头/未成/计数)换装饰手段或 opacity,最终撤 ghost 档",
+      "severity": 0.6,
+      "confidence": 1,
+      "effort": 4
+    },
+    "TASK-231": {
+      "id": "TASK-231",
+      "type": "task",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:17:57+00:00",
+      "updated_at": "2026-09-29T07:17:57+00:00",
+      "touched_round": 230,
+      "category": "correctness",
+      "summary": "强调档两主题三底提到 4.5:azure(3.77/4.70)与 gold-ink、amber-ink 在浅色卡片底只达大字 AA,小字仍模糊;提完从 WEAK 挪进 palette.spec 的 STRONG 组",
+      "severity": 0.5,
+      "confidence": 1,
+      "effort": 2
+    },
+    "TASK-232": {
+      "id": "TASK-232",
+      "type": "task",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:18:00+00:00",
+      "updated_at": "2026-09-29T07:18:00+00:00",
+      "touched_round": 230,
+      "category": "core-feature",
+      "summary": "dark 主题印面方案:btn-seal 现用 cinnabar(201 85 78),托奶油白字仅 3.81 欠 AA;沿用 xian 思路 dark 按钮底改用深朱(cinnabar-deep 系),亮朱留给正文/图标,并让 dark 正文朱回 4.5",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 3
+    },
+    "CHG-258": {
+      "id": "CHG-258",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:18:29+00:00",
+      "updated_at": "2026-09-29T07:18:29+00:00",
+      "touched_round": 230,
+      "commit": "f8db023",
+      "summary": "调色板判据上线(src/ui/palette.spec.ts)+ 文本色提档:ink-faint 双主题/violet/jade/amber 浅色提档,qinghua 死 token(与 azure 同值)从 style.css/tailwind/privacy 撤除;断言正文档双主题三底≥4.5 等"
+    },
+    "DEC-057": {
+      "id": "DEC-057",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:18:33+00:00",
+      "updated_at": "2026-09-29T07:18:33+00:00",
+      "touched_round": 230,
+      "rationale": "调色文字对比度按角色分档判据:正文档(墨三阶+紫)双主题三底≥4.5 锁死;强调档(标题/图标/大字)≥3 防跌破,提过 4.5 后挪进正文档;ghost 为装饰层(<3)层级单调,逐步撤档。对齐姊妹工程 xian 已收货的 palette.spec 纪律,取代人眼抽查",
+      "alternatives_rejected": "一次把全调色板拉到 4.5(观感全局大改、ghost 134 处一次迁移风险高、dak 朱按钮与正文需求冲突需专用印面方案,改为分批按角色推进)"
     }
   },
   "edges": [
@@ -20495,6 +20581,48 @@
       "to": "TASK-229",
       "type": "implements",
       "created_at": "2026-09-29T05:53:09+00:00"
+    },
+    {
+      "from": "CHG-258",
+      "to": "ISS-246",
+      "type": "resolves",
+      "created_at": "2026-09-29T07:18:51+00:00"
+    },
+    {
+      "from": "TASK-230",
+      "to": "ISS-247",
+      "type": "addresses",
+      "created_at": "2026-09-29T07:18:51+00:00"
+    },
+    {
+      "from": "TASK-231",
+      "to": "ISS-247",
+      "type": "addresses",
+      "created_at": "2026-09-29T07:18:52+00:00"
+    },
+    {
+      "from": "TASK-232",
+      "to": "ISS-247",
+      "type": "addresses",
+      "created_at": "2026-09-29T07:18:52+00:00"
+    },
+    {
+      "from": "DEC-057",
+      "to": "TASK-230",
+      "type": "governs",
+      "created_at": "2026-09-29T07:18:52+00:00"
+    },
+    {
+      "from": "DEC-057",
+      "to": "TASK-231",
+      "type": "governs",
+      "created_at": "2026-09-29T07:18:52+00:00"
+    },
+    {
+      "from": "DEC-057",
+      "to": "TASK-232",
+      "type": "governs",
+      "created_at": "2026-09-29T07:18:52+00:00"
     }
   ]
 }
