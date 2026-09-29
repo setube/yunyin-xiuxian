@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-28T13:48:14+00:00",
+  "updated_at": "2026-09-29T02:20:26+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13942,6 +13942,21 @@
       "source": "全仓同类测试排查 2026-09-28(grep settleOffline/tickExploration/afterWin 调用 facet + 断言类型甄别)",
       "summary": "12 个真跑含 rng 内核却无随机控制的 spec 逐个澄清:文本契约(offlineParity/offlineScope/offlineCap/battleFactor/highTierSmoke/offlineLedger/singleSourceAudit)或纯函数断言(petLuck mock equipGen 断 luck 参数/PDF pillValue 静态数据/pillValue toBe 数据完整性/dangerFactorFor 纯数学)—— 全仓无第二处依赖 rng 结果做确定性断言且不可控的假绿/flaky 测试,DEC-056 纪律已闭环",
       "confidence": 1.0
+    },
+    "TASK-228": {
+      "id": "TASK-228",
+      "type": "task",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-09-29T02:14:36+00:00",
+      "updated_at": "2026-09-29T02:20:26+00:00",
+      "touched_round": 230,
+      "category": "core-feature",
+      "severity": 0.5,
+      "confidence": 0.9,
+      "effort": 2,
+      "priority": 6,
+      "summary": "buildingUpgradeInfo 只查境界/峰值/洞府辖限,不查灵石玄铁够不够:升不起时按钮仍可点、点了弹一句「灵石或玄铁未足」的宽泛 toast,差多少不列 —— 违 xian agents 纪律「付不起置灰+列差多少」;补资源检查与 reason=尚差 X 石,按钮自动显示"
     }
   },
   "edges": [

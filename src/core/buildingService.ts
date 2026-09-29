@@ -5,6 +5,8 @@ import type { BuildingId, GNum } from '@/types'
 import { buildingDef } from '@/data/buildings'
 import { buildingCost } from './formulas'
 import { track } from './progress'
+import { gte, gnZero, subClamp } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useDongfuStore } from '@/stores/dongfu'
@@ -43,6 +45,19 @@ export function buildingUpgradeInfo(id: BuildingId): BuildingUpgradeInfo {
   } else if (id !== 'mansion' && lv >= dongfu.buildingLevelCap) {
     canUpgrade = false
     reason = buildingMansionGateToast()
+  } else {
+    // 资源检查(xian 仓纪律:付不起要先置灰、把差多少列出来,别让玩家点了才被弹教训)。
+    // 石头是 GNum 大数、玄铁是 number,分别算差;双缺合并成一句,每个「数+量词」粘着写。
+    const resources = useResourcesStore()
+    const stoneShort = gte(resources.spiritStone, stone) ? gnZero() : subClamp(stone, resources.spiritStone)
+    const oreShort = Math.max(0, ore - resources.ore)
+    if (stoneShort.m > 0 || oreShort > 0) {
+      canUpgrade = false
+      const parts: string[] = []
+      if (stoneShort.m > 0) parts.push(`尚差 ${formatGN(stoneShort)} 石`)
+      if (oreShort > 0) parts.push(`玄铁 ${oreShort} 块`)
+      reason = parts.join(' · ')
+    }
   }
   return { canUpgrade, reason, stone, ore, nextLevel: lv + 1 }
 }
