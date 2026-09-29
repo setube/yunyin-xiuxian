@@ -9,8 +9,9 @@
  * 三 **浅/夜两套对不上**:夜间主题只覆盖通道值,却不许只在一边定义 token。
  * 四 **小字读不清**:每一档颜色按它**自己的角色**过线 ——
  *    正文承载档(墨四阶里的三阶 + 紫)在浅/夜里都要 ≥4.5:1;
- *    强调档(朱/深朱)是按钮、大字的主场,守 ≥3:1(大字 AA);
- *    dark 朱作按钮底时托奶油白字仅 3.81,印面方案待建(TASK-232)。
+ *    印面(cinnabar-deep)是按钮底,只考核它托奶油白字:浅 7.09:1、夜 5.31:1;
+ *    夜主题的印面覆盖为深朱(亮朱当底只有 3.81:1,字糊)。
+ *    强调档(朱)是标题、大字的主场,守 ≥3:1(大字 AA)。
  *    纸上的墨只有三档:第四档 ink-ghost(浅色仅 1.66:1,托不住能读的字)已撤,
  *    原先承载次要小字的 134 处全迁 ink-faint,判据断言"不得复活"。
  * 五 **手抄回流**:浏览器 chrome 色(theme.ts)、index.html 首帧 meta、独立成篇的
@@ -20,8 +21,8 @@
  *   正文档:ink 11.75/10.03 · ink-soft 7.40/7.06 · ink-faint 4.71/5.03 · violet-ink 4.71/4.67
  *          azure 4.67/4.70 · gold-ink 4.74/5.46 · amber-ink 4.58/5.16
  *          jade 4.51/5.44 · indigo-ink 5.67/5.80
- *   强调档:cinnabar 4.81/3.02(dark 朱作按钮底时托白字仅 3.81,印面方案待建,勿下移)
- *          cinnabar-deep 6.29/3.70
+ *   强调档:cinnabar 4.81/3.02(夜朱作大字 3.02,按钮底已交给深朱)
+ *   印面:cinnabar-deep × 奶油白字 7.09(浅)/5.31(夜)
  *   墨档:ink-ghost 已撤(浅 1.66:1 读不清,134 处 text-ink-ghost 全迁 ink-faint)
  */
 import { describe, expect, it } from 'vitest'
@@ -78,8 +79,8 @@ function surfacesOf(theme: 'light' | 'dark'): Rgb[] {
 
 /** 正文承载档:浅/夜两套、三张底全 ≥4.5 */
 const STRONG = ['ink', 'ink-soft', 'ink-faint', 'violet-ink', 'azure', 'gold-ink', 'amber-ink', 'jade', 'indigo-ink']
-/** 强调档(标题/图标/大字):≥3 大字 AA;提过 4.5 后挪进 STRONG */
-const WEAK = ['cinnabar', 'cinnabar-deep']
+/** 强调档(标题/大字):≥3 大字 AA;提过 4.5 后挪进 STRONG */
+const WEAK = ['cinnabar']
 
 function channel(c: number): number {
   const v = c / 255
@@ -176,6 +177,28 @@ describe('调色板 · 承载文字的色都过线', () => {
     expect(PRIVACY).not.toContain('ink-ghost')
     // src 里的 .vue/.ts 也不许再手写这个类名(没有 token 就不生成样式,写了等于隐形文字)
     expect(filesMatching(resolve(ROOT, 'src'), /ink-ghost/, /\.(vue|ts)$/)).toEqual([])
+  })
+})
+
+describe('调色板 · 印面', () => {
+  /** .btn-seal 上那行固定奶油字,与 style.css 里的字面量必须一致 */
+  const SEAL_INK: Rgb = [246, 241, 229]
+
+  it('奶油白字与 style.css 里 .btn-seal 写死的字面量一致', () => {
+    // 改了色号却忘了这一处,判据要能喊住
+    expect(CSS).toMatch(/\.btn-seal \{[^}]*color: #f6f1e5/)
+  })
+
+  it('两套主题的印面都托得住奶油白字 ≥4.5:1', () => {
+    // 浅色印面=cinnabar;夜主题覆盖成 cinnabar-deep(深朱)
+    expect(contrast(LIGHT.get('cinnabar')!, SEAL_INK)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(DARK.get('cinnabar-deep')!, SEAL_INK)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('夜主题印面确实用深的那枚(亮朱当底会把奶油字压到 3.81:1)', () => {
+    // 深底托白字更高:deep 5.31 > 亮朱 3.81 —— 这正说明 deep 是更暗的那枚
+    expect(contrast(DARK.get('cinnabar-deep')!, SEAL_INK)).toBeGreaterThan(contrast(DARK.get('cinnabar')!, SEAL_INK))
+    expect(CSS).toMatch(/html\[data-theme='dark'\] \.btn-seal \{[^}]*background: var\(--color-cinnabar-deep\)/)
   })
 })
 

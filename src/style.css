@@ -416,7 +416,7 @@ html[data-theme='dark'] {
   --color-ink-soft-rgb: 198 191 169;
   --color-ink-faint-rgb: 168 161 140;
   --color-cinnabar-rgb: 201 85 78;
-  --color-cinnabar-deep-rgb: 212 105 95;
+  --color-cinnabar-deep-rgb: 163 70 64;
   --color-indigo-ink-rgb: 147 179 185;
   --color-gold-ink-rgb: 200 163 90;
   --color-jade-rgb: 147 175 149;
@@ -543,6 +543,16 @@ html[data-theme='dark'] {
 
 .btn-seal:active:not(:disabled) {
   transform: scale(0.96);
+  background: var(--color-cinnabar-deep);
+}
+
+/*
+ * 夜主题印面换深朱:亮朱(201 85 78)当底托奶油白字只有 3.81:1,手机上
+ * 「突破」「闭关」这类关键按钮的字会糊;深朱(163 70 64)白字 5.31:1。
+ * 浅色印面保持 cinnabar,它在白纸上已是 5.42:1 —— 两套主题各自选能托住
+ * 白字的那枚,判据见 src/ui/palette.spec.ts「印面」一节。
+ */
+html[data-theme='dark'] .btn-seal {
   background: var(--color-cinnabar-deep);
 }
 
