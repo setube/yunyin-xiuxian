@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-29T12:04:09+00:00",
+  "updated_at": "2026-09-29T16:46:14+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14113,6 +14113,42 @@
       "touched_round": 230,
       "commit": "a112f9a",
       "summary": "夜主题印面改深朱:dark cinnabar-deep 212→163 70 64,新增 dark .btn-seal 覆盖用 deep,奶油白字 3.81→5.31;palette.spec 新增印面 3 断言"
+    },
+    "ISS-248": {
+      "id": "ISS-248",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-09-29T15:58:24+00:00",
+      "updated_at": "2026-09-29T16:45:39+00:00",
+      "touched_round": 230,
+      "summary": "数据层裸 hex 颜色与调色板脱钩:qualities/linggen/SpiritRootReveal 手抄 hex(良品=旧jade、精品=旧azure、金=旧gold、雷=旧violet),改 token 后不同步——换肤换不到、漂了不报错(xian 判据四的同类坑)",
+      "severity": 0.6
+    },
+    "CHG-262": {
+      "id": "CHG-262",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T16:45:38+00:00",
+      "updated_at": "2026-09-29T16:45:38+00:00",
+      "touched_round": 230,
+      "commit": "6205b98",
+      "summary": "数据层颜色改引调色板变量:qualities/linggen/talents/SpiritRootReveal 撞 token 的裸 hex 改 var(--color-*) 引用(修漂移),EquipmentCard/InventoryView 的 hex-alpha 拼接改 tint()(utils/colorToken.ts)"
+    },
+    "TASK-233": {
+      "id": "TASK-233",
+      "type": "task",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T16:45:39+00:00",
+      "updated_at": "2026-09-29T16:45:39+00:00",
+      "touched_round": 230,
+      "category": "maintainability",
+      "summary": "palette.spec 补数据层 hex 判据:src/data 与组件内联色表(quality/linggen/talents/GRADES)只许出现白名单 hex(凡玄仙天等无 token 象征色),新增裸 hex 即红——防「再抄 token 值进数据层」。待 PR #20 合并后做,避免与 palette.spec 同文件冲突",
+      "severity": 0.5,
+      "confidence": 1,
+      "effort": 1
     }
   },
   "edges": [
@@ -20680,6 +20716,18 @@
       "to": "ISS-247",
       "type": "resolves",
       "created_at": "2026-09-29T12:04:09+00:00"
+    },
+    {
+      "from": "CHG-262",
+      "to": "ISS-248",
+      "type": "resolves",
+      "created_at": "2026-09-29T16:45:39+00:00"
+    },
+    {
+      "from": "TASK-233",
+      "to": "ISS-248",
+      "type": "addresses",
+      "created_at": "2026-09-29T16:46:14+00:00"
     }
   ]
 }
