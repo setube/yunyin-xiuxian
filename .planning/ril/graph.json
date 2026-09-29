@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-29T07:18:52+00:00",
+  "updated_at": "2026-09-29T07:42:35+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14020,10 +14020,10 @@
     "TASK-230": {
       "id": "TASK-230",
       "type": "task",
-      "status": "active",
-      "version": 1,
+      "status": "resolved",
+      "version": 2,
       "created_at": "2026-09-29T07:17:54+00:00",
-      "updated_at": "2026-09-29T07:17:54+00:00",
+      "updated_at": "2026-09-29T07:42:34+00:00",
       "touched_round": 230,
       "category": "correctness",
       "summary": "printtext-ink-ghost 134 处是「纸上的第四档墨」:承载可读小字处(如 BuffDialog 效果标题、BuildingCard 下次产出)提为 ink-faint(4.71/5.03);纯装饰占位(空态/箭头/未成/计数)换装饰手段或 opacity,最终撤 ghost 档",
@@ -14034,10 +14034,10 @@
     "TASK-231": {
       "id": "TASK-231",
       "type": "task",
-      "status": "active",
-      "version": 1,
+      "status": "resolved",
+      "version": 2,
       "created_at": "2026-09-29T07:17:57+00:00",
-      "updated_at": "2026-09-29T07:17:57+00:00",
+      "updated_at": "2026-09-29T07:42:34+00:00",
       "touched_round": 230,
       "category": "correctness",
       "summary": "强调档两主题三底提到 4.5:azure(3.77/4.70)与 gold-ink、amber-ink 在浅色卡片底只达大字 AA,小字仍模糊;提完从 WEAK 挪进 palette.spec 的 STRONG 组",
@@ -14080,6 +14080,28 @@
       "touched_round": 230,
       "rationale": "调色文字对比度按角色分档判据:正文档(墨三阶+紫)双主题三底≥4.5 锁死;强调档(标题/图标/大字)≥3 防跌破,提过 4.5 后挪进正文档;ghost 为装饰层(<3)层级单调,逐步撤档。对齐姊妹工程 xian 已收货的 palette.spec 纪律,取代人眼抽查",
       "alternatives_rejected": "一次把全调色板拉到 4.5(观感全局大改、ghost 134 处一次迁移风险高、dak 朱按钮与正文需求冲突需专用印面方案,改为分批按角色推进)"
+    },
+    "CHG-259": {
+      "id": "CHG-259",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:42:01+00:00",
+      "updated_at": "2026-09-29T07:42:01+00:00",
+      "touched_round": 230,
+      "commit": "1f9ee60",
+      "summary": "强调档(azure/gold-ink/amber-ink/jade)light 提档至正文档,privacy 抄色同步,palette.spec 的 STRONG 扩到九档(含 indigo),WEAK 只剩 cinnabar 两档"
+    },
+    "CHG-260": {
+      "id": "CHG-260",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T07:42:01+00:00",
+      "updated_at": "2026-09-29T07:42:01+00:00",
+      "touched_round": 230,
+      "commit": "3fcb2c9",
+      "summary": "ghost 撤档(含 8fd0cd9 迁移 commit):24 文件 134 处 text-ink-ghost 全迁 text-ink-faint,style.css/tailwind/privacy 删 ghost 定义与转发,palette.spec 断言 ink-ghost 不得复活"
     }
   },
   "edges": [
@@ -20623,6 +20645,18 @@
       "to": "TASK-232",
       "type": "governs",
       "created_at": "2026-09-29T07:18:52+00:00"
+    },
+    {
+      "from": "CHG-259",
+      "to": "TASK-231",
+      "type": "implements",
+      "created_at": "2026-09-29T07:42:35+00:00"
+    },
+    {
+      "from": "CHG-260",
+      "to": "TASK-230",
+      "type": "implements",
+      "created_at": "2026-09-29T07:42:35+00:00"
     }
   ]
 }
