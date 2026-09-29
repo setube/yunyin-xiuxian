@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-29T02:48:58+00:00",
+  "updated_at": "2026-09-29T05:53:09+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13968,6 +13968,32 @@
       "touched_round": 230,
       "commit": "cb86560",
       "summary": "buildingService.buildingUpgradeInfo 补资源检查(reason=尚差 X 石·玄铁 Y 块),BuildingCard 直显;buildingService.spec 4 条 TDD 先红后绿;全量 1976 绿,320px 探针无溢出"
+    },
+    "TASK-229": {
+      "id": "TASK-229",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-09-29T05:53:09+00:00",
+      "updated_at": "2026-09-29T05:53:09+00:00",
+      "touched_round": 230,
+      "category": "core-feature",
+      "severity": 0.4,
+      "confidence": 0.9,
+      "effort": 2,
+      "priority": 4,
+      "summary": "BuffDialog 不露叠 N:同一状态重复施加为时长叠加(endsAt 累加),玩家只见剩余与单份「全程」——叠 2 颗聚灵丹剩 40 分/全程 20 分 费解;给 buff 实例加 added(本命累计),详情显「已叠 N 份」+全程改显累计"
+    },
+    "CHG-257": {
+      "id": "CHG-257",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T05:53:09+00:00",
+      "updated_at": "2026-09-29T05:53:09+00:00",
+      "touched_round": 230,
+      "commit": "dc4b18e",
+      "summary": "BuffInstance 加可选 added,addBuff 累加;BuffDialog 新增「已叠 N 份」+全程/进度条改用累计(TDD cultivation.spec 先红后绿,全量 1978 绿)"
     }
   },
   "edges": [
@@ -20463,6 +20489,12 @@
       "to": "TASK-228",
       "type": "implements",
       "created_at": "2026-09-29T02:48:58+00:00"
+    },
+    {
+      "from": "CHG-257",
+      "to": "TASK-229",
+      "type": "implements",
+      "created_at": "2026-09-29T05:53:09+00:00"
     }
   ]
 }
