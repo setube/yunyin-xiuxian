@@ -34,10 +34,6 @@ export default {
           DEFAULT: withAlpha('--color-cinnabar-rgb'),
           deep: withAlpha('--color-cinnabar-deep-rgb')
         },
-        qinghua: {
-          DEFAULT: withAlpha('--color-qinghua-rgb'),
-          light: withAlpha('--color-qinghua-light-rgb')
-        },
         'indigo-ink': withAlpha('--color-indigo-ink-rgb'),
         'gold-ink': withAlpha('--color-gold-ink-rgb'),
         jade: withAlpha('--color-jade-rgb'),

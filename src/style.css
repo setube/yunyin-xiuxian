@@ -16,18 +16,16 @@
   --color-paper-dark-rgb: 221 213 194;
   --color-ink-rgb: 41 39 34;
   --color-ink-soft-rgb: 74 70 61;
-  --color-ink-faint-rgb: 133 127 112;
+  --color-ink-faint-rgb: 104 99 88;
   --color-ink-ghost-rgb: 185 178 160;
   --color-cinnabar-rgb: 168 63 57;
   --color-cinnabar-deep-rgb: 140 51 46;
-  --color-qinghua-rgb: 79 118 153;
-  --color-qinghua-light-rgb: 109 177 201;
   --color-indigo-ink-rgb: 62 92 99;
   --color-gold-ink-rgb: 156 122 60;
-  --color-jade-rgb: 110 139 116;
+  --color-jade-rgb: 103 132 110;
   --color-azure-rgb: 79 118 153;
-  --color-violet-ink-rgb: 123 94 167;
-  --color-amber-ink-rgb: 176 125 43;
+  --color-violet-ink-rgb: 114 85 158;
+  --color-amber-ink-rgb: 167 118 39;
 
   --color-paper: rgb(var(--color-paper-rgb));
   --color-paper-deep: rgb(var(--color-paper-deep-rgb));
@@ -38,8 +36,6 @@
   --color-ink-ghost: rgb(var(--color-ink-ghost-rgb));
   --color-cinnabar: rgb(var(--color-cinnabar-rgb));
   --color-cinnabar-deep: rgb(var(--color-cinnabar-deep-rgb));
-  --color-qinghua: rgb(var(--color-qinghua-rgb));
-  --color-qinghua-light: rgb(var(--color-qinghua-light-rgb));
   --color-indigo-ink: rgb(var(--color-indigo-ink-rgb));
   --color-gold-ink: rgb(var(--color-gold-ink-rgb));
   --color-jade: rgb(var(--color-jade-rgb));
@@ -420,12 +416,10 @@ html[data-theme='dark'] {
   --color-paper-dark-rgb: 51 48 43;
   --color-ink-rgb: 232 226 210;
   --color-ink-soft-rgb: 198 191 169;
-  --color-ink-faint-rgb: 151 144 123;
+  --color-ink-faint-rgb: 168 161 140;
   --color-ink-ghost-rgb: 107 101 87;
   --color-cinnabar-rgb: 201 85 78;
   --color-cinnabar-deep-rgb: 212 105 95;
-  --color-qinghua-rgb: 124 159 195;
-  --color-qinghua-light-rgb: 143 195 217;
   --color-indigo-ink-rgb: 147 179 185;
   --color-gold-ink-rgb: 200 163 90;
   --color-jade-rgb: 147 175 149;
