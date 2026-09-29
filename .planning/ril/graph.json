@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-29T02:20:26+00:00",
+  "updated_at": "2026-09-29T02:48:58+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13946,10 +13946,10 @@
     "TASK-228": {
       "id": "TASK-228",
       "type": "task",
-      "status": "active",
-      "version": 2,
+      "status": "resolved",
+      "version": 3,
       "created_at": "2026-09-29T02:14:36+00:00",
-      "updated_at": "2026-09-29T02:20:26+00:00",
+      "updated_at": "2026-09-29T02:48:58+00:00",
       "touched_round": 230,
       "category": "core-feature",
       "severity": 0.5,
@@ -13957,6 +13957,17 @@
       "effort": 2,
       "priority": 6,
       "summary": "buildingUpgradeInfo 只查境界/峰值/洞府辖限,不查灵石玄铁够不够:升不起时按钮仍可点、点了弹一句「灵石或玄铁未足」的宽泛 toast,差多少不列 —— 违 xian agents 纪律「付不起置灰+列差多少」;补资源检查与 reason=尚差 X 石,按钮自动显示"
+    },
+    "CHG-256": {
+      "id": "CHG-256",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-29T02:48:58+00:00",
+      "updated_at": "2026-09-29T02:48:58+00:00",
+      "touched_round": 230,
+      "commit": "cb86560",
+      "summary": "buildingService.buildingUpgradeInfo 补资源检查(reason=尚差 X 石·玄铁 Y 块),BuildingCard 直显;buildingService.spec 4 条 TDD 先红后绿;全量 1976 绿,320px 探针无溢出"
     }
   },
   "edges": [
@@ -20446,6 +20457,12 @@
       "to": "TASK-226",
       "type": "governs",
       "created_at": "2026-09-28T13:43:41+00:00"
+    },
+    {
+      "from": "CHG-256",
+      "to": "TASK-228",
+      "type": "implements",
+      "created_at": "2026-09-29T02:48:58+00:00"
     }
   ]
 }
