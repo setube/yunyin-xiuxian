@@ -19,9 +19,10 @@
  *
  * ── 对比度账目(worst 于 纸/纸深/卡片 三底,本轮调色后)──
  *   正文档:ink 11.75/10.03 · ink-soft 7.40/7.06 · ink-faint 4.71/5.03 · violet-ink 4.71/4.67
+ *          azure 4.67/4.70 · gold-ink 4.74/5.46 · amber-ink 4.58/5.16
+ *          jade 4.51/5.44 · indigo-ink 5.67/5.80
  *   强调档:cinnabar 4.81/3.02(dark 朱作按钮底时托白字仅 3.81,印面方案待建,勿下移)
- *          cinnabar-deep 6.29/3.70 · jade 3.24/5.44 · azure 3.77/4.70(待提 4.5)
- *          gold-ink 3.14/5.46 · amber-ink 3.14/5.16 · indigo-ink 5.67/5.80
+ *          cinnabar-deep 6.29/3.70
  *   印面:ink-ghost 1.66/2.24(纯装饰;全仓仍有 text-ink-ghost 处用法,分批撤)
  */
 import { describe, expect, it } from 'vitest'
@@ -77,9 +78,9 @@ function surfacesOf(theme: 'light' | 'dark'): Rgb[] {
 }
 
 /** 正文承载档:浅/夜两套、三张底全 ≥4.5 */
-const STRONG = ['ink', 'ink-soft', 'ink-faint', 'violet-ink']
+const STRONG = ['ink', 'ink-soft', 'ink-faint', 'violet-ink', 'azure', 'gold-ink', 'amber-ink', 'jade', 'indigo-ink']
 /** 强调档(标题/图标/大字):≥3 大字 AA;提过 4.5 后挪进 STRONG */
-const WEAK = ['cinnabar', 'cinnabar-deep', 'jade', 'azure', 'gold-ink', 'amber-ink', 'indigo-ink']
+const WEAK = ['cinnabar', 'cinnabar-deep']
 /** 印面:纸上的第四档墨,只准装饰 */
 const GHOST = 'ink-ghost'
 

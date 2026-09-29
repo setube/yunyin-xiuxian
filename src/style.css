@@ -21,11 +21,11 @@
   --color-cinnabar-rgb: 168 63 57;
   --color-cinnabar-deep-rgb: 140 51 46;
   --color-indigo-ink-rgb: 62 92 99;
-  --color-gold-ink-rgb: 156 122 60;
-  --color-jade-rgb: 103 132 110;
-  --color-azure-rgb: 79 118 153;
+  --color-gold-ink-rgb: 124 94 42;
+  --color-jade-rgb: 80 109 88;
+  --color-azure-rgb: 65 103 139;
   --color-violet-ink-rgb: 114 85 158;
-  --color-amber-ink-rgb: 167 118 39;
+  --color-amber-ink-rgb: 135 93 25;
 
   --color-paper: rgb(var(--color-paper-rgb));
   --color-paper-deep: rgb(var(--color-paper-deep-rgb));
