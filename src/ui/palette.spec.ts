@@ -28,6 +28,8 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { QUALITIES } from '@/data/qualities'
+import { ELEMENTS } from '@/data/linggen'
 
 const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
@@ -104,6 +106,33 @@ function worst(name: string, theme: 'light' | 'dark'): number {
 
 function hexOf(rgb: Rgb): string {
   return '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()
+}
+
+/** CIE76 色差 —— 只用来问「两档品阶/五行色是不是糊在一起了」 */
+function deltaE(a: Rgb, b: Rgb): number {
+  const f = (t: number): number => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116)
+  const lab = ([r, g, b]: Rgb): [number, number, number] => {
+    const [R, G, B] = [channel(r), channel(g), channel(b)]
+    const X = (0.4124 * R + 0.3576 * G + 0.1805 * B) / 0.95047
+    const Y = 0.2126 * R + 0.7152 * G + 0.0722 * B
+    const Z = (0.0193 * R + 0.1192 * G + 0.9505 * B) / 1.08883
+    return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))]
+  }
+  const [l1, a1, b1] = lab(a)
+  const [l2, a2, b2] = lab(b)
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2)
+}
+
+/** 数据层颜色引用 → 浅色主题的实际 RGB(只许 var(--color-x) 或 6 位 hex) */
+function resolveRgb(colorRef: string): Rgb {
+  const tokenVar = /var\(--color-([a-z0-9-]+)\)/.exec(colorRef)
+  if (tokenVar) return LIGHT.get(tokenVar[1]!)!
+  const hex = /^#([0-9a-fA-F]{6})$/.exec(colorRef)
+  if (hex) {
+    const n = parseInt(hex[1]!, 16)
+    return [n >> 16, (n >> 8) & 255, n & 255] as const
+  }
+  throw new Error(`数据层颜色无法解析为 RGB:${colorRef}`)
 }
 
 /** 扫源码文本,回报命中的文件(用于"某某名字不该再出现"这类判据) */
@@ -249,5 +278,26 @@ describe('调色板 · 数据层颜色', () => {
     walk(resolve(ROOT, 'src/data'))
     eat('src/components/common/SpiritRootReveal.vue', readFileSync(resolve(ROOT, 'src/components/common/SpiritRootReveal.vue'), 'utf-8'))
     expect(offenders, '数据层出现白名单外的裸 hex(疑似又手抄 token 旧值),请改成 var(--color-*) 引用').toEqual([])
+  })
+})
+
+describe('调色板 · 色阶分得开', () => {
+  it('品阶九色 / 五行十一色任意两档 ΔE≥10 —— 压深之后不糊成一团', () => {
+    const q9 = QUALITIES.map(q => ({ name: q.name, rgb: resolveRgb(q.color) }))
+    const l11 = Object.values(ELEMENTS).map(e => ({ name: e.name, rgb: resolveRgb(e.color) }))
+    const pair = (...px: { name: string; rgb: Rgb }[]): string => {
+      const tooClose: string[] = []
+      for (let i = 0; i < px.length; i += 1) {
+        for (let j = i + 1; j < px.length; j += 1) {
+          const d = deltaE(px[i]!.rgb, px[j]!.rgb)
+          if (d < 10) tooClose.push(`${px[i]!.name}-${px[j]!.name} ΔE ${d.toFixed(1)}`)
+        }
+      }
+      return tooClose.join(' · ')
+    }
+    expect(q9).toHaveLength(9)
+    expect(l11).toHaveLength(11)
+    expect(pair(...q9), '品阶两档糊在一起了').toBe('')
+    expect(pair(...l11), '五行两档糊在一起了').toBe('')
   })
 })
