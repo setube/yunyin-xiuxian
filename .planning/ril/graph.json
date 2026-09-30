@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-30T02:55:49+00:00",
+  "updated_at": "2026-09-30T17:27:41+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14160,6 +14160,17 @@
       "touched_round": 230,
       "commit": "dfebeb5",
       "summary": "数据层 hex 白名单判据接入 palette.spec,并当场抓到修掉 souls.ts 四处旧 token 手抄(魂质品阶 清晰/凝实/通灵/显形 → var(--color-*) 引用)"
+    },
+    "CHG-264": {
+      "id": "CHG-264",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-30T17:27:41+00:00",
+      "updated_at": "2026-09-30T17:27:41+00:00",
+      "touched_round": 230,
+      "commit": "f2b55d3",
+      "summary": "palette.spec 补「色阶分得开」判据:CIE76 ΔE>=10(品阶9色/五行11色),对齐 xian 判据五,防压深后相邻档糊成一团;实测最小ΔE 15.3/12.8"
     }
   },
   "edges": [
