@@ -111,10 +111,10 @@ export interface SoulGradeDef {
 
 export const SOUL_GRADES: SoulGradeDef[] = [
   { rank: 0, name: '朦胧', mult: 1.0, color: '#857F70' },
-  { rank: 1, name: '清晰', mult: 1.25, color: '#6E8B74' },
-  { rank: 2, name: '凝实', mult: 1.5, color: '#4F7699' },
-  { rank: 3, name: '通灵', mult: 1.75, color: '#7B5EA7' },
-  { rank: 4, name: '显形', mult: 2.0, color: '#B07D2B' },
+  { rank: 1, name: '清晰', mult: 1.25, color: 'var(--color-jade)' },
+  { rank: 2, name: '凝实', mult: 1.5, color: 'var(--color-azure)' },
+  { rank: 3, name: '通灵', mult: 1.75, color: 'var(--color-violet-ink)' },
+  { rank: 4, name: '显形', mult: 2.0, color: 'var(--color-amber-ink)' },
   { rank: 5, name: '化真', mult: 2.3, color: '#C9A227' }
 ]
 

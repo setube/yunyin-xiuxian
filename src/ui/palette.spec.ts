@@ -226,3 +226,28 @@ describe('调色板 · 两处手抄关系', () => {
     expect(body).not.toMatch(/qinghua/)
   })
 })
+
+describe('调色板 · 数据层颜色', () => {
+  it('src/data 与内联色表只许出现白名单 hex —— 不再允许手抄 token 旧值', () => {
+    // 品阶/五行色已改引 var(--color-*),留存的裸 hex 只能是「没有对应 token 的
+    // 象征色」:凡品灰/玄/仙/天(光)/土/风/冰/暗。出现白名单外的新 hex,说明
+    // 又有人把 token 当 hex 抄进数据层 —— 改 token 时它不会跟着变、漂了不报错。
+    const ALLOWED = new Set(['#A85C3F', '#C9A227', '#3E8E8B', '#8A6F4D', '#5E8C8A', '#6D93B8', '#4A463D', '#857F70'])
+    const offenders: string[] = []
+    const eat = (path: string, text: string): void => {
+      for (const m of text.matchAll(/color:\s*'(#[0-9a-fA-F]{6})'/g)) {
+        if (!ALLOWED.has(m[1]!.toUpperCase())) offenders.push(`${path} → ${m[1]}`)
+      }
+    }
+    const walk = (d: string): void => {
+      for (const entry of readdirSync(d, { withFileTypes: true })) {
+        const path = resolve(d, entry.name)
+        if (entry.isDirectory()) walk(path)
+        else if (/\.ts$/.test(entry.name) && !entry.name.endsWith('.spec.ts')) eat(path.slice(ROOT.length + 1), readFileSync(path, 'utf-8'))
+      }
+    }
+    walk(resolve(ROOT, 'src/data'))
+    eat('src/components/common/SpiritRootReveal.vue', readFileSync(resolve(ROOT, 'src/components/common/SpiritRootReveal.vue'), 'utf-8'))
+    expect(offenders, '数据层出现白名单外的裸 hex(疑似又手抄 token 旧值),请改成 var(--color-*) 引用').toEqual([])
+  })
+})
