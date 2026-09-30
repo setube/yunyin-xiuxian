@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-29T16:46:14+00:00",
+  "updated_at": "2026-09-30T02:55:49+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14139,16 +14139,27 @@
     "TASK-233": {
       "id": "TASK-233",
       "type": "task",
-      "status": "active",
-      "version": 1,
+      "status": "resolved",
+      "version": 2,
       "created_at": "2026-09-29T16:45:39+00:00",
-      "updated_at": "2026-09-29T16:45:39+00:00",
+      "updated_at": "2026-09-30T02:55:49+00:00",
       "touched_round": 230,
       "category": "maintainability",
       "summary": "palette.spec 补数据层 hex 判据:src/data 与组件内联色表(quality/linggen/talents/GRADES)只许出现白名单 hex(凡玄仙天等无 token 象征色),新增裸 hex 即红——防「再抄 token 值进数据层」。待 PR #20 合并后做,避免与 palette.spec 同文件冲突",
       "severity": 0.5,
       "confidence": 1,
       "effort": 1
+    },
+    "CHG-263": {
+      "id": "CHG-263",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-09-30T02:55:49+00:00",
+      "updated_at": "2026-09-30T02:55:49+00:00",
+      "touched_round": 230,
+      "commit": "dfebeb5",
+      "summary": "数据层 hex 白名单判据接入 palette.spec,并当场抓到修掉 souls.ts 四处旧 token 手抄(魂质品阶 清晰/凝实/通灵/显形 → var(--color-*) 引用)"
     }
   },
   "edges": [
@@ -20728,6 +20739,12 @@
       "to": "ISS-248",
       "type": "addresses",
       "created_at": "2026-09-29T16:46:14+00:00"
+    },
+    {
+      "from": "CHG-263",
+      "to": "TASK-233",
+      "type": "implements",
+      "created_at": "2026-09-30T02:55:49+00:00"
     }
   ]
 }
