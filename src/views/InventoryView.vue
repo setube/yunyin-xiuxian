@@ -356,7 +356,11 @@
           <button v-else class="btn-seal shrink-0 !px-2.5 !py-1 !text-[11px]" @click="equipItem(row.item.uid)">换上</button>
         </div>
       </div>
-      <p v-else class="py-8 text-center text-[12px] text-ink-faint">此部位尚无藏品,去历练中寻些机缘吧</p>
+      <p v-else class="py-6 text-center">
+        <span class="empty-seal mx-auto">空</span>
+        <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">此部位尚无藏品</span>
+        <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">去历练中寻些机缘吧</span>
+      </p>
       <p class="mt-2 text-center text-[10px] text-ink-faint">点名称可查看详情与对比</p>
     </BaseModal>
 
