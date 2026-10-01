@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-01T04:57:04.516147+00:00",
+  "updated_at": "2026-10-01T05:16:50.223759+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13707,10 +13707,10 @@
     "ISS-243": {
       "id": "ISS-243",
       "type": "issue",
-      "status": "active",
+      "status": "resolved",
       "version": 1,
       "created_at": "2026-09-28T07:11:39+00:00",
-      "updated_at": "2026-09-28T07:11:39+00:00",
+      "updated_at": "2026-10-01T05:16:50.223759+00:00",
       "touched_round": 230,
       "severity": 0.5,
       "summary": "Inventory 一键穿齐「穿齐 →」触控靶面不足:text-[10px] 行高 15px、py-1.5 使盒高仅 27px,低于 28px 可点阈值;负外边距-正内边距方案使命中区与行高脱钩",
@@ -13769,10 +13769,10 @@
     "ISS-244": {
       "id": "ISS-244",
       "type": "issue",
-      "status": "active",
+      "status": "resolved",
       "version": 1,
       "created_at": "2026-09-28T07:46:41+00:00",
-      "updated_at": "2026-09-28T07:46:41+00:00",
+      "updated_at": "2026-10-01T05:16:50.223759+00:00",
       "touched_round": 230,
       "severity": 0.5,
       "summary": "离线历练普通战装备掉落漏乘探险模式倍率:灵石/修为都乘 modeDef.rewardMult*regionEventReward,唯装备行只有 regionEventReward,高收益探索模式对离线装备掉落无效(在线/离线不同源)",
@@ -13807,10 +13807,10 @@
     "ISS-245": {
       "id": "ISS-245",
       "type": "issue",
-      "status": "active",
+      "status": "resolved",
       "version": 1,
       "created_at": "2026-09-28T08:52:06+00:00",
-      "updated_at": "2026-09-28T08:52:06+00:00",
+      "updated_at": "2026-10-01T05:16:50.223759+00:00",
       "touched_round": 230,
       "severity": 0.4,
       "summary": "离线普通战功法残页掉落漏乘模式倍率与期望量(写死0.15,无 mode×reg;在线为 0.12×mode×reg×1.5)",
@@ -13998,10 +13998,10 @@
     "ISS-246": {
       "id": "ISS-246",
       "type": "issue",
-      "status": "active",
+      "status": "resolved",
       "version": 1,
       "created_at": "2026-09-29T07:17:14+00:00",
-      "updated_at": "2026-09-29T07:17:14+00:00",
+      "updated_at": "2026-10-01T05:16:50.223759+00:00",
       "touched_round": 230,
       "summary": "正文弱化档与强调色在浅色卡片底上欠对比度(ink-faint 3.47 jade 2.95 amber 2.84 azure 3.77 violet 4.13 均<4.5;qinghua 与 azure 同值异名是死token),已随 palette 判据上线提档修复",
       "severity": 0.75
@@ -14196,6 +14196,20 @@
       "touched_round": 230,
       "commit": "1b6ebb5",
       "summary": "layout-check 判据与文言化 UI 对齐:6 条文案匹配串改为当前 src 用语(守意图不锁字面),存读/落盘两场景灵脉投资改走东府页展开区(aria-expanded 幂等开合);落盘节流假红消除(此前未真正投到脉)。layout-check 全绿(exit 0)"
+    },
+    "TASK-235": {
+      "id": "TASK-235",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-01T05:16:50.223759+00:00",
+      "updated_at": "2026-10-01T05:16:50.223759+00:00",
+      "touched_round": 230,
+      "category": "maintainability",
+      "summary": "RIL 记账卫生:ISS-243(穿齐触控靶面)/244(离线装备漏乘模式倍率)/245(离线残页漏乘模式倍率)/246(弱化档欠对比)代码均已由 CHG-251/252/253/258 修复并有回归佐证(layout-check 触控 28px 判据 / offline 乘式 / palette 对比度判据),唯独 issue 节点状态滞留在 active,把审计视线钉在已闭问题上。翻为 resolved 认领闭环",
+      "severity": 0.2,
+      "confidence": 1,
+      "effort": 1
     }
   },
   "edges": [
@@ -20787,6 +20801,12 @@
       "to": "TASK-234",
       "type": "implements",
       "created_at": "2026-10-01T04:57:04.516147+00:00"
+    },
+    {
+      "from": "CHG-265",
+      "to": "TASK-235",
+      "type": "implements",
+      "created_at": "2026-10-01T05:17:42.465013+00:00"
     }
   ]
 }
