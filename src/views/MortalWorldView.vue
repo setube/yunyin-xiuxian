@@ -1,17 +1,45 @@
 <template>
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <template v-if="view">
-      <!-- 世界身份占据第一视觉位:标题是这一世的名字,不是通用标签 -->
-      <div>
-        <h1 class="font-kai text-[19px] tracking-[0.12em] text-ink">{{ view.title }}</h1>
-        <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">本世之界 · {{ view.summary }}</p>
-        <p class="mt-0.5 text-[11px] text-cinnabar">此世笼罩:{{ view.ruleText }}</p>
+      <!-- 地界卷首:题签 + 朱印 —— 这一世的名字是世界的门面,卷轴开卷先是一枚印 -->
+      <div class="card-ink paper-grain relative overflow-hidden px-4 pb-3.5 pt-3">
+        <p class="font-kai text-[10px] tracking-[0.35em] text-ink-faint">本 世 之 界</p>
+        <div class="mt-1 flex items-end gap-3">
+          <div class="min-w-0 grow">
+            <h1 class="font-kai text-[19px] tracking-[0.12em] text-ink">{{ view.title }}</h1>
+            <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">{{ view.summary }}</p>
+          </div>
+          <!-- 卷首题印:朱泥打底,留「世」字为记 —— 此世由你亲历,故以印为凭 -->
+          <span
+            class="mb-1 grid h-11 w-11 shrink-0 -rotate-2 place-items-center rounded-sm bg-[var(--color-cinnabar)] font-kai text-[19px] text-[#f6f1e5] shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.14),0_2px_6px_rgb(140_51_46_/_0.35)]"
+          >世</span>
+        </div>
+        <p class="mt-1.5 text-[11px] leading-relaxed text-cinnabar">此世笼罩:{{ view.ruleText }}</p>
       </div>
 
-      <!-- 路线全貌:高低即层级,横距即路程,点大即事多 -->
-      <div class="card-ink px-3 py-2">
+      <!-- 路线全貌:高低即层级,横距即路程,点大即事多 —— 纸面先晕一层天清气韵,再落墨线 -->
+      <div class="card-ink paper-grain px-3 py-2">
         <svg :viewBox="`0 0 ${VIEW_W} ${VIEW_H}`" class="h-16 w-full" role="img" aria-label="本世路线">
-          <polyline :points="polyline" fill="none" stroke="currentColor" stroke-width="1" class="text-ink/25" />
+          <defs>
+            <linearGradient id="world-sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="var(--color-azure)" stop-opacity="0.12" />
+              <stop offset="0.62" stop-color="var(--color-azure)" stop-opacity="0" />
+              <stop offset="1" stop-color="var(--color-ink)" stop-opacity="0.08" />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" :width="VIEW_W" :height="VIEW_H" rx="7" fill="url(#world-sky)" />
+          <!-- 路段三态:终点已通的路画玉实线,眼下可往的画青实线,仍未至的画淡虚线 ——
+               走过的路在纸上被一段段点染成色 -->
+          <polyline
+            v-for="(seg, i) in segments"
+            :key="i"
+            :points="seg.points"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            :class="seg.cls"
+            :style="seg.dash ? { strokeDasharray: seg.dash } : undefined"
+          />
           <circle
             v-for="p in view.places"
             :key="p.nodeId"
