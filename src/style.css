@@ -556,10 +556,14 @@ html[data-theme='dark'] .btn-seal {
   background: var(--color-cinnabar-deep);
 }
 
-/* 卷首题印(本世之界):与 btn-seal 同一套印面 —— 夜主题换深朱,
-   不然亮朱(3.81:1)托不住奶油字,判据见上一条的注释 */
+/* 卷首题印(本世之界):与 .btn-seal 同一套印面 —— 奶油字、内阴影、夜主题深朱
+   全在这里收编,模板只留布局;判据见 src/ui/palette.spec.ts「调色板 · 印面」 */
 .world-seal {
   background: var(--color-cinnabar);
+  color: #f6f1e5;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
+    0 2px 6px rgb(140 51 46 / 0.35);
 }
 html[data-theme='dark'] .world-seal {
   background: var(--color-cinnabar-deep);

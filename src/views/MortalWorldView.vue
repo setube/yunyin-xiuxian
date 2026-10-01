@@ -9,9 +9,9 @@
             <h1 class="font-kai text-[19px] tracking-[0.12em] text-ink">{{ view.title }}</h1>
             <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">{{ view.summary }}</p>
           </div>
-          <!-- 卷首题印:朱泥打底,留「世」字为记 —— 此世由你亲历,故以印为凭 -->
+          <!-- 卷首题印:朱泥打底,留「世」字为记 —— 此世由你亲历,故以印为凭(印面样式见 style.css .world-seal) -->
           <span
-            class="world-seal mb-1 grid h-11 w-11 shrink-0 -rotate-2 place-items-center rounded-sm font-kai text-[19px] text-[#f6f1e5] shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.14),0_2px_6px_rgb(140_51_46_/_0.35)]"
+            class="world-seal mb-1 grid h-11 w-11 shrink-0 -rotate-2 place-items-center rounded-sm font-kai text-[19px]"
           >世</span>
         </div>
         <p class="mt-1.5 text-[11px] leading-relaxed text-cinnabar">此世笼罩:{{ view.ruleText }}</p>
@@ -84,7 +84,9 @@
           class="card-ink flex items-center gap-3 px-3 py-2.5"
           :class="{
             'opacity-60': !unlocked(p.nodeId),
-            'border-cinnabar/35': focusNode?.nodeId === p.nodeId
+            // .card-ink 的边框是手写(非 layer)声明,工具类在 @layer 里永远压不过它 ——
+            // 加 ! 破层,这正是 CharacterView/AdventureView 盖卡片边框的同一套做法
+            '!border-cinnabar/35': focusNode?.nodeId === p.nodeId
           }"
         >
           <span

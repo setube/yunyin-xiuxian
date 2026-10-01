@@ -278,6 +278,12 @@ describe('调色板 · 印面', () => {
     expect(contrast(DARK.get('cinnabar-deep')!, SEAL_INK)).toBeGreaterThan(contrast(DARK.get('cinnabar')!, SEAL_INK))
     expect(CSS).toMatch(/html\[data-theme='dark'\] \.btn-seal \{[^}]*background: var\(--color-cinnabar-deep\)/)
   })
+
+  it('卷首题印(.world-seal)也在 style.css 里钉同样的奶油字,夜主题同样换深朱', () => {
+    // .world-seal 从模板抄了 .btn-seal 的印面却零判据,颜色改飞了没人喊 —— 补一记
+    expect(CSS).toMatch(/\.world-seal \{[^}]*color: #f6f1e5/)
+    expect(CSS).toMatch(/html\[data-theme='dark'\] \.world-seal \{[^}]*background: var\(--color-cinnabar-deep\)/)
+  })
 })
 
 describe('调色板 · 两处手抄关系', () => {
