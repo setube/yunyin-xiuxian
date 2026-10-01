@@ -2,7 +2,7 @@
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <!-- 卷首扉页:修仙录不是清单,是「这一部只写你自己」的一册 —— 开卷先落一枚「我」印 -->
     <div class="card-ink paper-grain relative overflow-hidden px-4 pb-4 pt-5 text-center">
-      <span class="empty-seal mx-auto">我</span>
+      <span class="seal-solid" aria-hidden="true">我</span>
       <h1 class="mt-2.5 font-kai text-[20px] tracking-[0.3em] text-ink">修 仙 录</h1>
       <p class="mt-1 text-[10px] tracking-[0.25em] text-ink-faint">这一部,只写你自己</p>
     </div>
@@ -49,7 +49,7 @@
       <p class="mt-1.5 text-[9px] text-ink-faint">画像全部来自真实道痕统计,不可人工修饰。</p>
     </div>
     <p v-else class="card-ink px-4 py-6 text-center">
-      <span class="empty-seal">像</span>
+      <span class="empty-seal" aria-hidden="true">像</span>
       <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">道痕未满{{ cnNumber(PROFILE_MIN_MARKS) }}则</span>
       <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">画像尚不成形 —— 走远些,才照见自己</span>
     </p>
@@ -115,7 +115,7 @@
         </p>
       </template>
       <p v-else class="py-5 text-center">
-        <span class="empty-seal">初</span>
+        <span class="empty-seal" aria-hidden="true">初</span>
         <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">此为初世</span>
         <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">你尚未死过一次,也就还没有什么可以回忆</span>
       </p>
@@ -132,7 +132,7 @@
         </div>
       </div>
       <p v-else class="py-5 text-center">
-        <span class="empty-seal">白</span>
+        <span class="empty-seal" aria-hidden="true">白</span>
         <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">此录尚白</span>
         <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">天界之行,自会留名</span>
       </p>
@@ -151,7 +151,7 @@
         </p>
       </template>
       <p v-else class="py-5 text-center">
-        <span class="empty-seal">敌</span>
+        <span class="empty-seal" aria-hidden="true">敌</span>
         <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">尚无宿敌</span>
         <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">此录待你的血与道来填</span>
       </p>
@@ -171,7 +171,7 @@
         </p>
       </template>
       <p v-else class="py-5 text-center">
-        <span class="empty-seal">缘</span>
+        <span class="empty-seal" aria-hidden="true">缘</span>
         <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">尚无未了之缘</span>
         <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">缘起于路上,不在名录里</span>
       </p>
@@ -187,9 +187,9 @@
         </p>
       </template>
       <p v-else class="py-5 text-center">
-        <span class="empty-seal">迹</span>
+        <span class="empty-seal" aria-hidden="true">迹</span>
         <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">行迹未著</span>
-        <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">世界尚未记住你的足迹</span>
+        <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">走过,自会有人记得你的来时路</span>
       </p>
     </div>
 
@@ -204,7 +204,7 @@
         </p>
       </template>
       <p v-else class="py-5 text-center">
-        <span class="empty-seal">创</span>
+        <span class="empty-seal" aria-hidden="true">创</span>
         <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">纪录待创</span>
         <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">破界之时,自见分晓</span>
       </p>

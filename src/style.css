@@ -950,7 +950,25 @@ html[data-theme='dark'] .world-seal {
   font-family: var(--font-kai);
   font-size: 15px;
   letter-spacing: 0.1em;
-  color: rgb(var(--color-ink-rgb) / 0.38);
+  /* 0.38 太淡:暗色纸面上 2.79:1,远看是糊点不是章;提到 0.55(约 3.5:1),
+     仍是「还没写」的哑地位,却立得起来 */
+  color: rgb(var(--color-ink-rgb) / 0.55);
+  transform: rotate(-2deg);
+}
+
+/* 卷首私印(修仙录扉页):墨色实印 —— 与空态哑印相对,是「已落款」的分量。
+   地界卷首那枚是朱泥(世界印),这枚走墨:墨书配墨印,两卷各得其章 */
+.seal-solid {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  background: rgb(var(--color-ink-rgb) / 0.85);
+  color: rgb(var(--color-paper-rgb));
+  font-family: var(--font-kai);
+  font-size: 16px;
+  letter-spacing: 0.1em;
   transform: rotate(-2deg);
 }
 

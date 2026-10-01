@@ -63,7 +63,7 @@
         </div>
       </div>
       <p v-else class="card-ink px-4 py-6 text-center">
-        <span class="empty-seal">兽</span>
+        <span class="empty-seal" aria-hidden="true">兽</span>
         <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">尚无灵兽相伴</span>
         <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">灵兽多在历练际遇中结缘</span>
       </p>
