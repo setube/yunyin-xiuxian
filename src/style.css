@@ -740,14 +740,6 @@ html[data-theme='dark'] .world-seal {
   animation: bar-grow 0.4s 0.1s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
-/* 灵气环:围绕主视觉的旋转法阵 */
-.qi-ring {
-  position: absolute;
-  border-radius: 999px;
-  border: 1px dashed currentColor;
-  pointer-events: none;
-}
-
 /* 受击震颤:战斗中挨打的一方短促晃动(暴击更重) */
 .hit-shake {
   animation: hit-shake 0.3s ease-out;
