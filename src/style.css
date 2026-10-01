@@ -937,6 +937,23 @@ html[data-theme='dark'] .world-seal {
   }
 }
 
+/* 空态哑印:章节无物时,一枚单字印 + 一句指引 —— 空得有分量,却不抢戏。
+   字形压成浅墨、边框细淡,是「还没写」的留白,不是内容;
+   微转 2° 像一枚盖歪的闲章,替句子补上一点手泽。 */
+.empty-seal {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.18);
+  border-radius: 6px;
+  font-family: var(--font-kai);
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  color: rgb(var(--color-ink-rgb) / 0.38);
+  transform: rotate(-2deg);
+}
+
 /* 蓄势涟漪:大事将成的按钮外圈 */
 .pulse-ready {
   position: relative;
