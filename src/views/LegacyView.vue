@@ -1,6 +1,11 @@
 <template>
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
-    <SectionTitle title="修仙录" hint="这一部,只写你自己" />
+    <!-- 卷首扉页:修仙录不是清单,是「这一部只写你自己」的一册 —— 开卷先落一枚「我」印 -->
+    <div class="card-ink paper-grain relative overflow-hidden px-4 pb-4 pt-5 text-center">
+      <span class="empty-seal mx-auto">我</span>
+      <h1 class="mt-2.5 font-kai text-[20px] tracking-[0.3em] text-ink">修 仙 录</h1>
+      <p class="mt-1 text-[10px] tracking-[0.25em] text-ink-faint">这一部,只写你自己</p>
+    </div>
 
     <!-- 修行画像 -->
     <div v-if="profile" class="card-ink px-4 py-3">
