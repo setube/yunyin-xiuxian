@@ -62,10 +62,10 @@
           </button>
         </div>
       </div>
-      <p v-else class="mt-10 text-center text-[12px] text-ink-faint">
-        尚无灵兽相伴
-        <br />
-        <span class="text-[11px]">灵兽多在历练际遇中结缘</span>
+      <p v-else class="card-ink px-4 py-6 text-center">
+        <span class="empty-seal">兽</span>
+        <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">尚无灵兽相伴</span>
+        <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">灵兽多在历练际遇中结缘</span>
       </p>
       <!-- 集齐路上的念想:还差几只、去哪找,一句带过 -->
       <p v-if="petRows.length > 0 && petRows.length < PETS.length" class="mt-2.5 text-center text-[10px] text-ink-faint">
