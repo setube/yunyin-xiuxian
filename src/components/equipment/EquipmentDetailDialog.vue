@@ -151,7 +151,7 @@
       <!-- 修士实验室:反事实换装推演(真仙可用) -->
       <template v-if="canWhatIf">
         <div class="ink-divider my-3" />
-        <button v-if="!whatIf" class="btn-ghost w-full !py-1.5 !text-[12px]" @click="runWhatIf">天机推演 · 若换此装,四天局面如何?</button>
+        <button v-if="!whatIf" class="btn-ghost w-full !py-2 !text-[12px]" @click="runWhatIf">天机推演 · 若换此装,四天局面如何?</button>
         <template v-else>
           <p class="mb-1.5 font-kai text-[12px] tracking-[0.3em] text-ink-faint">天机推演</p>
           <p class="text-[11px] text-ink-soft tabular">

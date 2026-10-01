@@ -67,9 +67,10 @@
               <p v-if="gongfaBranchDef(branchConfirm)" class="mt-1 text-[11px] tabular text-azure">
                 {{ modsText(gongfaBranchDef(branchConfirm)!.mods) }}
               </p>
+              <!-- 择道确认是玩家唯一一次定流派走向:!py-1 盒高不足 28px,抬到 !py-2(35px) -->
               <div class="mt-1.5 flex justify-end gap-2">
-                <button class="btn-ghost !px-3 !py-1 !text-[11px]" @click="branchConfirm = null">再想想</button>
-                <button class="btn-seal !px-3 !py-1 !text-[11px]" @click="confirmBranch()">确认择道</button>
+                <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="branchConfirm = null">再想想</button>
+                <button class="btn-seal !px-3 !py-2 !text-[11px]" @click="confirmBranch()">确认择道</button>
               </div>
             </div>
           </div>

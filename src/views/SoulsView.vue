@@ -109,14 +109,16 @@
             <p class="truncate text-[12px]" :style="{ color: soulColor(soul) }">{{ soulLabel(soul) }}</p>
             <p class="text-[10px] text-ink-faint">凝自「{{ soul.fromName }}」 · {{ soulModText(soul) }}</p>
           </div>
+          <!-- 灵魂列表靠持有才渲染,巡页夹具无灵魂时这些钮根本不存在 —— 以前的 28px 尺子碰不到它。
+               !py-1 盒高约 21px;统一 !py-2 抬到 35px,与同行其它确认态按钮同高 -->
           <div class="flex shrink-0 gap-1">
-            <button class="btn-ghost !px-2.5 !py-1 !text-[11px]" @click="wearSoul(soul.uid)">装配</button>
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="wearSoul(soul.uid)">装配</button>
             <template v-if="pendingDissolveUid !== soul.uid">
-              <button class="btn-ghost !px-2 !py-1 !text-[11px] !text-ink-faint" @click="pendingDissolveUid = soul.uid">散去</button>
+              <button class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint" @click="pendingDissolveUid = soul.uid">散去</button>
             </template>
             <template v-else>
-              <button class="btn-seal !px-2 !py-1 !text-[11px]" @click="doDissolve(soul.uid)">确 散</button>
-              <button class="btn-ghost !px-2 !py-1 !text-[11px]" @click="pendingDissolveUid = null">取 消</button>
+              <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="doDissolve(soul.uid)">确 散</button>
+              <button class="btn-ghost !px-2 !py-2 !text-[11px]" @click="pendingDissolveUid = null">取 消</button>
             </template>
           </div>
         </div>
@@ -146,14 +148,14 @@
           <!-- 入炉二步确认:毁的是原器,不按一个「入 炉」就直接交代了 -->
           <button
             v-if="pendingRefineUid !== row.inst.uid"
-            class="btn-ghost !px-3 !py-1 !text-[11px]"
+            class="btn-ghost !px-3 !py-2 !text-[11px]"
             @click="pendingRefineUid = row.inst.uid"
           >
             入 炉
           </button>
           <div v-else class="flex shrink-0 items-center gap-1.5">
-            <button class="btn-seal !px-2.5 !py-1 !text-[11px]" @click="doRefine(row.inst.uid)">凝 炼</button>
-            <button class="btn-ghost !px-2.5 !py-1 !text-[11px]" @click="pendingRefineUid = null">取 消</button>
+            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doRefine(row.inst.uid)">凝 炼</button>
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pendingRefineUid = null">取 消</button>
           </div>
         </div>
       </div>
