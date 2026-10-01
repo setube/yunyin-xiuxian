@@ -905,6 +905,25 @@ html[data-theme='dark'] .btn-seal {
   animation: drift 18s ease-in-out infinite alternate-reverse;
 }
 
+/* 本世之界;眼下将赴的那一处 —— 节点外圈潺潺脉动,替玩家在图上指路。
+   SVG 里圈会缩放,得先把 transform 基点钉回圆心(fill-box) */
+.node-focus {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: node-pulse 1.9s ease-out infinite;
+}
+@keyframes node-pulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(1.75);
+  }
+}
+
 /* 蓄势涟漪:大事将成的按钮外圈 */
 .pulse-ready {
   position: relative;

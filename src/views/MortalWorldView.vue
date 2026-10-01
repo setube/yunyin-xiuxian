@@ -20,10 +20,32 @@
             :r="p.r"
             :class="cleared(p.nodeId) ? 'text-jade' : unlocked(p.nodeId) ? 'text-azure' : 'text-ink-faint'"
             fill="currentColor"
-            :fill-opacity="unlocked(p.nodeId) ? 0.85 : 0.35"
+            :fill-opacity="cleared(p.nodeId) ? 1 : unlocked(p.nodeId) ? 0.85 : 0.35"
+          />
+          <!-- 眼下将赴的那一处:外圈一道潺潺墨环,替玩家在图上指路(路尽则隐) -->
+          <circle
+            v-if="focusNode"
+            :cx="focusNode.x"
+            :cy="focusNode.y"
+            :r="focusNode.r + 2.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1"
+            class="node-focus text-cinnabar"
           />
         </svg>
-        <p class="mt-0.5 text-center text-[10px] text-ink-faint">高处境深 · 远处路长 · 点大处事多</p>
+        <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-ink-faint">
+          <span class="inline-flex items-center gap-1">
+            <span class="h-1.5 w-1.5 rounded-full bg-ink-faint/40" /> 未至
+          </span>
+          <span class="inline-flex items-center gap-1">
+            <span class="h-1.5 w-1.5 rounded-full bg-azure/80" /> 可往
+          </span>
+          <span class="inline-flex items-center gap-1">
+            <span class="h-1.5 w-1.5 rounded-full bg-jade" /> 已通
+          </span>
+          <span class="ml-auto">高处境深 · 远处路长 · 点大处事多</span>
+        </p>
       </div>
 
       <SectionTitle title="本世地界" hint="这一世的路,按段而行" />
@@ -109,8 +131,27 @@
     return worldView(w, id => enemyDef(id)?.name ?? id)
   })
 
-  /** 路线折线 —— 纵向绑定层级,故回落看得见 */
-  const polyline = computed(() => (view.value ? view.value.places.map(p => `${p.x},${p.y}`).join(' ') : ''))
+  /** 眼下这处 —— 路线里第一个「可往却尚未通关」的节点,地图上的「下一步」 */
+  const focusNode = computed(() => view.value?.places.find(p => unlocked(p.nodeId) && !cleared(p.nodeId)) ?? null)
+
+  /** 路段三态:终点已通是「走过的路」、可往未通是「正要走的路」,皆画实墨;
+      仍未至的路虚画淡线 —— 走过的路在纸上被一段段点染成色 */
+  const segments = computed(() => {
+    const ps = view.value?.places ?? []
+    const segs: { points: string; cls: string; dash: string }[] = []
+    for (let i = 0; i + 1 < ps.length; i++) {
+      const a = ps[i]!
+      const b = ps[i + 1]!
+      const bCleared = cleared(b.nodeId)
+      const bUnlocked = unlocked(b.nodeId)
+      segs.push({
+        points: `${a.x},${a.y} ${b.x},${b.y}`,
+        cls: bCleared ? 'text-jade/60' : bUnlocked ? 'text-azure/55' : 'text-ink/12',
+        dash: bCleared || bUnlocked ? '' : '4 3'
+      })
+    }
+    return segs
+  })
 
   function unlocked(nodeId: string): boolean {
     return canEnterNode(nodeId)
