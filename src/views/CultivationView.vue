@@ -225,6 +225,14 @@
       </button>
     </div>
 
+    <!-- 仙路旅途:从凡到仙的 21 境全景 —— 局部有「下一步」,这张是纵向视野:已至几境、距尽头还有多远 -->
+    <section>
+      <SectionTitle title="仙路" :hint="`已至 ${player.major + 1}/${REALMS.length} 境 · ${player.worldName}`" />
+      <div class="card-ink mt-2 px-3.5 py-3">
+        <RealmLadder :major="player.major" />
+      </div>
+    </section>
+
     <!-- Phase 28 闭关:5 分钟 +150% 修炼,期间禁止历练(数值唯一来源 = buffs.ts retreat + earlyGameService) -->
     <div class="card-ink flex items-start gap-3 px-4 py-3" :class="retreating ? 'bg-amber-ink/6' : ''">
       <!-- 静修印:与全页印章同一块语言;闭关中转为琥珀并在原地呼吸,静而有觉 -->
@@ -409,6 +417,8 @@
   import { qualityDef } from '@/data/qualities'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
+  import RealmLadder from '@/components/cultivation/RealmLadder.vue'
+  import { REALMS } from '@/data/realms'
   import GameIcon from '@/components/common/GameIcon.vue'
   import GongfaDialog from '@/components/cultivation/GongfaDialog.vue'
   import BuffDialog from '@/components/cultivation/BuffDialog.vue'
