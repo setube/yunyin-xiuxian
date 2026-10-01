@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 231,
+  "round": 232,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-01T14:31:06.889693+00:00",
+  "updated_at": "2026-10-01T22:43:03.461204+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14271,6 +14271,17 @@
       "touched_round": 231,
       "commit": "c49ad2e",
       "summary": "本世之界水墨舆图:卷首题签朱印/纸面晕染/路段三态/指路墨环/图例/地界卡互文/卷末纸本;ui-smoke-layout-check 双绿"
+    },
+    "CHG-269": {
+      "id": "CHG-269",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-01T22:43:03.461204+00:00",
+      "updated_at": "2026-10-01T22:43:03.461204+00:00",
+      "touched_round": 232,
+      "commit": "45ed900",
+      "summary": "空态叙事:全站空位统一哑印 .empty-seal(修仙录七处/天界/藏品/灵兽/卷首扉页);TS-lint-kai-palette 全绿"
     }
   },
   "edges": [
