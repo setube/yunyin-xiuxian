@@ -66,7 +66,7 @@
         换界规则必须写明:目前唯一的换界时机是兵解转世,玩家没有主动手段。
         规则存在却不告诉玩家,和没有规则一样糟
       -->
-      <div class="card-ink px-4 py-3">
+      <div class="card-ink paper-grain px-4 py-3">
         <p class="font-kai text-[13px] tracking-widest text-ink-soft">此界从何而来</p>
         <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">
           你睁眼时,天地已成此形。所历地界、途中缓急、镇守之物皆随此世而定,
