@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-01T11:16:59.201197+00:00",
+  "updated_at": "2026-10-01T12:53:23.984577+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14235,6 +14235,31 @@
       "touched_round": 230,
       "commit": "da3600a",
       "summary": "layout-check 弹窗触控巡逻:主动开分解/收纳/装备详情/炼丹四扇常见窗,打开态量内部控件(28px/无名),入口点不开只说明不连坐;对齐 HYP-056/057「打开才存在」边界"
+    },
+    "TASK-237": {
+      "id": "TASK-237",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-01T12:53:23.984577+00:00",
+      "updated_at": "2026-10-01T12:53:23.984577+00:00",
+      "touched_round": 230,
+      "category": "quality",
+      "summary": "layout-check 弹窗巡逻实测抓到的「连炼 ×5 / 炼制」27px 触控欠账:!py-1.5 盒高 27px 低于 28px 阈值,批量炼丹是高频操作;!py-2 抬到 35px,同弹窗窄屏方子卡布局判据随之解除",
+      "severity": 0.4,
+      "confidence": 1,
+      "effort": 1
+    },
+    "CHG-267": {
+      "id": "CHG-267",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-01T12:53:23.984577+00:00",
+      "updated_at": "2026-10-01T12:53:23.984577+00:00",
+      "touched_round": 230,
+      "commit": "0477ea2",
+      "summary": "开炉弹窗连炼/炼制 !py-1.5→!py-2(27→35px);layout-check 全绿"
     }
   },
   "edges": [
@@ -20838,6 +20863,12 @@
       "to": "TASK-236",
       "type": "implements",
       "created_at": "2026-10-01T11:16:59.201197+00:00"
+    },
+    {
+      "from": "CHG-267",
+      "to": "TASK-237",
+      "type": "implements",
+      "created_at": "2026-10-01T12:53:23.984577+00:00"
     }
   ]
 }
