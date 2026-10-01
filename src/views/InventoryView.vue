@@ -296,9 +296,11 @@
               <span class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</span>
             </p>
             <div class="ml-auto flex shrink-0 gap-1.5">
-              <!-- 玩家反馈「批量炼丹」:材料够几炉就连开几炉,结果与连点一致 -->
-              <button class="btn-ghost !px-3 !py-1.5 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
-              <button class="btn-seal !px-3 !py-1.5 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
+              <!-- 玩家反馈「批量炼丹」:材料够几炉就连开几炉,结果与连点一致。
+                   !py-1.5 盒高 27px 低于 28px 阈值(layout-check 弹窗巡逻实测),
+                   抬到 !py-2 到 35px,批量炼制是高频操作 -->
+              <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
+              <button class="btn-seal !px-3 !py-2 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
             </div>
           </div>
         </div>
