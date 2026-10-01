@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-01T05:16:50.223759+00:00",
+  "updated_at": "2026-10-01T11:16:59.201197+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14210,6 +14210,31 @@
       "severity": 0.2,
       "confidence": 1,
       "effort": 1
+    },
+    "TASK-236": {
+      "id": "TASK-236",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-01T11:16:59.201197+00:00",
+      "updated_at": "2026-10-01T11:16:59.201197+00:00",
+      "touched_round": 230,
+      "category": "quality",
+      "summary": "offset 弹窗触控巡逻判据:layout-check 补「主动点开常见弹窗量内部控件」通(分解/收纳/装备详情/炼丹),28px + 可访问名;入口点不开只留说明不连坐。实测抓过三处 27px 按钮(换装/重铸/自动重铸)",
+      "severity": 0.4,
+      "confidence": 1,
+      "effort": 2
+    },
+    "CHG-266": {
+      "id": "CHG-266",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-01T11:16:59.201197+00:00",
+      "updated_at": "2026-10-01T11:16:59.201197+00:00",
+      "touched_round": 230,
+      "commit": "da3600a",
+      "summary": "layout-check 弹窗触控巡逻:主动开分解/收纳/装备详情/炼丹四扇常见窗,打开态量内部控件(28px/无名),入口点不开只说明不连坐;对齐 HYP-056/057「打开才存在」边界"
     }
   },
   "edges": [
@@ -20807,6 +20832,12 @@
       "to": "TASK-235",
       "type": "implements",
       "created_at": "2026-10-01T05:17:42.465013+00:00"
+    },
+    {
+      "from": "CHG-266",
+      "to": "TASK-236",
+      "type": "implements",
+      "created_at": "2026-10-01T11:16:59.201197+00:00"
     }
   ]
 }
