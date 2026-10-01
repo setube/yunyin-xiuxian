@@ -461,7 +461,11 @@
               </button>
             </div>
           </div>
-          <p v-else class="card-ink mt-2 px-4 py-4 text-center text-[11px] text-ink-faint">此页尚白。你在天界的每一战,都会留下痕迹。</p>
+          <p v-else class="card-ink mt-2 px-4 py-5 text-center">
+            <span class="empty-seal">白</span>
+            <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">此页尚白</span>
+            <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">你在天界的每一战,都会留下痕迹</span>
+          </p>
         </section>
       </template>
     </template>
