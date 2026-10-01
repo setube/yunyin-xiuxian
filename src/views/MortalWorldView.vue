@@ -11,7 +11,7 @@
           </div>
           <!-- 卷首题印:朱泥打底,留「世」字为记 —— 此世由你亲历,故以印为凭 -->
           <span
-            class="mb-1 grid h-11 w-11 shrink-0 -rotate-2 place-items-center rounded-sm bg-[var(--color-cinnabar)] font-kai text-[19px] text-[#f6f1e5] shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.14),0_2px_6px_rgb(140_51_46_/_0.35)]"
+            class="world-seal mb-1 grid h-11 w-11 shrink-0 -rotate-2 place-items-center rounded-sm font-kai text-[19px] text-[#f6f1e5] shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.14),0_2px_6px_rgb(140_51_46_/_0.35)]"
           >世</span>
         </div>
         <p class="mt-1.5 text-[11px] leading-relaxed text-cinnabar">此世笼罩:{{ view.ruleText }}</p>

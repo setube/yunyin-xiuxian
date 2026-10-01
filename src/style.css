@@ -556,6 +556,15 @@ html[data-theme='dark'] .btn-seal {
   background: var(--color-cinnabar-deep);
 }
 
+/* 卷首题印(本世之界):与 btn-seal 同一套印面 —— 夜主题换深朱,
+   不然亮朱(3.81:1)托不住奶油字,判据见上一条的注释 */
+.world-seal {
+  background: var(--color-cinnabar);
+}
+html[data-theme='dark'] .world-seal {
+  background: var(--color-cinnabar-deep);
+}
+
 .btn-seal:disabled {
   /*
    * 禁用态**不是装饰态**:按钮上的字往往正是「为什么不让我点」
