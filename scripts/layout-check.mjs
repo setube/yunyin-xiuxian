@@ -739,7 +739,7 @@ for (const vp of VIEWPORTS) {
     location.hash = '#/settings'
   })
   await page.waitForTimeout(800)
-  const warned = await page.evaluate(() => document.body.innerText.includes('上次写入存档失败'))
+  const warned = await page.evaluate(() => document.body.innerText.includes('上次存档没能存下'))
   checked += 1
   if (!warned) failures.push('[375] /settings → 存档写失败时设置页没有提示(静默丢档)')
   if (pageErrors.length) failures.push(`[375] 存档失败场景页面异常:${[...new Set(pageErrors)].join(' | ')}`)
@@ -1699,11 +1699,12 @@ for (const vp of VIEWPORTS) {
   if (downloaded && !/\.save$/.test(downloaded)) failures.push(`[390] 存读场景:导出的文件名不像存档(${downloaded})`)
 
   // 动一下不会自己变的数:投一点灵脉,把灵石花掉
-  await page.goto(INDEX + '#' + '/', { waitUntil: 'load' })
+  // 灵脉投资已从弹窗改为东府页展开区(默认折叠):走到东府页,点开折叠头再投点。
+  await page.goto(INDEX + '#' + '/dongfu', { waitUntil: 'load' })
   await page.waitForTimeout(900)
   await page.getByRole('button', { name: /灵脉投资/ }).first().click({ timeout: 3000 }).catch(() => {})
   await page.waitForTimeout(400)
-  const invest = page.locator('.modal-panel button.btn-ghost:not([disabled])').first()
+  const invest = page.locator('#vein-panel button.btn-ghost:not([disabled])').first()
   let spent = null
   if ((await invest.count()) === 0) failures.push('[390] 存读场景:灵脉弹窗里没有可投的脉(判据没跑到东西)')
   else {
@@ -1842,7 +1843,7 @@ for (const vp of VIEWPORTS) {
       [...document.querySelectorAll('.pointer-events-none.fixed button')].map(b => (b.textContent || '').trim()).join('|')
     )
     if (after !== 3) failures.push(`[390] 收纳场景:清理后行囊剩 ${after} 件(应为 3 —— 那 3 件有投入的必须留下)`)
-    if (!/收纳毕:2 件/.test(toast)) failures.push(`[390] 收纳场景:清理后的交代不对(${toast || '无提示'})`)
+    if (!/收纳既毕,2 件无缘之物化尘/.test(toast)) failures.push(`[390] 收纳场景:清理后的交代不对(${toast || '无提示'})`)
     for (const [uid, name] of [['k_set', '玄铁重剑'], ['k_roll', '桃木簪']]) {
       if (!body.includes(name)) failures.push(`[390] 收纳场景:${name}(${uid})被自动清理了`)
     }
@@ -1954,13 +1955,13 @@ for (const vp of VIEWPORTS) {
       const after = await bagCount()
       const afterToast = await toasts()
       if (after !== 0) failures.push(`[390] 分解场景:点了「分 解」行囊还剩 ${after} 件(两件精品都该拆掉)`)
-      if (!/已分解\s*2\s*件/.test(afterToast)) failures.push(`[390] 分解场景:点「分 解」之后没有交代(${afterToast || '无提示'})`)
+      if (!/炉中化去 2 件/.test(afterToast)) failures.push(`[390] 分解场景:点「分 解」之后没有交代(${afterToast || '无提示'})`)
       const promised = Number((/得器灵尘×(\d+)/.exec(afterToast) || [])[1] ?? NaN)
       const dustAfter = await dustCount()
       if (promised !== 88) {
         failures.push(`[390] 分解场景:两件精品(其中一件 +4,记账投入尘 100)该退 88 尘,提示写的是 ${promised}`)
       }
-      if (!/退灵石\s*6,400/.test(afterToast)) failures.push(`[390] 分解场景:练过的件没退灵石(记了 8000,该退 6400)—— ${afterToast}`)
+      if (!/灵石退还\s*6,400/.test(afterToast)) failures.push(`[390] 分解场景:练过的件没退灵石(记了 8000,该退 6400)—— ${afterToast}`)
       if (dustBefore === null || dustAfter === null || dustAfter - dustBefore !== promised) {
         failures.push(`[390] 分解场景:提示说给 ${promised} 尘,器灵尘那一栏 ${dustBefore} → ${dustAfter}(所见非所得)`)
       }
@@ -2112,7 +2113,7 @@ for (const vp of VIEWPORTS) {
   await page.goto(INDEX + '#' + '/dongfu', { waitUntil: 'load' })
   await page.waitForTimeout(900)
   // 正则留出空白余量:卡片上的代价换行(数 + 量词 nowrap)会在「·」后断行
-  const buildBtn = page.locator('main button', { hasText: /建\s*造\s*·|升\s*级\s*·/ }).first()
+  const buildBtn = page.locator('main button', { hasText: /起\s*造\s*·|再\s*营\s*·/ }).first()
   if ((await buildBtn.count()) === 0) {
     failures.push('[390] 营造场景:洞府页没有可动工的建筑(判据没跑到东西)')
   } else {
@@ -2128,7 +2129,7 @@ for (const vp of VIEWPORTS) {
     else if (oreBefore.value === null || oreAfter.value === null || oreBefore.value - oreAfter.value !== oreCost) {
       failures.push(`[390] 营造场景:卡片写「${label}」,玄铁实际 ${oreBefore.text} → ${oreAfter.text}(所见非所付)`)
     }
-    if (!/升至|落成|建造/.test(toast)) failures.push(`[390] 营造场景:动工之后没有任何交代(${toast || '无提示'})`)
+    if (!/营造再进|落成/.test(toast)) failures.push(`[390] 营造场景:动工之后没有任何交代(${toast || '无提示'})`)
     console.log(`\n洞府营造:${label} → 玄铁 ${oreBefore.text} → ${oreAfter.text}(应扣 ${Number.isFinite(oreCost) ? oreCost : '?'})`)
   }
   if (pageErrors.length) failures.push(`[390] 营造场景页面异常:${[...new Set(pageErrors)].join(' | ')}`)
@@ -2367,7 +2368,7 @@ for (const vp of VIEWPORTS) {
     const toast = await page.evaluate(() =>
       [...document.querySelectorAll('.pointer-events-none.fixed button')].map(b => (b.textContent || '').trim()).join('|')
     )
-    const promised = Number((/分解得器灵尘×(\d+)/.exec(toast) || [])[1] ?? NaN)
+    const promised = Number((/此器化尘,得器灵尘×(\d+)/.exec(toast) || [])[1] ?? NaN)
     const dustAfterSplit = await readDust()
     const stillInBag = await page.evaluate(uid => !!document.querySelector(`main button[data-uid="${uid}"]`), BAG_UID)
     if (Number.isFinite(promised)) {
@@ -2377,7 +2378,7 @@ for (const vp of VIEWPORTS) {
       if (stillInBag) failures.push('[390] 锻造场景:分解之后那件还留在背包里')
       console.log(`\n背包账目:强化扣尘 ${costLine}(对上) · 分解得尘 ${promised}(对上,且件已出包)`)
     } else {
-      failures.push(`[390] 锻造场景:分解没有给出「分解得器灵尘×N」的交代(${toast || '无提示'})`)
+      failures.push(`[390] 锻造场景:分解没有给出「此器化尘,得器灵尘×N」的交代(${toast || '无提示'})`)
     }
   }
   if (pageErrors.length) failures.push(`[390] 锻造场景页面异常:${[...new Set(pageErrors)].join(' | ')}`)
@@ -2675,12 +2676,20 @@ for (const vp of VIEWPORTS) {
     return typeof v === 'number' ? v : v.m * Math.pow(10, v.e)
   }
   const investOnce = async () => {
-    await page.getByRole('button', { name: /灵脉投资/ }).first().click({ timeout: 3000 }).catch(() => {})
-    await page.waitForTimeout(400)
-    await page.locator('.modal-panel button.btn-ghost:not([disabled])').first().click({ timeout: 3000 }).catch(() => {})
+    // 灵脉投资已从弹窗改为东府页展开区:先走到东府页,点开折叠头(已展开则不重复收拢),再点投点钮。
+    await page.goto(INDEX + '#' + '/dongfu', { waitUntil: 'load' })
+    await page.waitForTimeout(700)
+    const expanded = await page
+      .getByRole('button', { name: /灵脉投资/ })
+      .first()
+      .getAttribute('aria-expanded')
+      .catch(() => null)
+    if (expanded !== 'true') {
+      await page.getByRole('button', { name: /灵脉投资/ }).first().click({ timeout: 3000 }).catch(() => {})
+      await page.waitForTimeout(400)
+    }
+    await page.locator('#vein-panel button.btn-ghost:not([disabled])').first().click({ timeout: 3000 }).catch(() => {})
     await page.waitForTimeout(500)
-    await page.keyboard.press('Escape')
-    await page.waitForTimeout(300)
     return readFormatted(page, '灵石')
   }
   checked += 1
