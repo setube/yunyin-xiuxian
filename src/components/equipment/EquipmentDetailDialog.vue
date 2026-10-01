@@ -236,13 +236,15 @@
         -->
         <template v-if="reforgeCostVal || sealCostVal">
           <div class="flex gap-2 text-[11px]">
-            <button v-if="reforgeCostVal" class="btn-ghost flex-1 !py-1" @click="doReforge">
+            <!-- 重铸是装备培养高频动作:!py-1 盒高仅 27px,低于 28px 可点阈值(弹窗内控件,巡页判据按「恰好打开的弹窗」才量得到它)。
+                 !py-2 抬到 35px;封存格是静态展示,但同排按钮提高后也跟着对齐,视觉仍是一整行 -->
+            <button v-if="reforgeCostVal" class="btn-ghost flex-1 !py-2" @click="doReforge">
               重铸词条
               <span class="ml-1 tabular text-[10px] text-ink-faint">
                 {{ formatGN(reforgeCostVal.stone) }} · 尘×{{ reforgeCostVal.dust }}
               </span>
             </button>
-            <div v-if="sealCostVal" class="flex flex-1 items-center justify-center rounded-md border border-azure/20 bg-azure/5 px-2 py-1 text-azure">
+            <div v-if="sealCostVal" class="flex flex-1 items-center justify-center rounded-md border border-azure/20 bg-azure/5 px-2 py-2 text-azure">
               封存一词 {{ formatGN(sealCostVal) }}
             </div>
           </div>
@@ -256,7 +258,7 @@
           <p v-if="inst" class="text-center text-[10px] text-ink-faint tabular">
             已重铸 {{ inst.reforgeCount ?? 0 }} 次 · 已封存 {{ (inst.sealedAffixIds ?? []).length }}/{{ sealCapacity(inst) }}
           </p>
-          <button v-if="reforgeCostVal" class="btn-ghost w-full !py-1 !text-[11px]" @click="autoOpen = !autoOpen">
+          <button v-if="reforgeCostVal" class="btn-ghost w-full !py-2 !text-[11px]" @click="autoOpen = !autoOpen">
             {{ autoOpen ? '收起自动重铸' : '自动重铸 · 洗到指定词条即停' }}
           </button>
         </template>

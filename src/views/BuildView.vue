@@ -132,7 +132,10 @@
             {{ lo.seal }}
           </span>
           <span class="min-w-0 grow truncate font-kai text-[12px] text-ink">{{ lo.name }}</span>
-          <button class="btn-ghost !px-2.5 !py-1 !text-[11px]" @click="applyLoadout(lo.id)">换装</button>
+          <!-- 换装与删除确认态同卡:!py-1 盒高仅 27px(config 充其量 1px 差,但判据 <28 即红),
+               且卡片只在「有构筑」时才出现 —— 页面层巡页夹具没铺 loadouts 永远量不到它(HYP-056 边界)。
+               !py-2 抬到 35px,与旁边确认态按钮同高,视觉一排齐整 -->
+          <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="applyLoadout(lo.id)">换装</button>
           <!-- 删除二步确认:一套构筑是心血,误触垃圾桶不该直接没 -->
           <template v-if="confirmDelete !== lo.id">
             <button
