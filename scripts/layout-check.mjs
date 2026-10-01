@@ -2993,6 +2993,103 @@ for (const vp of VIEWPORTS) {
   }
 }
 
+// ---- 第二十六B件事:弹窗触控巡逻 —— 主动开常见的窗,把内部控件过一遍尺子 ----
+/*
+ * 「打开才存在」的控件是页面层巡页的盲区:巡页只量「当前恰好开着的弹窗」,
+ * 而玩家每天点开的分解/收纳/炼丹/装备详情等,从没在打开态被量过 28px 与可访问名。
+ * 此前实测就在这里放过三处 27px 的按钮(换装/重铸词条/自动重铸)。
+ * 判据不猜弹窗会不会被内容顶掉:开出来有数据就量、量到过小就红、开不开说明夹具没
+ * 铺够那扇窗,记为「判据没跑到东西」留给人工核对 —— 不因为某一扇打不开就连累其它几扇。
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
+  const SAVE_SECRET = 'yunyin-xiuxian::dao-in-the-clouds::v1'
+  const enc = o => CryptoJS.AES.encrypt(JSON.stringify(o), SAVE_SECRET).toString()
+  const gn = (m, e) => ({ m, e })
+  const slices = {
+    game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
+    player: { name: '弹窗巡逻', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 100, herb: 20, ore: 20, page: 5, dust: 50 },
+    inventory: {
+      items: [
+        { uid: 'p_1', templateId: 'w_zhuqing', quality: 'excellent', tier: 3, level: 1, affixes: [{ affixId: 'a_gongji', value: 5 }] },
+        { uid: 'p_2', templateId: 'b_mabu', quality: 'excellent', tier: 3, level: 0, affixes: [] }
+      ],
+      equipped: {},
+      pills: {},
+      artifacts: [],
+      equippedArtifacts: []
+    },
+    endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
+    settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
+  }
+  await ctx.addInitScript(
+    data => {
+      if (localStorage.getItem('__patrolSeeded')) return
+      for (const [k, v] of Object.entries(data)) localStorage.setItem(k, v)
+      localStorage.setItem('__patrolSeeded', '1')
+    },
+    Object.fromEntries(Object.entries(slices).map(([k, v]) => [`yunyin.${k}`, enc(v)]))
+  )
+  const page = await ctx.newPage()
+  const pageErrors = []
+  watchPageErrors(page, pageErrors)
+  await page.goto(INDEX + '#' + '/inventory', { waitUntil: 'load' })
+  await page.waitForTimeout(2400)
+  checked += 1
+
+  /** 点开一扇窗 → 量内部控件 → 关掉。哪扇没开出来单独记账,不连坐。 */
+  const patrol = async (name, click) => {
+    const hit = await click()
+    if (!hit) {
+      // 入口点不开多半是夹具没铺够那扇窗的前置(收纳要有可清物、炼丹要有丹方)——
+      // 这是判据覆盖度的问题,不是产品缺陷,只留一句说明,不判失败
+      console.log(`弹窗巡逻:${name} · 入口没出现(夹具未铺该窗前置,留待人工核对)`)
+      return
+    }
+    await page.waitForTimeout(450)
+    const audit = await auditModalControls(page)
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(250)
+    if (!audit || audit.count === 0) {
+      failures.push(`[弹窗巡逻] ${name}:开出来了但面板里一个控件都没数到`)
+      return
+    }
+    if (!audit.label) failures.push(`[弹窗巡逻] ${name} 弹窗没有可访问名(读屏只会念「对话框」)`)
+    if (audit.unnamed.length) failures.push(`[弹窗巡逻] ${name} 里有 ${audit.unnamed.length} 个无名控件:${audit.unnamed.join(' | ')}`)
+    if (audit.small.length) failures.push(`[弹窗巡逻] ${name} 里可点元素过小(<28px):${audit.small.join(' | ')}`)
+    console.log(`弹窗巡逻:${name} · ${audit.count} 控件${audit.small.length ? ' · 过小:' + audit.small.join(' | ') : ' · 触控达标'}`)
+  }
+
+  await patrol('分解', async () => {
+    const btn = page.locator('main button', { hasText: /^分\s*解$/ }).first()
+    if ((await btn.count()) === 0) return false
+    await btn.click({ timeout: 3000 }).catch(() => {})
+    return true
+  })
+  await patrol('收纳', async () => {
+    const btn = page.locator('main button', { hasText: /^收\s*纳/ }).first()
+    if ((await btn.count()) === 0) return false
+    await btn.click({ timeout: 3000 }).catch(() => {})
+    return true
+  })
+  await patrol('装备详情', async () => {
+    // 装备已在夹具里,点第一件看详情
+    const card = page.locator('main button[data-uid]').first()
+    if ((await card.count()) === 0) return false
+    await card.click({ timeout: 3000 }).catch(() => {})
+    return true
+  })
+  await patrol('开炉炼丹', async () => {
+    const btn = page.locator('main button', { hasText: /开\s*炉\s*炼\s*丹/ }).first()
+    if ((await btn.count()) === 0) return false
+    await btn.click({ timeout: 3000 }).catch(() => {})
+    return true
+  })
+  if (pageErrors.length) failures.push(`[弹窗巡逻] 页面异常:${[...new Set(pageErrors)].join(' | ')}`)
+  await ctx.close()
+}
+
 await browser.close()
 
 // ---- 第二十七件事:外壳高度认 dvh,不认 vh ----
