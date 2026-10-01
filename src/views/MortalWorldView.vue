@@ -54,7 +54,10 @@
           v-for="p in view.places"
           :key="p.nodeId"
           class="card-ink flex items-center gap-3 px-3 py-2.5"
-          :class="{ 'opacity-60': !unlocked(p.nodeId) }"
+          :class="{
+            'opacity-60': !unlocked(p.nodeId),
+            'border-cinnabar/35': focusNode?.nodeId === p.nodeId
+          }"
         >
           <span
             class="grid h-9 w-9 shrink-0 place-items-center rounded-md"
@@ -66,7 +69,8 @@
             <p class="flex items-baseline gap-1.5">
               <span class="truncate font-kai text-[14px] text-ink">{{ p.name }}</span>
               <span class="shrink-0 text-[11px] text-azure">{{ p.terrain }}</span>
-              <span v-if="cleared(p.nodeId)" class="shrink-0 text-[10px] text-jade">已通</span>
+              <span v-if="cleared(p.nodeId)" class="shrink-0 rounded-sm border border-jade/50 px-1 py-px font-kai text-[9px] leading-none text-jade">已通</span>
+              <span v-else-if="focusNode?.nodeId === p.nodeId" class="shrink-0 text-[10px] text-cinnabar">此地</span>
             </p>
             <p class="mt-0.5 flex items-center gap-2 text-[10px] text-ink-faint">
               <span class="truncate">镇守 {{ p.bossName }}</span>
