@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 230,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-09-30T17:27:41+00:00",
+  "updated_at": "2026-10-01T04:57:04.516147+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -1041,7 +1041,7 @@
       "created_at": "2026-09-10T11:51:42+00:00",
       "updated_at": "2026-09-10T11:51:42+00:00",
       "touched_round": 11,
-      "commit": Infinity,
+      "commit": "Infinity",
       "summary": "Esc 关闭弹窗 + 图鉴计数口径对齐"
     },
     "HYP-003": {
@@ -4716,7 +4716,7 @@
       "updated_at": "2026-09-11T21:16:09+00:00",
       "touched_round": 94,
       "summary": "高界每界域补两件法宝(26→32):青锋仙剑/云纹仙印(仙界)、镇神印/神雷珠(神界)、混沌青莲/虚界梭(混沌海);contentDensity 增判据「法宝件数 > 法宝位数」",
-      "commit": Infinity
+      "commit": "Infinity"
     },
     "ISS-069": {
       "id": "ISS-069",
@@ -11837,7 +11837,7 @@
       "created_at": "2026-09-16T00:28:24+00:00",
       "updated_at": "2026-09-16T00:28:24+00:00",
       "touched_round": 200,
-      "commit": Infinity,
+      "commit": "Infinity",
       "summary": "celestialStats 恢复凡界装备 + 器魂叠加;敌人参照改本界锚点(powerScale);新增 celestialJudgement(道之理解 + 境界压制);四天/三试炼加 anchorTier,变数天界锚 32;五处造敌统一;界面写明「此界宜 X 及以上」;四份判据重写;README 与器魂文案改口"
     },
     "ISS-205": {
@@ -14171,6 +14171,31 @@
       "touched_round": 230,
       "commit": "f2b55d3",
       "summary": "palette.spec 补「色阶分得开」判据:CIE76 ΔE>=10(品阶9色/五行11色),对齐 xian 判据五,防压深后相邻档糊成一团;实测最小ΔE 15.3/12.8"
+    },
+    "TASK-234": {
+      "id": "TASK-234",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-01T04:57:04.516147+00:00",
+      "updated_at": "2026-10-01T04:57:04.516147+00:00",
+      "touched_round": 230,
+      "category": "maintainability",
+      "summary": "layout-check 判据跟随文言化 UI 同步(8 条):写盘失败/收纳/分解/退灵石/锻造分解/营造按钮的旧文案(上次写入存档失败/已分解/退灵石/分解得器灵尘/建造升至)已因文案人话化失配;灵脉投资从弹窗重构为东府页展开区后,存读/落盘两条场景还在 home 页找 modal,导致「判据没跑到东西」与落盘节流假红。全部改为匹配新文案与 #vein-panel 结构,取意图不锁字面(对齐 TASK-222 先例)",
+      "severity": 0.3,
+      "confidence": 1,
+      "effort": 1
+    },
+    "CHG-265": {
+      "id": "CHG-265",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-01T04:57:04.516147+00:00",
+      "updated_at": "2026-10-01T04:57:04.516147+00:00",
+      "touched_round": 230,
+      "commit": "1b6ebb5",
+      "summary": "layout-check 判据与文言化 UI 对齐:6 条文案匹配串改为当前 src 用语(守意图不锁字面),存读/落盘两场景灵脉投资改走东府页展开区(aria-expanded 幂等开合);落盘节流假红消除(此前未真正投到脉)。layout-check 全绿(exit 0)"
     }
   },
   "edges": [
@@ -20756,6 +20781,12 @@
       "to": "TASK-233",
       "type": "implements",
       "created_at": "2026-09-30T02:55:49+00:00"
+    },
+    {
+      "from": "CHG-265",
+      "to": "TASK-234",
+      "type": "implements",
+      "created_at": "2026-10-01T04:57:04.516147+00:00"
     }
   ]
 }
