@@ -55,7 +55,7 @@ describe('智能收纳判定', () => {
 
   it('达标品质一律保留;道途未成时低品质不保留', () => {
     const settings = useSettingsStore()
-    settings.smartKeep = { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true, keepPerfectRolls: true, keepSetPiece: true }
+    settings.smartKeep = { enabled: true, minQuality: 3, keepMinTier: 0, keepCoreAffix: true, keepComboPiece: true, keepPerfectRolls: true, keepSetPiece: true }
     const rng = new RandomService(mulberry32(7))
     // 生成高低品质各一件(minQualityRank 控制下限)
     const high = generateEquipment(10, rng, { luck: 0, minQualityRank: 5 })
