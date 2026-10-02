@@ -416,24 +416,43 @@
         {{ smartStatusLine }}
       </div>
 
-      <!-- 规则 · 门槛:总开关 + 保留线 -->
+      <!-- 规则 · 门槛:总开关 + 两条自留线(品质线 与 阶级线,任一达标即留) -->
       <p class="mb-1 mt-3 font-kai text-[11px] tracking-wider text-ink-soft">规则 · 门槛</p>
       <div class="rounded-md border border-ink/8 bg-paper-deep/40 px-2.5 py-1">
         <label class="flex items-center justify-between py-1.5">
           <span class="text-[13px] text-ink-soft">启用智能收纳</span>
           <input v-model="settings.smartKeep.enabled" type="checkbox" class="h-4 w-4 accent-cinnabar" />
         </label>
-        <div class="flex items-center justify-between gap-2 py-1.5">
-          <span class="text-[12px] text-ink-soft">此品质起一律保留</span>
-          <div class="flex gap-1">
+        <!-- 品质线:九档全列,从哪一档起珍 —— 不只灵品/玄品/地品三档可选 -->
+        <div class="border-t border-ink/6 py-1.5">
+          <p class="mb-1.5 text-[12px] text-ink-soft">品质线 · 自「{{ KEEP_QUALITY_CHOICES.find(q => q.rank === settings.smartKeep.minQuality)?.name ?? '灵品' }}」起珍藏</p>
+          <div class="flex flex-wrap gap-1.5">
             <button
               v-for="q in KEEP_QUALITY_CHOICES"
               :key="q.rank"
-              class="chip-ink"
+              class="chip-ink !py-1.5 text-[10px]"
               :class="settings.smartKeep.minQuality === q.rank ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
               @click="settings.smartKeep.minQuality = q.rank"
             >
               {{ q.name }}
+            </button>
+          </div>
+        </div>
+        <!-- 阶级线:阶数到线的,背得动高阶料子,无论品质皆留;与品质线「或」关系 -->
+        <div class="border-t border-ink/6 py-1.5">
+          <p class="mb-1.5 text-[12px] text-ink-soft">
+            阶级线 ·
+            {{ settings.smartKeep.keepMinTier > 0 ? `自 ${settings.smartKeep.keepMinTier} 阶起,不分品质皆留` : '不设(只看品质与识宝)' }}
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="t in KEEP_TIER_CHOICES"
+              :key="t"
+              class="chip-ink !py-1.5 text-[10px]"
+              :class="settings.smartKeep.keepMinTier === t ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
+              @click="settings.smartKeep.keepMinTier = t"
+            >
+              {{ t === 0 ? '不设' : `${t} 阶` }}
             </button>
           </div>
         </div>
@@ -804,11 +823,13 @@
 
   // ---- 智能收纳 ----
   const smartOpen = ref(false)
-  const KEEP_QUALITY_CHOICES = [
-    { rank: 3, name: '灵品' },
-    { rank: 4, name: '玄品' },
-    { rank: 5, name: '地品' }
-  ]
+  /** 品质自留线:九档全列,自由从任意一档起珍(从前只有灵/玄/地三档可选) */
+  const KEEP_QUALITY_CHOICES = QUALITIES.map(q => ({ rank: q.rank, name: q.name }))
+  /**
+   * 阶级自留线常用档位:0 = 不设;阶是「高阶产出」的近义,越高的窗口只在高阶材料里
+   * (见 qualities 的品质窗口),故给一组拉开距离的常用档,而不是 1~32 每档一个
+   */
+  const KEEP_TIER_CHOICES = [0, 8, 12, 16, 20, 24, 28, 32]
 
   /** 待清理件数(确认提示用) */
   const cleanCount = computed(() => inventory.bagItems.filter(it => !it.locked && !keepVerdict(it).keep).length)
@@ -821,6 +842,7 @@
     const sk = settings.smartKeep
     if (!sk.enabled) return '未启用 —— 掉落照常入包,此间的尺度暂且不用'
     const keepName = KEEP_QUALITY_CHOICES.find(q => q.rank === sk.minQuality)?.name ?? '灵品'
+    const tierLine = sk.keepMinTier > 0 ? `;自 ${sk.keepMinTier} 阶起,不分品质皆留` : ''
     const tags = [
       sk.keepCoreAffix && '核心',
       sk.keepComboPiece && '组合',
@@ -828,7 +850,7 @@
       sk.keepPerfectRolls && '近满'
     ].filter(Boolean)
     const grace = tags.length ? `;带${tags.join('或')}之器,一并留藏` : ''
-    return `${keepName}以上尽数珍藏${grace};余者无缘,落地便化作器灵尘`
+    return `${keepName}以上尽数珍藏${tierLine}${grace};余者无缘,落地便化作器灵尘`
   })
 
   /** 清理确认态:按一次按钮先落在「再想想/清理化尘」上 */
