@@ -532,7 +532,7 @@
     artifactSlotsFor
   } from '@/data/artifacts'
   import { REALMS } from '@/data/realms'
-  import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
+  import { EQUIP_SLOT_NAMES, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
   import { usePill, usePillBatch, availableRecipes, craftPill, craftPillBatch, pillCraftCost } from '@/core/pillService'
   import { craftability, type Craftability } from '@/core/craftability'
@@ -827,9 +827,10 @@
   const KEEP_QUALITY_CHOICES = QUALITIES.map(q => ({ rank: q.rank, name: q.name }))
   /**
    * 阶级自留线常用档位:0 = 不设;阶是「高阶产出」的近义,越高的窗口只在高阶材料里
-   * (见 qualities 的品质窗口),故给一组拉开距离的常用档,而不是 1~32 每档一个
+   * (见 qualities 的品质窗口),故给一组拉开距离的常用档,而不是 1~N 每档一个;
+   * 顶格与 MAX_EQUIP_TIER 同源,游戏阶上限涨了这里自动跟上
    */
-  const KEEP_TIER_CHOICES = [0, 8, 12, 16, 20, 24, 28, 32]
+  const KEEP_TIER_CHOICES = [0, 8, 12, 16, 20, 24, 28, MAX_EQUIP_TIER]
 
   /** 待清理件数(确认提示用) */
   const cleanCount = computed(() => inventory.bagItems.filter(it => !it.locked && !keepVerdict(it).keep).length)

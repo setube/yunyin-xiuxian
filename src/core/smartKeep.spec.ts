@@ -98,6 +98,7 @@ describe('智能收纳 · 自动裁决的边界', () => {
     settings.smartKeep.keepMinTier = 8
     // 连凡品(rank 0 < 品质线 3)、无任何识宝命中 —— 单凭阶数 8 就该留
     expect(keepVerdict(mk('t8', 'mortal', { tier: 8 })).keep).toBe(true)
+    expect(keepVerdict(mk('t8', 'mortal', { tier: 8 })).reason).toMatch(/阶/)
     expect(keepVerdict(mk('t12', 'mortal', { tier: 12 })).keep).toBe(true)
     expect(keepVerdict(mk('t12', 'mortal', { tier: 12 })).reason).toMatch(/阶/)
   })

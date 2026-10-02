@@ -3411,6 +3411,10 @@ for (const vp of [
     }
     await page.waitForTimeout(450)
     const audit = await auditModalControls(page)
+    // 弹出态再上一次排版尺子(竖排 / 量词分家 / 孤字 / 过小的可点元素):
+    // 这几扇窗平时不常开,开着的时候才是它们最容易偷偷溢出/挤行的时刻
+    const info = await measurePage(page)
+    for (const p of problemsOf(info)) failures.push(`[弹窗巡逻] ${name} 弹窗 → ${p}`)
     await page.keyboard.press('Escape').catch(() => {})
     await page.waitForTimeout(250)
     if (!audit || audit.count === 0) {

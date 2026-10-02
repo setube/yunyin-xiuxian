@@ -106,6 +106,13 @@ function t(
   }
 }
 
+/**
+ * 装备阶(tier)的上限 —— 现在混沌海一带的模板最高到 32 阶。
+ * 智能收纳的「阶级自留线」与它的档位胶囊共用这一个数:改档位同时改这里,
+ * 别在两处各写一个 32
+ */
+export const MAX_EQUIP_TIER = 32
+
 export const EQUIPMENT_TEMPLATES: EquipmentTemplate[] = [
   // ============ 人间界(1-20 阶)============
 
