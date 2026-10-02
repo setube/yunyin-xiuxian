@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 233,
+  "round": 234,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-01T23:45:42.875203+00:00",
+  "updated_at": "2026-10-02T03:06:35.439024+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14293,6 +14293,17 @@
       "touched_round": 233,
       "commit": "c8ca847",
       "summary": "仙路旅途:21 境横向刻度(realmLadder 纯函数+组件+修炼页接入);顺手清算死资产 qi-ring(被修炼法球三层环取代)"
+    },
+    "CHG-271": {
+      "id": "CHG-271",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-02T03:06:35.439024+00:00",
+      "updated_at": "2026-10-02T03:06:35.439024+00:00",
+      "touched_round": 234,
+      "commit": "08f6a14",
+      "summary": "归来卷轴:离线收益分三组(修为金标置顶)、拾得装备带 uid 可点开详情;TDD 账目断言入包有 uid/化尘无"
     }
   },
   "edges": [
