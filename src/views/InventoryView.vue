@@ -489,15 +489,43 @@
         两件事各归各管,调了这一头,那一头不受牵连。
       </p>
       <template #footer>
-        <!-- 一键清理二步确认:整包报废,按一下不该就此了结 -->
+        <!--
+          一键清理二步确认:整包报废,按一下不该就此了结。
+          确认页直接列清单(预览与下手同一份名单)+ 入炉收益 —— 化的是什么,一目了然
+        -->
         <template v-if="!cleanConfirm">
-          <button class="btn-ghost w-full !text-[12px]" @click="cleanConfirm = true">
-            依此规则清理行囊(未锁定的无缘之物化尘)
+          <button
+            class="btn-ghost w-full !text-[12px]"
+            :class="cleanCount ? '' : 'opacity-45'"
+            :disabled="cleanCount === 0"
+            @click="cleanConfirm = true"
+          >
+            依此规则清理行囊{{ cleanCount ? `(无缘之物化尘 · ${cleanCount} 件)` : '(已无可清之缘)' }}
           </button>
         </template>
         <template v-else>
-          <p class="mb-2 text-center text-[11px] text-cinnabar">
-            将把行囊中未锁定的无缘之物尽数化尘,共 {{ cleanCount }} 件——此举不可逆,仍要清理?
+          <p class="mb-1 text-center text-[11px] text-cinnabar tabular">
+            将化尘 {{ cleanCount }} 件,入炉可得 {{ batchYieldText(cleanYield) }}——此举不可逆
+          </p>
+          <div class="mb-2 max-h-36 overflow-y-auto rounded-md border border-ink/8 bg-paper-deep/40 px-2.5 py-1.5">
+            <p
+              v-for="t in cleanPreview.slice(0, SWEEP_PREVIEW_LIMIT)"
+              :key="t.item.uid"
+              class="flex items-baseline justify-between gap-2 py-1 text-[10px]"
+            >
+              <span class="min-w-0 truncate font-kai" :style="{ color: qualityDef(t.item.quality).color }">
+                {{ equipmentTemplate(t.item.templateId)?.name ?? '旧物' }}
+              </span>
+              <span class="shrink-0 text-ink-faint tabular">{{ t.item.tier }} 阶 · {{ t.reason }}</span>
+            </p>
+            <p v-if="cleanPreview.length > SWEEP_PREVIEW_LIMIT" class="mt-0.5 border-t border-ink/6 pt-0.5 text-[9px] text-ink-faint">
+              … 其余 {{ cleanPreview.length - SWEEP_PREVIEW_LIMIT }} 件从略
+            </p>
+            <p v-if="!cleanPreview.length" class="py-0.5 text-[10px] text-jade">此尺度下,行囊已无一缘可清</p>
+          </div>
+          <!-- 行囊若已满:榜首那件就是下一件新物的顶位对象,先把临头的事说破 -->
+          <p v-if="bagFull && cleanPreview.length" class="mb-2 text-[9px] leading-relaxed text-ink-faint">
+            行囊已满 —— 若无意外,下一件新宝会先顶走榜首「{{ firstSweepName }}」。
           </p>
           <div class="flex gap-2">
             <button class="btn-ghost flex-1 !text-[12px]" @click="cleanConfirm = false">再想想</button>
@@ -538,13 +566,16 @@
   import { craftability, type Craftability } from '@/core/craftability'
   import {
     batchYieldText,
+    type DecomposeBatch,
     decomposeBatch,
     decomposeByRanks,
     decomposePreview,
     artifactUpCost,
     upgradeArtifact
   } from '@/core/forge'
-  import { keepVerdict } from '@/core/smartKeep'
+  import { sweepTargets } from '@/core/smartKeep'
+  import { salvageOf } from '@/core/salvage'
+  import { add, gnZero } from '@/utils/gnum'
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
   import { equipAllBest, equipSetCombo } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
@@ -832,8 +863,31 @@
    */
   const KEEP_TIER_CHOICES = [0, 8, 12, 16, 20, 24, 28, MAX_EQUIP_TIER]
 
-  /** 待清理件数(确认提示用) */
-  const cleanCount = computed(() => inventory.bagItems.filter(it => !it.locked && !keepVerdict(it).keep).length)
+  /** 清理预告:清单条数上限,超出收拢一行「其余 N 件从略」,别让名单淹没弹窗 */
+  const SWEEP_PREVIEW_LIMIT = 6
+
+  /** 依当前所设尺度将化的件(预览与下手用同一份名单,所见即所得) */
+  const cleanPreview = computed(() => sweepTargets(inventory.bagItems))
+  /** 待清理件数(确认提示用),由名单现算,不再另写一套筛选 */
+  const cleanCount = computed(() => cleanPreview.value.length)
+  /** 清理入炉收益:只见不化(与「一键分解」的 preview 同口径,纯算) */
+  const cleanYield = computed<DecomposeBatch>(() => {
+    const total: DecomposeBatch = { count: 0, dust: 0, stone: gnZero() }
+    for (const t of cleanPreview.value) {
+      const gain = salvageOf(t.item)
+      total.count += 1
+      total.dust += gain.dust
+      total.stone = add(total.stone, gain.stone)
+    }
+    return total
+  })
+  /** 行囊是否已满:满时新宝会先顶走榜首那件无缘旧物 */
+  const bagFull = computed(() => inventory.bagItems.length >= BAG_CAPACITY)
+  /** 榜首件的名字(行囊满时,下一件新物的顶位对象) */
+  const firstSweepName = computed(() => {
+    const first = cleanPreview.value[0]
+    return first ? (equipmentTemplate(first.item.templateId)?.name ?? '旧物') : ''
+  })
 
   /**
    * 当前策略一句话:门槛 + 识宝命中 + 余者化尘。把六个开关拼成一句人话,
@@ -859,8 +913,7 @@
 
   function smartClean(): void {
     cleanConfirm.value = false
-    const targets = inventory.bagItems.filter(it => !it.locked && !keepVerdict(it).keep)
-    const got = decomposeBatch(targets)
+    const got = decomposeBatch(cleanPreview.value.map(t => t.item))
     ui.toast(smartCleanToast(got.count, batchYieldText(got)), 'info')
     smartOpen.value = false
   }
