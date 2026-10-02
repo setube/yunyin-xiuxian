@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 234,
+  "round": 235,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-02T03:06:35.439024+00:00",
+  "updated_at": "2026-10-02T08:53:13.849516+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14304,6 +14304,17 @@
       "touched_round": 234,
       "commit": "08f6a14",
       "summary": "归来卷轴:离线收益分三组(修为金标置顶)、拾得装备带 uid 可点开详情;TDD 账目断言入包有 uid/化尘无"
+    },
+    "CHG-272": {
+      "id": "CHG-272",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-02T08:53:13.849516+00:00",
+      "updated_at": "2026-10-02T08:53:13.849516+00:00",
+      "touched_round": 235,
+      "commit": "9638704",
+      "summary": "智能收纳两条自留线:品质线九档全列、阶级线 keepMinTier(阶到线不分品质皆留,与品质线或兜底);用户反馈 CHG"
     }
   },
   "edges": [
