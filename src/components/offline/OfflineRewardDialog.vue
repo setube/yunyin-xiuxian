@@ -54,6 +54,7 @@
 <script setup lang="ts">
   import { computed, watch } from 'vue'
   import { useUiStore } from '@/stores/ui'
+  import { useInventoryStore } from '@/stores/inventory'
   import { formatDuration, formatGN } from '@/utils/format'
   import { offlineAwayPhrase } from '@/ui/offlineText'
   import { qualityDef } from '@/data/qualities'
@@ -62,6 +63,7 @@
   import GameIcon from '@/components/common/GameIcon.vue'
 
   const ui = useUiStore()
+  const inventory = useInventoryStore()
 
   const summary = computed(() => ui.offlineSummary)
   const awayLine = computed(() => {
@@ -114,12 +116,19 @@
     return out
   })
 
-  /** 真正入行囊的装备(回收件已并入"回收化尘"行,不在此重复列出) */
-  const savedEquipment = computed(() => summary.value?.equipment.filter(e => !e.recycled) ?? [])
+  /**
+   * 真正可点开的入包件(回收件已并入"回收化尘"行,不在此重复列出)。
+   * 智能收纳 + 行囊满时,新件会把本结算先入包的件挤出包 —— 那件已化尘,
+   * 不能渲染成「点得开」的活件;按 uid 回查背包,在包里的才列、才计数。
+   */
+  const savedEquipment = computed(() =>
+    (summary.value?.equipment ?? []).filter(e => !e.recycled && (e.uid ? inventory.findItem(e.uid) !== undefined : false))
+  )
 
   /** 点一件离线拾得 → 打开它的装备详情(全局弹窗按 ui.equipDetailUid 找实例) */
   function openEquip(uid: string): void {
-    ui.equipDetailUid = uid
+    // 双保险:渲染时已按存在性过滤,点击仍守卫一遍,免得设了个找不到实例的 uid 让弹窗静默不开
+    if (inventory.findItem(uid)) ui.equipDetailUid = uid
   }
 
   function close(): void {

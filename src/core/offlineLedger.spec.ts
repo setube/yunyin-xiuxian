@@ -23,7 +23,7 @@ import { useDongfuStore } from '@/stores/dongfu'
 import { useAdventureStore } from '@/stores/adventure'
 import { useInventoryStore } from '@/stores/inventory'
 import { gn } from '@/utils/gnum'
-import { EXPLORE_MODES } from '@/data/constants'
+import { EXPLORE_MODES, BAG_CAPACITY } from '@/data/constants'
 
 const GAP_HOURS = 60
 const HOUR_MS = 3600 * 1000
@@ -85,6 +85,24 @@ describe('离线总结 · 变动了多少就报多少', () => {
     for (const eq of recycled) {
       expect(eq.uid, '已化尘的装备已不在包,不该再留 uid').toBeUndefined()
     }
+  })
+
+  it('行囊已满归来:装不下的件都标回收且不带 uid(让回收断言真有事可断)', () => {
+    setupBusySave()
+    const inventory = useInventoryStore()
+    // 塞满行囊(120 件旧物、未锁),新掉落无处可放 —— 无智能收纳时一律化尘
+    for (let i = 0; i < BAG_CAPACITY; i += 1) {
+      inventory.items.push({ uid: `bagfull${i}`, templateId: 'b_mabu', quality: 'mortal', tier: 1, level: 0, affixes: [] })
+    }
+    const summary = settleOffline(Date.now())!
+    const recycled = summary.equipment.filter(e => e.recycled)
+    const bagged = summary.equipment.filter(e => !e.recycled)
+    expect(recycled.length, '行囊塞满,新掉落与抑制区产出都应没处放、化作尘').toBeGreaterThan(0)
+    for (const eq of recycled) {
+      expect(eq.uid, '化尘的件已不在包,不该留 uid').toBeUndefined()
+    }
+    // 满包且无智能收纳:没有任何件真的入包,清单里不该再有「可点开」的件
+    expect(bagged.length).toBe(0)
   })
 
   it('60 小时归来:资源差额与摘要逐项对得上,且每项变动都有交代', () => {
