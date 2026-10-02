@@ -26,6 +26,7 @@ export const useSettingsStore = defineStore(
     const smartKeep = ref<import('@/core/smartKeep').SmartKeepConfig>({
       enabled: false,
       minQuality: 3,
+      keepMinTier: 0,
       keepCoreAffix: true,
       keepComboPiece: true,
       keepPerfectRolls: true,
@@ -59,6 +60,7 @@ export const useSettingsStore = defineStore(
       smartKeep.value = {
         enabled: sk.enabled === true,
         minQuality: Math.floor(asFiniteNumber(sk.minQuality, 3, 0)),
+        keepMinTier: Math.max(0, Math.min(99, Math.floor(asFiniteNumber(sk.keepMinTier, 0, 0)))),
         keepCoreAffix: sk.keepCoreAffix !== false,
         keepComboPiece: sk.keepComboPiece !== false,
         keepPerfectRolls: sk.keepPerfectRolls !== false,

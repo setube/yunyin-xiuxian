@@ -33,6 +33,7 @@ function smartOn(): void {
   useSettingsStore().smartKeep = {
     enabled: true,
     minQuality: 3,
+    keepMinTier: 0,
     keepCoreAffix: true,
     keepComboPiece: true,
     keepPerfectRolls: true,
@@ -90,6 +91,33 @@ describe('智能收纳 · 自动裁决的边界', () => {
     expect(keepVerdict(bare).keep).toBe(false)
     useSettingsStore().smartKeep.keepPerfectRolls = false
     expect(keepVerdict(perfect).keep).toBe(false)
+  })
+
+  it('阶级自留线:阶数到了,品质再低也当藏(硬保底,先于品质)', () => {
+    const settings = useSettingsStore()
+    settings.smartKeep.keepMinTier = 8
+    // 连凡品(rank 0 < 品质线 3)、无任何识宝命中 —— 单凭阶数 8 就该留
+    expect(keepVerdict(mk('t8', 'mortal', { tier: 8 })).keep).toBe(true)
+    expect(keepVerdict(mk('t12', 'mortal', { tier: 12 })).keep).toBe(true)
+    expect(keepVerdict(mk('t12', 'mortal', { tier: 12 })).reason).toMatch(/阶/)
+  })
+
+  it('阶级自留线未设(0)时,行为与从前一致 —— 阶数不掺和裁决', () => {
+    // beforeEach 里 keepMinTier 已是 0,凡品(tier 3)不进品质线、也不进阶级线 → 无缘
+    expect(keepVerdict(mk('t3', 'mortal')).keep).toBe(false)
+  })
+
+  it('两线是「或」:未达阶级线的珍品仍由品质线兜住,未达任何线的才化尘', () => {
+    const settings = useSettingsStore()
+    settings.smartKeep.keepMinTier = 8
+    settings.smartKeep.keepCoreAffix = false
+    settings.smartKeep.keepComboPiece = false
+    settings.smartKeep.keepSetPiece = false
+    settings.smartKeep.keepPerfectRolls = false
+    // tier 3 玄品:未达阶线(8),但品质 ≥ 3 → 留
+    expect(keepVerdict(mk('hq', 'spirit', { tier: 3 })).keep).toBe(true)
+    // tier 3 凡品:两条线都不达、识宝全关 → 化尘
+    expect(keepVerdict(mk('lq', 'mortal', { tier: 3 })).keep).toBe(false)
   })
 
   it('「一键分解」勾选的品质档与自动裁决彻底隔离 —— 手动筛的是行囊,落包不看它', () => {

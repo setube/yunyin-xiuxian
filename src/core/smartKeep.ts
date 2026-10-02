@@ -23,6 +23,11 @@ export interface SmartKeepConfig {
   enabled: boolean
   /** 达到此品质 rank 一律保留 */
   minQuality: number
+  /**
+   * 阶级自留线:阶数达到此值的装备**无论品质**一律保留(0 = 不启用)。
+   * 与品质线是「或」:任一达标即留 —— 阶线保高阶、品质线保珍品,各不误杀
+   */
+  keepMinTier: number
   /** 保留含当前主流派核心词条的装备 */
   keepCoreAffix: boolean
   /** 保留可能促成组合技的副体系件 */
@@ -92,6 +97,9 @@ export function keepVerdict(item: EquipmentInstance): KeepVerdict {
   const q = qualityDef(item.quality)
   // 先于品质:练过的件不属于「自动裁决」的管辖范围
   if (hasInvestment(item)) return { keep: true, reason: '已淬养,留待你自己定夺' }
+  // 阶级自留线(硬保底):阶数到了,品质再低也当藏 —— 高阶级是「高阶产出」的近义,
+  // 这条线让玩家不必为「保不漏高阶」而把品质线一路顶到神品
+  if (cfg.keepMinTier > 0 && item.tier >= cfg.keepMinTier) return { keep: true, reason: '阶高当藏' }
   if (q.rank >= cfg.minQuality) return { keep: true, reason: `${q.name}当藏` }
 
   // 这两条不看流派,故排在「道途未成」之前 —— 新档也该留住成套件与满值件
