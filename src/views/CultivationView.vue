@@ -227,7 +227,7 @@
 
     <!-- 仙路旅途:从凡到仙的 21 境全景 —— 局部有「下一步」,这张是纵向视野:已至几境、距尽头还有多远 -->
     <section>
-      <SectionTitle title="仙路" :hint="`已至 ${player.major + 1}/${REALMS.length} 境 · ${player.worldName}`" />
+      <SectionTitle title="仙路" :hint="`已至 ${player.major + 1}/${REALMS.length} 境`" />
       <div class="card-ink mt-2 px-3.5 py-3">
         <RealmLadder :major="player.major" />
       </div>

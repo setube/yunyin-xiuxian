@@ -51,4 +51,14 @@ describe('仙路旅途 · 界段', () => {
     expect(ws[1]!.start).toBe(WORLDS[1]!.start)
     expect(ws[3]!.end).toBe(WORLDS[3]!.end)
   })
+
+  it('界名落在各自段的中央:人间≈21%、仙界≈55%、神界≈76%、混沌海≈93%', () => {
+    const ws = realmLadderWorlds()
+    // 段 (0,8)/(9,13)/(14,17)/(18,20) 中点折算:((a+b)/2+0.5)/21×100
+    expect(ws.map(w => w.centerPct).map(v => Math.round(v))).toEqual([21, 55, 76, 93])
+    // 单调递增,且都在刻度内(0~100)
+    for (let i = 1; i < ws.length; i++) expect(ws[i]!.centerPct).toBeGreaterThan(ws[i - 1]!.centerPct)
+    expect(ws[0]!.centerPct).toBeGreaterThan(0)
+    expect(ws[ws.length - 1]!.centerPct).toBeLessThan(100)
+  })
 })

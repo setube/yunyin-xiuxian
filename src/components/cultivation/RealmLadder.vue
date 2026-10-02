@@ -22,9 +22,15 @@
       </template>
     </div>
 
-    <!-- 界段名:人间界 · 仙界 · 神界 · 混沌海,各自落在所属那一段的下方 -->
-    <p class="prose-ink mt-1 flex justify-between text-[9px] leading-none text-ink-faint">
-      <span v-for="w in worlds" :key="w.id">{{ w.name }}</span>
+    <!-- 界段名:人间界 · 仙界 · 神界 · 混沌海,各自钉在自己那段的正中央——
+         四界段长不一,均布会把仙界/神界标签偏向段首,段心才对得上段 -->
+    <p class="relative mt-1 h-3 text-[9px] leading-none text-ink-faint">
+      <span
+        v-for="w in worlds"
+        :key="w.id"
+        class="absolute -translate-x-1/2 whitespace-nowrap"
+        :style="{ left: `${w.centerPct}%` }"
+      >{{ w.name }}</span>
     </p>
   </div>
 </template>

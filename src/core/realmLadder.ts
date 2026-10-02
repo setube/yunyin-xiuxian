@@ -26,6 +26,10 @@ export interface RealmLadderWorld {
   name: string
   start: number
   end: number
+  /** 本段在整条刻度上的中心位置(0~100%,UI 把界名钉在那里)。
+      四界段长不一,均布(justify-between)会把仙界/神界标签偏向段首 ——
+      界名是段的名,应当落在自己那一段的中央 */
+  centerPct: number
 }
 
 /**
@@ -42,7 +46,15 @@ export function realmLadderPoints(major: number): RealmLadderPoint[] {
   }))
 }
 
-/** 四界段位 —— 界名、首尾索引从 data 直接继承,UI 不另抄第二份 */
+/** 四界段位 —— 界名、首尾索引从 data 直接继承,UI 不另抄第二份。
+    段心的算式:段中点那把「第几格」折算成刻度百分比 ——
+    段 [a,b] 的中点格是 (a+b)/2,格心在 +0.5,故 ((a+b)/2+0.5)/21×100 */
 export function realmLadderWorlds(): RealmLadderWorld[] {
-  return WORLDS.map(w => ({ id: w.id, name: w.name, start: w.start, end: w.end }))
+  return WORLDS.map(w => ({
+    id: w.id,
+    name: w.name,
+    start: w.start,
+    end: w.end,
+    centerPct: (((w.start + w.end) / 2 + 0.5) / REALMS.length) * 100
+  }))
 }
