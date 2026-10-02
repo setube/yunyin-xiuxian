@@ -1835,7 +1835,8 @@ for (const vp of VIEWPORTS) {
     if (!armed) failures.push('[390] 收纳场景:找不到「依此规则清理行囊」按钮')
     await page.waitForTimeout(300)
     const warn = await page.evaluate(() => (document.querySelector('.modal-panel')?.innerText || '').replace(/\n+/g, ' '))
-    const promisedCount = Number((/共\s*(\d+)\s*件/.exec(warn) || [])[1] ?? NaN)
+    // 确认框文案随版本走动:老句「共 N 件」→ 新句「将化尘 N 件,入炉可得…」。两式都认,免得尺子被改词带翻
+    const promisedCount = Number((/将化尘\s*(\d+)\s*件/.exec(warn) || /共\s*(\d+)\s*件/.exec(warn) || [])[1] ?? NaN)
     if (promisedCount !== 2) {
       failures.push(`[390] 收纳场景:该清的只有 2 件废物,确认框写的是 ${promisedCount} 件 —— 练过/成套/近满的件被算进了清理名单(${warn.slice(0, 90)})`)
     }
@@ -1853,7 +1854,7 @@ for (const vp of VIEWPORTS) {
     }
     if (!/\+3/.test(body)) failures.push('[390] 收纳场景:练过的那件(+3)被自动清理了')
     if (after === 3 && promisedCount === 2) {
-      console.log(`\n智能收纳:行囊 5 件 → 确认框「共 ${promisedCount} 件」→ 清理后 ${after} 件(练过/成套/近满三件都留下)`)
+      console.log(`\n智能收纳:行囊 5 件 → 确认框「${promisedCount} 件」→ 清理后 ${after} 件(练过/成套/近满三件都留下)`)
     }
   }
   if (pageErrors.length) failures.push(`[390] 收纳场景页面异常:${[...new Set(pageErrors)].join(' | ')}`)
