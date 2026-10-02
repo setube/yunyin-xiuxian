@@ -142,6 +142,28 @@
           <span class="tabular">器灵尘×{{ upCost.dust }} · 灵石 {{ formatGN(upCost.stone) }}</span>
         </p>
         <p class="mt-1 text-[11px] tabular text-azure">{{ equipNextLevelText(inst.level) }}</p>
+        <!--
+          连升:逐级成本一次算清(预览与执行共用 upgradeBatchPlan),省掉逐级一按。
+          花的是累计总账,按一下不该就此了结 —— 二步确认与分解/散去同款。
+        -->
+        <div v-if="batchPlan.levels > 0" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+          <template v-if="batchConfirm !== inst.uid">
+            <div class="min-w-0 flex-1">
+              <p class="text-[10px] text-ink-faint">
+                连升至 <span class="font-kai text-[12px] text-cinnabar">+{{ inst.level + batchPlan.levels }}</span> 级
+              </p>
+              <p class="mt-0.5 text-[9px] text-ink-faint tabular">共 器灵尘×{{ batchPlan.dust }} · 灵石 {{ formatGN(batchPlan.stone) }}</p>
+            </div>
+            <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchConfirm = inst.uid">连 升</button>
+          </template>
+          <template v-else>
+            <p class="min-w-0 flex-1 text-[10px] leading-relaxed text-cinnabar">
+              一步连升 {{ batchPlan.levels }} 级,花上面那笔总账 —— 仍要?
+            </p>
+            <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchConfirm = null">再想想</button>
+            <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runBatchUpgrade">连 升</button>
+          </template>
+        </div>
       </template>
       <p v-if="salvage" class="mt-1 flex items-center justify-between text-[11px] text-ink-faint">
         <span>分解返还{{ inst.level > 0 ? `(${salvageRefundPhrase()})` : '' }}</span>
@@ -327,7 +349,15 @@
   import { equipSetDef, setCounts } from '@/core/equipSet'
   import { worldNameOfTier } from '@/core/formulas'
   import { resolveEquipStats } from '@/core/equipGen'
-  import { decomposeEquipment, equipLevelCap, equipUpgradeCost, upgradeEquipment } from '@/core/forge'
+  import {
+    decomposeEquipment,
+    equipLevelCap,
+    equipUpgradeCost,
+    upgradeEquipment,
+    upgradeBatchPlan,
+    upgradeEquipmentBatch,
+    type UpgradeBatchPlan
+  } from '@/core/forge'
   import { salvageOf, salvageRefundPhrase } from '@/core/salvage'
   import { detectBuild } from '@/core/buildDetect'
   import { endgameUnlocked } from '@/core/endgameService'
@@ -337,7 +367,7 @@
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
   import { formatGN } from '@/utils/format'
-  import { isZero, sub } from '@/utils/gnum'
+  import { gnZero, isZero, sub } from '@/utils/gnum'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/ui/statNames'
   import { equipNextLevelText } from '@/ui/equipText'
@@ -381,6 +411,12 @@
   const resolved = computed(() => (inst.value ? resolveEquipStats(inst.value) : null))
   const isEquipped = computed(() => (inst.value && template.value ? inventory.equipped[template.value.slot] === inst.value.uid : false))
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
+  /** 连升计划:受余额与上限约束,预览与执行同一份(升不动时 levels=0,隐藏整块) */
+  const batchPlan = computed<UpgradeBatchPlan>(() =>
+    inst.value ? upgradeBatchPlan(inst.value.uid) : { levels: 0, dust: 0, stone: gnZero(), atCap: false }
+  )
+  /** 连升二步确认态;换件自动复位(见 closeAuto 的 watch) */
+  const batchConfirm = ref<string | null>(null)
   /** 分解返还:底材 + 强化投入的八成(练过的件拆了不至于血本无归,先把账摆出来) */
   const salvage = computed(() => (inst.value ? salvageOf(inst.value) : null))
 
@@ -522,13 +558,14 @@
     ui.equipDetailUid = uid
   }
 
-  // 换了一件(或关掉)就从头来:转移模式、自动重铸的勾选、分解的二步确认都不该串到下一件上
+  // 换了一件(或关掉)就从头来:转移模式、自动重铸的勾选、分解与连升的二步确认都不该串到下一件上
   watch(
     () => inst.value?.uid,
     () => {
       transferOpen.value = false
       closeAuto()
       decomposeArm.value = null
+      batchConfirm.value = null
     }
   )
 
@@ -620,6 +657,12 @@
 
   function doUpgrade(): void {
     if (inst.value) upgradeEquipment(inst.value.uid)
+  }
+
+  function runBatchUpgrade(): void {
+    if (!inst.value) return
+    batchConfirm.value = null
+    upgradeEquipmentBatch(inst.value.uid)
   }
 
   const decomposeArm = ref<string | null>(null)
