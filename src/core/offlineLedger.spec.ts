@@ -21,6 +21,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useAdventureStore } from '@/stores/adventure'
+import { useInventoryStore } from '@/stores/inventory'
 import { gn } from '@/utils/gnum'
 import { EXPLORE_MODES } from '@/data/constants'
 
@@ -67,6 +68,23 @@ function setupBusySave(): void {
 describe('离线总结 · 变动了多少就报多少', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  it('装备清单如实标注可看性:入包件带真实 uid,已化尘的不带', () => {
+    setupBusySave()
+    const summary = settleOffline(Date.now())!
+    const inventory = useInventoryStore()
+    const bagged = summary.equipment.filter(e => !e.recycled)
+    const recycled = summary.equipment.filter(e => e.recycled)
+    // 这一档打得凶,包里至少该拾得装备;若断言因夹具变动而失效,先一眼看得出
+    expect(bagged.length, '60 小时沐浴一场,归来清单里该有入包的装备').toBeGreaterThan(0)
+    for (const eq of bagged) {
+      expect(eq.uid, '入包的装备该能点开详情,uid 不能缺').toBeTruthy()
+      expect(inventory.findItem(eq.uid!), 'uid 需能在背包里找到对应实例,否则点开是空的').toBeTruthy()
+    }
+    for (const eq of recycled) {
+      expect(eq.uid, '已化尘的装备已不在包,不该再留 uid').toBeUndefined()
+    }
   })
 
   it('60 小时归来:资源差额与摘要逐项对得上,且每项变动都有交代', () => {

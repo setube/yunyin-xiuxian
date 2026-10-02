@@ -1031,8 +1031,9 @@ export interface OfflineSummary {
   battles: number
   wins: number
   events: number
-  /** 产出装备清单;回收(自动回收/满包化尘)的件以 recycled 标注 */
-  equipment: { name: string; quality: QualityId; recycled?: boolean }[]
+  /** 产出装备清单;回收(自动回收/满包化尘)的件以 recycled 标注。
+      入包的件带实例 uid —— 归来弹窗靠它把名字点开成装备详情;已化尘的件已不在包里,故无 uid */
+  equipment: { name: string; quality: QualityId; recycled?: boolean; uid?: string }[]
   /** 期间未入包装备化作的器灵尘总量 */
   recycledDust: number
   notes: string[]

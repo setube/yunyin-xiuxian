@@ -220,7 +220,13 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
           const res = acquireEquipment(inst, { quiet: true })
           // 所得清单如实记下每一件产出:入包与否都列,未入包(自动回收/满包化尘)标注回收;
           // 器灵尘按 acquire 返回值记账,不再依赖对行囊作 findItem 二次判定。
-          equipmentGained.push({ name: equipmentTemplate(inst.templateId)?.name ?? '未知', quality: inst.quality, recycled: !res.bagged })
+          // 入包的件带上实例 uid —— 归来弹窗点它要开装备详情;已化尘的件已不在包,不配 uid
+          equipmentGained.push({
+            name: equipmentTemplate(inst.templateId)?.name ?? '未知',
+            quality: inst.quality,
+            recycled: !res.bagged,
+            uid: res.bagged ? inst.uid : undefined
+          })
           if (!res.bagged) recycledDust += res.dust
         }
         trip.items += realCount

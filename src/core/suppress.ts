@@ -173,7 +173,7 @@ export function suppressRateFor(regionId: string): SuppressRate | null {
  */
 export interface SuppressedYield {
   stone: GNum
-  equipment: { name: string; quality: QualityId; recycled?: boolean }[]
+  equipment: { name: string; quality: QualityId; recycled?: boolean; uid?: string }[]
   /** 未入包(自动回收/满包化尘)装备化作的器灵尘(由 acquireEquipment 记账) */
   recycledDust: number
   /** 各地界的物产累计(灵草/玄铁/残页/器灵尘) */
@@ -247,7 +247,12 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
       const equip = generateEquipment(region.tier, service, { luck: 0 })
       const res = acquireEquipment(equip, { quiet: true }) // quiet=true 避免镇压收益刷屏
       // 所得清单如实记下每一件产出:入包与否都列,未入包(自动回收/满包化尘)标注回收
-      total.equipment.push({ name: equipmentTemplate(equip.templateId)?.name ?? '未知', quality: equip.quality, recycled: !res.bagged })
+      total.equipment.push({
+        name: equipmentTemplate(equip.templateId)?.name ?? '未知',
+        quality: equip.quality,
+        recycled: !res.bagged,
+        uid: res.bagged ? equip.uid : undefined
+      })
       if (!res.bagged) total.recycledDust += res.dust
     }
   }
