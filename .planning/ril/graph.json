@@ -1,6 +1,6 @@
 {
   "ril_version": 1,
-  "round": 235,
+  "round": 237,
   "created_at": "2026-09-09T11:22:32+00:00",
   "updated_at": "2026-10-02T08:53:13.849516+00:00",
   "nodes": {
@@ -14315,6 +14315,17 @@
       "touched_round": 235,
       "commit": "9638704",
       "summary": "智能收纳两条自留线:品质线九档全列、阶级线 keepMinTier(阶到线不分品质皆留,与品质线或兜底);用户反馈 CHG"
+    },
+    "CHG-274": {
+      "id": "CHG-274",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-02T11:57:45.680830+00:00",
+      "updated_at": "2026-10-02T11:57:45.680830+00:00",
+      "touched_round": 237,
+      "commit": "9a6f5f7",
+      "summary": "自动重铸候选按词条品质分组:传世/珍稀/稀有/常见四档分栏上色,选中亮目标章,已选回声品质色实时 N/3(用户反馈 CHG,续 CHG-272 收纳域)"
     }
   },
   "edges": [
