@@ -212,6 +212,35 @@ export const AFFIX_RARITY_RANK: Record<AffixRarity, number> = {
   legendary: 3
 }
 
+/** 按品质归类后的一档 */
+export interface AffixRarityGroup {
+  rarity: AffixRarity
+  items: AffixDef[]
+}
+
+/**
+ * 把一列词条按品质分成组:传世在前、空组不占位、组内保序。
+ * 自动重铸候选从平铺网格改成按档分组时用它 —— 顺序不硬编码,
+ * 随 AFFIX_RARITY_RANK 走,稀有度调序时这里自动跟上。
+ */
+export function affixesByRarity(affixes: readonly AffixDef[]): AffixRarityGroup[] {
+  const order = (Object.keys(AFFIX_RARITY_RANK) as AffixRarity[]).sort(
+    (a, b) => AFFIX_RARITY_RANK[b] - AFFIX_RARITY_RANK[a]
+  )
+  const buckets = new Map<AffixRarity, AffixDef[]>()
+  for (const af of affixes) {
+    const arr = buckets.get(af.rarity)
+    if (arr) arr.push(af)
+    else buckets.set(af.rarity, [af])
+  }
+  const out: AffixRarityGroup[] = []
+  for (const r of order) {
+    const items = buckets.get(r)
+    if (items) out.push({ rarity: r, items })
+  }
+  return out
+}
+
 /** 词条实际数值 = min + (max - min) × roll */
 export function affixValue(def: AffixDef, roll: number): number {
   const v = def.min + (def.max - def.min) * Math.max(0, Math.min(1, roll))
