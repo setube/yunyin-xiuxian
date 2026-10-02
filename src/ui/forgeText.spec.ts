@@ -5,6 +5,7 @@ import {
   batchDecomposeToast,
   decomposeToast,
   salvageYieldText,
+  upgradeBatchDoneToast,
   upgradeCapToast,
   upgradeDoneToast,
   upgradeShortToast
@@ -17,6 +18,11 @@ describe('炼器提示 · 文言仍报清尘与石', () => {
     expect(upgradeShortToast()).toContain('器灵尘')
     expect(upgradeShortToast()).toContain('灵石')
     expect(upgradeDoneToast('玄铁剑', 3)).toBe('「玄铁剑」再经一锤,已至 +3')
+  })
+
+  it('连升只报一次总况:级数、现阶、尘、石都在', () => {
+    expect(upgradeBatchDoneToast(3, 4, 60, '120')).toBe('连升 3 级,如今 +4,共耗器灵尘×60 · 灵石 120')
+    expect(upgradeBatchDoneToast(1, 1, 10, '0')).toContain('连升 1 级')
   })
 
   it('分解单件与批量都报器灵尘,有石才提退还', () => {

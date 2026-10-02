@@ -16,6 +16,11 @@ export function upgradeDoneToast(name: string, level: number): string {
   return `「${name}」再经一锤,已至 +${level}`
 }
 
+/** 连升的总结账:一锤一锤报太吵,连升只报一次总况(stoneText 由调用方 formatGN 好) */
+export function upgradeBatchDoneToast(levels: number, newLevel: number, dust: number, stoneText: string): string {
+  return `连升 ${levels} 级,如今 +${newLevel},共耗器灵尘×${dust} · 灵石 ${stoneText}`
+}
+
 export function salvageYieldText(dust: number, stoneText?: string): string {
   return stoneText ? `器灵尘×${dust} · 灵石退还 ${stoneText}` : `器灵尘×${dust}`
 }

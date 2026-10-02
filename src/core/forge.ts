@@ -18,7 +18,8 @@ import {
   salvageYieldText,
   upgradeCapToast,
   upgradeDoneToast,
-  upgradeShortToast
+  upgradeShortToast,
+  upgradeBatchDoneToast
 } from '@/ui/forgeText'
 import { salvageOf, salvageRefundPhrase } from './salvage'
 import { modOf } from './statsCalc'
@@ -44,18 +45,18 @@ export function equipUpgradeCost(uid: string): { dust: number; stone: GNum } | n
   return upgradeCost(inst.level, inst.tier, q.rank, modOf(player.finalStats.mods, 'forgeDiscount'))
 }
 
-export function upgradeEquipment(uid: string): boolean {
+export function upgradeEquipment(uid: string, opts: { quiet?: boolean } = {}): boolean {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
   const ui = useUiStore()
   const inst = inventory.findItem(uid)
   const cost = equipUpgradeCost(uid)
   if (!inst || !cost) {
-    ui.toast(upgradeCapToast(), 'warn')
+    if (!opts.quiet) ui.toast(upgradeCapToast(), 'warn')
     return false
   }
   if (!resources.hasSmall('dust', cost.dust) || !resources.hasStone(cost.stone)) {
-    ui.toast(upgradeShortToast(), 'warn')
+    if (!opts.quiet) ui.toast(upgradeShortToast(), 'warn')
     return false
   }
   resources.spendSmall('dust', cost.dust)
@@ -73,8 +74,63 @@ export function upgradeEquipment(uid: string): boolean {
   useLoreStore().noteEquipUsed(inst.templateId)
   // 强化即炼器:上头的一味矿材作「上手过」(矿石进通晓/锻造技艺的唯一活水)
   noteSmithingUsed(inst.tier, true)
-  ui.toast(upgradeDoneToast(t?.name ?? '此器', inst.level + 1), 'success')
+  if (!opts.quiet) ui.toast(upgradeDoneToast(t?.name ?? '此器', inst.level + 1), 'success')
   return true
+}
+
+export interface UpgradeBatchPlan {
+  /** 从当前级起能连升的级数(上限与余额的共同约束) */
+  levels: number
+  /** 连升总花费的器灵尘 */
+  dust: number
+  /** 连升总花费的灵石 */
+  stone: GNum
+  /** 是否因已至强化上限而停(而非钱不够) */
+  atCap: boolean
+}
+
+/**
+ * 强化连升计划:只算不动手。逐级累加 upgradeCost,到上限或余额缺口为止;
+ * 界面预览与批量执行共用这一份,所见即所得。折扣随当时玩家面板走。
+ */
+export function upgradeBatchPlan(uid: string): UpgradeBatchPlan {
+  const inventory = useInventoryStore()
+  const resources = useResourcesStore()
+  const player = usePlayerStore()
+  const inst = inventory.findItem(uid)
+  if (!inst) return { levels: 0, dust: 0, stone: gnZero(), atCap: false }
+  const cap = equipLevelCap()
+  if (inst.level >= cap) return { levels: 0, dust: 0, stone: gnZero(), atCap: true }
+  const q = qualityDef(inst.quality)
+  const discount = modOf(player.finalStats.mods, 'forgeDiscount')
+  let lv = inst.level
+  let dust = 0
+  let stone = gnZero()
+  while (lv < cap) {
+    const c = upgradeCost(lv, inst.tier, q.rank, discount)
+    if (!resources.hasSmall('dust', dust + c.dust) || !resources.hasStone(add(stone, c.stone))) break
+    dust += c.dust
+    stone = add(stone, c.stone)
+    lv += 1
+  }
+  return { levels: lv - inst.level, dust, stone, atCap: lv >= cap }
+}
+
+/**
+ * 强化连升:按计划一次升到位 —— 逐级走 upgradeEquipment 的 quiet 版,
+ * 每一级各自的记账/图鉴/炼器投入都照常,仅合为一次提示。
+ * 返回实际升的级数;0 = 未升(已到顶或钱不够,toast 会说明)。
+ */
+export function upgradeEquipmentBatch(uid: string): number {
+  const plan = upgradeBatchPlan(uid)
+  if (plan.levels === 0) {
+    useUiStore().toast(plan.atCap ? upgradeCapToast() : upgradeShortToast(), 'warn')
+    return 0
+  }
+  for (let i = 0; i < plan.levels; i += 1) upgradeEquipment(uid, { quiet: true })
+  const inst = useInventoryStore().findItem(uid)
+  useUiStore().toast(upgradeBatchDoneToast(plan.levels, inst?.level ?? 0, plan.dust, formatGN(plan.stone)), 'success')
+  return plan.levels
 }
 
 export function decomposeEquipment(uid: string, opts: { quiet?: boolean } = {}): boolean {
