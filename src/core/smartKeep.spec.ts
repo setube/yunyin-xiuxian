@@ -12,7 +12,7 @@ import { BAG_CAPACITY } from '@/data/constants'
 import { useSettingsStore } from '@/stores/settings'
 import { useInventoryStore } from '@/stores/inventory'
 import { acquireEquipment } from './loot'
-import { compareEvictable, hasInvestment, keepVerdict, perfectRolls, shouldAutoRecycle } from './smartKeep'
+import { compareEvictable, hasInvestment, keepVerdict, perfectRolls, shouldAutoRecycle, sweepTargets } from './smartKeep'
 
 /** 夹具一律用「不带套」的青云道袍,免得套件规则混进别的判据 */
 function mk(uid: string, quality: QualityId = 'mortal', opts: Partial<EquipmentInstance> = {}): EquipmentInstance {
@@ -163,5 +163,36 @@ describe('智能收纳 · 自动裁决的边界', () => {
     expect(compareEvictable(weak, strong)).toBeLessThan(0)
     expect(compareEvictable(weak, higherTier)).toBeLessThan(0)
     expect(compareEvictable(weak, betterQuality)).toBeLessThan(0)
+  })
+
+  describe('清理预告 sweepTargets —— 依当前规则列出将化的件(弱者在前,带理由)', () => {
+    it('无缘件全数入选并带理由;上锁者豁免', () => {
+      const plain1 = mk('p1', 'mortal', { tier: 1 })
+      const plain2 = mk('p2', 'mortal', { tier: 4 })
+      const locked = mk('lk', 'mortal', { locked: true })
+      const targets = sweepTargets([plain1, plain2, locked])
+      expect(targets.length).toBe(2)
+      expect(targets.every(t => t.reason.length > 0)).toBe(true)
+      expect(targets.some(t => t.item.uid === 'lk')).toBe(false)
+    })
+
+    it('已留之件(淬养/成套/词条近满/品质线/阶级线)一支不落进名单', () => {
+      const invested = mk('lv', 'mortal', { level: 5 })
+      const setPiece = mk('set1', 'mortal', { templateId: 'w_xuantie' }) // 铁壁共鸣套件
+      const perfect = mk('pf', 'excellent', { affixes: [{ id: 'atk1', roll: 0.95 }, { id: 'def1', roll: 0.88 }] })
+      const qualityKept = mk('hq', 'spirit')
+      const settings = useSettingsStore()
+      settings.smartKeep.keepMinTier = 8
+      const tierKept = mk('t8', 'mortal', { tier: 8 })
+      expect(sweepTargets([invested, setPiece, perfect, qualityKept, tierKept])).toEqual([])
+    })
+
+    it('排序与挤位同一把尺:弱者在前,已留之件不占位', () => {
+      const weak = mk('w1', 'mortal', { tier: 1 })
+      const tall = mk('w3', 'mortal', { tier: 9 })
+      const keptByQuality = mk('q1', 'spirit', { tier: 1 }) // 品质线已留,不进名单
+      const uids = sweepTargets([tall, keptByQuality, weak]).map(t => t.item.uid)
+      expect(uids).toEqual(['w1', 'w3'])
+    })
   })
 })

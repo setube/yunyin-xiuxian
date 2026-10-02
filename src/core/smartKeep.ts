@@ -150,6 +150,28 @@ function rollSum(item: EquipmentInstance): number {
   return item.affixes.reduce((s, x) => s + x.roll, 0)
 }
 
+/** 依当前规则将被清理的一件(未上锁且 keepVerdict 判不保),带理由 */
+export interface SweepTarget {
+  item: EquipmentInstance
+  /** 与 keepVerdict 同源:该件「不值一留」的那一句 */
+  reason: string
+}
+
+/**
+ * 清理预告 —— 依当前所设的尺度,列出行囊中该化的件。
+ * 与挤位同一把尺:未上锁且 keepVerdict 判不保的才入选,回来后按弱者在前排好
+ * (预览与下手用同一份名单,所见即所得;调用方不得另写一套筛选)。
+ */
+export function sweepTargets(items: readonly EquipmentInstance[]): SweepTarget[] {
+  const targets: SweepTarget[] = []
+  for (const it of items) {
+    if (it.locked) continue
+    const verdict = keepVerdict(it)
+    if (!verdict.keep) targets.push({ item: it, reason: verdict.reason })
+  }
+  return targets.sort((a, b) => compareEvictable(a.item, b.item))
+}
+
 /** 是否启用智能收纳 */
 export function smartKeepEnabled(): boolean {
   return useSettingsStore().smartKeep.enabled
