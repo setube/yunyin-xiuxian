@@ -187,23 +187,39 @@
         开关只会变字、词条格子与「开洗」永远不渲染(实测即玩家反馈的「没生效」)。
       -->
       <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
-        <p class="mb-1 text-[11px] text-ink-soft">洗到这些词条出现就停(任一命中即停,至多 3 条)</p>
-        <div class="grid max-h-36 grid-cols-3 gap-1 overflow-y-auto">
-          <button
-            v-for="af in affixOptions"
-            :key="af.id"
-            class="rounded px-1 py-1 text-[10px] leading-tight"
-            :class="isAutoTarget(af.id) ? 'border border-cinnabar text-cinnabar' : 'bg-ink/4 text-ink-faint'"
-            @click="toggleAutoTarget(af.id)"
-          >
-            {{ af.name }}
-          </button>
+        <p class="mb-1 text-[11px] text-ink-soft">洗到这些词条出现就停(任一命中即停 · 已选 {{ autoTargets.length }}/3)</p>
+        <!-- 四档品质成组:传世在前、空组不占位 —— 一眼分出「撞大运的目标」与「随手可得」;
+             组色用词条自身的品质色(与装备卡片同源),选中的下一颗整颗亮成「你的目标章」 -->
+        <div class="max-h-40 space-y-1.5 overflow-y-auto pr-0.5">
+          <div v-for="group in rarityGroups" :key="group.rarity">
+            <p class="flex items-center gap-1.5 text-[9px] tracking-widest" :style="{ color: AFFIX_RARITY_META[group.rarity].color }">
+              <span class="h-px w-3 shrink-0" :style="{ background: AFFIX_RARITY_META[group.rarity].color }"></span>
+              {{ AFFIX_RARITY_META[group.rarity].name }} · {{ group.items.length }} 条
+            </p>
+            <div class="mt-1 grid grid-cols-3 gap-1">
+              <button
+                v-for="af in group.items"
+                :key="af.id"
+                class="rounded px-1 py-1 text-[10px] leading-tight"
+                :class="isAutoTarget(af.id) ? 'border' : 'bg-ink/4'"
+                :style="isAutoTarget(af.id)
+                  ? { borderColor: AFFIX_RARITY_META[af.rarity].color, color: AFFIX_RARITY_META[af.rarity].color }
+                  : { color: 'var(--color-ink-faint)' }"
+                @click="toggleAutoTarget(af.id)"
+              >
+                {{ af.name }}
+              </button>
+            </div>
+          </div>
         </div>
         <div v-if="autoTargets.length" class="mt-1.5 space-y-0.5">
-          <p v-for="t in autoTargets" :key="t.affixId" class="flex items-center gap-2 text-[10px] text-ink-faint">
-            <span class="w-10 shrink-0 font-kai text-ink-soft">{{ affixDef(t.affixId)?.name ?? t.affixId }}</span>
+          <!-- 已选目标回声品质色:它从哪一档领出来,这里就还它本来的颜色 -->
+          <p v-for="t in autoTargets" :key="t.affixId" class="flex items-center gap-2 text-[10px]">
+            <span class="w-10 shrink-0 truncate font-kai" :style="{ color: targetColor(t.affixId) }">
+              {{ affixDef(t.affixId)?.name ?? t.affixId }}
+            </span>
             <input v-model.number="t.minRoll" type="range" min="0" max="1" step="0.05" class="grow accent-cinnabar" />
-            <span class="w-12 shrink-0 text-right tabular">≥{{ Math.round((t.minRoll ?? 0) * 100) }}%</span>
+            <span class="w-12 shrink-0 text-right tabular text-ink-faint">≥{{ Math.round((t.minRoll ?? 0) * 100) }}%</span>
           </p>
         </div>
         <div class="mt-1.5 flex items-center gap-2">
@@ -317,7 +333,7 @@
   import { endgameUnlocked } from '@/core/endgameService'
   import { whatIfEquip, type WhatIfReport } from '@/core/lab'
   import { autoReforge, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, type ReforgeTarget } from '@/core/reforge'
-  import { AFFIXES, affixDef, affixFitBlock } from '@/data/affixes'
+  import { AFFIXES, affixDef, affixFitBlock, affixesByRarity } from '@/data/affixes'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
   import { formatGN } from '@/utils/format'
@@ -426,6 +442,14 @@
 
   function isAutoTarget(id: string): boolean {
     return autoTargets.value.some(t => t.affixId === id)
+  }
+
+  /** 候选按四档品质成组(传世→常见,空组不占位);组内延续 affixOptions 的权重序 */
+  const rarityGroups = computed(() => affixesByRarity(affixOptions.value))
+
+  /** 已选目标的名字颜色:它从哪一档领出,就用哪一档的品质色 */
+  function targetColor(id: string): string {
+    return AFFIX_RARITY_META[affixDef(id)?.rarity ?? 'common'].color
   }
 
   function toggleAutoTarget(id: string): void {
