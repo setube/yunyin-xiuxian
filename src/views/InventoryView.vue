@@ -911,9 +911,17 @@
   /** 清理确认态:按一次按钮先落在「再想想/清理化尘」上 */
   const cleanConfirm = ref(false)
 
+  /**
+   * 清理下手:与确认页同一份名单(cleanPreview,reactive 随行囊刷新),点下时现算。
+   * 预览与实际同源 —— decomposeBatch 只在「件在包且未锁」时成功,而 sweepTargets
+   * 恰是按这两条筛的;单线程、弹窗挡着交互,渲染帧与点击之间没有夹缝,行囊即使被
+   * 异步事件改动,cleanPreview 先变、这里的 .value 也已是新值。toast 照实报 got
+   * (decomposeBatch 的真实返回值),不报预览数。
+   */
   function smartClean(): void {
     cleanConfirm.value = false
-    const got = decomposeBatch(cleanPreview.value.map(t => t.item))
+    const snapshot = sweepTargets(inventory.bagItems) // 与确认页同源,兜底再取一次
+    const got = decomposeBatch(snapshot.map(t => t.item))
     ui.toast(smartCleanToast(got.count, batchYieldText(got)), 'info')
     smartOpen.value = false
   }
