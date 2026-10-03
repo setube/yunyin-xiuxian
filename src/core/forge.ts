@@ -22,6 +22,7 @@ import {
   upgradeBatchDoneToast
 } from '@/ui/forgeText'
 import { salvageOf, salvageRefundPhrase } from './salvage'
+import { playSfx } from './audio'
 import { modOf } from './statsCalc'
 import { track } from './progress'
 import { noteSmithingUsed } from './loreService'
@@ -52,11 +53,17 @@ export function upgradeEquipment(uid: string, opts: { quiet?: boolean } = {}): b
   const inst = inventory.findItem(uid)
   const cost = equipUpgradeCost(uid)
   if (!inst || !cost) {
-    if (!opts.quiet) ui.toast(upgradeCapToast(), 'warn')
+    if (!opts.quiet) {
+      playSfx('warn')
+      ui.toast(upgradeCapToast(), 'warn')
+    }
     return false
   }
   if (!resources.hasSmall('dust', cost.dust) || !resources.hasStone(cost.stone)) {
-    if (!opts.quiet) ui.toast(upgradeShortToast(), 'warn')
+    if (!opts.quiet) {
+      playSfx('warn')
+      ui.toast(upgradeShortToast(), 'warn')
+    }
     return false
   }
   resources.spendSmall('dust', cost.dust)
@@ -74,7 +81,10 @@ export function upgradeEquipment(uid: string, opts: { quiet?: boolean } = {}): b
   useLoreStore().noteEquipUsed(inst.templateId)
   // 强化即炼器:上头的一味矿材作「上手过」(矿石进通晓/锻造技艺的唯一活水)
   noteSmithingUsed(inst.tier, true)
-  if (!opts.quiet) ui.toast(upgradeDoneToast(t?.name ?? '此器', inst.level + 1), 'success')
+  if (!opts.quiet) {
+    playSfx('success')
+    ui.toast(upgradeDoneToast(t?.name ?? '此器', inst.level + 1), 'success')
+  }
   return true
 }
 
@@ -124,11 +134,13 @@ export function upgradeBatchPlan(uid: string): UpgradeBatchPlan {
 export function upgradeEquipmentBatch(uid: string): number {
   const plan = upgradeBatchPlan(uid)
   if (plan.levels === 0) {
+    playSfx('warn')
     useUiStore().toast(plan.atCap ? upgradeCapToast() : upgradeShortToast(), 'warn')
     return 0
   }
   for (let i = 0; i < plan.levels; i += 1) upgradeEquipment(uid, { quiet: true })
   const inst = useInventoryStore().findItem(uid)
+  playSfx('success')
   useUiStore().toast(upgradeBatchDoneToast(plan.levels, inst?.level ?? 0, plan.dust, formatGN(plan.stone)), 'success')
   return plan.levels
 }
@@ -145,6 +157,7 @@ export function decomposeEquipment(uid: string, opts: { quiet?: boolean } = {}):
   resources.addStone(gain.stone)
   track('decomposed')
   if (!opts.quiet) {
+    playSfx('success') // 批量分解走 quiet,这一声由一键分解的总账那一层发
     ui.toast(
       isZero(gain.stone)
         ? decomposeToast(gain.dust)
@@ -204,7 +217,10 @@ export function decomposePreview(ranks: readonly number[]): DecomposeBatch {
 export function decomposeByRanks(ranks: readonly number[]): number {
   const ui = useUiStore()
   const got = decomposeBatch(decomposeTargets(ranks))
-  if (got.count > 0) ui.toast(batchDecomposeToast(got.count, batchYieldText(got)), 'info')
+  if (got.count > 0) {
+    playSfx('success') // 逐件走的是 quiet,总账这一层只发一声
+    ui.toast(batchDecomposeToast(got.count, batchYieldText(got)), 'info')
+  }
   return got.count
 }
 
@@ -226,16 +242,19 @@ export function upgradeArtifact(defId: string): boolean {
   const cost = artifactUpCost(defId)
   const def = artifactDef(defId)
   if (!cost || !def) {
+    playSfx('warn')
     ui.toast(artifactCapToast(), 'warn')
     return false
   }
   if (!resources.hasSmall('wudao', cost.wudao) || !resources.hasStone(cost.stone)) {
+    playSfx('warn')
     ui.toast(artifactShortToast(), 'warn')
     return false
   }
   resources.spendSmall('wudao', cost.wudao)
   resources.spendStone(cost.stone)
   inventory.levelUpArtifact(defId)
+  playSfx('success')
   ui.toast(artifactDoneToast(def.name), 'success')
   return true
 }

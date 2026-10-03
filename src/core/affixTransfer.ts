@@ -22,6 +22,7 @@ import { qualityDef } from '@/data/qualities'
 import { DIMINISH_KEYS, REFORGE_DUST_BASE, REFORGE_SEAL_LOAD, REFORGE_STONE_BASE, TRANSFER_PRICE_RATE } from '@/data/constants'
 import { add } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
+import { playSfx } from './audio'
 import { expectedRollsToHit, sealCost } from './reforge'
 import { sortAffixLines } from './equipGen'
 import { useInventoryStore } from '@/stores/inventory'
@@ -242,16 +243,19 @@ export function transferAffix(req: TransferRequest): boolean {
   const source = inventory.findItem(req.sourceUid)
   const target = inventory.findItem(req.targetUid)
   if (!source || !target) {
+    playSfx('warn')
     ui.toast(TRANSFER_LABELS.gone, 'warn')
     return false
   }
   const check = planTransfer(source, target, req.affixId, req.replaceId, req.seal)
   if (!check.ok) {
+    playSfx('warn')
     ui.toast(transferBlockText(check.block, req.affixId), 'warn')
     return false
   }
   const short = transferShort(check.plan.cost)
   if (short) {
+    playSfx('warn')
     ui.toast(transferShortText(short), 'warn')
     return false
   }
@@ -259,6 +263,7 @@ export function transferAffix(req: TransferRequest): boolean {
   resources.spendSmall('dust', check.plan.cost.dust)
   inventory.replaceItem(check.plan.target)
   inventory.replaceItem(check.plan.source)
+  playSfx('success') // 词条易地,一声落地
   ui.toast(transferDoneToast(affixDef(req.affixId)?.name ?? req.affixId), 'success')
   return true
 }

@@ -14,6 +14,7 @@
  */
 import type { EquipmentInstance, GNum } from '@/types'
 import { rng } from '@/utils/random'
+import { playSfx } from './audio'
 import { AFFIXES, affixDef, affixFitBlock } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
@@ -100,11 +101,17 @@ export function reforgeEquipment(uid: string, quiet = false): boolean {
   if (!inst) return false
   const cost = reforgeCost(inst)
   if (!cost) {
-    if (!quiet) ui.toast(reforgeEmptyToast(), 'warn')
+    if (!quiet) {
+      playSfx('warn')
+      ui.toast(reforgeEmptyToast(), 'warn')
+    }
     return false
   }
   if (!resources.hasStone(cost.stone) || !resources.hasSmall('dust', cost.dust)) {
-    if (!quiet) ui.toast(reforgeShortToast(), 'warn')
+    if (!quiet) {
+      playSfx('warn')
+      ui.toast(reforgeShortToast(), 'warn')
+    }
     return false
   }
 
@@ -143,7 +150,10 @@ export function reforgeEquipment(uid: string, quiet = false): boolean {
 
   const sealedNote = reforgeSealedNote(kept.length)
   const countNote = before === affixes.length ? `${affixes.length} 条` : `${before} → ${affixes.length} 条`
-  if (!quiet) ui.toast(reforgeDoneToast(countNote, sealedNote), 'success')
+  if (!quiet) {
+    playSfx('success')
+    ui.toast(reforgeDoneToast(countNote, sealedNote), 'success')
+  }
   return true
 }
 
