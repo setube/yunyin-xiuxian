@@ -71,10 +71,43 @@
             <button
               v-if="canSwitchTo(v.id)"
               class="btn-ghost mt-0.5 !px-2.5 !py-1 !text-[10px]"
-              @click="doSwitch(v.id)"
+              @click="switchArm = v.id"
             >
               改立主脉 · <span class="whitespace-nowrap">{{ formatGN(switchCost) }} 石</span>
             </button>
+          </div>
+        </div>
+
+        <!-- 连投批量行:一口气能注 ≥2 点才出现,总账先报清(与群批同一条式子,所见即所得) -->
+        <div v-if="plans[v.id].points >= 2" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+          <template v-if="batchArm !== v.id">
+            <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+              连投至 <span class="font-kai text-[11px] text-cinnabar">第 {{ currentLevel(v.id) + plans[v.id].points }} 点</span>
+              <span class="mt-0.5 block text-[9px] text-ink-faint tabular">共耗 灵石 {{ formatGN(plans[v.id].stone) }}</span>
+            </p>
+            <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = v.id">连 投</button>
+          </template>
+          <template v-else>
+            <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+              一步连投 {{ plans[v.id].points }} 点,花上面那笔总账 —— 仍要?
+            </p>
+            <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArm = null">再想想</button>
+            <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runBatch(v.id)">连 投</button>
+          </template>
+        </div>
+
+        <!-- 改立主脉确认行:20 倍单价的迁移费,按下前把回落后果摆出来(原主脉的超额点不再可添) -->
+        <div v-if="switchArm === v.id" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+          <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+            改立「<span class="font-kai text-[11px] text-cinnabar">{{ v.name }}</span>」为主脉,耗灵石
+            <span class="tabular text-ink">{{ formatGN(switchCost) }}</span>
+            <span v-if="switchLoss" class="mt-0.5 block text-[9px] leading-relaxed text-gold-ink">
+              「{{ switchLoss.oldName }}」现有 {{ switchLoss.points }} 点,化为副脉后超出 {{ VEIN_SIDE_CAP }} 点的 {{ switchLoss.lost }} 点不再可添(已有效果不减)
+            </span>
+          </p>
+          <div class="flex shrink-0 gap-1">
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="switchArm = null">再想想</button>
+            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="confirmSwitch(v.id)">改 立</button>
           </div>
         </div>
       </div>
@@ -97,12 +130,12 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
   import { VEINS, veinDef, type VeinId } from '@/data/veins'
   import { veinEffectText } from '@/ui/veinText'
-  import { investVein, veinPointCost, veinSwitchCost, switchMainVein } from '@/core/veinService'
+  import { investVein, investVeinBatch, veinInvestPlan, veinPointCost, veinSwitchCost, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
   import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { formatGN } from '@/utils/format'
 
@@ -188,11 +221,37 @@
     return dongfu.veinMain !== null
   }
 
-  function doInvest(veinId: VeinId): void {
-    investVein(veinId)
+  /** 四条脉的连投计划:一口气能注几点、花多少,行只用量,不算价 */
+  const plans = computed<Record<VeinId, VeinInvestPlan>>(() => ({
+    gather: veinInvestPlan('gather'),
+    craft: veinInvestPlan('craft'),
+    alchemy: veinInvestPlan('alchemy'),
+    insight: veinInvestPlan('insight')
+  }))
+
+  /** 连投的二步确认态:条脉一个坑位,行自随计划进退 */
+  const batchArm = ref<VeinId | null>(null)
+  function runBatch(veinId: VeinId): void {
+    batchArm.value = null
+    investVeinBatch(veinId) // 总账那一声与 toast 由服务自己报
   }
 
-  function doSwitch(veinId: VeinId): void {
-    switchMainVein(veinId)
+  /** 改立主脉的二步确认态:20 倍单价的迁移费,按下前把回落后果摆出来 */
+  const switchArm = ref<VeinId | null>(null)
+  /** 改立后原主脉要落回副脉上限:超出 30 点的部分不再可投(效果不减) */
+  const switchLoss = computed<{ oldName: string; points: number; lost: number } | null>(() => {
+    const old = dongfu.veinMain
+    if (!old || switchArm.value === null) return null
+    const pts = currentLevel(old)
+    if (pts <= 0) return { oldName: veinDef(old).name, points: pts, lost: 0 }
+    return { oldName: veinDef(old).name, points: pts, lost: Math.max(0, pts - VEIN_SIDE_CAP) }
+  })
+  function confirmSwitch(veinId: VeinId): void {
+    switchArm.value = null
+    switchMainVein(veinId) // 成败一声与 toast 由服务自己报
+  }
+
+  function doInvest(veinId: VeinId): void {
+    investVein(veinId)
   }
 </script>
