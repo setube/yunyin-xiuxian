@@ -24,7 +24,7 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { useLoreStore } from '@/stores/lore'
 import { useUiStore } from '@/stores/ui'
 import { playSfx } from './audio'
-import { craftOkToast, craftShortToast, pillGoneToast, pillTakenToast } from '@/ui/pillText'
+import { craftOkToast, craftShortToast, craftUnknownToast, pillGoneToast, pillTakenToast } from '@/ui/pillText'
 import type { GNum } from '@/types'
 
 /** 服用丹药 */
@@ -161,7 +161,9 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
   const cost = pillCraftCost(id)
   const able = craftability(id)
   const blocked = (msg: string): CraftBatchPlan => ({ rounds: 0, herb: 0, stone: gnZero(), blocked: msg })
-  if (!def || !cost || !able) return blocked(craftShortToast())
+  // 方子并不存在/没解析出配方:这与「知道方子但缺料」是两回事 —— 分开说,
+  // 调用方才能区分掌握问题与材料问题(未知方先于掌握度阻塞返回)
+  if (!def || !cost || !able) return blocked(craftUnknownToast())
   if (able.blockers.length > 0) return blocked(able.blockers[0]!)
   const herbRounds = Math.floor(resources.herb / cost.herb)
   let stoneRounds = 0

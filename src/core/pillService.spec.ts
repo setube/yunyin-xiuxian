@@ -363,11 +363,18 @@ describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底�
     expect(plan.rounds).toBe(4)
   })
 
-  it('一份料都没有:rounds=0 且 blocked 为料不足', () => {
+  it('一份料都没有:rounds=0 且 blocked 是「料不足」,把话说明白', () => {
     knowRecipe()
     const plan = craftBatchPlan(ID)
     expect(plan.rounds).toBe(0)
-    expect(plan.blocked).toBeTruthy()
+    expect(plan.blocked).toContain('灵草或灵石未足')
+  })
+
+  it('纯未知的方子 id:报「不知此方」而非「料不足」—— 掌握问题与材料问题分得开', () => {
+    const plan = craftBatchPlan('p__并_不_存_在__xyz')
+    expect(plan.rounds).toBe(0)
+    expect(plan.blocked).toContain('不知此方')
+    expect(plan.blocked).not.toContain('灵草')
   })
 
   it('计划绝不动材料 —— 调多少次,资源原样', () => {
