@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 244,
+  "round": 245,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-03T10:40:00.000+00:00",
+  "updated_at": "2026-10-04T00:00:00.000+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14425,6 +14425,17 @@
       "touched_round": 244,
       "commit": "3487f25",
       "summary": "词条信息收斂为「点哪条弹哪条」:词条表全删已(图鉴页签/面板头入口/成对组件),affixCodexText 更名 affixInfoText;BaseModal 新增 topmost 档(z-70,与 toast 同层)供词条弹框盖在详情(top/z-60)之上 —— 修「层级不对弹在下面」(玩家反馈再修正 CHG-281)"
+    },
+    "CHG-283": {
+      "id": "CHG-283",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-04T00:00:00.000+00:00",
+      "updated_at": "2026-10-04T00:00:00.000+00:00",
+      "touched_round": 245,
+      "commit": "a9c96fa",
+      "summary": "建筑连升:buildingBatchPlan 只算不动手(级数到品类满级/洞府辖限/余额三者最短,判据与 buildingUpgradeInfo 同源),upgradeBuildingBatch 一次连升按计划总账一扣一升、分文不少,二步确认后再动手;一次连升按实际级数计「升级建筑」次数(track n=plan.levels,防成就/主线只靠连升毕业不了);0 级计划不扣分、带拒因。探明「期初减期末 != 计划总账」的根因:测试首触 track 时一次性成就/主线顺带入账(+454.86 石),非尾差"
     }
   },
   "edges": [
