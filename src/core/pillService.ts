@@ -4,7 +4,7 @@
  * Phase 32.3 起,炼制不再是「够级必成」的兑换按钮:
  * 成败由认知与技艺决定(见 core/craftability.ts),失手要赔料,但也长本事。
  */
-import { gn, gnZero, gte, mulN, sub } from '@/utils/gnum'
+import { gn, gnZero, mulN, ratio } from '@/utils/gnum'
 import { rng } from '@/utils/random'
 import { pillDef } from '@/data/pills'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
@@ -166,12 +166,9 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
   if (!def || !cost || !able) return blocked(craftUnknownToast())
   if (able.blockers.length > 0) return blocked(able.blockers[0]!)
   const herbRounds = Math.floor(resources.herb / cost.herb)
-  let stoneRounds = 0
-  let remaining = resources.spiritStone
-  while (stoneRounds < herbRounds && gte(remaining, cost.stone)) {
-    remaining = sub(remaining, cost.stone)
-    stoneRounds += 1
-  }
+  // 灵石可开几炉:直接求商,不逐炉减 —— 库存大时按炉计数会跑成百万次 GNum 减法
+  // (ratio 的指数差钳制只会把币额超大的情况估算得略保守,再与 herbRounds 取小,安全)
+  const stoneRounds = Math.max(0, Math.floor(ratio(resources.spiritStone, cost.stone)))
   const rounds = Math.min(herbRounds, stoneRounds)
   if (rounds === 0) return blocked(craftShortToast())
   return { rounds, herb: rounds * cost.herb, stone: mulN(cost.stone, rounds) }
