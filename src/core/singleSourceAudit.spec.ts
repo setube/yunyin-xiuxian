@@ -101,6 +101,17 @@ describe('同源审计 · 词条能长在哪(议题 #22)', () => {
     const READS = /(?:\?\.|\.)(?:slots|minRank)\b|\{[^}]*\b(?:slots|minRank)\b[^}]*\}\s*=/
     /** 只读来显示、不做判断的地方:文件 → 允许出现的那一行(整行比对,改了就得重新过目) */
     const READ_ONLY: Record<string, string[]> = {
+      /**
+       * 词条图是查用的词典:把「能长在哪、几品起」当参考信息显给玩家看,
+       * 不喂任何「能不能长在这件上」的判断 —— 判断仍只走 affixFitBlock。
+       * 若哪天有人拿这些字段去决定掉落/重铸/转移,整页登记销账,红回来。
+       */
+      '/ui/affixCodexText.ts': [
+        "if (!def.slots || def.slots.length === 0) return '全部位'",
+        "return def.slots.map(s => EQUIP_SLOT_NAMES[s] ?? s).join('·')",
+        'if (def.minRank === undefined) return null',
+        'return `需${QUALITIES.find(q => q.rank === def.minRank)?.name ?? `${def.minRank} 品`}起`'
+      ],
       '/ui/affixTransferText.ts': ['const minRank = affixDef(affixId)?.minRank ?? 0']
     }
     const paths = Object.keys(ALL_SOURCES)

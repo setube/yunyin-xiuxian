@@ -209,7 +209,17 @@
         开关只会变字、词条格子与「开洗」永远不渲染(实测即玩家反馈的「没生效」)。
       -->
       <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
-        <p class="mb-1 text-[11px] text-ink-soft">洗到这些词条出现就停(任一命中即停 · 已选 {{ autoTargets.length }}/3)</p>
+        <p class="mb-1 flex items-center justify-between gap-2 text-[11px] text-ink-soft">
+          <span>洗到这些词条出现就停(任一命中即停 · 已选 {{ autoTargets.length }}/3)</span>
+          <!-- 词条表:名字、效果、区间、部位、门槛都在这里,认准了再点回来自选 -->
+          <button
+            type="button"
+            class="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-azure active:opacity-60"
+            @click="openCodex()"
+          >
+            词条表
+          </button>
+        </p>
         <!-- 四档品质成组:传世在前、空组不占位 —— 一眼分出「撞大运的目标」与「随手可得」;
              组色用词条自身的品质色(与装备卡片同源),选中的下一颗整颗亮成「你的目标章」 -->
         <div class="max-h-40 space-y-1.5 overflow-y-auto pr-0.5">
@@ -237,9 +247,16 @@
         <div v-if="autoTargets.length" class="mt-1.5 space-y-0.5">
           <!-- 已选目标回声品质色:它从哪一档领出来,这里就还它本来的颜色 -->
           <p v-for="t in autoTargets" :key="t.affixId" class="flex items-center gap-2 text-[10px]">
-            <span class="w-10 shrink-0 truncate font-kai" :style="{ color: targetColor(t.affixId) }">
+            <!-- 点已选词条名:钉开那张词条图,回来看清效果与区间再决定要不要留着这条目标 -->
+            <button
+              type="button"
+              class="w-10 shrink-0 truncate text-left font-kai"
+              :style="{ color: targetColor(t.affixId) }"
+              :title="`查看词条:${affixDef(t.affixId)?.name ?? t.affixId}`"
+              @click="openCodex(t.affixId)"
+            >
               {{ affixDef(t.affixId)?.name ?? t.affixId }}
-            </span>
+            </button>
             <input v-model.number="t.minRoll" type="range" min="0" max="1" step="0.05" class="grow accent-cinnabar" />
             <span class="w-12 shrink-0 text-right tabular text-ink-faint">≥{{ Math.round((t.minRoll ?? 0) * 100) }}%</span>
           </p>
@@ -338,6 +355,9 @@
       </div>
     </template>
   </BaseModal>
+
+  <!-- 词条图:全表,或钉在某一条上(已选目标名点开即看效果与区间) -->
+  <AffixCodexSheet :open="codexOpen" :affix-id="codexAffixId" @close="codexOpen = false" />
 </template>
 
 <script setup lang="ts">
@@ -376,6 +396,7 @@
   import { useAffixTransfer } from '@/composables/useAffixTransfer'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
+  import AffixCodexSheet from './AffixCodexSheet.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import AffixTransferPanel from './AffixTransferPanel.vue'
   import AffixTransferFooter from './AffixTransferFooter.vue'
@@ -447,6 +468,14 @@
 
   function canSealAffix(affixId: string): boolean {
     return inst.value !== undefined && sealCostVal.value !== null && !isAffixSealed(affixId)
+  }
+
+  /** 词条图:全表(null)或钉在某一条上;表内翻页由 AffixCodexSheet 自理 */
+  const codexOpen = ref(false)
+  const codexAffixId = ref<string | null>(null)
+  function openCodex(affixId: string | null = null): void {
+    codexAffixId.value = affixId
+    codexOpen.value = true
   }
 
   function doSealAffix(affixId: string): void {
