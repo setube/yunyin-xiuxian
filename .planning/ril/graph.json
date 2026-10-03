@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 241,
+  "round": 242,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-03T04:04:43.602+00:00",
+  "updated_at": "2026-10-03T09:10:00.000+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14381,6 +14381,28 @@
       "touched_round": 241,
       "commit": "ef1e61c",
       "summary": "祭炼连升:法宝一口气连炼多重的批量计划(逐重累加成本、满重或余额缺口即止;预览与执行同源 upgradeArtifactBatch,一次总账一声响;单炼按钮保留)(自我迭代体验优化)"
+    },
+    "CHG-279": {
+      "id": "CHG-279",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-03T08:22:00.000+00:00",
+      "updated_at": "2026-10-03T08:22:00.000+00:00",
+      "touched_round": 242,
+      "commit": "08aa002",
+      "summary": "灵脉连投与改立主脉二步确认:一口气注满(该脉上限/总容量/灵石三者取短,总价=点数×恒定单价,总账与预览分毫不差),迁脉按下前把原主脉超额点回落副限的后果摆出来(数字读 constants)(自我迭代体验优化)"
+    },
+    "CHG-280": {
+      "id": "CHG-280",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-03T09:10:00.000+00:00",
+      "updated_at": "2026-10-03T09:10:00.000+00:00",
+      "touched_round": 242,
+      "commit": "1ad571f",
+      "summary": "词条图:113 条词条收进一张查用的词典(名/效果/数值区间/可出部位/品质门槛,区间两端=affixValue(roll 0/1));自动重铸面板点名即查、图鉴新增词条页签(展示读登记 READ_ONLY,判断仍只走 affixFitBlock)(玩家反馈:词条数值区间和名字有没有表)"
     }
   },
   "edges": [
