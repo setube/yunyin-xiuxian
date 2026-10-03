@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 240,
+  "round": 241,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-02T08:53:13.849516+00:00",
+  "updated_at": "2026-10-03T04:04:43.602+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14370,6 +14370,17 @@
       "touched_round": 240,
       "commit": "b03e529",
       "summary": "炼器有声:强化/连升/分解/祭炼/重铸/词条转移补成败音效(成功=success、不足=warn、批量只一声、quiet 不响,全局音效闸保护)(自我迭代体验优化)"
+    },
+    "CHG-278": {
+      "id": "CHG-278",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-03T04:04:43.602+00:00",
+      "updated_at": "2026-10-03T04:04:43.602+00:00",
+      "touched_round": 241,
+      "commit": "ef1e61c",
+      "summary": "祭炼连升:法宝一口气连炼多重的批量计划(逐重累加成本、满重或余额缺口即止;预览与执行同源 upgradeArtifactBatch,一次总账一声响;单炼按钮保留)(自我迭代体验优化)"
     }
   },
   "edges": [
