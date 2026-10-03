@@ -210,8 +210,8 @@
       -->
       <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
         <p class="mb-1 flex items-center justify-between gap-2 text-[11px] text-ink-soft">
-          <span>洗到这些词条出现就停(任一命中即停 · 已选 {{ autoTargets.length }}/3)</span>
-          <!-- 词条表:名字、效果、区间、部位、门槛都在这里,认准了再点回来自选 -->
+          <span>点词条看效果与区间,在弹框里设为目标(任一命中即停 · 已选 {{ autoTargets.length }}/3)</span>
+          <!-- 词条表:全量词典,认不准名字时翻这一张 -->
           <button
             type="button"
             class="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-azure active:opacity-60"
@@ -229,6 +229,7 @@
               {{ AFFIX_RARITY_META[group.rarity].name }} · {{ group.items.length }} 条
             </p>
             <div class="mt-1 grid grid-cols-3 gap-1">
+              <!-- 点词条名即弹框看它的效果与区间;设为目标改在弹框里做(玩家反馈:不要词条表,点哪条看哪条) -->
               <button
                 v-for="af in group.items"
                 :key="af.id"
@@ -237,9 +238,10 @@
                 :style="isAutoTarget(af.id)
                   ? { borderColor: AFFIX_RARITY_META[af.rarity].color, color: AFFIX_RARITY_META[af.rarity].color }
                   : { color: 'var(--color-ink-faint)' }"
-                @click="toggleAutoTarget(af.id)"
+                :title="`查看「${af.name}」效果与区间`"
+                @click="openCodex(af.id)"
               >
-                {{ af.name }}
+                <span v-if="isAutoTarget(af.id)" class="mr-0.5">选</span>{{ af.name }}
               </button>
             </div>
           </div>
@@ -356,8 +358,18 @@
     </template>
   </BaseModal>
 
-  <!-- 词条图:全表,或钉在某一条上(已选目标名点开即看效果与区间) -->
-  <AffixCodexSheet :open="codexOpen" :affix-id="codexAffixId" @close="codexOpen = false" />
+  <!-- 词条图:点词条名弹这条的详情,可在弹框里设为目标;「词条表」入口才是全表 -->
+  <AffixCodexSheet
+    :open="codexOpen"
+    :affix-id="codexAffixId"
+    :browsable="codexBrowsable"
+    :targetable="true"
+    :selected="codexSelected"
+    :can-select="codexCanSelect"
+    @toggle-target="onCodexToggleTarget"
+    @update:affix-id="codexAffixId = $event"
+    @close="codexOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -473,9 +485,19 @@
   /** 词条图:全表(null)或钉在某一条上;表内翻页由 AffixCodexSheet 自理 */
   const codexOpen = ref(false)
   const codexAffixId = ref<string | null>(null)
+  /** 打开时定死的浏览权:词条表入口=true,点名弹框=false(见 AffixCodexSheet 的注释) */
+  const codexBrowsable = ref(false)
   function openCodex(affixId: string | null = null): void {
     codexAffixId.value = affixId
+    codexBrowsable.value = affixId === null
     codexOpen.value = true
+  }
+
+  /** 弹框里这条当前是不是自动重铸目标;目标未满三才有「再设」(满的位子只留给取消) */
+  const codexSelected = computed(() => codexAffixId.value !== null && isAutoTarget(codexAffixId.value))
+  const codexCanSelect = computed(() => autoTargets.value.length < 3)
+  function onCodexToggleTarget(id: string): void {
+    toggleAutoTarget(id)
   }
 
   function doSealAffix(affixId: string): void {

@@ -1,8 +1,18 @@
 <template>
   <div>
-    <!-- 单条详情:从全表点进来,看毕回表再比别的 -->
+    <!--
+      单条详情:两种来路 —— 从全表点进来可回表(browsable);从自动重铸点名弹框
+      (browsable=false)则只有这一条,browsable 由调用方按需求给。
+    -->
     <div v-if="focusDef" class="space-y-2.5">
-      <button type="button" class="btn-ghost !px-2.5 !py-1.5 !text-[11px]" @click="emit('update:focus', null)">‹ 回词条全表</button>
+      <button
+        v-if="browsable"
+        type="button"
+        class="btn-ghost !px-2.5 !py-1.5 !text-[11px]"
+        @click="emit('update:focus', null)"
+      >
+        ‹ 回词条全表
+      </button>
       <div class="flex items-center gap-2">
         <span
           class="shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-relaxed"
@@ -33,7 +43,7 @@
     </div>
 
     <!-- 全表:按四档品质成组(传世→常见),组内延续词条池的出场权重序 -->
-    <template v-else>
+    <template v-else-if="browsable">
       <p v-if="!groups.length" class="py-6 text-center text-[11px] text-ink-faint">词条库空空如也</p>
       <div v-for="group in groups" :key="group.rarity" class="mt-2 first:mt-0">
         <p class="flex items-center gap-1.5 text-[9px] tracking-widest" :style="{ color: affixRarityColor(group.rarity) }">
@@ -76,7 +86,7 @@
     affixSlotsText
   } from '@/ui/affixCodexText'
 
-  const props = defineProps<{ focus: string | null }>()
+  const props = withDefaults(defineProps<{ focus: string | null; browsable?: boolean }>(), { browsable: true })
   const emit = defineEmits<{ 'update:focus': [id: string | null] }>()
 
   /** 全表:承接随机词条池,按稀有度分组成组 */
