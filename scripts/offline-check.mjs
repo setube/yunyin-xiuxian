@@ -84,7 +84,10 @@ cpSync(DIST, work, { recursive: true })
 const server = await serve(work)
 const base = `http://127.0.0.1:${server.address().port}`
 
-const browser = await chromium.launch()
+const browser = await chromium.launch({
+  // 容器里 headless 常崩(无用户命名空间、/dev/shm 只有 64M) —— 与 ui-smoke/layout-check 同一处防
+  args: ['--no-sandbox', '--disable-dev-shm-usage']
+})
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 const page = await context.newPage()
 const pageErrors = []

@@ -62,7 +62,14 @@ const NUMERIC_LEAK = ['NaN', 'Infinity', 'undefined']
 /** 破坏性/离开型按钮:冒烟盘上不点 */
 const SKIP = /分解|删除|清空|重置|兵解|转世|散尽|导出|导入|隐私|关于我们|出 秘 境|暂别|确认转移/
 
-const browser = await chromium.launch({ args: ['--allow-file-access-from-files', '--disable-web-security'] })
+/**
+ * 容器里 headless 易崩的两处,一次防住:
+ * - --no-sandbox:无用户命名空间的容器里默认 sandbox 起不来,浏览器半路退出(报「Target closed」);
+ * - --disable-dev-shm-usage:/dev/shm 常只有 64M,点一阵就整浏览器崩 —— 改落 /tmp。
+ */
+const browser = await chromium.launch({
+  args: ['--allow-file-access-from-files', '--disable-web-security', '--no-sandbox', '--disable-dev-shm-usage']
+})
 const context = await browser.newContext({ viewport: { width: 375, height: 812 } })
 if (LATE) {
   const gn = (m, e) => ({ m, e })

@@ -141,7 +141,15 @@ const ROUTES = [
  * 本来就由下面 watchPageErrors 分流不计。自检从此不再随别人的 CDN 起伏。
  */
 const browser = await chromium.launch({
-  args: ['--allow-file-access-from-files', '--disable-web-security', '--host-resolver-rules=MAP sdk.51.la ~NOTFOUND']
+  // --no-sandbox / --disable-dev-shm-usage:容器里 headless 常崩(无用户命名空间、/dev/shm 只有 64M),
+  // 崩起来样式是一个个怪异(但真实)的失败 —— 见 ui-smoke 里同一处注释,这里一并防住
+  args: [
+    '--allow-file-access-from-files',
+    '--disable-web-security',
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--host-resolver-rules=MAP sdk.51.la ~NOTFOUND'
+  ]
 })
 const failures = []
 let checked = 0
