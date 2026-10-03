@@ -298,11 +298,36 @@
             <div class="ml-auto flex shrink-0 gap-1.5">
               <!-- 玩家反馈「批量炼丹」:材料够几炉就连开几炉,结果与连点一致。
                    !py-1.5 盒高 27px 低于 28px 阈值(layout-check 弹窗巡逻实测),
-                   抬到 !py-2 到 35px,批量炼制是高频操作 -->
-              <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
-              <button class="btn-seal !px-3 !py-2 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
+                   抬到 !py-2 到 35px,批量炼制是高频操作。
+                   料足(plan>5)时多一枚「炼满」:按当前料保底算清能开几炉,
+                   一次开完,预览与执行共用 craftBatchPlan -->
+              <template v-if="pillFullId !== r.def.id">
+                <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
+                <button
+                  v-if="r.plan.rounds > 5"
+                  class="btn-ghost !px-2.5 !py-2 !text-[11px]"
+                  @click="pillFullId = r.def.id"
+                >
+                  炼 满 ×{{ r.plan.rounds }}
+                </button>
+                <button class="btn-seal !px-3 !py-2 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
+              </template>
+              <template v-else>
+                <!-- 开的是累计总账,按一下不该就此了结:二步确认与分解/散去同款 -->
+                <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pillFullId = null">再想想</button>
+                <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="runCraftFull(r.def.id, r.plan.rounds)">
+                  开 炉 ×{{ r.plan.rounds }}
+                </button>
+              </template>
             </div>
           </div>
+          <p
+            v-if="pillFullId === r.def.id"
+            class="mt-1.5 text-[9px] leading-relaxed text-cinnabar"
+          >
+            开 {{ r.plan.rounds }} 炉,约耗 灵草×{{ r.plan.herb }} · 灵石 {{ formatGN(r.plan.stone) }};
+            炸炉按技艺省下残料,或可再多开几炉 —— 仍要?
+          </p>
         </div>
       </div>
       <p v-else class="px-1 py-6 text-center text-[11px] leading-relaxed text-ink-faint">
@@ -562,7 +587,7 @@
   import { REALMS } from '@/data/realms'
   import { EQUIP_SLOT_NAMES, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
-  import { usePill, usePillBatch, availableRecipes, craftPill, craftPillBatch, pillCraftCost } from '@/core/pillService'
+  import { usePill, usePillBatch, availableRecipes, craftBatchPlan, craftPill, craftPillBatch, pillCraftCost } from '@/core/pillService'
   import { craftability, type Craftability } from '@/core/craftability'
   import {
     batchYieldText,
@@ -690,13 +715,24 @@
 
   const recipes = computed(() =>
     availableRecipes()
-      .map(id => ({ def: pillDef(id), cost: pillCraftCost(id), able: craftability(id) }))
+      .map(id => ({
+        def: pillDef(id),
+        cost: pillCraftCost(id),
+        able: craftability(id),
+        plan: craftBatchPlan(id)
+      }))
       .filter(
-        (x): x is { def: PillDef; cost: { herb: number; stone: GNum }; able: Craftability } =>
+        (x): x is { def: PillDef; cost: { herb: number; stone: GNum }; able: Craftability; plan: ReturnType<typeof craftBatchPlan> } =>
           x.def !== undefined && x.cost !== null && x.able !== null
       )
       .sort((a, b) => a.able.rank - b.able.rank)
   )
+  /** 「炼满」二步确认态:谁不按常量的炉数,一眼先交代总账 */
+  const pillFullId = ref<string | null>(null)
+  function runCraftFull(id: string, rounds: number): void {
+    pillFullId.value = null
+    craftPillBatch(id, rounds)
+  }
 
   /** 技艺一览:名(DAO_NAMES 的道名 + 技艺名)、境地(skillStageName)、这项技艺管什么 */
   const skillRows = computed(() =>
