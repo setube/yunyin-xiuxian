@@ -24,6 +24,11 @@ export function buildingDoneToast(name: string, level: number): string {
   return `「${name}」营造再进,已至 ${level} 级`
 }
 
+/** 建筑连升的总结账:一级一级报太吵,连升只报一次总况(stoneText 由调用方 formatGN 好) */
+export function buildingBatchDoneToast(name: string, levels: number, newLevel: number, stoneText: string, ore: number): string {
+  return `「${name}」连升 ${levels} 级,今至 ${newLevel} 级,共耗灵石 ${stoneText} · 玄铁 ${ore} 块`
+}
+
 export function buildingActLabel(level: number): string {
   return level > 0 ? '再营' : '起造'
 }

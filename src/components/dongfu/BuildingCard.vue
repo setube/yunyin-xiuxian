@@ -89,6 +89,31 @@
         <template v-else>{{ atMax ? '已圆满' : atGateCap ? '辖于洞府' : info.reason }}</template>
       </template>
     </button>
+    <!--
+      连升行:一口气能连升 ≥2 级才出现,总账先报清(与强化连升/祭炼连升同一套)。
+      只够一级时,上面的升级按钮就是那一级,不必多摆一行。
+    -->
+    <div v-if="plan.levels >= 2" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+      <template v-if="!batchArm">
+        <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+          连升至 <span class="font-kai text-[11px] text-cinnabar">第 {{ level + plan.levels }} 级</span>
+          <span class="mt-0.5 block text-[9px] text-ink-faint tabular">
+            共耗 <span class="whitespace-nowrap">灵石 {{ formatGN(plan.stone) }}</span><span
+              v-if="plan.ore > 0"
+              class="whitespace-nowrap"
+            > · 玄铁 {{ plan.ore }} 块</span>
+          </span>
+        </p>
+        <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = true">连 升</button>
+      </template>
+      <template v-else>
+        <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+          一步连升 {{ plan.levels }} 级,花上面那笔总账 —— 仍要?
+        </p>
+        <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArm = false">再想想</button>
+        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runBatch">连 升</button>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -99,7 +124,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { petDef } from '@/data/pets'
   import GameIcon from '@/components/common/GameIcon.vue'
-  import { buildingUpgradeInfo, upgradeBuilding } from '@/core/buildingService'
+  import { buildingUpgradeInfo, buildingBatchPlan, upgradeBuilding, upgradeBuildingBatch } from '@/core/buildingService'
   import { modsText } from '@/ui/statNames'
   import { buildingActLabel } from '@/ui/buildingText'
   import { formatGN } from '@/utils/format'
@@ -112,6 +137,14 @@
   /** 实际可达上限:洞府全局闸门与自身品类上限取小,洞府卡展现的是"提升到什么档"的依据 */
   const cap = computed(() => dongfu.buildingCap(props.def.id))
   const info = computed(() => buildingUpgradeInfo(props.def.id))
+  /** 连升计划:一口气能升几级、花多少 —— 行只用量,预览与执行同源 */
+  const plan = computed(() => buildingBatchPlan(props.def.id))
+  /** 连升的二步确认态;升级落成自动复位(见下方 watch) */
+  const batchArm = ref(false)
+  function runBatch(): void {
+    batchArm.value = false
+    upgradeBuildingBatch(props.def.id) // 总账那一声与 toast 由服务自己报
+  }
   /** 未建且不可升 = 被境界闸门锁着(等级 0 时不可升只可能是境界不足,满级/辖限都要求 lv>0) */
   const locked = computed(() => level.value === 0 && !info.value.canUpgrade)
   /** 境界闸名(meta 行的「至 X 境」):数据里 unlockRealm 0/1/2 依次是 炼气/筑基/金丹 */
@@ -152,9 +185,10 @@
     return modsText(delta)
   })
 
-  // 升级落成:整卡金光一闪(动画播完自清)
+  // 升级落成:整卡金光一闪(动画播完自清);连升的确认态一并复位
   const flashing = ref(false)
   watch(level, (nv, ov) => {
     if (nv > ov) flashing.value = true
+    batchArm.value = false
   })
 </script>
