@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { affixDef, AFFIXES } from '@/data/affixes'
 import type { AffixDef } from '@/types'
-import { affixRangeEnds, affixRangeText, affixRankText, affixRarityColor, affixRarityLabel, affixSlotsText } from './affixCodexText'
+import { affixRangeEnds, affixRangeText, affixRankText, affixRarityColor, affixRarityLabel, affixSlotsText } from './affixInfoText'
 
 describe('词条图 · 字面现算', () => {
   it('效果区间 = 两端填进 {v}:攻击 2~5、暴伤整数档不落地碎数', () => {

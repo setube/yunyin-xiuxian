@@ -209,17 +209,7 @@
         开关只会变字、词条格子与「开洗」永远不渲染(实测即玩家反馈的「没生效」)。
       -->
       <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
-        <p class="mb-1 flex items-center justify-between gap-2 text-[11px] text-ink-soft">
-          <span>点词条看效果与区间,在弹框里设为目标(任一命中即停 · 已选 {{ autoTargets.length }}/3)</span>
-          <!-- 词条表:全量词典,认不准名字时翻这一张 -->
-          <button
-            type="button"
-            class="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-azure active:opacity-60"
-            @click="openCodex()"
-          >
-            词条表
-          </button>
-        </p>
+        <p class="mb-1 text-[11px] text-ink-soft">点词条看效果与区间,在弹框里设为目标(任一命中即停 · 已选 {{ autoTargets.length }}/3)</p>
         <!-- 四档品质成组:传世在前、空组不占位 —— 一眼分出「撞大运的目标」与「随手可得」;
              组色用词条自身的品质色(与装备卡片同源),选中的下一颗整颗亮成「你的目标章」 -->
         <div class="max-h-40 space-y-1.5 overflow-y-auto pr-0.5">
@@ -358,16 +348,14 @@
     </template>
   </BaseModal>
 
-  <!-- 词条图:点词条名弹这条的详情,可在弹框里设为目标;「词条表」入口才是全表 -->
-  <AffixCodexSheet
+  <!-- 词条信息:点哪条弹哪条 —— 名/效果/数值区间/部位/门槛;设目标也在这扇框(顶层弹框盖在详情之上) -->
+  <AffixInfoSheet
     :open="codexOpen"
-    :affix-id="codexAffixId"
-    :browsable="codexBrowsable"
+    :affix-id="codexAffixId ?? ''"
     :targetable="true"
     :selected="codexSelected"
     :can-select="codexCanSelect"
     @toggle-target="onCodexToggleTarget"
-    @update:affix-id="codexAffixId = $event"
     @close="codexOpen = false"
   />
 </template>
@@ -408,7 +396,7 @@
   import { useAffixTransfer } from '@/composables/useAffixTransfer'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
-  import AffixCodexSheet from './AffixCodexSheet.vue'
+  import AffixInfoSheet from './AffixInfoSheet.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import AffixTransferPanel from './AffixTransferPanel.vue'
   import AffixTransferFooter from './AffixTransferFooter.vue'
@@ -482,14 +470,11 @@
     return inst.value !== undefined && sealCostVal.value !== null && !isAffixSealed(affixId)
   }
 
-  /** 词条图:全表(null)或钉在某一条上;表内翻页由 AffixCodexSheet 自理 */
+  /** 词条信息弹框:点哪条就钉哪条(词条表已按反馈移除,这是看词条信息的唯一入口) */
   const codexOpen = ref(false)
   const codexAffixId = ref<string | null>(null)
-  /** 打开时定死的浏览权:词条表入口=true,点名弹框=false(见 AffixCodexSheet 的注释) */
-  const codexBrowsable = ref(false)
-  function openCodex(affixId: string | null = null): void {
+  function openCodex(affixId: string): void {
     codexAffixId.value = affixId
-    codexBrowsable.value = affixId === null
     codexOpen.value = true
   }
 

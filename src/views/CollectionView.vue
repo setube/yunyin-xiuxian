@@ -58,19 +58,6 @@
       <p class="text-center text-[10px] text-ink-faint">点已收录的条目可看详情 —— 灵材与悟道另分深浅,愈用愈明</p>
     </template>
 
-    <!-- 词条图鉴:全量参考表,不设「未收录」门槛 —— 是查用的词典,不是集邮册 -->
-    <template v-else>
-      <SectionTitle title="词条" :hint="`共 ${AFFIXES.length} 条 · 按四档成色分列`" />
-      <p class="mt-1 text-[10px] text-ink-faint">
-        效果与区间现算自词条定义:改动重铸池后,这张表自动跟上,不再抄第二份数。
-        <br />
-        <span class="text-ink-faint/80">点一行看详情 —— 名、效果、数值区间、可出部位与品质门槛。</span>
-      </p>
-      <div class="card-ink mt-2 px-3.5 py-3">
-        <AffixCodexList :focus="codexFocus" @update:focus="codexFocus = $event" />
-      </div>
-    </template>
-
     <!-- 图鉴详情 -->
     <BaseModal :open="detail !== null" :title="detail?.entry.name ?? ''" @close="detail = null">
       <div v-if="detail">
@@ -125,21 +112,15 @@
   import InkTabs from '@/components/common/InkTabs.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
-  import AffixCodexList from '@/components/equipment/AffixCodexList.vue'
-  import { AFFIXES } from '@/data/affixes'
 
   const quests = useQuestsStore()
 
-  type Tab = 'achievement' | 'collection' | 'codex'
+  type Tab = 'achievement' | 'collection'
   const tab = ref<Tab>('achievement')
   const TABS: { id: Tab; label: string }[] = [
     { id: 'achievement', label: '成就' },
-    { id: 'collection', label: '收藏' },
-    { id: 'codex', label: '词条' }
+    { id: 'collection', label: '收藏' }
   ]
-
-  /** 词条图鉴里钉住的那一条(点行即钉,看毕回表) */
-  const codexFocus = ref<string | null>(null)
 
   /**
    * 成就一律先以「???」示人,达成之后才现名目。

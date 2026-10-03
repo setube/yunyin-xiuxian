@@ -106,7 +106,7 @@ describe('同源审计 · 词条能长在哪(议题 #22)', () => {
        * 不喂任何「能不能长在这件上」的判断 —— 判断仍只走 affixFitBlock。
        * 若哪天有人拿这些字段去决定掉落/重铸/转移,整页登记销账,红回来。
        */
-      '/ui/affixCodexText.ts': [
+      '/ui/affixInfoText.ts': [
         "if (!def.slots || def.slots.length === 0) return '全部位'",
         "return def.slots.map(s => EQUIP_SLOT_NAMES[s] ?? s).join('·')",
         'if (def.minRank === undefined) return null',

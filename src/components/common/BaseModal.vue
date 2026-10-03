@@ -4,7 +4,7 @@
       <div
         v-if="props.open"
         class="fixed inset-0 flex items-center justify-center bg-ink/45 backdrop-blur-[2px] px-5"
-        :class="props.top ? 'z-60' : 'z-50'"
+        :class="props.topmost ? 'z-70' : props.top ? 'z-60' : 'z-50'"
         @click.self="onBackdrop"
       >
         <div
@@ -78,8 +78,14 @@
       ariaLabel?: string
       /** 顶层弹窗:叠在普通弹窗(z-50)之上,用于详情盖列表等场景 */
       top?: boolean
+      /**
+       * 最顶层弹窗(z-70,与 toast 同层):叠在 top 弹窗(z-60)之上。
+       * 只给「弹框盖详情」这类真嵌套用 —— 词条信息盖在装备详情(它自己就是 top)之上时,
+       * 少这一档它会沉到详情下面,玩家只看得见一片被遮暗的边。
+       */
+      topmost?: boolean
     }>(),
-    { title: '', closable: true, wide: false, top: false, ariaLabel: '' }
+    { title: '', closable: true, wide: false, top: false, topmost: false, ariaLabel: '' }
   )
 
   const emit = defineEmits<{ close: [] }>()
