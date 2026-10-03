@@ -19,7 +19,7 @@ vi.mock('@/utils/random', async importOriginal => {
   return { ...mod, rng: new mod.RandomService(() => mockRand) }
 })
 
-import { craftPill, pillCraftCost, salvageRatio, usePill } from './pillService'
+import { craftBatchPlan, craftPill, pillCraftCost, salvageRatio, usePill } from './pillService'
 import { craftability } from './craftability'
 import { pillDef } from '@/data/pills'
 import { PILLS } from '@/data/pills'
@@ -35,7 +35,7 @@ import { useLoreStore } from '@/stores/lore'
 import { usePlayerStore } from '@/stores/player'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useQuestsStore } from '@/stores/quests'
-import { toNum } from '@/utils/gnum'
+import { mulN, toNum } from '@/utils/gnum'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { MAIN_QUESTS } from '@/data/quests'
 
@@ -319,5 +319,68 @@ describe('服丹 · 丹从包里出去,药力真的落下', () => {
     const buffs = cultivation.buffs.filter(b => b.defId === pillDef('p_ningshen')!.buffId)
     expect(buffs.length, '丹说的状态没落到身上').toBe(1)
     expect(buffs[0]!.endsAt, '状态没有到期时间,等于永久').toBeGreaterThan(Date.now())
+  })
+})
+
+describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底算清能开几炉', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockRand = 0
+    settleRewards()
+  })
+
+  it('未知此方:rounds=0 且说明掌握不足,材料分文未动', () => {
+    const resources = useResourcesStore()
+    resources.addSmall('herb', 400)
+    resources.addStone({ m: 1, e: 9 })
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds).toBe(0)
+    expect(plan.blocked).toBeTruthy()
+    expect(resources.herb).toBe(400)
+  })
+
+  it('料足时 rounds=灵草口径与灵石口径的较小者,总账=每炉成本 × rounds', () => {
+    knowRecipe()
+    const cost = pillCraftCost(ID)!
+    const resources = useResourcesStore()
+    // 灵草足开 7 炉,灵石只够 3 炉 → 计划停在 3
+    resources.addSmall('herb', cost.herb * 7)
+    resources.addStone(mulN(cost.stone, 3))
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds).toBe(3)
+    expect(plan.herb).toBe(cost.herb * 3)
+    expect(plan.stone).toEqual(mulN(cost.stone, 3))
+    expect(plan.blocked).toBeUndefined()
+  })
+
+  it('灵草是短板的另一侧:灵石富余、草只够 4 炉 → rounds=4', () => {
+    knowRecipe()
+    const cost = pillCraftCost(ID)!
+    const resources = useResourcesStore()
+    resources.addSmall('herb', cost.herb * 4)
+    resources.addStone({ m: 1, e: 9 })
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds).toBe(4)
+  })
+
+  it('一份料都没有:rounds=0 且 blocked 为料不足', () => {
+    knowRecipe()
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds).toBe(0)
+    expect(plan.blocked).toBeTruthy()
+  })
+
+  it('计划绝不动材料 —— 调多少次,资源原样', () => {
+    knowRecipe()
+    const cost = pillCraftCost(ID)!
+    const resources = useResourcesStore()
+    resources.addSmall('herb', cost.herb * 6)
+    resources.addStone(mulN(cost.stone, 6))
+    const beforeHerb = resources.herb
+    const beforeStone = resources.spiritStone
+    craftBatchPlan(ID)
+    craftBatchPlan(ID)
+    expect(resources.herb).toBe(beforeHerb)
+    expect(resources.spiritStone).toEqual(beforeStone)
   })
 })

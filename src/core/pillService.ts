@@ -4,7 +4,7 @@
  * Phase 32.3 起,炼制不再是「够级必成」的兑换按钮:
  * 成败由认知与技艺决定(见 core/craftability.ts),失手要赔料,但也长本事。
  */
-import { gn } from '@/utils/gnum'
+import { gn, gnZero, gte, mulN, sub } from '@/utils/gnum'
 import { rng } from '@/utils/random'
 import { pillDef } from '@/data/pills'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
@@ -137,6 +137,42 @@ export function pillCraftCost(id: string): { herb: number; stone: GNum } | null 
  */
 export function availableRecipes(): string[] {
   return knownRecipes().map(p => p.id)
+}
+
+export interface CraftBatchPlan {
+  /** 按当前料保底可开的最大炉数(炉炉皆成也够);0 = 炼不动 */
+  rounds: number
+  /** 开 rounds 炉的灵草总量(每炉 cost.herb × rounds) */
+  herb: number
+  /** 开 rounds 炉的灵石总量 */
+  stone: GNum
+  /** rounds=0 时的阻塞理由(未知此方 / 掌握不够 / 料不足);炼得动时为 undefined */
+  blocked?: string
+}
+
+/**
+ * 炼丹连开计划:按当前料保底算清能开几炉 —— 纯算不动炉,炉炉皆成也够。
+ * 每炉灵草按全额算(炸炉省下的残料只多不少),灵石按每炉整扣折算;
+ * 未知方子/掌握不足先于材料缺口说。界面「炼满」预览与执行共用这一份。
+ */
+export function craftBatchPlan(id: string): CraftBatchPlan {
+  const resources = useResourcesStore()
+  const def = pillDef(id)
+  const cost = pillCraftCost(id)
+  const able = craftability(id)
+  const blocked = (msg: string): CraftBatchPlan => ({ rounds: 0, herb: 0, stone: gnZero(), blocked: msg })
+  if (!def || !cost || !able) return blocked(craftShortToast())
+  if (able.blockers.length > 0) return blocked(able.blockers[0]!)
+  const herbRounds = Math.floor(resources.herb / cost.herb)
+  let stoneRounds = 0
+  let remaining = resources.spiritStone
+  while (stoneRounds < herbRounds && gte(remaining, cost.stone)) {
+    remaining = sub(remaining, cost.stone)
+    stoneRounds += 1
+  }
+  const rounds = Math.min(herbRounds, stoneRounds)
+  if (rounds === 0) return blocked(craftShortToast())
+  return { rounds, herb: rounds * cost.herb, stone: mulN(cost.stone, rounds) }
 }
 
 /**
