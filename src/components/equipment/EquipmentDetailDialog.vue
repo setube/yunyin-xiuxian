@@ -368,6 +368,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { formatGN } from '@/utils/format'
   import { gnZero, isZero, sub } from '@/utils/gnum'
+  import { playSfx } from '@/core/audio'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/ui/statNames'
   import { equipNextLevelText } from '@/ui/equipText'
@@ -509,20 +510,23 @@
     const wanted = autoTargets.value.map(t => affixDef(t.affixId)?.name ?? t.affixId).join('、')
     const now = out.affixIds.map(id => affixDef(id)?.name ?? id).join('、') || '空'
     if (out.stop === 'target' && out.hit) {
+      playSfx('success') // 结账一声:洗到了
       ui.toast(
         `洗出「${affixDef(out.hit.id)?.name ?? out.hit.id}」值 ${Math.round(out.hit.roll * 100)}% —— 共洗 ${out.rolls} 次,${cost}`,
         'success'
       )
     } else if (out.stop === 'budget') {
+      playSfx('warn')
       ui.toast(`定好的次数用完了:连洗 ${out.rolls} 次,未能撞上「${wanted}」。如今这一身是:${now},${cost}`, 'warn')
     } else if (out.stop === 'broke') {
+      playSfx('warn')
       if (out.rolls === 0) {
         ui.toast(`灵石或器灵尘未足,难开这一炉,${cost}`, 'warn')
       } else {
         ui.toast(`灵石/器灵尘见底,洗了 ${out.rolls} 次即止;今一身为 ${now},${cost}`, 'warn')
       }
     } else {
-      // frozen 一档兼两种收法:无位可洗(全封存/无词条),或装备已不在行囊
+      // frozen 是「没得洗」不是「没洗成」,不响;这一档兼两种收法:无位可洗(全封存/无词条),或装备已不在行囊
       const gone = inst.value !== undefined && !inventory.findItem(inst.value.uid)
       ui.toast(gone ? '此物已不在行囊,重铸无从谈起' : '此物已无未封存词条,无从重铸', 'info')
     }
