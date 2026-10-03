@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 245,
+  "round": 246,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-04T00:00:00.000+00:00",
+  "updated_at": "2026-10-04T01:00:00.000+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14436,6 +14436,17 @@
       "touched_round": 245,
       "commit": "a9c96fa",
       "summary": "建筑连升:buildingBatchPlan 只算不动手(级数到品类满级/洞府辖限/余额三者最短,判据与 buildingUpgradeInfo 同源),upgradeBuildingBatch 一次连升按计划总账一扣一升、分文不少,二步确认后再动手;一次连升按实际级数计「升级建筑」次数(track n=plan.levels,防成就/主线只靠连升毕业不了);0 级计划不扣分、带拒因。探明「期初减期末 != 计划总账」的根因:测试首触 track 时一次性成就/主线顺带入账(+454.86 石),非尾差"
+    },
+    "CHG-284": {
+      "id": "CHG-284",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-04T01:00:00.000+00:00",
+      "updated_at": "2026-10-04T01:00:00.000+00:00",
+      "touched_round": 246,
+      "commit": "cb29591",
+      "summary": "构筑快照存满即置灰:满 6 栏时「存当前构筑」灭掉、改成「快照已满」,不再先开命名弹框敲完名字才被 captureLoadout 弹 warn(置灰纪律,横幅 X/6 仍把余额摊在眼前);service 层容量守卫兜底原样保留"
     }
   },
   "edges": [
