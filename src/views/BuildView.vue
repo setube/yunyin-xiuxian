@@ -124,7 +124,14 @@
     <div class="card-ink px-4 py-3">
       <p class="mb-1.5 flex items-center justify-between">
         <span class="text-[11px] text-ink-faint">把顺手的整套功法 / 法宝 / 装备存起来,一键切换</span>
-        <button class="-my-1 py-1.5 text-[11px] text-cinnabar/90 active:opacity-60" @click="openSave">+ 存当前构筑</button>
+        <!-- 满栏即置灰:别再让人点了存名字才被弹「已满」教训(与卡牌置灰同一纪律)。
+             已满时点不了,标题横幅「X/6」仍把余额摊在眼前 -->
+        <button
+          :disabled="loadouts.list.length >= MAX_LOADOUTS"
+          class="-my-1 py-1.5 text-[11px]"
+          :class="loadouts.list.length >= MAX_LOADOUTS ? 'cursor-not-allowed text-ink-faint/50' : 'text-cinnabar/90 active:opacity-60'"
+          @click="openSave"
+        >{{ loadouts.list.length >= MAX_LOADOUTS ? '快照已满' : '+ 存当前构筑' }}</button>
       </p>
       <div v-if="loadouts.list.length" class="space-y-1.5">
         <div v-for="lo in loadouts.list" :key="lo.id" class="flex items-center gap-2 rounded-md bg-paper-deep/70 px-2.5 py-1.5">
