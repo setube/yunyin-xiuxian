@@ -201,6 +201,26 @@
               炼化(悟道 {{ row.upCost.wudao }} · 灵石 {{ formatGN(row.upCost.stone) }})
             </button>
           </div>
+          <!--
+            祭炼连炼:一重一重点太累,与强化连升同一套二步确认 ——
+            行只在一口气能连炼 ≥2 重时出现(只够一重时,单炼按钮就是那一重)。
+          -->
+          <div v-if="row.artPlan.levels >= 2" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+            <template v-if="batchArtConfirm !== row.def.id">
+              <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+                连炼至 <span class="font-kai text-[11px] text-cinnabar">第 {{ row.owned.level + row.artPlan.levels }} 重</span>
+                <span class="mt-0.5 block text-[9px] text-ink-faint tabular">共耗 悟道×{{ row.artPlan.wudao }} · 灵石 {{ formatGN(row.artPlan.stone) }}</span>
+              </p>
+              <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArtConfirm = row.def.id">连 炼</button>
+            </template>
+            <template v-else>
+              <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+                一步连炼 {{ row.artPlan.levels }} 重,花上面那笔总账 —— 仍要?
+              </p>
+              <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArtConfirm = null">再想想</button>
+              <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runArtifactBatch(row.def.id)">连 炼</button>
+            </template>
+          </div>
         </div>
       </div>
       <p v-else class="mt-16 text-center text-[12px] text-ink-faint">
@@ -596,7 +616,9 @@
     decomposeByRanks,
     decomposePreview,
     artifactUpCost,
-    upgradeArtifact
+    artifactBatchPlan,
+    upgradeArtifact,
+    upgradeArtifactBatch
   } from '@/core/forge'
   import { sweepTargets } from '@/core/smartKeep'
   import { salvageOf } from '@/core/salvage'
@@ -823,6 +845,7 @@
         owned: a,
         def: artifactDef(a.defId)!,
         upCost: artifactUpCost(a.defId),
+        artPlan: artifactBatchPlan(a.defId),
         equipped: inventory.equippedArtifacts.includes(a.defId)
       }))
       // 与行囊同一套排法:品质降序 → 祭炼高的在前(此前按入手先后排,越捡越乱)
@@ -837,6 +860,13 @@
   function toggleArtifact(defId: string): void {
     const result = inventory.toggleArtifact(defId, artifactSlots.value)
     if (result === 'replaced') ui.toast(artifactSlotReplacedToast(), 'info')
+  }
+
+  /** 祭炼连炼的二步确认态;换件/换重自动重算,行与确认自会随之进退 */
+  const batchArtConfirm = ref<string | null>(null)
+  function runArtifactBatch(defId: string): void {
+    batchArtConfirm.value = null
+    upgradeArtifactBatch(defId) // 总账那一声与 toast 由服务自己报
   }
 
   function batchDecompose(): void {

@@ -1,7 +1,7 @@
 /**
  * 炼器服务 —— 强化 / 分解 / 法宝升阶
  */
-import type { EquipmentInstance, GNum } from '@/types'
+import type { ArtifactDef, EquipmentInstance, GNum } from '@/types'
 import { qualityDef } from '@/data/qualities'
 import { equipmentTemplate } from '@/data/equipment'
 import { artifactDef, ARTIFACT_MAX_LEVEL, ARTIFACT_UP_STONE_TIER, ARTIFACT_UP_WUDAO_BASE } from '@/data/artifacts'
@@ -10,6 +10,7 @@ import { stoneByTier, upgradeCost } from './formulas'
 import { add, gnZero, isZero } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import {
+  artifactBatchDoneToast,
   artifactCapToast,
   artifactDoneToast,
   artifactShortToast,
@@ -224,37 +225,109 @@ export function decomposeByRanks(ranks: readonly number[]): number {
   return got.count
 }
 
+/** 某法定某一重数的单次炼化代价(纯函数,不含上限;level ≥ 满重才算不出 → null) */
+export function artifactUpCostAt(def: ArtifactDef, level: number): { wudao: number; stone: GNum } | null {
+  if (level >= ARTIFACT_MAX_LEVEL) return null
+  return {
+    wudao: Math.ceil(ARTIFACT_UP_WUDAO_BASE * Math.pow(1.6, level) * (1 + qualityDef(def.quality).rank * 0.3)),
+    stone: stoneByTier(def.fromTier, ARTIFACT_UP_STONE_TIER * (1 + level))
+  }
+}
+
 export function artifactUpCost(defId: string): { wudao: number; stone: GNum } | null {
   const inventory = useInventoryStore()
   const owned = inventory.artifacts.find(a => a.defId === defId)
   const def = artifactDef(defId)
-  if (!owned || !def || owned.level >= ARTIFACT_MAX_LEVEL) return null
-  return {
-    wudao: Math.ceil(ARTIFACT_UP_WUDAO_BASE * Math.pow(1.6, owned.level) * (1 + qualityDef(def.quality).rank * 0.3)),
-    stone: stoneByTier(def.fromTier, ARTIFACT_UP_STONE_TIER * (1 + owned.level))
-  }
+  if (!owned || !def) return null
+  return artifactUpCostAt(def, owned.level)
 }
 
-export function upgradeArtifact(defId: string): boolean {
+export function upgradeArtifact(defId: string, opts: { quiet?: boolean } = {}): boolean {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
   const ui = useUiStore()
   const cost = artifactUpCost(defId)
   const def = artifactDef(defId)
   if (!cost || !def) {
-    playSfx('warn')
-    ui.toast(artifactCapToast(), 'warn')
+    if (!opts.quiet) {
+      playSfx('warn')
+      ui.toast(artifactCapToast(), 'warn')
+    }
     return false
   }
   if (!resources.hasSmall('wudao', cost.wudao) || !resources.hasStone(cost.stone)) {
-    playSfx('warn')
-    ui.toast(artifactShortToast(), 'warn')
+    if (!opts.quiet) {
+      playSfx('warn')
+      ui.toast(artifactShortToast(), 'warn')
+    }
     return false
   }
   resources.spendSmall('wudao', cost.wudao)
   resources.spendStone(cost.stone)
   inventory.levelUpArtifact(defId)
-  playSfx('success')
-  ui.toast(artifactDoneToast(def.name), 'success')
+  if (!opts.quiet) {
+    playSfx('success')
+    ui.toast(artifactDoneToast(def.name), 'success')
+  }
   return true
+}
+
+export interface ArtifactBatchPlan {
+  /** 从当前重数起能连炼的重数(满重与余额的共同约束) */
+  levels: number
+  /** 连炼总耗的悟道 */
+  wudao: number
+  /** 连炼总耗的灵石 */
+  stone: GNum
+  /** 是否因已至满重而停(而非悟道/灵石不够) */
+  atCap: boolean
+}
+
+/**
+ * 祭炼连升计划:只算不动手。逐重累加 artifactUpCostAt,到满重或余额缺口为止;
+ * 界面预览与批量执行共用这一份,所见即所得。
+ */
+export function artifactBatchPlan(defId: string): ArtifactBatchPlan {
+  const inventory = useInventoryStore()
+  const resources = useResourcesStore()
+  const owned = inventory.artifacts.find(a => a.defId === defId)
+  const def = artifactDef(defId)
+  if (!owned || !def) return { levels: 0, wudao: 0, stone: gnZero(), atCap: false }
+  if (owned.level >= ARTIFACT_MAX_LEVEL) return { levels: 0, wudao: 0, stone: gnZero(), atCap: true }
+  let lv = owned.level
+  let wudao = 0
+  let stone = gnZero()
+  // 循环上界已小于满重,artifactUpCostAt 必非 null —— 只需要判余额
+  while (lv < ARTIFACT_MAX_LEVEL) {
+    const c = artifactUpCostAt(def, lv)!
+    if (!resources.hasSmall('wudao', wudao + c.wudao) || !resources.hasStone(add(stone, c.stone))) break
+    wudao += c.wudao
+    stone = add(stone, c.stone)
+    lv += 1
+  }
+  return { levels: lv - owned.level, wudao, stone, atCap: lv >= ARTIFACT_MAX_LEVEL }
+}
+
+/**
+ * 祭炼连升:按计划一次炼到位 —— 逐重走 upgradeArtifact 的 quiet 版,
+ * 每重各自的扣费/等级照常,仅合为一次提示与一声响。返回实际炼的重数;
+ * 0 = 未炼(已至满重或余额不够,toast 会说明)。
+ */
+export function upgradeArtifactBatch(defId: string): number {
+  const plan = artifactBatchPlan(defId)
+  if (plan.levels === 0) {
+    playSfx('warn')
+    useUiStore().toast(plan.atCap ? artifactCapToast() : artifactShortToast(), 'warn')
+    return 0
+  }
+  // 当前流程里回合内不可能失败(计划刚验过账、同步无 await);防御性的断了就往回退一重照实报
+  let done = 0
+  for (let i = 0; i < plan.levels; i += 1) {
+    if (!upgradeArtifact(defId, { quiet: true })) break
+    done += 1
+  }
+  const owned = useInventoryStore().artifacts.find(a => a.defId === defId)
+  playSfx('success')
+  useUiStore().toast(artifactBatchDoneToast(done, owned?.level ?? 0, plan.wudao, formatGN(plan.stone)), 'success')
+  return done
 }

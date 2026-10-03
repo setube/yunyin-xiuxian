@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  artifactBatchDoneToast,
   artifactCapToast,
   artifactDoneToast,
   batchDecomposeToast,
@@ -36,5 +37,9 @@ describe('炼器提示 · 文言仍报清尘与石', () => {
     expect(artifactCapToast()).toContain('再祭无益')
     expect(artifactDoneToast('紫电')).toContain('祭炼')
     expect(artifactDoneToast('紫电')).not.toContain('炼化')
+  })
+
+  it('祭炼连升只报一次总况:重数、现重、悟道、石都在', () => {
+    expect(artifactBatchDoneToast(3, 5, 32, '240')).toBe('连炼 3 重,已至第 5 重,共耗悟道×32 · 灵石 240')
   })
 })
