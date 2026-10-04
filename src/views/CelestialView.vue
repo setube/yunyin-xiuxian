@@ -158,7 +158,7 @@
                 决战 · {{ runWorld.guardian.name }}
               </button>
             </template>
-            <button class="btn-ghost mt-2 w-full !py-1.5 !text-[11px] !text-ink-faint" @click="abandonRun">中道而返(道源不退)</button>
+            <button class="btn-ghost mt-2 w-full !py-2 !text-[11px] !text-ink-faint" @click="abandonRun">中道而返(道源不退)</button>
           </div>
         </section>
 
@@ -251,7 +251,7 @@
               <span v-for="m in dailyMutators" :key="m!.id">◇ {{ m!.name }}:{{ m!.text }}</span>
               <span v-if="dailyPact" class="text-cinnabar">契·{{ dailyPact.name }}</span>
             </p>
-            <button class="btn-seal mt-2 w-full !py-1.5 !text-[12px]" :disabled="endgame.dailyDoneDay === daily.day" @click="goDaily">
+            <button class="btn-seal mt-2 w-full !py-2 !text-[12px]" :disabled="endgame.dailyDoneDay === daily.day" @click="goDaily">
               {{ endgame.dailyDoneDay === daily.day ? '今日已成,明日再会' : `应 战(道源 ${CHALLENGE_ENTRY_COST})` }}
             </button>
           </div>
@@ -380,8 +380,8 @@
               <p v-else class="text-[11px] text-cinnabar">{{ challengeVerdict.reason }}</p>
             </div>
             <div class="mt-2 flex gap-2">
-              <button class="btn-ghost flex-1 !py-1.5 !text-[12px]" @click="doVerify">验 约</button>
-              <button class="btn-seal flex-1 !py-1.5 !text-[12px]" :disabled="!challengeVerdict?.ok || run !== null" @click="doUndertake">
+              <button class="btn-ghost flex-1 !py-2 !text-[12px]" @click="doVerify">验 约</button>
+              <button class="btn-seal flex-1 !py-2 !text-[12px]" :disabled="!challengeVerdict?.ok || run !== null" @click="doUndertake">
                 立 约(道源 {{ CHALLENGE_ENTRY_COST }})
               </button>
             </div>
@@ -618,7 +618,7 @@
             <span class="text-[12px] text-ink-soft">{{ row.rate.name }}(存 {{ formatNum(row.have) }})</span>
             <!-- 全熔防误触:文案亮出『整包』与可得道源(不再是『按 25:1 换』的可兑换暗示),再按一下才熔 -->
             <button
-              class="btn-ghost !px-3 !py-1 !text-[11px] tabular"
+              class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
               :disabled="furnacePreview(row.rate) <= 0"
               @click="furnaceConfirm = row.rate.resource"
             >
@@ -631,21 +631,21 @@
               <span class="tabular">+{{ furnacePreview(row.rate) }}</span> 缕 —— 此举不可逆,这些资源再无炼丹/锻造/参悟之途。
             </p>
             <div class="mt-1.5 flex justify-end gap-2">
-              <button class="btn-ghost !px-3 !py-1 !text-[11px]" @click="furnaceConfirm = null">再想想</button>
-              <button class="btn-seal !px-3 !py-1 !text-[11px] tabular" @click="doFurnace(row.rate)">确认熔尽</button>
+              <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="furnaceConfirm = null">再想想</button>
+              <button class="btn-seal !px-3 !py-2 !text-[11px] tabular" @click="doFurnace(row.rate)">确认熔尽</button>
             </div>
           </div>
         </div>
         <div class="flex items-center justify-between py-2.5">
           <span class="text-[12px] text-ink-soft">灵石(存 {{ formatGN(resources.spiritStone) }})</span>
-          <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="furnaceConvertStone()">
+          <button class="btn-ghost !px-3 !py-2 !text-[11px] tabular" @click="furnaceConvertStone()">
             {{ formatGN(furnaceStoneCost()) }} → 5 道源
           </button>
         </div>
         <div class="py-2.5">
           <div class="flex items-center justify-between">
             <span class="text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
-            <button class="btn-ghost !px-3 !py-1 !text-[11px] tabular" @click="doCondense()">
+            <button class="btn-ghost !px-3 !py-2 !text-[11px] tabular" @click="doCondense()">
               {{ DAO_SOURCE_PER_FRUIT }} 道源 → 道果 +1
             </button>
           </div>

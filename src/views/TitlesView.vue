@@ -21,7 +21,7 @@
             <p class="truncate text-[10px] text-ink-faint">{{ row.def.desc }}</p>
             <p v-if="row.owned && row.modText" class="truncate text-[10px] text-azure tabular" :title="row.modText">{{ row.modText }}</p>
           </div>
-          <button v-if="row.owned" class="btn-ghost shrink-0 !px-2.5 !py-1.5 !text-[11px]" @click="toggleTitle(row.def.id)">
+          <button v-if="row.owned" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="toggleTitle(row.def.id)">
             {{ row.worn ? '卸下' : '佩戴' }}
           </button>
         </div>
@@ -57,7 +57,7 @@
             <!-- 定性的话之外还要给数:换不换这只伙伴,靠「更容易」三个字算不出来 -->
             <p v-if="row.traitText" class="text-[10px] text-azure/80 tabular">{{ row.traitText }}</p>
           </div>
-          <button class="btn-ghost shrink-0 !px-2.5 !py-1 !text-[11px]" @click="togglePet(row.def.id)">
+          <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="togglePet(row.def.id)">
             {{ row.active ? '暂别' : '唤来' }}
           </button>
         </div>
