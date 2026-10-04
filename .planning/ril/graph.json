@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 247,
+  "round": 248,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-04T03:00:00.000+00:00",
+  "updated_at": "2026-10-04T04:00:00.000+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14458,6 +14458,17 @@
       "touched_round": 247,
       "commit": "2863c48",
       "summary": "本世对局:BuildView 新增七类实敌胜率面,短板在前、四墙(首领/高爆发/真伤/疾影)标出 —— 玩家第一次看到「我对谁吃亏」。playerMatchups 纯函数(快照×类型×场次,固定种子读数稳定);四墙 ids 抽进 buildSim.WALL_IDS 单源,buildSearch 万金油判据同源改用。应 Sourcery 三条:每场浅克隆快照(铁壁一次性 ironwallBrace 每场从头算,兼回归闸)、n 非正/非整回落 60、单调断言改七面平均抗抽样方差"
+    },
+    "CHG-286": {
+      "id": "CHG-286",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-04T04:00:00.000+00:00",
+      "updated_at": "2026-10-04T04:00:00.000+00:00",
+      "touched_round": 248,
+      "commit": "5cb0024",
+      "summary": "流派实验室:把藏了两轮的 searchBuilds 检索引擎 surface 成 BuildView 尾部面板 —— 一键跑检索读世界大势(万金油/陷阱/战力×胜率相关 + 解读),固定种子全服同一份。引擎侧 searchBuilds 拆出 scoreOne/assembleResults 共享内核,新增分块异步 searchBuildsAsync(每凑满一批让位 + 进度回调,同参与同步版逐位一致)。应 Sourcery 两条:进度节拍改按已评套数计(原 i%yieldEvery 批内多占一套/少报一)、重检索开跑清旧报告并加 error 态(失败不冒充本次结论)"
     }
   },
   "edges": [
