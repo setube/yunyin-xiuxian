@@ -40,7 +40,11 @@ export const useLoadoutsStore = defineStore(
       list.value = list.value.filter(l => l.id !== id)
     }
 
-    return { list, add, remove, sanitize }
+    function rename(id: string, name: string): void {
+      list.value = list.value.map(l => (l.id === id ? { ...l, name } : l))
+    }
+
+    return { list, add, remove, rename, sanitize }
   },
   { persist: persistConfig('loadouts') }
 )

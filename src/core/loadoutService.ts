@@ -94,3 +94,17 @@ export function applyLoadout(id: string): boolean {
 export function deleteLoadout(id: string): void {
   useLoadoutsStore().remove(id)
 }
+
+/**
+ * 构筑改名:清首尾空白、收敛到 8 字(与保存同一套收敛);空名回落「无名构筑」。
+ * 找不到该套则静默失败(改了不存在的 id 没什么可报的)。
+ */
+export function renameLoadout(id: string, name: string): boolean {
+  const loadouts = useLoadoutsStore()
+  const ui = useUiStore()
+  if (!loadouts.list.some(l => l.id === id)) return false
+  const next = name.trim().slice(0, 8) || '无名构筑'
+  loadouts.rename(id, next)
+  ui.toast(loadoutSavedToast(next), 'success')
+  return true
+}

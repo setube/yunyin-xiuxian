@@ -165,6 +165,7 @@
                且卡片只在「有构筑」时才出现 —— 页面层巡页夹具没铺 loadouts 永远量不到它(HYP-056 边界)。
                !py-2 抬到 35px,与旁边确认态按钮同高,视觉一排齐整 -->
           <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="applyLoadout(lo.id)">换装</button>
+          <button class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint" @click="openRename(lo)">改名</button>
           <!-- 删除二步确认:一套构筑是心血,误触垃圾桶不该直接没 -->
           <template v-if="confirmDelete !== lo.id">
             <button
@@ -226,9 +227,10 @@
     <!-- 流派实验室:随机构筑检索,读世界大势 -->
     <BuildLabPanel />
 
-    <!-- 保存构筑 -->
-    <BaseModal :open="saveOpen" title="存为构筑" @close="saveOpen = false">
-      <p class="text-[11px] text-ink-faint">将当前功法 / 法宝 / 整身装备存为一套,可随时一键切换。</p>
+    <!-- 保存 / 改名构筑:同一弹窗两种身位,存的那套功/宝/装原样不动 -->
+    <BaseModal :open="saveOpen" :title="renameId ? '为构筑改名' : '存为构筑'" @close="closeSave">
+      <p v-if="renameId" class="text-[11px] text-ink-faint">仅改这套的名号,所存功法 / 法宝 / 整身装备原样不动。</p>
+      <p v-else class="text-[11px] text-ink-faint">将当前功法 / 法宝 / 整身装备存为一套,可随时一键切换。</p>
       <input
         v-model="saveName"
         maxlength="8"
@@ -236,7 +238,7 @@
         placeholder="给这套构筑起个名号"
       />
       <template #footer>
-        <button class="btn-seal w-full" @click="confirmSave">存 入</button>
+        <button class="btn-seal w-full" @click="onSaveSubmit">{{ renameId ? '改 名' : '存 入' }}</button>
       </template>
     </BaseModal>
   </div>
@@ -254,8 +256,8 @@
   import { compareSnaps, type CompareReport } from '@/core/compare'
   import { endgameUnlocked, snapFromReplay } from '@/core/endgameService'
   import { useEndgameStore } from '@/stores/endgame'
-  import { applyLoadout, captureLoadout, deleteLoadout } from '@/core/loadoutService'
-  import { useLoadoutsStore, MAX_LOADOUTS } from '@/stores/loadouts'
+  import { applyLoadout, captureLoadout, deleteLoadout, renameLoadout } from '@/core/loadoutService'
+  import { useLoadoutsStore, MAX_LOADOUTS, type Loadout } from '@/stores/loadouts'
   import { cnNumber } from '@/utils/format'
   import { STAT_NAMES, signedPercent, statCaveat } from '@/ui/statNames'
   import { isSoftCapped } from '@/core/statsCalc'
@@ -338,12 +340,34 @@
     saveOpen.value = true
   }
 
+  /** 行内「改名」:同一弹窗换成改名身位,名字预填当前的 */
+  const renameId = ref<string | null>(null)
+  function openRename(lo: Loadout): void {
+    renameId.value = lo.id
+    saveName.value = lo.name
+    saveOpen.value = true
+  }
+
+  function confirmRename(): void {
+    if (renameId.value && renameLoadout(renameId.value, saveName.value)) {
+      saveOpen.value = false
+      renameId.value = null
+    }
+  }
+
+  /** 弹窗落定:存 / 改两分支,再由关闭统一复位改名身位 */
+  function onSaveSubmit(): void {
+    if (renameId.value) confirmRename()
+    else if (captureLoadout(saveName.value)) saveOpen.value = false
+  }
+
+  function closeSave(): void {
+    renameId.value = null
+    saveOpen.value = false
+  }
+
   function doDeleteLoadout(id: string): void {
     deleteLoadout(id)
     confirmDelete.value = null
-  }
-
-  function confirmSave(): void {
-    if (captureLoadout(saveName.value)) saveOpen.value = false
   }
 </script>

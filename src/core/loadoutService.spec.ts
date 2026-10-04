@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mulberry32, RandomService } from '@/utils/random'
 import { generateEquipment } from './equipGen'
-import { captureLoadout, applyLoadout } from './loadoutService'
+import { captureLoadout, applyLoadout, renameLoadout } from './loadoutService'
 import { equipmentTemplate } from '@/data/equipment'
 import { useInventoryStore } from '@/stores/inventory'
 import { useCultivationStore } from '@/stores/cultivation'
@@ -84,5 +84,25 @@ describe('构筑快照(保存/一键切换)', () => {
     }
     expect(loadouts.list.length).toBe(6)
     expect(captureLoadout('超载')).toBeNull()
+  })
+
+  it('改名:收敛空白与 8 字上限,套内装束原样不动', () => {
+    seed()
+    const loadouts = useLoadoutsStore()
+    const lo = captureLoadout('背水一号')!
+    const weaponUid = lo.equipment.weapon
+    // 全空白 → 回落「无名构筑」
+    expect(renameLoadout(lo.id, '   ')).toBe(true)
+    expect(loadouts.list.find(l => l.id === lo.id)!.name).toBe('无名构筑')
+    // 超过 8 字 → 截到 8 字
+    expect(renameLoadout(lo.id, '超长名字超过八个字会截断')).toBe(true)
+    expect(loadouts.list.find(l => l.id === lo.id)!.name).toBe('超长名字超过八个')
+    // 只动名号,套内功/宝/装原样
+    const renamed = loadouts.list.find(l => l.id === lo.id)!
+    expect(renamed.equipment.weapon).toBe(weaponUid)
+    expect(renamed.mainGongfa).toBe('m_taixuan')
+    // 不存在的 id 静默失败,什么都不动
+    expect(renameLoadout('nope', '新名')).toBe(false)
+    expect(loadouts.list.length).toBe(1)
   })
 })
