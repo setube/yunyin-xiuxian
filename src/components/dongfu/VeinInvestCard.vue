@@ -70,7 +70,7 @@
             </button>
             <button
               v-if="canSwitchTo(v.id)"
-              class="btn-ghost mt-0.5 !px-2.5 !py-1 !text-[10px]"
+              class="btn-ghost mt-0.5 !px-2.5 !py-2 !text-[10px]"
               @click="switchArm = v.id"
             >
               改立主脉 · <span class="whitespace-nowrap">{{ formatGN(switchCost) }} 石</span>

@@ -397,8 +397,8 @@
               {{ row.item.affixes.length }}/{{ qualityDef(row.item.quality).affixes[1] }}
             </span>
           </button>
-          <button v-if="row.equipped" class="btn-ghost shrink-0 !px-2.5 !py-1 !text-[11px]" @click="unequipSlot()">卸下</button>
-          <button v-else class="btn-seal shrink-0 !px-2.5 !py-1 !text-[11px]" @click="equipItem(row.item.uid)">换上</button>
+          <button v-if="row.equipped" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="unequipSlot()">卸下</button>
+          <button v-else class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="equipItem(row.item.uid)">换上</button>
         </div>
       </div>
       <p v-else class="py-6 text-center">
