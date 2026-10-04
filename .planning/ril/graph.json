@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 246,
+  "round": 247,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-04T01:00:00.000+00:00",
+  "updated_at": "2026-10-04T03:00:00.000+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14447,6 +14447,17 @@
       "touched_round": 246,
       "commit": "cb29591",
       "summary": "构筑快照存满即置灰:满 6 栏时「存当前构筑」灭掉、改成「快照已满」,不再先开命名弹框敲完名字才被 captureLoadout 弹 warn(置灰纪律,横幅 X/6 仍把余额摊在眼前);service 层容量守卫兜底原样保留"
+    },
+    "CHG-285": {
+      "id": "CHG-285",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-04T03:00:00.000+00:00",
+      "updated_at": "2026-10-04T03:00:00.000+00:00",
+      "touched_round": 247,
+      "commit": "2863c48",
+      "summary": "本世对局:BuildView 新增七类实敌胜率面,短板在前、四墙(首领/高爆发/真伤/疾影)标出 —— 玩家第一次看到「我对谁吃亏」。playerMatchups 纯函数(快照×类型×场次,固定种子读数稳定);四墙 ids 抽进 buildSim.WALL_IDS 单源,buildSearch 万金油判据同源改用。应 Sourcery 三条:每场浅克隆快照(铁壁一次性 ironwallBrace 每场从头算,兼回归闸)、n 非正/非整回落 60、单调断言改七面平均抗抽样方差"
     }
   },
   "edges": [
