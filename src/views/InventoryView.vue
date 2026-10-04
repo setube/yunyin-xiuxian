@@ -584,6 +584,7 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
+  import { useRoute } from 'vue-router'
   import { useInventoryStore } from '@/stores/inventory'
   import { useResourcesStore } from '@/stores/resources'
   import { usePlayerStore } from '@/stores/player'
@@ -652,6 +653,12 @@
 
   type Tab = 'equip' | 'pill' | 'material' | 'artifact'
   const tab = ref<Tab>('equip')
+
+  // 修行志的「去办」会用 ?tab=pill 这类深链进来;只在合法签里挑,乱掷的忽略
+  const route = useRoute()
+  const TAB_IDS: Tab[] = ['equip', 'pill', 'material', 'artifact']
+  const deepTab = route.query.tab as Tab | undefined
+  if (deepTab && (TAB_IDS as string[]).includes(deepTab)) tab.value = deepTab
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'equip', label: '装备' },

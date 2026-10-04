@@ -85,7 +85,17 @@
         <template v-if="mainQuest">
           <p class="flex items-center justify-between">
             <span class="font-kai text-[13px] tracking-wider text-ink">{{ mainQuest.name }}</span>
-            <span class="text-[10px] text-ink-faint">主线 {{ quests.mainIdx + 1 }}/{{ MAIN_QUESTS.length }}</span>
+            <span class="flex shrink-0 items-center gap-0.5">
+              <span class="text-[10px] text-ink-faint">主线 {{ quests.mainIdx + 1 }}/{{ MAIN_QUESTS.length }}</span>
+              <!-- 拿得准去哪办,就给一枚走往的箭头;拿不准的不摆,免得摆着指错路 -->
+              <RouterLink
+                v-if="mainNav"
+                :to="mainNav"
+                class="-my-1 -mr-1 p-2 text-[13px] leading-none text-ink-faint active:text-azure"
+                :aria-label="`去办:${mainQuest.name}`"
+                >›</RouterLink
+              >
+            </span>
           </p>
           <p class="mt-0.5 text-[11px] text-ink-faint">{{ mainQuest.desc }}</p>
           <p v-if="rewardPreview(mainQuest.reward)" class="mt-0.5 text-[10px] tabular text-azure">
@@ -102,8 +112,17 @@
                 {{ rewardPreview(t.reward) }}
               </span>
             </span>
-            <span class="shrink-0 tabular text-[11px]" :class="t.done ? 'text-jade' : 'text-ink-faint'">
-              {{ t.done ? '已成' : `${t.progress}/${t.target}` }}
+            <span class="flex shrink-0 items-center gap-0.5">
+              <span class="tabular text-[11px]" :class="t.done ? 'text-jade' : 'text-ink-faint'">
+                {{ t.done ? '已成' : `${t.progress}/${t.target}` }}
+              </span>
+              <RouterLink
+                v-if="!t.done && t.nav"
+                :to="t.nav"
+                class="-my-1 -mr-1 p-2 text-[13px] leading-none self-center text-ink-faint active:text-azure"
+                :aria-label="`去办:${t.desc}`"
+                >›</RouterLink
+              >
             </span>
           </div>
         </div>
@@ -140,6 +159,7 @@
   import { isRetreating } from '@/core/earlyGameService'
   import { homeStatusText } from '@/ui/homeStatus'
   import { rewardPreview } from '@/core/progress'
+  import { mainQuestNav, dailyTaskNav } from '@/ui/questNav'
   import { weatherEffectText } from '@/ui/weatherText'
   import { generateCurrentGoal, type Goal } from '@/core/goal'
   import SectionTitle from '@/components/common/SectionTitle.vue'
@@ -188,12 +208,15 @@
   const weatherLine = computed(() => weatherEffectText(weather.value))
 
   const mainQuest = computed(() => MAIN_QUESTS[quests.mainIdx])
+  /** 主线的「去办」落点:拿得准才给箭头(判据见 questNav) */
+  const mainNav = computed(() => (mainQuest.value ? mainQuestNav(mainQuest.value.cond) : null))
 
   const dailyRows = computed(() =>
     DAILY_TASKS.map(t => ({
       ...t,
       progress: Math.min(t.target, quests.dailyDelta(t.counterKey)),
-      done: quests.daily.done.includes(t.id)
+      done: quests.daily.done.includes(t.id),
+      nav: dailyTaskNav(t.counterKey)
     }))
   )
 </script>
