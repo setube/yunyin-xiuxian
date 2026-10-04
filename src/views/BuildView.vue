@@ -111,6 +111,28 @@
           </p>
           <p class="mt-0.5 text-[10px] text-ink-faint">{{ resilienceText(resilience) }}</p>
         </div>
+        <!--
+          本世对局:七类本世实敌挨个对打,短板一面先入眼。
+          玩家早在四处踩坑,却看不到「到底输在哪一类」 —— 胜率面把最吃亏的那面摆在前头。
+        -->
+        <div v-if="matchupRows" class="mt-2.5 rounded-md bg-paper-deep/60 px-3 py-2">
+          <p class="text-[10px] text-ink-faint">本世对局 —— 与当下构筑对打七类实敌,估其胜率,短板在前</p>
+          <div class="mt-1.5 space-y-1">
+            <div v-for="row in matchupSorted" :key="row.id" class="flex items-center gap-2">
+              <span class="w-9 shrink-0 truncate text-[11px] text-ink-soft">{{ row.name }}</span>
+              <span v-if="row.wall" class="shrink-0 rounded bg-cinnabar/10 px-1 py-0.5 text-[9px] leading-none text-cinnabar">墙</span>
+              <span class="track-ink h-1.25 min-w-0 flex-1 overflow-hidden rounded-full">
+                <span class="bar-fill h-full rounded-full" :class="winBarCls(row.winRate)" :style="{ width: `${row.winRate * 100}%` }" />
+              </span>
+              <span class="w-9 shrink-0 text-right tabular text-[11px]" :class="winTextCls(row.winRate)">
+                {{ Math.round(row.winRate * 100) }}%
+              </span>
+            </div>
+          </div>
+          <p class="mt-1.5 text-[9px] leading-relaxed text-ink-faint">
+            每类各打 60 场估算,读的是「哪面吃亏」的方向,不是精确胜率;四墙(首领 / 高爆发 / 真伤 / 疾影)通吃,才称万金油。
+          </p>
+        </div>
       </template>
       <p v-else class="text-[12px] leading-relaxed text-ink-faint">
         道途尚未成路。凑齐同一路数的词条、功法与法宝,自成一派——
@@ -224,6 +246,7 @@
   import { ratePower, ratingStars, type PowerDimKey } from '@/core/powerRating'
   import { matchComboArt, COMBO_SECONDARY_MIN } from '@/data/comboArts'
   import { measureResilience, resilienceText } from '@/core/resilience'
+  import { playerMatchups } from '@/core/playerMatchup'
   import { buildPlayerSnap } from '@/core/playerSnap'
   import { compareSnaps, type CompareReport } from '@/core/compare'
   import { endgameUnlocked, snapFromReplay } from '@/core/endgameService'
@@ -267,6 +290,18 @@
 
   /** 构筑韧性:主派封印后的战力保持(120 场等比敌采样) */
   const resilience = computed(() => (build.value ? measureResilience(buildPlayerSnap()) : null))
+
+  /** 本世对局:拿当前构筑快照逐类对打(与构筑韧性同一条现算路径),短板一眼可见 */
+  const matchupRows = computed(() => (build.value ? playerMatchups(buildPlayerSnap(), 60) : null))
+  /** 短板在前:胜率由低到高,先看见最吃亏的一面 */
+  const matchupSorted = computed(() => [...(matchupRows.value ?? [])].sort((a, b) => a.winRate - b.winRate))
+  /** 三档色:≥70% 稳(青) / ≥45% 胶着(褐) / 其余吃亏(朱) —— 沿用战斗面板的胜率给色 */
+  function winBarCls(rate: number): string {
+    return rate >= 0.7 ? 'bg-jade' : rate >= 0.45 ? 'bg-amber-ink' : 'bg-cinnabar'
+  }
+  function winTextCls(rate: number): string {
+    return rate >= 0.7 ? 'text-jade' : rate >= 0.45 ? 'text-amber-ink' : 'text-cinnabar'
+  }
 
   // ---- 双构筑对照 ----
   const endgame = useEndgameStore()

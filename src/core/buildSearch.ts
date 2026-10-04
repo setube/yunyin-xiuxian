@@ -10,7 +10,7 @@ import { ARTIFACTS } from '@/data/artifacts'
 import { resolveCombat } from './combat'
 import { powerScore } from './formulas'
 import { detectBuild } from './buildDetect'
-import { ENEMY_ARCHETYPES } from './buildSim'
+import { ENEMY_ARCHETYPES, WALL_IDS } from './buildSim'
 
 /** 可随机的词条空间(上限 ≈ 中期成型构筑的可达值) */
 const KEY_RANGES: [AnyStatKey, number][] = [
@@ -138,7 +138,7 @@ export function searchBuilds(n = 1000, fightsPerArch = 20, seed = 20260830): Sea
     }
     const avg = cells.reduce((s, x) => s + x, 0) / cells.length
     // 万金油判定:连「高压墙」都通吃 —— 首领/高爆发/真伤/疾影 四墙中 ≥3 面 ≥95%,且首领 ≥90%
-    const wallIdx = ENEMY_ARCHETYPES.map((a, i) => (['boss', 'burst', 'pierce', 'dodge'].includes(a.id) ? i : -1)).filter(i => i >= 0)
+    const wallIdx = ENEMY_ARCHETYPES.map((a, i) => (WALL_IDS.includes(a.id) ? i : -1)).filter(i => i >= 0)
     const bossIdx = ENEMY_ARCHETYPES.findIndex(a => a.id === 'boss')
     const wallsBroken = wallIdx.filter(i => cells[i]! >= 0.95).length
     const universal = wallsBroken >= 3 && cells[bossIdx]! >= 0.9

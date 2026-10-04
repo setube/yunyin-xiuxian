@@ -168,6 +168,13 @@ export const ENEMY_ARCHETYPES: EnemyArchetype[] = [
   { id: 'dodge', name: '疾影', snap: () => foe('风魅', 155, 48, 1400, 1.5, [{ name: '风影袭', mult: 1.6, rate: 0.3 }], { dodgeRate: 0.5 }) }
 ]
 
+/**
+ * 万金油判据里的「四墙」:首领/高爆发/真伤/疾影。
+ * 连这四面都通吃(各 ≥95%、首领 ≥90%)才算万金油 —— 只要先在任意一面翻船,
+ * 那个区域就会拖你后腿。四处引用都是这一个数组,别手抄。
+ */
+export const WALL_IDS = ['boss', 'burst', 'pierce', 'dodge']
+
 // ---------- 批量对战 ----------
 
 export interface MatchStats {

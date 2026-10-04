@@ -18,7 +18,7 @@ const CATEGORIES = [
   },
   {
     name: 'Combat      战斗规则',
-    match: ['combat.spec', 'battleFactor', 'highTierSmoke', 'ironwall', 'bossAudit', 'bossPhaseAudit', 'exploration.spec', 'exploreModes']
+    match: ['combat.spec', 'battleFactor', 'highTierSmoke', 'ironwall', 'bossAudit', 'bossPhaseAudit', 'exploration.spec', 'exploreModes', 'playerMatchup']
   },
   {
     name: 'Balance     流派与生态',
