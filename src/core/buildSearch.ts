@@ -205,8 +205,9 @@ export async function searchBuildsAsync(opts: SearchBuildsAsyncOptions = {}): Pr
   const scored: ScoredBuild[] = []
   for (let i = 0; i < n; i += 1) {
     scored.push(scoreOne(randomBuild(rng, i), rng, fightsPerArch))
-    if (i > 0 && i % yieldEvery === 0) {
-      opts.onProgress?.(i, n)
+    // 以「已评分套数」为节拍:凑满一批就报(套数即读数,不差一);末批留给收尾
+    if (scored.length % yieldEvery === 0 && i < n - 1) {
+      opts.onProgress?.(scored.length, n)
       await new Promise(res => setTimeout(res, 0))
     }
   }

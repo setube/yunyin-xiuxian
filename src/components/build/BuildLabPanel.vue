@@ -7,7 +7,10 @@
         战力高是不是真的就能打。检索较沉,点一下、等它跑完。
       </p>
 
-      <!-- 未跑:点一下才开跑 -->
+      <!-- 检索夭折:一句报清,按钮仍在 -->
+      <p v-if="error" class="mt-2 text-[10px] text-cinnabar">{{ error }}</p>
+
+      <!-- 未跑(含失败后):点一下才开跑 -->
       <button v-if="!running && !report" class="btn-seal mt-2 w-full !py-2 !text-[12px]" @click="run">
         跑一遍检索
       </button>
@@ -58,11 +61,15 @@
   const progress = ref(0)
   const total = ref(0)
   const report = ref<SearchReport | null>(null)
+  const error = ref('')
 
   /** 一次「实验室」:固定种子 → 全服同一份大势,不随刷新变;分块让位,主线程不冻结 */
   async function run(): Promise<void> {
     if (running.value) return
     running.value = true
+    // 重检索开跑先把旧报告清掉:带病的结果宁可不要,也不该冒充这次检索的结论
+    error.value = ''
+    report.value = null
     progress.value = 0
     total.value = 0
     try {
@@ -76,6 +83,8 @@
           total.value = t
         }
       })
+    } catch {
+      error.value = '检索夭折,稍后再试'
     } finally {
       running.value = false
     }
