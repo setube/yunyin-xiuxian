@@ -32,6 +32,9 @@ describe('修行志导航 · questNav', () => {
     for (const key of ['tribulations', 'decomposed', 'events', 'battles'] as CounterKey[]) {
       expect(mainQuestNav(counter(key)), `键 ${key} 应拿不准返回 null`).toBeNull()
     }
+    // 境界里程碑的 realm_<major>_<sub> 键 → 修炼页(开局主线就是这种)
+    expect(mainQuestNav({ type: 'custom', key: 'realm_0_2' })).toEqual({ name: 'cultivation' })
+    expect(mainQuestNav({ type: 'custom', key: 'realm_0_9' })).toEqual({ name: 'cultivation' })
     expect(mainQuestNav({ type: 'custom', key: 'stone1m' })).toBeNull()
   })
 

@@ -12,6 +12,9 @@ function navForCond(cond: AchvCond): QuestNav {
   if (cond.type === 'realm') return { name: 'cultivation' }
   // 品质型成就没有固定去处,拿不准就 null
   if (cond.type === 'quality') return null
+  // 境界里程碑多用 realm_<major>_<sub> 的 custom 键(如开局主线 realm_0_2)——
+  // 与 checkAchievements 的识别同一式,落到修炼页
+  if (cond.type === 'custom' && /^realm_\d+_\d+$/.test(cond.key)) return { name: 'cultivation' }
   switch (cond.key) {
     // 战斗与历练都落在历练页
     case 'kills':
