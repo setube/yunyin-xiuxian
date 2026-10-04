@@ -174,7 +174,7 @@ describe('离线结算同源吃天时(ISS-027 续)', () => {
     // 取一个除不尽的时长:整份产出会被 floor 进资源,余数才留在 frac 上 ——
     // 而余数正是这条产线的指纹(整数时长下 frac 恒为 0,断言会失去意义)
     const gapHours = 0.37
-    const setup = (): void => {
+    const setup = (): number => {
       setActivePinia(createPinia())
       const game = useGameStore()
       const player = usePlayerStore()
@@ -185,7 +185,12 @@ describe('离线结算同源吃天时(ISS-027 续)', () => {
       dongfu.levels.field = 3
       dongfu.levels.library = 2
       lore.recipeLore = { p_jvqidan: 0.2 }
-      game.lastActiveAt = Date.now() - gapHours * 3600 * 1000
+      // 结算时刻与 lastActiveAt 必须用**同一个 now**:settleOffline 的 dtSec 是
+      // 实量 `now − lastActiveAt`,差几毫秒就会把余数推过 6 位小数的同源断言
+      // (CI 上时好时坏的随机红,根因在此)。now 随 setup 返回,由调用方回填给结算。
+      const now = Date.now()
+      game.lastActiveAt = now - gapHours * 3600 * 1000
+      return now
     }
     const readFrac = (): { herb: number; ore: number; wudao: number; study: number } => ({
       herb: useDongfuStore().frac.herb,
@@ -194,8 +199,7 @@ describe('离线结算同源吃天时(ISS-027 续)', () => {
       study: useLoreStore().studyFrac
     })
 
-    setup()
-    settleOffline(Date.now())
+    settleOffline(setup())
     const offline = readFrac()
 
     setup()
