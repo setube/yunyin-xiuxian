@@ -73,14 +73,30 @@ export const useUiStore = defineStore('ui', () => {
   const reincarnation = ref<ReincarnationView | null>(null)
   const corruptedNotice = ref<string[]>([])
 
+  /** 每条 toast 的收起计时器;去重刷新时要先撤掉旧的 */
+  const timers = new Map<number, ReturnType<typeof setTimeout>>()
+
+  function removeToast(id: number): void {
+    timers.delete(id)
+    toasts.value = toasts.value.filter(t => t.id !== id)
+  }
+
   function toast(text: string, kind: Toast['kind'] = 'info'): void {
+    const ttl = kind === 'rare' ? 4200 : 2600
+    // 同文案去重:连点两下「道源不足」不该弹两条一模一样的 ——
+    // 原位保留、刷新到末尾并重置计时(失败的提示一直亮,直到不再犯)
+    const dup = toasts.value.find(t => t.text === text && t.kind === kind)
+    if (dup) {
+      const prev = timers.get(dup.id)
+      if (prev) clearTimeout(prev)
+      toasts.value = [...toasts.value.filter(t => t.id !== dup.id), dup]
+      timers.set(dup.id, setTimeout(() => removeToast(dup.id), ttl))
+      return
+    }
     const id = toastSeq
     toastSeq += 1
     toasts.value = [...toasts.value.slice(-4), { id, text, kind }]
-    const ttl = kind === 'rare' ? 4200 : 2600
-    setTimeout(() => {
-      toasts.value = toasts.value.filter(t => t.id !== id)
-    }, ttl)
+    timers.set(id, setTimeout(() => removeToast(id), ttl))
   }
 
   /** 手动关闭某条提示(点按 toast 即收,不等超时) */

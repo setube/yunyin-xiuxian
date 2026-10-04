@@ -39,4 +39,22 @@ describe('ui store · Toast', () => {
     ui.dismissToast(99999)
     expect(ui.toasts).toHaveLength(1)
   })
+
+  it('同文案去重:连弹两条一模一样的只留一条,并刷新到队尾', () => {
+    const ui = useUiStore()
+    ui.toast('道源不足 10', 'warn')
+    ui.toast('道源不足 10', 'warn')
+    expect(ui.toasts).toHaveLength(1)
+    expect(ui.toasts[0]!.text).toBe('道源不足 10')
+    // 第三种更长的失败文案另起一条
+    ui.toast('道源不足 100', 'warn')
+    expect(ui.toasts).toHaveLength(2)
+  })
+
+  it('仅文案同、类别不同不算重复(正式与警示各留一条)', () => {
+    const ui = useUiStore()
+    ui.toast('结算完毕', 'info')
+    ui.toast('结算完毕', 'rare')
+    expect(ui.toasts).toHaveLength(2)
+  })
 })
