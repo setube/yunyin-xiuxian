@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 248,
+  "round": 249,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-04T04:00:00.000+00:00",
+  "updated_at": "2026-10-04T05:00:00.000+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14469,6 +14469,17 @@
       "touched_round": 248,
       "commit": "5cb0024",
       "summary": "流派实验室:把藏了两轮的 searchBuilds 检索引擎 surface 成 BuildView 尾部面板 —— 一键跑检索读世界大势(万金油/陷阱/战力×胜率相关 + 解读),固定种子全服同一份。引擎侧 searchBuilds 拆出 scoreOne/assembleResults 共享内核,新增分块异步 searchBuildsAsync(每凑满一批让位 + 进度回调,同参与同步版逐位一致)。应 Sourcery 两条:进度节拍改按已评套数计(原 i%yieldEvery 批内多占一套/少报一)、重检索开跑清旧报告并加 error 态(失败不冒充本次结论)"
+    },
+    "CHG-287": {
+      "id": "CHG-287",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-04T05:00:00.000+00:00",
+      "updated_at": "2026-10-04T05:00:00.000+00:00",
+      "touched_round": 249,
+      "commit": "d447cf7",
+      "summary": "修行志「去办」导航:主线与每日任务行尾各加一枚 ›(p-2 抬触面),按任务条件性质给直达页 —— 境界/功法/突破 → 修炼,杀敌/扫荡/历练 → 历练,服丹/炼丹/强化 → 行囊对应签(?tab= 深链,行囊现读 route.query.tab 且只在合法签里挑),营建 → 洞府;拿不准的键一律 null 不摆箭头。questNav 纯函数 + 5 条契约 spec。应 Sourcery 一条:custom realm_<major>_<sub> 里程碑(开局主线 realm_0_2/0_9)识别为境界 → 修炼页,与 checkAchievements 同一式"
     }
   },
   "edges": [
