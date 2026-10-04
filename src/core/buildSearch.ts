@@ -123,35 +123,44 @@ function pearson(xs: number[], ys: number[]): number {
   return num / Math.sqrt(dx * dy)
 }
 
-export function searchBuilds(n = 1000, fightsPerArch = 20, seed = 20260830): SearchReport {
-  const rng = new RandomService(mulberry32(seed))
-  const results: SearchResult[] = []
-  for (let i = 0; i < n; i += 1) {
-    const build = randomBuild(rng, i)
-    const cells: number[] = []
-    for (const arch of ENEMY_ARCHETYPES) {
-      let wins = 0
-      for (let f = 0; f < fightsPerArch; f += 1) {
-        if (resolveCombat(build.snap, arch.snap(), rng).win) wins += 1
-      }
-      cells.push(wins / fightsPerArch)
+interface ScoredBuild {
+  build: RandomBuild
+  cells: number[]
+  avg: number
+  universal: boolean
+  trap: boolean
+}
+
+/** 单套构筑的评分:对每类原型打 fightsPerArch 场,算平均与万金油/陷阱判定 */
+function scoreOne(build: RandomBuild, rng: RandomService, fightsPerArch: number): ScoredBuild {
+  const cells: number[] = []
+  for (const arch of ENEMY_ARCHETYPES) {
+    let wins = 0
+    for (let f = 0; f < fightsPerArch; f += 1) {
+      if (resolveCombat(build.snap, arch.snap(), rng).win) wins += 1
     }
-    const avg = cells.reduce((s, x) => s + x, 0) / cells.length
-    // 万金油判定:连「高压墙」都通吃 —— 首领/高爆发/真伤/疾影 四墙中 ≥3 面 ≥95%,且首领 ≥90%
-    const wallIdx = ENEMY_ARCHETYPES.map((a, i) => (WALL_IDS.includes(a.id) ? i : -1)).filter(i => i >= 0)
-    const bossIdx = ENEMY_ARCHETYPES.findIndex(a => a.id === 'boss')
-    const wallsBroken = wallIdx.filter(i => cells[i]! >= 0.95).length
-    const universal = wallsBroken >= 3 && cells[bossIdx]! >= 0.9
-    const trap = cells.every(c => c < 0.3)
-    results.push({
-      build,
-      cells,
-      avg,
-      universal,
-      trap,
-      identity: detectBuild(build.mods)?.displayName ?? '杂学'
-    })
+    cells.push(wins / fightsPerArch)
   }
+  const avg = cells.reduce((s, x) => s + x, 0) / cells.length
+  // 万金油判定:连「高压墙」都通吃 —— WALL_IDS 四墙中 ≥3 面 ≥95%,且首领 ≥90%
+  const wallIdx = ENEMY_ARCHETYPES.map((a, i) => (WALL_IDS.includes(a.id) ? i : -1)).filter(i => i >= 0)
+  const bossIdx = ENEMY_ARCHETYPES.findIndex(a => a.id === 'boss')
+  const wallsBroken = wallIdx.filter(i => cells[i]! >= 0.95).length
+  const universal = wallsBroken >= 3 && cells[bossIdx]! >= 0.9
+  const trap = cells.every(c => c < 0.3)
+  return { build, cells, avg, universal, trap }
+}
+
+/** 汇总:排序 + 打标签(万金油/陷阱) + 战力-胜率相关 —— 同步异步共用同一汇总 */
+function assembleResults(scored: ScoredBuild[]): SearchReport {
+  const results: SearchResult[] = scored.map(it => ({
+    build: it.build,
+    cells: it.cells,
+    avg: it.avg,
+    universal: it.universal,
+    trap: it.trap,
+    identity: detectBuild(it.build.mods)?.displayName ?? '杂学'
+  }))
   results.sort((a, b) => b.avg - a.avg)
   return {
     results,
@@ -162,4 +171,45 @@ export function searchBuilds(n = 1000, fightsPerArch = 20, seed = 20260830): Sea
       results.map(r => r.avg)
     )
   }
+}
+
+export function searchBuilds(n = 1000, fightsPerArch = 20, seed = 20260830): SearchReport {
+  const rng = new RandomService(mulberry32(seed))
+  const scored: ScoredBuild[] = []
+  for (let i = 0; i < n; i += 1) {
+    scored.push(scoreOne(randomBuild(rng, i), rng, fightsPerArch))
+  }
+  return assembleResults(scored)
+}
+
+export interface SearchBuildsAsyncOptions {
+  n?: number
+  fightsPerArch?: number
+  seed?: number
+  /** 每攒这么多套让出一次事件循环 —— 大批检索不冻结主线程 */
+  yieldEvery?: number
+  /** 进度回调:(已完成, 总数) */
+  onProgress?: (done: number, total: number) => void
+}
+
+/**
+ * 分块异步版。与 searchBuilds 共享 scoreOne/assembleResults 同一内核,
+ * 同参(同 n/场次/种子)结果逐位一致;差别只在让出事件循环与报进度。
+ */
+export async function searchBuildsAsync(opts: SearchBuildsAsyncOptions = {}): Promise<SearchReport> {
+  const n = opts.n ?? 1000
+  const fightsPerArch = opts.fightsPerArch ?? 20
+  const seed = opts.seed ?? 20260830
+  const yieldEvery = Math.max(1, opts.yieldEvery ?? 40)
+  const rng = new RandomService(mulberry32(seed))
+  const scored: ScoredBuild[] = []
+  for (let i = 0; i < n; i += 1) {
+    scored.push(scoreOne(randomBuild(rng, i), rng, fightsPerArch))
+    if (i > 0 && i % yieldEvery === 0) {
+      opts.onProgress?.(i, n)
+      await new Promise(res => setTimeout(res, 0))
+    }
+  }
+  opts.onProgress?.(n, n)
+  return assembleResults(scored)
 }

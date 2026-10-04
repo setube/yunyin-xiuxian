@@ -1,7 +1,7 @@
 /* eslint-disable no-console -- 模拟器体检报告的正式输出(bun run test:report 依赖) */
 import { describe, expect, it } from 'vitest'
 import { ENEMY_ARCHETYPES } from './buildSim'
-import { searchBuilds } from './buildSearch'
+import { searchBuilds, searchBuildsAsync } from './buildSearch'
 import { fingerprintOf, FINGERPRINT_NAMES } from './fingerprints'
 
 describe('随机构筑搜索与异常检测(Phase 19)', () => {
@@ -51,5 +51,27 @@ describe('随机构筑搜索与异常检测(Phase 19)', () => {
 
   it('陷阱构筑存在但占比有限(随机垃圾 < 15%)', () => {
     expect(report.traps.length / report.results.length).toBeLessThan(0.15)
+  })
+})
+
+describe('searchBuildsAsync · 分块异步与同源', () => {
+  it('同参(同 n/场次/种子)与同步版逐位一致 —— 同一内核,别出来两本账', async () => {
+    const sync = searchBuilds(80, 8, 20261004)
+    const asyncRep = await searchBuildsAsync({ n: 80, fightsPerArch: 8, seed: 20261004 })
+    expect(asyncRep.results.map(r => r.avg)).toEqual(sync.results.map(r => r.avg))
+    expect(asyncRep.results.map(r => r.identity)).toEqual(sync.results.map(r => r.identity))
+    expect(asyncRep.powerCorrelation).toBe(sync.powerCorrelation)
+    expect(asyncRep.universals.length).toBe(sync.universals.length)
+    expect(asyncRep.traps.length).toBe(sync.traps.length)
+  })
+
+  it('进度回调单调递增、首尾齐整(0→n,按 yieldEvery 步进)', async () => {
+    const seen: number[] = []
+    await searchBuildsAsync({ n: 50, fightsPerArch: 4, yieldEvery: 10, onProgress: d => { seen.push(d) } })
+    expect(seen[0]).toBe(10)
+    expect(seen[seen.length - 1]).toBe(50)
+    for (let i = 1; i < seen.length; i += 1) {
+      expect(seen[i]!).toBeGreaterThan(seen[i - 1]!)
+    }
   })
 })

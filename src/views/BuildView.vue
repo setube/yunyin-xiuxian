@@ -223,6 +223,9 @@
       </div>
     </template>
 
+    <!-- 流派实验室:随机构筑检索,读世界大势 -->
+    <BuildLabPanel />
+
     <!-- 保存构筑 -->
     <BaseModal :open="saveOpen" title="存为构筑" @close="saveOpen = false">
       <p class="text-[11px] text-ink-faint">将当前功法 / 法宝 / 整身装备存为一套,可随时一键切换。</p>
@@ -257,6 +260,7 @@
   import { STAT_NAMES, signedPercent, statCaveat } from '@/ui/statNames'
   import { isSoftCapped } from '@/core/statsCalc'
   import SectionTitle from '@/components/common/SectionTitle.vue'
+  import BuildLabPanel from '@/components/build/BuildLabPanel.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
 
