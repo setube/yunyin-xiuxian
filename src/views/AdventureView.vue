@@ -100,7 +100,7 @@
                 <span :class="row.def.danger >= 4 ? 'text-cinnabar' : ''">{{ DANGER_NAMES[row.def.danger] }}</span>
                 <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界尚浅,恐有性命之忧</span>
                 <!-- 掉落阶位与 generateEquipment 用的同一档(region.tier):「此界掉几阶」出发前就亮着。
-                     nowrap:320px 上「产 1 阶之物」曾被从空格处断行,数字与量词拆成两行(layout-check 抓的) -->
+                     nowrap:320px 上这句曾被从空格处断行,数字与量词拆成两行(layout-check 抓的) -->
                 <span class="ml-1 whitespace-nowrap text-ink-soft">· {{ produceTierText(row.def.tier) }}</span>
               </p>
               <!--
