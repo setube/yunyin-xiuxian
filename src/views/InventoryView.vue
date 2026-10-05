@@ -258,8 +258,11 @@
       <template #footer>
         <div class="grid grid-cols-2 gap-2">
           <button class="btn-seal" @click="onUsePill()">服 用</button>
-          <!-- 玩家反馈「批量吃丹」:存量够几枚就连服几枚,结果与连点一致 -->
-          <button class="btn-ghost" @click="onUsePillBatch()">连服 ×5</button>
+          <!-- 批量吃丹:存量够几枚就连服几枚。文案把「×5」改成真数 —— 只剩 2 枚还挂着 ×5,
+               结算却吃到没有就停,界面说的与做的对不上;只够 1 枚时连服没有意义,直接不摆 -->
+          <button v-if="(currentPill?.count ?? 0) >= 2" class="btn-ghost" @click="onUsePillBatch()">
+            连服 ×{{ Math.min(5, currentPill?.count ?? 0) }}
+          </button>
         </div>
       </template>
     </BaseModal>
