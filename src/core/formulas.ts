@@ -159,8 +159,14 @@ export function baseCombatStats(major: number, sub: number): { attack: GNum; def
 }
 
 /** 战力评分 */
+/** 战力算式里的三项权重 —— powerScore 与其解释文字用同一份,不许改一处漏一处 */
+export const POWER_WEIGHTS = { attack: 3, defense: 2, hp: 0.15 } as const
+
 export function powerScore(attack: GNum, defense: GNum, maxHp: GNum): GNum {
-  return add(add(mulN(attack, 3), mulN(defense, 2)), mulN(maxHp, 0.15))
+  return add(
+    add(mulN(attack, POWER_WEIGHTS.attack), mulN(defense, POWER_WEIGHTS.defense)),
+    mulN(maxHp, POWER_WEIGHTS.hp)
+  )
 }
 
 /** 突破基础成功率(未计加成) */

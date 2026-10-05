@@ -7,6 +7,7 @@ import {
   LOW_HP_THRESHOLD,
   SHIELD_CAP_RATIO
 } from '@/data/constants'
+import { POWER_WEIGHTS } from '@/core/formulas'
 import type { AffixRarity, AnyStatKey, StatMods } from '@/types'
 
 /**
@@ -200,6 +201,12 @@ export function statValueText(key: string, n: number): string {
 export function statModPhrase(key: string, n: number): string {
   const name = STAT_NAMES[key as AnyStatKey] ?? key
   return `${name} ${statValueText(key, n)}`
+}
+
+/** 战力算式一句话 —— 权重取自 POWER_WEIGHTS,与 powerScore 同源 */
+export function powerExplainText(): string {
+  const w = POWER_WEIGHTS
+  return `攻×${w.attack} + 防×${w.defense} + 血×${w.hp}`
 }
 
 export function modsText(mods: StatMods): string {
