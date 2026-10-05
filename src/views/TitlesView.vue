@@ -78,6 +78,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
+  import { useUiStore } from '@/stores/ui'
   import { useQuestsStore } from '@/stores/quests'
   import { TITLES } from '@/data/titles'
   import { petDef, PETS } from '@/data/pets'
@@ -91,6 +92,7 @@
 
   const player = usePlayerStore()
   const quests = useQuestsStore()
+  const ui = useUiStore()
 
   type Tab = 'title' | 'pet'
   const tab = ref<Tab>('title')
@@ -134,6 +136,13 @@
   )
 
   function togglePet(id: string): void {
-    player.setPet(player.petId === id ? null : id)
+    const def = petDef(id)
+    const active = player.petId === id
+    player.setPet(active ? null : id)
+    // 唤来要听得见回响:顶栏只换了个名,性格那句跟脚(它管历练怎么表现)得当场说一句
+    if (def) {
+      if (active) ui.toast(`「${def.name}」已暂别 —— 它在灵兽园里等你`, 'info')
+      else ui.toast(`唤来「${def.name}」——${personalityDesc(def.personality)}`, 'info')
+    }
   }
 </script>
