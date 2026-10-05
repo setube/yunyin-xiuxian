@@ -306,6 +306,8 @@
         <p class="mt-0.5 text-[10px] text-ink-faint">
           静坐一炷香({{ retreatMinutes }} 分钟),修炼速度 +{{ retreatPct }}%;闭关期间无法外出历练。
         </p>
+        <!-- 闭关中:倒计时旁边补一枚「已多得」的活数 —— 与预览行同一份每多得速率,一眼看见时间没有白熬 -->
+        <p v-if="retreating && retreatSoFarGain" class="mt-1 text-[10px] text-jade">{{ retreatSoFarGain }}</p>
         <p v-if="!retreating" class="mt-1 text-[10px] text-jade">{{ retreatGain }}</p>
         <button v-if="!retreating" type="button" class="chip-ink mt-2 w-full !py-1.5 text-[11px]" @click="beginRetreat">
           闭关 · {{ retreatMinutes }}分钟 修炼 +{{ retreatPct }}%
@@ -456,7 +458,7 @@
   } from '@/core/tribulationDecision'
   import { reliefElements, rootElements } from '@/core/linggenAffinity'
   import { comprehendGongfa } from '@/core/gongfaService'
-  import { expEtaSec, qiEtaSec, qiRichEtaSec, retreatGainText } from '@/core/progress'
+  import { expEtaSec, qiEtaSec, qiRichEtaSec, retreatGainText, retreatGainedText } from '@/core/progress'
   import { usePill } from '@/core/pillService'
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
@@ -567,6 +569,13 @@
   const retreatPct = Math.round((retreatDef?.mods.cultivationSpeed ?? 0) * 100)
   /** 闭关「约多得」修为预览 —— 由 progress.retreatGainText 与 buff 本体同源算出;境界涨了跟着重算 */
   const retreatGain = computed(() => retreatGainText())
+  /** 闭关中的「已多得」活数 —— 已走时长由 retreatRemaining 反推,速率与预览同一份 */
+  const retreatSoFarGain = computed(() => {
+    if (!retreating.value) return ''
+    const dur = retreatDef?.durationSec ?? 0
+    if (!(dur > 0)) return ''
+    return retreatGainedText(Math.max(0, dur - retreatRemaining.value))
+  })
   function beginRetreat(): void {
     if (startRetreat()) {
       ui.toast('你封洞闭关,心不外骛', 'info')
