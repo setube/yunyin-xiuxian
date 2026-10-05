@@ -3,7 +3,10 @@
     <!-- 基本信息:名号、境界、年龄、世数皆在全局顶栏常驻,此处不再重复 -->
     <div class="card-ink px-4 py-4">
       <div class="flex items-center justify-between">
-        <span class="text-[10px] tracking-[0.3em] text-ink-faint">战 力</span>
+        <button class="-my-1 py-1.5 text-left active:opacity-60" @click="powerOpen = !powerOpen">
+          <span class="text-[10px] tracking-[0.3em] text-ink-faint">战 力</span>
+          <span class="ml-1 text-[9px] text-ink-faint">{{ powerOpen ? '▾' : '▸' }}拆解</span>
+        </button>
         <span class="font-kai text-[18px] text-cinnabar tabular">{{ formatGN(stats.power) }}</span>
       </div>
       <!--
@@ -11,6 +14,23 @@
         权重取自 POWER_WEIGHTS,与 powerScore 同一份,界面不手抄
       -->
       <p class="mt-0.5 text-right text-[9px] text-ink-faint tabular">{{ powerExplainText() }}</p>
+      <!--
+        逐行把攻/防/血各折算多少摊开,合计又对上总战力 —— 「拆解」不是另起口径,
+        读的与 powerScore 同一批属性同一份权重。
+      -->
+      <div v-if="powerOpen" class="mt-2 rounded-md bg-paper-deep/60 px-2.5 py-2 text-[10px]">
+        <p v-for="row in powerRows" :key="row.name" class="flex items-center justify-between">
+          <span class="text-ink-faint">{{ row.name }}</span>
+          <span class="tabular">
+            {{ formatGN(row.raw) }} ×{{ row.weight }} = <span class="text-azure">{{ formatGN(row.value) }}</span>
+          </span>
+        </p>
+        <p class="mt-1 flex items-center justify-between border-t border-ink/8 pt-1">
+          <span class="text-ink-faint">合计</span>
+          <span class="tabular font-kai text-[12px] text-cinnabar">{{ formatGN(stats.power) }}</span>
+        </p>
+        <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">各条权重与总战力同一份参数,逐行相加即上面那个数。</p>
+      </div>
       <div class="ink-divider my-3" />
       <!-- 灵根 -->
       <!--
@@ -556,7 +576,7 @@
   import { rootElements, tendencyLines } from '@/core/linggenAffinity'
   import { cnNumber, formatGN, formatPercent } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
-  import { STAT_KEYS, STAT_NAMES, modsText, powerExplainText, signedPercent, statCaveat } from '@/ui/statNames'
+  import { STAT_KEYS, STAT_NAMES, modsText, powerBreakdownRows, powerExplainText, signedPercent, statCaveat } from '@/ui/statNames'
   import { heritageViewRows, rebirthDecisionHint } from '@/ui/rebirthText'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
@@ -571,6 +591,10 @@
   const loadouts = useLoadoutsStore()
 
   const stats = computed(() => player.finalStats)
+
+  /** 战力拆解的展开态与构成行 —— 读同一批属性,逐行相加即战力行那个数 */
+  const powerOpen = ref(false)
+  const powerRows = computed(() => powerBreakdownRows(stats.value))
 
   const modRows = computed(() =>
     STAT_KEYS.map(k => ({
