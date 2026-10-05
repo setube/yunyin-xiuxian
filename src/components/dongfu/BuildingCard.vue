@@ -66,6 +66,13 @@
     <p v-if="beastCompanionName" class="mt-1 flex items-center gap-1 text-[10px] text-jade">
       <GameIcon name="paw" :size="11" />居园相伴 · {{ beastCompanionName }}
     </p>
+    <!--
+      藏经阁的翻检线:丹方获取是全书唯一的常驻被动流水,得在它家门口报一声 ——
+      升它之前,先看见它下一张方子几时来。与开炉页同一读数(studyEta)
+    -->
+    <p v-if="studyStatusLine" class="mt-1 flex items-center gap-1 text-[10px] text-gold-ink">
+      <GameIcon name="book" :size="11" />{{ studyStatusLine }}
+    </p>
     <button class="btn-ghost mt-2 w-full !py-1.5 !text-[12px]" :disabled="!info.canUpgrade" @click="upgradeBuilding(props.def.id)">
       <!--
         数与量词必须黏在一起:窄屏(320)上卡片只有 ~140px,浏览器会在数字与「石」之间断行,
@@ -123,11 +130,13 @@
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
   import { petDef } from '@/data/pets'
+  import { pillDef } from '@/data/pills'
   import GameIcon from '@/components/common/GameIcon.vue'
   import { buildingUpgradeInfo, buildingBatchPlan, upgradeBuilding, upgradeBuildingBatch } from '@/core/buildingService'
+  import { studyEta } from '@/core/loreService'
   import { modsText } from '@/ui/statNames'
   import { buildingActLabel } from '@/ui/buildingText'
-  import { formatGN } from '@/utils/format'
+  import { formatDuration, formatGN } from '@/utils/format'
 
   const props = withDefaults(defineProps<{ def: BuildingDef; featured?: boolean }>(), { featured: false })
 
@@ -154,6 +163,21 @@
   const beastCompanionName = computed(() =>
     props.def.id === 'beast' && player.petId ? petDef(player.petId)?.name : undefined
   )
+  /**
+   * 藏经阁的翻检线(只对 library 特例):被动流水就住在这座建筑里,
+   * 升它之前先看见下一张方子几时来 —— 读数与开炉页同一份 studyEta
+   */
+  const studyStatusLine = computed(() => {
+    if (props.def.id !== 'library') return ''
+    const eta = studyEta()
+    if (!eta) return ''
+    if (!eta.readingId && !eta.nextIsNew) return '翻检中:够得着的方子都已到手'
+    if (eta.readingId) {
+      const name = pillDef(eta.readingId)?.name ?? '某方'
+      return `正研读「${name}」,约 ${formatDuration(eta.nextInSec)} 后读通`
+    }
+    return `翻检中,约 ${formatDuration(eta.nextInSec)} 后翻出一张新方`
+  })
   /** 品类满级:金彩「圆满」 */
   const atMax = computed(() => level.value > 0 && level.value >= props.def.maxLevel)
   /** 被洞府辖限(没到品类上限但已到 mansion 抬的档):琥珀「辖限」 */
