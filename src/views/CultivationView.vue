@@ -22,6 +22,14 @@
         <div class="mb-1 flex justify-between text-[11px] text-ink-faint tabular">
           <button class="-my-1 py-1.5 text-left active:opacity-60" @click="showCultBreakdown = !showCultBreakdown">
             修为 +{{ formatRate(player.cultPerSec) }}
+            <!--
+              灵气充盈正在进行时:这档加成此前只在点开来路才偶然看见。
+              现在修为行自己亮一枚小章 —— 与「灵气充盈约 X」那行互斥,
+              一个报「还没到」,一个标「已经到了」(判据同 player.qiRich)
+            -->
+            <span v-if="player.qiRich" class="ml-1 rounded bg-jade/10 px-1 py-0.5 align-middle text-[9px] leading-none text-jade">
+              灵气充盈
+            </span>
             <span class="ml-0.5 text-[9px] text-ink-faint">{{ showCultBreakdown ? '▾' : '▸' }}来路</span>
           </button>
           <span>
