@@ -49,7 +49,9 @@ vi.mock('./combat', async importOriginal => {
   return {
     ...mod,
     resolveCombat: () => (combatWin.value ? { win: true, rounds: 5, playerHpPct: 0.9 } : { win: false, rounds: 5, playerHpPct: 0.4 }),
-    makeEnemySnap: () => ({ hp: 100, def: 10, atk: 10 })
+    // 敌战力从快照三维折出(enemyPowerOf 读 attack/defense/maxHp),
+    // 伪造件得按 CombatantSnap 的真形状给齐 —— 旧形状 {hp,def,atk} 会被 powerScore 踩到 undefined
+    makeEnemySnap: () => ({ attack: { m: 100, e: 0 }, defense: { m: 10, e: 0 }, maxHp: { m: 100, e: 0 } })
   }
 })
 
