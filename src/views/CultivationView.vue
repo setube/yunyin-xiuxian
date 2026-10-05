@@ -39,6 +39,13 @@
             </span>
           </span>
         </div>
+        <!--
+          积余给谁看?突破扣的只是这一境所需(advanceRealm 只减 expReq),
+          多出来的修为带着走 —— 不然玩家会以为圆满后多修的全白攒了。
+        -->
+        <p v-if="player.expFull && player.expOverflow.m > 0" class="mt-0.5 text-right text-[9px] text-ink-faint">
+          突破只扣这一境所需,余下修为带着走
+        </p>
         <div :class="player.expFull ? 'bar-charged' : ''">
         <ProgressBar :value="player.expProgress" color="var(--color-cinnabar)" :height="8" />
       </div>
@@ -267,6 +274,7 @@
           </button>
           <button type="button" class="chip-ink !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
             {{ prepPill.label }} · {{ prepPillCost }}灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
+            <span v-if="!prepCanPill" class="text-ink-faint">(灵石不足)</span>
           </button>
         </div>
         </div>
