@@ -19,7 +19,11 @@
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
         胜 {{ session?.wins ?? 0 }} 场 · 际遇 {{ session?.events ?? 0 }} 次 · 拾获 {{ session?.itemGain ?? 0 }} 件
-        <span v-if="huntIn > 0.4" class="text-ink-faint"> · 下一场 {{ formatCountdown(huntIn) }}</span>
+        <!-- 下一场也讲「几时」:同一分 nextBattleAt 翻译成钟点,和归时那句一个承诺 -->
+        <span v-if="huntIn > 0.4" class="text-ink-faint">
+          · 下一场 {{ formatCountdown(huntIn) }}
+          <span v-if="session" class="text-[10px]">(约 {{ formatClock(session.nextBattleAt) }})</span>
+        </span>
       </p>
       <!-- 本次所得:石头与修为此前只在挂机总结里出现,在线历练中玩家看不到这一趟赚了什么 -->
       <p v-if="gains" class="mt-0.5 text-[10px] text-ink-faint tabular">
