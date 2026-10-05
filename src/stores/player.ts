@@ -250,7 +250,10 @@ export const usePlayerStore = defineStore(
           fateModsValue.value,
           ...talentMods.value
         ],
-        // 名字与上面一一对应 —— 面板的「来源明细」直接读它们,不再另起一套说法
+        // 名字与上面一一对应 —— 面板的「来源明细」直接读它们,不再另起一套说法。
+        // 天时的名号就是当天的具体气象:修炼页的修为来路里「天时 +12%」,
+        // 若只写渠道名,玩家看不清是仙雨还是混沌潮;名前带气象,一眼即知。
+        // (mods 与名字取自同一个 todayWeather(),同源;清和日无词条,该行自然不出现。)
         sourceNames: [
           '装备',
           '功法',
@@ -260,7 +263,7 @@ export const usePlayerStore = defineStore(
           '称号',
           '师承',
           '灵兽',
-          '天时',
+          `天时·${todayWeather().name}`,
           '在身之卦',
           '命格',
           ...reincarnation.value.talents.map(id => `天赋·${talentDef(id)?.name ?? id}`)

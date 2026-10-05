@@ -263,11 +263,13 @@ describe('灵兽 / 称号 / 天赋 / 洞府建筑 / 灵脉 → 面板', () => {
    * (见 player.ts 上方的注释:并进去即全链路生效)。天时与命格由日期/灵根确定性推出,
    * 控制不了也不必控制:判据是**面板里那一路的来源明细,恰好等于那一路算出来的东西**。
    */
-  it('天时:面板「天时」那一路 = 今日天时的 mods(接线,不靠运气)', () => {
+  it('天时:面板天时那一路 = 今日天时的 mods,且名号带着气象(接线,不靠运气)', () => {
     const player = freshCharacter()
-    const row = player.finalStats.breakdown.find(r => r.name === '天时')
-    expect(row, '面板里没有「天时」这一路').toBeDefined()
+    // 名号是「天时·仙雨」这类 —— 停了渠道上,得让玩家看得见是天上哪片云,故按前缀找
+    const row = player.finalStats.breakdown.find(r => r.name.startsWith('天时·'))
+    expect(row, '面板里没有天时这一路').toBeDefined()
     expect(row!.mods).toEqual(todayWeather().mods)
+    expect(row!.name).toBe(`天时·${todayWeather().name}`)
   })
 
   it('命格:面板「命格」那一路 = 本世命格算出来的 mods', () => {
