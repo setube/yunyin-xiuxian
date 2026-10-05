@@ -98,6 +98,23 @@ export function equipAllBest(): number {
 }
 
 /**
+ * 空一身:卸下全部已佩戴的装备(回到行囊,不分解不炼化)。
+ * 清理破烂得先「脱身」—— 已佩戴的件不参加分解/收纳,逐格手动卸太苦;
+ * 一键换装只进不退,这枚是它成对的反向出口。返回卸了几件。
+ */
+export function unequipAllEquipped(): number {
+  const inventory = useInventoryStore()
+  let removed = 0
+  for (const slot of EQUIP_SLOTS) {
+    if (inventory.equipped[slot]) {
+      inventory.unequip(slot)
+      removed += 1
+    }
+  }
+  return removed
+}
+
+/**
  * 一键穿齐某共鸣套(玩家反馈:「能不能装备按照套装排序,或者穿套装」)。
  * 每槽换上该套**已持有里最强**的一件(真实战力,同分回退到粗排,同 stronger);
  * 已穿的那件更强就不动 —— 穿套装绝不降级。返回换上几件。

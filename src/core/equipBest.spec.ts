@@ -10,8 +10,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
-import { equipAllBest, equipBestFor, bestEquipFor, betterEquip, equipSetCombo, equippablePower } from './equipBest'
-import { resolveEquipStats } from './equipGen'
+import { equipAllBest, equipBestFor, bestEquipFor, betterEquip, equipSetCombo, equippablePower, unequipAllEquipped } from './equipBest'
+import { resolveEquipStats, generateEquipment } from './equipGen'
+import { mulberry32, RandomService } from '@/utils/random'
 import { affixDef, affixValue } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { toNum } from '@/utils/gnum'
@@ -232,6 +233,44 @@ describe('一键穿齐套装', () => {
     expect(equippablePower(worn)).toBeGreaterThan(equippablePower(a))
     expect(equipSetCombo('s_tiebi'), '真实战力更强的已穿件不动;头槽本就齐').toBe(0)
     expect(inv.equipped['weapon']).toBe(worn.uid)
+  })
+})
+
+/** 空一身:与一键换装成对的反向出口 —— 只脱不毁,件都回行囊 */
+describe('空一身(unequipAllEquipped)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('卸下全部已佩戴的槽位,件数对得上,装备回行囊不消失', () => {
+    const inv = useInventoryStore()
+    const rng = new RandomService(mulberry32(5))
+    const uids: string[] = []
+    for (const slot of ['weapon', 'head', 'body'] as EquipSlot[]) {
+      const piece = generateEquipment(3, rng, { slot })
+      inv.addEquipment(piece)
+      inv.equip(piece.uid, slot)
+      uids.push(piece.uid)
+    }
+    expect(uids.filter(uid => inv.findItem(uid)).length).toBe(3)
+    expect(Object.keys(inv.equipped).length).toBe(3)
+    const removed = unequipAllEquipped()
+    expect(removed).toBe(3)
+    expect(Object.keys(inv.equipped).length).toBe(0)
+    // 卸下 ≠ 销毁:件都在行囊里,等着分解或回头再穿
+    for (const uid of uids) {
+      expect(inv.findItem(uid)).toBeDefined()
+      expect(inv.bagItems.some(i => i.uid === uid)).toBe(true)
+    }
+  })
+
+  it('没穿任何件时卸了个寂寞:返回 0,不误伤行囊', () => {
+    const inv = useInventoryStore()
+    const rng = new RandomService(mulberry32(6))
+    const loose = generateEquipment(3, rng, { slot: 'weapon' })
+    inv.addEquipment(loose)
+    expect(unequipAllEquipped()).toBe(0)
+    expect(inv.bagItems.some(i => i.uid === loose.uid)).toBe(true)
   })
 })
 
