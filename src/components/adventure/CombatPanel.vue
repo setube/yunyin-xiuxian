@@ -213,7 +213,18 @@
           </span>
           {{ lore.archetype }}
         </p>
-        <p v-if="lore.hint" class="mt-1.5 text-[10px] text-ink-faint">{{ lore.hint }}</p>
+        <!--
+          距离下一层的情报给个实数:「再交手几阵」数不出来,「照面 X 记 · 还差 Y 记」能。
+          与 noteEnemy 同一张门槛表(loreService),胜一记、败三记、首领倍算 ——
+          那排小注就是它自己读出来的,不另抄
+        -->
+        <p v-if="lore.progress && lore.progress.remain > 0" class="mt-1.5 text-[10px] leading-relaxed text-ink-faint tabular">
+          照面 {{ lore.progress.seen }} 记,再攒
+          <span class="text-violet-ink">{{ lore.progress.remain }}</span> 记可窥「{{ lore.progress.nextName }}」
+          <span class="text-ink-faint/70">
+            (胜一记 · 败计三<template v-if="lore.progress.isBoss"> · 首领倍算</template>)
+          </span>
+        </p>
       </div>
       <!-- 战斗分析(战败自动展开;硬核数据供研究) -->
       <div v-if="showAnalysis && analysis" class="mt-2 rounded-md bg-ink/4 px-3 py-2.5">

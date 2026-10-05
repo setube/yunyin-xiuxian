@@ -28,9 +28,10 @@ import {
   stageAt
 } from '@/data/samsara'
 import { ENEMY_LORE_MAX, useLoreStore } from '@/stores/lore'
+import { ENEMY_LORE_THRESHOLDS } from '@/core/loreService'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
-import { describeEnemy, effectiveEnemyStage } from '@/ui/enemyLore'
+import { describeEnemy, effectiveEnemyStage, enemyLoreProgress } from '@/ui/enemyLore'
 import {
   aptitudeFloorNow,
   beginLife,
@@ -385,5 +386,21 @@ describe('敌人认知的逐层揭示(describeEnemy)', () => {
     expect(effectiveEnemyStage(1, true)).toBe(2)
     expect(effectiveEnemyStage(ENEMY_LORE_MAX, true)).toBe(ENEMY_LORE_MAX)
     expect(effectiveEnemyStage(1, false)).toBe(1)
+  })
+
+  it('距下一层的实账与 noteEnemy 同一张门槛表(首领倍算、败计三也在账内)', () => {
+    // 普通敌:0 层已攒 0 记,眼熟要 1 记;眼熟后距知其路数(5 记)还差 4 记
+    expect(enemyLoreProgress(0, 0, false)).toMatchObject({ seen: 0, need: 1, remain: 1, nextName: '眼熟' })
+    expect(enemyLoreProgress(1, 1, false)).toMatchObject({ need: 5, remain: 4, nextName: '知其路数' })
+    expect(enemyLoreProgress(2, 9, false)).toMatchObject({ need: 14, remain: 5, nextName: '洞悉' })
+    // 首领门槛加倍:洞悉前一层需 14×2 = 28 记,并带着「倍算」的凭据
+    expect(enemyLoreProgress(2, 27, true)).toMatchObject({ need: 28, remain: 1, isBoss: true })
+    expect(enemyLoreProgress(2, 28, true)).toMatchObject({ remain: 0, isBoss: true })
+    expect(enemyLoreProgress(2, 3, false)).toMatchObject({ need: 14, isBoss: false })
+    // 已洞悉 / 越界都没有"再攒"可说
+    expect(enemyLoreProgress(ENEMY_LORE_MAX, 999, false)).toBeNull()
+    expect(enemyLoreProgress(-1, 0, false)).toBeNull()
+    // 和后端判据同界:达到 need 即应升层 —— 界面报 0,noteEnemy 恰在此刻推进
+    expect(ENEMY_LORE_THRESHOLDS[3]).toBe(14)
   })
 })

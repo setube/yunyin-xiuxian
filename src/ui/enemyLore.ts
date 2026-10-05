@@ -18,6 +18,7 @@
 import { ELEMENTS } from '@/data/linggen'
 import { enemyDef } from '@/data/enemies'
 import { ENEMY_LORE_MAX, ENEMY_LORE_STAGE_NAMES, useLoreStore } from '@/stores/lore'
+import { ENEMY_LORE_BOSS_MULT, ENEMY_LORE_THRESHOLDS } from '@/core/loreService'
 import { currentStage } from '@/core/samsaraService'
 import type { BossArchetype, EnemyDef, EnemySkill } from '@/types'
 import { ARCHETYPES } from '@/core/bossArchetypes'
@@ -78,6 +79,8 @@ export interface EnemyLoreView {
   archetypeLabel: string | null
   /** 还差什么才看得更清楚(已洞悉为 null) */
   hint: string | null
+  /** 距下一层的实账(已洞悉为 null):照面几记、还差几记,与 noteEnemy 同一张门槛表 */
+  progress: EnemyLoreProgress | null
 }
 
 const HINTS = [
@@ -85,6 +88,26 @@ const HINTS = [
   '再交手几阵,便能数出它惯用的招式。',
   '再多打几场,连它残血那一手也瞒不过你。'
 ] as const
+
+/** 距下一认知层的实账 —— 与 noteEnemy 读同一张门槛表,差多少就是多少 */
+export interface EnemyLoreProgress {
+  /** 已攒的有效交手次数(胜一记、败以重计,见 ENEMY_LORE_LOSS_WEIGHT) */
+  seen: number
+  /** 下一层所需的有效交手总数(首领加倍,见 ENEMY_LORE_BOSS_MULT) */
+  need: number
+  /** 还差几记有效交手(≤0 时不该出现:noteEnemy 会在达到门槛那一刻立即升层) */
+  remain: number
+  /** 下一层的名字 */
+  nextName: string
+  /** 首领门槛加倍过(说明里那枚「首领倍算」的凭据) */
+  isBoss: boolean
+}
+
+export function enemyLoreProgress(raw: number, seen: number, isBoss: boolean): EnemyLoreProgress | null {
+  if (raw < 0 || raw >= ENEMY_LORE_MAX) return null
+  const need = ENEMY_LORE_THRESHOLDS[raw + 1]! * (isBoss ? ENEMY_LORE_BOSS_MULT : 1)
+  return { seen, need, remain: Math.max(0, need - seen), nextName: ENEMY_LORE_STAGE_NAMES[raw + 1] ?? '', isBoss }
+}
 
 /** 体格评语 —— 从倍率反推成人话,只说值得一说的那几条 */
 function frameOf(def: EnemyDef): string[] {
@@ -147,7 +170,8 @@ export function describeEnemy(def: EnemyDef, stage: number, boosted = false): En
       seen3 && def.archetype && ARCHETYPES[def.archetype]
         ? `${ARCHETYPES[def.archetype].name} · ${ARCHETYPES[def.archetype].seal}`
         : null,
-    hint: seen3 ? null : (HINTS[lv] ?? null)
+    hint: seen3 ? null : (HINTS[lv] ?? null),
+    progress: null
   }
 }
 
@@ -167,7 +191,9 @@ export function enemyLoreView(enemyId: string): EnemyLoreView | null {
   const def = enemyDef(enemyId)
   if (!def) return null
   const raw = useLoreStore().enemyLoreOf(enemyId)
+  const seen = useLoreStore().enemySeenOf(enemyId)
   const insightful = currentStage().enemyInsight
   const eff = effectiveEnemyStage(raw, insightful)
-  return { ...describeEnemy(def, eff, eff > raw), raw }
+  const view = describeEnemy(def, eff, eff > raw)
+  return { ...view, raw, progress: enemyLoreProgress(raw, seen, def.isBoss === true) }
 }
