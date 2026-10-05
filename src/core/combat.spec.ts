@@ -5,7 +5,7 @@ import { gn } from '@/utils/gnum'
 import { mulberry32, RandomService } from '@/utils/random'
 import { enemyDef } from '@/data/enemies'
 import { artifactDef } from '@/data/artifacts'
-import { enemyPowerOf, makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
+import { applyCombatRuleSnap, makeEnemySnap, resolveCombat, sampleWinRate, snapPower } from './combat'
 import { toNum } from '@/utils/gnum'
 import { powerScore } from './formulas'
 
@@ -30,12 +30,20 @@ describe('自动战斗', () => {
 
   it('敌战力标尺与 powerScore 同一把秤:由快照三维折出,不是界面另算', () => {
     const enemy = makeEnemySnap(wolf, 1, 1)
-    const got = toNum(enemyPowerOf(enemy))
+    const got = toNum(snapPower(enemy))
     const want = toNum(powerScore(enemy.attack, enemy.defense, enemy.maxHp))
     expect(got).toBeCloseTo(want, 6)
     // 层级越高战力越高:凡狼 (tier1) < 洪荒魔 (tier20)
     const far = makeEnemySnap(enemyDef('e_hmdemon')!, 20, 2)
-    expect(toNum(enemyPowerOf(far))).toBeGreaterThan(got)
+    expect(toNum(snapPower(far))).toBeGreaterThan(got)
+  })
+
+  it('规则改后的敌力沿用规则倍率:enemyAtkMult/敌HpMult 一并计进卡片那对数', () => {
+    const enemy = makeEnemySnap(wolf, 1, 1)
+    const plain = toNum(snapPower(enemy))
+    // 敌攻 ×2:战力两道都动(攻击项翻倍、减伤按攻防比走)—— 至少比基准高
+    const { eEff } = applyCombatRuleSnap(playerSnap(10), enemy, { enemyAtkMult: 2 })
+    expect(toNum(snapPower(eEff))).toBeGreaterThan(plain)
   })
 
   it('碾压级战力必胜,战报以胜利收尾', () => {

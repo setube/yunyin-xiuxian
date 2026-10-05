@@ -280,6 +280,21 @@ describe('会话账目 · 与真实入账同源', () => {
     expect(Array.isArray(adventure.lastBattle?.loot)).toBe(true)
     expect(adventure.session!.itemGain, '无实物掉落时件数为 0(旧实现会把提示行算成一件)').toBe(0)
   })
+
+  it('战报把开打那一刻的双方战力一起带走:敌力与「我」同刻冻结,不为战后换装所动', () => {
+    const adventure = useAdventureStore()
+    const player = usePlayerStore()
+    player.initCharacter('同刻', { roots: [] } as never)
+    const now = Date.now()
+    forgeSession(now)
+    tickExploration(now)
+    const view = adventure.lastBattle
+    expect(view).not.toBeNull()
+    expect(view!.enemyPower).toBeDefined()
+    expect(view!.playerPower).toBeDefined()
+    // 无规则时「我」应等于面板战力(同一套 finalStats 三维折出)
+    expect(toNum(view!.playerPower!)).toBeCloseTo(toNum(player.finalStats.power), 6)
+  })
 })
 
 describe('首领门槛 · 界面提示与战斗判定同源', () => {

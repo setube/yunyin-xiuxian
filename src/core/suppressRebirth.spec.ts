@@ -48,9 +48,43 @@ describe('转世不残留产出型镇压', () => {
       { enemyId: 'e_wolf', enemyName: '苍狼', regionId: 'qingyun', lossCount: 3, lastLossAt: Date.now() }
     ])
     player.rebirth(rollLinggen(rng))
-    // 宿敌记忆保留;镇压权益(含时间戳)清空
+    // 宿敌记忆保留;镇压权益(含时间戳与资格)清空
     expect(player.nemeses.length).toBe(1)
     expect(player.suppressedRegions).toHaveLength(0)
     expect(Object.keys(player.suppressedSince)).toHaveLength(0)
+    expect(player.suppressQualified).toHaveLength(0)
+  })
+
+  it('老档兜底:修复前已转世的存档,读档时远境镇压照清(不然还得再转一次世)', () => {
+    const player = usePlayerStore()
+    // 模拟修复上线前的旧档:境界 0(已然转世),却带着 20+ 阶远境的镇压列表
+    const far = REGIONS.filter(r => r.tier >= 20)[0]!
+    player.suppressedRegions = [far.id, 'qingyun']
+    player.suppressQualified = [far.id, 'qingyun']
+    player.suppressedSince = { [far.id]: 12345, qingyun: 67890 }
+    player.sanitize()
+    // 这一世(境界 0)根本打不进 20 阶远境 —— 妖气复聚;本世合法的 qingyun(minRealm 0)原样留
+    expect(player.suppressedRegions).toEqual(['qingyun'])
+    expect(player.suppressQualified).toEqual(['qingyun'])
+    expect(Object.keys(player.suppressedSince)).toEqual(['qingyun'])
+  })
+
+  it('读档兜底不误伤:中期存档(境界高)里合法的远境镇压原样保留', () => {
+    const player = usePlayerStore()
+    // 合 8 境的存档:minRealm ≤ 8 的远境是本世合法镇压,不许误清
+    player.major = 8
+    const far = REGIONS.filter(r => r.tier >= 20)[0]!
+    expect(far.minRealm).toBeLessThanOrEqual(8)
+    player.suppressedRegions = [far.id]
+    player.suppressQualified = [far.id]
+    player.sanitize()
+    expect(player.suppressedRegions).toEqual([far.id])
+    expect(player.suppressQualified).toEqual([far.id])
+    // 但「境界之下也不可能的」(minRealm 9+)还是要清 —— 那是被改档写进来的
+    const impossibleId = REGIONS.filter(r => r.minRealm > 8)[0]!.id
+    player.suppressedRegions = [far.id, impossibleId]
+    player.suppressedSince = { [far.id]: 1, [impossibleId]: 2 }
+    player.sanitize()
+    expect(player.suppressedRegions).toEqual([far.id])
   })
 })
