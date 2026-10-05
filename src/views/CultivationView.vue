@@ -145,7 +145,9 @@
       -->
       <div class="mt-2 grid gap-2" :class="btInfo.needTribulation ? 'grid-cols-1' : 'grid-cols-2'">
         <div v-if="!btInfo.needTribulation" class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
-          <button class="flex w-full items-baseline justify-between gap-1 text-left" @click="rateOpen = !rateOpen">
+          <!-- 两段 10px 字的按钮,裸着只有 16px 高 —— layout-check 一嗓子喊出来(拇指点不着)。
+               -my-1 py-2:靶面抬到 31px,负外边距把视觉位移抵回去,行高不动 -->
+          <button class="-my-1 flex w-full items-baseline justify-between gap-1 py-2 text-left" @click="rateOpen = !rateOpen">
             <span class="text-[10px] text-ink-faint">进阶成功率(小进阶)</span>
             <span class="text-[9px] text-ink-faint">{{ rateOpen ? '▾' : '▸' }}来路</span>
           </button>
