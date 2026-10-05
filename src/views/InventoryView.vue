@@ -56,7 +56,10 @@
       </div>
       <p class="mt-2 text-center text-[10px] text-ink-faint">点击部位查看候选,行囊满时新掉落自动折作器灵尘</p>
       <!-- 玩家反馈「一键装备最高阶级品质装备快捷键」:每槽换上当前最强,已是则不动 -->
-      <button class="btn-ghost mt-2 w-full !py-1.5 !text-[11px]" @click="onEquipAllBest">一键 · 各部位换上当前最强</button>
+      <!-- 点下去会动几件,先给个数:与结算同一把 bestEquipFor;一件不换时明说「已是最强」 -->
+      <button class="btn-ghost mt-2 w-full !py-1.5 !text-[11px]" @click="onEquipAllBest">
+        一键 · 各部位换上当前最强{{ bestSwapPreview }}
+      </button>
       <!--
         空一身:与一键换装成对的反向出口 —— 已佩戴的件不参加分解/收纳,
         想清一口袋破烂,得先把身上这九格脱干净。只脱不毁,件全回行囊
@@ -642,7 +645,7 @@
   import { salvageOf } from '@/core/salvage'
   import { add, gnZero } from '@/utils/gnum'
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
-  import { equipAllBest, equipSetCombo, unequipAllEquipped } from '@/core/equipBest'
+  import { bestEquipFor, equipAllBest, equipSetCombo, EQUIP_SLOTS, unequipAllEquipped } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { studyEta } from '@/core/loreService'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
@@ -907,6 +910,14 @@
     const changed = equipAllBest()
     ui.toast(changed > 0 ? `已自动换上 ${changed} 件当下最能打的(按真实战力挑)` : '已是更能打的一身', changed > 0 ? 'success' : 'info')
   }
+  /** 点前的预告:还有几个部位会真的换(与 onEquipAllBest 同一把 bestEquipFor 判据) */
+  const bestSwapPreview = computed(() => {
+    const n = EQUIP_SLOTS.filter(slot => {
+      const best = bestEquipFor(slot)
+      return !!best && inventory.equipped[slot] !== best.uid
+    }).length
+    return n > 0 ? `(将换 ${n} 件)` : '(已是最强)'
+  })
 
   /** 空一身:卸下全部已佩戴,件回到行囊 —— 以便清理/换血(只脱不毁) */
   function onUnequipAll(): void {
