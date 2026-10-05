@@ -5,6 +5,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { tribulationSuccessRate, breakthroughInfo, attemptBreakthrough } from './breakthrough'
+import { clampRate } from './formulas'
+import { modOf } from './statsCalc'
 import { buildTribulationPlan, currentTribulationPlan } from './tribulationDecision'
 import { prepareBreakthrough, breakthroughPrepState, consumeBreakthroughPrep } from './earlyGameService'
 import { gn } from '@/utils/gnum'
@@ -78,6 +80,37 @@ describe('渡劫成功率推演', () => {
       }
       console.log(`  劫型=${plan.title} 档=${plan.verdict} 准备度=${JSON.stringify(plan.prep)}`)
     }
+  })
+
+  it('rateParts:成功率的构成逐项可见,合计(取上下限后)= 展示率', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.$patch({ major: 0, sub: 5 })
+    resources.$patch({ qi: 99999 })
+    player.$patch({ exp: { m: 1e12, e: 0 } })
+    // 一无所有的裸号:只余「基础」一项
+    const bare = breakthroughInfo()
+    expect(bare.needTribulation).toBe(false)
+    expect(bare.rateParts.length).toBeGreaterThanOrEqual(1)
+    expect(bare.rateParts[0]!.label).toBe('基础')
+    const bareSum = bare.rateParts.reduce((a, p) => a + p.value, 0)
+    expect(clampRate(bareSum)).toBeCloseTo(bare.rate, 6)
+  })
+
+  it('带气运称号时,明细给出「气运 (幸运×5%)」一行,合计仍对上展示率', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.$patch({ major: 0, sub: 5, titleId: 'ti_tianjiao' })
+    resources.$patch({ qi: 99999 })
+    player.$patch({ exp: { m: 1e12, e: 0 } })
+    const info = breakthroughInfo()
+    expect(info.needTribulation).toBe(false)
+    const luckRow = info.rateParts.find(p => p.label.startsWith('气运'))
+    expect(luckRow).toBeDefined()
+    // 该行的值 = 当前总幸运值 ×5% —— 与展示率同一批词条(灵根/称号都会进幸运)
+    expect(luckRow!.value).toBeCloseTo(modOf(player.finalStats.mods, 'luck') * 0.05, 6)
+    const sum = info.rateParts.reduce((a, p) => a + p.value, 0)
+    expect(clampRate(sum)).toBeCloseTo(info.rate, 6)
   })
 
   it('突破准备就绪计入成功率;尝试突破后一次性消耗(TASK-023)', () => {

@@ -39,12 +39,21 @@ import { playSfx } from './audio'
 // Phase 28 突破准备:静坐/服丹的一次性加成(见 earlyGameService;仅无劫突破受益)
 import { breakthroughPrepState, consumeBreakthroughPrep, type BreakthroughPrepView } from './earlyGameService'
 
+/** 进阶成功率的一个构成项(展示用) */
+export interface RatePart {
+  label: string
+  /** 加合值,以 1.0 = 100% 计 */
+  value: number
+}
+
 export interface BreakthroughInfo {
   ready: boolean
   reason: string
   /** 修炼突破的基础成功率(未计天劫) */
   rate: number
   rateText: string
+  /** 成功率的构成 —— 与 rate 同一批操作数,逐项可见(0 项已省略) */
+  rateParts: RatePart[]
   qiCost: number
   isMajor: boolean
   needTribulation: boolean
@@ -113,12 +122,16 @@ export function breakthroughInfo(): BreakthroughInfo {
   const mods = player.finalStats.mods
   // Phase 28 突破准备:就绪的静坐/丹药加成并入展示率(消费在 attemptBreakthrough,一次性)
   const prep = breakthroughPrepState()
-  const rate = clampRate(
-    breakthroughBaseRate(player.major, player.sub) +
-      modOf(mods, 'breakthroughRate') +
-      modOf(mods, 'luck') * 0.05 +
-      (prep.ready ? prep.bonus : 0)
-  )
+  // 4 项操作数先各自成行,再合出 rate —— 界面要解释「凭什么是这个数」,这里就得给得出明细
+  const baseRate = breakthroughBaseRate(player.major, player.sub)
+  const rateMod = modOf(mods, 'breakthroughRate')
+  const luckPart = modOf(mods, 'luck') * 0.05
+  const prepBonus = prep.ready ? prep.bonus : 0
+  const rateParts: RatePart[] = [{ label: '基础', value: baseRate }]
+  if (rateMod !== 0) rateParts.push({ label: '词条加成', value: rateMod })
+  if (luckPart !== 0) rateParts.push({ label: '气运 (幸运×5%)', value: luckPart })
+  if (prepBonus !== 0) rateParts.push({ label: prep.kind === 'meditate' ? '静坐调息' : '聚气丹', value: prepBonus })
+  const rate = clampRate(baseRate + rateMod + luckPart + prepBonus)
   let ready = true
   let reason = ''
   if (player.atMaxRealm) {
@@ -136,6 +149,7 @@ export function breakthroughInfo(): BreakthroughInfo {
     reason,
     rate,
     rateText: formatPercent(rate, 0),
+    rateParts,
     qiCost,
     isMajor,
     needTribulation,
