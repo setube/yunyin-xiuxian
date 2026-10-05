@@ -210,6 +210,23 @@ export function qiEtaSec(): number {
   return gap / rate
 }
 
+/**
+ * 距「灵气充盈」的估算时长(秒)—— 按现速。
+ *
+ * 灵气过半即滋养修为(见 player store 的 qiRich)/ statsCalc 的 QI_RICH_BONUS),
+ * 这条答的是「修为还有多久要往上跳一档」。判据与 qiRich 同一道界:
+ * 缺口 = qiCapValue × 0.5 − 当前灵气,除以现速;已在充盈线以上或零恢复时返回 0。
+ */
+export function qiRichEtaSec(): number {
+  const player = usePlayerStore()
+  const resources = useResourcesStore()
+  const gap = player.qiCapValue * 0.5 - resources.qi
+  if (!(gap > 0)) return 0
+  const rate = player.qiRegenPerSec
+  if (!(rate > 0)) return 0
+  return gap / rate
+}
+
 /** 每日重置(引擎在日期变化时调用) */
 export function rolloverDailyIfNeeded(): void {
   const quests = useQuestsStore()
