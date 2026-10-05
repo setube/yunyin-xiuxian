@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cnNumber, formatCountdown, formatDuration, formatGN, formatPercent } from './format'
+import { cnNumber, formatClock, formatCountdown, formatDuration, formatGN, formatPercent } from './format'
 import { gn, powN } from './gnum'
 
 describe('数值格式化', () => {
@@ -135,5 +135,13 @@ describe('汉字数字(页面上的数量从来源数出来)', () => {
     expect(cnNumber(10000)).toBe('10000')
     expect(cnNumber(-1)).toBe('-1')
     expect(cnNumber(1.5)).toBe('1.5')
+  })
+})
+
+describe('时钟时刻(倒计时那句「约几时归」的落点)', () => {
+  it('本地时的 HH:MM,不足两位补零', () => {
+    expect(formatClock(new Date(2026, 9, 5, 14, 32).getTime())).toBe('14:32')
+    expect(formatClock(new Date(2026, 9, 5, 9, 4).getTime())).toBe('09:04')
+    expect(formatClock(new Date(2026, 9, 5, 0, 0).getTime())).toBe('00:00')
   })
 })

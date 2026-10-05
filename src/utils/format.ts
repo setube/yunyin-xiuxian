@@ -118,6 +118,12 @@ export function formatCountdown(totalSec: number): string {
   return `${pad2(m)}分${pad2(s)}秒`
 }
 
+/** 时间戳 → 「HH:MM」(本地时)—— 倒计时旁那句「约几时归」的落点 */
+export function formatClock(ts: number): string {
+  const d = new Date(ts)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 /** 寿元年数展示 */
 export function formatYears(y: number): string {
   if (y >= 10000) return formatNum(Math.floor(y)) + '载'

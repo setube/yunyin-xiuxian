@@ -10,6 +10,11 @@
         <!-- 每秒在走的倒计时同样要定宽:与状态面板同一类抖动,修就修干净 -->
         <span class="tabular text-[12px] text-ink-soft">
           余 <span class="countdown-slot">{{ formatCountdown(timeLeft) }}</span>
+          <!--
+            倒计时给「还剩多久」,这句给「几时归」—— 同一分 endsAt,翻译成本地钟点,
+            玩家不用倒着心算 00:27:31 是几点几分,得空了知道几时回来收一趟
+          -->
+          <span v-if="session && timeLeft > 0" class="ml-1 text-[10px] text-ink-faint">约 {{ formatClock(session.endsAt) }} 归</span>
         </span>
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
@@ -230,7 +235,7 @@
   import { useSettingsStore } from '@/stores/settings'
   import { stopExploration, winsUntilRegionBoss } from '@/core/exploration'
   import { COMBAT_PLAYBACK_BASE_MS, COMBAT_PLAYBACK_MIN_MS, EXPLORE_MODES } from '@/data/constants'
-  import { formatCountdown, formatGN } from '@/utils/format'
+  import { formatClock, formatCountdown, formatGN } from '@/utils/format'
   import { useNow } from '@/composables/useNow'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, enemyTraits, starsText, TRAIT_NAMES, type RegionEcology } from '@/core/buildAdvisor'
