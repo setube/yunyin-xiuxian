@@ -17,7 +17,9 @@
             触控靶面:纯 10px 文字行高 15px,拇指点不中(layout-check 报 27px < 28);
             负外边距配正内边距同升到 8px,盒高 31px 达标,流中占位仍只 15px 行高(同页收纳/分解同法)。
           -->
-          <button class="-my-2 shrink-0 px-1 py-2 text-[10px] text-azure/90 active:opacity-60" @click="onEquipSet(s.def.id)">穿齐 →</button>
+          <button class="-my-2 shrink-0 px-1 py-2 text-[10px] text-azure/90 active:opacity-60" @click="onEquipSet(s.def.id)">
+            穿齐 →({{ s.preview > 0 ? `换 ${s.preview}` : '已齐' }})
+          </button>
         </p>
       </div>
       <div class="mt-3 flex items-center justify-between px-1">
@@ -645,7 +647,7 @@
   import { salvageOf } from '@/core/salvage'
   import { add, gnZero } from '@/utils/gnum'
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
-  import { bestEquipFor, equipAllBest, equipSetCombo, EQUIP_SLOTS, unequipAllEquipped } from '@/core/equipBest'
+  import { bestEquipFor, equipAllBest, equipSetCombo, equipSetPreview, EQUIP_SLOTS, unequipAllEquipped } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { studyEta } from '@/core/loreService'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
@@ -698,9 +700,11 @@
     return [...counts.entries()]
       .map(([id, count]) => {
         const def = equipSetDef(id)
-        return def ? { def, count, active: count >= def.required } : null
+        if (!def) return null
+        // 干跑:这套现在会换几件(与穿齐同一份取舍),按钮先报数
+        return { def, count, active: count >= def.required, preview: equipSetPreview(id) }
       })
-      .filter((row): row is { def: EquipSetDef; count: number; active: boolean } => row !== null)
+      .filter((row): row is { def: EquipSetDef; count: number; active: boolean; preview: number } => row !== null)
       .sort((a, b) => Number(b.active) - Number(a.active) || b.count - a.count)
   })
 
