@@ -255,6 +255,11 @@
           战力 {{ formatGN(player.finalStats.power) }} · 装备成色、词条与临场随机仍定成败
         </p>
       </div>
+      <!--
+        灵兽之性折进了下面三档的「遇险 ×N / 行程」里,却不说是它干的 ——
+        换伙伴的决定点在这里,把它的跟脚照实摊开(departButtonText 同表)
+      -->
+      <p v-if="petTripLine" class="mb-2 text-[10px] leading-relaxed text-violet-ink tabular">{{ petTripLine }}</p>
       <p class="text-[12px] text-ink-faint">此行欲作何打算?</p>
       <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">行程论这一程走多久;「历练遇敌」只令同程妖踪更密,不能缩地成寸。</p>
       <div class="mt-3 space-y-2">
@@ -308,8 +313,10 @@
   } from '@/core/exploration'
   import { currentRegionEvent } from '@/core/regionEvent'
   import { modOf } from '@/core/statsCalc'
-  import { departButtonText } from '@/ui/adventureText'
+  import { departButtonText, petTraitTripLine } from '@/ui/adventureText'
   import { produceTierText } from '@/ui/produceText'
+  import { petDef } from '@/data/pets'
+  import { personalityEffects } from '@/core/petPersonality'
   import { EVENT_TIERS, tierOddsText } from '@/core/eventTier'
   import { pendingChainStages } from '@/core/eventEngine'
   import { foeOriginPartsText } from '@/core/battleAnalysis'
@@ -419,6 +426,14 @@
     const mine = currentBuild.value ? detectionAdaptation(currentBuild.value, eco) : null
     const recs = recommendForRegion(modeTarget.value).slice(0, 2)
     return { mine, recs }
+  })
+
+  /** 灵兽之性折进这一行的账(遇险/行程/掉宝/护持,与结算同表) —— 有伴才有一行 */
+  const petTripLine = computed(() => {
+    if (!player.petId) return ''
+    const def = petDef(player.petId)
+    if (!def) return ''
+    return petTraitTripLine(def.name, personalityEffects(player.petId))
   })
 
   /**

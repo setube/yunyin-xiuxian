@@ -4,7 +4,7 @@ import { EXPLORE_BATTLE_INTERVAL, EXPLORE_MODES } from '@/data/constants'
 import { PETS } from '@/data/pets'
 import { exploreBattleGapSec, exploreDurationSec, exploreRewardMult } from '@/core/exploration'
 import { personalityEffects } from '@/core/petPersonality'
-import { departButtonText } from './adventureText'
+import { departButtonText, petTraitTripLine } from './adventureText'
 
 describe('出发按钮与结算同一套数', () => {
   it('行程按灵兽之性折算,与 startExploration 同一公式', () => {
@@ -39,5 +39,25 @@ describe('出发按钮与结算同一套数', () => {
     expect(view).toContain('exploreDurationSec')
     expect(view).toContain('explorationFoeDanger')
     expect(view).not.toContain('EXPLORE_MODES[m.id].durationSec')
+  })
+
+  it('灵兽之性那行:有数的给数(遇险/行程),没数的只定性(掉宝/护持),无伴则空', () => {
+    for (const pet of PETS) {
+      const eff = personalityEffects(pet.id)
+      const line = petTraitTripLine(pet.name, eff)
+      expect(line).toContain('之性')
+      if (eff.dangerMult !== 1) expect(line).toContain('遇险 ×')
+      if (eff.exploreDurMult !== 1) expect(line).toContain('行程 ×')
+      if (eff.dropLuck !== 0) expect(line).toMatch(/掉宝/)
+      if (eff.lossReduction > 0) expect(line).toContain('护持')
+    }
+    expect(petTraitTripLine('无', { exploreDurMult: 1, dangerMult: 1, dropLuck: 0, lossReduction: 0 })).toBe('')
+  })
+
+  it('出行弹窗摊开灵兽之性,不手抄「遇险 ×0.95」这类数', () => {
+    const view = readFileSync(new URL('../views/AdventureView.vue', import.meta.url), 'utf8')
+    expect(view).toContain('petTraitTripLine(')
+    expect(view).not.toMatch(/遇险\s*×\s*0\.9\d/)
+    expect(view).not.toMatch(/遇险\s*×\s*1\.1\d/)
   })
 })
