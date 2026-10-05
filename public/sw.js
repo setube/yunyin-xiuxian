@@ -15,7 +15,7 @@
  * 离线回退仍会落到老页面。这是唯一需要人工记得的版本号,别在别处另设。
  */
 
-const CACHE_VERSION = 'yunyin-v1'
+const CACHE_VERSION = 'yunyin-v2'
 
 /**
  * 本地外壳里不许存在:Electron 跑在 file://,Capacitor 跑在 https://localhost。
