@@ -278,7 +278,7 @@
           </button>
           <button type="button" class="chip-ink !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
             {{ prepPill.label }} · {{ prepPillCost }}灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
-            <span v-if="!prepCanPill" class="text-ink-faint">(灵石不足)</span>
+            <span v-if="!prepCanPill" class="text-ink-faint">({{ prepPillDisabledLabel() }})</span>
           </button>
         </div>
         </div>
@@ -486,7 +486,7 @@
   import { formatCountdown, formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
   import { signedPercent } from '@/ui/statNames'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
-  import { prepPillShortToast, repairActLabel } from '@/ui/cultivationText'
+  import { prepPillDisabledLabel, prepPillShortToast, repairActLabel } from '@/ui/cultivationText'
   import { qualityDef } from '@/data/qualities'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'

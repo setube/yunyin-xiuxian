@@ -23,6 +23,11 @@ export function prepPillShortToast(): string {
   return '灵石未足,无以备药'
 }
 
+/** 服聚气丹按钮欠资时的禁用说明 —— 与备药 toast 同一句「灵石未足」,不在模板里手打 */
+export function prepPillDisabledLabel(): string {
+  return '灵石未足'
+}
+
 export function breakthroughPeakReason(): string {
   return '已至大道尽头'
 }

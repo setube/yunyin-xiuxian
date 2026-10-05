@@ -7,6 +7,7 @@ import {
   breakthroughPeakReason,
   breakthroughQiReason,
   breakthroughReadyNote,
+  prepPillDisabledLabel,
   prepPillShortToast,
   repairActLabel,
   repairDoneToast,
@@ -28,6 +29,9 @@ describe('修行页提示 · 文言仍报清缕数与药资', () => {
     expect(prepPillShortToast()).toContain('灵石')
     expect(prepPillShortToast()).toContain('备药')
     expect(prepPillShortToast()).not.toContain('不足')
+    // 欠资禁用说明与备药 toast 同一句「未足」,也不够硬
+    expect(prepPillDisabledLabel()).toContain('灵石')
+    expect(prepPillDisabledLabel()).not.toContain('不足')
     expect(breakthroughPeakReason()).toContain('大道尽头')
     expect(breakthroughExpReason()).toContain('圆满')
     expect(breakthroughQiReason('40')).toBe('灵气未足,此关需 40 缕')
