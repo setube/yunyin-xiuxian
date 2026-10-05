@@ -316,6 +316,33 @@
           <span v-if="modsText(tappedTalent.mods)" class="mt-0.5 block text-azure tabular">{{ modsText(tappedTalent.mods) }}</span>
         </p>
       </div>
+      <!--
+        去留一览:兵解是不可逆的大事,一句「随皮囊散去」盖不住整本账 ——
+        每一样去了哪、留下什么,读的就是结算弹窗那份 HERITAGE(同表,不另写)。
+        默认收起:不压弹窗高度,按下前点开即可核对
+      -->
+      <button
+        class="mt-3 flex w-full items-center justify-between px-2 py-2 text-left text-[11px] text-ink-soft active:opacity-60"
+        :aria-expanded="heritageOpen"
+        @click="heritageOpen = !heritageOpen"
+      >
+        <span>转世去留一览({{ keepCount }} 留 · {{ resetCount }} 去)</span>
+        <span class="text-[10px] text-azure">{{ heritageOpen ? '▾ 收 起' : '▸ 展 开' }}</span>
+      </button>
+      <div v-if="heritageOpen" class="mt-1.5 rounded-md bg-paper-deep/60 px-3 py-2">
+        <p class="text-[10px] text-ink-soft">随魂弥留 · 与结算弹窗同表</p>
+        <div class="mt-1 space-y-1">
+          <p v-for="row in heritageKeepRows" :key="row.id" class="flex items-baseline justify-between gap-2 text-[10px]">
+            <span class="text-ink-soft">{{ row.name }}</span>
+            <span class="shrink-0" :class="row.cls">{{ row.modeLabel }}</span>
+          </p>
+          <div class="my-1 border-t border-ink/6" />
+          <p v-for="row in heritageResetRows" :key="row.id" class="flex items-baseline justify-between gap-2 text-[10px]">
+            <span class="text-ink-faint">{{ row.name }}</span>
+            <span class="shrink-0" :class="row.cls">{{ row.modeLabel }}</span>
+          </p>
+        </div>
+      </div>
       <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">{{ rebirthDecisionHint() }}</p>
       <template #footer>
         <button class="btn-ghost w-full !text-[12px]" @click="rebirth">兵解转世</button>
@@ -522,7 +549,7 @@
   import { cnNumber, formatGN, formatPercent } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
   import { STAT_KEYS, STAT_NAMES, modsText, powerExplainText, signedPercent, statCaveat } from '@/ui/statNames'
-  import { rebirthDecisionHint } from '@/ui/rebirthText'
+  import { heritageViewRows, rebirthDecisionHint } from '@/ui/rebirthText'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -614,6 +641,13 @@
 
   // ---- 轮回 ----
   const rebirthOpen = ref(false)
+  /** 转世去留一览:展开态由玩家决定;行取自 HERITAGE 同表,见 ui/rebirthText */
+  const heritageOpen = ref(false)
+  const heritageRowsView = computed(() => heritageViewRows())
+  const heritageKeepRows = computed(() => heritageRowsView.value.filter(r => r.mode !== 'reset'))
+  const heritageResetRows = computed(() => heritageRowsView.value.filter(r => r.mode === 'reset'))
+  const keepCount = computed(() => heritageKeepRows.value.length)
+  const resetCount = computed(() => heritageResetRows.value.length)
   /** 天赋芯片点按展开(移动端无 hover,效果说明内联显示);关弹窗复位 */
   const talentTap = ref<string | null>(null)
   const tappedTalent = computed(() => (talentTap.value ? talentDef(talentTap.value) : undefined))
