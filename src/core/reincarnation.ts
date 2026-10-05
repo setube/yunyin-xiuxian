@@ -218,7 +218,12 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
 
   // 认知不因转世清零,只按阶补齐:该认得的药,睁眼就该认得
   const recognized = carryLore(stage)
+  // 转世前先记下旧世还在压着几处 —— rebirth() 会把镇压权益随皮囊散去
+  const releasedSuppressed = player.suppressedRegions.length
   player.rebirth(rollLinggen(rng, aptitudeFloorNow()))
+  if (releasedSuppressed > 0) {
+    ui.toast(`${releasedSuppressed} 处昔日镇压之地,妖气复聚 —— 此世再走一遭`, 'info')
+  }
   // 新的一世:上一世的建号草稿作废,「逆天改命」额度归满
   useGameStore().resetCreateDraft()
   // 道途归还天地,道源与道痕随神魂不灭

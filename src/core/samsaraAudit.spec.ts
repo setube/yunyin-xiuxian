@@ -310,7 +310,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
 
   it('记忆/精神/灵魂一律留:认知/成就/道果/天赋/宿慧/称号/师承/道痕/世界记忆/机缘记忆', () => {
     const byId = (id: string) => HERITAGE.find(r => r.id === id)!
-    for (const id of ['lore', 'quests', 'daoFruit', 'talents', 'insight', 'title', 'mentor', 'suppress', 'fortuneMemory']) {
+    for (const id of ['lore', 'quests', 'daoFruit', 'talents', 'insight', 'title', 'mentor', 'fortuneMemory']) {
       expect(byId(id).mode, `${byId(id).name} 属记忆/精神/灵魂,应保留`).toBe('full')
     }
     // 功法只「半留」:门类是记忆,层数是修为进度
@@ -319,6 +319,10 @@ describe('轮回审计 · 继承清单最小完备', () => {
     expect(byId('bonds').mode).toBe('partial')
     // 终局同理:道途归还天地(本世之诺),道源与道痕随神魂不灭
     expect(byId('endgame').mode).toBe('partial')
+    // 镇压同理(半留):镇压**收益**是「我拥有多少」—— 旧世压下的远境若跨世,新世按
+    // 旧阶位派发高阶装备/灵石,数值爆炸;故清 suppressedRegions/suppressedSince。
+    // 宿敌记忆与区域战绩(「世界记得你」的叙事)仍随神魂不灭
+    expect(byId('suppress').mode, `区域${byId('suppress').name} 产出不跨世、记忆跨世`).toBe('partial')
   })
 
   it('结算界面按去留分组时,清单一行不漏、一行不重(界面与代码同源)', () => {
