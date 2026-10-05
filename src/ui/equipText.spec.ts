@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { EQUIP_LEVEL_BONUS } from '@/data/constants'
 import { formatPercent } from '@/utils/format'
-import { affixRollHint, affixRollText, equipNextLevelText } from './equipText'
+import { affixRollHint, affixRollText, equipNextLevelText, powerCompareLabel } from './equipText'
 
 describe('equipNextLevelText', () => {
   it('裸装第一级等于常数,已强化的再涨按当前倍率折', () => {
@@ -35,5 +35,18 @@ describe('affixRollText', () => {
     expect(src).toContain('affixRollText(line.roll)')
     expect(src).toContain('affixRollHint')
     expect(src).not.toMatch(/浮\s+\d+%/)
+  })
+})
+
+describe('powerCompareLabel', () => {
+  it('起名忠于一键换装的口径 —— 不冒充面板「战力"', () => {
+    expect(powerCompareLabel()).toBe('战斗价值(一键口径)')
+  })
+
+  it('详情页用函数取名,并把「一键口径」写在名里,避免被抄成「战力"', () => {
+    const src = readFileSync(resolve(__dirname, '../components/equipment/EquipmentDetailDialog.vue'), 'utf8')
+    expect(src).toContain('powerCompareLabel()')
+    expect(src).toContain('v-if="powerCompare"')
+    expect(src).not.toContain('战斗价值(一键口径)')
   })
 })

@@ -42,6 +42,22 @@
       </p>
       <div class="ink-divider my-3" />
       <p v-if="compareTarget" class="mb-1.5 text-[10px] text-ink-faint tabular">对比当前佩戴:「{{ compareTarget.name }}」(绿升红降)</p>
+      <!--
+        攻防血一格格比,不如先给一个合笔口径 —— 正是「一键换装」照它抽最强的那把尺
+        (equippablePower:基础平铺 + 词条战力,与 toast「按真实战力挑」同一口径)。
+        它不是面板「战力」,是这套装备的取舍值;分得清,玩家才不会被两个 战力 弄混。
+      -->
+      <p v-if="powerCompare" class="mb-1.5 flex items-baseline justify-between text-[11px] tabular">
+        <span class="text-ink-faint">{{ powerCompareLabel() }}</span>
+        <span class="text-ink">
+          <span class="text-ink-faint">{{ formatNum(powerCompare.theirs) }}</span>
+          <span class="mx-1 text-ink-faint">→</span>
+          <span :class="powerCompare.up ? 'text-jade' : 'text-cinnabar'">{{ formatNum(powerCompare.mine) }}</span>
+          <span class="ml-1 text-[10px]" :class="powerCompare.up ? 'text-jade' : 'text-cinnabar'">
+            ({{ powerCompare.up ? '+' : '' }}{{ Math.round(powerCompare.pct) }}%)
+          </span>
+        </span>
+      </p>
       <div class="space-y-1.5">
         <p v-for="row in flatRows" :key="row.label" class="flex justify-between text-[13px]">
           <span class="text-ink-soft">{{ row.label }}</span>
@@ -371,6 +387,7 @@
   import { equipSetDef, setCounts } from '@/core/equipSet'
   import { worldNameOfTier } from '@/core/formulas'
   import { resolveEquipStats } from '@/core/equipGen'
+  import { equippablePower } from '@/core/equipBest'
   import {
     decomposeEquipment,
     equipLevelCap,
@@ -388,12 +405,12 @@
   import { AFFIXES, affixDef, affixFitBlock, affixesByRarity } from '@/data/affixes'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
-  import { formatGN } from '@/utils/format'
+  import { formatGN, formatNum } from '@/utils/format'
   import { gnZero, isZero, sub } from '@/utils/gnum'
   import { playSfx } from '@/core/audio'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/ui/statNames'
-  import { affixRollHint, affixRollText, equipNextLevelText } from '@/ui/equipText'
+  import { affixRollHint, affixRollText, equipNextLevelText, powerCompareLabel } from '@/ui/equipText'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
   import { useAffixTransfer } from '@/composables/useAffixTransfer'
   import BaseModal from '@/components/common/BaseModal.vue'
@@ -673,6 +690,19 @@
     const item = inventory.findItem(curUid)
     if (!item) return null
     return { item, name: equipmentTemplate(item.templateId)?.name ?? '当前佩戴' }
+  })
+
+  /**
+   * 战斗价值对比 —— 与「一键换装」同一把尺(equippablePower):
+   * 基础平铺 + 词条战力,「按真实战力挑」说的就是它。是取舍值,不是面板战力。
+   */
+  const powerCompare = computed(() => {
+    const cur = compareTarget.value
+    if (!cur || !inst.value) return null
+    const mine = equippablePower(inst.value)
+    const theirs = equippablePower(cur.item)
+    const pct = theirs > 0 ? ((mine - theirs) / theirs) * 100 : 0
+    return { mine, theirs, up: mine >= theirs, pct }
   })
 
   const fixedModRows = computed(() => {
