@@ -10,7 +10,8 @@ import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
 import { LIFESPAN_CRITICAL_RATIO, QI_RICH_RATIO } from '@/data/constants'
 import { titleDef } from '@/data/titles'
 import { pillDef } from '@/data/pills'
-import { stoneByTier } from './formulas'
+import { buffDef } from '@/data/buffs'
+import { baseCultPerSec, stoneByTier } from './formulas'
 import { formatGN } from '@/utils/format'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
@@ -226,6 +227,28 @@ export function qiRichEtaSec(): number {
   const rate = player.qiRegenPerSec
   if (!(rate > 0)) return 0
   return gap / rate
+}
+
+/**
+ * 闭关一炷香「约多得」的修为预览 —— 只报加成那部分,不是闭关期间全部产出。
+ *
+ * 速率与时长都从 buffs.ts 的 retreat 本体取,不手抄 1.5 / 300 两处:
+ * 增量 = baseCultPerSec(境界) × 词条加成 × 时长(秒),与修炼行读的
+ * baseCultPerSec 是同一份数(玩家现有其他修为词条与闭关增量互不影响,
+ * 闭关只在这之上再加 1.5 倍 base)。闭关中 buff 已落在 cultPerSec 上,
+ * 这条只在不闭关时出现,报的是「点了会多拿多少」而不是「正在拿多少」。
+ */
+export function retreatGainText(): string {
+  const player = usePlayerStore()
+  const def = buffDef('retreat')
+  if (!def) return ''
+  const boost = def.mods.cultivationSpeed ?? 0
+  if (!(boost > 0)) return ''
+  const base = baseCultPerSec(player.major, player.sub)
+  if (!(base > 0)) return ''
+  const total = base * boost * def.durationSec
+  if (!(total > 0)) return ''
+  return `此行约多得修为 ${formatGN(total)}`
 }
 
 /** 每日重置(引擎在日期变化时调用) */
