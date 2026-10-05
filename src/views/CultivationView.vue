@@ -69,7 +69,10 @@
       </div>
       <div class="mt-3">
         <div class="mb-1 flex justify-between text-[11px] text-ink-faint tabular">
-          <span>灵气 +{{ formatRate(player.qiRegenPerSec) }}</span>
+          <button class="-my-1 py-1.5 text-left active:opacity-60" @click="showQiBreakdown = !showQiBreakdown">
+            灵气 +{{ formatRate(player.qiRegenPerSec) }}
+            <span class="ml-0.5 text-[9px] text-ink-faint">{{ showQiBreakdown ? '▾' : '▸' }}来路</span>
+          </button>
           <span>
             {{ formatNum(Math.floor(Math.min(resources.qi, player.qiCapValue))) }} / {{ formatNum(player.qiCapValue) }}
             <span v-if="resources.qi > player.qiCapValue" class="text-azure">
@@ -82,6 +85,23 @@
           color="var(--color-azure)"
           :height="8"
         />
+        <!--
+          灵气上限与恢复速度同修为行一样讲「从哪来」:上限 = 本境基础 × 聚灵阵 × (1+其余词条),
+          回复 = 本境基础 × (1+词条)。与面板读同一份数(qiCap / qiCapMult / finalStats.mods),
+          聚灵阵 0 级或词条为空时对应因子不出现,乘法仍重组得上。
+        -->
+        <div v-if="showQiBreakdown" class="mt-2 rounded-md bg-paper-deep/60 px-2.5 py-2 text-[10px]">
+          <p class="text-ink-soft">
+            上限:本境基础 {{ formatNum(qiBase) }}({{ player.realm.name }}{{ player.subName }})
+            <span v-if="qiArrayPct"> × 聚灵阵 +{{ qiArrayPct }}%</span>
+            <span v-if="qiCapPct"> × 其余加成 +{{ formatPercent(qiCapPct) }}</span>
+            = <span class="tabular text-azure">{{ formatNum(player.qiCapValue) }}</span>
+          </p>
+          <p class="mt-1 text-ink-soft">
+            回复:基础 {{ formatRate(qiRegenBase) }} × (1 + <span class="tabular text-azure">{{ formatPercent(qiRegenMult) }}</span>) = <span class="tabular text-cinnabar">{{ formatRate(player.qiRegenPerSec) }}</span>
+          </p>
+          <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">聚灵阵与其余加成乘在上限上,与灵气条读的是同一份数。</p>
+        </div>
         <!--
           与修为那句同一份估算,分两档:未过灵气充盈线时报「充盈」—— 那是修为要跳一档的时刻,
           那句「修为 +X%」随手可得(qiRich / QI_RICH_BONUS 同源);过了半才报回满。两行互斥,不打架。
@@ -286,6 +306,7 @@
         <p class="mt-0.5 text-[10px] text-ink-faint">
           静坐一炷香({{ retreatMinutes }} 分钟),修炼速度 +{{ retreatPct }}%;闭关期间无法外出历练。
         </p>
+        <p v-if="!retreating" class="mt-1 text-[10px] text-jade">{{ retreatGain }}</p>
         <button v-if="!retreating" type="button" class="chip-ink mt-2 w-full !py-1.5 text-[11px]" @click="beginRetreat">
           闭关 · {{ retreatMinutes }}分钟 修炼 +{{ retreatPct }}%
         </button>
@@ -412,6 +433,7 @@
   import { computed, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
+  import { useDongfuStore } from '@/stores/dongfu'
   import CultivationOrb from '@/components/common/CultivationOrb.vue'
   import { useCultivationStore } from '@/stores/cultivation'
   import { useInventoryStore } from '@/stores/inventory'
@@ -419,7 +441,7 @@
   import { attemptBreakthrough, breakthroughInfo } from '@/core/breakthrough'
   import { prepareBreakthrough, startRetreat, isRetreating, getRetreatRemainingSec } from '@/core/earlyGameService'
   import { toNum } from '@/utils/gnum'
-  import { baseCultPerSec } from '@/core/formulas'
+  import { baseCultPerSec, baseQiRegen, qiCap } from '@/core/formulas'
   import { modOf } from '@/core/statsCalc'
   import {
     currentStatGuard,
@@ -434,7 +456,7 @@
   } from '@/core/tribulationDecision'
   import { reliefElements, rootElements } from '@/core/linggenAffinity'
   import { comprehendGongfa } from '@/core/gongfaService'
-  import { expEtaSec, qiEtaSec, qiRichEtaSec } from '@/core/progress'
+  import { expEtaSec, qiEtaSec, qiRichEtaSec, retreatGainText } from '@/core/progress'
   import { usePill } from '@/core/pillService'
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
@@ -462,6 +484,7 @@
 
   const player = usePlayerStore()
   const resources = useResourcesStore()
+  const dongfu = useDongfuStore()
 
   /**
    * 修炼速度的来路 —— 玩家最常盯的就是这一行,故就地摊开:
@@ -495,6 +518,22 @@
   })
   /** 灵气充盈的修为加成(取自常数,不在界面手抄) */
   const qiRichBonusPct = computed(() => formatPercent(QI_RICH_BONUS))
+
+  /**
+   * 灵气上限/恢复速度的来路 —— 与灵气条读同一份数,不在界面另算:
+   *   上限 = qiCap(境界,层) × dongfu.qiCapMult × (1 + finalStats 词条),floor 后入面板;
+   *   回复 = baseQiRegen(境界) × (1 + 词条)。
+   * 聚灵阵未建(<1)或词条为空时,对应因子为 0、行内不渲染,乘积不变。
+   */
+  const showQiBreakdown = ref(false)
+  const qiBase = computed(() => qiCap(player.major, player.sub))
+  const qiArrayPct = computed(() => {
+    const pct = (dongfu.qiCapMult - 1) * 100
+    return pct > 0 ? Math.round(pct) : 0
+  })
+  const qiCapPct = computed(() => modOf(player.finalStats.mods, 'qiCapPct'))
+  const qiRegenBase = computed(() => baseQiRegen(player.major))
+  const qiRegenMult = computed(() => modOf(player.finalStats.mods, 'qiRegen'))
   const cultivation = useCultivationStore()
   const inventory = useInventoryStore()
   const ui = useUiStore()
@@ -526,6 +565,8 @@
   const retreatDef = buffDef('retreat')
   const retreatMinutes = Math.round((retreatDef?.durationSec ?? 0) / 60)
   const retreatPct = Math.round((retreatDef?.mods.cultivationSpeed ?? 0) * 100)
+  /** 闭关「约多得」修为预览 —— 由 progress.retreatGainText 与 buff 本体同源算出;境界涨了跟着重算 */
+  const retreatGain = computed(() => retreatGainText())
   function beginRetreat(): void {
     if (startRetreat()) {
       ui.toast('你封洞闭关,心不外骛', 'info')
