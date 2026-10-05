@@ -74,6 +74,10 @@
           color="var(--color-azure)"
           :height="8"
         />
+        <!-- 与修为那句同一份估算(缺口 ÷ 现速,见 core/progress.qiEtaSec):满了没得等,便不写 -->
+        <p v-if="resources.qi < player.qiCapValue && qiEtaText" class="mt-1 text-right text-[10px] text-ink-faint tabular">
+          按现速,灵气回满约 {{ qiEtaText }}
+        </p>
         <!-- 以灵气疗伤(修复):灵气积余的用途,代价随境界指数增长 -->
         <button
           v-if="repair.injured"
@@ -405,7 +409,7 @@
   } from '@/core/tribulationDecision'
   import { reliefElements, rootElements } from '@/core/linggenAffinity'
   import { comprehendGongfa } from '@/core/gongfaService'
-  import { expEtaSec } from '@/core/progress'
+  import { expEtaSec, qiEtaSec } from '@/core/progress'
   import { usePill } from '@/core/pillService'
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
@@ -450,6 +454,11 @@
   /** 修为圆满的估算时长文案(空白即不显示,见 core/progress.expEtaSec) */
   const expEtaText = computed(() => {
     const sec = expEtaSec()
+    return sec > 0 ? formatDuration(sec) : ''
+  })
+  /** 灵气回满的估算时长文案(空白即不显示,见 core/progress.qiEtaSec) */
+  const qiEtaText = computed(() => {
+    const sec = qiEtaSec()
     return sec > 0 ? formatDuration(sec) : ''
   })
   const cultivation = useCultivationStore()

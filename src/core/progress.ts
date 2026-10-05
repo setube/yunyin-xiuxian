@@ -193,6 +193,23 @@ export function expEtaSec(): number {
   return gap / rate
 }
 
+/**
+ * 灵气回满的估算时长(秒)—— 按现速。
+ *
+ * 与 expEtaSec 同法:缺口 = qiCapValue − 当前灵气,除以现速 qiRegenPerSec,
+ * 只做这一道除法,与灵气条读的是同一份数;已满或零恢复时返回 0。
+ * 灵气满后恢复不再累积(超出的部分那是积余容量),故这条只在未满时出现。
+ */
+export function qiEtaSec(): number {
+  const player = usePlayerStore()
+  const resources = useResourcesStore()
+  const gap = player.qiCapValue - resources.qi
+  if (!(gap > 0)) return 0
+  const rate = player.qiRegenPerSec
+  if (!(rate > 0)) return 0
+  return gap / rate
+}
+
 /** 每日重置(引擎在日期变化时调用) */
 export function rolloverDailyIfNeeded(): void {
   const quests = useQuestsStore()
