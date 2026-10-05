@@ -5,7 +5,9 @@ import { gn } from '@/utils/gnum'
 import { mulberry32, RandomService } from '@/utils/random'
 import { enemyDef } from '@/data/enemies'
 import { artifactDef } from '@/data/artifacts'
-import { makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
+import { enemyPowerOf, makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
+import { toNum } from '@/utils/gnum'
+import { powerScore } from './formulas'
 
 const seeded = (seed = 1): RandomService => new RandomService(mulberry32(seed))
 
@@ -25,6 +27,16 @@ function playerSnap(power: number): CombatantSnap {
 
 describe('自动战斗', () => {
   const wolf = enemyDef('e_wolf')!
+
+  it('敌战力标尺与 powerScore 同一把秤:由快照三维折出,不是界面另算', () => {
+    const enemy = makeEnemySnap(wolf, 1, 1)
+    const got = toNum(enemyPowerOf(enemy))
+    const want = toNum(powerScore(enemy.attack, enemy.defense, enemy.maxHp))
+    expect(got).toBeCloseTo(want, 6)
+    // 层级越高战力越高:凡狼 (tier1) < 洪荒魔 (tier20)
+    const far = makeEnemySnap(enemyDef('e_hmdemon')!, 20, 2)
+    expect(toNum(enemyPowerOf(far))).toBeGreaterThan(got)
+  })
 
   it('碾压级战力必胜,战报以胜利收尾', () => {
     const enemy = makeEnemySnap(wolf, 1, 1)

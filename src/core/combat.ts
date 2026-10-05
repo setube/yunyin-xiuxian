@@ -38,7 +38,7 @@ import {
 } from '@/data/constants'
 import { artifactValue } from '@/data/artifacts'
 import { modOf } from './statsCalc'
-import { enemyGearFactor, powerScale } from './formulas'
+import { enemyGearFactor, powerScale, powerScore } from './formulas'
 
 interface Fighter {
   snap: CombatantSnap
@@ -153,6 +153,14 @@ function mergeAdd(base: StatMods, extra: StatMods): StatMods {
     out[key] = (out[key] ?? 0) + (extra[key] ?? 0)
   }
   return out
+}
+
+/**
+ * 敌人的战力标尺 —— 战斗卡片那枚「敌 X · 我 Y」,与玩家侧同用一把 powerScore,
+ * 界面不另算一套权重。入参是已折好的敌人快照(层级/危地/词条俱在)。
+ */
+export function enemyPowerOf(eSnap: CombatantSnap): GNum {
+  return powerScore(eSnap.attack, eSnap.defense, eSnap.maxHp)
 }
 
 export function resolveCombat(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: RandomService, rules?: CombatRules): CombatResult {

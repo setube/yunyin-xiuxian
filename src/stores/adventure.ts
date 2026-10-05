@@ -1,7 +1,7 @@
 /** 历练状态 —— 区域解锁 / 历练会话 / 待处理事件 / 最近战报 */
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { AdventureSession, CombatResult } from '@/types'
+import type { AdventureSession, CombatResult, GNum } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { regionDef, unlockClosure } from '@/data/regions'
 import { gn } from '@/utils/gnum'
@@ -13,6 +13,8 @@ export interface LastBattleView {
   /** 敌人定义 id(供适配度展示;旧存档可能缺失) */
   enemyId?: string
   isBoss: boolean
+  /** 敌方战力(readable: 与玩家侧同一把 powerScore,战斗卡片「敌 X · 我 Y」用;旧存档可能缺失) */
+  enemyPower?: GNum
   result: CombatResult
   at: number
   /**

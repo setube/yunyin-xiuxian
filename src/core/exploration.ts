@@ -16,7 +16,7 @@ import {
 } from '@/data/constants'
 import { mansionEventLuck } from './astronomy'
 import type { StatMods } from '@/types'
-import { makeEnemySnap, mortalFoeOriginFromParts, resolveCombat } from './combat'
+import { enemyPowerOf, makeEnemySnap, mortalFoeOriginFromParts, resolveCombat } from './combat'
 import { petDef } from '@/data/pets'
 import type { RegionEventId } from './regionEvent'
 import { mergeRules } from './gauntlet'
@@ -272,6 +272,8 @@ function runBattle(now: number): void {
   })
   const pSnap = buildPlayerSnap()
   const eSnap = makeEnemySnap(eDef, region.tier, dangerFactor, foeOrigin)
+  // 敌战力随战报带走 —— 战斗卡片那枚「敌 X · 我 Y」与结算同一份快照,不另算
+  const enemyPower = enemyPowerOf(eSnap)
   // 道途在世,一切战斗皆循此规则
   // 逆旅契:本世签下的契对每一场历练战斗生效(道果的非效率出口)
   const result = resolveCombat(pSnap, eSnap, rng, explorationRules())
@@ -290,6 +292,7 @@ function runBattle(now: number): void {
     enemyIcon: eDef.icon,
     enemyId: eDef.id,
     isBoss: Boolean(eDef.isBoss),
+    enemyPower,
     result,
     at: now
   }

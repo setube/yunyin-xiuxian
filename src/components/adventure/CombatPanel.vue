@@ -85,6 +85,13 @@
               </span>
             </p>
             <ProgressBar :value="ehp" color="var(--color-cinnabar)" :height="6" class="mt-1" />
+            <!--
+              敌力亮出来:星级只答「合适不合适」,这枚数答「悬殊多少」。
+              与战报同一份快照折出(combat.enemyPowerOf),不由界面另算
+            -->
+            <p v-if="battle?.enemyPower" class="mt-1 text-[10px] text-ink-faint tabular">
+              敌力 {{ formatGN(battle.enemyPower) }} · 我 {{ formatGN(player.finalStats.power) }}
+            </p>
           </div>
         </div>
         <span
