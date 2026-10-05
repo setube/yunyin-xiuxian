@@ -25,7 +25,7 @@
     <div class="rounded-md border border-ink/10 bg-paper-deep/50 px-3 py-2.5">
       <div class="flex items-center justify-between">
         <span class="font-kai text-[12px] tracking-wider text-ink-soft">洞府纪要</span>
-        <span class="rounded border border-gold-ink/30 px-2 py-0.5 text-[10px] text-gold-ink">离线上限 {{ summary.offlineHrs }} 时</span>
+        <!-- 离线上限在下方「离线可攒」那一行已给出(还带五段档位条),不再在右上角重复一遍同数 -->
       </div>
       <div class="mt-1.5 grid grid-cols-3 gap-1.5">
         <!-- 三格各配一枚小章:灵草叶 / 玄铁斧 / 悟道书,图比字先被眼睛接住 -->
