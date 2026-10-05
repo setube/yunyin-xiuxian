@@ -302,6 +302,10 @@ describe('文案数值对账 · 手写的门槛与容量', () => {
     for (const hand of ['70 点', '30 点', '总容量 100']) {
       expect(card, `手抄的「${hand}」应改成读常数`).not.toContain(hand)
     }
+    // 开启境界那句前瞻也读同一枚 VEIN_UNLOCK_MAJOR:门槛动,「金丹境方启」必须跟着动
+    const view = src('../views/DongfuView.vue')
+    expect(view, '前瞻应读 VEIN_UNLOCK_MAJOR 所在的境名').toContain('veinGateRealm')
+    expect(view, '前瞻不应再手抄「金丹境方启」').not.toContain('金丹境方启此脉')
   })
 
   it('「不能全部点满」是算术事实:全部脉的上限之和确实超过总容量', () => {
