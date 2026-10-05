@@ -18,3 +18,8 @@ export function affixRollText(roll: number): string {
 
 /** 「浮 X%」的悬停说明:告诉玩家这个百分数在比什么 */
 export const affixRollHint = '随机浮动:百分数越大,这条越接近它的上限。封存/重铸前看一眼'
+
+/** 战斗价值对比行的命名 —— 「(一键口径)」这半句要写实,免得被误抄成面板的「战力」 */
+export function powerCompareLabel(): string {
+  return '战斗价值(一键口径)'
+}
