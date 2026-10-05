@@ -78,9 +78,9 @@
       <span class="text-[11px] text-cinnabar">踏天 →</span>
     </RouterLink>
 
-    <!-- 修行志(任务) -->
+    <!-- 修行志(任务);日课按本地午夜重排,未成即作罢 —— 规则得摆在台面上,不然玩家会以为昨天差一步的日课还欠着 -->
     <section>
-      <SectionTitle title="修行志" />
+      <SectionTitle title="修行志" hint="午夜更替 · 未成作罢" />
       <div class="card-ink mt-2 px-4 py-3">
         <template v-if="mainQuest">
           <p class="flex items-center justify-between">
