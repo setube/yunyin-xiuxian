@@ -95,13 +95,21 @@ export const useUiStore = defineStore('ui', () => {
     }
     const id = toastSeq
     toastSeq += 1
+    // 队齐了要挤掉最旧的那条:它的收起计时器一并撤掉。
+    // 不然等它超时还会跑一趟 removeToast(对已下架的空转),
+    // 更糟的是去重路径曾用它做参考,旧计时器残留会让状态账对不上
+    const evicted = toasts.value[toasts.value.length - 5]
+    if (evicted) {
+      const t = timers.get(evicted.id)
+      if (t) clearTimeout(t)
+    }
     toasts.value = [...toasts.value.slice(-4), { id, text, kind }]
     timers.set(id, setTimeout(() => removeToast(id), ttl))
   }
 
-  /** 手动关闭某条提示(点按 toast 即收,不等超时) */
+  /** 手动关闭某条提示(点按 toast 即收,不等超时)—— 与超时收起同一条路,计时器一起撤 */
   function dismissToast(id: number): void {
-    toasts.value = toasts.value.filter(t => t.id !== id)
+    removeToast(id)
   }
 
   return {

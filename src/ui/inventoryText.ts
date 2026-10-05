@@ -24,6 +24,11 @@ export function loadoutSavedToast(name: string): string {
   return `构筑「${name}」已存入行囊`
 }
 
+/** 改名与保存是两回事:只动名号,不装包 —— 文案得分得开,免得「已存入行囊」撒谎 */
+export function loadoutRenamedToast(name: string): string {
+  return `构筑「${name}」已改名`
+}
+
 export function loadoutApplyToast(name: string, missing: number): string {
   return missing > 0 ? `已换上「${name}」,阙 ${missing} 件未配` : `已换上「${name}」`
 }

@@ -15,6 +15,7 @@ import { useUiStore } from '@/stores/ui'
 import {
   loadoutApplyToast,
   loadoutFullToast,
+  loadoutRenamedToast,
   loadoutSavedToast
 } from '@/ui/inventoryText'
 import { detectBuild } from './buildDetect'
@@ -105,6 +106,6 @@ export function renameLoadout(id: string, name: string): boolean {
   if (!loadouts.list.some(l => l.id === id)) return false
   const next = name.trim().slice(0, 8) || '无名构筑'
   loadouts.rename(id, next)
-  ui.toast(loadoutSavedToast(next), 'success')
+  ui.toast(loadoutRenamedToast(next), 'success')
   return true
 }
