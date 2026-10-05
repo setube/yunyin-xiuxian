@@ -74,8 +74,14 @@
           color="var(--color-azure)"
           :height="8"
         />
-        <!-- 与修为那句同一份估算(缺口 ÷ 现速,见 core/progress.qiEtaSec):满了没得等,便不写 -->
-        <p v-if="resources.qi < player.qiCapValue && qiEtaText" class="mt-1 text-right text-[10px] text-ink-faint tabular">
+        <!--
+          与修为那句同一份估算,分两档:未过灵气充盈线时报「充盈」—— 那是修为要跳一档的时刻,
+          那句「修为 +X%」随手可得(qiRich / QI_RICH_BONUS 同源);过了半才报回满。两行互斥,不打架。
+        -->
+        <p v-if="qiRichEtaText" class="mt-1 text-right text-[10px] text-ink-faint tabular">
+          按现速,灵气充盈约 {{ qiRichEtaText }}<span class="text-ink-soft">(修为 +{{ qiRichBonusPct }})</span>
+        </p>
+        <p v-else-if="resources.qi < player.qiCapValue && qiEtaText" class="mt-1 text-right text-[10px] text-ink-faint tabular">
           按现速,灵气回满约 {{ qiEtaText }}
         </p>
         <!-- 以灵气疗伤(修复):灵气积余的用途,代价随境界指数增长 -->
@@ -409,7 +415,7 @@
   } from '@/core/tribulationDecision'
   import { reliefElements, rootElements } from '@/core/linggenAffinity'
   import { comprehendGongfa } from '@/core/gongfaService'
-  import { expEtaSec, qiEtaSec } from '@/core/progress'
+  import { expEtaSec, qiEtaSec, qiRichEtaSec } from '@/core/progress'
   import { usePill } from '@/core/pillService'
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
@@ -419,7 +425,7 @@
   import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import { buffDef } from '@/data/buffs'
   import { pillDef } from '@/data/pills'
-  import { COMPREHEND_PAGE_COST } from '@/data/constants'
+  import { COMPREHEND_PAGE_COST, QI_RICH_BONUS } from '@/data/constants'
   import { todayWeather } from '@/core/weather'
   import { weatherTribulationLine } from '@/ui/weatherText'
   import { formatCountdown, formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
@@ -461,6 +467,13 @@
     const sec = qiEtaSec()
     return sec > 0 ? formatDuration(sec) : ''
   })
+  /** 是否仍差一点才到「灵气充盈」—— 到了就不报,因为修为已在享那档加成 */
+  const qiRichEtaText = computed(() => {
+    const sec = qiRichEtaSec()
+    return sec > 0 ? formatDuration(sec) : ''
+  })
+  /** 灵气充盈的修为加成(取自常数,不在界面手抄) */
+  const qiRichBonusPct = computed(() => formatPercent(QI_RICH_BONUS))
   const cultivation = useCultivationStore()
   const inventory = useInventoryStore()
   const ui = useUiStore()
