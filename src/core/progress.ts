@@ -229,6 +229,17 @@ export function qiRichEtaSec(): number {
   return gap / rate
 }
 
+/** 闭关「每多得修为/秒」—— 预览与闭关中活数共用同一份 base 与加成,不各算一遍 */
+function retreatGainPerSec(): number {
+  const player = usePlayerStore()
+  const def = buffDef('retreat')
+  if (!def) return 0
+  const boost = def.mods.cultivationSpeed ?? 0
+  if (!(boost > 0)) return 0
+  const base = baseCultPerSec(player.major, player.sub)
+  return base > 0 ? base * boost : 0
+}
+
 /**
  * 闭关一炷香「约多得」的修为预览 —— 只报加成那部分,不是闭关期间全部产出。
  *
@@ -239,16 +250,22 @@ export function qiRichEtaSec(): number {
  * 这条只在不闭关时出现,报的是「点了会多拿多少」而不是「正在拿多少」。
  */
 export function retreatGainText(): string {
-  const player = usePlayerStore()
   const def = buffDef('retreat')
-  if (!def) return ''
-  const boost = def.mods.cultivationSpeed ?? 0
-  if (!(boost > 0)) return ''
-  const base = baseCultPerSec(player.major, player.sub)
-  if (!(base > 0)) return ''
-  const total = base * boost * def.durationSec
-  if (!(total > 0)) return ''
-  return `此行约多得修为 ${formatGN(total)}`
+  const perSec = retreatGainPerSec()
+  if (!def || !(perSec > 0)) return ''
+  const total = perSec * def.durationSec
+  return total > 0 ? `此行约多得修为 ${formatGN(total)}` : ''
+}
+
+/**
+ * 闭关已过 elapsed 秒「已多得/多得的」修为 —— 与预览行同一份每多得速率,
+ * 闭关中的活数(elapsed 由调用方按 buff 已走时长给,不在此手抄 300)。
+ */
+export function retreatGainedText(elapsedSec: number): string {
+  const perSec = retreatGainPerSec()
+  if (!(perSec > 0) || !(elapsedSec > 0)) return ''
+  const gained = perSec * elapsedSec
+  return gained > 0 ? `此行已多得修为 ${formatGN(gained)}` : ''
 }
 
 /** 每日重置(引擎在日期变化时调用) */

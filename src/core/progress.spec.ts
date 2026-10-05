@@ -5,7 +5,7 @@ import { formatGN } from '@/utils/format'
 import { buffDef } from '@/data/buffs'
 import { CULT_BASE_SPEED } from '@/data/constants'
 import { baseCultPerSec } from './formulas'
-import { retreatGainText } from './progress'
+import { retreatGainText, retreatGainedText } from './progress'
 
 /**
  * 闭关预览 —— 按钮那句「此行约多得修为 X」,与修炼行读同一份
@@ -46,5 +46,18 @@ describe('retreatGainText 闭关约多得预览', () => {
     const hi = baseCultPerSec(player.major, player.sub)
     expect(hi).toBeGreaterThan(lo)
     expect(retreatGainText()).toBe(`此行约多得修为 ${formatGN(hi * 1.5 * 300)}`)
+  })
+
+  it('闭关中的活数:过半 → 恰为全长的一半(同一速率,只差已走时长)', () => {
+    const player = usePlayerStore()
+    const perSec = baseCultPerSec(player.major, player.sub) * 1.5 // 与实现同一口径的基准量
+    const half = perSec * 150
+    const full = perSec * 300
+    expect(retreatGainedText(150)).toBe(`此行已多得修为 ${formatGN(half)}`)
+    expect(full).toBeCloseTo(half * 2, 6) // 585 = 292.5 × 2,时长翻倍→所得翻倍
+  })
+
+  it('闭关中的活数:未起步(0 秒)→ 空白,不报「已多得 0」', () => {
+    expect(retreatGainedText(0)).toBe('')
   })
 })
