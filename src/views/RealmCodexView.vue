@@ -177,7 +177,7 @@
       <p class="mt-1.5 text-[11px] text-azure">
         今日利 <span class="text-gold-ink">{{ favoredWorldName }}</span> —— 与天时不同:天时是全境之气,星象只利一方。
       </p>
-      <button class="mt-2 w-full text-left text-[10px] text-azure" @click="showAllMansions = !showAllMansions">
+      <button class="-my-1 mt-2 w-full py-2 text-left text-[10px] text-azure" @click="showAllMansions = !showAllMansions">
         {{ showAllMansions ? `收起${cnNumber(MANSIONS.length)}宿` : `展开查看 ${MANSIONS.length} 宿 →` }}
       </button>
       <div v-if="showAllMansions" class="mt-2 divide-y divide-ink/6">
