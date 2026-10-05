@@ -94,6 +94,11 @@
     <section>
       <SectionTitle title="修行志" hint="午夜更替 · 未成作罢" />
       <div class="card-ink mt-2 px-4 py-3">
+        <!-- 更替时刻摆成活数:不只说「未成作罢」的规矩,还报还剩几时 —— 与 SectionTitle 的 hint 同面日历 -->
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-[9px] text-ink-faint">距午夜更替</span>
+          <span class="countdown-slot text-[10px] text-amber-ink tabular">{{ tilRollover }}</span>
+        </div>
         <template v-if="mainQuest">
           <p class="flex items-center justify-between">
             <span class="font-kai text-[13px] tracking-wider text-ink">{{ mainQuest.name }}</span>
@@ -174,6 +179,9 @@
   import { homeStatusText } from '@/ui/homeStatus'
   import { rewardPreview } from '@/core/progress'
   import { mainQuestNav, dailyTaskNav } from '@/ui/questNav'
+  import { useNow } from '@/composables/useNow'
+  import { secsUntilNextMidnight } from '@/utils/time'
+  import { formatCountdown } from '@/utils/format'
   import { weatherEffectText } from '@/ui/weatherText'
   import { generateCurrentGoal, type Goal } from '@/core/goal'
   import SectionTitle from '@/components/common/SectionTitle.vue'
@@ -247,4 +255,8 @@
       nav: dailyTaskNav(t.counterKey)
     }))
   )
+
+  /** 距午夜更替的活倒计时 —— 日课「未成即作罢」还剩几时,同屏数得出来 */
+  const now = useNow()
+  const tilRollover = computed(() => formatCountdown(secsUntilNextMidnight(now.value)))
 </script>

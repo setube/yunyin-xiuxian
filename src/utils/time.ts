@@ -26,3 +26,15 @@ export function formatDate(ts: number): string {
   const d = new Date(ts)
   return `${d.getMonth() + 1}月${d.getDate()}日`
 }
+
+/**
+ * 距下一个本地午夜还有多少秒 —— 日课更替的时刻。
+ *
+ * 与 todayStr / todayLocalNum 同一面本地日历(不以 UTC 日计,见 todayLocalNum 注):
+ * 取「今日 24:00」即明日 00:00。纯函数,输入是时间戳,便于测试不碰墙钟。
+ */
+export function secsUntilNextMidnight(from: number): number {
+  const d = new Date(from)
+  const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0)
+  return Math.max(0, (next.getTime() - from) / 1000)
+}
