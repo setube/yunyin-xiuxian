@@ -188,6 +188,12 @@ export interface ResolvedEquipStats {
     /** 数值之后的话(如「%」) */
     after: string
     rarity: AffixRarity
+    /**
+     * 随机浮动(0~1,取自实例上实际存着的 roll)。
+     * 显示「浮 X%」让玩家分得清一条满掷与一条贴底 —— 封存/重铸的取舍
+     * 全靠它跟词条数上限两个数成账,藏起来就是让玩家瞎赌。
+     */
+    roll: number
   }[]
 }
 
@@ -243,7 +249,8 @@ export function resolveEquipStats(inst: EquipmentInstance): ResolvedEquipStats {
       before,
       value: String(value),
       after,
-      rarity: def.rarity
+      rarity: def.rarity,
+      roll: roll.roll
     })
   }
   return { flats, mods, affixLines }

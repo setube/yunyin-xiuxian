@@ -95,6 +95,8 @@
             </span>
             <span class="ml-auto min-w-0 text-right text-[11px] leading-snug text-ink-soft">
               {{ line.before }}<span class="tabular font-medium text-ink">{{ line.value }}</span>{{ line.after }}
+              <!-- 浮动:这条掷到了它自己的几成 —— 封存/重铸的数,藏起来就是瞎赌 -->
+              <span class="text-[9px] text-ink-faint" :title="affixRollHint">{{ affixRollText(line.roll) }}</span>
             </span>
             <button
               v-if="canSealAffix(line.id)"
@@ -110,7 +112,7 @@
           </li>
         </ul>
         <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
-          这条儿按珍贵而排,左侧色边即它的成色
+          这条儿按珍贵而排,左侧色边即品级;「浮 X%」是这条掷到了上下限间的几成
         </p>
       </template>
       <template v-if="buildPreview">
@@ -391,7 +393,7 @@
   import { playSfx } from '@/core/audio'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/ui/statNames'
-  import { equipNextLevelText } from '@/ui/equipText'
+  import { affixRollHint, affixRollText, equipNextLevelText } from '@/ui/equipText'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
   import { useAffixTransfer } from '@/composables/useAffixTransfer'
   import BaseModal from '@/components/common/BaseModal.vue'
