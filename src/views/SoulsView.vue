@@ -103,6 +103,8 @@
 
     <!-- 散置形意 -->
     <BaseModal :open="idleOpen" title="散置形意" @close="idleOpen = false">
+      <!-- 散去一无所得:原器早毁,道源也不返 —— 这句得在动手之前看见,不能等散了才发现 -->
+      <p class="mb-2 text-[10px] leading-relaxed text-ink-faint">{{ dissolveNote() }}</p>
       <div v-if="idleSouls.length > 0" class="card-ink max-h-64 divide-y divide-ink/7 overflow-y-auto px-4">
         <div v-for="soul in idleSouls" :key="soul.uid" class="flex items-center justify-between gap-2 py-2.5">
           <div class="min-w-0">
@@ -135,7 +137,8 @@
 
     <!-- 凝炼台 -->
     <BaseModal :open="forgeOpen" title="凝炼台" @close="forgeOpen = false">
-      <p class="mb-2 text-[11px] leading-relaxed text-ink-faint">入炉即毁原器,耗道源 {{ SOUL_REFINE_COST }}。</p>
+      <!-- 代价与余额同屏给出 —— 弹窗盖住页面标题栏(道源在那上),不点开不知道还够不够 -->
+      <p class="mb-2 text-[11px] leading-relaxed text-ink-faint">{{ refineCostLine(SOUL_REFINE_COST, formatNum(endgame.daoSource)) }}</p>
       <div v-if="refinable.length > 0" class="card-ink max-h-64 divide-y divide-ink/7 overflow-y-auto px-4">
         <div v-for="row in refinable" :key="row.inst.uid" class="flex items-center justify-between gap-2 py-2.5">
           <div class="min-w-0">
@@ -177,6 +180,7 @@
   import { goBack } from '@/router/goBack'
   import { formatNum } from '@/utils/format'
   import { modsText } from '@/ui/statNames'
+  import { dissolveNote, refineCostLine } from '@/ui/soulText'
   import { equipmentTemplate } from '@/data/equipment'
   import { SOUL_SLOTS, soulGradeDef, soulMods, soulName, soulTypeDef, type SoulInstance } from '@/data/souls'
   import { canRefine, dissolveSoul, previewSoul, refineEquipment, removeSoul, SOUL_REFINE_COST, wearSoul } from '@/core/soulService'
