@@ -10,7 +10,16 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
-import { equipAllBest, equipBestFor, bestEquipFor, betterEquip, equipSetCombo, equippablePower, unequipAllEquipped } from './equipBest'
+import {
+  equipAllBest,
+  equipBestFor,
+  bestEquipFor,
+  betterEquip,
+  equipSetCombo,
+  equipSetPreview,
+  equippablePower,
+  unequipAllEquipped
+} from './equipBest'
 import { resolveEquipStats, generateEquipment } from './equipGen'
 import { mulberry32, RandomService } from '@/utils/random'
 import { affixDef, affixValue } from '@/data/affixes'
@@ -229,6 +238,9 @@ describe('一键穿齐套装', () => {
     inv.items = [worn, a, h]
     inv.equip(worn.uid, 'weapon')
     inv.equip(h.uid, 'head')
+
+    // 干跑与实穿同一份取舍:预览报几件,点下去就换几件
+    expect(equipSetPreview('s_tiebi'), '预览与 equipSetCombo 同源,头槽已齐、武器更强的都不动').toBe(0)
     expect(betterEquip(a, worn), '旧粗排:天品压过良品,该降级换上 — 这是要修的坏行为').toBe(true)
     expect(equippablePower(worn)).toBeGreaterThan(equippablePower(a))
     expect(equipSetCombo('s_tiebi'), '真实战力更强的已穿件不动;头槽本就齐').toBe(0)

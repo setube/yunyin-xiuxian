@@ -114,12 +114,8 @@ export function unequipAllEquipped(): number {
   return removed
 }
 
-/**
- * 一键穿齐某共鸣套(玩家反馈:「能不能装备按照套装排序,或者穿套装」)。
- * 每槽换上该套**已持有里最强**的一件(真实战力,同分回退到粗排,同 stronger);
- * 已穿的那件更强就不动 —— 穿套装绝不降级。返回换上几件。
- */
-export function equipSetCombo(setId: string): number {
+/** 该套每槽「已持有里最强」的一件 —— 穿齐与预览共用,不各算一遍 */
+function bestSetPieces(setId: string): Map<EquipSlot, EquipmentInstance> {
   const inventory = useInventoryStore()
   const bestPerSlot = new Map<EquipSlot, EquipmentInstance>()
   for (const it of inventory.items) {
@@ -128,12 +124,35 @@ export function equipSetCombo(setId: string): number {
     const cur = bestPerSlot.get(tpl.slot)
     if (!cur || stronger(it, cur)) bestPerSlot.set(tpl.slot, it)
   }
+  return bestPerSlot
+}
+
+/**
+ * 一键穿齐某共鸣套(玩家反馈:「能不能装备按照套装排序,或者穿套装」)。
+ * 每槽换上该套**已持有里最强**的一件(真实战力,同分回退到粗排,同 stronger);
+ * 已穿的那件更强就不动 —— 穿套装绝不降级。返回换上几件。
+ */
+export function equipSetCombo(setId: string): number {
+  const inventory = useInventoryStore()
   let changed = 0
-  for (const [slot, piece] of bestPerSlot) {
+  for (const [slot, piece] of bestSetPieces(setId)) {
     if (inventory.equipped[slot] === piece.uid) continue
     const occupant = inventory.equipped[slot] ? inventory.findItem(inventory.equipped[slot]!) : undefined
     if (occupant && stronger(occupant, piece)) continue
     inventory.equip(piece.uid, slot)
+    changed += 1
+  }
+  return changed
+}
+
+/** 干跑:这套现在会换上几件 —— 与 equipSetCombo 同一份取舍,只数不动,按钮「穿齐 →(换 N)」用 */
+export function equipSetPreview(setId: string): number {
+  const inventory = useInventoryStore()
+  let changed = 0
+  for (const [slot, piece] of bestSetPieces(setId)) {
+    if (inventory.equipped[slot] === piece.uid) continue
+    const occupant = inventory.equipped[slot] ? inventory.findItem(inventory.equipped[slot]!) : undefined
+    if (occupant && stronger(occupant, piece)) continue
     changed += 1
   }
   return changed
