@@ -76,7 +76,7 @@
         </p>
       </div>
 
-      <SectionTitle title="本世地界" hint="这一世的路,按段而行" />
+      <SectionTitle title="本世地界" :hint="travelHint" />
       <div class="space-y-2">
         <div
           v-for="p in view.places"
@@ -167,6 +167,14 @@
 
   /** 眼下这处 —— 路线里第一个「可往却尚未通关」的节点,地图上的「下一步」 */
   const focusNode = computed(() => view.value?.places.find(p => unlocked(p.nodeId) && !cleared(p.nodeId)) ?? null)
+
+  /** 标题旁那一句:「已通 X/Y 段」—— 与下方路段卡读同一份 view.places + cleared,不另报口径 */
+  const travelHint = computed(() => {
+    const ps = view.value?.places ?? []
+    if (ps.length === 0) return '这一世的路,按段而行'
+    const done = ps.filter(p => cleared(p.nodeId)).length
+    return `已通 ${done}/${ps.length} 段 · 按段而行`
+  })
 
   /** 路段三态:终点已通是「走过的路」、可往未通是「正要走的路」,皆画实墨;
       仍未至的路虚画淡线 —— 走过的路在纸上被一段段点染成色 */
