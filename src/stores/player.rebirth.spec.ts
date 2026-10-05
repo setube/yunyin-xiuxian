@@ -2,9 +2,10 @@
  * 转世「新的一世」—— 本世进程清零、跨世记忆保留(ISS-015 / TASK-009)
  *
  * 边界(与 DEC-003 对齐):
- *   - 必清:连胜/当日巡游/进行中的秘境/进行中的区域事件 —— 它们属「这一世」的当下
- *   - 保留:镇压与区域兴衰(「成长改变世界」的世界记忆)、机缘选择记忆
- *     (fortuneChoices,「世界记得你的选择」)、奇遇连锁(eventChains)
+ *   - 必清:连胜/当日巡游/进行中的秘境/进行中的区域事件/镇压收益 —— 它们属「这一世」的当下
+ *     (镇压收益逐 tick 派发灵石/装备,旧世远境跨世即数值爆炸,转世妖气复聚)
+ *   - 保留:区域兴衰战绩与宿敌(「成长改变世界」的世界记忆,不含镇压权益)、
+ *     机缘选择记忆(fortuneChoices,「世界记得你的选择」)、奇遇连锁(eventChains)
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -27,8 +28,9 @@ function seedPlayer(p: ReturnType<typeof usePlayerStore>): void {
     finished: false
   } as SecretRealmState
   p.regionEvent = { regionId: 'qingyun', eventId: 'ev_raiders', endsAt: 9e15 } as never
-  // 跨世记忆:全保留
+  // 镇压收益是本世进程,转世即散(妖气复聚);机缘/连锁是跨世记忆,全保留
   p.suppressedRegions = ['qingyun']
+  p.suppressedSince = { qingyun: 12345 }
   p.fortuneChoices = { ft_sword_remnant: 'take' }
   p.eventChains = { old_man_stone: 2 }
 }
@@ -38,7 +40,7 @@ describe('player.rebirth 转世状态重置', () => {
     setActivePinia(createPinia())
   })
 
-  it('清空本世进程:连胜/当日巡游/秘境/区域事件', () => {
+  it('清空本世进程:连胜/当日巡游/秘境/区域事件/镇压收益', () => {
     const p = usePlayerStore()
     p.initCharacter('测试道友', { roots: [] } as never)
     seedPlayer(p)
@@ -49,17 +51,19 @@ describe('player.rebirth 转世状态重置', () => {
     expect(p.lastCaveEventDay).toBe(0)
     expect(p.secretRealm).toBeNull()
     expect(p.regionEvent).toBeNull()
+    // 镇压收益是本世产出(逐 tick 派发灵石/装备),转世即妖气复聚 ——
+    // 旧世压下的远境若跨世,新世按旧阶位派发高阶装备,数值爆炸
+    expect(p.suppressedRegions).toHaveLength(0)
+    expect(Object.keys(p.suppressedSince)).toHaveLength(0)
   })
 
-  it('保留跨世记忆:镇压/机缘选择/奇遇连锁', () => {
+  it('保留跨世记忆:机缘选择/奇遇连锁(「世界记得你的选择」)', () => {
     const p = usePlayerStore()
     p.initCharacter('测试道友', { roots: [] } as never)
     seedPlayer(p)
 
     p.rebirth({ roots: [] } as never)
 
-    // 「成长改变世界」:镇压过的区域仍记住你
-    expect(p.suppressedRegions).toEqual(['qingyun'])
     // 「世界记得你的选择」:机缘取/弃记忆不随转世清空
     expect(p.fortuneChoices).toEqual({ ft_sword_remnant: 'take' })
     expect(p.eventChains).toEqual({ old_man_stone: 2 })

@@ -510,6 +510,12 @@ export const usePlayerStore = defineStore(
       divination.value = null
       // 突破准备也随这一世散去(下一世要重新备)
       breakthroughPrep.value = null
+      // 镇压权益随皮囊散去:旧世压下的远境(多为高阶)若跨世,新世炼气仍在按旧阶位
+      // 派发高阶装备/灵石,数值当场爆炸 —— 妖气复聚、回到历练地。这属于「我拥有多少」
+      // 而非「我是谁」;宿敌记忆与区域战绩(regionStats)仍随神魂不灭(见 samsaraAudit
+      // 'suppress' 一行的 partial 口径,「世界记得你」的叙事不丢)
+      suppressedRegions.value = []
+      suppressedSince.value = {}
       // 外物随皮囊散去:灵兽、洞府建筑、灵脉投资都是「我拥有多少」,不是「我是谁」
       petId.value = null
       dongfu.resetForRebirth()
