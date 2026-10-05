@@ -6,6 +6,11 @@
         <span class="text-[10px] tracking-[0.3em] text-ink-faint">战 力</span>
         <span class="font-kai text-[18px] text-cinnabar tabular">{{ formatGN(stats.power) }}</span>
       </div>
+      <!--
+        战力是全书出现最频繁却从不解释的一个数 —— 一句算式说清它从哪来。
+        权重取自 POWER_WEIGHTS,与 powerScore 同一份,界面不手抄
+      -->
+      <p class="mt-0.5 text-right text-[9px] text-ink-faint tabular">{{ powerExplainText() }}</p>
       <div class="ink-divider my-3" />
       <!-- 灵根 -->
       <!--
@@ -516,7 +521,7 @@
   import { rootElements, tendencyLines } from '@/core/linggenAffinity'
   import { cnNumber, formatGN, formatPercent } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
-  import { STAT_KEYS, STAT_NAMES, modsText, signedPercent, statCaveat } from '@/ui/statNames'
+  import { STAT_KEYS, STAT_NAMES, modsText, powerExplainText, signedPercent, statCaveat } from '@/ui/statNames'
   import { rebirthDecisionHint } from '@/ui/rebirthText'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import BaseModal from '@/components/common/BaseModal.vue'

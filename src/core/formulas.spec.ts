@@ -1,18 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import { gte, lt, ratio, toNum } from '@/utils/gnum'
+import { gte, gn, lt, ratio, toNum } from '@/utils/gnum'
 import {
+  POWER_WEIGHTS,
   baseCombatStats,
   baseCultPerSec,
   breakthroughBaseRate,
   buildingCost,
   expRequirement,
   powerScale,
+  powerScore,
   stoneByTier,
   tribulationWaveDamage,
   winChanceFromRatio
 } from './formulas'
+import { powerExplainText } from '@/ui/statNames'
 
 describe('GameFormula 成长曲线', () => {
+  it('战力：算式 = 攻×3 + 防×2 + 血×0.15，权重与释义同源，不许改一处漏一处', () => {
+    const a = gn(10)
+    const d = gn(20)
+    const h = gn(100)
+    const got = toNum(powerScore(a, d, h))
+    const want = 10 * POWER_WEIGHTS.attack + 20 * POWER_WEIGHTS.defense + 100 * POWER_WEIGHTS.hp
+    expect(got).toBeCloseTo(want, 6)
+    // 人物页那句释义必须真的来自同一份权重
+    expect(powerExplainText()).toBe(`攻×${POWER_WEIGHTS.attack} + 防×${POWER_WEIGHTS.defense} + 血×${POWER_WEIGHTS.hp}`)
+  })
   it('突破需求单调递增', () => {
     const a = expRequirement(0, 0)
     const b = expRequirement(0, 5)
