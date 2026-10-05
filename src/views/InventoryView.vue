@@ -35,9 +35,17 @@
         <button
           v-for="row in slotRows"
           :key="row.slot"
-          class="card-ink flex flex-col items-center gap-1 px-2 py-2.5 active:scale-95"
+          class="card-ink relative flex flex-col items-center gap-1 px-2 py-2.5 active:scale-95"
+          :aria-label="`${row.name}${row.upgradeable ? ',行囊里有更强的一件' : ''}`"
           @click="pickerSlot = row.slot"
         >
+          <!-- 行囊里有更强的:槽卡上一枚小章 —— 与一键换装同一把 bestEquipFor,不比它看得少 -->
+          <span
+            v-if="row.upgradeable"
+            role="img"
+            :aria-label="`${row.name}栏,行囊里有更强的一件`"
+            class="absolute right-1 top-1 rounded-sm bg-gold-ink/20 px-1 font-kai text-[8px] leading-[12px] text-gold-ink"
+          >可换</span>
           <span class="text-[9px] text-ink-faint">
             {{ row.name }}
             <template v-if="row.stock">· {{ row.stock }}</template>
@@ -715,12 +723,15 @@
     SLOTS.map(slot => {
       const uid = inventory.equipped[slot]
       const item = uid ? inventory.findItem(uid) : undefined
+      // 「行囊里还有更强的」—— 与一键换装同一把 bestEquipFor,槽卡不该比它看得少
+      const best = bestEquipFor(slot)
       return {
         slot,
         name: EQUIP_SLOT_NAMES[slot],
         item,
         template: item ? equipmentTemplate(item.templateId) : undefined,
-        stock: inventory.bagItems.filter(it => equipmentTemplate(it.templateId)?.slot === slot).length
+        stock: inventory.bagItems.filter(it => equipmentTemplate(it.templateId)?.slot === slot).length,
+        upgradeable: !!best && best.uid !== uid
       }
     })
   )
