@@ -3,7 +3,7 @@
  * 所有系统通过 track() 汇报行为,由此统一驱动成就与任务
  */
 import type { AchvCond, CounterKey, RewardBundle } from '@/types'
-import { gte } from '@/utils/gnum'
+import { gte, sub, toNum } from '@/utils/gnum'
 import { todayStr } from '@/utils/time'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
@@ -172,6 +172,25 @@ function checkDaily(): void {
       ui.toast(withReward(`日课已成「${task.name}」`, lines), 'success')
     }
   }
+}
+
+/**
+ * 修为圆满的估算时长(秒)—— 按现速。
+ *
+ * 现速即 player.cultPerSec(闭关/丹药/天时俱已在内),这里只做
+ * 「缺口 ÷ 现速」这一道除法,不另造口径;已圆满或速率为 0 时返回 0。
+ * 离线上限之外不再累积,故这只是「按现速」的估算,不是担保 ——
+ * 与修炼页那句「按现速,修为圆满约……」的措辞是同一份承诺。
+ */
+export function expEtaSec(): number {
+  const player = usePlayerStore()
+  if (player.expFull) return 0
+  // cultPerSec 本就是普通数(见 player store),别拿 toNum 去拧它
+  const rate = player.cultPerSec
+  if (!(rate > 0)) return 0
+  const gap = toNum(sub(player.expReq, player.exp))
+  if (!(gap > 0)) return 0
+  return gap / rate
 }
 
 /** 每日重置(引擎在日期变化时调用) */

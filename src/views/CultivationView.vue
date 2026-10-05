@@ -34,6 +34,13 @@
         <div :class="player.expFull ? 'bar-charged' : ''">
         <ProgressBar :value="player.expProgress" color="var(--color-cinnabar)" :height="8" />
       </div>
+      <!--
+        进度条只能看出「多少」,看不出「多久」—— 挂机游戏的第二问从来是「还得熬几时」。
+        估算是同源除法(缺口 ÷ 现速,见 core/progress.expEtaSec):只报约数,词的落点是现速。
+      -->
+      <p v-if="!player.expFull && expEtaText" class="mt-1 text-right text-[10px] text-ink-faint tabular">
+        按现速,修为圆满约 {{ expEtaText }}
+      </p>
       <!-- 修炼速度是玩家最常盯的数,故在它自己那一行就地摊开:基础 × (1 + 各来源) -->
       <div v-if="showCultBreakdown" class="mt-2 rounded-md bg-paper-deep/60 px-2.5 py-2 text-[10px]">
         <p class="text-ink-soft">
@@ -398,6 +405,7 @@
   } from '@/core/tribulationDecision'
   import { reliefElements, rootElements } from '@/core/linggenAffinity'
   import { comprehendGongfa } from '@/core/gongfaService'
+  import { expEtaSec } from '@/core/progress'
   import { usePill } from '@/core/pillService'
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
@@ -410,7 +418,7 @@
   import { COMPREHEND_PAGE_COST } from '@/data/constants'
   import { todayWeather } from '@/core/weather'
   import { weatherTribulationLine } from '@/ui/weatherText'
-  import { formatCountdown, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
+  import { formatCountdown, formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
   import { signedPercent } from '@/ui/statNames'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
   import { prepPillShortToast, repairActLabel } from '@/ui/cultivationText'
@@ -439,6 +447,11 @@
       .filter(r => r.value !== 0)
   )
   const cultMultiplier = computed(() => modOf(player.finalStats.mods, 'cultivationSpeed'))
+  /** 修为圆满的估算时长文案(空白即不显示,见 core/progress.expEtaSec) */
+  const expEtaText = computed(() => {
+    const sec = expEtaSec()
+    return sec > 0 ? formatDuration(sec) : ''
+  })
   const cultivation = useCultivationStore()
   const inventory = useInventoryStore()
   const ui = useUiStore()
