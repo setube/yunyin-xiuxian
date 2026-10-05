@@ -102,7 +102,8 @@ export const QI_CAP_SUB_GROWTH = 1.12
 /** 基础灵气回复/秒 —— Phase 39 由 1.2 降到 0.9(灵气这条线一并收慢) */
 export const QI_BASE_REGEN = 0.9
 export const QI_REGEN_MAJOR_GROWTH = 5.2
-/** 灵气高于上限一半时,修炼速度额外加成 */
+/** 灵气高于上限【一半】时,修炼速度额外加成 */
+export const QI_RICH_RATIO = 0.5
 export const QI_RICH_BONUS = 0.15
 
 // ============ 突破 ============
