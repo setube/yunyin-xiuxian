@@ -36,6 +36,11 @@
       <span class="flex items-center gap-1 whitespace-nowrap" title="灵气">
         <GameIcon name="wind" :size="13" class="text-azure" />
         {{ formatNum(Math.floor(resources.qi)) }}
+        <!--
+          灵气只给当前值不给上限,玩家不知道「离满还差多少」(充盈/突破都以 qiCapValue 为界)。
+          但 380px 以下让位:顶栏右组整组 shrink-0,多一节说不定又把 320 逼回两行去
+        -->
+        <span class="hidden text-ink-faint/70 min-[380px]:inline">/{{ formatNum(Math.floor(player.qiCapValue)) }}</span>
       </span>
       <!-- 只有图标的入口必须自带名字:否则读屏只会念「链接」,自动化也点不着它 -->
       <RouterLink
