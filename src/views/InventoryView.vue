@@ -57,6 +57,15 @@
       <p class="mt-2 text-center text-[10px] text-ink-faint">点击部位查看候选,行囊满时新掉落自动折作器灵尘</p>
       <!-- 玩家反馈「一键装备最高阶级品质装备快捷键」:每槽换上当前最强,已是则不动 -->
       <button class="btn-ghost mt-2 w-full !py-1.5 !text-[11px]" @click="onEquipAllBest">一键 · 各部位换上当前最强</button>
+      <!--
+        空一身:与一键换装成对的反向出口 —— 已佩戴的件不参加分解/收纳,
+        想清一口袋破烂,得先把身上这九格脱干净。只脱不毁,件全回行囊
+      -->
+      <button
+        v-if="equippedCount > 0"
+        class="btn-ghost mt-2 w-full !py-1.5 !text-[11px] !text-ink-faint"
+        @click="onUnequipAll"
+      >空一身 · 卸下全部({{ equippedCount }})</button>
 
       <!-- 全部藏品(含佩戴中):部位槽之下的完整清单 -->
       <div v-if="allItems.length" class="mt-4">
@@ -633,7 +642,7 @@
   import { salvageOf } from '@/core/salvage'
   import { add, gnZero } from '@/utils/gnum'
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
-  import { equipAllBest, equipSetCombo } from '@/core/equipBest'
+  import { equipAllBest, equipSetCombo, unequipAllEquipped } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { studyEta } from '@/core/loreService'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
@@ -691,6 +700,9 @@
       .filter((row): row is { def: EquipSetDef; count: number; active: boolean } => row !== null)
       .sort((a, b) => Number(b.active) - Number(a.active) || b.count - a.count)
   })
+
+  /** 已佩戴的槽位数 —— 「空一身」按钮的计数(身上没件时不出现,免得摆个 0 的按钮) */
+  const equippedCount = computed(() => SLOTS.filter(slot => inventory.equipped[slot]).length)
 
   const slotRows = computed(() =>
     SLOTS.map(slot => {
@@ -894,6 +906,12 @@
   function onEquipAllBest(): void {
     const changed = equipAllBest()
     ui.toast(changed > 0 ? `已自动换上 ${changed} 件当下最能打的(按真实战力挑)` : '已是更能打的一身', changed > 0 ? 'success' : 'info')
+  }
+
+  /** 空一身:卸下全部已佩戴,件回到行囊 —— 以便清理/换血(只脱不毁) */
+  function onUnequipAll(): void {
+    const removed = unequipAllEquipped()
+    ui.toast(removed > 0 ? `已卸下 ${removed} 件,尽数回到行囊` : '身上已无佩戴', removed > 0 ? 'success' : 'info')
   }
 
   /** 一键穿齐套装:换上该套已持有的件,已穿更强的则不换 */
