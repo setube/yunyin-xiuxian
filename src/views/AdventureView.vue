@@ -24,8 +24,8 @@
       <SectionTitle title="历练" hint="行万里路,炼一颗心" />
       <p class="text-[10px] leading-relaxed text-violet-ink">
         今日星象:{{ mansionLine }} —— 利
-        <span class="text-gold-ink">{{ favoredWorldName }}</span>
-        ,在其地历练际遇更易(他处不加)。
+        <span class="text-gold-ink">{{ favoredWorldName }}</span
+        >,在其地历练际遇<span class="tabular" title="秘境等其他活动不受此加成">+{{ mansionLuckPct }}%</span>(他处不加)。
       </p>
       <p v-if="player.suppressedRegions.length > 0" class="text-[10px] text-gold-ink">
         镇压收益中 {{ player.suppressedRegions.length }} 处 —— 与历练互不冲突,可同时收取;一次只能历练一处。
@@ -299,7 +299,7 @@
   import { worldOf, type WorldDef } from '@/data/realms'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
-  import { todayMansion, favoredWorld, todayMansionLine } from '@/core/astronomy'
+  import { todayMansion, favoredWorld, todayMansionLine, MANSION_EVENT_LUCK } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
   import { canEnterRegion, entryBlockReason, worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
@@ -360,6 +360,8 @@
   /** 今日星象:值日之宿所利界域,由此知今日该往哪一片地界走 */
   const mansionLine = computed(() => todayMansionLine())
   const favoredWorldName = computed(() => worldDef(favoredWorld(todayMansion())).name)
+  /** 值日之宿所利的百分数:一处来源,顺带被 `todayMansionLine` 同一条乘法链喂着 */
+  const mansionLuckPct = computed(() => Math.round(MANSION_EVENT_LUCK * 100))
   /** 区域适配原因点按展开(移动端无 hover) */
   const adaptExpand = ref<string | null>(null)
 
