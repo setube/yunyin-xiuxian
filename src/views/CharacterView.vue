@@ -504,6 +504,13 @@
           </p>
           <p class="mt-0.5 text-[11px] text-ink-faint">{{ m!.desc }}</p>
           <p class="mt-0.5 text-[11px] text-azure tabular">{{ modsText(m!.mods) }}</p>
+          <!--
+            拜师前就该看见与这位师尊当下的契合(同一份 mentorVerdict 读数,不必等拜完):
+            师承给的是增益,选谁合谁,先让玩家做得了知情的一笔
+          -->
+          <p class="mt-0.5 text-[10px] tabular" :class="mentorAffinityChip(m!.id)">
+            当下契合 {{ mentorAffinityText(m!.id) }}
+          </p>
         </button>
       </div>
       <template #footer>
@@ -543,6 +550,7 @@
   import { fruitCountLabel, fruitMarginalInfo } from '@/core/resourceGuidance'
   import { branchCodex, materialCodex } from '@/ui/codex'
   import { mentorVerdict, mentorChoices } from '@/core/mentorService'
+  import type { MentorId } from '@/data/mentors'
   import { mentorHint } from '@/core/fortuneChain'
   import { buildIdentity } from '@/core/identityService'
   import { rootElements, tendencyLines } from '@/core/linggenAffinity'
@@ -722,6 +730,17 @@
   // Phase 31 S1 师承
   const mentorDialog = ref(false)
   const mentorVer = computed(() => mentorVerdict(player.mentor))
+  /** 拜师前预读契合度:与拜后的 verdict 同一函数,只是人还没拜 —— 选谁合谁有数可见 */
+  function mentorAffinityText(mentorId: MentorId): string {
+    const a = mentorVerdict(mentorId)?.affinity ?? 0
+    return `${a > 0 ? '+' : ''}${a.toFixed(2)}`
+  }
+  function mentorAffinityChip(mentorId: MentorId): string {
+    const a = mentorVerdict(mentorId)?.affinity ?? 0
+    if (a > 0.2) return 'text-jade'
+    if (a < -0.2) return 'text-cinnabar/80'
+    return 'text-ink-faint'
+  }
   // Phase 31.1 机缘链:机缘取/弃记忆 → 师承推荐
   const hintMentor = computed(() => mentorHint())
   // Phase 31.2 修行画像
