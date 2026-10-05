@@ -290,6 +290,11 @@
     <BaseModal :open="craftOpen" title="开炉炼丹" wide @close="craftOpen = false">
       <p class="mb-2 text-[11px] text-ink-faint tabular">灵草 {{ resources.herb }} · 灵石 {{ formatGN(resources.spiritStone) }}</p>
       <!--
+        被动翻检全程无进度条:玩家只知道某天突然翻出一张方子,不知道它快到了。
+        这一行把「下一件事」报成时间 —— 读数与 studyTick 同序,见 core/loreService.studyEta
+      -->
+      <p v-if="studyLine" class="mb-2 text-[10px] leading-relaxed text-ink-faint tabular">{{ studyLine }}</p>
+      <!--
         方子列表不再自带滚动框:弹窗正文本身就是滚动容器,两层滚动叠在一起时,
         内层底边会把下一张卡片切得只剩一条圆角,玩家看不出还能滚(议题 #21)。
       -->
@@ -630,8 +635,9 @@
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
   import { equipAllBest, equipSetCombo } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
+  import { studyEta } from '@/core/loreService'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
-  import { cnNumber, formatGN, formatNum, formatPercent } from '@/utils/format'
+  import { cnNumber, formatDuration, formatGN, formatNum, formatPercent } from '@/utils/format'
   import { tint } from '@/utils/colorToken'
   import { STAT_NAMES, statCaveat, statModPhrase } from '@/ui/statNames'
   import {
@@ -1066,4 +1072,20 @@
     if (m >= 1) return '此方已通晓:火候节点烂熟于心'
     return `此方已得,熟练 ${Math.round(m * 100)}% —— 多炼几炉便到通晓`
   }
+
+  /**
+   * 藏经阁翻检的当刻概况(开炉页顶部一行)。
+   * 读数在 core/loreService.studyEta —— 与 studyTick 同一优先序,界面不另算。
+   */
+  const studyLine = computed(() => {
+    const eta = studyEta()
+    if (!eta) return ''
+    // 读通了又在手的两态;「够得着的都到手」与「正读某张」是两回事,措辞分开
+    if (!eta.readingId && !eta.nextIsNew) return '藏经阁翻检中:够得着的方子都已到手'
+    if (eta.readingId) {
+      const name = pillDef(eta.readingId)?.name ?? '某方'
+      return `藏经阁正研读「${name}」,约 ${formatDuration(eta.nextInSec)} 后读通`
+    }
+    return `藏经阁翻检中,约 ${formatDuration(eta.nextInSec)} 后翻出一张新方`
+  })
 </script>

@@ -213,6 +213,55 @@ export function studyBlueprint(id: string, amount: number): number {
   return useLoreStore().addBlueprintMastery(id, amount)
 }
 
+/** 藏经阁翻检的当刻概况 —— 研究与 studyTick 同一优先序读数,不另造口径 */
+export interface StudyEta {
+  library: number
+  /** 此刻正读通哪张方子(null = 都在手,谈不到补熟) */
+  readingId: string | null
+  /** 下一件事是新方,还是先把某张读通 */
+  nextIsNew: boolean
+  /** 距下一件事的秒数(按现值估算;「无可翻」为 0) */
+  nextInSec: number
+}
+
+/**
+ * 藏经阁此刻离「下一件事」还有多远。
+ *
+ * 被动翻检全程无进度条:玩家只知道某天突然翻出一张方子,不知道它快到了。
+ * 这里的读数与 studyTick 完全同序 —— 先补最生的那张、都读通了才求索新方 ——
+ * 只做减法所列的除法,不掺自己的估计。藏经阁未建时返回 null(无事可报)。
+ */
+export function studyEta(): StudyEta | null {
+  const dongfu = useDongfuStore()
+  const libLv = dongfu.levels.library
+  if (libLv <= 0) return null
+  const lore = useLoreStore()
+  const ratePerSec = (libLv * STUDY_MASTERY_PER_HOUR) / 3600
+  if (!(ratePerSec > 0)) return null
+
+  let lowest = 1
+  let target: string | null = null
+  for (const [id, v] of Object.entries(lore.recipeLore)) {
+    if (v > 0 && v < 1 && v < lowest) {
+      lowest = v
+      target = id
+    }
+  }
+  // studyFrac 里的余量先抵掉:还没喂出去的钻研,可以先喘口气
+  const frac = lore.studyFrac
+  if (target !== null) {
+    const room = 1 - lore.recipeMastery(target)
+    return { library: libLv, readingId: target, nextIsNew: false, nextInSec: Math.max(0, room - frac) / ratePerSec }
+  }
+  // 都在手了 —— 求索新的那张
+  const found = studiableRecipes(usePlayerStore().major, id => lore.recipeMastery(id))[0]
+  if (!found) {
+    // 够得着的都已到手,再积也无书可翻(与 studyTick 的 studyFrac 清零同一判据)
+    return { library: libLv, readingId: null, nextIsNew: false, nextInSec: 0 }
+  }
+  return { library: libLv, readingId: null, nextIsNew: true, nextInSec: Math.max(0, NEW_RECIPE_COST - frac) / ratePerSec }
+}
+
 /**
  * 藏经阁此刻翻得到的方子 —— 按阶位从低到高,先易后难。
  *
