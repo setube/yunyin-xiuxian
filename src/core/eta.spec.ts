@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { gn, mulN, sub, toNum } from '@/utils/gnum'
 import { usePlayerStore } from '@/stores/player'
-import { expEtaSec } from './progress'
+import { useResourcesStore } from '@/stores/resources'
+import { expEtaSec, qiEtaSec } from './progress'
 
 /**
- * 修为圆满的估算时长 —— 判据是「缺口 ÷ 现速」这道同源除法:
- * 与修炼页那条进度条读的是同一份 exp / expReq / cultPerSec,
- * 界面上那句「按现速,修为圆满约……」就是在报这个值。
+ * 「还得多久」的估算 —— 修为圆满与灵气回满同收在此册。
+ * 判据是「缺口 ÷ 现速」这道同源除法:与修炼页两条进度条读同一份数,
+ * 界面上那句「按现速,修为圆满约……」/「灵气回满约……」就在报这个值。
  */
 describe('expEtaSec 修为圆满估算(与面板同源)', () => {
   beforeEach(() => {
@@ -50,5 +51,38 @@ describe('expEtaSec 修为圆满估算(与面板同源)', () => {
     const atDouble = toNum(player.expReq) / (rate * 2)
     expect(before).toBeGreaterThan(0)
     expect(atDouble).toBeCloseTo(before / 2, 4)
+  })
+})
+
+/**
+ * 灵气回满的估算 —— 与 expEtaSec 同一道「缺口 ÷ 现速」除法,
+ * 灵气条读 qiCapValue / qi / qiRegenPerSec 三份数,这里也读这三份。
+ */
+describe('qiEtaSec 灵气回满估算(与灵气条同源)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('未满:值 = 缺口 ÷ 恢复速度', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const rate = player.qiRegenPerSec
+    const gap = player.qiCapValue - resources.qi
+    expect(qiEtaSec()).toBeCloseTo(gap / rate, 4)
+  })
+
+  it('积余一半 → 时间折半(随缺口线性走)', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const full = qiEtaSec()
+    resources.setQi(player.qiCapValue / 2, player.qiCapValue)
+    expect(qiEtaSec()).toBeCloseTo(full / 2, 4)
+  })
+
+  it('灵气已满 → 0(无物可等)', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    resources.setQi(player.qiCapValue, player.qiCapValue)
+    expect(qiEtaSec()).toBe(0)
   })
 })
