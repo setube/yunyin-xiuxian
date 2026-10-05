@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { gn, mulN, sub, toNum } from '@/utils/gnum'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
+import { QI_RICH_RATIO } from '@/data/constants'
 import { expEtaSec, qiEtaSec, qiRichEtaSec } from './progress'
 
 /**
@@ -89,34 +90,34 @@ describe('qiEtaSec 灵气回满估算(与灵气条同源)', () => {
 
 /**
  * 距「灵气充盈」的估算 —— 界线与 player store 的 qiRich 同一道
- * (qi ≥ 容量一半),值 = 缺口 ÷ 现速。
+ * (qi ≥ 容量 × QI_RICH_RATIO),值 = 缺口 ÷ 现速。
  */
 describe('qiRichEtaSec 灵气充盈估算(修为跳档时刻)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
-  it('在半线以下:值 = (半容量 − 当前) ÷ 恢复速度', () => {
+  it('在半线以下:值 = (容量×比例 − 当前) ÷ 恢复速度', () => {
     const player = usePlayerStore()
     const resources = useResourcesStore()
     const rate = player.qiRegenPerSec
-    const gap = player.qiCapValue * 0.5 - resources.qi
+    const gap = player.qiCapValue * QI_RICH_RATIO - resources.qi
     expect(qiRichEtaSec()).toBeCloseTo(gap / rate, 4)
   })
 
   it('已在充盈线上(过半)→ 0:修为已享那档加成,不报已过的时刻', () => {
     const player = usePlayerStore()
     const res = useResourcesStore()
-    res.setQi(player.qiCapValue * 0.75, player.qiCapValue)
+    res.setQi(player.qiCapValue * Math.min(0.9, QI_RICH_RATIO + 0.2), player.qiCapValue)
     expect(qiRichEtaSec()).toBe(0)
   })
 
-  it('半线即界(等号含在内,与 qiRich 判据一致):骑线 → 0,差一线 → >0', () => {
+  it('界线含等号(与 qiRich 判据一致):骑线 → 0,差一线 → >0', () => {
     const player = usePlayerStore()
     const res = useResourcesStore()
-    res.setQi(player.qiCapValue * 0.5, player.qiCapValue)
+    res.setQi(player.qiCapValue * QI_RICH_RATIO, player.qiCapValue)
     expect(qiRichEtaSec()).toBe(0)
-    res.setQi(player.qiCapValue * 0.5 - 1, player.qiCapValue)
+    res.setQi(player.qiCapValue * QI_RICH_RATIO - 1, player.qiCapValue)
     expect(qiRichEtaSec()).toBeGreaterThan(0)
   })
 })

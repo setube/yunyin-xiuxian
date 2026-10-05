@@ -6,7 +6,7 @@ import { gn, gnZero, add, gte, mulN, progress, subClamp } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
 import { realmDef, realmLabel, worldOf, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
 import { SUB_LEVELS, START_AGE } from '@/data/constants'
-import { QI_BANK_MULT } from '@/data/constants'
+import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
@@ -227,7 +227,7 @@ export const usePlayerStore = defineStore(
       const capPct = 1 + modOf(mergeMods([...ownedModSources.value, petMods.value]), 'qiCapPct')
       return Math.floor(qiCap(major.value, sub.value) * dongfu.qiCapMult * capPct)
     })
-    const qiRich = computed(() => resources.qi >= qiCapValue.value * 0.5)
+    const qiRich = computed(() => resources.qi >= qiCapValue.value * QI_RICH_RATIO)
     /** 灵气积余上限(标称容量 × 积余倍数):卡境期间灵气可存到此处 */
     const qiBankCapValue = computed(() => qiCapValue.value * QI_BANK_MULT)
 
