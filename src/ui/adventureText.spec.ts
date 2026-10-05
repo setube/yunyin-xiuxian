@@ -60,4 +60,13 @@ describe('出发按钮与结算同一套数', () => {
     expect(view).not.toMatch(/遇险\s*×\s*0\.9\d/)
     expect(view).not.toMatch(/遇险\s*×\s*1\.1\d/)
   })
+
+  it('战斗面板的连胜行读玩家连胜与奖励表,不手抄 3/5/10', () => {
+    const view = readFileSync(new URL('../components/adventure/CombatPanel.vue', import.meta.url), 'utf8')
+    expect(view).toContain('player.winStreak')
+    expect(view).toContain('WIN_STREAK_REWARDS')
+    // 下一档的缺口由表里的下一档现算,不许手写「距 5 连胜」
+    expect(view).not.toMatch(/距\s*[3,5,10]\s*连胜/)
+    expect(view).not.toMatch(/\{\{\s*10\s*\}\}/)
+  })
 })
