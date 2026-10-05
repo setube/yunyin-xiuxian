@@ -64,6 +64,10 @@
           </template>
         </button>
       </div>
+      <!-- 角上那枚「可换」得有人解释:新玩家看见金点子,该知道它是行囊里有更强的牌子 -->
+      <p v-if="hasUpgradeableSlot" class="text-center text-[9px] text-ink-faint">
+        角上点金 = 行囊里有更强的候补,点开该槽即可换上
+      </p>
       <p class="mt-2 text-center text-[10px] text-ink-faint">点击部位查看候选,行囊满时新掉落自动折作器灵尘</p>
       <!-- 玩家反馈「一键装备最高阶级品质装备快捷键」:每槽换上当前最强,已是则不动 -->
       <!-- 点下去会动几件,先给个数:与结算同一把 bestEquipFor;一件不换时明说「已是最强」 -->
@@ -718,6 +722,8 @@
 
   /** 已佩戴的槽位数 —— 「空一身」按钮的计数(身上没件时不出现,免得摆个 0 的按钮) */
   const equippedCount = computed(() => SLOTS.filter(slot => inventory.equipped[slot]).length)
+  /** 至少一个槽位有更强候补时,槽卡下方的图例才值得出现 */
+  const hasUpgradeableSlot = computed(() => slotRows.value.some(r => r.upgradeable))
 
   const slotRows = computed(() =>
     SLOTS.map(slot => {
