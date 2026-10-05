@@ -268,6 +268,25 @@ export function retreatGainedText(elapsedSec: number): string {
   return gained > 0 ? `此行已多得修为 ${formatGN(gained)}` : ''
 }
 
+/**
+ * 灵气积余蓄满的估算时长(秒)—— 按现速。
+ *
+ * 灵气越过标称容量后进入「积余」段(上限 = 标称容量 × QI_BANK_MULT,见
+ * resources.setQi 与 player.qiBankCapValue),恢复仍照常累积、不因「满了」就收手。
+ * 这条答的是积余阶段的「蓄满还差多久」:缺口 = qiBankCapValue − 当前灵气,除以现速,
+ * 与灵气条读同一份数;未积余(qi ≤ 标称容量)或零恢复时返回 0 —— 非积余阶段不报这事。
+ */
+export function qiBankEtaSec(): number {
+  const player = usePlayerStore()
+  const resources = useResourcesStore()
+  if (!(resources.qi > player.qiCapValue)) return 0
+  const gap = player.qiBankCapValue - resources.qi
+  if (!(gap > 0)) return 0
+  const rate = player.qiRegenPerSec
+  if (!(rate > 0)) return 0
+  return gap / rate
+}
+
 /** 每日重置(引擎在日期变化时调用) */
 export function rolloverDailyIfNeeded(): void {
   const quests = useQuestsStore()
