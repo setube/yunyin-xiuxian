@@ -119,6 +119,10 @@
         <p v-else-if="resources.qi < player.qiCapValue && qiEtaText" class="mt-1 text-right text-[10px] text-ink-faint tabular">
           按现速,灵气回满约 {{ qiEtaText }}
         </p>
+        <!-- 积余段(灵气越过标称容量):「回满」的说法已不适用,答的是蓄满积余还要多久 -->
+        <p v-else-if="qiBankEtaText" class="mt-1 text-right text-[10px] text-ink-faint tabular">
+          按现速,积余蓄满约 {{ qiBankEtaText }}
+        </p>
         <!-- 以灵气疗伤(修复):灵气积余的用途,代价随境界指数增长 -->
         <button
           v-if="repair.injured"
@@ -466,7 +470,7 @@
   } from '@/core/tribulationDecision'
   import { reliefElements, rootElements } from '@/core/linggenAffinity'
   import { comprehendGongfa } from '@/core/gongfaService'
-  import { expEtaSec, qiEtaSec, qiRichEtaSec, retreatGainText, retreatGainedText } from '@/core/progress'
+  import { expEtaSec, qiBankEtaSec, qiEtaSec, qiRichEtaSec, retreatGainText, retreatGainedText } from '@/core/progress'
   import { usePill } from '@/core/pillService'
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
@@ -524,6 +528,11 @@
   /** 是否仍差一点才到「灵气充盈」—— 到了就不报,因为修为已在享那档加成 */
   const qiRichEtaText = computed(() => {
     const sec = qiRichEtaSec()
+    return sec > 0 ? formatDuration(sec) : ''
+  })
+  /** 灵气积余段的「蓄满」估算(空白即不显示,见 core/progress.qiBankEtaSec) */
+  const qiBankEtaText = computed(() => {
+    const sec = qiBankEtaSec()
     return sec > 0 ? formatDuration(sec) : ''
   })
   /** 灵气充盈的修为加成(取自常数,不在界面手抄) */

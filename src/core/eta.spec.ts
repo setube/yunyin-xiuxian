@@ -3,8 +3,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { gn, mulN, sub, toNum } from '@/utils/gnum'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
-import { QI_RICH_RATIO } from '@/data/constants'
-import { expEtaSec, qiEtaSec, qiRichEtaSec } from './progress'
+import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
+import { expEtaSec, qiBankEtaSec, qiEtaSec, qiRichEtaSec } from './progress'
 
 /**
  * 「还得多久」的估算 —— 修为圆满与灵气回满同收在此册。
@@ -85,6 +85,41 @@ describe('qiEtaSec 灵气回满估算(与灵气条同源)', () => {
     const resources = useResourcesStore()
     resources.setQi(player.qiCapValue, player.qiCapValue)
     expect(qiEtaSec()).toBe(0)
+  })
+})
+
+/**
+ * 灵气积余段(越过标称容量)的蓄满估算 —— 上限与 resources.setQi 同一道
+ * (标称容量 × QI_BANK_MULT),值 = 缺口 ÷ 现速;非积余段不报。
+ */
+describe('qiBankEtaSec 灵气积余蓄满估算', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('积余段:值 = (积余上限 − 当前) ÷ 恢复速度', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const cap = player.qiCapValue
+    const rate = player.qiRegenPerSec
+    // 越过标称容量 1.5 倍,落进积余段(≤ 10 倍上限)
+    resources.setQi(cap * 1.5, cap)
+    const gap = cap * QI_BANK_MULT - cap * 1.5
+    expect(qiBankEtaSec()).toBeCloseTo(gap / rate, 4)
+  })
+
+  it('未积余(qi ≤ 标称容量)→ 0:不到那个阶段不报「蓄满」', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    resources.setQi(player.qiCapValue, player.qiCapValue)
+    expect(qiBankEtaSec()).toBe(0)
+  })
+
+  it('积余已蓄满(撞上积余上限)→ 0', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    resources.setQi(player.qiCapValue * QI_BANK_MULT, player.qiCapValue)
+    expect(qiBankEtaSec()).toBe(0)
   })
 })
 
