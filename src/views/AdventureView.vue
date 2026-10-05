@@ -99,8 +99,9 @@
                 {{ REALMS[row.def.minRealm]?.name }}境相宜 ·
                 <span :class="row.def.danger >= 4 ? 'text-cinnabar' : ''">{{ DANGER_NAMES[row.def.danger] }}</span>
                 <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界尚浅,恐有性命之忧</span>
-                <!-- 掉落阶位与 generateEquipment 用的同一档(region.tier):「此界掉几阶」出发前就亮着 -->
-                <span class="ml-1 text-ink-soft">· {{ produceTierText(row.def.tier) }}</span>
+                <!-- 掉落阶位与 generateEquipment 用的同一档(region.tier):「此界掉几阶」出发前就亮着。
+                     nowrap:320px 上「产 1 阶之物」曾被从空格处断行,数字与量词拆成两行(layout-check 抓的) -->
+                <span class="ml-1 whitespace-nowrap text-ink-soft">· {{ produceTierText(row.def.tier) }}</span>
               </p>
               <!--
                 敌人的「层级补偿」此前只落在数值里:玩家看到的只是一只小怪,打起来却像换了一身装备。
@@ -135,8 +136,9 @@
             class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-gold-ink/10 px-2.5 py-1.5"
           >
             <span class="text-[11px] text-gold-ink tabular">自动产出 · {{ rateText(row.def, row.recall) }}</span>
-            <!-- 镇压也在掉装备,阶位照旧取 region.tier(与 generateEquipment 同源) -->
-            <span class="text-[10px] text-ink-faint tabular">{{ produceTierText(row.def.tier) }}</span>
+            <!-- 镇压也在掉装备,阶位照旧取 region.tier(与 generateEquipment 同源);
+                 nowrap 同上:320 窄屏不许「4 阶」被拆成两行 -->
+            <span class="whitespace-nowrap text-[10px] text-ink-faint tabular">{{ produceTierText(row.def.tier) }}</span>
             <!-- 守土之年:守得越久,兴衰越盛,产出随之上浮 -->
             <span class="text-[10px] text-ink-faint tabular">已守 {{ heldText(row.def.id) }}</span>
             <!-- 复聚有确定期限,就该有倒计时:否则玩家只会看到镇压某天突然消失 -->
