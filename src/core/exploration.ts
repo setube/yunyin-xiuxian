@@ -35,7 +35,7 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
 import { checkSuppression, memorialLine, MEMORIAL_CHANCE } from './suppress'
-import { recordLoss, isNemesis, markAvenged, ghostOf, ghostTitle, ghostLeadIn, ECHO_GHOST_CHANCE } from './worldMemory'
+import { recordLoss, isNemesis, markAvenged, ghostOf, ghostTitle, ghostLeadIn, ECHO_GHOST_CHANCE, NEMESIS_THRESHOLD } from './worldMemory'
 import { personalityEffects } from './petPersonality'
 // 连胜与宿敌各有一个 recordLoss,一个管连胜清空、一个管宿敌(败北阈值):
 // 前者来自 Phase 28 前期玩法(earlyGameService),后者来自世界记忆(worldMemory),
@@ -369,7 +369,7 @@ function runBattle(now: number): void {
     const { list, becameNemesis } = recordLoss(player.nemeses, eDef.id, eDef.name, region.id, now)
     if (becameNemesis) {
       player.setNemeses(list)
-      ui.toast(`【宿敌】你已在${eDef.name}手下败北三次——此敌已成你的宿敌!`, 'warn')
+      ui.toast(`【宿敌】你已在${eDef.name}手下败北${NEMESIS_THRESHOLD}次——此敌已成你的宿敌!`, 'warn')
     } else {
       player.setNemeses(list)
     }

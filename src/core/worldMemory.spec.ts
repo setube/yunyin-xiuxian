@@ -3,6 +3,8 @@
  * S1 区域兴衰 / S2 宿敌记忆 / S3 事件余波
  */
 import { describe, it, expect, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import {
   deriveProsperity,
@@ -168,6 +170,12 @@ describe('S2 宿敌记忆', () => {
     }
     expect(flag).toBe(true)
     expect(isNemesis(list, 'e_wolfking')).toBe(true)
+  })
+
+  it('成敌 toast 的次数字与 NEMESIS_THRESHOLD 同源:不手抄「三次」', () => {
+    const exploration = readFileSync(resolve(__dirname, './exploration.ts'), 'utf8')
+    expect(exploration, 'toast 应读宿敌门槛').toContain('NEMESIS_THRESHOLD}次')
+    expect(exploration, 'toast 不应把 3 写死').not.toContain('败北三次')
   })
 
   it('雪耻后不再是宿敌', () => {
