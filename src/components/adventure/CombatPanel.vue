@@ -91,10 +91,13 @@
             <ProgressBar :value="ehp" color="var(--color-cinnabar)" :height="6" class="mt-1" />
             <!--
               敌力亮出来:星级只答「合适不合适」,这枚数答「悬殊多少」。
-              与战报同一份快照折出(combat.enemyPowerOf),不由界面另算
+              两侧都是**开打那一刻**从同一对有效快照折出的冻结数(combat.snapPower +
+              applyCombatRuleSnap),规则改过就按改过后的算 —— 战后换装不会让「我」飘走,
+              逆旅契/道途生效也不是摆设。老战报缺 playerPower 时退回当前面板,只作兜底
             -->
             <p v-if="battle?.enemyPower" class="mt-1 text-[10px] text-ink-faint tabular">
-              敌力 {{ formatGN(battle.enemyPower) }} · 我 {{ formatGN(player.finalStats.power) }}
+              敌力 {{ formatGN(battle.enemyPower) }} · 我
+              {{ formatGN(battle.playerPower ?? player.finalStats.power) }}
             </p>
           </div>
         </div>

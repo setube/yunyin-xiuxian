@@ -55,6 +55,9 @@ describe('player.rebirth 转世状态重置', () => {
     // 旧世压下的远境若跨世,新世按旧阶位派发高阶装备,数值爆炸
     expect(p.suppressedRegions).toHaveLength(0)
     expect(Object.keys(p.suppressedSince)).toHaveLength(0)
+    // 资格(「镇压过就不必再打满」那枚令)也是经济权柄:新世一键切回高阶收益
+    // 会把爆炸换个入口带回来,故一并随世散去
+    expect(p.suppressQualified).toHaveLength(0)
   })
 
   it('保留跨世记忆:机缘选择/奇遇连锁(「世界记得你的选择」)', () => {

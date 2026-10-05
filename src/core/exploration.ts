@@ -16,7 +16,7 @@ import {
 } from '@/data/constants'
 import { mansionEventLuck } from './astronomy'
 import type { StatMods } from '@/types'
-import { enemyPowerOf, makeEnemySnap, mortalFoeOriginFromParts, resolveCombat } from './combat'
+import { applyCombatRuleSnap, makeEnemySnap, mortalFoeOriginFromParts, resolveCombat, snapPower } from './combat'
 import { petDef } from '@/data/pets'
 import type { RegionEventId } from './regionEvent'
 import { mergeRules } from './gauntlet'
@@ -272,11 +272,16 @@ function runBattle(now: number): void {
   })
   const pSnap = buildPlayerSnap()
   const eSnap = makeEnemySnap(eDef, region.tier, dangerFactor, foeOrigin)
-  // 敌战力随战报带走 —— 战斗卡片那枚「敌 X · 我 Y」与结算同一份快照,不另算
-  const enemyPower = enemyPowerOf(eSnap)
   // 道途在世,一切战斗皆循此规则
   // 逆旅契:本世签下的契对每一场历练战斗生效(道果的非效率出口)
-  const result = resolveCombat(pSnap, eSnap, rng, explorationRules())
+  const rules = explorationRules()
+  // 卡片那对「敌 X · 我 Y」用**开打那一刻**的双方有效快照(规则改过就按改过的算)折出,
+  // 与 resolveCombat 同一份 applyCombatRuleSnap —— 战斗后换装不会让它飘,规则生效也不谎报。
+  // 离线结算时玩家未必在场,这一对只随在线战报走(离线归来卷轴另有旧账口径)。
+  const { pEff, eEff } = applyCombatRuleSnap(pSnap, eSnap, rules)
+  const enemyPower = snapPower(eEff)
+  const playerPower = snapPower(pEff)
+  const result = resolveCombat(pSnap, eSnap, rng, rules)
   // Phase 32.5:「独行」之誓看的是有没有真的祭出法宝,不是有没有法宝在身
   if (useInventoryStore().equippedArtifacts.length > 0) noteTaboo('artifact')
 
@@ -293,6 +298,7 @@ function runBattle(now: number): void {
     enemyId: eDef.id,
     isBoss: Boolean(eDef.isBoss),
     enemyPower,
+    playerPower,
     result,
     at: now
   }

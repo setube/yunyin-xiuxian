@@ -156,15 +156,23 @@ function mergeAdd(base: StatMods, extra: StatMods): StatMods {
 }
 
 /**
- * 敌人的战力标尺 —— 战斗卡片那枚「敌 X · 我 Y」,与玩家侧同用一把 powerScore,
- * 界面不另算一套权重。入参是已折好的敌人快照(层级/危地/词条俱在)。
+ * 一张快照的战力 —— 战斗卡片那枚「敌 X · 我 Y」两侧同用这一把 powerScore,
+ * 界面不另算一套权重。
  */
-export function enemyPowerOf(eSnap: CombatantSnap): GNum {
-  return powerScore(eSnap.attack, eSnap.defense, eSnap.maxHp)
+export function snapPower(snap: CombatantSnap): GNum {
+  return powerScore(snap.attack, snap.defense, snap.maxHp)
 }
 
-export function resolveCombat(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: RandomService, rules?: CombatRules): CombatResult {
-  // 规则注入:道途与特殊世界只改参数,不改逻辑
+/**
+ * 规则改后的双方有效快照 —— resolveCombat 开打用的同一份,抽出来供调用方
+ * 在「战斗那一刻」折同一对战力(卡片「敌 X · 我 Y」与结算同源,不另算)。
+ * 规则没改时原样返回;改了什么就是什么,卡片不谎报生效前的基准。
+ */
+export function applyCombatRuleSnap(
+  pSnap: CombatantSnap,
+  eSnap: CombatantSnap,
+  rules?: CombatRules
+): { pEff: CombatantSnap; eEff: CombatantSnap } {
   const pEff: CombatantSnap = rules
     ? {
         ...pSnap,
@@ -180,6 +188,12 @@ export function resolveCombat(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: R
         mods: rules.enemyExtraMods ? mergeAdd(eSnap.mods, rules.enemyExtraMods) : eSnap.mods
       }
     : eSnap
+  return { pEff, eEff }
+}
+
+export function resolveCombat(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: RandomService, rules?: CombatRules): CombatResult {
+  // 规则注入:道途与特殊世界只改参数,不改逻辑
+  const { pEff, eEff } = applyCombatRuleSnap(pSnap, eSnap, rules)
   const maxRounds = rules?.maxRounds ?? MAX_COMBAT_ROUNDS
   const healMult = rules?.healMult ?? 1
   const shieldCap = rules?.shieldCapRatio ?? SHIELD_CAP_RATIO

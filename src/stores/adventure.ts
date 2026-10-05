@@ -13,8 +13,10 @@ export interface LastBattleView {
   /** 敌人定义 id(供适配度展示;旧存档可能缺失) */
   enemyId?: string
   isBoss: boolean
-  /** 敌方战力(readable: 与玩家侧同一把 powerScore,战斗卡片「敌 X · 我 Y」用;旧存档可能缺失) */
+  /** 敌方战力(开打那一刻有效快照折出,战斗卡片「敌 X · 我 Y」用;旧存档可能缺失) */
   enemyPower?: GNum
+  /** 我方战力(战斗那一刻冻结 —— 卡片与敌力同刻比较,不拿战后的活数陪它站) */
+  playerPower?: GNum
   result: CombatResult
   at: number
   /**
@@ -23,6 +25,12 @@ export interface LastBattleView {
    * 旧存档没有这一栏,消费方按缺省空数组处理。
    */
   loot?: string[]
+}
+
+/** 战力栏修形:经 gn() 归一,归零即当作缺失(卡片 v-if 只看有值的 GNum 才渲染) */
+function gnStrict(v: unknown): GNum | undefined {
+  const g = gn(v as GNum)
+  return g.m === 0 && g.e === 0 ? undefined : g
 }
 
 export const useAdventureStore = defineStore(
@@ -105,7 +113,16 @@ export const useAdventureStore = defineStore(
       seenOnceEvents.value = asStringArray(seenOnceEvents.value)
       // 战报的 loot 是新增栏:形状不对就清成空表,别让损坏档在战报渲染里炸
       const lb = asObjectOrNull<LastBattleView>(lastBattle.value)
-      lastBattle.value = lb ? { ...lb, loot: lb.loot === undefined ? undefined : asStringArray(lb.loot) } : null
+      lastBattle.value = lb
+        ? {
+            ...lb,
+            loot: lb.loot === undefined ? undefined : asStringArray(lb.loot),
+            // 两个战力栏同款修形:坏对象(含 m/e 非数)经 gn() 归零,归零即当作缺失 ——
+            // 卡片 v-if 只认有值的 GNum,坏了就不渲染,格式GN 不会拿到坏数抛错
+            enemyPower: lb.enemyPower === undefined ? undefined : gnStrict(lb.enemyPower),
+            playerPower: lb.playerPower === undefined ? undefined : gnStrict(lb.playerPower)
+          }
+        : null
       eventMemories.value = asRecord(eventMemories.value)
       mortalWorld.value = asObjectOrNull(mortalWorld.value)
     }

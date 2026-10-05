@@ -513,9 +513,12 @@ export const usePlayerStore = defineStore(
       // 镇压权益随皮囊散去:旧世压下的远境(多为高阶)若跨世,新世炼气仍在按旧阶位
       // 派发高阶装备/灵石,数值当场爆炸 —— 妖气复聚、回到历练地。这属于「我拥有多少」
       // 而非「我是谁」;宿敌记忆与区域战绩(regionStats)仍随神魂不灭(见 samsaraAudit
-      // 'suppress' 一行的 partial 口径,「世界记得你」的叙事不丢)
+      // 'suppress' 一行的 partial 口径,「世界记得你」的叙事不丢)。
+      // 资格(取得即永久那枚令)也是经济权柄:不随世走,否则新世炼气一键把高阶远境
+      // 切回收益态,爆炸就换了个入口回来(sanitize 的 suppressReachable 兜老档同款)
       suppressedRegions.value = []
       suppressedSince.value = {}
+      suppressQualified.value = []
       // 外物随皮囊散去:灵兽、洞府建筑、灵脉投资都是「我拥有多少」,不是「我是谁」
       petId.value = null
       dongfu.resetForRebirth()
@@ -624,6 +627,15 @@ export const usePlayerStore = defineStore(
        */
       if (!Array.isArray(suppressedRegions.value)) suppressedRegions.value = []
       if (!Array.isArray(suppressQualified.value)) suppressQualified.value = []
+      // 镇压权益是「这一世」的东西:凡这一世根本打不进那一界(minRealm>当前境界)的
+      // 远境,要么是修复上线前已转世的老档残留、要么是被改档写进来的 —— 一律妖气复聚、
+      // 回到它本来该在的地方。判据保守:只清「境界之下不可能征服」的,本世真实的镇压
+      // (minRealm≤境界,转世前也这么压过)原样保留。suppressedSince 同步清,免得一旧一新。
+      if (typeof suppressedSince.value !== 'object' || suppressedSince.value === null) suppressedSince.value = {}
+      const suppressReachable = (id: string): boolean => (regionDef(id)?.minRealm ?? Infinity) <= major.value
+      suppressedRegions.value = suppressedRegions.value.filter(suppressReachable)
+      suppressQualified.value = suppressQualified.value.filter(suppressReachable)
+      suppressedSince.value = Object.fromEntries(Object.entries(suppressedSince.value).filter(([id]) => suppressReachable(id)))
       for (const id of suppressedRegions.value) {
         if (!suppressQualified.value.includes(id)) suppressQualified.value.push(id)
       }

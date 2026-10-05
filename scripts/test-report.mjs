@@ -42,8 +42,14 @@ const CATEGORIES = [
 
 const OUT = '.vitest-report.json'
 
+// CI 的 4 vCPU runner 上 169 个文件全量并行,worker 内存顶爆会整组打断:
+// 2026-10-05 一轮 PR 连续两次同一批 8 条 exploration 战败用例被打断,本地任何
+// 配置(含 --pool=forks --maxWorkers=4)都全绿,改为流式输出后同一份代码当场即绿 ——
+// 是负荷态下的 worker 中断,不是逻辑败。合入闸门不许靠运气,故 CI 限核:
+// 本地不设 CI 变量时按机器核心数全速,两边的判据仍是同一份 JSON。
+const CI_WORKERS = process.env.CI ? ' --maxWorkers=4' : ''
 try {
-  execSync(`bunx vitest run --reporter=json --outputFile=${OUT}`, { stdio: 'inherit' })
+  execSync(`bunx vitest run --reporter=json${CI_WORKERS} --outputFile=${OUT}`, { stdio: 'pipe' })
 } catch {
   // 有测试失败时 vitest 以非零码退出,报告文件仍会生成
 }
