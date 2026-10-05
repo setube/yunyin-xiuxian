@@ -191,7 +191,7 @@
                 <span v-for="(r, i) in world.ruleText" :key="i">{{ r }}</span>
               </p>
               <button class="btn-seal mt-2.5 w-full !py-2 !text-[13px]" :disabled="run !== null" @click="openPrep(world.id)">
-                {{ run ? '远征在途' : `启 程(道源 ${world.entryCost} · 破界底赏 ${world.rewardDaoSource})` }}
+                {{ run ? '远征在途' : `启 程(道源 ${world.entryCost} · 余 ${formatNum(endgame.daoSource)} · 破界底赏 ${world.rewardDaoSource})` }}
               </button>
             </div>
 
@@ -252,7 +252,7 @@
               <span v-if="dailyPact" class="text-cinnabar">契·{{ dailyPact.name }}</span>
             </p>
             <button class="btn-seal mt-2 w-full !py-2 !text-[12px]" :disabled="endgame.dailyDoneDay === daily.day" @click="goDaily">
-              {{ endgame.dailyDoneDay === daily.day ? '今日已成,明日再会' : `应 战(道源 ${CHALLENGE_ENTRY_COST})` }}
+              {{ endgame.dailyDoneDay === daily.day ? '今日已成,明日再会' : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})` }}
             </button>
           </div>
         </section>
@@ -265,7 +265,7 @@
               <p v-for="m in mutationRows" :key="m!.id" class="text-[11px] text-violet-ink">◇ {{ m!.name }}:{{ m!.text }}</p>
               <div class="mt-2 flex gap-2">
                 <button class="btn-seal flex-1 !py-2 !text-[12px]" @click="goMutation">
-                  应 战(道源 {{ MUTATION_ENTRY_COST }} · 破解得 {{ MUTATION_BASE_REWARD }})
+                  应 战(道源 {{ MUTATION_ENTRY_COST }} · 余 {{ formatNum(endgame.daoSource) }} · 破解得 {{ MUTATION_BASE_REWARD }})
                 </button>
                 <button class="btn-ghost !px-3 !text-[12px]" @click="mutationDraw = rollMutators()">再探</button>
               </div>
