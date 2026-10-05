@@ -397,7 +397,7 @@
             <p class="text-[10px] tabular text-ink-faint">
               天道历 {{ RULESET_VERSION }} 世 · 天地规矩易过 {{ RULESET_CHANGELOG.length }} 回
             </p>
-            <button class="font-kai text-[10px] text-azure active:scale-95" @click="openEra(null)">纪元变迁史 →</button>
+            <button class="-my-1 py-2 font-kai text-[10px] text-azure active:scale-95" @click="openEra(null)">纪元变迁史 →</button>
           </div>
           <!-- 今昔之比:与过去的自己对话 -->
           <div v-if="legacy.length" class="card-ink mt-2 px-4 py-3">

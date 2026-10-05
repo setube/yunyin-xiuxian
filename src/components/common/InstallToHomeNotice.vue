@@ -17,7 +17,7 @@
     <p class="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
       用 Safari 打开本页 → 点底部的分享按钮 → 选「添加到主屏幕」。
     </p>
-    <button v-if="!permanent" class="mt-2 text-[11px] text-ink-faint underline" @click="dismiss">知道了</button>
+    <button v-if="!permanent" class="-my-1 mt-2 py-2 text-[11px] text-ink-faint underline" @click="dismiss">知道了</button>
   </div>
 </template>
 
