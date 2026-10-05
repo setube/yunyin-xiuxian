@@ -106,10 +106,21 @@
       -->
       <div class="mt-2 grid gap-2" :class="btInfo.needTribulation ? 'grid-cols-1' : 'grid-cols-2'">
         <div v-if="!btInfo.needTribulation" class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
-          <p class="text-[10px] text-ink-faint">进阶成功率(小进阶)</p>
+          <button class="flex w-full items-baseline justify-between gap-1 text-left" @click="rateOpen = !rateOpen">
+            <span class="text-[10px] text-ink-faint">进阶成功率(小进阶)</span>
+            <span class="text-[9px] text-ink-faint">{{ rateOpen ? '▾' : '▸' }}来路</span>
+          </button>
           <p class="tabular text-[16px] font-kai leading-tight" :class="btInfo.rate >= 0.7 ? 'text-jade' : 'text-cinnabar'">
             {{ btInfo.rateText }}
           </p>
+          <!-- 率不是天外飞数:4 项操作数与结算同一批,展开即见 —— 0 贡献的档位渲染时就省略了 -->
+          <template v-if="rateOpen">
+            <p v-for="part in btInfo.rateParts" :key="part.label" class="mt-0.5 flex justify-between text-[10px]">
+              <span class="text-ink-faint">{{ part.label }}</span>
+              <span class="tabular" :class="part.value > 0 ? 'text-azure' : 'text-cinnabar'">{{ signedPercent(part.value) }}</span>
+            </p>
+            <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">各项相加再取上下限,就是上面那个数。</p>
+          </template>
         </div>
         <div class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
           <p class="text-[10px] text-ink-faint">{{ btInfo.needTribulation ? '此劫' : '渡劫' }}</p>
@@ -457,6 +468,8 @@
       .filter(r => r.value !== 0)
   )
   const cultMultiplier = computed(() => modOf(player.finalStats.mods, 'cultivationSpeed'))
+  /** 小进阶成功率那格的「来路」展开态(与修为来路同一收缩 idiom) */
+  const rateOpen = ref(false)
   /** 修为圆满的估算时长文案(空白即不显示,见 core/progress.expEtaSec) */
   const expEtaText = computed(() => {
     const sec = expEtaSec()
