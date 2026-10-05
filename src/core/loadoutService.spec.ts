@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mulberry32, RandomService } from '@/utils/random'
 import { generateEquipment } from './equipGen'
 import { captureLoadout, applyLoadout, renameLoadout } from './loadoutService'
-import { equipmentTemplate } from '@/data/equipment'
+import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
 import { useInventoryStore } from '@/stores/inventory'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useLoadoutsStore } from '@/stores/loadouts'
@@ -49,14 +49,18 @@ describe('构筑快照(保存/一键切换)', () => {
     expect(inventory.equippedArtifacts).toContain('af_lihuo')
   })
 
-  it('部件缺失时跳过而不崩溃', () => {
+  it('部件缺失时跳过而不崩溃,且缺件的名有姓地报出来', () => {
     const inventory = useInventoryStore()
+    const ui = useUiStore()
     const { weaponUid } = seed()
     const loadout = captureLoadout('残卷')!
     // 装备被分解
     inventory.removeEquipment(weaponUid)
     expect(applyLoadout(loadout.id)).toBe(true)
     expect(inventory.equipped.weapon).toBeUndefined()
+    // 阙的不止一个数:「兵刃」这类缺位要带名 —— 玩家得知道下一步补什么
+    const last = ui.toasts[ui.toasts.length - 1]!.text
+    expect(last).toContain(EQUIP_SLOT_NAMES.weapon)
   })
 
   it('槽位错配的装备不会被穿到错误位置', () => {

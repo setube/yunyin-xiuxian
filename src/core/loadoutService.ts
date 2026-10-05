@@ -3,8 +3,8 @@
  */
 import type { EquipSlot } from '@/types'
 import { uid } from '@/utils/id'
-import { equipmentTemplate } from '@/data/equipment'
-import { artifactSlotsFor } from '@/data/artifacts'
+import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
+import { artifactDef, artifactSlotsFor } from '@/data/artifacts'
 import { gongfaDef } from '@/data/gongfa'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
@@ -58,6 +58,8 @@ export function applyLoadout(id: string): boolean {
   const loadout = loadouts.list.find(l => l.id === id)
   if (!loadout) return false
   let missing = 0
+  /** 报得出来的缺件名:装备位缺了、功法没习、法宝没收藏 —— 让人知道下一步补什么 */
+  const missingNames: string[] = []
 
   // 装备
   for (const slot of Object.keys(loadout.equipment) as EquipSlot[]) {
@@ -68,6 +70,7 @@ export function applyLoadout(id: string): boolean {
       inventory.equip(itemUid, slot)
     } else {
       missing += 1
+      missingNames.push(EQUIP_SLOT_NAMES[slot] ?? slot)
       inventory.unequip(slot)
     }
   }
@@ -76,19 +79,24 @@ export function applyLoadout(id: string): boolean {
     cultivation.equipMain(loadout.mainGongfa)
   } else if (loadout.mainGongfa) {
     missing += 1
+    missingNames.push(gongfaDef(loadout.mainGongfa)?.name ?? '主修功法')
   }
   const subCap = dongfu.subGongfaSlots
   const validSubs = loadout.subGongfa.filter(g => cultivation.learned[g]).slice(0, subCap)
+  const unlearnedSubs = loadout.subGongfa.filter(g => !cultivation.learned[g])
   missing += loadout.subGongfa.length - validSubs.length
+  for (const g of unlearnedSubs) missingNames.push(gongfaDef(g)?.name ?? g)
   cultivation.subGongfa = validSubs
   // 法宝
   const artifactCap = artifactSlotsFor(player.major)
   const owned = new Set(inventory.artifacts.map(a => a.defId))
   const validArts = loadout.artifactIds.filter(a => owned.has(a)).slice(0, artifactCap)
+  const unownedArts = loadout.artifactIds.filter(a => !owned.has(a))
   missing += loadout.artifactIds.length - validArts.length
+  for (const a of unownedArts) missingNames.push(artifactDef(a)?.name ?? a)
   inventory.equippedArtifacts = validArts
 
-  ui.toast(loadoutApplyToast(loadout.name, missing), 'success')
+  ui.toast(loadoutApplyToast(loadout.name, missing, missingNames), 'success')
   return true
 }
 

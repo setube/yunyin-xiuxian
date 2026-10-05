@@ -29,6 +29,15 @@ export function loadoutRenamedToast(name: string): string {
   return `构筑「${name}」已改名`
 }
 
-export function loadoutApplyToast(name: string, missing: number): string {
-  return missing > 0 ? `已换上「${name}」,阙 ${missing} 件未配` : `已换上「${name}」`
+/**
+ * 换装结果的汇报 —— 阙的不止一个数:「哪几件没了」才是玩家下一步要去补的,
+ * 只报个数等于让人回到行囊里重新核对一遍
+ */
+export function loadoutApplyToast(name: string, missing: number, missingNames: string[]): string {
+  if (missing <= 0) return `已换上「${name}」`
+  if (missingNames.length > 0) {
+    const list = [...new Set(missingNames)].slice(0, 3).join('、')
+    return `已换上「${name}」,阙 ${missing} 件:${list}`
+  }
+  return `已换上「${name}」,阙 ${missing} 件`
 }

@@ -22,9 +22,11 @@ describe('行囊提示 · 文言仍报清件数与尘石', () => {
   it('构筑满套、存入、换上仍报套数与阙件', () => {
     expect(loadoutFullToast(5)).toContain('5 套')
     expect(loadoutSavedToast('杀伐')).toContain('「杀伐」')
-    expect(loadoutApplyToast('杀伐', 0)).toBe('已换上「杀伐」')
-    expect(loadoutApplyToast('杀伐', 2)).toBe('已换上「杀伐」,阙 2 件未配')
-    expect(loadoutApplyToast('杀伐', 2)).not.toContain('切换')
+    expect(loadoutApplyToast('杀伐', 0, [])).toBe('已换上「杀伐」')
+    // 阙件有名有姓:说不清是哪几件时,至少还把个数带上
+    expect(loadoutApplyToast('杀伐', 2, ['灵鹤诀', '清霜剑'])).toBe('已换上「杀伐」,阙 2 件:灵鹤诀、清霜剑')
+    expect(loadoutApplyToast('杀伐', 2, [])).toBe('已换上「杀伐」,阙 2 件')
+    expect(loadoutApplyToast('杀伐', 2, ['灵鹤诀'])).not.toContain('切换')
   })
 })
 
