@@ -50,6 +50,11 @@ export function mansionEventLuck(regionId: string): number {
   return isFavoredRegion(regionId) ? MANSION_EVENT_LUCK : 0
 }
 
+/** 星象加成换算成展示用的百分数 —— 三处页面/文案共用一枚,不各算各的 */
+export function mansionLuckPercent(): number {
+  return Math.round(MANSION_EVENT_LUCK * 100)
+}
+
 /** 今日星象一句话(展示层直接用,不另写一份) */
 export function todayMansionLine(): string {
   const m = todayMansion()

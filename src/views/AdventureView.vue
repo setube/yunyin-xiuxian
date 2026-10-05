@@ -299,7 +299,7 @@
   import { worldOf, type WorldDef } from '@/data/realms'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
-  import { todayMansion, favoredWorld, todayMansionLine, MANSION_EVENT_LUCK } from '@/core/astronomy'
+  import { todayMansion, favoredWorld, todayMansionLine, mansionLuckPercent } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
   import { canEnterRegion, entryBlockReason, worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
@@ -360,8 +360,8 @@
   /** 今日星象:值日之宿所利界域,由此知今日该往哪一片地界走 */
   const mansionLine = computed(() => todayMansionLine())
   const favoredWorldName = computed(() => worldDef(favoredWorld(todayMansion())).name)
-  /** 值日之宿所利的百分数:一处来源,顺带被 `todayMansionLine` 同一条乘法链喂着 */
-  const mansionLuckPct = computed(() => Math.round(MANSION_EVENT_LUCK * 100))
+  /** 值日之宿所利的百分数:一处来源(astronomy),历练页与界域志界域志共此一枚 */
+  const mansionLuckPct = computed(() => mansionLuckPercent())
   /** 区域适配原因点按展开(移动端无 hover) */
   const adaptExpand = ref<string | null>(null)
 

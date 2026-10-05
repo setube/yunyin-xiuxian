@@ -30,7 +30,7 @@ import {
 } from './constants'
 import { LIFESPAN_WORLDS, REALMS, WORLDS, WORLD_BREAK_MAJOR } from './realms'
 import { DIVINATION_COST, CHANGING_TIERS } from '@/core/divination'
-import { MANSION_EVENT_LUCK } from '@/core/astronomy'
+import { mansionLuckPercent } from '@/core/astronomy'
 import { PALACES, STARS } from './ziwei'
 import { GATES } from './qimen'
 import { MANSIONS, IMAGES } from './xiangxiu'
@@ -178,7 +178,7 @@ export const SORCERY_LAYERS: SorceryLayer[] = [
     name: '星象 · 值日',
     cadence: `${MANSIONS.length} 日一轮 · ${IMAGES.length} 象配四界`,
     cost: '免费、被动',
-    note: `只利所配界域:其地际遇 +${Math.round(MANSION_EVENT_LUCK * 100)}%,他处不加`
+    note: `只利所配界域:其地际遇 +${mansionLuckPercent()}%,他处不加`
   },
   {
     id: 'men',

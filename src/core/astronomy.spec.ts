@@ -17,7 +17,7 @@ import { IMAGES, MANSIONS } from '@/data/xiangxiu'
 import { REGIONS, regionDef } from '@/data/regions'
 import { worldOf } from '@/data/realms'
 import { useGameStore } from '@/stores/game'
-import { MANSION_EVENT_LUCK, favoredWorld, isFavoredRegion, mansionEventLuck, mansionOfDay, todayMansion, todayMansionLine } from './astronomy'
+import { MANSION_EVENT_LUCK, favoredWorld, isFavoredRegion, mansionEventLuck, mansionLuckPercent, mansionOfDay, todayMansion, todayMansionLine } from './astronomy'
 import { exploreEventChance } from './exploration'
 
 beforeEach(() => {
@@ -153,5 +153,27 @@ describe('星象 · 接线', () => {
       .replace(/\/\/.*$/gm, '')
     expect(offlineSrc).toContain('exploreEventChance(')
     expect(offlineSrc).not.toContain('EXPLORE_EVENT_CHANCE')
+  })
+})
+
+describe('星象加成 · 百分数一处出', () => {
+  it('mansionLuckPercent 忠实换算,不魔改常量', () => {
+    // 0.1 → 10%;若哪天加成改成 0.15,这里应得 15,而不是 10 原地撒谎
+    expect(mansionLuckPercent()).toBe(Math.round(MANSION_EVENT_LUCK * 100))
+    expect(mansionLuckPercent()).toBeGreaterThan(0)
+  })
+
+  it('历练页 / 界域志 / 数值体系三处都读同一枚,不许各自手算', () => {
+    const adventure = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
+    const realm = readFileSync(resolve(__dirname, '../views/RealmCodexView.vue'), 'utf8')
+    const doc = readFileSync(resolve(__dirname, '../data/progressionDoc.ts'), 'utf8')
+    for (const [name, src] of [
+      ['历练页', adventure],
+      ['界域志', realm],
+      ['数值体系', doc]
+    ] as const) {
+      expect(src, `${name} 应读 mansionLuckPercent()`).toContain('mansionLuckPercent(')
+      expect(src, `${name} 不应再手算 MANSION_EVENT_LUCK × 100`).not.toMatch(/Math\.round\(MANSION_EVENT_LUCK/)
+    }
   })
 })
