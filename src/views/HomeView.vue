@@ -85,7 +85,8 @@
         <template v-if="mainQuest">
           <p class="flex items-center justify-between">
             <span class="font-kai text-[13px] tracking-wider text-ink">{{ mainQuest.name }}</span>
-            <span class="flex shrink-0 items-center gap-0.5">
+            <span class="flex shrink-0 items-center gap-1.5">
+              <span v-if="mainProgress" class="tabular text-[10px] text-azure">{{ mainProgress }}</span>
               <span class="text-[10px] text-ink-faint">主线 {{ quests.mainIdx + 1 }}/{{ MAIN_QUESTS.length }}</span>
               <!-- 拿得准去哪办,就给一枚走往的箭头;拿不准的不摆,免得摆着指错路 -->
               <RouterLink
@@ -210,6 +211,13 @@
   const mainQuest = computed(() => MAIN_QUESTS[quests.mainIdx])
   /** 主线的「去办」落点:拿得准才给箭头(判据见 questNav) */
   const mainNav = computed(() => (mainQuest.value ? mainQuestNav(mainQuest.value.cond) : null))
+  /** 计数型主线的当刻进度:里程碑(境界/custom)不给数字,别拿它当计数器 */
+  const mainProgress = computed(() => {
+    const c = mainQuest.value?.cond
+    if (c?.type !== 'counter') return null
+    const cur = Math.min(c.value, quests.counter(c.key))
+    return `${cur}/${c.value}`
+  })
 
   const dailyRows = computed(() =>
     DAILY_TASKS.map(t => ({
