@@ -17,7 +17,7 @@ import { PILLS } from '@/data/pills'
 import { recipeCraft } from '@/data/crafting'
 import { MAX_MAJOR } from '@/data/realms'
 import { bearableRank } from './craftability'
-import { NEW_RECIPE_START, STUDY_REACH_OVER, seedLoreIfNeeded, studiableRecipes, studyTick } from './loreService'
+import { NEW_RECIPE_COST, NEW_RECIPE_START, STUDY_MASTERY_PER_HOUR, STUDY_REACH_OVER, seedLoreIfNeeded, studiableRecipes, studyEta, studyTick } from './loreService'
 import { useLoreStore } from '@/stores/lore'
 import { useDongfuStore } from '@/stores/dongfu'
 import { usePlayerStore } from '@/stores/player'
@@ -169,5 +169,74 @@ describe('藏经阁钻研(挂机推演)', () => {
     for (let h = 0; h < 100; h += 1) studyTick(3600)
     expect(lore.knownRecipeCount).toBe(before)
     expect(lore.studyFrac).toBe(0)
+  })
+})
+
+/**
+ * 藏经阁「下一件事」的读数 —— 判据是与 studyTick 同一优先序:
+ * 先补熟最生的一张、都读通了才求索新方,数值只做「缺口 ÷ 现速」。
+ */
+describe('藏经阁翻检概况(studyEta)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('未建藏经阁:无事可报 → null', () => {
+    setActivePinia(createPinia())
+    expect(studyEta()).toBeNull()
+  })
+
+  it('手头有半生方子:在补熟那张,时间 = (缺口 − 锅余) ÷ 现速', () => {
+    const player = usePlayerStore()
+    player.major = 2
+    useDongfuStore().setLevel('library', 6)
+    const lore = useLoreStore()
+    lore.addRecipeMastery('p_lingru', 0.5)
+    lore.studyFrac = 0.1
+    const eta = studyEta()!
+    expect(eta.readingId).toBe('p_lingru')
+    expect(eta.nextIsNew).toBe(false)
+    const rate = (6 * STUDY_MASTERY_PER_HOUR) / 3600
+    expect(eta.nextInSec).toBeCloseTo((1 - 0.5 - 0.1) / rate, 6)
+  })
+
+  it('都在手且还有方子可翻:下一件事是求索新方', () => {
+    const player = usePlayerStore()
+    player.major = 2
+    useDongfuStore().setLevel('library', 5)
+    const lore = useLoreStore()
+    // 把够得着的都补到通晓,独留灵乳一张未启 —— 于是架上还有书
+    for (const p of PILLS) {
+      if (!p.recipe || p.id === 'p_lingru') continue
+      const rank = recipeCraft(p)?.rank ?? Number.MAX_SAFE_INTEGER
+      if (p.minRealm <= player.major && rank <= bearableRank(player.major) + STUDY_REACH_OVER) {
+        lore.addRecipeMastery(p.id, 1)
+      }
+    }
+    lore.studyFrac = 0.05
+    const eta = studyEta()!
+    expect(eta.readingId).toBeNull()
+    expect(eta.nextIsNew).toBe(true)
+    const rate = (5 * STUDY_MASTERY_PER_HOUR) / 3600
+    expect(eta.nextInSec).toBeCloseTo((NEW_RECIPE_COST - 0.05) / rate, 6)
+  })
+
+  it('够得着的都已到手:读通齐了也无可翻 → 0', () => {
+    const player = usePlayerStore()
+    player.major = 2
+    useDongfuStore().setLevel('library', 5)
+    const lore = useLoreStore()
+    for (const p of PILLS) {
+      if (!p.recipe) continue
+      const rank = recipeCraft(p)?.rank ?? Number.MAX_SAFE_INTEGER
+      if (p.minRealm <= player.major && rank <= bearableRank(player.major) + STUDY_REACH_OVER) {
+        lore.addRecipeMastery(p.id, 1)
+      }
+    }
+    lore.studyFrac = 0.5
+    const eta = studyEta()!
+    expect(eta.readingId).toBeNull()
+    expect(eta.nextIsNew).toBe(false)
+    expect(eta.nextInSec).toBe(0)
   })
 })
