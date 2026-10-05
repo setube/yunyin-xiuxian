@@ -7,6 +7,7 @@ import { equipmentTemplate } from '@/data/equipment'
 import { useInventoryStore } from '@/stores/inventory'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useLoadoutsStore } from '@/stores/loadouts'
+import { useUiStore } from '@/stores/ui'
 
 describe('构筑快照(保存/一键切换)', () => {
   beforeEach(() => {
@@ -86,14 +87,20 @@ describe('构筑快照(保存/一键切换)', () => {
     expect(captureLoadout('超载')).toBeNull()
   })
 
-  it('改名:收敛空白与 8 字上限,套内装束原样不动', () => {
+  it('改名:收敛空白与 8 字上限,套内装束原样不动,提示说「已改名」而非「已存入行囊」', () => {
     seed()
     const loadouts = useLoadoutsStore()
+    const ui = useUiStore()
     const lo = captureLoadout('背水一号')!
     const weaponUid = lo.equipment.weapon
     // 全空白 → 回落「无名构筑」
     expect(renameLoadout(lo.id, '   ')).toBe(true)
     expect(loadouts.list.find(l => l.id === lo.id)!.name).toBe('无名构筑')
+    // 改名成功时的 toast:说的是改名,不是保存进包(此前复用了「已存入行囊」,报了假动作);
+    // captureLoadout 那一声「已存入行囊」在更早,断言只看最新一条
+    const lastToast = ui.toasts[ui.toasts.length - 1]!.text
+    expect(lastToast).toContain('已改名')
+    expect(lastToast).not.toContain('已存入行囊')
     // 超过 8 字 → 截到 8 字
     expect(renameLoadout(lo.id, '超长名字超过八个字会截断')).toBe(true)
     expect(loadouts.list.find(l => l.id === lo.id)!.name).toBe('超长名字超过八个')
