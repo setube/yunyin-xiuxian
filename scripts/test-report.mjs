@@ -43,7 +43,7 @@ const CATEGORIES = [
 const OUT = '.vitest-report.json'
 
 try {
-  execSync(`bunx vitest run --reporter=json --outputFile=${OUT}`, { stdio: 'pipe' })
+  execSync(`bunx vitest run --reporter=json --outputFile=${OUT}`, { stdio: 'inherit' })
 } catch {
   // 有测试失败时 vitest 以非零码退出,报告文件仍会生成
 }
