@@ -54,4 +54,18 @@ describe('师承(mentor)', () => {
   it('未拜师时无评价', () => {
     expect(mentorVerdict(null)).toBeNull()
   })
+
+  it('拜师前预读契合:与「拜没拜」无关 —— 拜师弹窗正是拿同一份数做知情选择', () => {
+    const player = usePlayerStore()
+    expect(player.mentor).toBeNull()
+    const quests = useQuestsStore()
+    quests.inc('kills', 500)
+    quests.inc('bossKills', 30)
+    // 未拜师也能对每位师尊预读契合(人物页拜师卡用的就是这一行)
+    const verdict = mentorVerdict('swordsman')
+    expect(verdict).not.toBeNull()
+    expect(verdict!.affinity).toBeGreaterThan(0)
+    const other = mentorVerdict('alchemist')
+    expect(other!.affinity).toBeLessThan(verdict!.affinity)
+  })
 })
