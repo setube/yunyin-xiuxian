@@ -37,9 +37,15 @@
       <RouterLink
         to="/settings"
         aria-label="设置"
-        class="-my-1.5 -mr-1.5 flex min-h-[32px] min-w-[32px] items-center justify-center p-1.5 text-ink-faint active:scale-90"
+        class="-my-1.5 -mr-1.5 relative flex min-h-[32px] min-w-[32px] items-center justify-center p-1.5 text-ink-faint active:scale-90"
       >
         <GameIcon name="settings" :size="15" />
+        <!-- 有新发布说明时点一枚朱砂圆点:绝对定位,不挤动 32px 的触面与布局 -->
+        <span
+          v-if="settings.hasUnseenRelease"
+          class="pointer-events-none absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-cinnabar"
+          aria-hidden="true"
+        />
       </RouterLink>
     </div>
   </header>
@@ -52,10 +58,12 @@
   import { LIFESPAN_WARN_RATIO } from '@/data/constants'
   import { Capacitor } from '@capacitor/core'
   import { useNativeInsets } from '@/composables/useNativeInsets'
+  import { useSettingsStore } from '@/stores/settings'
   import GameIcon from './GameIcon.vue'
 
   // 安卓状态栏的真实高度(非安卓为 0);与 env() 及原有的 40px 保底取大者,只会更准不会更矮
   const { top: statusInset } = useNativeInsets()
   const player = usePlayerStore()
   const resources = useResourcesStore()
+  const settings = useSettingsStore()
 </script>

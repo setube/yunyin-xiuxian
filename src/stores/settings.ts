@@ -1,13 +1,17 @@
 /** 设置 */
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { persistConfig } from '@/utils/storage'
 import { asArray, asFiniteNumber, asRecord } from '@/utils/saveShape'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
+import { APP_VERSION, compareVersions } from '@/utils/appVersion'
+import { RELEASE_NOTES } from '@/ui/releaseNotes'
 
 export const useSettingsStore = defineStore(
   'settings',
   () => {
+    /** 版本与更新:上次看过发布说明的版本(空 = 从没看过) */
+    const lastSeenVersion = ref('')
     const sfxOn = ref(true)
     const musicOn = ref(true)
     /** 音量 0~100 */
@@ -46,6 +50,21 @@ export const useSettingsStore = defineStore(
     /** iOS「添加到主屏幕」那张提示卡被玩家关掉过(关掉即不再出现,只劝一次) */
     const installNoticeDismissed = ref(false)
 
+    /**
+     * 该不该亮「新版本/未读发布说明」:当前版本更新于上次看过的那版时成立。
+     * 首条只当真——发布说明里确实有当前版本才成立,否则版本号吹了牛,圆圈也是空楼。
+     */
+    const hasUnseenRelease = computed(
+      () =>
+        RELEASE_NOTES.some(n => compareVersions(n.version, APP_VERSION) === 0) &&
+        compareVersions(APP_VERSION, lastSeenVersion.value) > 0
+    )
+
+    /** 打开过发布说明:把「已看到的最新版」记成当前版本,新标记随之熄灭 */
+    function markReleaseSeen(): void {
+      lastSeenVersion.value = APP_VERSION
+    }
+
     /** 存档修复:设置项被写坏会让音量/战斗速度算出 NaN,或让主题类名失效 */
     function sanitize(): void {
       // 音量是 0~100 的整数,不是 0~1 —— 别照搬比例类的写法
@@ -56,6 +75,7 @@ export const useSettingsStore = defineStore(
       dndEvents.value = dndEvents.value === true
       lastExportAt.value = asFiniteNumber(lastExportAt.value, 0, 0)
       installNoticeDismissed.value = installNoticeDismissed.value === true
+      lastSeenVersion.value = typeof lastSeenVersion.value === 'string' ? lastSeenVersion.value : ''
       decomposeRanks.value = asArray<number>(decomposeRanks.value).filter(n => typeof n === 'number' && Number.isFinite(n))
       const sk = asRecord<unknown>(smartKeep.value)
       smartKeep.value = {
@@ -83,6 +103,9 @@ export const useSettingsStore = defineStore(
       theme,
       lastExportAt,
       installNoticeDismissed,
+      lastSeenVersion,
+      hasUnseenRelease,
+      markReleaseSeen,
       sanitize
     }
   },
