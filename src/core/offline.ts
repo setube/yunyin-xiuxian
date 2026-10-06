@@ -53,6 +53,7 @@ import { useEndgameStore } from '@/stores/endgame'
 import { useLoadoutsStore } from '@/stores/loadouts'
 import { useSettingsStore } from '@/stores/settings'
 import { useDiagStore } from '@/stores/diag'
+import { usePacingTelemetry } from '@/stores/pacingTelemetry'
 
 /**
  * 离线事件兜底池:世界标签不命中公共事件池时的默认通用际遇。
@@ -363,6 +364,10 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
  * 从前只有 player/resources/lore/dongfu 四处 —— 其余八个分片若被写坏,
  * 会在**渲染期**抛出(如 cultivation.gongfaBranch 为 null 时的 Object.entries),
  * 玩家看到的是白屏。见 storeResilience.spec:逐个字段灌 undefined 的红线。
+ *
+ * 清单覆盖**所有**持久化分片(PERSISTED_STORES,见 utils/storage.ts)——
+ * 曾漏了 pacing:它的 sanitize 定义了但没人调,record() 里 events.slice(-119)
+ * 在 events 被写坏(null / 非数组)时照样抛错。这里与其余分片一视同仁地修平。
  */
 export function sanitizeOfflineInputs(): void {
   usePlayerStore().sanitize()
@@ -378,4 +383,5 @@ export function sanitizeOfflineInputs(): void {
   useSettingsStore().sanitize()
   useGameStore().sanitize()
   useDiagStore().sanitize()
+  usePacingTelemetry().sanitize() // 遥测分片也落盘,坏档一样要修平(见 pacingTelemetry.sanitize)
 }
