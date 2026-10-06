@@ -1023,6 +1023,13 @@ html[data-theme='dark'] .btn-seal:disabled {
   outline-offset: 2px;
 }
 
+/* 印面按钮的焦点圈:朱砂描边压在朱砂印面上看不见,换成奶油白(与印面文字同色),
+   键盘用户才能在关键按钮上看到焦点落在哪 */
+.btn-seal:focus-visible,
+.world-seal:focus-visible {
+  outline-color: #f6f1e5;
+}
+
 /* 滚动条 */
 *::-webkit-scrollbar {
   width: 3px;
@@ -1124,6 +1131,7 @@ html[data-theme='dark'] .btn-seal:disabled {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
@@ -1134,6 +1142,7 @@ html[data-theme='dark'] .btn-seal:disabled {
 .reduce-motion *::before,
 .reduce-motion *::after {
   animation-duration: 0.01ms !important;
+  animation-delay: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
 }

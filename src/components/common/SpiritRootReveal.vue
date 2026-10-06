@@ -27,16 +27,50 @@
           <p class="root-title">正在测定灵根……</p>
           <p class="root-temp" :style="{ color: currentColor }">{{ currentName }}</p>
         </div>
+
+        <!-- 无障碍播报:只播最终定格的真实灵根,不随闪现帧逐条报。
+             放到单独 aria-live 区而非闪名字的可见 span 上,避免读屏被轮换帧刷屏 -->
+        <span class="sr-only" role="status" aria-live="polite">{{ announcedName }}</span>
       </div>
     </Transition>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onUnmounted } from 'vue'
+  import { ref, computed, onUnmounted, nextTick } from 'vue'
+  import { useSettingsStore } from '@/stores/settings'
+
+  const settings = useSettingsStore()
 
   const visible = ref(false)
   const animating = ref(false)
+  /** 无障碍播报文本:只在定格时填入真实灵根,读屏据此播报最终结果 */
+  const announcedName = ref('')
+
+  /**
+   * 是否应跳过闪现动画:设置里开了「减少动效」或系统偏好 prefers-reduced-motion。
+   * 二者任一命中即跳过 2.2s 轮换,直接定格真实灵根。
+   */
+  function reducedMotionActive(): boolean {
+    if (settings.reduceMotion) return true
+    return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
+  }
+
+  /** 定格收尾:停掉轮换 → 显示真实灵根 → 约定时间后淡出并回调 onDone(只回调一次) */
+  function settle(onDone?: () => void): void {
+    if (timer) clearInterval(timer)
+    timer = null
+    animating.value = false
+    // 先让 live 区挂载/保持空内容,下一帧再填结果,确保 change 事件触发播报
+    void nextTick(() => {
+      announcedName.value = realName
+    })
+    const leave = setTimeout(() => {
+      visible.value = false
+      if (!unmounted) onDone?.()
+    }, 400)
+    stopTimers = () => clearTimeout(leave)
+  }
 
   /**
    * 灵根品阶全集(与 linggenGen.ts 的 gradeName 取值一致):
@@ -74,20 +108,22 @@
     // 灵根品阶越高颜色越亮(从 GRADES 里找真实灵根对应的颜色)
     realColor = GRADES.find(g => g.name === gradeName)?.color ?? '#c9a959'
     visible.value = true
+
+    // 减少动效(设置/系统偏好任一命中):跳过 2.2s 轮换,直接定格真实灵根,
+    // 仅保留淡出离场步进,onDone 依旧只回调一次
+    if (reducedMotionActive()) {
+      settle(onDone)
+      return
+    }
+
     animating.value = true
     // 随机闪现所有灵根品阶(100ms 一次,约 20 次后显出真容)
     timer = setInterval(() => {
       cycleIdx.value = Math.floor(Math.random() * GRADES.length)
     }, 100)
     const doneTimeout = setTimeout(() => {
-      if (timer) clearInterval(timer)
-      // 定格:显示真实灵根(animating=false 后 currentName 取 realName)
-      animating.value = false
-      const leave = setTimeout(() => {
-        visible.value = false
-        if (!unmounted) onDone?.()
-      }, 400)
-      stopTimers = () => clearTimeout(leave)
+      // 定格:显示真实灵根,并播报结果
+      settle(onDone)
     }, 2200)
     stopTimers = () => {
       if (timer) clearInterval(timer)
