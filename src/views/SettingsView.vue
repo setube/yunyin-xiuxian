@@ -3,7 +3,7 @@
     <SectionTitle title="设置" />
 
     <!-- 偏好 -->
-    <div class="card-ink divide-y divide-ink/7 px-4">
+    <div class="card-ink divide-y divide-ink/6 px-4">
       <div class="py-3">
         <label class="flex items-center justify-between">
           <span class="text-[13px] text-ink-soft">背景音乐</span>
@@ -142,7 +142,7 @@
 
     <!-- 关于 -->
     <SectionTitle title="关于" />
-    <div class="card-ink divide-y divide-ink/7 px-4">
+    <div class="card-ink divide-y divide-ink/6 px-4">
       <button class="flex w-full items-center justify-between py-3 active:opacity-60" @click="aboutOpen = true">
         <span class="text-[13px] text-ink-soft">关于我们</span>
         <span class="text-[11px] text-ink-faint">查看 →</span>

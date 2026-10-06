@@ -106,7 +106,7 @@
     </section>
 
     <!-- 八卦 -->
-    <section class="card-ink divide-y divide-ink/7 px-4">
+    <section class="card-ink divide-y divide-ink/6 px-4">
       <div v-for="t in TRIGRAMS" :key="t.id" class="flex items-start gap-2 py-2.5">
         <span class="w-[52px] shrink-0 font-kai text-[15px] text-ink">{{ t.symbol }} {{ t.name }}</span>
         <span class="w-[56px] shrink-0 text-[10px] text-ink-faint">象{{ t.image }} · {{ t.nature }}</span>
@@ -220,7 +220,7 @@
 
     <template v-if="codexTab === 'todo' && PLANNED_SCHOOLS.length">
       <SectionTitle title="待续" hint="已在构思、尚未成书的门类" />
-      <section class="card-ink divide-y divide-ink/7 px-4">
+      <section class="card-ink divide-y divide-ink/6 px-4">
       <div v-for="p in PLANNED_SCHOOLS" :key="p.name" class="flex items-start gap-2 py-2.5">
         <span class="w-[104px] shrink-0 font-kai text-[12px] text-ink-soft">{{ p.name }}</span>
         <span class="text-[11px] leading-relaxed text-ink-faint">{{ p.note }}</span>

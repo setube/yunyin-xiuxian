@@ -68,7 +68,7 @@
     <RouterLink
       v-if="player.major >= WORLD_BREAK_MAJOR"
       to="/celestial"
-      class="card-ink flex items-center gap-3 border-cinnabar/40 px-4 py-3 active:scale-99"
+      class="card-ink flex items-center gap-3 border-cinnabar/40 px-4 py-3 active:scale-98"
     >
       <span class="grid h-9 w-9 place-items-center rounded-md bg-cinnabar/90 font-kai text-[17px] text-paper animate-breathe">天</span>
       <span class="min-w-0 grow">
@@ -79,7 +79,7 @@
     </RouterLink>
 
     <!-- 本世之界:这一世的「名」散落在历练深处,主页却只在洞府/天界处开了门 —— 舆图该在门面首层 -->
-    <RouterLink to="/world" class="card-ink flex items-center gap-3 border-azure/30 px-4 py-3 active:scale-99">
+    <RouterLink to="/world" class="card-ink flex items-center gap-3 border-azure/30 px-4 py-3 active:scale-98">
       <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-azure/15 text-azure">
         <GameIcon name="cloud" :size="18" />
       </span>
@@ -148,7 +148,7 @@
     </section>
 
     <!-- 洞府入口(灵脉已统合进洞府页,入口副题带上一句免得找不到);右侧带实况:离线可攒 + 已营座数 -->
-    <RouterLink to="/dongfu" class="card-ink flex items-center justify-between gap-3 px-4 py-3 active:scale-99">
+    <RouterLink to="/dongfu" class="card-ink flex items-center justify-between gap-3 px-4 py-3 active:scale-98">
       <span class="min-w-0 flex-1">
         <span class="block font-kai text-[14px] tracking-widest text-ink">洞府营造</span>
         <span class="block truncate text-[10px] leading-relaxed text-ink-faint">灵脉 · 经营家业,道途更稳</span>

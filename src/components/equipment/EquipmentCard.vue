@@ -1,6 +1,6 @@
 <template>
   <button
-    class="relative aspect-square rounded-md border transition-transform active:scale-95"
+    class="relative aspect-square rounded-md border transition-transform active:scale-98"
     :style="{ borderColor: tint(quality.color, 0.33), background: tint(quality.color, 0.06) }"
     :data-uid="props.item.uid"
     @click="emit('open', props.item.uid)"

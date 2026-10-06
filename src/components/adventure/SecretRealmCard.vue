@@ -28,7 +28,7 @@
         <button
           v-for="r in list"
           :key="r.id"
-          class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-99"
+          class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98"
           :class="{ 'opacity-60': !canPay(r) }"
           @click="enter(r.id)"
         >

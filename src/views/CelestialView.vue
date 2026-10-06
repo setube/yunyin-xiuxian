@@ -70,7 +70,7 @@
         <!-- 天道熔炉 / 器魂:两处入口 -->
         <section class="space-y-2">
           <button
-            class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-99"
+            class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98"
             @click="furnaceOpen = true"
           >
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/85 font-kai text-[19px] text-paper">炉</span>
@@ -81,7 +81,7 @@
             <span class="shrink-0 text-[12px] text-ink-faint">›</span>
           </button>
 
-          <button class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-99" @click="goSouls()">
+          <button class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98" @click="goSouls()">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-gold-ink/85 font-kai text-[19px] text-paper">魂</span>
             <span class="min-w-0 flex-1">
               <span class="block font-kai text-[14px] tracking-widest text-ink">器 魂</span>
@@ -137,7 +137,7 @@
                 <button
                   v-for="(node, i) in currentNodes"
                   :key="node.id"
-                  class="rounded-md border border-ink/15 bg-paper-deep/60 px-2.5 py-2 text-left active:scale-97"
+                  class="rounded-md border border-ink/15 bg-paper-deep/60 px-2.5 py-2 text-left active:scale-98"
                   @click="pickNode(i as 0 | 1)"
                 >
                   <p class="font-kai text-[13px] text-ink">{{ node.name }}</p>
@@ -397,7 +397,7 @@
             <p class="text-[10px] tabular text-ink-faint">
               天道历 {{ RULESET_VERSION }} 世 · 天地规矩易过 {{ RULESET_CHANGELOG.length }} 回
             </p>
-            <button class="-my-1 py-2 font-kai text-[10px] text-azure active:scale-95" @click="openEra(null)">纪元变迁史 →</button>
+            <button class="-my-1 py-2 font-kai text-[10px] text-azure active:scale-90" @click="openEra(null)">纪元变迁史 →</button>
           </div>
           <!-- 今昔之比:与过去的自己对话 -->
           <div v-if="legacy.length" class="card-ink mt-2 px-4 py-3">
@@ -612,7 +612,7 @@
     <!-- 天道熔炉 -->
     <BaseModal :open="furnaceOpen" title="天道熔炉" @close="furnaceOpen = false">
       <p class="mb-2 text-[11px] leading-relaxed text-ink-faint">前尘俗物,皆可熔作道源。</p>
-      <div class="card-ink divide-y divide-ink/7 px-4">
+      <div class="card-ink divide-y divide-ink/6 px-4">
         <div v-for="row in furnaceRows" :key="row.rate.resource" class="py-2.5">
           <div class="flex items-center justify-between gap-2">
             <span class="text-[12px] text-ink-soft">{{ row.rate.name }}(存 {{ formatNum(row.have) }})</span>

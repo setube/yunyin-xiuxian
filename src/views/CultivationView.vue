@@ -342,7 +342,7 @@
           v-for="b in activeBuffs"
           :key="b.def!.id"
           type="button"
-          class="chip-ink tabular transition-transform active:scale-95"
+          class="chip-ink tabular transition-transform active:scale-90"
           :class="b.def!.kind === 'injury' ? 'border-cinnabar/60 text-cinnabar' : 'border-jade/60 text-jade'"
           @click="ui.buffDetailId = b.def!.id"
         >
@@ -387,7 +387,7 @@
         <!-- 主修 -->
         <button
           v-if="mainDef"
-          class="card-ink flex w-full items-center gap-3 px-3.5 py-3 text-left active:scale-99"
+          class="card-ink flex w-full items-center gap-3 px-3.5 py-3 text-left active:scale-98"
           @click="ui.gongfaDetailId = mainDef.id"
         >
           <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-cinnabar/10 font-kai text-cinnabar">主</span>
@@ -401,7 +401,7 @@
         </button>
 
         <!-- 已习得列表(限高滚动,功法过多不撑爆页面);行首门类印章 + 品质条目,不再是一排裸文字 -->
-        <div class="card-ink max-h-64 divide-y divide-ink/7 overflow-y-auto px-1">
+        <div class="card-ink max-h-64 divide-y divide-ink/6 overflow-y-auto px-1">
           <button
             v-for="def in learnedList"
             :key="def!.id"

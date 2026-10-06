@@ -35,7 +35,7 @@
         <button
           v-for="row in slotRows"
           :key="row.slot"
-          class="card-ink relative flex flex-col items-center gap-1 px-2 py-2.5 active:scale-95"
+          class="card-ink relative flex flex-col items-center gap-1 px-2 py-2.5 active:scale-98"
           :aria-label="`${row.name}${row.upgradeable ? ',行囊里有更强的一件' : ''}`"
           @click="pickerSlot = row.slot"
         >
@@ -99,7 +99,7 @@
     <template v-else-if="tab === 'pill'">
       <!-- 开炉炼丹:入口置顶,点开弹窗 -->
       <button
-        class="card-ink mt-3 flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-99"
+        class="card-ink mt-3 flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98"
         @click="craftOpen = true"
       >
         <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/85 font-kai text-[19px] text-paper">炉</span>
@@ -117,7 +117,7 @@
         <button
           v-for="row in pillRows"
           :key="row.def!.id"
-          class="relative aspect-square rounded-md border transition-transform active:scale-95"
+          class="relative aspect-square rounded-md border transition-transform active:scale-98"
           :style="{ borderColor: tint(qualityDef(row.def!.quality).color, 0.33), background: tint(qualityDef(row.def!.quality).color, 0.06) }"
           @click="pillDetail = row.def!.id"
         >
@@ -143,7 +143,7 @@
         <button
           v-for="m in materialGrid"
           :key="m.key"
-          class="relative aspect-square rounded-md border border-ink/15 bg-ink/[0.03] transition-transform active:scale-95"
+          class="relative aspect-square rounded-md border border-ink/15 bg-ink/[0.03] transition-transform active:scale-98"
           @click="materialDetail = m.key"
         >
           <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
@@ -426,7 +426,7 @@
           :class="row.equipped ? 'bg-jade/10' : 'bg-paper-deep/70'"
         >
           <GameIcon :name="row.template.icon" :size="16" :style="{ color: qualityDef(row.item.quality).color }" />
-          <button class="min-w-0 grow text-left active:opacity-70" @click="openDetail(row.item.uid)">
+          <button class="min-w-0 grow text-left active:opacity-60" @click="openDetail(row.item.uid)">
             <span class="block truncate font-kai text-[13px]" :style="{ color: qualityDef(row.item.quality).color }">
               {{ row.template.name }}
               <template v-if="row.item.level > 0">+{{ row.item.level }}</template>

@@ -8,7 +8,7 @@
     <!-- 选择区域 -->
     <template v-else>
       <!-- 本世之界:链接入口,详情另开一页。历练地图仍在下方,照旧可走 -->
-      <RouterLink to="/world" class="card-ink flex items-center gap-3 border-azure/30 px-4 py-3 active:scale-99">
+      <RouterLink to="/world" class="card-ink flex items-center gap-3 border-azure/30 px-4 py-3 active:scale-98">
         <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-azure/15 text-azure">
           <GameIcon name="cloud" :size="18" />
         </span>
@@ -147,7 +147,7 @@
             </span>
             <!-- 停取收益是次级动作:放在产出条里,不跟名字抢那一行 -->
             <button
-              class="ml-auto inline-flex min-h-[28px] items-center px-1 text-[10px] text-ink-faint underline underline-offset-2 active:scale-95 active:text-ink"
+              class="ml-auto inline-flex min-h-[28px] items-center px-1 text-[10px] text-ink-faint underline underline-offset-2 active:scale-90 active:text-ink"
               @click.stop="unsuppress(row.def.id)"
             >
               停取收益,改去历练
@@ -166,7 +166,7 @@
             <span class="text-[10px] text-ink-faint">已取得镇压资格</span>
             <span class="text-[10px] text-gold-ink tabular">{{ rateText(row.def, row.recall) }}</span>
             <button
-              class="ml-auto chip-ink min-h-[28px] !text-[10px] active:scale-95"
+              class="ml-auto chip-ink min-h-[28px] !text-[10px] active:scale-90"
               @click.stop="suppress(row.def.id)"
             >
               转为镇压收益
@@ -213,7 +213,7 @@
             <!-- min-h-[28px] 是排版自检的尺子:展开按钮此前只有 15px 高,拇指点不着 -->
             <button
               v-if="row.adaptation"
-              class="ml-auto inline-flex min-h-[28px] items-center text-[10px] text-ink-soft tabular active:scale-95"
+              class="ml-auto inline-flex min-h-[28px] items-center text-[10px] text-ink-soft tabular active:scale-90"
               :title="row.adaptation.reasons.join(';')"
               :aria-expanded="adaptExpand === row.def.id"
               @click="adaptExpand = adaptExpand === row.def.id ? null : row.def.id"
