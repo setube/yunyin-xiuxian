@@ -315,6 +315,23 @@ describe('调色板 · 印面', () => {
     expect(CSS).toMatch(/\.world-seal \{[^}]*color: #f6f1e5/)
     expect(CSS).toMatch(/html\[data-theme='dark'\] \.world-seal \{[^}]*background: var\(--color-cinnabar-deep\)/)
   })
+
+  it('夜主题禁用态 .btn-seal:disabled 换暗底,92% 白字仍 ≥4.5:1(亮暖灰当底会洗白)', () => {
+    // 夜里 ink-faint(168 161 140)是亮暖灰,禁用按钮的 92% 白字压上去只有 ~2:1 ——
+    // 必须换成真正暗的惰性底。这里验证两件事:
+    //  ① 浅色那份 ink-faint 打底不动(浅色主题 3.9:1 成立,回归不得改它);
+    //  ② 夜主题覆盖成 paper-dark,并把 92% 白字混上去算对比度。
+    const LIGHT_BG = /\.btn-seal:disabled \{[^}]*background: var\(--color-ink-faint\)/.test(CSS)
+    expect(LIGHT_BG, '浅色主题禁用态必须仍用 ink-faint 打底').toBe(true)
+    expect(CSS).toMatch(/html\[data-theme='dark'\] \.btn-seal:disabled \{[^}]*background: rgb\(var\(--color-paper-dark-rgb\)\)/)
+
+    // 92% 白字在暗底上的实际视效 = 白 ×0.92 + 底 ×0.08
+    const paperDark = DARK.get('paper-dark')
+    expect(paperDark, '暗色主题须有 paper-dark 供禁用态打底').toBeTruthy()
+    const bg = paperDark!
+    const text: Rgb = [255, 255, 255].map((wc, i) => Math.round(0.92 * wc + 0.08 * bg[i]!)) as unknown as Rgb
+    expect(contrast(text, bg), '夜主题禁用态 92% 白字在暗底上必须 ≥4.5').toBeGreaterThanOrEqual(4.5)
+  })
 })
 
 describe('调色板 · 两处手抄关系', () => {
