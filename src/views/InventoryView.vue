@@ -230,17 +230,19 @@
           <!--
             祭炼连炼:一重一重点太累,与强化连升同一套二步确认 ——
             行只在一口气能连炼 ≥2 重时出现(只够一重时,单炼按钮就是那一重)。
+            flex-wrap + 文本保底宽:窄屏放不下说明与双钮同排时,说明独占整行、钮换行 ——
+            与强化连升/洞府连升同一处外伤(320 下说明被 shrink-0 钮压成 0 宽竖排)。
           -->
-          <div v-if="row.artPlan.levels >= 2" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+          <div v-if="row.artPlan.levels >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
             <template v-if="batchArtConfirm !== row.def.id">
-              <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+              <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
                 连炼至 <span class="font-kai text-[11px] text-cinnabar">第 {{ row.owned.level + row.artPlan.levels }} 重</span>
                 <span class="mt-0.5 block text-[9px] text-ink-faint tabular">共耗 悟道×{{ row.artPlan.wudao }} · 灵石 {{ formatGN(row.artPlan.stone) }}</span>
               </p>
               <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArtConfirm = row.def.id">连 炼</button>
             </template>
             <template v-else>
-              <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+              <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
                 一步连炼 {{ row.artPlan.levels }} 重,花上面那笔总账 —— 仍要?
               </p>
               <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArtConfirm = null">再想想</button>

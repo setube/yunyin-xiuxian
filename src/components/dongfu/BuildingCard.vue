@@ -100,9 +100,14 @@
       连升行:一口气能连升 ≥2 级才出现,总账先报清(与强化连升/祭炼连升同一套)。
       只够一级时,上面的升级按钮就是那一级,不必多摆一行。
     -->
-    <div v-if="plan.levels >= 2" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+    <!--
+      窄卡(320 下网格卡内宽 ~113px)塞不下「说明 × 钮」同排:双钮本身就近 115px,
+      再挤一个 flex-1 文本,文本会被压到 0 宽逐字竖排、甚至塌进钮里(实测 0×220)。
+      flex-wrap + 文本保底宽:放得下就同排,放不下说明独占整行、钮换行自成一行。
+    -->
+    <div v-if="plan.levels >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
       <template v-if="!batchArm">
-        <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+        <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
           连升至 <span class="font-kai text-[11px] text-cinnabar">第 {{ level + plan.levels }} 级</span>
           <span class="mt-0.5 block text-[9px] text-ink-faint tabular">
             共耗 <span class="whitespace-nowrap">灵石 {{ formatGN(plan.stone) }}</span><span
@@ -114,7 +119,7 @@
         <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = true">连 升</button>
       </template>
       <template v-else>
-        <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+        <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
           一步连升 {{ plan.levels }} 级,花上面那笔总账 —— 仍要?
         </p>
         <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArm = false">再想想</button>

@@ -78,17 +78,19 @@
           </div>
         </div>
 
-        <!-- 连投批量行:一口气能注 ≥2 点才出现,总账先报清(与群批同一条式子,所见即所得) -->
-        <div v-if="plans[v.id].points >= 2" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+        <!-- 连投批量行:一口气能注 ≥2 点才出现,总账先报清(与群批同一条式子,所见即所得)。
+             flex-wrap + 文本保底宽:窄屏放不下说明与双钮同排时,说明独占整行、钮换行自成一行 ——
+             不然 flex-1 文本会被 shrink-0 双钮压到 0 宽逐字竖排(与建筑连升同一处外伤)。 -->
+        <div v-if="plans[v.id].points >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
           <template v-if="batchArm !== v.id">
-            <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+            <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
               连投至 <span class="font-kai text-[11px] text-cinnabar">第 {{ currentLevel(v.id) + plans[v.id].points }} 点</span>
               <span class="mt-0.5 block text-[9px] text-ink-faint tabular">共耗 灵石 {{ formatGN(plans[v.id].stone) }}</span>
             </p>
             <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = v.id">连 投</button>
           </template>
           <template v-else>
-            <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+            <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
               一步连投 {{ plans[v.id].points }} 点,花上面那笔总账 —— 仍要?
             </p>
             <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArm = null">再想想</button>
@@ -97,8 +99,8 @@
         </div>
 
         <!-- 改立主脉确认行:20 倍单价的迁移费,按下前把回落后果摆出来(原主脉的超额点不再可添) -->
-        <div v-if="switchArm === v.id" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
-          <p class="min-w-0 flex-1 text-[10px] leading-snug text-ink-soft">
+        <div v-if="switchArm === v.id" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+          <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
             改立「<span class="font-kai text-[11px] text-cinnabar">{{ v.name }}</span>」为主脉,耗灵石
             <span class="tabular text-ink">{{ formatGN(switchCost) }}</span>
             <span v-if="switchLoss" class="mt-0.5 block text-[9px] leading-relaxed text-gold-ink">
