@@ -4,7 +4,7 @@
     <div class="card-ink px-4 py-3">
       <template v-if="build">
         <div class="flex items-center gap-3">
-          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-cinnabar/90 font-kai text-[22px] text-paper shadow">
+          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-cinnabar/90 font-kai text-[22px] seal-face shadow">
             {{ build.style.seal }}
           </span>
           <div class="min-w-0 grow">
@@ -157,7 +157,7 @@
       </p>
       <div v-if="loadouts.list.length" class="space-y-1.5">
         <div v-for="lo in loadouts.list" :key="lo.id" class="flex items-center gap-2 rounded-md bg-paper-deep/70 px-2.5 py-1.5">
-          <span class="grid h-6 w-6 shrink-0 place-items-center rounded bg-cinnabar/85 font-kai text-[12px] text-paper">
+          <span class="grid h-6 w-6 shrink-0 place-items-center rounded bg-cinnabar/85 font-kai text-[12px] seal-face">
             {{ lo.seal }}
           </span>
           <span class="min-w-0 grow truncate font-kai text-[12px] text-ink">{{ lo.name }}</span>

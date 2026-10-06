@@ -13,7 +13,7 @@
         战力是全书出现最频繁却从不解释的一个数 —— 一句算式说清它从哪来。
         权重取自 POWER_WEIGHTS,与 powerScore 同一份,界面不手抄
       -->
-      <p class="mt-0.5 text-right text-[9px] text-ink-faint tabular">{{ powerExplainText() }}</p>
+      <p class="mt-0.5 text-right text-[10px] text-ink-faint tabular">{{ powerExplainText() }}</p>
       <!--
         逐行把攻/防/血各折算多少摊开,合计又对上总战力 —— 「拆解」不是另起口径,
         读的与 powerScore 同一批属性同一份权重。
@@ -29,7 +29,7 @@
           <span class="text-ink-faint">合计</span>
           <span class="tabular font-kai text-[12px] text-cinnabar">{{ formatGN(stats.power) }}</span>
         </p>
-        <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">战力由此数项合计而成,每项的权重都明码在列。</p>
+        <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">战力由此数项合计而成,每项的权重都明码在列。</p>
       </div>
       <div class="ink-divider my-3" />
       <!-- 灵根 -->
@@ -128,7 +128,7 @@
               {{ signedPercent(c.value) }}
             </span>
           </p>
-          <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">
+          <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
             总数即各项之和;标「另乘」的不并入百分比,而是单独乘在攻防血上。
           </p>
         </div>

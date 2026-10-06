@@ -569,6 +569,30 @@ html[data-theme='dark'] .world-seal {
   background: var(--color-cinnabar-deep);
 }
 
+/*
+ * seal-face:模板里一枚枚小方印(炉/魂/道/悟/主/世,以及劫印钮)共用的
+ * 「奶油字印面」—— 与 .btn-seal / .world-seal 同一套脸,只是背景由各个
+ * 使用点自己的 bg-*/NN 负责。
+ *
+ * 为什么必须有这一层:这些小印过去写成 `text-paper`。依纸色路由是对的
+ * (浅色 paper 就是奶油),但夜主题把 --color-paper-rgb 翻成近黑(33 31 28),
+ * 印的底却仍是亮朱/亮金 —— 于是现出「黑字顶红方」,与旁边奶油字的
+ * .btn-seal 脱节,反差也就 3.5:1 上下。
+ *
+ * 处理:浅色只校准字形为奶油白(底用调用处的 bg-cinnabar/90 · bg-gold-ink/85);
+ * 夜主题把整面印统一压成深朱底(rgb(--color-cinnabar-deep),与 .btn-seal 同
+ * 源),奶油字照旧。金字/靛字/紫字印在夜主题也并到深朱面:金(200 163 90)、
+ * 靛(147 179 185)、紫(169 143 211)在夜主题都够亮,托不住奶油字,且与
+ * 主按钮收编成同一枚印,视觉更整 —— 这是有意让「此世的四界色标」让位于
+ * 「统一的印面」,与卷首题印的做法一致。
+ */
+.seal-face {
+  color: #f6f1e5;
+}
+html[data-theme='dark'] .seal-face {
+  background: var(--color-cinnabar-deep);
+}
+
 .btn-seal:disabled {
   /*
    * 禁用态**不是装饰态**:按钮上的字往往正是「为什么不让我点」

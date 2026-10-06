@@ -1,7 +1,7 @@
 <template>
   <BaseModal :open="def !== undefined" :title="def?.name ?? ''" @close="close">
     <div v-if="def">
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <QualityTag :quality="def.quality" />
         <span class="chip-ink border-ink/30 text-ink-soft">{{ GONGFA_TYPE_NAMES[def.type] }}</span>
         <span v-if="def.element" class="chip-ink" :style="{ color: ELEMENTS[def.element].color }">

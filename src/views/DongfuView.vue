@@ -1,13 +1,21 @@
 <template>
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <!-- 抬头 -->
-    <div class="card-ink flex items-center justify-between gap-2 px-4 py-3">
+    <div class="card-ink relative flex items-center justify-between gap-2 px-4 py-3">
       <!--
         冷启动直接落在这一页时(书签 / deep link / 恢复上次路由),站内没有上一页,
         裸 router.back() 会退到 about:blank 把游戏一起带走 —— 故走 goBack(父页兜底)
       -->
       <button class="-my-1.5 py-1.5 text-left text-[12px] text-ink-faint" @click="goBack(router, { name: 'home' })">← 返回</button>
-      <p class="font-kai text-[15px] tracking-[0.3em] text-ink">洞府营造</p>
+      <!--
+        标题真正居中:左「返回」窄、右「经营家业,道途更稳」宽,若三件套走
+        justify-between,标题会被两侧的不等宽拽离版面中轴、看着发斜。
+        故把标题从文档流里提出来绝对居中(left-1/2),两侧各贴一边 ——
+        无论左右多宽,「洞府营造」永远钉在卡片正中。
+      -->
+      <p class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-kai text-[15px] tracking-[0.3em] text-ink">
+        洞府营造
+      </p>
       <span class="text-[10px] text-ink-faint">经营家业,道途更稳</span>
     </div>
 
