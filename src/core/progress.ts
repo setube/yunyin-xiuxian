@@ -190,7 +190,9 @@ export function expEtaSec(): number {
   const rate = player.cultPerSec
   if (!(rate > 0)) return 0
   const gap = toNum(sub(player.expReq, player.exp))
-  if (!(gap > 0)) return 0
+  // toNum 在指数 >308 时返回 Infinity(见 utils/gnum) —— Infinity > 0 恒真,
+  // 若不排掉,Infinity/rate 会把「修为圆满估算」算成无穷时长的坏读数。
+  if (!(gap > 0) || !Number.isFinite(gap)) return 0
   return gap / rate
 }
 

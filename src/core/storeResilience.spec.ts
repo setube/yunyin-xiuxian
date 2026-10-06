@@ -19,6 +19,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { usePacingTelemetry } from '@/stores/pacingTelemetry'
 import { useLoreStore } from '@/stores/lore'
+import { sanitizeOfflineInputs } from './offline'
 
 /**
  * store 清单**从源码倒推**,不再手写。
@@ -120,6 +121,20 @@ describe('坏档韧性 · 清单从源码倒推', () => {
     expect(t.enabled).toBe(true)
     t.record('enlightenment', 'modal', '顿悟')
     expect(t.events.length, '修形之后仍要能继续记录').toBe(2)
+  })
+
+  it('读档兜底清单亲自修平遥测:坏掉的 pacing 分片经 sanitizeOfflineInputs 归零', () => {
+    // 症结曾是「pacing 有 sanitize 但没人调」—— 每条 store 的 sanitize 单测都绿,
+    // 却漏了把它挂进读档兜底清单。这里走真实的读档口(engine.start → sanitizeOfflineInputs),
+    // 灌一个 JSON 合法、形状却烂掉的 events,断言它被清单修回可用的空数组。
+    setActivePinia(createPinia())
+    const t = usePacingTelemetry()
+    t.$patch({ events: null as never, enabled: 'yes' as never })
+    sanitizeOfflineInputs()
+    expect(t.events, '读档兜底清单必须覆盖 pacing,把 null 修回空数组').toEqual([])
+    expect(t.enabled).toBe(true)
+    t.record('enlightenment', 'modal', '顿悟')
+    expect(t.events.length, '修形之后仍要能继续记录').toBe(1)
   })
 
   it('装备见闻:条目形状烂掉就整条丢掉,不冒充「见过一件凡品 · 0 阶」', () => {
