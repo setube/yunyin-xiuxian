@@ -1,5 +1,5 @@
 <template>
-  <div class="card-ink px-4 py-3.5">
+  <div class="card-ink px-4 py-3">
     <!-- 头:主旨 + 容量总览。主/副上限一次性交代,免得人翻到下面才懂 70/30 何来 -->
     <p class="flex items-center justify-between">
       <span class="font-kai text-[14px] tracking-[0.25em] text-ink">灵脉投资</span>
