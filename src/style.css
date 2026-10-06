@@ -572,7 +572,7 @@ html[data-theme='dark'] .world-seal {
 /*
  * seal-face:模板里一枚枚小方印(炉/魂/道/悟/主/世,以及劫印钮)共用的
  * 「奶油字印面」—— 与 .btn-seal / .world-seal 同一套脸,只是背景由各个
- * 使用点自己的 bg-*/NN 负责。
+ * 使用点自己的 bg-* /NN 负责。
  *
  * 为什么必须有这一层:这些小印过去写成 `text-paper`。依纸色路由是对的
  * (浅色 paper 就是奶油),但夜主题把 --color-paper-rgb 翻成近黑(33 31 28),
