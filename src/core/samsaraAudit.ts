@@ -335,10 +335,10 @@ export const HERITAGE: HeritageRow[] = [
   },
   {
     id: 'name',
-    name: '姓名',
-    mode: 'full',
-    detail: 'rebirth() 不改 name —— 名与道号随神魂不灭',
-    kind: 'legacy',
+    name: '道号',
+    mode: 'reset',
+    detail: 'rebirth() 每世重掷新道号 —— 神魂不灭带走的是所知所历,不是名号;新的皮囊换新的名(见 stores/player.rebirth)',
+    kind: 'state',
     power: 'none',
     compressesGrowth: false
   },

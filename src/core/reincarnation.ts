@@ -234,7 +234,7 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
   track('reincarnations')
   ui.reincarnation = null
   ui.deathDialog = false
-  ui.toast('一梦轮回,你在云隐山下再度睁开双眼', 'rare')
+  ui.toast(`一梦轮回,你以「${player.name}」的道号在云隐山下再度睁开双眼`, 'rare')
   if (view.stageAdvanced) ui.toast(`宿慧渐厚,你已是「${view.stageName}」`, 'rare')
   if (recognized > 0) ui.toast(`睁眼之际,${recognized} 味灵材的名字自行浮上心头`, 'info')
 }

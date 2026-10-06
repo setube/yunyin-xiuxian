@@ -72,6 +72,18 @@ describe('player.rebirth 转世状态重置', () => {
     expect(p.eventChains).toEqual({ old_man_stone: 2 })
   })
 
+  it('新的皮囊换新的道号:转世重掷姓名,不沿用上一世的名号', () => {
+    const p = usePlayerStore()
+    p.initCharacter('旧道号', { roots: [] } as never)
+    seedPlayer(p)
+    const before = p.name
+
+    p.rebirth({ roots: [] } as never)
+
+    expect(p.name, '转世后仍沿用旧道号 —— 新的一世无从感知').not.toBe(before)
+    expect(p.name.length, '新道号不应为空').toBeGreaterThan(0)
+  })
+
   /**
    * 「灵魂/记忆留下,外物归零」:灵兽、洞府建筑、灵脉投资都是外物,
    * 不得随转世带走 —— 否则每一世都从半成品起步,「重新经历」名存实亡。
