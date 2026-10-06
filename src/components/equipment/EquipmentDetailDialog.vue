@@ -163,10 +163,12 @@
         <!--
           连升:逐级成本一次算清(预览与执行共用 upgradeBatchPlan),省掉逐级一按。
           花的是累计总账,按一下不该就此了结 —— 二步确认与分解/散去同款。
+          flex-wrap + 文本保底宽:窄屏(320 的弹窗内宽约 280px)说明与双钮放不下同排时,
+          说明独占整行、钮换行 —— 否则 flex-1 文本被 shrink-0 钮压成 0 宽竖排。
         -->
-        <div v-if="batchPlan.levels > 0" class="mt-2 flex items-center gap-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+        <div v-if="batchPlan.levels > 0" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
           <template v-if="batchConfirm !== inst.uid">
-            <div class="min-w-0 flex-1">
+            <div class="min-w-[5rem] flex-1">
               <p class="text-[10px] text-ink-faint">
                 连升至 <span class="font-kai text-[12px] text-cinnabar">+{{ inst.level + batchPlan.levels }}</span> 级
               </p>
@@ -175,7 +177,7 @@
             <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchConfirm = inst.uid">连 升</button>
           </template>
           <template v-else>
-            <p class="min-w-0 flex-1 text-[10px] leading-relaxed text-cinnabar">
+            <p class="min-w-[5rem] flex-1 text-[10px] leading-relaxed text-cinnabar">
               一步连升 {{ batchPlan.levels }} 级,花上面那笔总账 —— 仍要?
             </p>
             <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchConfirm = null">再想想</button>
