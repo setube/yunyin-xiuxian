@@ -4,6 +4,8 @@
  * 不钉具体百分比(数值随平衡走,契约是方向与确定性)。
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { gn } from '@/utils/gnum'
 import type { CombatantSnap } from '@/types'
 import { playerMatchups } from './playerMatchup'
@@ -68,5 +70,25 @@ describe('本世对局 · playerMatchups', () => {
     const strongAvg = avg(strong)
     expect(strongAvg + 1e-9, `强构筑平均胜率(${strongAvg.toFixed(3)})应 ≥ 弱构筑(${weakAvg.toFixed(3)})`).toBeGreaterThanOrEqual(weakAvg)
     expect(strongAvg - weakAvg, '强构筑总该有实打实的拉开,否则断言形同虚设').toBeGreaterThan(0.1)
+  })
+})
+
+describe('采样场次 · 一处出', () => {
+  // 文案「每类各打 N 场」与模拟实算必须读同一枚 —— 曾有一处注释写 120、实算 60 各说各话
+  const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').replace(/<!--[\s\S]*?-->/g, '')
+
+  it('默认值与回落兜底都走 MATCHUP_SAMPLE_RUNS,不再手抄 60', () => {
+    const src = strip(readFileSync(resolve(__dirname, 'playerMatchup.ts'), 'utf8'))
+    expect(src).toContain('n = MATCHUP_SAMPLE_RUNS')
+    expect(src).toContain('? n : MATCHUP_SAMPLE_RUNS')
+    expect(src).not.toMatch(/n = 60\b/)
+    expect(src).not.toMatch(/: 60\b/)
+  })
+
+  it('BuildView 文案读同一枚常量,不许再写「60 场」;旧的「120 场」注释别复活', () => {
+    const src = strip(readFileSync(resolve(__dirname, '../views/BuildView.vue'), 'utf8'))
+    expect(src).toContain('{{ MATCHUP_SAMPLE_RUNS }} 场估算')
+    expect(src, '文案不该再手抄 60').not.toContain('各打 60 场')
+    expect(src, '韧性采样是 RESILIENCE_SAMPLE_RUNS(resilience.ts 的 60),不是 120').not.toContain('120 场')
   })
 })

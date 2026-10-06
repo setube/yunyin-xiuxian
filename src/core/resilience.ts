@@ -19,6 +19,9 @@ export interface ResilienceReport {
   retention: number
 }
 
+/** 等比敌采样场次 —— BuildView 的「N 场等比敌采样」注释就是它(曾写崩成 120) */
+export const RESILIENCE_SAMPLE_RUNS = 60
+
 /** 封印指定流派的核心词条(清零,不改其他) */
 export function sealStyleMods(mods: StatMods, style: BuildStyleDef): StatMods {
   const out: StatMods = { ...mods }
@@ -41,7 +44,7 @@ function winRate(snap: CombatantSnap, foe: CombatantSnap, runs: number, seed: nu
  * 测定构筑韧性:对「与自身等比的基准敌」分别以完整构筑与封核构筑各战 runs 场。
  * 敌人等比生成(天界思路),任何数值段的玩家都可测
  */
-export function measureResilience(snap: CombatantSnap, runs = 60): ResilienceReport | null {
+export function measureResilience(snap: CombatantSnap, runs = RESILIENCE_SAMPLE_RUNS): ResilienceReport | null {
   const build = detectBuild(snap.mods)
   if (!build) return null
   const foe = worldFoeSnap(TRIAL_FOES[0]!, { attack: snap.attack, defense: snap.defense, maxHp: snap.maxHp }, 1.06)

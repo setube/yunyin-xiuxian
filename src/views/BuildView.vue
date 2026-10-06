@@ -130,7 +130,7 @@
             </div>
           </div>
           <p class="mt-1.5 text-[9px] leading-relaxed text-ink-faint">
-            每类各打 60 场估算,读的是「哪面吃亏」的方向,不是精确胜率;四墙(首领 / 高爆发 / 真伤 / 疾影)通吃,才称万金油。
+            每类各打 {{ MATCHUP_SAMPLE_RUNS }} 场估算,读的是「哪面吃亏」的方向,不是精确胜率;四墙(首领 / 高爆发 / 真伤 / 疾影)通吃,才称万金油。
           </p>
         </div>
       </template>
@@ -251,7 +251,7 @@
   import { ratePower, ratingStars, type PowerDimKey } from '@/core/powerRating'
   import { matchComboArt, COMBO_SECONDARY_MIN } from '@/data/comboArts'
   import { measureResilience, resilienceText } from '@/core/resilience'
-  import { playerMatchups } from '@/core/playerMatchup'
+  import { playerMatchups, MATCHUP_SAMPLE_RUNS } from '@/core/playerMatchup'
   import { buildPlayerSnap } from '@/core/playerSnap'
   import { compareSnaps, type CompareReport } from '@/core/compare'
   import { endgameUnlocked, snapFromReplay } from '@/core/endgameService'
@@ -294,11 +294,11 @@
     return { art, active: b.secondary.affinity >= COMBO_SECONDARY_MIN }
   })
 
-  /** 构筑韧性:主派封印后的战力保持(120 场等比敌采样) */
+  /** 构筑韧性:主派封印后的战力保持(按 RESILIENCE_SAMPLE_RUNS 场等比敌采样,见 core/resilience) */
   const resilience = computed(() => (build.value ? measureResilience(buildPlayerSnap()) : null))
 
   /** 本世对局:拿当前构筑快照逐类对打(与构筑韧性同一条现算路径),短板一眼可见 */
-  const matchupRows = computed(() => (build.value ? playerMatchups(buildPlayerSnap(), 60) : null))
+  const matchupRows = computed(() => (build.value ? playerMatchups(buildPlayerSnap(), MATCHUP_SAMPLE_RUNS) : null))
   /** 短板在前:胜率由低到高,先看见最吃亏的一面 */
   const matchupSorted = computed(() => [...(matchupRows.value ?? [])].sort((a, b) => a.winRate - b.winRate))
   /** 三档色:≥70% 稳(青) / ≥45% 胶着(褐) / 其余吃亏(朱) —— 沿用战斗面板的胜率给色 */
