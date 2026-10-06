@@ -582,6 +582,18 @@ html[data-theme='dark'] .world-seal {
   box-shadow: none;
 }
 
+/*
+ * 夜主题禁用态**:夜里的 ink-faint(168 161 140)是亮暖灰,白字压上去只有 ~2:1,
+ * 整枚按钮被洗白,读不出「为什么不让我点」(修为未至圆满 / 灵石不足 / 道源不足)。
+ * 浅色主题那套 ink-faint 打底(3.9:1)在夜里不成立,故单独换一块真正暗的
+ * 惰性底(paper-dark,51 48 43):92% 白字在上面 >11:1 —— 「灰掉」的观感不变,字却读得出来。
+ */
+html[data-theme='dark'] .btn-seal:disabled {
+  background: rgb(var(--color-paper-dark-rgb));
+  color: rgb(255 255 255 / 0.92);
+  box-shadow: none;
+}
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;
