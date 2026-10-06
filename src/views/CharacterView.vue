@@ -773,7 +773,8 @@
 
   function rebirth(): void {
     if (!canRebirth.value) {
-      ui.toast(`至少金丹境方可自行兵解`, 'warn')
+      // 与弹窗内那句「金丹境方可兵解」同源:门槛挪动,tosat 跟着走,不手抄境名
+      ui.toast(`至少${REALMS[MANUAL_REBIRTH_MIN_MAJOR]?.name ?? ''}境方可自行兵解`, 'warn')
       return
     }
     rebirthOpen.value = false

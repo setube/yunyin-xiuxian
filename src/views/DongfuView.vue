@@ -107,10 +107,16 @@
         </span>
         <span class="shrink-0 text-[12px] text-gold-ink transition-transform" :class="veinExpanded ? 'rotate-90' : ''">›</span>
       </button>
-      <!-- 未达门槛:整块就是一句前瞻,没有可展开的内容 -->
+      <!--
+        未达门槛:整块就是一句前瞻,没有可展开的内容。
+        开启境界不手抄「金丹」—— 与 veinsUnlocked 读同一枚 VEIN_UNLOCK_MAJOR,
+        倍数高些低些,这句前瞻自己跟着变(与 rebirthText 的「X境方可兵解」同法)
+      -->
       <div v-if="!veinsUnlocked" class="flex items-center gap-2.5 rounded-md border border-dashed border-gold-ink/25 bg-gold-ink/4 px-3 py-2.5">
         <GameIcon name="gem" :size="16" class="shrink-0 text-gold-ink/60" />
-        <p class="text-[10px] leading-relaxed text-ink-faint">灵脉 —— 以灵石点化,洞府根基永固,诸般属性皆有增益。金丹境方启此脉,届时自会在此与你相会。</p>
+        <p class="text-[10px] leading-relaxed text-ink-faint">
+          灵脉 —— 以灵石点化,洞府根基永固,诸般属性皆有增益。{{ veinGateRealm }}境方启此脉,届时自会在此与你相会。
+        </p>
       </div>
       <!--
         展开/收起:高度 + 透明度过渡,不像生硬裁切。
@@ -133,6 +139,7 @@
   import { useRouter } from 'vue-router'
   import { goBack } from '@/router/goBack'
   import { BUILDINGS, ARRAY_QI_CAP_PER_LEVEL } from '@/data/buildings'
+  import { REALMS } from '@/data/realms'
   import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, LIBRARY_WUDAO_PER_HOUR, OFFLINE_CAP_HOURS, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { VEINS } from '@/data/veins'
   import { useDongfuStore } from '@/stores/dongfu'
@@ -157,6 +164,8 @@
 
   /** 灵脉金丹解锁;未达门槛时只给一句前瞻,别让新人面对一整张禁用按钮 */
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
+  /** 前瞻里的开启境界名:取自 VEIN_UNLOCK_MAJOR 所在境,门槛动它跟着动 */
+  const veinGateRealm = computed(() => REALMS[VEIN_UNLOCK_MAJOR]?.name ?? '更高')
   /** 灵脉信息量大,默认折成一行;点开展开四脉详情 */
   const veinExpanded = ref(false)
   /** 折叠态摘要:已投点数 + 主脉名(未立主脉给提示) */

@@ -16,6 +16,7 @@ import {
   buildingBatchDoneToast,
   buildingDoneToast,
   buildingMansionGateToast,
+  buildingGateRealmName,
   buildingPeakToast,
   buildingRealmGate,
   buildingShortToast
@@ -40,7 +41,7 @@ export function buildingUpgradeInfo(id: BuildingId): BuildingUpgradeInfo {
   let reason = ''
   if (player.major < def.unlockRealm) {
     canUpgrade = false
-    reason = buildingRealmGate(['炼气', '筑基', '金丹'][def.unlockRealm] ?? '更高')
+    reason = buildingRealmGate(buildingGateRealmName(def.unlockRealm))
   } else if (lv >= def.maxLevel) {
     canUpgrade = false
     reason = buildingPeakToast()
@@ -117,7 +118,7 @@ export function buildingBatchPlan(id: BuildingId): BuildingBatchPlan {
     atMax,
     blocked
   })
-  if (player.major < def.unlockRealm) return zero(buildingRealmGate(['炼气', '筑基', '金丹'][def.unlockRealm] ?? '更高'))
+  if (player.major < def.unlockRealm) return zero(buildingRealmGate(buildingGateRealmName(def.unlockRealm)))
   if (from >= def.maxLevel) return zero(buildingPeakToast(), true)
   if (id !== 'mansion' && from >= dongfu.buildingLevelCap) return zero(buildingMansionGateToast())
 

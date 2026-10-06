@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 253,
+  "round": 254,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-06T00:30:00.000+00:00",
+  "updated_at": "2026-10-06T01:30:00.000+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14524,6 +14524,17 @@
       "touched_round": 253,
       "commit": "3a4d757",
       "summary": "数值爆炸根治 + 换装账目一次说清(15 提交打包):转世清空镇压收益 —— 旧世压下的远境(多为高阶)不再跨世按旧阶位派发装备/灵石,samsaraAudit 'suppress' 改 partial(宿敌/战绩记忆仍随神魂),exploration.spec mock 修回 CombatantSnap 真形状;地界「产 X 阶之物」与战斗卡片「敌力 X · 我 Y」(敌快照、region.tier 与结算同源,数值爆炸的另一半 )—— 此界掉几阶出发前亮着;一键换装「将换 N 件」、穿套装「换 N 件」、空一身计数(equipSetPreview 与实穿同一份取舍);装备详情「战斗价值(一键口径)」对比与词条「浮 X%」;战斗卡片「下一场/约几时归」;道源入口余量、本世之路「已通 X/Y」;凝炼台代价与道源余额同屏;触控靶面三处小字按钮(进阶率/展开宿/知道了)与补上道源余量同批"
+    },
+    "CHG-292": {
+      "id": "CHG-292",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-06T01:30:00.000+00:00",
+      "updated_at": "2026-10-06T01:30:00.000+00:00",
+      "touched_round": 254,
+      "commit": "436a227",
+      "summary": "跨档位信息的实账与同源防线的句守(14 提交打包):「途中三档」——值日星象把「更易」亮成 +10%(astronomy 同源);此物所知把「再交手几阵」亮成实账(照面几记/还差几记,noteEnemy 同一张门槛表);战斗面板亮出连胜与下一档缺口及赏格;灵脉/兵解/建筑境界闸的境名都改读各自门槛常量,不许手抄「金丹」—— VEIN_UNLOCK_MAJOR / MANUAL_REBIRTH_MIN_MAJOR / REALMS[unlockRealm] 三处并一处;成敌 toast 的败北次数读 NEMESIS_THRESHOLD,星象加成百分数收进 astronomy.mansionLuckPercent 三处并一处;顶栏灵气亮出「/上限」;(同源防线的注释不再抄原文,produceText 守卫误伤已修)"
     }
   },
   "edges": [

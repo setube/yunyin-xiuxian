@@ -135,7 +135,7 @@
   import { buildingUpgradeInfo, buildingBatchPlan, upgradeBuilding, upgradeBuildingBatch } from '@/core/buildingService'
   import { studyEta } from '@/core/loreService'
   import { modsText } from '@/ui/statNames'
-  import { buildingActLabel } from '@/ui/buildingText'
+  import { buildingActLabel, buildingGateRealmName } from '@/ui/buildingText'
   import { formatDuration, formatGN } from '@/utils/format'
 
   const props = withDefaults(defineProps<{ def: BuildingDef; featured?: boolean }>(), { featured: false })
@@ -156,8 +156,8 @@
   }
   /** 未建且不可升 = 被境界闸门锁着(等级 0 时不可升只可能是境界不足,满级/辖限都要求 lv>0) */
   const locked = computed(() => level.value === 0 && !info.value.canUpgrade)
-  /** 境界闸名(meta 行的「至 X 境」):数据里 unlockRealm 0/1/2 依次是 炼气/筑基/金丹 */
-  const gateName = computed(() => ['炼气', '筑基', '金丹'][props.def.unlockRealm] ?? '更高')
+  /** 境界闸名(meta 行的「至 X 境」):unlockRealm 就是 REALMS 下标,直接读表(见 buildingText) */
+  const gateName = computed(() => buildingGateRealmName(props.def.unlockRealm))
   /** 灵兽园联动:洞府与宠物两系统彼此看见(只对 beast 这一座特例,其它建筑不理会) */
   const player = usePlayerStore()
   const beastCompanionName = computed(() =>

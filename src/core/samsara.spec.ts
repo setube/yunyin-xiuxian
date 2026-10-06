@@ -28,9 +28,10 @@ import {
   stageAt
 } from '@/data/samsara'
 import { ENEMY_LORE_MAX, useLoreStore } from '@/stores/lore'
+import { ENEMY_LORE_THRESHOLDS } from '@/core/loreService'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
-import { describeEnemy, effectiveEnemyStage } from '@/ui/enemyLore'
+import { describeEnemy, effectiveEnemyStage, enemyLoreProgress } from '@/ui/enemyLore'
 import {
   aptitudeFloorNow,
   beginLife,
@@ -327,14 +328,13 @@ describe('轮回带走的那一份', () => {
 describe('敌人认知的逐层揭示(describeEnemy)', () => {
   const boss = enemyDef('e_wolfking')!
 
-  it('未识:一个字都不给,只给一句"去打"', () => {
+  it('未识:一个字都不给,像第一次照面该有的样子', () => {
     const v = describeEnemy(boss, 0)
     expect(v.frame).toEqual([])
     expect(v.elementName).toBeNull()
     expect(v.skills).toEqual([])
     expect(v.phases).toEqual([])
     expect(v.archetype).toBeNull()
-    expect(v.hint).not.toBeNull()
   })
 
   it('眼熟:见得到体格,还看不出招式', () => {
@@ -352,16 +352,14 @@ describe('敌人认知的逐层揭示(describeEnemy)', () => {
     expect(v.skills[0]!.note).toContain('180%')
     expect(v.phases).toEqual([])
     expect(v.archetype).toBeNull()
-    expect(v.hint).not.toBeNull()
   })
 
-  it('洞悉:残血变阵与本相一并交底,再无提示可言', () => {
+  it('洞悉:残血变阵与本相一并交底', () => {
     const v = describeEnemy(boss, ENEMY_LORE_MAX)
     expect(v.phases.length).toBe(boss.phases?.length ?? 0)
     expect(v.archetype).not.toBeNull()
     // 机制家族名与印同时揭示(取自 bossArchetypes 的唯一一张家族表)
     expect(v.archetypeLabel, '洞悉首领却给不出机制家族名').toContain('型 ·')
-    expect(v.hint).toBeNull()
   })
 
   it('层数越界不炸,自行夹紧', () => {
@@ -385,5 +383,30 @@ describe('敌人认知的逐层揭示(describeEnemy)', () => {
     expect(effectiveEnemyStage(1, true)).toBe(2)
     expect(effectiveEnemyStage(ENEMY_LORE_MAX, true)).toBe(ENEMY_LORE_MAX)
     expect(effectiveEnemyStage(1, false)).toBe(1)
+  })
+
+  it('距下一层的实账与 noteEnemy 同一张门槛表(首领倍算、败计三也在账内)', () => {
+    // 普通敌:0 层已攒 0 记,眼熟要 1 记;眼熟后距知其路数(5 记)还差 4 记
+    expect(enemyLoreProgress(0, 0, false, 0)).toMatchObject({ seen: 0, need: 1, remain: 1, nextName: '眼熟' })
+    expect(enemyLoreProgress(1, 1, false, 1)).toMatchObject({ need: 5, remain: 4, nextName: '知其路数' })
+    expect(enemyLoreProgress(2, 9, false, 2)).toMatchObject({ need: 14, remain: 5, nextName: '洞悉' })
+    // 首领门槛加倍:洞悉前一层需 14×2 = 28 记,并带着「倍算」的凭据
+    expect(enemyLoreProgress(2, 27, true, 2)).toMatchObject({ need: 28, remain: 1, isBoss: true })
+    expect(enemyLoreProgress(2, 28, true, 2)).toMatchObject({ remain: 0, isBoss: true })
+    expect(enemyLoreProgress(2, 3, false, 2)).toMatchObject({ need: 14, isBoss: false })
+    // 已洞悉 / 越界都没有"再攒"可说
+    expect(enemyLoreProgress(ENEMY_LORE_MAX, 999, false, ENEMY_LORE_MAX)).toBeNull()
+    expect(enemyLoreProgress(-1, 0, false, -1)).toBeNull()
+    // 和后端判据同界:达到 need 即应升层 —— 界面报 0,noteEnemy 恰在此刻推进
+    expect(ENEMY_LORE_THRESHOLDS[3]).toBe(14)
+  })
+
+  it('宿慧照见下的实账:遥遥指向真正没见过的层,不朝已摊开的层喊话', () => {
+    // 眼熟(1)被照见抬到知其路数(2),真正没见的是洞悉 —— 报「洞悉」,不是空对「知其路数」喊话
+    expect(enemyLoreProgress(1, 1, false, 2)).toMatchObject({ nextName: '洞悉' })
+    // 已被照见推到洞悉(满层):本相已摊开,再无新层可窥 —— nextName 空,只剩「更深知路数」
+    expect(enemyLoreProgress(2, 1, false, 3)).toMatchObject({ nextName: '' })
+    // 未识照见不动:从未交手就是从未交手
+    expect(enemyLoreProgress(0, 0, false, 0)).toMatchObject({ nextName: '眼熟' })
   })
 })

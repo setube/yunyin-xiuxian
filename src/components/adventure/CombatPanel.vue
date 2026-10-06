@@ -19,6 +19,18 @@
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
         胜 {{ session?.wins ?? 0 }} 场 · 际遇 {{ session?.events ?? 0 }} 次 · 拾获 {{ session?.itemGain ?? 0 }} 件
+        <!--
+          本场「胜 N 场」是一趟历练里的账,连胜是跨趟的「还没输过」—— 两本账。
+          连胜只在 3/5/10 的奖励 toast 里现身过一次,平时是多少、距下一档还剩几场,
+          玩家是看不见的:把活数挂回眼前,顺手报清下一档的缺口。
+        -->
+        <span v-if="streak" class="ml-1 text-gold-ink">
+          · 连胜 {{ streak }}
+          <template v-if="nextStreak">
+            · 距 {{ nextStreak }} 连胜尚差 {{ nextStreak - streak }} 场
+            <template v-if="nextReward">(奖:{{ nextReward }})</template>
+          </template>
+        </span>
         <!-- 下一场也讲「几时」:同一分 nextBattleAt 翻译成钟点,和归时那句一个承诺 -->
         <span v-if="huntIn > 0.4" class="text-ink-faint">
           · 下一场 {{ formatCountdown(huntIn) }}
@@ -213,7 +225,24 @@
           </span>
           {{ lore.archetype }}
         </p>
-        <p v-if="lore.hint" class="mt-1.5 text-[10px] text-ink-faint">{{ lore.hint }}</p>
+        <!--
+          距离下一层的情报给个实数:「再交手几阵」数不出来,「照面 X 记 · 还差 Y 记」能。
+          与 noteEnemy 同一张门槛表(loreService),胜一记、败三记、首领倍算 ——
+          那排小注就是它自己读出来的,不另抄。
+
+          「下一层」以有效层为基准:宿慧照见(熟知修仙界)会把认知层抬过一档,
+          界面上已经能看到的层不该再被点名「再攒几记可窥」—— 名字据此取舍,
+          eff 已到顶时(照见把最高层都摊开了)再攒的只有「计数」,没有新层可窥。
+        -->
+        <p v-if="lore.progress && lore.progress.remain > 0" class="mt-1.5 text-[10px] leading-relaxed text-ink-faint tabular">
+          照面 {{ lore.progress.seen }} 记,再攒
+          <span class="text-violet-ink">{{ lore.progress.remain }}</span> 记
+          <template v-if="lore.progress.nextName">可窥「{{ lore.progress.nextName }}」</template>
+          <template v-else>可更深知它的路数</template>
+          <span class="text-ink-faint/70">
+            (胜一记 · 败计三<template v-if="lore.progress.isBoss"> · 首领倍算</template>)
+          </span>
+        </p>
       </div>
       <!-- 战斗分析(战败自动展开;硬核数据供研究) -->
       <div v-if="showAnalysis && analysis" class="mt-2 rounded-md bg-ink/4 px-3 py-2.5">
@@ -249,6 +278,7 @@
   import { useSettingsStore } from '@/stores/settings'
   import { stopExploration, winsUntilRegionBoss } from '@/core/exploration'
   import { COMBAT_PLAYBACK_BASE_MS, COMBAT_PLAYBACK_MIN_MS, EXPLORE_MODES } from '@/data/constants'
+  import { WIN_STREAK_REWARDS } from '@/data/earlyGame'
   import { formatClock, formatCountdown, formatGN } from '@/utils/format'
   import { useNow } from '@/composables/useNow'
   import { detectBuild } from '@/core/buildDetect'
@@ -290,6 +320,25 @@
     const s = session.value
     if (!s) return null
     return { stone: formatGN(s.stoneGain), exp: formatGN(s.expGain) }
+  })
+
+  /**
+   * 连胜、下一档的缺口,与那一档的赏格:与奖励 toast 读同一本账
+   * (player.winStreak + WIN_STREAK_REWARDS),只差一个 milestone 时跳过一次
+   * (比如连胜 9 时「距 10」还在),满了 10 无话可说。赏格取自表里那一行,
+   * 只排格式不手写数 —— 到账的 toast 另走 streakRewardText,同一本账。
+   */
+  const streak = computed(() => player.winStreak)
+  const nextRewardRow = computed(() => WIN_STREAK_REWARDS.find(r => r.streak > streak.value) ?? null)
+  const nextStreak = computed(() => nextRewardRow.value?.streak ?? null)
+  /** 赏格预览:数字取自 WIN_STREAK_REWARDS 那一行,只排格式,不手写数 */
+  const nextReward = computed(() => {
+    const r = nextRewardRow.value
+    if (!r) return null
+    const parts: string[] = []
+    if (r.stone > 0) parts.push(`${formatGN(r.stone)} 石`)
+    if (r.wudao > 0) parts.push(`${r.wudao} 悟道点`)
+    return parts.length ? parts.join(' · ') : null
   })
 
   /** 距区域之主还差几胜(已靖的地界不再提示) */

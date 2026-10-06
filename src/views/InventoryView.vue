@@ -35,9 +35,17 @@
         <button
           v-for="row in slotRows"
           :key="row.slot"
-          class="card-ink flex flex-col items-center gap-1 px-2 py-2.5 active:scale-95"
+          class="card-ink relative flex flex-col items-center gap-1 px-2 py-2.5 active:scale-95"
+          :aria-label="`${row.name}${row.upgradeable ? ',行囊里有更强的一件' : ''}`"
           @click="pickerSlot = row.slot"
         >
+          <!-- 行囊里有更强的:槽卡上一枚小章 —— 与一键换装同一把 bestEquipFor,不比它看得少 -->
+          <span
+            v-if="row.upgradeable"
+            role="img"
+            :aria-label="`${row.name}栏,行囊里有更强的一件`"
+            class="absolute right-1 top-1 rounded-sm bg-gold-ink/20 px-1 font-kai text-[8px] leading-[12px] text-gold-ink"
+          >可换</span>
           <span class="text-[9px] text-ink-faint">
             {{ row.name }}
             <template v-if="row.stock">· {{ row.stock }}</template>
@@ -56,6 +64,10 @@
           </template>
         </button>
       </div>
+      <!-- 角上那枚「可换」得有人解释:新玩家看见金点子,该知道它是行囊里有更强的牌子 -->
+      <p v-if="hasUpgradeableSlot" class="text-center text-[9px] text-ink-faint">
+        角上点金 = 行囊里有更强的候补,点开该槽即可换上
+      </p>
       <p class="mt-2 text-center text-[10px] text-ink-faint">点击部位查看候选,行囊满时新掉落自动折作器灵尘</p>
       <!-- 玩家反馈「一键装备最高阶级品质装备快捷键」:每槽换上当前最强,已是则不动 -->
       <!-- 点下去会动几件,先给个数:与结算同一把 bestEquipFor;一件不换时明说「已是最强」 -->
@@ -710,17 +722,22 @@
 
   /** 已佩戴的槽位数 —— 「空一身」按钮的计数(身上没件时不出现,免得摆个 0 的按钮) */
   const equippedCount = computed(() => SLOTS.filter(slot => inventory.equipped[slot]).length)
+  /** 至少一个槽位有更强候补时,槽卡下方的图例才值得出现 */
+  const hasUpgradeableSlot = computed(() => slotRows.value.some(r => r.upgradeable))
 
   const slotRows = computed(() =>
     SLOTS.map(slot => {
       const uid = inventory.equipped[slot]
       const item = uid ? inventory.findItem(uid) : undefined
+      // 「行囊里还有更强的」—— 与一键换装同一把 bestEquipFor,槽卡不该比它看得少
+      const best = bestEquipFor(slot)
       return {
         slot,
         name: EQUIP_SLOT_NAMES[slot],
         item,
         template: item ? equipmentTemplate(item.templateId) : undefined,
-        stock: inventory.bagItems.filter(it => equipmentTemplate(it.templateId)?.slot === slot).length
+        stock: inventory.bagItems.filter(it => equipmentTemplate(it.templateId)?.slot === slot).length,
+        upgradeable: !!best && best.uid !== uid
       }
     })
   )
