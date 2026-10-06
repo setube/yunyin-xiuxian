@@ -29,7 +29,7 @@
           <span class="text-ink-faint">合计</span>
           <span class="tabular font-kai text-[12px] text-cinnabar">{{ formatGN(stats.power) }}</span>
         </p>
-        <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">各条权重与总战力同一份参数,逐行相加即上面那个数。</p>
+        <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">战力由此数项合计而成,每项的权重都明码在列。</p>
       </div>
       <div class="ink-divider my-3" />
       <!-- 灵根 -->
@@ -129,11 +129,11 @@
             </span>
           </p>
           <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">
-            明细之和就是上面那个数;标「另乘」的不并入百分比,而是单独乘在攻防血上。
+            总数即各项之和;标「另乘」的不并入百分比,而是单独乘在攻防血上。
           </p>
         </div>
         <p v-if="softCappedNotes.length" class="mt-1.5 text-[10px] leading-relaxed text-cinnabar/80">
-          标「软」的,已堆到好处将尽之处:{{ softCappedNotes.join('、') }}。再叠上去收效渐微,并非面板出了岔子。
+          标「软」的,已堆到好处将尽之处:{{ softCappedNotes.join('、') }}。再叠上去,收效渐微,实乃大道有涯。
         </p>
       </div>
     </section>
@@ -500,7 +500,7 @@
         <p class="text-[11px] text-ink-faint tabular">
           契合度
           <span :class="mentorVer.affinity > 0.2 ? 'text-jade' : mentorVer.affinity < -0.2 ? 'text-cinnabar' : 'text-ink-faint'">
-            {{ mentorVer.affinity.toFixed(2) }}
+            {{ mentorVer.affinity.toFixed(2) }} / 1.0
           </span>
         </p>
         <p class="text-[11px] leading-relaxed text-ink-faint">
@@ -754,10 +754,14 @@
   // Phase 31 S1 师承
   const mentorDialog = ref(false)
   const mentorVer = computed(() => mentorVerdict(player.mentor))
-  /** 拜师前预读契合度:与拜后的 verdict 同一函数,只是人还没拜 —— 选谁合谁有数可见 */
+  /**
+   * 拜师前预读契合度(与拜后的 verdict 同一函数,只是人还没拜 —— 选谁合谁有数可见)。
+   * 契合是 -1~1 的实数(见 mentorService),与同为百分比的构筑契合不同 —— 这里把标尺
+   * 也带出来(…/ 1.0),不然裸一个 0.42 读者分不清是 42% 还是 0.42/1.0。
+   */
   function mentorAffinityText(mentorId: MentorId): string {
     const a = mentorVerdict(mentorId)?.affinity ?? 0
-    return `${a > 0 ? '+' : ''}${a.toFixed(2)}`
+    return `${a > 0 ? '+' : ''}${a.toFixed(2)} / 1.0`
   }
   function mentorAffinityChip(mentorId: MentorId): string {
     const a = mentorVerdict(mentorId)?.affinity ?? 0
