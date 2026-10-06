@@ -20,7 +20,7 @@
           </span>
           <!--
             轮回次数:从主页人物卡移来,置于全局顶栏常驻。
-            但它是最闲的一格 —— 340px 以下宁可不要,也不能把灵石与灵气挤走。
+            但它是最闲的一格 —— 340px 以下宁可不要,也不能把灵石挤走。
           -->
           <span v-if="player.reincarnation.count > 0" class="hidden text-violet-ink min-[340px]:inline">
             {{ player.reincarnation.count }} 世
@@ -32,15 +32,6 @@
       <span class="flex items-center gap-1 whitespace-nowrap" title="灵石">
         <GameIcon name="gem" :size="13" class="text-gold-ink" />
         {{ formatGN(resources.spiritStone) }}
-      </span>
-      <span class="flex items-center gap-1 whitespace-nowrap" title="灵气">
-        <GameIcon name="wind" :size="13" class="text-azure" />
-        {{ formatNum(Math.floor(resources.qi)) }}
-        <!--
-          灵气只给当前值不给上限,玩家不知道「离满还差多少」(充盈/突破都以 qiCapValue 为界)。
-          但 380px 以下让位:顶栏右组整组 shrink-0,多一节说不定又把 320 逼回两行去
-        -->
-        <span class="hidden text-ink-faint/70 min-[380px]:inline">/{{ formatNum(Math.floor(player.qiCapValue)) }}</span>
       </span>
       <!-- 只有图标的入口必须自带名字:否则读屏只会念「链接」,自动化也点不着它 -->
       <RouterLink
@@ -57,7 +48,7 @@
 <script setup lang="ts">
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
-  import { formatGN, formatNum, formatYears } from '@/utils/format'
+  import { formatGN, formatYears } from '@/utils/format'
   import { LIFESPAN_WARN_RATIO } from '@/data/constants'
   import { Capacitor } from '@capacitor/core'
   import { useNativeInsets } from '@/composables/useNativeInsets'
