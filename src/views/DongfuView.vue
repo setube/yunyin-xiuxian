@@ -89,7 +89,7 @@
       <button
         v-if="veinsUnlocked"
         type="button"
-        class="card-ink flex w-full items-center gap-2.5 px-3.5 py-3 text-left active:scale-98"
+        class="card-ink flex w-full items-center gap-2.5 px-4 py-3 text-left active:scale-98"
         :aria-expanded="veinExpanded"
         aria-controls="vein-panel"
         @click="veinExpanded = !veinExpanded"

@@ -23,7 +23,7 @@
     </div>
 
     <!-- 灵根 -->
-    <div class="card-ink mt-4 px-4 py-4">
+    <div class="card-ink mt-4 px-4 py-3">
       <div class="flex items-center justify-between">
         <p class="font-kai text-[13px] tracking-[0.3em] text-ink-faint">灵 根</p>
         <span class="font-kai text-[15px] tracking-widest text-cinnabar">{{ profile.gradeName }}</span>
