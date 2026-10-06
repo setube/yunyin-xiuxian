@@ -34,7 +34,7 @@
           <template v-for="entry in cat.entries" :key="entry.id">
             <button
               v-if="entry.stage >= 1"
-              class="chip-ink flex items-center gap-1 active:scale-95"
+              class="chip-ink flex items-center gap-1 active:scale-90"
               :style="{ color: entry.color }"
               @click="openDetail(cat, entry)"
             >

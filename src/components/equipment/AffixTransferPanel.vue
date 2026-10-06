@@ -20,7 +20,7 @@
           :key="line.id"
           type="button"
           :aria-pressed="flow.affixId ? flow.affixId === line.id : undefined"
-          class="block w-full rounded-md border px-2.5 py-1.5 text-left active:opacity-70"
+          class="block w-full rounded-md border px-2.5 py-1.5 text-left active:opacity-60"
           :class="flow.affixId === line.id ? 'border-cinnabar bg-cinnabar/5' : 'border-ink/15 bg-paper-deep/50'"
           @click="flow.pickAffix(line.id)"
         >
@@ -57,7 +57,7 @@
           type="button"
           :aria-pressed="flow.targetUid ? flow.targetUid === c.item.uid : undefined"
           :disabled="c.block !== null"
-          class="block w-full rounded-md border px-2.5 py-1.5 text-left active:opacity-70 disabled:border-dashed disabled:bg-transparent"
+          class="block w-full rounded-md border px-2.5 py-1.5 text-left active:opacity-60 disabled:border-dashed disabled:bg-transparent"
           :class="flow.targetUid === c.item.uid ? 'border-cinnabar bg-cinnabar/5' : 'border-ink/15 bg-paper-deep/50'"
           @click="flow.pickTarget(c.item.uid)"
         >
@@ -95,7 +95,7 @@
           type="button"
           :aria-pressed="flow.replaceId !== undefined ? flow.replaceId === l.replaceId : undefined"
           :disabled="!l.check.ok"
-          class="block w-full rounded-md border px-2.5 py-1.5 text-left active:opacity-70 disabled:border-dashed disabled:bg-transparent"
+          class="block w-full rounded-md border px-2.5 py-1.5 text-left active:opacity-60 disabled:border-dashed disabled:bg-transparent"
           :class="flow.replaceId === l.replaceId ? 'border-cinnabar bg-cinnabar/5' : 'border-ink/15 bg-paper-deep/50'"
           @click="flow.pickSlot(l.replaceId)"
         >

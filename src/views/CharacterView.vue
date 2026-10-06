@@ -139,7 +139,7 @@
     </section>
 
     <!-- 各处入口 -->
-    <RouterLink to="/build" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
+    <RouterLink to="/build" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-98">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">流 派</span>
         <span class="block truncate text-[10px] text-ink-faint tabular">
@@ -153,7 +153,7 @@
     </RouterLink>
 
     <!-- 修行画像(Phase 31.2:历史行为归纳,纯描述无数值) -->
-    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="identityOpen = true">
+    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98" @click="identityOpen = true">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">修行画像</span>
         <span class="block truncate text-[10px] text-ink-faint">「{{ identity?.epithet ?? '云隐散人' }}」 · {{ identity?.narrative ?? '足迹尚浅' }}</span>
@@ -161,7 +161,7 @@
       <span class="shrink-0 text-[11px] text-ink-soft">展卷 →</span>
     </button>
 
-    <RouterLink to="/titles" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
+    <RouterLink to="/titles" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-98">
       <!--
         相伴灵兽的"脸":有伴时亮出一枚玉印,未伴时也留一枚灰底虚位印 ——
         9 张入口卡里只有这一张带前导图标,若用 v-if 直接消失,无宠物时的
@@ -184,7 +184,7 @@
     </RouterLink>
 
     <!-- 师承(Phase 31 S1):修行理念 + 师尊评价 -->
-    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="mentorDialog = true">
+    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98" @click="mentorDialog = true">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">师 承</span>
         <span class="block truncate text-[10px] text-ink-faint">
@@ -195,7 +195,7 @@
     </button>
 
     <!-- 道侣(Phase 33.8):这一世遇见的人。只记关系与经历,不给任何属性 -->
-    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="bondDialog = true">
+    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98" @click="bondDialog = true">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">道 侣</span>
         <span class="block truncate text-[10px] text-ink-faint">
@@ -211,7 +211,7 @@
       <span class="shrink-0 text-[11px] text-azure">{{ bondDef ? '相知 →' : '履历 →' }}</span>
     </button>
 
-    <RouterLink to="/collection" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
+    <RouterLink to="/collection" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-98">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">藏珍与成就</span>
         <span class="block text-[10px] text-ink-faint tabular">
@@ -221,7 +221,7 @@
       <span class="text-[11px] text-gold-ink">翻阅 →</span>
     </RouterLink>
 
-    <RouterLink to="/legacy" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
+    <RouterLink to="/legacy" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-98">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">修仙录</span>
         <span class="block truncate text-[10px] text-ink-faint tabular">画像 · 节点 · 我的纪录——这一部只写你自己</span>
@@ -230,7 +230,7 @@
     </RouterLink>
 
     <!-- 界域志:与修仙录同级 —— 一部写你,一部写这条路从哪来 -->
-    <RouterLink to="/codex" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-99">
+    <RouterLink to="/codex" class="card-ink flex items-center gap-3 px-4 py-3 active:scale-98">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">界域志</span>
         <span class="block truncate text-[10px] text-ink-faint tabular">{{ cnNumber(WORLDS.length) }}界{{ cnNumber(REALMS.length) }}境 · 每一境的来路与典籍</span>
@@ -238,7 +238,7 @@
       <span class="text-[11px] text-ink-soft">查阅 →</span>
     </RouterLink>
 
-    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-99" @click="rebirthOpen = true">
+    <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98" @click="rebirthOpen = true">
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">轮 回</span>
         <span class="block text-[10px] text-ink-faint tabular">
@@ -438,7 +438,7 @@
               <button
                 v-for="r in INTENT_CHOICES"
                 :key="r.id"
-                class="card-ink grow px-2 py-2 text-center text-[12px] text-ink-soft active:scale-99"
+                class="card-ink grow px-2 py-2 text-center text-[12px] text-ink-soft active:scale-98"
                 @click="answerIntent(r.id)"
               >
                 {{ r.label }}
@@ -460,7 +460,7 @@
               <button
                 v-for="ch in pendingEvent.choices"
                 :key="ch.id"
-                class="card-ink w-full px-3 py-2 text-left text-[12px] text-ink-soft active:scale-99"
+                class="card-ink w-full px-3 py-2 text-left text-[12px] text-ink-soft active:scale-98"
                 :class="{ '!border-cinnabar/50 text-cinnabar': ch.peril, '!border-gold-ink/40': ch.risky && !ch.peril }"
                 @click="pickChoice(ch.id)"
               >
