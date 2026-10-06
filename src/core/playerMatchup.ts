@@ -20,6 +20,9 @@ export interface MatchupRow {
   winRate: number
 }
 
+/** 默认采样场次 —— 文案「每类各打 N 场估算」也读这一枚,别手抄(曾 120→60 改过一处忘了另一处) */
+export const MATCHUP_SAMPLE_RUNS = 60
+
 /**
  * 对每类原型各打 n 场估算胜率。种子固定 → 同构筑两遍读数逐位一致;
  * 想模拟不同运数改 seed 即可。n=60 时对 50% 真值的 95% 置信 ±12.6%,
@@ -30,8 +33,8 @@ export interface MatchupRow {
  * 还会读数漂移。每场传一份浅克隆,一次性状态每场从头开始。n 须为正整数,
  * 传 0/负数/小数一律回落默认 60(公开参数,防调用方手滑)。
  */
-export function playerMatchups(snap: CombatantSnap, n = 60, seed = 20261004): MatchupRow[] {
-  const runs = Number.isInteger(n) && n > 0 ? n : 60
+export function playerMatchups(snap: CombatantSnap, n = MATCHUP_SAMPLE_RUNS, seed = 20261004): MatchupRow[] {
+  const runs = Number.isInteger(n) && n > 0 ? n : MATCHUP_SAMPLE_RUNS
   const rng = new RandomService(mulberry32(seed))
   return ENEMY_ARCHETYPES.map(arch => {
     let wins = 0
