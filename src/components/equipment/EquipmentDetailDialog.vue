@@ -74,9 +74,10 @@
       <template v-if="resolved.affixLines.length">
         <div class="ink-divider my-3" />
         <!--
-          条数上限按品质给(凡品 0~1 · 神品 6~9),这是玩家最该看见的一件事:
-          一件装备的"上限"就在它的品质里,而重铸可以重掷条数 —— 只有把它摊在明面上,
-          「要不要为这件洗下去」才算得清。
+          条数上限按品质档 rank + 1 现算(见下方 affixCap,与 qualityDef 同源,
+          不手抄「凡品几条 · 神品几条」—— 那一版会和 data/qualities 漂移)。
+          这是玩家最该看见的一件事:一件装备的"上限"就在它的品质里,而重铸可以
+          重掷条数 —— 只有把它摊在明面上,「要不要为这件洗下去」才算得清。
         -->
         <p class="mb-1.5 flex items-baseline justify-between font-kai text-[12px] tracking-[0.3em] text-ink-faint">
           <span>词 条</span>
@@ -229,7 +230,7 @@
         开关只会变字、词条格子与「开洗」永远不渲染(实测即玩家反馈的「没生效」)。
       -->
       <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
-        <p class="mb-1 text-[11px] text-ink-soft">点词条看效果与区间,在弹框里设为目标(任一命中即停 · 已选 {{ autoTargets.length }}/3)</p>
+        <p class="mb-1 text-[11px] text-ink-soft">点词条看效果与区间,在弹框里设为目标(任一命中即停 · 已选 {{ autoTargets.length }}/{{ AUTO_REFORGE_MAX_TARGETS }})</p>
         <!-- 四档品质成组:传世在前、空组不占位 —— 一眼分出「撞大运的目标」与「随手可得」;
              组色用词条自身的品质色(与装备卡片同源),选中的下一颗整颗亮成「你的目标章」 -->
         <div class="max-h-40 space-y-1.5 overflow-y-auto pr-0.5">
@@ -403,7 +404,7 @@
   import { detectBuild } from '@/core/buildDetect'
   import { endgameUnlocked } from '@/core/endgameService'
   import { whatIfEquip, type WhatIfReport } from '@/core/lab'
-  import { autoReforge, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, type ReforgeTarget } from '@/core/reforge'
+  import { autoReforge, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, AUTO_REFORGE_MAX_TARGETS, type ReforgeTarget } from '@/core/reforge'
   import { AFFIXES, affixDef, affixFitBlock, affixesByRarity } from '@/data/affixes'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
@@ -501,7 +502,7 @@
 
   /** 弹框里这条当前是不是自动重铸目标;目标未满三才有「再设」(满的位子只留给取消) */
   const codexSelected = computed(() => codexAffixId.value !== null && isAutoTarget(codexAffixId.value))
-  const codexCanSelect = computed(() => autoTargets.value.length < 3)
+  const codexCanSelect = computed(() => autoTargets.value.length < AUTO_REFORGE_MAX_TARGETS)
   function onCodexToggleTarget(id: string): void {
     toggleAutoTarget(id)
   }
@@ -549,7 +550,7 @@
   function toggleAutoTarget(id: string): void {
     if (isAutoTarget(id)) autoTargets.value = autoTargets.value.filter(t => t.affixId !== id)
     // 默认先求「高值」(≥50%);拉到底 0% 即回到「出现就行」
-    else if (autoTargets.value.length < 3) autoTargets.value = [...autoTargets.value, { affixId: id, minRoll: 0.5 }]
+    else if (autoTargets.value.length < AUTO_REFORGE_MAX_TARGETS) autoTargets.value = [...autoTargets.value, { affixId: id, minRoll: 0.5 }]
   }
 
   function closeAuto(): void {

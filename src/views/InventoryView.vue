@@ -130,7 +130,11 @@
           <span class="absolute bottom-0.5 right-1 text-[9px] leading-none text-ink-soft tabular">×{{ row.count }}</span>
         </button>
       </div>
-      <p v-else class="mt-10 text-center text-[12px] text-ink-faint">丹匣空空</p>
+      <p v-else class="mt-10 text-center text-[12px] text-ink-faint">
+        丹匣空空
+        <br />
+        <span class="text-[11px]">丹药多出于历练掉落、途中际遇与开炉炼丹</span>
+      </p>
     </template>
 
     <!-- 材料 -->

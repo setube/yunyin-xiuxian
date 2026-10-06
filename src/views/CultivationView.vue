@@ -70,7 +70,7 @@
           </span>
         </p>
         <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">
-          这些都是修炼速度的百分比加成,相加后乘在基础上 —— 与人物页属性明细同源。
+          这些都是修炼速度的百分比加成,相加后乘在基础上 —— 人物页明细与之一致。
         </p>
       </div>
       </div>
@@ -107,7 +107,7 @@
           <p class="mt-1 text-ink-soft">
             回复:基础 {{ formatRate(qiRegenBase) }} × (1 + <span class="tabular text-azure">{{ formatPercent(qiRegenMult) }}</span>) = <span class="tabular text-cinnabar">{{ formatRate(player.qiRegenPerSec) }}</span>
           </p>
-          <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">聚灵阵与其余加成乘在上限上,与灵气条读的是同一份数。</p>
+          <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">聚灵阵与其余加成乘在上限上,灵气条所示即此数。</p>
         </div>
         <!--
           与修为那句同一份估算,分两档:未过灵气充盈线时报「充盈」—— 那是修为要跳一档的时刻,
@@ -160,7 +160,7 @@
               <span class="text-ink-faint">{{ part.label }}</span>
               <span class="tabular" :class="part.value > 0 ? 'text-azure' : 'text-cinnabar'">{{ signedPercent(part.value) }}</span>
             </p>
-            <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">各项相加再取上下限,就是上面那个数。</p>
+            <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">各项相加,再按上下限敛口,方成此数。</p>
           </template>
         </div>
         <div class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">

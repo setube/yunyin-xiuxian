@@ -57,7 +57,7 @@
         <p class="flex items-baseline justify-between gap-2">
           <span class="font-kai text-[13px] tracking-wider text-ink">{{ currentGoal.text }}</span>
           <span v-if="currentGoal.progress !== undefined" class="shrink-0 text-[10px] text-ink-faint tabular">
-            {{ Math.round(currentGoal.progress * 100) }}%
+            进度 {{ Math.round(currentGoal.progress * 100) }}%
           </span>
         </p>
         <p v-if="currentGoal.hint" class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">{{ currentGoal.hint }}</p>

@@ -48,6 +48,13 @@ export interface ReforgeCost {
 }
 
 /**
+ * 自动重铸可同时设为目标的最大词条数。
+ * 命中其一即停,故目标是「这批里洗到哪一个都算数」的并集;上限太小翻不中要的,
+ * 太大又稀释成本 —— 面向玩家的文案(已选 X/3)与守卫逻辑都必须读它,不许各自手写。
+ */
+export const AUTO_REFORGE_MAX_TARGETS = 3
+
+/**
  * 重铸成本:灵石 = stoneByTier(阶数) × (1 + 封存数 × REFORGE_SEAL_LOAD);
  * 器灵尘 = REFORGE_DUST_BASE × (1 + 封存数)。
  *

@@ -309,7 +309,7 @@
 
           <SectionTitle title="天道挑战书" hint="你定规则,天道定赏" />
           <div class="card-ink mt-2 px-4 py-3">
-            <p class="text-[11px] text-ink-faint">选界 · 叠变数(至多三条)· 立契 · 命名。天道观你出题之难,赏格随之而定,绝无虚价。</p>
+            <p class="text-[11px] text-ink-faint">选界 · 叠变数(至多 {{ CHALLENGE_MAX_MUTATORS }} 条)· 立契 · 命名。天道观你出题之难,赏格随之而定,绝无虚价。</p>
             <div class="mt-2 flex flex-wrap gap-1.5">
               <button
                 v-for="w in CELESTIAL_WORLDS"
@@ -639,7 +639,7 @@
         <div class="flex items-center justify-between py-2.5">
           <span class="text-[12px] text-ink-soft">灵石(存 {{ formatGN(resources.spiritStone) }})</span>
           <button class="btn-ghost !px-3 !py-2 !text-[11px] tabular" @click="furnaceConvertStone()">
-            {{ formatGN(furnaceStoneCost()) }} → 5 道源
+            {{ formatGN(furnaceStoneCost()) }} → {{ FURNACE_STONE_DAO_SOURCE }} 道源
           </button>
         </div>
         <div class="py-2.5">
@@ -790,6 +790,7 @@
     EXPEDITION_GUARDIAN_LAYER,
     EXPEDITION_ROUTE_LAYERS,
     FURNACE_RATES,
+    FURNACE_STONE_DAO_SOURCE,
     TRIALS,
     daoPathDef,
     type FurnaceRate
@@ -1111,7 +1112,7 @@
     openReport({
       title: '天道变数',
       cleared: result.report.cleared,
-      markText: result.report.cleared ? `六战全捷,共 ${result.report.totalRounds} 回合` : `止步第 ${result.report.fightsWon + 1} 战`,
+      markText: result.report.cleared ? `${cnNumber(MUTATION_FIGHTS)}战全捷,共 ${result.report.totalRounds} 回合` : `止步第 ${result.report.fightsWon + 1} 战`,
       rows: result.report.rows,
       reward: result.rewardDaoSource
     })
