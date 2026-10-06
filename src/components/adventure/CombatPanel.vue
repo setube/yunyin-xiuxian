@@ -246,23 +246,61 @@
       </div>
       <!-- 战斗分析(战败自动展开;硬核数据供研究) -->
       <div v-if="showAnalysis && analysis" class="mt-2 rounded-md bg-ink/4 px-3 py-2.5">
-        <p class="font-kai text-[12px] tracking-wider" :class="battle?.result.win ? 'text-jade' : 'text-cinnabar'">
-          {{ analysis.headline }}
-        </p>
-        <template v-if="analysis.findings.length">
-          <p v-for="(f, i) in analysis.findings" :key="i" class="mt-1 text-[11px] leading-relaxed text-ink-soft">· {{ f.text }}</p>
-        </template>
-        <p v-if="analysis.directions.length" class="mt-1.5 text-[10px] text-ink-faint">
-          可借力的方向(非唯一解):
-          <span v-for="d in analysis.directions" :key="d.styleName" class="ml-1 text-violet-ink" :title="d.reason">
-            {{ d.styleName }}
+        <!-- 分析题首:朱/青别胜败,一落眼就知道这屏在答「为何这般」;与上方「此物所知」
+             (记敌人的路数)是两回事,不再共用一套标题,层次便分得开 -->
+        <p class="flex items-baseline gap-1.5">
+          <span
+            class="h-3 w-1 shrink-0 self-center rounded-sm"
+            :class="battle?.result.win ? 'bg-jade' : 'bg-cinnabar'"
+            aria-hidden="true"
+          ></span>
+          <span class="font-kai text-[12px] tracking-wider" :class="battle?.result.win ? 'text-jade' : 'text-cinnabar'">
+            {{ analysis.headline }}
+          </span>
+          <span class="chip-ink border-ink/15 text-[9px]" :class="battle?.result.win ? 'text-jade' : 'text-cinnabar'">
+            {{ battle?.result.win ? '胜因' : '败因' }}
           </span>
         </p>
-        <div v-if="analysis.dataRows.length" class="mt-2 grid grid-cols-2 gap-x-4 gap-y-0.5 border-t border-ink/10 pt-1.5">
-          <p v-for="row in analysis.dataRows" :key="row.label" class="flex justify-between text-[10px] tabular">
-            <span class="text-ink-faint">{{ row.label }}</span>
-            <span class="text-ink-soft">{{ row.value }}</span>
+        <!-- 败因逐条成列、句首一点,不再是一堵「·」糊成的墙 -->
+        <ul v-if="analysis.findings.length" class="mt-1.5 space-y-1">
+          <li v-for="(f, i) in analysis.findings" :key="i" class="flex gap-1.5 text-[11px] leading-relaxed text-ink-soft">
+            <span class="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-ink/30" aria-hidden="true"></span>
+            <span>{{ f.text }}</span>
+          </li>
+        </ul>
+        <!-- 借力的方向:理由贴脸摆开 —— 方向的价值就在那条理由,收进 :title 就白给触屏了 -->
+        <div v-if="analysis.directions.length" class="mt-2 rounded-md border border-violet-ink/15 bg-violet-ink/5 px-2.5 py-2">
+          <p class="text-[10px] tracking-wide text-ink-faint">
+            可借力的方向<span class="text-ink-faint/70">(非唯一解)</span>:
           </p>
+          <ul class="mt-1 flex flex-col gap-1">
+            <li v-for="d in analysis.directions" :key="d.styleName" class="flex flex-col">
+              <span class="text-[11px] text-violet-ink">{{ d.styleName }}</span>
+              <span class="text-[10px] leading-relaxed text-ink-faint">{{ d.reason }}</span>
+            </li>
+          </ul>
+        </div>
+        <!-- 硬核数据:整行让位给数值。标签占左侧定宽(不换行),数值折回整行剩余宽 ——
+             窄屏上也不再与标签互踩、被挤成一线窄落;战局定数与战时账目分节读 -->
+        <div v-if="analysis.dataRows.length" class="mt-2 border-t border-ink/10 pt-1.5">
+          <div v-if="analysisSections.setup.length">
+            <p class="text-[10px] tracking-wide text-ink-faint/70">战局定数</p>
+            <div class="mt-0.5 space-y-0.5">
+              <p v-for="row in analysisSections.setup" :key="row.label" class="flex items-baseline gap-3 text-[10px] tabular">
+                <span class="min-w-[4.5rem] shrink-0 whitespace-nowrap text-ink-faint">{{ row.label }}</span>
+                <span class="min-w-0 flex-1 text-right text-ink-soft">{{ row.value }}</span>
+              </p>
+            </div>
+          </div>
+          <div v-if="analysisSections.account.length" class="mt-1.5">
+            <p class="text-[10px] tracking-wide text-ink-faint/70">战时账目</p>
+            <div class="mt-0.5 space-y-0.5">
+              <p v-for="row in analysisSections.account" :key="row.label" class="flex items-baseline gap-3 text-[10px] tabular">
+                <span class="min-w-[4.5rem] shrink-0 whitespace-nowrap text-ink-faint">{{ row.label }}</span>
+                <span class="min-w-0 flex-1 text-right text-ink-soft">{{ row.value }}</span>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -416,6 +454,22 @@
     if (!b) return null
     const build = detectBuild(player.finalStats.mods)
     return analyzeBattle(b.result, build?.style.id ?? null)
+  })
+
+  /**
+   * 数据行按语义分两节:
+   * - 战局定数(先手 / 敌之加成)—— 开打前就定下的数,全是长句,该整行让位;
+   * - 战时账目(其余)—— 逐项读账,短条更密。
+   * 两个标签是 battleAnalysis 里钉死的字符串,这里只作分组,不碰模型。
+   */
+  const analysisSections = computed(() => {
+    const a = analysis.value
+    if (!a) return { setup: [], account: [] }
+    const SETUP_LABELS = new Set(['先手', '敌之加成'])
+    return {
+      setup: a.dataRows.filter(r => SETUP_LABELS.has(r.label)),
+      account: a.dataRows.filter(r => !SETUP_LABELS.has(r.label))
+    }
   })
 
   // 战败时自动展开分析;并按胜负配一声战果音
