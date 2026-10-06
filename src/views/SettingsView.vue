@@ -147,6 +147,17 @@
         <span class="text-[13px] text-ink-soft">关于我们</span>
         <span class="text-[11px] text-ink-faint">查看 →</span>
       </button>
+      <button class="flex w-full items-center justify-between py-3 active:opacity-60" @click="openRelease">
+        <span class="flex items-center gap-2 text-[13px] text-ink-soft">
+          版本与更新
+          <span
+            v-if="settings.hasUnseenRelease"
+            class="rounded bg-cinnabar px-1 py-px text-[10px] leading-none text-paper"
+            aria-label="有新版本"
+          >新</span>
+        </span>
+        <span class="text-[11px] text-ink-faint">查看 →</span>
+      </button>
       <button class="flex w-full items-center justify-between py-3 active:opacity-60" @click="privacyOpen = true">
         <span class="text-[13px] text-ink-soft">隐私政策</span>
         <span class="text-[11px] text-ink-faint">查看 →</span>
@@ -159,6 +170,9 @@
 
     <!-- 关于我们 -->
     <AboutDialog :open="aboutOpen" @close="aboutOpen = false" />
+
+    <!-- 版本与更新 -->
+    <ReleaseNotesDialog :open="releaseOpen" @close="releaseOpen = false" />
 
     <!-- 隐私政策 -->
     <PrivacyDialog :open="privacyOpen" @close="privacyOpen = false" />
@@ -198,6 +212,7 @@
   import BaseModal from '@/components/common/BaseModal.vue'
   import PrivacyDialog from '@/components/common/PrivacyDialog.vue'
   import AboutDialog from '@/components/common/AboutDialog.vue'
+  import ReleaseNotesDialog from '@/components/common/ReleaseNotesDialog.vue'
   import ProgressionDialog from '@/components/common/ProgressionDialog.vue'
   import InstallToHomeNotice from '@/components/common/InstallToHomeNotice.vue'
   import { DIAG_MAX, useDiagStore } from '@/stores/diag'
@@ -260,8 +275,15 @@
   const resetConfirm = ref(false)
   const privacyOpen = ref(false)
   const aboutOpen = ref(false)
+  const releaseOpen = ref(false)
   const progressionOpen = ref(false)
   const fileInput = ref<HTMLInputElement | null>(null)
+
+  /** 打开发布说明即视为已阅:把「已看到的最新版」记下,新标记随之熄灭 */
+  function openRelease(): void {
+    settings.markReleaseSeen()
+    releaseOpen.value = true
+  }
 
   /** 导出存档:Web/Electron 走浏览器下载,原生端写 Documents(见 savePlatform) */
   function onExport(): void {
