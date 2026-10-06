@@ -228,11 +228,17 @@
         <!--
           距离下一层的情报给个实数:「再交手几阵」数不出来,「照面 X 记 · 还差 Y 记」能。
           与 noteEnemy 同一张门槛表(loreService),胜一记、败三记、首领倍算 ——
-          那排小注就是它自己读出来的,不另抄
+          那排小注就是它自己读出来的,不另抄。
+
+          「下一层」以有效层为基准:宿慧照见(熟知修仙界)会把认知层抬过一档,
+          界面上已经能看到的层不该再被点名「再攒几记可窥」—— 名字据此取舍,
+          eff 已到顶时(照见把最高层都摊开了)再攒的只有「计数」,没有新层可窥。
         -->
         <p v-if="lore.progress && lore.progress.remain > 0" class="mt-1.5 text-[10px] leading-relaxed text-ink-faint tabular">
           照面 {{ lore.progress.seen }} 记,再攒
-          <span class="text-violet-ink">{{ lore.progress.remain }}</span> 记可窥「{{ lore.progress.nextName }}」
+          <span class="text-violet-ink">{{ lore.progress.remain }}</span> 记
+          <template v-if="lore.progress.nextName">可窥「{{ lore.progress.nextName }}」</template>
+          <template v-else>可更深知它的路数</template>
           <span class="text-ink-faint/70">
             (胜一记 · 败计三<template v-if="lore.progress.isBoss"> · 首领倍算</template>)
           </span>
