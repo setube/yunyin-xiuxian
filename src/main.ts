@@ -7,6 +7,7 @@ import { router } from './router'
 import { migrateLocalSchema, preflightScan } from './utils/storage'
 import { useUiStore } from './stores/ui'
 import { summarizeError, useDiagStore } from './stores/diag'
+import { useServiceWorkerUpdate } from './composables/useServiceWorkerUpdate'
 import './style.css'
 
 // 启动前扫描损坏存档 + 结构升级,避免白屏
@@ -68,6 +69,11 @@ if (import.meta.env.PROD && !isLocalShell && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then(reg => {
+        // 有新版本就绪时亮横幅;「重新加载」动作注册进 ui store,更新提示那枚关闭按钮在此续命
+        const handle = useServiceWorkerUpdate(reg, () => useUiStore().requestPwaUpdate())
+        useUiStore().setPwaApplyReload(() => handle.reload())
+      })
       .catch(() => {
         /* 注册失败不打扰玩家:功能可降级,见 public/sw.js 注释 */
       })

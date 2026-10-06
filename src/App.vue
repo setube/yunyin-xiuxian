@@ -35,6 +35,7 @@
 
     <!-- 全局浮层 -->
     <ToastHost />
+    <UpdatePrompt />
     <OfflineRewardDialog />
     <BreakthroughResultDialog />
     <EventDialog v-if="game.started" />
@@ -60,6 +61,7 @@
   import TopStatusBar from '@/components/common/TopStatusBar.vue'
   import BottomNavigation from '@/components/common/BottomNavigation.vue'
   import ToastHost from '@/components/common/ToastHost.vue'
+  import UpdatePrompt from '@/components/common/UpdatePrompt.vue'
   import OfflineRewardDialog from '@/components/offline/OfflineRewardDialog.vue'
   import BreakthroughResultDialog from '@/components/cultivation/BreakthroughResultDialog.vue'
   import EventDialog from '@/components/adventure/EventDialog.vue'
