@@ -16,6 +16,41 @@ permissions:
   contents: read
 
 jobs:
+  # 提交信息与 PR 标题的一卡通:conventional commit 格式。
+  # 主分支最近一次是 squash 合并的主题行(round 254: …),不带 type 前缀 ——
+  # squash 合并会把 PR 标题直接写进主分支,故这里两道都拦:分支内每个提交 + PR 标题。
+  commit-lint:
+    name: 提交信息与标题校验
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: 安装 Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: 安装依赖
+        run: bun install --frozen-lockfile
+      - name: 校验本分支全部提交 (conventional)
+        # fetch-depth: 0 才拉得到 base..head 的全量历史;base 即目标主干
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          n=0
+          # --no-merges:分支间同步产生的 merge 提交(如「Merge main into …」)不算作品,
+          # GitHub 自带的那些不以 conventional 命名,只校验本分支真正写的提交。
+          for c in $(git rev-list --no-merges "$BASE..HEAD"); do
+            n=$((n+1))
+            # 不带 --from/--to/--edit/--env 时,commitlint 从 stdin 读整条信息
+            printf '%s' "$(git log -1 --format=%B "$c")" | bun run commitlint --verbose
+          done
+          echo "已校验 $n 个提交"
+      - name: 校验 PR 标题 (conventional)
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | bun run commitlint --verbose
+
   check:
     # 作业名就是规则集里引用的状态检查名,改名须同步改规则集
     name: PR 校验
