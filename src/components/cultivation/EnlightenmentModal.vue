@@ -54,7 +54,7 @@ const show = computed(() => event.value !== null)
   <BaseModal :open="show" title="悟道顿悟" @close="handleIgnore">
     <p class="flex items-center justify-between text-[11px] text-ink-faint">
       <span>灵光一闪,选择一项增益</span>
-      <span class="tabular text-gold-ink">{{ remaining }} 秒后自散</span>
+      <span role="status" aria-live="polite" aria-atomic="true" class="tabular text-gold-ink">{{ remaining }} 秒后自散</span>
     </p>
     <div class="mt-3 space-y-2">
       <button

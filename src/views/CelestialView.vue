@@ -18,9 +18,12 @@
         <p class="font-kai text-[15px] tracking-[0.3em] text-ink">天 界</p>
         <div class="flex items-center gap-2">
           <span class="chip-ink border-cinnabar/50 text-[9px] text-cinnabar">此世消耗</span>
-          <button class="text-left" @click="openDaoSourceDialog()">
-            <span class="block text-[10px] leading-tight text-ink-faint">叩问天道·试一试</span>
-            <span class="block tabular font-kai text-[17px] leading-tight text-cinnabar">{{ formatNum(endgame.daoSource) }}</span>
+          <button class="group flex items-end gap-1 text-left active:scale-97 active:opacity-60" aria-label="道源,点开看用途与来处" @click="openDaoSourceDialog()">
+            <span>
+              <span class="block text-[10px] leading-tight text-ink-faint">叩问天道·试一试</span>
+              <span class="block tabular font-kai text-[17px] leading-tight text-cinnabar">{{ formatNum(endgame.daoSource) }}</span>
+            </span>
+            <span class="mb-px text-[13px] leading-tight text-ink-faint transition-transform group-active:translate-x-0.5">›</span>
           </button>
         </div>
       </div>
@@ -34,7 +37,7 @@
           <SectionTitle title="道途" hint="此生一诺,来世另择" />
           <div v-if="currentDao" class="card-ink mt-2 px-4 py-3">
             <p class="flex items-center gap-3">
-              <span class="grid h-10 w-10 place-items-center rounded-md bg-cinnabar/90 font-kai text-[20px] text-paper">
+              <span class="grid h-10 w-10 place-items-center rounded-md bg-cinnabar/90 font-kai text-[20px] seal-face">
                 {{ currentDao.seal }}
               </span>
               <span class="font-kai text-[16px] tracking-widest text-ink">{{ currentDao.name }}</span>
@@ -55,7 +58,7 @@
           <div v-else class="mt-2 grid grid-cols-2 gap-2.5">
             <button v-for="dao in DAO_PATHS" :key="dao.id" class="card-ink px-3 py-3 text-left active:scale-98" @click="pickDao(dao.id)">
               <p class="flex items-center gap-2">
-                <span class="grid h-8 w-8 place-items-center rounded-md bg-cinnabar/85 font-kai text-[16px] text-paper">
+                <span class="grid h-8 w-8 place-items-center rounded-md bg-cinnabar/85 font-kai text-[16px] seal-face">
                   {{ dao.seal }}
                 </span>
                 <span class="font-kai text-[14px] tracking-widest text-ink">{{ dao.name }}</span>
@@ -73,7 +76,7 @@
             class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98"
             @click="furnaceOpen = true"
           >
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/85 font-kai text-[19px] text-paper">炉</span>
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/85 font-kai text-[19px] seal-face">炉</span>
             <span class="min-w-0 flex-1">
               <span class="block font-kai text-[14px] tracking-widest text-ink">天道熔炉</span>
               <span class="block truncate text-[10px] leading-relaxed text-ink-faint">前尘俗物,皆可熔作道源</span>
@@ -82,7 +85,7 @@
           </button>
 
           <button class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98" @click="goSouls()">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-gold-ink/85 font-kai text-[19px] text-paper">魂</span>
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-gold-ink/85 font-kai text-[19px] seal-face">魂</span>
             <span class="min-w-0 flex-1">
               <span class="block font-kai text-[14px] tracking-widest text-ink">器 魂</span>
               <span class="block truncate text-[10px] leading-relaxed text-ink-faint">
@@ -168,7 +171,7 @@
           <div class="mt-2 space-y-2.5">
             <div v-for="world in CELESTIAL_WORLDS" :key="world.id" class="card-ink px-4 py-3">
               <p class="flex items-center gap-2">
-                <span class="grid h-8 w-8 place-items-center rounded-md bg-indigo-ink/85 font-kai text-[15px] text-paper">
+                <span class="grid h-8 w-8 place-items-center rounded-md bg-indigo-ink/85 font-kai text-[15px] seal-face">
                   {{ world.seal }}
                 </span>
                 <span class="font-kai text-[15px] tracking-widest text-ink">{{ world.name }}</span>
@@ -198,7 +201,7 @@
             <!-- 虚界之门:程序化生成 + 裁判过审 -->
             <div class="card-ink border border-violet-ink/25 px-4 py-3">
               <p class="flex items-center gap-2">
-                <span class="grid h-8 w-8 place-items-center rounded-md bg-violet-ink/85 font-kai text-[15px] text-paper">
+                <span class="grid h-8 w-8 place-items-center rounded-md bg-violet-ink/85 font-kai text-[15px] seal-face">
                   {{ endgame.voidWorld?.seal ?? '虚' }}
                 </span>
                 <span class="font-kai text-[15px] tracking-widest text-ink">
@@ -283,7 +286,7 @@
           <div class="mt-2 space-y-2.5">
             <div v-for="trial in TRIALS" :key="trial.id" class="card-ink px-4 py-3">
               <p class="flex items-center gap-2">
-                <span class="grid h-8 w-8 place-items-center rounded-md bg-gold-ink/85 font-kai text-[15px] text-paper">
+                <span class="grid h-8 w-8 place-items-center rounded-md bg-gold-ink/85 font-kai text-[15px] seal-face">
                   {{ trial.seal }}
                 </span>
                 <span class="font-kai text-[15px] tracking-widest text-ink">{{ trial.name }}</span>
@@ -445,7 +448,7 @@
                   算了
                 </button>
                 <button
-                  class="shrink-0 rounded bg-cinnabar px-2 py-1 font-kai text-[10px] text-paper active:scale-90"
+                  class="shrink-0 rounded bg-cinnabar px-2 py-1 font-kai text-[10px] seal-face active:scale-90"
                   @click="doRewrite(mark)"
                 >
                   确认重写

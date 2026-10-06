@@ -69,7 +69,7 @@
             {{ signedPercent(row.value) }}
           </span>
         </p>
-        <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">
+        <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
           这些都是修炼速度的百分比加成,相加后乘在基础上 —— 人物页明细与之一致。
         </p>
       </div>
@@ -160,7 +160,7 @@
               <span class="text-ink-faint">{{ part.label }}</span>
               <span class="tabular" :class="part.value > 0 ? 'text-azure' : 'text-cinnabar'">{{ signedPercent(part.value) }}</span>
             </p>
-            <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">各项相加,再按上下限敛口,方成此数。</p>
+            <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">各项相加,再按上下限敛口,方成此数。</p>
           </template>
         </div>
         <div class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
@@ -220,7 +220,7 @@
             </span>
           </p>
         </div>
-        <p class="mt-2 text-[9px] leading-relaxed text-ink-faint">
+        <p class="mt-2 text-[10px] leading-relaxed text-ink-faint">
           攻伐之力不助渡劫;防御与气血按当下境界另算,再厚也只能硬抗一隅,余者靠抗性、减伤与恢复;晋升与准备只能帮小进阶,渡劫大关不认。
         </p>
 
