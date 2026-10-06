@@ -41,12 +41,12 @@
     </div>
     <template #footer>
       <div v-if="targetable" class="grid grid-cols-2 gap-2">
-        <button class="btn-ghost" :disabled="!selected && !canSelect" @click="emit('toggle-target', affixId)">
+        <button class="btn-ghost !py-2 !text-[11px]" :disabled="!selected && !canSelect" @click="emit('toggle-target', affixId)">
           {{ selected ? '取消自动重铸目标' : '设为自动重铸目标' }}
         </button>
-        <button class="btn-seal" @click="emit('close')">收 下</button>
+        <button class="btn-seal !py-2 !text-[11px]" @click="emit('close')">收 下</button>
       </div>
-      <button v-else class="btn-seal w-full" @click="emit('close')">收 下</button>
+      <button v-else class="btn-seal w-full !py-2 !text-[11px]" @click="emit('close')">收 下</button>
     </template>
   </BaseModal>
 </template>
