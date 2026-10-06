@@ -39,7 +39,8 @@ import {
   reforgeShortToast,
   sealDoneToast,
   sealMustLeaveToast,
-  sealShortToast
+  sealShortToast,
+  unsealDoneToast
 } from '@/ui/reforgeText'
 
 export interface ReforgeCost {
@@ -194,6 +195,24 @@ export function sealAffix(uid: string, affixId: string): boolean {
   inventory.replaceItem({ ...inst, sealedAffixIds: [...(inst.sealedAffixIds ?? []), affixId] })
   const name = affixDef(affixId)?.name ?? '词条'
   ui.toast(sealDoneToast(name), 'success')
+  return true
+}
+
+/**
+ * 解封一个词条:重铸恢复可替换之。封存付费、解封免费 —— 付出的灵石不退还,
+ * 但位子即时空出,可再封。
+ */
+export function unsealAffix(uid: string, affixId: string): boolean {
+  const inventory = useInventoryStore()
+  const ui = useUiStore()
+  const inst = inventory.findItem(uid)
+  if (!inst) return false
+  if (!inst.affixes.some(a => a.id === affixId)) return false
+  if (!(inst.sealedAffixIds ?? []).includes(affixId)) return false
+  inventory.replaceItem({ ...inst, sealedAffixIds: (inst.sealedAffixIds ?? []).filter(id => id !== affixId) })
+  const name = affixDef(affixId)?.name ?? '词条'
+  playSfx('success')
+  ui.toast(unsealDoneToast(name), 'success')
   return true
 }
 
