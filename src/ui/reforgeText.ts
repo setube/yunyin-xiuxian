@@ -30,3 +30,8 @@ export function sealShortToast(): string {
 export function sealDoneToast(name: string): string {
   return `「${name}」已封存,重铸不移`
 }
+
+/** 解封成功提示:免费、位子即时空出(重铸恢复可替它) */
+export function unsealDoneToast(name: string): string {
+  return `「${name}」已解封,重铸可再替`
+}
