@@ -123,9 +123,14 @@
             >
               封存
             </button>
-            <span v-else-if="isAffixSealed(line.id)" class="shrink-0 text-jade" role="img" aria-label="这条词条已封存">
-              <GameIcon name="lock" :size="12" />
-            </span>
+            <button
+              v-else-if="isAffixSealed(line.id)"
+              class="shrink-0 rounded-md px-1.5 py-1 text-[10px] text-jade active:scale-90 active:opacity-60"
+              :aria-label="`解封词条${line.name}`"
+              @click="doUnsealAffix(line.id)"
+            >
+              <GameIcon name="unlock" :size="12" />
+            </button>
           </li>
         </ul>
         <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
@@ -404,7 +409,7 @@
   import { detectBuild } from '@/core/buildDetect'
   import { endgameUnlocked } from '@/core/endgameService'
   import { whatIfEquip, type WhatIfReport } from '@/core/lab'
-  import { autoReforge, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, AUTO_REFORGE_MAX_TARGETS, type ReforgeTarget } from '@/core/reforge'
+  import { autoReforge, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, unsealAffix, AUTO_REFORGE_MAX_TARGETS, type ReforgeTarget } from '@/core/reforge'
   import { AFFIXES, affixDef, affixFitBlock, affixesByRarity } from '@/data/affixes'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
@@ -509,6 +514,10 @@
 
   function doSealAffix(affixId: string): void {
     if (inst.value) sealAffix(inst.value.uid, affixId)
+  }
+
+  function doUnsealAffix(affixId: string): void {
+    if (inst.value) unsealAffix(inst.value.uid, affixId)
   }
 
   function doReforge(): void {
