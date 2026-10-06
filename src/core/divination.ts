@@ -18,15 +18,10 @@ import { RandomService, rng } from '@/utils/random'
 import { mergeMods } from './statsCalc'
 import { hexagramOf, trigramDef, trigramOfLines, type HexagramDef, type TrigramDef, type TrigramId } from '@/data/yijing'
 
-/** 问卦耗悟道点 —— 卜以决疑,不疑何卜;代价不重,但不可随手摇着玩 */
-export const DIVINATION_COST = 2
-
-/** 动爻数与"卦力/时长"的换挡(静卦久而缓,动多者盛而易过) */
-export const CHANGING_TIERS: { min: number; power: number; minutes: number; note: string }[] = [
-  { min: 0, power: 1, minutes: 45, note: '六爻不动,卦静而力缓 —— 照此行事,可久。' },
-  { min: 1, power: 1.25, minutes: 30, note: '一二爻动,事有转机 —— 力稍盛,时机稍急。' },
-  { min: 3, power: 1.5, minutes: 15, note: '三爻以上皆动,事变在即 —— 卦力最盛,也最易错过。' }
-]
+/** 问卦耗悟道点 / 动爻换挡 —— 真值在 data,这里导入并再导出,保持既有公共 API 同时供本模块 tierOf 使用 */
+import { DIVINATION_COST } from '@/data/constants'
+import { CHANGING_TIERS } from '@/data/yijing'
+export { DIVINATION_COST, CHANGING_TIERS }
 
 export interface HexagramReading {
   /** 本卦 */

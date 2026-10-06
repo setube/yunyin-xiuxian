@@ -223,6 +223,13 @@ export const HEXAGRAMS: HexagramDef[] = [
   h(64, '未济', 'li', 'kan', '火在水上,未济之象;事未成而慎终,如濡其尾。')
 ]
 
+/** 动爻数与"卦力/时长"的换挡(静卦久而缓,动多者盛而易过) */
+export const CHANGING_TIERS: { min: number; power: number; minutes: number; note: string }[] = [
+  { min: 0, power: 1, minutes: 45, note: '六爻不动,卦静而力缓 —— 照此行事,可久。' },
+  { min: 1, power: 1.25, minutes: 30, note: '一二爻动,事有转机 —— 力稍盛,时机稍急。' },
+  { min: 3, power: 1.5, minutes: 15, note: '三爻以上皆动,事变在即 —— 卦力最盛,也最易错过。' }
+]
+
 const TRIGRAM_BY_ID = new Map(TRIGRAMS.map(t => [t.id, t]))
 const HEXAGRAM_BY_PAIR = new Map(HEXAGRAMS.map(x => [`${x.upper}/${x.lower}`, x]))
 

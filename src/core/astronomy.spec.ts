@@ -17,7 +17,8 @@ import { IMAGES, MANSIONS } from '@/data/xiangxiu'
 import { REGIONS, regionDef } from '@/data/regions'
 import { worldOf } from '@/data/realms'
 import { useGameStore } from '@/stores/game'
-import { MANSION_EVENT_LUCK, favoredWorld, isFavoredRegion, mansionEventLuck, mansionLuckPercent, mansionOfDay, todayMansion, todayMansionLine } from './astronomy'
+import { MANSION_EVENT_LUCK } from '@/data/constants'
+import { favoredWorld, isFavoredRegion, mansionEventLuck, mansionLuckPercent, mansionOfDay, todayMansion, todayMansionLine } from './astronomy'
 import { exploreEventChance } from './exploration'
 
 beforeEach(() => {
@@ -163,7 +164,9 @@ describe('星象加成 · 百分数一处出', () => {
     expect(mansionLuckPercent()).toBeGreaterThan(0)
   })
 
-  it('历练页 / 界域志 / 数值体系三处都读同一枚,不许各自手算', () => {
+  it('历练页 / 界域志 / 数值体系三处同源,不许硬编码 10', () => {
+    // FIX A 后真值落在 data/constants(MANSION_EVENT_LUCK);页面走共享 helper 换算,
+    // 数值体系直接由 data 常量换算 —— 任何一处都不许写死 10(加成若是 0.15 必须跟着变)
     const adventure = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
     const realm = readFileSync(resolve(__dirname, '../views/RealmCodexView.vue'), 'utf8')
     const doc = readFileSync(resolve(__dirname, '../data/progressionDoc.ts'), 'utf8')
@@ -172,8 +175,10 @@ describe('星象加成 · 百分数一处出', () => {
       ['界域志', realm],
       ['数值体系', doc]
     ] as const) {
-      expect(src, `${name} 应读 mansionLuckPercent()`).toContain('mansionLuckPercent(')
-      expect(src, `${name} 不应再手算 MANSION_EVENT_LUCK × 100`).not.toMatch(/Math\.round\(MANSION_EVENT_LUCK/)
+      expect(src, `${name} 不应写死 10% 字面量`).not.toMatch(/\+10%|\+ 10 %/)
     }
+    expect(adventure, '历练页应共享换算 helper').toContain('mansionLuckPercent(')
+    expect(realm, '界域志应共享换算 helper').toContain('mansionLuckPercent(')
+    expect(doc, '数值体系应直接由 data 常量换算').toContain('MANSION_EVENT_LUCK')
   })
 })

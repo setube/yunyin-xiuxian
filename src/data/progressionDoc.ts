@@ -14,6 +14,7 @@ import {
   BUILDING_COST_GROWTH,
   COMBAT_MAJOR_GROWTH,
   CULT_MAJOR_SPEED_GROWTH,
+  DIVINATION_COST,
   EXP_MAJOR_GROWTH,
   GONGFA_UP_GROWTH,
   LATE_COMBAT_GROWTH,
@@ -21,6 +22,7 @@ import {
   LATE_EXP_GROWTH,
   LATE_QI_CAP_GROWTH,
   LATE_QI_REGEN_GROWTH,
+  MANSION_EVENT_LUCK,
   QI_BANK_MULT,
   QI_CAP_MAJOR_GROWTH,
   QI_REGEN_MAJOR_GROWTH,
@@ -29,12 +31,10 @@ import {
   UPGRADE_DUST_GROWTH
 } from './constants'
 import { LIFESPAN_WORLDS, REALMS, WORLDS, WORLD_BREAK_MAJOR } from './realms'
-import { DIVINATION_COST, CHANGING_TIERS } from '@/core/divination'
-import { mansionLuckPercent } from '@/core/astronomy'
 import { PALACES, STARS } from './ziwei'
 import { GATES } from './qimen'
 import { MANSIONS, IMAGES } from './xiangxiu'
-import { TRIGRAMS, HEXAGRAMS } from './yijing'
+import { TRIGRAMS, HEXAGRAMS, CHANGING_TIERS } from './yijing'
 
 export interface ProgressionAxis {
   id: string
@@ -178,7 +178,7 @@ export const SORCERY_LAYERS: SorceryLayer[] = [
     name: '星象 · 值日',
     cadence: `${MANSIONS.length} 日一轮 · ${IMAGES.length} 象配四界`,
     cost: '免费、被动',
-    note: `只利所配界域:其地际遇 +${mansionLuckPercent()}%,他处不加`
+    note: `只利所配界域:其地际遇 +${Math.round(MANSION_EVENT_LUCK * 100)}%,他处不加`
   },
   {
     id: 'men',
