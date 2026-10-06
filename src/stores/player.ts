@@ -12,6 +12,8 @@ import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
 import { mentorDef } from '@/data/mentors'
 import { talentDef } from '@/data/talents'
+import { randomDaoName } from '@/data/names'
+import { rng } from '@/utils/random'
 import { baseCultPerSec, baseQiRegen, expRequirement, qiCap } from '@/core/formulas'
 import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
@@ -522,6 +524,14 @@ export const usePlayerStore = defineStore(
       // 外物随皮囊散去:灵兽、洞府建筑、灵脉投资都是「我拥有多少」,不是「我是谁」
       petId.value = null
       dongfu.resetForRebirth()
+      // 新的皮囊,新的道号:神魂不灭带走的是所知所历(宿慧/道果/天赋/称号),不是这个名号。
+      // 每一世重掷一个道号(避免与上世撞名),亦是「N 世」在界面上一眼可辨的体现 ——
+      // 否则转世后顶栏仍是同一个道号,「这一世是全新的一世」无从感知(见 samsaraAudit 的姓名一行)。
+      let fresh: string
+      do {
+        fresh = randomDaoName(rng)
+      } while (fresh === name.value)
+      name.value = fresh
     }
 
     /** 存档修复 */
