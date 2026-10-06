@@ -6,7 +6,8 @@ import {
   reforgeShortToast,
   sealDoneToast,
   sealMustLeaveToast,
-  sealShortToast
+  sealShortToast,
+  unsealDoneToast
 } from './reforgeText'
 
 describe('重铸与封存提示 · 文言仍报清条数与尘石', () => {
@@ -21,5 +22,6 @@ describe('重铸与封存提示 · 文言仍报清条数与尘石', () => {
     expect(sealMustLeaveToast()).toContain('天意')
     expect(sealShortToast()).not.toContain('不足')
     expect(sealDoneToast('破军')).toBe('「破军」已封存,重铸不移')
+    expect(unsealDoneToast('破军')).toBe('「破军」已解封,重铸可再替')
   })
 })
