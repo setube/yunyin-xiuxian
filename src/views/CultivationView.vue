@@ -80,7 +80,7 @@
             灵气 +{{ formatRate(player.qiRegenPerSec) }}
             <span class="ml-0.5 text-[9px] text-ink-faint">{{ showQiBreakdown ? '▾' : '▸' }}来路</span>
           </button>
-          <span>
+          <span title="灵气">
             {{ formatNum(Math.floor(Math.min(resources.qi, player.qiCapValue))) }} / {{ formatNum(player.qiCapValue) }}
             <span v-if="resources.qi > player.qiCapValue" class="text-azure">
               · 积余 {{ formatNum(Math.floor(resources.qi)) }} / {{ formatNum(player.qiBankCapValue) }}
@@ -342,7 +342,7 @@
           v-for="b in activeBuffs"
           :key="b.def!.id"
           type="button"
-          class="chip-ink tabular transition-transform active:scale-90"
+          class="chip-ink !py-1.5 tabular transition-transform active:scale-90"
           :class="b.def!.kind === 'injury' ? 'border-cinnabar/60 text-cinnabar' : 'border-jade/60 text-jade'"
           @click="ui.buffDetailId = b.def!.id"
         >
@@ -566,7 +566,12 @@
   const prepMeditate = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === 'meditate')!
   const prepPill = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === 'pill')!
   const prepPillCost = prepPill.cost?.stone ?? 0
-  const prepCanPill = computed(() => toNum(resources.spiritStone) >= prepPillCost)
+  // toNum 在指数 >308 时返回 Infinity(见 utils/gnum)—— 先排掉非有限值,
+  // 否则 Infinity >= cost 恒真会让「药价不足」的按钮误亮(与 progress.ts 同判据)
+  const prepCanPill = computed(() => {
+    const stone = toNum(resources.spiritStone)
+    return Number.isFinite(stone) && stone >= prepPillCost
+  })
 
   function startPrep(option: 'meditate' | 'pill'): void {
     if (prepareBreakthrough(option)) {

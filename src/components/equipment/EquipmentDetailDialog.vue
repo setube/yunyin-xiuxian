@@ -28,7 +28,7 @@
           class="min-w-0 grow rounded-md border border-ink/15 bg-paper-deep/60 px-2 py-1 text-[12px] text-ink outline-none placeholder:text-ink-faint focus:border-azure"
           @change="applyNote"
         />
-        <button v-if="noteDraft" class="-my-1 px-1 py-1 text-[11px] text-ink-faint active:opacity-60" @click="clearNote">清除</button>
+        <button v-if="noteDraft" class="-my-1 flex min-h-[28px] items-center px-1 py-1 text-[11px] text-ink-faint active:opacity-60" @click="clearNote">清除</button>
       </div>
       <!--
         共鸣是机制而非数值,但装备卡片此前一个字都不提:玩家在「要不要换掉这件」时,
@@ -117,7 +117,7 @@
             </span>
             <button
               v-if="canSealAffix(line.id)"
-              class="shrink-0 rounded-md px-1.5 py-1 text-[10px] text-azure active:scale-90 active:opacity-60"
+              class="shrink-0 min-h-[28px] rounded-md px-1.5 py-1 text-[10px] text-azure active:scale-90 active:opacity-60"
               :aria-label="`封存词条${line.name}`"
               @click="doSealAffix(line.id)"
             >
@@ -125,7 +125,7 @@
             </button>
             <button
               v-else-if="isAffixSealed(line.id)"
-              class="shrink-0 rounded-md px-1.5 py-1 text-[10px] text-jade active:scale-90 active:opacity-60"
+              class="shrink-0 min-h-[28px] rounded-md px-1.5 py-1 text-[10px] text-jade active:scale-90 active:opacity-60"
               :aria-label="`解封词条${line.name}`"
               @click="doUnsealAffix(line.id)"
             >
@@ -249,7 +249,7 @@
               <button
                 v-for="af in group.items"
                 :key="af.id"
-                class="rounded px-1 py-1 text-[10px] leading-tight"
+                class="min-h-[28px] rounded px-1 py-1 text-[10px] leading-tight"
                 :class="isAutoTarget(af.id) ? 'border' : 'bg-ink/4'"
                 :style="isAutoTarget(af.id)
                   ? { borderColor: AFFIX_RARITY_META[af.rarity].color, color: AFFIX_RARITY_META[af.rarity].color }
@@ -268,7 +268,7 @@
             <!-- 点已选词条名:钉开那张词条图,回来看清效果与区间再决定要不要留着这条目标 -->
             <button
               type="button"
-              class="w-10 shrink-0 truncate text-left font-kai"
+              class="flex min-h-[28px] w-10 shrink-0 items-center truncate text-left font-kai"
               :style="{ color: targetColor(t.affixId) }"
               :title="`查看词条:${affixDef(t.affixId)?.name ?? t.affixId}`"
               @click="openCodex(t.affixId)"
@@ -290,7 +290,7 @@
           />
           <span class="text-[10px] text-ink-faint tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
           <button
-            class="btn-seal ml-auto !px-3 !py-1 !text-[11px]"
+            class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
             :disabled="!autoTargets.length"
             :title="autoTargets.length ? undefined : '先点一条要洗到的词条'"
             @click="runAutoReforge"

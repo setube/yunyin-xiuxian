@@ -1624,8 +1624,11 @@ for (const vp of VIEWPORTS) {
   await page.goto(INDEX, { waitUntil: 'load' })
   await page.waitForTimeout(2200)
   await clearOverlays(page)
+  // 灵气自 07b29de 起收敛回修炼页(顶栏只留灵石),故到修炼页读那里常驻的灵气条
+  await page.goto(INDEX + '#/cultivation', { waitUntil: 'load' })
+  await page.waitForTimeout(600)
   checked += 1
-  /** 读顶栏灵气:文本按 formatGN 的档位(万/亿/兆…)还原成数值 */
+  /** 读修炼页灵气:文本按 formatGN 的档位(万/亿/兆…)还原成数值 */
   const readQi = () => readFormatted(page, '灵气')
   const first = await readQi()
   await page.waitForTimeout(3200)
@@ -1634,7 +1637,7 @@ for (const vp of VIEWPORTS) {
   const third = await readQi()
   const nums = [first.value, second.value, third.value]
   if (nums.some(v => v === null || !Number.isFinite(v))) {
-    failures.push(`[390] 挂机场景:顶栏灵气读数解析不出来 —— ${[first, second, third].map(x => x.text).join(' / ')}`)
+    failures.push(`[390] 挂机场景:灵气读数解析不出来 —— ${[first, second, third].map(x => x.text).join(' / ')}`)
   } else if (!(nums[2] > nums[0] && nums[0] <= nums[1] && nums[1] <= nums[2])) {
     // 判据是「一直在涨、至少涨了一截」——不要求每步都严格变大:灵气涨到上限会平下来
     failures.push(`[390] 挂机场景:灵气没有在涨(页面上的数冻住了 —— 引擎没跑?) ${nums.join(' → ')}`)
