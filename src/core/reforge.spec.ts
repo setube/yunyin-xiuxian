@@ -13,7 +13,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
-import { reforgeCost, reforgeEquipment, sealCapacity, sealCost, sealAffix } from './reforge'
+import { reforgeCost, reforgeEquipment, reforgeableAffixIds, sealCapacity, sealCost, sealAffix, unsealAffix } from './reforge'
 import { REFORGE_DUST_BASE, REFORGE_SEAL_LOAD, REFORGE_STONE_BASE } from '@/data/constants'
 import { qualityDef } from '@/data/qualities'
 import { rng } from '@/utils/random'
@@ -205,6 +205,51 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
     expect(sealAffix('seal', 'atk1')).toBe(true)
     expect(useInventoryStore().findItem('seal')!.sealedAffixIds).toEqual(['atk1'])
     expect(sealAffix('seal', 'def1'), '只剩一条可重掷位,封不了').toBe(false)
+  })
+})
+
+describe('封存 ↔ 解封 · 循环可逆', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('封了能解:unsealAffix 移除 id、重铸恢复可替,且免费不扣账', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'roundtrip', sealedAffixIds: ['atk1'] }
+    useInventoryStore().items = [inst]
+    expect(unsealAffix('roundtrip', 'atk1')).toBe(true)
+    const after = useInventoryStore().findItem('roundtrip')!
+    expect(after.sealedAffixIds, '解封后该条不在封存表里').toEqual([])
+    expect(reforgeableAffixIds(after), '解封恢复了它的可重铸性').toContain('atk1')
+  })
+
+  it('未封存 / 词条不在 / 件不在,解封一律返回 false 且不动装备', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'nos', sealedAffixIds: [] }
+    useInventoryStore().items = [inst]
+    expect(unsealAffix('nos', 'def1'), '没封过').toBe(false)
+    expect(unsealAffix('nos', 'ghost'), '词条根本不在').toBe(false)
+    expect(unsealAffix('unknown-uid', 'atk1'), '件不在').toBe(false)
+    expect(useInventoryStore().findItem('nos')!.sealedAffixIds).toEqual([])
+  })
+
+  it('解封后位子随即空出,可再封', () => {
+    const inst: EquipmentInstance = {
+      ...base,
+      uid: 'reseal',
+      quality: 'profound',
+      affixes: [
+        { id: 'atk1', roll: 0.5 },
+        { id: 'def1', roll: 0.5 },
+        { id: 'hp1', roll: 0.5 }
+      ],
+      sealedAffixIds: ['atk1']
+    }
+    useInventoryStore().items = [inst]
+    const res = useResourcesStore()
+    res.addStone(gn(1e30))
+    expect(sealCapacity(inst)).toBe(2)
+    expect(sealCost(inst), '已封一条、还有位可再封').not.toBeNull()
+    expect(unsealAffix('reseal', 'atk1')).toBe(true)
+    expect(useInventoryStore().findItem('reseal')!.sealedAffixIds).toEqual([])
+    expect(sealAffix('reseal', 'atk1'), '解封后可再封').toBe(true)
+    expect(useInventoryStore().findItem('reseal')!.sealedAffixIds).toEqual(['atk1'])
   })
 })
 
