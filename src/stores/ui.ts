@@ -71,6 +71,13 @@ export const useUiStore = defineStore('ui', () => {
   const buffDetailId = ref<string | null>(null)
   const deathDialog = ref(false)
   const reincarnation = ref<ReincarnationView | null>(null)
+  /**
+   * PWA 新版本就绪提示:Service Worker 发现并装上更新后置 true,由 UpdatePrompt
+   * 渲染一枚可关闭的横幅;applyPwaUpdate 或关闭时清回 false。重载动作由 main.ts
+   * 通过 setPwaApplyReload 注入(加载时注册 SW 后才拿得到那个 registration)。
+   */
+  const pwaUpdatePending = ref(false)
+  let pwaApplyReload: (() => void) | null = null
   const corruptedNotice = ref<string[]>([])
 
   /** 每条 toast 的收起计时器;去重刷新时要先撤掉旧的 */
@@ -112,6 +119,32 @@ export const useUiStore = defineStore('ui', () => {
     removeToast(id)
   }
 
+  /** 检测到新版本已就绪:亮出「重载以应用」横幅 */
+  function requestPwaUpdate(): void {
+    pwaUpdatePending.value = true
+  }
+
+  /** 关掉横幅不更新(仍在旧版跑,下次检测还会再提示) */
+  function dismissPwaUpdate(): void {
+    pwaUpdatePending.value = false
+  }
+
+  /** main.ts 注册 SW 后注入「重载应用」的动作 */
+  function setPwaApplyReload(fn: () => void): void {
+    pwaApplyReload = fn
+  }
+
+  /** 确认应用更新:调用注入的重载,并清掉横幅 */
+  function applyPwaUpdate(): void {
+    pwaUpdatePending.value = false
+    const fn = pwaApplyReload
+    try {
+      fn?.()
+    } catch {
+      /* 重载失败不该再抛:保持旧版继续跑,横幅已收 */
+    }
+  }
+
   return {
     toasts,
     offlineSummary,
@@ -122,6 +155,11 @@ export const useUiStore = defineStore('ui', () => {
     buffDetailId,
     deathDialog,
     reincarnation,
+    pwaUpdatePending,
+    requestPwaUpdate,
+    dismissPwaUpdate,
+    setPwaApplyReload,
+    applyPwaUpdate,
     corruptedNotice,
     toast,
     dismissToast
