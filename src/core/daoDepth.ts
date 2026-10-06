@@ -3,7 +3,7 @@
  * 长生印在 CombatRules.perRounds 中实现;此处承载剑道纯度与逐胜叠层
  */
 import type { StatMods } from '@/types'
-import type { BuildDetection } from './buildDetect'
+import { STYLE_MATURE_AFFINITY, type BuildDetection } from './buildDetect'
 import { modOf } from './statsCalc'
 
 /** 剑意每层加成 */
@@ -19,17 +19,32 @@ export interface SwordPurity {
   checks: { name: string; ok: boolean }[]
 }
 
+interface PurityCheckDef {
+  name: string
+  ok: (mods: StatMods, artifactCount: number, build: BuildDetection | null) => boolean
+}
+
+/** 纯度判定共四则:层数即判定项数,UI 的「/N 层」读 SWORD_PURITY_MAX_LAYERS,不另处手抄 */
+const PURITY_CHECK_DEFS: PurityCheckDef[] = [
+  // 「契合 ≥60%」是成形门槛(STYLE_MATURE_AFFINITY)的镜像 —— 判定与文案同读一枚
+  {
+    name: `主流派成形(契合 ≥${Math.round(STYLE_MATURE_AFFINITY * 100)}%)`,
+    ok: (_mods, _art, build) => (build?.affinity ?? 0) >= STYLE_MATURE_AFFINITY
+  },
+  { name: '道路纯粹(无副体系)', ok: (_mods, _art, build) => build !== null && build.secondary === undefined },
+  { name: '法宝不过一件', ok: (_mods, art, _build) => art <= 1 },
+  { name: '不修回血之术', ok: (mods, _art, _build) => modOf(mods, 'lifesteal') + modOf(mods, 'regenPerRound') < 0.02 }
+]
+
+/** 剑意统共几层 —— 判定项数即层数,增删一条判定时「/N」同步跟着走 */
+export const SWORD_PURITY_MAX_LAYERS = PURITY_CHECK_DEFS.length
+
 /**
- * 剑意纯度(0~4 层):道途越纯,剑意越盛
+ * 剑意纯度(0 ~ SWORD_PURITY_MAX_LAYERS 层):道途越纯,剑意越盛
  * ①主流派成形以上 ②不涉副体系 ③法宝不过一件 ④不修回血之术
  */
 export function swordPurity(mods: StatMods, artifactCount: number, build: BuildDetection | null): SwordPurity {
-  const checks = [
-    { name: '主流派成形(契合 ≥60%)', ok: (build?.affinity ?? 0) >= 0.6 },
-    { name: '道路纯粹(无副体系)', ok: build !== null && build.secondary === undefined },
-    { name: '法宝不过一件', ok: artifactCount <= 1 },
-    { name: '不修回血之术', ok: modOf(mods, 'lifesteal') + modOf(mods, 'regenPerRound') < 0.02 }
-  ]
+  const checks = PURITY_CHECK_DEFS.map(d => ({ name: d.name, ok: d.ok(mods, artifactCount, build) }))
   return { layers: checks.filter(c => c.ok).length, checks }
 }
 

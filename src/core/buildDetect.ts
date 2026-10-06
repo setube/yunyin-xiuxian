@@ -70,6 +70,10 @@ export interface BuildDetection {
 /** 副体系判定门槛 */
 const SECONDARY_MIN_AFFINITY = 0.3
 
+/** 流派「成形 / 大成」的契合度门槛 —— 文案里的「契合 ≥60%」也读这一枚,别另处抄 */
+export const STYLE_MATURE_AFFINITY = 0.6
+export const STYLE_MASTER_AFFINITY = 0.9
+
 function shortName(style: BuildStyleDef): string {
   return style.name.replace(/流$/, '')
 }
@@ -95,7 +99,7 @@ export function detectBuild(mods: StatMods): BuildDetection | null {
   return {
     style: best.style,
     affinity: best.affinity,
-    stageName: best.affinity >= 0.9 ? '大成' : best.affinity >= 0.6 ? '成形' : '雏形',
+    stageName: best.affinity >= STYLE_MASTER_AFFINITY ? '大成' : best.affinity >= STYLE_MATURE_AFFINITY ? '成形' : '雏形',
     coreValues: keys.map(key => ({ key, value: modOf(mods, key) })).filter(x => x.value > 0),
     secondary: hasSecondary ? { style: second.style, affinity: second.affinity } : undefined,
     displayName: hasSecondary ? `${shortName(best.style)}·${shortName(second.style)}` : best.style.name
