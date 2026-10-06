@@ -3,6 +3,8 @@
  * 原则:每条新规则都必须「有解、无万金油」;模拟器就是发布门
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import type { CombatRules, CombatantSnap } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
 import { CELESTIAL_WORLDS, MUTATION_FOES, TRIAL_FOES } from '@/data/endgame'
@@ -12,7 +14,7 @@ import { BUILD_PROFILES, buildSnap } from './buildSim'
 import { SIM_REFERENCE } from './celestialSim'
 import { mergeRules, runGauntlet, worldFoeSnap } from './gauntlet'
 import { resolveCombat } from './combat'
-import { swordPurity, stackedMods, SWORD_LAYER_MODS, slaughterSpeedBonus } from './daoDepth'
+import { swordPurity, stackedMods, SWORD_LAYER_MODS, SWORD_PURITY_MAX_LAYERS, slaughterSpeedBonus } from './daoDepth'
 
 function chain(...list: (CombatRules | undefined)[]): CombatRules | undefined {
   return list.reduce((acc, cur) => mergeRules(acc, cur), undefined)
@@ -231,5 +233,27 @@ describe('契约机制单元', () => {
     expect(report.cleared).toBe(true)
     // 叠层生效的间接证据:第三场(+100% 伤害)回合数不多于第一场
     expect(report.rows[2]!.rounds).toBeLessThanOrEqual(report.rows[0]!.rounds)
+  })
+})
+
+describe('剑意层数与门槛 · 一处出', () => {
+  // 「当前 X/4 层」与「契合 ≥60%」都曾被手抄 —— 层数该等于判定项数,百分比该对着成形门槛
+  const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').replace(/<!--[\s\S]*?-->/g, '')
+
+  it('层数是判定项的推导,不是另写的一份', () => {
+    const pure = swordPurity({}, 0, null)
+    expect(SWORD_PURITY_MAX_LAYERS).toBe(pure.checks.length)
+  })
+
+  it('纯度判定与文案同读 STYLE_MATURE_AFFINITY,不手抄 60%', () => {
+    const src = strip(readFileSync(resolve(__dirname, 'daoDepth.ts'), 'utf8'))
+    expect(src).toContain('STYLE_MATURE_AFFINITY * 100')
+    expect(src).not.toContain('契合 ≥60%')
+  })
+
+  it('天界页的「/N 层」读 SWORD_PURITY_MAX_LAYERS,不许再写 /4', () => {
+    const src = strip(readFileSync(resolve(__dirname, '../views/CelestialView.vue'), 'utf8'))
+    expect(src).toContain('/{{ SWORD_PURITY_MAX_LAYERS }} 层')
+    expect(src).not.toContain('剑意 {{ swordInfo.layers }}/4 层')
   })
 })

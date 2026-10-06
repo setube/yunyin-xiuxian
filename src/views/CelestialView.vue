@@ -43,7 +43,7 @@
             <p v-for="(r, i) in currentDao.ruleText" :key="i" class="mt-0.5 text-[11px] text-azure">· {{ r }}</p>
             <p v-for="(r, i) in currentDao.deepText" :key="`d${i}`" class="mt-0.5 text-[11px] text-gold-ink">◈ {{ r }}</p>
             <p v-if="swordInfo" class="mt-1.5 text-[11px] text-violet-ink tabular">
-              当前剑意 {{ swordInfo.layers }}/4 层({{
+              当前剑意 {{ swordInfo.layers }}/{{ SWORD_PURITY_MAX_LAYERS }} 层({{
                 swordInfo.checks
                   .filter(c => c.ok)
                   .map(c => c.name)
@@ -834,7 +834,7 @@
   import { foeOriginLines } from '@/core/battleAnalysis'
   import type { CombatantSnap } from '@/types'
   import { BUILD_PROFILES } from '@/core/buildSim'
-  import { swordPurity } from '@/core/daoDepth'
+  import { swordPurity, SWORD_PURITY_MAX_LAYERS } from '@/core/daoDepth'
   import {
     CHALLENGE_ENTRY_COST,
     CHALLENGE_MAX_MUTATORS,
