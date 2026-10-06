@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, onUnmounted, ref } from 'vue'
   import { searchBuildsAsync } from '@/core/buildSearch'
   import type { SearchReport } from '@/core/buildSearch'
   import SectionTitle from '@/components/common/SectionTitle.vue'
@@ -62,6 +62,12 @@
   const total = ref(0)
   const report = ref<SearchReport | null>(null)
   const error = ref('')
+
+  // 检索是长任务,中途离开(组件卸载)就停下:不再改已销毁组件的响应式状态,也免得空烧 CPU
+  let isUnmounted = false
+  onUnmounted(() => {
+    isUnmounted = true
+  })
 
   /** 一次「实验室」:固定种子 → 全服同一份大势,不随刷新变;分块让位,主线程不冻结 */
   async function run(): Promise<void> {
@@ -73,20 +79,24 @@
     progress.value = 0
     total.value = 0
     try {
-      report.value = await searchBuildsAsync({
+      const result = await searchBuildsAsync({
         n: 600,
         fightsPerArch: 16,
         seed: 20261004,
         yieldEvery: 24,
         onProgress: (d, t) => {
+          if (isUnmounted) return
           progress.value = d
           total.value = t
         }
       })
+      if (isUnmounted) return
+      report.value = result
     } catch {
+      if (isUnmounted) return
       error.value = '检索夭折,稍后再试'
     } finally {
-      running.value = false
+      if (!isUnmounted) running.value = false
     }
   }
 
