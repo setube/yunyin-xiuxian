@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 254,
+  "round": 256,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-06T01:30:00.000+00:00",
+  "updated_at": "2026-10-06T14:01:48+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -14535,6 +14535,132 @@
       "touched_round": 254,
       "commit": "436a227",
       "summary": "跨档位信息的实账与同源防线的句守(14 提交打包):「途中三档」——值日星象把「更易」亮成 +10%(astronomy 同源);此物所知把「再交手几阵」亮成实账(照面几记/还差几记,noteEnemy 同一张门槛表);战斗面板亮出连胜与下一档缺口及赏格;灵脉/兵解/建筑境界闸的境名都改读各自门槛常量,不许手抄「金丹」—— VEIN_UNLOCK_MAJOR / MANUAL_REBIRTH_MIN_MAJOR / REALMS[unlockRealm] 三处并一处;成敌 toast 的败北次数读 NEMESIS_THRESHOLD,星象加成百分数收进 astronomy.mansionLuckPercent 三处并一处;顶栏灵气亮出「/上限」;(同源防线的注释不再抄原文,produceText 守卫误伤已修)"
+    },
+    "DEC-058": {
+      "id": "DEC-058",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-06T13:12:38+00:00",
+      "updated_at": "2026-10-06T13:12:38+00:00",
+      "touched_round": 255,
+      "rationale": "UI/UX 无障碍与动效打磨首轮",
+      "alternatives_rejected": "仅靠系统 prefers-reduced-motion 全局降速而不处理 JS 驱动动画、不补关键按钮焦点圈对比度"
+    },
+    "TASK-238": {
+      "id": "TASK-238",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-06T13:12:55+00:00",
+      "updated_at": "2026-10-06T13:12:55+00:00",
+      "touched_round": 255,
+      "category": "correctness",
+      "note": "InkTabs 补齐 WAI-ARIA tabs 模式:tablist role、左右/Home/End 键 roving tabindex 导航、正确 aria-selected 与 tabindex;aria-controls 因面板为父级槽位无稳定 id 而略过"
+    },
+    "TASK-239": {
+      "id": "TASK-239",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-06T13:12:55+00:00",
+      "updated_at": "2026-10-06T13:12:55+00:00",
+      "touched_round": 255,
+      "category": "correctness",
+      "note": "SpiritRootReveal 减少动效与无障碍播报:命中设置 reduceMotion 或系统 prefers-reduced-motion 时跳过 2.2s 轮换直接定格;新增 aria-live=polite 播报最终灵根,onDone 恰一次"
+    },
+    "TASK-240": {
+      "id": "TASK-240",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-06T13:36:39+00:00",
+      "updated_at": "2026-10-06T13:36:39+00:00",
+      "touched_round": 255,
+      "category": "core-feature",
+      "severity": 0.5,
+      "confidence": 1.0,
+      "effort": 2.0,
+      "summary": "战斗分析面板重排:数据行按战局定数/战时账目分节、整行让位防窄屏挤压;败因成列表;方向理由贴脸摆开取代 :title;与「此物所知」面板分清层次"
+    },
+    "DEC-059": {
+      "id": "DEC-059",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-06T13:36:39+00:00",
+      "updated_at": "2026-10-06T13:36:39+00:00",
+      "touched_round": 255,
+      "rationale": "窄屏(430px 壳)下 2 列 grid + justify-between 的长句行(敌之加成/先手)与标签互踩、被挤成多行窄条;多段标签(暴击/连击/反击 等)同样放不下。重排为单列整行:label 定宽不换行、value 折回剩余宽;战局定数与战时账目分节。方向理由只藏 :title 在触屏不可达,故贴脸摆开。数据模型自洽,挤压纯属展示层,故 battleAnalysis.ts 原样不动",
+      "alternatives_rejected": "保留 2 列把长行也塞半格:窄屏半格 ~108px 放不下长句与多段标签,仍会挤成窄条;按标签硬编码判断行长,脆弱易碎",
+      "summary": "战斗分析重排只动 CombatPanel 渲染,不改 battleAnalysis 数据模型——挤压纯属展示层"
+    },
+    "TASK-241": {
+      "id": "TASK-241",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-06T14:01:04+00:00",
+      "updated_at": "2026-10-06T14:01:04+00:00",
+      "touched_round": 256,
+      "category": "correctness",
+      "severity": 1.0,
+      "confidence": 1.0,
+      "effort": 1.0,
+      "summary": "把 pacingTelemetry.sanitize 挂进读档兜底清单 sanitizeOfflineInputs:遥测分片曾是唯一有 sanitize() 却始终未被调用的持久化 store,坏档 events 会让 record() 的 events.slice 在下次互动抛错;补挂 + record() 防御 + 新增强韧性回归测试"
+    },
+    "TASK-242": {
+      "id": "TASK-242",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-06T14:01:09+00:00",
+      "updated_at": "2026-10-06T14:01:09+00:00",
+      "touched_round": 256,
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 1.0,
+      "effort": 1.0,
+      "summary": "加深 loadouts.sanitize:条目嵌套字段(equipment/subGongfa/artifactIds/savedAt 等)用 saveShape 逐一修平,切换构筑时 Object.keys/.filter 不再因坏档嵌套形状抛错"
+    },
+    "TASK-243": {
+      "id": "TASK-243",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-06T14:01:09+00:00",
+      "updated_at": "2026-10-06T14:01:09+00:00",
+      "touched_round": 256,
+      "category": "performance",
+      "severity": 0.5,
+      "confidence": 1.0,
+      "effort": 1.0,
+      "summary": "构筑检索(9600 场模拟)加卸载取消:离开面板即中止,不再空烧 CPU(与 CombatPanel/GauntletPanel 的 onUnmounted 清理对齐)"
+    },
+    "TASK-244": {
+      "id": "TASK-244",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-06T14:01:09+00:00",
+      "updated_at": "2026-10-06T14:01:09+00:00",
+      "touched_round": 256,
+      "category": "dx",
+      "severity": 0.4,
+      "confidence": 1.0,
+      "effort": 1.0,
+      "summary": "同角色卡片内边距统一,消除卡片内边距漂移(横跨无关组件,内边距逐处漂移归一到同一档)"
+    },
+    "DEC-060": {
+      "id": "DEC-060",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-06T14:01:45+00:00",
+      "updated_at": "2026-10-06T14:01:45+00:00",
+      "touched_round": 256,
+      "rationale": "存储韧性三件套(pacing / loadouts / ETA 溢出)本次一并收口:pacing 分片是该图里唯一「有 sanitize() 却始终没挂进读档兜底清单」的持久化 store——storeResilience.spec 单测里每个 store 的 sanitize 都绿,漏的正是把它们真正接进 sanitizeOfflineInputs 这一步;坏档 events 会让 record() 的 events.slice 在下次互动抛 TypeError。故补挂 + record() 防御 + 经真实读档口的回归测试。loadouts.sanitize 此前只保顶层 array(id),applyLoadout 会对 equipment 走 Object.keys、对 subGongfa/artifactIds 走 .filter,坏档嵌套形状照样在切换构筑时抛错;现在用 saveShape 逐字段修平,与其余 store 的深度一致。ETA 路径对 toNum 在指数>308 返回 Infinity 的情况补 finite 守卫,防 gap/rate 算出无穷时长。另收口本轮的构筑检索卸载取消与同角色卡片内边距统一。",
+      "alternatives_rejected": "只靠 preflightScan 的 JSON 可解析性兜底(它不查形状,坏档可解析即放行,正是白屏来源);修 CombatPanel 那几个一次性 setTimeout/requestAnimationFrame(判定无实际泄漏——卸载后写 ref 对 Vue 安全、floatSeq 使残留定时器成空操作,按「不明显的无害项」跳过)。"
     }
   },
   "edges": [
@@ -21144,6 +21270,48 @@
       "to": "TASK-237",
       "type": "implements",
       "created_at": "2026-10-01T12:53:23.984577+00:00"
+    },
+    {
+      "from": "DEC-058",
+      "to": "TASK-238",
+      "type": "governs",
+      "created_at": "2026-10-06T13:13:01+00:00"
+    },
+    {
+      "from": "DEC-058",
+      "to": "TASK-239",
+      "type": "governs",
+      "created_at": "2026-10-06T13:13:01+00:00"
+    },
+    {
+      "from": "DEC-059",
+      "to": "TASK-240",
+      "type": "governs",
+      "created_at": "2026-10-06T13:36:39+00:00"
+    },
+    {
+      "from": "DEC-060",
+      "to": "TASK-241",
+      "type": "governs",
+      "created_at": "2026-10-06T14:01:48+00:00"
+    },
+    {
+      "from": "DEC-060",
+      "to": "TASK-242",
+      "type": "governs",
+      "created_at": "2026-10-06T14:01:48+00:00"
+    },
+    {
+      "from": "DEC-060",
+      "to": "TASK-243",
+      "type": "governs",
+      "created_at": "2026-10-06T14:01:48+00:00"
+    },
+    {
+      "from": "DEC-060",
+      "to": "TASK-244",
+      "type": "governs",
+      "created_at": "2026-10-06T14:01:48+00:00"
     }
   ]
 }
