@@ -148,7 +148,7 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(player.fortuneChoices).toEqual({ ft_sword_remnant: 'take' })
     expect(player.eventChains).toEqual({ old_man_stone: 2 })
     expect(player.nemeses).toHaveLength(1)
-    expect(player.regionStats.qingyun.totalFights).toBe(30)
+    expect(player.regionStats.qingyun!.totalFights).toBe(30)
     // 成就计数也随神魂不灭
     expect(quests.counters.kills).toBe(99)
   })
@@ -165,7 +165,6 @@ describe('转世交割 · confirmReincarnation', () => {
   })
 
   it('功法半留:门类记得,层数回到一层', () => {
-    const player = usePlayerStore()
     const cult = useCultivationStore()
 
     prepareReincarnation()
