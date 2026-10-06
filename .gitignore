@@ -9,7 +9,6 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 lerna-debug.log*
 CLAUDE.md
-AGENTS.md
 chars.txt
 extract_chars.py
 
