@@ -16,12 +16,12 @@
         {{ TRANSFER_LABELS.sourceLose }}「{{ movedName }}」<template v-if="flow.sourceWorn"> · {{ TRANSFER_LABELS.equipped }}</template>
       </p>
       <div class="flex gap-2">
-        <button type="button" class="btn-ghost px-4" @click="flow.disarm()">{{ TRANSFER_LABELS.cancel }}</button>
+        <button type="button" class="btn-ghost" @click="flow.disarm()">{{ TRANSFER_LABELS.cancel }}</button>
         <button type="button" class="btn-seal flex-1" @click="flow.confirm()">{{ TRANSFER_LABELS.confirm }}</button>
       </div>
     </template>
     <div v-else class="flex gap-2">
-      <button type="button" class="btn-ghost px-4" @click="onBack">{{ TRANSFER_LABELS.back }}</button>
+      <button type="button" class="btn-ghost" @click="onBack">{{ TRANSFER_LABELS.back }}</button>
       <!-- 禁用时按钮上的字就是原因:还差哪一步 / 被什么挡住 / 缺哪样 -->
       <button type="button" class="btn-seal flex-1" :disabled="flow.blockLabel !== null" @click="flow.arm()">
         {{ flow.blockLabel ?? TRANSFER_LABELS.go }}

@@ -10,7 +10,7 @@
         <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
           <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
         </p>
-        <button class="btn-seal px-3 py-1.5" :disabled="slotsFull" @click="doRecruit">
+        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull" @click="doRecruit">
           收徒<span v-if="!slotsFull" class="ml-1 text-[10px]">({{ recruitCostLine }})</span>
         </button>
       </div>
@@ -46,7 +46,7 @@
             <button
               v-for="t in TASKS"
               :key="t.spec"
-              class="chips flex items-center gap-1 px-2 py-1 text-[11px] active:bg-ink/10"
+              class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
               @click="dispatcher(a.uid, t.spec)"
             >
               <GameIcon :name="t.icon" :size="12" />{{ t.name }}
