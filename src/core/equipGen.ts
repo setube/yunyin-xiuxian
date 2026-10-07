@@ -1,7 +1,7 @@
 /**
  * 装备生成与数值解析 —— Template + 随机品质 + 随机词条 → Instance
  */
-import type { AffixRarity, AnyStatKey, EquipmentInstance, EquipSlot, GNum, QualityDef, StatMods } from '@/types'
+import type { AffixDef, AffixRarity, AnyStatKey, EquipmentInstance, EquipmentTemplate, EquipSlot, GNum, QualityDef, StatMods } from '@/types'
 import type { RandomService } from '@/utils/random'
 import { uid } from '@/utils/id'
 import { gnZero, mulN, add } from '@/utils/gnum'
@@ -43,14 +43,55 @@ const DROP_SLOTS: EquipSlot[] = [
 ]
 
 /**
+ * 模板按 (tier, slot) 预索引 —— 生成装备是热路径(每掉一件都全表 filter 288 件),
+ * 静态数据进模块起就摊好,不再每次掉落都重扫整张表。
+ */
+const TEMPLATES_BY_TIER_SLOT = new Map<string, EquipmentTemplate[]>()
+/** 各槽位按阶降序的阶表(退档兜底懒算一次就缓存) */
+const TIERS_BY_SLOT = new Map<EquipSlot, number[]>()
+for (const t of EQUIPMENT_TEMPLATES) {
+  const key = `${t.tier}:${t.slot}`
+  const arr = TEMPLATES_BY_TIER_SLOT.get(key)
+  if (arr) arr.push(t)
+  else TEMPLATES_BY_TIER_SLOT.set(key, [t])
+}
+
+/**
+ * 词条按 (slot, qualityRank) 预筛资格 —— 生成词条是热路径(每件每词条都全表
+ * filter 113 条),资格判定是纯静态的(affixFitBlock),进模块起摊好即可。
+ */
+const AFFIX_POOL_BY_SLOT_RANK = new Map<string, AffixDef[]>()
+{
+  let maxRank = 0
+  for (const q of QUALITIES) if (q.rank > maxRank) maxRank = q.rank
+  for (const slot of DROP_SLOTS) {
+    for (let rank = 0; rank <= maxRank; rank += 1) {
+      AFFIX_POOL_BY_SLOT_RANK.set(
+        `${slot}:${rank}`,
+        AFFIXES.filter(a => affixFitBlock(a, slot, rank) === null)
+      )
+    }
+  }
+}
+
+/**
  * 某槽位在某层级下的模板 —— **按阶取,不累积**。
  *
  * 从前这里是「minTier ≤ 层级」的累积池再取最近的几件,于是 13 阶的地界照样掉得出
  * 8 阶的星辰冠:同一个名字顶着不同的数字出现,名字就失去了分辨力(见 data/equipment 头注)。
  * 现在一件只属于一阶 —— 与「一阶一名」配套,看到名字就知道是哪一阶的东西。
  */
-function templatesAtTier(tier: number, slot: EquipSlot) {
-  return EQUIPMENT_TEMPLATES.filter(t => t.tier === tier && t.slot === slot)
+function templatesAtTier(tier: number, slot: EquipSlot): EquipmentTemplate[] {
+  return TEMPLATES_BY_TIER_SLOT.get(`${tier}:${slot}`) ?? []
+}
+
+/** 每槽位按阶降序的完整阶表(仅供退档兜底用) */
+function tiersForSlot(slot: EquipSlot): number[] {
+  const cached = TIERS_BY_SLOT.get(slot)
+  if (cached) return cached
+  const tiers = [...new Set(EQUIPMENT_TEMPLATES.filter(t => t.slot === slot).map(t => t.tier))].sort((a, b) => b - a)
+  TIERS_BY_SLOT.set(slot, tiers)
+  return tiers
 }
 
 /**
@@ -63,7 +104,7 @@ function templatesAtTier(tier: number, slot: EquipSlot) {
 function templatesForDrop(tier: number, slot: EquipSlot) {
   const here = templatesAtTier(tier, slot)
   if (here.length > 0) return here
-  const tiers = [...new Set(EQUIPMENT_TEMPLATES.filter(t => t.slot === slot).map(t => t.tier))].sort((a, b) => b - a)
+  const tiers = tiersForSlot(slot)
   const fallback = tiers.find(t => t < tier) ?? tiers[tiers.length - 1]
   return fallback === undefined ? [] : templatesAtTier(fallback, slot)
 }
@@ -142,10 +183,11 @@ export function generateEquipment(tier: number, rng: RandomService, opts: GenOpt
 
   const chosen: { id: string; roll: number }[] = []
   const used = new Set<string>()
+  const eligibleAffixes = AFFIX_POOL_BY_SLOT_RANK.get(`${template.slot}:${quality.rank}`)
   let guard = 0
   while (chosen.length < affixCount && guard < 50) {
     guard += 1
-    const candidates = AFFIXES.filter(a => !used.has(a.id) && affixFitBlock(a, template.slot, quality.rank) === null)
+    const candidates = eligibleAffixes?.filter(a => !used.has(a.id)) ?? []
     if (candidates.length === 0) break
     const picked = rng.weighted(candidates, a => a.weight)
     used.add(picked.id)
