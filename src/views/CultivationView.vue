@@ -463,9 +463,11 @@
     currentStatGuard,
     currentTribulationPlan,
     currentTribulationRelief,
+    currentTribResist,
     guardScore,
     statFoldAt,
     sustainScore,
+    tribReduction,
     tribulationWaveSpan,
     verdictLabel,
     type TribulationPlan
@@ -637,9 +639,9 @@
     const def = tribPlan.value?.def
     const relief = def ? currentTribulationRelief(def.id) : undefined
     // Same cap and same fold as waveDamage: reduction 0.6, resist 0.8, linggen reductionToResist.
-    const reduction = Math.min(0.6, modOf(mods, 'damageReduction'))
+    const reduction = tribReduction(mods)
     return {
-      resist: Math.min(0.8, modOf(mods, 'tribulationResist') + reduction * (relief?.reductionToResist ?? 0) + stat.resist),
+      resist: currentTribResist(mods, relief, stat),
       statResist: stat.resist,
       reduction,
       sustain: def ? sustainScore(mods, def, relief) : 0,

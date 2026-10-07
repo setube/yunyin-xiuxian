@@ -287,6 +287,20 @@ export function tribulationWaveSpan(
   return { waves, first, last, min, max, total, heaviestWave }
 }
 
+/** 天劫减伤(0.6 上限)—— 结算与 UI 台账共用的唯一口径,防跨层漂移 */
+export function tribReduction(mods: StatMods): number {
+  return Math.min(0.6, modOf(mods, 'damageReduction'))
+}
+
+/** 折算后天劫抗性(0.8 上限):减伤按灵根亲和折一部分为抗性,与词条抗性同项同上限 */
+export function currentTribResist(
+  mods: StatMods,
+  relief: TribulationRelief = NO_RELIEF,
+  stat: TribStatGuard = NO_STAT_GUARD
+): number {
+  return Math.min(0.8, modOf(mods, 'tribulationResist') + tribReduction(mods) * relief.reductionToResist + stat.resist)
+}
+
 /** 单波实际伤害(占最大生命比例);UI 与结算共用 */
 export function waveDamage(
   def: TribulationDef,
@@ -298,13 +312,10 @@ export function waveDamage(
   weatherMult = 1,
   stat: TribStatGuard = NO_STAT_GUARD
 ): number {
-  const reduction = Math.min(0.6, modOf(mods, 'damageReduction'))
+  const reduction = tribReduction(mods)
   // 厚土分担天罚:减伤按灵根亲和折算一部分为天劫抗性(无减伤者折算为零)
   // 三维折算(防御→抗性)与词条抗性同处一项、同受 0.8 上限:血厚防高者由此硬抗一部分
-  const resist = Math.min(
-    0.8,
-    modOf(mods, 'tribulationResist') + reduction * relief.reductionToResist + stat.resist
-  )
+  const resist = currentTribResist(mods, relief, stat)
   const lowHpRed = Math.min(0.6, modOf(mods, 'lowHpReduction'))
   const waves = tribulationWaves(targetMajor)
   let dmg = tribulationWaveDamage(targetMajor, wave, resist) * (1 - reduction) * waveMultiplier(def, wave, waves, relief)

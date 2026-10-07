@@ -2,6 +2,16 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.37.14] — 2026-10-07 · 渡劫减伤/抗性口径收敛到一处
+
+CultivationView 台账手抄了结算 `waveDamage` 的减伤 0.6 上限与抗性 0.8 折叠,现收敛到 `tribulationDecision` 的两处公共函数,消除跨层漂移(内部,行为等价)。
+
+### 调整与优化
+
+- 新增 `tribReduction(mods)` 与 `currentTribResist(mods, relief, stat)` 作为唯一口径
+- `waveDamage` 与 CultivationView 台账同引这两处,去掉视图里的重复折叠
+- 空基石对照(seed/随机模组/上下限)证明两处逐值相等,tribulation/breakthrough 全套 123 测通过
+
 ## [1.37.13] — 2026-10-07 · 收敛残余生命占比的存档守卫
 
 天界远征与凡界秘境两处存档还原各写了一份 `Math.min(1, asFiniteNumber(x,1,0.05))`,收敛到 `saveShape.asCarriedHpPct` 供两侧共用(内部,行为等价)。
