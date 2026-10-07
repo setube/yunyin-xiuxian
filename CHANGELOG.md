@@ -9,8 +9,9 @@
 ### 修复
 
 - `checkStateAchievements` 周期补扫前重放一次 `checkAchievements`:境界已高、计数已满的成就当场解锁(自愈,幂等)
+- 主线任务同根:周期补扫一并推进 `checkMainQuest`,老档不再卡在早该完成的一步
 - `engine.start` 加载即补扫:老档/导入档纵使从未 track 过,已满足的成就即时结清
-- 新增回归用例:境界拉到 12、从未 track,checkStateAchievements 亦补发 筑基/炼虚/渡劫/太乙 各境成就
+- 新增回归用例:境界拉到 12、从未 track,checkStateAchievements 亦补发 筑基/炼虚/渡劫/太乙 各境成就;境界过出生任务者主线随之推进
 
 ## [1.40.0] — 2026-10-07 · 坊市有卖
 
