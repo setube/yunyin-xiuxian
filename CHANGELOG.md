@@ -2,6 +2,16 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.37.8] — 2026-10-07 · 收敛重复的 Jaccard 距离实现
+
+天界与凡界世界生成各自手抄了一份 `jaccardDistance`,收敛到共享工具 `utils/setMath`(内部,行为等价)。
+
+### 调整与优化
+
+- 新增 `utils/setMath.jaccardDistance`,worldGen 与 mortalWorldGen 各删除私有副本改引共享实现
+- 两份实现逐字节等价(仅 `union` 局部绑定 vs 内联的写法差异),无 RNG/数值变化
+- 新增 setMath spec 锁空集边界与对称性
+
 ## [1.37.7] — 2026-10-07 · core 层清理无调用方的再导出垫片
 
 移除 15 处只作中转、没有任何调用方的再导出(这些名字的消费方都从各自的事实源模块直接导入),顺带删除随之变孤儿的最小导入(内部)。
