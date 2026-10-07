@@ -235,4 +235,3 @@ export function untouchedAxes(): DecisionAxis[] {
 export const MUTABLE_SPACE = ['CombatRules', '历练路线', '可用物品', '解锁顺序', '本世目标'] as const
 export const IMMUTABLE_SPACE = ['StatMods', 'Economy(资源)', 'DaoFruit', 'Insight(宿慧)'] as const
 
-export { LIFE_TRIALS }

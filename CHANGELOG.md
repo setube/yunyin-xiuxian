@@ -2,6 +2,16 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.37.7] — 2026-10-07 · core 层清理无调用方的再导出垫片
+
+移除 15 处只作中转、没有任何调用方的再导出(这些名字的消费方都从各自的事实源模块直接导入),顺带删除随之变孤儿的最小导入(内部)。
+
+### 调整与优化
+
+- 移除死再导出:lifeTrialService/reincarnation/formulas/daoluService/compoundingAudit/fruitOutlets/endgameService/expedition/identity/celestialSim/narrowingImpact/inflationAudit/mortalIdentity/trialMotivation/motivationType(部分)(内部)
+- 修剪随之无引用的单名导入:daoPathDef/mergeRules/PACTS/realmScale/MUTATORS(previewSoul 因 SoulsView 仍消费而保留)(内部)
+- `vue-tsc` noUnusedLocals 兜底:凡被 spec/视图实际消费的再导出(mortalWorldGen.NOVELTY_MIN、motivationType.NOVELTY_MIN、overviewNecessity.REGIONS、soulService.previewSoul/canRefine)保持原样,不误删
+
 ## [1.37.6] — 2026-10-07 · 装备生成残余分配收敛
 
 装备生成热路径去掉逐轮重扫:词条选取由「每选一条重 filter 全表、最多 9 轮」改成单份工作数组上保序删除;品质下限也按下限预索引(内部性能,玩家无感)。

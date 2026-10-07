@@ -10,11 +10,9 @@ import { mutatorDef } from '@/data/mutators'
 import { gateDef } from '@/data/qimen'
 import { RULESET_VERSION, isStaleRuleset } from '@/data/ruleset'
 import {
-  CELESTIAL_WORLDS,
   celestialWorldDef,
   DAO_SOURCE_PER_FRUIT,
   daoPathDef,
-  FURNACE_RATES,
   FURNACE_STONE_DAO_SOURCE,
   FURNACE_STONE_TIER_AMOUNT,
   TRIAL_FOES,
@@ -392,4 +390,3 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
   }
 }
 
-export { CELESTIAL_WORLDS, FURNACE_RATES, DAO_SOURCE_PER_FRUIT }

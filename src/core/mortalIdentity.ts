@@ -439,4 +439,3 @@ export function rhythmNovelty(w: MortalWorld, history: MortalWorld[]): number {
   return Math.min(...history.map(h => shapeCurveDistance(va.eventDensity, visibleFeatures(h).eventDensity)))
 }
 
-export { MUTATOR_THEMES, THEME_IDENTITY }

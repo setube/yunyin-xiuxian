@@ -6,7 +6,7 @@ import type { CelestialWorldDef, CombatantSnap, CombatRules, PactDef, StatMods, 
 import { rng } from '@/utils/random'
 import { mulberry32, RandomService } from '@/utils/random'
 import { celestialWorldDef } from '@/data/endgame'
-import { PACTS, pactDef } from '@/data/pacts'
+import { pactDef } from '@/data/pacts'
 import { MUTATORS } from '@/data/mutators'
 import { EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS, MUTATION_FOES } from '@/data/endgame'
 import { buildPlayerSnap } from './playerSnap'
@@ -538,4 +538,3 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
   }
 }
 
-export { PACTS }

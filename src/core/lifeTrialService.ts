@@ -21,7 +21,6 @@
  */
 import type { CombatRules } from '@/types'
 import { type LifeTrialDef, isPurelyAdverse, lifeTrialDef } from '@/data/lifeTrials'
-export type { LifeTrialState } from '@/data/lifeTrials'
 import { usePlayerStore } from '@/stores/player'
 import { useUiStore } from '@/stores/ui'
 

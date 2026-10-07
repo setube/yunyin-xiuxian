@@ -16,8 +16,6 @@
  * 所以深修玩家也能拿到浅轮回的一切。真正的互斥不在「能不能拿到」,
  * 而在「哪条路拿得更划算」以及「哪些东西浅修根本够不着」。
  */
-import { MANUAL_REBIRTH_MIN_MAJOR } from './reincarnation'
-
 /** 收窄动作 */
 export type NarrowAction =
   /** 留在浅轮回 */
@@ -202,4 +200,3 @@ export function deepExclusive(): PermanentAsset[] {
   return ASSETS.filter(a => a.deep && !a.shallowAfter && a.action !== 'onetime')
 }
 
-export { MANUAL_REBIRTH_MIN_MAJOR }

@@ -253,4 +253,4 @@ export function daoFruitGain(major: number, sub: number): number {
   return total + Math.floor(sub / 3)
 }
 
-export { gn }
+
