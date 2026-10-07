@@ -54,7 +54,8 @@ import {
   Wind,
   X,
   Zap,
-  Umbrella
+  Umbrella,
+  Users
 } from 'lucide-vue-next'
 
 export const ICONS: Record<string, Component> = {
@@ -111,7 +112,8 @@ export const ICONS: Record<string, Component> = {
   wind: Wind,
   x: X,
   zap: Zap,
-  umbrella: Umbrella
+  umbrella: Umbrella,
+  users: Users
 }
 
 export function iconOf(name: string): Component {
