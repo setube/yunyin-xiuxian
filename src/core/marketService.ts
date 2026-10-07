@@ -5,10 +5,10 @@
  * 一样受「给了下限就跳出品级窗口」约束),价格全走 stoneByTier —— 不另立一套
  * 经济口径,免得坊市价格与掉落/强化/重铸对不上账。
  */
-import type { EquipmentInstance } from '@/types'
-import { gn, mulN } from '@/utils/gnum'
+import type { EquipmentInstance, GNum } from '@/types'
+import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
-import { PILLS } from '@/data/pills'
+import { PILLS, pillDef } from '@/data/pills'
 import { mulberry32, RandomService } from '@/utils/random'
 import { generateEquipment, rollQuality } from './equipGen'
 import {
@@ -20,6 +20,10 @@ import {
   MARKET_EQUIP_STONE_BASE,
   MARKET_EQUIP_STONE_PER_RANK,
   MARKET_KIND_WEIGHTS,
+  MARKET_CONSIGN_STONE_BASE,
+  MARKET_CONSIGN_STONE_PER_RANK,
+  MARKET_SELL_PILL_FACTOR,
+  MARKET_SELL_MAT_STONE_UNITS,
   type MarketEquipSlot,
   type MarketKind,
   type MarketSlot,
@@ -102,3 +106,20 @@ export function marketEquipInstance(slot: MarketEquipSlot, stockedAt: number): E
 export function marketRemainingSec(stockedAt: number, now: number): number {
   return Math.max(0, stockedAt + MARKET_REFRESH_SECONDS * 1000 - now) / 1000
 }
+
+/** 寄卖一件装备可得(恒低于坊市购入同档,无搬砖套利) */
+export function consignPrice(tier: number, qualityRank: number): GNum {
+  return stoneByTier(tier, MARKET_CONSIGN_STONE_BASE + qualityRank * MARKET_CONSIGN_STONE_PER_RANK)
+}
+
+/** 即时售一枚丹药可得(购入倍率 2.5,售出 1.2,双向不成环) */
+export function pillSellPrice(pillId: string): GNum {
+  const def = pillDef(pillId)
+  return def && def.recipe?.stoneBase ? mulN(gn(def.recipe.stoneBase), MARKET_SELL_PILL_FACTOR) : gnZero()
+}
+
+/** 即时售一批材料(与货架同单位数)可得;每单位价低于购入 */
+export function materialSellPrice(major: number): GNum {
+  return mulN(stoneByTier(major, MARKET_SELL_MAT_STONE_UNITS), MARKET_MAT_COUNT)
+}
+
