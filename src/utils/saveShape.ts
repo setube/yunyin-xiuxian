@@ -52,6 +52,11 @@ export function asFiniteNumber(v: unknown, fallback: number, min?: number): numb
   return min === undefined ? n : Math.max(min, n)
 }
 
+/** 残余生命占比:有限数字取之并夹到 [0.05, 1],否则兜底 1(天界/凡界远征共用同一口径) */
+export function asCarriedHpPct(v: unknown): number {
+  return Math.min(1, asFiniteNumber(v, 1, 0.05))
+}
+
 /** 记录里每一项都取有限数字(非数字的键直接丢掉) */
 export function asNumberRecord(v: unknown, min?: number): Record<string, number> {
   const out: Record<string, number> = {}
