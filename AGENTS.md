@@ -109,4 +109,5 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
   - `offlineCap.spec.ts` — 离线上限生效，混沌道祖 5 条离线台词有限。
 - **惯用模式**：TTL / 去重淘汰用 `vi.useFakeTimers`。
 - **QA 脚本**：`test-report.mjs`（按系统分桶，失败/未归类即退出 1）；`ui-smoke.mjs`（375x812 交互冒烟，pageerror + NaN/Infinity 泄漏即失败，跳过破坏性按钮）；`layout-check.mjs`（38 项自检：无横向溢出、双栏 dvh 固定、触控目标 ≥28px、模态触控巡逻、tab-rail 粘性、无纵向挤压/孤行标点/数字单位断行、a11y 图标 aria；约 10 分钟，仅本地）；`offline-check.mjs`（SW 接管 + 离线启动 + 发布接管）。CI 对 `test-report` 限 maxWorkers=4。
-- **Git 保护**：main 仅通过 PR merge，禁止 force-push；v* release tag 只由发布流水线打。PR 校验 CI = 类型检查 + lint + 单测 + 生产构建全部绿。**CHANGELOG.md 需更新**（新增 / 调整与优化 / 修复 三节，中文一行式，格式 `## [ver] — date · 副标题`）。
+- **Git 保护**:main 仅通过 PR merge,禁止 force-push;v* release tag 只由发布流水线打。PR 校验 CI = 类型检查 + lint + 单测 + 生产构建全部绿。**CHANGELOG.md 需更新**(新增 / 调整与优化 / 修复 三节,中文一行式,格式 `## [ver] — date · 副标题`)。
+- **历史线性**:main 历史必须线性,禁止 merge 提交。合入 PR 一律用 rebase 或 squash 合并,严禁「Create a merge commit」/ `gh pr merge --merge`(会在 main 上引入双亲 merge 节点,破坏线性);同步主干一律 `git rebase main`,禁止「Merge main into …」式提交(`.github/workflows/history-linear.yml` 会把这类提交判为失败,其权威合并期闸门是分支规则集「Require a linear history」)。
