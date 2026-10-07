@@ -19,6 +19,7 @@ export const router = createRouter({
     { path: '/dongfu', name: 'dongfu', component: () => import('@/views/DongfuView.vue') },
     { path: '/collection', name: 'collection', component: () => import('@/views/CollectionView.vue') },
     { path: '/build', name: 'build', component: () => import('@/views/BuildView.vue') },
+    { path: '/market', name: 'market', component: () => import('@/views/MarketView.vue') },
     { path: '/titles', name: 'titles', component: () => import('@/views/TitlesView.vue') },
     { path: '/legacy', name: 'legacy', component: () => import('@/views/LegacyView.vue') },
     { path: '/settings', name: 'settings', component: () => import('@/views/SettingsView.vue') },
