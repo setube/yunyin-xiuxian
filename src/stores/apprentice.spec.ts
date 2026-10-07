@@ -88,7 +88,7 @@ describe('收徒 · 派发与收割', () => {
         make('ap_nope'),
         { uid: 'ok', archId: 'ap_youxia', level: 99, task: { spec: 'nope', startAt: 0, finishAt: 1 } },
         { uid: 'ok2', archId: 'ap_daotong', level: -3, task: { spec: 'study', startAt: 0, finishAt: 0 } }
-      ]
+      ] as unknown as OwnedApprentice[]
     })
     a.sanitize()
     expect(a.apprentices).toHaveLength(2)
