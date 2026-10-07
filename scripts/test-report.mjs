@@ -37,6 +37,10 @@ const CATEGORIES = [
       'decisionAudit', 'synergyScan', 'worldGen', 'ruleUniverse', 'playerLab', 'legacy', 'identity', 'samsara',
       'fortune', 'worldEcho', 'regionEvent', 'eventTier', 'eventEngine', 'explorationDnd', 'weather', 'boundaryTribulation', 'tribulation', 'secretRealm', 'petPersonality', 'goal.spec', 'divination', 'fate.spec', 'astronomy'
     ]
+  },
+  {
+    name: 'Features    玩法·坊市/收徒/悬赏',
+    match: ['market.spec', 'apprentice.spec', 'apprentices.spec', 'bounty.spec']
   }
 ]
 
