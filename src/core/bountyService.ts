@@ -8,7 +8,8 @@
 import type { GNum } from '@/types'
 import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
-import { PILLS, pillDef } from '@/data/pills'
+import { pillDef } from '@/data/pills'
+import { salePills } from './marketService'
 import {
   BOUNTY_SLOTS,
   BOUNTY_REFRESH_SECONDS,
@@ -23,9 +24,11 @@ import {
   type BountySlot
 } from '@/data/bounty'
 
-/** 每轮刷新取一味可炼丹,按刷新周期取模,让每次换一招、同周期内稳定 */
-function pickPill(now: number): string {
-  const pool = PILLS.filter(p => p.recipe?.stoneBase != null).map(p => p.id)
+/** 每轮刷新取一味当前境界可达的可炼丹,按刷新周期取模,让每次换一招、同周期内稳定 */
+function pickPill(major: number, now: number): string {
+  // 与坊市货架同口径(salePills):只从「现境界拿得到、且能炼丹方」里取 ——
+  // 悬赏不会挂出低境界玩家炼不了也未必有的高境丹药(那张单会整轮成为死位)。
+  const pool = salePills(major).map(p => p.id)
   const idx = Math.floor(now / (BOUNTY_REFRESH_SECONDS * 1000)) % Math.max(1, pool.length)
   return pool[idx] ?? ''
 }
@@ -40,7 +43,7 @@ export function equipBountyReward(tier: number, qualityRank: number): { stone: G
 
 /** 生成一版悬赏订单(四类各一);贡器 reward 为占位,交货时按所交之品现算 */
 export function generateBounty(major: number, now: number): BountySlot[] {
-  const pillId = pickPill(now)
+  const pillId = pickPill(major, now)
   const pd = pillDef(pillId)
   const matTarget = BOUNTY_MAT_TARGET
   const matReward = stoneByTier(major, matTarget * BOUNTY_MAT_UNIT_AMOUNT)
