@@ -2,6 +2,15 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.37.13] — 2026-10-07 · 收敛残余生命占比的存档守卫
+
+天界远征与凡界秘境两处存档还原各写了一份 `Math.min(1, asFiniteNumber(x,1,0.05))`,收敛到 `saveShape.asCarriedHpPct` 供两侧共用(内部,行为等价)。
+
+### 调整与优化
+
+- 新增 `utils/saveShape.asCarriedHpPct`(夹到 [0.05,1],兜底 1),endgame/player 两处 sanitize 改引
+- 行为逐字等价,storeResilience/importCorruption/saveRoundTrip 等存档红线全绿
+
 ## [1.37.12] — 2026-10-07 · 收敛 meta 模拟的守关者拼装
 
 `metaSim.avgClearRate` 里手抄的守关者拼装与 `celestialSim.worldFoes` 逐字节同构,改为导出并复用 `worldFoes`,去掉重复实现(内部,行为等价)。

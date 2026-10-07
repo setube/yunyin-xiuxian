@@ -18,7 +18,7 @@ import { baseCultPerSec, baseQiRegen, expRequirement, qiCap } from '@/core/formu
 import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
 import { readingFromState, readingMods } from '@/core/divination'
-import { asFiniteNumber, asStringArray } from '@/utils/saveShape'
+import { asCarriedHpPct, asFiniteNumber, asStringArray } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
 import { regionDef } from '@/data/regions'
@@ -583,7 +583,7 @@ export const usePlayerStore = defineStore(
             losses: Math.min(SECRET_MAX_LOSSES, Math.floor(asFiniteNumber(sr.losses, 0, 0))),
             spoils: asStringArray(sr.spoils),
             rules: asStringArray(sr.rules).filter(t => SECRET_RULES.some(r => r.text === t)),
-            carriedHpPct: Math.min(1, asFiniteNumber(sr.carriedHpPct, 1, 0.05)),
+            carriedHpPct: asCarriedHpPct(sr.carriedHpPct),
             finished: sr.finished === true
           }
         }
