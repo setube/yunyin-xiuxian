@@ -152,7 +152,7 @@ export function signedPercent(n: number): string {
  * Scope notes that belong on the number, not only in comments.
  * Titles, pills, weather, veins, and talent chips all read this map.
  */
-export const STAT_CAVEATS: Partial<Record<AnyStatKey, string>> = {
+const STAT_CAVEATS: Partial<Record<AnyStatKey, string>> = {
   breakthroughRate: '只入小进阶;大关天劫不与',
   luck: '主器物成色;小进阶另借此数半成',
   breakRefund: '只还败时所损修为;灵气不退',

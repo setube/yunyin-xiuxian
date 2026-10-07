@@ -25,9 +25,9 @@ import { persistConfig } from '@/utils/storage'
 import { asArray } from '@/utils/saveShape'
 import { defineStore } from 'pinia'
 
-export type InteractionKind = 'modal' | 'notify' | 'ambient'
+type InteractionKind = 'modal' | 'notify' | 'ambient'
 
-export interface InteractionEvent {
+interface InteractionEvent {
   /** 事件类型 ID(如 enlightenment / caveEvent / winStreak) */
   type: string
   kind: InteractionKind

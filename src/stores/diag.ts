@@ -18,7 +18,7 @@ import { ref } from 'vue'
 import { persistConfig } from '@/utils/storage'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
 
-export interface DiagEntry {
+interface DiagEntry {
   /** 发生时刻 */
   at: number
   /** 来源:Vue 的 info 字段(如 'render' / 'setup')或 'unhandledrejection' */
