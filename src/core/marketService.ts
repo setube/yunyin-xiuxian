@@ -11,6 +11,7 @@ import { stoneByTier } from './formulas'
 import { PILLS, pillDef } from '@/data/pills'
 import { mulberry32, RandomService } from '@/utils/random'
 import { generateEquipment, rollQuality } from './equipGen'
+import { qualityDef } from '@/data/qualities'
 import {
   MARKET_SLOTS,
   MARKET_REFRESH_SECONDS,
@@ -46,7 +47,8 @@ function buildSlot(
   idx: number,
   major: number,
   rng: RandomService,
-  usedPills: Set<string>
+  usedPills: Set<string>,
+  now: number
 ): MarketSlot {
   if (kind === 'pill') {
     const pool = salePills(major).filter(p => !usedPills.has(p.id))
@@ -73,14 +75,22 @@ function buildSlot(
     }
   }
   const minQualityRank = rollQuality(major, rng).rank
+  // 按「预览即购得的同一件」的真实品质档标价 —— 若按品质下限标价、实际却滚得更高,
+  // 「坊市买入 → 悬赏贡器」会因贡器按实档结算而套利(见 data/bounty 的单位档比对)。
+  const rank = qualityDef(generateEquipment(major, new RandomService(mulberry32(equipSeed(now, idx))), { minQualityRank }).quality).rank
   return {
     kind: 'equipment',
     idx,
     tier: major,
     minQualityRank,
-    price: stoneByTier(major, MARKET_EQUIP_STONE_BASE + minQualityRank * MARKET_EQUIP_STONE_PER_RANK),
+    price: stoneByTier(major, MARKET_EQUIP_STONE_BASE + rank * MARKET_EQUIP_STONE_PER_RANK),
     sold: false
   }
+}
+
+/** 货架某格的确定性装备种子 —— 上货与预览/购买共用,保证同一件 */
+function equipSeed(stockedAt: number, idx: number): number {
+  return (Math.floor(stockedAt / 1000) * 31 + idx) >>> 0
 }
 
 /** 生成一整架新货;stockedAt 取调用时刻,装备再生以此为种子锚 */
@@ -91,15 +101,16 @@ export function generateMarketStock(major: number, rng: RandomService, now: numb
   const usedPills = new Set<string>()
   const slots: MarketSlot[] = []
   for (let idx = 0; idx < MARKET_SLOTS; idx += 1) {
-    slots.push(buildSlot(pickKind(rng, feasible), idx, major, rng, usedPills))
+    slots.push(buildSlot(pickKind(rng, feasible), idx, major, rng, usedPills, now))
   }
   return { goods: slots, stockedAt: now }
 }
 
 /** 货架里某件装备的确定性实例 —— 预览与购买同源同一物(uid 除外,不落库、不进渲染) */
 export function marketEquipInstance(slot: MarketEquipSlot, stockedAt: number): EquipmentInstance {
-  const seed = (Math.floor(stockedAt / 1000) * 31 + slot.idx) >>> 0
-  return generateEquipment(slot.tier, new RandomService(mulberry32(seed)), { minQualityRank: slot.minQualityRank })
+  return generateEquipment(slot.tier, new RandomService(mulberry32(equipSeed(stockedAt, slot.idx))), {
+    minQualityRank: slot.minQualityRank
+  })
 }
 
 /** 货架还剩多久刷新(秒);已过期返回 0 */
