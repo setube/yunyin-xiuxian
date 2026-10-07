@@ -87,3 +87,16 @@ describe('成就周期补扫应治愈「越境未解锁」', () => {
     expect(quests.hasAchieved('a_r12'), '太乙境成就应补发').toBe(true)
   })
 })
+
+describe('主线任务同根补扫也应推进', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('境界已过出生任务、未再 track,checkStateAchievements 也应推进主线', () => {
+    const player = usePlayerStore()
+    const quests = useQuestsStore()
+    expect(quests.mainIdx).toBe(0)
+    player.$patch({ major: 1 }) // 出生任务 realm_0_2(炼气二层)已满足
+    checkStateAchievements()
+    expect(quests.mainIdx, '出生任务应被补扫完成并把主线前推一步').toBe(1)
+  })
+})
