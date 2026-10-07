@@ -53,3 +53,14 @@ const BY_ID = new Map<QualityId, QualityDef>(QUALITIES.map(q => [q.id, q]))
 export function qualityDef(id: QualityId): QualityDef {
   return BY_ID.get(id) ?? QUALITIES[0]!
 }
+
+/** 「稀有及以上」的起点档 = 灵品(spirit)。此边界由数据档位定义推导,改名/重排档位时一处生效。 */
+const RARE_RANK = QUALITIES.find(q => q.id === 'spirit')!.rank
+
+/** 是否稀有品质(灵品及以上)—— 掉落 toast、气运加成等处共用的同一把尺子。 */
+export function isRareQuality(q: QualityDef): boolean {
+  return q.rank >= RARE_RANK
+}
+
+/** 玄品(profound)档位 rank —— 层级加成封顶档,由数据推导,排档时一处生效。 */
+export const PROFOUND_RANK = QUALITIES.find(q => q.id === 'profound')!.rank

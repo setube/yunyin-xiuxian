@@ -7,7 +7,7 @@ import { uid } from '@/utils/id'
 import { gnZero, mulN, add } from '@/utils/gnum'
 import { AFFIXES, AFFIX_RARITY_RANK, affixDef, affixFitBlock, affixValue } from '@/data/affixes'
 import { EQUIPMENT_TEMPLATES, equipmentTemplate } from '@/data/equipment'
-import { QUALITIES, qualityDef } from '@/data/qualities'
+import { isRareQuality, PROFOUND_RANK, QUALITIES, qualityDef } from '@/data/qualities'
 import {
   EQUIP_BASE_FACTOR,
   EQUIP_LEVEL_BONUS,
@@ -165,8 +165,8 @@ export function rollQuality(tier: number, rng: RandomService, opts: GenOptions =
 export function qualityWeightAt(q: QualityDef, tier: number, opts: GenOptions = {}): number {
   const luck = opts.luck ?? 0
   if (q.rank === 0) return q.weight * bandFactor(q, tier, opts)
-  const tierBoost = Math.pow(QUALITY_TIER_SHIFT, (tier - 1) * Math.min(q.rank, 4) * 0.35)
-  const luckBoost = 1 + luck * (q.rank >= 3 ? 1.5 : 0.5)
+  const tierBoost = Math.pow(QUALITY_TIER_SHIFT, (tier - 1) * Math.min(q.rank, PROFOUND_RANK) * 0.35)
+  const luckBoost = 1 + luck * (isRareQuality(q) ? 1.5 : 0.5)
   return q.weight * tierBoost * luckBoost * bandFactor(q, tier, opts)
 }
 
