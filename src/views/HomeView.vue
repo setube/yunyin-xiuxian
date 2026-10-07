@@ -102,6 +102,18 @@
       <span class="shrink-0 text-[11px] text-gold-ink">购置 →</span>
     </RouterLink>
 
+    <!-- 收徒:弟子跑腿,后台自长 —— 洞府门面第二个常驻入口 -->
+    <RouterLink to="/apprentice" class="card-ink flex items-center gap-3 border-jade/30 px-4 py-3 active:scale-98">
+      <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-jade/15 text-jade">
+        <GameIcon name="users" :size="18" />
+      </span>
+      <span class="min-w-0 grow">
+        <span class="block font-kai text-[14px] tracking-widest text-ink">收徒</span>
+        <span class="block truncate text-[10px] text-ink-faint">遣弟子采药 · 历练 · 寻机缘,归来带回资材</span>
+      </span>
+      <span class="shrink-0 text-[11px] text-jade">遣派 →</span>
+    </RouterLink>
+
     <!-- 修行志(任务);日课按本地午夜重排,未成即作罢 —— 规则得摆在台面上,不然玩家会以为昨天差一步的日课还欠着 -->
     <section>
       <SectionTitle title="修行志" hint="午夜更替 · 未成作罢" />
