@@ -1016,11 +1016,11 @@
   const runWorld = computed(() => (run.value ? (resolveWorld(run.value.worldId) ?? null) : null))
   const runPact = computed(() => (run.value?.pactId ? pactDef(run.value.pactId) : undefined))
   const currentNodes = computed(() => {
-    if (!run.value || !runWorld.value || run.value.layer > 2) return null
+    if (!run.value || !runWorld.value || run.value.layer >= EXPEDITION_GUARDIAN_LAYER) return null
     return runWorld.value.routes[run.value.layer] ?? null
   })
   const nodePreviews = computed(() => (currentNodes.value ? currentNodes.value.map(n => previewFight(n.foe, n)) : []))
-  const guardianPreview = computed(() => (run.value?.layer === 3 && runWorld.value ? previewFight(runWorld.value.guardian) : null))
+  const guardianPreview = computed(() => (run.value?.layer === EXPEDITION_GUARDIAN_LAYER && runWorld.value ? previewFight(runWorld.value.guardian) : null))
 
   // ---- 战报弹窗(统一形状) ----
   interface ReportView {
