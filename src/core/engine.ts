@@ -42,6 +42,8 @@ class GameEngine {
       if (game.started && game.lastActiveAt > 0) {
         settleOffline(now)
       }
+      // 加载即补扫成就:老档/导入档纵使从未 track 过,已满足的成就当场解锁
+      if (game.started) checkStateAchievements()
     } catch (err) {
       console.error('[引擎] 离线结算异常', err)
     }

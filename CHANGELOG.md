@@ -2,6 +2,16 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.40.1] — 2026-10-07 · 成就补发
+
+修复:境界相关 / 计数成就「早已满足却未解锁」。真相是 realm/counter 成就此前只在 track()/trackRealm() 两个行为触发点被求值,老档/导入档在境界已高、又没有新计数行为时,低境界成就永远锁着;引擎周期只跑 checkStateAchievements,从不补扫 checkAchievements。
+
+### 修复
+
+- `checkStateAchievements` 周期补扫前重放一次 `checkAchievements`:境界已高、计数已满的成就当场解锁(自愈,幂等)
+- `engine.start` 加载即补扫:老档/导入档纵使从未 track 过,已满足的成就即时结清
+- 新增回归用例:境界拉到 12、从未 track,checkStateAchievements 亦补发 筑基/炼虚/渡劫/太乙 各境成就
+
 ## [1.40.0] — 2026-10-07 · 坊市有卖
 
 新增玩法第三条:坊市补上卖出半场 —— 装备寄卖、材料丹药即时售,灵石双向周转。单机下买卖方皆抽象为商号,价锚定确定性公式、售出恒低于购入,防无中生有刷灵石。

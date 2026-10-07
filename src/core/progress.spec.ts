@@ -5,7 +5,8 @@ import { formatGN } from '@/utils/format'
 import { buffDef } from '@/data/buffs'
 import { CULT_BASE_SPEED } from '@/data/constants'
 import { baseCultPerSec } from './formulas'
-import { retreatGainText, retreatGainedText } from './progress'
+import { retreatGainText, retreatGainedText, checkStateAchievements } from './progress'
+import { useQuestsStore } from '@/stores/quests'
 
 /**
  * 闭关预览 —— 按钮那句「此行约多得修为 X」,与修炼行读同一份
@@ -59,5 +60,30 @@ describe('retreatGainText 闭关约多得预览', () => {
 
   it('闭关中的活数:未起步(0 秒)→ 空白,不报「已多得 0」', () => {
     expect(retreatGainedText(0)).toBe('')
+  })
+})
+
+/**
+ * 成就周期补扫 —— 修复「早已越境、低境界成就却仍锁着」。
+ *
+ * 真相口径:realm/counter 成就在 evalCond 处用 `major >= N` 判定,逻辑本身没写错;
+ * 但它只在 track()/trackRealm() 这两个行为触发点被求值。若一份老存档/导入档在
+ * 「成就功能上线后未再走突破、也一直没发生任何计数行为」的情况下加载,引擎只跑
+ * checkStateAchievements(周期补扫),而它此前不补 realm —— 于是玩家明明已高好几境,
+ * 低境界成就却永远锁着。补扫必须在周期里重放一次 checkAchievements。
+ */
+describe('成就周期补扫应治愈「越境未解锁」', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('境界已拉高、从未 track 过,checkStateAchievements 也应补发低境界成就', () => {
+    const player = usePlayerStore()
+    const quests = useQuestsStore()
+    player.$patch({ major: 12 })
+    expect(quests.hasAchieved('a_r1'), '前置于未补扫时应是锁着的(红->绿)').toBe(false)
+    checkStateAchievements()
+    expect(quests.hasAchieved('a_r1'), '筑基境成就应被周期补扫解锁').toBe(true)
+    expect(quests.hasAchieved('a_r5'), '炼虚境成就应补发').toBe(true)
+    expect(quests.hasAchieved('a_r9'), '渡劫/真仙成就应补发').toBe(true)
+    expect(quests.hasAchieved('a_r12'), '太乙境成就应补发').toBe(true)
   })
 })
