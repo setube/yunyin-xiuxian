@@ -2,6 +2,16 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.37.10] — 2026-10-07 · 摘除仅内部使用的导出关键字
+
+statNames/pacingTelemetry/diag/endgame 里 5 个类型与常量只在本模块内部使用、全仓库无外部引用,去掉 `export` 关键字收窄公开面(内部,行为不变)。
+
+### 调整与优化
+
+- pacingTelemetry 的 `export type InteractionKind` / `export interface InteractionEvent` 去 export(内部)
+- 去掉 `export interface DiagEntry` / `export interface TrialRecord` / `export const STAT_CAVEATS` 的 export(内部)
+- 逐符号 grep 确认全仓库(含测试/视图)零外部引用,且各模块内部仍读取,故去 export 后无未用告警
+
 ## [1.37.9] — 2026-10-07 · 品质档位硬编码边界改引单一事实源
 
 「稀有及以上」「层级加成封顶档」这两处品质判定原本在各处手抄魔数(3 与 4),改为由 `data/qualities` 的档位定义推导并共用同一把尺子(内部,行为不变)。

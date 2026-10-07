@@ -8,7 +8,7 @@ import { EXPEDITION_GUARDIAN_LAYER, celestialWorldDef } from '@/data/endgame'
 import { SOUL_SLOTS, soulMods as soulModsOf, type SoulInstance } from '@/data/souls'
 import { asArray, asFiniteNumber, asNumberRecord, asObjectOrNull, asRecordOf, asStringArray } from '@/utils/saveShape'
 
-export interface TrialRecord {
+interface TrialRecord {
   clears: number
   /** 最少总回合(越少越好) */
   bestRounds: number
