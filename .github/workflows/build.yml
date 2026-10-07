@@ -214,12 +214,25 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      # 4. 上传新文件
+      # 4. Release 说明取 CHANGELOG 该版本小节(如 `## [1.41.0] …`),
+      #    与发版源保持一致,不再手动填。
+      - name: 生成 Release 说明(取 CHANGELOG 该版本小节)
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          awk -v v="[$VER]" 'BEGIN{in_sec=0} /^## \[/{ if(in_sec) exit; if(index($0,v)==4) in_sec=1; next } in_sec{print}' CHANGELOG.md > "$GITHUB_WORKSPACE/.release-body.md"
+          if [ ! -s "$GITHUB_WORKSPACE/.release-body.md" ]; then
+            echo "::warning::CHANGELOG.md 里找不到 `## [$VER]` 小节,Release 备注将为空"
+          else
+            echo "已从 CHANGELOG 提取 [$VER] 小节,共 $(wc -l < "$GITHUB_WORKSPACE/.release-body.md") 行"
+          fi
+
+      # 5. 创建 GitHub Release
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.get_version.outputs.VERSION }}
           name: Release ${{ steps.get_version.outputs.VERSION }}
+          body_path: .release-body.md
           files: ./final-release/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
