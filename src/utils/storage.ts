@@ -25,6 +25,7 @@ export const PERSISTED_STORES = [
   'lore',
   'market',
   'apprentice',
+  'bounty',
   /**
    * 节奏遥测(store id 是 pacingTelemetry,分片键取 'pacing')。
    *
@@ -63,6 +64,7 @@ export const STORE_NAMES: Record<string, string> = {
   lore: '认知',
   market: '坊市',
   apprentice: '收徒',
+  bounty: '悬赏',
   pacing: '节奏遥测',
   diag: '异常留档'
 }
