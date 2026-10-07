@@ -618,7 +618,7 @@ export function resolveCombat(
 export function sampleWinRate(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: RandomService, samples = 3, rules?: CombatRules): number {
   let wins = 0
   for (let i = 0; i < samples; i += 1) {
-    if (resolveCombat(pSnap, eSnap, rng, rules).win) wins += 1
+    if (resolveCombat(pSnap, eSnap, rng, rules, false).win) wins += 1
   }
   const table = [0.08, 0.4, 0.72, 0.93]
   // 索引夹到表长内:samples 取 >3 时 Math.min(samples, wins) 会越界取到 undefined →
