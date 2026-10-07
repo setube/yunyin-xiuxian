@@ -400,14 +400,23 @@
           <GameIcon name="flame" :size="15" class="text-cinnabar/70" />
         </button>
 
-        <!-- 已习得列表(限高滚动,功法过多不撑爆页面);行首门类印章 + 品质条目,不再是一排裸文字 -->
-        <div class="card-ink max-h-64 divide-y divide-ink/6 overflow-y-auto px-1">
-          <button
-            v-for="def in learnedList"
-            :key="def!.id"
-            class="flex w-full items-center gap-2.5 px-2.5 py-2 text-left active:bg-ink/4"
-            @click="ui.gongfaDetailId = def!.id"
-          >
+        <!--
+          已习得列表(限高滚动,功法过多不撑爆页面);按门类(主/辅/秘)分栏,栏内仍按品质降序,
+          不再是主辅秘混在一屏长笺里 —— 找一部想进修的,先落眼门类,再在同类里比品质。
+        -->
+        <div class="card-ink max-h-80 divide-y divide-ink/6 overflow-y-auto px-1">
+          <template v-for="group in learnedGroups" :key="group.type">
+            <!-- 栏头:门类名 + 该门已习得部数;粘顶,长笺内翻到哪都看得清当前门类 -->
+            <div class="sticky top-0 z-10 flex items-baseline gap-1.5 bg-ink/4 px-2.5 py-1">
+              <span class="text-[11px] font-medium tracking-wide text-ink-soft">{{ GONGFA_TYPE_NAMES[group.type] }}</span>
+              <span class="text-[10px] text-ink-faint">{{ group.items.length }} 部</span>
+            </div>
+            <button
+              v-for="def in group.items"
+              :key="def!.id"
+              class="flex w-full items-center gap-2.5 px-2.5 py-2 text-left active:bg-ink/4"
+              @click="ui.gongfaDetailId = def!.id"
+            >
             <!-- 门类印章:与主修卡「主」字同一块语言,辅/秘一眼可辨 -->
             <span
               class="grid h-8 w-8 shrink-0 place-items-center rounded-md font-kai text-[13px]"
@@ -425,7 +434,8 @@
             <span class="shrink-0 text-[10px]" :class="equipStateOf(def!.id) ? 'text-jade' : 'text-ink-faint'">
               {{ equipStateOf(def!.id) || '未装配' }}
             </span>
-          </button>
+            </button>
+          </template>
         </div>
 
         <!--
@@ -479,7 +489,8 @@
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
   import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
-  import { GONGFA, gongfaDef } from '@/data/gongfa'
+  import { GONGFA, gongfaDef, GONGFA_TYPE_NAMES } from '@/data/gongfa'
+  import type { GongfaDef, GongfaType } from '@/types'
   import { ELEMENTS } from '@/data/linggen'
   import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import { buffDef } from '@/data/buffs'
@@ -677,12 +688,23 @@
       .filter(x => x.def !== undefined)
   )
 
-  const learnedList = computed(() =>
-    Object.keys(cultivation.learned)
-      .map(id => gongfaDef(id))
-      .filter(d => d !== undefined)
-      .sort((a, b) => qualityDef(b!.quality).rank - qualityDef(a!.quality).rank)
-  )
+  /** 已习得功法:按门类(主/辅/秘)分栏,栏内按品质降序 —— 与功法阁门类同语言,找功法先落眼看门类 */
+  const learnedGroups = computed(() => {
+    const byType: Partial<Record<GongfaType, GongfaDef[]>> = {}
+    for (const id of Object.keys(cultivation.learned)) {
+      const def = gongfaDef(id)
+      if (!def) continue
+      const bucket = (byType[def.type] ??= [])
+      bucket.push(def)
+    }
+    const order: GongfaType[] = ['main', 'sub', 'secret']
+    return order
+      .map(type => ({
+        type,
+        items: (byType[type] ?? []).sort((a, b) => qualityDef(b.quality).rank - qualityDef(a.quality).rank)
+      }))
+      .filter(g => g.items.length > 0)
+  })
 
   const mainDef = computed(() => (cultivation.mainGongfa ? gongfaDef(cultivation.mainGongfa) : undefined))
 
