@@ -2,6 +2,15 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.37.11] — 2026-10-07 · 天界守卫层魔数改引常量
+
+CelestialView 里两处手写「守卫层=3」的魔数(`layer > 2`、`layer === 3`)改为引用已导入的 `EXPEDITION_GUARDIAN_LAYER` 常量(数值不变,语义不变)。
+
+### 调整与优化
+
+- `currentNodes` 的 `layer > 2` 改 `layer >= EXPEDITION_GUARDIAN_LAYER`(守卫层=3,等价)(内部)
+- `guardianPreview` 的 `layer === 3` 改 `layer === EXPEDITION_GUARDIAN_LAYER`(内部)
+
 ## [1.37.10] — 2026-10-07 · 摘除仅内部使用的导出关键字
 
 statNames/pacingTelemetry/diag/endgame 里 5 个类型与常量只在本模块内部使用、全仓库无外部引用,去掉 `export` 关键字收窄公开面(内部,行为不变)。
