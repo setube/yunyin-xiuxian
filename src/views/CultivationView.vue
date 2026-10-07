@@ -417,7 +417,7 @@
             :aria-selected="gongfaCat === g.type"
             :tabindex="gongfaCat === g.type ? 0 : -1"
             class="flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 font-kai text-[13px] tracking-[0.1em] transition-colors duration-200"
-            :class="gongfaCat === g.type ? 'bg-ink text-paper shadow-inner' : 'text-ink-faint active:text-ink-soft'"
+            :class="gongfaCat === g.type ? gongfaCatActive(g.type) : 'text-ink-faint active:text-ink-soft'"
             @click="gongfaCat = g.type"
           >
             <!-- 门类小印章:与列表行同一块语言,激活时压成纸上字,暗色下仍可辨 -->
@@ -744,6 +744,15 @@
       : type === 'main'
         ? 'bg-cinnabar/10 text-cinnabar'
         : 'bg-jade/15 text-jade'
+  }
+
+  /** 激活态的整块配色:沿用该门类的印章色填充,让选中门类与周围彩色印章同一套语言 */
+  function gongfaCatActive(type: GongfaType): string {
+    return type === 'secret'
+      ? 'bg-violet-ink text-paper'
+      : type === 'main'
+        ? 'bg-cinnabar text-paper'
+        : 'bg-jade text-paper'
   }
 
   /** WAI-ARIA tabs 键盘导航:左右键在门类间回绕,Home/End 直达首尾(与 InkTabs 同约定) */
