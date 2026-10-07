@@ -65,6 +65,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 ## Code Conventions & Common Patterns
 
 - **提交信息：Conventional `type(scope): subject`**，commitlint（husky commit-msg）强制，header ≤200 字。**Body 必须是逐条 bullet（`- x`），一条事实一行，禁止散文段落**——owner 用 filter-branch 重写过历史，要求干净的行项目。
+- **提交粒度**：每个 commit 最小完备——单一主题、自包含、可独立评审/回滚，能单独看懂改了啥。body 仍逐条 bullet、一行一事实；特别小的 trivial 改动（几行、同主题）允许并入同一 commit，commit 数不设硬指标，以真实有效改动为准，绝不灌水凑数。
 - **持久化 store 必须有 `sanitize()`**：见 storeResilience.spec.ts（从源码抓 `persistConfig` 列表逐一验证）。新增持久化 store 没有 sanitize → 测试直接红。
 - **语义色禁用裸 hex**：颜色只以 `--color-x-rgb`（裸 RGB 通道变量）定义在 `src/style.css`；`tailwind.config.js` 的 `withAlpha` 构建 `rgb(var(--x)/<alpha-value>)` 支持 `bg-ink/10` 与 color-mix；暗色主题在 `html[data-theme='dark']` 下仅覆写通道变量。palette.spec.ts 红线：明暗 token 1:1、每 token 映射进 tailwind、无同值异名、源中引用的颜色名必须存在、slash-opacity 只能来自 config 步进、强文本 ≥4.5:1、印面 cream `#f6f1e5` 需匹配 `.btn-seal` 与双主题印底、CIE76 保证品质/元素层级可区分。
   - **朱/金/靛/紫印章上的 scarlet 印面文字用 `.seal-face` 类，不要用 `text-paper`**（dark 下 text-paper 会反成近黑）。
@@ -111,3 +112,4 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - **QA 脚本**：`test-report.mjs`（按系统分桶，失败/未归类即退出 1）；`ui-smoke.mjs`（375x812 交互冒烟，pageerror + NaN/Infinity 泄漏即失败，跳过破坏性按钮）；`layout-check.mjs`（38 项自检：无横向溢出、双栏 dvh 固定、触控目标 ≥28px、模态触控巡逻、tab-rail 粘性、无纵向挤压/孤行标点/数字单位断行、a11y 图标 aria；约 10 分钟，仅本地）；`offline-check.mjs`（SW 接管 + 离线启动 + 发布接管）。CI 对 `test-report` 限 maxWorkers=4。
 - **Git 保护**:main 仅通过 PR merge,禁止 force-push;v* release tag 只由发布流水线打。PR 校验 CI = 类型检查 + lint + 单测 + 生产构建全部绿。**CHANGELOG.md 需更新**(新增 / 调整与优化 / 修复 三节,中文一行式,格式 `## [ver] — date · 副标题`)。
 - **历史线性**:main 历史必须线性,禁止 merge 提交。合入 PR 一律用 rebase 或 squash 合并,严禁「Create a merge commit」/ `gh pr merge --merge`(会在 main 上引入双亲 merge 节点,破坏线性);同步主干一律 `git rebase main`,禁止「Merge main into …」式提交(`.github/workflows/history-linear.yml` 会把这类提交判为失败,其权威合并期闸门是分支规则集「Require a linear history」)。
+- **PR 承载多 commit**：一个 PR 可承载多个 commit；PR 内每个 commit 都须能被独立评审，且 PR 作为整体说明改动主题。
