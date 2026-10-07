@@ -75,6 +75,19 @@ const AFFIX_POOL_BY_SLOT_RANK = new Map<string, AffixDef[]>()
 }
 
 /**
+ * 品质按下限预索引 —— rollQuality 每掉一件都按 floor 全表 filter 9 档,
+ * 池子是纯静态的(只与 rank 下限有关),进模块起摊好即可。
+ */
+const QUALITIES_BY_FLOOR: QualityDef[][] = []
+{
+  let maxRank = 0
+  for (const q of QUALITIES) if (q.rank > maxRank) maxRank = q.rank
+  for (let floor = 0; floor <= maxRank; floor += 1) {
+    QUALITIES_BY_FLOOR.push(QUALITIES.filter(q => q.rank >= floor))
+  }
+}
+
+/**
  * 某槽位在某层级下的模板 —— **按阶取,不累积**。
  *
  * 从前这里是「minTier ≤ 层级」的累积池再取最近的几件,于是 13 阶的地界照样掉得出
@@ -138,7 +151,7 @@ export function equipTemplatePool(tier: number, slot?: EquipSlot) {
  */
 export function rollQuality(tier: number, rng: RandomService, opts: GenOptions = {}): QualityDef {
   const floor = opts.minQualityRank ?? 0
-  const pool = QUALITIES.filter(q => q.rank >= floor)
+  const pool = QUALITIES_BY_FLOOR[floor] ?? QUALITIES
   return rng.weighted(pool, q => qualityWeightAt(q, tier, opts))
 }
 
@@ -182,16 +195,16 @@ export function generateEquipment(tier: number, rng: RandomService, opts: GenOpt
   const affixCount = rng.int(minA, maxA)
 
   const chosen: { id: string; roll: number }[] = []
-  const used = new Set<string>()
-  const eligibleAffixes = AFFIX_POOL_BY_SLOT_RANK.get(`${template.slot}:${quality.rank}`)
+  // 每轮只在单份工作数组上顺序划掉已选词条,不再逐轮 filter 一份新数组(最多 9 轮 × 全表)
+  const candidates = AFFIX_POOL_BY_SLOT_RANK.get(`${template.slot}:${quality.rank}`)?.slice() ?? []
   let guard = 0
-  while (chosen.length < affixCount && guard < 50) {
+  while (chosen.length < affixCount && guard < 50 && candidates.length > 0) {
     guard += 1
-    const candidates = eligibleAffixes?.filter(a => !used.has(a.id)) ?? []
-    if (candidates.length === 0) break
     const picked = rng.weighted(candidates, a => a.weight)
-    used.add(picked.id)
     chosen.push({ id: picked.id, roll: rng.next() })
+    // 保序删除:rng.weighted 的命中依赖数组序,原位 splice 才能与「逐轮 filter 去重」逐字节等价
+    const idx = candidates.indexOf(picked)
+    if (idx >= 0) candidates.splice(idx, 1)
   }
 
   return {
