@@ -46,7 +46,7 @@
               <GameIcon name="gem" :size="12" />{{ formatGN(c.price) }}
             </span>
             <button
-              class="btn-ghost px-2.5 py-1"
+              class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
               :disabled="c.sold"
               @click="buyOne(c.idx)"
             >
@@ -87,7 +87,7 @@
             <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: eq.color }">{{ eq.name }}</span>
             <span class="shrink-0 text-[10px] text-ink-faint">{{ eq.tier }} 阶</span>
             <span class="shrink-0 text-[10px] tabular text-gold-ink">{{ formatGN(eq.price) }}</span>
-            <button class="btn-ghost shrink-0 px-2.5 py-1" :disabled="consignSlotsFull" @click="consignOne(eq.uid)">
+            <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="consignSlotsFull" @click="consignOne(eq.uid)">
               寄卖
             </button>
           </div>
@@ -107,7 +107,7 @@
               <span class="font-kai text-[13px] text-ink">{{ m.name }}</span>
               <span class="text-[10px] text-ink-faint">存 {{ m.count }}</span>
             </div>
-            <button class="btn-ghost px-2.5 py-1" :disabled="m.count < MARKET_MAT_COUNT" @click="sellMaterialOne(m.id)">
+            <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="m.count < MARKET_MAT_COUNT" @click="sellMaterialOne(m.id)">
               售出 ×{{ MARKET_MAT_COUNT }} ({{ formatGN(m.price) }})
             </button>
           </div>
@@ -121,7 +121,7 @@
           <div v-for="p in sellablePills" :key="p.id" class="flex items-center gap-2 px-2.5 py-2">
             <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: p.color }">{{ p.name }}</span>
             <span class="shrink-0 text-[10px] text-ink-faint">×{{ p.count }}</span>
-            <button class="btn-ghost shrink-0 px-2.5 py-1" @click="sellPillOne(p.id)">
+            <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="sellPillOne(p.id)">
               售出 ({{ formatGN(p.price) }})
             </button>
           </div>
@@ -154,8 +154,31 @@
               <span class="flex items-center gap-0.5 tabular text-gold-ink"><GameIcon name="gem" :size="12" />{{ b.rewardText }}</span>
               <span v-if="b.extraText" class="text-azure">· {{ b.extraText }}</span>
             </span>
-            <button class="btn-ghost px-2.5 py-1" :disabled="b.claimed || !b.ready" @click="claimOne(b.idx)">
+            <button v-if="b.kind === 'equip'" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="b.claimed || !b.ready" @click="openEquipOrder = openEquipOrder === b.idx ? null : b.idx">
+              {{ b.claimed ? '已交' : openEquipOrder === b.idx ? '收起' : '选一件交货' }}
+            </button>
+            <button v-else class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="b.claimed || !b.ready" @click="claimOne(b.idx)">
               {{ b.claimed ? '已交' : b.ready ? '交货' : '暂不足' }}
+            </button>
+          </div>
+          <div
+            v-if="b.kind === 'equip' && openEquipOrder === b.idx"
+            class="mt-2 max-h-52 space-y-1 overflow-y-auto rounded-md bg-paper-deep/60 p-1.5"
+          >
+            <p class="px-2 pb-1 text-[10px] text-ink-faint">点选一件即交货,不可撤回;价随所交之品的品质。</p>
+            <p v-if="equipCandidates(b.idx).length === 0" class="px-2 py-3 text-center text-[11px] text-ink-faint">
+              行囊里没有够格的兵刃。
+            </p>
+            <button
+              v-for="c in equipCandidates(b.idx)"
+              :key="c.uid"
+              class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left active:bg-ink/6"
+              @click="claimEquipOne(b, c)"
+            >
+              <span class="min-w-0 grow truncate font-kai text-[12px]" :style="{ color: c.color }">{{ c.name }}</span>
+              <span class="shrink-0 text-[10px] text-ink-faint">{{ c.qualityName }} · {{ c.tier }} 阶</span>
+              <span class="shrink-0 text-[10px] tabular text-gold-ink">{{ formatGN(c.stone) }}</span>
+              <span v-if="c.dust > 0" class="shrink-0 text-[10px] text-ink-faint">尘×{{ c.dust }}</span>
             </button>
           </div>
         </div>
@@ -168,10 +191,10 @@
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import type { GNum } from '@/types'
   import type { MarketSlot } from '@/data/market'
-  import type { BountySlot } from '@/data/bounty'
+  import type { BountyKind, BountySlot } from '@/data/bounty'
   import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS } from '@/data/market'
   import { useBountyStore } from '@/stores/bounty'
-  import { bountyRemainingSec } from '@/core/bountyService'
+  import { bountyRemainingSec, equipBountyReward } from '@/core/bountyService'
   import { formatCountdown, formatGN } from '@/utils/format'
   import { useResourcesStore } from '@/stores/resources'
   import { useMarketStore } from '@/stores/market'
@@ -221,6 +244,8 @@
   const ui = useUiStore()
 
   const tab = ref<'buy' | 'sell' | 'bounty'>('buy')
+  /** 展开中的「贡兵刃」悬赏单(idx);null=全部收起 */
+  const openEquipOrder = ref<number | null>(null)
   const now = ref(Date.now())
   let timer: ReturnType<typeof setInterval> | undefined
 
@@ -362,6 +387,7 @@
 
   interface BountyView {
     idx: number
+    kind: BountyKind
     tag: string
     tagCls: string
     title: string
@@ -385,6 +411,7 @@
       const name = s.kind === 'herb' ? '灵草' : '玄铁'
       return {
         idx: s.idx,
+        kind: s.kind,
         tag: s.kind === 'herb' ? '草' : '铁',
         tagCls: B_TAG_CLS[s.kind] ?? '',
         title: `募 ${name} ×${s.target}`,
@@ -399,6 +426,7 @@
       const def = pillDef(s.kindId)
       return {
         idx: s.idx,
+        kind: s.kind,
         tag: '丹',
         tagCls: B_TAG_CLS.pill ?? '',
         title: `募 丹药 ×${s.target}`,
@@ -412,6 +440,7 @@
     const ready = inventory.bagItems.some(e => e.tier >= s.tier)
     return {
       idx: s.idx,
+      kind: s.kind,
       tag: '器',
       tagCls: B_TAG_CLS.equip ?? '',
       title: `贡一柄 ${s.tier} 阶以上兵刃`,
@@ -430,6 +459,38 @@
     if (result === 'ok') ui.toast(`悬赏 ${label} 已交货,灵石入账`, 'success')
     else if (result === 'insufficient') ui.toast('存货不足,凑齐再来', 'warn')
     else if (result === 'nobag') ui.toast('行囊里没有够格的兵刃', 'warn')
+  }
+
+  /** 某一纸贡兵刃悬赏可交付的行囊兵刃(≥门槛阶),含各自实交收益;点选再交,不再自动取第一件 */
+  function equipCandidates(idx: number): Array<{ uid: string; name: string; color: string; qualityName: string; tier: number; stone: GNum; dust: number }> {
+    const slot = bounty.orders.find(s => s.idx === idx)
+    if (!slot || slot.kind !== 'equip') return []
+    return inventory.bagItems
+      .filter(e => e.tier >= slot.tier)
+      .sort((a, b) => qualityDef(b.quality).rank - qualityDef(a.quality).rank)
+      .map(eq => {
+        const q = qualityDef(eq.quality)
+        const r = equipBountyReward(eq.tier, q.rank)
+        return {
+          uid: eq.uid,
+          name: equipmentTemplate(eq.templateId)?.name ?? eq.templateId,
+          color: q.color,
+          qualityName: q.name,
+          tier: eq.tier,
+          stone: r.stone,
+          dust: r.dust
+        }
+      })
+  }
+
+  /** 点选一件贡出;成交即收拢清单 */
+  function claimEquipOne(b: BountyView, c: { uid: string }): void {
+    const result = bounty.claimEquip(b.idx, c.uid)
+    if (result === 'ok') {
+      openEquipOrder.value = null
+      ui.toast(`悬赏 「${b.title}」 已交货,灵石入账`, 'success')
+    } else if (result === 'insufficient') ui.toast('这件兵刃不够门槛', 'warn')
+    else if (result === 'missing') ui.toast('行囊里找不到这件兵刃', 'warn')
   }
 
   onMounted(() => {
