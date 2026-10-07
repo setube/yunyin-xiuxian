@@ -1,0 +1,51 @@
+name: 历史线性校验
+
+# 线性历史护栏(可见层)。真正的权威闸门是分支保护/规则集里的
+# 「Require a linear history」(合并那一刻在远端拦下 merge 节点),
+# 此 Action 无法完全替代它 —— 合并前检查看不到合并时生成的节点。
+# 本文件只做两件能在 PR 期就发现的事:
+#   1) PR 自身提交范围内不许出现 merge 提交(拒绝「Merge main into …」式同步);
+#   2) base 必须是 head 的祖先(即分支没落后/分叉于主干,可 fast-forward 合并)。
+# 政策收紧说明:此前 commit-lint 以 --no-merges 容忍分支内 merge 提交,
+# 本检查从此将「Merge main」同步提交判为失败,请一律用 rebase 同步主干。
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  history-linear:
+    # 以作业名展示的状态检查名
+    name: 历史线性校验
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # 需要拉全量历史才能算 base..head 的 merge 提交与祖先关系
+          fetch-depth: 0
+      - name: 校验 PR 内无 merge 提交
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          merges=$(git rev-list --merges "$BASE..$HEAD")
+          if [ -n "$merges" ]; then
+            cnt=$(printf '%s\n' "$merges" | wc -l)
+            echo "::error:: 本 PR 提交范围内检测到 ${cnt} 个 merge 提交。请改用 rebase 同步主干(rebase 而非「Merge main」),保持历史线性。"
+            printf '%s\n' "$merges"
+            exit 1
+          fi
+          echo "✓ 本 PR 提交范围内无 merge 提交"
+      - name: 校验 base 是 head 的祖先(fast-forward 可合并)
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          if ! git merge-base --is-ancestor "$BASE" "$HEAD"; then
+            echo "::error:: 目标主干($BASE)不是本分支($HEAD)的祖先:分支已落后/分叉于主干,无法 fast-forward 合并。请先 rebase 到最新 main 再推送。"
+            exit 1
+          fi
+          echo "✓ base 是 head 的祖先,分支可 fast-forward 合并"
