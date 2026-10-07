@@ -18,7 +18,7 @@ export const SIM_REFERENCE: ReferenceStats = {
   maxHp: gn(1400)
 }
 
-function worldFoes(world: CelestialWorldDef, snap: CombatantSnap): CombatantSnap[] {
+export function worldFoes(world: CelestialWorldDef, snap: CombatantSnap): CombatantSnap[] {
   /**
    * 模拟器比的是**构筑形状**(它在同一份参照三维下横向比较不同流派),
    * 故参照仍取 SIM_REFERENCE,不走天界锚点;但判定照实战口径算:

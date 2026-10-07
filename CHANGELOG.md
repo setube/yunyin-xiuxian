@@ -2,6 +2,15 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.37.12] — 2026-10-07 · 收敛 meta 模拟的守关者拼装
+
+`metaSim.avgClearRate` 里手抄的守关者拼装与 `celestialSim.worldFoes` 逐字节同构,改为导出并复用 `worldFoes`,去掉重复实现(内部,行为等价)。
+
+### 调整与优化
+
+- 导出 `celestialSim.worldFoes`,metaSim 不再内联重复拼装(同一判定/参照/守卫,无 RNG)
+- 清理 metaSim 随之无引用的 MAX_MAJOR/worldFoeSnap/celestialJudgement/SIM_REFERENCE 导入(内部)
+
 ## [1.37.11] — 2026-10-07 · 天界守卫层魔数改引常量
 
 CelestialView 里两处手写「守卫层=3」的魔数(`layer > 2`、`layer === 3`)改为引用已导入的 `EXPEDITION_GUARDIAN_LAYER` 常量(数值不变,语义不变)。
