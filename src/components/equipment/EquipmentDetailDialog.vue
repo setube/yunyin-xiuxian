@@ -640,10 +640,12 @@
     }
   )
 
-  // 详情与转移互切、换看另一件:正文整块换了,滚动盒却没重挂 —— 回到顶上,免得开头几行在视口外
+  // 详情与转移互切、换看另一件:正文整块换了,滚动盒却没重挂 —— 回到顶上,免得开头几行在视口外。
+  // 用「多源数组」而不是「返回新数组的 getter」:后者在重铸(只换词条、uid 不变)时也会因
+  // 数组引用变化重放回调,把玩家原本停在词条一览的位置顶回顶部 —— 重铸不该动上下位置。
   const modalRef = ref<InstanceType<typeof BaseModal> | null>(null)
   watch(
-    () => [transferOpen.value, inst.value?.uid] as const,
+    [() => transferOpen.value, () => inst.value?.uid],
     () => void nextTick(() => modalRef.value?.scrollToTop())
   )
 
