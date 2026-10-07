@@ -225,6 +225,7 @@ src/
 - 从 `main` 拉分支改,改完开 Pull Request。PR 会自动跑「PR 校验」(类型检查 + ESLint + 单元测试 + 生产构建),**红了合不进去**——这是仓库规则集要求的合并前状态检查。
 - `main` 受规则集保护:不可删除、不可强推、只能经 PR 合入;`v*` 发版 tag 同样受保护,不可被创建 / 移动 / 删除。仓库管理员可绕过,用于直接推送与发版。
 - 从 fork 提 PR 前请先同步上游 `main`(fork 页面的 Sync fork),**不要重写 fork 的历史**——合并基一断,PR 就做不出来了。
+- `main` 历史必须**线性**:合入 PR 一律 `gh pr merge <编号> --rebase` 或 `--squash`,严禁 `--merge`(GitHub 的「Create a merge commit」会在 main 上产生双亲 merge 节点);同步主干先 `git fetch origin main` 再 `git rebase origin/main`——不要基于过时的本地主干 rebase,也不要「Merge main into …」(`.github/workflows/history-linear.yml` 会在 PR 期把这类提交判为失败)。权威合并期闸门(仅仓库 owner 可开):Settings → Rules → main 规则集 → 添加规则「Require a linear history」,开启后未经绕过的合并会被 GitHub 直接禁止(管理员/规则集绕过者仍可经绕过路径合入 merge 提交)。详见 AGENTS.md「历史线性」条款。
 - 新账号 24 小时内暂不能评论 / 提 issue / 提 PR(仓库开了最低档的互动限制,挡一次性小号)。
 
 ## 交流
