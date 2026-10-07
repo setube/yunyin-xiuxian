@@ -40,7 +40,6 @@ import { gnZero } from '@/utils/gnum'
 /** 至少金丹境方可主动兵解 */
 export const MANUAL_REBIRTH_MIN_MAJOR = 2
 
-export { daoFruitGain } from './formulas'
 import { daoFruitGain } from './formulas'
 import { archiveLifeTrial } from './lifeTrialService'
 import { rerollMortalWorld } from './mortalWorldService'

@@ -293,4 +293,3 @@ export function trivialAtLife(price: number, times = 3, maxLives = 200): number 
   return -1
 }
 
-export { fruitAtLife }

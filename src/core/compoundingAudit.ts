@@ -283,4 +283,3 @@ export function marginalSpeedup(lives: number): { life: number; gain: number }[]
   return out
 }
 
-export { MANUAL_REBIRTH_MIN_MAJOR, REINCARNATE_APTITUDE_FLOOR }

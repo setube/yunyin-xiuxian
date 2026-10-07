@@ -3,7 +3,7 @@
  * 画像与叙事全部来自真实道痕统计,不能人工选择,不给任何属性
  */
 import type { DaoMark, DaoPathId } from '@/types'
-import { DAO_PATHS, daoPathDef, celestialWorldDef } from '@/data/endgame'
+import { DAO_PATHS, celestialWorldDef } from '@/data/endgame'
 import { pactDef } from '@/data/pacts'
 import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore } from '@/stores/endgame'
@@ -169,4 +169,3 @@ export function trackClearRecords(worldName: string, totalRounds: number, pactId
 }
 
 /** 供画像页显示道途名 */
-export { daoPathDef }

@@ -21,7 +21,6 @@
  */
 import type { CombatRules } from '@/types'
 import { LIFE_TRIALS } from '@/data/lifeTrials'
-import { MUTATORS } from '@/data/mutators'
 import { NOVELTY_MIN } from './worldGen'
 
 // ============ 一、规则的向量化 ============
@@ -225,4 +224,5 @@ export function hostReadyCount(): number {
   return CONDITIONS.filter(c => c.hostReady).length
 }
 
-export { LIFE_TRIALS, MUTATORS, NOVELTY_MIN }
+export { NOVELTY_MIN }
+

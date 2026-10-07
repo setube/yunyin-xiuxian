@@ -9,7 +9,7 @@ import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { MAX_MAJOR } from '@/data/realms'
 import { BUILD_PROFILES, buildSnap, type BuildProfile } from './buildSim'
 import { randomBuild } from './buildSearch'
-import { celestialJudgement, mergeRules, runGauntlet, worldFoeSnap, type ReferenceStats } from './gauntlet'
+import { celestialJudgement, runGauntlet, worldFoeSnap, type ReferenceStats } from './gauntlet'
 
 /** 模拟参照属性(与 buildSim 基准一致) */
 export const SIM_REFERENCE: ReferenceStats = {
@@ -121,4 +121,3 @@ export function crossWorldUniversals(n = 120): { count: number; worstCaseBest: n
   return { count, worstCaseBest }
 }
 
-export { mergeRules }

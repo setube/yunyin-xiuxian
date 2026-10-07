@@ -23,7 +23,7 @@ import { GONGFA } from '@/data/gongfa'
 import { MORTAL_TIER_MAX, REGIONS, maxTierForMajor } from '@/data/regions'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { MAX_MAJOR } from '@/data/realms'
-import { enemyGearFactor, powerScale, powerScore, realmScale } from './formulas'
+import { enemyGearFactor, powerScale, powerScore } from './formulas'
 import { QUALITIES } from '@/data/qualities'
 import { generateEquipment, qualityWeightAt, resolveEquipStats } from './equipGen'
 import { celestialDepthScale } from './gauntlet'
@@ -424,4 +424,3 @@ export function gearAsymmetry(): GearAsymmetry {
   return { playerGearGrowth, enemyGearGrowth, ratio: playerGearGrowth / enemyGearGrowth }
 }
 
-export { realmScale }
