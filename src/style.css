@@ -68,12 +68,10 @@
   from {
     opacity: 0;
     transform: translateY(12px);
-    filter: blur(1.5px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
@@ -245,22 +243,6 @@
   }
 }
 
-@keyframes card-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 1px 2px rgb(41 39 34 / 0.06),
-      0 4px 14px rgb(41 39 34 / 0.05),
-      0 0 0 0 rgb(168 63 57 / 0);
-  }
-  50% {
-    box-shadow:
-      0 1px 2px rgb(41 39 34 / 0.06),
-      0 4px 14px rgb(41 39 34 / 0.05),
-      0 0 16px 2px rgb(168 63 57 / 0.22);
-  }
-}
-
 @keyframes card-flash {
   0% {
     box-shadow:
@@ -318,22 +300,43 @@
   from {
     opacity: 0;
     transform: scale(0.94) translateY(8px);
-    filter: blur(2px);
   }
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
-    filter: blur(0);
   }
 }
 
 @keyframes glow-pulse {
+  /* 辉光改由 .animate-glow-pulse::before 承担(只动不透明度,走合成器);
+     元素本体不再逐帧重绘 box-shadow。 */
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgb(168 63 57 / 0);
+    opacity: 1;
+  }
+}
+
+/* 呼吸蓄势的外圈:用径向渐层的伪元素按不透明度脉动 —— 不透明度只走合成器,
+   不像 box-shadow 那样逐帧触发重绘(突破就绪按钮 / 稀有提示 / 首岭战前按钮)。 */
+.animate-glow-pulse {
+  position: relative;
+}
+.animate-glow-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: radial-gradient(closest-side, rgb(var(--color-cinnabar-rgb) / 0.35), rgb(var(--color-cinnabar-rgb) / 0));
+  animation: glow-pulse-halo 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes glow-pulse-halo {
+  0%,
+  100% {
+    opacity: 0.2;
   }
   50% {
-    box-shadow: 0 0 18px 2px rgb(168 63 57 / 0.25);
+    opacity: 1;
   }
 }
 
@@ -892,8 +895,28 @@ html[data-theme='dark'] .btn-seal:disabled {
 
 /* 修为圆满:境界卡蓄势微光呼吸(保留卡片底影) */
 .card-charged {
+  position: relative;
   border-color: rgb(var(--color-cinnabar-rgb) / 0.38);
-  animation: card-glow 2.6s ease-in-out infinite;
+}
+/* 常驻动画的辉光改由 ::before 承担:静态光晕 + 不透明度脉动 ——
+   box-shadow 逐帧动画会让圆满的境界卡每帧重绘。 */
+.card-charged::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 16px 2px rgb(var(--color-cinnabar-rgb) / 0.2);
+  animation: card-glow-halo 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes card-glow-halo {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* 修为圆满:进度条流光转金、涌动加速 */
