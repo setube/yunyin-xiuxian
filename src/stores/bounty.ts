@@ -6,7 +6,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { GNum } from '@/types'
+import type { GNum, QualityId } from '@/types'
 import { gn, gnZero } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
 import { usePlayerStore } from '@/stores/player'
@@ -34,6 +34,15 @@ function isKind(v: unknown): v is BountyKind {
 
 function nonNeg(v: unknown, fallback: number): number {
   return Number.isFinite(v) ? Math.max(0, Math.floor(v as number)) : fallback
+}
+
+/** 交一柄兵刃入账:现算灵石器尘(按所交之品的品质);贡器四路共用,价随实交 */
+function deliverEquip(eq: { uid: string; tier: number; quality: QualityId }): void {
+  const r = equipBountyReward(eq.tier, qualityDef(eq.quality).rank)
+  useInventoryStore().removeEquipment(eq.uid)
+  const resources = useResourcesStore()
+  resources.addStone(r.stone)
+  if (r.dust > 0) resources.addSmall('dust', r.dust)
 }
 
 export const useBountyStore = defineStore(
@@ -93,16 +102,28 @@ export const useBountyStore = defineStore(
       } else {
         const eq = inventory.bagItems.find(e => e.tier >= slot.tier)
         if (!eq) return 'nobag'
-        const r = equipBountyReward(eq.tier, qualityDef(eq.quality).rank)
-        inventory.removeEquipment(eq.uid)
-        resources.addStone(r.stone)
-        if (r.dust > 0) resources.addSmall('dust', r.dust)
+        deliverEquip(eq)
       }
       slot.claimed = true
       return 'ok'
     }
 
-    return { orders, bountyAt, sanitize, sync, claim }
+    /** 交货一柄玩家点选的够格兵刃(不再自动取第一件,见 C5) */
+    function claimEquip(idx: number, uid: string): BountyClaimResult {
+      const now = Date.now()
+      sync(now)
+      const slot = orders.value.find(s => s.idx === idx)
+      if (!slot || slot.kind !== 'equip') return 'missing'
+      if (slot.claimed) return 'claimed'
+      const eq = useInventoryStore().bagItems.find(e => e.uid === uid)
+      if (!eq) return 'missing'
+      if (eq.tier < slot.tier) return 'insufficient'
+      deliverEquip(eq)
+      slot.claimed = true
+      return 'ok'
+    }
+
+    return { orders, bountyAt, sanitize, sync, claim, claimEquip }
   },
   { persist: persistConfig('bounty') }
 )

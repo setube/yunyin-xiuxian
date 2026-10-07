@@ -68,6 +68,25 @@ describe('坊市悬赏板 · 交货', () => {
     expect(res.dust).toBeGreaterThan(0)
   })
 
+  it('贡器点选:交玩家指定的那一件,其余不动;低于门槛不可交;已交不可再交', () => {
+    const b = useBountyStore()
+    const inv = useInventoryStore()
+    seedSlots([{ idx: 0, kind: 'equip', kindId: '', target: 1, tier: 3, reward: { m: 0, e: 0 }, extra: 0, claimed: false }])
+    inv.$patch({
+      items: [
+        { uid: 'keep', templateId: 'x', quality: 'heaven', tier: 5, level: 0, affixes: [] },
+        { uid: 'give', templateId: 'y', quality: 'fine', tier: 4, level: 0, affixes: [] },
+        { uid: 'junk', templateId: 'z', quality: 'mortal', tier: 2, level: 0, affixes: [] }
+      ]
+    })
+    expect(b.claimEquip(0, 'junk'), 'tier 2 < 门槛 3,不可点交').toBe('insufficient')
+    expect(inv.items).toHaveLength(3)
+    expect(b.claimEquip(0, 'give')).toBe('ok')
+    expect(inv.items.map(i => i.uid).sort()).toEqual(['junk', 'keep'])
+    expect(b.orders[0]!.claimed).toBe(true)
+    expect(b.claimEquip(0, 'keep'), '已交不可再交').toBe('claimed')
+  })
+
   it('sanitize:烂订单逐纸修形、垃圾丢弃、时刻夹回非负', () => {
     const b = useBountyStore()
     b.$patch({
