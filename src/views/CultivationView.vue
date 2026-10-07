@@ -401,22 +401,47 @@
         </button>
 
         <!--
-          已习得列表(限高滚动,功法过多不撑爆页面);按门类(主/辅/秘)分栏,栏内仍按品质降序,
-          不再是主辅秘混在一屏长笺里 —— 找一部想进修的,先落眼门类,再在同类里比品质。
+          门类分段切换:主修/辅修/秘术 三选一,只渲染选中门类 ——
+          辅修一按即见,不再埋在长笺里;选中门类单类展示、栏头不再粘顶互相叠压。
         -->
-        <div class="card-ink max-h-80 divide-y divide-ink/6 overflow-y-auto px-1">
-          <template v-for="group in learnedGroups" :key="group.type">
-            <!-- 栏头:门类名 + 该门已习得部数;粘顶,长笺内翻到哪都看得清当前门类 -->
-            <div class="sticky top-0 z-10 flex items-baseline gap-1.5 bg-ink/4 px-2.5 py-1">
-              <span class="text-[11px] font-medium tracking-wide text-ink-soft">{{ GONGFA_TYPE_NAMES[group.type] }}</span>
-              <span class="text-[10px] text-ink-faint">{{ group.items.length }} 部</span>
-            </div>
-            <button
-              v-for="def in group.items"
-              :key="def!.id"
-              class="flex w-full items-center gap-2.5 px-2.5 py-2 text-left active:bg-ink/4"
-              @click="ui.gongfaDetailId = def!.id"
-            >
+        <div
+          class="card-ink flex gap-1 p-1"
+          role="tablist"
+          aria-label="功法门类"
+          @keydown="onGongfaCatKeydown"
+        >
+          <button
+            v-for="g in gongfaCategories"
+            :key="g.type"
+            role="tab"
+            :aria-selected="gongfaCat === g.type"
+            :tabindex="gongfaCat === g.type ? 0 : -1"
+            class="flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 font-kai text-[13px] tracking-[0.1em] transition-colors duration-200"
+            :class="gongfaCat === g.type ? 'bg-ink text-paper shadow-inner' : 'text-ink-faint active:text-ink-soft'"
+            @click="gongfaCat = g.type"
+          >
+            <!-- 门类小印章:与列表行同一块语言,激活时压成纸上字,暗色下仍可辨 -->
+            <span
+              class="grid h-5 w-5 place-items-center rounded font-kai text-[11px]"
+              :class="gongfaCat === g.type ? 'bg-paper/15 text-paper' : gongfaCatSeal(g.type)"
+            >{{ g.type === 'secret' ? '秘' : g.type === 'main' ? '主' : '辅' }}</span>
+            <span>{{ GONGFA_TYPE_NAMES[g.type] }}</span>
+            <span class="text-[10px]" :class="gongfaCat === g.type ? 'text-paper/60' : 'text-ink-faint'">{{ g.items.length }} 部</span>
+          </button>
+        </div>
+
+        <!-- 选中门类的已习得列表:单类一屏,栏内按品质降序 -->
+        <div
+          class="card-ink max-h-80 divide-y divide-ink/6 overflow-y-auto px-1"
+          role="tabpanel"
+          :aria-label="GONGFA_TYPE_NAMES[gongfaCat]"
+        >
+          <button
+            v-for="def in activeGongfaItems"
+            :key="def!.id"
+            class="flex w-full items-center gap-2.5 px-2.5 py-2 text-left active:bg-ink/4"
+            @click="ui.gongfaDetailId = def!.id"
+          >
             <!-- 门类印章:与主修卡「主」字同一块语言,辅/秘一眼可辨 -->
             <span
               class="grid h-8 w-8 shrink-0 place-items-center rounded-md font-kai text-[13px]"
@@ -434,8 +459,10 @@
             <span class="shrink-0 text-[10px]" :class="equipStateOf(def!.id) ? 'text-jade' : 'text-ink-faint'">
               {{ equipStateOf(def!.id) || '未装配' }}
             </span>
-            </button>
-          </template>
+          </button>
+          <p v-if="activeGongfaItems.length === 0" class="px-2.5 py-5 text-center text-[10px] text-ink-faint">
+            此门尚无习得功法 —— 参悟或将它转为此门,功法便在此现身。
+          </p>
         </div>
 
         <!--
@@ -688,8 +715,8 @@
       .filter(x => x.def !== undefined)
   )
 
-  /** 已习得功法:按门类(主/辅/秘)分栏,栏内按品质降序 —— 与功法阁门类同语言,找功法先落眼看门类 */
-  const learnedGroups = computed(() => {
+  /** 已习得功法按门类(主/辅/秘)分组、栏内按品质降序 —— 恒出三门供切换,选中门类单类展示 */
+  const gongfaCategories = computed(() => {
     const byType: Partial<Record<GongfaType, GongfaDef[]>> = {}
     for (const id of Object.keys(cultivation.learned)) {
       const def = gongfaDef(id)
@@ -698,13 +725,46 @@
       bucket.push(def)
     }
     const order: GongfaType[] = ['main', 'sub', 'secret']
-    return order
-      .map(type => ({
-        type,
-        items: (byType[type] ?? []).sort((a, b) => qualityDef(b.quality).rank - qualityDef(a.quality).rank)
-      }))
-      .filter(g => g.items.length > 0)
+    return order.map(type => ({
+      type,
+      items: (byType[type] ?? []).sort((a, b) => qualityDef(b.quality).rank - qualityDef(a.quality).rank)
+    }))
   })
+
+  /** 门类切换(主修/辅修/秘术):只展示选中门类,不再三栏粘顶叠压 */
+  const gongfaCat = ref<GongfaType>('main')
+  const activeGongfaItems = computed(
+    () => gongfaCategories.value.find(g => g.type === gongfaCat.value)?.items ?? []
+  )
+
+  /** 门类小印章的配色(非激活态;与主修卡「主」字同一块语言) */
+  function gongfaCatSeal(type: GongfaType): string {
+    return type === 'secret'
+      ? 'bg-violet-ink/15 text-violet-ink'
+      : type === 'main'
+        ? 'bg-cinnabar/10 text-cinnabar'
+        : 'bg-jade/15 text-jade'
+  }
+
+  /** WAI-ARIA tabs 键盘导航:左右键在门类间回绕,Home/End 直达首尾(与 InkTabs 同约定) */
+  function onGongfaCatKeydown(e: KeyboardEvent): void {
+    if ((e.target as HTMLElement).getAttribute?.('role') !== 'tab') return
+    const order: GongfaType[] = ['main', 'sub', 'secret']
+    let idx = order.indexOf(gongfaCat.value)
+    switch (e.key) {
+      case 'ArrowLeft': idx -= 1; break
+      case 'ArrowRight': idx += 1; break
+      case 'Home': idx = 0; break
+      case 'End': idx = order.length - 1; break
+      default: return // 其它键不干预
+    }
+    idx = (idx + order.length) % order.length // 左右键到两端回绕
+    e.preventDefault() // 别让方向键顺带滚动页面
+    const target = order[idx]
+    if (target === undefined) return
+    gongfaCat.value = target
+    ;(e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]')[idx]?.focus()
+  }
 
   const mainDef = computed(() => (cultivation.mainGongfa ? gongfaDef(cultivation.mainGongfa) : undefined))
 
