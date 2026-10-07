@@ -37,6 +37,28 @@ export const MARKET_EQUIP_STONE_PER_RANK = 30
 /** 货架出门类权重(骰出门类后,若该门类在现境界无货则让给别的门类) */
 export const MARKET_KIND_WEIGHTS: Record<MarketKind, number> = { pill: 4, material: 3, equipment: 3 }
 
+// ---- 售出(摆摊) ----
+/** 装备寄卖格数与耗时(秒,真实时间;离线照走,到期自售入账) */
+export const MARKET_CONSIGN_SLOTS = 2
+export const MARKET_CONSIGN_SECONDS = 2400
+/** 寄卖装备灵石档位(stoneByTier 的 amount)与每品质档增量 —— 恒低于坊市购入同档,无搬砖套利 */
+export const MARKET_CONSIGN_STONE_BASE = 25
+export const MARKET_CONSIGN_STONE_PER_RANK = 12
+/** 丹药即时售价 = 炼制石耗 × 此倍(购入倍率 2.5,卖出低于购入,双向不成环) */
+export const MARKET_SELL_PILL_FACTOR = 1.2
+/** 材料每单位即时售价档位(stoneByTier 的 amount);购入每单位 6,售出 3 */
+export const MARKET_SELL_MAT_STONE_UNITS = 3
+
+/** 一桩寄卖(装备已离背包、售出即入账;不可撤回) */
+export interface ConsignPost {
+  slot: number
+  tier: number
+  qualityRank: number
+  price: GNum
+  finishAt: number
+  name: string
+}
+
 export interface MarketPillSlot {
   kind: 'pill'
   idx: number
