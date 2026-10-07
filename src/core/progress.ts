@@ -139,8 +139,12 @@ export function checkCustomAchievement(key: string): void {
   }
 }
 
-/** 周期检查(寿元/灵石等状态型成就) */
+/** 周期检查(寿元/灵石等状态型成就 + 全成就补扫) */
 export function checkStateAchievements(): void {
+  // 全成就补扫:realm / counter 成就是累计事实,只要满足了就该解锁。
+  // 它们原本只在 track()/trackRealm() 两个行为触发点被求值;老档/导入档在
+  // 境界已高却再没触发计数时,低境界成就会一直锁着 —— 周期里重放一次即自愈。
+  checkAchievements()
   const player = usePlayerStore()
   const resources = useResourcesStore()
   if (player.lifespanRatio <= LIFESPAN_CRITICAL_RATIO && player.lifespanRatio > 0) checkCustomAchievement('lifespanLow')
