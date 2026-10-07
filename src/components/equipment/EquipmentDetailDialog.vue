@@ -357,7 +357,7 @@
           <!-- 分解二步确认:一件淬养过的装备(强化/封存/重铸)误触垃圾桶不该直接没 -->
           <template v-if="decomposeArm !== inst?.uid">
             <button
-              class="btn-ghost px-3"
+              class="btn-ghost"
               :disabled="isEquipped || inst?.locked"
               aria-label="分解这件装备"
               @click="decomposeArm = inst?.uid ?? null"
@@ -366,8 +366,8 @@
             </button>
           </template>
           <template v-else>
-            <button class="btn-seal !px-2.5 !text-[11px]" @click="doDecompose">分解?</button>
-            <button class="btn-ghost px-2 text-[11px] text-ink-faint" @click="decomposeArm = null">算了</button>
+            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doDecompose">分解?</button>
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px] text-ink-faint" @click="decomposeArm = null">算了</button>
           </template>
         </div>
       </div>
