@@ -6,9 +6,10 @@
 import type { CombatantSnap, StatMods } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
+import { MAX_MAJOR } from '@/data/realms'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
 import { SIM_REFERENCE } from './celestialSim'
-import { runGauntlet, worldFoeSnap } from './gauntlet'
+import { runGauntlet, worldFoeSnap, celestialJudgement } from './gauntlet'
 
 export interface MetaRound {
   round: number
@@ -25,10 +26,13 @@ function avgClearRate(snap: CombatantSnap, runs: number, seedBase: number): numb
   let sum = 0
   for (let w = 0; w < CELESTIAL_WORLDS.length; w += 1) {
     const world = CELESTIAL_WORLDS[w]!
+    // 与 celestialSim.worldFoes / production expedition 同一口径:守关者按本流派形状
+    // 算道之理解判定(厚构筑会被加厚),否则厚筑流派的通关率会被系统性高估。
+    const judgement = celestialJudgement(snap.mods, MAX_MAJOR, world.anchorTier)
     const rng = new RandomService(mulberry32(seedBase + w * 131))
     const foes: CombatantSnap[] = []
-    for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, SIM_REFERENCE))
-    foes.push(worldFoeSnap(world.guardian, SIM_REFERENCE))
+    for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, SIM_REFERENCE, 1, judgement))
+    foes.push(worldFoeSnap(world.guardian, SIM_REFERENCE, 1, judgement))
     let clears = 0
     for (let r = 0; r < runs; r += 1) {
       if (runGauntlet(snap, foes, world.rules, world.healBetweenPct, rng).cleared) clears += 1

@@ -242,5 +242,7 @@
     const i = activeModals.indexOf(entry)
     if (i >= 0) activeModals.splice(i, 1)
     unwatchEdges()
+    // 与 setup 处的注册同引用配对,卸载即移除,避免每个弹窗实例向 window 永久泄漏键盘监听
+    if (typeof window !== 'undefined') window.removeEventListener('keydown', onWindowKey)
   })
 </script>

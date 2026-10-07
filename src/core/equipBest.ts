@@ -41,7 +41,10 @@ const HP_FLAT_WEIGHT = 1 / 6
 export function equippablePower(i: EquipmentInstance): number {
   const r = resolveEquipStats(i)
   const f = r.flats
-  let value = toNum(f.attack) + toNum(f.defense) + toNum(f.maxHp) * HP_FLAT_WEIGHT
+  // toNum 在 e>308 返回 Infinity(见 utils/gnum)。坏档/异常模板把平铺写爆时,先夹回 0,
+  // 别让 Infinity 战力混进 multi 件全平手、一键换装退化成语义变味的比较。
+  const finite = (n: number): number => (Number.isFinite(n) ? n : 0)
+  let value = finite(toNum(f.attack)) + finite(toNum(f.defense)) + finite(toNum(f.maxHp)) * HP_FLAT_WEIGHT
   const critRate = r.mods.critRate ?? 0
   const critDamage = r.mods.critDamage ?? 0
   value += critRate * (1 + critDamage)

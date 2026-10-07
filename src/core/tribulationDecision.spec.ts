@@ -124,6 +124,13 @@ describe('⑥ 三维折算(防御→抗性 / 气血→开劫水位)', () => {
     expect(statGuardOf({ defense: bareDef, maxHp: bareHp, major: MAJOR, sub: SUB })).toEqual({ resist: 0, guard: 0 })
   })
 
+  it('坏档三维 Infinity/境界爆表时整块作废,不再靠封顶兜底(见 utils/gnum toNum)', () => {
+    // toNum 在 e>308 返回 Infinity:防御/气血被写爆时按 0 折算,而不是经 Math.min(CAP,…) 折成满抗
+    expect(statGuardOf({ defense: Infinity, maxHp: Infinity, major: MAJOR, sub: SUB })).toEqual({ resist: 0, guard: 0 })
+    // 境界大到 realmScale 翻出可表示范围一并作废
+    expect(statGuardOf({ defense: bareDef, maxHp: bareHp, major: 1e9, sub: 0 })).toEqual({ resist: 0, guard: 0 })
+  })
+
   it('超出部分按倍数线性折算,并各自封顶', () => {
     const six = statGuardOf({ defense: bareDef * 6, maxHp: bareHp * 6, major: MAJOR, sub: SUB })
     // (6-1)×4% = 20%,抗性那条上限 18% —— 到顶了(Phase 39 由 5%/30% 收窄)

@@ -196,7 +196,7 @@
           <button
             v-for="c in compareCandidates"
             :key="c.at"
-            class="chip-ink"
+            class="chip-ink !py-1.5"
             :class="compareAt === c.at ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
             @click="pickCompare(c.at)"
           >

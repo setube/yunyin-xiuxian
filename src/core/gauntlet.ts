@@ -276,6 +276,8 @@ export interface GauntletOpts {
   minHpAfterFight?: number
   /** 剑意/杀意:每胜一场,玩家词条叠加一层 */
   perWinPlayerMods?: StatMods
+  /** 只读 .cleared/.rounds 时置 false,要求 resolveCombat 跳过战报构建 */
+  buildLog?: boolean
 }
 
 /** 词条叠加 n 层 */
@@ -311,7 +313,7 @@ export function runGauntlet(
       ? { ...player, mods: stackMods(player.mods, opts.perWinPlayerMods, fightsWon) }
       : player
     const fightRules: CombatRules = { ...(rules ?? {}), playerStartHpPct: Math.min(startCap, carried) }
-    const result = resolveCombat(snap, foe, rng, fightRules)
+    const result = resolveCombat(snap, foe, rng, fightRules, opts.buildLog ?? true)
     totalRounds += result.rounds
     rows.push({ foeName: foe.name, win: result.win, rounds: result.rounds, hpLeftPct: result.playerHpPct, logs: result.log, foe })
     if (!result.win) {

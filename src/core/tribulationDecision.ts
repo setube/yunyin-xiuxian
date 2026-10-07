@@ -99,12 +99,21 @@ export const NO_STAT_GUARD: TribStatGuard = { resist: 0, guard: 0 }
  * 曲线调整悄悄变形。裸修为及以下拿不到折算,超出部分按常数线性折算后封顶。
  */
 export function statGuardOf(raw: { defense: number; maxHp: number; major: number; sub: number }): TribStatGuard {
+  // toNum 在 e>308 返回 Infinity(见 utils/gnum)。坏档把境界/三维写爆时,别让 Infinity
+  // 流进 surplus 靠下面的 Math.min(CAP, …) 兜底 —— 显式排掉,返回一块干净的全零折算。
   const scale = toNum(realmScale(raw.major, raw.sub))
+  if (!Number.isFinite(scale)) return NO_STAT_GUARD
   const bareDef = scale * COMBAT_DEF_BASE
   const bareHp = scale * COMBAT_HP_BASE
-  // 规整到 9 位:除法会留下 1e-17 这样的尾巴,裸修为该是干净的 0,不是"白送一点点"
-  const surplus = (value: number, bare: number) =>
-    bare > 0 ? Math.max(0, Number((value / bare - 1).toFixed(9))) : 0
+  // 规整到 9 位:除法会留下 1e-17 这样的尾巴,裸修为该是干净的 0,不是"白送一点点"。
+  // 比值远离 1 时(大幅超界)没有小数残留可规整,直接算 —— .toFixed(9) 只在比值接近 1 时
+  // 才有意义,对 1e300 这样的巨值会造出几 KB 的字符串,毫无必要。
+  const surplus = (value: number, bare: number): number => {
+    if (!Number.isFinite(value) || !(bare > 0)) return 0
+    const ratio = value / bare
+    const normalized = ratio > 1 && ratio < 2 ? Number((ratio - 1).toFixed(9)) : ratio - 1
+    return Math.max(0, normalized)
+  }
   const defSurplus = surplus(raw.defense, bareDef)
   const hpSurplus = surplus(raw.maxHp, bareHp)
   return {

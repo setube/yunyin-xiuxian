@@ -317,7 +317,7 @@
               <button
                 v-for="w in CELESTIAL_WORLDS"
                 :key="w.id"
-                class="chip-ink"
+                class="chip-ink !py-1.5"
                 :class="draft.worldId === w.id ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
                 @click="setDraftWorld(w.id)"
               >
@@ -328,7 +328,7 @@
               <button
                 v-for="m in MUTATORS"
                 :key="m.id"
-                class="chip-ink"
+                class="chip-ink !py-1.5"
                 :class="draft.mutatorIds.includes(m.id) ? 'border-violet-ink text-violet-ink' : 'border-ink/25 text-ink-faint'"
                 :title="m.text"
                 :aria-pressed="draft.mutatorIds.includes(m.id)"
@@ -343,7 +343,7 @@
             </p>
             <div class="mt-1.5 flex flex-wrap gap-1.5">
               <button
-                class="chip-ink"
+                class="chip-ink !py-1.5"
                 :class="draft.pactId === null ? 'border-jade text-jade' : 'border-ink/25 text-ink-faint'"
                 :aria-pressed="draft.pactId === null"
                 @click="setDraftPact(null)"
@@ -353,7 +353,7 @@
               <button
                 v-for="p in PACTS"
                 :key="p.id"
-                class="chip-ink"
+                class="chip-ink !py-1.5"
                 :class="draft.pactId === p.id ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
                 :title="p.ruleText"
                 :aria-pressed="draft.pactId === p.id"
@@ -425,7 +425,7 @@
               <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">{{ mark.rounds }}回合 · {{ mark.buildName }}</span>
               <button
                 v-if="isStaleRuleset(mark.ruleset)"
-                class="shrink-0 rounded border border-cinnabar/50 bg-cinnabar/10 px-1 py-0.5 font-kai text-[9px] text-cinnabar active:scale-90"
+                class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-1 py-0.5 font-kai text-[9px] text-cinnabar active:scale-90"
                 :title="`录于旧纪 ${mark.ruleset},天道已变`"
                 @click="openEra(mark)"
               >
@@ -433,7 +433,7 @@
               </button>
               <button
                 v-if="mark.replay"
-                class="shrink-0 rounded border border-gold-ink/40 px-1.5 py-0.5 font-kai text-[10px] text-gold-ink active:scale-90"
+                class="shrink-0 min-h-[28px] rounded border border-gold-ink/40 px-1.5 py-0.5 font-kai text-[10px] text-gold-ink active:scale-90"
                 title="以当年的构筑重打此战"
                 @click="goReplay(mark)"
               >
@@ -442,13 +442,13 @@
               <!-- 重写要花道源,代价内联在按钮上(不再是 hover 专属),触控面放大,并加一步确认 -->
               <template v-if="mark.cleared && mark.replay && rewriteConfirm === i">
                 <button
-                  class="shrink-0 rounded border border-cinnabar/50 bg-cinnabar/10 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
+                  class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
                   @click="rewriteConfirm = null"
                 >
                   算了
                 </button>
                 <button
-                  class="shrink-0 rounded bg-cinnabar px-2 py-1 font-kai text-[10px] seal-face active:scale-90"
+                  class="shrink-0 min-h-[28px] rounded bg-cinnabar px-2 py-1 font-kai text-[10px] seal-face active:scale-90"
                   @click="doRewrite(mark)"
                 >
                   确认重写
@@ -456,7 +456,7 @@
               </template>
               <button
                 v-else-if="mark.cleared && mark.replay"
-                class="shrink-0 rounded border border-cinnabar/40 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
+                class="shrink-0 min-h-[28px] rounded border border-cinnabar/40 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
                 :title="`以今日之你重打此战,快过 ${mark.rounds} 回合即【胜于旧我】`"
                 @click="rewriteConfirm = i"
               >

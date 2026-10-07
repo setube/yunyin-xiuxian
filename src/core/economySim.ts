@@ -18,8 +18,11 @@
  *   十二境全压死在层级 20,收入那一半先错了 1.9^12。
  *
  * 读界外的表须知:那一段的**出口**多半不在建筑上(建筑早已封顶),而在天道熔炉
- * (玄铁/残页/器灵尘 → 道源)。本模型尚未把熔炉出口计入,故界外读到的高闲置
- * 是「没有出口模型」的读数,不等于「这些资源真的没用」—— 见 ISS-210。
+ * (玄铁/残页/器灵尘/灵石 → 道源)。熔炉已入模型(ISS-210 结清):材料与灵石按各自
+ * 熔铸率折算成道源潜力,道源再凝道果,凝一枚的代价落在 daoCostHours(见界外每一行)。
+ * 故界外读到的高闲置比值(动辄 10^5×)是**真实读数** —— 每境只凝一枚道果的终局需求
+ * 本就远小于材料产出,不代表「这些资源真的没用」;真正该看的是 daoCostHours 是否随
+ * 层级漂移(见 DAO_SOURCE_PER_FRUIT 与熔炉价那一段)。
  */
 import { toNum } from '@/utils/gnum'
 import { mulberry32, RandomService } from '@/utils/random'
@@ -247,7 +250,17 @@ export function auditEra(major: number): EraAudit {
     eraHours,
     ...(furnace ? { daoCostHours } : {}),
     flows: [
-      make('stone', stoneIncome, stoneSinkHour),
+      /**
+       * 灵石一行与其它四样不同:它在界外仍保留「强化/炼丹/建筑」这些人间界式的去处
+       * (stoneSinkHour),不像玄铁/残页/灵草/器灵尘那样经 withFurnace 整体改认熔炉。
+       * 故这里在人间界式去向**之上追加**熔炉口的灵石消耗:
+       * 实际被熔炉吃掉的灵石 = 灵石投入熔炉的炉次 × 分摊比例
+       *   = (stoneIncome / stonePerDao) × stonePerDao × furnaceShare
+       *   = stoneIncome × furnaceShare   (stonePerDao 约去)。
+       * 道源潜力那一侧(见上 furnace)仍计入灵石贡献,两端同认「灵石投熔炉」这一去向。
+       * 终局道果需求故意很小,故这一项量级极小(≈0.02 比值点)——修正的是记账一致性。
+       */
+      make('stone', stoneIncome, stoneSinkHour + (furnace ? stoneIncome * furnaceShare : 0)),
       withFurnace('herb', herbIncome, herbSinkHour),
       withFurnace('ore', oreIncome, oreSinkEra / amortizeHours),
       withFurnace('page', pageIncome, pageSinkEra / amortizeHours),

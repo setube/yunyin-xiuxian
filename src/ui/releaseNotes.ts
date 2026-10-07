@@ -15,10 +15,17 @@
  *
  * 本文件保持零依赖(不 import 任何东西),以便测试只喂数据、不被随机引入的
  * 依赖链拖住;同时它也是发布说明的单点 —— 加一条新版本,改这里即可。
+ *
+ * ## 与 CHANGELOG 的关系(重要)
+ * 只有「玩家可感的已发布版本」才加一条:首条的 version 必须 == package.json 的
+ * version(releaseNotes.spec.ts 钉死,否则「已是最新 / 新版本就绪」会自相矛盾)。
+ * CHANGELOG 里纯内部的版本(如 1.37.1 / 1.37.2 的模拟器校准、数据层韧性修复,
+ * 无任何玩家可见内容,且 package.json 未抬版本)刻意不在这儿落条 —— 别给玩家
+ * 编它没拿到的东西。加新版本时:实改点逐条取自 CHANGELOG,不外推、不编造。
  */
 
 export interface ReleaseNote {
-  /** 版本号,须与 CHANGELOG 的版本段一致,也得与 package.json 的 version 对上 */
+  /** 版本号;首条必须与 package.json 的 version 对上(见上文「与 CHANGELOG 的关系」) */
   version: string
   /** 发布日期,YYYY-MM-DD */
   date: string
@@ -34,7 +41,7 @@ export interface ReleaseNote {
   sign?: string
 }
 
-/** 发布说明,新的在前。version 必须与 CHANGELOG / package.json 一致。 */
+/** 发布说明,新的在前。仅收「玩家可感的已发布版本」,首条必须与 package.json 同源。 */
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: '1.37.0',
@@ -47,7 +54,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     ],
     changes: [
       '一、时辰可料:以现下修速为度,修为圆满、灵气回满、灵气充盈各报「约 X 后」;藏经阁翻检亦报「约 X 后读通某方 / 翻出一张新方」,够得着的方子都已到手时,明说无可再翻。',
-      '二、转世去留,先点清账:兵解之前,可展开十七样去留之清单——随魂保留、部分保留、归零重来,逐行点验,与结算弹窗同一张账。',
+      '二、转世去留,先点清账:兵解之前,可展开三十四样去留之清单——随魂保留、部分保留、归零重来,逐行点验,与结算弹窗同一张账。',
       '三、战力来路,摆上台面:攻×3、防×2、血×0.15,一望即明;进阶成功率之「来路」,基础、词条、气运·幸运、静坐或聚气丹,逐项摊开。',
       '四、灵气充盈进行时,修为行亮一枚小章:未到报其时辰,已到亮其章,同源互斥,不误一眼。',
       '五、天时一行,带当日气象:同一天是天上哪片云,望之即知。',

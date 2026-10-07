@@ -190,6 +190,12 @@ export const TRIB_HP_GUARD_CAP = 0.35
  */
 export const TRIBULATION_DIFFICULTY_CAP_MAJOR = 9
 
+// ============ 问卦 / 星象 ============
+/** 问卦耗悟道点 —— 卜以决疑,不疑何卜;代价不重,但不可随手摇着玩 */
+export const DIVINATION_COST = 2
+/** 值日之宿所利界域的际遇加成(乘在际遇概率上) */
+export const MANSION_EVENT_LUCK = 0.1
+
 // ============ 战斗基础 ============
 export const COMBAT_ATK_BASE = 12
 export const COMBAT_DEF_BASE = 7

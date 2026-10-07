@@ -19,6 +19,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { usePacingTelemetry } from '@/stores/pacingTelemetry'
 import { useLoreStore } from '@/stores/lore'
+import { useResourcesStore } from '@/stores/resources'
 import { sanitizeOfflineInputs } from './offline'
 
 /**
@@ -280,6 +281,22 @@ describe('坏档韧性 · 复杂状态的值也要修回来(不只是"不炸")',
     player.$patch({ lifespanBonusYears: 200 } as never)
     player.sanitize()
     expect(player.lifespanBonusYears).toBe(200)
+  })
+
+  it('资源:负数/NaN 被夹回 0,合法正数不因守卫被误伤', () => {
+    // 游戏内写入路径(addSmall/setQi)都以 Math.max(0, …) 兜底,负数只能来自坏档;
+    // sanitize 此前只修非有限值,负数会原样存活并显示成负库存。与 settings.sanitize 对齐后一并归零。
+    setActivePinia(createPinia())
+    const r = useResourcesStore()
+    r.qi = -50
+    r.wudao = -3
+    r.herb = NaN
+    r.ore = 7
+    r.sanitize()
+    expect(r.qi).toBe(0)
+    expect(r.wudao).toBe(0)
+    expect(r.herb).toBe(0)
+    expect(r.ore).toBe(7)
   })
 })
 

@@ -13,7 +13,7 @@
         战力是全书出现最频繁却从不解释的一个数 —— 一句算式说清它从哪来。
         权重取自 POWER_WEIGHTS,与 powerScore 同一份,界面不手抄
       -->
-      <p class="mt-0.5 text-right text-[10px] text-ink-faint tabular">{{ powerExplainText() }}</p>
+      <p class="mt-0.5 text-right text-[10px] text-ink-faint tabular">{{ powerExplain }}</p>
       <!--
         逐行把攻/防/血各折算多少摊开,合计又对上总战力 —— 「拆解」不是另起口径,
         读的与 powerScore 同一批属性同一份权重。
@@ -115,7 +115,7 @@
           :key="note.key"
           class="mt-0.5 text-[9px] leading-relaxed text-ink-faint"
         >
-          {{ note.label }}:{{ note.caveat }}
+          {{ note.label }}: {{ note.caveat }}
         </p>
         <div v-if="breakdownRows.length" class="mt-1.5 rounded-md bg-paper-deep/60 px-2.5 py-2">
           <p class="text-[10px] text-ink-soft">{{ STAT_NAMES[breakdownKey!] }} · 来源明细</p>
@@ -320,7 +320,7 @@
           <button
             v-for="t in ownedTalents"
             :key="t!.id"
-            class="chip-ink border-current bg-transparent text-left"
+            class="chip-ink !py-1.5 border-current bg-transparent text-left"
             :style="{ color: TALENT_GRADE_COLORS[t!.grade] }"
             :title="t!.desc"
             :aria-expanded="talentTap === t!.id"
@@ -363,7 +363,7 @@
           </p>
         </div>
       </div>
-      <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">{{ rebirthDecisionHint() }}</p>
+      <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">{{ rebirthHint }}</p>
       <template #footer>
         <button class="btn-ghost w-full !text-[12px]" @click="rebirth">兵解转世</button>
       </template>
@@ -510,7 +510,7 @@
       <div v-else class="space-y-2.5">
         <p class="text-[12px] leading-relaxed text-ink-faint">师承,是你在凡界遇见的良师相赠的一份心法。拜入门下,得一条相合之增益;言行与师道相契,师尊自有嘉许 —— 纵偶有不契,也不至受罚。</p>
         <button
-          v-for="m in mentorChoices()"
+          v-for="m in mentorChoicesList"
           :key="m!.id"
           class="w-full rounded-lg border px-3 py-2.5 text-left transition-all active:scale-98"
           :class="hintMentor === m!.id ? 'border-cinnabar/60 bg-cinnabar/5' : 'border-ink/20'"
@@ -595,6 +595,8 @@
   /** 战力拆解的展开态与构成行 —— 读同一批属性,逐行相加即战力行那个数 */
   const powerOpen = ref(false)
   const powerRows = computed(() => powerBreakdownRows(stats.value))
+  /** 战力算式是纯常量文案(powerExplainText 无依赖),只在 setup 算一次,模板不再每帧重算 */
+  const powerExplain = powerExplainText()
 
   const modRows = computed(() =>
     STAT_KEYS.map(k => ({
@@ -680,6 +682,8 @@
   const heritageResetRows = computed(() => heritageRowsView.value.filter(r => r.mode === 'reset'))
   const keepCount = computed(() => heritageKeepRows.value.length)
   const resetCount = computed(() => heritageResetRows.value.length)
+  /** 兵解提示是纯常量文案(rebirthDecisionHint 无依赖),setup 只算一次 */
+  const rebirthHint = rebirthDecisionHint()
   /** 天赋芯片点按展开(移动端无 hover,效果说明内联显示);关弹窗复位 */
   const talentTap = ref<string | null>(null)
   const tappedTalent = computed(() => (talentTap.value ? talentDef(talentTap.value) : undefined))
@@ -754,17 +758,29 @@
   // Phase 31 S1 师承
   const mentorDialog = ref(false)
   const mentorVer = computed(() => mentorVerdict(player.mentor))
+  /** 可选师承列表是纯静态数据,setup 只算一次;弹窗 v-for 不再每帧重取 */
+  const mentorChoicesList = mentorChoices()
   /**
    * 拜师前预读契合度(与拜后的 verdict 同一函数,只是人还没拜 —— 选谁合谁有数可见)。
    * 契合是 -1~1 的实数(见 mentorService),与同为百分比的构筑契合不同 —— 这里把标尺
    * 也带出来(…/ 1.0),不然裸一个 0.42 读者分不清是 42% 还是 0.42/1.0。
+   *
+   * 备选师尊的契合度一次算齐进 Map:模板里同一人只读一份,不再逐人两处各算一遍 mentorVerdict。
    */
+  const mentorAffinityMap = computed(() => {
+    const map = new Map<MentorId, number>()
+    for (const m of mentorChoicesList) map.set(m.id, mentorVerdict(m.id)?.affinity ?? 0)
+    return map
+  })
+  function mentorAffinity(mentorId: MentorId): number {
+    return mentorAffinityMap.value.get(mentorId) ?? 0
+  }
   function mentorAffinityText(mentorId: MentorId): string {
-    const a = mentorVerdict(mentorId)?.affinity ?? 0
+    const a = mentorAffinity(mentorId)
     return `${a > 0 ? '+' : ''}${a.toFixed(2)} / 1.0`
   }
   function mentorAffinityChip(mentorId: MentorId): string {
-    const a = mentorVerdict(mentorId)?.affinity ?? 0
+    const a = mentorAffinity(mentorId)
     if (a > 0.2) return 'text-jade'
     if (a < -0.2) return 'text-cinnabar/80'
     return 'text-ink-faint'

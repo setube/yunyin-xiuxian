@@ -75,6 +75,8 @@ describe('数值格式化', () => {
     expect(formatPercent(NaN)).toBe('--')
     expect(formatPercent(Infinity)).toBe('--')
     expect(formatPercent(-Infinity)).toBe('--')
+    // x 有限但 x*100 上溢成 Infinity 时同样要给占位,不能吐 "Infinity%"(见 format.ts)
+    expect(formatPercent(1e307)).toBe('--')
   })
 
   it('非法时长显示 --', () => {

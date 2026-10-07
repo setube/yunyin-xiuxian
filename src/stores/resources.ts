@@ -55,14 +55,16 @@ export const useResourcesStore = defineStore(
       qi.value = Math.max(0, Math.min(cap * QI_BANK_MULT, v))
     }
 
-    /** 存档修复:重建大数字段 */
+    /** 存档修复:重建大数字段,并把负数/非有限值一并夹回 0(与 settings.sanitize 同判据) */
     function sanitize(): void {
       spiritStone.value = gn(spiritStone.value)
       for (const key of Object.keys(smallRefs) as SmallResourceId[]) {
         const r = smallRefs[key]
         if (!Number.isFinite(r.value)) r.value = 0
+        r.value = Math.max(0, r.value)
       }
       if (!Number.isFinite(qi.value)) qi.value = 0
+      qi.value = Math.max(0, qi.value)
     }
 
     return {

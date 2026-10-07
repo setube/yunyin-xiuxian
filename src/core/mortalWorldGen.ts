@@ -441,7 +441,7 @@ function runChain(profileIdx: number, w: MortalWorld, n: number, seed: number): 
       const foe = snapOf(place.boss, place.tier, bossDanger(k))
       if (!foe) continue
       fights += 1
-      if (resolveCombat(scaledBuildSnap(profileIdx, place.tier), foe, rng, w.rules).win) wins += 1
+      if (resolveCombat(scaledBuildSnap(profileIdx, place.tier), foe, rng, w.rules, false).win) wins += 1
     }
   }
   return fights === 0 ? 0 : wins / fights

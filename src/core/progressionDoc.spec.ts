@@ -16,7 +16,7 @@ import {
   SORCERY_SUMMARY
 } from '@/data/progressionDoc'
 import { CHANGING_TIERS, DIVINATION_COST } from './divination'
-import { MANSION_EVENT_LUCK } from './astronomy'
+import { MANSION_EVENT_LUCK } from '@/data/constants'
 import { GATES } from '@/data/qimen'
 import { MANSIONS, IMAGES } from '@/data/xiangxiu'
 import { PALACES, STARS } from '@/data/ziwei'

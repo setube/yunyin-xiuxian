@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { onUnmounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { useSettingsStore } from '@/stores/settings'
   import { useUiStore } from '@/stores/ui'
@@ -88,6 +88,7 @@
   const aboutOpen = ref(false)
   const fileInput = ref<HTMLInputElement | null>(null)
   const warpRef = ref<InstanceType<typeof WarpPortal> | null>(null)
+  let enterTimer: ReturnType<typeof setTimeout> | undefined
 
   function onStart(): void {
     if (settings.privacyAccepted) {
@@ -102,7 +103,7 @@
     agreeOpen.value = false
     // 穿梭传送门:播放约 2.5s 后进入建号页
     warpRef.value?.show({ title: '云深不知处', subtitle: '一念修行 · 仙路自此始' })
-    setTimeout(() => {
+    enterTimer = setTimeout(() => {
       void router.push('/create')
     }, 2500)
   }
@@ -133,4 +134,8 @@
     reader.readAsText(file)
     if (fileInput.value) fileInput.value.value = ''
   }
+
+  onUnmounted(() => {
+    if (enterTimer !== undefined) clearTimeout(enterTimer)
+  })
 </script>
