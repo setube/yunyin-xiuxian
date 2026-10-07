@@ -6,6 +6,7 @@
  */
 import type { CelestialWorldDef, WorldFoeShape, WorldRouteNode } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
+import { jaccardDistance } from '@/utils/setMath'
 import { CELESTIAL_WORLDS, TRIAL_FOES } from '@/data/endgame'
 import { MUTATORS, MUTATOR_THEMES, THEME_IDENTITY, type MutatorTheme } from '@/data/mutators'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
@@ -112,14 +113,6 @@ function foeMechSet(w: CelestialWorldDef): Set<string> {
     if ((f.mods?.dodgeRate ?? 0) >= 0.2) out.add('dodgy')
   }
   return out
-}
-
-function jaccardDistance(a: Set<string>, b: Set<string>): number {
-  if (a.size === 0 && b.size === 0) return 0
-  let inter = 0
-  for (const x of a) if (b.has(x)) inter += 1
-  const union = a.size + b.size - inter
-  return 1 - inter / union
 }
 
 /** 最优流派差异:top2 完全相同=0,半同=0.5,全异=1;历史无审计时取中性 0.5 */
