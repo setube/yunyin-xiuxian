@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <InkTabs v-model="tab" :tabs="[{ id: 'buy', label: '购' }, { id: 'sell', label: '售' }]" />
+    <InkTabs v-model="tab" :tabs="[{ id: 'buy', label: '购' }, { id: 'sell', label: '售' }, { id: 'bounty', label: '悬赏' }]" />
 
     <!-- 购入货架 -->
     <section v-if="tab === 'buy'">
@@ -61,7 +61,7 @@
     </section>
 
     <!-- 售出:装备寄卖 / 材料丹药即时售 -->
-    <section v-else class="space-y-4">
+    <section v-else-if="tab === 'sell'" class="space-y-4">
       <!-- 寄卖装备 -->
       <div>
         <SectionTitle title="装备寄卖" :hint="`${market.consign.length}/${consignSlots}`" />
@@ -131,6 +131,36 @@
         </div>
       </div>
     </section>
+
+    <!-- 悬赏板:商号收购订单,交货得灵石 -->
+    <section v-else class="space-y-4">
+      <p class="card-ink flex items-center justify-between px-3 py-2 text-[10px] text-ink-faint">
+        <span>商号悬赏收购,交货即结。价比摆摊售出更丰。</span>
+        <span class="tabular" :class="bountyRemaining <= 0 ? 'text-cinnabar' : ''">
+          {{ bountyRemaining <= 0 ? '正在换新单…' : `换新单还差 ${formatCountdown(bountyRemaining)}` }}
+        </span>
+      </p>
+      <div class="space-y-2">
+        <div v-for="b in bountyList" :key="b.idx" class="card-ink p-3" :class="b.claimed ? 'opacity-50' : ''">
+          <div class="flex items-center gap-2.5">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md font-kai text-[14px]" :class="b.tagCls">{{ b.tag }}</span>
+            <div class="min-w-0 grow">
+              <p class="truncate font-kai text-[13px] text-ink">{{ b.title }}</p>
+              <p class="text-[10px] text-ink-faint">{{ b.desc }}</p>
+            </div>
+          </div>
+          <div class="mt-2 flex items-center justify-between">
+            <span class="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span class="flex items-center gap-0.5 tabular text-gold-ink"><GameIcon name="gem" :size="12" />{{ b.rewardText }}</span>
+              <span v-if="b.extraText" class="text-azure">· {{ b.extraText }}</span>
+            </span>
+            <button class="btn-ghost px-2.5 py-1" :disabled="b.claimed || !b.ready" @click="claimOne(b.idx)">
+              {{ b.claimed ? '已交' : b.ready ? '交货' : '暂不足' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -138,7 +168,10 @@
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import type { GNum } from '@/types'
   import type { MarketSlot } from '@/data/market'
+  import type { BountySlot } from '@/data/bounty'
   import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS } from '@/data/market'
+  import { useBountyStore } from '@/stores/bounty'
+  import { bountyRemainingSec } from '@/core/bountyService'
   import { formatCountdown, formatGN } from '@/utils/format'
   import { useResourcesStore } from '@/stores/resources'
   import { useMarketStore } from '@/stores/market'
@@ -183,10 +216,11 @@
   const resources = useResourcesStore()
   const market = useMarketStore()
   const inventory = useInventoryStore()
+  const bounty = useBountyStore()
   const player = usePlayerStore()
   const ui = useUiStore()
 
-  const tab = ref<'buy' | 'sell'>('buy')
+  const tab = ref<'buy' | 'sell' | 'bounty'>('buy')
   const now = ref(Date.now())
   let timer: ReturnType<typeof setInterval> | undefined
 
@@ -316,12 +350,96 @@
     for (const name of sold) ui.toast(`寄卖「${name}」已售,灵石入账`, 'success')
   }
 
+  const bountyRemaining = computed(() => bountyRemainingSec(bounty.bountyAt, now.value))
+
+  /** 一纸悬赏摊成订单视图;ready 判「此刻交不交得起」 */
+  const bountyList = computed(() =>
+    bounty.orders
+      .slice()
+      .sort((a, b) => a.idx - b.idx)
+      .map(s => renderBounty(s))
+  )
+
+  interface BountyView {
+    idx: number
+    tag: string
+    tagCls: string
+    title: string
+    desc: string
+    rewardText: string
+    extraText: string
+    claimed: boolean
+    ready: boolean
+  }
+
+  const B_TAG_CLS: Record<string, string> = {
+    herb: 'bg-jade/15 text-jade',
+    ore: 'bg-ink/10 text-ink-soft',
+    pill: 'bg-cinnabar/10 text-cinnabar',
+    equip: 'bg-violet-ink/15 text-violet-ink'
+  }
+
+  function renderBounty(s: BountySlot): BountyView {
+    const claimed = s.claimed
+    if (s.kind === 'herb' || s.kind === 'ore') {
+      const name = s.kind === 'herb' ? '灵草' : '玄铁'
+      return {
+        idx: s.idx,
+        tag: s.kind === 'herb' ? '草' : '铁',
+        tagCls: B_TAG_CLS[s.kind] ?? '',
+        title: `募 ${name} ×${s.target}`,
+        desc: `交 ${name} 一摞,现货即结`,
+        rewardText: formatGN(s.reward),
+        extraText: '',
+        claimed,
+        ready: (s.kind === 'herb' ? resources.herb : resources.ore) >= s.target
+      }
+    }
+    if (s.kind === 'pill') {
+      const def = pillDef(s.kindId)
+      return {
+        idx: s.idx,
+        tag: '丹',
+        tagCls: B_TAG_CLS.pill ?? '',
+        title: `募 丹药 ×${s.target}`,
+        desc: def ? `收「${def.name}」${s.target} 枚` : '一味指定的丹药',
+        rewardText: formatGN(s.reward),
+        extraText: s.extra ? `另赠 悟道×${s.extra}` : '',
+        claimed,
+        ready: s.kindId ? (inventory.pills[s.kindId] ?? 0) >= s.target : false
+      }
+    }
+    const ready = inventory.bagItems.some(e => e.tier >= s.tier)
+    return {
+      idx: s.idx,
+      tag: '器',
+      tagCls: B_TAG_CLS.equip ?? '',
+      title: `贡一柄 ${s.tier} 阶以上兵刃`,
+      desc: '交一柄不低于此阶者,灵石器尘随品而赠',
+      rewardText: '价随品',
+      extraText: '另赠 器尘',
+      claimed,
+      ready
+    }
+  }
+
+  function claimOne(idx: number): void {
+    const result = bounty.claim(idx)
+    const slot = bounty.orders.find(s => s.idx === idx)
+    const label = slot ? `「${renderBounty(slot).title}」` : ''
+    if (result === 'ok') ui.toast(`悬赏 ${label} 已交货,灵石入账`, 'success')
+    else if (result === 'insufficient') ui.toast('存货不足,凑齐再来', 'warn')
+    else if (result === 'nobag') ui.toast('行囊里没有够格的兵刃', 'warn')
+  }
+
   onMounted(() => {
     market.sync(Date.now())
+    bounty.sync(Date.now())
     reapConsign()
     timer = setInterval(() => {
       now.value = Date.now()
       reapConsign()
+      bounty.sync(now.value)
       // 跨过货架刷新窗口的当口重上一架货(离线归来同理,这一拍立刻换新)
       if (marketRemainingSec(market.stockedAt, now.value) <= 0) market.sync(now.value)
     }, 1000)
