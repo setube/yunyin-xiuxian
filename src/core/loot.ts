@@ -6,7 +6,7 @@ import { rng } from '@/utils/random'
 import { gnZero, isZero } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import { salvageYieldText } from '@/ui/forgeText'
-import { qualityDef } from '@/data/qualities'
+import { isRareQuality, qualityDef } from '@/data/qualities'
 import { equipmentTemplate } from '@/data/equipment'
 import { PILLS } from '@/data/pills'
 import { ARTIFACTS, artifactDef } from '@/data/artifacts'
@@ -147,7 +147,7 @@ function acquireInto(inst: EquipmentInstance, opts: { quiet?: boolean; forceKeep
     const res = toDust(inst)
     return { ...res, line: `${label}(行囊已满,${res.line})` }
   }
-  if (!quiet && q.rank >= 3) {
+  if (!quiet && isRareQuality(q)) {
     ui.toast(`灵光乍现,拾得「${label}」`, 'rare')
   }
   return { line: label, bagged: true, evicted: false, dust: 0, stone: gnZero() }

@@ -2,6 +2,16 @@
 
 本文件自 v1.33.1 起维护;更早的版本见 [GitHub Releases](https://github.com/setube/yunyin-xiuxian/releases)。
 
+## [1.37.9] — 2026-10-07 · 品质档位硬编码边界改引单一事实源
+
+「稀有及以上」「层级加成封顶档」这两处品质判定原本在各处手抄魔数(3 与 4),改为由 `data/qualities` 的档位定义推导并共用同一把尺子(内部,行为不变)。
+
+### 调整与优化
+
+- 新增 `data/qualities.isRareQuality`(灵品及以上),loot 稀有掉落到 toast 与 equipGen 气运加成共用
+- 新增 `data/qualities.PROFOUND_RANK`(玄品档),equipGen 层级加成封顶档不再手写 4
+- 推导值恰等于原字面量,无 RNG/数值变化
+
 ## [1.37.8] — 2026-10-07 · 收敛重复的 Jaccard 距离实现
 
 天界与凡界世界生成各自手抄了一份 `jaccardDistance`,收敛到共享工具 `utils/setMath`(内部,行为等价)。
