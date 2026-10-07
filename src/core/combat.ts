@@ -191,7 +191,14 @@ export function applyCombatRuleSnap(
   return { pEff, eEff }
 }
 
-export function resolveCombat(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: RandomService, rules?: CombatRules): CombatResult {
+export function resolveCombat(
+  pSnap: CombatantSnap,
+  eSnap: CombatantSnap,
+  rng: RandomService,
+  rules?: CombatRules,
+  /** 纯胜负抽样 / 审计 / 扫描只读 .win 时置 false,跳过战报构建(formatGN/数组/每段 hpPct) */
+  buildLog: boolean = true
+): CombatResult {
   // 规则注入:道途与特殊世界只改参数,不改逻辑
   const { pEff, eEff } = applyCombatRuleSnap(pSnap, eSnap, rules)
   const maxRounds = rules?.maxRounds ?? MAX_COMBAT_ROUNDS
@@ -224,6 +231,7 @@ export function resolveCombat(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: R
 
   const hpPct = (f: Fighter): number => Math.max(0, Math.min(1, ratio(f.hp, f.snap.maxHp)))
   const push = (t: CombatLogEntry['t'], side: CombatLogEntry['side'], text: string, dmg?: GNum): void => {
+    if (!buildLog) return
     log.push({ t, side, text, dmg: dmg ? formatGN(dmg) : undefined, php: hpPct(p), ehp: hpPct(e) })
   }
 

@@ -40,7 +40,7 @@ export function worldClearRate(world: CelestialWorldDef, snap: CombatantSnap, ru
   const foes = worldFoes(world, snap)
   let clears = 0
   for (let i = 0; i < runs; i += 1) {
-    if (runGauntlet(snap, foes, world.rules, world.healBetweenPct, rng).cleared) clears += 1
+    if (runGauntlet(snap, foes, world.rules, world.healBetweenPct, rng, { buildLog: false }).cleared) clears += 1
   }
   return clears / runs
 }

@@ -62,7 +62,7 @@ function winRate(snap: CombatantSnap, foe: CombatantSnap, runs: number, seed: nu
   const rng = new RandomService(mulberry32(seed))
   let wins = 0
   for (let i = 0; i < runs; i += 1) {
-    if (resolveCombat(snap, foe, rng).win) wins += 1
+    if (resolveCombat(snap, foe, rng, undefined, false).win) wins += 1
   }
   return wins / runs
 }
@@ -198,7 +198,7 @@ describe('三阶涌现扫描(A+B 正常、A+C 正常、B+C 正常,A+B+C 突然�
       const rng = new RandomService(mulberry32(seed))
       let ok = 0
       for (let r = 0; r < gRuns; r += 1) {
-        if (runGauntlet(snapWith(mods), [gFoe, gFoe, gFoe], undefined, 0.3, rng).cleared) ok += 1
+        if (runGauntlet(snapWith(mods), [gFoe, gFoe, gFoe], undefined, 0.3, rng, { buildLog: false }).cleared) ok += 1
       }
       return ok / gRuns
     }
@@ -241,7 +241,7 @@ describe('流派 × 道途 协同审计', () => {
           const rules = mergeRules(dao.rules, world.rules)
           let clears = 0
           for (let r = 0; r < 10; r += 1) {
-            if (runGauntlet(snap, foes, rules, world.healBetweenPct, rng).cleared) clears += 1
+            if (runGauntlet(snap, foes, rules, world.healBetweenPct, rng, { buildLog: false }).cleared) clears += 1
           }
           sum += clears / 10
         }

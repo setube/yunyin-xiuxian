@@ -29,7 +29,7 @@ function mutationClearRate(rules: CombatRules | undefined, snap: CombatantSnap, 
   }
   let clears = 0
   for (let i = 0; i < runs; i += 1) {
-    if (runGauntlet(snap, foes, rules, 0.4, rng).cleared) clears += 1
+    if (runGauntlet(snap, foes, rules, 0.4, rng, { buildLog: false }).cleared) clears += 1
   }
   return clears / runs
 }
@@ -46,7 +46,7 @@ function worldRateWithRules(worldIdx: number, extra: CombatRules | undefined, sn
   const rules = chain(world.rules, extra)
   let clears = 0
   for (let i = 0; i < runs; i += 1) {
-    if (runGauntlet(snap, foes, rules, world.healBetweenPct, rng).cleared) clears += 1
+    if (runGauntlet(snap, foes, rules, world.healBetweenPct, rng, { buildLog: false }).cleared) clears += 1
   }
   return clears / runs
 }
@@ -115,7 +115,7 @@ describe('路线节点裁判', () => {
             const rng = new RandomService(mulberry32(41000 + pi * 97 + node.id.length))
             let wins = 0
             for (let r = 0; r < 20; r += 1) {
-              if (resolveCombat(buildSnap(profile), foe, rng, rules).win) wins += 1
+              if (resolveCombat(buildSnap(profile), foe, rng, rules, false).win) wins += 1
             }
             best = Math.max(best, wins / 20)
           }
@@ -164,7 +164,7 @@ describe('组合技裁判', () => {
     const winRate = (snap: CombatantSnap, seed: number): number => {
       const rng = new RandomService(mulberry32(seed))
       let wins = 0
-      for (let i = 0; i < 120; i += 1) if (resolveCombat(snap, foe, rng, lowHp).win) wins += 1
+      for (let i = 0; i < 120; i += 1) if (resolveCombat(snap, foe, rng, lowHp, false).win) wins += 1
       return wins / 120
     }
     expect(winRate(withArt, 777)).toBeGreaterThan(winRate(base, 777) - 0.02)
@@ -219,7 +219,7 @@ describe('契约机制单元', () => {
   it('无伤契:战后血线不达标即判违契终止', () => {
     const foes = [worldFoeSnap(TRIAL_FOES[0]!, SIM_REFERENCE, 1), worldFoeSnap(TRIAL_FOES[1]!, SIM_REFERENCE, 1)]
     const rng = new RandomService(mulberry32(123))
-    const report = runGauntlet(buildSnap(BUILD_PROFILES[0]!), foes, undefined, 0.5, rng, { minHpAfterFight: 0.999 })
+    const report = runGauntlet(buildSnap(BUILD_PROFILES[0]!), foes, undefined, 0.5, rng, { minHpAfterFight: 0.999, buildLog: false })
     expect(report.cleared).toBe(false)
     expect(report.pactBroken ?? report.rows.some(r => !r.win)).toBeTruthy()
   })
@@ -228,7 +228,8 @@ describe('契约机制单元', () => {
     const weakFoe = worldFoeSnap(TRIAL_FOES[0]!, SIM_REFERENCE, 0.3)
     const rng = new RandomService(mulberry32(456))
     const report = runGauntlet(buildSnap(BUILD_PROFILES[0]!), [weakFoe, weakFoe, weakFoe], undefined, 1, rng, {
-      perWinPlayerMods: { damageBonus: 0.5 }
+      perWinPlayerMods: { damageBonus: 0.5 },
+      buildLog: false
     })
     expect(report.cleared).toBe(true)
     // 叠层生效的间接证据:第三场(+100% 伤害)回合数不多于第一场
