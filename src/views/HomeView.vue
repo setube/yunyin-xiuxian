@@ -90,6 +90,18 @@
       <span class="shrink-0 text-[11px] text-azure">观 象 →</span>
     </RouterLink>
 
+    <!-- 坊市:灵石换机缘的地界,洞府门面给一个常驻入口 -->
+    <RouterLink to="/market" class="card-ink flex items-center gap-3 border-gold-ink/30 px-4 py-3 active:scale-98">
+      <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-gold-ink/10 text-gold-ink">
+        <GameIcon name="store" :size="18" />
+      </span>
+      <span class="min-w-0 grow">
+        <span class="block font-kai text-[14px] tracking-widest text-ink">坊市</span>
+        <span class="block truncate text-[10px] text-ink-faint">灵石换丹药 · 续料 · 淘一件趁手兵刃</span>
+      </span>
+      <span class="shrink-0 text-[11px] text-gold-ink">购置 →</span>
+    </RouterLink>
+
     <!-- 修行志(任务);日课按本地午夜重排,未成即作罢 —— 规则得摆在台面上,不然玩家会以为昨天差一步的日课还欠着 -->
     <section>
       <SectionTitle title="修行志" hint="午夜更替 · 未成作罢" />
