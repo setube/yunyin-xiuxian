@@ -20,6 +20,7 @@ import { useAdventureStore } from '@/stores/adventure'
 import { usePacingTelemetry } from '@/stores/pacingTelemetry'
 import { useLoreStore } from '@/stores/lore'
 import { useResourcesStore } from '@/stores/resources'
+import { useMarketStore } from '@/stores/market'
 import { sanitizeOfflineInputs } from './offline'
 
 /**
@@ -345,5 +346,18 @@ describe('坏档韧性 · 活状态(引擎每 tick 都读的那些)', () => {
     player.$patch({ regionEvent: { regionId: 'qingyun', eventId: 'yaochao', endsAt: NaN } } as never)
     player.sanitize()
     expect(player.regionEvent).toBeNull()
+  })
+})
+
+describe('坏档韧性 · 新增持久化分片已挂进读档兜底清单', () => {
+  it('坊市货架由 sanitizeOfflineInputs 修平:坏 pillId 的格被丢弃,不再因 renderSlot 白屏', () => {
+    setActivePinia(createPinia())
+    const market = useMarketStore()
+    market.$patch({
+      stock: [{ kind: 'pill', idx: 0, pillId: 'p_nope', count: 1, price: { m: 1, e: 0 }, sold: false }],
+      stockedAt: Date.now()
+    })
+    sanitizeOfflineInputs()
+    expect(market.stock, '坏 pillId 的货格应被修掉,renderSlot 才不致 undefined.name').toEqual([])
   })
 })
