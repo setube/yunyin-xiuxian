@@ -3,7 +3,7 @@
  *
  * 旧实现 `Math.max(旧 endsAt, now + dur)` 实为「刷新」:聚灵还剩 20 分钟时再服一颗同类丹,
  * 那 20 分钟直接作废,玩家连服丹药等于白丢药力。本文件锁住叠加语义与三条边界:
- *  1. 尚在生效 → 剩余时长相加;
+ *  1. 尚在生效 → 剩余时长相加(**丹药增益封顶在单颗两倍**,见 core/buffCap;非丹药状态不限);
  *  2. 已过期实例 → 以 now 为基准,不把历史负剩余叠进来;
  *  3. 不同状态各自计时、未注册 id 静默忽略(不因叠加改动变成脏数据源)。
  */
@@ -50,14 +50,15 @@ describe('状态时长叠加(addBuff)', () => {
     expect(remainSec).toBe(600 + juling!.durationSec)
   })
 
-  it('连服 N 次 → 时长恰好是 N 倍(线性可预期)', () => {
+  it('连服 N 次 → 攒不过上限:丹药增益封顶在单颗两倍,到顶即停', () => {
     const cultivation = useCultivationStore()
     const t0 = 5_000_000
-    for (let i = 0; i < 3; i++) cultivation.addBuff('buff_juling', t0)
+    for (let i = 0; i < 5; i++) cultivation.addBuff('buff_juling', t0)
 
     expect(cultivation.buffs).toHaveLength(1)
     const remainSec = (cultivation.buffs[0]!.endsAt - t0) / SEC
-    expect(remainSec).toBe(juling!.durationSec * 3)
+    // 封顶(见 core/buffCap):最长 = 单颗时长 × 2,连服再多也攒不上去了
+    expect(remainSec).toBe(juling!.durationSec * 2)
   })
 
   it('同一实例随身携带 added(本命累积毫秒):首施=单份,连服 N 次=N 份', () => {

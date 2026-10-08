@@ -7,6 +7,7 @@ import { gongfaDef } from '@/data/gongfa'
 import { buffDef } from '@/data/buffs'
 import { gongfaBranchDef } from '@/data/gongfaBranches'
 import { mergeMods } from '@/core/statsCalc'
+import { buffCapSec } from '@/core/buffCap'
 import { asArray, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 
 /** 功法在某等级下的属性 */
@@ -127,11 +128,18 @@ export const useCultivationStore = defineStore(
       const def = buffDef(defId)
       if (!def) return
       const add = def.durationSec * 1000
+      // 丹药增益有上限(单颗 × 倍数,见 core/buffCap):超过上限的部分被削掉
+      const capMs = buffCapSec(defId) === undefined ? undefined : buffCapSec(defId)! * 1000
       const existing = buffs.value.find(b => b.defId === defId)
       if (existing) {
-        const endsAt = Math.max(existing.endsAt, now) + add
+        let endsAt = Math.max(existing.endsAt, now) + add
         // added 随施加累加,UI 报叠 N 的凭据;旧档实例没有 added 时按「已有一份」起算
-        const added = (existing.added ?? add) + add
+        let added = (existing.added ?? add) + add
+        if (capMs !== undefined) {
+          // 到顶之后再服:endsAt 与 added 都钳在上限,不再线性堆(白吃的一枚由服丹文案报清)
+          endsAt = Math.min(endsAt, now + capMs)
+          added = Math.min(added, capMs)
+        }
         buffs.value = buffs.value.map(b => (b.defId === defId ? { ...b, endsAt, added } : b))
       } else {
         buffs.value = [...buffs.value, { defId, endsAt: now + add, added: add }]
