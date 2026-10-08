@@ -104,7 +104,7 @@ describe('修行目标(Phase 29)', () => {
     // 把所有已解锁地界都通关,历练目标消失
     useAdventureStore().cleared = [...useAdventureStore().unlocked]
     // 材料/装备也都不缺 → 没有可挤的建议就闭嘴
-    useResourcesStore().herb = 12
+    useResourcesStore().herbByGrade[1] = 12
     for (const slot of ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman'] as const) {
       useInventoryStore().equip(`u-${slot}`, slot)
     }
@@ -118,7 +118,7 @@ describe('修行目标(Phase 29)', () => {
     const adventure = useAdventureStore()
     adventure.unlocked = ['qingyun', 'luoxia']
     adventure.cleared = ['qingyun', 'luoxia'] // 无未通关地界 → explore 不触发
-    useResourcesStore().herb = 3
+    useResourcesStore().herbByGrade[1] = 3
     const goal = generateCurrentGoal(player)!
     expect(goal.type).toBe('material')
     expect(goal.text).toContain('采')
@@ -137,7 +137,7 @@ describe('修行目标(Phase 29)', () => {
     for (const slot of ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman'] as const) {
       useInventoryStore().equip(`u-${slot}`, slot)
     }
-    useResourcesStore().herb = 12
+    useResourcesStore().herbByGrade[1] = 12
     expect(generateCurrentGoal(player)).toBeNull()
   })
 
@@ -151,7 +151,7 @@ describe('修行目标(Phase 29)', () => {
     // weapon、head 已填 → 优先级里第一个空槽是 body(衣袍)
     useInventoryStore().equip('u-weapon', 'weapon')
     useInventoryStore().equip('u-head', 'head')
-    useResourcesStore().herb = 12
+    useResourcesStore().herbByGrade[1] = 12
     const goal = generateCurrentGoal(player)!
     expect(goal.type).toBe('equipment')
     expect(goal.text).toContain('寻一件')
@@ -167,7 +167,7 @@ describe('修行目标(Phase 29)', () => {
     const adventure = useAdventureStore()
     adventure.unlocked = []
     adventure.cleared = []
-    useResourcesStore().herb = 0 // 灵草见底
+    useResourcesStore().herbByGrade[1] = 0 // 灵草见底
     expect(generateCurrentGoal(player)).toBeNull()
   })
 })

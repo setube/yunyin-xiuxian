@@ -9,6 +9,7 @@ import type { EquipmentInstance, GNum } from '@/types'
 import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { PILLS, pillDef } from '@/data/pills'
+import { herbBuyPrice, herbGradeOfMajor } from '@/data/herbGrades'
 import { mulberry32, RandomService } from '@/utils/random'
 import { generateEquipment, rollQuality } from './equipGen'
 import { qualityDef } from '@/data/qualities'
@@ -65,14 +66,12 @@ function buildSlot(
   }
   if (kind === 'material') {
     const matId: 'herb' | 'ore' = rng.chance(0.5) ? 'herb' : 'ore'
-    return {
-      kind: 'material',
-      idx,
-      matId,
-      count: MARKET_MAT_COUNT,
-      price: mulN(stoneByTier(major, MARKET_MAT_STONE_UNITS), MARKET_MAT_COUNT),
-      sold: false
-    }
+    // 灵草按品明码标价:当前境界的品阶,×10 阶梯一路到一千万封顶(见 data/herbGrades)
+    const price =
+      matId === 'herb'
+        ? mulN(gn(herbBuyPrice(herbGradeOfMajor(major))), MARKET_MAT_COUNT)
+        : mulN(stoneByTier(major, MARKET_MAT_STONE_UNITS), MARKET_MAT_COUNT)
+    return { kind: 'material', idx, matId, count: MARKET_MAT_COUNT, price, sold: false }
   }
   const minQualityRank = rollQuality(major, rng).rank
   // 按「预览即购得的同一件」的真实品质档标价 —— 若按品质下限标价、实际却滚得更高,
@@ -129,8 +128,13 @@ export function pillSellPrice(pillId: string): GNum {
   return def && def.recipe?.stoneBase ? mulN(gn(def.recipe.stoneBase), MARKET_SELL_PILL_FACTOR) : gnZero()
 }
 
-/** 即时售一批材料(与货架同单位数)可得;每单位价低于购入 */
-export function materialSellPrice(major: number): GNum {
+/** 即时售一批材料(与货架同单位数)可得;每单位价低于购入,灵石草按品计价 */
+export function materialSellPrice(matId: 'herb' | 'ore', major: number): GNum {
+  if (matId === 'herb') {
+    // 草:购价按品(herbBuyPrice),售价恒为购价的 5/6 档(3 vs 6),低于购入不成环
+    const perHerb = herbBuyPrice(herbGradeOfMajor(major)) * (MARKET_SELL_MAT_STONE_UNITS / MARKET_MAT_STONE_UNITS)
+    return mulN(gn(perHerb), MARKET_MAT_COUNT)
+  }
   return mulN(stoneByTier(major, MARKET_SELL_MAT_STONE_UNITS), MARKET_MAT_COUNT)
 }
 

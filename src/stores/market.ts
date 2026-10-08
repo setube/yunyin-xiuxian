@@ -198,7 +198,7 @@ export const useMarketStore = defineStore(
       const resources = useResourcesStore()
       if (!resources.hasSmall(matId, MARKET_MAT_COUNT)) return false
       resources.spendSmall(matId, MARKET_MAT_COUNT)
-      resources.addStone(materialSellPrice(major))
+      resources.addStone(materialSellPrice(matId, major))
       return true
     }
 

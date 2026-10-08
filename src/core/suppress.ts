@@ -9,6 +9,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { regionDef } from '@/data/regions'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { stoneByTier } from '@/core/formulas'
 import { generateEquipment } from '@/core/equipGen'
 import { acquireEquipment } from '@/core/loot'
@@ -228,7 +229,8 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
     if (yieldDef) {
       const amount = Math.floor(yieldDef.perHour * hours * yieldMult)
       if (amount > 0) {
-        resources.addSmall(yieldDef.id, amount)
+        if (yieldDef.id === 'herb') resources.addHerb(herbGradeOfMajor(region.minRealm), amount)
+        else resources.addSmall(yieldDef.id, amount)
         const row = total.resources.find(r => r.id === yieldDef.id)
         if (row) row.amount += amount
         else total.resources.push({ id: yieldDef.id, name: yieldDef.name, amount })

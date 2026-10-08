@@ -204,6 +204,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
   import { pillDef } from '@/data/pills'
+  import { HERB_GRADE_NAMES, herbGradeBandLabel, herbGradeOfMajor } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef } from '@/data/qualities'
   import {
@@ -291,8 +292,10 @@
     (['herb', 'ore'] as const).map(id => ({
       id,
       ...MAT_META[id],
-      count: id === 'herb' ? resources.herb : resources.ore,
-      price: materialSellPrice(player.major)
+      // 坊市只在这一境界的一品上进出:草按当前品阶计入,价也按品
+      name: id === 'herb' ? HERB_GRADE_NAMES[herbGradeOfMajor(player.major)] : MAT_META[id].name,
+      count: id === 'herb' ? resources.herbOf(herbGradeOfMajor(player.major)) : resources.ore,
+      price: materialSellPrice(id, player.major)
     }))
   )
 
@@ -332,9 +335,9 @@
       const meta = MAT_META[slot.matId]
       return {
         ...base,
-        name: meta.name,
+        name: slot.matId === 'herb' ? HERB_GRADE_NAMES[herbGradeOfMajor(player.major)] : meta.name,
         nameCls: {},
-        sub: `补洞府之材 · ×${slot.count}`,
+        sub: slot.matId === 'herb' ? `${herbGradeBandLabel(herbGradeOfMajor(player.major))} · ×${slot.count}` : `补洞府之材 · ×${slot.count}`,
         price: slot.price
       }
     }
@@ -424,7 +427,7 @@
         rewardText: formatGN(s.reward),
         extraText: '',
         claimed,
-        ready: (s.kind === 'herb' ? resources.herb : resources.ore) >= s.target
+        ready: (s.kind === 'herb' ? resources.herbOf(herbGradeOfMajor(player.major)) : resources.ore) >= s.target
       }
     }
     if (s.kind === 'pill') {

@@ -5,6 +5,7 @@ import {
   applyImportPayload,
   buildExportPayload,
   clearAllSave,
+  migrateHerbSlice,
   migrateInventorySlice,
   SAVE_VERSION,
   validateImportPayload,
@@ -19,6 +20,13 @@ function migrate(payload: ExportPayload): ExportPayload {
   const migrated = { ...payload, data: { ...payload.data } }
   if (migrated.version < 2 && typeof migrated.data.inventory === 'object' && migrated.data.inventory !== null) {
     migrated.data.inventory = migrateInventorySlice(migrated.data.inventory as Record<string, unknown>)
+  }
+  // 灵草五品:旧档单标量 herb 按当前境界折算成品阶分账(同版本形状迁移,恒执行)
+  if (typeof migrated.data.resources === 'object' && migrated.data.resources !== null) {
+    const player = migrated.data.player as Record<string, unknown> | undefined
+    const major =
+      player && typeof player.major === 'number' && Number.isFinite(player.major) ? Math.floor(player.major) : 0
+    migrated.data.resources = migrateHerbSlice(migrated.data.resources as Record<string, unknown>, major)
   }
   // 导入 = 从这份快照继续:lastActiveAt 重戳为现在的时刻。
   // 快照里吞着的是导出那一刻的时间戳,直接沿用会把「导入旧备份」误算成

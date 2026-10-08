@@ -236,7 +236,10 @@ describe('内容可达性 · 高界丹药真能开炉', () => {
     const resources = useResourcesStore()
     const player = usePlayerStore()
     player.major = MAX_MAJOR
-    resources.addSmall('herb', 10_000_000)
+    // 高界方子按品吃草:仙品(3)/神品(4)/道品(5)各给足,免得低阶草喂不了高阶方
+    resources.addHerb(3, 20_000_000)
+    resources.addHerb(4, 20_000_000)
+    resources.addHerb(5, 20_000_000)
     // 高界丹方的灵石开销按层级折算(1.9^tier 量级),远高于元婴期的直觉数
     resources.addStone(gn(1e40))
 

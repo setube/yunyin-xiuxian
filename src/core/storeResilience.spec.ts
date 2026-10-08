@@ -291,12 +291,17 @@ describe('坏档韧性 · 复杂状态的值也要修回来(不只是"不炸")',
     const r = useResourcesStore()
     r.qi = -50
     r.wudao = -3
-    r.herb = NaN
+    // 灵草五品:烂档品阶账(负/NaN/非法键/非有限值)逐品夹回 0
+    r.herbByGrade = { 1: NaN, 2: -3, 3: 7, 4: 'x', 5: Infinity } as never
     r.ore = 7
     r.sanitize()
     expect(r.qi).toBe(0)
     expect(r.wudao).toBe(0)
-    expect(r.herb).toBe(0)
+    expect(r.herbOf(1)).toBe(0)
+    expect(r.herbOf(2)).toBe(0)
+    expect(r.herbOf(3)).toBe(7)
+    expect(r.herbOf(4)).toBe(0)
+    expect(r.herbOf(5)).toBe(0)
     expect(r.ore).toBe(7)
   })
 })
