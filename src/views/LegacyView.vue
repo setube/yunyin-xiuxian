@@ -145,7 +145,7 @@
         <p v-for="n in nemesisRows" :key="n.enemyId" class="flex items-center gap-2 py-2 text-[12px]">
           <span class="font-kai text-[13px]" :class="n.avengedAt ? 'text-ink' : 'text-cinnabar'">{{ n.enemyName }}</span>
           <span class="text-[10px] text-ink-faint">{{ n.regionName }} · 败我 {{ n.lossCount }} 次</span>
-          <span class="ml-auto shrink-0 text-[10px]" :class="n.avengedAt ? 'text-jade' : 'text-cinnabar/70'">
+          <span class="ml-auto shrink-0 text-[10px]" :class="n.avengedAt ? 'text-jade' : 'text-cinnabar'">
             {{ n.avengedAt ? '已雪耻' : '尚为宿敌' }}
           </span>
         </p>

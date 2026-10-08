@@ -167,7 +167,7 @@
           v-for="f in floats.filter(x => x.side === 'p')"
           :key="f.id"
           class="pointer-events-none absolute right-2 top-0 tabular font-kai"
-          :class="f.crit ? 'animate-float-crit text-[17px] text-cinnabar' : 'animate-float-dmg text-[13px] text-cinnabar/80'"
+          :class="f.crit ? 'animate-float-crit text-[17px] text-cinnabar' : 'animate-float-dmg text-[13px] text-cinnabar'"
         >
           {{ f.text }}
         </span>
@@ -239,7 +239,7 @@
           <span class="text-violet-ink">{{ lore.progress.remain }}</span> 记
           <template v-if="lore.progress.nextName">可窥「{{ lore.progress.nextName }}」</template>
           <template v-else>可更深知它的路数</template>
-          <span class="text-ink-faint/70">
+          <span class="text-ink-faint">
             (胜一记 · 败计三<template v-if="lore.progress.isBoss"> · 首领倍算</template>)
           </span>
         </p>
@@ -271,7 +271,7 @@
         <!-- 借力的方向:理由贴脸摆开 —— 方向的价值就在那条理由,收进 :title 就白给触屏了 -->
         <div v-if="analysis.directions.length" class="mt-2 rounded-md border border-violet-ink/15 bg-violet-ink/5 px-2.5 py-2">
           <p class="text-[10px] tracking-wide text-ink-faint">
-            可借力的方向<span class="text-ink-faint/70">(非唯一解)</span>:
+            可借力的方向<span class="text-ink-faint">(非唯一解)</span>:
           </p>
           <ul class="mt-1 flex flex-col gap-1">
             <li v-for="d in analysis.directions" :key="d.styleName" class="flex flex-col">
@@ -284,7 +284,7 @@
              窄屏上也不再与标签互踩、被挤成一线窄落;战局定数与战时账目分节读 -->
         <div v-if="analysis.dataRows.length" class="mt-2 border-t border-ink/10 pt-1.5">
           <div v-if="analysisSections.setup.length">
-            <p class="text-[10px] tracking-wide text-ink-faint/70">战局定数</p>
+            <p class="text-[10px] tracking-wide text-ink-faint">战局定数</p>
             <div class="mt-0.5 space-y-0.5">
               <p v-for="row in analysisSections.setup" :key="row.label" class="flex items-baseline gap-3 text-[10px] tabular">
                 <span class="min-w-[4.5rem] shrink-0 whitespace-nowrap text-ink-faint">{{ row.label }}</span>
@@ -293,7 +293,7 @@
             </div>
           </div>
           <div v-if="analysisSections.account.length" class="mt-1.5">
-            <p class="text-[10px] tracking-wide text-ink-faint/70">战时账目</p>
+            <p class="text-[10px] tracking-wide text-ink-faint">战时账目</p>
             <div class="mt-0.5 space-y-0.5">
               <p v-for="row in analysisSections.account" :key="row.label" class="flex items-baseline gap-3 text-[10px] tabular">
                 <span class="min-w-[4.5rem] shrink-0 whitespace-nowrap text-ink-faint">{{ row.label }}</span>

@@ -17,7 +17,7 @@
             触控靶面:纯 10px 文字行高 15px,拇指点不中(layout-check 报 27px < 28);
             负外边距配正内边距同升到 8px,盒高 31px 达标,流中占位仍只 15px 行高(同页收纳/分解同法)。
           -->
-          <button class="-my-2 shrink-0 px-1 py-2 text-[10px] text-azure/90 active:opacity-60" @click="onEquipSet(s.def.id)">
+          <button class="-my-2 shrink-0 px-1 py-2 text-[10px] text-azure active:opacity-60" @click="onEquipSet(s.def.id)">
             穿齐 →({{ s.preview > 0 ? `换 ${s.preview}` : '已齐' }})
           </button>
         </p>
@@ -25,10 +25,10 @@
       <div class="mt-3 flex items-center justify-between px-1">
         <span class="text-[11px] text-ink-faint tabular">藏品 {{ inventory.bagItems.length }} · 器灵尘 {{ resources.dust }}</span>
         <span class="flex gap-3">
-          <button class="-my-1.5 py-1.5 text-[11px] text-azure/90 active:opacity-60" @click="smartOpen = true">
+          <button class="-my-1.5 py-1.5 text-[11px] text-azure active:opacity-60" @click="smartOpen = true">
             收纳{{ settings.smartKeep.enabled ? '·启' : '' }}
           </button>
-          <button class="-my-1.5 py-1.5 text-[11px] text-cinnabar/80 active:opacity-60" @click="decomposeOpen = true">分解</button>
+          <button class="-my-1.5 py-1.5 text-[11px] text-cinnabar active:opacity-60" @click="decomposeOpen = true">分解</button>
         </span>
       </div>
       <div class="mt-2 grid grid-cols-3 gap-2">
@@ -347,7 +347,7 @@
               </p>
               <p class="text-[11px] text-ink-faint tabular">{{ HERB_GRADE_SHORT[r.cost.grade] }}灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
               <!-- 炼出来是什么:方子清单此前只报代价与把握,不报成品 -->
-              <p class="text-[10px] leading-relaxed text-azure/80">{{ pillFuncText(r.def) }}</p>
+              <p class="text-[10px] leading-relaxed text-azure">{{ pillFuncText(r.def) }}</p>
               <p v-for="w in r.able.weakness" :key="w" class="mt-0.5 text-[10px] text-ink-faint">· {{ w }}</p>
             </div>
           </div>
@@ -483,7 +483,7 @@
           </span>
         </label>
       </div>
-      <p v-if="decomposeTotal > 0" class="mt-2 text-right text-[11px] text-cinnabar/90 tabular">
+      <p v-if="decomposeTotal > 0" class="mt-2 text-right text-[11px] text-cinnabar tabular">
         共 {{ decomposeTotal }} 件,入炉可化 {{ batchYieldText(decomposePlanned) }}
       </p>
       <template #footer>

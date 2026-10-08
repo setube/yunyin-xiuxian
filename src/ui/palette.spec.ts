@@ -287,6 +287,40 @@ describe('调色板 · 承载文字的色都过线', () => {
     // src 里的 .vue/.ts 也不许再手写这个类名(没有 token 就不生成样式,写了等于隐形文字)
     expect(filesMatching(resolve(ROOT, 'src'), /ink-ghost/, /\.(vue|ts)$/)).toEqual([])
   })
+
+  /*
+   * 强文本色不叠透明度:text-<carrier>/N 一律此路不通。
+   *
+   * 半透明文字的实际颜色是「字色往底上混」,对比度只降不升 —— 任意一档 <100 的
+   * 强文本色,压在任何一张铺字底(取最暗的纸深)上都跌破它该守的 AA:
+   *   cinnabar/80 浅主题 3.46:1 / 夜主题 1.9:1(整色 4.81 / 3.02,夜朱本就是「大字」
+   *   的既定底,再降就真看不见);ink-faint/70 只有 2.71:1;azure/90 3.87:1。
+   * 要更淡是**换一档角色**(选一档已过线的 token),不是让浏览器把字色往底里混
+   * —— 混出来的结果对不上任何已核过的对比度账。
+   * 例外只有装饰性的 SVG 填色/描边(远山、路段线),它们走 fill-/stroke- 而非 text-,
+   * 透明是画法不是写字,故不在本判据的猎杀范围内。
+   */
+  it('强文本色不叠透明度(半透明字对底色算不出已核过的 AA)', () => {
+    // 故障注入:正是曾经散落在各视图里的那几枚(cinnabar/80、ink-faint/70、azure/90)
+    const TEXTS = [...STRONG, 'cinnabar']
+    const re = new RegExp(`(?<![\\w-])text-(${TEXTS.join('|')})/\\d+`, 'g')
+    expect('bg-ink/[0.03] text-cinnabar border-ink/15', '非 text- 用法不许误报').not.toMatch(re)
+    expect('text-cinnabar/80 text-jade/60', '半透明强文本必须被报').toMatch(re)
+    const offenders: string[] = []
+    const walk = (d: string): void => {
+      for (const entry of readdirSync(d, { withFileTypes: true })) {
+        const path = resolve(d, entry.name)
+        if (entry.isDirectory()) walk(path)
+        else if (/\.(vue|ts)$/.test(entry.name) && !entry.name.endsWith('.spec.ts')) {
+          for (const m of readFileSync(path, 'utf-8').matchAll(re)) {
+            offenders.push(`${path.slice(ROOT.length + 1)} → ${m[0]}`)
+          }
+        }
+      }
+    }
+    walk(resolve(ROOT, 'src'))
+    expect(offenders, '强文本色带了透明度,对比度必然跌破 AA;改用整色 token ').toEqual([])
+  })
 })
 
 describe('调色板 · 印面', () => {

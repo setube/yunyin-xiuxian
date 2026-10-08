@@ -38,28 +38,28 @@
       <div class="mt-1.5 grid grid-cols-3 gap-1.5">
         <!-- 三格各配一枚小章:灵草叶 / 玄铁斧 / 悟道书,图比字先被眼睛接住 -->
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
-          <GameIcon name="leaf" :size="13" class="mx-auto text-jade/70" />
+          <GameIcon name="leaf" :size="13" class="mx-auto text-jade" />
           <p class="mt-0.5 text-[9px] text-ink-faint">灵草 / 时</p>
           <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-jade' : 'text-ink-faint'">{{ summary.fieldLv ? summary.herbHr : '—' }}</p>
         </div>
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
-          <GameIcon name="axe" :size="13" class="mx-auto text-ink-soft/70" />
+          <GameIcon name="axe" :size="13" class="mx-auto text-ink-soft" />
           <p class="mt-0.5 text-[9px] text-ink-faint">玄铁 / 时</p>
           <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-ink-soft' : 'text-ink-faint'">{{ summary.fieldLv ? summary.oreHr : '—' }}</p>
         </div>
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
-          <GameIcon name="book" :size="13" class="mx-auto text-gold-ink/80" />
+          <GameIcon name="book" :size="13" class="mx-auto text-gold-ink" />
           <p class="mt-0.5 text-[9px] text-ink-faint">悟道 / 时</p>
           <p class="tabular font-kai text-[14px] leading-tight" :class="summary.libLv ? 'text-gold-ink' : 'text-ink-faint'">{{ summary.libLv ? summary.wudaoHr : '—' }}</p>
         </div>
       </div>
       <div class="mt-1.5 flex items-center justify-between gap-2">
         <span class="flex items-center gap-1 rounded bg-paper-deep/60 px-2 py-1 text-[10px] text-ink-faint">
-          <GameIcon name="droplets" :size="12" class="text-azure/70" />
+          <GameIcon name="droplets" :size="12" class="text-azure" />
           灵气上限 <span class="tabular" :class="summary.arrayLv ? 'text-azure' : 'text-ink-faint'">{{ summary.arrayLv ? summary.qiCapPct : '—' }}</span>
         </span>
         <span class="flex items-center gap-1 rounded bg-paper-deep/60 px-2 py-1 text-[10px] text-ink-faint">
-          <GameIcon name="scroll" :size="12" class="text-gold-ink/70" />
+          <GameIcon name="scroll" :size="12" class="text-gold-ink" />
           辅修栏 <span class="tabular text-ink-soft">{{ summary.subSlots }}</span>
         </span>
       </div>
@@ -87,7 +87,7 @@
     <section>
       <SectionTitle title="营造" :hint="`已启 ${builtCount}/${BUILDINGS.length} · 各司其职`" />
       <BuildingCard :def="mansionDef" featured class="mt-2" />
-      <div class="mt-2.5 grid grid-cols-2 gap-2.5">
+      <div class="mt-2.5 grid grid-cols-1 gap-2.5 min-[320px]:grid-cols-2">
         <BuildingCard v-for="def in otherBuildings" :key="def.id" :def="def" />
       </div>
     </section>
@@ -121,7 +121,7 @@
         倍数高些低些,这句前瞻自己跟着变(与 rebirthText 的「X境方可兵解」同法)
       -->
       <div v-if="!veinsUnlocked" class="flex items-center gap-2.5 rounded-md border border-dashed border-gold-ink/25 bg-gold-ink/4 px-3 py-2.5">
-        <GameIcon name="gem" :size="16" class="shrink-0 text-gold-ink/60" />
+        <GameIcon name="gem" :size="16" class="shrink-0 text-gold-ink" />
         <p class="text-[10px] leading-relaxed text-ink-faint">
           灵脉 —— 以灵石点化,洞府根基永固,诸般属性皆有增益。{{ veinGateRealm }}境方启此脉,届时自会在此与你相会。
         </p>

@@ -153,6 +153,7 @@ const browser = await chromium.launch({
 })
 const failures = []
 let checked = 0
+let zoomSeen = 0
 
 /**
  * 弹窗**里面**的控件也要过页面上那两条尺子:有可访问名、不小于 28px。
@@ -169,9 +170,15 @@ async function auditModalControls(page) {
     const rows = [...panel.querySelectorAll('button, a, [role=button]')]
       .map(el => {
         const r = el.getBoundingClientRect()
+        // 23px 的弹窗按钮不在「声明了 28」之列,量出来多小就是多小;声明的 min-height
+        // 到了 28 的,给半像素容差(27.5+),再往下 27.6px 只是渲染精度,不是真的不够。
+        // 报数带一位小数 —— 不会像四舍五入那样把 27.6 打印成与下限同值的「28」。
+        const declared = parseFloat(getComputedStyle(el).minHeight) || 0
+        const ok = r.height >= 28 || (declared >= 28 && r.height >= 27.5)
         return {
           name: (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14),
-          h: Math.round(r.height)
+          h: r.height,
+          ok
         }
       })
       .filter(r => r.h > 0)
@@ -179,8 +186,8 @@ async function auditModalControls(page) {
       count: rows.length,
       // 对话框自己也得有个名字:读屏遇到 role=dialog 要念得出是哪一扇
       label: (panel.getAttribute('aria-label') || panel.querySelector('h3')?.textContent || '').trim(),
-      unnamed: rows.filter(r => !r.name).map(r => `${r.h}px`),
-      small: rows.filter(r => r.h < 28).map(r => `${r.h}px «${r.name || '无名'}»`)
+      unnamed: rows.filter(r => !r.name).map(r => `${r.h.toFixed(1)}px`),
+      small: rows.filter(r => !r.ok).map(r => `${r.h.toFixed(1)}px «${r.name || '无名'}»`)
     }
   })
 }
@@ -308,10 +315,17 @@ async function measurePage(page) {
        * 大多是把文字行直接当按钮(属性来源行、返回链接、设置里的胶囊按钮)。
        */
       smallTargets: [...document.querySelectorAll('button, a, [role=button]')]
-        .map(el => ({ el, r: el.getBoundingClientRect() }))
-        .filter(({ r }) => r.width > 0 && r.height > 0 && r.height < 28)
+        .map(el => {
+          const r = el.getBoundingClientRect()
+          // 与 auditModalControls 同一条尺子:声明的 min-height 到了 28 的给半像素容差
+          // (27.5+),报数带一位小数,免得 27.6px 的子像素抖动把 min-h-[28px] 无常判红
+          const declared = parseFloat(getComputedStyle(el).minHeight) || 0
+          const ok = r.height >= 28 || (declared >= 28 && r.height >= 27.5)
+          return { el, r, ok }
+        })
+        .filter(({ r, ok }) => r.width > 0 && r.height > 0 && !ok)
         .slice(0, 3)
-        .map(({ el, r }) => `${Math.round(r.height)}px «${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 12)}»`),
+        .map(({ el, r }) => `${r.height.toFixed(1)}px «${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 12)}»`),
       /**
        * 禁用按钮上的字也得读得出来。
        *
@@ -682,6 +696,41 @@ function problemsOf(info) {
   return problems
 }
 
+/**
+ * 两百档字号(200% 缩放)—— 390 宽的机型把字放大一倍后,布局视口只剩 195 CSS px,
+ * 比 320 那一档还窄 125px。量的是**缩放档**而非宽度档:320 档量小屏真机的原样,
+ * 这一档量「常用机型上把字放大一倍之后」的样子。判据与巡页共用同一把尺子
+ * (measurePage):横向溢出、外壳被滚偏、越界元素。量完把视口还原,免得带偏
+ * 前后按原尺寸量的读数。
+ */
+async function measureZoomScale(page, vp) {
+  const width = Math.round(vp.width / 2)
+  const height = Math.round(vp.height / 2)
+  await page.setViewportSize({ width, height })
+  await page.waitForTimeout(420) // 让断点与 transition 走完再量
+  const info = await measurePage(page)
+  const innerWidth = await page.evaluate(() => window.innerWidth)
+  await page.setViewportSize({ width: vp.width, height: vp.height })
+  await page.waitForTimeout(260)
+  return { ...info, innerWidth }
+}
+
+/** 缩放档的读数 → 失败清单(只判:确实量在 200%、溢出、外壳被滚偏、越界元素) */
+function zoomProblems(info, tag) {
+  const problems = []
+  if (info.innerWidth !== undefined && Math.abs(info.innerWidth * 2 - Number(tag)) > 2) {
+    problems.push(`缩放档没量在 200% 上(布局视口 ${info.innerWidth}px)`)
+  }
+  if (info.horizontalOverflow) problems.push('横向溢出')
+  if (info.shellShift && (info.shellShift.scrollLeft !== 0 || info.shellShift.overflowX > 1)) {
+    problems.push(
+      `外壳被滚偏(scrollLeft ${info.shellShift.scrollLeft} / 横向可滚 ${info.shellShift.overflowX}px)`,
+    )
+  }
+  if (info.overflows.length) problems.push(`越界元素:${info.overflows.join(', ')}`)
+  return problems
+}
+
 for (const vp of VIEWPORTS) {
   const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dpr })
   const pageErrors = []
@@ -717,6 +766,14 @@ for (const vp of VIEWPORTS) {
     const railFails = railProblems(rail)
     if (rail) checked += 1
     if (railFails.length) failures.push(`[${vp.tag}] ${route} → ${railFails.join(' / ')}`)
+    // 两百档字号(200% 缩放)—— 390 那档顺带量一眼:放大一倍后只剩 195px,比 320 还窄。
+    // 量完原地还原视口,不占用一次额外建号。判据只在 390 档跑,别处重复装没意义。
+    if (vp.tag === '390') {
+      const zoom = await measureZoomScale(page, vp)
+      zoomSeen += 1
+      const zoomBad = zoomProblems(zoom, vp.tag)
+      if (zoomBad.length) failures.push(`[200%] ${route} → ${zoomBad.join(' / ')}`)
+    }
     if (SHOTS) {
       mkdirSync(SHOTS_DIR, { recursive: true })
       await page.screenshot({ path: join(SHOTS_DIR, `${vp.tag}${route.replace(/\//g, '_')}.png`), fullPage: true })
@@ -981,7 +1038,13 @@ for (const vp of VIEWPORTS) {
         label: panel.getAttribute('aria-label'),
         role: panel.getAttribute('role'),
         controls: [...panel.querySelectorAll('button, a, [role=button]')]
-          .map(el => ({ name: (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14), h: Math.round(el.getBoundingClientRect().height) }))
+          .map(el => {
+            const r = el.getBoundingClientRect()
+            // 与巡页/弹窗巡逻同一条尺子:声明的 min-height 到了 28 的给半像素容差
+            const declared = parseFloat(getComputedStyle(el).minHeight) || 0
+            const ok = r.height >= 28 || (declared >= 28 && r.height >= 27.5)
+            return { name: (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14), h: r.height, ok }
+          })
           .filter(c => c.h > 0)
       }
     })
@@ -996,8 +1059,8 @@ for (const vp of VIEWPORTS) {
   for (const [title, info] of seen) {
     if (info.role !== 'dialog') failures.push(`[375] 「${title}」没有 dialog 语义(role=${info.role})`)
     if (!info.label) failures.push(`[375] 「${title}」没有可访问名`)
-    const bad = info.controls.filter(c => !c.name || c.h < 28)
-    if (bad.length) failures.push(`[375] 「${title}」里有 ${bad.length} 个控件不合格:${bad.map(c => `${c.h}px «${c.name || '无名'}»`).join(' | ')}`)
+    const bad = info.controls.filter(c => !c.name || !c.ok)
+    if (bad.length) failures.push(`[375] 「${title}」里有 ${bad.length} 个控件不合格:${bad.map(c => `${c.h.toFixed(1)}px «${c.name || '无名'}»`).join(' | ')}`)
   }
   if (pageErrors.length) failures.push(`[375] 引擎事件场景页面异常:${[...new Set(pageErrors)].join(' | ')}`)
   await page.close()
@@ -3509,6 +3572,8 @@ await browser.close()
     failures.push('楷体栈里没了系统楷体兜底 —— 子集外的生僻字会直接掉到衬线')
   }
 }
+
+if (zoomSeen === 0) failures.push('200% 缩放档一处都没量到 —— 那条判据空转了(390 档的路由没跑完?)')
 
 console.log(`\n排版自检:${checked} 个页面 × 视口组合`)
 if (failures.length === 0) {

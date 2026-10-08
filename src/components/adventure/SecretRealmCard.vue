@@ -34,7 +34,7 @@
         >
           <span class="flex items-baseline gap-2">
             <span class="font-kai text-[13px] text-ink">{{ r.name }}</span>
-            <span class="text-[10px] tabular" :class="canPay(r) ? 'text-ink-faint' : 'text-cinnabar/80'">
+            <span class="text-[10px] tabular" :class="canPay(r) ? 'text-ink-faint' : 'text-cinnabar'">
               {{ entryCostText(r, player.major) }}
             </span>
             <span class="ml-auto text-[10px] text-azure">入 境 →</span>
