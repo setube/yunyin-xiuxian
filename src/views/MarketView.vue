@@ -47,10 +47,10 @@
             </span>
             <button
               class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
-              :disabled="c.sold"
+              :disabled="c.sold || !c.afford"
               @click="buyOne(c.idx)"
             >
-              {{ c.sold ? '已售' : '买下' }}
+              {{ c.sold ? '已售' : c.afford ? '买下' : '灵石不足' }}
             </button>
           </div>
         </div>
@@ -106,6 +106,7 @@
               <GameIcon :name="m.icon" :size="16" class="text-jade" />
               <span class="font-kai text-[13px] text-ink">{{ m.name }}</span>
               <span class="text-[10px] text-ink-faint">存 {{ m.count }}</span>
+              <span v-if="m.count < MARKET_MAT_COUNT" class="text-[10px] text-cinnabar">再 {{ MARKET_MAT_COUNT - m.count }} 份可售</span>
             </div>
             <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="m.count < MARKET_MAT_COUNT" @click="sellMaterialOne(m.id)">
               售出 ×{{ MARKET_MAT_COUNT }} ({{ formatGN(m.price) }})
@@ -196,6 +197,7 @@
   import { useBountyStore } from '@/stores/bounty'
   import { bountyRemainingSec, equipBountyReward } from '@/core/bountyService'
   import { formatCountdown, formatGN } from '@/utils/format'
+  import { cmp } from '@/utils/gnum'
   import { useResourcesStore } from '@/stores/resources'
   import { useMarketStore } from '@/stores/market'
   import { useInventoryStore } from '@/stores/inventory'
@@ -224,6 +226,8 @@
     sub: string
     price: GNum
     sold: boolean
+    /** 当前灵石是否买得起 —— 买不起的货不再与买得起的长得一样 */
+    afford: boolean
   }
 
   const MAT_META: Record<'herb' | 'ore', { name: string; icon: string }> = {
@@ -311,7 +315,8 @@
       idx: slot.idx,
       tag: slot.kind === 'pill' ? '丹' : slot.kind === 'material' ? '材' : '器',
       tagCls: TAG_CLS[slot.kind] ?? '',
-      sold: slot.sold
+      sold: slot.sold,
+      afford: !slot.sold && cmp(resources.spiritStone, slot.price) >= 0
     }
     if (slot.kind === 'pill') {
       const def = pillDef(slot.pillId)!

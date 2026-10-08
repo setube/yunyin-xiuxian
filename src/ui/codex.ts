@@ -199,7 +199,8 @@ export function describeBranch(def: GongfaBranchDef, stage: number): CodexEntry 
     color: lv >= BRANCH_STAGE_MAX ? PICKED_COLOR : g ? qualityDef(g.quality).color : undefined,
     stage: lv,
     stageName: BRANCH_STAGE_NAMES[lv]!,
-    badge: lv >= BRANCH_STAGE_MAX ? '择' : '',
+    // 已择处印「择」;已见且正可择的印「可择」—— 那正是当前唯一能推进的路,别埋进一屏未见
+    badge: lv >= BRANCH_STAGE_MAX ? '择' : lv >= 1 ? '可择' : '',
     hint: lv < BRANCH_STAGE_MAX ? BRANCH_HINTS[lv]! : '',
     // 分支名有重复(如两部功法各有一条「归一」),所属功法是唯一的辨认依据
     foot: { label: '所属功法', value: g?.name ?? '—' }

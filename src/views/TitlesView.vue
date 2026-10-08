@@ -19,6 +19,7 @@
           <div class="min-w-0 grow">
             <p class="font-kai text-[13px]" :class="row.owned ? 'text-ink' : 'text-ink-faint'">{{ row.def.name }}</p>
             <p class="truncate text-[10px] text-ink-faint">{{ row.def.desc }}</p>
+            <p v-if="!row.owned && row.source" class="truncate text-[10px] text-ink-faint">来历:{{ row.source }}</p>
             <p v-if="row.owned && row.modText" class="truncate text-[10px] text-azure tabular" :title="row.modText">{{ row.modText }}</p>
           </div>
           <button v-if="row.owned" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="toggleTitle(row.def.id)">
@@ -81,6 +82,8 @@
   import { useUiStore } from '@/stores/ui'
   import { useQuestsStore } from '@/stores/quests'
   import { TITLES } from '@/data/titles'
+  import { ACHIEVEMENTS } from '@/data/achievements'
+  import { achievementDirection } from '@/ui/achievementHint'
   import { petDef, PETS } from '@/data/pets'
   import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
   import { petTraitText } from '@/ui/itemText'
@@ -104,6 +107,12 @@
   // ---- 名号 ----
   const ownedCount = computed(() => quests.titlesOwned.length)
 
+  /** 名号由成就解锁:为未获得的称号补一句「从哪来」,方向自动随条件走,不剧透成就名 */
+  const TITLE_SOURCE: Record<string, string> = {}
+  for (const a of ACHIEVEMENTS) {
+    if (a.reward?.titleId) TITLE_SOURCE[a.reward.titleId] = achievementDirection(a.cond)
+  }
+
   /** 全量陈列:佩戴中 > 已拥有 > 未获得 */
   const titleRows = computed(() => {
     const ownedSet = new Set(quests.titlesOwned)
@@ -111,7 +120,8 @@
       def,
       owned: ownedSet.has(def.id),
       worn: player.titleId === def.id,
-      modText: modsText(def.mods ?? {})
+      modText: modsText(def.mods ?? {}),
+      source: ownedSet.has(def.id) ? '' : TITLE_SOURCE[def.id] ?? ''
     })).sort((a, b) => Number(b.worn) - Number(a.worn) || Number(b.owned) - Number(a.owned))
   })
 
