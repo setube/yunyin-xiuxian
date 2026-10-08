@@ -12,6 +12,8 @@ import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
 import { mentorDef } from '@/data/mentors'
 import { talentDef } from '@/data/talents'
+import { heritageDef } from '@/data/heritage'
+import { birthMajorFloor } from '@/core/heritageEffects'
 import { randomDaoName } from '@/data/names'
 import { rng } from '@/utils/random'
 import { baseCultPerSec, baseQiRegen, expRequirement, qiCap } from '@/core/formulas'
@@ -61,6 +63,18 @@ export const usePlayerStore = defineStore(
       count: 0,
       daoFruit: 0,
       talents: [] as string[],
+      /**
+       * 宿命传承:跨世永久的能力位,随神魂不灭、不清零
+       * (锻造生命周期见 core/heritageForge)
+       */
+      heritage: [] as string[],
+      /**
+       * 本世各传承效果已用掉几回(每世重置)。
+       *
+       * 「每世一回」类容错(渡劫跬步)与本世三炉(浴火丹心)的用量账:跨世不带,
+       * 故 rebirth() 里清空;落进存档是为了刷新页面不白嫖(见 sanitizeHeritageUses)。
+       */
+      heritageUses: {} as Record<string, number>,
       insight: 0,
       lives: [] as import('@/data/samsara').LifeRecord[],
       vow: null as import('@/data/samsara').LifeVow | null,
@@ -424,6 +438,49 @@ export const usePlayerStore = defineStore(
     }
 
     /**
+     * 宿命传承:永久持有,跨世不清零。重复锻造(旧档残留/重复触发)会被忽略。
+     * 锻造由 core/heritageForge.lifeForge 判定,在 confirmReincarnation 落账。
+     */
+    function addHeritage(id: string): void {
+      if (!reincarnation.value.heritage.includes(id)) {
+        reincarnation.value = {
+          ...reincarnation.value,
+          heritage: [...reincarnation.value.heritage, id]
+        }
+      }
+    }
+
+    /**
+     * 消耗一次「每世一回/每世 N 回」的传承效果(渡劫跬步 / 浴火丹心)。
+     *
+     * 只在**持有该传承、且本世还没用满**时返回 true 并记账 —— 调用方据此决定
+     * 「这一下要不要照常结算损失/照常开炉」;返回 false 就照旧。
+     * 用量跨世不带(rebirth 清空),只落在本世 —— 刷新页面不白嫖(sanitize 修形)。
+     */
+    function consumeHeritageUse(id: string, max = 1): boolean {
+      if (!reincarnation.value.heritage.includes(id)) return false
+      const used = reincarnation.value.heritageUses[id] ?? 0
+      if (used >= max) return false
+      reincarnation.value = {
+        ...reincarnation.value,
+        heritageUses: { ...reincarnation.value.heritageUses, [id]: used + 1 }
+      }
+      return true
+    }
+
+    /** 形状修复:传承用量只保留「认识的 id + 正整数次」 */
+    function sanitizeHeritageUses(raw: unknown): Record<string, number> {
+      const src = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {}
+      const out: Record<string, number> = {}
+      for (const [id, n] of Object.entries(src)) {
+        if (!heritageDef(id)) continue
+        const v = Number(n)
+        if (Number.isFinite(v) && v > 0) out[id] = Math.floor(v)
+      }
+      return out
+    }
+
+    /**
      * 花掉道果。
      *
      * 余额**真的减少** —— 不是记一笔「已花费」了事。
@@ -489,11 +546,17 @@ export const usePlayerStore = defineStore(
       dead.value = true
     }
 
-    /** 转世重置(保留天赋/道果/转世次数) */
+    /** 转世重置(保留天赋/道果/转世次数/宿命传承) */
     function rebirth(newLinggen: LinggenProfile): void {
-      reincarnation.value = { ...reincarnation.value, count: reincarnation.value.count + 1 }
+      reincarnation.value = {
+        ...reincarnation.value,
+        count: reincarnation.value.count + 1,
+        // 每世一回类容错/本世三炉的用量账跨世不带,新的一世从头算
+        heritageUses: {}
+      }
       linggen.value = newLinggen
-      major.value = 0
+      // 新的一世从炼气起步;若已持有「元婴凝实」传承,保底从筑基起(见 heritageEffects.birthMajorFloor)
+      major.value = birthMajorFloor(reincarnation.value.heritage)
       sub.value = 0
       exp.value = gnZero()
       age.value = START_AGE
@@ -653,6 +716,8 @@ export const usePlayerStore = defineStore(
         count,
         daoFruit: Number.isFinite(r?.daoFruit) ? Math.max(0, r.daoFruit) : 0,
         talents: Array.isArray(r?.talents) ? r.talents : [],
+        heritage: Array.isArray(r?.heritage) ? r.heritage.filter((h: unknown): boolean => !!heritageDef(String(h))) : [],
+        heritageUses: sanitizeHeritageUses(r?.heritageUses),
         insight: Number.isFinite(r?.insight) ? Math.max(0, r.insight) : legacyInsightOf(count),
         lives: Array.isArray(r?.lives) ? r.lives : [],
         vow: r?.vow ?? null,
@@ -844,6 +909,8 @@ export const usePlayerStore = defineStore(
       setTitle,
       setPet,
       addTalent,
+      addHeritage,
+      consumeHeritageUse,
       addDaoFruit,
       addInsight,
       bond,
