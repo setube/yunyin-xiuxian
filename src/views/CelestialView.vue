@@ -185,7 +185,7 @@
                 未至此境者会被**境界压制**(守关者额外增伤)。名字从境界表取,不手写 ——
                 哪天梯子挪了,这句自己跟上。
               -->
-              <p class="mt-0.5 text-[10px]" :class="player.major < anchorMajorOf(world.anchorTier) ? 'text-cinnabar/80' : 'text-ink-faint'">
+              <p class="mt-0.5 text-[10px]" :class="player.major < anchorMajorOf(world.anchorTier) ? 'text-cinnabar' : 'text-ink-faint'">
                 此界宜 {{ REALMS[anchorMajorOf(world.anchorTier)]?.name ?? '' }} 及以上
                 <template v-if="player.major < anchorMajorOf(world.anchorTier)"> · 你尚在此境之下,受境界压制</template>
               </p>
@@ -523,7 +523,7 @@
             @click="prepGate = g.id"
           >
             <span class="font-kai text-[13px]">{{ g.name }}</span>
-            <span class="ml-0.5 text-[9px]" :class="g.kind === '凶' ? 'text-cinnabar/80' : g.kind === '吉' ? 'text-jade' : 'text-ink-faint'">{{ g.kind }}</span>
+            <span class="ml-0.5 text-[9px]" :class="g.kind === '凶' ? 'text-cinnabar' : g.kind === '吉' ? 'text-jade' : 'text-ink-faint'">{{ g.kind }}</span>
           </button>
         </div>
         <p v-if="selectedGate" class="mt-1.5 rounded-md bg-paper-deep/70 px-3 py-2 text-[10px] leading-relaxed text-ink-soft">
@@ -551,14 +551,14 @@
             敌人一侧的判定(道之理解 / 境界压制):这是"为什么这一界对我更难"的答案。
             判定的文案与数值同源(core/gauntlet.celestialJudgementLines),界面不再另编一套说法。
           -->
-          <p v-for="(line, i) in prepForecast.judgementLines" :key="i" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar/80">
+          <p v-for="(line, i) in prepForecast.judgementLines" :key="i" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar">
             {{ line }}
           </p>
         </div>
         <p v-if="prepPreview" class="mt-2 text-[10px] leading-relaxed text-violet-ink">
           天机透视 · 入界之敌:{{ prepPreview.skillLines.join(' / ') }} —— {{ prepPreview.winText }}
         </p>
-        <p v-if="prepPreview?.riskLines.length" class="mt-1 text-[10px] leading-relaxed text-cinnabar/80">
+        <p v-if="prepPreview?.riskLines.length" class="mt-1 text-[10px] leading-relaxed text-cinnabar">
           危局:{{ prepPreview.riskLines.join(';') }}
         </p>
       </template>
@@ -597,7 +597,7 @@
           连同"怎么办"一并写在这里 —— 战报不是判决书,是下一次出发的依据。
         -->
         <div v-if="expedition.judgementLines?.length" class="mt-2 rounded-md bg-cinnabar/5 px-3 py-2">
-          <p class="font-kai text-[11px] tracking-widest text-cinnabar/80">此战之判</p>
+          <p class="font-kai text-[11px] tracking-widest text-cinnabar">此战之判</p>
           <p v-for="(line, i) in expedition.judgementLines" :key="i" class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
             {{ line }}
           </p>
@@ -629,7 +629,7 @@
             </button>
           </div>
           <div v-if="furnaceConfirm === row.rate.resource" class="mt-1.5 rounded-md bg-cinnabar/5 px-3 py-2">
-            <p class="text-[10px] leading-relaxed text-cinnabar/90">
+            <p class="text-[10px] leading-relaxed text-cinnabar">
               将 <span class="tabular">{{ row.rate.name }} ×{{ formatNum(row.have) }}</span> 尽数熔作道源,共
               <span class="tabular">+{{ furnacePreview(row.rate) }}</span> 缕 —— 此举不可逆,这些资源再无炼丹/锻造/参悟之途。
             </p>

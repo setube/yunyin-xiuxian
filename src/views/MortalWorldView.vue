@@ -109,7 +109,7 @@
               </span>
             </p>
             <!-- 锁住的地界要给一句"为什么现在去不了",而不是只画把锁 -->
-            <p v-if="!unlocked(p.nodeId)" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar/80">
+            <p v-if="!unlocked(p.nodeId)" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar">
               {{ blockReason(p.regionId) ?? '此境未开,须先走完这一世的来时路' }}
             </p>
           </div>
@@ -188,7 +188,7 @@
       const bUnlocked = unlocked(b.nodeId)
       segs.push({
         points: `${a.x},${a.y} ${b.x},${b.y}`,
-        cls: bCleared ? 'text-jade/60' : bUnlocked ? 'text-azure/55' : 'text-ink/15',
+        cls: bCleared ? 'stroke-jade/60' : bUnlocked ? 'stroke-azure/55' : 'stroke-ink/15',
         dash: bCleared || bUnlocked ? '' : '4 3'
       })
     }

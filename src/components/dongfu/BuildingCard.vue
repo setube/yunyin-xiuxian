@@ -8,7 +8,7 @@
       >
         <GameIcon :name="props.def.icon" :size="featured ? 22 : 18" />
         <!-- 境界闸门未开:右上角落一把小锁,整印转金灰 -->
-        <GameIcon v-if="locked" name="lock" :size="9" class="absolute -bottom-0.5 -right-0.5 rounded-full bg-paper p-[1px] text-gold-ink/80" />
+        <GameIcon v-if="locked" name="lock" :size="9" class="absolute -bottom-0.5 -right-0.5 rounded-full bg-paper p-[1px] text-gold-ink" />
       </span>
       <div class="min-w-0 grow">
         <!--
@@ -60,7 +60,7 @@
     <p v-if="modLine" class="mt-1 text-[11px] leading-relaxed text-azure tabular">{{ modLine }}</p>
     <!-- 再进净得:本级词条到下一级的增量,买前预览;不可点时不给(不能对着画不了的饼招手) -->
     <p v-if="nextGain" class="mt-1 text-[10px] leading-relaxed text-ink-faint">
-      再升一层,又添 <span class="tabular text-azure/75">{{ nextGain }}</span>
+      再升一层,又添 <span class="tabular text-azure">{{ nextGain }}</span>
     </p>
     <!-- 灵兽园:把当前相伴的灵兽报在园子里 —— 别的建筑都是数值,这里是活物 -->
     <p v-if="beastCompanionName" class="mt-1 flex items-center gap-1 text-[10px] text-jade">
@@ -189,7 +189,7 @@
   const atGateCap = computed(() => level.value > 0 && !atMax.value && level.value >= cap.value)
   /** 印章三态:已建朱砂 / 未建墨灰 / 被锁金灰 */
   const sealCls = computed(() => {
-    if (locked.value) return 'bg-gold-ink/8 text-gold-ink/50'
+    if (locked.value) return 'bg-gold-ink/8 text-gold-ink'
     return level.value > 0 ? 'bg-cinnabar/10 text-cinnabar' : 'bg-ink/5 text-ink-faint'
   })
   /** 这一级真正进属性的词条。只在已建造时显示,避免和未启用时的 desc 叠在一起。 */

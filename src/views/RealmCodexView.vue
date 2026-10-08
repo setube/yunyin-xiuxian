@@ -112,7 +112,7 @@
         <span class="w-[56px] shrink-0 text-[10px] text-ink-faint">象{{ t.image }} · {{ t.nature }}</span>
         <span class="min-w-0 grow text-[11px] leading-relaxed text-ink-soft">{{ t.gist }}</span>
         <span class="shrink-0 text-[10px] text-jade">宜{{ t.good }}</span>
-        <span class="shrink-0 text-[10px] text-cinnabar/80">忌{{ t.bad }}</span>
+        <span class="shrink-0 text-[10px] text-cinnabar">忌{{ t.bad }}</span>
       </div>
     </section>
 
@@ -150,7 +150,7 @@
       <div class="mt-2.5 divide-y divide-ink/6">
         <div v-for="row in fateRows" :key="row.palace.id" class="flex items-baseline gap-2 py-1.5">
           <span class="w-14 shrink-0 font-kai text-[12px] text-ink-soft">{{ row.palace.name }}</span>
-          <span class="w-24 shrink-0 text-[11px] text-cinnabar/90">{{ row.starNames }}</span>
+          <span class="w-24 shrink-0 text-[11px] text-cinnabar">{{ row.starNames }}</span>
           <span class="min-w-0 text-[11px] leading-relaxed text-ink-faint">{{ row.palace.domain }} · {{ row.palace.use }}</span>
         </div>
       </div>

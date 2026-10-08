@@ -52,7 +52,7 @@
             -->
             <span
               v-else
-              class="inline-flex items-center rounded-full border border-dashed border-ink/15 px-2 py-0.5 text-[10px] leading-snug text-ink-faint/60"
+              class="inline-flex items-center rounded-full border border-dashed border-ink/15 px-2 py-0.5 text-[10px] leading-snug text-ink-faint"
               :title="`尚未收录 · ${cat.source}`"
             >???</span>
           </template>

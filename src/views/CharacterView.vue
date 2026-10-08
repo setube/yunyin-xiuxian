@@ -102,7 +102,7 @@
           >
             <span class="text-ink-faint">
               {{ row.label }}
-              <span v-if="row.capped" class="ml-0.5 text-[9px] text-cinnabar/80">软</span>
+              <span v-if="row.capped" class="ml-0.5 text-[9px] text-cinnabar">软</span>
             </span>
             <span class="tabular" :class="row.value > 0 ? 'text-azure' : 'text-cinnabar'">
               {{ signedPercent(row.value) }}
@@ -122,7 +122,7 @@
           <p v-for="c in breakdownRows" :key="c.name" class="mt-0.5 flex justify-between text-[10px]">
             <span class="text-ink-faint">
               {{ c.name }}
-              <span v-if="c.onTop" class="ml-1 text-[9px] text-cinnabar/80">另乘</span>
+              <span v-if="c.onTop" class="ml-1 text-[9px] text-cinnabar">另乘</span>
             </span>
             <span class="tabular" :class="c.value > 0 ? 'text-azure' : 'text-cinnabar'">
               {{ signedPercent(c.value) }}
@@ -132,7 +132,7 @@
             总数即各项之和;标「另乘」的不并入百分比,而是单独乘在攻防血上。
           </p>
         </div>
-        <p v-if="softCappedNotes.length" class="mt-1.5 text-[10px] leading-relaxed text-cinnabar/80">
+        <p v-if="softCappedNotes.length" class="mt-1.5 text-[10px] leading-relaxed text-cinnabar">
           标「软」的,已堆到好处将尽之处:{{ softCappedNotes.join('、') }}。再叠上去,收效渐微,实乃大道有涯。
         </p>
       </div>
@@ -372,7 +372,7 @@
           <li v-for="h in ownedHeritage" :key="h!.id" class="rounded-md border border-jade/40 bg-jade/5 px-2.5 py-1.5">
             <p class="flex items-baseline justify-between text-[11px] font-kai text-jade">
               <span>{{ h!.name }}</span>
-              <span class="text-[9px] tracking-[0.2em] text-jade/70">{{ h!.axis === 'choice' ? '· 选择' : h!.axis === 'fault-tolerant' ? '· 容错' : '· 荣誉' }}</span>
+              <span class="text-[9px] tracking-[0.2em] text-jade">{{ h!.axis === 'choice' ? '· 选择' : h!.axis === 'fault-tolerant' ? '· 容错' : '· 荣誉' }}</span>
             </p>
             <p class="text-[10px] leading-relaxed text-ink-soft">{{ h!.desc }}</p>
           </li>
@@ -508,7 +508,7 @@
                 @click="pickChoice(ch.id)"
               >
                 {{ ch.label }}
-                <span v-if="ch.peril" class="ml-1 text-[10px] text-cinnabar/80">〔共命之险〕</span>
+                <span v-if="ch.peril" class="ml-1 text-[10px] text-cinnabar">〔共命之险〕</span>
               </button>
             </div>
           </div>
@@ -834,7 +834,7 @@
   function mentorAffinityChip(mentorId: MentorId): string {
     const a = mentorAffinity(mentorId)
     if (a > 0.2) return 'text-jade'
-    if (a < -0.2) return 'text-cinnabar/80'
+    if (a < -0.2) return 'text-cinnabar'
     return 'text-ink-faint'
   }
   // Phase 31.1 机缘链:机缘取/弃记忆 → 师承推荐

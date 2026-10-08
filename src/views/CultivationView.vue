@@ -226,10 +226,10 @@
 
         <!-- 界膜之劫:跨界规则加难(见 TRIB_WORLD_STEP_STAT_FOLD),决意之前必须说清 -->
         <div v-if="worldStep" class="mt-2 rounded-md border border-cinnabar/30 bg-cinnabar/5 px-2.5 py-2">
-          <p class="text-[10px] leading-relaxed text-cinnabar/90">界膜之劫:跨界这一关血肉之厚一概不算 —— 防御与气血折算出的抗性、开劫护持在此作废,只认词条与准备。</p>
+          <p class="text-[10px] leading-relaxed text-cinnabar">界膜之劫:跨界这一关血肉之厚一概不算 —— 防御与气血折算出的抗性、开劫护持在此作废,只认词条与准备。</p>
         </div>
         <!-- 天威长相:道数随境界涨、单波逐道加重,摊出来才知道护持该留到哪一段 -->
-        <p v-if="tribWeatherLine" class="mt-1.5 text-[10px] leading-relaxed text-cinnabar/80">{{ tribWeatherLine }}</p>
+        <p v-if="tribWeatherLine" class="mt-1.5 text-[10px] leading-relaxed text-cinnabar">{{ tribWeatherLine }}</p>
         <p v-if="tribWave" class="mt-1 text-[10px] text-ink-faint tabular">
           共 {{ tribWave.waves }} 道,单波 {{ formatPercent(tribWave.min, 0) }}–{{ formatPercent(tribWave.max, 0) }} 最大生命(合计约 {{ formatPercent(tribWave.total, 0) }})
         </p>
@@ -274,11 +274,11 @@
           (实测第二枚右缘到 331px,越界 11px)。故允许换行:宽屏并排、窄屏上下。
         -->
         <div v-if="!btInfo.prep.sitting && !btInfo.prep.ready" class="mt-1.5 flex flex-wrap gap-1.5">
-          <button type="button" class="chip-ink !py-1.5 text-[10px]" @click="startPrep('meditate')">
+          <button type="button" class="chip-ink chip-ink-wrap !py-1.5 text-[10px]" @click="startPrep('meditate')">
             {{ prepMeditate.label }} · {{ Math.round(prepMeditate.duration / 60) }}分钟
             +{{ Math.round(prepMeditate.bonusRate * 100) }}%
           </button>
-          <button type="button" class="chip-ink !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
+          <button type="button" class="chip-ink chip-ink-wrap !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
             {{ prepPill.label }} · {{ prepPillCost }}灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
             <span v-if="!prepCanPill" class="text-ink-faint">({{ prepPillDisabledLabel() }})</span>
           </button>
@@ -397,7 +397,7 @@
               第 {{ cultivation.learned[mainDef.id] }} 层 · {{ qualityDef(mainDef.quality).name }}
             </span>
           </span>
-          <GameIcon name="flame" :size="15" class="text-cinnabar/70" />
+          <GameIcon name="flame" :size="15" class="text-cinnabar" />
         </button>
 
         <!--
@@ -405,7 +405,7 @@
           辅修一按即见,不再埋在长笺里;选中门类单类展示、栏头不再粘顶互相叠压。
         -->
         <div
-          class="card-ink flex gap-1 p-1"
+          class="card-ink flex flex-wrap gap-1 p-1"
           role="tablist"
           aria-label="功法门类"
           @keydown="onGongfaCatKeydown"

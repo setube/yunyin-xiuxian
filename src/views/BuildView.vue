@@ -26,7 +26,7 @@
           <p v-for="cv in build.coreValues" :key="cv.key" class="flex justify-between text-[12px]">
             <span class="text-ink-soft">
               {{ STAT_NAMES[cv.key] }}
-              <span v-if="isSoftCapped(player.finalStats.mods, cv.key)" class="ml-0.5 text-[9px] text-cinnabar/80">软</span>
+              <span v-if="isSoftCapped(player.finalStats.mods, cv.key)" class="ml-0.5 text-[9px] text-cinnabar">软</span>
             </span>
             <span class="tabular text-violet-ink">{{ signedPercent(cv.value) }}</span>
           </p>
@@ -90,7 +90,7 @@
           <p class="mt-0.5 text-[11px] leading-relaxed" :class="comboInfo.active ? 'text-ink-soft' : 'text-ink-faint'">
             {{ comboInfo.art.desc }}
           </p>
-          <p class="mt-0.5 text-[10px] text-cinnabar/80">代价:{{ comboInfo.art.costText }}</p>
+          <p class="mt-0.5 text-[10px] text-cinnabar">代价:{{ comboInfo.art.costText }}</p>
         </div>
         <!-- 构筑韧性:主派被封后还剩什么 -->
         <div v-if="resilience" class="mt-2.5 rounded-md bg-ink/4 px-3 py-2">
@@ -151,7 +151,7 @@
         <button
           :disabled="loadouts.list.length >= MAX_LOADOUTS"
           class="-my-1 py-1.5 text-[11px]"
-          :class="loadouts.list.length >= MAX_LOADOUTS ? 'cursor-not-allowed text-ink-faint/50' : 'text-cinnabar/90 active:opacity-60'"
+          :class="loadouts.list.length >= MAX_LOADOUTS ? 'cursor-not-allowed text-ink-faint' : 'text-cinnabar active:opacity-60'"
           @click="openSave"
         >{{ loadouts.list.length >= MAX_LOADOUTS ? '快照已满' : '+ 存当前构筑' }}</button>
       </p>
