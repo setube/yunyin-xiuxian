@@ -42,7 +42,7 @@
           <span
             class="grid h-10 w-10 shrink-0 place-items-center rounded-md transition-colors"
             :class="row.active ? 'bg-jade/10 text-jade' : 'bg-ink/5 text-ink-soft'"
-          ><GameIcon :name="row.def.icon" :size="20" /></span>
+          ><GameIcon :name="beastIcon(row.def.family)" :size="20" /></span>
           <div class="min-w-0 grow">
             <p class="flex flex-wrap items-center gap-1.5">
               <span class="truncate font-kai text-[13px]" :style="{ color: qualityDef(row.def.quality).color }">{{ row.def.name }}</span>
@@ -85,6 +85,7 @@
   import { ACHIEVEMENTS } from '@/data/achievements'
   import { achievementDirection } from '@/ui/achievementHint'
   import { petDef, PETS } from '@/data/pets'
+  import { beastIcon } from '@/data/beastFamilies'
   import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
   import { petTraitText } from '@/ui/itemText'
   import { qualityDef } from '@/data/qualities'

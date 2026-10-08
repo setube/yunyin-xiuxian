@@ -37,7 +37,7 @@ import { personalityEffects } from './petPersonality'
 const DEF: EnemyDef = {
   id: 'test_foe',
   name: '试招石人',
-  icon: 'x',
+  family: 'beast',
   tier: 6,
   hpMult: 1,
   atkMult: 1,

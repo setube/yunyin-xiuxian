@@ -6,6 +6,7 @@ import { rng } from '@/utils/random'
 import { add, gnZero } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import { enemyDef } from '@/data/enemies'
+import { beastIcon } from '@/data/beastFamilies'
 import { regionDef, REGIONS } from '@/data/regions'
 import {
   EVENT_AUTO_RESOLVE_SECONDS,
@@ -294,7 +295,7 @@ function runBattle(now: number): void {
   }
   const view: LastBattleView = {
     enemyName: ghost ? ghostTitle(ghost) : eDef.name,
-    enemyIcon: eDef.icon,
+    enemyIcon: beastIcon(eDef.family),
     enemyId: eDef.id,
     isBoss: Boolean(eDef.isBoss),
     enemyPower,

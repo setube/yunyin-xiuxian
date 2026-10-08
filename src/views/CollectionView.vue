@@ -92,6 +92,7 @@
   import { ACHIEVEMENTS } from '@/data/achievements'
   import { GONGFA } from '@/data/gongfa'
   import { PETS } from '@/data/pets'
+  import { beastIcon } from '@/data/beastFamilies'
   import { EVENTS } from '@/data/events'
   import { chainOfEvent } from '@/data/chains'
   import { TALENTS, TALENT_GRADE_COLORS } from '@/data/talents'
@@ -220,7 +221,7 @@
           name: p.name,
           desc: [p.desc, petFuncText(p)].filter(Boolean).join('\n'),
           meta: qualityDef(p.quality).name,
-          icon: p.icon,
+          icon: beastIcon(p.family),
           color: qualityDef(p.quality).color
         }))
       ),

@@ -209,7 +209,7 @@ describe('存档往返 · 导出再导入一模一样', () => {
     const def: EnemyDef = {
       id: 'saved_foe',
       name: '石傀',
-      icon: 'x',
+      family: 'construct',
       tier: 9,
       hpMult: 1,
       atkMult: 1,

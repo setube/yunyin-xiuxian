@@ -12,6 +12,7 @@ import type { WorldFoeShape } from '@/types'
 import { formatGN } from '@/utils/format'
 import { rng } from '@/utils/random'
 import { ENEMIES, enemyDef } from '@/data/enemies'
+import { beastIcon } from '@/data/beastFamilies'
 import { maxTierForMajor } from '@/data/regions'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES, secretRealmDef, type SecretRealmDef } from '@/data/secretRealms'
 import { resolveCombat } from './combat'
@@ -174,7 +175,7 @@ export function secretLayerFoe(state: SecretRealmState, rand: typeof rng = rng):
   const ref = { attack: stats.attack, defense: stats.defense, maxHp: stats.maxHp }
   const shape: WorldFoeShape = {
     name: foeDef.name,
-    icon: foeDef.icon,
+    icon: beastIcon(foeDef.family),
     atkR: foeDef.atkMult,
     defR: foeDef.defMult,
     hpR: foeDef.hpMult,
