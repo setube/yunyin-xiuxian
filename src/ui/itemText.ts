@@ -26,7 +26,8 @@ import { equipSetDef } from '@/core/equipSet'
 import { worldNameOfTier } from '@/core/formulas'
 import { gongfaModsAt } from '@/stores/cultivation'
 import { personalityEffects } from '@/core/petPersonality'
-import { formatDuration, formatNum, formatPercent } from '@/utils/format'
+import { formatNum, formatPercent } from '@/utils/format'
+import { classicalDuration } from '@/data/timeUnits'
 import { modsText } from './statNames'
 
 // ============ 装备 ============
@@ -120,9 +121,9 @@ export function pillFuncText(def: PillDef): string {
   const i = def.instant
   if (def.kind === 'instant' && i) {
     const parts: string[] = []
-    // 修为丹按等效闭关时长计价(Phase 39):写"折合闭关 一时"而不是百分比 ——
+    // 修为丹按等效闭关时长计价(Phase 39):写"折合闭关那一段等效时长"而不是百分比 ——
     // 玩家要判断的是"这枚丹抵我多久",不是"它占这道墙的几成"
-    if (i.expSecs) parts.push(`修为 +折合闭关 ${formatDuration(i.expSecs)}(至多不满一层)`)
+    if (i.expSecs) parts.push(`修为 +折合闭关 ${classicalDuration(i.expSecs)}(至多不满一层)`)
     if (i.expFixed) parts.push(`修为 +${formatNum(i.expFixed)} 点`)
     if (i.qiPct) parts.push(`灵气 +上限的 ${Math.round(i.qiPct * 100)}%`)
     if (i.lifespanYears) parts.push(`寿元 +${formatNum(i.lifespanYears)} 载`)
