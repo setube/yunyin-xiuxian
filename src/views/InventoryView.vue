@@ -345,7 +345,7 @@
                 <span v-if="r.able.overReach > 0" class="whitespace-nowrap text-[10px] text-cinnabar">越阶 {{ r.able.overReach }}</span>
                 <span v-if="r.plan.rounds > 0" class="whitespace-nowrap text-[10px] text-jade">现可炼 {{ r.plan.rounds }} 炉</span>
               </p>
-              <p class="text-[11px] text-ink-faint tabular">灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
+              <p class="text-[11px] text-ink-faint tabular">{{ HERB_GRADE_SHORT[r.cost.grade] }}灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
               <!-- 炼出来是什么:方子清单此前只报代价与把握,不报成品 -->
               <p class="text-[10px] leading-relaxed text-azure/80">{{ pillFuncText(r.def) }}</p>
               <p v-for="w in r.able.weakness" :key="w" class="mt-0.5 text-[10px] text-ink-faint">· {{ w }}</p>
@@ -390,7 +390,7 @@
             v-if="pillFullId === r.def.id"
             class="mt-1.5 text-[9px] leading-relaxed text-cinnabar"
           >
-            开 {{ r.plan.rounds }} 炉,约耗 灵草×{{ r.plan.herb }} · 灵石 {{ formatGN(r.plan.stone) }};
+            开 {{ r.plan.rounds }} 炉,约耗 {{ HERB_GRADE_SHORT[r.cost.grade] }}灵草×{{ r.plan.herb }} · 灵石 {{ formatGN(r.plan.stone) }};
             炸炉按技艺省下残料,或可再多开几炉 —— 仍要?
           </p>
         </div>
@@ -637,6 +637,7 @@
   import { useSettingsStore } from '@/stores/settings'
   import { qualityDef, QUALITIES } from '@/data/qualities'
   import { pillDef } from '@/data/pills'
+  import { HERB_GRADE_SHORT, type HerbGrade } from '@/data/herbGrades'
   import { pillFuncText } from '@/ui/itemText'
   import {
     artifactActiveText,
@@ -808,7 +809,7 @@
         plan: craftBatchPlan(id)
       }))
       .filter(
-        (x): x is { def: PillDef; cost: { herb: number; stone: GNum }; able: Craftability; plan: ReturnType<typeof craftBatchPlan> } =>
+        (x): x is { def: PillDef; cost: { herb: number; stone: GNum; grade: HerbGrade }; able: Craftability; plan: ReturnType<typeof craftBatchPlan> } =>
           x.def !== undefined && x.cost !== null && x.able !== null
       )
       // 现在能开炉的置顶,其余再按阶位 —— 进弹窗一眼看见此刻哪味立刻可炼

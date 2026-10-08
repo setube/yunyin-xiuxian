@@ -205,7 +205,7 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
   resources.spiritStone = gnZero() as GNum
   resources.setQi(0, 1)
   resources.wudao = 0
-  resources.herb = 0
+  resources.resetHerbs()
   resources.ore = 0
   resources.page = 0
   resources.dust = 0

@@ -47,7 +47,7 @@ function seedLife(): void {
   res.spiritStone = gn(99999)
   res.setQi(500, 100)
   res.wudao = 50
-  res.herb = 40
+  res.herbByGrade[1] = 40
   res.ore = 30
   res.page = 20
   res.dust = 10

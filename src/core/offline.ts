@@ -9,6 +9,7 @@ import { offlineAgeNote } from '@/ui/offlineText'
 import { breakthroughReadyNote } from '@/ui/cultivationText'
 import { rng } from '@/utils/random'
 import { regionDef } from '@/data/regions'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { enemyDef } from '@/data/enemies'
 import {
   AGE_YEARS_PER_HOUR,
@@ -217,7 +218,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         // 材料 —— 离线也会撞见新灵材,只是次数封顶,免得回来一屏 toast
         const herbGain = Math.round(wins * 1.0 * doubleMult)
         const oreGain = Math.round(wins * 0.5 * doubleMult)
-        resources.addSmall('herb', herbGain)
+        resources.addHerb(herbGradeOfMajor(region.minRealm), herbGain)
         resources.addSmall('ore', oreGain)
         harvestMaterials(region.tier, 'herb', herbGain)
         harvestMaterials(region.tier, 'ore', oreGain)

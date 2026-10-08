@@ -9,6 +9,7 @@ import { salvageYieldText } from '@/ui/forgeText'
 import { isRareQuality, qualityDef } from '@/data/qualities'
 import { equipmentTemplate } from '@/data/equipment'
 import { PILLS } from '@/data/pills'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { ARTIFACTS, artifactDef } from '@/data/artifacts'
 import { lifeThemeDef } from '@/data/lifeThemes'
 import {
@@ -263,7 +264,7 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
   // 材料 —— 数量进标量库存,同时抽出"你到底捡到了什么"推进认知
   if (rng.chance(0.5)) {
     const n = rng.int(1, 3) * doubled
-    resources.addSmall('herb', n)
+    resources.addHerb(herbGradeOfMajor(region.minRealm), n)
     harvestMaterials(tier, 'herb', n)
   }
   if (rng.chance(0.35)) {

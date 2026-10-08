@@ -180,7 +180,7 @@ describe('坊市 · 买卖', () => {
   it('即时售材:走一批扣库存、入账灵石;不够一批则不成', () => {
     const market = useMarketStore()
     const resources = useResourcesStore()
-    resources.herb = 10 // 不到一批 12
+    resources.herbByGrade[1] = 10 // 不到一批 12
     resources.ore = 20
     resources.spiritStone = gn(0)
     expect(market.sellMaterial('herb', 0), '不够一批不售').toBe(false)

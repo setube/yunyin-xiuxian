@@ -10,6 +10,8 @@ import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { pillDef } from '@/data/pills'
 import { salePills } from './marketService'
+import { herbBuyPrice, herbGradeOfMajor } from '@/data/herbGrades'
+import { MARKET_MAT_STONE_UNITS } from '@/data/market'
 import {
   BOUNTY_SLOTS,
   BOUNTY_REFRESH_SECONDS,
@@ -46,10 +48,13 @@ export function generateBounty(major: number, now: number): BountySlot[] {
   const pillId = pickPill(major, now)
   const pd = pillDef(pillId)
   const matTarget = BOUNTY_MAT_TARGET
-  const matReward = stoneByTier(major, matTarget * BOUNTY_MAT_UNIT_AMOUNT)
+  const oreReward = stoneByTier(major, matTarget * BOUNTY_MAT_UNIT_AMOUNT)
+  // 募草按品计价:每株 = 购价 ×(悬赏档 4.5 / 购入档 6),恒在摆摊(3)与购入(6)之间
+  const herbUnit = herbBuyPrice(herbGradeOfMajor(major)) * (BOUNTY_MAT_UNIT_AMOUNT / MARKET_MAT_STONE_UNITS)
+  const herbReward = mulN(gn(herbUnit), matTarget)
   const slots: BountySlot[] = [
-    { idx: 0, kind: 'herb', kindId: 'herb', target: matTarget, tier: 0, reward: matReward, extra: 0, claimed: false },
-    { idx: 1, kind: 'ore', kindId: 'ore', target: matTarget, tier: 0, reward: matReward, extra: 0, claimed: false },
+    { idx: 0, kind: 'herb', kindId: 'herb', target: matTarget, tier: 0, reward: herbReward, extra: 0, claimed: false },
+    { idx: 1, kind: 'ore', kindId: 'ore', target: matTarget, tier: 0, reward: oreReward, extra: 0, claimed: false },
     {
       idx: 2,
       kind: 'pill',

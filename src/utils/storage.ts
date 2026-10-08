@@ -5,6 +5,7 @@
 
 import type { StateTree } from 'pinia'
 import { encryptSave, readSaveText } from './crypto'
+import { herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
 
 export const SAVE_PREFIX = 'yunyin.'
 export const SAVE_VERSION = 2
@@ -252,6 +253,39 @@ export function preflightScan(): string[] {
   return corrupted
 }
 
+/**
+ * 灵草五品迁移:旧档单标量 `herb` → 按当前境界折算成品阶分账(不丢草,幂等)。
+ *
+ * 旧档的 `herb: N`(单标量)在玩家此刻无可用的来源界域,取「当前境界折算」——
+ * 反正他现阶段炼的是本境界的方子,把草落在他当下能用的那一品,既守住
+ * 「低阶草炼高阶丹」红线(旧品阶追不上),又不静默丢草。
+ */
+export function migrateHerbSlice(resources: Record<string, unknown>, major: number): Record<string, unknown> {
+  const hasMap = 'herbByGrade' in resources
+  const scalar =
+    typeof resources.herb === 'number' && Number.isFinite(resources.herb as number)
+      ? Math.floor(resources.herb as number)
+      : 0
+  if (hasMap && scalar <= 0) return resources
+  const next = { ...resources }
+  const grade = herbGradeOfMajor(Math.max(0, Math.floor(Number(major) || 0)))
+  const rawMap =
+    hasMap && resources.herbByGrade && typeof resources.herbByGrade === 'object'
+      ? (resources.herbByGrade as Record<string, unknown>)
+      : {}
+  const clean: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  for (const [k, v] of Object.entries(rawMap)) {
+    const g = Number(k)
+    if (!isHerbGrade(g)) continue
+    const n = typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : 0
+    clean[g] = Math.max(0, n)
+  }
+  if (scalar > 0) clean[grade] = (clean[grade] ?? 0) + scalar
+  next.herbByGrade = clean
+  delete next.herb
+  return next
+}
+
 /** v1 → v2:单法宝位升级为多法宝位(幂等,顺带清理残留旧字段) */
 export function migrateInventorySlice(data: Record<string, unknown>): Record<string, unknown> {
   const hasNew = 'equippedArtifacts' in data
@@ -271,12 +305,30 @@ export function migrateInventorySlice(data: Record<string, unknown>): Record<str
  */
 export function migrateLocalSchema(): void {
   try {
-    const key = storageKey('inventory')
-    const raw = localStorage.getItem(key)
-    if (raw === null) return
-    const data = JSON.parse(readSaveText(raw)) as Record<string, unknown>
-    const migrated = migrateInventorySlice(data)
-    localStorage.setItem(key, encryptSave(JSON.stringify(migrated)))
+    const invKey = storageKey('inventory')
+    const invRaw = localStorage.getItem(invKey)
+    if (invRaw !== null) {
+      const inv = JSON.parse(readSaveText(invRaw)) as Record<string, unknown>
+      localStorage.setItem(invKey, encryptSave(JSON.stringify(migrateInventorySlice(inv))))
+    }
+    // 灵草五品:旧档单标量 herb → 按当前境界折算成品阶分账(不丢草)
+    const resKey = storageKey('resources')
+    const resRaw = localStorage.getItem(resKey)
+    if (resRaw !== null) {
+      const res = JSON.parse(readSaveText(resRaw)) as Record<string, unknown>
+      // 取玩家当前境界做折算基准;player 坏档则由 preflightScan 兜底
+      let major = 0
+      const playerRaw = localStorage.getItem(storageKey('player'))
+      if (playerRaw !== null) {
+        try {
+          const player = JSON.parse(readSaveText(playerRaw)) as Record<string, unknown>
+          if (typeof player.major === 'number' && Number.isFinite(player.major)) major = Math.floor(player.major)
+        } catch {
+          /* player 分片损坏,按 0 折算 */
+        }
+      }
+      localStorage.setItem(resKey, encryptSave(JSON.stringify(migrateHerbSlice(res, major))))
+    }
   } catch {
     // 损坏数据交由 preflightScan 兜底
   }

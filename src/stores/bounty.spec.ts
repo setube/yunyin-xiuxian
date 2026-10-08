@@ -26,13 +26,13 @@ describe('坊市悬赏板 · 交货', () => {
     const b = useBountyStore()
     const res = useResourcesStore()
     seedSlots([mat('herb')])
-    res.herb = 10 // 不足 30
+    res.herbByGrade[1] = 10 // 不足 30
     res.spiritStone = { m: 0, e: 0 }
     expect(b.claim(0)).toBe('insufficient')
     expect(res.herb).toBe(10)
     expect(b.orders[0]!.claimed).toBe(false)
 
-    res.herb = 30
+    res.herbByGrade[1] = 30
     expect(b.claim(0)).toBe('ok')
     expect(res.herb).toBe(0)
     expect(toNum(res.spiritStone)).toBeCloseTo(toNum(b.orders[0]!.reward), 5)

@@ -7,6 +7,7 @@
 import { gn, gnZero, mulN, ratio } from '@/utils/gnum'
 import { rng } from '@/utils/random'
 import { pillDef } from '@/data/pills'
+import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { formatDuration, formatGN } from '@/utils/format'
 import { recipeCraft, type SkillId } from '@/data/crafting'
@@ -132,9 +133,14 @@ export function usePillBatch(id: string, count: number): number {
 }
 
 /** 炼丹消耗 */
-export function pillCraftCost(id: string): { herb: number; stone: GNum } | null {
+export function pillCraftCost(id: string): { herb: number; stone: GNum; grade: HerbGrade } | null {
   const def = pillDef(id)
   if (!def?.recipe) return null
+  /**
+   * 灵草按方子准入境界决定品阶:方子出自哪一界,就要哪一品的草。
+   * 「新手村的青芝炼混沌道祖的丹」从此不可能 —— 低阶草进不了高阶方子。
+   */
+  const grade = herbGradeOfMajor(def.minRealm)
   /**
    * 灵石开销按这张方子**准入境界能拿到的最高层级**折算。
    *
@@ -143,7 +149,7 @@ export function pillCraftCost(id: string): { herb: number; stone: GNum } | null 
    * 于是界外炼丹被自己的报价挡在门外(ISS-211)。层级只有一个事实源:区域表。
    */
   const tier = maxTierForMajor(def.minRealm)
-  return { herb: def.recipe.herb, stone: stoneByTier(tier, def.recipe.stoneBase / 10) }
+  return { herb: def.recipe.herb, stone: stoneByTier(tier, def.recipe.stoneBase / 10), grade }
 }
 
 /**
@@ -180,7 +186,7 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
   // 调用方才能区分掌握问题与材料问题(未知方先于掌握度阻塞返回)
   if (!def || !cost || !able) return blocked(craftUnknownToast())
   if (able.blockers.length > 0) return blocked(able.blockers[0]!)
-  const herbRounds = Math.floor(resources.herb / cost.herb)
+  const herbRounds = Math.floor(resources.herbOf(cost.grade) / cost.herb)
   // 灵石可开几炉:直接求商,不逐炉减 —— 库存大时按炉计数会跑成百万次 GNum 减法
   // (ratio 的指数差钳制只会把币额超大的情况估算得略保守,再与 herbRounds 取小,安全)
   const stoneRounds = Math.max(0, Math.floor(ratio(resources.spiritStone, cost.stone)))
@@ -241,7 +247,7 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
     if (!quiet) ui.toast(able.blockers[0]!, 'warn')
     return { ok: false, count: 0, aborted: true }
   }
-  if (!resources.hasSmall('herb', cost.herb) || !resources.hasStone(cost.stone)) {
+  if (!resources.hasHerb(cost.grade, cost.herb) || !resources.hasStone(cost.stone)) {
     if (!quiet) ui.toast(craftShortToast(), 'warn')
     return { ok: false, count: 0, aborted: true }
   }
@@ -255,10 +261,10 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
   // 无论成败,炉先开了,料先下了
   resources.spendStone(cost.stone)
   if (succeeded) {
-    resources.spendSmall('herb', cost.herb)
+    resources.spendHerb(cost.grade, cost.herb)
   } else {
     const kept = Math.floor(cost.herb * salvageRatio(able.skill))
-    resources.spendSmall('herb', cost.herb - kept)
+    resources.spendHerb(cost.grade, cost.herb - kept)
   }
 
   gainCraftExp(craft?.skills ?? {}, able.rank, succeeded)
