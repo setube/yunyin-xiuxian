@@ -715,7 +715,7 @@
       .filter(x => x.def !== undefined)
   )
 
-  /** 已习得功法按门类(主/辅/秘)分组、栏内按品质降序 —— 恒出三门供切换,选中门类单类展示 */
+  /** 已习得功法按门类(主/辅/秘)分组、栏内已装配的置顶再按品质降序 —— 恒出三门供切换,选中门类单类展示 */
   const gongfaCategories = computed(() => {
     const byType: Partial<Record<GongfaType, GongfaDef[]>> = {}
     for (const id of Object.keys(cultivation.learned)) {
@@ -727,7 +727,11 @@
     const order: GongfaType[] = ['main', 'sub', 'secret']
     return order.map(type => ({
       type,
-      items: (byType[type] ?? []).sort((a, b) => qualityDef(b.quality).rank - qualityDef(a.quality).rank)
+      items: (byType[type] ?? []).sort((a, b) => {
+        const ea = Number(equipStateOf(a.id) !== '')
+        const eb = Number(equipStateOf(b.id) !== '')
+        return eb - ea || qualityDef(b.quality).rank - qualityDef(a.quality).rank
+      })
     }))
   })
 

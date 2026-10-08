@@ -17,6 +17,9 @@
           <div class="min-w-0">
             <p class="font-kai text-[12px]" :class="row.done ? 'text-ink' : 'text-ink-faint'">{{ row.name }}</p>
             <p class="text-[10px] text-ink-faint">{{ row.desc }}</p>
+            <p v-if="!row.done && row.progress" class="mt-0.5 text-[10px] tabular text-azure">
+              已 {{ row.progress.current }} / {{ row.progress.target }}
+            </p>
             <p v-if="row.reward" class="mt-0.5 text-[10px] tabular text-azure">{{ row.reward }}</p>
           </div>
         </div>
@@ -138,10 +141,18 @@
         name: done ? a.name : '???',
         // 名字成时自现,但方向要给:六十多个「???」不给方向,这一页就是白纸
         desc: done ? a.desc : `尚未达成 · 方向:${achievementDirection(a.cond)}`,
+        // 计数类成就在方向之外补进度数字:「已 46/50」比一句「历练征战」更让人知道还差几步
+        progress: a.cond.type === 'counter' ? { current: quests.counter(a.cond.key), target: a.cond.value } : null,
         // 未达成不报赏,免得把称号提前说破;已达成的数额与 grantReward 同一套折算
         reward: done && a.reward ? rewardPreview(a.reward) : ''
       }
-    }).sort((a, b) => Number(b.done) - Number(a.done))
+    }).sort((a, b) => {
+      if (a.done !== b.done) return Number(b.done) - Number(a.done)
+      // 未达成段内:计数类按离阈值最近优先(「下一步就能成的那条」浮到未达成区头部);非计数沉底保持原序
+      const pa = a.progress ? a.progress.current / a.progress.target : -1
+      const pb = b.progress ? b.progress.current / b.progress.target : -1
+      return pb - pa
+    })
   )
 
   /**

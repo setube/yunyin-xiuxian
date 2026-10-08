@@ -343,6 +343,7 @@
                 <span class="whitespace-nowrap font-kai text-[13px] text-ink">{{ r.def.name }}</span>
                 <span class="whitespace-nowrap text-[10px] text-ink-faint">{{ r.able.rank }} 阶</span>
                 <span v-if="r.able.overReach > 0" class="whitespace-nowrap text-[10px] text-cinnabar">越阶 {{ r.able.overReach }}</span>
+                <span v-if="r.plan.rounds > 0" class="whitespace-nowrap text-[10px] text-jade">现可炼 {{ r.plan.rounds }} 炉</span>
               </p>
               <p class="text-[11px] text-ink-faint tabular">灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
               <!-- 炼出来是什么:方子清单此前只报代价与把握,不报成品 -->
@@ -361,24 +362,28 @@
                    抬到 !py-2 到 35px,批量炼制是高频操作。
                    料足(plan>5)时多一枚「炼满」:按当前料保底算清能开几炉,
                    一次开完,预览与执行共用 craftBatchPlan -->
-              <template v-if="pillFullId !== r.def.id">
-                <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
-                <button
-                  v-if="r.plan.rounds > 5"
-                  class="btn-ghost !px-2.5 !py-2 !text-[11px]"
-                  @click="pillFullId = r.def.id"
-                >
-                  炼 满 ×{{ r.plan.rounds }}
-                </button>
-                <button class="btn-seal !px-3 !py-2 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
+              <template v-if="r.plan.rounds > 0">
+                <template v-if="pillFullId !== r.def.id">
+                  <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
+                  <button
+                    v-if="r.plan.rounds > 5"
+                    class="btn-ghost !px-2.5 !py-2 !text-[11px]"
+                    @click="pillFullId = r.def.id"
+                  >
+                    炼 满 ×{{ r.plan.rounds }}
+                  </button>
+                  <button class="btn-seal !px-3 !py-2 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
+                </template>
+                <template v-else>
+                  <!-- 开的是累计总账,按一下不该就此了结:二步确认与分解/散去同款 -->
+                  <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pillFullId = null">再想想</button>
+                  <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="runCraftFull(r.def.id, r.plan.rounds)">
+                    开 炉 ×{{ r.plan.rounds }}
+                  </button>
+                </template>
               </template>
-              <template v-else>
-                <!-- 开的是累计总账,按一下不该就此了结:二步确认与分解/散去同款 -->
-                <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pillFullId = null">再想想</button>
-                <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="runCraftFull(r.def.id, r.plan.rounds)">
-                  开 炉 ×{{ r.plan.rounds }}
-                </button>
-              </template>
+              <!-- 缺料/掌握不足:不摆注定点不动的按钮,把真实阻拦摊在眼前 -->
+              <span v-else class="whitespace-nowrap text-[10px] text-cinnabar">{{ r.plan.blocked }}</span>
             </div>
           </div>
           <p
@@ -748,11 +753,12 @@
     })
   )
 
-  /** 全部藏品(含佩戴中),按品质/层级降序 */
+  /** 全部藏品(含佩戴中),佩戴中的置顶,其余按品质/层级降序 */
   const allItems = computed(() =>
     inventory.items
       .map(item => ({ item, equipped: inventory.equippedUids.has(item.uid) }))
       .sort((a, b) => {
+        if (a.equipped !== b.equipped) return Number(b.equipped) - Number(a.equipped)
         const dq = qualityDef(b.item.quality).rank - qualityDef(a.item.quality).rank
         return dq !== 0 ? dq : b.item.tier - a.item.tier
       })
@@ -805,7 +811,12 @@
         (x): x is { def: PillDef; cost: { herb: number; stone: GNum }; able: Craftability; plan: ReturnType<typeof craftBatchPlan> } =>
           x.def !== undefined && x.cost !== null && x.able !== null
       )
-      .sort((a, b) => a.able.rank - b.able.rank)
+      // 现在能开炉的置顶,其余再按阶位 —— 进弹窗一眼看见此刻哪味立刻可炼
+      .sort((a, b) => {
+        const ca = a.plan.rounds > 0 ? 1 : 0
+        const cb = b.plan.rounds > 0 ? 1 : 0
+        return cb - ca || a.able.rank - b.able.rank
+      })
   )
   /** 「炼满」二步确认态:谁不按常量的炉数,一眼先交代总账 */
   const pillFullId = ref<string | null>(null)
