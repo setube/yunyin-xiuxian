@@ -9,7 +9,8 @@ import { rng } from '@/utils/random'
 import { pillDef } from '@/data/pills'
 import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
-import { formatDuration, formatGN } from '@/utils/format'
+import { classicalDuration } from '@/data/timeUnits'
+import { formatGN } from '@/utils/format'
 import { recipeCraft, type SkillId } from '@/data/crafting'
 import { expFromSecs, stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
@@ -56,13 +57,13 @@ export function usePill(id: string, quiet = false): boolean {
      *
      * 走的是与一场遭遇、一次际遇**同一个**结算函数(expFromSecs)——
      * 三条来源只在"这段时长有多长"上不同,不再各有各的公式与各自的漂移。
-     * 读 player.cultPerSec 而不是裸修速:丹药说的那句"服之如闭关一时",
-     * 就该是他自己的一时(功法/建筑/状态/增益都在里头)。
+     * 读 player.cultPerSec 而不是裸修速:丹药说的那句"服之如闭关一段等效时长",
+     * 就该是他自己那一段的等效时长(功法/建筑/状态/增益都在里头)。
      */
     if (def.instant.expSecs) {
       const gain = expFromSecs(player.expReq, def.instant.expSecs, player.cultPerSec, INSTANT_EXP_LAYER_CAP)
       player.gainExp(gain)
-      lines.push(`修为 +${formatGN(gain)}(约抵闭关 ${formatDuration(def.instant.expSecs)})`)
+      lines.push(`修为 +${formatGN(gain)}(约抵闭关 ${classicalDuration(def.instant.expSecs)})`)
     }
     if (def.instant.expFixed) {
       player.gainExp(gn(def.instant.expFixed))
