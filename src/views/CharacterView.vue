@@ -243,7 +243,7 @@
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">轮 回</span>
         <span class="block text-[10px] text-ink-faint tabular">
           <span class="chip-ink mr-1 border-violet-ink/50 text-[9px] text-violet-ink">永久积累</span>
-          道果 {{ player.reincarnation.daoFruit }} · 天赋 {{ ownedTalents.length }} 项
+          道果 {{ player.reincarnation.daoFruit }} · 天赋 {{ ownedTalents.length }} 项 · 传承 {{ ownedHeritage.length }} 道
         </span>
       </span>
       <span class="text-[11px] text-violet-ink">观想 →</span>
@@ -335,6 +335,25 @@
           ：{{ tappedTalent.desc }}
           <span v-if="modsText(tappedTalent.mods)" class="mt-0.5 block text-azure tabular">{{ modsText(tappedTalent.mods) }}</span>
         </p>
+      </div>
+      <div class="mt-3">
+        <p class="text-[11px] text-ink-soft">
+          宿命传承
+          <span class="ml-1 text-[10px] text-violet-ink">【永久积累 · 随神魂不灭】</span>
+          <span class="block text-[10px] text-ink-faint">
+            某道境界走到底,才留下独有一道传承(能力位)。金丹以下浅修,永远锻造不出。
+          </span>
+        </p>
+        <ul v-if="ownedHeritage.length" class="mt-1.5 space-y-1.5">
+          <li v-for="h in ownedHeritage" :key="h!.id" class="rounded-md border border-jade/40 bg-jade/5 px-2.5 py-1.5">
+            <p class="flex items-baseline justify-between text-[11px] font-kai text-jade">
+              <span>{{ h!.name }}</span>
+              <span class="text-[9px] tracking-[0.2em] text-jade/70">{{ h!.axis === 'choice' ? '· 选择' : h!.axis === 'fault-tolerant' ? '· 容错' : '· 荣誉' }}</span>
+            </p>
+            <p class="text-[10px] leading-relaxed text-ink-soft">{{ h!.desc }}</p>
+          </li>
+        </ul>
+        <p v-else class="mt-1.5 text-[11px] text-ink-faint">尚未铸得传承 —— 金丹及以上的深修,方有一道可留</p>
       </div>
       <!--
         去留一览:兵解是不可逆的大事,一句「随皮囊散去」盖不住整本账 ——
@@ -554,6 +573,7 @@
   import { petDef, PETS } from '@/data/pets'
   import { beastIcon } from '@/data/beastFamilies'
   import { talentDef, TALENT_GRADE_COLORS, TALENTS } from '@/data/talents'
+  import { heritageDef } from '@/data/heritage'
   import { ACHIEVEMENTS } from '@/data/achievements'
   import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
   import { GONGFA } from '@/data/gongfa'
@@ -649,6 +669,7 @@
   const currentPetName = computed(() => (player.petId ? petDef(player.petId)?.name : undefined))
   const currentPetIcon = computed(() => (player.petId ? beastIcon(petDef(player.petId)!.family) : undefined))
   const ownedTalents = computed(() => player.reincarnation.talents.map(id => talentDef(id)).filter(t => t !== undefined))
+  const ownedHeritage = computed(() => player.reincarnation.heritage.map(id => heritageDef(id)).filter(d => d !== undefined))
 
   const collectHave = computed(
     () =>

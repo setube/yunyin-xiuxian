@@ -134,22 +134,28 @@ export function aptitudeFloorNow(): number {
  *
  * 注意这不是"保留多少"—— 认知从来不因转世清零。这里做的是**补足**:
  * 百世老修不该还要从头辨认青芝草。
+ * @param all 持「真仙道痕」传承时为 true:不按本世境界,最高档全带。
  * @returns 本次新认出的灵材数
  */
-export function carryLore(stage: SamsaraStageDef): number {
-  if (stage.knownMaterialRank <= 0) return 0
+export function carryLore(stage: SamsaraStageDef, all = false): number {
+  const rank = all ? MAX_MATERIAL_RANK : stage.knownMaterialRank
+  if (rank <= 0) return 0
   const lore = useLoreStore()
   let n = 0
   for (const m of MATERIALS) {
-    if (m.rank <= stage.knownMaterialRank && lore.advanceLore(m.id, 1)) n += 1
+    if (m.rank <= rank && lore.advanceLore(m.id, 1)) n += 1
   }
   return n
 }
 
-/** 转世睁眼时一共认得几味灵材(不改动状态,供轮回界面预告) */
-export function carryLorePreview(stage: SamsaraStageDef): number {
+/** 灵材的最高 rank(供「最高档全带」用) */
+const MAX_MATERIAL_RANK = MATERIALS.reduce((max, m) => Math.max(max, m.rank), 0)
+
+/** 转世睁眼时一共认得几味灵材(不改动状态,供轮回界面预告;all 同 carryLore) */
+export function carryLorePreview(stage: SamsaraStageDef, all = false): number {
   const lore = useLoreStore()
-  return MATERIALS.filter(m => m.rank <= stage.knownMaterialRank || lore.loreOf(m.id) >= 1).length
+  const rank = all ? MAX_MATERIAL_RANK : stage.knownMaterialRank
+  return MATERIALS.filter(m => m.rank <= rank || lore.loreOf(m.id) >= 1).length
 }
 
 // ============ 这一世的命题 ============

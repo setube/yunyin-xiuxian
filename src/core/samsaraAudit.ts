@@ -151,6 +151,15 @@ export const HERITAGE: HeritageRow[] = [
     compressesGrowth: true
   },
   {
+    id: 'heritage',
+    name: '宿命传承',
+    mode: 'full',
+    detail: 'reincarnation.heritage 随神魂不灭,跨世不清零;每世至多锻造最深一道未入门槛(见 core/heritageForge),重复锻造被忽略',
+    kind: 'legacy',
+    power: 'none',
+    compressesGrowth: false
+  },
+  {
     id: 'insight',
     name: '宿慧',
     mode: 'full',

@@ -12,6 +12,7 @@ import { realmDef, realmLabel, worldOf, isWorldEntry } from '@/data/realms'
 import { BT_FAIL_EXP_LOSS, BT_QI_COST_RATIO } from '@/data/constants'
 import { breakthroughBaseRate, clampRate } from './formulas'
 import { modOf } from './statsCalc'
+import { hasBreakExemption } from './heritageEffects'
 import {
   rollTribulation,
   sustainScore,
@@ -248,9 +249,14 @@ export function attemptBreakthrough(): BreakthroughView | null {
           : `${baseMessage}${loreLine}`
     }
   } else {
-    const mods = player.finalStats.mods
-    const refund = Math.min(0.8, modOf(mods, 'breakRefund'))
-    player.loseExpPct(BT_FAIL_EXP_LOSS * (1 - refund))
+    // 渡劫跬步(宿命传承):本世唯一一次突破失败豁免 —— 不散修为(一次性容错,跨世不带)
+    const exempted =
+      hasBreakExemption(player.reincarnation.heritage) && player.consumeHeritageUse('dubu', 1)
+    if (!exempted) {
+      const mods = player.finalStats.mods
+      const refund = Math.min(0.8, modOf(mods, 'breakRefund'))
+      player.loseExpPct(BT_FAIL_EXP_LOSS * (1 - refund))
+    }
     cultivation.addBuff('injury', Date.now())
     track('breakthroughFails')
     playSfx('fail')
