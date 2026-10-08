@@ -14,8 +14,10 @@ import { expFromSecs, stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
 import { collect, track } from './progress'
 import { modOf } from './statsCalc'
+import { buffOverflowOf } from './buffCap'
 import { craftability, knownRecipes } from './craftability'
 import { noteMaterialUsed } from './loreService'
+import { craftGuaranteeRemaining } from './heritageEffects'
 import { noteTaboo } from './samsaraService'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -78,8 +80,16 @@ export function usePill(id: string, quiet = false): boolean {
       lines.push(`悟道点 +${def.instant.wudao}`)
     }
   } else if (def.buffId) {
+    // 贴着上限再服,药力会被削(甚至一点不加)—— 说出来,别让玩家自己猜"为什么没变"
+    const overflow = buffOverflowOf(cultivation.buffs, def.buffId, Date.now())
     cultivation.addBuff(def.buffId, Date.now())
-    lines.push('药力化开,状态加身')
+    lines.push(
+      overflow === 'full'
+        ? '药力已至上限,这一颗白费了'
+        : overflow === 'partial'
+          ? '药力已至上限,这一颗只延续到顶'
+          : '药力化开,状态加身'
+    )
   }
   track('pillsUsed')
   // Phase 32.5:「不假外物」之誓在按下这一刻就落空,不必等到转世才被告知
@@ -99,13 +109,18 @@ export function usePill(id: string, quiet = false): boolean {
  */
 export function usePillBatch(id: string, count: number): number {
   if (count < 1) return 0 // 没要求服,一枚也不许动
+  const def = pillDef(id)
+  if (!def) return 0
+  // 增益丹(带 buffId)批量连服是陷阱:药力一顶,后面的全白费(涉策 buffOverflowOf)——
+  // 退化为单服,让「只延续到顶 / 这一颗白费了」那句说得明白,而不是「连服 N 枚」一笔带过。
+  if (def.buffId) return usePill(id) ? 1 : 0
   if (count === 1) return usePill(id) ? 1 : 0
   let eaten = 0
   for (let i = 0; i < count; i += 1) {
     if (!usePill(id, true)) break
     eaten += 1
   }
-  const name = pillDef(id)?.name ?? id
+  const name = def.name
   const ui = useUiStore()
   if (eaten > 0) {
     playSfx('success')
@@ -232,7 +247,10 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
   }
 
   const craft = recipeCraft(def)
-  const succeeded = rng.chance(able.successRate)
+  // 浴火丹心(宿命传承):本世前几炉必成 —— 只在真开炉时读取并消费每世额度
+  const guarantee = craftGuaranteeRemaining(player.reincarnation.heritage, player.reincarnation.heritageUses)
+  const succeeded = guarantee > 0 || rng.chance(able.successRate)
+  if (guarantee > 0) player.consumeHeritageUse('danxin', 3)
 
   // 无论成败,炉先开了,料先下了
   resources.spendStone(cost.stone)
