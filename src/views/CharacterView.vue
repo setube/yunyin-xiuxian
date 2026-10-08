@@ -552,6 +552,7 @@
   import { ELEMENTS } from '@/data/linggen'
   import { titleDef } from '@/data/titles'
   import { petDef, PETS } from '@/data/pets'
+  import { beastIcon } from '@/data/beastFamilies'
   import { talentDef, TALENT_GRADE_COLORS, TALENTS } from '@/data/talents'
   import { ACHIEVEMENTS } from '@/data/achievements'
   import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
@@ -646,7 +647,7 @@
 
   const currentTitleName = computed(() => (player.titleId ? titleDef(player.titleId)?.name : undefined))
   const currentPetName = computed(() => (player.petId ? petDef(player.petId)?.name : undefined))
-  const currentPetIcon = computed(() => (player.petId ? petDef(player.petId)?.icon : undefined))
+  const currentPetIcon = computed(() => (player.petId ? beastIcon(petDef(player.petId)!.family) : undefined))
   const ownedTalents = computed(() => player.reincarnation.talents.map(id => talentDef(id)).filter(t => t !== undefined))
 
   const collectHave = computed(

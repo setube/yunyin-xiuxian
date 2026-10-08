@@ -37,6 +37,7 @@ import {
   COMBAT_HP_BASE
 } from '@/data/constants'
 import { artifactValue } from '@/data/artifacts'
+import { beastIcon } from '@/data/beastFamilies'
 import { modOf } from './statsCalc'
 import { enemyGearFactor, powerScale, powerScore } from './formulas'
 
@@ -124,7 +125,7 @@ export function makeEnemySnap(def: EnemyDef, tier: number, dangerMult: number, o
   const gear = enemyGearFactor(tier) * dangerMult
   return {
     name: def.name,
-    icon: def.icon,
+    icon: beastIcon(def.family),
     isPlayer: false,
     origin: origin ?? mortalFoeOrigin(tier, dangerMult),
     attack: mulN(scale, COMBAT_ATK_BASE * def.atkMult * gear),

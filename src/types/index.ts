@@ -472,10 +472,38 @@ export interface BossPhase {
   label?: string
 }
 
+/**
+ * 敌人与灵宠的「族类」—— 一族共用一枚形,异族不共形。
+ * 形由 data/beastFamilies.ts 的族类表给出,数据里只写 family、不自己写 icon。
+ */
+export type BeastFamily =
+  | 'beast'
+  | 'winged'
+  | 'piscine'
+  | 'chelonian'
+  | 'serpent'
+  | 'dragon'
+  | 'verdant'
+  | 'aqueous'
+  | 'undead'
+  | 'ghost'
+  | 'armored'
+  | 'construct'
+  | 'blade'
+  | 'demon'
+  | 'immortal'
+  | 'deity'
+  | 'spirit'
+  | 'astral'
+  | 'mirage'
+  | 'outsider'
+  | 'treasure'
+
 export interface EnemyDef {
   id: string
   name: string
-  icon: string
+  /** 族类 —— 一族共用一枚形,异族不共形;形由 beastFamilies.ts 给出,不手写 */
+  family: BeastFamily
   element?: ElementId
   tier: number
   hpMult: number
@@ -656,7 +684,8 @@ export interface PetDef {
   id: string
   name: string
   desc: string
-  icon: string
+  /** 族类 —— 形由 beastFamilies.ts 给出,不手写 */
+  family: BeastFamily
   quality: QualityId
   mods: StatMods
   /** Phase 31.0 S4:灵兽性格(贪宝/慢稳/好战/谨慎),影响历练行为倾向 */

@@ -9,10 +9,8 @@
 import { describe, expect, it } from 'vitest'
 import { ICONS } from './icons'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
-import { PETS } from '@/data/pets'
 import { BUILDINGS } from '@/data/buildings'
 import { REGIONS } from '@/data/regions'
-import { ENEMIES } from '@/data/enemies'
 import { BUFFS } from '@/data/buffs'
 import { PILLS } from '@/data/pills'
 import { ARTIFACTS } from '@/data/artifacts'
@@ -20,10 +18,10 @@ import { CELESTIAL_WORLDS, TRIAL_FOES } from '@/data/endgame'
 
 const SOURCES: { label: string; items: { name?: string; icon?: string }[] }[] = [
   { label: '装备', items: EQUIPMENT_TEMPLATES },
-  { label: '灵兽', items: PETS },
+  // 敌人与灵兽已不再自持 icon:族类 → 形 的唯一事实源在 data/beastFamilies.ts,
+  // 其形注册与「异族不共形」判据由 beastFamilies.spec.ts 钉死。
   { label: '建筑', items: BUILDINGS },
   { label: '区域', items: REGIONS },
-  { label: '敌人', items: ENEMIES },
   { label: '增益', items: BUFFS },
   { label: '丹药', items: PILLS },
   { label: '法宝', items: ARTIFACTS },
