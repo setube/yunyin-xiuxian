@@ -57,6 +57,18 @@ describe('收徒 · 派发与收割', () => {
     expect(a.apprentices[0]!.level).toBe(3)
   })
 
+  it('采药给草按「当前大境界」品阶入账(与采集按地界相反)', () => {
+    const player = usePlayerStore()
+    player.major = 12 // 当前大境界已是仙品(3)
+    const a = useApprenticeStore()
+    const res = useResourcesStore()
+    for (const g of [1, 2, 3, 4, 5] as const) res.herbByGrade[g] = 0
+    a.$patch({ apprentices: [make('ap_luanniao', { task: { spec: 'herb', startAt: 0, finishAt: 1 } })] })
+    a.collectFinished(9999, 12)
+    expect(res.herbByGrade[3], '采药该按当前大境界(仙品3)入账').toBeGreaterThan(0)
+    expect(res.herbByGrade[1], '采药不该按凡品/地界入账').toBe(0)
+  })
+
   it('历练回的是灵石(走 stoneByTier 那条经济)', () => {
     const a = useApprenticeStore()
     a.$patch({ apprentices: [make('ap_youxia', { level: 1 })] }) // 天赋 adventure

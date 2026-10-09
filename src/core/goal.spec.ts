@@ -185,4 +185,22 @@ describe('修行目标(Phase 29)', () => {
     expect(goal.type, '当前品断粮就该提示采集,不能被旧品掩盖').toBe('material')
     expect(goal.progress).toBe(0)
   })
+
+  it('world-break 后最高已通关地界低于当前大境界:提示按「实采可得的那一品」判缺,采不出所需之品就不再推', () => {
+    const player = usePlayerStore()
+    player.initCharacter('目标', { roots: [] } as never)
+    player.exp = gnZero()
+    player.major = 12 // 当前大境界已是仙品(3)
+    const adventure = useAdventureStore()
+    adventure.unlocked = ['qingyun'] // 只通关过凡界(地界 0)的地界
+    adventure.cleared = ['qingyun']
+    for (const slot of ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman'] as const) {
+      useInventoryStore().equip(`u-${slot}`, slot)
+    }
+    const resources = useResourcesStore()
+    resources.herbByGrade[1] = 50 // 地界品(凡品)成堆
+    resources.herbByGrade[3] = 0 // 当前大境界品(仙品)见底
+    // 采集只出凡品 —— 仙品见底它救不了,不该推荐「去青云采集」的假方子
+    expect(generateCurrentGoal(player)).toBeNull()
+  })
 })
