@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 坊市定价单调性+有限守卫:三价无套利(sell/buy 比例、购>悬赏>售)此前已锁,但「高阶/珍稀必卖更贵」的严格单调从无 spec 钉死——若 STONE_TIER_GROWTH≤1 或 PER_RANK 转负,高阶/珍稀反而更贱会沉默穿过——新增守卫:寄卖价随阶严格递增(同珍稀)、随珍稀度严格递增(同阶)、材料即售价随境界严格递增、灵草即售价随品级严格递增、逐批=单株×货架单位数,且全部有限为正;变异证明:把 MARKET_CONSIGN_STONE_PER_RANK 改 -12 → 阶/珍稀单调两案转红
 - 度劫机关(runGauntlet)波次环单测:此前只在远征/试炼/相元挑战里被间接覆盖(integration 只断言 cleared→fightsWon===波数),波次环本身从未作为被测单元——新增 spec 直接钉死「全胜即清(fightsWon=波数、逐场记 rows)、中途败即停当层(cleared=false、已胜场数、败场也记 rows)、零波直接清(fightsWon=0)」;确定性:runGauntlet 的 rng 是形参,喂固定种子 + 满维碾压 vs 纸糊极大幅差(1e9 vs 100)让任何骰都改不了胜负;变异证明:把成功 return 的 cleared 改成 false → 全胜/零波两案转红
 - Boss 机制家族(bossArchetypes)数据完整性守卫:ARCHETYPES 8 家族此前零 spec(仅 samsara.spec 注释提及),而每场 Boss 战都吃这张表——新增守卫钉死键与类型联合一一对应无缺无余、id==key、名/印/述非空、印各唯一且单汉字、coreMods/数值人格(攻防血倍率)有限为正、相位阈值 ∈(0,1) 且多相位严格递减、技能 mult 有限为正且 rate∈(0,1];变异证明:把 berserk 相位阈值改成 NaN → 相位序测试转红
 - 相元挑战(undertakeChallenge)入场/清败原子守卫:零覆盖审计发现 verifyChallenge 只在今日天道 spec 里走过定价,真正「立约应战」(扣入场费→真打→赏/记谱)无人看守——新增 spec 走真实 combat(不 mock 防压弱 celestialStats):真仙(major9)裸装必败赤炎天、混沌顶配必清;顶配清:扣 CHALLENGE_ENTRY_COST=15、赏裁判定价 rewardDaoSource、记 best_custom 纪录与 first_custom 里程碑;裸装败:不赏不记谱但入场费照扣;道源不足 → null 不进场不扣账;变异证明:临时砍掉清后发奖 → 顶配清测试转红

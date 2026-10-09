@@ -28,9 +28,10 @@ import {
   BOUNTY_EQUIP_STONE_BASE,
   BOUNTY_EQUIP_STONE_PER_RANK
 } from '@/data/bounty'
-import { pillSellPrice, consignPrice, herbSellPrice } from './marketService'
+import { pillSellPrice, consignPrice, herbSellPrice, materialSellPrice, herbSellBatch } from './marketService'
 import { herbBountyReward } from './bountyService'
 import { herbBuyPrice, HERB_GRADES } from '@/data/herbGrades'
+import { MARKET_MAT_COUNT } from '@/data/market'
 import { PILLS } from '@/data/pills'
 
 /** 该境界的代表层级(与 economySim 同:maxTierForMajor) */
@@ -129,6 +130,57 @@ describe('灵草三价无套利守卫(购/悬赏/售)', () => {
       const buy = herbBuyPrice(g)
       expect(herbSellPrice(g)).toBe(buy * (MARKET_SELL_MAT_STONE_UNITS / MARKET_MAT_STONE_UNITS))
       expect(toN(herbBountyReward(g, 1))).toBe(buy * (BOUNTY_MAT_UNIT_AMOUNT / MARKET_MAT_STONE_UNITS))
+    }
+  })
+})
+
+describe('坊市定价单调性 + 有限(高阶/珍稀必卖更贵)', () => {
+  it('寄卖价随阶单调递增:同一珍稀度下,阶越高卖越贵', () => {
+    for (const rank of [0, 1, 2, 3]) {
+      let prev = 0
+      for (let tier = 1; tier <= 25; tier += 1) {
+        const p = toN(consignPrice(tier, rank))
+        expect(p, `consign tier=${tier} rank=${rank}`).toBeGreaterThan(prev)
+        expect(Number.isFinite(p)).toBe(true)
+        prev = p
+      }
+    }
+  })
+
+  it('寄卖价随珍稀度单调递增:同一阶下,品质越高卖越贵', () => {
+    for (const tier of [1, 5, 10, 20]) {
+      let prev = 0
+      for (let rank = 0; rank <= 4; rank += 1) {
+        const p = toN(consignPrice(tier, rank))
+        expect(p, `consign tier=${tier} rank=${rank}`).toBeGreaterThan(prev)
+        prev = p
+      }
+    }
+  })
+
+  it('材料即售价随境界单调递增,且有限为正', () => {
+    let prev = 0
+    for (let major = 1; major <= 30; major += 1) {
+      const p = toN(materialSellPrice(major))
+      expect(p, `material major=${major}`).toBeGreaterThan(prev)
+      expect(Number.isFinite(p)).toBe(true)
+      prev = p
+    }
+  })
+
+  it('灵草即售价随品级单调递增,且有限为正', () => {
+    let prev = 0
+    for (const g of HERB_GRADES) {
+      const p = herbSellPrice(g)
+      expect(p, `herb grade=${g}`).toBeGreaterThan(prev)
+      expect(Number.isFinite(p)).toBe(true)
+      prev = p
+    }
+  })
+
+  it('逐批=单株×单位数:herbSellBatch(g) 恰为 herbSellPrice(g)×货架单位数', () => {
+    for (const g of HERB_GRADES) {
+      expect(toN(herbSellBatch(g))).toBeCloseTo(herbSellPrice(g) * MARKET_MAT_COUNT, 6)
     }
   })
 })
