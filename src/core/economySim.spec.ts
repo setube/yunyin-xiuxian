@@ -156,6 +156,10 @@ describe('经济闭环审计(Phase 19 · Phase 40 补界外与修为)', () => {
     expect(min, '凝一枚道果便宜到几分钟一枚 —— 终局数值出口会失去意义').toBeGreaterThan(0.1)
     expect(max, '凝一枚道果贵到一天以上 —— 终局会变成摆设').toBeLessThan(24)
     expect(max / min, `道果价随层级漂移了:${min.toFixed(2)}h → ${max.toFixed(2)}h`).toBeLessThan(2)
+    // 量级锚:DAO_SOURCE_PER_FRUIT=200 后,全境落 ~1.8~3.4h。钉住「2~3h 节奏」这一产品口径,
+    // 别让它被哪一次的调参悄悄拉回 ~1h(太快)或翻到 6h+(太慢)。
+    expect(min, '道果节奏不该比 1 小时还快').toBeGreaterThan(1)
+    expect(max, '道果节奏不该超过 6 小时').toBeLessThan(6)
   })
 
   /**

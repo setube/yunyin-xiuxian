@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import type { GNum, SmallResourceId } from '@/types'
 import { add, gn, gnZero, gte, subClamp } from '@/utils/gnum'
 import { QI_BANK_MULT } from '@/data/constants'
+import { FURNACE_HERB_MIN_GRADE } from '@/data/endgame'
 import { HERB_GRADES, herbGradeOfMajor, isHerbGrade, type HerbGrade } from '@/data/herbGrades'
 import { persistConfig } from '@/utils/storage'
 import { usePlayerStore } from '@/stores/player'
@@ -79,6 +80,32 @@ export const useResourcesStore = defineStore(
       return true
     }
 
+    /**
+     * 天道熔炉可熔的灵草总和(仙品起,`FURNACE_HERB_MIN_GRADE`)。
+     * 凡/灵品草只走坊市→灵石,永不入炉(道源是仙才有的货币)。
+     */
+    const herbMeltable = computed(() =>
+      HERB_GRADES.filter(g => g >= FURNACE_HERB_MIN_GRADE).reduce((sum, g) => sum + (herbByGrade.value[g] ?? 0), 0)
+    )
+
+    /**
+     * 跨品实扣仙品+灵草 n 株(自低品起扣,余数保留)。
+     * 与 herbMeltable 同判据 —— 熔炉「按总和算、按这些品扣」,杜绝白拿道源。
+     */
+    function spendHerbMeltable(n: number): boolean {
+      if (n < 1) return false
+      let need = Math.floor(n)
+      const acc = herbByGrade.value
+      for (const g of HERB_GRADES) {
+        if (g < FURNACE_HERB_MIN_GRADE) continue
+        const take = Math.min(need, acc[g] ?? 0)
+        acc[g] = Math.max(0, (acc[g] ?? 0) - take)
+        need -= take
+        if (need <= 0) return true
+      }
+      return need <= 0
+    }
+
     /** 转世清零:五品一把清 */
     function resetHerbs(): void {
       herbByGrade.value = emptyHerbMap()
@@ -152,6 +179,8 @@ export const useResourcesStore = defineStore(
       addHerb,
       hasHerb,
       spendHerb,
+      herbMeltable,
+      spendHerbMeltable,
       resetHerbs,
       addStone,
       spendStone,
