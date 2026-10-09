@@ -9,7 +9,7 @@ import { offlineAgeNote } from '@/ui/offlineText'
 import { breakthroughReadyNote } from '@/ui/cultivationText'
 import { rng } from '@/utils/random'
 import { regionDef } from '@/data/regions'
-import { herbGradeOfMajor } from '@/data/herbGrades'
+import { HERB_GRADES, herbGradeOfMajor } from '@/data/herbGrades'
 import { enemyDef } from '@/data/enemies'
 import {
   AGE_YEARS_PER_HOUR,
@@ -128,6 +128,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
 
   // ---- 建筑产出 ----
   const herbBefore = resources.herb
+  const herbBeforeByGrade = { ...resources.herbByGrade }
   const oreBefore = resources.ore
   const wudaoBefore = resources.wudao
   dongfu.produce(effSec)
@@ -330,6 +331,11 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
     stone: sub(resources.spiritStone, stoneBefore),
     qi: Math.round(resources.qi - qiBefore),
     herb: resources.herb - herbBefore,
+    // 逐品净增(仅列>0)—— 灵田可前瞻产当前/高一档,单品名会误报,故逐品记
+    herbByGrade: HERB_GRADES.map(g => ({
+      grade: g,
+      amount: resources.herbOf(g) - (herbBeforeByGrade[g] ?? 0)
+    })).filter(e => e.amount > 0),
     ore: resources.ore - oreBefore,
     wudao: resources.wudao - wudaoBefore,
     ageYears: Math.round(player.age - ageBefore),
