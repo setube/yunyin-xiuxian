@@ -155,6 +155,8 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
     }
     case 'material':
       resources.addSmall(effect.id, effect.amount)
+      // 灵草按品入账(addSmall 落当前品),文案显式报品,与五品经济同口径 —— events 数据只写数量不写品
+      if (effect.id === 'herb') return `${HERB_GRADE_SHORT[herbGradeOfMajor(player.major)]}灵草 +${effect.amount}`
       return `${MATERIAL_NAMES[effect.id]} +${effect.amount}`
     case 'equipment': {
       const inst = generateEquipment(Math.max(tier, 1), rng, {

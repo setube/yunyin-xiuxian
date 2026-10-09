@@ -14,6 +14,7 @@ import type { EventDef } from '@/types'
 import { add, gn, gte, mulN, sub } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
+import { usePlayerStore } from '@/stores/player'
 import { eventDef } from '@/data/events'
 import { resolveEventChoice } from './eventEngine'
 import { stoneByTier } from './formulas'
@@ -59,5 +60,22 @@ describe('事件结算 · 灵石代价守恒', () => {
     expect(inventory.pills['p_daoyuan']).toBe(1)
     // 顺手确认这笔不是负值(300 灵石代价在等价档位下真实大于零,不是虚设)
     expect(gte(cost, gn(1))).toBe(true)
+  })
+
+  it('事件 material 发灵草:文案显式报当前品(5 境 → 灵品)', () => {
+    const player = usePlayerStore()
+    player.initCharacter('事件', { roots: [] } as never)
+    player.major = 5 // 灵品带(5~8)
+    const def: EventDef = {
+      id: 'ev_test_herb',
+      title: '',
+      text: '',
+      tags: ['general'],
+      weight: 1,
+      choices: [{ label: '采', outcomes: [{ weight: 1, text: '得', effects: [{ type: 'material', id: 'herb', amount: 6 }] }] }]
+    }
+    const res = resolveEventChoice(def, 0, 3)
+    expect(res.lines.some(l => l.includes('灵品灵草 +6')), '事件发草也该报品').toBe(true)
+    expect(res.lines.some(l => l.includes('灵草 +6') && !l.includes('灵品')), '不得退回不带品的裸数').toBe(false)
   })
 })
