@@ -3,9 +3,10 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS, type MarketSlot } from '@/data/market'
+import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS, MARKET_REFRESH_SECONDS, type MarketSlot } from '@/data/market'
 import { gn, toNum } from '@/utils/gnum'
 import { BAG_CAPACITY } from '@/data/constants'
+import { marketRemainingSec } from '@/core/marketService'
 import { useMarketStore } from '@/stores/market'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -207,5 +208,34 @@ describe('坊市 · 买卖', () => {
     market.sanitize()
     expect(market.consign).toHaveLength(1)
     expect(market.consign[0]!.name).toBe('贝甲')
+  })
+})
+
+describe('坊市 · 刷新窗口时序(sync 与到期)', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('货还新鲜、未到刷新窗:sync 原样保架,不重上货、时刻不动', () => {
+    const m = useMarketStore()
+    const now = 1_000_000_000_000
+    m.$patch({ stock: [pillSlot(0)], stockedAt: now - 1000 }) // 距刷新还有 7199 秒
+    m.sync(now)
+    expect(m.stock).toEqual([pillSlot(0)]) // 深等:货架一字未动
+    expect(m.stockedAt).toBe(now - 1000)
+  })
+
+  it('一过刷新窗(sync 时 now ≥ stockedAt+REFRESH):重上一架,时刻推进到 now', () => {
+    const m = useMarketStore()
+    const now = 1_000_000_000_000
+    m.$patch({ stock: [pillSlot(0)], stockedAt: now - MARKET_REFRESH_SECONDS * 1000 - 1 })
+    m.sync(now)
+    expect(m.stockedAt).toBe(now) // 重上时刻锚到本次调用,不会再立刻复刷
+  })
+
+  it('marketRemainingSec:恰好到期=0、临近为正、已过被夹回 0(绝不回负)', () => {
+    const x = 1_000_000_000_000
+    const windowMs = MARKET_REFRESH_SECONDS * 1000
+    expect(marketRemainingSec(x, x + windowMs)).toBe(0) // 恰好到期
+    expect(marketRemainingSec(x, x + windowMs - 5000)).toBe(5) // 还差 5 秒
+    expect(marketRemainingSec(x, x + windowMs + 5000)).toBe(0) // 已过 → 夹回 0
   })
 })
