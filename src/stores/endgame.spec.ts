@@ -242,3 +242,34 @@ describe('道源原始操作 · spend/addDaoSource 原子·单调·取整', () =
     expect(endgame.daoSource).toBe(3)
   })
 })
+
+describe('天道试炼 · recordTrial best-min 守谱', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('递减回合:bestRounds 逐次取最小,clears 每次 +1', () => {
+    const e = useEndgameStore()
+    e.recordTrial('qisha', 10)
+    e.recordTrial('qisha', 6)
+    e.recordTrial('qisha', 4)
+    expect(e.trialRecords['qisha']?.bestRounds).toBe(4)
+    expect(e.trialRecords['qisha']?.clears).toBe(3)
+  })
+
+  it('更差的(更多回合)不清 best:5 后打 9,仍守 5(纪录不被坏成绩盖掉)', () => {
+    const e = useEndgameStore()
+    e.recordTrial('yixian', 5)
+    e.recordTrial('yixian', 9)
+    expect(e.trialRecords['yixian']?.bestRounds).toBe(5)
+    expect(e.trialRecords['yixian']?.clears).toBe(2)
+  })
+
+  it('不同试炼各自独立记谱(不相串)', () => {
+    const e = useEndgameStore()
+    e.recordTrial('qisha', 3)
+    e.recordTrial('wuhui', 7)
+    expect(e.trialRecords['qisha']?.bestRounds).toBe(3)
+    expect(e.trialRecords['wuhui']?.bestRounds).toBe(7)
+  })
+})
