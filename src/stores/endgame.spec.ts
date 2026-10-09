@@ -192,3 +192,53 @@ describe('混元界重掷代价 · rerollVoidWorld 扣/退与失效分支', () =
 afterEach(() => {
   h.genResult = 'world'
 })
+
+describe('道源原始操作 · spend/addDaoSource 原子·单调·取整', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('道源不足时 spend 拒绝且分文不动(原子:false 不带副作用)', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ daoSource: 7 })
+    expect(endgame.spendDaoSource(8)).toBe(false)
+    expect(endgame.daoSource).toBe(7) // 拒绝不吞账
+  })
+
+  it('大于等于余额即扣,且余额精确为差', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ daoSource: 7 })
+    expect(endgame.spendDaoSource(7)).toBe(true)
+    expect(endgame.daoSource).toBe(0)
+    endgame.$patch({ daoSource: 20 })
+    expect(endgame.spendDaoSource(12)).toBe(true)
+    expect(endgame.daoSource).toBe(8)
+  })
+
+  it('addDaoSource 非负:余额为 0 时加负数仍 0(无负额腐蚀)', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ daoSource: 0 })
+    endgame.addDaoSource(-5)
+    expect(endgame.daoSource).toBe(0)
+  })
+
+  it('addDaoSource 取整:小数向下取整(非四舍五入)', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ daoSource: 3 })
+    endgame.addDaoSource(0.5) // 3 + 0.5 = 3.5 → floor 3
+    expect(endgame.daoSource).toBe(3)
+    endgame.addDaoSource(1) // +1 → 4
+    expect(endgame.daoSource).toBe(4)
+  })
+
+  it('addDaoSource 单调:小数叠加逐次向下取整,不漏不四舍五入', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ daoSource: 0 })
+    endgame.addDaoSource(2.2) // → 2
+    expect(endgame.daoSource).toBe(2)
+    endgame.addDaoSource(0.5) // 2 + 0.5 = 2.5 → 2(不是 3)
+    expect(endgame.daoSource).toBe(2)
+    endgame.addDaoSource(1) // +1 → 3
+    expect(endgame.daoSource).toBe(3)
+  })
+})
