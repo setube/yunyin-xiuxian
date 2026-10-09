@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 洞府产出跨整界原子·拆批等值守卫:produce 的「余数进位、整发时扣回整份」是防漂移的关键,但旧测只验证 sub-1-unit 的 frac 比例(整发前无 grant),跨整界的原子性与拆批等值无人钉死——新增守卫:拆开多次(produce(450)×2)与一次连产(produce(900))的灵草落账与 frac 完全一致(逐次取整漂移在此露头)、跨整界只整发(900s=1.5 株只落 1、余 0.5 进位,补 300s 恰好再整发 1)、整发落对可种品桶;变异证明:把灵田累加改成每 call floor → 拆批等值/跨整界两案转红(连旧的比例测试也红)
 - 修为丹即时修为到顶 clamp 守卫(usePill 路径):expFromSecs 的 clamp 此前只在公式层被测(expIncome.spec),服丹这条真实玩家路径的「溢出分支」无人看守——若 usePill 擅自不调 expFromSecs,一颗大修为丹能直接顶满整层以上——新增守卫走真实 usePill:低境界+修速 buff 配 10800s 太初丹 → 药力精确封顶在 expReq×INSTANT_EXP_LAYER_CAP(不满一层),而非 cultPerSec×secs,丹出包、有限无 NaN;正对照:高境界玄元丹远不满一层、不受 clamp(证明非每颗都截);变异证明:把 usePill 的 gain 换成 cultPerSec×secs(绕过 clamp)→ clamp 测试转红
 - 坊市定价单调性+有限守卫:三价无套利(sell/buy 比例、购>悬赏>售)此前已锁,但「高阶/珍稀必卖更贵」的严格单调从无 spec 钉死——若 STONE_TIER_GROWTH≤1 或 PER_RANK 转负,高阶/珍稀反而更贱会沉默穿过——新增守卫:寄卖价随阶严格递增(同珍稀)、随珍稀度严格递增(同阶)、材料即售价随境界严格递增、灵草即售价随品级严格递增、逐批=单株×货架单位数,且全部有限为正;变异证明:把 MARKET_CONSIGN_STONE_PER_RANK 改 -12 → 阶/珍稀单调两案转红
 - 度劫机关(runGauntlet)波次环单测:此前只在远征/试炼/相元挑战里被间接覆盖(integration 只断言 cleared→fightsWon===波数),波次环本身从未作为被测单元——新增 spec 直接钉死「全胜即清(fightsWon=波数、逐场记 rows)、中途败即停当层(cleared=false、已胜场数、败场也记 rows)、零波直接清(fightsWon=0)」;确定性:runGauntlet 的 rng 是形参,喂固定种子 + 满维碾压 vs 纸糊极大幅差(1e9 vs 100)让任何骰都改不了胜负;变异证明:把成功 return 的 cleared 改成 false → 全胜/零波两案转红
