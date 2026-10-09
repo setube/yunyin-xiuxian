@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 师承跨世保留守卫:rebirth 的「外物归零」清单(灵兽/突破准备/洞府/道童)会让人误把师承一并清掉,player.rebirth.spec 却零断言——新增对照守卫钉死 DEC-003 的口径:师承是「我是谁」的成长思想,转世保留(对照灵兽随皮囊归零),且一经确立不可更改、转世亦然(另投他门被拒);变异证明:在 rebirth 里临时清 mentor.value → 保留测试转红
 - 洞府巡游「每日一巡」跨天守卫:旧测只钉「当日已巡游后不再触发」,翌日(跨天刷新)的恢复路径零覆盖——新增独立 spec 钉死「同日被挡、翌日(lastCaveEventDay 陈旧)恢复可巡」;刻意独立文件以避开 mayTriggerCaveEvent 的模块级 caveEvent 串状态,掷签常数化(Math.random→0)排除存在感衰减干扰;变异证明:改坏同日判断(lastCaveEventDay===today → !==)→ 同日守卫测试转红
 - 远征败战分支 run-state 守卫:旧测只走全胜路径(advance 循环),败战分支零覆盖——裸装真仙入赤炎天(空战力必败)首战即失去,钉死「败战即结」:type=lost、入界价照扣(确已入界定战)、worldRun 被 settle 清空——不留下可免费续打的残局、无累计连胜/不退层漂移;变异证明:败战后若保留 run → 两案齐红
 - 天道试炼 run-state/best-min/清败原子守卫:challengeTrial 与 recordTrial 全零覆盖(qisha/yixian/wuhui 整条试炼路径没被任何 spec 碰过)——如今钉死 recordTrial 的 bestRounds 取最小(更差回合不乱必记录)、顶配清 qisha(扣入界费/赏 rewardDaoSource/记 clears+best/全捷战数=试炼场数)、裸装败 qisha(不赏不记谱、入界费照扣)、每道试炼入界费/奖励/场数/escalation 有限为正;走真实 combat(刻意不 mock 渡劫,避免压弱 celestialStats)

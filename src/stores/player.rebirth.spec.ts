@@ -72,6 +72,25 @@ describe('player.rebirth 转世状态重置', () => {
     expect(p.eventChains).toEqual({ old_man_stone: 2 })
   })
 
+  it('师承跨世保留:转世丢了外物,却带走这师门(对照灵兽归零·不可复改)', () => {
+    const p = usePlayerStore()
+    p.initCharacter('测试道友', { roots: [] } as never)
+    // 师承 = 跨世保留的成长思想(DEC-003),与灵兽/洞府这些「外物」相反
+    p.adoptMentor('swordsman')
+    // 对照组:灵兽作外物,转世必清
+    p.setPet('pet_yueying')
+
+    p.rebirth({ roots: [] } as never)
+
+    // 师承跨世保留:转世后在
+    expect(p.mentor, '师承是「我是谁」的思想,不该随皮囊散去').toBe('swordsman')
+    // 外物对照:灵兽随皮囊归零
+    expect(p.petId, '灵兽应随皮囊散去').toBeNull()
+    // 一经确立不可更改,转世亦然:另投他门被拒
+    p.adoptMentor('alchemist')
+    expect(p.mentor, '转世后也不得另投师门').toBe('swordsman')
+  })
+
   it('新的皮囊换新的道号:转世重掷姓名,不沿用上一世的名号', () => {
     const p = usePlayerStore()
     p.initCharacter('旧道号', { roots: [] } as never)
