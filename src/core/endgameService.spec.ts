@@ -3,10 +3,13 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
-import { FURNACE_RATES, DAO_SOURCE_PER_FRUIT } from '@/data/endgame'
-import { chooseDaoPath, condenseDaoFruit, currentDaoRules, endgameUnlocked, furnaceConvert } from './endgameService'
+import { FURNACE_RATES, DAO_SOURCE_PER_FRUIT, FURNACE_STONE_TIER_AMOUNT, FURNACE_STONE_DAO_SOURCE } from '@/data/endgame'
+import { chooseDaoPath, condenseDaoFruit, currentDaoRules, endgameUnlocked, furnaceConvert, furnaceStoneCost, furnaceConvertStone } from './endgameService'
+import { stoneByTier } from './formulas'
+import { maxTierForMajor } from '@/data/regions'
 import { resolveWorld, startWorldExpedition } from './expedition'
 import { attemptBreakthrough } from './breakthrough'
+import { gnZero } from '@/utils/gnum'
 
 /**
  * 飞升也要渡天劫(大关皆劫)。
@@ -168,5 +171,60 @@ describe('真仙终局服务', () => {
     expect(view?.message).toContain('仙界')
     // 大关进阶时附上该境出处(可解释性):真仙取道教仙阶
     expect(view?.message).toContain('道教仙阶')
+  })
+})
+
+/**
+ * 天道熔炉 · 灵石熔铸价随层级(ISS-214 口径直测)。
+ *
+ * economySim 只守「凝一枚道果的材料代价不随层级漂移」,但它用的是自己那份
+ * stoneByTier(tier, FURNACE_STONE_TIER_AMOUNT)(economySim.ts:217),不调用现役的
+ * furnaceStoneCost —— 现役函数此前没有任何直测。旧病(SS-214)是把熔铸价冻在真仙那层,
+ * 一到混沌海道果就相对收入塌 1.9^12。这三条把现役函数钉死在「价随层级、相对收入恒定」。
+ */
+describe('天道熔炉 · 灵石熔铸价随层级(现役函数直测)', () => {
+  function toN(g: { m: number; e: number }): number {
+    return g.m * Math.pow(10, g.e)
+  }
+
+  it('价 = stoneByTier(玩家当前层级, FURNACE_STONE_TIER_AMOUNT),随层级走', () => {
+    for (const major of [9, 14, 20]) {
+      const player = usePlayerStore()
+      player.major = major
+      expect(maxTierForMajor(major), `境 ${major} 的层级`).toBeGreaterThan(0)
+      expect(furnaceStoneCost(), `境 ${major} 的熔铸价该按该境层级算`).toEqual(
+        stoneByTier(maxTierForMajor(major), FURNACE_STONE_TIER_AMOUNT)
+      )
+    }
+  })
+
+  it('价相对一战灵石收入恒定(ISS-214 本质:花的是这一层的钱)', () => {
+    const ratios = [9, 14, 20].map(major => {
+      usePlayerStore().major = major
+      const tier = maxTierForMajor(major)
+      return toN(furnaceStoneCost()) / toN(stoneByTier(tier, 10))
+    })
+    expect(ratios[0]!, '300/10 同条 stoneByTier,代价恒为 30').toBeCloseTo(30, 6)
+    expect(ratios[1]! as number).toBeCloseTo(ratios[0] as number, 6)
+    expect(ratios[2]! as number).toBeCloseTo(ratios[0] as number, 6)
+  })
+
+  it('融灵石成道源:足则转成、扣灵石、入道源;不足则 false 且分文不动(原子)', () => {
+    const resources = useResourcesStore()
+    const endgame = useEndgameStore()
+    const player = usePlayerStore()
+    // 不足:灵石清零 → 转不出,道源与灵石分文不动(原子)
+    resources.spiritStone = gnZero()
+    expect(furnaceConvertStone()).toBe(false)
+    expect(endgame.daoSource).toBe(0)
+    expect(toN(resources.spiritStone)).toBe(0)
+
+    player.major = 14
+    const cost = furnaceStoneCost()
+    resources.addStone(cost)
+    const before = toN(resources.spiritStone)
+    expect(furnaceConvertStone()).toBe(true)
+    expect(endgame.daoSource, '熔作道源入账').toBe(FURNACE_STONE_DAO_SOURCE)
+    expect(toN(resources.spiritStone), '足额扣掉一份').toBe(before - toN(cost))
   })
 })
