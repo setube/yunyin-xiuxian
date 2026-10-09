@@ -21,6 +21,7 @@ import { ARTIFACTS, artifactDef, artifactValue } from '@/data/artifacts'
 import type { ArtifactDef } from '@/types'
 import { budgetOfMods } from './ruleBudget'
 import { regionDef } from '@/data/regions'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { usePlayerStore } from '@/stores/player'
 import { shouldAutoRecycle } from './smartKeep'
 import { useInventoryStore } from '@/stores/inventory'
@@ -67,6 +68,25 @@ describe('自动回收 · 装备入包前的第一道闸', () => {
     } finally {
       vi.restoreAllMocks()
     }
+  })
+
+  it('采集给草按「地界」品阶,不按玩家当前大境界(回刷低境只给低品)', () => {
+    const player = usePlayerStore()
+    player.initCharacter('品阶守卫', { roots: [] } as never)
+    player.major = 12 // 当前大境界已是仙品(3)—— 回青云(地界 0)只该给凡品(1)
+    const resources = useResourcesStore()
+    for (const g of [1, 2, 3, 4, 5] as const) resources.herbByGrade[g] = 0
+    // 只放行材料这一支(rng.chance 判 0.5 的只有灵草),rng.int 固定给 2
+    const spyC = vi.spyOn(rng, 'chance').mockImplementation(p => p === 0.5)
+    const spyI = vi.spyOn(rng, 'int').mockReturnValue(2)
+    try {
+      afterWin(regionDef('qingyun')!, 1, false)
+    } finally {
+      spyC.mockRestore()
+      spyI.mockRestore()
+    }
+    expect(resources.herbByGrade[1], '青云(地界 0)该给凡品灵草').toBeGreaterThan(0)
+    expect(resources.herbOf(herbGradeOfMajor(player.major)), '采集不该按玩家当前大境界给品').toBe(0)
   })
 
   it('智能收纳开启时,低于保留线的凡良拾取即化尘,不入行囊,器灵尘到账', () => {

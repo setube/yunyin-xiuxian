@@ -113,20 +113,21 @@ export function generateCurrentGoal(player: ReturnType<typeof usePlayerStore>): 
 
   // 5. 材料不足 → 采集:灵草见底便指向最高层级的已通关地界(取材收益最大)。
   //    材料在装备之前 —— 断粮卡丹方是"阻断",空槽是"可选的战力余量"。
-  //    读当前品阶的可炼数,不读跨品总和:旧品/早境草炼不了此刻的丹方,报它们只会掩盖断粮。
+  //    判缺按「实际采得到的那一品」:采集只出最高已通关地界的品(loot 按地界给品,
+  //    见 loot.ts:267)。报当前大境界品不总是对得上 —— world-break 后最高已通关
+  //    地界常低于当前大境界,按当前品判缺会推荐「采不出所需之品」的假方子。
+  //    以地界品判缺,建议自洽(照旧不读跨品总和:旧品炼不了此刻的丹方,仍会掩盖断粮)。
   const resources = useResourcesStore()
-  const currentHerb = resources.herbOf(herbGradeOfMajor(player.major))
-  if (hasClearedAny && currentHerb < MATERIAL_LOW_HERB) {
-    const best = [...REGIONS]
-      .filter(r => adventure.cleared.includes(r.id))
-      .sort((a, b) => b.tier - a.tier)[0]
-    if (best) {
-      return {
-        type: 'material',
-        text: `去「${best.name}」采集灵草`,
-        progress: Math.min(1, currentHerb / MATERIAL_LOW_HERB),
-        hint: '丹药原料所剩无几,历练途中常有灵草可采'
-      }
+  const best = hasClearedAny
+    ? [...REGIONS].filter(r => adventure.cleared.includes(r.id)).sort((a, b) => b.tier - a.tier)[0]
+    : undefined
+  const currentHerb = resources.herbOf(herbGradeOfMajor(best ? best.minRealm : player.major))
+  if (best && currentHerb < MATERIAL_LOW_HERB) {
+    return {
+      type: 'material',
+      text: `去「${best.name}」采集灵草`,
+      progress: Math.min(1, currentHerb / MATERIAL_LOW_HERB),
+      hint: '丹药原料所剩无几,历练途中常有灵草可采'
     }
   }
 
