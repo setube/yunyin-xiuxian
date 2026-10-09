@@ -25,6 +25,7 @@
  * ⚠ --late 很慢(一轮约十分钟):终局页面上的按钮会真的触发模拟
  * (突破推演 / 远征预估 / 挑战书定价),不是脚本卡住了。日常冒烟用默认模式。
  */
+import { classifySmoke, namePattern, SMOKE_ALLOWLIST } from './smoke-classify.ts'
 import { chromium } from 'playwright'
 import CryptoJS from 'crypto-js'
 import { dirname, join, resolve } from 'node:path'
@@ -137,17 +138,6 @@ const silent = []
 */
 const dead = []
 /**
- * 幂等选中项白名单:点「当前已选中的值」本身就该没反应(×1 当已在 ×1、跟随系统当已开),
- * 属设计内的无效果,不判失败。每项留一句理由,不许空着硬塞。
-*/
-const ALLOW_SILENT = new Set([
-  '/settings 点「×1」', // 战报速度默认为 ×1,点当下的选中值 = 无变化
-  '/settings 点「跟随系统」' // 主题默认跟随系统,点当下的选中值 = 无变化
-])
-function escapeRe(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-/**
  * 干净重试:回本路由、单独点同一按钮,看指纹有没有变。
  * 全流程态下点一个「已被前次交互带入目标态」的按钮会没增量(误报);单独点却有变化
  * 的,证明控件功能正常,不判失败。返回:
@@ -158,8 +148,7 @@ function escapeRe(s) {
 async function cleanRetry(route, label) {
   await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
   await page.waitForTimeout(700)
-  const namere = new RegExp('^' + escapeRe(label).replace(/\s+/g, '\\s+') + '$')
-  const b = page.getByRole('button', { name: namere }).first()
+  const b = page.getByRole('button', { name: namePattern(label) }).first()
   if (!(await b.count())) return null
   if (!(await b.isVisible().catch(() => false))) return null
   const before = await fingerprint()
@@ -167,28 +156,17 @@ async function cleanRetry(route, label) {
   await settle()
   return (await fingerprint()) !== before
 }
-/**
- * 区分「真死控件(判失败)」与「读数(不判失败)」:
- *  1. 幂等选中项白名单 → 读数
- *  2. 干净重试有变化 → 读数(功能正常,抑制全流程误报)
- *  3. 干净重试仍无变化 → dead(判失败)
- *  4. 干净态找不到(弹窗类)→ 读数(无法复现,不误伤)
- */
+/** 死/读数的归桶与报告行都来自共享分类器 classifySmoke —— 单一来源,不在此处另写一套 */
+function pushSmokeDecision(dec) {
+  if (dec.bucket === 'dead') dead.push(dec.line)
+  else silent.push(dec.line)
+}
 async function classifySilent(route, kind, label) {
   const verb = kind === 'modal' ? '弹窗内点' : '点'
   const entry = `${route} ${verb}「${label}」`
-  if (ALLOW_SILENT.has(entry)) {
-    silent.push(`${entry}(幂等选中项,不判失败)`)
-    return
-  }
-  const clean = await cleanRetry(route, label)
-  if (clean === true) {
-    silent.push(`${route} 干净重试有变化(功能正常,抑制误报):${verb}「${label}」`)
-  } else if (clean === null) {
-    silent.push(`${entry}(干净态无法单独复现,不判失败)`)
-  } else {
-    dead.push(entry)
-  }
+  // 幂等选中项白名单:不干净重试,直接按读数处理(分类器会再核一遍)
+  const clean = SMOKE_ALLOWLIST.includes(entry) ? null : await cleanRetry(route, label)
+  pushSmokeDecision(classifySmoke(route, kind, label, clean, SMOKE_ALLOWLIST))
 }
 /** 已成功走过的导航链接(去重:同 href 全站只点一次;失败/被挡的不计入,留待后续路由重试) */
 const navClicked = new Set()
