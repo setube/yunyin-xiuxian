@@ -7,7 +7,9 @@
     <!--
       云雾装饰 —— 必须关在自己的一层裁剪盒里。
 
-      这两团雾是**故意越界**画的(左上 -64px、右下 -96px)才好看,但它们若直接挂在
+      这两团雾是**故意打小、只留角上两团淡雾**(之前 -64px/-96px 一大片,
+      把洞府纪要、营造卡糊在底下,像一座山压住版面),并**故意越界**画的
+      (左上 -16px、右下 -32px)才好看,但它们若直接挂在
       外壳上,就会把 overflow-hidden 的外壳撑出一段可以滚动的横向溢出(实测
       scrollWidth 516 vs clientWidth 390)。外壳本身是 overflow-hidden,玩家滚不动,
       可浏览器会——建号结束时焦点回到 body,浏览器顺手把它 scrollLeft 设成 24,
@@ -16,9 +18,9 @@
       故装饰归装饰:外包一层 inset-0 overflow-hidden,越界部分在这里被裁掉,
       不再进入外壳的滚动区。
     -->
-    <div class="pointer-events-none absolute inset-0 overflow-hidden">
-      <div class="absolute -top-24 -left-16 h-64 w-96 rounded-full bg-white/40 blur-3xl animate-mist" />
-      <div class="absolute top-1/3 -right-24 h-72 w-80 rounded-full bg-white/30 blur-3xl animate-mist-slow" />
+    <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <div class="absolute -top-16 -left-8 h-32 w-60 rounded-full bg-white/25 blur-2xl animate-mist" />
+      <div class="absolute -bottom-8 -right-10 h-36 w-64 rounded-full bg-white/20 blur-2xl animate-mist-slow" />
     </div>
 
     <TopStatusBar v-if="game.started && route.name !== 'create'" />
