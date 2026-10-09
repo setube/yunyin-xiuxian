@@ -24,6 +24,7 @@ import {
 import {
   apprenticeSpoils,
   apprenticeTaskSeconds,
+  dispatchAllToNeed,
   taskDone,
   type OwnedApprentice,
   type TaskSpoils
@@ -43,6 +44,11 @@ function isSpec(v: unknown): v is ApprenticeSpec {
 function clampLevel(v: unknown): number {
   const n = Math.floor(Number(v) || 1)
   return Math.min(APPRENTICE_MAX_LEVEL, Math.max(1, n))
+}
+
+function clampBond(v: unknown): number {
+  const n = Math.floor(Number(v) || 0)
+  return Math.max(0, n)
 }
 
 /** 把一趟产出入账到资源/背包 */
@@ -72,6 +78,7 @@ export const useApprenticeStore = defineStore(
         if (typeof archId !== 'string' || !apprenticeDef(archId)) continue
         const uid = 'uid' in raw && typeof raw.uid === 'string' && raw.uid ? raw.uid : nextUid()
         const level = clampLevel('level' in raw ? raw.level : 1)
+        const bond = clampBond('bond' in raw ? raw.bond : 0)
         let task: OwnedApprentice['task'] = null
         if ('task' in raw && raw.task && typeof raw.task === 'object') {
           const t = raw.task as { spec?: unknown; startAt?: unknown; finishAt?: unknown }
@@ -79,7 +86,7 @@ export const useApprenticeStore = defineStore(
             task = { spec: t.spec, startAt: Math.max(0, Math.floor(t.startAt as number)), finishAt: Math.max(0, Math.floor(t.finishAt as number)) }
           }
         }
-        clean.push({ uid, archId, level, task })
+        clean.push({ uid, archId, level, bond, task })
       }
       apprentices.value = clean
     }
@@ -87,7 +94,7 @@ export const useApprenticeStore = defineStore(
     /** 无弟子则白送一名入门弟子(让这功能一开局就看得见摸得着),仅此一次 */
     function sync(): void {
       if (apprentices.value.length === 0) {
-        apprentices.value = [{ uid: nextUid(), archId: STARTER_APPRENTICE, level: 1, task: null }]
+        apprentices.value = [{ uid: nextUid(), archId: STARTER_APPRENTICE, level: 1, bond: 0, task: null }]
       }
     }
 
@@ -100,6 +107,7 @@ export const useApprenticeStore = defineStore(
         const spoils = apprenticeSpoils(appr.archId, spec, major, appr.level)
         applySpoils(spoils)
         appr.level = Math.min(APPRENTICE_MAX_LEVEL, appr.level + 1)
+        appr.bond += 1
         appr.task = null
         reaped.push(spoils)
       }
@@ -122,11 +130,34 @@ export const useApprenticeStore = defineStore(
       if (pool.length === 0) return 'full'
       const cost = stoneByTier(major, 30)
       if (!useResourcesStore().spendStone(cost)) return 'poor'
-      apprentices.value.push({ uid: nextUid(), archId: rng.pick(pool).id, level: 1, task: null })
+      apprentices.value.push({ uid: nextUid(), archId: rng.pick(pool).id, level: 1, bond: 0, task: null })
       return 'ok'
     }
 
-    return { apprentices, sanitize, sync, collectFinished, dispatch, recruit }
+    /** 一键「各尽其长」:把每名闲置道童派到当前最缺的门;忙的不动;返回实际派了几个 */
+    function dispatchAll(now: number): number {
+      const idle = apprentices.value
+        .filter(a => !a.task)
+        .map(a => ({ uid: a.uid, talent: apprenticeDef(a.archId)!.talent }))
+      if (idle.length === 0) return 0
+      const resources = useResourcesStore()
+      const major = usePlayerStore().major
+      const targets = dispatchAllToNeed(idle, {
+        herb: resources.herbOf(herbGradeOfMajor(major)),
+        ore: resources.ore,
+        wudao: resources.wudao,
+        dust: resources.dust
+      })
+      for (const t of targets) {
+        const appr = apprentices.value.find(x => x.uid === t.uid)
+        if (appr && !appr.task) {
+          appr.task = { spec: t.spec, startAt: now, finishAt: now + apprenticeTaskSeconds(t.spec) * 1000 }
+        }
+      }
+      return targets.length
+    }
+
+    return { apprentices, sanitize, sync, collectFinished, dispatch, dispatchAll, recruit }
   },
   { persist: persistConfig('apprentice') }
 )

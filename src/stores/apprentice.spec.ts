@@ -12,7 +12,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { usePlayerStore } from '@/stores/player'
 
 function make(archId = 'ap_luanniao', over: Partial<OwnedApprentice> = {}): OwnedApprentice {
-  return { uid: 'u1', archId, level: 3, task: null, ...over }
+  return { uid: 'u1', archId, level: 3, bond: 0, task: null, ...over }
 }
 
 describe('收徒 · 派发与收割', () => {
@@ -44,6 +44,7 @@ describe('收徒 · 派发与收割', () => {
     expect(reaped).toHaveLength(1)
     expect(res.herbOf(herbGradeOfMajor(0)), '天赋加成采一摞灵草').toBe(12)
     expect(a.apprentices[0]!.level).toBe(4)
+    expect(a.apprentices[0]!.bond, '完工一趟羁绊 +1').toBe(1)
     expect(a.apprentices[0]!.task).toBeNull()
   })
 
@@ -80,23 +81,45 @@ describe('收徒 · 派发与收割', () => {
     expect(a.recruit(player.major), '槽满').toBe('full')
   })
 
-  it('sanitize:坏弟子整位丢弃、坏任务当作闲置、坏等级夹回', () => {
+  it('sanitize:坏弟子整位丢弃、坏任务当作闲置、坏等级/羁绊夹回', () => {
     const a = useApprenticeStore()
     a.$patch({
       apprentices: [
         null,
         { uid: 42 },
         make('ap_nope'),
-        { uid: 'ok', archId: 'ap_youxia', level: 99, task: { spec: 'nope', startAt: 0, finishAt: 1 } },
-        { uid: 'ok2', archId: 'ap_daotong', level: -3, task: { spec: 'study', startAt: 0, finishAt: 0 } }
+        { uid: 'ok', archId: 'ap_youxia', level: 99, bond: 1500, task: { spec: 'nope', startAt: 0, finishAt: 1 } },
+        { uid: 'ok2', archId: 'ap_daotong', level: -3, bond: -7, task: { spec: 'study', startAt: 0, finishAt: 0 } },
+        { uid: 'ok3', archId: 'ap_lingtong', level: 2 }
       ] as unknown as OwnedApprentice[]
     })
     a.sanitize()
-    expect(a.apprentices).toHaveLength(2)
+    expect(a.apprentices).toHaveLength(3)
     const ok = a.apprentices.find(x => x.archId === 'ap_youxia')!
     expect(ok.level, '超出上限夹回').toBe(APPRENTICE_MAX_LEVEL)
+    expect(ok.bond, '合理羁绊保留').toBe(1500)
     expect(ok.task, '坏任务当作闲置').toBeNull()
     const ok2 = a.apprentices.find(x => x.archId === 'ap_daotong')!
     expect(ok2.level, '负等级夹回 1').toBe(1)
+    expect(ok2.bond, '负羁绊夹回 0').toBe(0)
+    const ok3 = a.apprentices.find(x => x.archId === 'ap_lingtong')!
+    expect(ok3.bond, '老档缺 bond 补 0').toBe(0)
+  })
+
+  it('各尽其长一键:缺灵草时闲置道童全体去采药,忙的不动', () => {
+    const a = useApprenticeStore()
+    const player = usePlayerStore()
+    player.major = 0 // 灵草品阶 1(凡品);herb 缺、其余 0 也不及 herb 短缺分
+    a.$patch({
+      apprentices: [
+        { uid: 'x', archId: 'ap_youxia', level: 1, bond: 0, task: null },
+        { uid: 'y', archId: 'ap_daotong', level: 1, bond: 0, task: null },
+        { uid: 'z', archId: 'ap_luanniao', level: 1, bond: 0, task: { spec: 'ore', startAt: 0, finishAt: 99999 } }
+      ] as OwnedApprentice[]
+    })
+    expect(a.dispatchAll(Date.now())).toBe(2)
+    expect(a.apprentices.find(x => x.uid === 'x')!.task!.spec).toBe('herb')
+    expect(a.apprentices.find(x => x.uid === 'y')!.task!.spec).toBe('herb')
+    expect(a.apprentices.find(x => x.uid === 'z')!.task!.spec, '忙的道童不动').toBe('ore')
   })
 })

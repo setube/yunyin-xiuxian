@@ -9,7 +9,13 @@ import {
   apprenticeDef,
   apprenticeSlots
 } from '@/data/apprentices'
-import { apprenticeSpoils } from '@/core/apprenticeService'
+import { apprenticeSpoils, dispatchAllToNeed, needTargetDoor } from '@/core/apprenticeService'
+import {
+  BOND_TITLES,
+  bondTitle,
+  DISPATCH_ADVENTURE_FIXED_SCORE,
+  DISPATCH_NEED_TARGET
+} from '@/data/apprentices'
 import { toNum } from '@/utils/gnum'
 
 describe('收徒 · 数据不变量', () => {
@@ -65,5 +71,64 @@ describe('收徒 · 数据不变量', () => {
         if (s.stone) expect(toNum(s.stone)).toBeGreaterThan(0)
       }
     }
+  })
+
+  it('各尽其长:缺哪个就全体派去哪个门(缺者分高,确定性)', () => {
+    // herb 为 0 → score = 40/1 = 40,远高于其余 → 全体采药
+    const idle = [
+      { uid: 'a', talent: 'ore' as const },
+      { uid: 'b', talent: 'study' as const }
+    ]
+    expect(dispatchAllToNeed(idle, { herb: 0, ore: 500, wudao: 500, dust: 500 })).toEqual([
+      { uid: 'a', spec: 'herb' },
+      { uid: 'b', spec: 'herb' }
+    ])
+  })
+
+  it('各尽其长:皆有余时去历练挣灵石(adventure 固定兜底分)', () => {
+    // 各资源 score < 0.25(历练兜底),故全体去历练
+    const idle = [{ uid: 'a', talent: 'herb' as const }]
+    expect(dispatchAllToNeed(idle, { herb: 200, ore: 200, wudao: 200, dust: 200 })).toEqual([
+      { uid: 'a', spec: 'adventure' }
+    ])
+  })
+
+  it('各尽其长:目标分无差别 → 各自专职;无闲置则空手', () => {
+    // herb score = 40/4 = 10 与 ore score = 30/3 = 10 并列最高 → null → 各自专职
+    expect(needTargetDoor({ herb: 3, ore: 2, wudao: 100, dust: 100 })).toBeNull()
+    const idle = [
+      { uid: 'a', talent: 'herb' as const },
+      { uid: 'b', talent: 'ore' as const }
+    ]
+    expect(dispatchAllToNeed(idle, { herb: 3, ore: 2, wudao: 100, dust: 100 })).toEqual([
+      { uid: 'a', spec: 'herb' },
+      { uid: 'b', spec: 'ore' }
+    ])
+    expect(dispatchAllToNeed([], { herb: 0, ore: 0, wudao: 0, dust: 0 })).toEqual([])
+  })
+
+  it('羁绊位阶:按累计完工趟数阈值换上称谓(阈值递减验证)', () => {
+    expect(BOND_TITLES[0]!.min).toBe(0)
+    const cases: Array<[number, string]> = [
+      [0, '道童'],
+      [9, '道童'],
+      [10, '道仆'],
+      [29, '道仆'],
+      [30, '道徒'],
+      [59, '道徒'],
+      [60, '记名弟子'],
+      [99, '记名弟子'],
+      [100, '真传'],
+      [500, '真传']
+    ]
+    for (const [bond, name] of cases) {
+      expect(bondTitle(bond), `bond=${bond} 应为 ${name}`).toBe(name)
+    }
+    expect(BOND_TITLES.length).toBe(5)
+  })
+
+  it('各尽其长目标水位与历练兜底分是确定常数', () => {
+    expect(DISPATCH_NEED_TARGET).toEqual({ herb: 40, ore: 30, wudao: 30, dust: 30 })
+    expect(DISPATCH_ADVENTURE_FIXED_SCORE).toBe(0.25)
   })
 })

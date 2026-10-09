@@ -11,6 +11,8 @@ import { stoneByTier } from './formulas'
 import { PILLS } from '@/data/pills'
 import {
   APPRENTICE_TALENT_BONUS,
+  DISPATCH_ADVENTURE_FIXED_SCORE,
+  DISPATCH_NEED_TARGET,
   apprenticeDef,
   taskDef,
   type ApprenticeSpec
@@ -21,6 +23,8 @@ export interface OwnedApprentice {
   uid: string
   archId: string
   level: number
+  /** 羁绊:累计完工趟数(只喂位阶称谓/flavor,不给产出加成) */
+  bond: number
   task: { spec: ApprenticeSpec; startAt: number; finishAt: number } | null
 }
 
@@ -76,4 +80,51 @@ export function apprenticeSpoils(archId: string, spec: ApprenticeSpec, major: nu
 /** 任务是否已完工(按墙钟) */
 export function taskDone(appr: OwnedApprentice, now: number): boolean {
   return appr.task !== null && now >= appr.task.finishAt
+}
+
+/** 各尽其长 · 库存快照(缺者分高,score = 目标水位 ÷ (现存量 + 1)) */
+export interface DispatchNeedStock {
+  herb: number
+  ore: number
+  wudao: number
+  dust: number
+}
+
+function needScore(amount: number, water: number): number {
+  return water / (Math.max(0, Math.floor(amount)) + 1)
+}
+
+/** 取当前最缺的门:各资源短缺分最高者;历练取「器尘短缺分与灵石兜底分之较高」;
+ *  并列最高(或无单门胜出)返回 null → 各自专职 */
+export function needTargetDoor(stock: DispatchNeedStock): ApprenticeSpec | null {
+  const scores: Array<[ApprenticeSpec, number]> = [
+    ['herb', needScore(stock.herb, DISPATCH_NEED_TARGET.herb)],
+    ['ore', needScore(stock.ore, DISPATCH_NEED_TARGET.ore)],
+    ['study', needScore(stock.wudao, DISPATCH_NEED_TARGET.wudao)],
+    ['adventure', Math.max(needScore(stock.dust, DISPATCH_NEED_TARGET.dust), DISPATCH_ADVENTURE_FIXED_SCORE)]
+  ]
+  let best: ApprenticeSpec | null = null
+  let bestScore = -Infinity
+  let unique = true
+  for (const [spec, s] of scores) {
+    if (s > bestScore) {
+      best = spec
+      bestScore = s
+      unique = true
+    } else if (s === bestScore) {
+      unique = false
+    }
+  }
+  return unique ? best : null
+}
+
+/** 一键「各尽其长」:把每名闲置道童确定性地派到当前最缺的门;目标分无差别则各自专职 */
+export function dispatchAllToNeed(
+  idle: Array<{ uid: string; talent: ApprenticeSpec }>,
+  stock: DispatchNeedStock
+): Array<{ uid: string; spec: ApprenticeSpec }> {
+  if (idle.length === 0) return []
+  const target = needTargetDoor(stock)
+  if (target) return idle.map(x => ({ uid: x.uid, spec: target }))
+  return idle.map(x => ({ uid: x.uid, spec: x.talent }))
 }

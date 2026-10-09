@@ -73,3 +73,35 @@ export const APPRENTICE_TALENT_BONUS = 1.25
 export function apprenticeSlots(major: number): number {
   return Math.min(5, 1 + Math.floor(Math.max(0, major) / 4))
 }
+
+/** 各尽其长 · 目标水位(存栏使 score=1 的参考;导演口径 040/030/030/030) */
+export type DispatchNeedResource = 'herb' | 'ore' | 'wudao' | 'dust'
+export const DISPATCH_NEED_TARGET: Record<DispatchNeedResource, number> = {
+  herb: 40,
+  ore: 30,
+  wudao: 30,
+  dust: 30
+}
+/** 历练的固定兜底分:低于任一资源的短缺分 —— 皆有余时才去历练挣灵石 */
+export const DISPATCH_ADVENTURE_FIXED_SCORE = 0.25
+
+/** 羁绊位阶(道童称谓)—— 纯命名/flavor,不给产出/时长加成;按累计完工趟数阈值 */
+export interface BondTitle {
+  min: number
+  name: string
+}
+export const BOND_TITLES: BondTitle[] = [
+  { min: 0, name: '道童' },
+  { min: 10, name: '道仆' },
+  { min: 30, name: '道徒' },
+  { min: 60, name: '记名弟子' },
+  { min: 100, name: '真传' }
+]
+/** 由累计完工趟数取位阶称谓 */
+export function bondTitle(bond: number): string {
+  let name = BOND_TITLES[0]!.name
+  for (const t of BOND_TITLES) {
+    if (bond >= t.min) name = t.name
+  }
+  return name
+}
