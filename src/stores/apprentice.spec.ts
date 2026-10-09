@@ -122,4 +122,50 @@ describe('收徒 · 派发与收割', () => {
     expect(a.apprentices.find(x => x.uid === 'y')!.task!.spec).toBe('herb')
     expect(a.apprentices.find(x => x.uid === 'z')!.task!.spec, '忙的道童不动').toBe('ore')
   })
+
+  it('真传道童转世:最高羁绊凝成跨世之缘,新世 starter 带传承羁绊入场并被消耗', () => {
+    const a = useApprenticeStore()
+    // 多名道童:只取最高那名(150),且封顶到真传位阶(100)
+    a.$patch({
+      apprentices: [
+        { uid: 'x', archId: 'ap_luanniao', level: 1, bond: 150, task: null },
+        { uid: 'y', archId: 'ap_youxia', level: 1, bond: 40, task: null }
+      ] as OwnedApprentice[]
+    })
+    a.resetForRebirth()
+    expect(a.apprentices, '道童本体随世散去').toHaveLength(0)
+    expect(a.rebirthKarma, '真传凝缘,封顶到真传位阶').toBe(100)
+
+    // 新世 sync():starter 带着传承羁绊入场,随后清零(一次性,不每世重演)
+    a.sync()
+    expect(a.apprentices).toHaveLength(1)
+    expect(a.apprentices[0]!.archId).toBe(STARTER_APPRENTICE)
+    expect(a.apprentices[0]!.bond).toBe(100)
+    expect(a.rebirthKarma).toBe(0)
+  })
+
+  it('无真传时转世:starter 羁绊仍为 0,现状不变', () => {
+    const a = useApprenticeStore()
+    a.$patch({
+      apprentices: [{ uid: 'x', archId: 'ap_daotong', level: 1, bond: 40, task: null }] as OwnedApprentice[]
+    })
+    a.resetForRebirth()
+    expect(a.rebirthKarma, '未达真传不凝缘').toBe(0)
+    a.sync()
+    expect(a.apprentices[0]!.bond).toBe(0)
+    expect(a.rebirthKarma).toBe(0)
+  })
+
+  it('sanitize:跨世之缘夹回 0~真传阈值(不越界)', () => {
+    const a = useApprenticeStore()
+    a.$patch({ rebirthKarma: -5 } as never)
+    a.sanitize()
+    expect(a.rebirthKarma).toBe(0)
+    a.$patch({ rebirthKarma: 500 } as never)
+    a.sanitize()
+    expect(a.rebirthKarma, '封顶到真传位阶').toBe(100)
+    a.$patch({ rebirthKarma: NaN } as never)
+    a.sanitize()
+    expect(a.rebirthKarma).toBe(0)
+  })
 })

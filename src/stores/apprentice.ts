@@ -16,6 +16,7 @@ import { herbGradeOfMajor } from '@/data/herbGrades'
 import {
   APPRENTICE_MAX_LEVEL,
   APPRENTICES,
+  BOND_TITLES,
   STARTER_APPRENTICE,
   apprenticeDef,
   apprenticeSlots,
@@ -51,6 +52,14 @@ function clampBond(v: unknown): number {
   return Math.max(0, n)
 }
 
+/** 跨世之缘只对「真传(最高羁绊位阶)」开放,封顶到其阈值不越界 */
+const REBIRTH_KARMA_CAP = BOND_TITLES[BOND_TITLES.length - 1]!.min
+
+function clampKarma(v: unknown): number {
+  const n = Math.floor(Number(v) || 0)
+  return Math.min(REBIRTH_KARMA_CAP, Math.max(0, n))
+}
+
 /** 把一趟产出入账到资源/背包 */
 function applySpoils(spoils: TaskSpoils): void {
   const resources = useResourcesStore()
@@ -68,9 +77,12 @@ export const useApprenticeStore = defineStore(
   'apprentice',
   () => {
     const apprentices = ref<OwnedApprentice[]>([])
+    /** 跨世之缘:真传道童转世后凝成的一丝缘(一次性,新世 starter 携带后清零) */
+    const rebirthKarma = ref(0)
 
     /** 存档修复:弟子逐位修形,坏位整位丢弃;任务形状不对就当作闲置 */
     function sanitize(): void {
+      rebirthKarma.value = clampKarma(rebirthKarma.value)
       const clean: OwnedApprentice[] = []
       for (const raw of asArray<unknown>(apprentices.value)) {
         if (!raw || typeof raw !== 'object' || !('archId' in raw)) continue
@@ -91,10 +103,12 @@ export const useApprenticeStore = defineStore(
       apprentices.value = clean
     }
 
-    /** 无弟子则白送一名入门弟子(让这功能一开局就看得见摸得着),仅此一次 */
+    /** 无弟子则白送一名入门弟子(让这功能一开局就看得见摸得着),仅此一次。
+     *  若上一世凝有跨世之缘(真传),starter 带着这份传承羁绊入场,随后清零(一次性携带,不每世重演) */
     function sync(): void {
       if (apprentices.value.length === 0) {
-        apprentices.value = [{ uid: nextUid(), archId: STARTER_APPRENTICE, level: 1, bond: 0, task: null }]
+        apprentices.value = [{ uid: nextUid(), archId: STARTER_APPRENTICE, level: 1, bond: rebirthKarma.value, task: null }]
+        rebirthKarma.value = 0
       }
     }
 
@@ -157,12 +171,17 @@ export const useApprenticeStore = defineStore(
       return targets.length
     }
 
-    /** 转世清零:道童是今生观中家业,随皮囊散去;羁绊随人一并归零。新世由 sync() 补送 starter */
+    /** 转世清零:道童是今生观中家业,随皮囊散去;新世由 sync() 补送 starter。
+     *  只取最高那名的羁绊,且仅「真传(满位阶)」凝成跨世之缘(封顶到真传位阶不越界);
+     *  道童本体不复活,只落 rebirthKarma 这一丝「老仆相寻」的缘。 */
     function resetForRebirth(): void {
+      let max = 0
+      for (const appr of apprentices.value) max = Math.max(max, appr.bond)
+      rebirthKarma.value = max >= REBIRTH_KARMA_CAP ? REBIRTH_KARMA_CAP : 0
       apprentices.value = []
     }
 
-    return { apprentices, sanitize, sync, collectFinished, dispatch, dispatchAll, resetForRebirth, recruit }
+    return { apprentices, rebirthKarma, sanitize, sync, collectFinished, dispatch, dispatchAll, resetForRebirth, recruit }
   },
   { persist: persistConfig('apprentice') }
 )
