@@ -320,6 +320,38 @@ describe('服丹 · 丹从包里出去,药力真的落下', () => {
     expect(buffs.length, '丹说的状态没落到身上').toBe(1)
     expect(buffs[0]!.endsAt, '状态没有到期时间,等于永久').toBeGreaterThan(Date.now())
   })
+
+  it('修为丹到顶 clamp:等效闭关远超一层时,药力封顶在「不满一层」,不按 cultPerSec×secs 白给', () => {
+    // 低境界一层只要刻把钟,配 10800s 的大修为丹(太初丹)必然溢出 —— 走真实 usePill 路径
+    const player = usePlayerStore()
+    const inventory = useInventoryStore()
+    const cultivation = useCultivationStore()
+    player.$patch({ major: 2, sub: 5, exp: { m: 0, e: 0 } })
+    cultivation.addBuff('buff_juling', Date.now()) // 修速 +50%,把 cultPerSec 顶到必然溢出
+    inventory.addPill('p_taichu', 1)
+    const req = toNum(expRequirement(2, 5))
+    const before = toNum(player.exp)
+    expect(usePill('p_taichu')).toBe(true)
+    const gain = toNum(player.exp) - before
+    // 封顶在「不满一层」= expReq × INSTANT_EXP_LAYER_CAP,而非 cultPerSec×10800
+    expect(gain).toBeCloseTo(req * INSTANT_EXP_LAYER_CAP, 3)
+    expect(gain, '整层填满 —— clamp 失效').toBeLessThan(req)
+    expect(Number.isFinite(gain)).toBe(true)
+    expect(inventory.pills['p_taichu'] ?? 0, '服下该出包').toBe(0)
+  })
+
+  it('正对照:低药效丹在高境界远不满一层 —— 不封顶(证明 clamp 不是每颗都截)', () => {
+    const player = usePlayerStore()
+    const inventory = useInventoryStore()
+    player.$patch({ major: 8, sub: 5, exp: { m: 0, e: 0 } })
+    inventory.addPill('p_xuanyuan', 1) // 玄元丹 expSecs=900,高境界一层极大
+    const req = toNum(expRequirement(8, 5))
+    const before = toNum(player.exp)
+    expect(usePill('p_xuanyuan')).toBe(true)
+    const gain = toNum(player.exp) - before
+    expect(Number.isFinite(gain) && gain > 0).toBe(true)
+    expect(gain, '正对照不该被 clamp(它本来就远不满一层)').toBeLessThan(req * INSTANT_EXP_LAYER_CAP)
+  })
 })
 
 describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底算清能开几炉', () => {
