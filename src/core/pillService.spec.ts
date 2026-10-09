@@ -391,3 +391,22 @@ describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底�
     expect(resources.spiritStone).toEqual(beforeStone)
   })
 })
+
+describe('炸炉保残料比 · salvageRatio 自身边界(去自证)', () => {
+  it('闲手(技艺 0):恰按基准 0.2 保料', () => {
+    expect(salvageRatio(0)).toBe(0.2)
+  })
+
+  it('技艺 100:到顶 0.5(基准 + 满档 0.3)', () => {
+    expect(salvageRatio(100)).toBe(0.5)
+  })
+
+  it('技艺 200(超满):被夹回 0.5,不上浮(否则保料比该门手艺失控)', () => {
+    expect(salvageRatio(200)).toBe(0.5)
+    expect(salvageRatio(1000)).toBe(0.5) // 大幅超限同样不越 0.5
+  })
+
+  it('技艺 50:线性中段 0.35(基准 + 半档 0.15)', () => {
+    expect(salvageRatio(50)).toBeCloseTo(0.35, 10)
+  })
+})
