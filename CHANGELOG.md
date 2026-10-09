@@ -55,6 +55,7 @@
 - 远征读档恢复守卫:worldRun 是活状态(每场战斗都读 layer/carriedHpPct/winStacks),读档恢复处(endgame.sanitize)把每一域夹回安全区间,但此前 0 个测试调用 —— 一处 clamp 写坏会静默滑过 CI。如今钉死:未知 worldId(非天界非 void)直接作废、void 在途保护、layer 夹回 [0,GUARDIAN_LAYER=3](NaN→0)、carriedHpPct 夹回 [0.05,1](非数→1,防开局 NaN/无敌)、pactId/gateId 只收 string、bonus/totalRounds/winStacks 取非负整数、rows 只留有效 foeName;连同 rerollVoidWorld 代价守卫(虚界在途拒绝/道源不足拒绝/成功扣 10/生成失败退回 10)
 - 灵田产草品阶中档夹逼守卫:fieldHerbGrade 的极端(band 两端)已有测试,但「至多高当前一档」「保当前品下限」在中间境界才真正发威 —— 如今钉死:中境界(当前品3)拉满(可种5)只前瞻到4、绝不一步到道品(9/13→4),低田保下限仍 3(不掉回灵品),低境界拉满只到2,道品之境拉满止于5;变异证明:摘掉 +1 上限 → 前瞻案齐红(含既有的高灵田前瞻案)
 - 远征路线树数据完整性守卫:chooseRouteNode 按 world.routes[layer][choice] 出敌,路线战敌是手写内联 shape(),此前 0 个测试遍历(world.routes dataHeaderAudit 只数表头)——缺层/缺择、战敌比率归零或 NaN、两层路线奖励相同、节点 id 重复都会静默打坏择路。如今遍历 CELESTIAL_WORLDS 钉死:每界 3 层 × 每层 2 择、每路线战敌 atkR/defR/hpR/speed 有限为正、技能 mult/rate 有限为正、每层两择 bonus 不同且非负、界内路线节点 id 唯一;校准真实数据(4 界 24 节点,bonus 8-16,比率 .38+. 无重复);变异证明:把 chiyan 一层两择 bonus 改重复 → 择路可辨案齐红
+- 道源原始操作原子·单调·取整守卫:spendDaoSource/addDaoSource 是一切道源交易(远征入界/虚界重掷/天道试炼)的共享原语,各处都调却从没直接测其自身边界(只被 soulService/重掷间接覆盖)——如今直接钉死:道源不足 spend 拒绝且分文不动(原子:false 无副作用)、足额即扣且余额精确为差、addDaoSource 负数不退不腐蚀(余额 0 加负数仍 0)、小数向下取整(3.5→3 非 4)、单调逐次取整;变异证明:摘掉 spend 的不足守卫 → 原子案+既有重掷不足案齐红
 - 冒烟自检覆盖补两页:道童(/apprentice)与坊市(/market)——最近改动最密的两个路由此前不在界面冒烟盘上,页码错误/NaN/Infinity 泄漏/按钮沉默都会滑过 CI
 - 引擎心跳 start/stop/dt 边界首度直测:双开只开一个 interval、停就清、暂停/未开始/dt=0 不结算、小 dt 在线推进、大 dt 走离线结算——此前整条主干零覆盖,防双心跳与路由漂移
 - 道果熔铸价随层级口径直测:现役 furnaceStoneCost/furnaceConvertStone 首度有直接断言(价=stoneByTier(当前层级,300)、相对一战收入恒定 30、足则转成/不足原子不动)——此前只有 economySim 用自己的平行算式守,冻死战价的旧病(SS-214)漏网即绿
