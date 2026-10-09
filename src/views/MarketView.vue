@@ -203,7 +203,7 @@
   import { useInventoryStore } from '@/stores/inventory'
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
-  import { pillDef } from '@/data/pills'
+  import { pillDef, pillQualityColor, pillQualityName } from '@/data/pills'
   import { HERB_GRADE_NAMES, HERB_GRADES, herbGradeBandLabel, herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef } from '@/data/qualities'
@@ -309,7 +309,7 @@
       .map(x => ({
         id: x.id,
         name: x.def!.name,
-        color: qualityDef(x.def!.quality).color,
+        color: pillQualityColor(x.def!),
         count: x.count,
         price: pillSellPrice(x.id)
       }))
@@ -329,8 +329,8 @@
       return {
         ...base,
         name: def.name,
-        nameCls: { color: qualityDef(def.quality).color },
-        sub: `${qualityDef(def.quality).name} · ×${slot.count}`,
+        nameCls: { color: pillQualityColor(def) },
+        sub: `${pillQualityName(def)} · ×${slot.count}`,
         price: slot.price
       }
     }

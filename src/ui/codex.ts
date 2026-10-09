@@ -27,7 +27,7 @@ import { GONGFA_TYPE_NAMES, gongfaDef } from '@/data/gongfa'
 import { QUALITIES, qualityDef } from '@/data/qualities'
 import { ARTIFACTS, ARTIFACT_MAX_LEVEL } from '@/data/artifacts'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
-import { PILLS } from '@/data/pills'
+import { PILLS, pillQualityColor } from '@/data/pills'
 import type { ArtifactDef, EquipmentTemplate, PillDef } from '@/types'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
@@ -383,7 +383,7 @@ export function describePill(def: PillDef, collected: boolean, mastery: number):
     name: def.name,
     desc: [def.desc, pillFuncText(def)].filter(Boolean).join('\n'),
     meta: pillMetaText(def),
-    color: qualityDef(def.quality).color,
+    color: pillQualityColor(def),
     stage,
     stageName: PILL_STAGE_NAMES[stage]!,
     badge: top && stage >= PILL_STAGE_MAX ? '通' : '',

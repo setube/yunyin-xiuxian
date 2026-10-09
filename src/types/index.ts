@@ -358,12 +358,20 @@ export interface GongfaDef {
 }
 
 // ============ 丹药 / Buff ============
+/**
+ * 丹药的品阶。「dao(道品)」是丹药系统**专属**的顶档 —— 只在丹药里存在,
+ * 不入共享品质表 QUALITIES(不参与装备/法宝/功法的掉落与数值)。它比神品高半档,
+ * 是混沌海(境界 18-20)那一小撮登峰丹药的名号。其余取值与共享品质一致。
+ * 关于 rank/名/色的解析,一律走 data/pills.ts 的 pillRank/pillQualityName/pillQualityColor。
+ */
+export type PillQuality = QualityId | 'dao'
+
 export interface PillDef {
   id: string
   name: string
   desc: string
   icon: string
-  quality: QualityId
+  quality: PillQuality
   kind: 'instant' | 'buff'
   instant?: {
     /**

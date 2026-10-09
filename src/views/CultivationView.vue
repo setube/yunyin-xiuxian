@@ -366,10 +366,10 @@
           v-for="p in quickPills"
           :key="p.def!.id"
           class="card-ink flex items-center gap-2 px-3 py-2 text-left active:scale-98"
-          :style="{ borderLeft: `2px solid ${qualityDef(p.def!.quality).color}` }"
+          :style="{ borderLeft: `2px solid ${pillQualityColor(p.def!)}` }"
           @click="usePill(p.def!.id)"
         >
-          <GameIcon :name="p.def!.icon" :size="16" :style="{ color: qualityDef(p.def!.quality).color }" />
+          <GameIcon :name="p.def!.icon" :size="16" :style="{ color: pillQualityColor(p.def!) }" />
           <span class="min-w-0 grow">
             <span class="block truncate font-kai text-[12px] text-ink">{{ p.def!.name }}</span>
             <span class="block text-[10px] text-ink-faint">存 {{ p.count }}</span>
@@ -521,7 +521,7 @@
   import { ELEMENTS } from '@/data/linggen'
   import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import { buffDef } from '@/data/buffs'
-  import { pillDef } from '@/data/pills'
+  import { pillDef, pillQualityColor, pillRank } from '@/data/pills'
   import { COMPREHEND_PAGE_COST, QI_RICH_BONUS } from '@/data/constants'
   import { todayWeather } from '@/core/weather'
   import { weatherTribulationLine } from '@/ui/weatherText'
@@ -792,7 +792,7 @@
       .map(([id, count]) => ({ def: pillDef(id), count }))
       .filter(x => x.def !== undefined && x.count > 0)
       .filter(x => x.def!.kind === 'buff' || x.def!.instant?.expSecs || x.def!.instant?.expFixed || x.def!.instant?.qiPct)
-      .sort((a, b) => qualityDef(b.def!.quality).rank - qualityDef(a.def!.quality).rank)
+      .sort((a, b) => pillRank(b.def!) - pillRank(a.def!))
       .slice(0, 4)
   )
 
