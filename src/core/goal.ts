@@ -23,6 +23,7 @@ import { REGIONS } from '@/data/regions'
 import { EQUIP_SLOT_NAMES } from '@/data/equipment'
 import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
 import { pillDef } from '@/data/pills'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { breakthroughGoalText } from '@/ui/cultivationText'
 import type { EquipSlot } from '@/types'
 
@@ -112,8 +113,10 @@ export function generateCurrentGoal(player: ReturnType<typeof usePlayerStore>): 
 
   // 5. 材料不足 → 采集:灵草见底便指向最高层级的已通关地界(取材收益最大)。
   //    材料在装备之前 —— 断粮卡丹方是"阻断",空槽是"可选的战力余量"。
+  //    读当前品阶的可炼数,不读跨品总和:旧品/早境草炼不了此刻的丹方,报它们只会掩盖断粮。
   const resources = useResourcesStore()
-  if (hasClearedAny && resources.herb < MATERIAL_LOW_HERB) {
+  const currentHerb = resources.herbOf(herbGradeOfMajor(player.major))
+  if (hasClearedAny && currentHerb < MATERIAL_LOW_HERB) {
     const best = [...REGIONS]
       .filter(r => adventure.cleared.includes(r.id))
       .sort((a, b) => b.tier - a.tier)[0]
@@ -121,7 +124,7 @@ export function generateCurrentGoal(player: ReturnType<typeof usePlayerStore>): 
       return {
         type: 'material',
         text: `去「${best.name}」采集灵草`,
-        progress: Math.min(1, resources.herb / MATERIAL_LOW_HERB),
+        progress: Math.min(1, currentHerb / MATERIAL_LOW_HERB),
         hint: '丹药原料所剩无几,历练途中常有灵草可采'
       }
     }

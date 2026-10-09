@@ -106,7 +106,7 @@
         <span class="min-w-0 flex-1">
           <span class="block font-kai text-[14px] tracking-widest text-ink">开炉炼丹</span>
           <span class="block truncate text-[10px] leading-relaxed text-ink-faint">
-            {{ recipes.length > 0 ? `已知丹方 ${recipes.length} 种 · 灵草 ${resources.herb}` : '尚不知任何丹方' }}
+            {{ recipes.length > 0 ? `已知丹方 ${recipes.length} 种 · ${HERB_GRADE_SHORT[herbGrade]}灵草×${formatNum(resources.herbOf(herbGrade))}` : '尚不知任何丹方' }}
           </span>
         </span>
         <span class="shrink-0 text-[12px] text-ink-faint">›</span>
@@ -320,7 +320,7 @@
 
     <!-- 开炉炼丹 -->
     <BaseModal :open="craftOpen" title="开炉炼丹" wide @close="craftOpen = false">
-      <p class="mb-2 text-[11px] text-ink-faint tabular">灵草 {{ resources.herb }} · 灵石 {{ formatGN(resources.spiritStone) }}</p>
+      <p class="mb-2 text-[11px] text-ink-faint tabular">灵草 {{ herbStash }} · 灵石 {{ formatGN(resources.spiritStone) }}</p>
       <!--
         被动翻检全程无进度条:玩家只知道某天突然翻出一张方子,不知道它快到了。
         这一行把「下一件事」报成时间 —— 读数与 studyTick 同序,见 core/loreService.studyEta
@@ -637,7 +637,8 @@
   import { useSettingsStore } from '@/stores/settings'
   import { qualityDef, QUALITIES } from '@/data/qualities'
   import { pillDef } from '@/data/pills'
-  import { HERB_GRADE_SHORT, type HerbGrade } from '@/data/herbGrades'
+  import { HERB_GRADE_SHORT, herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
+  import { herbStashText } from '@/ui/herbText'
   import { pillFuncText } from '@/ui/itemText'
   import {
     artifactActiveText,
@@ -845,12 +846,19 @@
     return 'text-cinnabar'
   }
 
+  /** 当前所在大境界的灵草品阶 —— 炼丹/采药都看它,存量的「主数字」也该读它 */
+  const herbGrade = computed(() => herbGradeOfMajor(player.major))
+
+  /** 逐品灵草存量(仅列持有>0,大数走 formatNum) —— 总量展示的真相在细节里,不在一个总和 */
+  const herbStash = computed(() => herbStashText(g => resources.herbOf(g), formatNum))
+
+  /** 材料行:灵草的量是「当前品」的可炼数,`full` 留给详情弹窗逐品陈列(其它料本就单标量) */
   const materialRows = computed(() => [
-    { icon: 'leaf', name: '灵草', desc: '炼丹的根本', value: resources.herb },
-    { icon: 'mountain', name: '玄铁', desc: '筑造与炼器之材', value: resources.ore },
-    { icon: 'scroll', name: '功法残页', desc: '集残页可参悟功法', value: resources.page },
-    { icon: 'sparkles', name: '器灵尘', desc: '强化装备的灵性之尘', value: resources.dust },
-    { icon: 'book', name: '悟道点', desc: '功法进修与法宝炼化所需', value: resources.wudao }
+    { icon: 'leaf', name: '灵草', desc: '炼丹的根本', value: resources.herbOf(herbGrade.value), full: `逐品:${herbStash.value}` },
+    { icon: 'mountain', name: '玄铁', desc: '筑造与炼器之材', value: resources.ore, full: String(resources.ore) },
+    { icon: 'scroll', name: '功法残页', desc: '集残页可参悟功法', value: resources.page, full: String(resources.page) },
+    { icon: 'sparkles', name: '器灵尘', desc: '强化装备的灵性之尘', value: resources.dust, full: String(resources.dust) },
+    { icon: 'book', name: '悟道点', desc: '功法进修与法宝炼化所需', value: resources.wudao, full: String(resources.wudao) }
   ])
 
   /** 材料格子:含灵石一并展示,数量走 formatNum 免得格子被长数字撑破 */
@@ -862,7 +870,7 @@
       desc: m.desc,
       color: 'text-ink-soft',
       display: formatNum(m.value),
-      full: String(m.value)
+      full: m.full
     })),
     {
       key: '灵石',
