@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- Boss 机制家族(bossArchetypes)数据完整性守卫:ARCHETYPES 8 家族此前零 spec(仅 samsara.spec 注释提及),而每场 Boss 战都吃这张表——新增守卫钉死键与类型联合一一对应无缺无余、id==key、名/印/述非空、印各唯一且单汉字、coreMods/数值人格(攻防血倍率)有限为正、相位阈值 ∈(0,1) 且多相位严格递减、技能 mult 有限为正且 rate∈(0,1];变异证明:把 berserk 相位阈值改成 NaN → 相位序测试转红
 - 相元挑战(undertakeChallenge)入场/清败原子守卫:零覆盖审计发现 verifyChallenge 只在今日天道 spec 里走过定价,真正「立约应战」(扣入场费→真打→赏/记谱)无人看守——新增 spec 走真实 combat(不 mock 防压弱 celestialStats):真仙(major9)裸装必败赤炎天、混沌顶配必清;顶配清:扣 CHALLENGE_ENTRY_COST=15、赏裁判定价 rewardDaoSource、记 best_custom 纪录与 first_custom 里程碑;裸装败:不赏不记谱但入场费照扣;道源不足 → null 不进场不扣账;变异证明:临时砍掉清后发奖 → 顶配清测试转红
 - 今日天道确定性守卫:dailyChallenge 全模块此前零 spec,而「按日期种子确定性生成(刷新不换题)」是anti-farm 的根基——新增 spec 钉死同日两次生成题面深度相等、不吞全局随机(Math.random 干扰无影响)、跨 UTC 日 day 号随种子换;变异证明:给种子加 Math.random 随机盐 → 同日生成即不同题,两案转红
 - 师承跨世保留守卫:rebirth 的「外物归零」清单(灵兽/突破准备/洞府/道童)会让人误把师承一并清掉,player.rebirth.spec 却零断言——新增对照守卫钉死 DEC-003 的口径:师承是「我是谁」的成长思想,转世保留(对照灵兽随皮囊归零),且一经确立不可更改、转世亦然(另投他门被拒);变异证明:在 rebirth 里临时清 mentor.value → 保留测试转红
