@@ -64,7 +64,7 @@ export const STORE_NAMES: Record<string, string> = {
   endgame: '终局',
   lore: '认知',
   market: '坊市',
-  apprentice: '收徒',
+  apprentice: '道童',
   bounty: '悬赏',
   pacing: '节奏遥测',
   diag: '异常留档'

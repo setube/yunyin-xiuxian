@@ -1,24 +1,24 @@
 <template>
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
-    <!-- 门面:槽位 + 灵石 + 收徒入口 -->
+    <!-- 门面:槽位 + 灵石 + 招道童入口 -->
     <div class="card-ink flex items-center justify-between px-4 py-3">
       <div>
-        <p class="font-kai text-[14px] tracking-widest text-ink">收徒</p>
-        <p class="text-[10px] text-ink-faint">弟子跑腿 · 后台自长</p>
+        <p class="font-kai text-[14px] tracking-widest text-ink">道童</p>
+        <p class="text-[10px] text-ink-faint">道童跑腿 · 后台自长</p>
       </div>
       <div class="flex items-center gap-3">
         <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
           <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
         </p>
         <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull" @click="doRecruit">
-          收徒<span v-if="!slotsFull" class="ml-1 text-[10px]">({{ recruitCostLine }})</span>
+          收道童<span v-if="!slotsFull" class="ml-1 text-[10px]">({{ recruitCostLine }})</span>
         </button>
       </div>
     </div>
 
-    <!-- 弟子列表 -->
+    <!-- 道童列表 -->
     <section>
-      <SectionTitle title="门下弟子" :hint="`${appr.apprentices.length}/${slots}`" />
+      <SectionTitle title="座下道童" :hint="`${appr.apprentices.length}/${slots}`" />
       <div class="mt-2 space-y-2">
         <div v-for="a in apprenticesList" :key="a.uid" class="card-ink p-3">
           <!-- 顶部:名号 / 境界层 / 状态 -->
@@ -55,11 +55,11 @@
           </div>
         </div>
         <p v-if="apprenticesList.length === 0" class="px-2 py-4 text-center text-[11px] text-ink-faint">
-          尚无一徒 —— 先收一名进门,门庭遂有生气。
+          尚无一童 —— 先收一名道童进门,门庭遂有生气。
         </p>
       </div>
       <p class="mt-2 text-[10px] leading-relaxed text-ink-faint">
-        弟子按时辰走工,离线亦照此工期;归来之时自会带回资材。天赋门类产出更丰。
+        道童按时辰走工,离线亦照此工期;归来之时自会带回资材。天赋门类产出更丰。
       </p>
     </section>
   </div>
@@ -80,6 +80,7 @@
     type ApprenticeSpec
   } from '@/data/apprentices'
   import type { TaskSpoils } from '@/core/apprenticeService'
+  import { HERB_GRADE_NAMES, herbGradeOfMajor } from '@/data/herbGrades'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 
@@ -117,20 +118,20 @@
 
   function dispatcher(uid: string, spec: ApprenticeSpec): void {
     if (appr.dispatch(uid, spec, Date.now())) {
-      ui.toast('已遣弟子前往', 'info')
+      ui.toast('已遣道童前往', 'info')
     }
   }
 
   function doRecruit(): void {
     const result = appr.recruit(player.major)
-    if (result === 'ok') ui.toast('新收一名弟子入门', 'success')
+    if (result === 'ok') ui.toast('新收一名道童入门', 'success')
     else if (result === 'poor') ui.toast('灵石不足', 'warn')
     else ui.toast('门中已满', 'info')
   }
 
   function spoilsText(s: TaskSpoils): string {
     const parts: string[] = []
-    if (s.herb) parts.push(`灵草×${s.herb}`)
+    if (s.herb) parts.push(`${HERB_GRADE_NAMES[herbGradeOfMajor(player.major)]}×${s.herb}`)
     if (s.ore) parts.push(`玄铁×${s.ore}`)
     if (s.dust) parts.push(`器尘×${s.dust}`)
     if (s.wudao) parts.push(`悟道×${s.wudao}`)
@@ -139,11 +140,11 @@
     return parts.join(' · ')
   }
 
-  /** 收割所有已完工弟子;回来的就报一声带回什么 */
+  /** 收割所有已完工道童;回来的就报一声带回什么 */
   function reap(): void {
     const reaped = appr.collectFinished(now.value, player.major)
     for (const s of reaped) {
-      ui.toast(`弟子归来,带回 ${spoilsText(s)}`, 'success')
+      ui.toast(`道童归来,带回 ${spoilsText(s)}`, 'success')
     }
   }
 

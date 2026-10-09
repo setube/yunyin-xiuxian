@@ -10,7 +10,9 @@ import { persistConfig } from '@/utils/storage'
 import { rng } from '@/utils/random'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
+import { usePlayerStore } from '@/stores/player'
 import { stoneByTier } from '@/core/formulas'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import {
   APPRENTICE_MAX_LEVEL,
   APPRENTICES,
@@ -47,7 +49,8 @@ function clampLevel(v: unknown): number {
 function applySpoils(spoils: TaskSpoils): void {
   const resources = useResourcesStore()
   const inventory = useInventoryStore()
-  if (spoils.herb) resources.addSmall('herb', spoils.herb)
+  // 采药按玩家当前大境界的品阶显式入账(五品分账;与五品经济同口径)
+  if (spoils.herb) resources.addHerb(herbGradeOfMajor(usePlayerStore().major), spoils.herb)
   if (spoils.ore) resources.addSmall('ore', spoils.ore)
   if (spoils.dust) resources.addSmall('dust', spoils.dust)
   if (spoils.wudao) resources.addSmall('wudao', spoils.wudao)
