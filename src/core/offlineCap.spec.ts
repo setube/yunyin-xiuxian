@@ -12,11 +12,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { settleOffline } from './offline'
+import { checkStateAchievements } from './progress'
 import { studyTick } from './loreService'
 import { useLoreStore } from '@/stores/lore'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
+import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { todayWeather } from './weather'
 import { gn, mulN, toNum } from '@/utils/gnum'
@@ -240,5 +242,103 @@ describe('离线结算同源吃天时(ISS-027 续)', () => {
       expect(expected, `major ${major} 期望增益为 0,断言形同虚设`).toBeGreaterThan(0)
       expect(gained / expected, `major ${major} 离线增益偏离 0.9 折扣:${(gained / expected).toFixed(4)}`).toBeCloseTo(1, 3)
     }
+  })
+})
+
+/**
+ * 离线总结「报数 == 实发」守卫。
+ *
+ * 回归点:离线结算在各条产线落账后,于 offline.ts:327-345 汇总 `OfflineSummary`
+ * (stone/qi/herb/herbByGrade/ore/wudao/ageYears + capped/cappedSeconds)。这些数全靠
+ * 与结算前快照做差得到,却从未被断言「报的数 == 玩家实际到手的数」——一旦汇总口径
+ * 漂移(差值错位、逐品漏档、cap 标签写死),玩家在归来卷轴看到的就是「说谎的数」,
+ * 而 CI 毫无反应。这里用受控起始态过一遍真实 settleOffline,逐项核对报数与实发。
+ *
+ * 每个 `it` 独立 pinia(离线结算会改多店状态),避免互相污染。
+ */
+describe('离线总结报数 == 实发', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('非封顶段:stone/qi/herb/herbByGrade/ore/wudao/ageYears 报数==实发,cap 恒假', () => {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const dongfu = useDongfuStore()
+    player.major = 3
+    dongfu.setLevel('field', 3) // 灵田在产,让 herb/ore 真实走通
+    dongfu.setLevel('library', 3) // 藏经阁让 wudao 真实走通
+    // 先排掉「首次 track('offlineClaims') 时被一并补发的主线/境界成就一次性石头/灵草」——
+    // 那是成就系统的账,不在离线总结的管辖内;不排掉会用原始总额差污染 "报数==实发" 断言
+    checkStateAchievements()
+    game.markStarted()
+    game.lastActiveAt = Date.now() - 3600 * 1000 // 1h 前最后在线;洞府 0 级 cap 8h -> 非封顶
+
+    const s0 = toNum(resources.spiritStone)
+    const q0 = resources.qi
+    const h0 = resources.herb
+    const o0 = resources.ore
+    const w0 = resources.wudao
+    const age0 = player.age
+    const herbBefore = { ...resources.herbByGrade }
+
+    const summary = settleOffline(Date.now())
+    expect(summary, '1h 离线应结算').not.toBeNull()
+    const sm = summary!
+
+    expect(sm.capped, '1h 未达 8h 封顶').toBe(false)
+    expect(sm.seconds).toBe(3600)
+    expect(sm.cappedSeconds, '非封顶时带报完整秒数').toBe(3600)
+
+    // 报数 == 实发(以结算后快照差为准,逐项核对)
+    expect(toNum(resources.spiritStone) - s0, 'stone 实发').toBeCloseTo(toNum(sm.stone), 3)
+    expect(Math.round(resources.qi - q0), 'qi 实发(取整)').toBe(sm.qi)
+    expect(Math.round(player.age - age0), 'ageYears 实发').toBe(sm.ageYears)
+    expect(resources.herb - h0, 'herb 实发').toBe(sm.herb)
+    expect(resources.ore - o0, 'ore 实发').toBe(sm.ore)
+    expect(resources.wudao - w0, 'wudao 实发').toBe(sm.wudao)
+
+    // 灵田真实在产(否则下面逐品核对形同虚设)
+    expect(sm.herb, '灵田应产出灵草').toBeGreaterThan(0)
+    // 总 herb == 逐品净增之和
+    const gradeSum = sm.herbByGrade.reduce((a, e) => a + e.amount, 0)
+    expect(gradeSum, '总 herb 应等于逐品之和').toBe(sm.herb)
+    // 逐品净增 == 实际该品增量
+    for (const e of sm.herbByGrade) {
+      expect(resources.herbOf(e.grade) - (herbBefore[e.grade] ?? 0), `品${e.grade} 逐品实发`).toBe(e.amount)
+    }
+  })
+
+  it('封顶段:capped/cappedSeconds/seconds 报数正确,实发按 cap 折算且寿元不封顶', () => {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const dongfu = useDongfuStore()
+    player.major = 3
+    dongfu.setLevel('field', 3)
+    dongfu.setLevel('library', 3)
+    checkStateAchievements() // 排掉首次 track 补发的成就/主线一次性收益,保持断言纯净
+    game.markStarted()
+    game.lastActiveAt = Date.now() - 60 * 3600 * 1000 // 60h;洞府 0 级 cap 8h
+
+    const age0 = player.age
+    const rate = player.cultPerSec // 结算前速率(60h 修为可能当场越层,结算后会涨,须以结算前为准)
+    const summary = settleOffline(Date.now())
+    expect(summary, '60h 离线应结算').not.toBeNull()
+    const sm = summary!
+
+    const capSec = 8 * 3600 // 28800
+    const effSec = capSec * OFFLINE_EFFICIENCY
+    expect(sm.capped, '60h 超过 8h 封顶').toBe(true)
+    expect(sm.cappedSeconds, '报出真实 capSec').toBe(capSec)
+    expect(sm.seconds, '报出完整 dtSec').toBe(60 * 3600)
+
+    // 实发按 capSec 折算:修为增益对应 ~7.2h(cap×0.9),而非 ~54h(60h×0.9)
+    expect(toNum(sm.exp), '增益按 cap 折算').toBeCloseTo(rate * effSec, 3)
+    expect(toNum(sm.exp), '不得越过 cap 多给').toBeLessThan(rate * (60 * 3600) * OFFLINE_EFFICIENCY * 0.5)
+
+    // 寿元不封顶:60h 全额记账(≈60 年),而非 8h(≈8 年),且报数==实发
+    expect(sm.ageYears).toBe(Math.round(player.age - age0))
+    expect(sm.ageYears, '寿元按完整 60h 记账').toBeGreaterThanOrEqual(50)
   })
 })
