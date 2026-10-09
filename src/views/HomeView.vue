@@ -7,21 +7,7 @@
     <InstallToHomeNotice />
 
     <!-- 人物水墨主视觉 -->
-    <div class="card-ink relative overflow-hidden px-4 pb-4 pt-5">
-      <!-- 远山 -->
-      <svg class="pointer-events-none absolute inset-x-0 bottom-0 h-28 w-full fill-ink/8" viewBox="0 0 400 110" preserveAspectRatio="none">
-        <path
-          class="drift-far"
-          d="M0 110 L60 40 Q80 20 100 45 L150 95 L200 30 Q215 12 235 38 L300 100 L340 55 Q355 38 372 60 L400 90 L400 110 Z"
-          fill="currentColor"
-        />
-        <path
-          class="drift-near"
-          d="M0 110 L40 80 L110 105 L180 70 L260 108 L330 80 L400 105 L400 110 Z"
-          fill="currentColor"
-          opacity="0.6"
-        />
-      </svg>
+      <div class="card-ink relative overflow-hidden px-4 pb-4 pt-5">
       <div class="relative z-10 flex items-start justify-between">
         <div class="min-w-0 flex-1">
           <p class="text-[11px]" :class="player.lifespanRatio < LIFESPAN_WARN_RATIO ? 'text-cinnabar' : 'text-ink-faint'">
