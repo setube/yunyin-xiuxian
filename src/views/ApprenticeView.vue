@@ -19,6 +19,12 @@
     <!-- 道童列表 -->
     <section>
       <SectionTitle title="座下道童" :hint="`${appr.apprentices.length}/${slots}`" />
+      <div class="mt-1 flex items-center justify-between gap-2 px-1">
+        <span class="text-[10px] text-ink-faint">一键按需派活 · 只动闲置道童</span>
+        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="!hasIdle" @click="doDispatchAll">
+          <GameIcon name="users" :size="12" />各尽其长
+        </button>
+      </div>
       <div class="mt-2 space-y-2">
         <div v-for="a in apprenticesList" :key="a.uid" class="card-ink p-3">
           <!-- 顶部:名号 / 境界层 / 状态 -->
@@ -30,6 +36,7 @@
               <p class="flex items-center gap-2 truncate font-kai text-[14px] text-ink">
                 {{ a.def.name }}
                 <span class="rounded bg-gold-ink/10 px-1.5 text-[10px] text-gold-ink">第 {{ a.level }} 层</span>
+                <span class="rounded bg-jade/10 px-1.5 text-[10px] text-jade">{{ a.bondTitle }}</span>
               </p>
               <p class="truncate text-[10px] text-ink-faint">{{ a.def.desc }}</p>
             </div>
@@ -77,6 +84,7 @@
     APPRENTICE_TASKS,
     apprenticeDef,
     apprenticeSlots,
+    bondTitle,
     type ApprenticeSpec
   } from '@/data/apprentices'
   import type { TaskSpoils } from '@/core/apprenticeService'
@@ -96,6 +104,7 @@
 
   const slots = computed(() => apprenticeSlots(player.major))
   const slotsFull = computed(() => appr.apprentices.length >= slots.value)
+  const hasIdle = computed(() => appr.apprentices.some(a => a.task === null))
   const recruitCostLine = computed(() => `${formatGN(stoneByTier(player.major, 30))} 灵石`)
 
   const apprenticesList = computed(() =>
@@ -106,6 +115,7 @@
       return {
         uid: a.uid,
         level: a.level,
+        bondTitle: bondTitle(a.bond),
         def,
         busy,
         taskName: task?.name ?? '',
@@ -120,6 +130,12 @@
     if (appr.dispatch(uid, spec, Date.now())) {
       ui.toast('已遣道童前往', 'info')
     }
+  }
+
+  function doDispatchAll(): void {
+    const n = appr.dispatchAll(now.value)
+    if (n > 0) ui.toast(`已按需遣 ${n} 名道童出门`, 'info')
+    else ui.toast('皆已出门,候归即可', 'info')
   }
 
   function doRecruit(): void {

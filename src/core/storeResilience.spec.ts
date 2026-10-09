@@ -21,6 +21,7 @@ import { usePacingTelemetry } from '@/stores/pacingTelemetry'
 import { useLoreStore } from '@/stores/lore'
 import { useResourcesStore } from '@/stores/resources'
 import { useMarketStore } from '@/stores/market'
+import { useApprenticeStore } from '@/stores/apprentice'
 import { sanitizeOfflineInputs } from './offline'
 
 /**
@@ -282,6 +283,23 @@ describe('坏档韧性 · 复杂状态的值也要修回来(不只是"不炸")',
     player.$patch({ lifespanBonusYears: 200 } as never)
     player.sanitize()
     expect(player.lifespanBonusYears).toBe(200)
+  })
+
+  it('道童:坏羁绊夹回非负整数,老档缺 bond 补 0', () => {
+    setActivePinia(createPinia())
+    const a = useApprenticeStore()
+    a.$patch({
+      apprentices: [
+        { uid: 'b1', archId: 'ap_luanniao', level: 1, bond: NaN, task: null },
+        { uid: 'b2', archId: 'ap_youxia', level: 1, bond: -5, task: null },
+        { uid: 'b3', archId: 'ap_daotong', level: 1, task: null }
+      ] as never
+    })
+    a.sanitize()
+    expect(a.apprentices).toHaveLength(3)
+    expect(a.apprentices.find(x => x.uid === 'b1')!.bond, 'NaN 夹回 0').toBe(0)
+    expect(a.apprentices.find(x => x.uid === 'b2')!.bond, '负值夹回 0').toBe(0)
+    expect(a.apprentices.find(x => x.uid === 'b3')!.bond, '老档缺 bond 补 0').toBe(0)
   })
 
   it('资源:负数/NaN 被夹回 0,合法正数不因守卫被误伤', () => {
