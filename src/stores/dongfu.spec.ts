@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useDongfuStore } from './dongfu'
 import { BUILDINGS, ARRAY_QI_CAP_PER_LEVEL, BEAST_EFFECT_PER_LEVEL } from '@/data/buildings'
-import { FORGE_LEVEL_PER_CAP } from '@/data/constants'
+import { FIELD_HERB_PER_HOUR, FORGE_LEVEL_PER_CAP } from '@/data/constants'
+import { MAX_MAJOR } from '@/data/realms'
+import type { HerbGrade } from '@/data/herbGrades'
+import { usePlayerStore } from '@/stores/player'
+import { useResourcesStore } from '@/stores/resources'
 import { modsText } from '@/ui/statNames'
 import { readFileSync } from 'node:fs'
 import type { BuildingId } from '@/types'
@@ -167,5 +171,41 @@ describe('建筑卡与结算同源', () => {
   it('炼器台强化上限文案跟 FORGE_LEVEL_PER_CAP 走', () => {
     const forge = BUILDINGS.find(b => b.id === 'forge')!
     expect(forge.effectText(FORGE_LEVEL_PER_CAP)).toContain('强化上限 +1')
+  })
+})
+
+describe('洞府产出 · 灵田品阶(灵田等级越高产更高品)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const SECONDS = 2400 // 久到 1 级田也凑得出一整株:fieldLv × 6/3600 × 2400 = fieldLv×4 株
+  const herbCount = (fieldLv: number): number => (fieldLv * FIELD_HERB_PER_HOUR * SECONDS) / 3600
+
+  const yieldByGrade = (major: number, fieldLv: number): Record<HerbGrade, number> => {
+    const player = usePlayerStore()
+    player.major = major
+    const dongfu = useDongfuStore()
+    dongfu.setLevel('field', fieldLv)
+    dongfu.produce(SECONDS)
+    const res = useResourcesStore()
+    return { 1: res.herbOf(1), 2: res.herbOf(2), 3: res.herbOf(3), 4: res.herbOf(4), 5: res.herbOf(5) }
+  }
+
+  it('低灵田:产出当前境界品,凡境(0)只落凡品', () => {
+    expect(yieldByGrade(0, 1)).toEqual({ 1: herbCount(1), 2: 0, 3: 0, 4: 0, 5: 0 })
+  })
+
+  it('高灵田:同凡境(0)前瞻一档提到灵品(2),不越当前+1', () => {
+    expect(yieldByGrade(0, 13)).toEqual({ 1: 0, 2: herbCount(13), 3: 0, 4: 0, 5: 0 })
+  })
+
+  it('高境界低灵田:仍保当前品下限,不掉回低品', () => {
+    // 道品(5)境、1 级田:田上限只是凡品,但 max(当前品=5) 兜住,仍给道品
+    expect(yieldByGrade(MAX_MAJOR, 1)).toEqual({ 1: 0, 2: 0, 3: 0, 4: 0, 5: herbCount(1) })
+  })
+
+  it('到顶不越道品(5):混沌海拉满灵田仍止于道品', () => {
+    expect(yieldByGrade(MAX_MAJOR, 15)).toEqual({ 1: 0, 2: 0, 3: 0, 4: 0, 5: herbCount(15) })
   })
 })
