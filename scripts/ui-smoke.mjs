@@ -44,6 +44,8 @@ const ROUTES = [
   '/',
   '/cultivation',
   '/adventure',
+  '/apprentice',
+  '/market',
   '/inventory',
   '/character',
   '/codex',
