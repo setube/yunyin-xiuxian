@@ -60,6 +60,30 @@ describe('真仙终局服务', () => {
     expect(resources.ore).toBe(5) // 余数保留
   })
 
+  it('熔炉的草唯仙品起可熔:凡/灵不入炉、按品实扣,不白拿道源(over-credit 修)', () => {
+    ascend()
+    const resources = useResourcesStore()
+    const endgame = useEndgameStore()
+    const rate = FURNACE_RATES.find(r => r.resource === 'herb')! // per 60
+    // 凡品 40 + 灵品 20 = 60,但凡/灵不入炉 → meltable 0,既熔不了也入不了账
+    resources.$patch({ herbByGrade: { 1: 40, 2: 20, 3: 0, 4: 0, 5: 0 } })
+    expect(furnaceConvert(rate)).toBe(0)
+    expect(endgame.daoSource).toBe(0)
+    // 仙品 120 → 2 缕,只扣仙品,凡/灵分毫未动
+    resources.$patch({ herbByGrade: { 1: 40, 2: 20, 3: 120, 4: 0, 5: 0 } })
+    expect(furnaceConvert(rate)).toBe(2)
+    expect(endgame.daoSource).toBe(2)
+    expect(resources.herbMeltable).toBe(0)
+    expect(resources.herbByGrade[1] + resources.herbByGrade[2], '凡/灵品不入炉').toBe(60)
+    // 跨品:仙 30 + 神 35 = 65 → 1 缕,自低品起扣 60(仙30+神30),神余 5;道源只按实扣入账
+    endgame.daoSource = 0
+    resources.$patch({ herbByGrade: { 1: 0, 2: 0, 3: 30, 4: 35, 5: 0 } })
+    expect(furnaceConvert(rate)).toBe(1)
+    expect(endgame.daoSource).toBe(1)
+    expect(resources.herbByGrade[3]).toBe(0)
+    expect(resources.herbByGrade[4]).toBe(5)
+  })
+
   it('道源凝道果:走既有软上限体系', () => {
     ascend()
     const endgame = useEndgameStore()

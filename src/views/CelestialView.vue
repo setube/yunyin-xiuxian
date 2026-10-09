@@ -614,7 +614,7 @@
 
     <!-- 天道熔炉 -->
     <BaseModal :open="furnaceOpen" title="天道熔炉" @close="furnaceOpen = false">
-      <p class="mb-2 text-[11px] leading-relaxed text-ink-faint">前尘俗物,皆可熔作道源。</p>
+      <p class="mb-2 text-[11px] leading-relaxed text-ink-faint">前尘俗物,皆可熔作道源。灵草唯仙品以上可入炉(凡/灵品只走坊市换灵石)。</p>
       <div class="card-ink divide-y divide-ink/6 px-4">
         <div v-for="row in furnaceRows" :key="row.rate.resource" class="py-2.5">
           <div class="flex items-center justify-between gap-2">
@@ -891,9 +891,10 @@
   watch(furnaceOpen, open => {
     if (!open) furnaceConfirm.value = null
   })
-  /** 全熔一包可得道源(预览,与 furnaceConvert 同口径 floor(have/per)) */
+  /** 全熔一包可得道源(预览,与 furnaceConvert 同口径 floor(have/per));灵草按仙品+计 */
   function furnacePreview(rate: FurnaceRate): number {
-    return Math.floor(resources[rate.resource] / rate.per)
+    const have = rate.resource === 'herb' ? resources.herbMeltable : resources[rate.resource]
+    return Math.floor(have / rate.per)
   }
   function doFurnace(rate: FurnaceRate): void {
     furnaceConfirm.value = null
@@ -1245,5 +1246,5 @@
     }
   }
 
-  const furnaceRows = computed(() => FURNACE_RATES.map(rate => ({ rate, have: resources[rate.resource] })))
+  const furnaceRows = computed(() => FURNACE_RATES.map(rate => ({ rate, have: rate.resource === 'herb' ? resources.herbMeltable : resources[rate.resource] as number })))
 </script>

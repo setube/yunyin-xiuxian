@@ -45,7 +45,7 @@ export function daoSourceDialog(): ResourceDialogData {
     name: '道源',
     role: DAO_SOURCE_ROLE,
     roleTone: 'action',
-    intro: '真仙之后用于叩问天道的资源。',
+    intro: '真仙之后用于叩问天道的资源。灵草唯仙品起可献祭;凡/灵品只走坊市换灵石。',
     usages: DAO_SOURCE_USAGES,
     gains: ['破界', '天道试炼', '天道挑战', '天道熔炉'],
     lifecycle: '本世使用,可通过凝道果转化为永久成长。'

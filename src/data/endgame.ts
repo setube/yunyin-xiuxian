@@ -496,8 +496,25 @@ export const FURNACE_RATES: FurnaceRate[] = [
 export const FURNACE_STONE_TIER_AMOUNT = 300
 export const FURNACE_STONE_DAO_SOURCE = 5
 
-/** 道源凝道果:数值成长唯一出口,受道果软上限约束 */
-export const DAO_SOURCE_PER_FRUIT = 100
+/**
+ * 道源凝道果:数值成长唯一出口,受道果软上限约束。
+ *
+ * 凝一枚道果的**时长**由 economySim 的 daoCostHours 守:它 = DAO_SOURCE_PER_FRUIT ÷
+ * 熔炉每小时道源潜力,且必须在整条界外长尾上**不随层级漂移**(ISS-214 红线)。
+ * 从 100 抬到 200,即把「凝一枚道果」的典型时长从 ~1h 拉到 ~2~3h(实测 daoCostHours
+ * 全境 ~1.8~3.4h,中心 ~2.5h) —— 道果更稀缺、终局节奏更慢、每一枚更重
+ * (design: 道果价恒定、熔炉平算,品位价值走灵石)。
+ */
+export const DAO_SOURCE_PER_FRUIT = 200
+
+/**
+ * 熔炉可熔灵草的**最低品阶**。
+ *
+ * 道源是**仙**才开始有的货币:凡/灵品草(人间界)只有坊市→灵石一条出路,永不入炉;
+ * 仙/神/道品草(天/神/混沌海)才进天道熔炉。esourceOverCredit 修:
+ * 熔炉 herb 按「≥此品的总和」计、也按这些品实际扣料,凡/灵品不入账。
+ */
+export const FURNACE_HERB_MIN_GRADE = 3
 
 /**
  * 远征行程:0 ~ ROUTE_LAYERS-1 为「重」层择路,ROUTE_LAYERS 为界主层。

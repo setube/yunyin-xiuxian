@@ -23,6 +23,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore } from '@/stores/endgame'
 import { condenseDaoFruit } from './endgameService'
 import { effectiveDaoFruit } from './statsCalc'
+import { DAO_SOURCE_PER_FRUIT } from '@/data/endgame'
 
 describe('S1 生命周期语义', () => {
   it('道源=此世消耗,道果=永久积累', () => {
@@ -100,7 +101,7 @@ describe('S6 认知埋点', () => {
 
   it('埋点统计:道源/道果/教学标记/说明弹窗', () => {
     const endgame = useEndgameStore()
-    endgame.addDaoSource(100)
+    endgame.addDaoSource(DAO_SOURCE_PER_FRUIT)
     condenseDaoFruit()
     markResourceDialogSeen()
     const stats = cognitionStats()
