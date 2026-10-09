@@ -108,6 +108,29 @@ describe('膨胀治理 · 境界跨越', () => {
     expect(last.leapMult).toBeLessThan(8)
     expect(last.detach).toBeLessThan(2)
   })
+
+  it('界外每一跃脱节纳入纳管:天堑不塌成绝壁,蓄力不溢成跳崖', () => {
+    // 人界各跃本就有界(平均脱节 <1.15、单跃 <1.25);界外(fromMajor>8)此前**只打印不设防**。
+    // 实测三档(随缘/常规/极限)界外脱节在 0.31~2.21:
+    //  - 神将→神王贴近 0.3:界外一境一天堑,内容刻意领先(晚境更难)属设计;
+    //  - 太乙→大罗 / 混沌真灵→神魔贴近 2.2:装备换代那一下的蓄力落差,内容一时没跟上。
+    // 两条都不许再恶化 → 上界 2.5(蓄力不得把内容甩得更开,甩开那段境=白给)、
+    // 下界 0.25(天堑不得塌成绝壁,塌了晚境=卡死)。镜像人界的逐跃断言,只是界外带宽更宽。
+    for (const profile of GEAR_PROFILES) {
+      const rows = realmLeapAudit(profile)
+      for (const r of rows.filter(x => x.fromMajor > 8)) {
+        const name = `${REALMS[r.fromMajor]!.name}→${REALMS[r.toMajor]!.name}`
+        expect(
+          r.detach,
+          `${profile.name} ${name} 脱节 ${r.detach.toFixed(2)} 破上界:内容被甩开,该境变白给`
+        ).toBeLessThan(2.5)
+        expect(
+          r.detach,
+          `${profile.name} ${name} 脱节 ${r.detach.toFixed(2)} 破下界:内容压过头,成绝壁`
+        ).toBeGreaterThan(0.25)
+      }
+    }
+  })
 })
 
 describe('膨胀治理 · 内容覆盖', () => {
