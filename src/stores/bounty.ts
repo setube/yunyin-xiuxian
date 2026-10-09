@@ -14,8 +14,17 @@ import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { qualityDef } from '@/data/qualities'
 import { BOUNTY_REFRESH_SECONDS, type BountyKind, type BountySlot } from '@/data/bounty'
-import { equipBountyReward, generateBounty } from '@/core/bountyService'
+import { equipBountyReward, generateBounty, herbBountyReward } from '@/core/bountyService'
+import { HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
+
+/** 募草交货挑品:自**低品**起挑一档「够 target 交得动」的,交掉它(保高阶给方子) */
+function pickHerbDeliverGrade(resources: { herbOf(g: HerbGrade): number }, target: number): HerbGrade | null {
+  for (const g of HERB_GRADES) {
+    if (resources.herbOf(g) >= target) return g
+  }
+  return null
+}
 
 export type BountyClaimResult = 'ok' | 'claimed' | 'insufficient' | 'nobag' | 'missing'
 
@@ -90,10 +99,17 @@ export const useBountyStore = defineStore(
       const inventory = useInventoryStore()
 
       if (slot.kind === 'herb' || slot.kind === 'ore') {
-        const matId = slot.kindId === 'ore' ? 'ore' : 'herb'
-        if (!resources.hasSmall(matId, slot.target)) return 'insufficient'
-        resources.spendSmall(matId, slot.target)
-        resources.addStone(slot.reward)
+        if (slot.kind === 'ore') {
+          if (!resources.hasSmall('ore', slot.target)) return 'insufficient'
+          resources.spendSmall('ore', slot.target)
+          resources.addStone(slot.reward)
+        } else {
+          // 任意品阶可交:自低品起挑一档够 target 的交,价按**所交之品**(不滞销旧草)
+          const grade = pickHerbDeliverGrade(resources, slot.target)
+          if (!grade) return 'insufficient'
+          resources.spendHerb(grade, slot.target)
+          resources.addStone(herbBountyReward(grade, slot.target))
+        }
       } else if (slot.kind === 'pill') {
         if ((inventory.pills[slot.kindId] ?? 0) < slot.target) return 'insufficient'
         inventory.spendPill(slot.kindId, slot.target)

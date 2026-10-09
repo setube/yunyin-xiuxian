@@ -177,14 +177,18 @@ describe('坊市 · 买卖', () => {
     expect(market.sellPill('p_jvqisan'), '还有货可再卖').toBe(true)
   })
 
-  it('即时售材:走一批扣库存、入账灵石;不够一批则不成', () => {
+  it('即时售材:玄铁走一批扣库存入账;灵草按品(低品不够不售、高品够则按该品售)', () => {
     const market = useMarketStore()
     const resources = useResourcesStore()
-    resources.herbByGrade[1] = 10 // 不到一批 12
+    resources.herbByGrade[1] = 10 // 凡品不足一批 12
+    resources.herbByGrade[5] = 20 // 道品够一批
     resources.ore = 20
     resources.spiritStone = gn(0)
-    expect(market.sellMaterial('herb', 0), '不够一批不售').toBe(false)
-    expect(market.sellMaterial('ore', 0)).toBe(true)
+    expect(market.sellHerb(1), '不够一批不售').toBe(false)
+    expect(market.sellHerb(5), '高品够则售').toBe(true)
+    expect(resources.herbByGrade[5]).toBe(20 - MARKET_MAT_COUNT)
+    expect(resources.herbByGrade[1], '低品分毫未动').toBe(10)
+    expect(market.sellMaterial(0)).toBe(true)
     expect(resources.ore).toBe(20 - MARKET_MAT_COUNT)
     expect(toNum(resources.spiritStone)).toBeGreaterThan(0)
   })

@@ -25,7 +25,8 @@ import {
   type ConsignPost,
   type MarketSlot
 } from '@/data/market'
-import { consignPrice, generateMarketStock, marketEquipInstance, materialSellPrice, pillSellPrice } from '@/core/marketService'
+import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, materialSellPrice, pillSellPrice } from '@/core/marketService'
+import type { HerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
 
 export type MarketBuyResult = 'ok' | 'sold' | 'poor' | 'bagfull' | 'missing'
@@ -193,16 +194,25 @@ export const useMarketStore = defineStore(
       return true
     }
 
-    /** 即时售一批材料(与货架购入同单位数) */
-    function sellMaterial(matId: 'herb' | 'ore', major: number): boolean {
+    /** 即时售一批**玄铁**(与货架购入同单位数);灵草走 sellHerb(按品) */
+    function sellMaterial(major: number): boolean {
       const resources = useResourcesStore()
-      if (!resources.hasSmall(matId, MARKET_MAT_COUNT)) return false
-      resources.spendSmall(matId, MARKET_MAT_COUNT)
-      resources.addStone(materialSellPrice(matId, major))
+      if (resources.ore < MARKET_MAT_COUNT) return false
+      resources.spendSmall('ore', MARKET_MAT_COUNT)
+      resources.addStone(materialSellPrice(major))
       return true
     }
 
-    return { stock, stockedAt, consign, sanitize, sync, buy, consignEquip, collectConsign, sellPill, sellMaterial }
+    /** 即时售一批**任意品阶**灵草(按该品计价;凡/灵品旧草也有出口,不留死货) */
+    function sellHerb(grade: HerbGrade): boolean {
+      const resources = useResourcesStore()
+      if (resources.herbOf(grade) < MARKET_MAT_COUNT) return false
+      resources.spendHerb(grade, MARKET_MAT_COUNT)
+      resources.addStone(herbSellBatch(grade))
+      return true
+    }
+
+    return { stock, stockedAt, consign, sanitize, sync, buy, consignEquip, collectConsign, sellPill, sellMaterial, sellHerb }
   },
   { persist: persistConfig('market') }
 )
