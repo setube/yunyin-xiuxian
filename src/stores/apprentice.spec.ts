@@ -57,6 +57,24 @@ describe('收徒 · 派发与收割', () => {
     expect(a.apprentices[0]!.level).toBe(3)
   })
 
+  it('位阶(羁绊)纯叙事:不同位阶的道童完成同一任务,产出逐项相同', () => {
+    const a = useApprenticeStore()
+    // 两名 ap_luanniao(天赋 herb),同等级同任务,只差 bond:0(道童)vs 100(真传)
+    a.$patch({
+      apprentices: [
+        { uid: 'low', archId: 'ap_luanniao', level: 3, bond: 0, task: { spec: 'herb', startAt: 0, finishAt: 1 } },
+        { uid: 'hi', archId: 'ap_luanniao', level: 3, bond: 100, task: { spec: 'herb', startAt: 0, finishAt: 1 } }
+      ]
+    } as never)
+    const reaped = a.collectFinished(9999, 0)
+    expect(reaped, '两人都完工').toHaveLength(2)
+    // 产出与时长必须逐项一致 —— 位阶是纯叙事,不可误当产出加成(描述即承诺)
+    expect(reaped[1], '真传不该比道童多产出').toEqual(reaped[0])
+    // 位阶只影响称谓,不改产出;完工仍各自 +1(互不串扰)
+    expect(a.apprentices.find(x => x.uid === 'low')!.bond).toBe(1)
+    expect(a.apprentices.find(x => x.uid === 'hi')!.bond).toBe(101)
+  })
+
   it('采药给草按「当前大境界」品阶入账(与采集按地界相反)', () => {
     const player = usePlayerStore()
     player.major = 12 // 当前大境界已是仙品(3)
