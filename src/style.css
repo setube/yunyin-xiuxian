@@ -223,15 +223,6 @@
   }
 }
 
-@keyframes drift {
-  from {
-    transform: translateX(-4px);
-  }
-  to {
-    transform: translateX(4px);
-  }
-}
-
 @keyframes ink-wave {
   0% {
     opacity: 0.55;
@@ -950,14 +941,6 @@ html[data-theme='dark'] .btn-seal:disabled {
 }
 .ink-dots span:nth-child(3) {
   animation-delay: 0.3s;
-}
-
-/* 远山视差:两层山错速缓漂 */
-.drift-far {
-  animation: drift 26s ease-in-out infinite alternate;
-}
-.drift-near {
-  animation: drift 18s ease-in-out infinite alternate-reverse;
 }
 
 /* 本世之界;眼下将赴的那一处 —— 节点外圈潺潺脉动,替玩家在图上指路。
