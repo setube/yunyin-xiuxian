@@ -147,3 +147,26 @@ describe('远征 · 判定看得见', () => {
     )
   })
 })
+
+describe('远征 · 败战即结(不留残局续打)', () => {
+  it('裸装真仙入赤炎天:扣了入界价、首战败 → type=lost、worldRun 清空', () => {
+    // 无装 = 空属性战力,赤炎天首战(界内敌人)必败——确定性败战
+    seated(9, [], 'heaven', 20)
+    const eg = useEndgameStore()
+    const chiyan = world('chiyan')
+    const before = eg.daoSource
+    const outcome = startWorldExpedition(chiyan.id, null)
+    expect(outcome).not.toBeNull()
+    expect(before - eg.daoSource, '确已入界定战(非开船前被拒)').toBe(chiyan.entryCost)
+    expect(outcome!.type).toBe('lost')
+    // settle 会把 worldRun 清空:败战即结束本趟,不留下可免费续打的残局
+    expect(eg.worldRun).toBeNull()
+  })
+
+  it('败战不留连胜/不退层(本就无可续):run 被清,无累计累增状态漂移', () => {
+    seated(9, [], 'heaven', 20)
+    const outcome = startWorldExpedition('chiyan', null)
+    expect(outcome!.type).toBe('lost')
+    expect(useEndgameStore().worldRun).toBeNull()
+  })
+})
