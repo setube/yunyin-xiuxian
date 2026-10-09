@@ -14,6 +14,8 @@ import {
   OFFLINE_CAP_HOURS
 } from '@/data/constants'
 import { mergeMods } from '@/core/statsCalc'
+import { usePlayerStore } from '@/stores/player'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { useResourcesStore } from './resources'
 
 export const useDongfuStore = defineStore(
@@ -133,6 +135,7 @@ export const useDongfuStore = defineStore(
     /** 建筑产出(灵田/藏经阁),按秒推进 */
     function produce(dtSec: number): void {
       const resources = useResourcesStore()
+      const player = usePlayerStore()
       const fieldLv = levels.value.field
       const libLv = levels.value.library
       if (fieldLv > 0) {
@@ -146,7 +149,14 @@ export const useDongfuStore = defineStore(
         const whole = Math.floor(frac.value[key])
         if (whole >= 1) {
           frac.value[key] -= whole
-          resources.addSmall(key, whole)
+          /**
+           * 灵田 = 当前品阶的稳定水龙头。区域采集按「地界」给品(回头刷低境只给低品),
+           * 唯独灵田恒定喂「玩家当前大境界品阶」—— 保证升境后当前境界方子要的那一品
+           * 永远有稳定来源、不至于断丹。与坊市买 / 道童采 / 事件普发(全走当前品)同口径,
+           * 与区域按地界给品互补。ore/wudao 两行不涉品阶,维持原样。
+           */
+          if (key === 'herb') resources.addHerb(herbGradeOfMajor(player.major), whole)
+          else resources.addSmall(key, whole)
         }
       }
     }
