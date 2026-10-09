@@ -170,4 +170,19 @@ describe('修行目标(Phase 29)', () => {
     useResourcesStore().herbByGrade[1] = 0 // 灵草见底
     expect(generateCurrentGoal(player)).toBeNull()
   })
+
+  it('当前品见底而旧品成堆 → 仍提示采集(跨品总和会掩盖断粮)', () => {
+    const player = usePlayerStore()
+    player.initCharacter('目标', { roots: [] } as never)
+    player.exp = gnZero()
+    const adventure = useAdventureStore()
+    adventure.unlocked = ['qingyun']
+    adventure.cleared = ['qingyun']
+    // 凡品 0(当前境可炼数)、却囤着一堆高品草 —— 旧口径 resources.herb(总和)读 500 会放过这次断粮
+    useResourcesStore().herbByGrade[1] = 0
+    useResourcesStore().herbByGrade[3] = 500
+    const goal = generateCurrentGoal(player)!
+    expect(goal.type, '当前品断粮就该提示采集,不能被旧品掩盖').toBe('material')
+    expect(goal.progress).toBe(0)
+  })
 })

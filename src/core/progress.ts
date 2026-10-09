@@ -11,6 +11,7 @@ import { LIFESPAN_CRITICAL_RATIO, QI_RICH_RATIO } from '@/data/constants'
 import { titleDef } from '@/data/titles'
 import { pillDef } from '@/data/pills'
 import { buffDef } from '@/data/buffs'
+import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
 import { baseCultPerSec, stoneByTier } from './formulas'
 import { formatGN } from '@/utils/format'
 import { usePlayerStore } from '@/stores/player'
@@ -31,7 +32,7 @@ function resourceParts(bundle: RewardBundle): string[] {
   const lines: string[] = []
   if (bundle.stoneTier) lines.push(`灵石 +${formatGN(stoneByTier(playerTier(), bundle.stoneTier))}`)
   if (bundle.wudao) lines.push(`悟道点 +${bundle.wudao}`)
-  if (bundle.herb) lines.push(`灵草 +${bundle.herb}`)
+  if (bundle.herb) lines.push(`${HERB_GRADE_SHORT[herbGradeOfMajor(usePlayerStore().major)]}灵草 +${bundle.herb}`)
   if (bundle.ore) lines.push(`玄铁 +${bundle.ore}`)
   if (bundle.page) lines.push(`残页 +${bundle.page}`)
   if (bundle.dust) lines.push(`器灵尘 +${bundle.dust}`)
