@@ -40,7 +40,7 @@ const CATEGORIES = [
   },
   {
     name: 'Features    玩法·坊市/收徒/悬赏',
-    match: ['market.spec', 'apprentice.spec', 'apprentices.spec', 'bounty.spec', 'bountyService.spec']
+    match: ['market.spec', 'apprentice.spec', 'apprenticeService.spec', 'apprentices.spec', 'bounty.spec', 'bountyService.spec']
   }
 ]
 
