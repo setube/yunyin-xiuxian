@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useDongfuStore, fieldHerbGrade } from './dongfu'
 import { BUILDINGS, ARRAY_QI_CAP_PER_LEVEL, BEAST_EFFECT_PER_LEVEL } from '@/data/buildings'
-import { FIELD_HERB_PER_HOUR, FORGE_LEVEL_PER_CAP } from '@/data/constants'
+import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, FORGE_LEVEL_PER_CAP, LIBRARY_WUDAO_PER_HOUR } from '@/data/constants'
 import { MAX_MAJOR } from '@/data/realms'
 import type { HerbGrade } from '@/data/herbGrades'
 import { usePlayerStore } from '@/stores/player'
@@ -318,5 +318,63 @@ describe('洞府产出 · 跨整界原子(拆批等值/余数进位)', () => {
     const grade = fieldHerbGrade(player.major, 1)
     d.produce(600) // 恰 1 株
     expect(useResourcesStore().herbByGrade[grade] ?? 0).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('洞府产出 · 长时间量级(长时整发恰准/拆批等值不漂)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const herbTotal = (): number => Object.values(useResourcesStore().herbByGrade).reduce((a, b) => a + (b ?? 0), 0)
+  const wudaoTotal = (): number => useResourcesStore().wudao
+  const oreTotal = (): number => useResourcesStore().ore
+
+  it('长时单次(field/library 2 × 200000s ≈ 55.6h)产出恰按 floor 整发,余数收进 [0,1) 不丢不漂', () => {
+    // lv2:herb = 2*6*dt/3600、ore = 2*2.4*dt/3600、wudao = 2*1.5*dt/3600 (dt=200000 → 666.67/266.67/166.67)
+    const d = useDongfuStore()
+    d.levels.field = 2
+    d.levels.library = 2
+    const herbBefore = herbTotal()
+    const wudaoBefore = wudaoTotal()
+    const oreBefore = oreTotal()
+    d.produce(200_000)
+    expect(herbTotal() - herbBefore).toBe(Math.floor((2 * FIELD_HERB_PER_HOUR * 200_000) / 3600))
+    expect(oreTotal() - oreBefore).toBe(Math.floor((2 * FIELD_ORE_PER_HOUR * 200_000) / 3600))
+    expect(wudaoTotal() - wudaoBefore).toBe(Math.floor((2 * LIBRARY_WUDAO_PER_HOUR * 200_000) / 3600))
+    // 3 层整发后余数都收敛在 [0,1):量级放大不该丢整份、也不该多给
+    expect(d.frac.herb).toBeGreaterThanOrEqual(0)
+    expect(d.frac.herb).toBeLessThan(1)
+    expect(d.frac.ore).toBeLessThan(1)
+    expect(d.frac.wudao).toBeLessThan(1)
+  })
+
+  it('量级拆批等值:produce(100000)×2 的落账与 frac 恰等于 produce(200000) 一次(漂移在放大 dt 下也成立)', () => {
+    const runBoth = (): { herb: number; wudao: number; fracHerb: number } => {
+      setActivePinia(createPinia())
+      const d = useDongfuStore()
+      d.levels.field = 2
+      d.levels.library = 2
+      const h0 = herbTotal()
+      const w0 = wudaoTotal()
+      d.produce(100_000)
+      d.produce(100_000)
+      return { herb: herbTotal() - h0, wudao: wudaoTotal() - w0, fracHerb: d.frac.herb }
+    }
+    const runOne = (): { herb: number; wudao: number; fracHerb: number } => {
+      setActivePinia(createPinia())
+      const d = useDongfuStore()
+      d.levels.field = 2
+      d.levels.library = 2
+      const h0 = herbTotal()
+      const w0 = wudaoTotal()
+      d.produce(200_000)
+      return { herb: herbTotal() - h0, wudao: wudaoTotal() - w0, fracHerb: d.frac.herb }
+    }
+    const split = runBoth()
+    const one = runOne()
+    expect(split.herb).toBe(one.herb)
+    expect(split.wudao).toBe(one.wudao)
+    expect(split.fracHerb).toBeCloseTo(one.fracHerb, 9)
   })
 })

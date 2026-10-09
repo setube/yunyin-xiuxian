@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 洞府产出长时间量级守卫:drift-free 只在 450/900s 小 dt 验过,真实长离线(60h 折 effSec 一次灌入)的量级从未测——新增守卫:field/library 2 × 200000s(≈55.6h)单次产出恰按 floor 整发(herb666.7→666/ore266.7→266/wudao166.7→166)、余数收敛 [0,1) 不丢不多给;量级拆批等值(produce(100000)×2 == produce(200000) 落账与 frac 全同);变异证明:把整发从 floor 改 ceil → 长时单次测试转红
 - 掉落品质 luck 边界守卫:qualityWeightAt 的 luck 路径此前零断言(equipGen.spec 无 luck 测试,dropQualityWindow 只测窗口带)——负幸运是实到场景(谨慎灵兽 dropLuck=-0.02 汇入),而 qualityWeightAt 不钳 luck、weighted() 用 Math.max(0,·) 垫底,负幸运下若哪一处产出 NaN(→ Math.max(0,NaN)=NaN → 总权重 NaN → 掷回乱档)会静默腐蚀掉落——新增守卫:luck=0 每档权重有限为正、负幸运(−0.1)凡品权重仍>0 且稀有有限(可≤0 但绝不 NaN/∞)、强负幸运(−10)rollQuality 稳定掷回凡品不崩;变异证明:负幸运时把 luckBoost 改成 NaN → 负幸运两案转红(且掷出乱档 rank 8,证明确会腐蚀)
 - 洞府产出跨整界原子·拆批等值守卫:produce 的「余数进位、整发时扣回整份」是防漂移的关键,但旧测只验证 sub-1-unit 的 frac 比例(整发前无 grant),跨整界的原子性与拆批等值无人钉死——新增守卫:拆开多次(produce(450)×2)与一次连产(produce(900))的灵草落账与 frac 完全一致(逐次取整漂移在此露头)、跨整界只整发(900s=1.5 株只落 1、余 0.5 进位,补 300s 恰好再整发 1)、整发落对可种品桶;变异证明:把灵田累加改成每 call floor → 拆批等值/跨整界两案转红(连旧的比例测试也红)
 - 修为丹即时修为到顶 clamp 守卫(usePill 路径):expFromSecs 的 clamp 此前只在公式层被测(expIncome.spec),服丹这条真实玩家路径的「溢出分支」无人看守——若 usePill 擅自不调 expFromSecs,一颗大修为丹能直接顶满整层以上——新增守卫走真实 usePill:低境界+修速 buff 配 10800s 太初丹 → 药力精确封顶在 expReq×INSTANT_EXP_LAYER_CAP(不满一层),而非 cultPerSec×secs,丹出包、有限无 NaN;正对照:高境界玄元丹远不满一层、不受 clamp(证明非每颗都截);变异证明:把 usePill 的 gain 换成 cultPerSec×secs(绕过 clamp)→ clamp 测试转红
