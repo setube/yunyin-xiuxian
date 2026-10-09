@@ -94,16 +94,20 @@ export const useResourcesStore = defineStore(
      */
     function spendHerbMeltable(n: number): boolean {
       if (n < 1) return false
-      let need = Math.floor(n)
+      const need = Math.floor(n)
+      // 原子:不足则一枚不动 —— 与其余 spend(spendSmall/spendStone/spendHerb)同契约,
+      // 失败不得白扣材料。此前先逐品扣再返回 false,失败路径会把可熔草啃成 0。
+      if (herbMeltable.value < need) return false
       const acc = herbByGrade.value
+      let rest = need
       for (const g of HERB_GRADES) {
         if (g < FURNACE_HERB_MIN_GRADE) continue
-        const take = Math.min(need, acc[g] ?? 0)
+        const take = Math.min(rest, acc[g] ?? 0)
         acc[g] = Math.max(0, (acc[g] ?? 0) - take)
-        need -= take
-        if (need <= 0) return true
+        rest -= take
+        if (rest <= 0) return true
       }
-      return need <= 0
+      return rest <= 0
     }
 
     /** 转世清零:五品一把清 */
