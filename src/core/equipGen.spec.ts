@@ -5,7 +5,7 @@ import { AFFIX_RARITY_RANK, affixDef } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
 import { isZero, toNum } from '@/utils/gnum'
-import { generateEquipment, resolveEquipStats, rollQuality, sortAffixLines } from './equipGen'
+import { generateEquipment, resolveEquipStats, rollQuality, qualityWeightAt, sortAffixLines } from './equipGen'
 import type { EquipmentInstance, QualityId } from '@/types'
 
 const seeded = (seed = 42): RandomService => new RandomService(mulberry32(seed))
@@ -153,5 +153,32 @@ describe('装备生成', () => {
     ]
     expect(sortAffixLines(rolls).map(r => r.id)).toEqual(['def2', 'atk2'])
     expect(rolls.map(r => r.id), '排序函数不该就地改数组').toEqual(['atk2', 'def2'])
+  })
+})
+
+describe('掉落品质 · luck 边界(负幸运不崩、不产 NaN)', () => {
+  it('luck=0 基线:每一档品质的权重都有限且为正', () => {
+    for (const q of QUALITIES) {
+      const w = qualityWeightAt(q, 1, {})
+      expect(Number.isFinite(w), `${q.id} 权重 NaN/∞`).toBe(true)
+      expect(w, `${q.id} 权重应>0`).toBeGreaterThan(0)
+    }
+  })
+
+  it('负幸运(谨慎灵兽这种 dropLuck=-0.02 向下放大):凡品权重仍>0,稀有权重有限(允许≤0,但绝不 NaN/∞)', () => {
+    for (const q of QUALITIES) {
+      const w = qualityWeightAt(q, 1, { luck: -0.1 })
+      expect(Number.isFinite(w), `${q.id} 负幸运权重 NaN/∞`).toBe(true)
+      if (q.rank === 0) expect(w, '凡品不吃 luck,恒为正').toBeGreaterThan(0)
+    }
+  })
+
+  it('强烈负幸运:稀有全部摊成 0 → rollQuality 仍稳稳掷回凡品(不崩、无 NaN)', () => {
+    // luck=-10 让 1+luck*(0.5/1.5) << 0,稀有权重被 weighted 钳到 0,只剩凡品可掷
+    const q = rollQuality(1, seeded(7), { luck: -10 })
+    expect(q).toBeDefined()
+    expect(Number.isFinite(q.id.length)).toBe(true)
+    expect(qualityDef(q.id)).toBeDefined()
+    expect(q.rank, '强负幸运应稳定给凡品(common 恒可掷)').toBe(0)
   })
 })
