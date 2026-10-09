@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 相元挑战(undertakeChallenge)入场/清败原子守卫:零覆盖审计发现 verifyChallenge 只在今日天道 spec 里走过定价,真正「立约应战」(扣入场费→真打→赏/记谱)无人看守——新增 spec 走真实 combat(不 mock 防压弱 celestialStats):真仙(major9)裸装必败赤炎天、混沌顶配必清;顶配清:扣 CHALLENGE_ENTRY_COST=15、赏裁判定价 rewardDaoSource、记 best_custom 纪录与 first_custom 里程碑;裸装败:不赏不记谱但入场费照扣;道源不足 → null 不进场不扣账;变异证明:临时砍掉清后发奖 → 顶配清测试转红
 - 今日天道确定性守卫:dailyChallenge 全模块此前零 spec,而「按日期种子确定性生成(刷新不换题)」是anti-farm 的根基——新增 spec 钉死同日两次生成题面深度相等、不吞全局随机(Math.random 干扰无影响)、跨 UTC 日 day 号随种子换;变异证明:给种子加 Math.random 随机盐 → 同日生成即不同题,两案转红
 - 师承跨世保留守卫:rebirth 的「外物归零」清单(灵兽/突破准备/洞府/道童)会让人误把师承一并清掉,player.rebirth.spec 却零断言——新增对照守卫钉死 DEC-003 的口径:师承是「我是谁」的成长思想,转世保留(对照灵兽随皮囊归零),且一经确立不可更改、转世亦然(另投他门被拒);变异证明:在 rebirth 里临时清 mentor.value → 保留测试转红
 - 洞府巡游「每日一巡」跨天守卫:旧测只钉「当日已巡游后不再触发」,翌日(跨天刷新)的恢复路径零覆盖——新增独立 spec 钉死「同日被挡、翌日(lastCaveEventDay 陈旧)恢复可巡」;刻意独立文件以避开 mayTriggerCaveEvent 的模块级 caveEvent 串状态,掷签常数化(Math.random→0)排除存在感衰减干扰;变异证明:改坏同日判断(lastCaveEventDay===today → !==)→ 同日守卫测试转红

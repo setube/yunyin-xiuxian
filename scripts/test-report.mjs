@@ -30,7 +30,7 @@ const CATEGORIES = [
     name: 'Regression  服务与归因',
     match: ['/ui/', 'rewardText', 'unlockChainSelfHeal', 'loadoutService', 'loadouts.spec', 'battleAnalysis', 'foeOrigin', 'loreService', 'smithingLore', 'contentReachability', 'contentDensity', 'mentorService', 'daoluService', 'bondEvents', 'bondTiming', 'bondIntent', 'bondCausality', 'worldMemory', 'phase31LinkAudit', 'suppress', 'game.spec', 'engine.spec', 'earlyGameService', 'cavePatrolDay', 'earlyGameBuffs', 'savePlatform', 'saveRoundTrip', 'saveBackup', 'importCorruption', 'saveMigration', 'codexSource', 'achievementHint', 'titleLadder', 'titleReunlock', 'artifactEffects', 'dataHeaderAudit', 'deadExportAudit', 'chainProgression', 'vocabularyCoverage', 'singleSourceAudit', 'effectWiring', 'uiLayering', 'itemText', 'kaiFontCoverage', 'fatePreview', 'goBack', 'storeResilience', 'smokeClassify', 'cultivation.spec', 'diag.spec', 'platform.spec', 'rewardReachability', 'dataIntegrity', 'dataTextAudit', 'useAffixTransfer', 'time.spec', 'soulText', 'produceText', 'settings.spec']
   },
-  { name: 'Celestial   真仙终局', match: ['celestialSim', 'celestialCaliber', 'endgameService', 'phase21', 'expedition', 'trialChallenge', 'dailyChallenge', 'soulForge', 'souls.spec', 'soulService', 'rulesetEra', 'qimen'] },
+  { name: 'Celestial   真仙终局', match: ['celestialSim', 'celestialCaliber', 'endgameService', 'phase21', 'expedition', 'trialChallenge', 'dailyChallenge', 'challenge', 'soulForge', 'souls.spec', 'soulService', 'rulesetEra', 'qimen'] },
   {
     name: 'Decision    决策质量',
     match: [
