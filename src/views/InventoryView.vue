@@ -506,7 +506,7 @@
         {{ smartStatusLine }}
       </div>
 
-      <!-- 规则 · 门槛:总开关 + 两条自留线(品质线 与 阶级线,任一达标即留) -->
+      <!-- 规则 · 门槛:总开关 + 两条自留线(品质线 与 阶级线,双线皆满才留) -->
       <p class="mb-1 mt-3 font-kai text-[11px] tracking-wider text-ink-soft">规则 · 门槛</p>
       <div class="rounded-md border border-ink/8 bg-paper-deep/40 px-2.5 py-1">
         <label class="flex items-center justify-between py-1.5">
@@ -528,11 +528,11 @@
             </button>
           </div>
         </div>
-        <!-- 阶级线:阶数到线的,背得动高阶料子,无论品质皆留;与品质线「或」关系 -->
+        <!-- 阶级线:阶数到线的,须同时过品质线才留;与品质线「且」关系 -->
         <div class="border-t border-ink/6 py-1.5">
           <p class="mb-1.5 text-[12px] text-ink-soft">
             阶级线 ·
-            {{ settings.smartKeep.keepMinTier > 0 ? `自 ${settings.smartKeep.keepMinTier} 阶起,不分品质皆留` : '不设(只看品质与识宝)' }}
+            {{ settings.smartKeep.keepMinTier > 0 ? `自 ${settings.smartKeep.keepMinTier} 阶起,双线皆满才留` : '不设(只看品质与识宝)' }}
           </p>
           <div class="flex flex-wrap gap-1.5">
             <button
@@ -1047,7 +1047,7 @@
     const sk = settings.smartKeep
     if (!sk.enabled) return '未启用 —— 掉落照常入包,此间的尺度暂且不用'
     const keepName = KEEP_QUALITY_CHOICES.find(q => q.rank === sk.minQuality)?.name ?? '灵品'
-    const tierLine = sk.keepMinTier > 0 ? `;自 ${sk.keepMinTier} 阶起,不分品质皆留` : ''
+    const tierLine = sk.keepMinTier > 0 ? `;且自 ${sk.keepMinTier} 阶起,双线皆满才留` : ''
     const tags = [
       sk.keepCoreAffix && '核心',
       sk.keepComboPiece && '组合',

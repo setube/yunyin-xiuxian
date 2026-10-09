@@ -24,8 +24,8 @@ export interface SmartKeepConfig {
   /** 达到此品质 rank 一律保留 */
   minQuality: number
   /**
-   * 阶级自留线:阶数达到此值的装备**无论品质**一律保留(0 = 不启用)。
-   * 与品质线是「或」:任一达标即留 —— 阶线保高阶、品质线保珍品,各不误杀
+   * 阶级自留线:阶数达到此值的装备,须同时满足品质线才保留(0 = 不启用)。
+   * 与品质线是「且」:双线皆满才留 —— 未设的那条线视为通过,单线使用照旧
    */
   keepMinTier: number
   /** 保留含当前主流派核心词条的装备 */
@@ -48,7 +48,7 @@ export interface KeepVerdict {
  * **智能收纳是总闸**:没开,装备一律不替你扔 —— 历练/挂机掉落的凡俗之物也照常入包。
  * 开启后,由 keepVerdict 一条线说了算,命中的保留规则、该件留在行囊;
  * 未命中任何规则才会不入行囊、直接化尘:
- *   1. 品质达保留线、或阶数达阶级自留线、或命中任何智能规则(核心/组合/成套/近满)→ 留;
+ *   1. 品质达保留线 **且** 阶数达阶级自留线(未设的线视为通过),或命中任何智能规则(核心/组合/成套/近满)→ 留;
  *   2. 练过的件 → 留,待本人定夺;
  *   3. 其余 → 与道无缘,化尘。
  * 「一键分解」勾选的品质档**只作用于行囊内已存之件的手动批量分解**,不参与落包
@@ -97,10 +97,14 @@ export function keepVerdict(item: EquipmentInstance): KeepVerdict {
   const q = qualityDef(item.quality)
   // 先于品质:练过的件不属于「自动裁决」的管辖范围
   if (hasInvestment(item)) return { keep: true, reason: '已淬养,留待你自己定夺' }
-  // 阶级自留线(硬保底):阶数到了,品质再低也当藏 —— 高阶级是「高阶产出」的近义,
-  // 这条线让玩家不必为「保不漏高阶」而把品质线一路顶到神品
-  if (cfg.keepMinTier > 0 && item.tier >= cfg.keepMinTier) return { keep: true, reason: '阶高当藏' }
-  if (q.rank >= cfg.minQuality) return { keep: true, reason: `${q.name}当藏` }
+  // 两条阈值线是「且」:品质(rank 达线)与阶级(tier 达线)双双达标才留。
+  // 阶级线未设(0)按「通过」放行 —— 单设品质线时行为与从前一致,阶数不掺和
+  const tierMet = cfg.keepMinTier <= 0 || item.tier >= cfg.keepMinTier
+  const qMet = q.rank >= cfg.minQuality
+  if (qMet && tierMet) {
+    const both = cfg.keepMinTier > 0 && item.tier >= cfg.keepMinTier
+    return { keep: true, reason: both ? `${q.name}·${item.tier}阶,双线皆满` : `${q.name}当藏` }
+  }
 
   // 这两条不看流派,故排在「道途未成」之前 —— 新档也该留住成套件与满值件
   const setId = equipmentTemplate(item.templateId)?.set
