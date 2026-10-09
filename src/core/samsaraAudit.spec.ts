@@ -13,6 +13,25 @@ import { createPinia, setActivePinia } from 'pinia'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { usePlayerStore } from '@/stores/player'
+import { useResourcesStore } from '@/stores/resources'
+import { useLoreStore } from '@/stores/lore'
+import { useDongfuStore } from '@/stores/dongfu'
+import { useCultivationStore } from '@/stores/cultivation'
+import { useInventoryStore } from '@/stores/inventory'
+import { useQuestsStore } from '@/stores/quests'
+import { useAdventureStore } from '@/stores/adventure'
+import { useEndgameStore } from '@/stores/endgame'
+import { useLoadoutsStore } from '@/stores/loadouts'
+import { useSettingsStore } from '@/stores/settings'
+import { useGameStore } from '@/stores/game'
+import { useDiagStore } from '@/stores/diag'
+import { useMarketStore } from '@/stores/market'
+import { useApprenticeStore } from '@/stores/apprentice'
+import { useBountyStore } from '@/stores/bounty'
+import { usePacingTelemetry } from '@/stores/pacingTelemetry'
+import { PERSISTED_STORES } from '@/utils/storage'
+import { prepareReincarnation, confirmReincarnation } from './reincarnation'
+import { gn, toNum } from '@/utils/gnum'
 import {
   daoFruitAfterLives,
   FRUIT_PER_LIFE,
@@ -333,5 +352,178 @@ describe('轮回审计 · 继承清单最小完备', () => {
     expect(seen.length, '分组后条目总数应等于清单总数').toBe(HERITAGE.length)
     expect(new Set(seen).size, '不得有条目被重复归组').toBe(HERITAGE.length)
     for (const g of groups) expect(g.title, `${g.mode} 组缺界面用语`).toBeTruthy()
+  })
+})
+
+/**
+ * 跨店持久化分片「最小完备」 —— 关掉上面 player-only 倒推的盲区。
+ *
+ * player 的 $state 倒推(List 上面那条)只盯着 player 一个分片;其余 16 个持久化分片
+ * (adventure/bounty/market/loadouts/cultivation/endgame/…)若新加一个跨世在途字段,
+ * 没有 CI 逼它回答「转世留不留」,静默由代码决定 —— 正是 player 分片被补上的那个洞,
+ * 在别的分片还开着。
+ *
+ * 这里为每个持久化分片登记「每个字段 → reset/keep」判据,并从 $state 倒推强行全覆盖:
+ * 任一字段(或整个新分片)不在表里,即红。reset 判据在真实转世后被断言落到初始/空,
+ * keep 判据被断言原样保留 —— 自证这张表不是空话。
+ */
+describe('轮回审计 · 跨店持久化分片最小完备', () => {
+  /** 持久化分片实例的共性:都有 $state(倒推存档字段用)。用 object 而非 Record<string,…>,
+   *  因 pinia 的 $state 是 UnwrapRef 交叉类型,不给索引签名 */
+  type RegionStore = { $state: object }
+
+  /** 分片 id → store 实例(与 PERSISTED_STORES 对齐;player 已由上面单独覆盖) */
+  const GETTERS: Record<string, () => RegionStore> = {
+    game: useGameStore,
+    resources: useResourcesStore,
+    inventory: useInventoryStore,
+    cultivation: useCultivationStore,
+    dongfu: useDongfuStore,
+    adventure: useAdventureStore,
+    quests: useQuestsStore,
+    settings: useSettingsStore,
+    loadouts: useLoadoutsStore,
+    endgame: useEndgameStore,
+    lore: useLoreStore,
+    market: useMarketStore,
+    apprentice: useApprenticeStore,
+    bounty: useBountyStore,
+    pacing: usePacingTelemetry,
+    diag: useDiagStore
+  }
+
+  /**
+   * 每个持久化分片每个字段的跨世判据。判据取自已核实真实代码(见 confirmReincarnation /
+   * player.rebirth / resetForRebirth / onRebirth / setMortalWorld):
+   *  - reset :转世后清回初始/空(reincarnation.ts 逐行落实)
+   *  - keep  :跨世原样保留(记忆/认知/履历/道统/世界全局/客户端偏好/遥测,或本世装备位仍引用保留的功法门类)
+   * 「runtime」不需要 —— 这些分片没有纯客户端且无跨世意义的字段;settings/diag/pacing 属 keep。
+   */
+  const STORE_FIELDS: Record<string, Record<string, 'reset' | 'keep'>> = {
+    game: {
+      started: 'keep', saveVersion: 'keep', createdAt: 'keep', lastActiveAt: 'keep',
+      totalPlaySec: 'keep', createRerolls: 'keep', createProfile: 'keep'
+    },
+    resources: {
+      spiritStone: 'reset', qi: 'reset', wudao: 'reset', herbByGrade: 'reset',
+      ore: 'reset', page: 'reset', dust: 'reset'
+    },
+    inventory: {
+      items: 'reset', equipped: 'reset', pills: 'reset', artifacts: 'reset', equippedArtifacts: 'reset'
+    },
+    cultivation: {
+      // learned 半留(carryGongfa 归零回一层)、buffs 清空;主/副/悟道分支 属「记得门类」,保留
+      learned: 'reset', buffs: 'reset', mainGongfa: 'keep', subGongfa: 'keep', gongfaBranch: 'keep'
+    },
+    dongfu: { levels: 'reset', frac: 'reset', veinMain: 'reset', veinPoints: 'reset' },
+    adventure: {
+      // rerollMortalWorld 换界即清 mortalCleared;事件/历练/区域/战役 为本世进程
+      mortalWorld: 'reset', mortalCleared: 'reset', unlocked: 'reset', cleared: 'reset',
+      session: 'reset', pendingEventId: 'reset', pendingEventSince: 'reset', lastBattle: 'reset',
+      seenOnceEvents: 'keep', eventMemories: 'keep' // 世界记忆/见闻,随神魂不灭
+    },
+    quests: {
+      counters: 'keep', achieved: 'keep', mainIdx: 'keep', daily: 'keep',
+      titlesOwned: 'keep', collections: 'keep', collectedAt: 'keep'
+    },
+    settings: {
+      sfxOn: 'keep', musicOn: 'keep', musicVol: 'keep', sfxVol: 'keep', reduceMotion: 'keep',
+      dndEvents: 'keep', battleSpeed: 'keep', decomposeRanks: 'keep', smartKeep: 'keep',
+      privacyAccepted: 'keep', theme: 'keep', lastExportAt: 'keep', installNoticeDismissed: 'keep', lastSeenVersion: 'keep'
+    },
+    loadouts: { list: 'keep' },
+    endgame: {
+      daoPath: 'reset', worldRun: 'reset', // 道途归还天地、远征中断(onRebirth)
+      daoSource: 'keep', worldClears: 'keep', trialRecords: 'keep', marks: 'keep', voidWorld: 'keep',
+      dailyDoneDay: 'keep', milestones: 'keep', records: 'keep', endgameTutorialSeen: 'keep',
+      souls: 'keep', equippedSouls: 'keep', soulTutorialSeen: 'keep',
+      daoFruitTutorialSeen: 'keep', resourceDialogSeen: 'keep'
+    },
+    lore: {
+      materialLore: 'keep', materialSeen: 'keep', recipeLore: 'keep', blueprintLore: 'keep',
+      skillExp: 'keep', enemyLore: 'keep', enemySeen: 'keep', equipLore: 'keep', studyFrac: 'keep', seeded: 'keep'
+    },
+    market: { stock: 'keep', stockedAt: 'keep', consign: 'keep' },
+    apprentice: { apprentices: 'reset', rebirthKarma: 'keep' },
+    bounty: { orders: 'keep', bountyAt: 'keep' },
+    pacing: { events: 'keep', enabled: 'keep' },
+    diag: { errors: 'keep' }
+  }
+
+  /** 虚的 store getter 是否真的给得出 $state(防止表/分片对不上号时静默空转) */
+  function stateKeys(id: string): string[] {
+    const use = GETTERS[id]
+    expect(use, `分片 ${id} 在 PERSISTED_STORES 里,却没有对应 getter`).toBeDefined()
+    const s = use!().$state
+    return Object.keys(s)
+  }
+
+  it('每个持久化分片的每个字段都登记了跨世去留 —— 从 $state 倒推,不靠手写漏网', () => {
+    setActivePinia(createPinia())
+    const nonPlayer = PERSISTED_STORES.filter(id => id !== 'player')
+    for (const id of nonPlayer) {
+      expect(STORE_FIELDS[id], `持久化分片 ${id} 未登记跨世去留表`).toBeDefined()
+      const verdicts = STORE_FIELDS[id]!
+      const keys = stateKeys(id)
+      expect(keys.length, `分片 ${id} 取不到存档字段,断言形同虚设`).toBeGreaterThan(0)
+      const unmapped = keys.filter(k => !(k in verdicts))
+      expect(
+        unmapped,
+        `分片 ${id} 这些字段没有跨世去留结论:${unmapped.join('、')} —— 要么补 STORE_FIELDS 一行,要么写明为何保留`
+      ).toEqual([])
+    }
+  })
+
+  it('reset 判定在真实转世后落到初始/空,keep 判定原样保留(表不自欺)', () => {
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    const res = useResourcesStore()
+    const inv = useInventoryStore()
+    const cult = useCultivationStore()
+    const adv = useAdventureStore()
+    const endgame = useEndgameStore()
+    const lore = useLoreStore()
+
+    player.initCharacter('旧道号', { roots: [] } as never)
+    player.major = 5
+    player.sub = 8
+    player.exp = gn(1000)
+    player.age = 300
+    res.spiritStone = gn(999)
+    res.herbByGrade[1] = 10
+    res.ore = 5
+    res.wudao = 3
+    inv.pills = { p_jvqisan: 1 }
+    cult.learned = { m_taixuan: 5 }
+    cult.mainGongfa = 'm_taixuan'
+    cult.buffs = [{ id: 'b', until: 999 }] as never
+    adv.unlocked = ['qingyun', 'luoxia']
+    adv.cleared = ['qingyun']
+    adv.lastBattle = { at: 1 } as never
+    endgame.daoSource = 7
+    endgame.souls = [{ uid: 's1' }] as never
+    lore.materialLore = { m_lingzhi: 2 }
+
+    prepareReincarnation()
+    confirmReincarnation(null)
+
+    // reset 判据 → 初始/空
+    // 灵石/悟道与 flow spec 同裁:清零后 a_re1「完成第一次转世」成就给新世补发一小笔
+    // 悟道与灵石,故不尽等于 0 —— 但带进的存量(999/3)必须消失
+    expect(toNum(res.spiritStone), '存量灵石应清,只剩新世开局馈赠').toBeLessThan(1000)
+    expect(res.herbByGrade[1]).toBe(0)
+    expect(res.ore).toBe(0)
+    expect(inv.pills).toEqual({})
+    expect(cult.buffs).toEqual([])
+    expect(cult.learned, 'learned 归零回一层(保留门类记忆)').toEqual({ m_taixuan: 1 })
+    expect(adv.cleared).toEqual([])
+    expect(adv.unlocked, '区域退回新手界').toEqual(['qingyun'])
+    expect(adv.lastBattle).toBeNull()
+    expect(endgame.daoPath, '道途归还天地(reset)').toBeNull()
+    expect(endgame.souls, '道源/道痕/灵魂 keep').toEqual([{ uid: 's1' }])
+    // keep 判据 → 保留
+    expect(cult.mainGongfa, '主修门类 keep').toBe('m_taixuan')
+    expect(endgame.daoSource, '道源 keep').toBe(7)
+    expect(lore.materialLore, '认知 keep').toEqual({ m_lingzhi: 2 })
   })
 })
