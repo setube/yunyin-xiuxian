@@ -130,6 +130,19 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(player.petId).toBeNull()
     expect(dongfu.levels.field).toBe(0)
     expect(appr.apprentices, '道童随转世散去').toHaveLength(0)
+    expect(appr.rebirthKarma, 'seedLife 的 bond:20 未达真传,不凝缘').toBe(0)
+  })
+
+  it('真传道童转世:道童本体散去,但一丝缘(rebirthKarma)随世带走', () => {
+    // 与上一条「列表清空」共存:道童本体仍是今生家业随皮囊散,唯真传之缘在 rebirthKarma 里带过世
+    const appr = useApprenticeStore()
+    useApprenticeStore().$patch({
+      apprentices: [{ uid: 'apt2', archId: STARTER_APPRENTICE, level: 9, bond: 150, task: null }] as never
+    })
+    prepareReincarnation()
+    confirmReincarnation(null)
+    expect(appr.apprentices, '道童本体仍随世散去').toHaveLength(0)
+    expect(appr.rebirthKarma, '真传之缘随世带走,封顶到真传位阶').toBe(100)
   })
 
   it('带走「我是谁」:道果/天赋/宿慧/称号/认知/道源道痕/世界记忆全部保留', () => {
