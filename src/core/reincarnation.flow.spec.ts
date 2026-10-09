@@ -21,8 +21,10 @@ import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { useEndgameStore } from '@/stores/endgame'
 import { useDongfuStore } from '@/stores/dongfu'
+import { useApprenticeStore } from '@/stores/apprentice'
 import { useLoreStore } from '@/stores/lore'
 import { useQuestsStore } from '@/stores/quests'
+import { STARTER_APPRENTICE } from '@/data/apprentices'
 import { prepareReincarnation, confirmReincarnation } from '@/core/reincarnation'
 import { gn, toNum } from '@/utils/gnum'
 
@@ -66,6 +68,10 @@ function seedLife(): void {
   adv.cleared = ['qingyun']
   dongfu.setLevel('field', 8)
   player.setPet('pet_yueying')
+  // 道童:今生观中家业(带羁绊),应与洞府/灵兽同随转世散去
+  useApprenticeStore().$patch({
+    apprentices: [{ uid: 'apt1', archId: STARTER_APPRENTICE, level: 3, bond: 20, task: null }] as never
+  })
 
   // 跨世资产
   player.reincarnation.daoFruit = 100
@@ -96,6 +102,7 @@ describe('转世交割 · confirmReincarnation', () => {
     const cult = useCultivationStore()
     const adv = useAdventureStore()
     const dongfu = useDongfuStore()
+    const appr = useApprenticeStore()
 
     prepareReincarnation()
     confirmReincarnation(null)
@@ -122,6 +129,7 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(adv.cleared).toEqual([])
     expect(player.petId).toBeNull()
     expect(dongfu.levels.field).toBe(0)
+    expect(appr.apprentices, '道童随转世散去').toHaveLength(0)
   })
 
   it('带走「我是谁」:道果/天赋/宿慧/称号/认知/道源道痕/世界记忆全部保留', () => {

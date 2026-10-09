@@ -157,7 +157,12 @@ export const useApprenticeStore = defineStore(
       return targets.length
     }
 
-    return { apprentices, sanitize, sync, collectFinished, dispatch, dispatchAll, recruit }
+    /** 转世清零:道童是今生观中家业,随皮囊散去;羁绊随人一并归零。新世由 sync() 补送 starter */
+    function resetForRebirth(): void {
+      apprentices.value = []
+    }
+
+    return { apprentices, sanitize, sync, collectFinished, dispatch, dispatchAll, resetForRebirth, recruit }
   },
   { persist: persistConfig('apprentice') }
 )
