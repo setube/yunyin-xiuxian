@@ -229,4 +229,34 @@ describe('fieldHerbGrade 直接判定(洞府纪要的「前瞻 ↑」信号源)'
   it('混沌海(道品=5)拉满:止于道品,不再越', () => {
     expect(fieldHerbGrade(MAX_MAJOR, 15)).toBe(5)
   })
+
+  /**
+   * 中档夹逼 —— 极端(band 两端)之外,「至多高当前一档」「保当前品下限」在
+   * 中间境界才真正发威:major 9-13 当前品=3,田拉满(可种 5)只许前瞻到 4,
+   * 绝不一步到道品;田低(可种 2)仍保 3,不掉回灵品。
+   */
+  it('中境界拉满(当前品3/可种5):只前瞻+1到4,不跳到田上限5', () => {
+    expect(fieldHerbGrade(9, 15)).toBe(4)
+    expect(fieldHerbGrade(13, 15)).toBe(4) // band 上缘(13)同一判据
+  })
+
+  it('中境界低田(当前品3/可种2):保下限仍 3,不因田低掉回灵品', () => {
+    expect(fieldHerbGrade(9, 4)).toBe(3)
+  })
+
+  it('中境界田恰在当前品(可种3):前瞻无空间,仍 3', () => {
+    expect(fieldHerbGrade(9, 7)).toBe(3)
+  })
+
+  it('低境界拉满(当前品1/可种5):只前瞻到2,不一步到5', () => {
+    expect(fieldHerbGrade(0, 15)).toBe(2)
+  })
+
+  it('灵品境(当前品2)低田:保下限仍 2', () => {
+    expect(fieldHerbGrade(5, 4)).toBe(2)
+  })
+
+  it('道品之境(当前品4)拉满:可种5→5,仍不越道品', () => {
+    expect(fieldHerbGrade(14, 15)).toBe(5)
+  })
 })
