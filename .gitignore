@@ -39,6 +39,9 @@ docs/generated/
 __pycache__/
 *.pyc
 
+# Vitest 缓存
+.vitest/
+
 # wrangler files
 .wrangler
 .dev.vars*
