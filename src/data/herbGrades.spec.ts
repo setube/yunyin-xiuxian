@@ -122,18 +122,18 @@ describe('灵草 · 配方品阶与丹出处一致(炼丹消费口径)', () => {
 })
 
 describe('灵草 · 旧档迁移不丢草', () => {
-  it('旧档单标量 herb 按当前境界折算成品阶分账,一粒不丢、幂等', () => {
+  it('旧档单标量 herb 统一落凡品(品 1)分账,不丢草、幂等', () => {
     const hg = (res: Record<string, unknown>): Record<string, number> => res.herbByGrade as Record<string, number>
-    // 混沌海(20 境)玩家:40 株旧草 → 道品账
+    // 混沌海(20 境)玩家:40 株旧草 → 仍落凡品账(迁移统一凡品,不随境界折算)
     const migrated = migrateHerbSlice({ herb: 40, ore: 7 }, 20)
-    expect(hg(migrated)).toEqual({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 40 })
+    expect(hg(migrated)).toEqual({ 1: 40, 2: 0, 3: 0, 4: 0, 5: 0 })
     expect('herb' in migrated).toBe(false)
     // 已有分账且无残留标量:原样返回,不重复折算
     const already = migrateHerbSlice({ herbByGrade: { 1: 0, 2: 0, 3: 5, 4: 0, 5: 0 }, ore: 1 }, 20)
     expect(already).toEqual({ herbByGrade: { 1: 0, 2: 0, 3: 5, 4: 0, 5: 0 }, ore: 1 })
-    // 标量 + 分账并存(迁移中断的怪档):并账不丢
+    // 标量 + 分账并存(迁移中断的怪档):并账不丢,标量部分并入凡品账
     const both = migrateHerbSlice({ herbByGrade: { 1: 0, 2: 0, 3: 5, 4: 0, 5: 0 }, herb: 3 }, 5)
-    expect(hg(both)[2]).toBe(3) // 灵品境(5)折算到品 2
+    expect(hg(both)[1]).toBe(3) // 标量旧草并入凡品账(品 1)
     expect(hg(both)[3]).toBe(5) // 原有仙品账不动
     // 坏档非数值标量:当 0,不崩
     const junk = migrateHerbSlice({ herb: 'abc' }, 0)

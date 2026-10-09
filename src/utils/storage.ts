@@ -5,7 +5,7 @@
 
 import type { StateTree } from 'pinia'
 import { encryptSave, readSaveText } from './crypto'
-import { herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
+import { isHerbGrade } from '@/data/herbGrades'
 
 export const SAVE_PREFIX = 'yunyin.'
 export const SAVE_VERSION = 2
@@ -254,13 +254,16 @@ export function preflightScan(): string[] {
 }
 
 /**
- * 灵草五品迁移:旧档单标量 `herb` → 按当前境界折算成品阶分账(不丢草,幂等)。
+ * 灵草五品迁移:旧档单标量 `herb` → 一律落凡品(品 1)分账(不丢草,幂等)。
  *
- * 旧档的 `herb: N`(单标量)在玩家此刻无可用的来源界域,取「当前境界折算」——
- * 反正他现阶段炼的是本境界的方子,把草落在他当下能用的那一品,既守住
- * 「低阶草炼高阶丹」红线(旧品阶追不上),又不静默丢草。
+ * 旧档未分化的 `herb: N` 是粗胚级的存量,本就谈不上品阶 —— 按「低阶草炼不了
+ * 高阶丹」的统一口径,它就地沉淀为最粗的凡品(品 1),**不再按当前境界折算**。
+ * 凡品永远有出口:喂凡品方子(准入境界 0-4),或坊市按品即时出售,不会成死货。
+ *
+ * @param _major 旧方案曾按玩家当前境界把旧草折算成那一品;如今旧草统一落凡品、
+ *   不再依赖境界,此参数仅为保持导出签名与调用点稳定而保留(留待将来如需按境界分流)。
  */
-export function migrateHerbSlice(resources: Record<string, unknown>, major: number): Record<string, unknown> {
+export function migrateHerbSlice(resources: Record<string, unknown>, _major: number): Record<string, unknown> {
   const hasMap = 'herbByGrade' in resources
   const scalar =
     typeof resources.herb === 'number' && Number.isFinite(resources.herb as number)
@@ -268,7 +271,6 @@ export function migrateHerbSlice(resources: Record<string, unknown>, major: numb
       : 0
   if (hasMap && scalar <= 0) return resources
   const next = { ...resources }
-  const grade = herbGradeOfMajor(Math.max(0, Math.floor(Number(major) || 0)))
   const rawMap =
     hasMap && resources.herbByGrade && typeof resources.herbByGrade === 'object'
       ? (resources.herbByGrade as Record<string, unknown>)
@@ -280,7 +282,7 @@ export function migrateHerbSlice(resources: Record<string, unknown>, major: numb
     const n = typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : 0
     clean[g] = Math.max(0, n)
   }
-  if (scalar > 0) clean[grade] = (clean[grade] ?? 0) + scalar
+  if (scalar > 0) clean[1] = Math.max(0, (clean[1] ?? 0) + scalar)
   next.herbByGrade = clean
   delete next.herb
   return next
@@ -311,12 +313,12 @@ export function migrateLocalSchema(): void {
       const inv = JSON.parse(readSaveText(invRaw)) as Record<string, unknown>
       localStorage.setItem(invKey, encryptSave(JSON.stringify(migrateInventorySlice(inv))))
     }
-    // 灵草五品:旧档单标量 herb → 按当前境界折算成品阶分账(不丢草)
+    // 灵草五品:旧档单标量 herb → 一律落凡品(品 1)分账(不丢草;不再按境界折算)
     const resKey = storageKey('resources')
     const resRaw = localStorage.getItem(resKey)
     if (resRaw !== null) {
       const res = JSON.parse(readSaveText(resRaw)) as Record<string, unknown>
-      // 取玩家当前境界做折算基准;player 坏档则由 preflightScan 兜底
+      // 玩家当前境界不再作为折算基准(旧草统一落凡品),此读取仅为保持迁移签名而保留
       let major = 0
       const playerRaw = localStorage.getItem(storageKey('player'))
       if (playerRaw !== null) {

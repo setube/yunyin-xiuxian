@@ -156,27 +156,27 @@ describe('迁移 · 灵草五品(旧档单标量 herb → 品阶分账)', () => 
     clearAllSave()
   })
 
-  it('启动迁移:resources 分片按 player 当前境界折算,旧 scalar 清掉、不丢草', () => {
-    // 混沌海(20 境)玩家,手里 40 株旧草 → 折成 40 株道品
+  it('启动迁移:resources 分片旧 scalar 统一落凡品账,清掉、不丢草', () => {
+    // 混沌海(20 境)玩家,手里 40 株旧草 → 统一并入 40 株凡品账(不再随境界折算)
     localStorage.setItem(storageKey('player'), JSON.stringify({ major: 20 }))
     localStorage.setItem(storageKey('resources'), JSON.stringify({ herb: 40, wudao: 5 }))
     migrateLocalSchema()
     const raw = localStorage.getItem(storageKey('resources'))!
     const back = JSON.parse(decryptSave(raw)!)
-    expect(back.herbByGrade).toEqual({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 40 })
+    expect(back.herbByGrade).toEqual({ 1: 40, 2: 0, 3: 0, 4: 0, 5: 0 })
     expect('herb' in back, '旧标量字段必须清掉,否则反复折算').toBe(false)
     expect(back.wudao, '其它资源字段不该被动').toBe(5)
   })
 
-  it('灵品境(5)玩家:旧草折进第 2 品,不丢草', () => {
+  it('灵品境(5)玩家:旧草统一并入凡品账,不丢草', () => {
     localStorage.setItem(storageKey('player'), JSON.stringify({ major: 5 }))
     localStorage.setItem(storageKey('resources'), JSON.stringify({ herb: 12 }))
     migrateLocalSchema()
     const back = JSON.parse(decryptSave(localStorage.getItem(storageKey('resources'))!)!)
-    expect(back.herbByGrade[2]).toBe(12)
+    expect(back.herbByGrade[1], '旧草并入凡品账').toBe(12)
   })
 
-  it('导入路径同样折算 resources 分片(不丢草)', () => {
+  it('导入路径同样归一 resources 分片旧草到凡品账(不丢草)', () => {
     const payload = {
       game: 'yunyin-xiuxian',
       version: 2,
@@ -185,7 +185,7 @@ describe('迁移 · 灵草五品(旧档单标量 herb → 品阶分账)', () => 
     }
     expect(importSaveText(JSON.stringify(payload))).toBeNull()
     const back = JSON.parse(decryptSave(localStorage.getItem(storageKey('resources'))!)!)
-    expect(back.herbByGrade[3], '仙界(9 境)旧草应折进仙品账').toBe(60)
+    expect(back.herbByGrade[1], '仙界(9 境)旧草同样并入凡品账').toBe(60)
     expect('herb' in back).toBe(false)
   })
 })
