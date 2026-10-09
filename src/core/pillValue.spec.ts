@@ -508,3 +508,57 @@ describe('道品顶档的解析守卫', () => {
     expect(qualityDef('dao' as never).rank).toBe(0)
   })
 })
+
+/**
+ * 道品顶档的**成员不变式**(Phase 33.6 补二)。
+ *
+ * 「道品」不是随便哪一味混沌海丹都能叫的量产物 —— 它是**各族各线可炼顶阶**的
+ * 专属名号:一族一炉的巅峰才配登道品,次席(如悟道线的道祖丹 150,逊于天道金丹 200)
+ * 只给神品。守卫共三条:
+ *  1. 道品只在混沌海(准入境界 ≥18)出现,不入前中后期 —— 一张低境方子叫「道品」即失真;
+ *  2. 没有任何一味道品可炼丹,在自家族内被「更晚、更强」的后辈压过(否则名号空心化);
+ *  3. 每族的混沌海可炼顶阶(境界最高、药力最足的那一味)必须是道品;
+ *     而顶阶落在混沌海之外的族,其顶阶不得叫道品(道品是混沌海专属)。
+ */
+describe('道品顶档的成员不变式', () => {
+  const daoPills = PILLS.filter(p => p.quality === 'dao')
+
+  it('道品只在混沌海(准入境界 ≥18)出现 —— 不入前中后期', () => {
+    expect(daoPills.length).toBeGreaterThan(0)
+    for (const p of daoPills) {
+      expect(p.minRealm, `${p.name} 名登道品却不在混沌海(准入境界 ≥18)`).toBeGreaterThanOrEqual(18)
+    }
+  })
+
+  it('任何一味道品可炼丹,都不被自家族内更晚更强的后辈压过', () => {
+    // 比较口径与 contentDensity「丹方越晚越强」一致:以较高门槛处统一取值
+    for (const d of daoPills) {
+      if (!d.recipe) continue
+      for (const c of PILLS) {
+        if (!c.recipe || pillFamily(c) !== pillFamily(d)) continue
+        if (c.minRealm <= d.minRealm) continue
+        const at = c.minRealm
+        expect(
+          pillGainSecAt(c, at),
+          `${d.name}(道品)之上竟有同族更晚且更强的 ${c.name}?道品名号空心化了`
+        ).toBeLessThanOrEqual(pillGainSecAt(d, at) + 1e-9)
+      }
+    }
+  })
+
+  it('每族混沌海可炼顶阶(境界最高、药力最足)必须是道品;混沌海外的族不得叫道品', () => {
+    const families: PillFamily[] = ['exp', 'qi', 'lifespan', 'wudao', 'tempo', 'state']
+    for (const fam of families) {
+      // 顶阶 = 界最高(降序)同界再比药力(降序)的那一味
+      const apex = PILLS.filter(p => pillFamily(p) === fam && p.recipe).sort((a, b) => {
+        const byRealm = b.minRealm - a.minRealm
+        return byRealm !== 0 ? byRealm : pillGainSecAt(b, b.minRealm) - pillGainSecAt(a, a.minRealm)
+      })[0]!
+      if (apex.minRealm >= 18) {
+        expect(apex.quality, `${FAMILY_NAME[fam]}族的混沌海可炼顶阶「${apex.name}」该登道品`).toBe('dao')
+      } else {
+        expect(apex.quality, `${FAMILY_NAME[fam]}族的顶阶不在混沌海,不该叫「道品」`).not.toBe('dao')
+      }
+    }
+  })
+})
