@@ -155,6 +155,7 @@ describe('离线总结 · 变动了多少就报多少', () => {
       stone: { ...resources.spiritStone },
       qi: resources.qi,
       herb: resources.herb,
+      herbByGrade: { ...resources.herbByGrade },
       ore: resources.ore,
       wudao: resources.wudao,
       age: player.age
@@ -179,6 +180,12 @@ describe('离线总结 · 变动了多少就报多少', () => {
     // 一 资源类:摘要报的数就是实际差额(灵气取整,故容 1)
     expect(summary.qi, '灵气回充没报,或报的数不是实际差额').toBeCloseTo(delta.qi, 0)
     expect(summary.herb).toBe(delta.herb)
+    // 灵草逐品净增:各品实际差额要一一对上,且之和等于总差额 —— 灵田前瞻产的高一品不能被单品名吞掉
+    const gradeDelta = ([1, 2, 3, 4, 5] as const)
+      .map(g => ({ grade: g, amount: resources.herbOf(g) - (before.herbByGrade[g] ?? 0) }))
+      .filter(e => e.amount > 0)
+    expect(summary.herbByGrade, '逐品净增与各品实际差额不符').toEqual(gradeDelta)
+    expect(gradeDelta.reduce((s, e) => s + e.amount, 0), '逐品之和应等于总差额').toBe(summary.herb)
     expect(summary.ore).toBe(delta.ore)
     expect(summary.wudao).toBe(delta.wudao)
     // 二 寿元:流逝多少就报多少(它不受离线上限约束,按真实时长算)

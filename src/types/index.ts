@@ -1053,6 +1053,8 @@ export interface OfflineSummary {
   /** 灵气回充量(受上限约束,故记实际差额) */
   qi: number
   herb: number
+  /** 离线期间逐品灵草净增(仅列>0 的品)—— 灵田可前瞻产当前/高一档,单品名会误报,故逐品记 */
+  herbByGrade: { grade: 1 | 2 | 3 | 4 | 5; amount: number }[]
   ore: number
   wudao: number
   /** 离线期间流逝的寿元(年)—— 是代价,不是收益,但玩家该知道 */
