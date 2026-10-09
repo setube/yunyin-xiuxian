@@ -344,11 +344,20 @@ describe('闭关(Phase 28 · 接线后:buff 注册/互斥守卫/buff 到期)', (
   })
 
   it('startRetreat 注册 5 分钟闭关 buff,isRetreating 为真,剩余 300 秒', () => {
-    expect(startRetreat()).toBe(true)
-    const cult = useCultivationStore()
-    expect(cult.hasBuff('retreat')).toBe(true)
-    expect(isRetreating()).toBe(true)
-    expect(getRetreatRemainingSec()).toBe(300)
+    // 冻实 Date.now():getRetreatRemainingSec = ceil((endsAt - now)/1000) 是真实时钟秒界,
+    // 并行重载下 startRetreat 到断言间只要跨整秒就偶发 299（重复跑又复现不了)——
+    // 冻时让两处读到同一时刻,剩余恒为 300（与突破准备/静坐同款做法）。
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_000_000)
+      expect(startRetreat()).toBe(true)
+      const cult = useCultivationStore()
+      expect(cult.hasBuff('retreat')).toBe(true)
+      expect(isRetreating()).toBe(true)
+      expect(getRetreatRemainingSec()).toBe(300)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('已在闭关时再次调用幂等返回 false,不刷新时长', () => {
