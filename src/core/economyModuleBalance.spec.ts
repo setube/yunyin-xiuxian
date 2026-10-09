@@ -28,7 +28,9 @@ import {
   BOUNTY_EQUIP_STONE_BASE,
   BOUNTY_EQUIP_STONE_PER_RANK
 } from '@/data/bounty'
-import { pillSellPrice, consignPrice } from './marketService'
+import { pillSellPrice, consignPrice, herbSellPrice } from './marketService'
+import { herbBountyReward } from './bountyService'
+import { herbBuyPrice, HERB_GRADES } from '@/data/herbGrades'
 import { PILLS } from '@/data/pills'
 
 /** 该境界的代表层级(与 economySim 同:maxTierForMajor) */
@@ -100,6 +102,33 @@ describe('三模块经济审计 · 无套利与弟子不衰减', () => {
       const adventure = toN(stoneByTier(tier, 4))
       const battle = toN(stoneByTier(tier, 10))
       expect(adventure / battle, `境 ${major} 历练/战斗应恒常`).toBeCloseTo(0.4, 6)
+    }
+  })
+})
+
+describe('灵草三价无套利守卫(购/悬赏/售)', () => {
+  it('每一品:售 = 购价×½、悬赏每株 = 购价×¾,且 购 > 悬赏 > 售(不搬砖)', () => {
+    for (const g of HERB_GRADES) {
+      const buy = herbBuyPrice(g)
+      const sell = herbSellPrice(g)
+      const bountyPer = toN(herbBountyReward(g, 1))
+      // 对购价直比固定倍率 —— 常数一旦改回 0.8/0.9(搬砖复活)此处即红
+      expect(sell, `第 ${g} 品售出应=购价×½`).toBe(buy / 2)
+      expect(bountyPer, `第 ${g} 品悬赏每株应=购价×¾`).toBe(buy * 0.75)
+      // 无套利顺序:购 > 悬赏 > 售
+      expect(buy, `第 ${g} 品购价应高于悬赏`).toBeGreaterThan(bountyPer)
+      expect(bountyPer, `第 ${g} 品悬赏应高于售出`).toBeGreaterThan(sell)
+      // 且均为整数(无分石漂移)
+      expect(Number.isInteger(sell), `第 ${g} 品售出应为整数`).toBe(true)
+      expect(Number.isInteger(bountyPer), `第 ${g} 品悬赏每株应为整数`).toBe(true)
+    }
+  })
+
+  it('公式口径与常数一致:售/悬赏就是「购价 × 该档 ÷ 购入档」', () => {
+    for (const g of HERB_GRADES) {
+      const buy = herbBuyPrice(g)
+      expect(herbSellPrice(g)).toBe(buy * (MARKET_SELL_MAT_STONE_UNITS / MARKET_MAT_STONE_UNITS))
+      expect(toN(herbBountyReward(g, 1))).toBe(buy * (BOUNTY_MAT_UNIT_AMOUNT / MARKET_MAT_STONE_UNITS))
     }
   })
 })
