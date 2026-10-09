@@ -4,25 +4,6 @@
     class="app-shell mx-auto flex max-w-107.5 flex-col overflow-hidden bg-paper shadow-[0_0_60px_rgba(0,0,0,0.45)] relative paper-grain"
     :class="{ 'reduce-motion': settings.reduceMotion }"
   >
-    <!--
-      云雾装饰 —— 必须关在自己的一层裁剪盒里。
-
-      这两团雾是**故意打小、只留角上两团淡雾**(之前 -64px/-96px 一大片,
-      把洞府纪要、营造卡糊在底下,像一座山压住版面),并**故意越界**画的
-      (左上 -16px、右下 -32px)才好看,但它们若直接挂在
-      外壳上,就会把 overflow-hidden 的外壳撑出一段可以滚动的横向溢出(实测
-      scrollWidth 516 vs clientWidth 390)。外壳本身是 overflow-hidden,玩家滚不动,
-      可浏览器会——建号结束时焦点回到 body,浏览器顺手把它 scrollLeft 设成 24,
-      此后整个界面**永久左移 24px**:顶栏的名字与「炼气·一层」被切掉左半边,
-      底部第一栏的「洞府」只剩半个字。这不是理论,375/320/430 三档宽度都能复现。
-      故装饰归装饰:外包一层 inset-0 overflow-hidden,越界部分在这里被裁掉,
-      不再进入外壳的滚动区。
-    -->
-    <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      <div class="absolute -top-16 -left-8 h-32 w-60 rounded-full bg-white/25 blur-2xl animate-mist" />
-      <div class="absolute -bottom-8 -right-10 h-36 w-64 rounded-full bg-white/20 blur-2xl animate-mist-slow" />
-    </div>
-
     <TopStatusBar v-if="game.started && route.name !== 'create'" />
 
     <main ref="scrollHost" class="relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">

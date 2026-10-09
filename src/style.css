@@ -260,15 +260,6 @@
   }
 }
 
-@keyframes mist {
-  from {
-    transform: translate3d(-6%, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(6%, -3%, 0) scale(1.08);
-  }
-}
-
 @keyframes breathe {
   0%,
   100% {
