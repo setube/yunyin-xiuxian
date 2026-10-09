@@ -16,9 +16,8 @@
  * 见文末「未处置的账」。
  */
 import { describe, it, expect } from 'vitest'
-import { PILLS, pillDef } from '@/data/pills'
+import { PILLS, pillDef, pillQualityName, pillRank } from '@/data/pills'
 import { buffDef } from '@/data/buffs'
-import { qualityDef } from '@/data/qualities'
 import { MAX_MAJOR, WORLD_BREAK_MAJOR } from '@/data/realms'
 import { BATTLE_EXP_SECS, INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import {
@@ -196,11 +195,11 @@ describe('定价法则', () => {
         const at = unifiedRealm(group)
         for (const a of group) {
           for (const b of group) {
-            if (qualityDef(a.quality).rank >= qualityDef(b.quality).rank) continue
+            if (pillRank(a) >= pillRank(b)) continue
             expect(
               pillGainSecAt(a, at),
-              `${FAMILY_NAME[fam]}族${line === 'craft' ? '可炼' : '掉落'}线:${a.name}(${qualityDef(a.quality).name})` +
-                ` 品质低于 ${b.name}(${qualityDef(b.quality).name}) 却更管用`
+              `${FAMILY_NAME[fam]}族${line === 'craft' ? '可炼' : '掉落'}线:${a.name}(${pillQualityName(a)})` +
+                ` 品质低于 ${b.name}(${pillQualityName(b)}) 却更管用`
             ).toBeLessThanOrEqual(pillGainSecAt(b, at) + 1e-9)
           }
         }
@@ -410,10 +409,10 @@ describe('本次校准的落点', () => {
 
   it('掉落修为线自成一条干净的递进', () => {
     const line = PILLS.filter(p => pillFamily(p) === 'exp' && pillLine(p) === 'drop').sort(
-      (a, b) => qualityDef(a.quality).rank - qualityDef(b.quality).rank
+      (a, b) => pillRank(a) - pillRank(b)
     )
     const at = unifiedRealm(line)
-    const names = line.map(p => `${p.name}(${qualityDef(p.quality).name} ${dur(pillGainSecAt(p, at))})`)
+    const names = line.map(p => `${p.name}(${pillQualityName(p)} ${dur(pillGainSecAt(p, at))})`)
     console.log(`\n  掉落修为线 @境界${at}:${names.join(' < ')}`)
     expect(line.length).toBeGreaterThanOrEqual(4)
   })

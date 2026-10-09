@@ -120,6 +120,52 @@ const CRAFT_OVERRIDES: Readonly<Record<string, Partial<RecipeCraft>>> = {
   p_jiuzhuan: {
     materials: ['mat_taixushen', 'mat_jiuye', 'mat_leixin', 'mat_youming'],
     skills: { condense: 0.24, temper: 0.2, pairing: 0.2, flame: 0.18, nurture: 0.18 }
+  },
+  // ---- 深邃设计:神/道品丹方(Phase 33.6)君臣佐使 -------------------------------------------------
+  // 太乙丹:以太乙玄金为骨(万法不侵),恰合「太乙」之名
+  p_taiyi: {
+    materials: ['mat_taiyi', 'mat_taixushen', 'mat_jiuye'],
+    skills: { condense: 0.32, flame: 0.24, temper: 0.2, pairing: 0.14, herbLore: 0.1 }
+  },
+  // 神炼金丹:雷心竹霸道淬体、太虚灵参调和 —— 神火炼丹,火候是命门
+  p_shenlian: {
+    materials: ['mat_leixin', 'mat_taixushen', 'mat_jiuye'],
+    skills: { flame: 0.34, temper: 0.24, condense: 0.18, pairing: 0.14, herbLore: 0.1 }
+  },
+  // 神识丹:幽冥花撬动神魂,以毒引识 —— 炼丹有道,养识无捷径
+  p_shenshi: {
+    materials: ['mat_youming', 'mat_taixushen', 'mat_zihenlan'],
+    skills: { pairing: 0.3, nurture: 0.26, herbLore: 0.18, flame: 0.14, temper: 0.12 }
+  },
+  // 一元始丹:太乙玄金为心(万法不侵),太虚灵参为基,九叶还魂养元 —— 道品登峰
+  p_yiyuan: {
+    materials: ['mat_taiyi', 'mat_taixushen', 'mat_jiuye'],
+    skills: { condense: 0.34, flame: 0.22, temper: 0.2, pairing: 0.14, herbLore: 0.1 }
+  },
+  // 天道金丹:以太虚灵参归元、紫纹兰淬纯 —— 测的是悟性,炼的是道心
+  p_tiandao: {
+    materials: ['mat_taixushen', 'mat_zihenlan', 'mat_jiuye'],
+    skills: { nurture: 0.3, pairing: 0.26, temper: 0.2, condense: 0.14, flame: 0.1 }
+  },
+  // 无量寿丹:九叶还魂草生生不息为君 —— 延寿急不得,养丹为要
+  p_wuliang: {
+    materials: ['mat_jiuye', 'mat_taixushen', 'mat_zihenlan'],
+    skills: { nurture: 0.36, temper: 0.24, condense: 0.16, herbLore: 0.14, flame: 0.1 }
+  },
+  // 道液:九叶还魂养元气、寒髓晶极寒涤杂 —— 一滴涤尽,火候更难
+  p_daoye: {
+    materials: ['mat_jiuye', 'mat_hansui', 'mat_taixushen'],
+    skills: { condense: 0.3, pairing: 0.24, nurture: 0.2, flame: 0.16, temper: 0.1 }
+  },
+  // 道胎丹:太乙玄金为胎、幽冥花引神魂 —— 道胎不灭,全在一炉镇得住
+  p_daotai: {
+    materials: ['mat_taiyi', 'mat_youming', 'mat_taixushen'],
+    skills: { nurture: 0.3, pairing: 0.26, flame: 0.18, herbLore: 0.16, temper: 0.1 }
+  },
+  // 混天丹:太乙玄金承混元、雷心竹锻其气 —— 一气混元,火候必须压得住雷性
+  p_huntian: {
+    materials: ['mat_taiyi', 'mat_leixin', 'mat_taixushen'],
+    skills: { flame: 0.3, condense: 0.24, pairing: 0.2, temper: 0.16, herbLore: 0.1 }
   }
 }
 

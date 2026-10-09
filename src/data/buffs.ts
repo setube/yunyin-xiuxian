@@ -63,7 +63,16 @@ export const BUFFS: BuffDef[] = [
   b('buff_hundun', '本源归一', 'pill', 1800, '混沌本源入体,修炼速度提升 80%;小进阶成功率提升 10%(大关天劫,不食此源)', {
     cultivationSpeed: 0.8,
     breakthroughRate: 0.1
-  }, 'sparkles')
+  }, 'sparkles'),
+  // ---- 深邃设计:仙界以上的神/道品丹药增益(每 buff 仅一味丹产出,见 pillValue 法则 C) ----
+  b('buff_daluo', '大罗金身', 'pill', 1200, '大罗金身不坏,攻击提升 40%,暴击率提升 5%', { attackPct: 0.4, critRate: 0.05 }, 'crown'),
+  b('buff_shenyuan', '神元淬体', 'pill', 1800, '神元淬炼肉身,修炼速度提升 70%;小进阶成功率提升 6%(大关天劫,不食此源)', {
+    cultivationSpeed: 0.7,
+    breakthroughRate: 0.06
+  }, 'sparkles'),
+  b('buff_zhenshan', '镇世神威', 'pill', 1500, '神威镇世,造成伤害提升 30%,生命上限提升 15%', { damageBonus: 0.3, maxHpPct: 0.15 }, 'crown'),
+  b('buff_daotai', '道胎不灭', 'pill', 1800, '道胎不朽,受到伤害降低 20%,反击几率提升 20%', { damageReduction: 0.2, counterRate: 0.2 }, 'shield'),
+  b('buff_huntian', '混天一气', 'pill', 1800, '一气混元,修炼速度提升 120%,灵气回复提升 40%', { cultivationSpeed: 1.2, qiRegen: 0.4 }, 'wind')
 ]
 
 const BY_ID = new Map(BUFFS.map(x => [x.id, x]))

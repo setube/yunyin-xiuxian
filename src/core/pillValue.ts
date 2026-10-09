@@ -42,8 +42,7 @@
  *    会**高估**取得代价。这是保守方向:若在此口径下某味丹仍显得过强,结论只会更硬。
  */
 import type { PillDef } from '@/types'
-import { PILLS } from '@/data/pills'
-import { qualityDef } from '@/data/qualities'
+import { PILLS, pillQualityName, pillRank } from '@/data/pills'
 import { buffDef } from '@/data/buffs'
 import { recipeCraft } from '@/data/crafting'
 import { maxTierForMajor } from '@/data/regions'
@@ -206,7 +205,7 @@ export function craftBattlesOf(def: PillDef): number {
 
 /** 掉落权重 —— 与 core/loot.ts 的 randomDropPill 同一口径:品质越高越罕见 */
 export function dropWeightOf(def: PillDef): number {
-  return 100 / (1 + qualityDef(def.quality).rank * 2)
+  return 100 / (1 + pillRank(def) * 2)
 }
 
 /** 某大境界能掉出的丹药池 */
@@ -239,13 +238,13 @@ export function dropBattlesOf(def: PillDef): number {
  */
 export function craftPeerOf(def: PillDef): PillDef | null {
   const fam = pillFamily(def)
-  const rank = qualityDef(def.quality).rank
+  const rank = pillRank(def)
   let best: PillDef | null = null
   for (const p of PILLS) {
     if (!p.recipe || pillFamily(p) !== fam) continue
-    const pr = qualityDef(p.quality).rank
+    const pr = pillRank(p)
     if (pr < rank) continue
-    if (best === null || pr < qualityDef(best.quality).rank) best = p
+    if (best === null || pr < pillRank(best)) best = p
   }
   return best
 }
@@ -292,8 +291,8 @@ export function pillValueRow(def: PillDef): PillValueRow {
   return {
     id: def.id,
     name: def.name,
-    quality: qualityDef(def.quality).name,
-    qualityRank: qualityDef(def.quality).rank,
+    quality: pillQualityName(def),
+    qualityRank: pillRank(def),
     minRealm: def.minRealm,
     family: pillFamily(def),
     line,

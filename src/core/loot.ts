@@ -8,7 +8,7 @@ import { formatGN } from '@/utils/format'
 import { salvageYieldText } from '@/ui/forgeText'
 import { isRareQuality, qualityDef } from '@/data/qualities'
 import { equipmentTemplate } from '@/data/equipment'
-import { PILLS } from '@/data/pills'
+import { PILLS, pillRank } from '@/data/pills'
 import { herbGradeOfMajor } from '@/data/herbGrades'
 import { ARTIFACTS, artifactDef } from '@/data/artifacts'
 import { lifeThemeDef } from '@/data/lifeThemes'
@@ -183,7 +183,7 @@ export function acquireArtifact(defId: string, quiet = false): string {
 export function randomDropPill(major: number): string | null {
   const pool = PILLS.filter(p => p.minRealm <= major && !p.recipe)
   if (pool.length === 0) return null
-  const picked = rng.weighted(pool, p => 100 / (1 + qualityDef(p.quality).rank * 2))
+  const picked = rng.weighted(pool, p => 100 / (1 + pillRank(p) * 2))
   return picked.id
 }
 

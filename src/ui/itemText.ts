@@ -15,6 +15,7 @@
  */
 import type { ArtifactDef, EquipmentTemplate, GongfaDef, PetDef, PillDef } from '@/types'
 import { qualityDef } from '@/data/qualities'
+import { pillQualityName } from '@/data/pills'
 import { EQUIP_SLOT_NAMES } from '@/data/equipment'
 import { artifactActiveText, artifactValue } from '@/data/artifacts'
 import { buffDef } from '@/data/buffs'
@@ -148,7 +149,7 @@ export function pillSourceText(def: PillDef): string {
 
 /** 丹药的出处一行:品质 · 类别 · 从哪一境起现世 */
 export function pillMetaText(def: PillDef): string {
-  return `${qualityDef(def.quality).name} · ${def.recipe ? '可炼' : '偶得'} · ${REALMS[def.minRealm]?.name ?? ''}期起见`
+  return `${pillQualityName(def)} · ${def.recipe ? '可炼' : '偶得'} · ${REALMS[def.minRealm]?.name ?? ''}期起见`
 }
 
 // ============ 灵兽 ============

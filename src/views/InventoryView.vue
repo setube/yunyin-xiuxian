@@ -118,12 +118,12 @@
           v-for="row in pillRows"
           :key="row.def!.id"
           class="relative aspect-square rounded-md border transition-transform active:scale-98"
-          :style="{ borderColor: tint(qualityDef(row.def!.quality).color, 0.33), background: tint(qualityDef(row.def!.quality).color, 0.06) }"
+          :style="{ borderColor: tint(pillQualityColor(row.def!), 0.33), background: tint(pillQualityColor(row.def!), 0.06) }"
           @click="pillDetail = row.def!.id"
         >
           <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
-            <GameIcon :name="row.def!.icon" :size="20" :style="{ color: qualityDef(row.def!.quality).color }" />
-            <span class="w-full truncate text-center text-[9px] leading-tight" :style="{ color: qualityDef(row.def!.quality).color }">
+            <GameIcon :name="row.def!.icon" :size="20" :style="{ color: pillQualityColor(row.def!) }" />
+            <span class="w-full truncate text-center text-[9px] leading-tight" :style="{ color: pillQualityColor(row.def!) }">
               {{ row.def!.name }}
             </span>
           </span>
@@ -269,13 +269,13 @@
         <div class="flex items-center gap-3">
           <span
             class="grid h-12 w-12 shrink-0 place-items-center rounded-md"
-            :style="{ color: qualityDef(currentPill.def.quality).color, background: tint(qualityDef(currentPill.def.quality).color, 0.08) }"
+            :style="{ color: pillQualityColor(currentPill.def), background: tint(pillQualityColor(currentPill.def), 0.08) }"
           >
             <GameIcon :name="currentPill.def.icon" :size="24" />
           </span>
           <div class="min-w-0">
-            <p class="text-[11px]" :style="{ color: qualityDef(currentPill.def.quality).color }">
-              {{ qualityDef(currentPill.def.quality).name }}
+            <p class="text-[11px]" :style="{ color: pillQualityColor(currentPill.def) }">
+              {{ pillQualityName(currentPill.def) }}
             </p>
             <p class="text-[11px] text-ink-faint tabular">持有 ×{{ currentPill.count }}</p>
           </div>
@@ -337,7 +337,7 @@
             加了「连炼 ×5」之后右列更宽,窄屏上左列只剩两个字宽,丹名被压成竖排(议题 #21)。
           -->
           <div class="flex items-start gap-2.5">
-            <GameIcon :name="r.def.icon" :size="18" class="mt-px shrink-0" :style="{ color: qualityDef(r.def.quality).color }" />
+            <GameIcon :name="r.def.icon" :size="18" class="mt-px shrink-0" :style="{ color: pillQualityColor(r.def) }" />
             <div class="min-w-0 grow">
               <p class="flex flex-wrap items-baseline gap-x-2">
                 <span class="whitespace-nowrap font-kai text-[13px] text-ink">{{ r.def.name }}</span>
@@ -636,7 +636,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useSettingsStore } from '@/stores/settings'
   import { qualityDef, QUALITIES } from '@/data/qualities'
-  import { pillDef } from '@/data/pills'
+  import { pillDef, pillQualityColor, pillQualityName, pillRank } from '@/data/pills'
   import { HERB_GRADE_SHORT, herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
   import { herbStashText } from '@/ui/herbText'
   import { pillFuncText } from '@/ui/itemText'
@@ -798,7 +798,7 @@
     Object.entries(inventory.pills)
       .map(([id, count]) => ({ def: pillDef(id), count }))
       .filter(x => x.def !== undefined && x.count > 0)
-      .sort((a, b) => qualityDef(b.def!.quality).rank - qualityDef(a.def!.quality).rank)
+      .sort((a, b) => pillRank(b.def!) - pillRank(a.def!))
   )
 
   const recipes = computed(() =>
