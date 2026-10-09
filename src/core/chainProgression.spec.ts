@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import { RandomService, mulberry32 } from '@/utils/random'
+import { usePlayerStore } from '@/stores/player'
 import { CHAINS, CHAIN_EVENTS, CHAIN_TAG, chainOfEvent } from '@/data/chains'
 import { EVENTS, FORTUNE_EVENTS, eventDef } from '@/data/events'
 import { REGIONS } from '@/data/regions'
@@ -187,5 +188,48 @@ describe('奇缘 · 不进区域随机池,但真的会出现', () => {
     // 接线证明:奇缘阶段确实会被掷出来(拔掉 pickChainStageEvent 的调用这里会归零)
     expect(chainHits, '200 次判定里一次奇缘都没出现,说明奇缘没接上').toBeGreaterThan(0)
     console.log(`\n200 次事件判定:奇缘阶段 ${chainHits} 次`)
+  })
+})
+
+describe('奇缘连锁 · 读档修形(越界夹回/残链清掉)', () => {
+  it('越界 stage 被夹回链长:sword_in_lake(2 程)的 99 → 2', () => {
+    const player = usePlayerStore()
+    player.eventChains = { sword_in_lake: 99 }
+    player.sanitize()
+    expect(player.eventChains['sword_in_lake']).toBe(2)
+  })
+
+  it('认不出的链整条清掉:未知 chainId 不入档,已知的保留', () => {
+    const player = usePlayerStore()
+    player.eventChains = { ghost_chain: 3, old_man_stone: 1 }
+    player.sanitize()
+    expect(player.eventChains).toEqual({ old_man_stone: 1 })
+  })
+
+  it('合法的中程 stage 原样保留(修形非空转)', () => {
+    const player = usePlayerStore()
+    player.eventChains = { old_man_stone: 1, yunzhong: 3 }
+    player.sanitize()
+    expect(player.eventChains).toEqual({ old_man_stone: 1, yunzhong: 3 })
+  })
+
+  it('非对象残档清零为 {}', () => {
+    const player = usePlayerStore()
+    player.eventChains = 'junk' as never
+    player.sanitize()
+    expect(player.eventChains).toEqual({})
+  })
+
+  it('越界 stage 的链在 pending 里被视为已了(不崩、不悬),修形后夹回链长', () => {
+    const player = usePlayerStore()
+    player.major = 1
+    // 无劫时 old_man_stone(3 程)确实待走 —— 证明下案非空转
+    player.eventChains = {}
+    expect(pendingChainStages(1).some(p => p.chainId === 'old_man_stone')).toBe(true)
+    // 劫成 99:未修形前该缘被当「已了」不再待走;修形后夹回链长(3),仍是已了
+    player.eventChains = { old_man_stone: 99 }
+    expect(pendingChainStages(1).some(p => p.chainId === 'old_man_stone')).toBe(false)
+    player.sanitize()
+    expect(player.eventChains['old_man_stone']).toBe(3)
   })
 })

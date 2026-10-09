@@ -13,6 +13,7 @@ import { petDef } from '@/data/pets'
 import { mentorDef } from '@/data/mentors'
 import { talentDef } from '@/data/talents'
 import { heritageDef } from '@/data/heritage'
+import { CHAINS } from '@/data/chains'
 import { birthMajorFloor } from '@/core/heritageEffects'
 import { randomDaoName } from '@/data/names'
 import { rng } from '@/utils/random'
@@ -696,6 +697,23 @@ export const usePlayerStore = defineStore(
         const endsAt = asFiniteNumber(ev.endsAt, 0, 0)
         if (!regionOk || endsAt <= 0) regionEvent.value = null
         else regionEvent.value = { ...ev, endsAt }
+      }
+      /**
+       * 奇缘连锁进度(Phase 34 奇缘录):写入口 setEventChain 已夹(0 ≤ stage),但读档
+       * sanitize 此前没夹加载——越界/残链的 stage 会让 pendingChainStages 读到
+       * chain.stages[done] === undefined,那条奇缘被当成「已了」永不再现。故这里夹回
+       * [0, 链长],认不出的链整条清掉(跨世保留的设计不变,只是修形)。
+       */
+      if (typeof eventChains.value !== 'object' || eventChains.value === null) {
+        eventChains.value = {}
+      } else {
+        const chainNext: Record<string, number> = {}
+        for (const [chainId, stage] of Object.entries(eventChains.value)) {
+          const chain = CHAINS.find(c => c.id === chainId)
+          if (!chain) continue // 认不出的链:整条清掉
+          chainNext[chainId] = Math.min(chain.stages.length, Math.max(0, Math.floor(asFiniteNumber(stage, 0, 0))))
+        }
+        eventChains.value = chainNext
       }
       /**
        * 数组类字段先补形,再谈内容 —— 存档可能被改坏、写坏或在旧版本里根本没有这一栏。
