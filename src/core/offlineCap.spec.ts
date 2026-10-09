@@ -18,6 +18,7 @@ import { useLoreStore } from '@/stores/lore'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
+import { useCultivationStore } from '@/stores/cultivation'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { todayWeather } from './weather'
@@ -340,5 +341,37 @@ describe('离线总结报数 == 实发', () => {
     // 寿元不封顶:60h 全额记账(≈60 年),而非 8h(≈8 年),且报数==实发
     expect(sm.ageYears).toBe(Math.round(player.age - age0))
     expect(sm.ageYears, '寿元按完整 60h 记账').toBeGreaterThanOrEqual(50)
+  })
+})
+
+/** 离线修炼修为(仅挂 修炼,不挂历练) */
+function offlineCultExp(buff: 'none' | 'expired' | 'active'): number {
+  setActivePinia(createPinia())
+  const game = useGameStore()
+  const player = usePlayerStore()
+  game.markStarted()
+  const started = Date.now() - 2 * 3600 * 1000
+  game.lastActiveAt = started
+  player.major = 4
+  player.exp = { m: 0, e: 0 }
+  if (buff !== 'none') {
+    const endsAt = buff === 'expired' ? Date.now() - 5000 : Date.now() + 3600 * 1000
+    useCultivationStore().buffs = [{ defId: 'buff_juling', endsAt, added: 1800000 }] // 聚灵:+50% 修速
+  }
+  const summary = settleOffline(Date.now())!
+  return toNum(summary.exp)
+}
+
+describe('离线结算 · 已过期 buff 不补贴(结算前先清算)', () => {
+  it('已过期的聚灵(+50% 修速)对离线修为零贡献:与无 buff 完全一致', () => {
+    const expired = offlineCultExp('expired')
+    const none = offlineCultExp('none')
+    expect(expired).toBe(none) // 过期即不补贴离线修为
+  })
+
+  it('未过期聚灵仍正常抬离线修为(阳性对照:测试不是空转)', () => {
+    const active = offlineCultExp('active')
+    const none = offlineCultExp('none')
+    expect(active).toBeGreaterThan(none)
   })
 })
