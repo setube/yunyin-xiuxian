@@ -10,7 +10,7 @@ import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { pillDef } from '@/data/pills'
 import { salePills } from './marketService'
-import { herbBuyPrice, herbGradeOfMajor } from '@/data/herbGrades'
+import { herbBuyPrice, type HerbGrade } from '@/data/herbGrades'
 import { MARKET_MAT_STONE_UNITS } from '@/data/market'
 import {
   BOUNTY_SLOTS,
@@ -43,17 +43,20 @@ export function equipBountyReward(tier: number, qualityRank: number): { stone: G
   }
 }
 
-/** 生成一版悬赏订单(四类各一);贡器 reward 为占位,交货时按所交之品现算 */
+/** 募草交货可得:按**所交的品阶**计价,每株 = 购价 ×(悬赏档 4.5 / 购入档 6),恒在摆摊与购入之间 */
+export function herbBountyReward(grade: HerbGrade, target: number): GNum {
+  const unit = herbBuyPrice(grade) * (BOUNTY_MAT_UNIT_AMOUNT / MARKET_MAT_STONE_UNITS)
+  return mulN(gn(unit), target)
+}
+
+/** 生成一版悬赏订单(四类各一);贡器/募草 reward 为占位,交货时按所交之品现算 */
 export function generateBounty(major: number, now: number): BountySlot[] {
   const pillId = pickPill(major, now)
   const pd = pillDef(pillId)
   const matTarget = BOUNTY_MAT_TARGET
   const oreReward = stoneByTier(major, matTarget * BOUNTY_MAT_UNIT_AMOUNT)
-  // 募草按品计价:每株 = 购价 ×(悬赏档 4.5 / 购入档 6),恒在摆摊(3)与购入(6)之间
-  const herbUnit = herbBuyPrice(herbGradeOfMajor(major)) * (BOUNTY_MAT_UNIT_AMOUNT / MARKET_MAT_STONE_UNITS)
-  const herbReward = mulN(gn(herbUnit), matTarget)
   const slots: BountySlot[] = [
-    { idx: 0, kind: 'herb', kindId: 'herb', target: matTarget, tier: 0, reward: herbReward, extra: 0, claimed: false },
+    { idx: 0, kind: 'herb', kindId: 'herb', target: matTarget, tier: 0, reward: gnZero(), extra: 0, claimed: false },
     { idx: 1, kind: 'ore', kindId: 'ore', target: matTarget, tier: 0, reward: oreReward, extra: 0, claimed: false },
     {
       idx: 2,

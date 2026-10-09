@@ -108,7 +108,7 @@
               <span class="text-[10px] text-ink-faint">存 {{ m.count }}</span>
               <span v-if="m.count < MARKET_MAT_COUNT" class="text-[10px] text-cinnabar">再 {{ MARKET_MAT_COUNT - m.count }} 份可售</span>
             </div>
-            <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="m.count < MARKET_MAT_COUNT" @click="sellMaterialOne(m.id)">
+            <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="m.count < MARKET_MAT_COUNT" @click="m.grade == null ? sellOreOne() : sellHerbOne(m.grade)">
               售出 ×{{ MARKET_MAT_COUNT }} ({{ formatGN(m.price) }})
             </button>
           </div>
@@ -204,11 +204,12 @@
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
   import { pillDef } from '@/data/pills'
-  import { HERB_GRADE_NAMES, herbGradeBandLabel, herbGradeOfMajor } from '@/data/herbGrades'
+  import { HERB_GRADE_NAMES, HERB_GRADES, herbGradeBandLabel, herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef } from '@/data/qualities'
   import {
     consignPrice,
+    herbSellBatch,
     marketEquipInstance,
     marketRemainingSec,
     materialSellPrice,
@@ -288,16 +289,18 @@
       }))
   )
 
-  const materialRows = computed(() =>
-    (['herb', 'ore'] as const).map(id => ({
-      id,
-      ...MAT_META[id],
-      // 坊市只在这一境界的一品上进出:草按当前品阶计入,价也按品
-      name: id === 'herb' ? HERB_GRADE_NAMES[herbGradeOfMajor(player.major)] : MAT_META[id].name,
-      count: id === 'herb' ? resources.herbOf(herbGradeOfMajor(player.major)) : resources.ore,
-      price: materialSellPrice(id, player.major)
+  /** 摆摊逐品可售:玄铁一行 + 每品灵草(仅列持有>0 的品),旧草也有出口 */
+  const materialRows = computed(() => [
+    { id: 'ore', grade: null as HerbGrade | null, icon: 'mountain', name: '玄铁', count: resources.ore, price: materialSellPrice(player.major) },
+    ...HERB_GRADES.filter(g => resources.herbOf(g) > 0).map(g => ({
+      id: `herb_${g}`,
+      grade: g,
+      icon: 'leaf',
+      name: HERB_GRADE_NAMES[g],
+      count: resources.herbOf(g),
+      price: herbSellBatch(g)
     }))
-  )
+  ])
 
   const sellablePills = computed(() =>
     Object.entries(inventory.pills)
@@ -368,8 +371,12 @@
     else if (result === 'full') ui.toast('寄卖格已满', 'info')
   }
 
-  function sellMaterialOne(id: 'herb' | 'ore'): void {
-    if (market.sellMaterial(id, player.major)) ui.toast(MAT_META[id].name + '已售出', 'success')
+  function sellOreOne(): void {
+    if (market.sellMaterial(player.major)) ui.toast('玄铁 已售出', 'success')
+  }
+
+  function sellHerbOne(g: HerbGrade): void {
+    if (market.sellHerb(g)) ui.toast(`${HERB_GRADE_NAMES[g]} 已售出`, 'success')
   }
 
   function sellPillOne(pillId: string): void {
@@ -415,19 +422,33 @@
 
   function renderBounty(s: BountySlot): BountyView {
     const claimed = s.claimed
-    if (s.kind === 'herb' || s.kind === 'ore') {
-      const name = s.kind === 'herb' ? '灵草' : '玄铁'
+    if (s.kind === 'herb') {
+      const anyGrade = HERB_GRADES.some(g => resources.herbOf(g) >= s.target)
       return {
         idx: s.idx,
         kind: s.kind,
-        tag: s.kind === 'herb' ? '草' : '铁',
-        tagCls: B_TAG_CLS[s.kind] ?? '',
-        title: `募 ${name} ×${s.target}`,
-        desc: `交 ${name} 一摞,现货即结`,
+        tag: '草',
+        tagCls: B_TAG_CLS.herb ?? '',
+        title: `募 灵草 ×${s.target}`,
+        desc: '交任意一品灵草,现货即结,价随所交之品',
+        rewardText: '价随品',
+        extraText: '',
+        claimed,
+        ready: anyGrade
+      }
+    }
+    if (s.kind === 'ore') {
+      return {
+        idx: s.idx,
+        kind: s.kind,
+        tag: '铁',
+        tagCls: B_TAG_CLS.ore ?? '',
+        title: `募 玄铁 ×${s.target}`,
+        desc: `交 玄铁 一摞,现货即结`,
         rewardText: formatGN(s.reward),
         extraText: '',
         claimed,
-        ready: (s.kind === 'herb' ? resources.herbOf(herbGradeOfMajor(player.major)) : resources.ore) >= s.target
+        ready: resources.ore >= s.target
       }
     }
     if (s.kind === 'pill') {

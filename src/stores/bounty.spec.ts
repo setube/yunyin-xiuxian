@@ -8,6 +8,7 @@ import { toNum } from '@/utils/gnum'
 import { useBountyStore } from '@/stores/bounty'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
+import { herbBountyReward } from '@/core/bountyService'
 
 const FAR = 4_102_444_800_000 // 2099-12-31
 
@@ -22,7 +23,7 @@ function mat(kind: 'herb' | 'ore', idx = 0): BountySlot {
 describe('坊市悬赏板 · 交货', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('募草:扣足量、入账价、盖已交;不足则不成', () => {
+  it('募草:扣足量、按所交品计价、盖已交;不足则不成(任意品可交)', () => {
     const b = useBountyStore()
     const res = useResourcesStore()
     seedSlots([mat('herb')])
@@ -32,12 +33,24 @@ describe('坊市悬赏板 · 交货', () => {
     expect(res.herb).toBe(10)
     expect(b.orders[0]!.claimed).toBe(false)
 
-    res.herbByGrade[1] = 30
+    // 凡品+道品都够:自低品起挑(保高阶给方子),价按凡品算
+    res.$patch({ herbByGrade: { 1: 30, 2: 0, 3: 0, 4: 0, 5: 5 } })
     expect(b.claim(0)).toBe('ok')
-    expect(res.herb).toBe(0)
-    expect(toNum(res.spiritStone)).toBeCloseTo(toNum(b.orders[0]!.reward), 5)
+    expect(res.herb).toBe(5)
+    expect(toNum(res.spiritStone)).toBe(toNum(herbBountyReward(1, 30)))
     expect(b.orders[0]!.claimed).toBe(true)
     expect(b.claim(0), '已交不可再交').toBe('claimed')
+  })
+
+  it('募草只剩道品够:交道品即得高品价', () => {
+    const b = useBountyStore()
+    const res = useResourcesStore()
+    seedSlots([mat('herb')])
+    res.$patch({ herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 30 } })
+    res.spiritStone = { m: 0, e: 0 }
+    expect(b.claim(0)).toBe('ok')
+    expect(res.herb).toBe(0)
+    expect(toNum(res.spiritStone)).toBe(toNum(herbBountyReward(5, 30)))
   })
 
   it('募丹:扣足枚、入账灵石并附悟道', () => {
