@@ -9,7 +9,7 @@
  * 总额——总额还含 track('offlineClaims') 触发的成就奖励(境界成就等),与镇压无关。
  * 每个 `it` 独立 pinia,避免多次结算互相污染。
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { settleOffline } from './offline'
 import { checkStateAchievements } from './progress'
@@ -346,20 +346,29 @@ describe('离线总结报数 == 实发', () => {
 
 /** 离线修炼修为(仅挂 修炼,不挂历练) */
 function offlineCultExp(buff: 'none' | 'expired' | 'active'): number {
-  setActivePinia(createPinia())
-  const game = useGameStore()
-  const player = usePlayerStore()
-  game.markStarted()
-  const started = Date.now() - 2 * 3600 * 1000
-  game.lastActiveAt = started
-  player.major = 4
-  player.exp = { m: 0, e: 0 }
-  if (buff !== 'none') {
-    const endsAt = buff === 'expired' ? Date.now() - 5000 : Date.now() + 3600 * 1000
-    useCultivationStore().buffs = [{ defId: 'buff_juling', endsAt, added: 1800000 }] // 聚灵:+50% 修速
+  // 冻实 Date.now():endsAt 与 settleOffline 的 nowMs 各取一次真实时钟,并行下两次读数之间
+  // 一旦跨到不同的"现在",本应过期的聚灵会偶发被当成仍有效 → expired != none(完整套件
+  // 并载时间歇报、单跑又好)。冻时让两处读同一时刻,过期必被 prune(与闭关冻时同款修法)。
+  vi.useFakeTimers()
+  try {
+    vi.setSystemTime(1_000_000)
+    setActivePinia(createPinia())
+    const game = useGameStore()
+    const player = usePlayerStore()
+    game.markStarted()
+    const started = Date.now() - 2 * 3600 * 1000
+    game.lastActiveAt = started
+    player.major = 4
+    player.exp = { m: 0, e: 0 }
+    if (buff !== 'none') {
+      const endsAt = buff === 'expired' ? Date.now() - 5000 : Date.now() + 3600 * 1000
+      useCultivationStore().buffs = [{ defId: 'buff_juling', endsAt, added: 1800000 }] // 聚灵:+50% 修速
+    }
+    const summary = settleOffline(Date.now())!
+    return toNum(summary.exp)
+  } finally {
+    vi.useRealTimers()
   }
-  const summary = settleOffline(Date.now())!
-  return toNum(summary.exp)
 }
 
 describe('离线结算 · 已过期 buff 不补贴(结算前先清算)', () => {
