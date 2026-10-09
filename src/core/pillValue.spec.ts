@@ -16,7 +16,17 @@
  * 见文末「未处置的账」。
  */
 import { describe, it, expect } from 'vitest'
-import { PILLS, pillDef, pillQualityName, pillRank } from '@/data/pills'
+import {
+  PILLS,
+  pillDef,
+  pillQualityColor,
+  pillQualityName,
+  pillRank,
+  DAO_QUALITY_COLOR,
+  DAO_QUALITY_NAME,
+  DAO_QUALITY_RANK
+} from '@/data/pills'
+import { qualityDef } from '@/data/qualities'
 import { buffDef } from '@/data/buffs'
 import { MAX_MAJOR, WORLD_BREAK_MAJOR } from '@/data/realms'
 import { BATTLE_EXP_SECS, INSTANT_EXP_LAYER_CAP } from '@/data/constants'
@@ -457,5 +467,44 @@ describe('本次校准的落点', () => {
       expect(craftPeak, `${FAMILY_NAME[fam]}族没有可炼品`).toBeGreaterThan(0)
       if (dropPeak > 0) expect(craftPeak, `${FAMILY_NAME[fam]}族顶端仍被掉落品压过`).toBeGreaterThanOrEqual(dropPeak)
     }
+  })
+})
+
+/**
+ * 道品顶档的解析守卫(Phase 33.6 补)。
+ *
+ * 共享品质表 QUALITIES 只到神品(rank 8);「道品」是丹药专属顶档,只存在于
+ * data/pills.ts。凡要读丹药品阶的 rank/名/色,一律走 pillRank / pillQualityName /
+ * pillQualityColor —— 绝不直接 qualityDef(pill.quality):共享表查无 'dao',
+ * qualityDef 会回落 QUALITIES[0] 凡品,登峰一品在图上静默降格成凡品,CI 还不报警。
+ *
+ * 本组测试替这条「口头禁令」兜底:道品丹的解析必须走对,且与 qualityDef 的凡品
+ * 回落在口径上分道扬镳。
+ */
+describe('道品顶档的解析守卫', () => {
+  const daoPills = PILLS.filter(p => p.quality === 'dao')
+
+  it('确有道品位阶的丹药 —— 空断言防顶档被整档误删', () => {
+    expect(daoPills.length, '没有一味道品丹?道品顶档被删空了').toBeGreaterThan(0)
+  })
+
+  it('每一味道品丹的 rank/名/色 都解析到道品档,而不是回落成凡品', () => {
+    for (const p of daoPills) {
+      expect(pillRank(p), `${p.name} 的 rank 没落到道品档`).toBe(DAO_QUALITY_RANK)
+      expect(pillQualityName(p), `${p.name} 的名字应记「道品」`).toBe(DAO_QUALITY_NAME)
+      expect(pillQualityColor(p), `${p.name} 的配色应记登峰金芒`).toBe(DAO_QUALITY_COLOR)
+      // 反向坐实:直接 qualityDef 会把道品箍回凡品,两个口径必须分叉,否则就是没走对
+      expect(qualityDef(p.quality as never).name, `${p.name} 竟以凡品口径解析`).not.toBe(DAO_QUALITY_NAME)
+      expect(pillRank(p)).not.toBe(qualityDef(p.quality as never).rank)
+    }
+  })
+
+  it('道品是丹药专属顶档,不入共享品质表(qualityDef 查无此档会回落凡品)', () => {
+    expect(DAO_QUALITY_RANK).toBe(9)
+    expect(DAO_QUALITY_NAME).toBe('道品')
+    expect(DAO_QUALITY_COLOR).toBe('#E9B949')
+    // 'dao' 不在 QUALITIES —— 这正是文件尾注释警告的坑:命中了就不该当 道品 用
+    expect(qualityDef('dao' as never).name).toBe('凡品')
+    expect(qualityDef('dao' as never).rank).toBe(0)
   })
 })

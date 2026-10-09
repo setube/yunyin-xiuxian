@@ -282,7 +282,7 @@ export const PILLS: PillDef[] = [
     recipe: { herb: 490, stoneBase: 1550 },
     alchemyLevel: 10
   }),
-  p('p_daozu', '道祖丹', 'divine', 20, '万道之祖留下的方子,一炉只出三枚', {
+  p('p_daozu', '道祖丹', 'divine', 20, '万道之祖留下的方子,一炉殊难成一枚,丹成则道贯古今', {
     instant: { wudao: 150 },
     recipe: { herb: 520, stoneBase: 1700 },
     alchemyLevel: 10
