@@ -52,6 +52,7 @@
 - 天机携带气血预报边界守卫:1.33「天机预览补算携带气血、装残不再报乐观」的修复此前只测了出发前(run=undefined),没在携带气血边界守——如今钉死三件原子事实:withCarriedHp 把携带气血精确写进入界起手(含上限夹逼)、战斗结算真按 playerStartHpPct 起手(构造刀口之战:满血赢/带伤输)、天机预览确定性
 - RIL 图谱孤立 change 节点收口:预 round-257 的 26 个 change 节点(承载真实 commit,却从未接线 implements/resolves)归集到整合 task/issue,ril.py check 首次归零(26 问题 → 0)
 - 离线×在线掉落倍率行为级成比例守卫:regionEventReward(区域事件加丰)与 doubleDropRate(福缘)此前只被 offlineParity 的**文本契约**守着(断言源码含串),字符串还在≠产出真被放大 —— 如今真跑 settleOffline(同 offlineModeReward 的 mock rng+sampleWinRate 确定性技):妖潮 ×1.2 残页 ≈ 平日 1.2 倍(±取整噪声),探宝 ×1.05 残页 ≈ 平日 1.05 倍,二者独立可叠加(组合 ≈ ×1.26);变异证明:从残页行摘掉 regionEventReward → 两案齐红
+- 远征读档恢复守卫:worldRun 是活状态(每场战斗都读 layer/carriedHpPct/winStacks),读档恢复处(endgame.sanitize)把每一域夹回安全区间,但此前 0 个测试调用 —— 一处 clamp 写坏会静默滑过 CI。如今钉死:未知 worldId(非天界非 void)直接作废、void 在途保护、layer 夹回 [0,GUARDIAN_LAYER=3](NaN→0)、carriedHpPct 夹回 [0.05,1](非数→1,防开局 NaN/无敌)、pactId/gateId 只收 string、bonus/totalRounds/winStacks 取非负整数、rows 只留有效 foeName;连同 rerollVoidWorld 代价守卫(虚界在途拒绝/道源不足拒绝/成功扣 10/生成失败退回 10)
 - 冒烟自检覆盖补两页:道童(/apprentice)与坊市(/market)——最近改动最密的两个路由此前不在界面冒烟盘上,页码错误/NaN/Infinity 泄漏/按钮沉默都会滑过 CI
 - 引擎心跳 start/stop/dt 边界首度直测:双开只开一个 interval、停就清、暂停/未开始/dt=0 不结算、小 dt 在线推进、大 dt 走离线结算——此前整条主干零覆盖,防双心跳与路由漂移
 - 道果熔铸价随层级口径直测:现役 furnaceStoneCost/furnaceConvertStone 首度有直接断言(价=stoneByTier(当前层级,300)、相对一战收入恒定 30、足则转成/不足原子不动)——此前只有 economySim 用自己的平行算式守,冻死战价的旧病(SS-214)漏网即绿
