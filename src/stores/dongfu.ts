@@ -41,7 +41,7 @@ function fieldGradeCap(fieldLv: number): HerbGrade {
  *   result  = min(5, max(当前品, preview))  —— 永不低过当前品(守住当前品水龙头),永不越道品
  * 两式叠加:低境拉满也最多高当前一档(不跳过当前品来源、不越道品);高境低田仍给当前品(不砸下限)。
  */
-function fieldHerbGrade(major: number, fieldLv: number): HerbGrade {
+export function fieldHerbGrade(major: number, fieldLv: number): HerbGrade {
   const current = herbGradeOfMajor(major)
   const preview = Math.min(current + 1, fieldGradeCap(fieldLv))
   return Math.min(5, Math.max(current, preview)) as HerbGrade

@@ -41,6 +41,10 @@
           <GameIcon name="leaf" :size="13" class="mx-auto text-jade" />
           <p class="mt-0.5 text-[9px] text-ink-faint">灵草 / 时</p>
           <p class="tabular font-kai text-[14px] leading-tight" :class="summary.fieldLv ? 'text-jade' : 'text-ink-faint'">{{ summary.fieldLv ? summary.herbHr : '—' }}</p>
+          <!-- 灵田产草品阶:正常就报当前境的品;前瞻高一档(囤下一境草)时朱标提醒 -->
+          <p v-if="summary.fieldGrade" class="mt-0.5 text-[8px] leading-none" :class="summary.fieldForward ? 'text-cinnabar' : 'text-ink-faint'">
+            {{ summary.fieldForward ? `前瞻 ↑ ${summary.fieldGradeName}` : `产${summary.fieldGradeName}` }}
+          </p>
         </div>
         <div class="rounded bg-paper-deep/60 px-1 py-1.5 text-center">
           <GameIcon name="axe" :size="13" class="mx-auto text-ink-soft" />
@@ -150,7 +154,8 @@
   import { REALMS } from '@/data/realms'
   import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, LIBRARY_WUDAO_PER_HOUR, OFFLINE_CAP_HOURS, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { VEINS } from '@/data/veins'
-  import { useDongfuStore } from '@/stores/dongfu'
+  import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
+  import { useDongfuStore, fieldHerbGrade } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -205,6 +210,11 @@
       libLv,
       arrayLv,
       herbHr: `${fieldLv * FIELD_HERB_PER_HOUR} 株`,
+      // 灵田产草品阶:与 produce 同一判据(fieldHerbGrade)。level 0 未建时为 null。
+      // forward = 产的高于当前境品 —— 灵田不受境界门控、可前瞻一档(囤下一境草),这值得明说。
+      fieldGrade: fieldLv > 0 ? fieldHerbGrade(player.major, fieldLv) : null,
+      fieldGradeName: fieldLv > 0 ? HERB_GRADE_SHORT[fieldHerbGrade(player.major, fieldLv)] : null,
+      fieldForward: fieldLv > 0 && fieldHerbGrade(player.major, fieldLv) > herbGradeOfMajor(player.major),
       oreHr: `${(fieldLv * FIELD_ORE_PER_HOUR).toFixed(1)} 块`,
       wudaoHr: `${(libLv * LIBRARY_WUDAO_PER_HOUR).toFixed(1)} 点`,
       offlineHrs: dongfu.offlineCapHours,

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useDongfuStore } from './dongfu'
+import { useDongfuStore, fieldHerbGrade } from './dongfu'
 import { BUILDINGS, ARRAY_QI_CAP_PER_LEVEL, BEAST_EFFECT_PER_LEVEL } from '@/data/buildings'
 import { FIELD_HERB_PER_HOUR, FORGE_LEVEL_PER_CAP } from '@/data/constants'
 import { MAX_MAJOR } from '@/data/realms'
@@ -207,5 +207,26 @@ describe('洞府产出 · 灵田品阶(灵田等级越高产更高品)', () => {
 
   it('到顶不越道品(5):混沌海拉满灵田仍止于道品', () => {
     expect(yieldByGrade(MAX_MAJOR, 15)).toEqual({ 1: 0, 2: 0, 3: 0, 4: 0, 5: herbCount(15) })
+  })
+})
+
+describe('fieldHerbGrade 直接判定(洞府纪要的「前瞻 ↑」信号源)', () => {
+  // 界面「前瞻 ↑ XX品」就靠 fieldHerbGrade 是否高于当前境品判 —— 与 produce 同一判据,
+  // 单独把它钉在边界上,免得界面提示与实际入账漂移。
+
+  it('低灵田未到跃迁档:产当前境品(凡境 3 级田仍凡品)', () => {
+    expect(fieldHerbGrade(0, 3)).toBe(1)
+  })
+
+  it('灵田 4 级(跃迁档)凡境即前瞻为灵品:产 2,高于当前品 1', () => {
+    expect(fieldHerbGrade(0, 4)).toBe(2)
+  })
+
+  it('高境界低灵田:保当前品下限,不因田低掉回低品', () => {
+    expect(fieldHerbGrade(MAX_MAJOR, 1)).toBe(5)
+  })
+
+  it('混沌海(道品=5)拉满:止于道品,不再越', () => {
+    expect(fieldHerbGrade(MAX_MAJOR, 15)).toBe(5)
   })
 })
