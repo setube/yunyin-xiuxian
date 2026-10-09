@@ -218,3 +218,39 @@ describe('服用丹药的三档文案(usePill 端到端)', () => {
     expect(lastToast()).toContain('这一颗白费了')
   })
 })
+
+describe('读档复钳上限(sanitize 不放过超限 buff)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('5× 越限的坏档 buff:sanitize 后 added 夹回上限、endsAt 钳到 now+上限,不整段横跨', () => {
+    const cultivation = useCultivationStore()
+    const now = Date.now()
+    const capMs = buffCapSec('buff_juling')! * 1000
+    const full = 5 * buffDef('buff_juling')!.durationSec * 1000 // 5 倍远超 2 倍上限
+    cultivation.$patch({ buffs: [{ defId: 'buff_juling', endsAt: now + full, added: full }] })
+    cultivation.sanitize()
+    expect(cultivation.buffs[0]!.added).toBe(capMs)
+    expect(cultivation.buffs[0]!.endsAt).toBeGreaterThan(now + capMs - 5000) // ±取 Date.now 偏差
+    expect(cultivation.buffs[0]!.endsAt).toBeLessThanOrEqual(now + capMs + 5000)
+  })
+
+  it('合法(≤上限)的 buff 读档后原样保留(修形非空转)', () => {
+    const cultivation = useCultivationStore()
+    const now = Date.now()
+    const dur = buffDef('buff_juling')!.durationSec * 1000 // 单颗时长 ≤ 2× 上限
+    cultivation.$patch({ buffs: [{ defId: 'buff_juling', endsAt: now + dur, added: dur }] })
+    cultivation.sanitize()
+    expect(cultivation.buffs[0]!.endsAt).toBe(now + dur)
+    expect(cultivation.buffs[0]!.added).toBe(dur)
+  })
+
+  it('无上限的 buff(闭关/重伤/祝福)读档不受钳制,仅保证有限数字', () => {
+    const cultivation = useCultivationStore()
+    const now = Date.now()
+    cultivation.buffs = [{ defId: 'injury', endsAt: now + 5000, added: 5000 } as never]
+    cultivation.sanitize()
+    expect(cultivation.buffs[0]!.endsAt).toBe(now + 5000) // 未过期、未过期:不受钳制原样保留
+  })
+})

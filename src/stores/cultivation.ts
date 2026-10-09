@@ -8,7 +8,7 @@ import { buffDef } from '@/data/buffs'
 import { gongfaBranchDef } from '@/data/gongfaBranches'
 import { mergeMods } from '@/core/statsCalc'
 import { buffCapSec } from '@/core/buffCap'
-import { asArray, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
+import { asArray, asNumberRecord, asRecord, asStringArray, asFiniteNumber } from '@/utils/saveShape'
 
 /** 功法在某等级下的属性 */
 export function gongfaModsAt(id: string, level: number): StatMods {
@@ -49,7 +49,23 @@ export const useCultivationStore = defineStore(
       learned.value = fixedLearned
       if (typeof mainGongfa.value !== 'string' || !fixedLearned[mainGongfa.value]) mainGongfa.value = null
       subGongfa.value = asStringArray(subGongfa.value).filter(id => fixedLearned[id] !== undefined)
-      buffs.value = asArray<BuffInstance>(buffs.value, [], b => !!b && typeof (b as BuffInstance).defId === 'string')
+      buffs.value = asArray<BuffInstance>(buffs.value, [], b => !!b && typeof (b as BuffInstance).defId === 'string').map(b => {
+        const capSec = buffCapSec(b.defId)
+        const capMs = capSec === undefined ? undefined : capSec * 1000
+        if (capMs === undefined) {
+          // 不受丹药上限约束的状态(闭关/重伤/祝福):仅保证时限是有限数字,不另加局部上限
+          return { ...b, endsAt: asFiniteNumber(b.endsAt, Date.now(), 0) }
+        }
+        // 受上限的丹药 buff:读档复钳到 2× 单颗上限(与 addBuff 同口径)。
+        // 此前只钳写入口、没钳读档——坏档/老档若带超限时长(如 5× 的「无限囤」残留),
+        // 会横跨整段会话有效,尤以修速类(+50% 聚灵)为甚。endsAt 钳在 now+cap、added 钳在 cap。
+        const now = Date.now()
+        return {
+          ...b,
+          endsAt: Math.min(asFiniteNumber(b.endsAt, now, 0), now + capMs),
+          added: Math.min(asFiniteNumber(b.added, 0, 0), capMs)
+        }
+      })
       gongfaBranch.value = asRecord<string>(gongfaBranch.value)
     }
 
