@@ -130,6 +130,66 @@ const errors = []
  * 一屏里要是冒出十几个,那就说明有一批入口在静默失败。
  */
 const silent = []
+/**
+ * 真·死控件/无效果控件:点了没反应,干净重试仍没反应 → 判失败(exitCode 1)。
+ * 与 silent 分开:silent 是「读数不判失败」(导航被浮层挡、或干净重试证实功能正常),
+ * 而这里是有实据的死按钮。
+*/
+const dead = []
+/**
+ * 幂等选中项白名单:点「当前已选中的值」本身就该没反应(×1 当已在 ×1、跟随系统当已开),
+ * 属设计内的无效果,不判失败。每项留一句理由,不许空着硬塞。
+*/
+const ALLOW_SILENT = new Set([
+  '/settings 点「×1」', // 战报速度默认为 ×1,点当下的选中值 = 无变化
+  '/settings 点「跟随系统」' // 主题默认跟随系统,点当下的选中值 = 无变化
+])
+function escapeRe(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+/**
+ * 干净重试:回本路由、单独点同一按钮,看指纹有没有变。
+ * 全流程态下点一个「已被前次交互带入目标态」的按钮会没增量(误报);单独点却有变化
+ * 的,证明控件功能正常,不判失败。返回:
+ *  - true  单独点有变化(功能正常)
+ *  - false 单独点也无变化(真死控件)
+ *  - null  干净态下找不到该按钮(如弹窗按钮在干净态未开),无法复现 → 不判失败
+ */
+async function cleanRetry(route, label) {
+  await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
+  await page.waitForTimeout(700)
+  const namere = new RegExp('^' + escapeRe(label).replace(/\s+/g, '\\s+') + '$')
+  const b = page.getByRole('button', { name: namere }).first()
+  if (!(await b.count())) return null
+  if (!(await b.isVisible().catch(() => false))) return null
+  const before = await fingerprint()
+  await b.click({ timeout: 800 }).catch(() => {})
+  await settle()
+  return (await fingerprint()) !== before
+}
+/**
+ * 区分「真死控件(判失败)」与「读数(不判失败)」:
+ *  1. 幂等选中项白名单 → 读数
+ *  2. 干净重试有变化 → 读数(功能正常,抑制全流程误报)
+ *  3. 干净重试仍无变化 → dead(判失败)
+ *  4. 干净态找不到(弹窗类)→ 读数(无法复现,不误伤)
+ */
+async function classifySilent(route, kind, label) {
+  const verb = kind === 'modal' ? '弹窗内点' : '点'
+  const entry = `${route} ${verb}「${label}」`
+  if (ALLOW_SILENT.has(entry)) {
+    silent.push(`${entry}(幂等选中项,不判失败)`)
+    return
+  }
+  const clean = await cleanRetry(route, label)
+  if (clean === true) {
+    silent.push(`${route} 干净重试有变化(功能正常,抑制误报):${verb}「${label}」`)
+  } else if (clean === null) {
+    silent.push(`${entry}(干净态无法单独复现,不判失败)`)
+  } else {
+    dead.push(entry)
+  }
+}
 /** 已成功走过的导航链接(去重:同 href 全站只点一次;失败/被挡的不计入,留待后续路由重试) */
 const navClicked = new Set()
 /** 已报过「未达目标/被浮层挡住」读数的链接(同 href 只报一次,避免跨路由刷屏) */
@@ -246,7 +306,7 @@ async function clickInsideModal(route) {
     await settle()
     if (errors.length > before) errors[errors.length - 1].where = `${route} 弹窗内点「${label}」`
     // 弹窗按钮此前只查了 pageerror,点了没反应的同样会被静默吞掉 —— 一并纳入指纹判定
-    else if ((await fingerprint()) === beforeFp) silent.push(`${route} 弹窗内点「${label}」`)
+    else if ((await fingerprint()) === beforeFp) await classifySilent(route, 'modal', label)
   }
 }
 
@@ -272,7 +332,7 @@ for (const route of ROUTES) {
     clicked += 1
     await settle()
     if (errors.length > before) errors[errors.length - 1].where = `${route} 点「${label}」`
-    else if ((await fingerprint()) === beforeFp) silent.push(`${route} 点「${label}」`)
+    else if ((await fingerprint()) === beforeFp) await classifySilent(route, 'page', label)
     await clickInsideModal(route)
     // 点开弹窗后关掉,免得挡住后面的按钮
     await page.keyboard.press('Escape').catch(() => {})
@@ -347,6 +407,11 @@ console.log(`\n界面冒烟:${ROUTES.length} 页,点击 ${clicked} 次(导航 ${
 if (silent.length) {
   console.log(`点了没反应 ${silent.length} 处(读数,不判失败):`)
   for (const s of silent.slice(0, 20)) console.log(`  · ${s}`)
+}
+if (dead.length) {
+  console.log(`✗ 死按钮/无效果控件 ${dead.length} 处(干净重试仍无变化):`)
+  for (const d of dead) console.log(`  ✗ ${d}`)
+  process.exitCode = 1
 }
 if (errors.length === 0) {
   console.log('✓ 无运行时异常')
