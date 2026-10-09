@@ -260,3 +260,63 @@ describe('fieldHerbGrade 直接判定(洞府纪要的「前瞻 ↑」信号源)'
     expect(fieldHerbGrade(14, 15)).toBe(5)
   })
 })
+
+describe('洞府产出 · 跨整界原子(拆批等值/余数进位)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const herbTotal = (): number => Object.values(useResourcesStore().herbByGrade).reduce((a, b) => a + (b ?? 0), 0)
+
+  it('拆开多次与一次连产等值:produce(450)×2 的落账与 frac 恰等于 produce(900) 一次', () => {
+    // 灵田 lv1 = 6 株/时 -> 450s=0.75 株、900s=1.5 株;粗看 floor 会吞小数,
+    // 但余数进位必须两边一致(逐次取整的漂移在此会露头)
+    const batch = (): { herb: number; frac: number } => {
+      setActivePinia(createPinia())
+      const d = useDongfuStore()
+      d.levels.field = 1
+      d.levels.library = 1
+      d.produce(900)
+      return { herb: herbTotal(), frac: d.frac.herb }
+    }
+    const s = (): { herb: number; frac: number } => {
+      setActivePinia(createPinia())
+      const d = useDongfuStore()
+      d.levels.field = 1
+      d.levels.library = 1
+      d.produce(450)
+      d.produce(450)
+      return { herb: herbTotal(), frac: d.frac.herb }
+    }
+    const a = s()
+    const b = batch()
+    expect(a.herb, '拆开与一次连产应给出同样多的整株').toBe(b.herb)
+    expect(a.frac).toBeCloseTo(b.frac, 9)
+    expect(Number.isFinite(a.frac)).toBe(true)
+  })
+
+  it('跨整界只整发:灵田 lv1 产 900s(=1.5 株)只落 1 株、余 0.5 进位,不加刀', () => {
+    setActivePinia(createPinia())
+    const d = useDongfuStore()
+    d.levels.field = 1
+    const before = herbTotal()
+    d.produce(900) // 1.5 株 -> 整发 1
+    expect(herbTotal() - before).toBe(1)
+    expect(d.frac.herb).toBeCloseTo(0.5, 9)
+    // 再补 300s(=0.5 株) -> 余数 0.5+0.5=1.0,恰好再整发 1 株
+    const mid = herbTotal()
+    d.produce(300)
+    expect(herbTotal() - mid).toBe(1)
+    expect(d.frac.herb).toBeCloseTo(0, 9)
+  })
+
+  it('产出落在灵田当前可种品(整发的草挂对品阶桶)', () => {
+    setActivePinia(createPinia())
+    const d = useDongfuStore()
+    const player = usePlayerStore()
+    d.levels.field = 1
+    const grade = fieldHerbGrade(player.major, 1)
+    d.produce(600) // 恰 1 株
+    expect(useResourcesStore().herbByGrade[grade] ?? 0).toBeGreaterThanOrEqual(1)
+  })
+})
