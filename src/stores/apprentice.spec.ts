@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { OwnedApprentice } from '@/core/apprenticeService'
 import { APPRENTICE_MAX_LEVEL, STARTER_APPRENTICE } from '@/data/apprentices'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { gn, toNum } from '@/utils/gnum'
 import { useApprenticeStore } from '@/stores/apprentice'
 import { useResourcesStore } from '@/stores/resources'
@@ -41,7 +42,7 @@ describe('收徒 · 派发与收割', () => {
     a.$patch({ apprentices: [make('ap_luanniao', { task: { spec: 'herb', startAt: 0, finishAt: 1 } })] })
     const reaped = a.collectFinished(9999, 0)
     expect(reaped).toHaveLength(1)
-    expect(res.herb, '天赋加成采一摞灵草').toBe(12)
+    expect(res.herbOf(herbGradeOfMajor(0)), '天赋加成采一摞灵草').toBe(12)
     expect(a.apprentices[0]!.level).toBe(4)
     expect(a.apprentices[0]!.task).toBeNull()
   })
@@ -51,7 +52,7 @@ describe('收徒 · 派发与收割', () => {
     const res = useResourcesStore()
     a.$patch({ apprentices: [make('ap_luanniao', { task: { spec: 'herb', startAt: 0, finishAt: 99999 } })] })
     expect(a.collectFinished(100, 0)).toEqual([])
-    expect(res.herb).toBe(0)
+    expect(res.herbOf(herbGradeOfMajor(0))).toBe(0)
     expect(a.apprentices[0]!.level).toBe(3)
   })
 
