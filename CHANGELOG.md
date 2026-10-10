@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 修炼速度 buff 叠加守卫:buff_juling(聚灵 +0.5 修速,丹药 2× 上限)与 retreat(闭关 +1.5 修速,无上限)是**两种不同状态共用一个 cultivationSpeed 键**——时长叠加(cultivation/buffCap)管同一状态多久,但「不同状态按合并求和、一方到期只撤该方」从没直接断言——cultivationSpeed 不在递减/软阈值集,天然线性求和——新增守卫(扩于 cultivation.spec):聚灵+闭关同时 → buffMods.cultivationSpeed 恰为 2.0(合并求和不是覆盖);闭关先到期(pruneBuffs)→ 只撤闭关那份、聚灵仍在 → 0.5;各方全到期 → 该键消失;变异证明:把 buffMods 合并改成只取第一个 buff → 求和与单方撤除两案转红,还原(diff 空)(注:本次全量曾出现一次不复现的间歇性失败,复跑 2674/0 稳定通过)
 - 坊市定价健壮性守卫:已知丹的售价比例(1.2×/2.5×购售不成环)与随阶/品质单调早有断言,但边的地板(未知丹、0 阶、负参)从没直接喂过——生意里任何一处 NaN/负/无限都会在界面挂「NaN 灵石」或倒贴——新增守卫(扩于 economyModuleBalance.spec):未知丹售价 0 且有限(不 NaN/不∞/不为负)、已知丹售价恰为 stoneBase × 1.2、0 阶/负参的寄卖与售材价有限非负(stoneByTier 的 max(0,tier-1) 把负参夹回正);变异证明:把未知丹返回换成 NaN GNum → 未知丹案转红,还原(diff 空)
 - 历练待决事件超时自动结算守卫:tickExploration 的待决分支(挂起事件 > EVENT_AUTO_RESOLVE_SECONDS=120s 没人点就按默认选项当场结清——清待决、事件+1、重排下一战)从未被直接断言(explorationDnd 只测「遇事勿扰」撞见即结那条,手动模式这条**挂起后超时再结**的路径零覆盖)——超时阈值/结账任何回归都会让弹窗卡死或事件数虚涨——新增守卫(显式传 now,时间边界可控不需假时钟):未超时(差 1 秒)仍挂起不结、事件数不动;已超时(越 1 秒)清待决+事件+1+重排下一战;结清后再 tick 不重复结算(事件数不再 +1);变异证明:把 EVENT_AUTO_RESOLVE_SECONDS 改成极大值 → 已超时案转红(不再自动结),还原(diff 空)
 - 图鉴见闻收录守卫:lore store 记「见过最好一件/最高认知层」,noteEquipUsed 每次装备/强化都触发,却零直接规格(loreService.spec 只管藏经阁钻研引擎)——once-only、q/t 上限、认知层/掌握度封顶任一回归都会把写进存档的图鉴数据腐蚀掉——新增守卫:noteEquipUsed 的 u 恰记一次(重复 no-op 且保 q/t)、noteEquipSeen 品质钳进 [0,8]/层级非负/取 max 不降级、advanceLore 至多推到 LORE_MAX(3)到顶不再推也不越过、advanceEnemyLore 至多推到 ENEMY_LORE_MAX(3)、addRecipeMastery/addBlueprintMastery 钳进 [0,1](过冲→1/下穿→0);变异证明:把 LORE_MAX 钳制删掉 → advanceLore 越界案转红(推过 99),把掌握度 Math.min(1) 删掉 → 过冲案转红,还原(diff 空)
