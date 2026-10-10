@@ -6,7 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS, MARKET_REFRESH_SECONDS, type MarketSlot } from '@/data/market'
 import { gn, toNum } from '@/utils/gnum'
 import { BAG_CAPACITY } from '@/data/constants'
-import { marketRemainingSec } from '@/core/marketService'
+import { marketRemainingSec, herbSellBatch, materialSellPrice } from '@/core/marketService'
 import { useMarketStore } from '@/stores/market'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -295,5 +295,51 @@ describe('寄卖 · 多格部分回款与槽位归整', () => {
     expect(credits).toHaveLength(2) // 两支都回款
     expect(toNum(res.spiritStone)).toBeCloseTo(p0 + p1, 5)
     expect(market.consign).toHaveLength(0)
+  })
+})
+
+/**
+ * 即时售材 / 售草 结算精额守恒。
+ *
+ * sellHerb/sellMaterial 扣一「批」(MARKET_MAT_COUNT),按「批价」入账(herbSellBatch /
+ * materialSellPrice)。market.spec:181 只断言了 扣该品批数 + 低品不动 + 灵石为正;
+ * 入账的**精确值**与**连售多批不漂移**从没直接断言 —— 若把批价错当成单株价、或在批价上
+ * 漂移,一次次真实售卖会静默少收/多收。这里用纯过程量把「按批入账 · 连售不漂」钉死。
+ */
+describe('即时售材/售草结算精额守恒', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('sellHerb:扣恰 N×MARKET_MAT_COUNT、连售 N 批恰入 N×herbSellBatch(无漂移)', () => {
+    const market = useMarketStore()
+    const res = useResourcesStore()
+    const N = 3
+    const g = 3
+    res.herbByGrade[g] = N * MARKET_MAT_COUNT
+    res.spiritStone = gn(0)
+    const batch = herbSellBatch(g)
+    for (let i = 0; i < N; i += 1) expect(market.sellHerb(g)).toBe(true)
+    expect(res.herbByGrade[g]).toBe(0)
+    expect(toNum(res.spiritStone)).toBeCloseTo(toNum(batch) * N, 6) // 连售 N 批 = N×批价
+  })
+
+  it('sellHerb 单批恰入 herbSellBatch(批价,不是单株价)', () => {
+    const market = useMarketStore()
+    const res = useResourcesStore()
+    res.herbByGrade[1] = MARKET_MAT_COUNT
+    res.spiritStone = gn(0)
+    expect(market.sellHerb(1)).toBe(true)
+    expect(toNum(res.spiritStone)).toBeCloseTo(toNum(herbSellBatch(1)), 6)
+  })
+
+  it('sellMaterial:按 materialSellPrice 入账、扣恰 MARKER_MAT_COUNT ore', () => {
+    const market = useMarketStore()
+    const res = useResourcesStore()
+    res.ore = MARKET_MAT_COUNT * 2
+    res.spiritStone = gn(0)
+    expect(market.sellMaterial(0)).toBe(true)
+    expect(res.ore).toBe(MARKET_MAT_COUNT)
+    expect(toNum(res.spiritStone)).toBeCloseTo(toNum(materialSellPrice(0)), 6)
   })
 })
