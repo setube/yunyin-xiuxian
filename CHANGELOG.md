@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 图鉴见闻收录守卫:lore store 记「见过最好一件/最高认知层」,noteEquipUsed 每次装备/强化都触发,却零直接规格(loreService.spec 只管藏经阁钻研引擎)——once-only、q/t 上限、认知层/掌握度封顶任一回归都会把写进存档的图鉴数据腐蚀掉——新增守卫:noteEquipUsed 的 u 恰记一次(重复 no-op 且保 q/t)、noteEquipSeen 品质钳进 [0,8]/层级非负/取 max 不降级、advanceLore 至多推到 LORE_MAX(3)到顶不再推也不越过、advanceEnemyLore 至多推到 ENEMY_LORE_MAX(3)、addRecipeMastery/addBlueprintMastery 钳进 [0,1](过冲→1/下穿→0);变异证明:把 LORE_MAX 钳制删掉 → advanceLore 越界案转红(推过 99),把掌握度 Math.min(1) 删掉 → 过冲案转红,还原(diff 空)
 - 功法参悟(藏经阁)边界守卫:comprehendGongfa 走 RNG 随机加权习得,此前无任何直接规格(参悟残页成本/池内未学门槛/已学回退都无守卫)——残页不足或加残页成本乱动会让学生白拿功法或双扣残页——新增守卫(不断言习得哪一部,只断言属性):残页不足(page=0)拒绝不习得不扣、残页足够成功习得一部且精确扣 COMPREHEND_PAGE_COST 残页、新增份在参悟池(minRealm≤major+1)且此前未学、全学(池空)拒绝不扣残页;变异证明:把 hasSmall('page') 闸删掉 → 残页不足案转红(没残页也照样学)
 - 功法参悟到顶服务守卫:cultivation.upgrade 本身不加钳(learned=lv+1),整条「圆满不越级」全靠 gongfaUpgradeCost 在 lv ≥ maxLevel 返回 null 这道闸——此前只有 gongfaBranch.spec 测数据层,upgradeGongfa/gongfaUpgradeCost/comprehendGongfa 无直接规格;闸一旦松掉或调用方绕过,圆满功法会越级溢出、静默腐蚀功法加成——新增守卫走升级路径(无 RNG):到顶(lv===maxLevel)cost 为 null、到顶再升级拒绝一文不花且等级停在 maxLevel(永不过顶)、悟道点不足/残页不足拒绝不扣等级不变、成功 +1 且精确扣 gongfaUpgradeCost 的悟道点+残页;变异证明:把 maxLevel 闸删掉 → 到顶两案转红(等级越到 10)
 - 装备槽属性汇总(equipMods)守卫:inventory.equipMods 是「已装备件+法宝被动」合计的唯一权威、喂进 finalStats,却零直接规格(statBreakdown 只测比例折算,不测原始按槽汇总)——回归把未装备件掺进来、或叠加错、或卸下不撤都会静默腐蚀总属性——新增守卫用 mergeMods 对「恰好已装备的那批」作真值,断言单件恰等/两件共享键合并两者都在/未装备件不掺(多摆一件未装备的深等不变)/卸下即撤/空槽空对象;变异证明:把 equipMods 来源从 equippedItems 改成全部 items → 未装备件掺入+卸下即撤两案转红
