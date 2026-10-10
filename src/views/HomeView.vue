@@ -83,7 +83,7 @@
       </span>
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-widest text-ink">坊市</span>
-        <span class="block truncate text-[10px] text-ink-faint">灵石换丹药 · 续料 · 淘一件趁手兵刃</span>
+        <span class="block truncate text-[10px] text-ink-faint">历练战获 · 售物入账 · 换丹药续料与趁手兵刃</span>
       </span>
       <span class="shrink-0 text-[11px] text-gold-ink">购置 →</span>
     </RouterLink>

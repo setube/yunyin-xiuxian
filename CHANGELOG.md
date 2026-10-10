@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 灵石来源可观察性:坊市入口副标从「灵石换丹药 · 续料 · 淘一件趁手兵刃」(纯消费侧)改为「历练战获 · 售物入账 · 换丹药续料与趁手兵刃」,顶栏灵石徽章 tooltip 由单个「灵石」补全为「灵石 · 历练战获与坊市售物可得」——新档 0 灵石玩家不再找不到游戏主货币的来源(纯文案,不动经济/布局/逻辑)
 - 即时售材/售草精额守恒守卫:sellHerb/sellMaterial 扣一「批」(MARKET_MAT_COUNT)、按「批价」入账(herbSellBatch/materialSellPrice);market.spec 之前只断言扣该品批数+低品不动+灵石为正,入账的**精确值**与连售多批**不漂移**从没直接断言——若把批价错当单株价或在批价上漂移,一次次真实售卖会静默少收/多收——新增守卫(扩于 market.spec,纯过程量):sellHerb 扣恰 N×MARKET_MAT_COUNT、连售 N 批恰入 N×herbSellBatch(无漂移)、单批恰入批价(非单株价)、sellMaterial 按 materialSellPrice 入账扣恰 ore;变异证明:把售草入账换成别的价 → 精额两案转红,还原(diff 空)
 - 炼丹计划与运行守恒守卫:craftBatchPlan 是纯计划(rounds=min(草炉数,石炉数),herb/stone=rounds×单炉),craftPillBatch 是逐炉实跑——两者在不同 spec 各测各的,「计划即实耗」从没交叉断言;计划算错(漏看石、±1)会让界面报的「炼满 N 炉/耗 X 料」与实际对不上或实跑越料——新增守卫(确定性 mockRand=0 必成,扩于 pillBatch.spec):计划即实耗(rounds 与 herb/stone 恰为实跑消耗)、计划是上限(凭草只够 plan.rounds,连炼更多不会越扣);变异证明:把计划 rounds 改成 +1 → 计划即实耗/计划是上限两案转红,还原(diff 空)
 - 批量炼丹炸炉守恒守卫:craftPillBatch 逐炉 craftPill(rounds++、aborted 即停、made/failed 分账),而 pillBatch.spec 的批量炼丹只测了 必成连炼/料仅够一炉/0炉——炸炉(失败率)批次的材料消耗从未直接断言(回归若多扣/欠扣/越料,一次真实连炼就亏材料)——新增守卫(确定性 mockRand,pillBatch 同款注入):必成批次 rounds/made 齐、材料恰耗 cost×N、不超扣;炸炉批次 rounds 照开 made0 failed3、失败也烧料(草按 salvage 保下、石照扣)、不越料不欠;料恰够 1 炉连炼 5 炉就 1 炉、草到 0 干净停、石不为负;变异证明:把 aborted 的 break 删掉 → 料仅够一炉/恰够 1 炉两案转红(空转还计 rounds),还原(diff 空)
