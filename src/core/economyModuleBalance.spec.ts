@@ -31,7 +31,7 @@ import {
 import { pillSellPrice, consignPrice, herbSellPrice, materialSellPrice, herbSellBatch } from './marketService'
 import { herbBountyReward } from './bountyService'
 import { herbBuyPrice, HERB_GRADES } from '@/data/herbGrades'
-import { MARKET_MAT_COUNT } from '@/data/market'
+import { MARKET_MAT_COUNT, MARKET_SELL_PILL_FACTOR } from '@/data/market'
 import { PILLS } from '@/data/pills'
 
 /** 该境界的代表层级(与 economySim 同:maxTierForMajor) */
@@ -182,5 +182,36 @@ describe('坊市定价单调性 + 有限(高阶/珍稀必卖更贵)', () => {
     for (const g of HERB_GRADES) {
       expect(toN(herbSellBatch(g))).toBeCloseTo(herbSellPrice(g) * MARKET_MAT_COUNT, 6)
     }
+  })
+})
+
+/**
+ * 坊市 · 定价健壮性(边)。
+ *
+ * 已知值的比例(售价/底价、购售不成环)与随阶/品质单调已在上面的 describe 断言;
+ * 这里只补**边上的地板**:未知丹、0 阶、负参。生意里任何一处 NaN/负/无限都会在界面
+ * 挂着「NaN 灵石」或倒贴,而这些输入在别处从没直接喂过。
+ */
+describe('坊市 · 定价健壮性(未知丹 0 元·0 阶负参非负有限)', () => {
+  it('未知丹:售价 0 且有限(不 NaN/不∞/不为负)', () => {
+    const v = toN(pillSellPrice('not_a_pill'))
+    expect(v).toBe(0)
+    expect(Number.isFinite(v)).toBe(true)
+  })
+
+  it('已知丹:售价恰为 stoneBase × 1.2', () => {
+    const withBase = PILLS.find(p => p.recipe?.stoneBase != null)
+    if (!withBase?.recipe?.stoneBase) throw new Error('测试需要一张有灵材底的丹方')
+    expect(toN(pillSellPrice(withBase.id))).toBe(withBase.recipe.stoneBase * MARKET_SELL_PILL_FACTOR)
+  })
+
+  it('0 阶 / 负参:寄卖与售材价有限非负(不 NaN/不为负)', () => {
+    expect(Number.isFinite(toN(consignPrice(0, 0)))).toBe(true)
+    expect(toN(consignPrice(0, 0))).toBeGreaterThanOrEqual(0)
+    expect(Number.isFinite(toN(materialSellPrice(0)))).toBe(true)
+    expect(toN(materialSellPrice(0))).toBeGreaterThanOrEqual(0)
+    // 负阶/负品质被 stoneByTier 的 max(0, tier-1) 夹回正
+    expect(toN(consignPrice(-1, -1))).toBeGreaterThanOrEqual(0)
+    expect(toN(materialSellPrice(-5))).toBeGreaterThanOrEqual(0)
   })
 })
