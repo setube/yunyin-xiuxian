@@ -4,6 +4,7 @@
  */
 import { gn, mulN } from '@/utils/gnum'
 import { ACTIVE_STAMP_MS, AGE_YEARS_PER_HOUR, OFFLINE_MIN_SECONDS, TICK_MS } from '@/data/constants'
+import { buffDef } from '@/data/buffs'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -139,9 +140,17 @@ class GameEngine {
       resources.setQi(resources.qi + player.qiRegenPerSec * dt, player.qiCapValue)
       // 建筑产出
       dongfu.produce(dt)
-      // Buff 过期
-      cultivation.pruneBuffs(now)
-        // 历练推进
+      // Buff 过期:先记下本次要过期的(否则 prune 后无从得知),到期即一次性提示,
+      // 免得玩家人在别页(主页/历练/坊市)时修速无声回落、还找不到原因
+      const expiring = cultivation.buffs.filter(b => b.endsAt <= now)
+      if (expiring.length > 0) {
+        cultivation.pruneBuffs(now)
+        const names = expiring.map(b => buffDef(b.defId)?.name).filter((n): n is string => n !== undefined)
+        if (names.length > 0) useUiStore().toast(`「${names.join('、')}」已到期`, 'info')
+      } else {
+        cultivation.pruneBuffs(now)
+      }
+      // 历练推进
       tickExploration(now)
       // Phase 28: 悟道顿悟触发(修炼时随机)
       mayTriggerEnlightenment()
