@@ -46,18 +46,9 @@ import { useDongfuStore } from '@/stores/dongfu'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useAdventureStore } from '@/stores/adventure'
 import { useGameStore } from '@/stores/game'
-import { useLoreStore } from '@/stores/lore'
 import { useUiStore } from '@/stores/ui'
-import { useInventoryStore } from '@/stores/inventory'
-import { useQuestsStore } from '@/stores/quests'
 import { useEndgameStore } from '@/stores/endgame'
-import { useLoadoutsStore } from '@/stores/loadouts'
-import { useSettingsStore } from '@/stores/settings'
-import { useDiagStore } from '@/stores/diag'
-import { useMarketStore } from '@/stores/market'
-import { useApprenticeStore } from '@/stores/apprentice'
-import { useBountyStore } from '@/stores/bounty'
-import { usePacingTelemetry } from '@/stores/pacingTelemetry'
+import { sanitizeAllStores } from '@/stores/sanitizeAll'
 
 /**
  * 离线事件兜底池:世界标签不命中公共事件池时的默认通用际遇。
@@ -385,21 +376,5 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
  * 在 events 被写坏(null / 非数组)时照样抛错。这里与其余分片一视同仁地修平。
  */
 export function sanitizeOfflineInputs(): void {
-  usePlayerStore().sanitize()
-  useResourcesStore().sanitize()
-  useLoreStore().sanitize()
-  useDongfuStore().sanitize() // 洞府等级非法会把离线封顶小时算成 NaN,收益全线 NaN
-  useCultivationStore().sanitize()
-  useInventoryStore().sanitize()
-  useQuestsStore().sanitize()
-  useAdventureStore().sanitize()
-  useEndgameStore().sanitize()
-  useLoadoutsStore().sanitize()
-  useSettingsStore().sanitize()
-  useGameStore().sanitize()
-  useDiagStore().sanitize()
-  useMarketStore().sanitize() // 坊市货架/寄卖坏格修平,否则 renderSlot 对坏 pillId 白屏
-  useApprenticeStore().sanitize()
-  useBountyStore().sanitize()
-  usePacingTelemetry().sanitize() // 遥测分片也落盘,坏档一样要修平(见 pacingTelemetry.sanitize)
+  sanitizeAllStores()
 }
