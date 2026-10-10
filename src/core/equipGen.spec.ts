@@ -6,6 +6,7 @@ import { equipmentTemplate } from '@/data/equipment'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
 import { isZero, toNum } from '@/utils/gnum'
 import { generateEquipment, resolveEquipStats, rollQuality, qualityWeightAt, sortAffixLines } from './equipGen'
+import { budgetOfMods } from './ruleBudget'
 import type { EquipmentInstance, QualityId } from '@/types'
 
 const seeded = (seed = 42): RandomService => new RandomService(mulberry32(seed))
@@ -180,5 +181,36 @@ describe('掉落品质 · luck 边界(负幸运不崩、不产 NaN)', () => {
     expect(Number.isFinite(q.id.length)).toBe(true)
     expect(qualityDef(q.id)).toBeDefined()
     expect(q.rank, '强负幸运应稳定给凡品(common 恒可掷)').toBe(0)
+  })
+})
+
+describe('装备生成 · 词条值有限性(跨阶/幸运清扫:生成永不产 NaN·越界 roll)', () => {
+  it('遍历阶×品质×幸运:每个词条 roll∈[0,1] 且有限,mods 全有限,词条预算有限非负', () => {
+    const tiers = [1, 6, 12, 20, 30, 40]
+    const ranks = [0, 3] as const
+    const lucks = [-0.1, 0, 0.5] as const
+    for (const tier of tiers) {
+      for (const rank of ranks) {
+        for (const luck of lucks) {
+          const inst = generateEquipment(tier, seeded(tier * 100 + rank * 10 + (luck < 0 ? 1 : luck === 0 ? 2 : 3)), {
+            minQualityRank: rank,
+            luck
+          })
+          // ① 词条 roll 必须落在 [0,1] 且有限(溢出/NaN 会污染装备)
+          for (const aff of inst.affixes) {
+            expect(Number.isFinite(aff.roll), `tier=${tier} rank=${rank} luck=${luck} roll NaN/∞`).toBe(true)
+            expect(aff.roll >= 0 && aff.roll <= 1, `tier=${tier} rank=${rank} luck=${luck} roll=${aff.roll} 越界`).toBe(true)
+          }
+          // ② 换算后的 mods 全部有限(平铺/词条/缩放不产 NaN/∞)
+          const res = resolveEquipStats(inst)
+          for (const [k, v] of Object.entries(res.mods)) {
+            expect(Number.isFinite(v as number), `tier=${tier} mod ${k}=${v} NaN/∞`).toBe(true)
+          }
+          // ③ 词条预算必须有限且非负(负数=预算溢出腐蚀掉落)
+          const budget = budgetOfMods(res.mods)
+          expect(Number.isFinite(budget) && budget >= 0, `tier=${tier} budget=${budget}`).toBe(true)
+        }
+      }
+    }
   })
 })
