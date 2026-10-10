@@ -191,7 +191,9 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
   // 灵石可开几炉:直接求商,不逐炉减 —— 库存大时按炉计数会跑成百万次 GNum 减法
   // (ratio 的指数差钳制只会把币额超大的情况估算得略保守,再与 herbRounds 取小,安全)
   const stoneRounds = Math.max(0, Math.floor(ratio(resources.spiritStone, cost.stone)))
-  const rounds = Math.min(herbRounds, stoneRounds)
+  // ratio 在除数(cost.stone)为 0/NaN 时返回 Infinity/NaN —— 此处把非有限的「灵石可开炉数」
+  // 显式收束为「不构成限制」:此时炉数由灵草维度唯一决定,绝不把 Infinity 传进 round/plan。
+  const rounds = Math.min(herbRounds, Number.isFinite(stoneRounds) ? stoneRounds : herbRounds)
   if (rounds === 0) return blocked(craftShortToast())
   return { rounds, herb: rounds * cost.herb, stone: mulN(cost.stone, rounds) }
 }

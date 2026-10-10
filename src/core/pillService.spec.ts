@@ -442,3 +442,45 @@ describe('炸炉保残料比 · salvageRatio 自身边界(去自证)', () => {
     expect(salvageRatio(50)).toBeCloseTo(0.35, 10)
   })
 })
+
+/**
+ * 炼丹计划有限性(craftBatchPlan 不产 Infinity/NaN)。
+ *
+ * craftBatchPlan 里 stoneRounds 用 ratio(spiritStone, cost.stone) 求商;若某张方的灵石价
+ * 为 0/异常(导入坏档/未来内容),ratio 会回 Infinity/NaN。产品侧已把非有限的「石炉数」
+ * 显式收束为「更不构成限制」(rounds 由草维度唯一决定)。这里把「每张可炼方都得出有限
+ * rounds/stone」钉成不变量,防止未来重构漏掉收束又让 Infinity/NaN 漏回计划。
+ */
+describe('炼丹计划有限性(craftBatchPlan 不产 Infinity/NaN)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('每张可炼丹方都得出有限 rounds/stone(除数收束)', () => {
+    const res = useResourcesStore()
+    const lore = useLoreStore()
+    res.addStone({ m: 1, e: 9 })
+    let checked = 0
+    for (const p of PILLS) {
+      const cost = pillCraftCost(p.id)
+      if (!cost) continue
+      // 逐张点亮：方子掌握 + 灵材认知,让「能炼」为真(只看计划是否有限,不是成败)
+      lore.addRecipeMastery(p.id, 1)
+      for (const mid of recipeCraft(pillDef(p.id)!)?.materials ?? []) {
+        lore.advanceLore(mid, 3)
+      }
+      res.herbByGrade[cost.grade] = 10_000 // 该品给足草
+      const able = craftability(p.id)
+      if ((able?.blockers?.length ?? 0) > 0) continue // 点亮后仍挡(如境界准入)的跳过
+      const plan = craftBatchPlan(p.id)
+      expect(Number.isFinite(plan.rounds), `${p.id} rounds 非有限`).toBe(true)
+      expect(plan.rounds).toBeGreaterThanOrEqual(0)
+      if (plan.rounds > 0) {
+        expect(Number.isFinite(toNum(plan.stone)), `${p.id} stone 非有限`).toBe(true)
+        expect(plan.herb).toBeGreaterThan(0)
+      }
+      checked += 1
+    }
+    expect(checked).toBeGreaterThan(0)
+  })
+})
