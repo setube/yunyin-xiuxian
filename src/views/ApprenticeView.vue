@@ -78,7 +78,7 @@
   import { stoneByTier } from '@/core/formulas'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
-  import { useApprenticeStore } from '@/stores/apprentice'
+  import { RECRUIT_COST_TIER_AMOUNT, useApprenticeStore } from '@/stores/apprentice'
   import { useUiStore } from '@/stores/ui'
   import {
     APPRENTICE_TASKS,
@@ -105,7 +105,7 @@
   const slots = computed(() => apprenticeSlots(player.major))
   const slotsFull = computed(() => appr.apprentices.length >= slots.value)
   const hasIdle = computed(() => appr.apprentices.some(a => a.task === null))
-  const recruitCostLine = computed(() => `${formatGN(stoneByTier(player.major, 30))} 灵石`)
+  const recruitCostLine = computed(() => `${formatGN(stoneByTier(player.major, RECRUIT_COST_TIER_AMOUNT))} 灵石`)
 
   const apprenticesList = computed(() =>
     appr.apprentices.map(a => {
