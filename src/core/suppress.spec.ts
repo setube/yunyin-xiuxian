@@ -384,3 +384,49 @@ describe('镇压速率:显示与结算同源', () => {
     expect(uiStonePerHour('qingyun')).toBeGreaterThan(toNum(suppressRateFor('qingyun')!.stonePerHour))
   })
 })
+
+describe('镇压复苏 · settle 级(72h 复生当拍不产石)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const HOUR = 3600_000
+
+  it('镇压超 72h:settle 自动解除(移出镇压表+since 清掉),复生当拍不产一石', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.major = 5
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: Date.now() - 73 * HOUR }
+    const before = { ...resources.spiritStone }
+    const total = settleSuppressedRegions(3600, new RandomService(() => 0.1))
+    // 复生:移出镇压表、since 清掉
+    expect(player.suppressedRegions).not.toContain('qingyun')
+    expect(player.suppressedSince['qingyun'], '复生后 since 应被删').toBeUndefined()
+    // 复生当拍不产石(active 已空 → 返回 null、一石不动)
+    expect(resources.spiritStone).toEqual(before)
+    expect(total).toBeNull()
+  })
+
+  it('未满 72h:仍镇压、且产出灵石(正对照:测试不是空转)', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.major = 5
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: Date.now() - 1 * HOUR }
+    const before = { ...resources.spiritStone }
+    settleSuppressedRegions(3600, new RandomService(() => 0.1))
+    expect(player.suppressedRegions, '不满 72h 不该自行解除').toContain('qingyun')
+    expect(resources.spiritStone.m, '仍在镇压期间应照常产石').toBeGreaterThan(before.m)
+  })
+
+  it('两区并存:只有超 72h 的复苏,未满 72h 的照常留着(逐区独立判定)', () => {
+    const player = usePlayerStore()
+    player.major = 5
+    player.suppressedRegions = ['qingyun', 'cangwu']
+    player.suppressedSince = { qingyun: Date.now() - 73 * HOUR, cangwu: Date.now() - 1 * HOUR }
+    settleSuppressedRegions(3600, new RandomService(() => 0.1))
+    expect(player.suppressedRegions).not.toContain('qingyun')
+    expect(player.suppressedRegions).toContain('cangwu')
+  })
+})
