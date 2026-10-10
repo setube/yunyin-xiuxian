@@ -94,6 +94,7 @@
 
 ### 修复
 
+- 载入/导入后立即逐仓自愈:逐仓字段级修平原先只在引擎 `onMounted` 与离线结算前各跑一遍——坏档(JSON 合法但字段 NaN/负值)在加载后的第一帧仍会带着坏值渲染一小下,才被 mount 时的自愈修回。现把「修哪些仓」收成单一一处 `sanitizeAllStores()`(与旧 offline 逐仓清单逐字一致),并提前到**首次渲染前**在启动时跑一遍(导入走 `reloadGame`→下次启动同样覆盖);离线/引擎 start 复用它,同源不重写。健康存档幂等、逐字不变
 - 炼丹计划/灵脉投资除数收束:craftBatchPlan 与 veinInvestPlan 用 ratio(灵石, 单价) 求「可开几炉/可投几点」,ratio 在除数(单价)为 0/异常时回 Infinity/NaN;此前靠与另一有限维度取 min 才兜住,但若某张方子/某脉单价异常(导入坏档/未来内容),中间值 Infinity 会潜在地脏掉计划。现显式把非有限的「灵石可开炉数/点数」收束为「不构成限制」——rounds 由灵草/容量维度唯一决定,计划绝不产出 Infinity/NaN;对现有全部方子/灵脉行为完全不变(已加有限性不变量:逐张可炼方计划 round≥0 且有限)
 - 已过期聚灵断言冻时:完整套件并载下此测偶发失败(完整跑报 1~3 个无关测试挂了、重跑又好)——根源与闭关剩余秒同族:offlineCultExp 的 endsAt 与 settleOffline 的 nowMs 各取一次真实 Date.now(),两次读数跨到不同「现在」时本应过期的聚灵被当成仍有效 → expired≠none;现用 vi.useFakeTimers+setSystemTime 冻时,两处读同一时刻、过期必被 prune(连跑 8 次稳定,完整套件 2624 全绿)
 - 闭关剩余秒断言改冻时:getRetreatRemainingSec()=ceil((endsAt-Date.now())/1000) 走真实时钟,并行重载下 startRetreat→断言的间隙只要跨整秒就偶发返回 299,让完整套件在个别运行里间歇报 1~3 个无关测试失败、重跑又好(此前被当作 crypto-js 转换抖动搁置)——现用 vi.useFakeTimers+setSystemTime 冻时,两处读到同一时刻,剩余恒为 300;全库同类「真实时钟精确秒」断言已扫:cultivation/offlineCap/loreService 均喂显式时刻或纯输入,唯闭关这一处是潜在时效抖动

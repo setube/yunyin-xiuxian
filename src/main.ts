@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core'
 import App from './App.vue'
 import { router } from './router'
 import { migrateLocalSchema, preflightScan } from './utils/storage'
+import { sanitizeAllStores } from './stores/sanitizeAll'
 import { useUiStore } from './stores/ui'
 import { summarizeError, useDiagStore } from './stores/diag'
 import { useServiceWorkerUpdate } from './composables/useServiceWorkerUpdate'
@@ -50,6 +51,10 @@ window.addEventListener('unhandledrejection', event => {
   console.error('[未处理的 Promise]', event.reason)
   noteError('unhandledrejection', event.reason)
 })
+
+// 首次渲染前逐仓自愈:把 hydrate 进来的 malformed 字段(bad 档/导入档的 NaN/负值)当场修平,
+// 免得在线会话甚至第一帧就带坏值(engine.start 在 onMounted 也调一遍,这里更早一步、幂等同源)
+sanitizeAllStores()
 
 app.mount('#app')
 
