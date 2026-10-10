@@ -32,6 +32,9 @@ import {
 } from '@/core/apprenticeService'
 import { asArray } from '@/utils/saveShape'
 
+/** 收一名道童的灵石价(以 tier 折算)。展示与实扣同读这一份 —— 只改一处,不会报价≠实扣 */
+export const RECRUIT_COST_TIER_AMOUNT = 30
+
 let seq = 0
 function nextUid(): string {
   seq += 1
@@ -142,7 +145,7 @@ export const useApprenticeStore = defineStore(
       const owned = new Set(apprentices.value.map(a => a.archId))
       const pool = APPRENTICES.filter(x => x.id !== STARTER_APPRENTICE && !owned.has(x.id))
       if (pool.length === 0) return 'full'
-      const cost = stoneByTier(major, 30)
+      const cost = stoneByTier(major, RECRUIT_COST_TIER_AMOUNT)
       if (!useResourcesStore().spendStone(cost)) return 'poor'
       apprentices.value.push({ uid: nextUid(), archId: rng.pick(pool).id, level: 1, bond: 0, task: null })
       return 'ok'
