@@ -11,6 +11,7 @@ import { rng } from '@/utils/random'
 import { regionDef } from '@/data/regions'
 import { HERB_GRADES, herbGradeOfMajor } from '@/data/herbGrades'
 import { enemyDef } from '@/data/enemies'
+import { buffDef } from '@/data/buffs'
 import {
   AGE_YEARS_PER_HOUR,
   BATTLE_EXP_SECS,
@@ -112,7 +113,13 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   // 结算前先清算已过期 buff:离线期 finalStats.mods 会被本段全部产出引用,
   // 若 buff 已过期末清算,已过期的修炼/掉落加成会对整段离线全程生效(在线每 tick 即时清算,
   // 离线单次结算必须在这里先剪枝)。已在当下过期即不再计;恰在途中过期的按整段生效(远轻于全程漏删,留档)。
+  // 离开时还挂着的增益若在离线期间已过时效,归来只会看到效果没了、不知缘由(在线已提示,这里同样口径补一句)
+  const goneBuffNames = cultivation.buffs
+    .filter(b => b.endsAt <= nowMs)
+    .map(b => buffDef(b.defId)?.name)
+    .filter((n): n is string => n !== undefined)
   cultivation.pruneBuffs(nowMs)
+  if (goneBuffNames.length > 0) notes.push(`「${goneBuffNames.join('、')}」已到期`)
 
   // ---- 修炼 ----
   const expBefore = { ...player.exp }
