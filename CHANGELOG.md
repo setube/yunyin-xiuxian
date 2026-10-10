@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 功法参悟(藏经阁)边界守卫:comprehendGongfa 走 RNG 随机加权习得,此前无任何直接规格(参悟残页成本/池内未学门槛/已学回退都无守卫)——残页不足或加残页成本乱动会让学生白拿功法或双扣残页——新增守卫(不断言习得哪一部,只断言属性):残页不足(page=0)拒绝不习得不扣、残页足够成功习得一部且精确扣 COMPREHEND_PAGE_COST 残页、新增份在参悟池(minRealm≤major+1)且此前未学、全学(池空)拒绝不扣残页;变异证明:把 hasSmall('page') 闸删掉 → 残页不足案转红(没残页也照样学)
 - 功法参悟到顶服务守卫:cultivation.upgrade 本身不加钳(learned=lv+1),整条「圆满不越级」全靠 gongfaUpgradeCost 在 lv ≥ maxLevel 返回 null 这道闸——此前只有 gongfaBranch.spec 测数据层,upgradeGongfa/gongfaUpgradeCost/comprehendGongfa 无直接规格;闸一旦松掉或调用方绕过,圆满功法会越级溢出、静默腐蚀功法加成——新增守卫走升级路径(无 RNG):到顶(lv===maxLevel)cost 为 null、到顶再升级拒绝一文不花且等级停在 maxLevel(永不过顶)、悟道点不足/残页不足拒绝不扣等级不变、成功 +1 且精确扣 gongfaUpgradeCost 的悟道点+残页;变异证明:把 maxLevel 闸删掉 → 到顶两案转红(等级越到 10)
 - 装备槽属性汇总(equipMods)守卫:inventory.equipMods 是「已装备件+法宝被动」合计的唯一权威、喂进 finalStats,却零直接规格(statBreakdown 只测比例折算,不测原始按槽汇总)——回归把未装备件掺进来、或叠加错、或卸下不撤都会静默腐蚀总属性——新增守卫用 mergeMods 对「恰好已装备的那批」作真值,断言单件恰等/两件共享键合并两者都在/未装备件不掺(多摆一件未装备的深等不变)/卸下即撤/空槽空对象;变异证明:把 equipMods 来源从 equippedItems 改成全部 items → 未装备件掺入+卸下即撤两案转红
 - 炼器单步强化边界守卫:upgradeBatchPlan/equipmentBatch/equipLevelCap 早有覆盖,但单步 upgradeEquipment 的拒绝分支(到顶/未知件/缺料 → false 不扣)与精确扣账从未直接断言(只在别处当 helper 用)——新增守卫:成功升一级+精确扣 equipUpgradeCost 的 dust+stone+invested 累计(扣账与报价一致,先清首强成就会发 24 石的一次性成就赏以免混进差额)、到顶(level===equipLevelCap)拒绝不扣、未知 uid 拒绝、器灵尘不足拒绝不扣、灵石不足拒绝不扣;变异证明:把灵石扣账删掉 → 成功测试转红
