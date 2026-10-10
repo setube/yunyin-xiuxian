@@ -5,6 +5,8 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
 import { expEtaSec, qiBankEtaSec, qiEtaSec, qiRichEtaSec } from './progress'
+import { useCultivationStore } from '@/stores/cultivation'
+import { baseCultPerSec } from './formulas'
 
 /**
  * 「还得多久」的估算 —— 修为圆满与灵气回满同收在此册。
@@ -154,5 +156,57 @@ describe('qiRichEtaSec 灵气充盈估算(修为跳档时刻)', () => {
     expect(qiRichEtaSec()).toBe(0)
     res.setQi(player.qiCapValue * QI_RICH_RATIO - 1, player.qiCapValue)
     expect(qiRichEtaSec()).toBeGreaterThan(0)
+  })
+})
+
+
+/**
+ * 修为速率折算(cultivationSpeed -> cultPerSec)。
+ *
+ * r314 守了 buffMods 的合并求和;这里往下守「折进速率」这一段:cultPerSec 把
+ * finalStats 里的 cultivationSpeed 模按 ×(1 + mod) 折进实时修速(player.ts:361)。
+ * engine.spec 只 spy gainExp(断言「被调」不「调了多少」),离线是聚合值 —— 无人直接
+ * 断言关上一颗聚灵后在线速率正好多出 base×0.5。
+ * 折叠是线性的:base×(1+mod0+Δ) - base×(1+mod0) = base×Δ —— 以「基准前后差」断言,
+ * 不依赖全新存档里那笔 0.15 的背景修速(灵根/功法等)。
+ */
+describe('修为速率折算(cultivationSpeed -> cultPerSec)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('聚灵(+0.5):在线速率比基准多出恰 base×0.5', () => {
+    const player = usePlayerStore()
+    const base = baseCultPerSec(player.major, player.sub ?? 0)
+    const before = player.cultPerSec
+    useCultivationStore().addBuff('buff_juling', 1_000_000)
+    expect(player.cultPerSec - before).toBeCloseTo(base * 0.5, 6)
+  })
+
+  it('聚灵 + 闭关(+1.5,合并 2.0):在线速率比基准多出恰 base×2.0', () => {
+    const player = usePlayerStore()
+    const base = baseCultPerSec(player.major, player.sub ?? 0)
+    const before = player.cultPerSec
+    const cul = useCultivationStore()
+    cul.addBuff('buff_juling', 1_000_000)
+    cul.addBuff('retreat', 1_000_000)
+    expect(player.cultPerSec - before).toBeCloseTo(base * 2.0, 6)
+  })
+
+  it('pruneBuffs 全到期后:速率回到基准(背景修速不变)', () => {
+    const player = usePlayerStore()
+    const before = player.cultPerSec
+    const cul = useCultivationStore()
+    cul.addBuff('buff_juling', 1_000_000) // ends 1000 + 1800s
+    cul.addBuff('retreat', 1_000_000) // ends 1000 + 300s
+    cul.pruneBuffs(1_000_000 + 1_900_000) // 都过期
+    expect(player.cultPerSec).toBeCloseTo(before, 6)
+  })
+
+  it('折进的模确实来自 finalStats.mods.cultivationSpeed(键正确)', () => {
+    const player = usePlayerStore()
+    const base = baseCultPerSec(player.major, player.sub ?? 0)
+    const mod = player.finalStats.mods.cultivationSpeed ?? 0
+    expect(player.cultPerSec).toBeCloseTo(base * Math.max(0.05, 1 + mod), 6)
   })
 })
