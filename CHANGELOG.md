@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 炼丹计划与运行守恒守卫:craftBatchPlan 是纯计划(rounds=min(草炉数,石炉数),herb/stone=rounds×单炉),craftPillBatch 是逐炉实跑——两者在不同 spec 各测各的,「计划即实耗」从没交叉断言;计划算错(漏看石、±1)会让界面报的「炼满 N 炉/耗 X 料」与实际对不上或实跑越料——新增守卫(确定性 mockRand=0 必成,扩于 pillBatch.spec):计划即实耗(rounds 与 herb/stone 恰为实跑消耗)、计划是上限(凭草只够 plan.rounds,连炼更多不会越扣);变异证明:把计划 rounds 改成 +1 → 计划即实耗/计划是上限两案转红,还原(diff 空)
 - 批量炼丹炸炉守恒守卫:craftPillBatch 逐炉 craftPill(rounds++、aborted 即停、made/failed 分账),而 pillBatch.spec 的批量炼丹只测了 必成连炼/料仅够一炉/0炉——炸炉(失败率)批次的材料消耗从未直接断言(回归若多扣/欠扣/越料,一次真实连炼就亏材料)——新增守卫(确定性 mockRand,pillBatch 同款注入):必成批次 rounds/made 齐、材料恰耗 cost×N、不超扣;炸炉批次 rounds 照开 made0 failed3、失败也烧料(草按 salvage 保下、石照扣)、不越料不欠;料恰够 1 炉连炼 5 炉就 1 炉、草到 0 干净停、石不为负;变异证明:把 aborted 的 break 删掉 → 料仅够一炉/恰够 1 炉两案转红(空转还计 rounds),还原(diff 空)
 - 修为速率折算守卫:r314 守了 buffMods 的合并求和,但「折进实时速率」这一段(cultPerSec 把 finalStats 里的 cultivationSpeed 按 ×(1+mod) 折进在线修速,player.ts:361)从没直接断言——engine.spec 只 spy gainExp(断言被调不调多少)、离线是聚合值——新增守卫(扩于 eta.spec,以 baseCultPerSec 为基准断言线性差):聚灵(+0.5)→ 在线速率比基准多出恰 base×0.5;聚灵+闭关(+1.5 合并 2.0)→ 多出恰 base×2.0;pruneBuffs 全到期 → 速率回到基准;折进的模确实来自 finalStats.mods.cultivationSpeed(键正确);变异证明:把折进 key 换成 'expGain' → 聚灵/双buff/键正确三案转红,还原(diff 空)(注:全量仍在偶发一次不复现的间歇性失败,复跑全绿——r315/316 已把已知实时钟整秒存档位全部冻时,与本轮新增的确定性守卫无关)
 - 寄卖多格部分回款与槽位归整守卫:collectConsign 逐件按 finishAt<=now 入账、再把剩余未成交格子 sort+reindex 回 0..n-1;market.spec 之前只测「单件→腾空」——两格一售一候(只售出到账、候件原样、余槽归整无洞)从没直接断言——回归若留洞或错记卖给哪件会坑寄卖账——新增守卫(确定性时刻):两格一售一候 → 只售出那份到账(候件分文不动)、候件保留且槽位归整到 0(无洞)、credits 只报售出名;二轮收割候件也到期 → 两笔全额到账、腾空;变异证明:把 collectConsign 的槽位 reindex 删掉 → 余槽归整案转红(留洞),还原(diff 空)
