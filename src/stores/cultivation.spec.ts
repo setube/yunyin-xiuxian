@@ -30,6 +30,7 @@ describe('状态时长叠加(addBuff)', () => {
     setActivePinia(createPinia())
   })
 
+
   it('首次施加:endsAt = now + 定义时长', () => {
     const cultivation = useCultivationStore()
     cultivation.addBuff('buff_juling', 1_000_000)
@@ -111,5 +112,53 @@ describe('状态时长叠加(addBuff)', () => {
 
     expect(cultivation.buffs).toHaveLength(1)
     expect((cultivation.buffs[0]!.endsAt - t1) / SEC).toBe(injury.durationSec * 2 - 10)
+  })
+})
+
+/**
+ * 修炼速度 buff 叠加与单方到期撤除。
+ *
+ * buff_juling(聚灵, +50% 修速,丹药有 2× 上限)与 retreat(闭关, +150% 修速,无上限)
+ * 是**两种不同状态但共用一个 cultivationSpeed 键**。时长叠加(cultivation/addBuff 与
+ * buffCap)管的是同一状态多久,这里管的是**不同状态按合并求和**(不是覆盖):
+ * 0.5 + 1.5 = 2.0(cultivationSpeed 不在递减/软阈值集里,天然线性),且一方到期
+ * 只撤它自己的那一份、不殃及另一份。
+ */
+describe('修炼速度 buff 叠加与单方到期撤除(buffMods)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('聚灵 + 闭关同时:修速按合并求和 = 2.0(不是后者覆盖前者)', () => {
+    const cul = useCultivationStore()
+    const t0 = 1_000_000
+    cul.addBuff('buff_juling', t0) // cultivationSpeed +0.5
+    cul.addBuff('retreat', t0) // cultivationSpeed +1.5
+    expect(cul.buffs).toHaveLength(2)
+    expect(cul.buffMods.cultivationSpeed).toBe(2.0)
+  })
+
+  it('闭关先到期(pruneBuffs):只撤闭关那份,聚灵仍在 → 0.5', () => {
+    const cul = useCultivationStore()
+    const t0 = 1_000_000
+    cul.addBuff('buff_juling', t0) // endsAt = t0 + 1800s
+    cul.addBuff('retreat', t0) // endsAt = t0 + 300s
+    const retreatEnd = t0 + buffDef('retreat')!.durationSec * SEC
+    const afterRetreat = retreatEnd + 1
+    expect(cul.buffMods.cultivationSpeed).toBe(2.0)
+    expect(cul.pruneBuffs(afterRetreat)).toBe(true) // 撤掉了什么
+    expect(cul.buffs.map(b => b.defId)).toEqual(['buff_juling'])
+    expect(cul.buffMods.cultivationSpeed).toBe(0.5) // 聚灵那份还留着
+  })
+
+  it('各方全到期后:该键归零(键消失)', () => {
+    const cul = useCultivationStore()
+    const t0 = 2_000_000
+    cul.addBuff('buff_juling', t0) // endsAt = t0 + 1800s
+    cul.addBuff('retreat', t0) // endsAt = t0 + 300s
+    const julingEnd = t0 + buffDef('buff_juling')!.durationSec * SEC
+    cul.pruneBuffs(julingEnd + 1)
+    expect(cul.buffs).toHaveLength(0)
+    expect(cul.buffMods.cultivationSpeed).toBeUndefined()
   })
 })
