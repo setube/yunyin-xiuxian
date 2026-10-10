@@ -483,7 +483,10 @@ export function tickExploration(now: number): void {
   if (adventure.pendingEventId) {
     if (now - adventure.pendingEventSince > EVENT_AUTO_RESOLVE_SECONDS * 1000) {
       const region = regionDef(s.regionId)
-      autoResolveEvent(adventure.pendingEventId, region?.tier ?? 1)
+      const res = autoResolveEvent(adventure.pendingEventId, region?.tier ?? 1)
+      // 超时自动按默认结算:结果(所得明细)要在界面上看见,不能无声入账
+      if (res && res.lines.length) useUiStore().toast(res.lines.join('、'), 'info')
+      else if (res?.outcomeText) useUiStore().toast(res.outcomeText, 'info')
       adventure.setPendingEvent(null, now)
       const cur = adventure.session
       if (cur) adventure.setSession({ ...cur, events: cur.events + 1, nextBattleAt: nextBattleTime(now) })
@@ -508,7 +511,10 @@ export function tickExploration(now: number): void {
          * 撞见际遇/机缘/奇缘时按超时同一条路(默认好愿)当场结清 ——
          * 奖励照拿、不卡手、也不把这一 Tick 的战斗窗口吞掉。
          */
-        autoResolveEvent(ev.id, region.tier)
+        const res = autoResolveEvent(ev.id, region.tier)
+        // 勿扰自动结算:所得明细照报(弹窗不弹,但那一份到手的东西得在 toast 里看见)
+        if (res && res.lines.length) useUiStore().toast(res.lines.join('、'), 'info')
+        else if (res?.outcomeText) useUiStore().toast(res.outcomeText, 'info')
         const cur = adventure.session
         if (cur) adventure.setSession({ ...cur, events: cur.events + 1, nextBattleAt: nextBattleTime(now) })
         return
