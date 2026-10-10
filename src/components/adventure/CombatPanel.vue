@@ -40,7 +40,7 @@
       <!-- 本次所得:石头与修为此前只在挂机总结里出现,在线历练中玩家看不到这一趟赚了什么 -->
       <p v-if="gains" class="mt-0.5 text-[10px] text-ink-faint tabular">
         本次所得 · 灵石 <span class="text-gold-ink">+{{ gains.stone }}</span> · 修为
-        <span class="text-jade">+{{ gains.exp }}</span>
+        <span class="text-jade">+{{ gains.exp }}</span><template v-if="gains.itemText"> · 拾获 <span class="text-azure">{{ gains.itemText }}</span> 件</template>
       </p>
       <!-- 目标感:未靖的地界,打完十胜就该遇首领;不给提示的话玩家不知道还要打多久 -->
       <p v-if="bossHint" class="mt-0.5 text-[10px]" :class="bossSoon ? 'text-cinnabar' : 'text-gold-ink'">
@@ -353,11 +353,11 @@
   const huntIn = computed(() => (session.value ? Math.max(0, (session.value.nextBattleAt - now.value) / 1000) : 0))
   const modeName = computed(() => (session.value ? EXPLORE_MODES[session.value.mode].name : ''))
 
-  /** 本次历练已得(灵石/修为)—— 取自会话里如实累计的入账数,不是期望值 */
+  /** 本次历练已得(灵石/修为/拾获件数)—— 取自会话里如实累计的入账数,不是期望值 */
   const gains = computed(() => {
     const s = session.value
     if (!s) return null
-    return { stone: formatGN(s.stoneGain), exp: formatGN(s.expGain) }
+    return { stone: formatGN(s.stoneGain), exp: formatGN(s.expGain), itemText: s.itemGain > 0 ? String(s.itemGain) : null }
   })
 
   /**
