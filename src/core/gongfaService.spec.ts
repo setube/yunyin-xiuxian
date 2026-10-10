@@ -12,7 +12,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useResourcesStore } from '@/stores/resources'
-import { gongfaUpgradeCost, upgradeGongfa } from '@/core/gongfaService'
+import { comprehendGongfa, gongfaUpgradeCost, upgradeGongfa } from '@/core/gongfaService'
+import { COMPREHEND_PAGE_COST } from '@/data/constants'
+import { GONGFA, gongfaDef } from '@/data/gongfa'
 
 const G = 'm_taixuan' // main 型,默认 maxLevel 9
 const MAXLV = 9
@@ -81,5 +83,52 @@ describe('功法到顶守卫(upgradeGongfa / gongfaUpgradeCost)', () => {
     expect(cul.learned[G]).toBe(2)
     expect(res.wudao).toBe(w0 - cost.wudao)
     expect(res.page).toBe(p0 - cost.page)
+  })
+})
+
+/**
+ * 功法参悟(藏经阁)边界:残页不足不学、池内未学才习得、学完不扣残页。
+ * 参悟走 RNG(learnRandomGongfa 随机加权),故不断言「习得哪一部」,只断言
+ * 属性:残页数、习得计数 +1、新增那一部在参悟池里(minRealm ≤ major+1)此前未学。
+ */
+describe('功法参悟边界(comprehendGongfa)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('残页不足(page=0):拒绝、不习得、残页不动', () => {
+    const cul = useCultivationStore()
+    const res = useResourcesStore()
+    cul.learned = {}
+    res.page = 0
+    const before = Object.keys(cul.learned).length
+    expect(comprehendGongfa()).toBe(false)
+    expect(res.page).toBe(0) // 不扣(本来就没有)
+    expect(Object.keys(cul.learned).length).toBe(before) // 不学
+  })
+
+  it('残页足够:成功习得一部,精确扣 COMPREHEND_PAGE_COST 残页,新增份在池内且此前未学', () => {
+    const cul = useCultivationStore()
+    const res = useResourcesStore()
+    cul.learned = {}
+    res.page = 1_000_000
+    const before = Object.keys(cul.learned)
+    expect(comprehendGongfa()).toBe(true)
+    expect(res.page).toBe(1_000_000 - COMPREHEND_PAGE_COST) // 精确扣 12 残页
+    const after = Object.keys(cul.learned)
+    expect(after.length).toBe(before.length + 1) // 恰好习得一部
+    const newId = after.find(id => !before.includes(id))!
+    expect(gongfaDef(newId)?.minRealm).toBeLessThanOrEqual(1) // major 0 + 1:池内
+    expect(before.includes(newId)).toBe(false) // 此前未学
+  })
+
+  it('全学(池已空):拒绝、不习得、残页不动', () => {
+    const cul = useCultivationStore()
+    const res = useResourcesStore()
+    // 把 minRealm ≤ major(0)+1 的功法全学掉 → 参悟池为空
+    cul.learned = Object.fromEntries(GONGFA.filter(g => g.minRealm <= 1).map(g => [g.id, 1]))
+    res.page = 1000
+    expect(comprehendGongfa()).toBe(false)
+    expect(res.page).toBe(1000) // 不扣
   })
 })
