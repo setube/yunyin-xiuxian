@@ -239,3 +239,61 @@ describe('坊市 · 刷新窗口时序(sync 与到期)', () => {
     expect(marketRemainingSec(x, x + windowMs + 5000)).toBe(0) // 已过 → 夹回 0
   })
 })
+
+/**
+ * 寄卖多格部分回款与槽位归整。
+ *
+ * collectConsign 逐件按 finishAt<=now 入账,再把剩下未成交的格子 sort+reindex 回 0..n-1。
+ * market.spec 之前只测了「单件→腾空」;两格一售一候(只售出到账、候件原样、余槽归整无洞)
+ * 从没直接断言。这里用确定性时刻,把真实回款/归整锁住。
+ */
+describe('寄卖 · 多格部分回款与槽位归整', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  function seatTwo(): { market: ReturnType<typeof useMarketStore>; res: ReturnType<typeof useResourcesStore> } {
+    const market = useMarketStore()
+    const res = useResourcesStore()
+    const inv = useInventoryStore()
+    inv.$patch({
+      items: [
+        { uid: 'A', templateId: 'xa', quality: 'mortal', tier: 2, level: 0, affixes: [] },
+        { uid: 'B', templateId: 'xb', quality: 'fine', tier: 8, level: 0, affixes: [] }
+      ]
+    })
+    expect(market.consignEquip('A', 1000)).toBe('ok')
+    expect(market.consignEquip('B', 1000)).toBe('ok')
+    expect(market.consign).toHaveLength(MARKET_CONSIGN_SLOTS)
+    return { market, res }
+  }
+
+  it('两格一售一候:只售出那份到账、候件分文不动、余槽归整到 0(无洞)', () => {
+    const { market, res } = seatTwo()
+    const sold = market.consign[0]!
+    const pending = market.consign[1]!
+    expect(toNum(sold.price)).not.toBe(toNum(pending.price)) // 两件价不同
+    sold.finishAt = 0 // 售出
+    pending.finishAt = 99999 // 仍候
+    expect(res.spiritStone).toEqual(gn(0))
+    const credits = market.collectConsign(5000)
+    expect(toNum(res.spiritStone)).toBeCloseTo(toNum(sold.price), 5) // 只入售出那份
+    expect(credits, '只报售出的名字').toEqual([sold.name])
+    expect(market.consign).toHaveLength(1)
+    const keep = market.consign[0]!
+    expect(keep.slot).toBe(0) // 余槽归整到 0(不留洞)
+    expect(toNum(keep.price)).toBeCloseTo(toNum(pending.price), 5) // 候件价格原样
+  })
+
+  it('第二次收割:候件也到期 -> 两笔全额到账、腾空', () => {
+    const { market, res } = seatTwo()
+    const p0 = toNum(market.consign[0]!.price)
+    const p1 = toNum(market.consign[1]!.price)
+    market.consign[0]!.finishAt = 0
+    market.consign[1]!.finishAt = 0
+    const credits = market.collectConsign(5000)
+    expect(credits).toHaveLength(2) // 两支都回款
+    expect(toNum(res.spiritStone)).toBeCloseTo(p0 + p1, 5)
+    expect(market.consign).toHaveLength(0)
+  })
+})
