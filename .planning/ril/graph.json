@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 258,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-09T20:10:51+00:00",
+  "updated_at": "2026-10-10T03:38:50+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -15419,6 +15419,1732 @@
       "confidence": 1.0,
       "effort": 1,
       "title": "历史未接线变更收口:26 个 change 节点归集到整合 task/issue"
+    },
+    "ISS-270": {
+      "id": "ISS-270",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:28:32+00:00",
+      "updated_at": "2026-10-09T20:28:36+00:00",
+      "touched_round": 258,
+      "title": "offlineParity 对 regionEventReward/doubleDropRate 只做文本契约(断言源码含串),字符串还在≠产出真被放大——缺行为层守卫",
+      "severity": 0.4
+    },
+    "TASK-266": {
+      "id": "TASK-266",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:28:32+00:00",
+      "updated_at": "2026-10-09T20:28:36+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.4,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "离线×在线掉落倍率行为级成比例守卫(妖潮×1.2/福缘×1.05,独立可叠加)"
+    },
+    "CHG-313": {
+      "id": "CHG-313",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T20:28:32+00:00",
+      "updated_at": "2026-10-09T20:28:32+00:00",
+      "touched_round": 258,
+      "commit": "e325d79",
+      "title": "test(offline): 离线×在线掉落倍率行为级成比例守卫"
+    },
+    "ISS-271": {
+      "id": "ISS-271",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:37:38+00:00",
+      "updated_at": "2026-10-09T20:37:42+00:00",
+      "touched_round": 258,
+      "title": "远征读档恢复(endgame.sanitize)把 worldRun 活状态每域夹回,却 0 个测试调用——clamp 写坏会静默滑过 CI",
+      "severity": 0.4
+    },
+    "TASK-267": {
+      "id": "TASK-267",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:37:38+00:00",
+      "updated_at": "2026-10-09T20:37:42+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.4,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "远征读档恢复 sanitize 守卫 + rerollVoidWorld 代价守卫"
+    },
+    "CHG-314": {
+      "id": "CHG-314",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T20:37:38+00:00",
+      "updated_at": "2026-10-09T20:37:38+00:00",
+      "touched_round": 258,
+      "commit": "ed66b6f",
+      "title": "test(endgame): 远征读档恢复 sanitize 守卫(+rerollVoidWorld 代价)"
+    },
+    "ISS-272": {
+      "id": "ISS-272",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:43:40+00:00",
+      "updated_at": "2026-10-09T20:43:45+00:00",
+      "touched_round": 258,
+      "title": "fieldHerbGrade 中档夹逼(至多高当前一档/保下限)只在 band 两端有测试,中间境界的 clamp 若写坏会静默放过大一步到道品",
+      "severity": 0.3
+    },
+    "TASK-268": {
+      "id": "TASK-268",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:43:40+00:00",
+      "updated_at": "2026-10-09T20:43:44+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.3,
+      "confidence": 1.0,
+      "effort": 1,
+      "title": "灵田产草品阶中档夹逼守卫(前瞻+1/保下限)"
+    },
+    "CHG-315": {
+      "id": "CHG-315",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T20:43:40+00:00",
+      "updated_at": "2026-10-09T20:43:40+00:00",
+      "touched_round": 258,
+      "commit": "aa70621",
+      "title": "test(dongfu): 灵田产草品阶中档夹逼(前瞻+1/保下限)"
+    },
+    "ISS-273": {
+      "id": "ISS-273",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:52:21+00:00",
+      "updated_at": "2026-10-09T20:52:26+00:00",
+      "touched_round": 258,
+      "title": "CELESTIAL_WORLDS 择路梯(world.routes)0 个测试遍历——缺层/缺择/战敌退化/择路同奖/节点重 id 会静默打坏择路",
+      "severity": 0.35
+    },
+    "TASK-269": {
+      "id": "TASK-269",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:52:21+00:00",
+      "updated_at": "2026-10-09T20:52:26+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.35,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "远征路线树数据完整性守卫(三层两择/有限战敌/择路可辨)"
+    },
+    "CHG-316": {
+      "id": "CHG-316",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T20:52:22+00:00",
+      "updated_at": "2026-10-09T20:52:22+00:00",
+      "touched_round": 258,
+      "commit": "7f2b987",
+      "title": "test(expedition): 路线树数据完整性守卫(三层两择/有限战敌/择路可辨)"
+    },
+    "ISS-274": {
+      "id": "ISS-274",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:58:59+00:00",
+      "updated_at": "2026-10-09T20:59:03+00:00",
+      "touched_round": 258,
+      "title": "spendDaoSource/addDaoSource 原始语义(原子/单调/取整)各处都调却从没直接测自身边界,只被 soulService/重掷间接覆盖",
+      "severity": 0.3
+    },
+    "TASK-270": {
+      "id": "TASK-270",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T20:58:59+00:00",
+      "updated_at": "2026-10-09T20:59:03+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.3,
+      "confidence": 1.0,
+      "effort": 1,
+      "title": "道源 spend/add 原始操作原子·单调·取整守卫"
+    },
+    "CHG-317": {
+      "id": "CHG-317",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T20:58:59+00:00",
+      "updated_at": "2026-10-09T20:58:59+00:00",
+      "touched_round": 258,
+      "commit": "af8d7c8",
+      "title": "test(endgame): 道源 spend/add 原始操作原子·单调·取整守卫"
+    },
+    "ISS-275": {
+      "id": "ISS-275",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:05:35+00:00",
+      "updated_at": "2026-10-09T21:05:39+00:00",
+      "touched_round": 258,
+      "title": "market.sync 刷新窗口时序(7200s)0 个测试——永远重上(货架被清)或从不重上(僵死)皆静默滑过 CI",
+      "severity": 0.35
+    },
+    "TASK-271": {
+      "id": "TASK-271",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:05:35+00:00",
+      "updated_at": "2026-10-09T21:05:39+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.35,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "坊市刷新窗口时序守卫(sync 窗口内保架/期满再刷/剩余归零)"
+    },
+    "CHG-318": {
+      "id": "CHG-318",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T21:05:35+00:00",
+      "updated_at": "2026-10-09T21:05:35+00:00",
+      "touched_round": 258,
+      "commit": "5fcfebf",
+      "title": "test(market): 坊市刷新窗口时序守卫(sync 窗口内保架/期满再刷/剩余归零)"
+    },
+    "ISS-276": {
+      "id": "ISS-276",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:10:52+00:00",
+      "updated_at": "2026-10-09T21:10:56+00:00",
+      "touched_round": 258,
+      "title": "salvageRatio(炸炉保残料比)只被炸炉案当自证期望值,取夹逼或系数漂移不会红——需独立边界断言",
+      "severity": 0.3
+    },
+    "TASK-272": {
+      "id": "TASK-272",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:10:52+00:00",
+      "updated_at": "2026-10-09T21:10:56+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.3,
+      "confidence": 1.0,
+      "effort": 1,
+      "title": "salvageRatio 保残料比边界守卫(去自证)"
+    },
+    "CHG-319": {
+      "id": "CHG-319",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T21:10:52+00:00",
+      "updated_at": "2026-10-09T21:10:52+00:00",
+      "touched_round": 258,
+      "commit": "e22cdc4",
+      "title": "test(pills): salvageRatio 保残料比边界守卫(去自证)"
+    },
+    "ISS-277": {
+      "id": "ISS-277",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:17:35+00:00",
+      "updated_at": "2026-10-09T21:17:40+00:00",
+      "touched_round": 258,
+      "title": "veinService 核心边界(总容量100/批量计划/换主付费)全零覆盖,只两条 happy-path——回归会静默放过超投/僵账",
+      "severity": 0.4
+    },
+    "TASK-273": {
+      "id": "TASK-273",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:17:35+00:00",
+      "updated_at": "2026-10-09T21:17:40+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.4,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "灵脉投资/批量/换主上限守卫"
+    },
+    "CHG-320": {
+      "id": "CHG-320",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T21:17:35+00:00",
+      "updated_at": "2026-10-09T21:17:35+00:00",
+      "touched_round": 258,
+      "commit": "a4ab0e3",
+      "title": "test(vein): 灵脉投资上限/批量/换主守卫"
+    },
+    "ISS-278": {
+      "id": "ISS-278",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:27:27+00:00",
+      "updated_at": "2026-10-09T21:27:33+00:00",
+      "touched_round": 258,
+      "title": "离线结算让已过期 buff(BUG):settleOffline 产出先算、pruneBuffs 末段才跑,buffMods 无过期过滤——已过期聚灵对整段离线全程加成",
+      "severity": 0.55
+    },
+    "TASK-274": {
+      "id": "TASK-274",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:27:28+00:00",
+      "updated_at": "2026-10-09T21:27:33+00:00",
+      "touched_round": 258,
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "离线结算前先清算已过期 buff(不再全程生效)"
+    },
+    "CHG-321": {
+      "id": "CHG-321",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T21:27:28+00:00",
+      "updated_at": "2026-10-09T21:27:28+00:00",
+      "touched_round": 258,
+      "commit": "7ff95c7",
+      "title": "fix(offline): 结算前先清算已过期 buff,不再全程生效"
+    },
+    "ISS-279": {
+      "id": "ISS-279",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:35:56+00:00",
+      "updated_at": "2026-10-09T21:36:02+00:00",
+      "touched_round": 258,
+      "title": "player.eventChains 读档(sanitize)没夹 stage,越界/残链 stage 让该奇缘被当已了永不再现(写入口已夹、读档漏夹)",
+      "severity": 0.45
+    },
+    "TASK-275": {
+      "id": "TASK-275",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:35:56+00:00",
+      "updated_at": "2026-10-09T21:36:01+00:00",
+      "touched_round": 258,
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "奇缘连锁读档夹回界内(越界不再当已完结)"
+    },
+    "CHG-322": {
+      "id": "CHG-322",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T21:35:57+00:00",
+      "updated_at": "2026-10-09T21:35:57+00:00",
+      "touched_round": 258,
+      "commit": "d9fde4e",
+      "title": "fix(save): 奇缘连锁读档夹回界内,越界不再当已完结"
+    },
+    "ISS-280": {
+      "id": "ISS-280",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:47:07+00:00",
+      "updated_at": "2026-10-09T21:47:13+00:00",
+      "touched_round": 258,
+      "title": "cultivation.sanitize 只校 buff 形状不钳时限:写入口 addBuff 已钳 2x 上限,读档却没钳——越限/老档 buff 横跨整段会话有效",
+      "severity": 0.5
+    },
+    "TASK-276": {
+      "id": "TASK-276",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:47:07+00:00",
+      "updated_at": "2026-10-09T21:47:12+00:00",
+      "touched_round": 258,
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 1.0,
+      "effort": 1,
+      "title": "状态读档钳回丹药时限上限(越限 buff 不整段带超限时长)"
+    },
+    "CHG-323": {
+      "id": "CHG-323",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T21:47:07+00:00",
+      "updated_at": "2026-10-09T21:47:07+00:00",
+      "touched_round": 258,
+      "commit": "9f1d40a",
+      "title": "fix(save): 状态读档钳回丹药时限上限,越限 buff 不再整段带超限时长"
+    },
+    "ISS-281": {
+      "id": "ISS-281",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:56:40+00:00",
+      "updated_at": "2026-10-09T21:56:46+00:00",
+      "touched_round": 258,
+      "title": "远征败战分支 run-state 零覆盖(旧测只走全胜):败战后是否清空 run/不退层/不增连胜无守卫",
+      "severity": 0.4
+    },
+    "TASK-277": {
+      "id": "TASK-277",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T21:56:40+00:00",
+      "updated_at": "2026-10-09T21:56:46+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.4,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "远征败战分支 run-state 守卫(败战即结/不留残局)"
+    },
+    "CHG-324": {
+      "id": "CHG-324",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T21:56:40+00:00",
+      "updated_at": "2026-10-09T21:56:40+00:00",
+      "touched_round": 258,
+      "commit": "6eb7d5e",
+      "title": "test(expedition): 远征败战分支 run-state 守卫(败不退层/带伤可续->败战即结)"
+    },
+    "ISS-282": {
+      "id": "ISS-282",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:10:00+00:00",
+      "updated_at": "2026-10-09T22:10:06+00:00",
+      "touched_round": 258,
+      "title": "天道试炼(challengeTrial/recordTrial)全零覆盖:bestRounds 最小守谱与清败原子(bestRounds/入界费/奖励/记谱)无守卫",
+      "severity": 0.4
+    },
+    "TASK-278": {
+      "id": "TASK-278",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:10:00+00:00",
+      "updated_at": "2026-10-09T22:10:06+00:00",
+      "touched_round": 258,
+      "category": "test-quality",
+      "severity": 0.4,
+      "confidence": 1.0,
+      "effort": 2,
+      "title": "天道试炼挑战/记录 run-state 守卫(best-min·清败原子)"
+    },
+    "CHG-325": {
+      "id": "CHG-325",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T22:10:00+00:00",
+      "updated_at": "2026-10-09T22:10:00+00:00",
+      "touched_round": 258,
+      "commit": "ac68903",
+      "title": "test(tribulation): 天道试炼挑战/记录 run-state 守卫(best-min·清败原子)"
+    },
+    "ISS-283": {
+      "id": "ISS-283",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:20:30+00:00",
+      "updated_at": "2026-10-09T22:20:50+00:00",
+      "touched_round": 258,
+      "title": "洞府巡游跨天恢复路径零覆盖",
+      "severity": 0.4
+    },
+    "TASK-279": {
+      "id": "TASK-279",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:20:30+00:00",
+      "updated_at": "2026-10-09T22:20:50+00:00",
+      "touched_round": 258,
+      "title": "巡游跨天守卫(同日被挡/翌日恢复)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-326": {
+      "id": "CHG-326",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T22:20:42+00:00",
+      "updated_at": "2026-10-09T22:20:42+00:00",
+      "touched_round": 258,
+      "title": "test(earlygame): 洞府巡游跨天守卫",
+      "commit": "bd8b895"
+    },
+    "ISS-284": {
+      "id": "ISS-284",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:27:21+00:00",
+      "updated_at": "2026-10-09T22:27:26+00:00",
+      "touched_round": 258,
+      "title": "师承跨世保留零断言(rebirth 外物归零误清风险)",
+      "severity": 0.35
+    },
+    "TASK-280": {
+      "id": "TASK-280",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:27:21+00:00",
+      "updated_at": "2026-10-09T22:27:26+00:00",
+      "touched_round": 258,
+      "title": "师承跨世保留守卫(对照外物归零·不可复改)",
+      "category": "test-quality",
+      "effort": 1
+    },
+    "CHG-327": {
+      "id": "CHG-327",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T22:27:23+00:00",
+      "updated_at": "2026-10-09T22:27:23+00:00",
+      "touched_round": 258,
+      "title": "test(rebirth): 师承跨世保留守卫",
+      "commit": 8606063
+    },
+    "ISS-285": {
+      "id": "ISS-285",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:35:31+00:00",
+      "updated_at": "2026-10-09T22:35:37+00:00",
+      "touched_round": 258,
+      "title": "今日天道确定性零覆盖(刷新farm 漏洞风险)",
+      "severity": 0.45
+    },
+    "TASK-281": {
+      "id": "TASK-281",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:35:32+00:00",
+      "updated_at": "2026-10-09T22:35:37+00:00",
+      "touched_round": 258,
+      "title": "今日天道确定性守卫(同日同题/不吞全局随机/跨日换题)",
+      "category": "correctness",
+      "effort": 1
+    },
+    "CHG-328": {
+      "id": "CHG-328",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T22:35:34+00:00",
+      "updated_at": "2026-10-09T22:35:34+00:00",
+      "touched_round": 258,
+      "title": "test(daily): 今日天道确定性守卫",
+      "commit": "022806d"
+    },
+    "ISS-286": {
+      "id": "ISS-286",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:46:58+00:00",
+      "updated_at": "2026-10-09T22:47:04+00:00",
+      "touched_round": 258,
+      "title": "undertakeChallenge 清/败路径零覆盖(入场费/发奖回归风险)",
+      "severity": 0.4
+    },
+    "TASK-282": {
+      "id": "TASK-282",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:46:58+00:00",
+      "updated_at": "2026-10-09T22:47:04+00:00",
+      "touched_round": 258,
+      "title": "相元挑战入场/清败原子守卫",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-329": {
+      "id": "CHG-329",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T22:47:00+00:00",
+      "updated_at": "2026-10-09T22:47:00+00:00",
+      "touched_round": 258,
+      "title": "test(challenge): 相元挑战入场/清败原子守卫",
+      "commit": "ce39958"
+    },
+    "ISS-287": {
+      "id": "ISS-287",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:53:13+00:00",
+      "updated_at": "2026-10-09T22:53:17+00:00",
+      "touched_round": 258,
+      "title": "Boss 机制家族表零规格(相位/倍率/印腐蚀风险)",
+      "severity": 0.4
+    },
+    "TASK-283": {
+      "id": "TASK-283",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:53:13+00:00",
+      "updated_at": "2026-10-09T22:53:17+00:00",
+      "touched_round": 258,
+      "title": "Boss 机制家族数据完整性守卫(键覆盖/相位序/倍率/印唯一)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-330": {
+      "id": "CHG-330",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T22:53:16+00:00",
+      "updated_at": "2026-10-09T22:53:16+00:00",
+      "touched_round": 258,
+      "title": "test(boss): Boss 机制家族数据完整性守卫",
+      "commit": "b0352d5"
+    },
+    "ISS-288": {
+      "id": "ISS-288",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:59:45+00:00",
+      "updated_at": "2026-10-09T22:59:49+00:00",
+      "touched_round": 258,
+      "title": "runGauntlet 原始波次环零单测(全胜/败停/零波)",
+      "severity": 0.4
+    },
+    "TASK-284": {
+      "id": "TASK-284",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T22:59:45+00:00",
+      "updated_at": "2026-10-09T22:59:49+00:00",
+      "touched_round": 258,
+      "title": "度劫机关波次环单测(全胜即清/败停当层/零波)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-331": {
+      "id": "CHG-331",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T22:59:49+00:00",
+      "updated_at": "2026-10-09T22:59:49+00:00",
+      "touched_round": 258,
+      "title": "test(gauntlet): 波次环单测",
+      "commit": "b2f4ee8"
+    },
+    "ISS-289": {
+      "id": "ISS-289",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:06:21+00:00",
+      "updated_at": "2026-10-09T23:06:25+00:00",
+      "touched_round": 258,
+      "title": "坊市定价严格单调零 spec(高阶/珍稀变贱回归风险)",
+      "severity": 0.4
+    },
+    "TASK-285": {
+      "id": "TASK-285",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:06:21+00:00",
+      "updated_at": "2026-10-09T23:06:25+00:00",
+      "touched_round": 258,
+      "title": "坊市定价单调性+有限守卫(阶/珍稀/境界/品级必涨)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-332": {
+      "id": "CHG-332",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T23:06:25+00:00",
+      "updated_at": "2026-10-09T23:06:25+00:00",
+      "touched_round": 258,
+      "title": "test(market): 坊市定价单调性+有限守卫",
+      "commit": "dd7925d"
+    },
+    "ISS-290": {
+      "id": "ISS-290",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:15:16+00:00",
+      "updated_at": "2026-10-09T23:15:20+00:00",
+      "touched_round": 258,
+      "title": "修为丹即时修为溢出分支零守卫(usePill 路径)",
+      "severity": 0.4
+    },
+    "TASK-286": {
+      "id": "TASK-286",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:15:16+00:00",
+      "updated_at": "2026-10-09T23:15:20+00:00",
+      "touched_round": 258,
+      "title": "修为丹到顶 clamp 守卫(usePill 路径/正对照)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-333": {
+      "id": "CHG-333",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T23:15:19+00:00",
+      "updated_at": "2026-10-09T23:15:19+00:00",
+      "touched_round": 258,
+      "title": "test(pills): 修为丹即时修为到顶 clamp 守卫",
+      "commit": "7fe2574"
+    },
+    "ISS-291": {
+      "id": "ISS-291",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:22:29+00:00",
+      "updated_at": "2026-10-09T23:22:33+00:00",
+      "touched_round": 258,
+      "title": "洞府产出跨整界原子/拆批等值零守卫",
+      "severity": 0.4
+    },
+    "TASK-287": {
+      "id": "TASK-287",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:22:29+00:00",
+      "updated_at": "2026-10-09T23:22:33+00:00",
+      "touched_round": 258,
+      "title": "洞府产出跨整界原子·拆批等值守卫",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-334": {
+      "id": "CHG-334",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T23:22:33+00:00",
+      "updated_at": "2026-10-09T23:22:33+00:00",
+      "touched_round": 258,
+      "title": "test(dongfu): 产出跨整界原子·拆批等值守卫",
+      "commit": 7984420
+    },
+    "ISS-292": {
+      "id": "ISS-292",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:32:01+00:00",
+      "updated_at": "2026-10-09T23:32:06+00:00",
+      "touched_round": 258,
+      "title": "完整套件偶发 1~3 测试失败(真实时钟秒界断言抖动)",
+      "severity": 0.4
+    },
+    "TASK-288": {
+      "id": "TASK-288",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:32:01+00:00",
+      "updated_at": "2026-10-09T23:32:06+00:00",
+      "touched_round": 258,
+      "title": "闭关剩余秒断言冻时,消除并行秒界抖动",
+      "category": "stability",
+      "effort": 1
+    },
+    "CHG-335": {
+      "id": "CHG-335",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T23:32:05+00:00",
+      "updated_at": "2026-10-09T23:32:05+00:00",
+      "touched_round": 258,
+      "title": "fix(test): 闭关剩余秒冻时断言",
+      "commit": "8cdbaff"
+    },
+    "ISS-293": {
+      "id": "ISS-293",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:38:03+00:00",
+      "updated_at": "2026-10-09T23:38:07+00:00",
+      "touched_round": 258,
+      "title": "掉落品质 luck 路径零断言(负幸运 NaN 腐蚀风险)",
+      "severity": 0.4
+    },
+    "TASK-289": {
+      "id": "TASK-289",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:38:03+00:00",
+      "updated_at": "2026-10-09T23:38:07+00:00",
+      "touched_round": 258,
+      "title": "掉落品质 luck 边界守卫(负幸运不崩/凡品恒可掷)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-336": {
+      "id": "CHG-336",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T23:38:07+00:00",
+      "updated_at": "2026-10-09T23:38:07+00:00",
+      "touched_round": 258,
+      "title": "test(loot): 掉落品质 luck 边界守卫",
+      "commit": "67dddf3"
+    },
+    "ISS-294": {
+      "id": "ISS-294",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:46:34+00:00",
+      "updated_at": "2026-10-09T23:46:41+00:00",
+      "touched_round": 258,
+      "title": "洞府产出长时间量级零守卫(长离线一次灌入漂移风险)",
+      "severity": 0.35
+    },
+    "TASK-290": {
+      "id": "TASK-290",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:46:34+00:00",
+      "updated_at": "2026-10-09T23:46:41+00:00",
+      "touched_round": 258,
+      "title": "洞府产出长时间量级守卫(长时整发/fi拆批等值)",
+      "category": "test-quality",
+      "effort": 1
+    },
+    "CHG-337": {
+      "id": "CHG-337",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T23:46:41+00:00",
+      "updated_at": "2026-10-09T23:46:41+00:00",
+      "touched_round": 258,
+      "title": "test(dongfu): 产出长时间量级守卫",
+      "commit": "21bb6ff"
+    },
+    "ISS-295": {
+      "id": "ISS-295",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:51:30+00:00",
+      "updated_at": "2026-10-09T23:51:35+00:00",
+      "touched_round": 258,
+      "title": "完整套件偶发失败(离线过期聚灵双读真实时钟竞态)",
+      "severity": 0.5
+    },
+    "TASK-291": {
+      "id": "TASK-291",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-09T23:51:30+00:00",
+      "updated_at": "2026-10-09T23:51:35+00:00",
+      "touched_round": 258,
+      "title": "已过期聚灵断言冻时(消并行下偶发buff残留)",
+      "category": "stability",
+      "effort": 1
+    },
+    "CHG-338": {
+      "id": "CHG-338",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-09T23:51:35+00:00",
+      "updated_at": "2026-10-09T23:51:35+00:00",
+      "touched_round": 258,
+      "title": "fix(test): 已过期聚灵断言冻时",
+      "commit": 0.0
+    },
+    "ISS-296": {
+      "id": "ISS-296",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:00:17+00:00",
+      "updated_at": "2026-10-10T00:00:23+00:00",
+      "touched_round": 258,
+      "title": "生成词条值有限性/roll范围零清扫(NaN/越界腐蚀风险)",
+      "severity": 0.4
+    },
+    "TASK-292": {
+      "id": "TASK-292",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:00:17+00:00",
+      "updated_at": "2026-10-10T00:00:23+00:00",
+      "touched_round": 258,
+      "title": "装备生成词条值有限性守卫(跨阶/幸运清扫)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-339": {
+      "id": "CHG-339",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T00:00:22+00:00",
+      "updated_at": "2026-10-10T00:00:22+00:00",
+      "touched_round": 258,
+      "title": "test(equip): 装备生成词条值有限性守卫",
+      "commit": "092be70"
+    },
+    "ISS-297": {
+      "id": "ISS-297",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:06:39+00:00",
+      "updated_at": "2026-10-10T00:06:44+00:00",
+      "touched_round": 258,
+      "title": "镇压 72h 复苏 settle 级路径零覆盖(复生当拍产石风险)",
+      "severity": 0.4
+    },
+    "TASK-293": {
+      "id": "TASK-293",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:06:39+00:00",
+      "updated_at": "2026-10-10T00:06:44+00:00",
+      "touched_round": 258,
+      "title": "镇压 72h 复苏 settle 级守卫(复生当拍不产石)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-340": {
+      "id": "CHG-340",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T00:06:43+00:00",
+      "updated_at": "2026-10-10T00:06:43+00:00",
+      "touched_round": 258,
+      "title": "test(suppress): 镇压 72h 复苏 settle 级守卫",
+      "commit": "f412155"
+    },
+    "ISS-298": {
+      "id": "ISS-298",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:19:30+00:00",
+      "updated_at": "2026-10-10T00:19:36+00:00",
+      "touched_round": 258,
+      "title": "单步 upgradeEquipment 拒绝分支/精确扣账零直接断言",
+      "severity": 0.4
+    },
+    "TASK-294": {
+      "id": "TASK-294",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:19:31+00:00",
+      "updated_at": "2026-10-10T00:19:36+00:00",
+      "touched_round": 258,
+      "title": "炼器单步强化边界守卫(成败扣账/到顶/缺料)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-341": {
+      "id": "CHG-341",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T00:19:36+00:00",
+      "updated_at": "2026-10-10T00:19:36+00:00",
+      "touched_round": 258,
+      "title": "test(forge): 炼器单步强化边界守卫",
+      "commit": "ec7c8cf"
+    },
+    "ISS-299": {
+      "id": "ISS-299",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:27:17+00:00",
+      "updated_at": "2026-10-10T00:27:23+00:00",
+      "touched_round": 258,
+      "title": "equipMods 装备槽汇总零规格(幻影/叠加/漏撤腐蚀总属性)",
+      "severity": 0.45
+    },
+    "TASK-295": {
+      "id": "TASK-295",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:27:17+00:00",
+      "updated_at": "2026-10-10T00:27:22+00:00",
+      "touched_round": 258,
+      "title": "装备槽属性汇总守卫(合并叠加/空槽/卸除)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-342": {
+      "id": "CHG-342",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T00:27:22+00:00",
+      "updated_at": "2026-10-10T00:27:22+00:00",
+      "touched_round": 258,
+      "title": "test(equip): 装备槽属性汇总守卫",
+      "commit": "2c18433"
+    },
+    "ISS-300": {
+      "id": "ISS-300",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:35:51+00:00",
+      "updated_at": "2026-10-10T00:35:55+00:00",
+      "touched_round": 258,
+      "title": "功法升级到顶闸零规格(圆满越级溢出腐蚀加成)",
+      "severity": 0.45
+    },
+    "TASK-296": {
+      "id": "TASK-296",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:35:52+00:00",
+      "updated_at": "2026-10-10T00:35:55+00:00",
+      "touched_round": 258,
+      "title": "功法参悟到顶服务守卫(圆满不越级/缺料不扣)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-343": {
+      "id": "CHG-343",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T00:35:55+00:00",
+      "updated_at": "2026-10-10T00:35:55+00:00",
+      "touched_round": 258,
+      "title": "test(gongfa): 功法参悟到顶守卫",
+      "commit": "1b4091e"
+    },
+    "ISS-301": {
+      "id": "ISS-301",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:43:33+00:00",
+      "updated_at": "2026-10-10T00:43:37+00:00",
+      "touched_round": 258,
+      "title": "comprehendGongfa 参悟边界零规格(RNG 习得/残页成本/池内未学)",
+      "severity": 0.4
+    },
+    "TASK-297": {
+      "id": "TASK-297",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:43:33+00:00",
+      "updated_at": "2026-10-10T00:43:37+00:00",
+      "touched_round": 258,
+      "title": "功法参悟边界守卫(残页不足不学/池内未学)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-344": {
+      "id": "CHG-344",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T00:43:36+00:00",
+      "updated_at": "2026-10-10T00:43:36+00:00",
+      "touched_round": 258,
+      "title": "test(gongfa): 功法参悟边界守卫",
+      "commit": "b996d49"
+    },
+    "ISS-302": {
+      "id": "ISS-302",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:51:33+00:00",
+      "updated_at": "2026-10-10T00:51:37+00:00",
+      "touched_round": 258,
+      "title": "lore store 收录深度零规格(once-only/q-t 上限/认知封顶)",
+      "severity": 0.4
+    },
+    "TASK-298": {
+      "id": "TASK-298",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:51:33+00:00",
+      "updated_at": "2026-10-10T00:51:37+00:00",
+      "touched_round": 258,
+      "title": "图鉴见闻收录守卫(使用见识去重·上限钳制)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-345": {
+      "id": "CHG-345",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T00:51:37+00:00",
+      "updated_at": "2026-10-10T00:51:37+00:00",
+      "touched_round": 258,
+      "title": "test(lore): 图鉴见闻收录守卫",
+      "commit": "8856ea0"
+    },
+    "ISS-303": {
+      "id": "ISS-303",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:59:02+00:00",
+      "updated_at": "2026-10-10T00:59:06+00:00",
+      "touched_round": 258,
+      "title": "历练待决事件超时自动结算零覆盖(弹窗卡死/事件数虚涨)",
+      "severity": 0.4
+    },
+    "TASK-299": {
+      "id": "TASK-299",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T00:59:02+00:00",
+      "updated_at": "2026-10-10T00:59:06+00:00",
+      "touched_round": 258,
+      "title": "历练待决事件超时自动结算守卫(120s 分界)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-346": {
+      "id": "CHG-346",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T00:59:05+00:00",
+      "updated_at": "2026-10-10T00:59:05+00:00",
+      "touched_round": 258,
+      "title": "test(explore): 历练待决事件超时自动结算守卫",
+      "commit": "57c4da9"
+    },
+    "ISS-304": {
+      "id": "ISS-304",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:05:06+00:00",
+      "updated_at": "2026-10-10T01:05:10+00:00",
+      "touched_round": 258,
+      "title": "坊市定价边地板零断言(未知丹/0-阶/负参可 NaN/负)",
+      "severity": 0.4
+    },
+    "TASK-300": {
+      "id": "TASK-300",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:05:06+00:00",
+      "updated_at": "2026-10-10T01:05:10+00:00",
+      "touched_round": 258,
+      "title": "坊市定价健壮性守卫(未知0元·非负有限)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-347": {
+      "id": "CHG-347",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T01:05:10+00:00",
+      "updated_at": "2026-10-10T01:05:10+00:00",
+      "touched_round": 258,
+      "title": "test(market): 坊市定价健壮性守卫",
+      "commit": "947c513"
+    },
+    "ISS-305": {
+      "id": "ISS-305",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:12:35+00:00",
+      "updated_at": "2026-10-10T01:12:40+00:00",
+      "touched_round": 258,
+      "title": "双不同 buff 同键修速叠加/单方到期撤除零断言",
+      "severity": 0.4
+    },
+    "TASK-301": {
+      "id": "TASK-301",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:12:35+00:00",
+      "updated_at": "2026-10-10T01:12:39+00:00",
+      "touched_round": 258,
+      "title": "修炼速度buff叠加守卫(双buff求和·单方到期撤)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-348": {
+      "id": "CHG-348",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T01:12:39+00:00",
+      "updated_at": "2026-10-10T01:12:39+00:00",
+      "touched_round": 258,
+      "title": "test(cultivate): 修炼速度buff叠加守卫",
+      "commit": "89ecad7"
+    },
+    "ISS-306": {
+      "id": "ISS-306",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:28:32+00:00",
+      "updated_at": "2026-10-10T01:28:37+00:00",
+      "touched_round": 258,
+      "title": "每日任务领奖/跨日重置零断言(永领一次|虚高)",
+      "severity": 0.5
+    },
+    "TASK-302": {
+      "id": "TASK-302",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:28:33+00:00",
+      "updated_at": "2026-10-10T01:28:37+00:00",
+      "touched_round": 258,
+      "title": "每日任务领奖/跨日重置守卫(当日一次·跨日重领)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-349": {
+      "id": "CHG-349",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T01:28:37+00:00",
+      "updated_at": "2026-10-10T01:28:37+00:00",
+      "touched_round": 258,
+      "title": "test(daily): 每日任务领奖/跨日重置守卫",
+      "commit": "ce832ef"
+    },
+    "ISS-307": {
+      "id": "ISS-307",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:35:04+00:00",
+      "updated_at": "2026-10-10T01:35:09+00:00",
+      "touched_round": 258,
+      "title": "寄卖多格部分回款/槽位归整零断言(留洞|错记)",
+      "severity": 0.4
+    },
+    "TASK-303": {
+      "id": "TASK-303",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:35:04+00:00",
+      "updated_at": "2026-10-10T01:35:08+00:00",
+      "touched_round": 258,
+      "title": "寄卖多格部分回款守卫(仅售到账·余槽归整)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-350": {
+      "id": "CHG-350",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T01:35:08+00:00",
+      "updated_at": "2026-10-10T01:35:08+00:00",
+      "touched_round": 258,
+      "title": "test(market): 寄卖多格部分回款守卫",
+      "commit": 6586029
+    },
+    "ISS-308": {
+      "id": "ISS-308",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:44:27+00:00",
+      "updated_at": "2026-10-10T01:44:33+00:00",
+      "touched_round": 258,
+      "title": "修速折进 cultPerSec 精确速率零断言(可错键/少乘)",
+      "severity": 0.4
+    },
+    "TASK-304": {
+      "id": "TASK-304",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:44:27+00:00",
+      "updated_at": "2026-10-10T01:44:33+00:00",
+      "touched_round": 258,
+      "title": "修为速率折算守卫(闭关/聚灵按速入账)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-351": {
+      "id": "CHG-351",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T01:44:32+00:00",
+      "updated_at": "2026-10-10T01:44:32+00:00",
+      "touched_round": 258,
+      "title": "test(rate): 修为速率折算守卫",
+      "commit": 4999321
+    },
+    "ISS-309": {
+      "id": "ISS-309",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:56:59+00:00",
+      "updated_at": "2026-10-10T01:57:04+00:00",
+      "touched_round": 258,
+      "title": "批量炼丹炸炉批次材料守恒零断言(多扣/欠扣/越料)",
+      "severity": 0.45
+    },
+    "TASK-305": {
+      "id": "TASK-305",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T01:56:59+00:00",
+      "updated_at": "2026-10-10T01:57:03+00:00",
+      "touched_round": 258,
+      "title": "批量炼丹炸炉守恒守卫(失败也耗料·中止不超扣)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-352": {
+      "id": "CHG-352",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T01:57:03+00:00",
+      "updated_at": "2026-10-10T01:57:03+00:00",
+      "touched_round": 258,
+      "title": "test(pill): 批量炼丹炸炉守恒守卫",
+      "commit": "5538d8b"
+    },
+    "ISS-310": {
+      "id": "ISS-310",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T02:01:58+00:00",
+      "updated_at": "2026-10-10T02:02:03+00:00",
+      "touched_round": 258,
+      "title": "炼丹计划与实跑不交叉校验(计划可错/实跑越料)",
+      "severity": 0.45
+    },
+    "TASK-306": {
+      "id": "TASK-306",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T02:01:58+00:00",
+      "updated_at": "2026-10-10T02:02:03+00:00",
+      "touched_round": 258,
+      "title": "炼丹计划与运行守恒守卫(预测即实耗)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-353": {
+      "id": "CHG-353",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T02:02:02+00:00",
+      "updated_at": "2026-10-10T02:02:02+00:00",
+      "touched_round": 258,
+      "title": "test(pill): 炼丹计划与运行守恒守卫",
+      "commit": "ecc7ffa"
+    },
+    "ISS-311": {
+      "id": "ISS-311",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T02:06:45+00:00",
+      "updated_at": "2026-10-10T02:06:50+00:00",
+      "touched_round": 258,
+      "title": "即时售材/售草入账精额零断言(批价/多批漂移)",
+      "severity": 0.4
+    },
+    "TASK-307": {
+      "id": "TASK-307",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T02:06:45+00:00",
+      "updated_at": "2026-10-10T02:06:50+00:00",
+      "touched_round": 258,
+      "title": "即时售材/售草精额守恒守卫(按批入账·多批不漂)",
+      "category": "test-quality",
+      "effort": 2
+    },
+    "CHG-354": {
+      "id": "CHG-354",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T02:06:49+00:00",
+      "updated_at": "2026-10-10T02:06:49+00:00",
+      "touched_round": 258,
+      "title": "test(market): 即时售材/售草精额守恒守卫",
+      "commit": "929efa1"
+    },
+    "ISS-312": {
+      "id": "ISS-312",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T02:22:15+00:00",
+      "updated_at": "2026-10-10T02:22:21+00:00",
+      "touched_round": 258,
+      "title": "炼丹/灵脉计划在单价 0/异常时可产 Infinity/NaN 计划",
+      "severity": 0.3
+    },
+    "TASK-308": {
+      "id": "TASK-308",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T02:22:15+00:00",
+      "updated_at": "2026-10-10T02:22:21+00:00",
+      "touched_round": 258,
+      "title": "炼丹计划除数收束为有限(显式加固+全表有限性不变量)",
+      "category": "fix",
+      "effort": 1
+    },
+    "CHG-355": {
+      "id": "CHG-355",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T02:22:20+00:00",
+      "updated_at": "2026-10-10T02:22:20+00:00",
+      "touched_round": 258,
+      "title": "fix(pill): 炼丹计划除数收束不产 Infinity",
+      "commit": "98ab8b8"
+    },
+    "ISS-313": {
+      "id": "ISS-313",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T02:39:08+00:00",
+      "updated_at": "2026-10-10T02:39:18+00:00",
+      "touched_round": 258,
+      "title": "载入/导入后逐仓字段未自愈:坏档 NaN/负值残留到在线首帧与会话",
+      "severity": 0.3
+    },
+    "TASK-309": {
+      "id": "TASK-309",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T02:39:08+00:00",
+      "updated_at": "2026-10-10T02:39:18+00:00",
+      "touched_round": 258,
+      "title": "载入/导入即逐仓自愈(sanitizeAllStores 唯一入口 + pre-mount 启动)",
+      "category": "fix",
+      "effort": 2
+    },
+    "CHG-356": {
+      "id": "CHG-356",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T02:39:09+00:00",
+      "updated_at": "2026-10-10T02:39:09+00:00",
+      "touched_round": 258,
+      "title": "fix(save): 载入/导入即逐仓自愈,免 NaN 残留到在线",
+      "commit": "92a792c"
+    },
+    "ISS-314": {
+      "id": "ISS-314",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:03:32+00:00",
+      "updated_at": "2026-10-10T03:03:35+00:00",
+      "touched_round": 258,
+      "title": "新玩家找不到游戏主货币灵石的来源(无任何在途出处提示)",
+      "severity": 0.2
+    },
+    "TASK-310": {
+      "id": "TASK-310",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:03:32+00:00",
+      "updated_at": "2026-10-10T03:03:35+00:00",
+      "touched_round": 258,
+      "title": "灵石来源可观察性:坊市入口副标+顶栏徽章 tooltip 补「战获·售物」提示",
+      "category": "ux",
+      "effort": 1
+    },
+    "CHG-357": {
+      "id": "CHG-357",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T03:03:32+00:00",
+      "updated_at": "2026-10-10T03:03:32+00:00",
+      "touched_round": 258,
+      "title": "feat(ui): 灵石来源提示(坊市入口/顶栏徽章)",
+      "commit": "5da29b4"
+    },
+    "ISS-315": {
+      "id": "ISS-315",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:10:38+00:00",
+      "updated_at": "2026-10-10T03:10:39+00:00",
+      "touched_round": 258,
+      "title": "历练中场看不到本轮拾获装备数(账本有 itemGain 却不显)",
+      "severity": 0.2
+    },
+    "TASK-311": {
+      "id": "TASK-311",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:10:38+00:00",
+      "updated_at": "2026-10-10T03:10:39+00:00",
+      "touched_round": 258,
+      "title": "历练在线所得行补「拾获装备数」(读 itemGain,只加展示)",
+      "category": "ux",
+      "effort": 1
+    },
+    "CHG-358": {
+      "id": "CHG-358",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T03:10:38+00:00",
+      "updated_at": "2026-10-10T03:10:38+00:00",
+      "touched_round": 258,
+      "title": "feat(ui): 历练所得行补拾获装备数(中场可见)",
+      "commit": "c4310be"
+    },
+    "ISS-316": {
+      "id": "ISS-316",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:17:16+00:00",
+      "updated_at": "2026-10-10T03:17:17+00:00",
+      "touched_round": 258,
+      "title": "收徒价 30 展示与实扣两处各写,将来调价会报价≠实扣",
+      "severity": 0.2
+    },
+    "TASK-312": {
+      "id": "TASK-312",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:17:16+00:00",
+      "updated_at": "2026-10-10T03:17:17+00:00",
+      "touched_round": 258,
+      "title": "收徒价抽单一常量 RECRUIT_COST_TIER_AMOUNT,展示实扣同源",
+      "category": "ux",
+      "effort": 1
+    },
+    "CHG-359": {
+      "id": "CHG-359",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T03:17:16+00:00",
+      "updated_at": "2026-10-10T03:17:16+00:00",
+      "touched_round": 258,
+      "title": "refactor(apprentice): 收徒价 30 抽单一常量,展示实扣同源",
+      "commit": "4f2fc94"
+    },
+    "ISS-317": {
+      "id": "ISS-317",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:29:46+00:00",
+      "updated_at": "2026-10-10T03:29:47+00:00",
+      "touched_round": 258,
+      "title": "在线增益到期无声掉速,玩家在别页时查不到缘由",
+      "severity": 0.3
+    },
+    "TASK-313": {
+      "id": "TASK-313",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:29:47+00:00",
+      "updated_at": "2026-10-10T03:29:47+00:00",
+      "touched_round": 258,
+      "title": "在线 buff 到期加一次性 toast(每拍记下过期项,到期即报)",
+      "category": "ux",
+      "effort": 1
+    },
+    "CHG-360": {
+      "id": "CHG-360",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T03:29:47+00:00",
+      "updated_at": "2026-10-10T03:29:47+00:00",
+      "touched_round": 258,
+      "title": "feat(engine): 在线 buff 到期一次提示(不再无声掉速)",
+      "commit": "80695c0"
+    },
+    "ISS-318": {
+      "id": "ISS-318",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:34:31+00:00",
+      "updated_at": "2026-10-10T03:34:31+00:00",
+      "touched_round": 258,
+      "title": "离线归来时离线期间到期的增益被静默清除,玩家不知缘由",
+      "severity": 0.3
+    },
+    "TASK-314": {
+      "id": "TASK-314",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:34:31+00:00",
+      "updated_at": "2026-10-10T03:34:31+00:00",
+      "touched_round": 258,
+      "title": "离线结算前记下过期增益,写进归来总结 notes(与在线同口径)",
+      "category": "ux",
+      "effort": 1
+    },
+    "CHG-361": {
+      "id": "CHG-361",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T03:34:31+00:00",
+      "updated_at": "2026-10-10T03:34:31+00:00",
+      "touched_round": 258,
+      "title": "feat(offline): 离线归来 buff 到期记入总结(与在线同口径)",
+      "commit": "eed323a"
+    },
+    "ISS-319": {
+      "id": "ISS-319",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:38:49+00:00",
+      "updated_at": "2026-10-10T03:38:49+00:00",
+      "touched_round": 258,
+      "title": "在线自动结算(勿扰/超时)的事件奖励明细被丢弃,玩家不知得了什么",
+      "severity": 0.3
+    },
+    "TASK-315": {
+      "id": "TASK-315",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-10T03:38:49+00:00",
+      "updated_at": "2026-10-10T03:38:50+00:00",
+      "touched_round": 258,
+      "title": "自动结算事件奖励补 toast(超时+勿扰两条路报所得明细)",
+      "category": "ux",
+      "effort": 1
+    },
+    "CHG-362": {
+      "id": "CHG-362",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-10T03:38:49+00:00",
+      "updated_at": "2026-10-10T03:38:49+00:00",
+      "touched_round": 258,
+      "title": "feat(explore): 自动结算事件奖励补 toast(勿扰/超时可见)",
+      "commit": "eb08176"
     }
   },
   "edges": [
@@ -22748,6 +24474,906 @@
       "to": "ISS-269",
       "type": "resolves",
       "created_at": "2026-10-09T20:10:45+00:00"
+    },
+    {
+      "from": "CHG-313",
+      "to": "ISS-270",
+      "type": "resolves",
+      "created_at": "2026-10-09T20:28:35+00:00"
+    },
+    {
+      "from": "CHG-313",
+      "to": "TASK-266",
+      "type": "implements",
+      "created_at": "2026-10-09T20:28:35+00:00"
+    },
+    {
+      "from": "TASK-266",
+      "to": "ISS-270",
+      "type": "addresses",
+      "created_at": "2026-10-09T20:28:35+00:00"
+    },
+    {
+      "from": "CHG-314",
+      "to": "ISS-271",
+      "type": "resolves",
+      "created_at": "2026-10-09T20:37:41+00:00"
+    },
+    {
+      "from": "CHG-314",
+      "to": "TASK-267",
+      "type": "implements",
+      "created_at": "2026-10-09T20:37:41+00:00"
+    },
+    {
+      "from": "TASK-267",
+      "to": "ISS-271",
+      "type": "addresses",
+      "created_at": "2026-10-09T20:37:42+00:00"
+    },
+    {
+      "from": "CHG-315",
+      "to": "ISS-272",
+      "type": "resolves",
+      "created_at": "2026-10-09T20:43:44+00:00"
+    },
+    {
+      "from": "CHG-315",
+      "to": "TASK-268",
+      "type": "implements",
+      "created_at": "2026-10-09T20:43:44+00:00"
+    },
+    {
+      "from": "TASK-268",
+      "to": "ISS-272",
+      "type": "addresses",
+      "created_at": "2026-10-09T20:43:44+00:00"
+    },
+    {
+      "from": "CHG-316",
+      "to": "ISS-273",
+      "type": "resolves",
+      "created_at": "2026-10-09T20:52:25+00:00"
+    },
+    {
+      "from": "CHG-316",
+      "to": "TASK-269",
+      "type": "implements",
+      "created_at": "2026-10-09T20:52:25+00:00"
+    },
+    {
+      "from": "TASK-269",
+      "to": "ISS-273",
+      "type": "addresses",
+      "created_at": "2026-10-09T20:52:25+00:00"
+    },
+    {
+      "from": "CHG-317",
+      "to": "ISS-274",
+      "type": "resolves",
+      "created_at": "2026-10-09T20:59:03+00:00"
+    },
+    {
+      "from": "CHG-317",
+      "to": "TASK-270",
+      "type": "implements",
+      "created_at": "2026-10-09T20:59:03+00:00"
+    },
+    {
+      "from": "TASK-270",
+      "to": "ISS-274",
+      "type": "addresses",
+      "created_at": "2026-10-09T20:59:03+00:00"
+    },
+    {
+      "from": "CHG-318",
+      "to": "ISS-275",
+      "type": "resolves",
+      "created_at": "2026-10-09T21:05:39+00:00"
+    },
+    {
+      "from": "CHG-318",
+      "to": "TASK-271",
+      "type": "implements",
+      "created_at": "2026-10-09T21:05:39+00:00"
+    },
+    {
+      "from": "TASK-271",
+      "to": "ISS-275",
+      "type": "addresses",
+      "created_at": "2026-10-09T21:05:39+00:00"
+    },
+    {
+      "from": "CHG-319",
+      "to": "ISS-276",
+      "type": "resolves",
+      "created_at": "2026-10-09T21:10:56+00:00"
+    },
+    {
+      "from": "CHG-319",
+      "to": "TASK-272",
+      "type": "implements",
+      "created_at": "2026-10-09T21:10:56+00:00"
+    },
+    {
+      "from": "TASK-272",
+      "to": "ISS-276",
+      "type": "addresses",
+      "created_at": "2026-10-09T21:10:56+00:00"
+    },
+    {
+      "from": "CHG-320",
+      "to": "ISS-277",
+      "type": "resolves",
+      "created_at": "2026-10-09T21:17:40+00:00"
+    },
+    {
+      "from": "CHG-320",
+      "to": "TASK-273",
+      "type": "implements",
+      "created_at": "2026-10-09T21:17:40+00:00"
+    },
+    {
+      "from": "TASK-273",
+      "to": "ISS-277",
+      "type": "addresses",
+      "created_at": "2026-10-09T21:17:40+00:00"
+    },
+    {
+      "from": "CHG-321",
+      "to": "ISS-278",
+      "type": "resolves",
+      "created_at": "2026-10-09T21:27:32+00:00"
+    },
+    {
+      "from": "CHG-321",
+      "to": "TASK-274",
+      "type": "implements",
+      "created_at": "2026-10-09T21:27:33+00:00"
+    },
+    {
+      "from": "TASK-274",
+      "to": "ISS-278",
+      "type": "addresses",
+      "created_at": "2026-10-09T21:27:33+00:00"
+    },
+    {
+      "from": "CHG-322",
+      "to": "ISS-279",
+      "type": "resolves",
+      "created_at": "2026-10-09T21:36:01+00:00"
+    },
+    {
+      "from": "CHG-322",
+      "to": "TASK-275",
+      "type": "implements",
+      "created_at": "2026-10-09T21:36:01+00:00"
+    },
+    {
+      "from": "TASK-275",
+      "to": "ISS-279",
+      "type": "addresses",
+      "created_at": "2026-10-09T21:36:01+00:00"
+    },
+    {
+      "from": "CHG-323",
+      "to": "ISS-280",
+      "type": "resolves",
+      "created_at": "2026-10-09T21:47:12+00:00"
+    },
+    {
+      "from": "CHG-323",
+      "to": "TASK-276",
+      "type": "implements",
+      "created_at": "2026-10-09T21:47:12+00:00"
+    },
+    {
+      "from": "TASK-276",
+      "to": "ISS-280",
+      "type": "addresses",
+      "created_at": "2026-10-09T21:47:12+00:00"
+    },
+    {
+      "from": "CHG-324",
+      "to": "ISS-281",
+      "type": "resolves",
+      "created_at": "2026-10-09T21:56:45+00:00"
+    },
+    {
+      "from": "CHG-324",
+      "to": "TASK-277",
+      "type": "implements",
+      "created_at": "2026-10-09T21:56:45+00:00"
+    },
+    {
+      "from": "TASK-277",
+      "to": "ISS-281",
+      "type": "addresses",
+      "created_at": "2026-10-09T21:56:45+00:00"
+    },
+    {
+      "from": "CHG-325",
+      "to": "ISS-282",
+      "type": "resolves",
+      "created_at": "2026-10-09T22:10:05+00:00"
+    },
+    {
+      "from": "CHG-325",
+      "to": "TASK-278",
+      "type": "implements",
+      "created_at": "2026-10-09T22:10:05+00:00"
+    },
+    {
+      "from": "TASK-278",
+      "to": "ISS-282",
+      "type": "addresses",
+      "created_at": "2026-10-09T22:10:06+00:00"
+    },
+    {
+      "from": "CHG-326",
+      "to": "TASK-279",
+      "type": "implements",
+      "created_at": "2026-10-09T22:20:45+00:00"
+    },
+    {
+      "from": "CHG-326",
+      "to": "ISS-283",
+      "type": "resolves",
+      "created_at": "2026-10-09T22:20:45+00:00"
+    },
+    {
+      "from": "TASK-279",
+      "to": "ISS-283",
+      "type": "addresses",
+      "created_at": "2026-10-09T22:20:45+00:00"
+    },
+    {
+      "from": "CHG-327",
+      "to": "TASK-280",
+      "type": "implements",
+      "created_at": "2026-10-09T22:27:25+00:00"
+    },
+    {
+      "from": "CHG-327",
+      "to": "ISS-284",
+      "type": "resolves",
+      "created_at": "2026-10-09T22:27:25+00:00"
+    },
+    {
+      "from": "TASK-280",
+      "to": "ISS-284",
+      "type": "addresses",
+      "created_at": "2026-10-09T22:27:25+00:00"
+    },
+    {
+      "from": "CHG-328",
+      "to": "TASK-281",
+      "type": "implements",
+      "created_at": "2026-10-09T22:35:37+00:00"
+    },
+    {
+      "from": "CHG-328",
+      "to": "ISS-285",
+      "type": "resolves",
+      "created_at": "2026-10-09T22:35:37+00:00"
+    },
+    {
+      "from": "TASK-281",
+      "to": "ISS-285",
+      "type": "addresses",
+      "created_at": "2026-10-09T22:35:37+00:00"
+    },
+    {
+      "from": "CHG-329",
+      "to": "TASK-282",
+      "type": "implements",
+      "created_at": "2026-10-09T22:47:03+00:00"
+    },
+    {
+      "from": "CHG-329",
+      "to": "ISS-286",
+      "type": "resolves",
+      "created_at": "2026-10-09T22:47:03+00:00"
+    },
+    {
+      "from": "TASK-282",
+      "to": "ISS-286",
+      "type": "addresses",
+      "created_at": "2026-10-09T22:47:03+00:00"
+    },
+    {
+      "from": "CHG-330",
+      "to": "TASK-283",
+      "type": "implements",
+      "created_at": "2026-10-09T22:53:16+00:00"
+    },
+    {
+      "from": "CHG-330",
+      "to": "ISS-287",
+      "type": "resolves",
+      "created_at": "2026-10-09T22:53:17+00:00"
+    },
+    {
+      "from": "TASK-283",
+      "to": "ISS-287",
+      "type": "addresses",
+      "created_at": "2026-10-09T22:53:17+00:00"
+    },
+    {
+      "from": "CHG-331",
+      "to": "TASK-284",
+      "type": "implements",
+      "created_at": "2026-10-09T22:59:49+00:00"
+    },
+    {
+      "from": "CHG-331",
+      "to": "ISS-288",
+      "type": "resolves",
+      "created_at": "2026-10-09T22:59:49+00:00"
+    },
+    {
+      "from": "TASK-284",
+      "to": "ISS-288",
+      "type": "addresses",
+      "created_at": "2026-10-09T22:59:49+00:00"
+    },
+    {
+      "from": "CHG-332",
+      "to": "TASK-285",
+      "type": "implements",
+      "created_at": "2026-10-09T23:06:25+00:00"
+    },
+    {
+      "from": "CHG-332",
+      "to": "ISS-289",
+      "type": "resolves",
+      "created_at": "2026-10-09T23:06:25+00:00"
+    },
+    {
+      "from": "TASK-285",
+      "to": "ISS-289",
+      "type": "addresses",
+      "created_at": "2026-10-09T23:06:25+00:00"
+    },
+    {
+      "from": "CHG-333",
+      "to": "TASK-286",
+      "type": "implements",
+      "created_at": "2026-10-09T23:15:20+00:00"
+    },
+    {
+      "from": "CHG-333",
+      "to": "ISS-290",
+      "type": "resolves",
+      "created_at": "2026-10-09T23:15:20+00:00"
+    },
+    {
+      "from": "TASK-286",
+      "to": "ISS-290",
+      "type": "addresses",
+      "created_at": "2026-10-09T23:15:20+00:00"
+    },
+    {
+      "from": "CHG-334",
+      "to": "TASK-287",
+      "type": "implements",
+      "created_at": "2026-10-09T23:22:33+00:00"
+    },
+    {
+      "from": "CHG-334",
+      "to": "ISS-291",
+      "type": "resolves",
+      "created_at": "2026-10-09T23:22:33+00:00"
+    },
+    {
+      "from": "TASK-287",
+      "to": "ISS-291",
+      "type": "addresses",
+      "created_at": "2026-10-09T23:22:33+00:00"
+    },
+    {
+      "from": "CHG-335",
+      "to": "TASK-288",
+      "type": "implements",
+      "created_at": "2026-10-09T23:32:05+00:00"
+    },
+    {
+      "from": "CHG-335",
+      "to": "ISS-292",
+      "type": "resolves",
+      "created_at": "2026-10-09T23:32:05+00:00"
+    },
+    {
+      "from": "TASK-288",
+      "to": "ISS-292",
+      "type": "addresses",
+      "created_at": "2026-10-09T23:32:06+00:00"
+    },
+    {
+      "from": "CHG-336",
+      "to": "TASK-289",
+      "type": "implements",
+      "created_at": "2026-10-09T23:38:07+00:00"
+    },
+    {
+      "from": "CHG-336",
+      "to": "ISS-293",
+      "type": "resolves",
+      "created_at": "2026-10-09T23:38:07+00:00"
+    },
+    {
+      "from": "TASK-289",
+      "to": "ISS-293",
+      "type": "addresses",
+      "created_at": "2026-10-09T23:38:07+00:00"
+    },
+    {
+      "from": "CHG-337",
+      "to": "TASK-290",
+      "type": "implements",
+      "created_at": "2026-10-09T23:46:41+00:00"
+    },
+    {
+      "from": "CHG-337",
+      "to": "ISS-294",
+      "type": "resolves",
+      "created_at": "2026-10-09T23:46:41+00:00"
+    },
+    {
+      "from": "TASK-290",
+      "to": "ISS-294",
+      "type": "addresses",
+      "created_at": "2026-10-09T23:46:41+00:00"
+    },
+    {
+      "from": "CHG-338",
+      "to": "TASK-291",
+      "type": "implements",
+      "created_at": "2026-10-09T23:51:35+00:00"
+    },
+    {
+      "from": "CHG-338",
+      "to": "ISS-295",
+      "type": "resolves",
+      "created_at": "2026-10-09T23:51:35+00:00"
+    },
+    {
+      "from": "TASK-291",
+      "to": "ISS-295",
+      "type": "addresses",
+      "created_at": "2026-10-09T23:51:35+00:00"
+    },
+    {
+      "from": "CHG-339",
+      "to": "TASK-292",
+      "type": "implements",
+      "created_at": "2026-10-10T00:00:22+00:00"
+    },
+    {
+      "from": "CHG-339",
+      "to": "ISS-296",
+      "type": "resolves",
+      "created_at": "2026-10-10T00:00:22+00:00"
+    },
+    {
+      "from": "TASK-292",
+      "to": "ISS-296",
+      "type": "addresses",
+      "created_at": "2026-10-10T00:00:22+00:00"
+    },
+    {
+      "from": "CHG-340",
+      "to": "TASK-293",
+      "type": "implements",
+      "created_at": "2026-10-10T00:06:43+00:00"
+    },
+    {
+      "from": "CHG-340",
+      "to": "ISS-297",
+      "type": "resolves",
+      "created_at": "2026-10-10T00:06:44+00:00"
+    },
+    {
+      "from": "TASK-293",
+      "to": "ISS-297",
+      "type": "addresses",
+      "created_at": "2026-10-10T00:06:44+00:00"
+    },
+    {
+      "from": "CHG-341",
+      "to": "TASK-294",
+      "type": "implements",
+      "created_at": "2026-10-10T00:19:36+00:00"
+    },
+    {
+      "from": "CHG-341",
+      "to": "ISS-298",
+      "type": "resolves",
+      "created_at": "2026-10-10T00:19:36+00:00"
+    },
+    {
+      "from": "TASK-294",
+      "to": "ISS-298",
+      "type": "addresses",
+      "created_at": "2026-10-10T00:19:36+00:00"
+    },
+    {
+      "from": "CHG-342",
+      "to": "TASK-295",
+      "type": "implements",
+      "created_at": "2026-10-10T00:27:22+00:00"
+    },
+    {
+      "from": "CHG-342",
+      "to": "ISS-299",
+      "type": "resolves",
+      "created_at": "2026-10-10T00:27:22+00:00"
+    },
+    {
+      "from": "TASK-295",
+      "to": "ISS-299",
+      "type": "addresses",
+      "created_at": "2026-10-10T00:27:22+00:00"
+    },
+    {
+      "from": "CHG-343",
+      "to": "TASK-296",
+      "type": "implements",
+      "created_at": "2026-10-10T00:35:55+00:00"
+    },
+    {
+      "from": "CHG-343",
+      "to": "ISS-300",
+      "type": "resolves",
+      "created_at": "2026-10-10T00:35:55+00:00"
+    },
+    {
+      "from": "TASK-296",
+      "to": "ISS-300",
+      "type": "addresses",
+      "created_at": "2026-10-10T00:35:55+00:00"
+    },
+    {
+      "from": "CHG-344",
+      "to": "TASK-297",
+      "type": "implements",
+      "created_at": "2026-10-10T00:43:36+00:00"
+    },
+    {
+      "from": "CHG-344",
+      "to": "ISS-301",
+      "type": "resolves",
+      "created_at": "2026-10-10T00:43:36+00:00"
+    },
+    {
+      "from": "TASK-297",
+      "to": "ISS-301",
+      "type": "addresses",
+      "created_at": "2026-10-10T00:43:37+00:00"
+    },
+    {
+      "from": "CHG-345",
+      "to": "TASK-298",
+      "type": "implements",
+      "created_at": "2026-10-10T00:51:37+00:00"
+    },
+    {
+      "from": "CHG-345",
+      "to": "ISS-302",
+      "type": "resolves",
+      "created_at": "2026-10-10T00:51:37+00:00"
+    },
+    {
+      "from": "TASK-298",
+      "to": "ISS-302",
+      "type": "addresses",
+      "created_at": "2026-10-10T00:51:37+00:00"
+    },
+    {
+      "from": "CHG-346",
+      "to": "TASK-299",
+      "type": "implements",
+      "created_at": "2026-10-10T00:59:05+00:00"
+    },
+    {
+      "from": "CHG-346",
+      "to": "ISS-303",
+      "type": "resolves",
+      "created_at": "2026-10-10T00:59:05+00:00"
+    },
+    {
+      "from": "TASK-299",
+      "to": "ISS-303",
+      "type": "addresses",
+      "created_at": "2026-10-10T00:59:06+00:00"
+    },
+    {
+      "from": "CHG-347",
+      "to": "TASK-300",
+      "type": "implements",
+      "created_at": "2026-10-10T01:05:10+00:00"
+    },
+    {
+      "from": "CHG-347",
+      "to": "ISS-304",
+      "type": "resolves",
+      "created_at": "2026-10-10T01:05:10+00:00"
+    },
+    {
+      "from": "TASK-300",
+      "to": "ISS-304",
+      "type": "addresses",
+      "created_at": "2026-10-10T01:05:10+00:00"
+    },
+    {
+      "from": "CHG-348",
+      "to": "TASK-301",
+      "type": "implements",
+      "created_at": "2026-10-10T01:12:39+00:00"
+    },
+    {
+      "from": "CHG-348",
+      "to": "ISS-305",
+      "type": "resolves",
+      "created_at": "2026-10-10T01:12:39+00:00"
+    },
+    {
+      "from": "TASK-301",
+      "to": "ISS-305",
+      "type": "addresses",
+      "created_at": "2026-10-10T01:12:39+00:00"
+    },
+    {
+      "from": "CHG-349",
+      "to": "TASK-302",
+      "type": "implements",
+      "created_at": "2026-10-10T01:28:37+00:00"
+    },
+    {
+      "from": "CHG-349",
+      "to": "ISS-306",
+      "type": "resolves",
+      "created_at": "2026-10-10T01:28:37+00:00"
+    },
+    {
+      "from": "TASK-302",
+      "to": "ISS-306",
+      "type": "addresses",
+      "created_at": "2026-10-10T01:28:37+00:00"
+    },
+    {
+      "from": "CHG-350",
+      "to": "TASK-303",
+      "type": "implements",
+      "created_at": "2026-10-10T01:35:08+00:00"
+    },
+    {
+      "from": "CHG-350",
+      "to": "ISS-307",
+      "type": "resolves",
+      "created_at": "2026-10-10T01:35:08+00:00"
+    },
+    {
+      "from": "TASK-303",
+      "to": "ISS-307",
+      "type": "addresses",
+      "created_at": "2026-10-10T01:35:08+00:00"
+    },
+    {
+      "from": "CHG-351",
+      "to": "TASK-304",
+      "type": "implements",
+      "created_at": "2026-10-10T01:44:32+00:00"
+    },
+    {
+      "from": "CHG-351",
+      "to": "ISS-308",
+      "type": "resolves",
+      "created_at": "2026-10-10T01:44:32+00:00"
+    },
+    {
+      "from": "TASK-304",
+      "to": "ISS-308",
+      "type": "addresses",
+      "created_at": "2026-10-10T01:44:32+00:00"
+    },
+    {
+      "from": "CHG-352",
+      "to": "TASK-305",
+      "type": "implements",
+      "created_at": "2026-10-10T01:57:03+00:00"
+    },
+    {
+      "from": "CHG-352",
+      "to": "ISS-309",
+      "type": "resolves",
+      "created_at": "2026-10-10T01:57:03+00:00"
+    },
+    {
+      "from": "TASK-305",
+      "to": "ISS-309",
+      "type": "addresses",
+      "created_at": "2026-10-10T01:57:03+00:00"
+    },
+    {
+      "from": "CHG-353",
+      "to": "TASK-306",
+      "type": "implements",
+      "created_at": "2026-10-10T02:02:02+00:00"
+    },
+    {
+      "from": "CHG-353",
+      "to": "ISS-310",
+      "type": "resolves",
+      "created_at": "2026-10-10T02:02:02+00:00"
+    },
+    {
+      "from": "TASK-306",
+      "to": "ISS-310",
+      "type": "addresses",
+      "created_at": "2026-10-10T02:02:03+00:00"
+    },
+    {
+      "from": "CHG-354",
+      "to": "TASK-307",
+      "type": "implements",
+      "created_at": "2026-10-10T02:06:49+00:00"
+    },
+    {
+      "from": "CHG-354",
+      "to": "ISS-311",
+      "type": "resolves",
+      "created_at": "2026-10-10T02:06:49+00:00"
+    },
+    {
+      "from": "TASK-307",
+      "to": "ISS-311",
+      "type": "addresses",
+      "created_at": "2026-10-10T02:06:49+00:00"
+    },
+    {
+      "from": "CHG-355",
+      "to": "TASK-308",
+      "type": "implements",
+      "created_at": "2026-10-10T02:22:20+00:00"
+    },
+    {
+      "from": "CHG-355",
+      "to": "ISS-312",
+      "type": "resolves",
+      "created_at": "2026-10-10T02:22:20+00:00"
+    },
+    {
+      "from": "TASK-308",
+      "to": "ISS-312",
+      "type": "addresses",
+      "created_at": "2026-10-10T02:22:21+00:00"
+    },
+    {
+      "from": "CHG-356",
+      "to": "TASK-309",
+      "type": "implements",
+      "created_at": "2026-10-10T02:39:11+00:00"
+    },
+    {
+      "from": "CHG-356",
+      "to": "ISS-313",
+      "type": "resolves",
+      "created_at": "2026-10-10T02:39:11+00:00"
+    },
+    {
+      "from": "TASK-309",
+      "to": "ISS-313",
+      "type": "addresses",
+      "created_at": "2026-10-10T02:39:11+00:00"
+    },
+    {
+      "from": "CHG-357",
+      "to": "TASK-310",
+      "type": "implements",
+      "created_at": "2026-10-10T03:03:32+00:00"
+    },
+    {
+      "from": "CHG-357",
+      "to": "ISS-314",
+      "type": "resolves",
+      "created_at": "2026-10-10T03:03:33+00:00"
+    },
+    {
+      "from": "TASK-310",
+      "to": "ISS-314",
+      "type": "addresses",
+      "created_at": "2026-10-10T03:03:33+00:00"
+    },
+    {
+      "from": "CHG-358",
+      "to": "TASK-311",
+      "type": "implements",
+      "created_at": "2026-10-10T03:10:38+00:00"
+    },
+    {
+      "from": "CHG-358",
+      "to": "ISS-315",
+      "type": "resolves",
+      "created_at": "2026-10-10T03:10:38+00:00"
+    },
+    {
+      "from": "TASK-311",
+      "to": "ISS-315",
+      "type": "addresses",
+      "created_at": "2026-10-10T03:10:39+00:00"
+    },
+    {
+      "from": "CHG-359",
+      "to": "TASK-312",
+      "type": "implements",
+      "created_at": "2026-10-10T03:17:16+00:00"
+    },
+    {
+      "from": "CHG-359",
+      "to": "ISS-316",
+      "type": "resolves",
+      "created_at": "2026-10-10T03:17:16+00:00"
+    },
+    {
+      "from": "TASK-312",
+      "to": "ISS-316",
+      "type": "addresses",
+      "created_at": "2026-10-10T03:17:16+00:00"
+    },
+    {
+      "from": "CHG-360",
+      "to": "TASK-313",
+      "type": "implements",
+      "created_at": "2026-10-10T03:29:47+00:00"
+    },
+    {
+      "from": "CHG-360",
+      "to": "ISS-317",
+      "type": "resolves",
+      "created_at": "2026-10-10T03:29:47+00:00"
+    },
+    {
+      "from": "TASK-313",
+      "to": "ISS-317",
+      "type": "addresses",
+      "created_at": "2026-10-10T03:29:47+00:00"
+    },
+    {
+      "from": "CHG-361",
+      "to": "TASK-314",
+      "type": "implements",
+      "created_at": "2026-10-10T03:34:31+00:00"
+    },
+    {
+      "from": "CHG-361",
+      "to": "ISS-318",
+      "type": "resolves",
+      "created_at": "2026-10-10T03:34:31+00:00"
+    },
+    {
+      "from": "TASK-314",
+      "to": "ISS-318",
+      "type": "addresses",
+      "created_at": "2026-10-10T03:34:31+00:00"
+    },
+    {
+      "from": "CHG-362",
+      "to": "TASK-315",
+      "type": "implements",
+      "created_at": "2026-10-10T03:38:49+00:00"
+    },
+    {
+      "from": "CHG-362",
+      "to": "ISS-319",
+      "type": "resolves",
+      "created_at": "2026-10-10T03:38:49+00:00"
+    },
+    {
+      "from": "TASK-315",
+      "to": "ISS-319",
+      "type": "addresses",
+      "created_at": "2026-10-10T03:38:49+00:00"
     }
   ]
 }
