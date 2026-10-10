@@ -12,6 +12,7 @@
 
 ### 调整与优化
 
+- 炼器单步强化边界守卫:upgradeBatchPlan/equipmentBatch/equipLevelCap 早有覆盖,但单步 upgradeEquipment 的拒绝分支(到顶/未知件/缺料 → false 不扣)与精确扣账从未直接断言(只在别处当 helper 用)——新增守卫:成功升一级+精确扣 equipUpgradeCost 的 dust+stone+invested 累计(扣账与报价一致,先清首强成就会发 24 石的一次性成就赏以免混进差额)、到顶(level===equipLevelCap)拒绝不扣、未知 uid 拒绝、器灵尘不足拒绝不扣、灵石不足拒绝不扣;变异证明:把灵石扣账删掉 → 成功测试转红
 - 镇压 72h 复苏 settle 级守卫:isReviving/hoursUntilRevive 纯函数早有断言(worldMemory.spec),但 settleSuppressedRegions 的**真正复苏路径**(复生当拍移出镇压表、当拍不产石)零覆盖——若回归让复生区域当拍仍结算或该解的没解,会静默腐蚀镇压系统——新增守卫走真实 settle(settle 内部 Date.now(),用 73h/1h 大余差确定):镇压超 72h → 复生(移出镇压表、since 删)、当拍不产一石、返回 null;未满 72h → 照常镇压且产石(正对照);两区并存只有超 72h 的复苏(逐区独立);变异证明:把 REVIVE_AFTER_HOURS 改 999 → 复生两案转红
 - 装备生成词条值有限性守卫:equipGen.spec 此前只断言词条数/排序/品质阶梯与 luck 权重(r301),词条**值**的有限性与 roll 范围从未清扫——生成件若产出 NaN/∞ 的词条或越界的 roll(极端 luck/预算溢出/边缘 factor)会悄悄腐蚀玩家装备——新增守卫跨阶(1/6/12/20/30/40)×品质×幸运(−0.1/0/+0.5)走真实 generateEquipment+resolveEquipStats:每个词条 roll∈[0,1] 且有限、换算 mods 全有限、词条预算(budgetOfMods)有限且非负;变异证明:把 resolveEquipStats 的词条 value 改成 NaN → 清扫测试转红
 - 洞府产出长时间量级守卫:drift-free 只在 450/900s 小 dt 验过,真实长离线(60h 折 effSec 一次灌入)的量级从未测——新增守卫:field/library 2 × 200000s(≈55.6h)单次产出恰按 floor 整发(herb666.7→666/ore266.7→266/wudao166.7→166)、余数收敛 [0,1) 不丢不多给;量级拆批等值(produce(100000)×2 == produce(200000) 落账与 frac 全同);变异证明:把整发从 floor 改 ceil → 长时单次测试转红

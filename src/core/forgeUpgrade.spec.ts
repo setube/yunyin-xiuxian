@@ -9,9 +9,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { EquipmentInstance, GNum } from '@/types'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
-import { add, gn } from '@/utils/gnum'
+import { useQuestsStore } from '@/stores/quests'
+import { ACHIEVEMENTS } from '@/data/achievements'
+import { MAIN_QUESTS } from '@/data/quests'
+import { add, gn, sub, toNum } from '@/utils/gnum'
 import { upgradeCost } from './formulas'
-import { equipLevelCap, upgradeBatchPlan, upgradeEquipmentBatch } from './forge'
+import { equipLevelCap, equipUpgradeCost, upgradeBatchPlan, upgradeEquipment, upgradeEquipmentBatch } from './forge'
 
 /** 夹具一律凡品 rank 0 → upgradeCost 只吃 level/tier,折扣恒 0 */
 function mk(uid: string, level: number): EquipmentInstance {
@@ -122,5 +125,76 @@ describe('强化连升 · 批量账', () => {
     expect(upgradeEquipmentBatch('f')).toBe(0)
     expect(useInventoryStore().findItem('f')!.level).toBe(0)
     expect(r.dust).toBe(0)
+  })
+})
+
+describe('炼器 · 单步强化(upgradeEquipment)边界', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('成功:升一级、精确扣 dust+stone、invested 累计(分解八成返还的账本)', () => {
+    seat(mk('a', 0))
+    // 结算成就/主线一次性赏钱:首次强化成就会给 24 石,混进差额就分不清强化扣了多少
+    useQuestsStore().$patch({ achieved: ACHIEVEMENTS.map(a => a.id), mainIdx: MAIN_QUESTS.length - 1 })
+    // 用可表示的灵石量级(1e6):rich() 的 1e30 下 65 石成本会被浮点精度吞掉,量不出差
+    const r = useResourcesStore()
+    r.dust = 1_000_000
+    r.spiritStone = gn(1_000_000)
+    const d0 = r.dust
+    const s0 = { ...r.spiritStone }
+    // 预期扣账取自真实的 equipUpgradeCost(含 forgeDiscount 当前面板),不是手写 discount=0
+    const cost = equipUpgradeCost('a')!
+    expect(upgradeEquipment('a')).toBe(true)
+    const item = useInventoryStore().findItem('a')!
+    expect(item.level).toBe(1)
+    expect(r.dust).toBe(d0 - cost.dust)
+    expect(toNum(sub(s0, r.spiritStone))).toBeCloseTo(toNum(cost.stone), 6)
+    expect(item.invested?.dust).toBe(cost.dust)
+    expect(toNum(item.invested?.stone ?? gn(0))).toBeCloseTo(toNum(cost.stone), 6)
+  })
+
+  it('到顶:返回 false、level 不动、分文不扣', () => {
+    seat(mk('a', equipLevelCap()))
+    rich()
+    const r = useResourcesStore()
+    const d0 = r.dust
+    const s0 = { ...r.spiritStone }
+    expect(upgradeEquipment('a')).toBe(false)
+    expect(useInventoryStore().findItem('a')!.level).toBe(equipLevelCap())
+    expect(r.dust).toBe(d0)
+    expect(r.spiritStone).toEqual(s0)
+  })
+
+  it('未知 uid:返回 false、无副作用', () => {
+    rich()
+    const r = useResourcesStore()
+    const d0 = r.dust
+    expect(upgradeEquipment('ghost')).toBe(false)
+    expect(r.dust).toBe(d0)
+  })
+
+  it('器灵尘不足:不扣、level 不动', () => {
+    seat(mk('a', 0))
+    const cost = costOf(0)
+    const r = useResourcesStore()
+    r.dust = cost.dust - 1 // 差 1 尘
+    r.spiritStone = gn(1e30)
+    const d0 = r.dust
+    expect(upgradeEquipment('a')).toBe(false)
+    expect(useInventoryStore().findItem('a')!.level).toBe(0)
+    expect(r.dust).toBe(d0)
+  })
+
+  it('灵石不足:不扣、level 不动', () => {
+    seat(mk('a', 0))
+    const cost = costOf(0)
+    const r = useResourcesStore()
+    r.dust = 1_000_000_000
+    r.spiritStone = sub(cost.stone, gn(1)) // 差 1 灵石
+    const d0 = r.dust
+    const s0 = { ...r.spiritStone }
+    expect(upgradeEquipment('a')).toBe(false)
+    expect(useInventoryStore().findItem('a')!.level).toBe(0)
+    expect(r.dust).toBe(d0)
+    expect(r.spiritStone).toEqual(s0)
   })
 })
