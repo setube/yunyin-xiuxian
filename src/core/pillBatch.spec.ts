@@ -15,9 +15,11 @@ vi.mock('@/utils/random', async importOriginal => {
   return { ...mod, rng: new mod.RandomService(() => mockRand) }
 })
 
-import { usePillBatch, craftPillBatch, pillCraftCost } from './pillService'
+import { usePillBatch, craftPillBatch, pillCraftCost, salvageRatio } from './pillService'
 import { pillDef } from '@/data/pills'
 import { recipeCraft } from '@/data/crafting'
+import { craftability } from '@/core/craftability'
+import { toNum } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
@@ -115,5 +117,53 @@ describe('批量炼丹', () => {
     expect(useResourcesStore().herb, '材料不应被扣').toBe(400)
     expect(craftPillBatch(ID, -1)).toEqual({ rounds: 0, made: 0, failed: 0 })
     expect(useResourcesStore().herb, '负数同样不扣材料').toBe(400)
+  })
+
+  it('必成批次:rounds/made 齐、材料恰耗 cost×N、不超扣', () => {
+    mockRand = 0
+    const res = useResourcesStore()
+    const c = pillCraftCost(ID)!
+    const g = c.grade
+    res.addSmall('herb', c.herb * 5)
+    res.addStone({ m: 1, e: 9 })
+    const h0 = res.herbOf(g)
+    const s0 = toNum(res.spiritStone)
+    const out = craftPillBatch(ID, 3)
+    expect(out.rounds).toBe(3)
+    expect(out.made).toBeGreaterThanOrEqual(3)
+    expect(res.herbOf(g), '必成全额扣草').toBe(h0 - c.herb * 3)
+    expect(s0 - toNum(res.spiritStone), '必成石恰扣 cost×3').toBeCloseTo(toNum(c.stone) * 3, 6)
+    expect(res.herbOf(g)).toBeGreaterThanOrEqual(0)
+  })
+
+  it('炸炉批次:rounds 照开、made0 failed3、失败也烧料(草按 salvage 保下、石照扣)、不越料不欠', () => {
+    mockRand = 0.999 // 必炸
+    const res = useResourcesStore()
+    const c = pillCraftCost(ID)!
+    const g = c.grade
+    res.addSmall('herb', c.herb * 5)
+    res.addStone({ m: 1, e: 9 })
+    const kept = Math.floor(c.herb * salvageRatio(craftability(ID)!.skill))
+    const h0 = res.herbOf(g)
+    const s0 = toNum(res.spiritStone)
+    const out = craftPillBatch(ID, 3)
+    expect(out.rounds).toBe(3)
+    expect(out.made).toBe(0)
+    expect(out.failed).toBe(3)
+    expect(res.herbOf(g), '炸炉也烧草,只保下 salvage 那份').toBe(h0 - (c.herb - kept) * 3)
+    expect(s0 - toNum(res.spiritStone), '炸炉石照扣').toBeCloseTo(toNum(c.stone) * 3, 6)
+    expect(res.herbOf(g)).toBeGreaterThanOrEqual(0) // 不欠料
+  })
+
+  it('料恰够 1 炉:连炼 5 炉就 1 炉,草到 0 干净停、石不为负', () => {
+    mockRand = 0
+    const res = useResourcesStore()
+    const c = pillCraftCost(ID)!
+    res.addSmall('herb', c.herb)
+    res.addStone(c.stone)
+    const out = craftPillBatch(ID, 5)
+    expect(out.rounds).toBe(1)
+    expect(res.herbOf(c.grade)).toBe(0)
+    expect(toNum(res.spiritStone)).toBeGreaterThanOrEqual(0)
   })
 })
