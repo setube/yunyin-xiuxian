@@ -15,6 +15,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { qualityDef } from '@/data/qualities'
 import { BOUNTY_REFRESH_SECONDS, type BountyKind, type BountySlot } from '@/data/bounty'
 import { equipBountyReward, generateBounty, herbBountyReward } from '@/core/bountyService'
+import { marketTier } from '@/core/marketService'
 import { HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
 
@@ -47,7 +48,7 @@ function nonNeg(v: unknown, fallback: number): number {
 
 /** 交一柄兵刃入账:现算灵石器尘(按所交之品的品质);贡器四路共用,价随实交 */
 function deliverEquip(eq: { uid: string; tier: number; quality: QualityId }): void {
-  const r = equipBountyReward(eq.tier, qualityDef(eq.quality).rank)
+  const r = equipBountyReward(marketTier(eq.tier), qualityDef(eq.quality).rank)
   useInventoryStore().removeEquipment(eq.uid)
   const resources = useResourcesStore()
   resources.addStone(r.stone)

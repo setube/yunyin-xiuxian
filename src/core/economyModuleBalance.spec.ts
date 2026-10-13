@@ -14,6 +14,8 @@
 import { describe, expect, it } from 'vitest'
 import { stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
+import { MAX_MAJOR } from '@/data/realms'
+import { mulberry32, RandomService } from '@/utils/random'
 import {
   MARKET_PILL_MARKUP,
   MARKET_MAT_STONE_UNITS,
@@ -28,8 +30,8 @@ import {
   BOUNTY_EQUIP_STONE_BASE,
   BOUNTY_EQUIP_STONE_PER_RANK
 } from '@/data/bounty'
-import { pillSellPrice, consignPrice, herbSellPrice, materialSellPrice, herbSellBatch } from './marketService'
-import { herbBountyReward } from './bountyService'
+import { pillSellPrice, consignPrice, herbSellPrice, materialSellPrice, herbSellBatch, generateMarketStock } from './marketService'
+import { herbBountyReward, generateBounty } from './bountyService'
 import { herbBuyPrice } from './herbPrice'
 import { HERB_GRADES } from '@/data/herbGrades'
 import { MARKET_MAT_COUNT, MARKET_SELL_PILL_FACTOR } from '@/data/market'
@@ -40,6 +42,10 @@ const tierOf = (major: number): number => maxTierForMajor(major)
 
 function toN(g: { m: number; e: number }): number {
   return g.m * Math.pow(10, g.e)
+}
+
+function rng(seed = 0x5eed): RandomService {
+  return new RandomService(mulberry32(seed))
 }
 
 /** 全部 major 0..最大境界 */
@@ -176,7 +182,9 @@ describe('坊市定价单调性 + 有限(高阶/珍稀必卖更贵)', () => {
 
   it('材料即售价随境界单调递增,且有限为正', () => {
     let prev = 0
-    for (let major = 1; major <= 30; major += 1) {
+    // 价格骑在区域层级上(maxTierForMajor),真实境界域 1..MAX_MAJOR 内层级严格递增;
+    // 20 之后全部封顶混沌海第 32 层,无更高层级可走,故只测真实境界域。
+    for (let major = 1; major <= MAX_MAJOR; major += 1) {
       const p = toN(materialSellPrice(major))
       expect(p, `material major=${major}`).toBeGreaterThan(prev)
       expect(Number.isFinite(p)).toBe(true)
@@ -229,5 +237,42 @@ describe('坊市 · 定价健壮性(未知丹 0 元·0 阶负参非负有限)', 
     // 负阶/负品质被 stoneByTier 的 max(0, tier-1) 夹回正
     expect(toN(consignPrice(-1, -1))).toBeGreaterThanOrEqual(0)
     expect(toN(materialSellPrice(-5))).toBeGreaterThanOrEqual(0)
+  })
+})
+
+/**
+ * 一把尺(单标尺)守卫:灵草/匹材/装备/悬赏全骑同一根 1.9^区域层级 曲线。
+ *
+ * 旧实现把匹材/装备价钉在「境界大阶 major」上,而草价已随 maxTierForMajor
+ * 缩放 —— 同一架货里两把尺一分叉,major9 的矿石格只有草的 ~1/17000,
+ * 「坊市是灵石主销处」塌掉。这里在非零大阶上直接对比材价与草价底子:
+ * 材:草 = 6:64 且与层级无关;谁把材退回大阶,比值立刻差两个数量级,本测试即红。
+ */
+describe('坊市/悬赏 · 材与草骑同一区域层级之尺', () => {
+  it('玄铁/募铁与灵草共用 maxTierForMajor(major),不以境界大阶当层级', () => {
+    // 选 maxTierForMajor(major) > major 的境 —— 两把尺在此显著分叉(矿石格才不会塌成死位)
+    const major = 9
+    const tier = maxTierForMajor(major)
+    expect(tier, '前提:此境两把尺确实分叉').toBeGreaterThan(major)
+
+    // 玄铁货架格(每单位 amount 6)与草一品购价底子(amount 64)骑同一条曲线
+    let oreSlot: { price: { m: number; e: number } } | undefined
+    for (let s = 0; s < 24 && !oreSlot; s += 1) {
+      oreSlot = generateMarketStock(major, rng(s + 1), 1_700_000_000_000).goods.find(
+        x => x.kind === 'material' && x.matId === 'ore'
+      )
+    }
+    expect(oreSlot, '若干次生成总该开得出玄铁格').toBeDefined()
+    const oreUnit = toN(oreSlot!.price) / MARKET_MAT_COUNT
+    const herbUnitRaw = toN(stoneByTier(tier, 64)) // 草一品购价的未取整底子(amount 64)
+    // 材:草 = amount 6:64,与层级无关 —— 若矿石退回大阶(major=9),比值掉 ~2200 倍
+    expect(oreUnit / herbUnitRaw).toBeCloseTo(MARKET_MAT_STONE_UNITS / 64, 5)
+    // 敛重证:退回「大阶当层级」的量级不在同一曲线上,确保本断言真抓得住回退
+    const revertedOreUnit = toN(stoneByTier(major, MARKET_MAT_STONE_UNITS))
+    expect(revertedOreUnit / herbUnitRaw).toBeLessThan((oreUnit / herbUnitRaw) * 0.01)
+
+    // 募铁悬赏(amount 4.5/单位 × target)同骑真实层级
+    const oreBounty = generateBounty(major, 1_700_000_000_000).find(s => s.kind === 'ore')!.reward
+    expect(toN(oreBounty)).toBeCloseTo(toN(stoneByTier(tier, BOUNTY_MAT_TARGET * BOUNTY_MAT_UNIT_AMOUNT)), 5)
   })
 })

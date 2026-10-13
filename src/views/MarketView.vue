@@ -212,6 +212,7 @@
     herbSellBatch,
     marketEquipInstance,
     marketRemainingSec,
+    marketTier,
     materialSellPrice,
     pillSellPrice
   } from '@/core/marketService'
@@ -285,7 +286,7 @@
         name: equipmentTemplate(eq.templateId)?.name ?? eq.templateId,
         color: qualityDef(eq.quality).color,
         tier: eq.tier,
-        price: consignPrice(eq.tier, qualityDef(eq.quality).rank)
+        price: consignPrice(marketTier(eq.tier), qualityDef(eq.quality).rank)
       }))
   )
 
@@ -499,7 +500,7 @@
       .sort((a, b) => qualityDef(b.quality).rank - qualityDef(a.quality).rank)
       .map(eq => {
         const q = qualityDef(eq.quality)
-        const r = equipBountyReward(eq.tier, q.rank)
+        const r = equipBountyReward(marketTier(eq.tier), q.rank)
         return {
           uid: eq.uid,
           name: equipmentTemplate(eq.templateId)?.name ?? eq.templateId,

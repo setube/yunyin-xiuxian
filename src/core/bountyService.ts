@@ -9,7 +9,7 @@ import type { GNum } from '@/types'
 import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { pillDef } from '@/data/pills'
-import { salePills } from './marketService'
+import { salePills, marketTier } from './marketService'
 import { herbBuyPrice } from './herbPrice'
 import type { HerbGrade } from '@/data/herbGrades'
 import { MARKET_MAT_STONE_UNITS } from '@/data/market'
@@ -56,7 +56,7 @@ export function generateBounty(major: number, now: number): BountySlot[] {
   const pillId = pickPill(major, now)
   const pd = pillDef(pillId)
   const matTarget = BOUNTY_MAT_TARGET
-  const oreReward = stoneByTier(major, matTarget * BOUNTY_MAT_UNIT_AMOUNT)
+  const oreReward = stoneByTier(marketTier(major), matTarget * BOUNTY_MAT_UNIT_AMOUNT)
   const slots: BountySlot[] = [
     { idx: 0, kind: 'herb', kindId: 'herb', target: matTarget, tier: 0, reward: gnZero(), extra: 0, claimed: false },
     { idx: 1, kind: 'ore', kindId: 'ore', target: matTarget, tier: 0, reward: oreReward, extra: 0, claimed: false },

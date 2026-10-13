@@ -11,7 +11,7 @@ import {
   MARKET_SLOTS,
   type MarketEquipSlot
 } from '@/data/market'
-import { generateMarketStock, marketEquipInstance, salePills } from '@/core/marketService'
+import { generateMarketStock, marketEquipInstance, marketTier, salePills } from '@/core/marketService'
 import { equipBountyReward } from '@/core/bountyService'
 import { qualityDef } from '@/data/qualities'
 
@@ -76,7 +76,7 @@ describe('坊市 · 购入 vs 悬赏贡器 无套利', () => {
       for (const slot of stock.goods) {
         if (slot.kind !== 'equipment') continue
         const inst = marketEquipInstance(slot, stock.stockedAt)
-        const reward = equipBountyReward(inst.tier, qualityDef(inst.quality).rank)
+        const reward = equipBountyReward(marketTier(inst.tier), qualityDef(inst.quality).rank)
         expect(toNum(slot.price), '坊价须高于贡器所得(同件)').toBeGreaterThan(toNum(reward.stone))
       }
     }

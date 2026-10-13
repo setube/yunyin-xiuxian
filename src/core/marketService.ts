@@ -8,6 +8,7 @@
 import type { EquipmentInstance, GNum } from '@/types'
 import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
+import { maxTierForMajor } from '@/data/regions'
 import { PILLS, pillDef } from '@/data/pills'
 import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
 import { herbBuyPrice } from './herbPrice'
@@ -36,6 +37,18 @@ import {
 /** 现境界拿得到的可售丹药(须有炼制石耗才能定价) */
 export function salePills(major: number): typeof PILLS {
   return PILLS.filter(p => p.recipe?.stoneBase != null && p.minRealm <= major)
+}
+
+/**
+ * 坊市/悬赏的**唯一经济标尺** —— 当前境界能到达的最高区域层级。
+ *
+ * 与灵草 herbPrice(stoneByTier(maxTierForMajor(major), 64))同一把尺:
+ * 材/装备/贡器/悬赏全部骑在 1.9^层级 这条曲线上,而不是直接拿境界大阶(major,0-20)
+ * 当层级 —— 否则同一架货里草按真实层级、矿/装备按大阶,两把尺一分叉,
+ * 「坊市是灵石主销处」就塌成矿石格/贡器格全变死位(economySim 亦全程用 maxTierForMajor)。
+ */
+export function marketTier(major: number): number {
+  return maxTierForMajor(major)
 }
 
 /** 一货架里骰一个此刻拿得到的门类(权重仅对可行门类生效) */
@@ -71,7 +84,7 @@ function buildSlot(
     const price =
       matId === 'herb'
         ? mulN(gn(herbBuyPrice(herbGradeOfMajor(major), major)), MARKET_MAT_COUNT)
-        : mulN(stoneByTier(major, MARKET_MAT_STONE_UNITS), MARKET_MAT_COUNT)
+        : mulN(stoneByTier(marketTier(major), MARKET_MAT_STONE_UNITS), MARKET_MAT_COUNT)
     return { kind: 'material', idx, matId, count: MARKET_MAT_COUNT, price, sold: false }
   }
   const minQualityRank = rollQuality(major, rng).rank
@@ -83,7 +96,7 @@ function buildSlot(
     idx,
     tier: major,
     minQualityRank,
-    price: stoneByTier(major, MARKET_EQUIP_STONE_BASE + rank * MARKET_EQUIP_STONE_PER_RANK),
+    price: stoneByTier(marketTier(major), MARKET_EQUIP_STONE_BASE + rank * MARKET_EQUIP_STONE_PER_RANK),
     sold: false
   }
 }
@@ -131,7 +144,7 @@ export function pillSellPrice(pillId: string): GNum {
 
 /** 即时售一批**玄铁**(与货架同单位数)可得;每单位价低于购入,不成环。灵草的出售走 herbSell(按品) */
 export function materialSellPrice(major: number): GNum {
-  return mulN(stoneByTier(major, MARKET_SELL_MAT_STONE_UNITS), MARKET_MAT_COUNT)
+  return mulN(stoneByTier(marketTier(major), MARKET_SELL_MAT_STONE_UNITS), MARKET_MAT_COUNT)
 }
 
 /**
