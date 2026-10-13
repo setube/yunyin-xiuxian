@@ -68,19 +68,23 @@ export const STARTER_APPRENTICE = 'ap_lingtong'
 export const APPRENTICE_MAX_LEVEL = 20
 /** 天赋门类产出加成 */
 export const APPRENTICE_TALENT_BONUS = 1.25
+/** 收一名道童的灵石价(以 tier 折算)。展示与实扣同读这一份 —— 只改一处,不会报价≠实扣 */
+export const RECRUIT_COST_TIER_AMOUNT = 30
 
 /** 弟子槽位随境界增长:1 起,每 4 境 +1,顶到 5 */
 export function apprenticeSlots(major: number): number {
   return Math.min(5, 1 + Math.floor(Math.max(0, major) / 4))
 }
 
-/** 各尽其长 · 目标水位(存栏使 score=1 的参考;导演口径 040/030/030/030) */
-export type DispatchNeedResource = 'herb' | 'ore' | 'wudao' | 'dust'
+/** 各尽其长 · 目标水位(存栏使 score=1 的参考;导演口径 040/030/030/030/010) */
+export type DispatchNeedResource = 'herb' | 'ore' | 'wudao' | 'dust' | 'seek'
 export const DISPATCH_NEED_TARGET: Record<DispatchNeedResource, number> = {
   herb: 40,
   ore: 30,
   wudao: 30,
-  dust: 30
+  dust: 30,
+  // seek 以「丹药总存量」为稀缺代理;水位最低 → 谷有余时才去寻宝补丹(点缀,非主力)
+  seek: 10
 }
 /** 历练的固定兜底分:低于任一资源的短缺分 —— 皆有余时才去历练挣灵石 */
 export const DISPATCH_ADVENTURE_FIXED_SCORE = 0.25

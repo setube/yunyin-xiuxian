@@ -12,31 +12,37 @@ import { dispatchAllToNeed, needTargetDoor, type DispatchNeedStock } from './app
 describe('各尽其长 · needTargetDoor 取最缺之门', () => {
   it('采药最缺时,取「采药」为唯一目标', () => {
     // 灵草见底(score 40),其余三门皆够(score ≈0.97)
-    const stock: DispatchNeedStock = { herb: 0, ore: 30, wudao: 30, dust: 30 }
+    const stock: DispatchNeedStock = { herb: 0, ore: 30, wudao: 30, dust: 30, seek: 20 }
     expect(needTargetDoor(stock)).toBe('herb')
   })
 
   it('皆有余(资源全满)时,历练以固定兜底分胜出', () => {
     // 三门资源 score 皆 < 0.25,历练固定分 0.25 独大
-    const stock: DispatchNeedStock = { herb: 200, ore: 150, wudao: 150, dust: 150 }
+    const stock: DispatchNeedStock = { herb: 200, ore: 150, wudao: 150, dust: 150, seek: 50 }
     expect(needTargetDoor(stock)).toBe('adventure')
   })
 
   it('四门短缺分全并列时,返回 null(→各自专职)', () => {
     // 各资源 score 恰为 1.0:herb 40/40、ore 30/30、study 30/30、dust 30/30
-    const stock: DispatchNeedStock = { herb: 39, ore: 29, wudao: 29, dust: 29 }
+    const stock: DispatchNeedStock = { herb: 39, ore: 29, wudao: 29, dust: 29, seek: 9 }
     expect(needTargetDoor(stock)).toBeNull()
+  })
+
+  it('谷有余而丹药见底时,取「寻机缘」为唯一目标', () => {
+    // 最基本的四门皆够(score ≈0.97~0.97),丹药存量 0 → seek score 10/1=10 独大
+    const stock: DispatchNeedStock = { herb: 40, ore: 30, wudao: 30, dust: 30, seek: 0 }
+    expect(needTargetDoor(stock)).toBe('seek')
   })
 })
 
 describe('各尽其长 · dispatchAllToNeed 派发', () => {
   it('无闲置道童:不派,返回空', () => {
-    const stock: DispatchNeedStock = { herb: 0, ore: 30, wudao: 30, dust: 30 }
+    const stock: DispatchNeedStock = { herb: 0, ore: 30, wudao: 30, dust: 30, seek: 20 }
     expect(dispatchAllToNeed([], stock)).toEqual([])
   })
 
   it('采药最缺:全体闲置道童都去采药(各自天赋被压下)', () => {
-    const stock: DispatchNeedStock = { herb: 0, ore: 30, wudao: 30, dust: 30 }
+    const stock: DispatchNeedStock = { herb: 0, ore: 30, wudao: 30, dust: 30, seek: 20 }
     const idle = [
       { uid: 'u1', talent: 'study' as const },
       { uid: 'u2', talent: 'ore' as const },
@@ -50,7 +56,7 @@ describe('各尽其长 · dispatchAllToNeed 派发', () => {
   })
 
   it('皆有余:全体闲置道童都去历练挣灵石', () => {
-    const stock: DispatchNeedStock = { herb: 200, ore: 150, wudao: 150, dust: 150 }
+    const stock: DispatchNeedStock = { herb: 200, ore: 150, wudao: 150, dust: 150, seek: 50 }
     const idle = [
       { uid: 'u1', talent: 'study' as const },
       { uid: 'u2', talent: 'herb' as const }
@@ -62,7 +68,7 @@ describe('各尽其长 · dispatchAllToNeed 派发', () => {
   })
 
   it('四门短缺分全并列:全体各自专职,各回各的天赋之门', () => {
-    const stock: DispatchNeedStock = { herb: 39, ore: 29, wudao: 29, dust: 29 }
+    const stock: DispatchNeedStock = { herb: 39, ore: 29, wudao: 29, dust: 29, seek: 9 }
     const idle = [
       { uid: 'u1', talent: 'study' as const },
       { uid: 'u2', talent: 'adventure' as const },

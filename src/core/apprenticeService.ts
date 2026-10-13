@@ -43,10 +43,16 @@ export function apprenticeTaskSeconds(spec: ApprenticeSpec): number {
   return taskDef(spec).seconds
 }
 
-/** 寻宝的丹药:按等级在可炼丹池里取一枚,确定可复现 */
-function pickSeekPill(level: number): string {
-  const pool = PILLS.filter(p => p.recipe?.stoneBase != null).map(p => p.id)
-  return pool[(level * 7) % pool.length]!
+/**
+ * 寻宝的丹药:按境界在「寻宝此刻拿得到的可炼丹池」里取一枚,确定可复现。
+ * 池以 minRealm ≤ major 封顶(与坊市 salePills 同源)—— 否则新号跑一趟寻宝就能
+ * 白捡 dao 品顶阶丹,兜底掉炼丹石耗/材料/境界整条经济线。境界 ≥0 时池恒非空(入口
+ * 丹均为 minRealm 0)。防空池兜底,避免因数据误删而静默吞产出。
+ */
+function pickSeekPill(major: number, level: number): string {
+  const pool = PILLS.filter(p => p.recipe?.stoneBase != null && p.minRealm <= major).map(p => p.id)
+  if (pool.length) return pool[(level * 7) % pool.length]!
+  return PILLS.find(p => p.recipe?.stoneBase != null)?.id ?? 'p_jvqisan'
 }
 
 function baseSpoils(major: number, level: number): Record<ApprenticeSpec, TaskSpoils> {
@@ -54,7 +60,7 @@ function baseSpoils(major: number, level: number): Record<ApprenticeSpec, TaskSp
     herb: { herb: 4 + level * 2 },
     ore: { ore: 3 + level * 2 },
     adventure: { stone: stoneByTier(major, 3 + level), dust: 1 + level },
-    seek: { pillId: pickSeekPill(level), pillCount: 1 },
+    seek: { pillId: pickSeekPill(major, level), pillCount: 1 },
     study: { wudao: 2 + level }
   }
 }
@@ -72,7 +78,9 @@ export function apprenticeSpoils(archId: string, spec: ApprenticeSpec, major: nu
   if (base.stone) out.stone = mulN(base.stone, mult)
   if (base.pillId) {
     out.pillId = base.pillId
-    out.pillCount = base.pillCount
+    // 丹药是不可分的整数产出,×1.25 后向上取整(基数 1 → 天赋 2 枚),否则 floor 会把
+    // 天赋加成整掉成空、与 herb/ore 的「天赋更丰」承诺不一致。
+    out.pillCount = Math.max(1, Math.ceil((base.pillCount ?? 1) * mult))
   }
   return out
 }
@@ -88,6 +96,8 @@ export interface DispatchNeedStock {
   ore: number
   wudao: number
   dust: number
+  /** 丹药总存量 —— seek(寻宝)的稀缺代理 */
+  seek: number
 }
 
 function needScore(amount: number, water: number): number {
@@ -101,7 +111,8 @@ export function needTargetDoor(stock: DispatchNeedStock): ApprenticeSpec | null 
     ['herb', needScore(stock.herb, DISPATCH_NEED_TARGET.herb)],
     ['ore', needScore(stock.ore, DISPATCH_NEED_TARGET.ore)],
     ['study', needScore(stock.wudao, DISPATCH_NEED_TARGET.wudao)],
-    ['adventure', Math.max(needScore(stock.dust, DISPATCH_NEED_TARGET.dust), DISPATCH_ADVENTURE_FIXED_SCORE)]
+    ['adventure', Math.max(needScore(stock.dust, DISPATCH_NEED_TARGET.dust), DISPATCH_ADVENTURE_FIXED_SCORE)],
+    ['seek', needScore(stock.seek, DISPATCH_NEED_TARGET.seek)]
   ]
   let best: ApprenticeSpec | null = null
   let bestScore = -Infinity

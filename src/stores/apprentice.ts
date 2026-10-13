@@ -17,6 +17,7 @@ import {
   APPRENTICE_MAX_LEVEL,
   APPRENTICES,
   BOND_TITLES,
+  RECRUIT_COST_TIER_AMOUNT,
   STARTER_APPRENTICE,
   apprenticeDef,
   apprenticeSlots,
@@ -31,9 +32,6 @@ import {
   type TaskSpoils
 } from '@/core/apprenticeService'
 import { asArray } from '@/utils/saveShape'
-
-/** 收一名道童的灵石价(以 tier 折算)。展示与实扣同读这一份 —— 只改一处,不会报价≠实扣 */
-export const RECRUIT_COST_TIER_AMOUNT = 30
 
 let seq = 0
 function nextUid(): string {
@@ -163,7 +161,8 @@ export const useApprenticeStore = defineStore(
         herb: resources.herbOf(herbGradeOfMajor(major)),
         ore: resources.ore,
         wudao: resources.wudao,
-        dust: resources.dust
+        dust: resources.dust,
+        seek: Object.values(useInventoryStore().pills).reduce((a, b) => a + b, 0)
       })
       for (const t of targets) {
         const appr = apprentices.value.find(x => x.uid === t.uid)

@@ -78,10 +78,11 @@
   import { stoneByTier } from '@/core/formulas'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
-  import { RECRUIT_COST_TIER_AMOUNT, useApprenticeStore } from '@/stores/apprentice'
+  import { useApprenticeStore } from '@/stores/apprentice'
   import { useUiStore } from '@/stores/ui'
   import {
     APPRENTICE_TASKS,
+    RECRUIT_COST_TIER_AMOUNT,
     apprenticeDef,
     apprenticeSlots,
     bondTitle,
@@ -135,7 +136,8 @@
   function doDispatchAll(): void {
     const n = appr.dispatchAll(now.value)
     if (n > 0) ui.toast(`已按需遣 ${n} 名道童出门`, 'info')
-    else ui.toast('皆已出门,候归即可', 'info')
+    // 按钮在无闲置道童时禁用,正常走不到;真走到说明有闲置却派不动(如目标门全满),如实报,别用「皆已出门」误导
+    else ui.toast('没有空闲道童可遣', 'info')
   }
 
   function doRecruit(): void {

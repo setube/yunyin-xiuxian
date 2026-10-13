@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   APPRENTICE_TASKS,
   APPRENTICES,
+  APPRENTICE_MAX_LEVEL,
   STARTER_APPRENTICE,
   apprenticeDef,
   apprenticeSlots
@@ -16,6 +17,7 @@ import {
   DISPATCH_ADVENTURE_FIXED_SCORE,
   DISPATCH_NEED_TARGET
 } from '@/data/apprentices'
+import { pillDef } from '@/data/pills'
 import { toNum } from '@/utils/gnum'
 
 describe('收徒 · 数据不变量', () => {
@@ -51,12 +53,30 @@ describe('收徒 · 数据不变量', () => {
     expect(apprenticeSpoils('ap_luanniao', 'herb', 0, 5).herb!).toBeGreaterThan(talentBonus)
   })
 
-  it('寻宝确定取一枚可炼丹,每次不空手', () => {
-    const s = apprenticeSpoils('ap_lingtong', 'seek', 0, 2)
-    expect(s.pillId).toBeTruthy()
-    expect(s.pillCount).toBe(1)
-    // 无人能凭空拿丹 —— 是实打实一枚
-    expect(s.herb).toBeUndefined()
+  it('寻宝确定取一枚可炼丹:境界内取丹,且寻宝天赋者多得一枚', () => {
+    // 非寻宝天赋者跑寻宝:基数 1 枚
+    const plain = apprenticeSpoils('ap_luanniao', 'seek', 0, 2)
+    expect(plain.pillId).toBeTruthy()
+    expect(plain.pillCount).toBe(1)
+    // 只会拿一颗实丹,不会凭空多一份非丹产出
+    expect(plain.herb).toBeUndefined()
+    // 寻宝天赋(ap_lingtong)×1.25 向上取整 → 2 枚,「天赋门类更丰」在寻宝上兑现
+    const gifted = apprenticeSpoils('ap_lingtong', 'seek', 0, 2)
+    expect(gifted.pillId).toBeTruthy()
+    expect(gifted.pillCount).toBeGreaterThan(plain.pillCount!)
+  })
+
+  it('寻宝挑丹不越境界:低境界永远拿不到高界丹(堵新号白捡顶阶丹)', () => {
+    // 覆盖 0..18 境与各弟子等级,断言挑出的丹其准入境界不高于当前境界
+    for (let major = 0; major <= 18; major++) {
+      for (const arch of APPRENTICES) {
+        for (const level of [1, 10, APPRENTICE_MAX_LEVEL]) {
+          const s = apprenticeSpoils(arch.id, 'seek', major, level)
+          expect(s.pillId, `${major}境不应拿到越界丹`).toBeTruthy()
+          expect(pillDef(s.pillId!)!.minRealm, `major=${major} 越界`).toBeLessThanOrEqual(major)
+        }
+      }
+    }
   })
 
   it('一份产出绝不为负、不大得过离谱', () => {
@@ -79,7 +99,7 @@ describe('收徒 · 数据不变量', () => {
       { uid: 'a', talent: 'ore' as const },
       { uid: 'b', talent: 'study' as const }
     ]
-    expect(dispatchAllToNeed(idle, { herb: 0, ore: 500, wudao: 500, dust: 500 })).toEqual([
+    expect(dispatchAllToNeed(idle, { herb: 0, ore: 500, wudao: 500, dust: 500, seek: 500 })).toEqual([
       { uid: 'a', spec: 'herb' },
       { uid: 'b', spec: 'herb' }
     ])
@@ -88,23 +108,23 @@ describe('收徒 · 数据不变量', () => {
   it('各尽其长:皆有余时去历练挣灵石(adventure 固定兜底分)', () => {
     // 各资源 score < 0.25(历练兜底),故全体去历练
     const idle = [{ uid: 'a', talent: 'herb' as const }]
-    expect(dispatchAllToNeed(idle, { herb: 200, ore: 200, wudao: 200, dust: 200 })).toEqual([
+    expect(dispatchAllToNeed(idle, { herb: 200, ore: 200, wudao: 200, dust: 200, seek: 200 })).toEqual([
       { uid: 'a', spec: 'adventure' }
     ])
   })
 
   it('各尽其长:目标分无差别 → 各自专职;无闲置则空手', () => {
     // herb score = 40/4 = 10 与 ore score = 30/3 = 10 并列最高 → null → 各自专职
-    expect(needTargetDoor({ herb: 3, ore: 2, wudao: 100, dust: 100 })).toBeNull()
+    expect(needTargetDoor({ herb: 3, ore: 2, wudao: 100, dust: 100, seek: 0 })).toBeNull()
     const idle = [
       { uid: 'a', talent: 'herb' as const },
       { uid: 'b', talent: 'ore' as const }
     ]
-    expect(dispatchAllToNeed(idle, { herb: 3, ore: 2, wudao: 100, dust: 100 })).toEqual([
+    expect(dispatchAllToNeed(idle, { herb: 3, ore: 2, wudao: 100, dust: 100, seek: 0 })).toEqual([
       { uid: 'a', spec: 'herb' },
       { uid: 'b', spec: 'ore' }
     ])
-    expect(dispatchAllToNeed([], { herb: 0, ore: 0, wudao: 0, dust: 0 })).toEqual([])
+    expect(dispatchAllToNeed([], { herb: 0, ore: 0, wudao: 0, dust: 0, seek: 0 })).toEqual([])
   })
 
   it('羁绊位阶:按累计完工趟数阈值换上称谓(阈值递减验证)', () => {
@@ -128,7 +148,7 @@ describe('收徒 · 数据不变量', () => {
   })
 
   it('各尽其长目标水位与历练兜底分是确定常数', () => {
-    expect(DISPATCH_NEED_TARGET).toEqual({ herb: 40, ore: 30, wudao: 30, dust: 30 })
+    expect(DISPATCH_NEED_TARGET).toEqual({ herb: 40, ore: 30, wudao: 30, dust: 30, seek: 10 })
     expect(DISPATCH_ADVENTURE_FIXED_SCORE).toBe(0.25)
   })
 })
