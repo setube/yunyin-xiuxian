@@ -13,7 +13,7 @@ import { CHAIN_STAGE_CHANCE, FORTUNE_CHANCE, INSTANT_EXP_LAYER_CAP } from '@/dat
 import { pillDef, PILLS, pillRank } from '@/data/pills'
 import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
 import { buffDef } from '@/data/buffs'
-import { PETS, petDef } from '@/data/pets'
+import { petDef, genericPetPool } from '@/data/pets'
 import { expFromSecs, stoneByTier } from './formulas'
 import { generateEquipment } from './equipGen'
 import { acquireArtifact, acquireEquipment, randomDropArtifact } from './loot'
@@ -196,7 +196,8 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
     case 'pet': {
       const quests = useQuestsStore()
       const owned = new Set(quests.collections.pet)
-      const pool = PETS.filter(p => !owned.has(p.id))
+      // 泛型事件只发入门圣兽(凡/精/灵/玄/天);仙品/神品神兽仅由指名 id 的高界事件发放
+      const pool = genericPetPool(owned)
       const id = effect.id ?? (pool.length ? rng.pick(pool).id : null)
       if (!id || owned.has(id)) {
         resources.addSmall('herb', 10)

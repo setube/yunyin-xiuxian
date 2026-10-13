@@ -16,6 +16,9 @@ import { describe, expect, it } from 'vitest'
 import { CONTENT_GATES, disqualified, qualifiedRewards, reachabilityTable } from './contentGateAudit'
 import { MANUAL_REBIRTH_MIN_MAJOR } from './reincarnation'
 import { REALMS, WORLD_BREAK_MAJOR } from '@/data/realms'
+import { EVENTS } from '@/data/events'
+import { PETS, genericPetPool, IMMORTAL_RANK } from '@/data/pets'
+import { qualityDef } from '@/data/qualities'
 
 const NAMES = REALMS.map(r => r.name)
 
@@ -52,6 +55,35 @@ describe('内容可达性 · 被证伪的候选', () => {
     expect(pet.qualifies).toBe(true)
     expect(row.goldShare!).toBeLessThan(1) // 神兽不在金丹可达范围内
     console.log(`\n灵兽:${pet.evidence}`)
+  })
+
+  it('灵兽:泛型事件池只发入门圣兽;仙品/神品神兽仅由仙界及以上(≥9)的指名事件发放', () => {
+    // 泛型事件(ev_wounded_beast / ft_beast_pledge 共用 genericPetPool)不含任何仙品/神品神兽
+    const entry = genericPetPool(new Set())
+    for (const p of entry) {
+      expect(qualityDef(p.quality).rank, `${p.id} 不得进泛型池`).toBeLessThan(IMMORTAL_RANK)
+    }
+    const entryIds = new Set(entry.map(p => p.id))
+    // 汇总所有「指名 id」的发兽效果:petId -> 各事件的 minRealm
+    const grantedAt: Record<string, number[]> = {}
+    for (const e of EVENTS) {
+      for (const c of e.choices) {
+        for (const o of c.outcomes) {
+          for (const f of o.effects) {
+            if (f.type !== 'pet') continue
+            if (!f.id) continue
+            ;(grantedAt[f.id] ??= []).push(e.minRealm ?? 0)
+          }
+        }
+      }
+    }
+    // 每一只 仙品/神品 神兽:①不进泛型池 ②都有指名事件 ③全部事件在仙界及以上(无绕过路径)
+    for (const p of PETS) {
+      if (qualityDef(p.quality).rank < IMMORTAL_RANK) continue
+      expect(entryIds.has(p.id), `${p.id} 神兽不得经泛型池获得`).toBe(false)
+      expect(grantedAt[p.id]?.length ?? 0, `${p.id} 神兽须有指名 id 的事件`).toBeGreaterThan(0)
+      expect(Math.min(...(grantedAt[p.id] ?? [])), `${p.id} 所有发放事件须在仙界及以上(≥9)`).toBeGreaterThanOrEqual(9)
+    }
   })
 
   it('师承:同样无门槛,且跨世保留——第一世拜完就永久有了', () => {

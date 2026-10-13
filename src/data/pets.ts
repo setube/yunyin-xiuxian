@@ -2,6 +2,21 @@
  * Phase 31.0 S4:增加性格(personality)—— 历练时的行为倾向,
  * 让玩家选伙伴而非只看数值 */
 import type { PetDef } from '@/types'
+import { qualityDef } from './qualities'
+
+/** 神兽门槛:仙品及以上为神兽 —— 仅由指名 id 的高界事件发放,不进泛型灵兽池。由数据档位推导。 */
+export const IMMORTAL_RANK = qualityDef('immortal').rank
+
+/**
+ * 泛型灵兽事件(未指名 id,如 ev_wounded_beast / ft_beast_pledge)可发放的池子。
+ *
+ * 只含入门圣兽(仙品以下,凡/精/灵/玄/天);仙品/神品神兽只由带 minRealm 的
+ * 指名事件发放(见 data/events.ts 的仙界及以上奇遇),不进此处 ——
+ * 否则凡界玩家就能在「妖兽认主」里滚出神级神兽,神兽门槛形同虚设。
+ */
+export function genericPetPool(owned: Set<string>): PetDef[] {
+  return PETS.filter(p => qualityDef(p.quality).rank < IMMORTAL_RANK && !owned.has(p.id))
+}
 
 export const PETS: PetDef[] = [
   {

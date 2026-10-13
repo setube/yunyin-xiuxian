@@ -82,8 +82,8 @@ export const CONTENT_GATES: ContentGate[] = [
     kind: 'trigger',
     minMajor: 14,
     evidence:
-      'PetDef 无境界字段;入门 8 只由无门槛事件发放(ev_wounded_beast / ft_beast_pledge),' +
-      '4 只神兽由神界/混沌海事件(id 指名、带 minRealm)发放',
+      'PetDef 无境界字段;泛型事件(ev_wounded_beast / ft_beast_pledge)只发入门 8 只(凡/精/灵/玄/天,genericPetPool 按仙品档过滤);' +
+      '6 只神兽(仙品/神品)由仙界及以上事件(id 指名、带 minRealm≥9)发放',
     reachableByGoldRebirth: false,
     bypass: '入门灵兽金丹前即可集齐;神兽须行至神界及以上,无绕过路径',
     qualifies: true
