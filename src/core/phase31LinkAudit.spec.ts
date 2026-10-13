@@ -84,10 +84,11 @@ describe('联动审计 · ④共鸣非最优套装化', () => {
   it('套装装备仅占少数,散件仍是大头', () => {
     const setCount = EQUIPMENT_TEMPLATES.filter(t => t.set).length
     // 判据是「比例」而非某个历史数字:扩界后模板池从 50 增到 77,
-    // 套装件(铁壁3/星斗2 + 三界各 3)随之增加,但散件仍须占绝对多数
+    // 套装件(铁壁3/星斗2 + 三界各 3)随之增加;Phase B-2a 又给饰品加了三件套
+    // (妖庭项链/戒指/灵符),故绝对数从 15 升到 18 —— 真正守住的是比例:散件仍须绝对多数
     const ratio = setCount / EQUIPMENT_TEMPLATES.length
     expect(ratio, `套装件占比 ${(ratio * 100).toFixed(0)}% 偏高`).toBeLessThanOrEqual(0.25)
-    expect(setCount).toBeLessThanOrEqual(15)
+    expect(setCount).toBeLessThanOrEqual(18)
   })
 
   it('共鸣触发条件宽松(2 件即可),不强制 6 件收集', () => {

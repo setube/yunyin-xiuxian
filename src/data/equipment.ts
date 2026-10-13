@@ -292,9 +292,9 @@ export const EQUIPMENT_TEMPLATES: EquipmentTemplate[] = [
   t('wr_jinwen', '荒骨护臂', 'wrist', 13, { attack: 5, defense: 5 }, '妖庭妖兽的骨磨成,护臂上有年轮似的纹', { fixedMods: { attackPct: 0.04 } }),
   t('bl_hujin', '虎筋腰带', 'belt', 13, { defense: 5, maxHp: 42 }, '虎妖之筋绞成,束上时腰背自生一股力'),
   t('bo_yaoting', '妖庭战靴', 'boots', 13, { defense: 6, maxHp: 22 }, '踏过妖庭石阶的战靴', { fixedMods: { attackPct: 0.05 } }),
-  t('n_yaoting', '妖庭骨串', 'necklace', 13, { maxHp: 38 }, '妖庭祭司的骨串', { fixedMods: { lifesteal: 0.02 } }),
-  t('r_yaoting', '妖庭环', 'ring', 13, { attack: 6 }, '妖庭的权环,内壁刻满细纹', { fixedMods: { luck: 0.04 } }),
-  t('tl_yaoting', '妖庭符', 'talisman', 13, { maxHp: 30 }, '妖庭的旧符,朱砂是拿妖血调的', { fixedMods: { eventLuck: 0.08 } }),
+  t('n_yaoting', '妖庭骨串', 'necklace', 13, { maxHp: 38 }, '妖庭祭司的骨串', { fixedMods: { lifesteal: 0.02 }, set: 's_yaoting' }),
+  t('r_yaoting', '妖庭环', 'ring', 13, { attack: 6 }, '妖庭的权环,内壁刻满细纹', { fixedMods: { luck: 0.04 }, set: 's_yaoting' }),
+  t('tl_yaoting', '妖庭符', 'talisman', 13, { maxHp: 30 }, '妖庭的旧符,朱砂是拿妖血调的', { fixedMods: { eventLuck: 0.08 }, set: 's_yaoting' }),
 
   // ---- 14 阶 · 沉沙古城 ----
   t('w_chensha', '沉沙剑', 'weapon', 14, { attack: 17 }, '从沙底挖出的剑,剑鞘早烂了', { fixedMods: { critRate: 0.03 } }),

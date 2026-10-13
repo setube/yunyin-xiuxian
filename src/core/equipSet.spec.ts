@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { activeSets, setCounts, hasActiveSet, equipSetDef, ASTRAL_SET_SHIELD } from './equipSet'
+import { activeSets, setCounts, hasActiveSet, equipSetDef, ASTRAL_SET_SHIELD, ACCESSORY_SET_LIFESTEAL } from './equipSet'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
 import type { EquipmentInstance, QualityId } from '@/types'
 
@@ -26,6 +26,19 @@ describe('装备共鸣(equipSet)', () => {
     expect(sets.length).toBe(1)
     expect(sets[0]!.id).toBe('s_tiebi')
     expect(hasActiveSet(two, 'ironwall')).toBe(true)
+  })
+
+  it('饰品三件套(妖庭)三件触发、两件不触发,钩子走吸血', () => {
+    expect(equipSetDef('s_yaoting')?.hook).toBe('peishi')
+    expect(equipSetDef('s_yaoting')?.required).toBe(3)
+    const two = [inst('a', 'n_yaoting'), inst('b', 'r_yaoting')]
+    expect(activeSets(two).some(s => s.id === 's_yaoting')).toBe(false)
+    const three = [inst('a', 'n_yaoting'), inst('b', 'r_yaoting'), inst('c', 'tl_yaoting')]
+    expect(setCounts(three).get('s_yaoting')).toBe(3)
+    expect(hasActiveSet(three, 'peishi')).toBe(true)
+    // 效果文案与吸血常量同源,不手抄 8%
+    expect(equipSetDef('s_yaoting')!.effectDesc).toContain(String(Math.round(ACCESSORY_SET_LIFESTEAL * 100)))
+    expect(equipSetDef('s_yaoting')!.effectDesc).toContain('转化为生命')
   })
 
   it('不同 set 互不干扰,各自计件', () => {

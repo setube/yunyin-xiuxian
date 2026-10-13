@@ -9,7 +9,7 @@ import { useEndgameStore } from '@/stores/endgame'
 import { modOf } from './statsCalc'
 import { detectBuild } from './buildDetect'
 import { stackedMods, swordPurity, SWORD_LAYER_MODS } from './daoDepth'
-import { hasActiveSet, ASTRAL_SET_SHIELD } from './equipSet'
+import { hasActiveSet, ASTRAL_SET_SHIELD, ACCESSORY_SET_LIFESTEAL } from './equipSet'
 
 /**
  * 构建玩家战斗快照。
@@ -45,6 +45,11 @@ export function buildPlayerSnap(celestial = false): CombatantSnap {
   // powerRating/战报随 mods 透明展示。不进 finalStats:机制钩子不改面板与流派检测。
   if (hasActiveSet(inventory.equippedItems, 'astral')) {
     mods = stackedMods(mods, { shieldOnStart: ASTRAL_SET_SHIELD }, 1)
+  }
+  // Phase B-2a:饰品三件套共鸣(妖庭 trio → 吸血被动)—— 并入 lifesteal mod,
+  // combat 每击读 mods.lifesteal 直接生效;不进 finalStats,机制钩子不改面板与流派检测(与 astral 同法)
+  if (hasActiveSet(inventory.equippedItems, 'peishi')) {
+    mods = stackedMods(mods, { lifesteal: ACCESSORY_SET_LIFESTEAL }, 1)
   }
 
   return {
