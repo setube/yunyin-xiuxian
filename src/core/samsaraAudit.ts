@@ -334,6 +334,15 @@ export const HERITAGE: HeritageRow[] = [
     compressesGrowth: false
   },
   {
+    id: 'fateFocus',
+    name: '命格点化主星(择一主星显化)',
+    mode: 'reset',
+    detail: 'rebirth() 置 fateFocus=null —— 点化是「这一世侧重哪一路」的选择,位随盘转:转世命盘重排,点化随之散去',
+    kind: 'state',
+    power: 'low',
+    compressesGrowth: false
+  },
+  {
     id: 'enlightenmentAt',
     name: '悟道频次(顿悟冷却)',
     mode: 'full',

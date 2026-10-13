@@ -7,6 +7,7 @@ import { persistConfig } from '@/utils/storage'
 import { realmDef, realmLabel, worldOf, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
 import { SUB_LEVELS, START_AGE } from '@/data/constants'
 import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
+import { STAR_FOCUS_COST_BASE } from '@/data/constants'
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
@@ -25,7 +26,8 @@ import { asCarriedHpPct, asFiniteNumber, asStringArray } from '@/utils/saveShape
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
 import { regionDef } from '@/data/regions'
-import { fateChart, fateMods, fateSeed } from '@/core/fate'
+import { STARS } from '@/data/ziwei'
+import { fateChart, fateFocusMods, fateSeed } from '@/core/fate'
 import type { FortuneChoice } from '@/core/fortuneChain'
 import { useInventoryStore } from './inventory'
 import { useCultivationStore } from './cultivation'
@@ -208,7 +210,14 @@ export const usePlayerStore = defineStore(
      * 一世不变,转世重算 —— 与"一时之卦"分工明确。
      */
     const chart = computed(() => fateChart(fateSeed(linggen.value, reincarnation.value.count)))
-    const fateModsValue = computed<StatMods>(() => fateMods(chart.value))
+    /**
+     * 命格点化主星(Phase A-1):选中的主星 id,或 null(未点化)。
+     *
+     * 是存档状态(不是随机)—— 同人同世同 focus 必同果,转世也不动它(它是"这一世怎么凸显",
+     * 不是命盘本身)。sanitize 里按白名单(十四主星)校验,认不出的清回 null。
+     */
+    const fateFocus = ref<string | null>(null)
+    const fateModsValue = computed<StatMods>(() => fateFocusMods(chart.value, fateFocus.value))
 
     /**
      * Mod sources except the pet itself. beastPct/qiCapPct must not read
@@ -578,6 +587,8 @@ export const usePlayerStore = defineStore(
       divination.value = null
       // 突破准备也随这一世散去(下一世要重新备)
       breakthroughPrep.value = null
+      // 命格点化主星是"这一世侧重哪一路"的选择:转世命盘重排,点化随之散去
+      fateFocus.value = null
       // 镇压权益随皮囊散去:旧世压下的远境(多为高阶)若跨世,新世炼气仍在按旧阶位
       // 派发高阶装备/灵石,数值当场爆炸 —— 妖气复聚、回到历练地。这属于「我拥有多少」
       // 而非「我是谁」;宿敌记忆与区域战绩(regionStats)仍随神魂不灭(见 samsaraAudit
@@ -633,6 +644,14 @@ export const usePlayerStore = defineStore(
       }
       // 旧存档没有顿悟冷却一栏(Phase 34.6):0 = 从未顿悟,合法
       if (!Number.isFinite(enlightenmentAt.value) || enlightenmentAt.value < 0) enlightenmentAt.value = 0
+      /**
+       * 命格点化主星(Phase A-1):白名单校验。
+       * 认不出的 id(坏档/旧版)清回 null —— 别让坏 id 既得不到任何放大,
+       * 也别让一个重复 id 在实际放大时假性命中而把某通道翻倍。
+       */
+      if (fateFocus.value !== null && !STARS.some(s => s.id === fateFocus.value)) {
+        fateFocus.value = null
+      }
       /**
        * 秘境状态修形(Phase 34.9):它现在真的会进档(以前是进不去的骨架)。
        * 层数越界会让「第 99 层」直接结算通关,携带气血越界会把战斗开局算成 NaN —— 故逐项夹回。
@@ -865,6 +884,24 @@ export const usePlayerStore = defineStore(
       enlightenmentAt.value = Number.isFinite(t) ? Math.max(0, t) : 0
     }
 
+    // ---------- Phase A-1 命格点化主星 ----------
+    /**
+     * 点化主星:花灵石把某位主星之力放大(STAR_FOCUS_COST_BASE)。
+     *
+     * 守则:
+     * - 只认十四主星(认不出的 id 直接拒,不产生新放大/不报错);
+     * - 已点化同一星不反复收钱(点化是"选",不是"每次掏钱刷取值");
+     * - 灵石不足原子拒绝(spendStone 契约):不扣、不改,返回 false。
+     */
+    function focusFateStar(starId: string): boolean {
+      const star = STARS.find(s => s.id === starId)
+      if (!star || fateFocus.value === starId) return false
+      const cost = gn(STAR_FOCUS_COST_BASE)
+      if (!resources.spendStone(cost)) return false
+      fateFocus.value = starId
+      return true
+    }
+
     // ---------- Phase 31.1 机缘链 ----------
     function setFortuneChoices(choices: Record<string, FortuneChoice>): void {
       fortuneChoices.value = choices
@@ -918,6 +955,8 @@ export const usePlayerStore = defineStore(
       divinationMods,
       fateChart: chart,
       fateMods: fateModsValue,
+      fateFocus,
+      focusFateStar,
       cultPerSec,
       qiRegenPerSec,
       lifespanMax,

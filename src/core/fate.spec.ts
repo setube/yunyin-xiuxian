@@ -15,8 +15,9 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { LinggenProfile } from '@/types'
 import { PALACES, STARS } from '@/data/ziwei'
-import { fateChart, fateLordLine, fateMods, fateSeed } from './fate'
+import { fateChart, fateFocusMods, fateLordLine, fateMods, fateSeed, type FateChart } from './fate'
 import { usePlayerStore } from '@/stores/player'
+import { STAR_FOCUS_MULT } from '@/data/constants'
 
 function linggen(ratioA: number, ratioB: number): LinggenProfile {
   return {
@@ -127,5 +128,86 @@ describe('紫微 · 命格之力真的进属性', () => {
     for (const token of ['in fateRows', 'fateLordLine(', 'in STARS', 'player.fateMods']) {
       expect(src, `界域志没有接上 ${token}`).toContain(token)
     }
+  })
+})
+
+describe('紫微 · 点化主星(fateFocus)', () => {
+  function chartOf() {
+    return fateChart(fateSeed(linggen(60, 40), 2))
+  }
+
+  function starsOf(chart: FateChart) {
+    return chart.palaces.flatMap(p => p.stars)
+  }
+
+  it('确定性:同一张盘 + 同一个 focus,算多少次都一样', () => {
+    const chart = chartOf()
+    const starId = starsOf(chart)[0]!.id
+    const a = fateFocusMods(chart, starId)
+    const b = fateFocusMods(chart, starId)
+    expect(JSON.stringify(b)).toBe(JSON.stringify(a))
+  })
+
+  it('未点化(null)与点化一致地保底色:focus 只抬升选定主星所在通道', () => {
+    const chart = chartOf()
+    const base = fateMods(chart)
+    // 与 null 同果:null 焦点 = 未点化 = 常数底色
+    expect(JSON.stringify(fateFocusMods(chart, null))).toBe(JSON.stringify(base))
+    const star = starsOf(chart)[0]!
+    const focused = fateFocusMods(chart, star.id)
+    for (const k of Object.keys(star.mods)) {
+      expect(focused[k as keyof typeof focused] ?? 0).toBeGreaterThan(base[k as keyof typeof base] ?? 0)
+    }
+    for (const k of Object.keys(base)) {
+      if (!(k in star.mods)) {
+        expect(focused[k as keyof typeof focused] ?? 0).toBe(base[k as keyof typeof base] ?? 0)
+      }
+    }
+  })
+
+  it('选中主星之力恰好按 STAR_FOCUS_MULT 放大(其余十三颗原值)', () => {
+    const chart = chartOf()
+    const star = starsOf(chart)[0]!
+    const base = fateMods(chart)
+    const focused = fateFocusMods(chart, star.id)
+    for (const [k, v] of Object.entries(star.mods)) {
+      expect(focused[k as keyof typeof focused] ?? 0).toBeCloseTo(
+        (base[k as keyof typeof base] ?? 0) + (v as number) * (STAR_FOCUS_MULT - 1),
+        10
+      )
+    }
+  })
+
+  it('不同 focus 产出不同 mods(选择真的有效,不是一场空)', () => {
+    const chart = chartOf()
+    const variants = new Set(starsOf(chart).map(s => JSON.stringify(fateFocusMods(chart, s.id))))
+    // 十四主星 mods 各不相同,至少得给出一种以上的聚焦结果
+    expect(variants.size).toBeGreaterThan(1)
+  })
+
+  it('放大后每一条通道仍在单通道上限内(<0.2),不压过问卦一时之盛', () => {
+    const chart = chartOf()
+    for (const star of starsOf(chart)) {
+      const focused = fateFocusMods(chart, star.id)
+      for (const v of Object.values(focused)) expect(Math.abs(v as number)).toBeLessThan(0.2)
+    }
+  })
+
+  it('认不出的 focus id(坏档)不放大 —— 按无焦点处理,不给坏 id 假性命中', () => {
+    const chart = chartOf()
+    const base = fateMods(chart)
+    expect(JSON.stringify(fateFocusMods(chart, 'nope_star'))).toBe(JSON.stringify(base))
+  })
+})
+
+describe('紫微 · 点化主星落档(sanitize)', () => {
+  it('坏档把 fateFocus 写成不存在的星 id:sanitize 认不出即清回 null,不放大任何通道', () => {
+    const player = usePlayerStore()
+    player.initCharacter('测试', linggen(60, 40))
+    player.fateFocus = 'zz_nonexistent'
+    player.sanitize()
+    expect(player.fateFocus).toBeNull()
+    // 清回 null 后=未点化,命格之力与 fateMods 常数完全一致
+    expect(JSON.stringify(player.fateMods)).toBe(JSON.stringify(fateMods(player.fateChart)))
   })
 })

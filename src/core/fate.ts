@@ -10,6 +10,7 @@
  */
 import type { LinggenProfile, StatMods } from '@/types'
 import { PALACES, STARS, type PalaceDef, type StarDef } from '@/data/ziwei'
+import { STAR_FOCUS_MULT } from '@/data/constants'
 import { mulberry32 } from '@/utils/random'
 import { mergeMods } from './statsCalc'
 
@@ -67,6 +68,36 @@ export function fateChart(seed: number): FateChart {
 /** 一世之格:十二宫各星之力相合(数值刻意低,命是底色) */
 export function fateMods(chart: FateChart): StatMods {
   return mergeMods(chart.palaces.flatMap(p => p.stars.map(s => s.mods)))
+}
+
+/**
+ * 点化主星(Phase A-1):择一主星显化。
+ *
+ * 命格本是把十四颗星全加的**常数**(见 fateMods)—— 同人同世谁看都一样,
+ * 玩家对它没有任何选择、任何 sink。这里给它一个主动动词:把选中的主星之力
+ * 放大 STAR_FOCUS_MULT,其余十三颗维持原值。
+ *
+ * 不变式逐一守住:
+ * - 14 颗仍一颗不落布满(fateChart 不动,本函数只读图作放大);
+ * - 确定性:focusStarId 是存档状态,不是随机 —— 同人同世同 focus 必同果;
+ * - 单通道 <0.2:单颗主星至多 0.03,×2 后 0.06,与他星同通道相加仍远低于上限。
+ *
+ * focusStarId 认不出的(id 不在命盘/已损坏)按无焦点处理:不放大、不报错、不放大某通道。
+ */
+export function fateFocusMods(chart: FateChart, focusStarId: string | null): StatMods {
+  const exists = focusStarId !== null && chart.palaces.some(p => p.stars.some(s => s.id === focusStarId))
+  // 未点化(null)或认不出的 focus:就是常数底色本身,直接复用 fateMods
+  if (!exists) return fateMods(chart)
+  const parts: StatMods[] = []
+  for (const palace of chart.palaces) {
+    for (const star of palace.stars) {
+      const m: StatMods = {}
+      const mult = star.id === focusStarId ? STAR_FOCUS_MULT : 1
+      for (const k of Object.keys(star.mods) as (keyof StatMods)[]) m[k] = (star.mods[k] ?? 0) * mult
+      parts.push(m)
+    }
+  }
+  return mergeMods(parts)
 }
 
 /** 命宫所落之星(展示用):题眼与同宫者 */

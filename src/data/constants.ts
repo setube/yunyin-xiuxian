@@ -195,6 +195,10 @@ export const TRIBULATION_DIFFICULTY_CAP_MAJOR = 9
 export const DIVINATION_COST = 2
 /** 值日之宿所利界域的际遇加成(乘在际遇概率上) */
 export const MANSION_EVENT_LUCK = 0.1
+/** 命格「点化主星」耗灵石 —— 见 core/fate 的 fateFocusMods(紫微 A-1 的主动 sink) */
+export const STAR_FOCUS_COST_BASE = 500
+/** 点化主星之放大倍率:选中主星之力 ×F,其余十三颗维持原值 */
+export const STAR_FOCUS_MULT = 2
 
 // ============ 战斗基础 ============
 export const COMBAT_ATK_BASE = 12

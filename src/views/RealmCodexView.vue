@@ -155,10 +155,21 @@
         </div>
       </div>
       <div class="mt-2 border-t border-ink/10 pt-2">
-        <p class="text-[10px] text-ink-faint">{{ cnNumber(STARS.length) }}主星</p>
-        <p v-for="s in STARS" :key="s.id" class="mt-1 text-[11px] leading-relaxed text-ink-soft">
-          <span class="font-kai text-ink">{{ s.name }}</span>
-          <span class="text-ink-faint"> · {{ s.nature }} · {{ s.gist }}</span>
+        <p class="text-[10px] text-ink-faint">{{ cnNumber(STARS.length) }}主星 · 无石亦可只观,择一点化则换流派方向</p>
+        <div v-for="s in STARS" :key="s.id" class="mt-1 flex items-start gap-2 text-[11px] leading-relaxed text-ink-soft">
+          <span class="min-w-0 flex-1">
+            <span class="font-kai text-ink">{{ s.name }}</span>
+            <span class="text-ink-faint"> · {{ s.nature }} · {{ s.gist }}</span>
+          </span>
+          <button
+            class="shrink-0 cursor-pointer text-[10px]"
+            :class="player.fateFocus === s.id ? 'font-kai text-gold-ink' : 'text-azure'"
+            @click="focusStar(s.id)"
+          >{{ player.fateFocus === s.id ? '已显化' : `点化 ${focusCostText}` }}</button>
+        </div>
+        <p class="mt-2 text-[10px] leading-relaxed text-ink-faint">
+          点化一位主星,其力二倍显化(其余十三颗仍作底色,十四星一颗不误)—— 花的是灵石({{ focusCostText }}),
+          换的是这一世侧重哪一路:好钢用在一个人身上。
         </p>
       </div>
     </section>
@@ -247,7 +258,9 @@
   import { fateLordLine } from '@/core/fate'
   import { IMAGES, MANSIONS, type ImageId } from '@/data/xiangxiu'
   import { GATES } from '@/data/qimen'
-  import { cnNumber } from '@/utils/format'
+  import { cnNumber, formatGN } from '@/utils/format'
+  import { gn } from '@/utils/gnum'
+  import { STAR_FOCUS_COST_BASE } from '@/data/constants'
   import { mansionLuckPercent, favoredWorld, todayMansion, todayMansionLine } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
   import type { WorldId } from '@/types'
@@ -305,6 +318,14 @@
   // 命格:一世不变的一张盘(转世重算),故不必计时,直接读 player 的派生值
   const fateLordLineText = computed(() => fateLordLine(player.fateChart))
   const fateModsText = computed(() => modsText(player.fateMods))
+
+  /** 点化主星的灵石单价(一处出,文案与扣费同源) */
+  const focusCostText = formatGN(gn(STAR_FOCUS_COST_BASE))
+  function focusStar(id: string): void {
+    const ok = player.focusFateStar(id)
+    const name = STARS.find(s => s.id === id)?.name ?? id
+    ui.toast(ok ? `点化「${name}」显化,其力二倍` : '灵石不足,点化不成', ok ? 'info' : 'warn')
+  }
   const fateRows = computed(() =>
     player.fateChart.palaces.map(p => ({
       palace: p.palace,

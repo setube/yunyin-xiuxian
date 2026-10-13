@@ -244,6 +244,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     dead: ['realm'],
     divination: ['divination'],
     enlightenmentAt: ['enlightenmentAt'],
+    fateFocus: ['fateFocus'],
     eventChains: ['fortuneMemory'],
     exp: ['realm'],
     fortuneChoices: ['fortuneMemory'],
