@@ -32,6 +32,7 @@ import {
 } from '@/data/bounty'
 import { pillSellPrice, consignPrice, herbSellPrice, materialSellPrice, herbSellBatch, generateMarketStock } from './marketService'
 import { herbBountyReward, generateBounty } from './bountyService'
+import { apprenticeSpoils } from './apprenticeService'
 import { herbBuyPrice } from './herbPrice'
 import { HERB_GRADES } from '@/data/herbGrades'
 import { MARKET_MAT_COUNT, MARKET_SELL_PILL_FACTOR } from '@/data/market'
@@ -109,11 +110,12 @@ describe('三模块经济审计 · 无套利与弟子不衰减', () => {
     }
   })
 
-  it('② 弟子石类差事不贬值:历练(amount 4)恒为战斗(amount 10)的固定份额', () => {
-    // 两者同用 stoneByTier(同一层级),故比值与境界、层级都无关 —— 恒等于 0.4
+  it('② 弟子石类差事不贬值:历练恒为战斗的固定份额(真调 apprenticeSpoils)', () => {
+    // 直接调 apprenticeSpoils(基础档,非历练天赋)对 stoneByTier(maxTierForMajor,10) 求比,
+    // 而不是用 stoneByTier(tier,4) 自算 —— 否则实现传错尺(把 major 当 tier)时守卫照样绿
     for (const major of MAJORS) {
       const tier = tierOf(major)
-      const adventure = toN(stoneByTier(tier, 4))
+      const adventure = toN(apprenticeSpoils('ap_luanniao', 'adventure', major, 1).stone!)
       const battle = toN(stoneByTier(tier, 10))
       expect(adventure / battle, `境 ${major} 历练/战斗应恒常`).toBeCloseTo(0.4, 6)
     }

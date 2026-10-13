@@ -9,6 +9,7 @@ import type { GNum } from '@/types'
 import { mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { PILLS } from '@/data/pills'
+import { maxTierForMajor } from '@/data/regions'
 import {
   APPRENTICE_TALENT_BONUS,
   DISPATCH_ADVENTURE_FIXED_SCORE,
@@ -59,7 +60,7 @@ function baseSpoils(major: number, level: number): Record<ApprenticeSpec, TaskSp
   return {
     herb: { herb: 4 + level * 2 },
     ore: { ore: 3 + level * 2 },
-    adventure: { stone: stoneByTier(major, 3 + level), dust: 1 + level },
+    adventure: { stone: stoneByTier(maxTierForMajor(major), 3 + level), dust: 1 + level },
     seek: { pillId: pickSeekPill(major, level), pillCount: 1 },
     study: { wudao: 2 + level }
   }

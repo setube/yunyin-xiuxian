@@ -76,6 +76,7 @@
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { formatCountdown, formatGN } from '@/utils/format'
   import { stoneByTier } from '@/core/formulas'
+  import { maxTierForMajor } from '@/data/regions'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
   import { useApprenticeStore } from '@/stores/apprentice'
@@ -106,7 +107,7 @@
   const slots = computed(() => apprenticeSlots(player.major))
   const slotsFull = computed(() => appr.apprentices.length >= slots.value)
   const hasIdle = computed(() => appr.apprentices.some(a => a.task === null))
-  const recruitCostLine = computed(() => `${formatGN(stoneByTier(player.major, RECRUIT_COST_TIER_AMOUNT))} 灵石`)
+  const recruitCostLine = computed(() => `${formatGN(stoneByTier(maxTierForMajor(player.major), RECRUIT_COST_TIER_AMOUNT))} 灵石`)
 
   const apprenticesList = computed(() =>
     appr.apprentices.map(a => {
@@ -134,10 +135,9 @@
   }
 
   function doDispatchAll(): void {
+    // 按钮在无闲置道童时禁用,dispatchAll 恒派 ≥1 名 —— 无兜底死分支
     const n = appr.dispatchAll(now.value)
     if (n > 0) ui.toast(`已按需遣 ${n} 名道童出门`, 'info')
-    // 按钮在无闲置道童时禁用,正常走不到;真走到说明有闲置却派不动(如目标门全满),如实报,别用「皆已出门」误导
-    else ui.toast('没有空闲道童可遣', 'info')
   }
 
   function doRecruit(): void {

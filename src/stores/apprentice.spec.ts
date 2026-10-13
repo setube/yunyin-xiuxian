@@ -136,6 +136,15 @@ describe('收徒 · 派发与收割', () => {
     expect(ok3.bond, '老档缺 bond 补 0').toBe(0)
   })
 
+  it('sanitize:完工早于开工的坏任务当作闲置(不白嫖一趟产出)', () => {
+    const a = useApprenticeStore()
+    a.$patch({
+      apprentices: [{ uid: 't', archId: 'ap_luanniao', level: 2, bond: 0, task: { spec: 'herb', startAt: 99999, finishAt: 0 } }] as unknown as OwnedApprentice[]
+    })
+    a.sanitize()
+    expect(a.apprentices[0]!.task, 'finishAt<startAt 应置闲,不许开局即收割').toBeNull()
+  })
+
   it('各尽其长一键:缺灵草时闲置道童全体去采药,忙的不动', () => {
     const a = useApprenticeStore()
     const player = usePlayerStore()

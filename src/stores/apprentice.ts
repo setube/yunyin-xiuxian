@@ -13,6 +13,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { stoneByTier } from '@/core/formulas'
 import { herbGradeOfMajor } from '@/data/herbGrades'
+import { maxTierForMajor } from '@/data/regions'
 import {
   APPRENTICE_MAX_LEVEL,
   APPRENTICES,
@@ -61,12 +62,12 @@ function clampKarma(v: unknown): number {
   return Math.min(REBIRTH_KARMA_CAP, Math.max(0, n))
 }
 
-/** 把一趟产出入账到资源/背包 */
-function applySpoils(spoils: TaskSpoils): void {
+/** 把一趟产出入账到资源/背包;采药品阶按「结算同一趟的 major」定,不另读 player(一处函数不再两把尺) */
+function applySpoils(spoils: TaskSpoils, major: number): void {
   const resources = useResourcesStore()
   const inventory = useInventoryStore()
-  // 采药按玩家当前大境界的品阶显式入账(五品分账;与五品经济同口径)
-  if (spoils.herb) resources.addHerb(herbGradeOfMajor(usePlayerStore().major), spoils.herb)
+  // 采药按当前大境界的品阶显式入账(五品分账;与五品经济同口径)
+  if (spoils.herb) resources.addHerb(herbGradeOfMajor(major), spoils.herb)
   if (spoils.ore) resources.addSmall('ore', spoils.ore)
   if (spoils.dust) resources.addSmall('dust', spoils.dust)
   if (spoils.wudao) resources.addSmall('wudao', spoils.wudao)
@@ -96,7 +97,10 @@ export const useApprenticeStore = defineStore(
         if ('task' in raw && raw.task && typeof raw.task === 'object') {
           const t = raw.task as { spec?: unknown; startAt?: unknown; finishAt?: unknown }
           if (isSpec(t.spec) && Number.isFinite(t.startAt) && Number.isFinite(t.finishAt)) {
-            task = { spec: t.spec, startAt: Math.max(0, Math.floor(t.startAt as number)), finishAt: Math.max(0, Math.floor(t.finishAt as number)) }
+            const startAt = Math.max(0, Math.floor(t.startAt as number))
+            const finishAt = Math.max(0, Math.floor(t.finishAt as number))
+            // 完工不得早于开工 —— 坏档若 finishAt<startAt 会「开局即白嫖一趟产出」,视作坏任务置闲
+            if (finishAt >= startAt) task = { spec: t.spec, startAt, finishAt }
           }
         }
         clean.push({ uid, archId, level, bond, task })
@@ -120,7 +124,7 @@ export const useApprenticeStore = defineStore(
         if (!taskDone(appr, now)) continue
         const spec = appr.task!.spec
         const spoils = apprenticeSpoils(appr.archId, spec, major, appr.level)
-        applySpoils(spoils)
+        applySpoils(spoils, major)
         appr.level = Math.min(APPRENTICE_MAX_LEVEL, appr.level + 1)
         appr.bond += 1
         appr.task = null
@@ -143,7 +147,7 @@ export const useApprenticeStore = defineStore(
       const owned = new Set(apprentices.value.map(a => a.archId))
       const pool = APPRENTICES.filter(x => x.id !== STARTER_APPRENTICE && !owned.has(x.id))
       if (pool.length === 0) return 'full'
-      const cost = stoneByTier(major, RECRUIT_COST_TIER_AMOUNT)
+      const cost = stoneByTier(maxTierForMajor(major), RECRUIT_COST_TIER_AMOUNT)
       if (!useResourcesStore().spendStone(cost)) return 'poor'
       apprentices.value.push({ uid: nextUid(), archId: rng.pick(pool).id, level: 1, bond: 0, task: null })
       return 'ok'
