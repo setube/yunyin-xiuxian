@@ -127,8 +127,17 @@ function weaknessLines(c: {
   return out
 }
 
-/** 计算一张丹方当前的可炼程度;非可炼丹方返回 null */
-export function craftability(id: string): Craftability | null {
+/** 双丹(一炉得二)的概率:由掌握度与技艺共同决定,封顶 0.5。单一事实源,实机与审计共用 */
+export function bonusChanceOf(mastery: number, skill: number): number {
+  return Math.min(0.5, mastery * 0.18 + skill / 500)
+}
+
+/**
+ * 计算一张丹方当前的可炼程度;非可炼丹方返回 null。
+ * `omitWeakness` 用于 quiet 批量炼丹:weakness(失败话术)是最重的一块,
+ * 每个可炼度里都要重排材料+遍历技艺,而批量静默路径从不读它 —— 跳过以省重复。
+ */
+export function craftability(id: string, opts?: { omitWeakness?: boolean }): Craftability | null {
   const def = pillDef(id)
   if (!def) return null
   const craft = recipeCraft(def)
@@ -157,9 +166,10 @@ export function craftability(id: string): Craftability | null {
     bearableRank: bearable,
     overReach: over,
     successRate: composeSuccessRate(mastery, matLore, skill, over),
-    bonusChance: Math.min(0.5, mastery * 0.18 + skill / 500),
+    bonusChance: bonusChanceOf(mastery, skill),
     blockers,
-    weakness: blockers.length > 0 ? [] : weaknessLines({ mastery, matLore, skill, over, craft, loreOf, levelOf }),
+    weakness:
+      blockers.length > 0 || opts?.omitWeakness ? [] : weaknessLines({ mastery, matLore, skill, over, craft, loreOf, levelOf }),
     materials: craft.materials
   }
 }

@@ -19,7 +19,7 @@ import { usePillBatch, craftPillBatch, pillCraftCost, salvageRatio, craftBatchPl
 import { pillDef } from '@/data/pills'
 import { recipeCraft } from '@/data/crafting'
 import { craftability } from '@/core/craftability'
-import { toNum } from '@/utils/gnum'
+import { toNum, mulN } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
@@ -218,6 +218,22 @@ describe('批量炼丹 · 计划与运行守恒(craftBatchPlan ↔ craftPillBatc
     const out = craftPillBatch(ID, plan.rounds + 5) // 多要 5 炉
     expect(out.rounds, '受草限制仍停在计划炉数').toBe(plan.rounds)
     expect(res.herbOf(g)).toBe(0) // 草打光,不越扣
+  })
+
+  it('计划即实耗:灵石是唯一限制时,rounds 被石限住且 stone 恰对应实跑', () => {
+    const res = useResourcesStore()
+    const c = pillCraftCost(ID)!
+    const g = c.grade
+    // 草给足 10 炉,石只够 2 炉 → rounds 由灵石维度唯一决定
+    res.addSmall('herb', c.herb * 10)
+    res.addStone(mulN(c.stone, 2))
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds, '石限应把 plan.rounds 钳到 2').toBe(2)
+    const s0 = toNum(res.spiritStone)
+    const out = craftPillBatch(ID, plan.rounds)
+    expect(out.rounds, '实跑炉数应等于计划(2)').toBe(2)
+    expect(s0 - toNum(res.spiritStone), '实耗石 = 计划 stone = 2 炉成本,恰花光').toBeCloseTo(toNum(plan.stone), 6)
+    expect(res.herbOf(g)).toBeGreaterThanOrEqual(0) // 草充足,不欠不超
   })
 })
 

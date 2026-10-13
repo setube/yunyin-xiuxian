@@ -243,7 +243,8 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
   const ui = useUiStore()
   const def = pillDef(id)
   const cost = pillCraftCost(id)
-  const able = craftability(id)
+  // 批量静默路径从不读 weakness(仅失败 toast 用)—— 跳过那份最重的计算
+  const able = craftability(id, quiet ? { omitWeakness: true } : undefined)
   if (!def || !cost || !able) return { ok: false, count: 0, aborted: true }
 
   if (able.blockers.length > 0) {

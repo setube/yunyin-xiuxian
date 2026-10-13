@@ -55,7 +55,7 @@ import {
 } from '@/data/constants'
 import { toNum } from '@/utils/gnum'
 import { baseCultPerSec, baseQiRegen, expRequirement, qiCap, stoneByTier } from './formulas'
-import { bearableRank, composeSuccessRate } from './craftability'
+import { bearableRank, bonusChanceOf, composeSuccessRate } from './craftability'
 import { salvageRatio } from './pillService'
 
 // ============ 审计基准 ============
@@ -178,7 +178,7 @@ export function auditCraftRate(def: PillDef): number {
 /** 基准手艺下的期望出丹数(见 craftability.ts 的 bonusChance) */
 export function auditYield(def: PillDef): number {
   if (!def.recipe) return 1
-  return 1 + Math.min(0.5, AUDIT_MASTERY * 0.18 + AUDIT_SKILL / 500)
+  return 1 + bonusChanceOf(AUDIT_MASTERY, AUDIT_SKILL)
 }
 
 /**
