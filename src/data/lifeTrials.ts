@@ -27,6 +27,7 @@
  * 所以每一条都必须是纯逆境,由 isPurelyAdverse 强制校验。
  */
 import type { CombatRules, StatMods } from '@/types'
+import { MAX_COMBAT_ROUNDS } from '@/data/constants'
 
 /** 这一世签下的契(存档结构) */
 export interface LifeTrialState {
@@ -100,9 +101,6 @@ export function lifeTrialDef(id: string): LifeTrialDef | undefined {
   return LIFE_TRIALS.find(t => t.id === id)
 }
 
-/** 战斗默认回合上限;契约只许把它压低 */
-export const DEFAULT_MAX_ROUNDS = 40
-
 /** 违反「纯逆境」的原因;空数组表示合法 */
 export function adverseViolations(rules: CombatRules): string[] {
   const bad: string[] = []
@@ -119,7 +117,9 @@ export function adverseViolations(rules: CombatRules): string[] {
   lte(rules.healMult, 1, 'healMult')
   lte(rules.shieldCapRatio, 1, 'shieldCapRatio')
   lte(rules.playerStartHpPct, 1, 'playerStartHpPct')
-  lte(rules.maxRounds, DEFAULT_MAX_ROUNDS, 'maxRounds')
+  // 回合上限只能压到「战斗真实默认」以内——压得比 50 低是更难(合法),高于 50 才是减难。
+  // 曾用自拟的 40 作界,把 41~50 这段「比默认更严」的合法努力型契约误判成减难、永久拒签。
+  lte(rules.maxRounds, MAX_COMBAT_ROUNDS, 'maxRounds')
   // 属性修正:给玩家的只能是负数,给敌人的只能是正数
   const scan = (mods: StatMods | undefined, sign: 1 | -1, name: string): void => {
     for (const [k, v] of Object.entries(mods ?? {})) {

@@ -101,6 +101,9 @@ describe('逆旅契 · 判据二:产物不进 StatMods', () => {
     expect(adverseViolations({ playerExtraMods: { attackPct: 0.2 } })).not.toHaveLength(0)
     expect(adverseViolations({ enemyExtraMods: { attackPct: -0.2 } })).not.toHaveLength(0)
     expect(adverseViolations({ perRounds: { interval: 3, playerHealPct: 0.1, playerShieldPct: 0.1, enemyAtkGrowth: 0 } })).not.toHaveLength(0)
+    // 回合上限界要与战斗真实默认(MAX_COMBAT_ROUNDS=50)一致:压到 41~50(比真实更严)是合法努力,51+ 才是减难
+    expect(adverseViolations({ maxRounds: 45 })).toHaveLength(0)
+    expect(adverseViolations({ maxRounds: 51 })).not.toHaveLength(0)
     console.log(`\n伪装示例被拒:${adverseViolations({ playerExtraMods: { attackPct: 0.2 } })[0]}`)
   })
 
@@ -191,5 +194,50 @@ describe('逆旅契 · 接入与存档', () => {
     expect(player.reincarnation.trial).toBeNull()
     expect(lifeTrialRules()).toBeUndefined()
     console.log('\n老存档降级正常:trial = null,不影响任何既有行为')
+  })
+
+  it('坏档带未知契 id 或缺字段的 trial 会被 sanitize 清成未签约,不锁死本世', () => {
+    const player = usePlayerStore()
+    player.addDaoFruit(200)
+    // 坏档:契带认不出的 id —— 若不清理,canSign 会因「已立契」永远置灰,须等转世才解
+    player.$patch({
+      reincarnation: {
+        count: 3,
+        daoFruit: 200,
+        talents: [],
+        insight: 0,
+        lives: [],
+        vow: null,
+        trial: { trialId: 'tr_not_real', at: 1, paid: 30 }
+      } as never
+    })
+    player.sanitize()
+    expect(player.reincarnation.trial).toBeNull()
+    expect(canSignLifeTrial('tr_gu')).toBe(true)
+
+    // 坏档:契缺 paid 字段 —— 同样清理
+    player.$patch({
+      reincarnation: {
+        count: 3,
+        daoFruit: 200,
+        talents: [],
+        insight: 0,
+        lives: [],
+        vow: null,
+        trial: { trialId: 'tr_gu', at: 1 }
+      } as never
+    })
+    player.sanitize()
+    expect(player.reincarnation.trial).toBeNull()
+  })
+
+  it('sanitize 不清掉真实已签的合法契', () => {
+    const player = usePlayerStore()
+    player.addDaoFruit(200)
+    signLifeTrial('tr_gu')
+    player.sanitize()
+    // 合法契原样保留:转世履历与规则注入都不受影响
+    expect(player.reincarnation.trial?.trialId).toBe('tr_gu')
+    expect(activeLifeTrial()?.id).toBe('tr_gu')
   })
 })

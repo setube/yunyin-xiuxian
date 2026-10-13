@@ -422,9 +422,8 @@
         <button
           v-for="t in LIFE_TRIALS"
           :key="t.id"
-          class="card-ink w-full px-3 py-2 text-left disabled:opacity-40"
-          :disabled="!canSignLifeTrial(t.id)"
-          @click="signTrial(t.id)"
+          :class="['card-ink w-full px-3 py-2 text-left', canSignLifeTrial(t.id) ? '' : 'opacity-40']"
+          @click="requestTrial(t.id)"
         >
           <span class="flex items-baseline justify-between">
             <span class="font-kai text-[14px] text-ink">{{ t.seal }} · {{ t.name }}</span>
@@ -437,6 +436,21 @@
         </button>
       </div>
       <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">一世只可立一契,立下不可解。转世时契随皮囊散去,履历长存。</p>
+    </BaseModal>
+
+    <!-- 逆旅契 · 确认:不可逆、花费高,先给一次反悔的机会再立 -->
+    <BaseModal :open="pendingTrial !== null" title="立契确认" @close="pendingTrial = null">
+      <template v-if="pendingTrial">
+        <p class="text-[11px] leading-relaxed text-ink-faint">
+          立下「{{ pendingTrial.seal }} · {{ pendingTrial.name }}」,押上 {{ pendingTrial.cost }} 道果。此世再无回头路,回报只在履历。
+        </p>
+        <p class="mt-2 text-[12px] leading-relaxed text-ink-soft">{{ pendingTrial.desc }}</p>
+        <p class="mt-1 text-[10px] text-ink-faint">{{ pendingTrial.ruleText }}</p>
+        <div class="mt-3 flex gap-2">
+          <button class="btn-seal grow" @click="confirmSignTrial">确认立契</button>
+          <button class="btn-ink grow" @click="pendingTrial = null">再想想</button>
+        </div>
+      </template>
     </BaseModal>
 
     <!-- 道侣弹窗:这一世的关系与历世的同行 -->
@@ -588,7 +602,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { ENDING_NAMES, LEAN_NAMES, STAGE_NAMES, TEMPER_NAMES, daoluDef } from '@/data/daolu'
   import { chooseBondEvent, herStance, nextGateHint, pendingBondEvent, pendingIntent, respondIntent } from '@/core/daoluService'
-  import { LIFE_TRIALS } from '@/data/lifeTrials'
+  import { LIFE_TRIALS, type LifeTrialDef } from '@/data/lifeTrials'
   import { activeLifeTrial, canSignLifeTrial, signLifeTrial } from '@/core/lifeTrialService'
   import { useQuestsStore } from '@/stores/quests'
   import { useUiStore } from '@/stores/ui'
@@ -804,7 +818,25 @@
   const trialOpen = ref(false)
   /** 本世已立的逆旅契;未立为 null */
   const signedTrial = computed(() => activeLifeTrial())
-  function signTrial(id: string): void {
+  // 待确认的契:点卡只进这层,确认弹窗通过后才会真的 signLifeTrial —— 不可逆,先给反悔
+  const pendingTrial = ref<LifeTrialDef | null>(null)
+  function requestTrial(id: string): void {
+    const def = LIFE_TRIALS.find(t => t.id === id)
+    if (!def) return
+    if (player.reincarnation.trial) {
+      ui.toast('此生已有契在身', 'warn')
+      return
+    }
+    if (player.reincarnation.daoFruit < def.cost) {
+      ui.toast('道果不足', 'warn')
+      return
+    }
+    pendingTrial.value = def
+  }
+  function confirmSignTrial(): void {
+    if (!pendingTrial.value) return
+    const id = pendingTrial.value.id
+    pendingTrial.value = null
     if (signLifeTrial(id)) trialOpen.value = false
   }
   const canRebirth = computed(() => player.major >= MANUAL_REBIRTH_MIN_MAJOR)

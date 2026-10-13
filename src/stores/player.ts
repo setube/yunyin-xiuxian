@@ -29,6 +29,7 @@ import { asCarriedHpPct, asFiniteNumber, asStringArray } from '@/utils/saveShape
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
 import { regionDef } from '@/data/regions'
+import { lifeTrialDef, type LifeTrialState } from '@/data/lifeTrials'
 import { STARS } from '@/data/ziwei'
 import { fateChart, fateFocusMods, fateSeed } from '@/core/fate'
 import type { MansionRedirect } from '@/core/astronomy'
@@ -513,6 +514,18 @@ export const usePlayerStore = defineStore(
     }
 
     /**
+     * 逆旅契形状修复:坏档/改出来的 trial 若带未知契 id、缺字段或非有限数,
+     * 一律归 null。否则它会让 canSignLifeTrial 只见「已立契」而永远签不了(须等转世才解)。
+     */
+    function sanitizeTrial(raw: unknown): LifeTrialState | null {
+      if (typeof raw !== 'object' || raw === null) return null
+      const t = raw as { trialId?: unknown; at?: unknown; paid?: unknown }
+      if (typeof t.trialId !== 'string' || !lifeTrialDef(t.trialId)) return null
+      if (!Number.isFinite(t.at) || !Number.isFinite(t.paid)) return null
+      return { trialId: t.trialId, at: t.at as number, paid: t.paid as number }
+    }
+
+    /**
      * 花掉道果。
      *
      * 余额**真的减少** —— 不是记一笔「已花费」了事。
@@ -821,7 +834,7 @@ export const usePlayerStore = defineStore(
         insight: Number.isFinite(r?.insight) ? Math.max(0, r.insight) : legacyInsightOf(count),
         lives: Array.isArray(r?.lives) ? r.lives : [],
         vow: r?.vow ?? null,
-        trial: r?.trial ?? null,
+        trial: sanitizeTrial(r?.trial),
         bonds: Array.isArray(r?.bonds) ? r.bonds : []
       }
     }
