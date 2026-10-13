@@ -111,6 +111,7 @@
           <span class="text-ink-soft">{{ l.realmLabel }}</span>
           <span class="text-[10px] text-ink-faint tabular">寿 {{ l.age }} 载</span>
           <span v-if="l.themeName" class="text-[10px]" :class="l.resultColor">{{ l.themeName }}·{{ l.resultText }}</span>
+          <span v-if="l.trialName" class="text-[10px] text-cinnabar">·立契{{ l.trialName }}</span>
           <span class="ml-auto shrink-0 tabular text-[10px] text-gold-ink">宿慧 +{{ l.insight }}</span>
         </p>
       </template>
@@ -223,6 +224,7 @@
   import { currentStage, totalInsight, vowProgress, vowResult } from '@/core/samsaraService'
   import { nextStageAfter } from '@/data/samsara'
   import { lifeThemeDef } from '@/data/lifeThemes'
+  import { lifeTrialDef } from '@/data/lifeTrials'
   import { regionDef } from '@/data/regions'
   import { eventDef } from '@/data/events'
   import { isNemesis } from '@/core/worldMemory'
@@ -271,7 +273,9 @@
           ...l,
           themeName: l.themeId ? (lifeThemeDef(l.themeId)?.name ?? null) : null,
           resultText: RESULT_TEXTS[result],
-          resultColor: RESULT_COLORS[result]
+          resultColor: RESULT_COLORS[result],
+          // 逆旅契是这一世唯一的回报 —— 让「记在履历上」真的能被看见
+          trialName: l.trialId ? (lifeTrialDef(l.trialId)?.name ?? null) : null
         }
       })
   )

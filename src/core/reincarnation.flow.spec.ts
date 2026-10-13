@@ -26,6 +26,7 @@ import { useLoreStore } from '@/stores/lore'
 import { useQuestsStore } from '@/stores/quests'
 import { STARTER_APPRENTICE } from '@/data/apprentices'
 import { prepareReincarnation, confirmReincarnation } from '@/core/reincarnation'
+import { signLifeTrial, lifeTrialRules } from '@/core/lifeTrialService'
 import { gn, toNum } from '@/utils/gnum'
 
 /** 摆好一个「有存量的人生」:某种境界、带资源装备、带跨世资产、有记忆,再转世 */
@@ -209,5 +210,22 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(player.reincarnation.lives).toHaveLength(lives)
     expect(player.reincarnation.daoFruit).toBe(fruit)
     expect(useUiStore().reincarnation).toBeNull()
+  })
+
+  it('逆旅契随世交割:归档进履历、本世契清空、下世不再受契约束', () => {
+    const player = usePlayerStore()
+    // seedLife 给 daoFruit=100,tr_gu 需 24 —— 签得动
+    expect(signLifeTrial('tr_gu')).toBe(true)
+    expect(lifeTrialRules()).toBeDefined()
+
+    prepareReincarnation()
+    confirmReincarnation(null)
+
+    // 唯一回报落进履历尾部(归档),本世契随皮囊散去(清空) —— 顺序错了会丢奖励或跨世泄漏
+    const last = player.reincarnation.lives[player.reincarnation.lives.length - 1]
+    expect(last?.trialId, '履历应记为这世所立之契').toBe('tr_gu')
+    expect(player.reincarnation.trial, '本世契应随转世清空,不泄漏进下一世').toBeNull()
+    // 下一世无契规则注入
+    expect(lifeTrialRules()).toBeUndefined()
   })
 })

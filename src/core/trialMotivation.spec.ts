@@ -82,13 +82,14 @@ describe('动机 · 四份契到底改变了什么', () => {
 })
 
 describe('动机 · 决策维度覆盖', () => {
-  it('静态标注必须与实测一致:build 一格确实被激活', () => {
-    // AXIS_COVERAGE 把 build 标为已覆盖,依据是实测排序改变。
-    // 若将来契约改到不再影响排序,这条一致性校验会立刻变红
-    const claimsBuild = AXIS_COVERAGE.every(c => c.axes.includes('build'))
-    const actuallyReshapes = impacts.every(im => playValueOf(im) === 'reshapes')
-    expect(claimsBuild).toBe(actuallyReshapes)
-    console.log(`\n标注 build=${claimsBuild} · 实测全部改变排序=${actuallyReshapes},一致`)
+  it('静态标注必须与实测一致:build 格是否激活逐契比对', () => {
+    // 逐索引比对 AXIS_COVERAGE[i] 与 impacts[i],而不是两侧 .every 聚合 ——
+    // 否则恰好一份契漂移会让两边同为 false、false===false 照样通过(全盲)
+    for (let i = 0; i < AXIS_COVERAGE.length; i += 1) {
+      const labeled = AXIS_COVERAGE[i]!.axes.includes('build')
+      const measured = playValueOf(impacts[i]!) === 'reshapes'
+      expect(measured, `契 ${AXIS_COVERAGE[i]!.trialId} 的 build 实测应与静态标注一致`).toBe(labeled)
+    }
   })
 
   it('但历练、顺序、遭遇、目标四格一个都没碰到', () => {
