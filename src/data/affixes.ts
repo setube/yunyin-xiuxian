@@ -1,4 +1,4 @@
-/** 随机词条池 —— 113 条,通过权重与品质门槛控制稀有度 */
+/** 随机词条池 —— 119 条,通过权重与品质门槛控制稀有度 */
 import type { AffixDef, AnyStatKey, EquipSlot, AffixRarity } from '@/types'
 
 const W = ['weapon'] as EquipSlot[]
@@ -158,6 +158,17 @@ export const AFFIXES: AffixDef[] = [
   a('alc2', '丹圣', 'alchemyYield', 10, 20, '双枚成丹概率提升 {v}%', 15, { slots: J, minRank: 4 }),
   a('fg1', '巧手', 'forgeDiscount', 5, 10, '强化消耗降低 {v}%', 40, { slots: J }),
   a('fg2', '器道', 'forgeDiscount', 10, 20, '强化消耗降低 {v}%', 15, { slots: J, minRank: 4 }),
+  // ---- 饰品专属战斗线:闪避 ----
+  // 闪避在主属是鞋靴+A 的天下,这里给饰品一条专属的闪避线 —— 用既有键 dodgeRate(在 DIMINISH/SOFT_CAPS 内),
+  // 让「挂件」也能站得住脚:不是纯幸运/经济饰物,而是有一门战斗身手
+  a('dgj1', '轻鸿', 'dodgeRate', 2, 5, '闪避概率提升 {v}%', 50, { slots: J }),
+  a('dgj2', '踏虚', 'dodgeRate', 5, 9, '闪避概率提升 {v}%', 20, { slots: J, minRank: 4 }),
+  a('dgj3', '御空', 'dodgeRate', 9, 14, '闪避概率提升 {v}%', 8, { slots: J, minRank: 7 }),
+  // ---- 饰品专属战斗线:吸血(用既有键 lifesteal,在 DIMINISH_KEYS 内) ----
+  // 吸血在主属是武器的专利(ls1/ls2 slots:W),这里给饰品一条专属的续航线 —— 持久战里挂件的续航价值
+  a('lsj1', '饮灵', 'lifesteal', 2, 5, '造成伤害的 {v}% 转化为生命', 55, { slots: J }),
+  a('lsj2', '吮魄', 'lifesteal', 5, 10, '造成伤害的 {v}% 转化为生命', 25, { slots: J, minRank: 4 }),
+  a('lsj3', '噬命', 'lifesteal', 10, 16, '造成伤害的 {v}% 转化为生命', 8, { slots: J, minRank: 7 }),
   // ---- 流派:背水 ----
   a('bs1', '背水一击', 'lowHpDamage', 15, 25, '生命低于三成时造成伤害提升 {v}%', 55, { slots: W, decimals: 0 }),
   a('bs2', '向死而生', 'lowHpDamage', 25, 40, '生命低于三成时造成伤害提升 {v}%', 22, { slots: W, minRank: 4, decimals: 0 }),

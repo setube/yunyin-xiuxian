@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { AffixDef, AffixRarity } from '@/types'
-import { affixesByRarity } from './affixes'
+import { AFFIXES, affixesByRarity } from './affixes'
 
 /** 词条夹具:只关心 rarity 与 id,其余字段按类型最小补齐 */
 function mk(id: string, rarity: AffixRarity): AffixDef {
@@ -51,5 +51,36 @@ describe('词条按品质分组 affixesByRarity', () => {
 
   it('空列表返回空', () => {
     expect(affixesByRarity([])).toEqual([])
+  })
+})
+
+describe('饰品专属战斗词缀(B-1)', () => {
+  const J_COMBAT = AFFIXES.filter(a => /^dgj|^lsj/.test(a.id))
+
+  it('专属战斗线只在 J 槽(项链/戒指/灵符),绝不落主属性槽(W/A)', () => {
+    expect(J_COMBAT.length, '应有一整条 J 专属战斗词缀线').toBeGreaterThan(0)
+    for (const a of J_COMBAT) {
+      expect(a.id, 'J 专属战斗词缀应限定 J 槽').not.toBeUndefined()
+      expect(a.slots, `${a.id} 的槽位不是 J 三件`).toEqual(['necklace', 'ring', 'talisman'])
+      // 用的是既有战斗键(闪避/吸血),不是新增键 —— dataIntegrity 不许无源键
+      expect(['dodgeRate', 'lifesteal']).toContain(a.key)
+    }
+  })
+
+  it('数值有限且逐档递增(品质阶梯:下一档上下限都不弱于上一档)', () => {
+    const byKey: Record<string, AffixDef[]> = {}
+    for (const a of J_COMBAT) {
+      ;(byKey[a.key] ??= []).push(a)
+    }
+    for (const list of Object.values(byKey)) {
+      const sorted = [...list].sort((x, y) => (x.minRank ?? 0) - (y.minRank ?? 0))
+      for (const a of sorted) {
+        expect(a.min, `${a.id} 下限应为正`).toBeGreaterThan(0)
+        expect(a.max, `${a.id} 上限应高于下限`).toBeGreaterThan(a.min)
+      }
+      for (let i = 1; i < sorted.length; i += 1) {
+        expect(sorted[i]!.min, `${sorted[i]!.id} 下限不应回落`).toBeGreaterThanOrEqual(sorted[i - 1]!.max)
+      }
+    }
   })
 })

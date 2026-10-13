@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32, RandomService } from '@/utils/random'
 import { QUALITIES, qualityDef } from '@/data/qualities'
-import { AFFIX_RARITY_RANK, affixDef } from '@/data/affixes'
+import { AFFIX_RARITY_RANK, AFFIXES, affixDef, affixFitBlock } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
 import { isZero, toNum } from '@/utils/gnum'
@@ -212,5 +212,35 @@ describe('装备生成 · 词条值有限性(跨阶/幸运清扫:生成永不产
         }
       }
     }
+  })
+})
+
+describe('饰品专属战斗词缀(B-1)', () => {
+  const J_SLOTS = ['necklace', 'ring', 'talisman'] as const
+  const NOT_J = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots'] as const
+
+  it("J 专属战斗词缀经 affixFitBlock:J 槽可落、非 J 槽一律被 'slot' 挡住", () => {
+    const combat = AFFIXES.filter(a => /^dgj|^lsj/.test(a.id))
+    expect(combat.length, '应有 J 专属战斗词缀线').toBeGreaterThan(0)
+    for (const def of combat) {
+      for (const slot of J_SLOTS) {
+        expect(affixFitBlock(def, slot, 8), `${def.id} 应能上 ${slot}`).toBeNull()
+      }
+      for (const slot of NOT_J) {
+        expect(affixFitBlock(def, slot, 8), `${def.id} 不该上 ${slot}`).toBe('slot')
+      }
+    }
+  })
+
+  it('饰品槽能掷出专属战斗词缀 —— 挂件不再是纯运气饰物', () => {
+    const ids = new Set(AFFIXES.filter(a => /^dgj|^lsj/.test(a.id)).map(a => a.id))
+    const hit = new Set<string>()
+    for (const slot of J_SLOTS) {
+      for (let i = 0; i < 400; i += 1) {
+        const inst = generateEquipment(20, seeded(9917 + slot.length * 700 + i), { slot })
+        for (const a of inst.affixes) if (ids.has(a.id)) hit.add(a.id)
+      }
+    }
+    expect(hit.size, '高阶梯多次 J 槽掷取应碰上专属战斗词缀').toBeGreaterThan(0)
   })
 })
