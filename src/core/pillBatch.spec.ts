@@ -136,6 +136,14 @@ describe('批量炼丹', () => {
     expect(res.herbOf(g)).toBeGreaterThanOrEqual(0)
   })
 
+  it('成功开炉也涨一点掌握度(练成熟手,不止炸炉才长记性)', () => {
+    giveMaterials()
+    const lore = useLoreStore()
+    const before = lore.recipeMastery(ID)
+    craftPillBatch(ID, 1)
+    expect(lore.recipeMastery(ID), '成功一炉也应熟稔+0.01').toBeCloseTo(before + 0.01, 6)
+  })
+
   it('炸炉批次:rounds 照开、made0 failed3、失败也烧料(草按 salvage 保下、石照扣)、不越料不欠', () => {
     mockRand = 0.999 // 必炸
     const res = useResourcesStore()
@@ -210,5 +218,17 @@ describe('批量炼丹 · 计划与运行守恒(craftBatchPlan ↔ craftPillBatc
     const out = craftPillBatch(ID, plan.rounds + 5) // 多要 5 炉
     expect(out.rounds, '受草限制仍停在计划炉数').toBe(plan.rounds)
     expect(res.herbOf(g)).toBe(0) // 草打光,不越扣
+  })
+})
+
+describe('批量炼丹 · 开炉前置(方子未到手)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockRand = 0
+  })
+
+  it('count===1 但炉没开(方子未知):不算「开了一炉又炸了」,与连炼循环口径一致', () => {
+    // 未 knowRecipe → craftability 拿不到 → craftPill 直接 abort(炉没开,机器没动)
+    expect(craftPillBatch(ID, 1)).toEqual({ rounds: 0, made: 0, failed: 0 })
   })
 })

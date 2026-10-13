@@ -289,6 +289,9 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
   inventory.addPill(id, 1 + extra)
   track('pillsCrafted', 1 + extra)
   collect('pill', id)
+  // 会炼的方子越开越熟(炸炉 0.02 长记性;成功 0.01 熟能生巧)——
+  // 否则「多炼几炉便到通晓」这句界面承诺永不兑现(历史上只有失败/研读加掌握度)
+  useLoreStore().addRecipeMastery(id, 0.01)
   if (!quiet) {
     playSfx('success')
     ui.toast(craftOkToast(def.name, extra > 0), extra ? 'rare' : 'success')
@@ -306,7 +309,9 @@ export function craftPillBatch(id: string, count: number): { rounds: number; mad
   if (count < 1) return { rounds: 0, made: 0, failed: 0 } // 没要求炼,一炉也不许开
   if (count === 1) {
     const first = craftPill(id)
-    return { rounds: first.ok ? 1 : 1, made: first.ok ? first.count : 0, failed: first.ok ? 0 : 1 }
+    // 炉根本没开(方子未知/掌握不足/缺料)不算「开了一炉又炸了」—— 与 count≥2 的循环口径对齐
+    if (first.aborted) return { rounds: 0, made: 0, failed: 0 }
+    return { rounds: 1, made: first.ok ? first.count : 0, failed: first.ok ? 0 : 1 }
   }
   let made = 0
   let failed = 0

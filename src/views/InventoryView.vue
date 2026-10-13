@@ -291,8 +291,13 @@
         <div class="grid grid-cols-2 gap-2">
           <button class="btn-seal" @click="onUsePill()">服 用</button>
           <!-- 批量吃丹:存量够几枚就连服几枚。文案把「×5」改成真数 —— 只剩 2 枚还挂着 ×5,
-               结算却吃到没有就停,界面说的与做的对不上;只够 1 枚时连服没有意义,直接不摆 -->
-          <button v-if="(currentPill?.count ?? 0) >= 2" class="btn-ghost" @click="onUsePillBatch()">
+               结算却吃到没有就停,界面说的与做的对不上;只够 1 枚时连服没有意义,直接不摆。
+               增益丹每次只服 1 枚(药力顶格,多服白费),不摆「连服」免得点了没反应 -->
+          <button
+            v-if="(currentPill?.count ?? 0) >= 2 && currentPill?.def?.kind !== 'buff'"
+            class="btn-ghost"
+            @click="onUsePillBatch()"
+          >
             连服 ×{{ Math.min(5, currentPill?.count ?? 0) }}
           </button>
         </div>
@@ -355,6 +360,7 @@
             <p class="whitespace-nowrap text-[10px] text-ink-faint">
               把握
               <span class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</span>
+              <span v-if="r.able.bonusChance > 0" class="ml-1 tabular text-jade">· 双丹 {{ formatPercent(r.able.bonusChance) }}</span>
             </p>
             <div class="ml-auto flex shrink-0 gap-1.5">
               <!-- 玩家反馈「批量炼丹」:材料够几炉就连开几炉,结果与连点一致。
@@ -1146,7 +1152,7 @@
     const m = lore.recipeMastery(id)
     if (m <= 0) return '此方尚未到手 —— 去藏经阁翻书,或向师长讨教'
     if (m >= 1) return '此方已通晓:火候节点烂熟于心'
-    return `此方已得,熟练 ${Math.round(m * 100)}% —— 多炼几炉便到通晓`
+    return `此方已得,熟练 ${Math.round(m * 100)}% —— 多多开炉、研读数番可增熟稔`
   }
 
   /**
