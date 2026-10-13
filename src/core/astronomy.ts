@@ -11,11 +11,22 @@
  * 确定性:由游戏总秒数派生,同一游戏日固定,无现实时间依赖(与天时同法)。
  */
 import { useGameStore } from '@/stores/game'
+import { usePlayerStore } from '@/stores/player'
 import { MANSIONS, imageDef, type MansionDef } from '@/data/xiangxiu'
 import { regionDef } from '@/data/regions'
-import { worldOf } from '@/data/realms'
-import { MANSION_EVENT_LUCK } from '@/data/constants'
+import { WORLDS, worldOf } from '@/data/realms'
+import { MANSION_EVENT_LUCK, MANSION_REDIRECT_MAX } from '@/data/constants'
 import type { WorldId } from '@/types'
+
+/** 玩家把今日值日定向到某界的覆盖记录(存于 player store,见 stores/player) */
+export interface MansionRedirect {
+  /** 生效的游戏日 —— 不是今天就不算数(次日自动回落) */
+  gameDay: number
+  /** 玩家选中要利的界域 */
+  worldId: WorldId
+  /** 当日已定向了几次(限 MANSION_REDIRECT_MAX,达上限即回落天数派生) */
+  count: number
+}
 
 /** 游戏日 → 值日之宿(28 日一轮) */
 export function mansionOfDay(day: number): MansionDef {
@@ -25,7 +36,12 @@ export function mansionOfDay(day: number): MansionDef {
 
 /** 今日值日之宿 */
 export function todayMansion(): MansionDef {
-  return mansionOfDay(Math.floor(useGameStore().totalPlaySec / 86400))
+  return mansionOfDay(currentGameDay())
+}
+
+/** 当前游戏日(秒 → 日),固定口径一处出 */
+export function currentGameDay(): number {
+  return Math.floor(useGameStore().totalPlaySec / 86400)
 }
 
 /** 此宿所利之界域(四象配四界的游戏约定) */
@@ -33,11 +49,41 @@ export function favoredWorld(mansion: MansionDef): WorldId {
   return imageDef(mansion.image)?.world ?? 'mortal'
 }
 
+/**
+ * 玩家把今日值日定向到某界的覆盖,是否今天生效。
+ *
+ * 仅在三个条件同时满足时给玩家选中的界:
+ * 1. 这条覆盖就是今天记下的(gameDay 相合);
+ * 2. 当日次数未耗尽(count < MANSION_REDIRECT_MAX,达上限即回落天数派生);
+ * 3. 界域 id 合法(WORLDS 里有这一界)。
+ * 任一不满足 → 返回 null,由调用方回落到天数派生 —— 默认行为与从前完全一致。
+ */
+export function activeRedirectWorld(day: number, redirect: MansionRedirect | null): WorldId | null {
+  if (!redirect) return null
+  if (redirect.gameDay !== day) return null
+  if (redirect.count >= MANSION_REDIRECT_MAX) return null
+  if (!WORLDS.some(w => w.id === redirect.worldId)) return null
+  return redirect.worldId
+}
+
+/** 玩家当前记下的定向覆盖(读 player store) */
+export function currentRedirect(): MansionRedirect | null {
+  return usePlayerStore().mansionRedirect
+}
+
+/**
+ * 今日所利界域(有效口径):有生效定向走定向,否则走天数派生。
+ * 展示与判定共用这一枚,避免一处看定向、一处看天数而打架。
+ */
+export function effectiveFavoredWorld(): WorldId {
+  return activeRedirectWorld(currentGameDay(), currentRedirect()) ?? favoredWorld(todayMansion())
+}
+
 /** 某地界今日是否得星象之利 */
 export function isFavoredRegion(regionId: string): boolean {
   const region = regionDef(regionId)
   if (!region) return false
-  return favoredWorld(todayMansion()) === worldOf(region.minRealm).id
+  return effectiveFavoredWorld() === worldOf(region.minRealm).id
 }
 
 /**

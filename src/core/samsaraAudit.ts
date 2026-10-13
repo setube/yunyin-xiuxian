@@ -334,6 +334,15 @@ export const HERITAGE: HeritageRow[] = [
     compressesGrowth: false
   },
   {
+    id: 'mansionRedirect',
+    name: '星象值日定向(今日所利界域的战术覆盖)',
+    mode: 'reset',
+    detail: 'rebirth() 置 mansionRedirect=null —— 定向是「今日利哪一界」的当日战术,新世从新手界从头走,覆盖随之散去',
+    kind: 'state',
+    power: 'low',
+    compressesGrowth: false
+  },
+  {
     id: 'fateFocus',
     name: '命格点化主星(择一主星显化)',
     mode: 'reset',

@@ -1,13 +1,13 @@
 /** 玩家状态 —— 境界 / 修为 / 寿元 / 灵根 / 最终属性汇总 */
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { FinalStats, GNum, LinggenProfile, StatMods } from '@/types'
+import type { FinalStats, GNum, LinggenProfile, StatMods, WorldId } from '@/types'
 import { gn, gnZero, add, gte, mulN, progress, subClamp } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
-import { realmDef, realmLabel, worldOf, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
+import { realmDef, realmLabel, worldOf, WORLDS, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
 import { SUB_LEVELS, START_AGE } from '@/data/constants'
 import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
-import { STAR_FOCUS_COST_BASE } from '@/data/constants'
+import { STAR_FOCUS_COST_BASE, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
@@ -28,6 +28,7 @@ import { DAOLU, STAGE_ORDER } from '@/data/daolu'
 import { regionDef } from '@/data/regions'
 import { STARS } from '@/data/ziwei'
 import { fateChart, fateFocusMods, fateSeed } from '@/core/fate'
+import type { MansionRedirect } from '@/core/astronomy'
 import type { FortuneChoice } from '@/core/fortuneChain'
 import { useInventoryStore } from './inventory'
 import { useCultivationStore } from './cultivation'
@@ -218,6 +219,15 @@ export const usePlayerStore = defineStore(
      */
     const fateFocus = ref<string | null>(null)
     const fateModsValue = computed<StatMods>(() => fateFocusMods(chart.value, fateFocus.value))
+
+    /**
+     * 星象值日定向(Phase A-2):玩家把今日所利界域定向到哪一界的覆盖。
+     *
+     * 「当日有效」:gameDay 不是今天就不生效(次日自动回落天数派生,无需清理)。
+     * 「限次」:count 记当日已定向几次,达 MANSION_REDIRECT_MAX 后当日回落到天数派生。
+     * 定向本身不改变二十八宿轮值,只改"今日利哪一界"(仍是只利一界 +10%)。
+     */
+    const mansionRedirect = ref<MansionRedirect | null>(null)
 
     /**
      * Mod sources except the pet itself. beastPct/qiCapPct must not read
@@ -589,6 +599,8 @@ export const usePlayerStore = defineStore(
       breakthroughPrep.value = null
       // 命格点化主星是"这一世侧重哪一路"的选择:转世命盘重排,点化随之散去
       fateFocus.value = null
+      // 星象值日定向是"今天利哪一界"的战术覆盖:新世从新手界从头走,覆盖随之散去
+      mansionRedirect.value = null
       // 镇压权益随皮囊散去:旧世压下的远境(多为高阶)若跨世,新世炼气仍在按旧阶位
       // 派发高阶装备/灵石,数值当场爆炸 —— 妖气复聚、回到历练地。这属于「我拥有多少」
       // 而非「我是谁」;宿敌记忆与区域战绩(regionStats)仍随神魂不灭(见 samsaraAudit
@@ -651,6 +663,28 @@ export const usePlayerStore = defineStore(
        */
       if (fateFocus.value !== null && !STARS.some(s => s.id === fateFocus.value)) {
         fateFocus.value = null
+      }
+      /**
+       * 星象值日定向(Phase A-2):界域必须真实(WORLDS 里有这一界)、次数必须有限。
+       * 形状不对/界域认不出 → 整块清空(回落到天数派生,不残留坏覆盖);次数越界夹回上限。
+       */
+      if (mansionRedirect.value) {
+        const mr = mansionRedirect.value
+        const worldOk = typeof mr.worldId === 'string' && WORLDS.some(w => w.id === mr.worldId)
+        if (
+          !worldOk ||
+          !Number.isFinite(mr.gameDay) ||
+          typeof mr.count !== 'number' ||
+          !Number.isFinite(mr.count)
+        ) {
+          mansionRedirect.value = null
+        } else {
+          mansionRedirect.value = {
+            gameDay: Math.max(0, Math.floor(mr.gameDay)),
+            worldId: mr.worldId,
+            count: Math.min(MANSION_REDIRECT_MAX, Math.max(0, Math.floor(mr.count)))
+          }
+        }
       }
       /**
        * 秘境状态修形(Phase 34.9):它现在真的会进档(以前是进不去的骨架)。
@@ -902,6 +936,29 @@ export const usePlayerStore = defineStore(
       return true
     }
 
+    // ---------- Phase A-2 星象值日定向 ----------
+    /**
+     * 把今日值日定向到某界:花灵石(MANSION_REDIRECT_COST)把今日所利界域改成所选。
+     *
+     * 守则:
+     * - 只认真实世界(WORLDS 里有这一界,认不出的直接拒);
+     * - 已定向到同一界 / 当日次数已耗尽:不再收钱重复定向;
+     * - 灵石不足原子拒绝(spendStone 契约):不扣、不改、返回 false。
+     * 每一成功定向让当日 count +1;count 达 MANSION_REDIRECT_MAX 当日即回落到天数派生(core/astronomy 判定)。
+     */
+    function redirectFavoredWorld(worldId: WorldId): boolean {
+      if (!WORLDS.some(w => w.id === worldId)) return false
+      const day = Math.floor(useGameStore().totalPlaySec / 86400)
+      const cur = mansionRedirect.value
+      if (cur && cur.gameDay === day && (cur.count >= MANSION_REDIRECT_MAX || cur.worldId === worldId)) {
+        return false
+      }
+      const cost = gn(MANSION_REDIRECT_COST)
+      if (!resources.spendStone(cost)) return false
+      mansionRedirect.value = cur && cur.gameDay === day ? { gameDay: day, worldId, count: cur.count + 1 } : { gameDay: day, worldId, count: 1 }
+      return true
+    }
+
     // ---------- Phase 31.1 机缘链 ----------
     function setFortuneChoices(choices: Record<string, FortuneChoice>): void {
       fortuneChoices.value = choices
@@ -957,6 +1014,8 @@ export const usePlayerStore = defineStore(
       fateMods: fateModsValue,
       fateFocus,
       focusFateStar,
+      mansionRedirect,
+      redirectFavoredWorld,
       cultPerSec,
       qiRegenPerSec,
       lifespanMax,

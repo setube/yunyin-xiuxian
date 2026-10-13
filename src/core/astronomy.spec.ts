@@ -17,8 +17,13 @@ import { IMAGES, MANSIONS } from '@/data/xiangxiu'
 import { REGIONS, regionDef } from '@/data/regions'
 import { worldOf } from '@/data/realms'
 import { useGameStore } from '@/stores/game'
-import { MANSION_EVENT_LUCK } from '@/data/constants'
-import { favoredWorld, isFavoredRegion, mansionEventLuck, mansionLuckPercent, mansionOfDay, todayMansion, todayMansionLine } from './astronomy'
+import { usePlayerStore } from '@/stores/player'
+import { MANSION_EVENT_LUCK, MANSION_REDIRECT_MAX } from '@/data/constants'
+import type { WorldId } from '@/types'
+import {
+  activeRedirectWorld, effectiveFavoredWorld, favoredWorld, isFavoredRegion,
+  mansionEventLuck, mansionLuckPercent, mansionOfDay, todayMansion, todayMansionLine
+} from './astronomy'
 import { exploreEventChance } from './exploration'
 
 beforeEach(() => {
@@ -180,5 +185,61 @@ describe('星象加成 · 百分数一处出', () => {
     expect(adventure, '历练页应共享换算 helper').toContain('mansionLuckPercent(')
     expect(realm, '界域志应共享换算 helper').toContain('mansionLuckPercent(')
     expect(doc, '数值体系应直接由 data 常量换算').toContain('MANSION_EVENT_LUCK')
+  })
+})
+
+describe('星象 · 值日定向(A-2)', () => {
+  function dayWorld(day: number): WorldId {
+    return favoredWorld(mansionOfDay(day))
+  }
+  function regionOfWorld(w: WorldId): string {
+    return REGIONS.find(r => worldOf(r.minRealm).id === w)!.id
+  }
+  /** 找一个自动所利为人间界的日子,并把它设为今天 */
+  function setTodayAutoMortal(): number {
+    const game = useGameStore()
+    let day = -1
+    for (let d = 0; d < 28; d += 1) if (dayWorld(d) === 'mortal') { day = d; break }
+    game.$patch({ totalPlaySec: day * 86400 + 60 })
+    return day
+  }
+
+  it('定向后:今日所利界域跟随玩家所选,玩家所选得利、他处不加', () => {
+    const player = usePlayerStore()
+    const day = setTodayAutoMortal()
+    const chosen = 'immortal'
+    player.mansionRedirect = { gameDay: day, worldId: chosen, count: 1 }
+    expect(effectiveFavoredWorld()).toBe(chosen)
+    expect(mansionEventLuck(regionOfWorld(chosen))).toBeCloseTo(MANSION_EVENT_LUCK)
+    expect(mansionEventLuck(regionOfWorld('mortal'))).toBe(0)
+    expect(mansionEventLuck(regionOfWorld('god'))).toBe(0)
+  })
+
+  it('次数用尽(count ≥ MAX)时回落到天数派生:玩家所选不再得利,自动所利得利', () => {
+    const player = usePlayerStore()
+    const day = setTodayAutoMortal()
+    const chosen = 'immortal'
+    player.mansionRedirect = { gameDay: day, worldId: chosen, count: MANSION_REDIRECT_MAX }
+    expect(mansionEventLuck(regionOfWorld(chosen))).toBe(0)
+    expect(mansionEventLuck(regionOfWorld('mortal'))).toBeCloseTo(MANSION_EVENT_LUCK)
+    expect(effectiveFavoredWorld()).toBe('mortal')
+  })
+
+  it('非当日的覆盖不生效、认不出的界不生效 —— 一律回落到天数派生', () => {
+    const player = usePlayerStore()
+    const day = setTodayAutoMortal()
+    // 覆盖记在别的日子:不算数
+    player.mansionRedirect = { gameDay: day + 1, worldId: 'immortal', count: 1 }
+    expect(effectiveFavoredWorld()).toBe('mortal')
+    // 坏界 id:activeRedirectWorld 直接拒
+    expect(activeRedirectWorld(day, { gameDay: day, worldId: 'nope' as WorldId, count: 1 })).toBeNull()
+  })
+
+  it('坏档定向落档(sanitize):界域认不出 / 次数越界 → 整块清空或夹回,不留坏覆盖', () => {
+    const player = usePlayerStore()
+    player.mansionRedirect = { gameDay: 3, worldId: 'nope' as WorldId, count: 99 }
+    player.sanitize()
+    // 界域认不出 → 整块清空(回落到天数派生,不残留坏覆盖)
+    expect(player.mansionRedirect).toBeNull()
   })
 })

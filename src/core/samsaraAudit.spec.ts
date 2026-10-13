@@ -251,6 +251,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     lastCaveEventDay: ['streak'],
     lifespanBonusYears: ['realm'],
     linggen: ['linggen'],
+    mansionRedirect: ['mansionRedirect'],
     major: ['realm'],
     mentor: ['mentor'],
     name: ['name'],

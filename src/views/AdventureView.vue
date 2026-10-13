@@ -27,6 +27,26 @@
         <span class="text-gold-ink">{{ favoredWorldName }}</span
         >,在其地历练际遇<span class="tabular" title="秘境等其他活动不受此加成">+{{ mansionLuckPct }}%</span>(他处不加)。
       </p>
+      <p class="mt-1 flex items-center gap-2 text-[10px]">
+        <button class="chip-ink text-azure" aria-label="星象值日定向" @click="mansionRedirectOpen = !mansionRedirectOpen">
+          星象定向{{ redirectActiveText }} ▾
+        </button>
+      </p>
+      <div v-if="mansionRedirectOpen" class="mt-1.5 rounded border border-ink/10 bg-ink/4 p-2">
+        <p class="text-[9px] leading-relaxed text-ink-faint">
+          把今日所利界域定向到所选(每次耗 {{ redirectCostText }} 灵石;今日限 {{ mansionRedirectMax }} 次,
+          达上限当日回落到天数派生,默认仍随值日之宿)。
+        </p>
+        <div class="mt-1.5 flex flex-wrap gap-2">
+          <button
+            v-for="w in WORLDS"
+            :key="w.id"
+            class="chip-ink"
+            :class="w.id === effectiveWorldId ? 'text-gold-ink' : 'text-azure'"
+            @click="redirectTo(w.id)"
+          >{{ w.name }}{{ w.id === effectiveWorldId ? ' ·' : '' }}</button>
+        </div>
+      </div>
       <p v-if="player.suppressedRegions.length > 0" class="text-[10px] text-gold-ink">
         镇压收益中 {{ player.suppressedRegions.length }} 处 —— 与历练互不冲突,可同时收取;一次只能历练一处。
       </p>
@@ -296,15 +316,15 @@
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
   import { REGIONS, regionDef, DANGER_NAMES } from '@/data/regions'
-  import { worldOf, type WorldDef } from '@/data/realms'
+  import { worldOf, WORLDS, type WorldDef } from '@/data/realms'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
-  import { todayMansion, favoredWorld, todayMansionLine, mansionLuckPercent } from '@/core/astronomy'
+  import { effectiveFavoredWorld, todayMansionLine, mansionLuckPercent } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
   import { canEnterRegion, entryBlockReason, worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
   import { REALMS } from '@/data/realms'
-  import { EXPLORE_MODES } from '@/data/constants'
+  import { EXPLORE_MODES, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
   import {
     exploreBattleGapSec,
     exploreDurationSec,
@@ -324,7 +344,8 @@
   import { foeOriginPartsText } from '@/core/battleAnalysis'
   import { SUPPRESS_THRESHOLDS, suppressRateFor, suppressionProgress } from '@/core/suppress'
   import { REVIVE_AFTER_HOURS, hoursUntilRevive, regionRecallFor, prosperityName, isReviving, prosperityYieldMult } from '@/core/worldMemory'
-  import { mulN } from '@/utils/gnum'
+  import { mulN, gn } from '@/utils/gnum'
+  import type { WorldId } from '@/types'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, ecologyChips, ECO_LEVEL_NAMES, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { formatGN } from '@/utils/format'
@@ -359,9 +380,26 @@
 
   /** 今日星象:值日之宿所利界域,由此知今日该往哪一片地界走 */
   const mansionLine = computed(() => todayMansionLine())
-  const favoredWorldName = computed(() => worldDef(favoredWorld(todayMansion())).name)
+  /** 今日所利界域(有效口径):有生效定向走定向,否则随值日之宿 */
+  const effectiveWorldId = computed(() => effectiveFavoredWorld())
+  const favoredWorldName = computed(() => worldDef(effectiveWorldId.value).name)
   /** 值日之宿所利的百分数:一处来源(astronomy),历练页与界域志界域志共此一枚 */
   const mansionLuckPct = computed(() => mansionLuckPercent())
+
+  /** 星象值日定向的展示与动作(Phase A-2) */
+  const mansionRedirectOpen = ref(false)
+  const redirectCostText = formatGN(gn(MANSION_REDIRECT_COST))
+  const mansionRedirectMax = MANSION_REDIRECT_MAX
+  /** 按钮上标注当前定向状态:今日已定向到某界则点名 */
+  const redirectActiveText = computed(() => {
+    const mr = player.mansionRedirect
+    return mr && mr.worldId === effectiveWorldId.value ? ` · ${worldDef(mr.worldId).name}` : ''
+  })
+  function redirectTo(id: WorldId): void {
+    const ok = player.redirectFavoredWorld(id)
+    const name = worldDef(id).name
+    ui.toast(ok ? `今日定向到「${name}」` : '今日次数已尽 / 已定向此界 / 灵石不足', ok ? 'info' : 'warn')
+  }
   /** 区域适配原因点按展开(移动端无 hover) */
   const adaptExpand = ref<string | null>(null)
 
