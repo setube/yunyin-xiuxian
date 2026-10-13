@@ -137,6 +137,24 @@ describe('坊市 · 买卖', () => {
     expect(() => JSON.stringify(market.$state)).not.toThrow()
   })
 
+  it('sanitize:合法灵草货架的品阶跨读档保留,坏品阶落回无级', () => {
+    const market = useMarketStore()
+    market.$patch({
+      stock: [
+        { kind: 'material', idx: 0, matId: 'herb', grade: 3, count: 12, price: { m: 5, e: 0 }, sold: false },
+        { kind: 'material', idx: 1, matId: 'herb', grade: 99, count: 12, price: { m: 5, e: 0 }, sold: false }
+      ] as unknown as MarketSlot[]
+    })
+    market.sanitize()
+    // 先断言确实是 material 格(避免守卫空转),再断言品阶读写
+    const s0 = market.stock[0]
+    expect(s0?.kind, '合法货架格应保留').toBe('material')
+    if (s0?.kind === 'material') expect(s0.grade, '合法 3 品应跨读档保留').toBe(3)
+    const s1 = market.stock[1]
+    expect(s1?.kind, '坏品阶格仍应保留为 material').toBe('material')
+    if (s1?.kind === 'material') expect(s1.grade, '99 不是合法品阶,应落回无级兜底').toBeUndefined()
+  })
+
   it('寄卖:背包一件离包上架,记价/记层/记时刻,行囊随之腾空', () => {
     const market = useMarketStore()
     const inventory = useInventoryStore()

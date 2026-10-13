@@ -27,7 +27,7 @@ import {
 } from '@/data/market'
 import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, materialSellPrice, pillSellPrice } from '@/core/marketService'
 import type { HerbGrade } from '@/data/herbGrades'
-import { herbGradeOfMajor } from '@/data/herbGrades'
+import { herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
 
 export type MarketBuyResult = 'ok' | 'sold' | 'poor' | 'bagfull' | 'missing'
@@ -77,10 +77,14 @@ export const useMarketStore = defineStore(
         } else if (kind === 'material') {
           const matId = 'matId' in raw ? raw.matId : undefined
           if (matId !== 'herb' && matId !== 'ore') continue
+          // 上货时钉死的灵草品阶要跨读档保留 —— 否则每次读档都掉回无级,
+          // 「标价/入账/显示同源」约定失效,还可靠出入档白赚品阶差
+          const g = 'grade' in raw ? raw.grade : undefined
           clean.push({
             kind,
             idx,
             matId,
+            grade: isHerbGrade(g) ? g : undefined,
             count: Math.max(1, Math.floor(Number('count' in raw ? raw.count : 1) || 1)),
             price: gprice('price' in raw ? raw.price : undefined),
             sold
