@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useCultivationStore } from './cultivation'
 import { buffDef } from '@/data/buffs'
+import { gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 
 const SEC = 1000
 // 用 `!` 断言会掩盖写错 id(addBuff 对未注册 id 静默 return,测试会以「buffs 为空」失败而非说明原因)
@@ -160,5 +161,22 @@ describe('修炼速度 buff 叠加与单方到期撤除(buffMods)', () => {
     cul.pruneBuffs(julingEnd + 1)
     expect(cul.buffs).toHaveLength(0)
     expect(cul.buffMods.cultivationSpeed).toBeUndefined()
+  })
+})
+
+describe('sanitize:功法等级与悟道分支加固', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('超限功法等级钳到满级;不属于该功法/不存在的悟道分支被清', () => {
+    const c = useCultivationStore()
+    c.$patch({
+      learned: { m_taixuan: 99 },
+      gongfaBranch: { m_taixuan: 'b_not_real', x_other: 'b_some' }
+    } as never)
+    c.sanitize()
+    // level 99 钳到 m_taixuan 满级(9),否则 perLevel 无限放大修速且无降级路径
+    expect(c.learned['m_taixuan']).toBe(gongfaMaxLevel(gongfaDef('m_taixuan')!))
+    // 分支 id 认不出 / 不是该功法已满级的条目 —— 一律清空(白送词条的注入洞)
+    expect(Object.keys(c.gongfaBranch)).toHaveLength(0)
   })
 })

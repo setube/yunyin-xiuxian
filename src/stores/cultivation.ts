@@ -44,7 +44,11 @@ export const useCultivationStore = defineStore(
     function sanitize(): void {
       const fixedLearned: Record<string, number> = {}
       for (const [id, lv] of Object.entries(asNumberRecord(learned.value, 0))) {
-        if (lv > 0) fixedLearned[id] = Math.floor(lv)
+        if (lv > 0) {
+          // 等级钳到该功法满级(秘术 3 / 主辅 9,以数据源为准)——坏档把等级写远超上限
+          // 会按 perLevel 无限放大属性且游戏内无降级路径,永久膨胀
+          fixedLearned[id] = Math.min(Math.max(1, Math.floor(lv)), gongfaMaxLevel(gongfaDef(id)))
+        }
       }
       learned.value = fixedLearned
       if (typeof mainGongfa.value !== 'string' || !fixedLearned[mainGongfa.value]) mainGongfa.value = null
@@ -66,7 +70,14 @@ export const useCultivationStore = defineStore(
           added: Math.min(asFiniteNumber(b.added, 0, 0), capMs)
         }
       })
-      gongfaBranch.value = asRecord<string>(gongfaBranch.value)
+      // 悟道分支:只留「bid 真属于 gid 且该功法已满级」的条目 —— 分支是不装配仍生效的永久
+      // 被动,注入 {m_daozu:'b_daozu_ben'} 会白送词条,故归属与习得状态都要校验
+      const keptBranch: Record<string, string> = {}
+      for (const [gid, bid] of Object.entries(asRecord<string>(gongfaBranch.value))) {
+        const br = gongfaBranchDef(bid)
+        if (br?.gongfaId === gid && (fixedLearned[gid] ?? 0) >= gongfaMaxLevel(gongfaDef(gid))) keptBranch[gid] = bid
+      }
+      gongfaBranch.value = keptBranch
     }
 
     const gongfaMods = computed<StatMods>(() => {
@@ -145,7 +156,8 @@ export const useCultivationStore = defineStore(
       if (!def) return
       const add = def.durationSec * 1000
       // 丹药增益有上限(单颗 × 倍数,见 core/buffCap):超过上限的部分被削掉
-      const capMs = buffCapSec(defId) === undefined ? undefined : buffCapSec(defId)! * 1000
+      const capSec = buffCapSec(defId)
+      const capMs = capSec === undefined ? undefined : capSec * 1000
       const existing = buffs.value.find(b => b.defId === defId)
       if (existing) {
         let endsAt = Math.max(existing.endsAt, now) + add
