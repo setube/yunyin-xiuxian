@@ -24,6 +24,7 @@ import { useEndgameStore } from '@/stores/endgame'
 import { condenseDaoFruit } from './endgameService'
 import { effectiveDaoFruit } from './statsCalc'
 import { DAO_SOURCE_PER_FRUIT } from '@/data/endgame'
+import { DAO_FRUIT_CULT_BONUS } from '@/data/constants'
 
 describe('S1 生命周期语义', () => {
   it('道源=此世消耗,道果=永久积累', () => {
@@ -63,10 +64,24 @@ describe('S3 道果边际收益', () => {
     expect(Number(info.deltaPct)).toBeLessThan(10)
   })
 
-  it('软上限白话文案', () => {
+  it('软上限白话文案:如实报出下一枚的边际收益(不虚报「微乎其微」)', () => {
     expect(fruitSoftCapText(0)).toContain('尚未')
-    expect(fruitSoftCapText(15)).toContain('软上限')
-    expect(fruitSoftCapText(50)).toContain('微乎其微')
+    for (const total of [5, 15, 20, 50, 200]) {
+      const t = fruitSoftCapText(total)
+      const eff = effectiveDaoFruit(total)
+      const next = effectiveDaoFruit(total + 1)
+      const marginalEff = next - eff
+      const effPct = (marginalEff / eff) * 100
+      const cultPct = marginalEff * DAO_FRUIT_CULT_BONUS * 100
+      // 文案列出的两个百分比 = 引擎现算的真实边际(改指数/倍率即同步变真)
+      expect(t, `total=${total}`).toContain(`+${effPct.toFixed(1)}%`)
+      expect(t, `total=${total}`).toContain(`+${cultPct.toFixed(1)}%`)
+      // 引用当前道果数,不硬编码「二十」;也不用夸大字眼糊弄(200 枚边际依旧存在)
+      expect(t, `total=${total}`).toContain(`道果已 ${total} 枚`)
+      expect(t, `total=${total}`).not.toContain('微乎其微')
+      // 任何总量下边际都仍为正 —— 若文案说成「已尽」即此处红
+      expect(Number(effPct.toFixed(1))).toBeGreaterThan(0)
+    }
   })
 })
 

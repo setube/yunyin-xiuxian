@@ -81,11 +81,22 @@ export function fruitMarginalInfo(): { total: number; effective: number; nextEff
   return { total: fruit, effective: eff, nextEffective: nextEff, deltaPct: delta.toFixed(2) }
 }
 
-/** 道果软上限白话文案 */
+/**
+ * 道果软上限白话文案 —— 如实报出「再凝一枚」的真实边际,不再堆一个夸大的字眼。
+ *
+ * 边际永远存在,且直接源自 DAO_FRUIT_SOFT_EXP(effectiveDaoFruit = 道果^0.9):
+ * 即便 20 枚以后,再凝一枚仍带来约 +4.5% 有效收益(≈+2% 修行),并非「微乎其微」。
+ * 故文案不设「已逾二十即微乎其微」这种与数据对不上的硬编码断言,而是从
+ * effectiveDaoFruit 现算两个百分比(有效收益、修行)写出来 —— 改指数即同步变真。
+ */
 export function fruitSoftCapText(total: number): string {
   if (total <= 0) return '尚未凝得道果。'
-  if (total < 20) return '道果积累越多,每一枚新增道果带来的轮回收益越低(软上限)。'
-  return '道果已逾二十:再增一枚,收益微乎其微,但仍是永久的。'
+  const eff = effectiveDaoFruit(total)
+  const next = effectiveDaoFruit(total + 1)
+  const marginalEff = next - eff
+  const effPct = (marginalEff / eff) * 100
+  const cultPct = marginalEff * DAO_FRUIT_CULT_BONUS * 100
+  return `道果已 ${total} 枚:再凝一枚,有效收益 +${effPct.toFixed(1)}%,修行 +${cultPct.toFixed(1)}%——收益渐减,仍属永久。`
 }
 
 // ---------- S4/S5 首次教学 ----------
