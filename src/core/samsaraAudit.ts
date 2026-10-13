@@ -336,8 +336,8 @@ export const HERITAGE: HeritageRow[] = [
   {
     id: 'wudaoExchange',
     name: '悟道兑换(灵石→悟道点的当日限次出口)',
-    mode: 'reset',
-    detail: 'rebirth() 置 wudaoExchange 归零 —— 兑换是「今日限次出口」的当日账,新世重算',
+    mode: 'full',
+    detail: '日账不入世:gameDay 相合才计入当日,次日自动重置;转世不清 — 否则同游戏日转世会重开每日兑换配额',
     kind: 'state',
     power: 'low',
     compressesGrowth: false
@@ -345,8 +345,8 @@ export const HERITAGE: HeritageRow[] = [
   {
     id: 'mansionRedirect',
     name: '星象值日定向(今日所利界域的战术覆盖)',
-    mode: 'reset',
-    detail: 'rebirth() 置 mansionRedirect=null —— 定向是「今日利哪一界」的当日战术,新世从新手界从头走,覆盖随之散去',
+    mode: 'full',
+    detail: '日账不入世:gameDay 相合才生效,次日自动回落到天数派生;转世不清 — 否则同游戏日转世会重开当日改向配额',
     kind: 'state',
     power: 'low',
     compressesGrowth: false

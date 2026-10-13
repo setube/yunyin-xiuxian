@@ -215,24 +215,29 @@ describe('星象 · 值日定向(A-2)', () => {
     expect(mansionEventLuck(regionOfWorld('god'))).toBe(0)
   })
 
-  it('次数用尽(count ≥ MAX)时回落到天数派生:玩家所选不再得利,自动所利得利', () => {
+  it('当日定向持续生效(count 达到上限只禁继续改向,不撤销已生效的定向 —— 付费不白费)', () => {
     const player = usePlayerStore()
     const day = setTodayAutoMortal()
-    const chosen = 'immortal'
+    const chosen = 'god' // 与自动所利(mortal)不同
     player.mansionRedirect = { gameDay: day, worldId: chosen, count: MANSION_REDIRECT_MAX }
-    expect(mansionEventLuck(regionOfWorld(chosen))).toBe(0)
-    expect(mansionEventLuck(regionOfWorld('mortal'))).toBeCloseTo(MANSION_EVENT_LUCK)
-    expect(effectiveFavoredWorld()).toBe('mortal')
+    expect(effectiveFavoredWorld()).toBe(chosen)
+    expect(mansionEventLuck(regionOfWorld(chosen))).toBeCloseTo(MANSION_EVENT_LUCK)
+    expect(mansionEventLuck(regionOfWorld('mortal'))).toBe(0)
+    // 当日已兑满:继续改向被拒(count 不再增长)
+    expect(player.redirectFavoredWorld('immortal')).toBe(false)
+    expect(player.mansionRedirect?.count).toBe(MANSION_REDIRECT_MAX)
   })
 
-  it('非当日的覆盖不生效、认不出的界不生效 —— 一律回落到天数派生', () => {
+  it('未定向(count = 0)或非当日覆盖不生效 —— 一律回落到天数派生', () => {
     const player = usePlayerStore()
     const day = setTodayAutoMortal()
-    // 覆盖记在别的日子:不算数
+    // 覆盖记在别的日子:不算数,回落到天数派生
     player.mansionRedirect = { gameDay: day + 1, worldId: 'immortal', count: 1 }
     expect(effectiveFavoredWorld()).toBe('mortal')
-    // 坏界 id:activeRedirectWorld 直接拒
+    // activeRedirectWorld 对坏界 id 直接拒
     expect(activeRedirectWorld(day, { gameDay: day, worldId: 'nope' as WorldId, count: 1 })).toBeNull()
+    // count = 0 代表「今日尚未改向」:即使记了也没生效
+    expect(activeRedirectWorld(day, { gameDay: day, worldId: 'immortal', count: 0 })).toBeNull()
   })
 
   it('坏档定向落档(sanitize):界域认不出 / 次数越界 → 整块清空或夹回,不留坏覆盖', () => {

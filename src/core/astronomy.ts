@@ -15,7 +15,7 @@ import { usePlayerStore } from '@/stores/player'
 import { MANSIONS, imageDef, type MansionDef } from '@/data/xiangxiu'
 import { regionDef } from '@/data/regions'
 import { WORLDS, worldOf } from '@/data/realms'
-import { MANSION_EVENT_LUCK, MANSION_REDIRECT_MAX } from '@/data/constants'
+import { MANSION_EVENT_LUCK } from '@/data/constants'
 import type { WorldId } from '@/types'
 
 /** 玩家把今日值日定向到某界的覆盖记录(存于 player store,见 stores/player) */
@@ -52,16 +52,15 @@ export function favoredWorld(mansion: MansionDef): WorldId {
 /**
  * 玩家把今日值日定向到某界的覆盖,是否今天生效。
  *
- * 仅在三个条件同时满足时给玩家选中的界:
- * 1. 这条覆盖就是今天记下的(gameDay 相合);
- * 2. 当日次数未耗尽(count < MANSION_REDIRECT_MAX,达上限即回落天数派生);
- * 3. 界域 id 合法(WORLDS 里有这一界)。
- * 任一不满足 → 返回 null,由调用方回落到天数派生 —— 默认行为与从前完全一致。
+ * 只要这条覆盖是今天记下的、确认改向过(count≥1)、且界域 id 合法,就一直生效——
+ * 每成功改向一次就换一次今日所利界域(最后一改为准);当日改满 MANSION_REDIRECT_MAX
+ * 只是**不再允许继续改向**,并不会撤销已生效的定向(付费改向不白费)。
+ * 任一条件不满足 → 返回 null,由调用方回落到天数派生 —— 默认行为与从前完全一致。
  */
 export function activeRedirectWorld(day: number, redirect: MansionRedirect | null): WorldId | null {
   if (!redirect) return null
   if (redirect.gameDay !== day) return null
-  if (redirect.count >= MANSION_REDIRECT_MAX) return null
+  if (redirect.count < 1) return null
   if (!WORLDS.some(w => w.id === redirect.worldId)) return null
   return redirect.worldId
 }

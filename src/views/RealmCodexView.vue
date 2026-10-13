@@ -261,7 +261,7 @@
   import { cnNumber, formatGN } from '@/utils/format'
   import { gn } from '@/utils/gnum'
   import { STAR_FOCUS_COST_BASE } from '@/data/constants'
-  import { mansionLuckPercent, favoredWorld, todayMansion, todayMansionLine } from '@/core/astronomy'
+  import { mansionLuckPercent, effectiveFavoredWorld, todayMansionLine } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
   import type { WorldId } from '@/types'
   import { modsText } from '@/ui/statNames'
@@ -322,8 +322,13 @@
   /** 点化主星的灵石单价(一处出,文案与扣费同源) */
   const focusCostText = formatGN(gn(STAR_FOCUS_COST_BASE))
   function focusStar(id: string): void {
-    const ok = player.focusFateStar(id)
     const name = STARS.find(s => s.id === id)?.name ?? id
+    // 已显化同星:不是灵石不足,另提示
+    if (player.fateFocus === id) {
+      ui.toast(`「${name}」已显化,无需再点`, 'info')
+      return
+    }
+    const ok = player.focusFateStar(id)
     ui.toast(ok ? `点化「${name}」显化,其力二倍` : '灵石不足,点化不成', ok ? 'info' : 'warn')
   }
   const fateRows = computed(() =>
@@ -336,7 +341,7 @@
   // 星象:值日之宿与所利界域(由游戏日派生,随心跳刷新)
   const showAllMansions = ref(false)
   const mansionLine = computed(() => todayMansionLine())
-  const favoredWorldName = computed(() => worldDef(favoredWorld(todayMansion())).name)
+  const favoredWorldName = computed(() => worldDef(effectiveFavoredWorld()).name)
   function worldName(id: WorldId): string {
     return worldDef(id).name
   }

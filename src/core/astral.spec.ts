@@ -92,6 +92,16 @@ describe('饰品三件套共鸣进战斗(妖庭 trio → 吸血)', () => {
     expect(snap.mods.lifesteal ?? 0).toBeLessThan(ACCESSORY_SET_LIFESTEAL)
   })
 
+  it('吸血来源只可能是套装:无套装的普通三 J 饰物 lifesteal 为 0(隔离对照)', () => {
+    // 妖庭(13)之外,普通 tier-12 三 J 饰物(冰髓坠/寒魄戒/寒光符)不在任何套里,穿上后 lifesteal 应为 0
+    const inv = useInventoryStore()
+    inv.items = [inst('n-plain', 'n_longhun'), inst('r-plain', 'r_liuli'), inst('tl-plain', 'tl_jinguang')]
+    inv.equipped = { necklace: 'n-plain', ring: 'r-plain', talisman: 'tl-plain' } as never
+    const snap = buildPlayerSnap()
+    // 角色自带没有吸血来源(默认无功法/无吸血器魂),这 0 说明吸血全来自套装
+    expect(snap.mods.lifesteal ?? 0).toBe(0)
+  })
+
   it('真打一场:受创后吸血之躯真的回复气血(stats.healed > 0)', () => {
     wearYaoTing()
     const snap = buildPlayerSnap()
