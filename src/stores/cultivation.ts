@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { BuffInstance, CombatSkill, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
-import { gongfaDef } from '@/data/gongfa'
+import { gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 import { buffDef } from '@/data/buffs'
 import { gongfaBranchDef } from '@/data/gongfaBranches'
 import { mergeMods } from '@/core/statsCalc'
@@ -182,7 +182,7 @@ export const useCultivationStore = defineStore(
 
     // Phase 31 A3:选择功法悟道分支(满级后一次,不可改)
     function chooseBranch(gongfaId: string, branchId: string): boolean {
-      const full = (learned.value[gongfaId] ?? 0) >= (gongfaDef(gongfaId)?.maxLevel ?? 9)
+      const full = (learned.value[gongfaId] ?? 0) >= gongfaMaxLevel(gongfaDef(gongfaId))
       const def = gongfaBranchDef(branchId)
       if (!full || !def || def.gongfaId !== gongfaId) return false
       if (gongfaBranch.value[gongfaId]) return false

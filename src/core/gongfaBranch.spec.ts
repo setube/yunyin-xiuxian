@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useCultivationStore } from '@/stores/cultivation'
 import { branchesFor, canEnlighten, gongfaBranchDef, GONGFA_BRANCHES } from '@/data/gongfaBranches'
-import { GONGFA, gongfaDef } from '@/data/gongfa'
+import { GONGFA, gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 import { AFFIXES } from '@/data/affixes'
 import { qualityDef } from '@/data/qualities'
 import { STAT_NAMES } from '@/ui/statNames'
@@ -70,7 +70,7 @@ describe('悟道提示与实际可选项同源', () => {
   })
 
   it('有分支的功法满级才可悟道,未满级不可', () => {
-    const max = gongfaDef('m_taixuan')?.maxLevel ?? 9
+    const max = gongfaMaxLevel(gongfaDef('m_taixuan'))
     expect(canEnlighten('m_taixuan', max - 1)).toBe(false)
     expect(canEnlighten('m_taixuan', max)).toBe(true)
   })

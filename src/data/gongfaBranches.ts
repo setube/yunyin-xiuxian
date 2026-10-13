@@ -25,7 +25,7 @@
  * 分支不是发词条的由头,而是把这部功法本来就在说的话说到底。
  */
 import type { StatMods } from '@/types'
-import { gongfaDef } from './gongfa'
+import { gongfaDef, gongfaMaxLevel } from './gongfa'
 
 export interface GongfaBranchDef {
   /** 所属功法 */
@@ -361,5 +361,5 @@ export function branchesFor(gongfaId: string): GongfaBranchDef[] {
 export function canEnlighten(gongfaId: string, level: number): boolean {
   const def = gongfaDef(gongfaId)
   if (!def) return false
-  return level >= (def.maxLevel ?? 9) && branchesFor(gongfaId).length > 0
+  return level >= gongfaMaxLevel(def) && branchesFor(gongfaId).length > 0
 }

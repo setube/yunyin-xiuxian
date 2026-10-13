@@ -116,16 +116,17 @@
   import { useCultivationStore } from '@/stores/cultivation'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
-  import { gongfaDef, GONGFA_TYPE_NAMES } from '@/data/gongfa'
+  import { gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import { ELEMENTS } from '@/data/linggen'
   import { branchesFor, gongfaBranchDef } from '@/data/gongfaBranches'
   import { gongfaUpgradeCost, upgradeGongfa } from '@/core/gongfaService'
   import { gongfaAffinity, rootElements } from '@/core/linggenAffinity'
+  import { mergeMods } from '@/core/statsCalc'
   import { gongfaModsAt } from '@/stores/cultivation'
   import { STAT_NAMES, modsText, statValueText } from '@/ui/statNames'
   import { gongfaSkillLine } from '@/ui/itemText'
   import { gongfaSubFullToast } from '@/ui/gongfaText'
-  import type { AnyStatKey } from '@/types'
+  import type { AnyStatKey, StatMods } from '@/types'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
 
@@ -144,7 +145,10 @@
 
   const modRows = computed(() => {
     if (!def.value || !learned.value) return []
-    const mods = gongfaModsAt(def.value.id, level.value)
+    const sources: StatMods[] = [gongfaModsAt(def.value.id, level.value)]
+    // 已悟道分支并入同一账本(与人物总览完全一致),否则顶部列表与面板口径分叉
+    if (branchPicked.value) sources.push(branchPicked.value.mods)
+    const mods = mergeMods(sources)
     return Object.entries(mods).map(([k, v]) => ({
       label: STAT_NAMES[k as AnyStatKey] ?? k,
       value: statValueText(k, v as number)
@@ -166,7 +170,7 @@
   const isSub = computed(() => def.value && cultivation.subGongfa.includes(def.value.id))
 
   // Phase 31 A3:满级悟道分支
-  const fullLevel = computed(() => (def.value ? level.value >= (def.value.maxLevel ?? 9) : false))
+  const fullLevel = computed(() => (def.value ? level.value >= gongfaMaxLevel(def.value) : false))
   const branches = computed(() => (def.value ? branchesFor(def.value.id) : []))
   const branchPicked = computed(() => {
     if (!def.value) return undefined

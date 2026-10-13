@@ -530,7 +530,7 @@
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
   import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
-  import { GONGFA, gongfaDef, GONGFA_TYPE_NAMES } from '@/data/gongfa'
+  import { GONGFA, gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import type { GongfaDef, GongfaType } from '@/types'
   import { ELEMENTS } from '@/data/linggen'
   import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
@@ -827,7 +827,7 @@
 
   /** 功行是否已至顶层 */
   function isFull(id: string): boolean {
-    return (cultivation.learned[id] ?? 0) >= (gongfaDef(id)?.maxLevel ?? 9)
+    return (cultivation.learned[id] ?? 0) >= gongfaMaxLevel(gongfaDef(id))
   }
 
   /** 是否真能悟道(判据取自 gongfaBranches,界面提示与实际可选项同源) */

@@ -655,6 +655,12 @@ export function gongfaDef(id: string): GongfaDef | undefined {
   return BY_ID.get(id)
 }
 
+/** 一部功法的满级:数据没写就用 g() 里的型默认(秘术 3 / 主辅 9)。
+ *  只此一处事实源 —— 各处重复 `?? 9` 会把漏配 maxLevel 的秘术当真主修练到 9 层。 */
+export function gongfaMaxLevel(def: GongfaDef | undefined): number {
+  return def?.maxLevel ?? (def?.type === 'secret' ? 3 : 9)
+}
+
 export const GONGFA_TYPE_NAMES: Record<GongfaType, string> = {
   main: '主修',
   sub: '辅修',

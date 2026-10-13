@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest'
 import { LORE_MAX, LORE_STAGE_NAMES, MATERIALS, materialDef } from '@/data/materials'
 import { GONGFA_BRANCHES, gongfaBranchDef } from '@/data/gongfaBranches'
-import { gongfaDef } from '@/data/gongfa'
+import { gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 import {
   ARTIFACT_STAGE_MAX,
   ARTIFACT_STAGE_NAMES,
@@ -113,7 +113,7 @@ describe('灵材谱:按认知层渐进披露', () => {
 describe('悟道录:未见 / 已见 / 已择', () => {
   const branch = GONGFA_BRANCHES[0]!
   const sibling = GONGFA_BRANCHES.find(x => x.gongfaId === branch.gongfaId && x.id !== branch.id)!
-  const fullLevel = gongfaDef(branch.gongfaId)!.maxLevel ?? 9
+  const fullLevel = gongfaMaxLevel(gongfaDef(branch.gongfaId)!)
 
   it('功法未满级则歧路未现', () => {
     expect(branchStage(branch, { [branch.gongfaId]: fullLevel - 1 }, {})).toBe(0)
