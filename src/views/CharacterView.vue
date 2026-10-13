@@ -314,7 +314,7 @@
         (边际渐减)·
         {{
           fruitInfo.total > 0
-            ? `当前修行 +${formatPercent(fruitInfo.effective * DAO_FRUIT_CULT_BONUS)} · 道躯 +${formatPercent(fruitInfo.effective * DAO_FRUIT_COMBAT_BONUS)}`
+            ? `当前修行 +${formatPercent(fruitInfo.effective * DAO_FRUIT_CULT_BONUS * stats.cultSpeedFactor)} · 道躯 +${formatPercent(fruitInfo.effective * DAO_FRUIT_COMBAT_BONUS)}`
             : ''
         }}
       </p>
@@ -609,7 +609,7 @@
   import { detectBuild } from '@/core/buildDetect'
   import { useLoadoutsStore } from '@/stores/loadouts'
   import { isSoftCapped, modOf } from '@/core/statsCalc'
-  import { DAO_FRUIT_COMBAT_BONUS, DAO_FRUIT_CULT_BONUS, SOFT_CAPS } from '@/data/constants'
+  import { DAO_FRUIT_COMBAT_BONUS, DAO_FRUIT_CULT_BONUS, SOFT_CAPS, CULT_SPEED_SOFT_CAP_DIMINISH } from '@/data/constants'
   import { RESPONSE_NAMES, SPARK_NAMES } from '@/data/bondIntent'
   import { TRIGGER_NAMES } from '@/data/bondEvents'
   import { fruitCountLabel, fruitMarginalInfo } from '@/core/resourceGuidance'
@@ -648,7 +648,7 @@
       key: k,
       label: STAT_NAMES[k],
       value: modOf(stats.value.mods, k),
-      capped: isSoftCapped(stats.value.mods, k)
+      capped: isSoftCapped(stats.value.mods, k) || (k === 'cultivationSpeed' && stats.value.cultSpeedSoftCapped)
     })).filter(x => x.value !== 0)
   )
 
@@ -684,7 +684,9 @@
   const softCappedNotes = computed(() =>
     modRows.value
       .filter(r => r.capped)
-      .map(r => `${r.label}(超出按 ${Math.round((SOFT_CAPS[r.key]?.diminish ?? 1) * 100)}% 计入)`)
+      .map(r =>
+        `${r.label}(超出按 ${Math.round((r.key === 'cultivationSpeed' ? CULT_SPEED_SOFT_CAP_DIMINISH : SOFT_CAPS[r.key]?.diminish ?? 1) * 100)}% 计入)`
+      )
   )
 
   const build = computed(() => detectBuild(stats.value.mods))

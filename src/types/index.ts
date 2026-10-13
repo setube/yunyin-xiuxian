@@ -159,8 +159,21 @@ export interface FinalStats {
    *
    * onTop 的那几条(道果)不并入百分比,而是单独乘在攻防血/修炼上:
    * 故面板展示时要说清「另乘」,否则明细之和会对不上玩家看到的值。
+   * 修炼速度的明细是**已按软阈值折算**后的那份(cultSpeedFactor 摊回各来源),
+   * 故「明细之和 == 面板值」恒成立 —— 见 statBreakdown.spec。
    */
   breakdown: StatSourceRow[]
+  /**
+   * 修炼速度软阈值是否已介入(合计越过 CULT_SPEED_SOFT_CAP_T)。
+   * 展示层用来把「修炼速度」一行标「软」;与 SOFT_CAPS 无关(那条只覆盖战斗词条)。
+   */
+  cultSpeedSoftCapped: boolean
+  /**
+   * 修炼速度软阈值折算系数 = 封顶后值 / 未封顶原值(cultCapped/cultTotal)。
+   * 未越过阈值恒为 1;越过时 < 1,且已摊回明细(见 breakdown)。展示层用它把
+   * 任何单独引用的修炼速度份额(如道果那一行「当前修行 +%」)压到与面板一致。
+   */
+  cultSpeedFactor: number
 }
 
 /** 一条属性来源:谁给的、给了多少 */

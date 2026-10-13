@@ -20,9 +20,9 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { AnyStatKey, StatMods } from '@/types'
-import { mergeMods, mergeModsDetailed, computeFinalStats, modOf } from './statsCalc'
+import { mergeMods, mergeModsDetailed, computeFinalStats, modOf, effectiveDaoFruit } from './statsCalc'
 import { baseCultPerSec } from './formulas'
-import { SOFT_CAPS, CULT_SPEED_SOFT_CAP_T, CULT_SPEED_SOFT_CAP_DIMINISH } from '@/data/constants'
+import { SOFT_CAPS, CULT_SPEED_SOFT_CAP_T, CULT_SPEED_SOFT_CAP_DIMINISH, DAO_FRUIT_CULT_BONUS } from '@/data/constants'
 import { gnZero } from '@/utils/gnum'
 import type { StatsInput } from './statsCalc'
 import { usePlayerStore } from '@/stores/player'
@@ -168,6 +168,9 @@ describe('修炼速度软阈值(computeFinalStats 那道防线)', () => {
     const stats = computeFinalStats(cultInput({ cultivationSpeed: raw }))
     // 那么:软阈值不介入,面板值与输入逐位一致(bit-identical)
     expect(modOf(stats.mods, 'cultivationSpeed')).toBe(raw)
+    // 且:未越过阈值时不标「软」、折算系数恒 1(展示层的份额原样呈现)
+    expect(stats.cultSpeedSoftCapped).toBe(false)
+    expect(stats.cultSpeedFactor).toBe(1)
   })
 
   it('给定合计越过阈值:超出部分被削弱,增长衰减(极端轮回堆叠的兜底)', () => {
@@ -180,6 +183,9 @@ describe('修炼速度软阈值(computeFinalStats 那道防线)', () => {
     // 且:仍高于阈值(不是砍回阈值),但明显低于未封顶的原始值
     expect(modOf(stats.mods, 'cultivationSpeed')).toBeGreaterThan(CULT_SPEED_SOFT_CAP_T)
     expect(modOf(stats.mods, 'cultivationSpeed')).toBeLessThan(raw)
+    // 且:越过阈值时标「软」,折算系数 = 封顶值/原值(展示层份额据此压低)
+    expect(stats.cultSpeedSoftCapped).toBe(true)
+    expect(stats.cultSpeedFactor).toBeCloseTo(expected / raw, 8)
   })
 
   it('给定越过阈值的合计:折算同乘摊回来源,明细之和 == 面板值', () => {
@@ -190,5 +196,21 @@ describe('修炼速度软阈值(computeFinalStats 那道防线)', () => {
       .reduce((s, r) => s + (r.mods.cultivationSpeed ?? 0), 0)
     // 那么:来源明细之和依旧等于面板值,不合糊
     expect(sum).toBeCloseTo(modOf(stats.mods, 'cultivationSpeed'), 8)
+  })
+
+  it('越过阈值时,道果「当前修行 +%」展示的那一份 = effectiveDaoFruit×倍率×折算系数(不虚报)', () => {
+    // 给定:道果 + 功法把修炼速度推到阈值以上 —— 引擎对道果那一份也乘同一个 cultSpeedFactor
+    const fruit = 30
+    const input = { ...cultInput({ cultivationSpeed: CULT_SPEED_SOFT_CAP_T + 0.5 }), daoFruit: fruit }
+    const stats = computeFinalStats(input)
+    // 前提:本输入确实越过了阈值(否则这条测试没有在守东西)
+    expect(stats.cultSpeedSoftCapped).toBe(true)
+    // 明细里「道果(修炼)」那一行 = 引擎计入的份额
+    const row = stats.breakdown.find(r => r.name === '道果(修炼)')!
+    const eff = effectiveDaoFruit(fruit)
+    // 展示层(CharacterView)就是用 eff × DAO_FRUIT_CULT_BONUS × cultSpeedFactor 显示 —— 应恰为面板那份
+    expect(row.mods.cultivationSpeed!).toBeCloseTo(eff * DAO_FRUIT_CULT_BONUS * stats.cultSpeedFactor, 8)
+    // 对照:若有人把展示层改回未折算的 eff × DAO_FRUIT_CULT_BONUS,会虚报(明显大于面板那份)
+    expect(eff * DAO_FRUIT_CULT_BONUS).toBeGreaterThan(row.mods.cultivationSpeed!)
   })
 })

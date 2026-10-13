@@ -33,7 +33,9 @@ describe('GameFormula 成长曲线', () => {
       maxHp: gn(100),
       power: powerScore(gn(10), gn(20), gn(100)),
       mods: {},
-      breakdown: []
+      breakdown: [],
+      cultSpeedSoftCapped: false,
+      cultSpeedFactor: 1
     }
     const rows = powerBreakdownRows(s)
     // 三行齐全,名字与权重对得上

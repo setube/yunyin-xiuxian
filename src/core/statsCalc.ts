@@ -189,5 +189,14 @@ export function computeFinalStats(input: StatsInput): FinalStats {
   }
   if (input.qiRich) breakdown.push({ name: '灵气充盈', mods: { cultivationSpeed: qiRichExtra * cultFactor } })
 
-  return { attack, defense, maxHp, power: powerScore(attack, defense, maxHp), mods, breakdown }
+  return {
+    attack,
+    defense,
+    maxHp,
+    power: powerScore(attack, defense, maxHp),
+    mods,
+    breakdown,
+    cultSpeedSoftCapped: cultTotal > CULT_SPEED_SOFT_CAP_T,
+    cultSpeedFactor: cultFactor
+  }
 }
