@@ -383,6 +383,20 @@
     <section>
       <!-- 玩家反馈:看功法列表时只报残页,悟道点要开弹窗才看得见 —— 这里一并报 -->
       <SectionTitle title="功法" :hint="`残页 ${resources.page} · 悟道点 ${formatGN(resources.wudao)}`" />
+      <!-- 悟道兑换(Phase C-1):后期灵石过剩时,限量换悟道点再投进修/炼化 -->
+      <div
+        v-if="player.major >= WUDAO_EXCHANGE_MIN_MAJOR"
+        class="mb-2 flex items-center justify-between gap-3 rounded border border-gold-ink/30 bg-gold-ink/5 px-3 py-2"
+      >
+        <div class="min-w-0">
+          <p class="text-[11px] text-ink">灵石 → 悟道 · 后期限量</p>
+          <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
+            今日已兑 {{ player.wudaoExchangeToday }} / {{ WUDAO_EXCHANGE_PER_DAY }} 次 · 次耗
+            {{ formatGN(gn(WUDAO_EXCHANGE_PRICE_BASE)) }} 灵石得 {{ WUDAO_EXCHANGE_GAIN }} 点
+          </p>
+        </div>
+        <button class="chip-ink shrink-0 !text-[10px]" :disabled="!player.canExchangeWudao" @click="doExchange">兑换</button>
+      </div>
       <div class="mt-2 space-y-2">
         <!-- 主修 -->
         <button
@@ -493,7 +507,7 @@
   import { useUiStore } from '@/stores/ui'
   import { attemptBreakthrough, breakthroughInfo } from '@/core/breakthrough'
   import { prepareBreakthrough, startRetreat, isRetreating, getRetreatRemainingSec } from '@/core/earlyGameService'
-  import { toNum } from '@/utils/gnum'
+  import { toNum, gn } from '@/utils/gnum'
   import { baseCultPerSec, baseQiRegen, qiCap } from '@/core/formulas'
   import { modOf } from '@/core/statsCalc'
   import {
@@ -522,13 +536,16 @@
   import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import { buffDef } from '@/data/buffs'
   import { pillDef, pillQualityColor, pillRank } from '@/data/pills'
-  import { COMPREHEND_PAGE_COST, QI_RICH_BONUS } from '@/data/constants'
+  import {
+    COMPREHEND_PAGE_COST, QI_RICH_BONUS,
+    WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PRICE_BASE
+  } from '@/data/constants'
   import { todayWeather } from '@/core/weather'
   import { weatherTribulationLine } from '@/ui/weatherText'
   import { formatCountdown, formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
   import { signedPercent } from '@/ui/statNames'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
-  import { prepPillDisabledLabel, prepPillShortToast, repairActLabel } from '@/ui/cultivationText'
+  import { prepPillDisabledLabel, prepPillShortToast, repairActLabel, exchangeOkToast, exchangeFailText } from '@/ui/cultivationText'
   import { qualityDef } from '@/data/qualities'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
@@ -598,6 +615,12 @@
   const cultivation = useCultivationStore()
   const inventory = useInventoryStore()
   const ui = useUiStore()
+
+  /** 悟道兑换(Phase C-1):后期限量灵石→悟道点 */
+  function doExchange(): void {
+    const ok = player.exchangeStoneForWudao()
+    ui.toast(ok ? exchangeOkToast(WUDAO_EXCHANGE_GAIN) : exchangeFailText(player.major < WUDAO_EXCHANGE_MIN_MAJOR), ok ? 'info' : 'warn')
+  }
   const now = useNow()
 
   const btInfo = computed(() => breakthroughInfo())

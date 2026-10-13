@@ -7,7 +7,10 @@ import { persistConfig } from '@/utils/storage'
 import { realmDef, realmLabel, worldOf, WORLDS, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
 import { SUB_LEVELS, START_AGE } from '@/data/constants'
 import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
-import { STAR_FOCUS_COST_BASE, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
+import {
+  STAR_FOCUS_COST_BASE, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX,
+  WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PRICE_BASE, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PER_DAY
+} from '@/data/constants'
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
@@ -228,6 +231,13 @@ export const usePlayerStore = defineStore(
      * 定向本身不改变二十八宿轮值,只改"今日利哪一界"(仍是只利一界 +10%)。
      */
     const mansionRedirect = ref<MansionRedirect | null>(null)
+
+    /**
+     * 后期限量灵石→悟道兑换(Phase C-1):{gameDay, count} 记每游戏日已兑几次。
+     * 「当日计数」:gameDay 不是今天即从 0 重算(次日自动重置,无需清理)。
+     * 上限 WUDAO_EXCHANGE_PER_DAY,达上限当日无法再兑。
+     */
+    const wudaoExchange = ref<{ gameDay: number; count: number }>({ gameDay: 0, count: 0 })
 
     /**
      * Mod sources except the pet itself. beastPct/qiCapPct must not read
@@ -601,6 +611,8 @@ export const usePlayerStore = defineStore(
       fateFocus.value = null
       // 星象值日定向是"今天利哪一界"的战术覆盖:新世从新手界从头走,覆盖随之散去
       mansionRedirect.value = null
+      // 悟道兑换是"今日'限次出口"的当日账:新世重算
+      wudaoExchange.value = { gameDay: 0, count: 0 }
       // 镇压权益随皮囊散去:旧世压下的远境(多为高阶)若跨世,新世炼气仍在按旧阶位
       // 派发高阶装备/灵石,数值当场爆炸 —— 妖气复聚、回到历练地。这属于「我拥有多少」
       // 而非「我是谁」;宿敌记忆与区域战绩(regionStats)仍随神魂不灭(见 samsaraAudit
@@ -684,6 +696,19 @@ export const usePlayerStore = defineStore(
             worldId: mr.worldId,
             count: Math.min(MANSION_REDIRECT_MAX, Math.max(0, Math.floor(mr.count)))
           }
+        }
+      }
+      /**
+       * 悟道兑换(Phase C-1):每日计数夹回 [0, WUDAO_EXCHANGE_PER_DAY]。
+       * 坏档把 count 写成负数/NaN/越界,都会让当天要么白送、要么永不可兑 —— 夹回常态。
+       */
+      const we = wudaoExchange.value
+      if (!we || !Number.isFinite(we.gameDay) || !Number.isFinite(we.count)) {
+        wudaoExchange.value = { gameDay: 0, count: 0 }
+      } else {
+        wudaoExchange.value = {
+          gameDay: Math.max(0, Math.floor(we.gameDay)),
+          count: Math.min(WUDAO_EXCHANGE_PER_DAY, Math.max(0, Math.floor(we.count)))
         }
       }
       /**
@@ -959,6 +984,39 @@ export const usePlayerStore = defineStore(
       return true
     }
 
+    // ---------- Phase C-1 后期限量灵石→悟道兑换 ----------
+    /**
+     * 后期限量「灵石 → 悟道点」兑换。
+     *
+     * 后期(realm≥18)灵石过剩,给一个可控出口换悟道点(功法进修/法宝炼化的真货币)。
+     * 守则:
+     * - 境界不到 WUDAO_EXCHANGE_MIN_MAJOR 不开(锁定,连灵石也不碰);
+     * - 当天已兑满 WUDAO_EXCHANGE_PER_DAY 拒兑(限额是"节奏",不是无限印钞机);
+     * - 灵石不足原子拒绝(spendStone 契约):不扣、不加、返回 false。
+     * 只动灵石→悟道这条**可选的限量**出口,不重建效率回路、不动熔炉(审计敏感点)。
+     */
+    function exchangeStoneForWudao(): boolean {
+      if (major.value < WUDAO_EXCHANGE_MIN_MAJOR) return false
+      const day = Math.floor(useGameStore().totalPlaySec / 86400)
+      const cur = wudaoExchange.value
+      const today = cur && cur.gameDay === day ? cur : { gameDay: day, count: 0 }
+      if (today.count >= WUDAO_EXCHANGE_PER_DAY) return false
+      if (!resources.spendStone(gn(WUDAO_EXCHANGE_PRICE_BASE))) return false
+      resources.addSmall('wudao', WUDAO_EXCHANGE_GAIN)
+      wudaoExchange.value = { gameDay: day, count: today.count + 1 }
+      return true
+    }
+    /** 今天已兑了几次(次日自动归零的口径,界面展示用) */
+    const wudaoExchangeToday = computed(() => {
+      const day = Math.floor(useGameStore().totalPlaySec / 86400)
+      const cur = wudaoExchange.value
+      return cur && cur.gameDay === day ? cur.count : 0
+    })
+    /** 现在能不能再兑(境界到门 + 当日未兑满) */
+    const canExchangeWudao = computed(
+      () => major.value >= WUDAO_EXCHANGE_MIN_MAJOR && wudaoExchangeToday.value < WUDAO_EXCHANGE_PER_DAY
+    )
+
     // ---------- Phase 31.1 机缘链 ----------
     function setFortuneChoices(choices: Record<string, FortuneChoice>): void {
       fortuneChoices.value = choices
@@ -1016,6 +1074,10 @@ export const usePlayerStore = defineStore(
       focusFateStar,
       mansionRedirect,
       redirectFavoredWorld,
+      wudaoExchange,
+      wudaoExchangeToday,
+      canExchangeWudao,
+      exchangeStoneForWudao,
       cultPerSec,
       qiRegenPerSec,
       lifespanMax,

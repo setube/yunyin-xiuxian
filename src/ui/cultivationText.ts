@@ -52,3 +52,11 @@ export function breakthroughGoalText(near: boolean, needTribulation: boolean, ta
 export function breakthroughReadyNote(needTribulation: boolean): string {
   return `修为已至圆满,可${breakthroughActLabel(needTribulation)}`
 }
+
+// ---- 悟道兑换(Phase C-1):灵石 → 悟道点,tost 文案一处出,不在视图里硬写 ----
+export function exchangeOkToast(reward: number): string {
+  return `悟道点 +${reward}`
+}
+export function exchangeFailText(lockedByRealm: boolean): string {
+  return lockedByRealm ? '境界未到,兑换未开' : '灵石未足 / 今日已兑满'
+}

@@ -268,7 +268,8 @@ describe('轮回审计 · 继承清单最小完备', () => {
     suppressedRegions: ['suppress'],
     suppressedSince: ['suppress'],
     titleId: ['title'],
-    winStreak: ['streak']
+    winStreak: ['streak'],
+    wudaoExchange: ['wudaoExchange']
   }
 
   /** 存档里有、但确实不需要跨世登记的行(写清理由,不许留空) */

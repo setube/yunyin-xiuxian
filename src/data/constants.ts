@@ -550,6 +550,21 @@ export const COMPREHEND_PAGE_COST = 12
 export const GONGFA_UP_WUDAO_BASE = 4
 export const GONGFA_UP_GROWTH = 1.45
 
+// ============ 悟道兑换(Phase C-1) ============
+/**
+ * 后期限量「灵石 → 悟道点」兑换:中期经济平稳、后期(realm≥18)灵石过剩,
+ * 给过剩的灵石一个可控出口,免得囤积失控 —— 但限量(每游戏日 WUDAO_EXCHANGE_PER_DAY),
+ * 不重建效率回路,也不动熔炉这个审计敏感的建模点。
+ */
+/** 兑换开门的境界(混沌海起),不到不开 */
+export const WUDAO_EXCHANGE_MIN_MAJOR = 18
+/** 每次兑换所费灵石 */
+export const WUDAO_EXCHANGE_PRICE_BASE = 3000
+/** 每次兑换所得悟道点 */
+export const WUDAO_EXCHANGE_GAIN = 1
+/** 每游戏日可兑换的次数上限 */
+export const WUDAO_EXCHANGE_PER_DAY = 10
+
 // ============ 建筑 ============
 export const BUILDING_COST_GROWTH = 2.3
 

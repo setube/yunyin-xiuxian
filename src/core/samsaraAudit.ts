@@ -334,6 +334,15 @@ export const HERITAGE: HeritageRow[] = [
     compressesGrowth: false
   },
   {
+    id: 'wudaoExchange',
+    name: '悟道兑换(灵石→悟道点的当日限次出口)',
+    mode: 'reset',
+    detail: 'rebirth() 置 wudaoExchange 归零 —— 兑换是「今日限次出口」的当日账,新世重算',
+    kind: 'state',
+    power: 'low',
+    compressesGrowth: false
+  },
+  {
     id: 'mansionRedirect',
     name: '星象值日定向(今日所利界域的战术覆盖)',
     mode: 'reset',
