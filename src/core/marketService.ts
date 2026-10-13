@@ -67,25 +67,32 @@ function buildSlot(
 ): MarketSlot {
   if (kind === 'pill') {
     const pool = salePills(major).filter(p => !usedPills.has(p.id))
-    const def = (pool.length > 0 ? rng.pick(pool) : salePills(major)[0])!
-    usedPills.add(def.id)
-    return {
-      kind: 'pill',
-      idx,
-      pillId: def.id,
-      count: 1,
-      price: mulN(gn(def.recipe!.stoneBase), MARKET_PILL_MARKUP),
-      sold: false
+    if (pool.length > 0) {
+      const def = rng.pick(pool)!
+      usedPills.add(def.id)
+      return {
+        kind: 'pill',
+        idx,
+        pillId: def.id,
+        count: 1,
+        price: mulN(gn(def.recipe!.stoneBase), MARKET_PILL_MARKUP),
+        sold: false
+      }
     }
+    // 该境界可炼丹已全在架上:与其摆同味重复丹,不如落回材料格(同架两格同味观感差)
+    kind = 'material'
   }
   if (kind === 'material') {
     const matId: 'herb' | 'ore' = rng.chance(0.5) ? 'herb' : 'ore'
+    // 其余三个分叉的价都冻结在上货时刻,唯独灵草按品阶 —— 品阶也一同钉死在上货时刻,
+    // 否则 2 小时货架期内跨品阶/转世,标价是旧品、入账却按当下品,三者分叉。
+    const grade = herbGradeOfMajor(major)
     // 灵草按品明码标价:当前境界的品阶,×10 阶梯一路到一千万封顶(见 data/herbGrades)
     const price =
       matId === 'herb'
-        ? mulN(gn(herbBuyPrice(herbGradeOfMajor(major), major)), MARKET_MAT_COUNT)
+        ? mulN(gn(herbBuyPrice(grade, major)), MARKET_MAT_COUNT)
         : mulN(stoneByTier(marketTier(major), MARKET_MAT_STONE_UNITS), MARKET_MAT_COUNT)
-    return { kind: 'material', idx, matId, count: MARKET_MAT_COUNT, price, sold: false }
+    return { kind: 'material', idx, matId, grade, count: MARKET_MAT_COUNT, price, sold: false }
   }
   const minQualityRank = rollQuality(major, rng).rank
   // 按「预览即购得的同一件」的真实品质档标价 —— 若按品质下限标价、实际却滚得更高,

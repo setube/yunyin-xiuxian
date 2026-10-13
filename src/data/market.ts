@@ -17,6 +17,7 @@
  *     与掉落同源。装备层数即当前境界(major)。
  */
 import type { GNum } from '@/types'
+import type { HerbGrade } from '@/data/herbGrades'
 
 export type MarketKind = 'pill' | 'material' | 'equipment'
 
@@ -74,6 +75,11 @@ export interface MarketMaterialSlot {
   idx: number
   /** 库存两标量之一(见 stores/resources 的 herb/ore) */
   matId: 'herb' | 'ore'
+  /**
+   * 灵草品阶 —— 上货那一刻定死。否则 2 小时货架期内跨品阶/转世,标价是旧品、
+   * 显示与入账却按当下品,三者分叉(转世后尤其明显)。旧档无此字段时按当下品兜底。
+   */
+  grade?: HerbGrade
   count: number
   price: GNum
   sold: boolean

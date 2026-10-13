@@ -55,6 +55,24 @@ describe('坊市 · 买卖', () => {
     expect(toNum(resources.spiritStone)).toBeCloseTo(95, 5)
   })
 
+  it('灵草按上货那一刻的品阶入账,不随当下境界飘(转世不再错品)', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    const player = usePlayerStore()
+    player.major = 0 // 当下是 1 品
+    // 货架里的草是 3 品(模拟高境期间上货、转世后未刷新)
+    seedStock([{ kind: 'material', idx: 0, matId: 'herb', grade: 3, count: 12, price: { m: 5, e: 0 }, sold: false }])
+    resources.spiritStone = gn(100)
+
+    expect(market.buy(0)).toBe('ok')
+    expect(resources.herbOf(3), '应按货架钉死的 3 品入账').toBe(12)
+    expect(resources.herbOf(1), '不该按当下 1 品入账').toBe(0)
+    // 旧档货架无 grade:兜底按当下品
+    seedStock([{ kind: 'material', idx: 0, matId: 'herb', count: 6, price: { m: 1, e: 0 }, sold: false }])
+    expect(market.buy(0)).toBe('ok')
+    expect(resources.herbOf(1)).toBe(6)
+  })
+
   it('灵石不足:不成交、不扣钱、不标已售', () => {
     const market = useMarketStore()
     const resources = useResourcesStore()

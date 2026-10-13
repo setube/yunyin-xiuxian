@@ -27,6 +27,7 @@ import {
 } from '@/data/market'
 import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, materialSellPrice, pillSellPrice } from '@/core/marketService'
 import type { HerbGrade } from '@/data/herbGrades'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
 
 export type MarketBuyResult = 'ok' | 'sold' | 'poor' | 'bagfull' | 'missing'
@@ -137,7 +138,12 @@ export const useMarketStore = defineStore(
       if (slot.kind === 'pill') {
         inventory.addPill(slot.pillId, slot.count)
       } else if (slot.kind === 'material') {
-        resources.addSmall(slot.matId, slot.count)
+        // 灵草按上货那一刻的品阶入账(与标价同源)。旧档货架无 grade 字段 → 按当下品兜底
+        if (slot.matId === 'herb') {
+          resources.addHerb(slot.grade ?? herbGradeOfMajor(usePlayerStore().major), slot.count)
+        } else {
+          resources.addSmall('ore', slot.count)
+        }
       } else {
         inventory.addEquipment(marketEquipInstance(slot, stockedAt.value))
       }

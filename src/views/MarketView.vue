@@ -336,11 +336,13 @@
     }
     if (slot.kind === 'material') {
       const meta = MAT_META[slot.matId]
+      // 灵草按上货那一刻的品阶显示(与标价、入账同源),旧档无 grade → 按当下品兜底
+      const grade = slot.grade ?? herbGradeOfMajor(player.major)
       return {
         ...base,
-        name: slot.matId === 'herb' ? HERB_GRADE_NAMES[herbGradeOfMajor(player.major)] : meta.name,
+        name: slot.matId === 'herb' ? HERB_GRADE_NAMES[grade] : meta.name,
         nameCls: {},
-        sub: slot.matId === 'herb' ? `${herbGradeBandLabel(herbGradeOfMajor(player.major))} · ×${slot.count}` : `补洞府之材 · ×${slot.count}`,
+        sub: slot.matId === 'herb' ? `${herbGradeBandLabel(grade)} · ×${slot.count}` : `补洞府之材 · ×${slot.count}`,
         price: slot.price
       }
     }
