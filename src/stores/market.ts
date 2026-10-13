@@ -25,7 +25,7 @@ import {
   type ConsignPost,
   type MarketSlot
 } from '@/data/market'
-import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, marketTier, materialSellPrice, pillSellPrice } from '@/core/marketService'
+import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, materialSellPrice, pillSellPrice } from '@/core/marketService'
 import type { HerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
 
@@ -157,7 +157,7 @@ export const useMarketStore = defineStore(
         slot: Math.min(slot, MARKET_CONSIGN_SLOTS - 1),
         tier: eq.tier,
         qualityRank: qualityDef(eq.quality).rank,
-        price: consignPrice(marketTier(eq.tier), qualityDef(eq.quality).rank),
+        price: consignPrice(eq.tier, qualityDef(eq.quality).rank),
         finishAt: now + MARKET_CONSIGN_SECONDS * 1000,
         name
       })

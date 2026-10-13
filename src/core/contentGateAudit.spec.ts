@@ -13,12 +13,17 @@
  * 此后无限轮回都还在。
  */
 import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import { CONTENT_GATES, disqualified, qualifiedRewards, reachabilityTable } from './contentGateAudit'
 import { MANUAL_REBIRTH_MIN_MAJOR } from './reincarnation'
 import { REALMS, WORLD_BREAK_MAJOR } from '@/data/realms'
 import { EVENTS } from '@/data/events'
-import { PETS, genericPetPool, IMMORTAL_RANK } from '@/data/pets'
+import { PETS, genericPetPool, petDef, IMMORTAL_RANK } from '@/data/pets'
 import { qualityDef } from '@/data/qualities'
+import { resolveEventChoice } from './eventEngine'
+import { usePlayerStore } from '@/stores/player'
+import { useQuestsStore } from '@/stores/quests'
+import type { EventDef } from '@/types'
 
 const NAMES = REALMS.map(r => r.name)
 
@@ -83,6 +88,32 @@ describe('内容可达性 · 被证伪的候选', () => {
       expect(entryIds.has(p.id), `${p.id} 神兽不得经泛型池获得`).toBe(false)
       expect(grantedAt[p.id]?.length ?? 0, `${p.id} 神兽须有指名 id 的事件`).toBeGreaterThan(0)
       expect(Math.min(...(grantedAt[p.id] ?? [])), `${p.id} 所有发放事件须在仙界及以上(≥9)`).toBeGreaterThanOrEqual(9)
+    }
+  })
+
+  it('灵兽:真实解析泛型灵兽事件,实际发放的每一只都在入门档(无神兽漏网)', () => {
+    // 直接触发 genericPetPool 只能证明「池子没神兽」;这里从事件结算入口走一遍,
+    // 证明 eventEngine 的泛型分支用的就是那个池 —— 改回 PETS.filter 才会放过神兽。
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    player.initCharacter('事件', { roots: [] } as never)
+    player.major = 9
+    const quests = useQuestsStore()
+    const def: EventDef = {
+      id: 'ev_test_pet_generic',
+      title: '',
+      text: '',
+      tags: ['general'],
+      weight: 1,
+      choices: [{ label: '收留', outcomes: [{ weight: 1, text: '得一灵兽', effects: [{ type: 'pet' }] }] }]
+    }
+    // 刷很多次:若泛型池混入神兽,收集序列里几乎必然冒出仙/神品,本断言即红。
+    // 正确实现下,池子只有入门 8 只,刷到耗尽也只是这 8 只。
+    for (let i = 0; i < 150; i += 1) resolveEventChoice(def, 0, 3)
+    expect(quests.collections.pet.length, '泛型灵兽事件应能发到入门圣兽').toBeGreaterThan(0)
+    for (const id of quests.collections.pet) {
+      const p = petDef(id)!
+      expect(qualityDef(p.quality).rank, `${id} 泛型事件不得发 仙品/神品 神兽`).toBeLessThan(IMMORTAL_RANK)
     }
   })
 
