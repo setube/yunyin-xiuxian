@@ -38,7 +38,7 @@ import {
 } from '@/data/constants'
 import { artifactValue } from '@/data/artifacts'
 import { beastIcon } from '@/data/beastFamilies'
-import { modOf } from './statsCalc'
+import { modOf, capChance } from './statsCalc'
 import { enemyGearFactor, powerScale, powerScore } from './formulas'
 
 interface Fighter {
@@ -339,7 +339,7 @@ export function resolveCombat(
      * 「N 次出手落空,连击与暴击难以衔接」。故这里让攻击方的命中按百分点
      * 相减(不为负)——堆命中的代价是一整条词条位,换的是「打得中」。
      */
-    const dodge = Math.max(0, modOf(tMods, 'dodgeRate') - modOf(aMods, 'accuracy'))
+    const dodge = capChance(modOf(tMods, 'dodgeRate') - modOf(aMods, 'accuracy'))
     if (rng.chance(dodge)) {
       target.stats.dodges += 1
       attacker.stats.missedHits += 1
@@ -357,7 +357,7 @@ export function resolveCombat(
     if (!isZero(attacker.shield)) factor *= 1 + modOf(aMods, 'shieldPower')
     factor *= 1 + rng.float(-DAMAGE_VARIANCE, DAMAGE_VARIANCE)
 
-    const isCrit = rng.chance(CRIT_BASE + modOf(aMods, 'critRate'))
+    const isCrit = rng.chance(capChance(CRIT_BASE + modOf(aMods, 'critRate')))
     if (isCrit) {
       factor *= 1 + CRIT_DMG_BASE + modOf(aMods, 'critDamage')
       attacker.stats.crits += 1
@@ -404,7 +404,7 @@ export function resolveCombat(
       healSelf(attacker, mulN(dmg, ls))
     }
     // 反击(锋反词条增幅反击威力):多段攻击的每一段都可能挨反击
-    if (!opts.skipCounter && !isZero(target.hp) && rng.chance(modOf(tMods, 'counterRate'))) {
+    if (!opts.skipCounter && !isZero(target.hp) && rng.chance(capChance(modOf(tMods, 'counterRate')))) {
       target.stats.counters += 1
       push('proc', target.snap.isPlayer ? 'p' : 'e', `${tName}顺势反击!`)
       strike(target, attacker, 0.5 * (1 + modOf(tMods, 'counterDamage')), '反击', round, {
@@ -424,7 +424,7 @@ export function resolveCombat(
       })
     }
     // 连击(连环词条增幅追击威力)
-    if (!isZero(target.hp) && rng.chance(modOf(aMods, 'comboRate'))) {
+    if (!isZero(target.hp) && rng.chance(capChance(modOf(aMods, 'comboRate')))) {
       attacker.stats.combos += 1
       strike(attacker, target, 0.6 * (1 + modOf(aMods, 'comboDamage')), '追击', round, {
         skipFollowups: true,
@@ -432,7 +432,7 @@ export function resolveCombat(
       })
     }
     // 震慑
-    if (!isZero(target.hp) && rng.chance(modOf(aMods, 'stunRate'))) {
+    if (!isZero(target.hp) && rng.chance(capChance(modOf(aMods, 'stunRate')))) {
       if (tryStun(target)) push('proc', side, `${tName}被震得气血翻涌,一时难以动弹!`)
     }
   }

@@ -22,6 +22,9 @@ describe('出发按钮与结算同一套数', () => {
   it('遇敌间隔只看历练遇敌,收益无事件时就是档位', () => {
     expect(exploreBattleGapSec(0)).toBe(EXPLORE_BATTLE_INTERVAL)
     expect(exploreBattleGapSec(0.3)).toBeCloseTo(EXPLORE_BATTLE_INTERVAL / 1.3, 9)
+    // 历练加速若为负(未来负面词条),间隔不许变负/变无限 —— 保底不低于原始档
+    expect(exploreBattleGapSec(-8)).toBe(EXPLORE_BATTLE_INTERVAL)
+    expect(exploreBattleGapSec(-8), '负加速不得给出负/无限间隔').toBeGreaterThan(0)
     expect(exploreRewardMult('risky', null)).toBe(EXPLORE_MODES.risky.rewardMult)
   })
 

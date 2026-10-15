@@ -24,7 +24,7 @@ import {
 } from '@/data/constants'
 import { generateEquipment } from './equipGen'
 import { expFromSecs, stoneByTier } from './formulas'
-import { modOf } from './statsCalc'
+import { modOf, capChance } from './statsCalc'
 import { personalityEffects } from './petPersonality'
 import { autoRecycleReason, compareEvictable, keepVerdict, shouldAutoRecycle, smartKeepEnabled } from './smartKeep'
 import { salvageOf } from './salvage'
@@ -229,11 +229,9 @@ export function randomDropArtifact(tier: number): string | null {
 /**
  * 概率输入钳到 [0,1]:rng.chance 不钳制(rand()<p),法宝 ×(isBoss?6:1)×(1+luck)、
  * doubleDropRate、书页/丹药倍率堆叠出界时,>1 会变成"必然掉落"、<0 会"永不掉落"。
- * 此处与 equipChance 的 Math.min(0.9, ...) 同一纪律:概率在进判定前先归一。
+ * 此处与 equipChance 的 Math.min(0.9, ...) 同一纪律:概率在进判定前先归一
+ * (capChance 取 statsCalc 唯一一份,掉落侧与 combat 各机关共用)。
  */
-function capChance(p: number): number {
-  return Math.min(1, Math.max(0, p))
-}
 
 /** 战斗胜利掉落 */
 export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean): DropSummary {

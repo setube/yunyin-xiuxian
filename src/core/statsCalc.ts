@@ -130,6 +130,11 @@ export function modOf(mods: StatMods, key: AnyStatKey): number {
   return mods[key] ?? 0
 }
 
+/** 概率进判定前一并归一 [0,1]:词条堆过 1 不该变「必然触发」,堆为负不该变「永不触发」 */
+export function capChance(p: number): number {
+  return Math.min(1, Math.max(0, p))
+}
+
 /** 有效道果:超过一定数量后收益递减,避免多周目变成无限加速器 */
 export function effectiveDaoFruit(fruit: number): number {
   if (fruit <= 0) return 0
