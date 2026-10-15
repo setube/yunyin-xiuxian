@@ -43,6 +43,17 @@ class GameEngine {
       if (game.started && game.lastActiveAt > 0) {
         settleOffline(now)
       }
+      // 离线结算只加寿元、不判生死:这里补一道死亡判定 —— 跨离线寿元耗尽当场拉闸,
+      // 角色从此进入死亡态,不再推进
+      if (game.started) {
+        this.checkDeath()
+        // 读档若是已死之身(大限处停机 / 离线跨寿元),必须重新亮出轮回入口:
+        // ui.deathDialog 非持久化,不重开则低境界(无法手动转世)被软锁在原地
+        if (usePlayerStore().dead) {
+          this.deathAnnounced = true
+          useUiStore().deathDialog = true
+        }
+      }
       // 加载即补扫成就:老档/导入档纵使从未 track 过,已满足的成就当场解锁
       if (game.started) checkStateAchievements()
     } catch (err) {
@@ -113,6 +124,8 @@ class GameEngine {
       // 冻结跨午夜恢复时离线收益归"归来之日"
       rolloverDailyIfNeeded()
       settleOffline(now)
+      // 与 start 同:离线结算只加寿元、不判生死,这里补死亡判定
+      this.checkDeath()
     } else {
       this.advance(dt, now)
     }

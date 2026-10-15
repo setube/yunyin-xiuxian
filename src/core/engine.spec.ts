@@ -15,6 +15,7 @@ import { settleOffline } from './offline'
 import type * as OfflineMod from './offline'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
+import { useUiStore } from '@/stores/ui'
 import { TICK_MS, OFFLINE_MIN_SECONDS } from '@/data/constants'
 
 // 把 settleOffline 换成可观测的 spy,断言「大 dt 走离线结算」;其余实现保持真实
@@ -128,5 +129,45 @@ describe('引擎心跳 · start/stop/dt 路由直测', () => {
     capturedTick!()
     expect(settle, '大 dt 应走离线结算').toHaveBeenCalled()
     expect(gainExpSpy, '大 dt 不再按单拍 advance 前推').not.toHaveBeenCalled()
+  })
+})
+
+describe('引擎 · 死亡边界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.useFakeTimers()
+    vi.stubGlobal('document', {
+      addEventListener: vi.fn(() => {}),
+      removeEventListener: vi.fn(() => {}),
+      visibilityState: 'visible'
+    })
+    vi.stubGlobal('window', {
+      addEventListener: vi.fn(() => {}),
+      removeEventListener: vi.fn(() => {}),
+      setInterval: () => 0,
+      clearInterval: () => {}
+    })
+    vi.spyOn(window, 'setInterval').mockImplementation((cb: () => void) => {
+      void cb
+      return 1 as never
+    })
+    vi.spyOn(window, 'clearInterval').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('读档为已死之身时,start() 重新亮出轮回入口(防低境界软锁)', () => {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    game.started = true
+    player.dead = true // 已死存档:上一场在大限处停机
+    engine.start()
+    // ui.deathDialog 非持久化,唯一入口是 engine.checkDeath —— 而死者的 checkDeath 提前 return,
+    // 若不重开,重载后低境界(无法手动转世)就被软锁在原地
+    expect(ui.deathDialog, '读档已死应重新打开轮回入口').toBe(true)
   })
 })
