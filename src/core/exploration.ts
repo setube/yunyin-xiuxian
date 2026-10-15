@@ -496,7 +496,11 @@ export function exploreRewardMult(mode: ExploreMode, eventId: RegionEventId | nu
  * 让"所见即所算"有地方可钉(见 astronomy.spec 的在线/离线同源一条)。
  */
 export function exploreEventChance(regionId: string, mods: StatMods): number {
-  return EXPLORE_EVENT_CHANCE * (1 + modOf(mods, 'eventLuck') + mansionEventLuck(regionId))
+  // 区域事件的际遇率修正(eventMult,如古墓 1.5)—— 与 reward/danger 一样真算,不能只写在 desc 里:
+  // 在线 tick、离线、预览全走这一处,「约每 N 程一次」与实算同源
+  const ev = currentRegionEvent(regionId)
+  const eventMult = ev ? (regionEventDef(ev.eventId)?.eventMult ?? 1) : 1
+  return EXPLORE_EVENT_CHANCE * (1 + modOf(mods, 'eventLuck') + mansionEventLuck(regionId)) * eventMult
 }
 
 /** 每 Tick 推进历练(由引擎调用) */

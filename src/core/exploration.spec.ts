@@ -14,7 +14,7 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { gnZero, sub, toNum } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
 import { EXPLORE_BOSS_AFTER_WINS, EVENT_AUTO_RESOLVE_SECONDS } from '@/data/constants'
-import { tickExploration, startExploration, winsUntilRegionBoss, regionBossCleared } from './exploration'
+import { tickExploration, startExploration, winsUntilRegionBoss, regionBossCleared, exploreEventChance } from './exploration'
 import { startRetreat } from './earlyGameService'
 
 /**
@@ -444,5 +444,18 @@ describe('历练 · 待决事件超时自动结算', () => {
     tickExploration(now) // 待决已清,同刻再 tick
     expect(adv.pendingEventId).toBeNull()
     expect(adv.session!.events, '不该重复结算成 2').toBe(1)
+  })
+})
+
+describe('区域事件 eventMult 真算进际遇率', () => {
+  it('古墓 eventMult=1.5 真抬高际遇率,不只写在 desc', () => {
+    const player = usePlayerStore()
+    const base = exploreEventChance('qingyun', {})
+    player.regionEvent = { regionId: 'qingyun', eventId: 'gumu', endsAt: Date.now() + 60_000 }
+    try {
+      expect(exploreEventChance('qingyun', {})).toBeCloseTo(base * 1.5, 6)
+    } finally {
+      player.regionEvent = null
+    }
   })
 })

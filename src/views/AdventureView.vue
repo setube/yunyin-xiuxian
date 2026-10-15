@@ -341,6 +341,7 @@
     exploreRewardMult,
     explorationFoeDanger,
     regionFoeOrigin,
+    regionBossCleared,
     startExploration
   } from '@/core/exploration'
   import { currentRegionEvent } from '@/core/regionEvent'
@@ -465,7 +466,7 @@
         // 若拿准入当可见性,路线上未轮到的地界会把后面能进的一并藏掉
         canEnter: canEnterRegion(r.id),
         blockReason: entryBlockReason(r.id),
-        cleared: adventure.cleared.includes(r.id),
+        cleared: regionBossCleared(r.id),
         suppressed,
         revived,
         /** 是否取得过镇压资格(取得即永久,此后可自由在历练/收益之间切换) */
