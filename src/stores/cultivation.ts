@@ -71,12 +71,15 @@ export const useCultivationStore = defineStore(
           added: Math.min(asFiniteNumber(b.added, 0, 0), capMs)
         }
       })
-      // 悟道分支:只留「bid 真属于 gid 且该功法已满级」的条目 —— 分支是不装配仍生效的永久
-      // 被动,注入 {m_daozu:'b_daozu_ben'} 会白送词条,故归属与习得状态都要校验
+      // 悟道分支:只留「bid 真属于 gid 且该功法已习得」的条目 —— 分支是不装配仍生效的永久
+      // 被动,注入 {m_daozu:'b_daozu_ben'} 会白送词条,故归属必须校验。
+      // 习得状态只要求「已学」,不要求满级:转世会把功法落回 1 层(见
+      // reincarnation.carryGongfa,只留一部满级),而分支按契约「转世不失」永久保留 ——
+      // 若按满级收,分支一经过转世+读档就被静默抹掉,永久被动名存实亡。
       const keptBranch: Record<string, string> = {}
       for (const [gid, bid] of Object.entries(asRecord<string>(gongfaBranch.value))) {
         const br = gongfaBranchDef(bid)
-        if (br?.gongfaId === gid && (fixedLearned[gid] ?? 0) >= gongfaMaxLevel(gongfaDef(gid))) keptBranch[gid] = bid
+        if (br?.gongfaId === gid && (fixedLearned[gid] ?? 0) >= 1) keptBranch[gid] = bid
       }
       gongfaBranch.value = keptBranch
     }

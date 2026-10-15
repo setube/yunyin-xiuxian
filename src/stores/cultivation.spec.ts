@@ -182,6 +182,28 @@ describe('sanitize:功法等级与悟道分支加固', () => {
     // 分支 id 认不出 / 不是该功法已满级的条目 —— 一律清空(白送词条的注入洞)
     expect(Object.keys(c.gongfaBranch)).toHaveLength(0)
   })
+
+  it('转世落回 1 层,分支仍按契约保留(不因「未满级」被读档/离线抹掉)', () => {
+    const c = useCultivationStore()
+    c.$patch({
+      // 转世把功法落回 1 层(reincarnation.carryGongfa 只留一部满级),但分支是「转世不失」的永久被动
+      learned: { m_taixuan: 1 },
+      gongfaBranch: { m_taixuan: 'b_taixuan_sha' }
+    } as never)
+    c.sanitize()
+    // 归属正确的分支在已习得功法上保留 —— 满级才选分支是「可悟道」闸,不是读档判据
+    expect(c.gongfaBranch['m_taixuan']).toBe('b_taixuan_sha')
+  })
+
+  it('仍拦注入:未习得功法上的分支被清(不白送词条)', () => {
+    const c = useCultivationStore()
+    c.$patch({
+      learned: {}, // m_taixuan 根本没学到
+      gongfaBranch: { m_taixuan: 'b_taixuan_sha' }
+    } as never)
+    c.sanitize()
+    expect(Object.keys(c.gongfaBranch), '未习得功法的分支仍应被清').toHaveLength(0)
+  })
 })
 
 describe('辅修槽位约束:超出预算的伴生功法不白给(gongfaMods 与装配页同口径)', () => {
