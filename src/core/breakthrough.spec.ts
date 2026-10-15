@@ -14,8 +14,9 @@ import type { StatMods } from '@/types'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
-import { REALMS, WORLDS } from '@/data/realms'
+import { REALMS, WORLDS, MAX_MAJOR } from '@/data/realms'
 import { SUB_LEVELS } from '@/data/constants'
+import { breakthroughPeakReason } from '@/ui/cultivationText'
 
 describe('渡劫成功率推演', () => {
   beforeEach(() => {
@@ -251,5 +252,20 @@ describe('大关不食突破准备(TASK-023 口径:渡劫背面是颗天劫骰,�
       vi.useRealTimers()
       vi.restoreAllMocks()
     }
+  })
+})
+
+describe('巅峰(大道尽头)', () => {
+  it('已达大道尽头时,「下一步」不再 clamp 回自己的重名境界,而是如实说已至尽头', () => {
+    const player = usePlayerStore()
+    player.major = MAX_MAJOR
+    player.sub = SUB_LEVELS - 1
+    const info = breakthroughInfo()
+    expect(player.atMaxRealm, '构造出的应为巅峰').toBe(true)
+    expect(info.ready, '巅峰不可再突破').toBe(false)
+    // 旧行为:realmLabel(major+1, 0) 被 clamp 回 MAX_MAJOR → 「下一步:混沌道祖·一层」
+    // (巅峰玩家已在 混沌道祖·圆满,这个「下一步」指向自己当前境界的「一层」,是自指残影)
+    expect(info.targetLabel).toBe(breakthroughPeakReason())
+    expect(info.targetLabel, '不再出现自己境界的「一层」残影').not.toContain('一层')
   })
 })

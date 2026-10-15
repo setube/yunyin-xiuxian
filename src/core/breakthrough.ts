@@ -156,7 +156,7 @@ export function breakthroughInfo(): BreakthroughInfo {
     qiCost,
     isMajor,
     needTribulation,
-    targetLabel: realmLabel(nextMajor, nextSub),
+    targetLabel: player.atMaxRealm ? breakthroughPeakReason() : realmLabel(nextMajor, nextSub),
     prep
   }
 }
