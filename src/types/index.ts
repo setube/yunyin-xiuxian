@@ -1046,6 +1046,8 @@ export interface MarkContext {
 export interface DaoMark {
   life: number
   daoPathId: DaoPathId | null
+  /** 记录此痕时的大境界 —— 忆战/重写按它还原当年的境界压制(旧档缺失回退 MAX) */
+  major?: number
   /** 世界或试炼 id */
   targetId: string
   targetName: string

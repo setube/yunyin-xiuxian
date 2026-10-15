@@ -35,6 +35,7 @@ import {
 } from './gauntlet'
 import { CELESTIAL_WORLDS, TRIALS } from '@/data/endgame'
 import { MAX_MAJOR } from '@/data/realms'
+import { recordMark } from './endgameService'
 import type { StatMods } from '@/types'
 
 const WORLD = CELESTIAL_WORLDS[0]!
@@ -170,5 +171,29 @@ describe('天界口径 · 造敌只有一条路', () => {
     expect(gauntlet, 'SOUL_CAPACITY 同样不该再出现').not.toContain('SOUL_CAPACITY')
     const player = flightSrc('../stores/player.ts')
     expect(player, '天界三维必须带上凡界装备的平铺').toMatch(/equipFlats: inventory\.equipFlats/)
+  })
+})
+
+describe('忆战 · 境界压制按当年大境界还原', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('记痕时落定当年大境界:recordMark 把 player.major 写进道痕(旧档缺省则忆战回退 MAX)', () => {
+    const player = usePlayerStore()
+    player.initCharacter('忆战', { roots: [{ element: 'wood', aptitude: 80 }] } as never)
+    player.major = 8
+    recordMark('ichiyan', '赤炎天', true, 4)
+    expect(useEndgameStore().marks[0]!.major).toBe(8)
+  })
+
+  it('忆战重打按当年境界判压制:低境记的痕,守关补正还在,不被 MAX 抹平', () => {
+    // 赤炎天 tier 22 -> tierMajor 10:major 8 在锚点之下(压制,守关 +25% 增伤),
+    // MAX(20) 在之上(不压制)。旧实现在忆战里传 MAX_MAJOR,把这笔当年的守关补正
+    // 整个丢掉了 —— 这正是一世道痕却按最高境界重打的落差。
+    const low = celestialJudgement({}, 8, CELESTIAL_WORLDS[0]!.anchorTier)
+    const top = celestialJudgement({}, MAX_MAJOR, CELESTIAL_WORLDS[0]!.anchorTier)
+    expect(low.suppressed, '低境道痕应被压制').toBe(true)
+    expect(top.suppressed, '满修不被压制').toBe(false)
+    expect(low.damageBonus, '被压制的那痕,守关增伤还在').toBe(CELESTIAL_SUPPRESS_BONUS)
+    expect(top.damageBonus).toBe(0)
   })
 })

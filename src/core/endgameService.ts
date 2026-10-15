@@ -160,6 +160,8 @@ function recordMarkInternal(
   const mark: DaoMark = {
     life: player.reincarnation.count + 1,
     daoPathId: endgame.daoPath,
+    // 记下当年的大境界:忆战据此还原当年的境界压制(低境打高锚点时那笔补正)
+    major: player.major,
     targetId,
     targetName,
     cleared,
@@ -257,8 +259,9 @@ export function replayMark(mark: DaoMark): ExpeditionResult | null {
   const r = mark.replay
   const snap = snapFromReplay('当年的你', r)
   const stats = { attack: r.attack, defense: r.defense, maxHp: r.maxHp }
-  // 词条对称按当年的构筑深度,与三维同口径——忆战要还原的是当年那一局
-  const judgement = celestialJudgement(snap.mods, MAX_MAJOR, (world ?? trial)!.anchorTier)
+  // 词条对称按当年的构筑深度,与三维同口径——忆战要还原的是当年那一局。
+  // 境界也按当年的大境界走(低境打高锚点时那笔补正要还在),旧档无 major 回退 MAX。
+  const judgement = celestialJudgement(snap.mods, mark.major ?? MAX_MAJOR, (world ?? trial)!.anchorTier)
   const foes = []
   if (world) {
     for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, stats, 1, judgement))
