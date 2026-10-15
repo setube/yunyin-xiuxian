@@ -23,6 +23,12 @@ describe('数值格式化', () => {
     expect(formatGN(powN(10, 52))).toMatch(/e52$/)
   })
 
+  it('科学计数 mantissa 四舍五入到 10 时进位(9.99…eN→1.00eN+1,不产 10.00eN)', () => {
+    // bug:9.999e52 四舍五入 m.toFixed(2)='10.00' 直接拼成 10.00e52;应归一化 1.00e53
+    expect(formatGN({ m: 9.999, e: 52 })).toBe('1.00e53')
+    expect(formatGN({ m: 9.494, e: 52 })).toBe('9.49e52')
+  })
+
   it('零与负数', () => {
     expect(formatGN(gn(0))).toBe('0')
     expect(formatGN(-123456)).toBe('-12.35万')

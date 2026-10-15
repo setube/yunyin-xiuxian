@@ -29,7 +29,10 @@ export function formatGN(v: GNum | number): string {
   }
   const unitIdx = Math.floor(g.e / 4) - 1
   if (unitIdx >= UNITS.length) {
-    return `${g.m.toFixed(2)}e${g.e}`
+    // 科学计数兜底:mantissa 四舍五入到 10.00 时进位(9.99…e407 → 1.00e408),不许 10.00e407
+    const m = g.m.toFixed(2)
+    if (m === '10.00') return `1.00e${g.e + 1}`
+    return `${m}e${g.e}`
   }
   const value = g.m * Math.pow(10, g.e - (unitIdx + 1) * 4)
   return trimZero(fixedByMag(value)) + UNITS[unitIdx]
