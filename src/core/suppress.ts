@@ -9,7 +9,8 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { regionDef } from '@/data/regions'
-import { herbGradeOfMajor } from '@/data/herbGrades'
+import { herbGradeOfMajor, HERB_GRADE_SHORT } from '@/data/herbGrades'
+import type { HerbGrade } from '@/data/herbGrades'
 import { stoneByTier } from '@/core/formulas'
 import { generateEquipment } from '@/core/equipGen'
 import { acquireEquipment } from '@/core/loot'
@@ -84,7 +85,13 @@ export function suppressYield(regionId: string): { id: SuppressResource; name: s
   if (!hit) return null
   // 层级越高,同一物产的产出越丰(线性,不参与灵石的指数口径)
   const perHour = Math.round(hit.perHour * (1 + region.tier * 0.15))
-  return { id: hit.resource, name: RESOURCE_NAMES[hit.resource], perHour }
+  // 灵草按该地界的品阶明示(其余物产单标量无品):镇压产草按 region.minRealm 的品收集,
+  // 展示若只写「灵草」,玩家压着神/道域也看不出自己囤的是哪一品。
+  const name =
+    hit.resource === 'herb'
+      ? `${HERB_GRADE_SHORT[herbGradeOfMajor(region.minRealm)]}灵草`
+      : RESOURCE_NAMES[hit.resource]
+  return { id: hit.resource, name, perHour }
 }
 
 /**
@@ -177,8 +184,8 @@ export interface SuppressedYield {
   equipment: { name: string; quality: QualityId; recycled?: boolean; uid?: string }[]
   /** 化尘所得的器灵尘(自动回收/满包化尘/腾位化掉的旧件;由 acquireEquipment 记账) */
   recycledDust: number
-  /** 各地界的物产累计(灵草/玄铁/残页/器灵尘) */
-  resources: { id: SuppressResource; name: string; amount: number }[]
+  /** 各地界的物产累计(灵草/玄铁/残页/器灵尘);灵草按品分账,grade 标明品阶 */
+  resources: { id: SuppressResource; name: string; amount: number; grade?: HerbGrade }[]
 }
 
 export function settleSuppressedRegions(dt: number, service: RandomService = rng): SuppressedYield | null {
@@ -229,11 +236,19 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
     if (yieldDef) {
       const amount = Math.floor(yieldDef.perHour * hours * yieldMult)
       if (amount > 0) {
-        if (yieldDef.id === 'herb') resources.addHerb(herbGradeOfMajor(region.minRealm), amount)
-        else resources.addSmall(yieldDef.id, amount)
-        const row = total.resources.find(r => r.id === yieldDef.id)
-        if (row) row.amount += amount
-        else total.resources.push({ id: yieldDef.id, name: yieldDef.name, amount })
+        if (yieldDef.id === 'herb') {
+          // 灵草按品分账:同一品聚一行、跨品分开,展示才不至于「只有灵草,不知何品」
+          const grade = herbGradeOfMajor(region.minRealm)
+          resources.addHerb(grade, amount)
+          const row = total.resources.find(r => r.id === 'herb' && r.grade === grade)
+          if (row) row.amount += amount
+          else total.resources.push({ id: 'herb', name: `${HERB_GRADE_SHORT[grade]}灵草`, amount, grade })
+        } else {
+          resources.addSmall(yieldDef.id, amount)
+          const row = total.resources.find(r => r.id === yieldDef.id)
+          if (row) row.amount += amount
+          else total.resources.push({ id: yieldDef.id, name: yieldDef.name, amount })
+        }
       }
     }
 

@@ -860,7 +860,7 @@
 
   /** 材料行:灵草的量是「当前品」的可炼数,`full` 留给详情弹窗逐品陈列(其它料本就单标量) */
   const materialRows = computed(() => [
-    { icon: 'leaf', name: '灵草', desc: '炼丹的根本', value: resources.herbOf(herbGrade.value), full: `逐品:${herbStash.value}` },
+    { icon: 'leaf', name: `${HERB_GRADE_SHORT[herbGrade.value]}灵草`, desc: '炼丹的根本(格子数是当前品,逐品见详情)', value: resources.herbOf(herbGrade.value), full: `逐品:${herbStash.value}` },
     { icon: 'mountain', name: '玄铁', desc: '筑造与炼器之材', value: resources.ore, full: String(resources.ore) },
     { icon: 'scroll', name: '功法残页', desc: '集残页可参悟功法', value: resources.page, full: String(resources.page) },
     { icon: 'sparkles', name: '器灵尘', desc: '强化装备的灵性之尘', value: resources.dust, full: String(resources.dust) },

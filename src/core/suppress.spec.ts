@@ -4,6 +4,8 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { DECOMPOSE_DUST } from '@/data/constants'
+import { regionDef } from '@/data/regions'
+import { herbGradeOfMajor, HERB_GRADE_SHORT } from '@/data/herbGrades'
 import { qualityDef } from '@/data/qualities'
 import { sub, toNum } from '@/utils/gnum'
 import { RandomService } from '@/utils/random'
@@ -50,8 +52,22 @@ describe('区域镇压系统', () => {
       expect(resources.herb, '林区镇压应产出灵草').toBeGreaterThan(before)
       const row = total!.resources.find(r => r.id === 'herb')
       expect(row, '产出清单应记下灵草').toBeDefined()
-      expect(row!.name).toBe('灵草')
+      // 灵草已分品阶,清单必须写明品阶(否则压着神/道域也看不出囤的是哪一品)—— 品阶按该地界取
+      const grade = herbGradeOfMajor(regionDef('wanyao')!.minRealm)
+      expect(row!.name, '产出清单的灵草要写明品阶,不能只写「灵草」').toBe(`${HERB_GRADE_SHORT[grade]}灵草`)
+      expect(row!.grade, '行上应带着品阶').toBe(grade)
       expect(row!.amount).toBeGreaterThan(0)
+    })
+
+    it('在线「镇压/时」的产草率也写明品阶(suppressYield 不只报「灵草」)', () => {
+      const y = suppressYield('wanyao')
+      expect(y).not.toBeNull()
+      if (y!.id === 'herb') {
+        // 品阶按该地界算;在线速率行与离线清单同一口径,都不能只有「灵草」二字
+        expect(y!.name, '产草率要带品阶').toContain('灵草')
+        expect(y!.name, '产草率不能只写「灵草」').not.toBe('灵草')
+        expect(y!.name).toContain(HERB_GRADE_SHORT[herbGradeOfMajor(regionDef('wanyao')!.minRealm)])
+      }
     })
 
     /**

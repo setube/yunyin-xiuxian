@@ -1,6 +1,7 @@
 /** 洞府建筑 —— 7 座,长线成长 */
 import type { BuildingDef, BuildingId, StatMods } from '@/types'
 import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, FORGE_LEVEL_PER_CAP, LIBRARY_WUDAO_PER_HOUR, OFFLINE_CAP_HOURS } from './constants'
+import { HERB_GRADE_SHORT, fieldGradeCap } from './herbGrades'
 
 /** 聚灵阵每级抬高的灵气上限(乘在境界容量上,不进 StatMods)。文案与 dongfu.qiCapMult 都读它。 */
 export const ARRAY_QI_CAP_PER_LEVEL = 0.08
@@ -67,7 +68,8 @@ export const BUILDINGS: BuildingDef[] = [
     unlockRealm: 0,
     costBase: 80,
     costOre: 8,
-    effectText: lv => `每小时产灵草 ${(lv * FIELD_HERB_PER_HOUR).toFixed(0)} 株、玄铁 ${(lv * FIELD_ORE_PER_HOUR).toFixed(1)} 块`
+    effectText: lv =>
+      `每小时产灵草 ${(lv * FIELD_HERB_PER_HOUR).toFixed(0)} 株(当前境品或高一档,田满可种${HERB_GRADE_SHORT[fieldGradeCap(lv)]})、玄铁 ${(lv * FIELD_ORE_PER_HOUR).toFixed(1)} 块`
   },
   {
     id: 'library',

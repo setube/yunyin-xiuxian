@@ -42,6 +42,21 @@ export function isHerbGrade(v: unknown): v is HerbGrade {
 }
 
 /**
+ * 灵田等级 → 可种出的最高品(单调 LUT)。
+ * 每 3 级「破一档」,15 级(品类满级)到顶可种道品。刻意用一张小表而非巧公式:
+ * 门槛肉眼可读、好调,不藏玄机。灵田升级不被境界门控,故 fieldHerbGrade 用
+ * 「限超前 +1」兜住低境一步到道品(见 dongfu 注释) —— 这张表只是等级上限那半边。
+ */
+const FIELD_GRADE_UNLOCK_LEVELS: Record<Exclude<HerbGrade, 1>, number> = { 2: 4, 3: 7, 4: 10, 5: 13 }
+
+/** 灵田等级 → 可种最高品(1 起,逐档跃迁,单调) */
+export function fieldGradeCap(fieldLv: number): HerbGrade {
+  let g: HerbGrade = 1
+  for (const grade of [2, 3, 4, 5] as const) if (fieldLv >= FIELD_GRADE_UNLOCK_LEVELS[grade]) g = grade
+  return g
+}
+
+/**
  * 品阶与境界的分档表:[起始 major, 结束 major, 品阶]。
  *
  * 人间界前中后期分两品(0~4 凡品 / 5~8 灵品),仙界 9~13 仙品,神界 14~17 神品,

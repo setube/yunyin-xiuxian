@@ -15,31 +15,18 @@ import {
 } from '@/data/constants'
 import { mergeMods } from '@/core/statsCalc'
 import { usePlayerStore } from '@/stores/player'
-import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
+import { herbGradeOfMajor, fieldGradeCap, type HerbGrade } from '@/data/herbGrades'
 import { useResourcesStore } from './resources'
-
-/**
- * 灵田等级 → 可种出的最高品(单调 LUT)。每 3 级「破一档」,15 级(品类满级)
- * 到顶可种道品。刻意用一张小表而非巧公式:门槛肉眼可读、好调,不藏玄机。
- *
- * 注意:灵田升级并不被境界门控(only 灵石/玄铁成本,buildingService.ts)——
- * 低境界玩家靠刷资源也能把灵田拉满。因此 fieldHerbGrade 用「限超前 +1」兜住,
- * 见下方注释:灵田最多比当前境界高一档,绝不成为低境一步到道品的捷径。
- */
-const FIELD_GRADE_UNLOCK_LEVELS: Record<Exclude<HerbGrade, 1>, number> = { 2: 4, 3: 7, 4: 10, 5: 13 }
-
-/** 灵田等级 → 可种最高品(1 起,逐档跃迁,单调) */
-function fieldGradeCap(fieldLv: number): HerbGrade {
-  let g: HerbGrade = 1
-  for (const grade of [2, 3, 4, 5] as const) if (fieldLv >= FIELD_GRADE_UNLOCK_LEVELS[grade]) g = grade
-  return g
-}
 
 /**
  * 灵田产草品阶 = 当前境界品与「可种最高品」的合取,前赡一只且保下限:
  *   preview = min(当前品+1, 田内可种上限)   —— 前瞻最多高当前一档(囤下一境草)
  *   result  = min(5, max(当前品, preview))  —— 永不低过当前品(守住当前品水龙头),永不越道品
  * 两式叠加:低境拉满也最多高当前一档(不跳过当前品来源、不越道品);高境低田仍给当前品(不砸下限)。
+ *
+ * 注意:灵田升级不被境界门控(only 灵石/玄铁成本),低境刷资源也能拉满 ——
+ * 因此(a) 限超前 +1 兜住低境一步到道品; (b) 「可种最高品」等级表 fieldGradeCap
+ * 是唯一事实源,住在 data/herbGrades,灵田卡面 effectText 与这里共用同一张表。
  */
 export function fieldHerbGrade(major: number, fieldLv: number): HerbGrade {
   const current = herbGradeOfMajor(major)
