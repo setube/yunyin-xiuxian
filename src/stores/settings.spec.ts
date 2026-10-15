@@ -66,3 +66,19 @@ describe('设置 · decomposeRanks 档位守卫', () => {
     expect(s.decomposeRanks).toContain(3)
   })
 })
+
+describe('设置 · 布尔开关坏档清洗', () => {
+  it('只有字面 true 存活,其余字符串/数字真值一律 ===true 归一到 false', () => {
+    const s = useSettingsStore()
+    // 损坏档:四个开关混入「真值但不是 true」的东西 —— 不清洗会永久减速 / 永不静音 / 假装已同意
+    ;(s as unknown as { reduceMotion: unknown }).reduceMotion = 'false'
+    ;(s as unknown as { musicOn: unknown }).musicOn = 1
+    ;(s as unknown as { sfxOn: unknown }).sfxOn = 'true'
+    ;(s as unknown as { privacyAccepted: unknown }).privacyAccepted = 'false'
+    s.sanitize()
+    expect(s.reduceMotion, '字符串真值"false"不再永久减速').toBe(false)
+    expect(s.musicOn, '数字 1 不再当成交(on)').toBe(false)
+    expect(s.sfxOn, '字符串"true"不再当成交(on)').toBe(false)
+    expect(s.privacyAccepted, '字符串"false"不再假装已同意').toBe(false)
+  })
+})

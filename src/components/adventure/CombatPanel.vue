@@ -508,7 +508,8 @@
     stopPlayback()
     defeated.value = null
     const entries = b.result.log
-    if (instant) {
+    // 减动效:同 GauntletPanel —— 直接给结果不逐条播,开关对两处战斗回放一视同仁
+    if (instant || settings.reduceMotion) {
       displayed.value = entries.slice(-100)
       const last = entries[entries.length - 1]
       php.value = last?.php ?? 1

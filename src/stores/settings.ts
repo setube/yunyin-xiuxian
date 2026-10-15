@@ -74,6 +74,13 @@ export const useSettingsStore = defineStore(
       if (![1, 2, 4].includes(battleSpeed.value)) battleSpeed.value = 1
       if (!['auto', 'light', 'dark'].includes(theme.value)) theme.value = 'auto'
       dndEvents.value = dndEvents.value === true
+      // 布尔开关与 dndEvents/installNoticeDismissed 同理:损坏档里一旦混入字符串("false")/数字(1),
+      // 不清洗就会以真值存活 —— musicOn/sfxOn 永远静不了音、reduceMotion 永远卡在减动效、
+      // privacyAccepted 让没同意隐私的玩家被当成已同意直接跳过。一律 ===true 归一。
+      sfxOn.value = sfxOn.value === true
+      musicOn.value = musicOn.value === true
+      reduceMotion.value = reduceMotion.value === true
+      privacyAccepted.value = privacyAccepted.value === true
       lastExportAt.value = asFiniteNumber(lastExportAt.value, 0, 0)
       installNoticeDismissed.value = installNoticeDismissed.value === true
       lastSeenVersion.value = typeof lastSeenVersion.value === 'string' ? lastSeenVersion.value : ''

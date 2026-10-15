@@ -2,7 +2,6 @@
   <!-- 桌面端外框:居中手机区域 -->
   <div
     class="app-shell mx-auto flex max-w-107.5 flex-col overflow-hidden bg-paper shadow-[0_0_60px_rgba(0,0,0,0.45)] relative paper-grain"
-    :class="{ 'reduce-motion': settings.reduceMotion }"
   >
     <TopStatusBar v-if="game.started && route.name !== 'create'" />
 
@@ -96,6 +95,16 @@
   watch(
     () => settings.theme,
     t => applyTheme(t),
+    { immediate: true }
+  )
+
+  // 减少动效:原类名绑在 .app-shell 上,Teleport 到 body 的弹层(弹窗 / 传送门 / 突破炸屏)
+  // 全都在 .app-shell 之外,逃过 `.reduce-motion` 的后代选择器 —— 开了开关弹层照旧全幅动。
+  // (SpiritRootReveal 就为这吃过亏,只得自己写 JS 兜底。)改挂到 body,让包括 Teleport
+  // 在内的所有内容都吃到这条,与系统 prefers-reduced-motion 的全局覆盖对齐。
+  watch(
+    () => settings.reduceMotion,
+    v => document.body.classList.toggle('reduce-motion', v),
     { immediate: true }
   )
 
