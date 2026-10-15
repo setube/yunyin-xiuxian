@@ -14,6 +14,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { qualityDef } from '@/data/qualities'
 import { BOUNTY_REFRESH_SECONDS, type BountyKind, type BountySlot } from '@/data/bounty'
+import { MAX_MAJOR } from '@/data/realms'
 import { equipBountyReward, generateBounty, herbBountyReward } from '@/core/bountyService'
 import { HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
@@ -59,10 +60,17 @@ export const useBountyStore = defineStore(
   () => {
     const orders = ref<BountySlot[]>([])
     const bountyAt = ref(0)
-
+    /**
+     * 募草交货的计价大境界 —— 上货时刻冻结(与募矿/募丹的 slot.reward 同纪律):
+     * 版的工价在生成那一刻定死,窗口内境界再涨也不该把契约价跟着抬
+     * (旧档无此字段,null 视为回退到当前境界,见 claim 的 herb 分支)
+     */
+    const bountyMajor = ref<number | null>(null)
     /** 存档修复:订单逐纸修形,烂纸丢弃;时刻夹回非负(归零会即时换新) */
     function sanitize(): void {
       bountyAt.value = Math.max(0, asFiniteNumber(bountyAt.value, 0))
+      const bm = asFiniteNumber(bountyMajor.value, -1)
+      bountyMajor.value = bm >= 0 ? Math.min(MAX_MAJOR, Math.floor(bm)) : null
       const clean: BountySlot[] = []
       for (const raw of asArray<unknown>(orders.value)) {
         if (!raw || typeof raw !== 'object' || !('kind' in raw) || !isKind(raw.kind)) continue
@@ -86,6 +94,7 @@ export const useBountyStore = defineStore(
       const player = usePlayerStore()
       orders.value = generateBounty(player.major, now)
       bountyAt.value = now
+      bountyMajor.value = player.major
     }
 
     /** 交货第 idx 单;验货→扣货→入账;贡器按所交之品的品质现算价 */
@@ -104,11 +113,13 @@ export const useBountyStore = defineStore(
           resources.spendSmall('ore', slot.target)
           resources.addStone(slot.reward)
         } else {
-          // 任意品阶可交:自低品起挑一档够 target 的交,价按**所交之品**(不滞销旧草)
+          // 任意品阶可交:自低品起挑一档够 target 的交;价按所交之品的购价,但大境界
+          // 取「上货时刻冻结」的那份(bountyMajor,旧档为 null 则回退当前)—— 与募矿/募丹一致
           const grade = pickHerbDeliverGrade(resources, slot.target)
           if (!grade) return 'insufficient'
           resources.spendHerb(grade, slot.target)
-          resources.addStone(herbBountyReward(grade, usePlayerStore().major, slot.target))
+          const priceMajor = bountyMajor.value ?? usePlayerStore().major
+          resources.addStone(herbBountyReward(grade, priceMajor, slot.target))
         }
       } else if (slot.kind === 'pill') {
         if ((inventory.pills[slot.kindId] ?? 0) < slot.target) return 'insufficient'
@@ -139,7 +150,7 @@ export const useBountyStore = defineStore(
       return 'ok'
     }
 
-    return { orders, bountyAt, sanitize, sync, claim, claimEquip }
+    return { orders, bountyAt, bountyMajor, sanitize, sync, claim, claimEquip }
   },
   { persist: persistConfig('bounty') }
 )

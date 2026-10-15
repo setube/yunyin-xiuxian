@@ -123,3 +123,20 @@ describe('坊市悬赏板 · 交货', () => {
     expect(b.bountyAt).toBe(0)
   })
 })
+
+describe('坊市悬赏板 · 募草工价上货时刻冻结', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('版生成境地之后窗口内境界上涨,募草契约价不跟着抬(与募矿/募丹同纪律)', () => {
+    const b = useBountyStore()
+    const res = useResourcesStore()
+    seedSlots([mat('herb')])
+    // 版在 major 5 生成(工价冻结于此),玩家此刻已到 major 10
+    b.bountyMajor = 5
+    usePlayerStore().major = 10
+    res.$patch({ herbByGrade: { 1: 30, 2: 0, 3: 0, 4: 0, 5: 0 }, spiritStone: { m: 0, e: 0 } })
+    expect(b.claim(0)).toBe('ok')
+    // 价按生成的 major 5 折算,不是当前 10 —— 若有人把它改回 live major,此断言即红
+    expect(toNum(res.spiritStone)).toBe(toNum(herbBountyReward(1, 5, 30)))
+  })
+})

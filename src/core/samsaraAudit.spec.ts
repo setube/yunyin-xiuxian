@@ -448,7 +448,7 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
     },
     market: { stock: 'keep', stockedAt: 'keep', consign: 'keep' },
     apprentice: { apprentices: 'reset', rebirthKarma: 'keep' },
-    bounty: { orders: 'keep', bountyAt: 'keep' },
+    bounty: { orders: 'keep', bountyAt: 'keep', bountyMajor: 'keep' },
     pacing: { events: 'keep', enabled: 'keep' },
     diag: { errors: 'keep' }
   }
