@@ -234,7 +234,7 @@
                 </p>
                 <div class="mt-2.5 flex gap-2">
                   <button class="btn-seal flex-1 !py-2 !text-[13px]" :disabled="run !== null" @click="openPrep('void')">
-                    {{ run ? '远征在途' : `启 程(破界底赏 ${endgame.voidWorld.rewardDaoSource})` }}
+                    {{ run ? '远征在途' : `启 程(道源 ${endgame.voidWorld.entryCost} · 余 ${formatNum(endgame.daoSource)} · 破界底赏 ${endgame.voidWorld.rewardDaoSource})` }}
                   </button>
                   <button class="btn-ghost !px-3 !text-[12px]" @click="rerollVoidWorld()">再窥({{ VOID_REROLL_COST }})</button>
                 </div>
