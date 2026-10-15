@@ -248,9 +248,6 @@
         <span v-if="btInfo.needTribulation" class="rounded bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-violet-ink">
           大关 · 渡劫
         </span>
-        <span v-else-if="btInfo.isMajor" class="rounded bg-ink/6 px-1.5 py-0.5 text-[10px] leading-none text-ink-faint">
-          大境界之槛
-        </span>
       </p>
 
       <!-- Phase 28 突破准备:静坐调息 / 服聚气丹(无劫突破时,一次性加成) -->
@@ -821,7 +818,7 @@
 
   function equipStateOf(id: string): string {
     if (cultivation.mainGongfa === id) return '主修'
-    if (cultivation.subGongfa.includes(id)) return '辅修'
+    if (cultivation.subGongfa.includes(id)) return gongfaDef(id)?.type === 'secret' ? '秘术' : '辅修'
     return ''
   }
 

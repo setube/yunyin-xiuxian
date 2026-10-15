@@ -102,7 +102,7 @@
           {{ isMain ? '主修中' : '设为主修' }}
         </button>
         <button v-else class="btn-seal flex-1" @click="toggleSub">
-          {{ isSub ? '卸下辅修' : '设为辅修' }}
+          {{ subActionText }}
         </button>
         <button v-if="upCost" class="btn-ghost flex-1" @click="def && upgradeGongfa(def.id)">进 修</button>
       </div>
@@ -168,6 +168,11 @@
 
   const isMain = computed(() => def.value && cultivation.mainGongfa === def.value.id)
   const isSub = computed(() => def.value && cultivation.subGongfa.includes(def.value.id))
+  // 秘术不该被叫「辅修」:两者都放进同一槽位,但门类是两块不同的印 —— 按钮如实点名
+  const subActionText = computed(() => {
+    const label = def.value?.type === 'secret' ? '秘术' : '辅修'
+    return isSub.value ? `卸下${label}` : `设为${label}`
+  })
 
   // Phase 31 A3:满级悟道分支
   const fullLevel = computed(() => (def.value ? level.value >= gongfaMaxLevel(def.value) : false))

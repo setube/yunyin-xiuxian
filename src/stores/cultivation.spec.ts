@@ -10,6 +10,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useCultivationStore } from './cultivation'
+import { useDongfuStore } from './dongfu'
+import { usePlayerStore } from './player'
+import { modOf } from '@/core/statsCalc'
 import { buffDef } from '@/data/buffs'
 import { gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 
@@ -178,5 +181,41 @@ describe('sanitize:功法等级与悟道分支加固', () => {
     expect(c.learned['m_taixuan']).toBe(gongfaMaxLevel(gongfaDef('m_taixuan')!))
     // 分支 id 认不出 / 不是该功法已满级的条目 —— 一律清空(白送词条的注入洞)
     expect(Object.keys(c.gongfaBranch)).toHaveLength(0)
+  })
+})
+
+describe('辅修槽位约束:超出预算的伴生功法不白给(gongfaMods 与装配页同口径)', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('藏书楼缩水、槽位变少后,超槽辅修词条不再生效(选中列表保留,槽位恢复自动回来)', () => {
+    const player = usePlayerStore()
+    const cul = useCultivationStore()
+    const dongfu = useDongfuStore()
+
+    // 藏书楼 3 级 → 辅修槽位 2(1 + floor(3/3))
+    dongfu.setLevel('library', 3)
+    expect(dongfu.subGongfaSlots).toBe(2)
+
+    // 学两门词条不同的辅修,按加装顺序占满 2 槽
+    cul.learn('s_tuna') // cultivationSpeed
+    cul.learn('s_lianti') // maxHpPct
+    expect(cul.toggleSub('s_tuna', 2)).toBe(true)
+    const hpBeforeLianti = modOf(player.finalStats.mods, 'maxHpPct') // s_lianti 加入前的基准
+    expect(cul.toggleSub('s_lianti', 2)).toBe(true)
+    expect(cul.subGongfa).toEqual(['s_tuna', 's_lianti'])
+
+    const speedFull = modOf(player.finalStats.mods, 'cultivationSpeed')
+    const hpFull = modOf(player.finalStats.mods, 'maxHpPct')
+    expect(speedFull, '满槽时两门都该生效').toBeGreaterThan(0)
+    expect(hpFull, '满槽时两门都该生效').toBeGreaterThan(hpBeforeLianti)
+
+    // 藏书楼跌回 0 级(转世后 levels 重算)→ 槽位 1,玩家选中的数组原样保留
+    dongfu.setLevel('library', 0)
+    expect(dongfu.subGongfaSlots).toBe(1)
+    expect(cul.subGongfa, '槽位缩水不抹掉玩家的选择').toHaveLength(2)
+
+    // 只有先装的 s_tuna 生效;s_lianti 的 maxHpPct 掉回基准 —— 不再免费白给
+    expect(modOf(player.finalStats.mods, 'cultivationSpeed'), '槽内首门仍生效').toBeGreaterThan(0)
+    expect(modOf(player.finalStats.mods, 'maxHpPct'), '超槽辅修不得再白给词条').toBeCloseTo(hpBeforeLianti, 6)
   })
 })

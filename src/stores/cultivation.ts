@@ -8,6 +8,7 @@ import { buffDef } from '@/data/buffs'
 import { gongfaBranchDef } from '@/data/gongfaBranches'
 import { mergeMods } from '@/core/statsCalc'
 import { buffCapSec } from '@/core/buffCap'
+import { useDongfuStore } from '@/stores/dongfu'
 import { asArray, asNumberRecord, asRecord, asStringArray, asFiniteNumber } from '@/utils/saveShape'
 
 /** 功法在某等级下的属性 */
@@ -85,7 +86,11 @@ export const useCultivationStore = defineStore(
       if (mainGongfa.value && learned.value[mainGongfa.value]) {
         sources.push(gongfaModsAt(mainGongfa.value, learned.value[mainGongfa.value]!))
       }
-      for (const id of subGongfa.value) {
+      // 有效辅修只计到洞府辅修槽位预算(与装配页 loadout 的 slice(0, subGongfaSlots) 同口径):
+      // 转世后藏书楼缩水、槽位变少,超出预算的伴生功法不再白给词条 ——
+      // 玩家选中的列表原样保留,待藏书楼抬回、槽位恢复时按加装顺序自动重新激活。
+      const subCap = useDongfuStore().subGongfaSlots
+      for (const id of subGongfa.value.slice(0, subCap)) {
         if (learned.value[id]) sources.push(gongfaModsAt(id, learned.value[id]!))
       }
       // Phase 31 A3:悟道分支追加词条(选过的功法)

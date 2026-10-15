@@ -45,8 +45,14 @@ function realSecondsForMajor(major: number, kind: 'bare' | 'max'): number {
   const res = useResourcesStore()
 
   if (kind === 'max') {
-    // 典型灵根 1.6(不是顶配)+ 该境可用的最优功法 + 辅修栏占满 + 建筑满级 + 灵脉主脉吃满
+    // 典型灵根 1.6(不是顶配)+ 该境可用的最优功法 + 辅修栏占满(槽位预算)+ 建筑满级 + 灵脉主脉吃满
     player.linggen = { roots: [{ element: 'wood', aptitude: 96 }], gradeName: '单灵根', growthMult: 1.6 }
+    // 先定下洞府满级后的辅修槽位预算,再选「占满槽位」的功法 —— 超槽的伴生功法不生效,
+    // 满配建模不该把它们算进去(否则跟 gongfaMods 的真实截断打架)
+    for (const b of BUILDINGS) dongfu.setLevel(b.id, b.maxLevel)
+    dongfu.veinPoints = { gather: 70, craft: 0, alchemy: 0, insight: 0 }
+    dongfu.veinMain = 'gather'
+    const subCap = dongfu.subGongfaSlots
     const usable = GONGFA.filter(g => g.minRealm <= major)
     const cultOf = (id: string): number => {
       const def = GONGFA.find(g => g.id === id)!
@@ -57,7 +63,7 @@ function realSecondsForMajor(major: number, kind: 'bare' | 'max'): number {
     const mains = usable.filter(g => g.type === 'main').sort((a, b) => cultOf(b.id) - cultOf(a.id))
     const subs = usable.filter(g => g.type !== 'main').sort((a, b) => cultOf(b.id) - cultOf(a.id))
     const mainId = mains[0]!.id
-    const subIds = subs.slice(0, 7).map(g => g.id)
+    const subIds = subs.slice(0, subCap).map(g => g.id)
     for (const id of [mainId, ...subIds]) {
       const def = GONGFA.find(g => g.id === id)!
       cul.learn(id)
@@ -68,10 +74,7 @@ function realSecondsForMajor(major: number, kind: 'bare' | 'max'): number {
       if (branch) cul.chooseBranch(id, branch.id)
     }
     cul.equipMain(mainId)
-    for (const id of subIds) cul.toggleSub(id, 7)
-    for (const b of BUILDINGS) dongfu.setLevel(b.id, b.maxLevel)
-    dongfu.veinPoints = { gather: 70, craft: 0, alchemy: 0, insight: 0 }
-    dongfu.veinMain = 'gather'
+    for (const id of subIds) cul.toggleSub(id, subCap)
   } else {
     // 裸档:无 kit、无灵根加成
     player.linggen = { roots: [{ element: 'wood', aptitude: 60 }], gradeName: '单灵根', growthMult: 1 }
