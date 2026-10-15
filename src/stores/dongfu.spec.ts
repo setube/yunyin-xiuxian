@@ -378,3 +378,23 @@ describe('洞府产出 · 长时间量级(长时整发恰准/拆批等值不漂)
     expect(split.fracHerb).toBeCloseTo(one.fracHerb, 9)
   })
 })
+
+describe('灵田产草品阶 · 等级表唯一事实源', () => {
+  it('低境拉满也最多高当前一档,等级低时压回当前品(不越级不砸下限)', () => {
+    // major 0=凡品(1):田满(cap 5)也只前瞻到 2;田零级(cap 1)压回当前品 1
+    expect(fieldHerbGrade(0, 15)).toBe(2)
+    expect(fieldHerbGrade(0, 0)).toBe(1)
+    // major 9=仙品(3):田满前瞻 +1 → 神品(4)
+    expect(fieldHerbGrade(9, 15)).toBe(4)
+    // major 20 混沌海=道品(5):已到顶,不加不降
+    expect(fieldHerbGrade(20, 15)).toBe(5)
+  })
+
+  it('灵田卡面 effectText 也写明品阶,不再只写「每小时 X 株」(等级表同为数据事实源)', () => {
+    const field = BUILDINGS.find(b => b.id === 'field')!
+    const text = field.effectText(15)
+    // 满级可种道品 —— 卡面必须把「产的是哪一品」交代出来,否则玩家看不出囤的是哪档
+    expect(text).toContain('道品')
+    expect(text).toContain('灵草')
+  })
+})
