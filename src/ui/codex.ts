@@ -257,9 +257,28 @@ const EQUIP_STAGE3_RANK = qualityDef('heaven').rank
 const EQUIP_HINTS = [
   '尚未见过此物 —— 多在地界里走动。',
   '见过形制了 —— 强化一件、或把它装上身,才算上手。',
-  '用过了 —— 再往上就看运气:见一件天品以上的成色。',
+  '', // 用过了 —— 再往上看运气(stage-2 提示按模板阶封顶现算,见 equipStage2Hint)
   ''
 ] as const
+
+/**
+ * 该阶模板在掉落窗口内能见到的最好品质档(fromTier ≤ 该阶)。
+ * 天品 fromTier 16 —— 十几阶的铁剑按 0.1^6 的越窗衰减永远够不着天品,
+ * 提示不再拿「见天品」去吊玩家;写死 EQUIP_STAGE3 会把它吊成收不回的杆。
+ */
+function maxReachableRankAtTier(tier: number): number {
+  let best = 0
+  for (const q of QUALITIES) if (q.fromTier <= tier) best = Math.max(best, q.rank)
+  return best
+}
+
+/** 「用过了」的下一步提示:按该阶真实上限说人话,不吊一件到不了的天品 */
+function equipStage2Hint(tier: number, seenQ: number): string {
+  const ceilingRank = maxReachableRankAtTier(tier)
+  const ceiling = qualityOfRank(ceilingRank).name
+  if (seenQ >= ceilingRank) return `用过了 —— 已到过此物随阶可见的最好成色:${ceiling}。`
+  return `用过了 —— 再往上看运气:见一件${ceiling}以上的成色。`
+}
 
 /** 见闻记录:该模板见过的最高品质档、最高层级,以及是否亲手用过(u) */
 export interface EquipSeen {
@@ -301,7 +320,7 @@ export function describeEquipment(def: EquipmentTemplate, seen: EquipSeen | unde
     stage,
     stageName: EQUIP_STAGE_NAMES[stage]!,
     badge: stage >= EQUIP_STAGE_MAX ? '极' : '',
-    hint: EQUIP_HINTS[stage]!,
+    hint: stage === 2 && seen ? equipStage2Hint(def.tier, seen.q) : EQUIP_HINTS[stage]!,
     foot: { label: '收录时间', value: '' }
   }
 }

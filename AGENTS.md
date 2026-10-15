@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-**云隐修仙录** — 一款 Vue 3 驱动的文字修仙放置（idle）游戏，单机离线成长玩法。版本 1.37.0，`type: module`。支持 Web/PWA、Electron、Android（Capacitor）多端。许可证 CC BY-NC 4.0（禁止商用）；打包的楷体字型为 LXGW WenKai，SIL OFL 1.1（许可证文本在 `public/fonts/OFL.txt`，再分发时须保留）。
+**云隐修仙录** — 一款 Vue 3 驱动的文字修仙放置（idle）游戏，单机离线成长玩法。版本 1.42.0，`type: module`。支持 Web/PWA、Electron、Android（Capacitor）多端。许可证 CC BY-NC 4.0（禁止商用）；打包的楷体字型为 LXGW WenKai，SIL OFL 1.1（许可证文本在 `public/fonts/OFL.txt`，再分发时须保留）。
 
 ## Architecture & Data Flow
 
@@ -20,9 +20,9 @@ src/stores/ Pinia 状态（持久化 <-> 内存）
 src/ui/    展示层字符串/图标注册（非逻辑）
 ```
 
-- **src/data/** — 纯静态声明式数据，无副作用、单一事实源。48 个模块：realms、regions、enemies（132）、equipment（288 模板）、affixes（113）、gongfa、gongfaBranches、pills、artifacts、souls、xiangxiu、ziwei、yijing、qimen、daolu、endgame、mutators、constants（556 行，含 `TICK_MS`、`OFFLINE_MIN_SECONDS`、`AGE_YEARS_PER_HOUR`、`ACTIVE_STAMP_MS` 等）。**这里的数字就是真实游戏数值，改动会影响全流程。**
-- **src/core/** — 游戏逻辑。关键模块：`engine.ts`（在线心跳 1000ms 单例，含 start/stop 与防重复 interval 守卫）、`combat.ts`（后台完整预演后回放）、`statsCalc.ts`（词缀递减 + 软上限）、`equipGen.ts`、`exploration.ts`、`offline.ts`、`progress.ts`（任务/成就横向总线）、`theme.ts`、`worldGen.ts`（终局世界生成，三重审计门）；另有 16 个 `*Service.ts` 与 6 个 `*Sim.ts` 平衡模拟器。
-- **src/stores/** — 15 个 Pinia store；除 `ui.ts` 外 14 个经 `persistConfig('<id>')`（`utils/storage.ts`）持久化。**任何持久化 store 必须暴露 `sanitize()`** 修复损坏存档——`storeResilience.spec.ts` 会从源码正则 `/persistConfig\('([a-zA-Z]+)'\)/` 抓取列表并逐一跑恶意损坏用例，缺 `sanitize` 即测试红。
+- **src/data/** — 纯静态声明式数据，无副作用、单一事实源。55 个模块：realms、regions、enemies（132）、equipment（288 模板）、affixes（119）、gongfa、gongfaBranches、pills、artifacts、souls、xiangxiu、ziwei、yijing、qimen、daolu、endgame、mutators、constants（556 行，含 `TICK_MS`、`OFFLINE_MIN_SECONDS`、`AGE_YEARS_PER_HOUR`、`ACTIVE_STAMP_MS` 等）。**这里的数字就是真实游戏数值，改动会影响全流程。**
+- **src/core/** — 游戏逻辑。关键模块：`engine.ts`（在线心跳 1000ms 单例，含 start/stop 与防重复 interval 守卫）、`combat.ts`（后台完整预演后回放）、`statsCalc.ts`（词缀递减 + 软上限）、`equipGen.ts`、`exploration.ts`、`offline.ts`、`progress.ts`（任务/成就横向总线）、`theme.ts`、`worldGen.ts`（终局世界生成，三重审计门）；另有 19 个 `*Service.ts` 与 6 个 `*Sim.ts` 平衡模拟器。
+- **src/stores/** — 19 个 Pinia store；除 `ui.ts` 外 18 个经 `persistConfig('<id>')`（`utils/storage.ts`）持久化。**任何持久化 store 必须暴露 `sanitize()`** 修复损坏存档——`storeResilience.spec.ts` 会从源码正则 `/persistConfig\('([a-zA-Z]+)'\)/` 抓取列表并逐一跑恶意损坏用例，缺 `sanitize` 即测试红。
 - **src/ui/** — 展示层数据（icons 注册、statNames、codex、enemyLore、releaseNotes、`*Text.ts`）。注意 "palette" 不是模块，是 `src/ui/palette.spec.ts` 治理测试。
 - **src/utils/** — `GNum`（大数 `{m,e}=m×10^e`，`gn/ad/mul/div/powN/cmp/toNum`；**`toNum` 在 e>308 返回 Infinity，需守卫**）、`format`（formatGN/Num/Rate/Percent/Duration/Countdown/Clock/Years）、`random`（mulberry32 + RandomService 单例）、`storage`（前缀 `yunyin.`，SAVE_VERSION 2，AES 加密，节流合并写入 `SAVE_FLUSH_MS` 5000，`PERSISTED_STORES` 列表，`subscribeSaveWriteFailure`，preflightScan 隔离，v1→v2 迁移）、`saveShape`（asArray/asStringArray/asRecord/asRecordOf/asFiniteNumber 守卫）、`platform`、`colorToken`（tint）。
 - **src/types/** — 领域类型（CombatResult、CombatSideStats、FoeOrigin、GNum、EquipSlot…）。
@@ -32,8 +32,8 @@ src/ui/    展示层字符串/图标注册（非逻辑）
 | 路径 | 用途 |
 |---|---|
 | `src/data/` | 静态声明式游戏内容（唯一事实源）|
-| `src/core/` | 游戏逻辑 + 184 个同目录 `*.spec.ts` |
-| `src/stores/` | Pinia 状态（14 持久化 + ui 临时）|
+| `src/core/` | 游戏逻辑 + 206 个同目录 `*.spec.ts` |
+| `src/stores/` | Pinia 状态（18 持久化 + ui 临时）|
 | `src/ui/` | 展示层字符串 / 图标 | 
 | `src/utils/` | 大数、格式化、随机、存储、存档守卫 |
 | `src/types/` | 领域类型 |
@@ -72,6 +72,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - **字体**：`font-kai` 仅用于标题/境界名/名号，正文用系统栈。捆绑楷体子集 1.5MB（"GB 屏幕阅读版"）；新增装饰字形须进 `build-kai-font.py` 的 `SYMBOLS_FROM_SYSTEM` 白名单，否则构建失败。
 - **动画**：`@keyframes` 定义在 style.css；必须同时尊重 `@media (prefers-reduced-motion: reduce)` 与 `.reduce-motion` 块，且两处都要把 `animation-delay` 归零。键盘可访问：全局 `:focus-visible` 朱砂描边已存在，别用 `outline-none` 干掉；纯图标按钮要有 `aria-label`。
 - **Big number 注意**：`GNum.toNum()` 在 e>308 返回 Infinity，处理超大数值前先守卫。
+- **层级地雷（反复踩过）**：灵石相关的报价/奖励/花费曲线（经 `stoneByTier`）一律骑 `maxTierForMajor(major)` 的真实区域阶梯（至 32 阶）——**别拿境界大阶 `major`(0-20) 当层级**。坊市装备价、悬赏贡器门槛、`playerTier`(成就/每日/主线灵石奖励 + 灵脉投点/迁移费) 都曾固死在旧尺 `min(20, major*2+2)` 上、在混沌道祖处偏约 2.2e5 倍才被修掉。新增 `stoneByTier` 调用点前，先对照 `marketService.marketTier` / `bountyService` / `pillCraftCost` 确认用的是同一把尺。
 - **数据流**：改数值去 `src/data/`，改逻辑去 `src/core/`，改展示去 `src/ui/`，不要跨层硬编码。
 - **测试**：`describe/it` 用中文 given-when-then，真实断言，刻意故障注入证明测试能抓 bug。
 
@@ -112,7 +113,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 
 ## Testing & QA
 
-- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 242 个 spec：core 184、ui 36、stores 9、utils 8、data 2、composables 2、router 1）。README 里的 "155/143" 已过时——实际 242/184。
+- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 283 个 spec：core 206、ui 39、stores 18、utils 9、data 8、composables 2、router 1；全量约 2814 用例）。README 里的 "155/143" 已过时——按当前计 283/2814，别信旧数。
 - **运行**：全量 `bun run test`；分桶报告 `bun run test:report`。
 - **红线测试（改了相关逻辑必须保住）**：
   - `storeResilience.spec.ts` — 持久化 store 必须带 `sanitize`，且经恶意损坏用例。

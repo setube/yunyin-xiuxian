@@ -211,6 +211,19 @@ describe('图鉴 · 用具三类的收录深度', () => {
     }
   })
 
+  it('装备:低阶模板的「用过了」提示按该阶上限说人话,不拿永远够不着的天品吊玩家', () => {
+    // 玄铁重剑只属 2 阶 —— 天品 fromTier 16,它的掉落窗口到不了天品,别承诺它
+    const low = equipmentTemplate('w_xuantie')!
+    expect(low.tier).toBeLessThan(qualityDef('heaven').fromTier!)
+    const lowSeen = { q: qualityDef('excellent').rank, t: 2, u: 1 } // 用了,见过精品(该阶上限)
+    const lowHint = describeEquipment(low, lowSeen, true).hint
+    expect(lowHint, '低阶模板不该承诺天品').not.toContain('天品')
+    // 星云长兵 17 阶(≥ 天品 fromTier 16)—— 才该导向天品
+    const high = equipmentTemplate('w_xingyun')!
+    const highHint = describeEquipment(high, { q: qualityDef('fine').rank, t: 17, u: 1 }, true).hint
+    expect(highHint, '够得着天品的模板仍指引天品').toContain('天品')
+  })
+
   it('法宝:祭炼重数决定深度,到九重封顶;功用行给的是本人那一份', () => {
     const fuchen = artifactDef('af_xuanxu')!
     expect(artifactStage(0, false)).toBe(0)
