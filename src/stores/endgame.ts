@@ -72,6 +72,12 @@ export const useEndgameStore = defineStore(
     function sanitize(): void {
       daoPath.value = typeof daoPath.value === 'string' ? daoPath.value : null
       daoSource.value = asFiniteNumber(daoSource.value, 0, 0)
+      // 一次性引导标记:损坏档里混入真值(1/"true")会永久压掉引导,混入假值(0/"")又可能重播。
+      // 一律 ===true 归一,与 settings 的布尔开关同一套清洗纪律。
+      endgameTutorialSeen.value = endgameTutorialSeen.value === true
+      daoFruitTutorialSeen.value = daoFruitTutorialSeen.value === true
+      resourceDialogSeen.value = resourceDialogSeen.value === true
+      soulTutorialSeen.value = soulTutorialSeen.value === true
       worldClears.value = asNumberRecord(worldClears.value, 0)
       trialRecords.value = asRecordOf<TrialRecord>(
         trialRecords.value,
@@ -117,6 +123,10 @@ export const useEndgameStore = defineStore(
       )
       souls.value = asArray<SoulInstance>(souls.value, [], s => !!s && typeof (s as SoulInstance).uid === 'string')
       equippedSouls.value = asStringArray(equippedSouls.value)
+      // 装配表清掉已不存在的 uid(ghost):否则原始槽位与 activeSouls(过滤读数)分叉 ——
+      // 幽灵占着槽、栏里看着有空位,再装配却静默失败
+      const soulUids = new Set(souls.value.map(s => s.uid))
+      equippedSouls.value = equippedSouls.value.filter(id => soulUids.has(id))
     }
 
     /** 已装配器魂(过滤掉已不存在的 uid) */
@@ -144,7 +154,8 @@ export const useEndgameStore = defineStore(
     function equipSoul(uid: string): boolean {
       const equipped = Array.isArray(equippedSouls.value) ? equippedSouls.value : []
       if (equipped.includes(uid)) return false
-      if (equipped.length >= SOUL_SLOTS) return false
+      // 槽位按「有效装配」算(activeSouls 已滤幽灵):幽灵占原始槽只会让装配静默失败
+      if (activeSouls.value.length >= SOUL_SLOTS) return false
       if (!soulList.value.some(s => s.uid === uid)) return false
       equippedSouls.value = [...equipped, uid]
       return true

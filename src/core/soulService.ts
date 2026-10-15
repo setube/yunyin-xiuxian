@@ -65,6 +65,8 @@ export function wearSoul(uid: string): boolean {
     ui.toast(`神魂只容得下 ${SOUL_SLOTS} 缕形意,先散去一缕`, 'warn')
     return false
   }
+  // equipSoul 的槽位判定已按「有效装配」(滤掉 ghost)算,幽灵槽不再让它静默失败;
+  // 剩余失败(已装配/不在持有池)按原语义静默返回
   return endgame.equipSoul(uid)
 }
 

@@ -639,7 +639,7 @@
       <div class="card-ink divide-y divide-ink/6 px-4">
         <div v-for="row in furnaceRows" :key="row.rate.resource" class="py-2.5">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[12px] text-ink-soft">{{ row.rate.name }}(存 {{ formatNum(row.have) }})</span>
+            <span class="text-[12px] text-ink-soft">{{ row.rate.resource === 'herb' ? `灵草(仙品+存 ${formatNum(row.have)})` : `${row.rate.name}(存 ${formatNum(row.have)})` }}</span>
             <!-- 全熔防误触:文案亮出『整包』与可得道源(不再是『按 25:1 换』的可兑换暗示),再按一下才熔 -->
             <button
               class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
@@ -651,8 +651,9 @@
           </div>
           <div v-if="furnaceConfirm === row.rate.resource" class="mt-1.5 rounded-md bg-cinnabar/5 px-3 py-2">
             <p class="text-[10px] leading-relaxed text-cinnabar">
-              将 <span class="tabular">{{ row.rate.name }} ×{{ formatNum(row.have) }}</span> 尽数熔作道源,共
-              <span class="tabular">+{{ furnacePreview(row.rate) }}</span> 缕 —— 此举不可逆,这些资源再无炼丹/锻造/参悟之途。
+              将以 <span class="tabular">{{ row.rate.name }} ×{{ formatNum(furnacePreview(row.rate) * row.rate.per) }}</span> 熔作
+              <span class="tabular">+{{ furnacePreview(row.rate) }}</span> 缕道源,余
+              <span class="tabular">{{ formatNum(row.have - furnacePreview(row.rate) * row.rate.per) }}</span> 保留 —— 此举不可逆,所熔资源再无炼丹/锻造/参悟之途。
             </p>
             <div class="mt-1.5 flex justify-end gap-2">
               <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="furnaceConfirm = null">再想想</button>
@@ -1257,8 +1258,11 @@
   }
 
   function goDaily(): void {
-    if (!daily.value) return
-    const result = undertakeDaily(daily.value)
+    // 用当下现取,不拿可能已跨午夜的缓存 daily.value(其 day 来自非响应式 todayChallenge,
+    // 驻足跨日仍是昨天那题):应战落闸与题面都要是今天的
+    const current = todayChallenge()
+    if (!current) return
+    const result = undertakeDaily(current)
     if (result) {
       openReport({
         title: result.title,

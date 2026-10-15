@@ -273,3 +273,22 @@ describe('天道试炼 · recordTrial best-min 守谱', () => {
     expect(e.trialRecords['wuhui']?.bestRounds).toBe(7)
   })
 })
+
+describe('终局一次性引导标记 sanitize', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('损坏的真值(非字面 true)被 ===true 归一,不再永久压掉或重播引导', () => {
+    const e = useEndgameStore()
+    ;(e as unknown as { endgameTutorialSeen: unknown }).endgameTutorialSeen = 'false'
+    ;(e as unknown as { daoFruitTutorialSeen: unknown }).daoFruitTutorialSeen = 1
+    ;(e as unknown as { resourceDialogSeen: unknown }).resourceDialogSeen = 'true'
+    ;(e as unknown as { soulTutorialSeen: unknown }).soulTutorialSeen = 0
+    e.sanitize()
+    expect(e.endgameTutorialSeen, '"false"不再被当成已看,引导按需可出').toBe(false)
+    expect(e.daoFruitTutorialSeen, '数字 1 不再永久压掉道果引导').toBe(false)
+    expect(e.resourceDialogSeen, '"true"不再永久压掉资源弹窗').toBe(false)
+    expect(e.soulTutorialSeen, '0 → false').toBe(false)
+  })
+})

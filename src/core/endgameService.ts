@@ -130,7 +130,9 @@ export function condenseDaoFruit(): boolean {
   if (first) endgame.daoFruitTutorialSeen = true
   // S5 首次道果教学:即时因果解释,建立"现在拿道果 = 以后更强"
   ui.toast(
-    first ? '百缕道源凝作一枚道果——此物不随此身而灭,转世仍归你所有,来世修行更快。' : '百缕道源凝作一枚道果',
+    first
+      ? `${DAO_SOURCE_PER_FRUIT} 缕道源凝作一枚道果——此物不随此身而灭,转世仍归你所有,来世修行更快。`
+      : `${DAO_SOURCE_PER_FRUIT} 缕道源凝作一枚道果`,
     'rare'
   )
   return true

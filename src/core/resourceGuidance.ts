@@ -60,7 +60,7 @@ export function daoFruitDialog(): ResourceDialogData {
     intro: '跨越轮回仍不磨灭的修行成果。',
     usages: DAO_FRUIT_USAGES,
     gains: ['道源凝聚', '终局奖励'],
-    lifecycle: `跨世保留。每枚:修行 +${formatPercent(DAO_FRUIT_CULT_BONUS)},道躯 +${formatPercent(DAO_FRUIT_COMBAT_BONUS)}。`
+    lifecycle: `跨世保留。每枚至多:修行 +${formatPercent(DAO_FRUIT_CULT_BONUS)},道躯 +${formatPercent(DAO_FRUIT_COMBAT_BONUS)};边际渐减(effectiveDaoFruit=道果^0.9)。`
   }
 }
 

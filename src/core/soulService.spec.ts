@@ -184,6 +184,32 @@ describe('装配器魂(wearSoul)', () => {
     expect(wearSoul('s1')).toBe(false) // equipSoul 见已装配 → false
     expect(useUiStore().toasts).toHaveLength(0)
   })
+
+  it('ghost 幽灵占原始槽不阻挡真魂装入(槽按有效装配算,不均静默失败)', () => {
+    const endgame = useEndgameStore()
+    endgame.souls = [
+      { uid: 's1', type: 'fengmang', grade: 1, fromName: 'x' },
+      { uid: 's2', type: 'beishui', grade: 1, fromName: 'x' },
+      { uid: 's3', type: 'gangdun', grade: 1, fromName: 'x' }
+    ]
+    // 装配表 3 条,其中 'ghost' 已不存在于 souls —— activeSouls 只算 2 条
+    endgame.equippedSouls = ['s1', 's2', 'ghost']
+    expect(endgame.activeSouls).toHaveLength(2)
+    // 旧逻辑:equipSoul 看原始长度 3=满 → 静默返 false,栏里明明有位置却装不上
+    expect(wearSoul('s3')).toBe(true)
+    expect(useUiStore().toasts).toHaveLength(0)
+    expect(endgame.activeSouls.map(s => s.uid)).toContain('s3')
+  })
+
+  it('sanitize 清掉装配表里不存在的 ghost uid(原始槽与有效装配不再分叉)', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({
+      souls: [{ uid: 's1', type: 'fengmang', grade: 1, fromName: 'x' }],
+      equippedSouls: ['s1', 'ghost']
+    })
+    endgame.sanitize()
+    expect(endgame.equippedSouls).toEqual(['s1'])
+  })
 })
 
 describe('卸下器魂(removeSoul)', () => {
