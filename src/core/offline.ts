@@ -16,6 +16,8 @@ import {
   AGE_YEARS_PER_HOUR,
   BATTLE_EXP_SECS,
   EQUIP_DROP_CHANCE,
+  HERB_DROP_CHANCE,
+  ORE_DROP_CHANCE,
   EXPLORE_BATTLE_INTERVAL,
   PAGE_DROP_CHANCE,
   EXPLORE_BOSS_AFTER_WINS,
@@ -30,7 +32,7 @@ import { buildPlayerSnap } from './playerSnap'
 import { generateEquipment } from './equipGen'
 import { onAcquire, acquireEquipment, afterWin } from './loot'
 import { autoResolveEvent, regionEventPoolFor } from './eventEngine'
-import { clearRegionAndUnlockNext, exploreEventChance, dangerFactorFor, explorationRules } from './exploration'
+import { clearRegionAndUnlockNext, exploreEventChance, regionBossCleared, dangerFactorFor, explorationRules } from './exploration'
 import { currentRegionEvent, regionEventDef } from './regionEvent'
 import { placeContent } from './mortalWorldService'
 import { expFromSecs, stoneByTier } from './formulas'
@@ -67,6 +69,24 @@ const DEFAULT_OFFLINE_EVENT_IDS = ['ev_spring', 'ev_herb_garden', 'ev_night_talk
 const OFFLINE_SAFE_EFFECTS = new Set(['stone', 'exp', 'material', 'equipment', 'pill', 'buff', 'nothing'])
 function isOfflineSafeEvent(ev: EventDef): boolean {
   return ev.choices.every(c => c.outcomes.every(o => o.effects.every(e => OFFLINE_SAFE_EFFECTS.has(e.type))))
+}
+
+/**
+ * 离线单胜材料均值 —— 与在线 afterWin 同一套期望(单源取 drop 常量,防两处漂移)。
+ * herb 在线 = HERB_DROP_CHANCE(0.5)×E[1..3](2);ore = ORE_DROP_CHANCE(0.35)×E[1..2](1.5);
+ * page = PAGE_DROP_CHANCE×1.5×倍率。flat dust 是离线独有的便捷值,在线并无此入口(见 dust 注释)。
+ */
+export function offlineMaterialGain(
+  wins: number,
+  doubleMult: number,
+  rewardMult: number
+): { herb: number; ore: number; page: number; dust: number } {
+  return {
+    herb: Math.round(wins * HERB_DROP_CHANCE * 2 * doubleMult),
+    ore: Math.round(wins * ORE_DROP_CHANCE * 1.5 * doubleMult),
+    page: Math.round(wins * PAGE_DROP_CHANCE * 1.5 * rewardMult * doubleMult),
+    dust: Math.round(wins * 0.3 * doubleMult)
+  }
 }
 
 /**
@@ -219,20 +239,21 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         player.gainExp(expGain)
         trip.stone = add(trip.stone, stoneGain)
         trip.exp = add(trip.exp, expGain)
-        // 材料 —— 离线也会撞见新灵材,只是次数封顶,免得回来一屏 toast
-        const herbGain = Math.round(wins * 1.0 * doubleMult)
-        const oreGain = Math.round(wins * 0.5 * doubleMult)
+        // 材料 —— 离线也会撞见新灵材,只是次数封顶,免得回来一屏 toast。
+        // 用与在线同一套期望(offlineMaterialGain,单源取 drop 常量):herb 0.5×2、ore 0.35×1.5、page 0.12×1.5
+        const { herb: herbGain, ore: oreGain, page: pageGain, dust: dustGain } = offlineMaterialGain(
+          wins,
+          doubleMult,
+          modeDef.rewardMult * regionEventReward
+        )
         resources.addHerb(herbGradeOfMajor(region.minRealm), herbGain)
         resources.addSmall('ore', oreGain)
         harvestMaterials(region.tier, 'herb', herbGain)
         harvestMaterials(region.tier, 'ore', oreGain)
-        // 残页与在线同源:在线判 rng.chance(PAGE_DROP_CHANCE * rewardMult),出 n=1..2(均值1.5),
-        // rewardMult 参数 = mode×reg —— 离线按其期望整段结算,0.15 是写死的旧值(漏了模式倍率)
-        resources.addSmall('page', Math.round(wins * PAGE_DROP_CHANCE * 1.5 * modeDef.rewardMult * regionEventReward * doubleMult))
-        resources.addSmall('dust', Math.round(wins * 0.3 * doubleMult))
-        // 装备:最多实际生成 6 件,其余折算为器灵尘(掉落数与在线同源,乘模式倍率 × 事件加丰 × 福缘 ——
-        // 在线 afterWin 把 mode×regReward 全折进 rewardMult 参数,这里缺了 modeDef.rewardMult,
-        // 「进取 / 疾驰」的 +40% / +90% 就对离线装备掉落完全落空,与灵石/修为两行不同源
+        resources.addSmall('page', pageGain)
+        resources.addSmall('dust', dustGain)
+        // 装备:最多实际生成 6 件,其余折算为器灵尘(掉落数与在线同源 ——
+        // 在线 afterWin 把 mode×regReward 折进 rewardMult,离线同乘模式倍率 × 事件加丰 × 福缘)
         const equipCount = Math.round(wins * EQUIP_DROP_CHANCE * modeDef.rewardMult * regionEventReward * (1 + modOf(mods, 'dropRate')) * doubleMult)
         const realCount = Math.min(6, equipCount)
         for (let i = 0; i < realCount; i += 1) {
@@ -276,8 +297,10 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
       // 而实际只结算了 40 次——把 count 收敛为真实经历再写进 summary 与 session
       events = evCap
       // 离线自动挑战区域首领(收益折损,胜则连锁解锁;门槛与在线一致,避免离线早一步解锁下一区)
-      // 门槛与在线同源(EXPLORE_BOSS_AFTER_WINS):两处各写一个 10,改一处就抢跑解锁
-      if (!adventure.cleared.includes(region.id) && wins >= EXPLORE_BOSS_AFTER_WINS) {
+      // 「首领是否已清」按**本世路线**判(与在线 exploration.regionBossCleared 同源):
+      // 旧 REGIONS cleared 链在本世路线下会留空,若离线仍按它判,已清的 boss 会被离线再砍一遍、
+      // 还能顺手解锁下一区 —— 与在线判定分叉
+      if (!regionBossCleared(region.id) && wins >= EXPLORE_BOSS_AFTER_WINS) {
         const bossDef = enemyDef(placeContent(region.id).boss)
         if (bossDef) {
           const bossDanger = dangerFactorFor(modeDef.dangerMult, region.danger, petDangerMult, regionEventDanger)
@@ -341,7 +364,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
     })).filter(e => e.amount > 0),
     ore: resources.ore - oreBefore,
     wudao: resources.wudao - wudaoBefore,
-    ageYears: Math.round(player.age - ageBefore),
+    ageYears: Math.floor(player.age - ageBefore),
     battles,
     wins,
     events,

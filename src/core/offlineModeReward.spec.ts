@@ -123,3 +123,20 @@ describe('离线普通战产出吃模式倍率(确定性)', () => {
     expect(deep.equipChanceCount).toBeLessThanOrEqual(Math.round(normal.equipChanceCount * 1.5))
   })
 })
+
+import { offlineMaterialGain } from './offline'
+import { HERB_DROP_CHANCE, ORE_DROP_CHANCE, PAGE_DROP_CHANCE } from '@/data/constants'
+
+describe('离线单胜材料与在线 afterWin 同一期望(单源取 drop 常量)', () => {
+  it('ore 取 ORE_DROP_CHANCE×1.5(0.525)而非写死 0.5;herb/page 同源;福缘/倍率各自放大', () => {
+    const g = offlineMaterialGain(120, 1, 1)
+    // ore 在线期望 = 0.35×1.5=0.525/胜 —— 写死的 0.5 在 120 胜处只有 60,这里须 63,退回即红
+    expect(g.ore, 'ore 应随 ORE_DROP_CHANCE×1.5,不可退回写死 0.5').toBe(Math.round(120 * ORE_DROP_CHANCE * 1.5))
+    expect(g.herb, 'herb 应随 HERB_DROP_CHANCE×2').toBe(Math.round(120 * HERB_DROP_CHANCE * 2))
+    expect(g.page, 'page 应随 PAGE_DROP_CHANCE×1.5').toBe(Math.round(120 * PAGE_DROP_CHANCE * 1.5))
+    // 福缘翻倍整体放大;模式/事件倍率只作用于 page(在线 rewardMult 只碰 page 概率与装备),不碰 herb/ore
+    expect(offlineMaterialGain(100, 2, 1).ore).toBe(Math.round(100 * ORE_DROP_CHANCE * 1.5 * 2))
+    expect(offlineMaterialGain(100, 1, 1.4).page).toBe(Math.round(100 * PAGE_DROP_CHANCE * 1.5 * 1.4))
+    expect(offlineMaterialGain(100, 1, 1.4).ore).toBe(Math.round(100 * ORE_DROP_CHANCE * 1.5))
+  })
+})

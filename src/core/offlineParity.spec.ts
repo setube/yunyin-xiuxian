@@ -83,7 +83,18 @@ describe('离线历练 · 区域事件加丰与加难成对(regReward)', () => {
     // 「进取/疾驰」这类高收益模式对离线装备掉落就落空(曾经正是如此)
     expect(offline).toContain('EQUIP_DROP_CHANCE * modeDef.rewardMult * regionEventReward')
     // 残页与在线同源:在线 page 掉落判定是 rng.chance(PAGE_DROP_CHANCE * rewardMult),
-    // rewardMult 参数含 mode×reg —— 离线残页若只写死 0.15、不吃模式倍率,高收益模式赌残页就落空
-    expect(offline).toContain('PAGE_DROP_CHANCE * 1.5 * modeDef.rewardMult * regionEventReward')
+    // rewardMult 参数含 mode×reg —— 残页现由 offlineMaterialGain 单源折算,仍吃 PAGE_DROP_CHANCE×1.5×倍率
+    expect(offline).toContain('PAGE_DROP_CHANCE * 1.5 * rewardMult')
+  })
+})
+
+describe('离线历练 · 首领判定与在线同源(本世路线)', () => {
+  it('离线首领「是否已清」按本世路线 regionBossCleared 判,不再按旧 REGIONS cleared 链', () => {
+    const offline = readFileSync(src('./offline.ts'), 'utf8')
+    // 与在线 exploration.regionBossCleared 同一条判据:本世路线下旧 cleared 链会留空,
+    // 若离线按它判,已清的 boss 会被离线再砍一遍、还顺手解锁下一区(与在线判定分叉)
+    expect(offline).toContain('regionBossCleared(region.id)')
+    // 显式钉死「不再用裸 adventure.cleared 判定」—— 有人改回旧链即红
+    expect(offline).not.toMatch(/!adventure\.cleared\.includes\(region\.id\)/)
   })
 })
