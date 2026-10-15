@@ -22,6 +22,8 @@ import { buffDef } from '@/data/buffs'
 import { ENLIGHTENMENT_OPTIONS, CAVE_EVENT_POOL } from '@/data/earlyGame'
 import { usePlayerStore } from '@/stores/player'
 import { useCultivationStore } from '@/stores/cultivation'
+import { useDongfuStore } from '@/stores/dongfu'
+import { petDef } from '@/data/pets'
 
 describe('前期玩法 buff 数据完整性(防「无此定义→静默空转」回潮)', () => {
   it('每一个顿悟选项引用的 buffId 都有定义', () => {
@@ -129,6 +131,19 @@ describe('qiCapPct / beastPct 接线(修复阵法 / 安抚灵兽语出必践)', 
     expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(0.1)
     cultivation.addBuff('cave_garden_pet', Date.now())
     expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(0.13)
+  })
+
+  it('兽苑卡片的出战加成走「真到账」那份:petModsFor 随灵兽园等级与安抚增益同源放大(非 base)', () => {
+    const player = usePlayerStore()
+    const cultivation = useCultivationStore()
+    const dongfu = useDongfuStore()
+    player.setPet('pet_qingyu') // explorationSpeed base 0.1
+    // 灵兽园 8 级(beastMult=1.8)+ 安抚增益(1.3):0.1×1.8×1.3 = 0.234
+    dongfu.setLevel('beast', 8)
+    cultivation.addBuff('cave_garden_pet', Date.now())
+    // 卡片渲染源与「真到账」finalStats 同一份 —— 若卡片拿裸 base 0.1,这里就漏了灵兽园/安抚的放大
+    expect(player.petModsFor(petDef('pet_qingyu')!).explorationSpeed).toBeCloseTo(0.234)
+    expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(0.234)
   })
 })
 

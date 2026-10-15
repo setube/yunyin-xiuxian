@@ -627,7 +627,7 @@
   import { RESPONSE_NAMES, SPARK_NAMES } from '@/data/bondIntent'
   import { TRIGGER_NAMES } from '@/data/bondEvents'
   import { fruitCountLabel, fruitMarginalInfo } from '@/core/resourceGuidance'
-  import { branchCodex, materialCodex } from '@/ui/codex'
+  import { branchCodex, materialCodex, codexOwnedCount } from '@/ui/codex'
   import { mentorVerdict, mentorChoices } from '@/core/mentorService'
   import type { MentorId } from '@/data/mentors'
   import { mentorHint } from '@/core/fortuneChain'
@@ -713,13 +713,13 @@
 
   const collectHave = computed(
     () =>
-      quests.collections.equip.length +
-      quests.collections.gongfa.length +
-      quests.collections.pill.length +
-      quests.collections.artifact.length +
-      quests.collections.pet.length +
-      quests.collections.event.length +
-      quests.collections.talent.length +
+      codexOwnedCount(quests.collections.equip, EQUIPMENT_TEMPLATES) +
+      codexOwnedCount(quests.collections.gongfa, GONGFA) +
+      codexOwnedCount(quests.collections.pill, PILLS) +
+      codexOwnedCount(quests.collections.artifact, ARTIFACTS) +
+      codexOwnedCount(quests.collections.pet, PETS) +
+      codexOwnedCount(quests.collections.event, EVENTS) +
+      codexOwnedCount(quests.collections.talent, TALENTS) +
       // 图鉴页还有灵材谱与悟道录两类(派生视图,见 ui/codex.ts),计数要带上,否则两页对不上
       branchCodex().entries.filter(e => e.stage > 0).length +
       materialCodex().entries.filter(e => e.stage > 0).length

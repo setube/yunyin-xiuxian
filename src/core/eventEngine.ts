@@ -14,6 +14,7 @@ import { pillDef, PILLS, pillRank } from '@/data/pills'
 import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
 import { buffDef } from '@/data/buffs'
 import { petDef, genericPetPool } from '@/data/pets'
+import { personalityEffects } from './petPersonality'
 import { expFromSecs, stoneByTier } from './formulas'
 import { generateEquipment } from './equipGen'
 import { acquireArtifact, acquireEquipment, randomDropArtifact } from './loot'
@@ -159,7 +160,8 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
       return `${MATERIAL_NAMES[effect.id]} +${effect.amount}`
     case 'equipment': {
       const inst = generateEquipment(Math.max(tier, 1), rng, {
-        luck: modOf(player.finalStats.mods, 'luck'),
+        // 品质 luck 与战斗/离线掉落同源:并上灵兽性格的掉落倾向(贪宝更易稀出,谨慎稍稍寻常)
+        luck: modOf(player.finalStats.mods, 'luck') + personalityEffects(player.petId).dropLuck,
         minQualityRank: effect.minQualityRank
       })
       return `获得 ${acquireEquipment(inst).line}`

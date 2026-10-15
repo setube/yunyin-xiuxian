@@ -142,7 +142,8 @@
       .map(def => ({
         def: def!,
         active: player.petId === def!.id,
-        modText: modsText(def!.mods),
+        // 出战加成按「真到账」那份渲染(× 灵兽园等级 × 安抚增益),与角色面板来源明细一致,不能给 base
+        modText: modsText(player.petModsFor(def!)),
         personalityName: PERSONALITY_NAMES[def!.personality],
         personalityDesc: personalityDesc(def!.personality),
         traitText: petTraitText(def!)

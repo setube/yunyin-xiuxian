@@ -97,6 +97,7 @@
   import { computed, ref } from 'vue'
   import { useQuestsStore } from '@/stores/quests'
   import type { CollectionCategory } from '@/stores/quests'
+  import { usePlayerStore } from '@/stores/player'
   import { ACHIEVEMENTS } from '@/data/achievements'
   import { GONGFA } from '@/data/gongfa'
   import { PETS } from '@/data/pets'
@@ -114,9 +115,10 @@
     materialCodex,
     pillCodex,
     type CodexCat,
-    type CodexEntry
+    type CodexEntry,
+    codexOwnedCount
   } from '@/ui/codex'
-  import { gongfaFuncText, gongfaMetaText, petFuncText } from '@/ui/itemText'
+  import { gongfaFuncText, gongfaMetaText } from '@/ui/itemText'
   import { modsText } from '@/ui/statNames'
   import { achievementDirection, achievementGroup, ACHIEVEMENT_GROUP_LABEL, ACHIEVEMENT_GROUP_ORDER } from '@/ui/achievementHint'
   import { rewardPreview } from '@/core/progress'
@@ -126,6 +128,7 @@
   import GameIcon from '@/components/common/GameIcon.vue'
 
   const quests = useQuestsStore()
+  const player = usePlayerStore()
 
   type Tab = 'achievement' | 'collection'
   const tab = ref<Tab>('achievement')
@@ -193,7 +196,8 @@
     const owned = new Set(ownedIds)
     // 标题计数要与彩签一致:ownedIds 可能含重复/已被移出图鉴的旧 id,
     // 照 `ownedIds.length` 会多报 —— 数「实际落进 defs 的那几枚」才和渲染对得上
-    const ownedCount = defs.reduce((n, d) => (owned.has(d.id) ? n + 1 : n), 0)
+    // (与角色页「图鉴 N/M」同一口径,见 ui/codex.codexOwnedCount)
+    const ownedCount = codexOwnedCount(ownedIds, defs)
     const entries: CodexEntry[] = defs
       .map(d => ({
         id: d.id,
@@ -246,7 +250,7 @@
         PETS.map(p => ({
           id: p.id,
           name: p.name,
-          desc: [p.desc, petFuncText(p)].filter(Boolean).join('\n'),
+          desc: [p.desc, modsText(player.petModsFor(p))].filter(Boolean).join('\n'),
           meta: qualityDef(p.quality).name,
           icon: beastIcon(p.family),
           color: qualityDef(p.quality).color

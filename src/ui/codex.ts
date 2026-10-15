@@ -76,6 +76,19 @@ export interface CodexCat {
   entries: CodexEntry[]
 }
 
+/**
+ * 「已收 N」的**统一口径** —— 收藏页与角色页共用,不许两处各算各自的。
+ *
+ * 收藏 ids 可能含重复 / 已被移出图鉴的旧 id(normal 存档的 collect 只追加真实 id,
+ * 但被损坏 / 旧版迁移的档会残留)。照 `ownedIds.length` 会多报 ——
+ * 只数「实际落进 defs 的那几枚」,才和界面上渲染出的彩签数对得上。
+ * CollectionView.makeCat 与 CharacterView 的图鉴计数都走这一个函数。
+ */
+export function codexOwnedCount(ownedIds: string[], defs: { id: string }[]): number {
+  const owned = new Set(ownedIds)
+  return defs.reduce((n, d) => (owned.has(d.id) ? n + 1 : n), 0)
+}
+
 /** 七类收藏册的来源说明(灵材谱与悟道录在各自构造函数里另给) */
 export const CODEX_SOURCES: Record<CollectionCategory, string> = {
   equip: '来源:历练掉落 —— 强敌与首领更易出',

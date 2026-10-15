@@ -32,7 +32,8 @@ import {
   describePill,
   type EquipSeen,
   equipStage,
-  pillStage
+  pillStage,
+  codexOwnedCount
 } from './codex'
 import {
   ARTIFACT_LEVEL_BONUS,
@@ -287,5 +288,16 @@ describe('图鉴 · 用具三类的收录深度', () => {
       expect(describePill(p, false, 0).stage).toBe(0)
       expect(describePill(p, false, 0).desc).not.toBe('')
     }
+  })
+})
+
+describe('codexOwnedCount(「已收 N」统一口径)', () => {
+  const defs = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+
+  it('只数实际落进 defs 的那几枚,重复与已被移出的旧 id 不多报', () => {
+    // 收藏 ids 可能混入旧 id('z')与重复('b'×3)—— 损坏 / 旧版迁移的档会残留
+    expect(codexOwnedCount(['a', 'b', 'b', 'b', 'z'], defs)).toBe(2)
+    expect(codexOwnedCount([], defs), '空集计 0').toBe(0)
+    expect(codexOwnedCount(['a', 'b', 'c'], defs), '健康档全落进 defs,如数计入').toBe(3)
   })
 })
