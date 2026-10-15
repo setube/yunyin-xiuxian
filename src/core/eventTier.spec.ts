@@ -186,14 +186,18 @@ describe('三档触发 · 接线', () => {
 
 describe('际遇概览(anyChance 入参 = 引擎真掷同一条乘链)', () => {
   it('抬高基础(星象/福缘/区域事件 eventMult)按同倍率放大各档,「约每 N 程」随之减少', () => {
-    const base = tierChances(false)
+    // 有缘在续(stagePending=true)时奇缘档也非零,三档断言都真穷尽(不会拿 0×2==0 唬人)
+    const base = tierChances(true)
     const x2 = EXPLORE_EVENT_CHANCE * 2
-    const boosted = tierChances(false, x2)
+    const boosted = tierChances(true, x2)
+    expect(boosted.qiyuan).toBeCloseTo(base.qiyuan * 2, 9)
     expect(boosted.jiyuan).toBeCloseTo(base.jiyuan * 2, 9)
     expect(boosted.jingyu).toBeCloseTo(base.jingyu * 2, 9)
-    expect(boosted.qiyuan).toBeCloseTo(base.qiyuan * 2, 9)
-    expect(tierEncountersPerTrigger('jingyu', false, x2)).toBeLessThan(tierEncountersPerTrigger('jingyu', false))
+    expect(tierEncountersPerTrigger('qiyuan', true, x2)).toBeLessThan(tierEncountersPerTrigger('qiyuan', true))
+    // 文案层也吃 anyChance:基础×2 后「约每 N」的 N 必须变小(否则 tierOddsText 弃用入参也测不出)
+    expect(tierEncountersPerTrigger('jingyu', true, x2)).toBeLessThan(tierEncountersPerTrigger('jingyu', true))
+    expect(tierOddsText('jingyu', true, x2)).not.toBe(tierOddsText('jingyu', true))
     // 缺省 = 裸基础,不破坏既有契约
-    expect(tierChances(false)).toEqual(base)
+    expect(tierChances(true)).toEqual(base)
   })
 })
