@@ -503,6 +503,20 @@ export interface ExpeditionForecast {
  * 整程预估:玩家构筑 + 所选契约,对该世界的线性连战做小样本推演。
  * 只给分档与星级,不给精确数字——信息归玩家,答案也归玩家
  */
+
+/** 远征真实对阵:入界 + 每层择路节点(取第 0 个选择作代表)+ 界主,共 EXPEDITION_ROUTE_LAYERS+2 战。
+ *  别用 world.fights —— 那是挑战/重演的敌数(6),远征只有 5 战;用错则预估多算一战、用错敌方形态、
+ *  给剑/杀多算一层 per-win。节点各自的 rules 不逐战建模(gauntlet 只吃一份全局规则),仅取敌方形状。 */
+export function expeditionFoeShapes(world: CelestialWorldDef): WorldFoeShape[] {
+  const foes: WorldFoeShape[] = [world.foes[0]!]
+  for (let layer = 0; layer < EXPEDITION_ROUTE_LAYERS; layer += 1) {
+    const node = world.routes[layer]?.[0]
+    if (node) foes.push(node.foe)
+  }
+  foes.push(world.guardian)
+  return foes
+}
+
 export function forecastExpedition(worldId: string, pactId: string | null, gateId: string | null = null): ExpeditionForecast | null {
   const world = resolveWorld(worldId)
   if (!world) return null
@@ -522,9 +536,7 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
   // 预估与实战同源:同一份参照、同一个加厚系数(见 celestialFoeCaliber 的注释)
   const { ref: pRef, judgement: pJudgement } = celestialFoeCaliber(player.major, player.celestialStats.mods, world.anchorTier)
   const snap = pactBoundedSnap(buildPlayerSnap(true), pact)
-  const playerFoes: CombatantSnap[] = []
-  for (let i = 0; i < world.fights - 1; i += 1) playerFoes.push(worldFoeSnap(world.foes[i % world.foes.length]!, pRef, 1, pJudgement))
-  playerFoes.push(worldFoeSnap(world.guardian, pRef, 1, pJudgement))
+  const playerFoes: CombatantSnap[] = expeditionFoeShapes(world).map(f => worldFoeSnap(f, pRef, 1, pJudgement))
   let clears = 0
   for (let i = 0; i < 8; i += 1) {
     if (runGauntlet(snap, playerFoes, rules, world.healBetweenPct, seededRng, playerOpts).cleared) clears += 1
@@ -542,10 +554,7 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
   for (const profile of BUILD_PROFILES) {
     const styleSnap = buildSnap(profile)
     const styleJudgement = celestialJudgement(styleSnap.mods, MAX_MAJOR, world.anchorTier)
-    const simFoes: CombatantSnap[] = []
-    for (let i = 0; i < world.fights - 1; i += 1)
-      simFoes.push(worldFoeSnap(world.foes[i % world.foes.length]!, SIM_REFERENCE, 1, styleJudgement))
-    simFoes.push(worldFoeSnap(world.guardian, SIM_REFERENCE, 1, styleJudgement))
+    const simFoes: CombatantSnap[] = expeditionFoeShapes(world).map(f => worldFoeSnap(f, SIM_REFERENCE, 1, styleJudgement))
     let wins = 0
     for (let i = 0; i < 5; i += 1) {
       if (runGauntlet(styleSnap, simFoes, rules, world.healBetweenPct, seededRng, opts).cleared) wins += 1

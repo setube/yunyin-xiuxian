@@ -14,8 +14,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
-import { CELESTIAL_WORLDS } from '@/data/endgame'
-import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian } from './expedition'
+import { CELESTIAL_WORLDS, EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
+import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes } from './expedition'
 import { celestialJudgementLines } from './gauntlet'
 import type { EquipSlot, EquipmentInstance } from '@/types'
 
@@ -168,5 +168,23 @@ describe('远征 · 败战即结(不留残局续打)', () => {
     const outcome = startWorldExpedition('chiyan', null)
     expect(outcome!.type).toBe('lost')
     expect(useEndgameStore().worldRun).toBeNull()
+  })
+})
+
+describe('远征预估对阵与实打同源(入界 + 每层节点 + 界主,共 5 战,非 world.fights)', () => {
+  it('每界预估对阵 = 入界 + EXPEDITION_ROUTE_LAYERS 真实节点敌 + 界主(身份同一,非循环堆)', () => {
+    for (const w of CELESTIAL_WORLDS) {
+      const foes = expeditionFoeShapes(w)
+      expect(foes.length, `${w.id} 应恰为 1+${EXPEDITION_ROUTE_LAYERS}+1 战`).toBe(1 + EXPEDITION_ROUTE_LAYERS + 1)
+      // 首战是入界之敌 world.foes[0],不是循环取模堆进来的泛形
+      expect(foes[0], `${w.id} 首战应为入界之敌`).toBe(w.foes[0])
+      // 中段各战取每层择路第 0 个选择的真实敌方形状
+      for (let layer = 0; layer < EXPEDITION_ROUTE_LAYERS; layer += 1) {
+        const routeFoe = w.routes[layer]?.[0]?.foe
+        if (routeFoe) expect(foes[1 + layer], `${w.id} 第 ${layer + 2} 战应为真实节点敌`).toBe(routeFoe)
+      }
+      // 末战是界主
+      expect(foes[foes.length - 1], `${w.id} 末战应为界主`).toBe(w.guardian)
+    }
   })
 })
