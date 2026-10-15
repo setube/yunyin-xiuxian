@@ -360,7 +360,7 @@
             <p class="whitespace-nowrap text-[10px] text-ink-faint">
               把握
               <span class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</span>
-              <span v-if="r.able.bonusChance > 0" class="ml-1 tabular text-jade">· 双丹 {{ formatPercent(r.able.bonusChance) }}</span>
+              <span v-if="r.able.bonusChanceWithYield > 0" class="ml-1 tabular text-jade">· 双丹 {{ formatPercent(r.able.bonusChanceWithYield) }}</span>
             </p>
             <div class="ml-auto flex shrink-0 gap-1.5">
               <!-- 玩家反馈「批量炼丹」:材料够几炉就连开几炉,结果与连点一致。

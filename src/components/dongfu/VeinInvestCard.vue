@@ -137,7 +137,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { VEINS, veinDef, type VeinId } from '@/data/veins'
   import { veinEffectText } from '@/ui/veinText'
-  import { investVein, investVeinBatch, veinInvestPlan, veinPointCost, veinSwitchCost, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
+  import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinSwitchCost, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
   import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { formatGN } from '@/utils/format'
 
@@ -182,9 +182,9 @@
     return dongfu.veinMain === veinId
   }
 
-  /** 该脉实际可投上限:主脉 70,副脉 30 */
+  /** 该脉实际可投上限:主脉 70,副脉 30;未定主脉时每条都按主脉档 —— 与 veinService.veinCap 同一口径,不再在视图抄第二份 */
   function cap(veinId: VeinId): number {
-    return isMain(veinId) ? VEIN_MAIN_CAPACITY : VEIN_SIDE_CAP
+    return veinCap(veinId)
   }
 
   /** 单脉已投 / 该脉上限;迁出的超额部分封顶百分百,条列满但数字照实报 */

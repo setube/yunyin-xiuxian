@@ -11,6 +11,7 @@ import type { PillDef } from '@/types'
 import { LORE_MAX, materialDef } from '@/data/materials'
 import { recipeCraft, skillDef, type RecipeCraft, type SkillId } from '@/data/crafting'
 import { pillDef, PILLS } from '@/data/pills'
+import { modOf } from './statsCalc'
 import { useLoreStore } from '@/stores/lore'
 import { usePlayerStore } from '@/stores/player'
 
@@ -34,6 +35,8 @@ export interface Craftability {
   successRate: number
   /** 成功时多得一枚的概率 */
   bonusChance: number
+  /** 含炼丹产出(炉/丹心/称号等 alchemyYield)后的真实多得概率 —— 与结算同一口径(封 0.8) */
+  bonusChanceWithYield: number
   /** 开不了炉的硬阻碍 */
   blockers: string[]
   /** 压低成功率的软因素,人话 */
@@ -167,6 +170,9 @@ export function craftability(id: string, opts?: { omitWeakness?: boolean }): Cra
     overReach: over,
     successRate: composeSuccessRate(mastery, matLore, skill, over),
     bonusChance: bonusChanceOf(mastery, skill),
+    // 结算 real: min(0.8, bonusChance + alchemyYield) —— 展示给这个真实值,
+    // 别只给基础通道(否则 bonusChance=0 而丹心有 20% 时,双丹标签直接消失,误导)
+    bonusChanceWithYield: Math.min(0.8, bonusChanceOf(mastery, skill) + modOf(player.finalStats.mods, 'alchemyYield')),
     blockers,
     weakness:
       blockers.length > 0 || opts?.omitWeakness ? [] : weaknessLines({ mastery, matLore, skill, over, craft, loreOf, levelOf }),

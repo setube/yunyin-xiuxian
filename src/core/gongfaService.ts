@@ -5,6 +5,7 @@ import { rng } from '@/utils/random'
 import { GONGFA, gongfaDef } from '@/data/gongfa'
 import { qualityDef } from '@/data/qualities'
 import { COMPREHEND_PAGE_COST } from '@/data/constants'
+import { INSIGHT_DISCOUNT_CAP } from '@/data/veins'
 import { gongfaUpCost } from './formulas'
 import { gongfaAffinity, rootElements } from './linggenAffinity'
 import { collect, track } from './progress'
@@ -78,7 +79,7 @@ export function gongfaUpgradeCost(id: string): { wudao: number; page: number } |
   if (!def || !lv || lv >= def.maxLevel) return null
   const q = qualityDef(def.quality)
   // 寒冥灵脉:参悟悟道点折扣(Phase 30.3)
-  const discount = Math.min(0.5, useDongfuStore().insightDiscount)
+  const discount = Math.min(INSIGHT_DISCOUNT_CAP, useDongfuStore().insightDiscount)
   return { wudao: Math.max(1, Math.ceil(gongfaUpCost(q.rank, lv) * (1 - discount))), page: Math.ceil(lv * (1 + q.rank * 0.5)) }
 }
 

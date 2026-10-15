@@ -5,7 +5,7 @@
  * 又和当前加成栏的词条名不是一套,同一张卡上左右对不上。
  */
 import { formatPercent } from '@/utils/format'
-import { INSIGHT_DISCOUNT_PER_POINT, INSIGHT_EFFECT_NAME, type VeinDef } from '@/data/veins'
+import { INSIGHT_DISCOUNT_CAP, INSIGHT_DISCOUNT_PER_POINT, INSIGHT_EFFECT_NAME, type VeinDef } from '@/data/veins'
 import { modsText } from './statNames'
 
 export function veinEffectText(def: VeinDef, points: number): string {
@@ -18,7 +18,7 @@ export function veinEffectText(def: VeinDef, points: number): string {
   const mods = modsText(scaled)
   if (mods) parts.push(mods)
   if (def.id === 'insight') {
-    parts.push(`${INSIGHT_EFFECT_NAME} −${formatPercent(points * INSIGHT_DISCOUNT_PER_POINT)}`)
+    parts.push(`${INSIGHT_EFFECT_NAME} −${formatPercent(Math.min(INSIGHT_DISCOUNT_CAP, points * INSIGHT_DISCOUNT_PER_POINT))}`)
   }
   return parts.join(' · ')
 }
