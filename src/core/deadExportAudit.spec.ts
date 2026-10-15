@@ -303,7 +303,8 @@ describe('死导出审计', () => {
     tribulationSuccessRate: '审计口径:五种劫型的抽样成功率,界面走劫势推演,不展示这一条单一概率',
     div: '数值原语:gNum 库的除法(含零除分支),gnum.spec 覆盖;库完整性优先于"当前无人调"',
     lt: '数值原语:gNum 比较,供公式单调性用例读',
-    gt: '数值原语:gNum 比较,与 lt 成对'
+    gt: '数值原语:gNum 比较,与 lt 成对',
+    parseClassicalDuration: '反查原语:classicalDuration 把时长渲染成古语时制后,由它对文案做 round-trip 自检(timeUnits.spec 守卫),运行时从不解析古语文案'
   }
 
   it('运行时模块里的导出,不能只被 spec 用到 —— 那是骨架空转的样子', () => {

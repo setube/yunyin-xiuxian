@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { mulberry32, RandomService } from '@/utils/random'
 import { toNum } from '@/utils/gnum'
 import { pillDef } from '@/data/pills'
+import { MAX_MAJOR } from '@/data/realms'
 import {
   MARKET_MAT_COUNT,
   MARKET_PILL_MARKUP,
@@ -12,6 +13,7 @@ import {
   type MarketEquipSlot
 } from '@/data/market'
 import { generateMarketStock, marketEquipInstance, marketTier, salePills } from '@/core/marketService'
+import { pillStoneCost } from '@/core/pillService'
 import { equipBountyReward } from '@/core/bountyService'
 import { qualityDef } from '@/data/qualities'
 
@@ -51,13 +53,18 @@ describe('坊市 · 货架生成', () => {
     }
   })
 
-  it('丹药价 = 炼制石耗 × 倍率,绝不比自炼便宜(无套利)', () => {
-    const stock = generateMarketStock(3, rng(0x222), 1)
-    for (const s of stock.goods) {
-      if (s.kind !== 'pill') continue
-      const def = pillDef(s.pillId)!
-      expect(toNum(s.price), `${def.name} 坊价不该低于自炼石耗`).toBeGreaterThanOrEqual(def.recipe!.stoneBase)
-      expect(toNum(s.price) / def.recipe!.stoneBase, `${def.name} 倍率应恰是 2.5`).toBeCloseTo(MARKET_PILL_MARKUP, 5)
+  it('丹药价 = 炼制石耗 × 倍率,绝不比自炼便宜(无套利,全境界含顶层)', () => {
+    // 全境界扫:顶层是重灾区 —— 旧写死 stoneBase×2.5,道祖丹自炼 ~1.7e11 却只标 4250(4 千万倍白送)
+    for (const major of [0, 3, MAX_MAJOR]) {
+      const stock = generateMarketStock(major, rng(major + 0x222), 1)
+      for (const s of stock.goods) {
+        if (s.kind !== 'pill') continue
+        const def = pillDef(s.pillId)!
+        // 基准是「实际炼制石耗」= layer 曲线上的 pillStoneCost(不是写死 stoneBase)
+        const craft = pillStoneCost(def)
+        expect(toNum(s.price), `${def.name} 坊价不该低于实际自炼石耗`).toBeGreaterThanOrEqual(toNum(craft))
+        expect(toNum(s.price) / toNum(craft), `${def.name} 倍率应恰是 2.5`).toBeCloseTo(MARKET_PILL_MARKUP, 5)
+      }
     }
   })
 

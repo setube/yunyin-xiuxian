@@ -29,7 +29,7 @@ import { useLoreStore } from '@/stores/lore'
 import { useUiStore } from '@/stores/ui'
 import { playSfx } from './audio'
 import { craftOkToast, craftShortToast, craftUnknownToast, pillGoneToast, pillTakenToast } from '@/ui/pillText'
-import type { GNum } from '@/types'
+import type { GNum, PillDef } from '@/types'
 
 /** 服用丹药 */
 /**
@@ -148,9 +148,15 @@ export function pillCraftCost(id: string): { herb: number; stone: GNum; grade: H
    * 从前这里自写 `minRealm × 2 + 1`,界外就飞出区域表了:第 18 境的方子算出层级 37,
    * 而玩家在混沌海能到的最高层级是 32 —— 一张方子的价格凭空高出 322 倍(1.9^5),
    * 于是界外炼丹被自己的报价挡在门外(ISS-211)。层级只有一个事实源:区域表。
+   * 这一份是「炼制石耗」的唯一事实源:坊市买/售、悬赏募丹都拿它当基准(见 market/bounty)。
    */
-  const tier = maxTierForMajor(def.minRealm)
-  return { herb: def.recipe.herb, stone: stoneByTier(tier, def.recipe.stoneBase / 10), grade }
+  return { herb: def.recipe.herb, stone: pillStoneCost(def), grade }
+}
+
+/** 一枚丹药的「炼制石耗」基准(按方子准入境界的最高层级折算,与上面灵石开销同源) */
+export function pillStoneCost(def: PillDef): GNum {
+  if (!def.recipe?.stoneBase) return gnZero()
+  return stoneByTier(maxTierForMajor(def.minRealm), def.recipe.stoneBase / 10)
 }
 
 /**

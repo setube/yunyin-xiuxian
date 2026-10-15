@@ -10,6 +10,7 @@ import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
 import { PILLS, pillDef } from '@/data/pills'
+import { pillStoneCost } from './pillService'
 import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
 import { herbBuyPrice } from './herbPrice'
 import { mulberry32, RandomService } from '@/utils/random'
@@ -75,7 +76,10 @@ function buildSlot(
         idx,
         pillId: def.id,
         count: 1,
-        price: mulN(gn(def.recipe!.stoneBase), MARKET_PILL_MARKUP),
+        // 买丹跳过炼丹线,故「比自炼贵 2.5 倍」—— 基准必须是该丹的炼制石耗(pillStoneCost,
+        // stoneByTier 层级曲线),而不是写死的 stoneBase 裸值:顶层丹自炼 ~1.7e11,写死 4250
+        // 就是 4 千万倍白送,economy 整条炼丹-灵石环在后期直接死掉。
+        price: mulN(pillStoneCost(def), MARKET_PILL_MARKUP),
         sold: false
       }
     }
@@ -148,7 +152,9 @@ export function consignPrice(tier: number, qualityRank: number): GNum {
 /** 即时售一枚丹药可得(购入倍率 2.5,售出 1.2,双向不成环) */
 export function pillSellPrice(pillId: string): GNum {
   const def = pillDef(pillId)
-  return def && def.recipe?.stoneBase ? mulN(gn(def.recipe.stoneBase), MARKET_SELL_PILL_FACTOR) : gnZero()
+  // 与买价同源:按该丹炼制石耗(pillStoneCost)的层级曲线 ×1.2 —— 写死 stoneBase 会让
+  // 顶层丹只卖 2040,而那一战的价值 ~6e9,炼丹→灵石的灵石回环在后期名存实亡。
+  return def && def.recipe?.stoneBase ? mulN(pillStoneCost(def), MARKET_SELL_PILL_FACTOR) : gnZero()
 }
 
 /** 即时售一批**玄铁**(与货架同单位数)可得;每单位价低于购入,不成环。灵草的出售走 herbSell(按品) */

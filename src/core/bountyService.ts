@@ -9,6 +9,7 @@ import type { GNum } from '@/types'
 import { gn, gnZero, mulN } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { pillDef } from '@/data/pills'
+import { pillStoneCost } from './pillService'
 import { salePills, marketTier } from './marketService'
 import { herbBuyPrice } from './herbPrice'
 import type { HerbGrade } from '@/data/herbGrades'
@@ -66,7 +67,7 @@ export function generateBounty(major: number, now: number): BountySlot[] {
       kindId: pd?.id ?? '',
       target: BOUNTY_PILL_COUNT,
       tier: 0,
-      reward: pd?.recipe?.stoneBase ? mulN(gn(pd.recipe.stoneBase), BOUNTY_PILL_COUNT * BOUNTY_PILL_REWARD_FACTOR) : gnZero(),
+      reward: pd?.recipe?.stoneBase ? mulN(pillStoneCost(pd), BOUNTY_PILL_COUNT * BOUNTY_PILL_REWARD_FACTOR) : gnZero(),
       extra: BOUNTY_PILL_WUDAO,
       claimed: false
     },
