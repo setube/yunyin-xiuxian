@@ -21,7 +21,7 @@ import { CHAINS } from '@/data/chains'
 import { birthMajorFloor } from '@/core/heritageEffects'
 import { randomDaoName } from '@/data/names'
 import { rng } from '@/utils/random'
-import { baseCultPerSec, baseQiRegen, expRequirement, qiCap } from '@/core/formulas'
+import { baseCultPerSec, baseQiRegen, expRequirement, gameDay, qiCap } from '@/core/formulas'
 import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
 import { readingFromState, readingMods } from '@/core/divination'
@@ -41,6 +41,9 @@ import { useApprenticeStore } from './apprentice'
 import { useResourcesStore } from './resources'
 import { useEndgameStore } from './endgame'
 import { useGameStore } from './game'
+
+/** 修行速率的下限乘数:修为/灵气增速从不归零(防负增益把成长钉死在地板上) */
+const MIN_SPEED_MULT = 0.05
 
 export const usePlayerStore = defineStore(
   'player',
@@ -389,9 +392,9 @@ export const usePlayerStore = defineStore(
 
     /** 修为增速(每秒) */
     const cultPerSec = computed(
-      () => baseCultPerSec(major.value, sub.value) * Math.max(0.05, 1 + modOf(finalStats.value.mods, 'cultivationSpeed'))
+      () => baseCultPerSec(major.value, sub.value) * Math.max(MIN_SPEED_MULT, 1 + modOf(finalStats.value.mods, 'cultivationSpeed'))
     )
-    const qiRegenPerSec = computed(() => baseQiRegen(major.value) * Math.max(0.05, 1 + modOf(finalStats.value.mods, 'qiRegen')))
+    const qiRegenPerSec = computed(() => baseQiRegen(major.value) * Math.max(MIN_SPEED_MULT, 1 + modOf(finalStats.value.mods, 'qiRegen')))
 
     // ---------- 寿元 ----------
     const lifespanMax = computed(() => {
@@ -986,7 +989,7 @@ export const usePlayerStore = defineStore(
      */
     function redirectFavoredWorld(worldId: WorldId): boolean {
       if (!WORLDS.some(w => w.id === worldId)) return false
-      const day = Math.floor(useGameStore().totalPlaySec / 86400)
+      const day = gameDay(useGameStore().totalPlaySec)
       const cur = mansionRedirect.value
       if (cur && cur.gameDay === day && (cur.count >= MANSION_REDIRECT_MAX || cur.worldId === worldId)) {
         return false
@@ -1010,7 +1013,7 @@ export const usePlayerStore = defineStore(
      */
     function exchangeStoneForWudao(): boolean {
       if (major.value < WUDAO_EXCHANGE_MIN_MAJOR) return false
-      const day = Math.floor(useGameStore().totalPlaySec / 86400)
+      const day = gameDay(useGameStore().totalPlaySec)
       const cur = wudaoExchange.value
       const today = cur && cur.gameDay === day ? cur : { gameDay: day, count: 0 }
       if (today.count >= WUDAO_EXCHANGE_PER_DAY) return false
@@ -1021,7 +1024,7 @@ export const usePlayerStore = defineStore(
     }
     /** 今天已兑了几次(次日自动归零的口径,界面展示用) */
     const wudaoExchangeToday = computed(() => {
-      const day = Math.floor(useGameStore().totalPlaySec / 86400)
+      const day = gameDay(useGameStore().totalPlaySec)
       const cur = wudaoExchange.value
       return cur && cur.gameDay === day ? cur.count : 0
     })

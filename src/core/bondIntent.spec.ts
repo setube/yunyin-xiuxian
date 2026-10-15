@@ -113,6 +113,13 @@ describe('主动意图 · 一:由经历催生,不由阈值触发', () => {
     console.log(`\n酝酿 ${before.toFixed(2)} → 越线之后 ${after.toFixed(2)} —— 有些话说不出口了`)
   })
 
+  it('sparks 只记「发生过哪些类型」:重复的同行不去重会攒出存档膨胀', () => {
+    together()
+    for (let i = 0; i < 3; i += 1) sparkIntent('shared')
+    // 历练每 6% 一战就推一次 'shared';界面按去重后人名展示,存一串重复的纯属浪费
+    expect(currentBond()!.intent!.sparks, '同一经历只记一次').toEqual(['shared'])
+  })
+
   it('性格决定她憋多久', () => {
     const rows: { name: string; temper: string; n: number }[] = []
     for (const id of ['dl_qingli', 'dl_hanzheng']) {

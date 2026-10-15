@@ -25,7 +25,13 @@ import { startRetreat } from './earlyGameService'
  */
 const CAUTIOUS_LOSS_REDUCTION = 0.04
 
-const { protect, combatWin } = vi.hoisted(() => ({ protect: { value: false }, combatWin: { value: false } }))
+const { protect, combatWin, combatHpPct } = vi.hoisted(() => ({
+  protect: { value: false },
+  combatWin: { value: false },
+  // 默认身死(气血耗尽,playerHpPct=0):败北保护/连胜用例要的是「真正的败北」;
+  // 遁走(回合耗尽,hp>0)由「遁走≠身死」describe 专门显式置值
+  combatHpPct: { value: 0 }
+}))
 
 vi.mock('@/utils/random', async importOriginal => {
   const mod = await importOriginal<typeof import('@/utils/random')>()
@@ -48,7 +54,10 @@ vi.mock('./combat', async importOriginal => {
   const mod = await importOriginal<typeof import('./combat')>()
   return {
     ...mod,
-    resolveCombat: () => (combatWin.value ? { win: true, rounds: 5, playerHpPct: 0.9 } : { win: false, rounds: 5, playerHpPct: 0.4 }),
+    resolveCombat: () =>
+      combatWin.value
+        ? { win: true, rounds: 5, playerHpPct: 0.9 }
+        : { win: false, rounds: 5, playerHpPct: combatHpPct.value },
     // 敌战力从快照三维折出(enemyPowerOf 读 attack/defense/maxHp),
     // 伪造件得按 CombatantSnap 的真形状给齐 —— 旧形状 {hp,def,atk} 会被 powerScore 踩到 undefined
     makeEnemySnap: () => ({ attack: { m: 100, e: 0 }, defense: { m: 10, e: 0 }, maxHp: { m: 100, e: 0 } })
@@ -168,6 +177,56 @@ describe('连胜(TASK-022 接线 · runBattle 胜负驱动 player.winStreak)', (
     forgeSession(now)
     tickExploration(now)
     expect(player.winStreak).toBe(0)
+  })
+})
+
+/**
+ * 回合耗尽·遁走 vs 身死·败北:处置必须分开(回归)。
+ *
+ * 此前两种非胜结局吃同一套死亡级惩罚 —— 满血「遁走,你无功而返」也会被加 重伤、
+ * 记一次宿敌败北,战报说「遁走」、总结却说「身负重伤」,自相矛盾且账目被污染。
+ * 遁走(敌未死你亦未死,playerHpPct>0)只是无功而返:不重伤、不计宿敌,连胜照清。
+ */
+describe('回合耗尽·遁走 ≠ 身死·败北(处置分开)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    protect.value = false
+    combatWin.value = false
+    combatHpPct.value = 0.4
+  })
+
+  it('遁走(满血无功而返):不加重伤、不计宿敌败绩、连胜照清、中止历练', () => {
+    combatHpPct.value = 0.4 // 敌遁走,你未死
+    const player = usePlayerStore()
+    player.initCharacter('拖佬', { roots: [] } as never)
+    player.winStreak = 3
+    const now = Date.now()
+    forgeSession(now)
+
+    tickExploration(now)
+
+    const cultivation = useCultivationStore()
+    const adventure = useAdventureStore()
+    expect(cultivation.buffs.some(b => b.defId === 'injury'), '遁走不该受重伤').toBe(false)
+    expect(player.nemeses, '遁走不是败北,不该记宿敌').toHaveLength(0)
+    expect(player.winStreak, '非胜则连胜照清').toBe(0)
+    expect(adventure.session, '无功而返也应中止历练').toBeNull()
+  })
+
+  it('身死(气血耗尽):照常重伤、计宿敌败绩、中止历练', () => {
+    combatHpPct.value = 0 // 气血耗尽
+    const player = usePlayerStore()
+    player.initCharacter('阵亡', { roots: [] } as never)
+    const now = Date.now()
+    forgeSession(now)
+
+    tickExploration(now)
+
+    const cultivation = useCultivationStore()
+    const adventure = useAdventureStore()
+    expect(cultivation.buffs.some(b => b.defId === 'injury')).toBe(true)
+    expect(player.nemeses, '身死是败北,该计一次宿敌').toHaveLength(1)
+    expect(adventure.session).toBeNull()
   })
 })
 

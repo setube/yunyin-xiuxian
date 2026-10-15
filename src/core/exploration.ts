@@ -86,6 +86,11 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
     ui.toast('你正在历练途中,先了结眼下这一程', 'warn')
     return false
   }
+  // 秘境与历练互斥:身处秘境者不许再开一程历练,免得两段「在途」同跑
+  if (player.secretRealm) {
+    ui.toast('你正身处秘境之中,先出了秘境再行历练', 'warn')
+    return false
+  }
   if (!routeAllows(regionId)) {
     ui.toast(entryBlockReason(regionId) ?? `${region.name}此时去不得`, 'warn')
     return false
@@ -124,7 +129,7 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
   return true
 }
 
-export function stopExploration(reason: 'manual' | 'defeat' | 'complete'): void {
+export function stopExploration(reason: 'manual' | 'defeat' | 'complete' | 'retreat'): void {
   const adventure = useAdventureStore()
   const ui = useUiStore()
   const s = adventure.session
@@ -144,6 +149,8 @@ export function stopExploration(reason: 'manual' | 'defeat' | 'complete'): void 
     ui.toast(`此行${region?.name ?? ''}历练圆满,胜 ${s.wins} 场,际遇 ${s.events} 次;${haul}`, 'success')
   } else if (reason === 'defeat') {
     ui.toast(`你身负重伤,不得不中断历练归来疗伤;此行${haul}`, 'warn')
+  } else if (reason === 'retreat') {
+    ui.toast(`你与此敌鏖战多时难分胜负,对方遁走,你无功而返;此行${haul}`, 'info')
   } else {
     ui.toast(`你收拾行囊,提前结束了这次历练;此行${haul}`, 'info')
   }
@@ -243,9 +250,14 @@ function runBattle(now: number): void {
   if (!region) return
   const modeDef = EXPLORE_MODES[s.mode]
 
-  const notCleared = !adventure.cleared.includes(region.id)
-  // 每积累 EXPLORE_BOSS_AFTER_WINS 胜,方有资格挑战区域之主(避免开局撞见首领)
-  const bossDue = winsUntilRegionBoss(s.wins, !notCleared) === 0
+  // 每积累 EXPLORE_BOSS_AFTER_WINS 胜,方有资格挑战区域之主(避免开局撞见首领)。
+  // 「首领是否已清」按**本世路线**判:路线内的区域看本世节点是否已通,不按旧 REGIONS
+  // cleared 链 —— 旧档把整条旧链清空后,规则里该链一旦参与判定,本世路线就会永远
+  // 锁死(牌子的 boss 永不出、路线永不前进,mortalRouteAccess「旧档全解锁」那条旧断言
+  // 正是把死锁当正确钉下的)。路线外(老档兼容)才按旧链判断区域之主
+  const routeNode = adventure.mortalWorld?.chain.find(p => p.fromId === region.id)
+  const bossCleared = routeNode ? adventure.mortalCleared.includes(routeNode.nodeId) : adventure.cleared.includes(region.id)
+  const bossDue = winsUntilRegionBoss(s.wins, bossCleared) === 0
   // 敌群与首领取自**本世路线节点**,不是 REGIONS ——
   // 同一处地界放进不同世界,遇到的就该是不同的东西
   const content = placeContent(region.id)
@@ -352,29 +364,31 @@ function runBattle(now: number): void {
       ui.toast(`【雪耻】宿敌${eDef.name}已被斩于剑下!`, 'rare')
     }
   } else {
-    // Phase 31 S4:灵兽护主 —— 慢稳/谨慎的灵兽(lossReduction>0)在危急时低概率
-    // 护住这一击:免于重伤、不计败绩、历练继续(「失败率下降」落到实处)。
-    // 好战型 lossReduction=0,恒不触发,与无灵兽行为一致
+    // 回合耗尽而遁走(敌未死你亦未死)不是败亡:无功而返,但不重伤、不计宿敌败绩。
+    // 此前两种结局吃同一套死亡级惩罚 —— 满血「遁走」也被加 重伤、记一次宿敌败北,
+    // 战报说「遁走,你无功而返」、总结却说「身负重伤」,自相矛盾且账目被污染。
     const ui = useUiStore()
-    if (rng.chance(personalityEffects(player.petId).lossReduction)) {
+    const timeout = result.playerHpPct > 0
+    // Phase 31 S4:灵兽护主 —— 只在真正危急(身死)时低概率护住这一击
+    if (!timeout && rng.chance(personalityEffects(player.petId).lossReduction)) {
       adventure.setSession({ ...s, nextBattleAt: nextBattleTime(now) })
       ui.toast('灵兽机警,替你挡开了这一击,历练继续', 'info')
       return
     }
-    cultivation.addBuff('injury', now)
+    if (!timeout) cultivation.addBuff('injury', now)
     adventure.setSession({ ...s, losses: s.losses + 1 })
 
-    // Phase 28 连胜:真正的败北清空连胜(灵兽护住的那次不在此列)
+    // Phase 28 连胜:非胜即清连胜(遁走也不例外,拖不死不算赢)
     recordStreakLoss()
-    // Phase 30.9 S2: 记录败北,达到阈值标记宿敌
-    const { list, becameNemesis } = recordLoss(player.nemeses, eDef.id, eDef.name, region.id, now)
-    if (becameNemesis) {
+    // Phase 30.9 S2: 记录败北,达到阈值标记宿敌(遁走不是败北,不计入)
+    if (!timeout) {
+      const { list, becameNemesis } = recordLoss(player.nemeses, eDef.id, eDef.name, region.id, now)
       player.setNemeses(list)
-      ui.toast(`【宿敌】你已在${eDef.name}手下败北${NEMESIS_THRESHOLD}次——此敌已成你的宿敌!`, 'warn')
-    } else {
-      player.setNemeses(list)
+      if (becameNemesis) {
+        ui.toast(`【宿敌】你已在${eDef.name}手下败北${NEMESIS_THRESHOLD}次——此敌已成你的宿敌!`, 'warn')
+      }
     }
-    stopExploration('defeat')
+    stopExploration(timeout ? 'retreat' : 'defeat')
   }
 }
 
@@ -422,21 +436,24 @@ function maybeEncounter(regionId: string): void {
 export function clearRegionAndUnlockNext(regionId: string): void {
   const adventure = useAdventureStore()
   const ui = useUiStore()
-  if (!adventure.markCleared(regionId)) return
-  const region = regionDef(regionId)
-  ui.toast(`你击败了${region?.name ?? ''}之主!`, 'rare')
-  // 击破首领 —— 打开了本不该开的地方
-  offerBondEvent('bossDefeated')
-  // 也可能翻出与她未了之事有关的东西
-  if (rng.chance(0.5)) sparkIntent('omen')
-  // 本世路线推进:通过这一段,下一段自开
-  const nextPlace = advanceRoute(regionId)
-  if (nextPlace) ui.toast(`此世前路已明——${nextPlace}`, 'rare')
-  for (const r of REGIONS) {
-    if (r.requireCleared === regionId && adventure.unlock(r.id)) {
-      ui.toast(`新的历练之地已开放——${r.name}`, 'rare')
+  // 旧链记账与连锁解锁只在「首次清」时做;已清(如旧档全解锁)不重播
+  if (adventure.markCleared(regionId)) {
+    const region = regionDef(regionId)
+    ui.toast(`你击败了${region?.name ?? ''}之主!`, 'rare')
+    // 击破首领 —— 打开了本不该开的地方
+    offerBondEvent('bossDefeated')
+    // 也可能翻出与她未了之事有关的东西
+    if (rng.chance(0.5)) sparkIntent('omen')
+    for (const r of REGIONS) {
+      if (r.requireCleared === regionId && adventure.unlock(r.id)) {
+        ui.toast(`新的历练之地已开放——${r.name}`, 'rare')
+      }
     }
   }
+  // 本世路线推进永远照跑(与旧链是否已含此区域无关):旧档已清的区域也得以把
+  // 本世节点推进 —— 此前 `if (!markCleared) return` 在旧档全清处把路线整个锁死
+  const nextPlace = advanceRoute(regionId)
+  if (nextPlace) ui.toast(`此世前路已明——${nextPlace}`, 'rare')
 }
 
 function nextBattleTime(now: number): number {

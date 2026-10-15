@@ -22,7 +22,7 @@ describe('灵脉投资(Phase 30.3)', () => {
   it('未定主脉时首投即成主脉,主脉可投过 30 直达 70', () => {
     const dongfu = useDongfuStore()
     expect(dongfu.veinMain).toBeNull()
-    expect(veinCap('gather')).toBe(30) // 未定主脉时按副脉算
+    expect(veinCap('gather')).toBe(70) // 未定主脉时每条都可能是首投之脉 → 按主脉档,与批量同口径
 
     // 连投 40 点:首投定主,之后一路投到 40(越过副脉 30 上限)
     for (let i = 0; i < 40; i += 1) investVein('gather')
@@ -34,6 +34,19 @@ describe('灵脉投资(Phase 30.3)', () => {
     for (let i = 40; i < 70; i += 1) expect(investVein('gather')).toBe(true)
     expect(dongfu.veinPoints.gather).toBe(70)
     expect(investVein('gather')).toBe(false)
+  })
+
+  it('失败的首次投资不立主脉:灵石不足的被拒点击,主脉仍空置', () => {
+    const dongfu = useDongfuStore()
+    expect(dongfu.veinMain).toBeNull()
+    useResourcesStore().spiritStone = gn(0) // 一穷二白
+    expect(investVein('gather'), '灵石不足应被拒').toBe(false)
+    expect(dongfu.veinMain, '被拒的投资不该立主脉').toBeNull()
+    expect(dongfu.veinPoints.gather ?? 0).toBe(0)
+    // 主脉仍可择:有了灵石,gather 照常能成为首投之脉
+    useResourcesStore().spiritStone = gn(1e9)
+    expect(investVein('gather')).toBe(true)
+    expect(dongfu.veinMain).toBe('gather')
   })
 
   it('改立主脉:付费换向,原主脉点数保留但降至副脉上限不可续投', () => {

@@ -46,9 +46,9 @@
             :cx="p.x"
             :cy="p.y"
             :r="p.r"
-            :class="cleared(p.nodeId) ? 'text-jade' : unlocked(p.nodeId) ? 'text-azure' : 'text-ink-faint'"
+            :class="cleared(p.nodeId) ? 'text-jade' : unlocked(p) ? 'text-azure' : 'text-ink-faint'"
             fill="currentColor"
-            :fill-opacity="cleared(p.nodeId) ? 1 : unlocked(p.nodeId) ? 0.85 : 0.35"
+            :fill-opacity="cleared(p.nodeId) ? 1 : unlocked(p) ? 0.85 : 0.35"
           />
           <!-- 眼下将赴的那一处:外圈一道潺潺墨环,替玩家在图上指路(路尽则隐) -->
           <circle
@@ -83,7 +83,7 @@
           :key="p.nodeId"
           class="card-ink flex items-center gap-3 px-3 py-2.5"
           :class="{
-            'opacity-60': !unlocked(p.nodeId),
+            'opacity-60': !unlocked(p),
             // .card-ink 的边框是手写(非 layer)声明,工具类在 @layer 里永远压不过它 ——
             // 加 ! 破层,这正是 CharacterView/AdventureView 盖卡片边框的同一套做法
             '!border-cinnabar/35': focusNode?.nodeId === p.nodeId
@@ -91,9 +91,9 @@
         >
           <span
             class="grid h-9 w-9 shrink-0 place-items-center rounded-md"
-            :class="unlocked(p.nodeId) ? 'bg-azure/10 text-azure' : 'bg-ink/6 text-ink-faint'"
+            :class="unlocked(p) ? 'bg-azure/10 text-azure' : 'bg-ink/6 text-ink-faint'"
           >
-            <GameIcon :name="unlocked(p.nodeId) ? (regionDef(p.regionId)?.icon ?? 'mountain') : 'lock'" :size="16" />
+            <GameIcon :name="unlocked(p) ? (regionDef(p.regionId)?.icon ?? 'mountain') : 'lock'" :size="16" />
           </span>
           <div class="min-w-0 grow">
             <p class="flex items-baseline gap-1.5">
@@ -109,12 +109,12 @@
               </span>
             </p>
             <!-- 锁住的地界要给一句"为什么现在去不了",而不是只画把锁 -->
-            <p v-if="!unlocked(p.nodeId)" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar">
+            <p v-if="!unlocked(p)" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar">
               {{ blockReason(p.regionId) ?? '此境未开,须先走完这一世的来时路' }}
             </p>
           </div>
           <!-- 已通的段落照样能再去 —— 「已通」是记号,不是封路 -->
-          <button v-if="unlocked(p.nodeId)" class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="depart(p.regionId)">出 发</button>
+          <button v-if="unlocked(p)" class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="depart(p.regionId)">出 发</button>
         </div>
       </div>
 
@@ -153,7 +153,7 @@
   import { useAdventureStore } from '@/stores/adventure'
   import { enemyDef } from '@/data/enemies'
   import { regionDef } from '@/data/regions'
-  import { VIEW_H, VIEW_W, canEnterNode, ensureMortalWorld, entryBlockReason, isNodeCleared, worldView } from '@/core/mortalWorldService'
+  import { VIEW_H, VIEW_W, canEnterRegion, ensureMortalWorld, entryBlockReason, isNodeCleared, worldView } from '@/core/mortalWorldService'
 
   const adventure = useAdventureStore()
   const router = useRouter()
@@ -166,7 +166,7 @@
   })
 
   /** 眼下这处 —— 路线里第一个「可往却尚未通关」的节点,地图上的「下一步」 */
-  const focusNode = computed(() => view.value?.places.find(p => unlocked(p.nodeId) && !cleared(p.nodeId)) ?? null)
+  const focusNode = computed(() => view.value?.places.find(p => unlocked(p) && !cleared(p.nodeId)) ?? null)
 
   /** 标题旁那一句:「已通 X/Y 段」—— 与下方路段卡读同一份 view.places + cleared,不另报口径 */
   const travelHint = computed(() => {
@@ -185,7 +185,7 @@
       const a = ps[i]!
       const b = ps[i + 1]!
       const bCleared = cleared(b.nodeId)
-      const bUnlocked = unlocked(b.nodeId)
+      const bUnlocked = unlocked(b)
       segs.push({
         points: `${a.x},${a.y} ${b.x},${b.y}`,
         cls: bCleared ? 'stroke-jade/60' : bUnlocked ? 'stroke-azure/55' : 'stroke-ink/15',
@@ -195,8 +195,13 @@
     return segs
   })
 
-  function unlocked(nodeId: string): boolean {
-    return canEnterNode(nodeId)
+  /**
+   * 地图上「可往」= 地界准入唯一出口(canEnterRegion):本世路线只**追加**可达性,
+   * 不收回旧解锁链已给的权限。此前照 canEnterNode(纯路线段序)判 —— 旧链已解锁的
+   * 地域在历练页能出发、本页却标成锁死还写一句「须先走完来时路」,两页互相打脸
+   */
+  function unlocked(node: { nodeId: string; regionId: string }): boolean {
+    return canEnterRegion(node.regionId)
   }
 
   function cleared(nodeId: string): boolean {

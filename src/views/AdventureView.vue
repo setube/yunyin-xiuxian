@@ -198,8 +198,11 @@
             </button>
           </div>
           <p class="mt-2 text-[11px] leading-relaxed text-ink-faint">
+            <!-- 进得去:给全景;进不去且没被本世路线拦:给旧链的「先击败某主」。
+                 被本世路线拦时(下头 blockReason)只讲那一条 —— 两条理由并存会指向,
+                 玩家不知道该往哪走 -->
             <template v-if="row.canEnter">{{ row.def.desc }}</template>
-            <template v-else>需先击败{{ prevRegionName(row.def) }}之主,方可踏足此地。</template>
+            <template v-else-if="!row.blockReason">需先击败{{ prevRegionName(row.def) }}之主,方可踏足此地。</template>
           </p>
           <!--
             镇压资格进度:只显示「能不能镇压」时,玩家打够了场数却压不住,
@@ -306,6 +309,7 @@
           -->
           <span class="text-right text-[11px] text-ink-faint tabular">
             {{ departText(m.id) }}
+            <span class="block text-[10px] text-gold-ink">{{ departReward(m.id) }}</span>
           </span>
         </button>
       </div>
@@ -320,13 +324,12 @@
   import { useAdventureStore } from '@/stores/adventure'
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
-  import { useGameStore } from '@/stores/game'
   import { useResourcesStore } from '@/stores/resources'
   import { REGIONS, regionDef, DANGER_NAMES } from '@/data/regions'
   import { worldOf, WORLDS, type WorldDef } from '@/data/realms'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
-  import { effectiveFavoredWorld, todayMansionLine, mansionLuckPercent } from '@/core/astronomy'
+  import { effectiveFavoredWorld, todayMansionLine, mansionLuckPercent, currentGameDay } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
   import { canEnterRegion, entryBlockReason, worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
@@ -341,6 +344,7 @@
     startExploration
   } from '@/core/exploration'
   import { currentRegionEvent } from '@/core/regionEvent'
+  import { expectedWinReward } from '@/core/loot'
   import { modOf } from '@/core/statsCalc'
   import { departButtonText, petTraitTripLine } from '@/ui/adventureText'
   import { produceTierText } from '@/ui/produceText'
@@ -365,7 +369,6 @@
   const router = useRouter()
   const player = usePlayerStore()
   const ui = useUiStore()
-  const game = useGameStore()
   const resources = useResourcesStore()
 
   const modeTarget = ref<RegionDef | null>(null)
@@ -412,7 +415,7 @@
   /** 该界此刻能否定向:不能则给出一句原因。判据与 redirectFavoredWorld 同一套(见 player.ts),
    *  但改在点击前置灰标出 —— 灵石不足/次数已尽/已定向此界不该缩成一个点了没反应的死按钮。 */
   function redirectReason(w: WorldId): string | null {
-    const day = Math.floor(game.totalPlaySec / 86400)
+    const day = currentGameDay()
     const cur = player.mansionRedirect
     if (cur && cur.gameDay === day) {
       if (cur.worldId === w) return '已定向此界'
@@ -548,6 +551,15 @@
       dangerMult: danger,
       battleGapSec: exploreBattleGapSec(modOf(player.finalStats.mods, 'explorationSpeed'))
     })
+  }
+
+  /** 一胜的期望所得(与 afterWin 同公式的均值):给「收益 ×Y」补一把尺子 */
+  function departReward(mode: ExploreMode): string {
+    const region = modeTarget.value
+    if (!region) return ''
+    const eventId = currentRegionEvent(region.id)?.eventId ?? null
+    const r = expectedWinReward(region, exploreRewardMult(mode, eventId))
+    return `一胜约 ${formatGN(r.stone)} 石 · ${formatGN(r.exp)} 修为`
   }
 
   function chooseMode(region: RegionDef): void {

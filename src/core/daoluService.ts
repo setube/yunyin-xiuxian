@@ -480,10 +480,19 @@ export function sparkIntent(spark: IntentSpark): BondIntent | null {
   const next: BondIntent = {
     ...cur,
     ripeness: Math.max(0, cur.ripeness + sparkDelta(spark, def.temper)),
-    sparks: [...cur.sparks, spark]
+    sparks: uniqueSparks(cur.sparks, spark)
   }
   player.setBond({ ...b, intent: next })
   return next
+}
+
+/**
+ * 意图表只记「**发生过哪些类型**」:sparks 在界面里按去重后人名展示,
+ * 存一长串重复的 'shared'(历练每 6% 一战就推一次)纯属徒增存档膨胀 —— 去重后
+ * 类型至多 4 种、天然有界,显示不漏任何一类,存档不再越攒越肥
+ */
+function uniqueSparks(existing: IntentSpark[], spark: IntentSpark): IntentSpark[] {
+  return existing.includes(spark) ? existing : [...existing, spark]
 }
 
 /**

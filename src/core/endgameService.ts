@@ -303,8 +303,9 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
   const player = usePlayerStore()
   const stats = player.celestialStats
   const ref = { attack: stats.attack, defense: stats.defense, maxHp: stats.maxHp }
-  if (!trial) return null
-  const judgement = celestialJudgement(stats.mods, player.major, trial.anchorTier)
+  // 世界与试炼都能重写(同界同契,下方 if (world) 分支):此前的 `if (!trial) return null`
+  // 在扣费之后拦死世界道痕,使世界分支永远不可达 —— 却照样烧掉 10 道源。修掉这条错位残守。
+  const judgement = celestialJudgement(stats.mods, player.major, (world ?? trial)!.anchorTier)
   const foes = []
   if (world) {
     for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, ref, 1, judgement))
@@ -360,7 +361,6 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
   }
   const stats = player.celestialStats
   const ref = { attack: stats.attack, defense: stats.defense, maxHp: stats.maxHp }
-  if (!trial) return null
   const judgement = celestialJudgement(stats.mods, player.major, trial.anchorTier)
   const foes = []
   for (let i = 0; i < trial.fights; i += 1) {

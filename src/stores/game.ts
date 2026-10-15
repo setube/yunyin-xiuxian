@@ -23,6 +23,8 @@ export const useGameStore = defineStore(
     const createRerolls = ref<number | null>(CREATE_REROLL_QUOTA)
     /** 当前摆在建号页上的那副牌;null 表示尚未开掷 */
     const createProfile = ref<LinggenProfile | null>(null)
+    /** 建号草稿 · 道号:刷新页面不丢手打的字(与灵根草稿同一条「别丢我输入」的承诺) */
+    const createName = ref('')
 
     /** 存档修复:时间戳/时长被写坏会让离线结算与展示算出 NaN */
     function sanitize(): void {
@@ -38,6 +40,7 @@ export const useGameStore = defineStore(
               Math.max(0, Math.floor(asFiniteNumber(createRerolls.value, CREATE_REROLL_QUOTA, 0)))
             )
       createProfile.value = asObjectOrNull<LinggenProfile>(createProfile.value)
+      createName.value = typeof createName.value === 'string' ? createName.value.slice(0, 8) : ''
     }
 
     /** 记下当前掷出的灵根(不扣次数,扣次数由 spendCreateReroll 负责) */
@@ -57,6 +60,12 @@ export const useGameStore = defineStore(
     function resetCreateDraft(): void {
       createRerolls.value = CREATE_REROLL_QUOTA
       createProfile.value = null
+      createName.value = ''
+    }
+
+    /** 记下当前手打的道号(随草稿持久化,刷新不丢) */
+    function setCreateName(name: string): void {
+      createName.value = name.slice(0, 8)
     }
 
     function markStarted(): void {
@@ -81,7 +90,9 @@ export const useGameStore = defineStore(
       totalPlaySec,
       createRerolls,
       createProfile,
+      createName,
       setCreateProfile,
+      setCreateName,
       spendCreateReroll,
       resetCreateDraft,
       markStarted,

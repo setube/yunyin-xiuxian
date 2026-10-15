@@ -20,6 +20,8 @@ import { SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
+import { useAdventureStore } from '@/stores/adventure'
+import { startExploration } from './exploration'
 import {
   SECRET_LAYERS,
   SECRET_MAX_LOSSES,
@@ -79,6 +81,22 @@ describe('秘境 · 进得去', () => {
     abandonRealm()
     expect(enterSecretRealm('sr_kuye').ok).toBe(false) // 门槛 4
     expect(enterSecretRealm('nope').ok).toBe(false)
+  })
+
+  it('秘境与历练互斥:历练途中不许入秘境,秘境之中不许开历练', () => {
+    ready(3)
+    const adventure = useAdventureStore()
+    // 先证明清场状态能正常开场(别让当年 qingyun 解锁链失败混进断言)
+    expect(startExploration('qingyun', 'normal')).toBe(true)
+    adventure.setSession(null)
+    // 在秘境中 → 开历练被拒(新守卫生效)
+    expect(enterSecretRealm('sr_kurong').ok).toBe(true)
+    expect(startExploration('qingyun', 'normal'), '在秘境内不许再开历练').toBe(false)
+    // 历练途中 → 入秘境被拒(新守卫生效)
+    adventure.setSession(null)
+    abandonRealm()
+    expect(startExploration('qingyun', 'normal')).toBe(true)
+    expect(enterSecretRealm('sr_kurong').ok, '历练途中不许入秘境').toBe(false)
   })
 
   it('入口代价按地界层级折算 —— 高境界不是只贵一点', () => {

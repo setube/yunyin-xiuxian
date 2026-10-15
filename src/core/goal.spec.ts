@@ -40,6 +40,25 @@ describe('修行目标(Phase 29)', () => {
     expect(goal.hint).not.toContain('天劫')
   })
 
+  it('临近突破但灵气不足时,hint 报出还差几成 —— 破境要耗灵气,别让人空冲', () => {
+    const player = usePlayerStore()
+    player.initCharacter('目标', { roots: [] } as never)
+    player.exp = gn(Math.floor(toNum(player.expReq) * 0.9))
+    useResourcesStore().setQi(0, player.qiCapValue) // 灵气放空
+    const goal = generateCurrentGoal(player)!
+    expect(goal.type).toBe('breakthrough')
+    expect(goal.hint).toContain('灵气还差')
+  })
+
+  it('灵气已足时,临近突破的 hint 不必再报灵气缺口', () => {
+    const player = usePlayerStore()
+    player.initCharacter('目标', { roots: [] } as never)
+    player.exp = gn(Math.floor(toNum(player.expReq) * 0.9))
+    useResourcesStore().setQi(player.qiCapValue, player.qiCapValue) // 灵气满
+    const goal = generateCurrentGoal(player)!
+    expect(goal.hint).not.toContain('灵气还差')
+  })
+
   it('圆满层指向下一境,且不把小进阶的丹药说成能渡天劫', () => {
     const player = usePlayerStore()
     player.initCharacter('目标', { roots: [] } as never)
@@ -65,17 +84,18 @@ describe('修行目标(Phase 29)', () => {
     expect(goal.hint).toBeUndefined()
   })
 
-  it('无临近突破且已有 Build → build 目标,进度 = 核心词条数/4', () => {
+  it('无临近突破且已有 Build → build 目标,进度 = 已凑核心/流派核心数(2 键满筑即满,不再卡在 2/4)', () => {
     const player = usePlayerStore()
     player.initCharacter('目标', { roots: [] } as never)
     setBuild.value = {
-      style: { name: '天龙' },
+      style: { name: '天龙', core: { critChance: 0.35, critDamage: 0.5 } },
       coreValues: [{ key: 'critChance' }, { key: 'critDamage' }]
     }
     const goal = generateCurrentGoal(player)!
     expect(goal.type).toBe('build')
     expect(goal.text).toContain('天龙')
-    expect(goal.progress).toBe(0.5)
+    expect(goal.progress).toBe(1) // 2/2,满筑可满
+    expect(goal.hint).toContain('2/2')
   })
 
   it('近突破优先于 build(breakthrough 检查在最前)', () => {

@@ -300,9 +300,9 @@
           道果
           <span class="ml-1 text-[10px] text-violet-ink">【永久积累】</span>
           <span class="block text-[10px] text-ink-faint">
-            每枚:修行 +{{ formatPercent(DAO_FRUIT_CULT_BONUS) }},道躯 +{{
+            每枚至多:修行 +{{ formatPercent(DAO_FRUIT_CULT_BONUS) }},道躯 +{{
               formatPercent(DAO_FRUIT_COMBAT_BONUS)
-            }};转世保留
+            }};边际渐减(见下),转世保留
           </span>
         </span>
         <span class="tabular font-kai text-[15px] text-cinnabar">{{ player.reincarnation.daoFruit }}</span>

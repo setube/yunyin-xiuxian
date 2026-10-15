@@ -125,6 +125,9 @@ export function undertakeChallenge(draft: ChallengeDraft, verdict: ChallengeVerd
     const player2 = usePlayerStore()
     endgame.updateRecord('best_custom', reward, player2.reincarnation.count + 1, name, 'max')
     ui.toast(`挑战书《${name}》功成!道源 +${reward}`, 'rare')
+  } else if (report.pactBroken) {
+    // 违契终止:并非败北,而是契约束缚 —— 已胜的场次如实报数,不再报「止步第 N 战」的败绩口吻
+    ui.toast(`《${name}》违契而止,已胜 ${report.fightsWon} 战`, 'warn')
   } else {
     ui.toast(`《${name}》未竟,止步第 ${report.fightsWon + 1} 战`, 'warn')
   }
@@ -136,6 +139,10 @@ export function undertakeChallenge(draft: ChallengeDraft, verdict: ChallengeVerd
     title: `挑战书 · ${name}`,
     report,
     rewardDaoSource: reward,
-    markText: report.cleared ? `${report.rows.length} 战全捷,共 ${report.totalRounds} 回合` : `止步第 ${report.fightsWon + 1} 战`
+    markText: report.cleared
+      ? `${report.rows.length} 战全捷,共 ${report.totalRounds} 回合`
+      : report.pactBroken
+        ? `违契而止,已胜 ${report.fightsWon} 战`
+        : `止步第 ${report.fightsWon + 1} 战`
   }
 }

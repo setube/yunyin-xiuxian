@@ -33,7 +33,9 @@ export function veinsUnlocked(): boolean {
 /** 某条脉当前可投上限 */
 export function veinCap(id: VeinId): number {
   const dongfu = useDongfuStore()
-  return dongfu.veinMain === id ? VEIN_MAIN_CAPACITY : VEIN_SIDE_CAP
+  // 未定主脉时每条都可能是首投之脉 → 都按主脉档 70,与连投计划(effectiveCap)同一口径;
+  // 否则卡片上显示「0/30」、批量却标「连投至第 70 点」,同一张卡两个数
+  return dongfu.veinMain === null || dongfu.veinMain === id ? VEIN_MAIN_CAPACITY : VEIN_SIDE_CAP
 }
 
 /** 单点投资成本(按玩家当前层级) */
@@ -60,7 +62,6 @@ export function investVein(id: VeinId): boolean {
     ui.toast(veinFullToast(), 'warn')
     return false
   }
-  if (dongfu.veinMain === null) dongfu.setVeinMain(id)
   const current = dongfu.veinPoints[id] ?? 0
   if (current >= veinCap(id)) {
     ui.toast(veinPeakToast(dongfu.veinMain === id), 'warn')
@@ -71,6 +72,9 @@ export function investVein(id: VeinId): boolean {
     ui.toast(veinShortToast(), 'warn')
     return false
   }
+  // 只有这次真投下去,才立为首投之脉(此前在守卫之前就把主脉定死,
+  // 没灵石/已满的被拒绝点击也把主脉占掉,其余三条「首投成主」就此堵死)
+  if (dongfu.veinMain === null) dongfu.setVeinMain(id)
   resources.spendStone(cost)
   dongfu.addVeinPoint(id, 1)
   return true

@@ -161,9 +161,14 @@
   /** 收割所有已完工道童;回来的就报一声带回什么 */
   function reap(): void {
     const reaped = appr.collectFinished(now.value, player.major)
-    for (const s of reaped) {
-      ui.toast(`道童归来,带回 ${spoilsText(s)}`, 'success')
+    if (reaped.length === 0) return
+    // ui.toast 会按「同文 + 同级」去重刷新同一条:两名道童带回一模一样的「悟道×2」时,
+    // 逐条 toast 会被第二条顶掉 —— 明明回了两位却只报一位。批量就合成一条汇总
+    if (reaped.length === 1) {
+      ui.toast(`道童归来,带回 ${spoilsText(reaped[0]!)}`, 'success')
+      return
     }
+    ui.toast(`道童归来 ${reaped.length} 名:${reaped.map(s => spoilsText(s)).join(';')}`, 'success')
   }
 
   onMounted(() => {

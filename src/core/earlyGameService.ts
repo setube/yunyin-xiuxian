@@ -2,13 +2,14 @@
  * Phase 28 前期玩法服务 —— 悟道顿悟/突破准备/闭关/历练路线/连胜/洞府巡游/灵兽陪行
  */
 import { usePlayerStore } from '@/stores/player'
+import { useDongfuStore } from '@/stores/dongfu'
 import { useGameStore } from '@/stores/game'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useResourcesStore } from '@/stores/resources'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { usePacingTelemetry } from '@/stores/pacingTelemetry'
-import type { EnlightenmentEvent, EnlightenmentOption, CaveEvent } from '@/types'
+import type { EnlightenmentEvent, EnlightenmentOption, CaveEvent, BuildingId } from '@/types'
 import {
   ENLIGHTENMENT_OPTIONS,
   CAVE_EVENT_POOL,
@@ -28,6 +29,15 @@ function telemetry(): ReturnType<typeof usePacingTelemetry> {
 
 let enlightenmentEvent: EnlightenmentEvent | null = null
 let caveEvent: CaveEvent | null = null
+
+/** 巡游落点 → 对应洞府建筑:落点只发生在玩家盖了那座建筑的地方 */
+const CAVE_LOCATION_BUILDING: Record<keyof typeof CAVE_EVENT_POOL, BuildingId> = {
+  field: 'field',
+  furnace: 'alchemy',
+  library: 'library',
+  array: 'array',
+  garden: 'beast'
+}
 
 /** 获取当前悟道顿悟事件(60秒窗口) */
 export function getCurrentEnlightenment(): EnlightenmentEvent | null {
@@ -252,9 +262,14 @@ export function mayTriggerCaveEvent(): CaveEvent | null {
     return null
   }
 
-  // 随机选择一个区域
-  const locations = Object.keys(CAVE_EVENT_POOL) as Array<keyof typeof CAVE_EVENT_POOL>
-  const location = locations[Math.floor(Math.random() * locations.length)]!
+  // 随机选一个**盖了对应建筑**的落点:别让「丹炉余温」出现在你没炼丹炉的洞府里,
+  // 或「安抚灵兽」在你没灵兽园时给一条空增益。一处都没盖(纯新人)回落灵田 ——
+  // 它的收获(灵草)恒有意义,不制造空洞
+  const dongfu = useDongfuStore()
+  const locationKeys = Object.keys(CAVE_EVENT_POOL) as Array<keyof typeof CAVE_EVENT_POOL>
+  const owned = locationKeys.filter(loc => (dongfu.levels[CAVE_LOCATION_BUILDING[loc]] ?? 0) > 0)
+  const locations = (owned.length > 0 ? owned : ['field']) as Array<keyof typeof CAVE_EVENT_POOL>
+  const location = locations[Math.floor(Math.random() * locations.length)]! 
   const pool = CAVE_EVENT_POOL[location]
   if (!pool || pool.length === 0) return null
 
@@ -278,6 +293,9 @@ export function getCurrentCaveEvent(): CaveEvent | null {
   const now = Date.now()
   if (now > caveEvent.expiresAt) {
     caveEvent = null
+    // 过期同样是「今日已巡过」:不记这天的额度,30s 轮询就会天天反复重掷,
+    // 「每日一巡」能被视而不见地无限刷(与掷签失败那条 invariant 同规)
+    usePlayerStore().markCaveEventToday(todayLocalNum())
     return null
   }
   return caveEvent

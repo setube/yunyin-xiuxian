@@ -289,7 +289,9 @@ export function describeEquipment(def: EquipmentTemplate, seen: EquipSeen | unde
   const stage = equipStage(seen, collected)
   const lines = [def.desc, equipFuncText(def)].filter(Boolean)
   if (stage >= 1 && seen) {
-    lines.push(`见过最好的:${qualityOfRank(seen.q).name} · ${seen.t} 阶`)
+    // 成色与阶别各自独立取高(两次掉落可能分别抬升 q 与 t),故分开陈述:
+    // 「天品 · 最高 18 阶」不误导成「一件既是天品又到 18 阶」的幻影
+    lines.push(`见过最好成色:${qualityOfRank(seen.q).name} · 最高 ${seen.t} 阶`)
   }
   return {
     id: def.id,

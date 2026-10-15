@@ -66,4 +66,15 @@ describe('度劫机关 · 波次环(runGauntlet)', () => {
     expect(r.fightsWon).toBe(0)
     expect(r.rows).toHaveLength(0)
   })
+
+  it('违契终止:该场明明胜了,fightsWon 要计入这一胜,跟 rows 的 win=true 一致', () => {
+    // 独立种子,不依赖其它用例消费 stream;玩家每场都赢但胜后血量 < 80% 契线 → 违契停
+    const rrng = new RandomService(mulberry32(7))
+    const p: CombatantSnap = { name: 'p', icon: 'p', isPlayer: true, attack: gn(200), defense: gn(1), maxHp: gn(500), speed: 1, mods: {}, skills: [] }
+    const r = runGauntlet(p, [foe('a', 300, 200)], undefined, 0, rrng, { minHpAfterFight: 0.8 })
+    expect(r.cleared).toBe(false)
+    expect(r.pactBroken).toBe(true)
+    expect(r.rows[0]!.win).toBe(true) // 这一行是「赢」
+    expect(r.fightsWon).toBe(1) // 胜场数必须承认这一胜,否则展示会报「止步/败」与赢行矛盾
+  })
 })

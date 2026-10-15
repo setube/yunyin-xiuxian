@@ -405,7 +405,7 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
   const STORE_FIELDS: Record<string, Record<string, 'reset' | 'keep'>> = {
     game: {
       started: 'keep', saveVersion: 'keep', createdAt: 'keep', lastActiveAt: 'keep',
-      totalPlaySec: 'keep', createRerolls: 'keep', createProfile: 'keep'
+      totalPlaySec: 'keep', createRerolls: 'keep', createProfile: 'keep', createName: 'keep'
     },
     resources: {
       spiritStone: 'reset', qi: 'reset', wudao: 'reset', herbByGrade: 'reset',

@@ -41,8 +41,8 @@
     </div>
     <template #footer>
       <div v-if="targetable" class="grid grid-cols-2 gap-2">
-        <button class="btn-ghost !py-2 !text-[11px]" :disabled="!selected && !canSelect" @click="emit('toggle-target', affixId)">
-          {{ selected ? '取消自动重铸目标' : '设为自动重铸目标' }}
+        <button class="btn-ghost !py-2 !text-[11px]" :disabled="!selected && !canSelect" :title="toggleLabel" @click="emit('toggle-target', affixId)">
+          {{ toggleLabel }}
         </button>
         <button class="btn-seal !py-2 !text-[11px]" @click="emit('close')">收 下</button>
       </div>
@@ -85,4 +85,10 @@
   const rangeEnds = computed(() => (def.value ? affixRangeEnds(def.value) : { lo: 0, hi: 0 }))
   const slotsText = computed(() => (def.value ? affixSlotsText(def.value) : ''))
   const rankText = computed(() => (def.value ? affixRankText(def.value) : null))
+  /** 目标按钮文案即缘由:满位/已选各明示,禁用不是猜谜(约定「按钮上的字就是原因」) */
+  const toggleLabel = computed(() => {
+    if (props.selected) return '取消自动重铸目标'
+    if (!props.canSelect) return '目标已满(3)'
+    return '设为自动重铸目标'
+  })
 </script>

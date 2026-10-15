@@ -14,6 +14,7 @@ import {
   ARTIFACT_NEAR_BONUS,
   ARTIFACT_NEAR_WINDOW,
   artifactDropWeight,
+  expectedWinReward,
   randomDropArtifact
 } from './loot'
 import { upgradeEquipment } from './forge'
@@ -30,7 +31,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { qualityDef } from '@/data/qualities'
 import { DECOMPOSE_DUST } from '@/data/constants'
 import { useLoreStore } from '@/stores/lore'
-import { gn } from '@/utils/gnum'
+import { gn, toNum } from '@/utils/gnum'
 import type { EquipmentInstance, QualityId } from '@/types'
 
 describe('自动回收 · 装备入包前的第一道闸', () => {
@@ -87,6 +88,26 @@ describe('自动回收 · 装备入包前的第一道闸', () => {
     }
     expect(resources.herbByGrade[1], '青云(地界 0)该给凡品灵草').toBeGreaterThan(0)
     expect(resources.herbOf(herbGradeOfMajor(player.major)), '采集不该按玩家当前大境界给品').toBe(0)
+  })
+
+  it('出行预览 expectedWinReward 与 afterWin 均值口径同源(所见即所打)', () => {
+    const player = usePlayerStore()
+    player.initCharacter('预览', { roots: [] } as never)
+    const region = regionDef('qingyun')!
+    const rewardMult = 1.4
+    // 均值:灵石 float(0.8,1.2)→1.0;不翻倍、无掉落。预览与实发应算出同一笔期望
+    const spyF = vi.spyOn(rng, 'float').mockReturnValue(1)
+    const spyC = vi.spyOn(rng, 'chance').mockReturnValue(false)
+    try {
+      const actual = afterWin(region, rewardMult, false)
+      const preview = expectedWinReward(region, rewardMult)
+      expect(toNum(preview.stone), '预览灵石应与实发均值一致').toBeCloseTo(toNum(actual.stone), 6)
+      expect(toNum(preview.exp), '预览修为应与实发均值一致').toBeCloseTo(toNum(actual.exp), 6)
+      expect(toNum(preview.stone)).toBeGreaterThan(0)
+    } finally {
+      spyF.mockRestore()
+      spyC.mockRestore()
+    }
   })
 
   it('智能收纳开启时,低于保留线的凡良拾取即化尘,不入行囊,器灵尘到账', () => {

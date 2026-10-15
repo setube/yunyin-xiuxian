@@ -47,3 +47,78 @@ export function achievementDirection(cond: AchvCond): string {
       return '历程节点'
   }
 }
+
+/** 成就的「主题」—— 62 条平铺一列难回看,先按主题归成几段再铺 */
+export type AchievementGroup =
+  | 'realm'
+  | 'breakthrough'
+  | 'quest'
+  | 'gear'
+  | 'pill'
+  | 'gongfa'
+  | 'dongfu'
+  | 'reinc'
+  | 'milestone'
+
+export const ACHIEVEMENT_GROUP_LABEL: Record<AchievementGroup, string> = {
+  realm: '境界',
+  breakthrough: '突破与渡劫',
+  quest: '历练与征战',
+  gear: '装备',
+  pill: '丹药',
+  gongfa: '功法',
+  dongfu: '洞府',
+  reinc: '转世',
+  milestone: '历程'
+}
+
+/** 展示顺序:境界先行,往下是各玩法面,最后是特殊历程 */
+export const ACHIEVEMENT_GROUP_ORDER: AchievementGroup[] = [
+  'realm',
+  'breakthrough',
+  'quest',
+  'gear',
+  'pill',
+  'gongfa',
+  'dongfu',
+  'reinc',
+  'milestone'
+]
+
+/** 计数器 → 主题(与 COUNTER_DIRECTIONS 同键,但归得更粗,供分组标题用)。
+ * 导出它供 spec 扫 CounterKey 联合类型核验,与方向表同等守则。 */
+export const COUNTER_GROUPS: Record<CounterKey, AchievementGroup> = {
+  kills: 'quest',
+  bossKills: 'quest',
+  battles: 'quest',
+  explores: 'quest',
+  events: 'quest',
+  equipsGained: 'gear',
+  upgrades: 'gear',
+  decomposed: 'gear',
+  pillsUsed: 'pill',
+  pillsCrafted: 'pill',
+  pillsFailed: 'pill',
+  gongfaLearned: 'gongfa',
+  breakthroughs: 'breakthrough',
+  breakthroughFails: 'breakthrough',
+  tribulations: 'breakthrough',
+  reincarnations: 'reinc',
+  soulsRefined: 'dongfu',
+  offlineClaims: 'dongfu',
+  buildingUpgrades: 'dongfu'
+}
+
+/** 一条成就归属的主题(条件是唯一依据,不另抄一张「成就→主题」清单) */
+export function achievementGroup(cond: AchvCond): AchievementGroup {
+  switch (cond.type) {
+    case 'counter':
+      return COUNTER_GROUPS[cond.key] ?? 'milestone'
+    case 'realm':
+      return 'realm'
+    case 'quality':
+      return 'gear'
+    case 'custom':
+      return 'milestone'
+  }
+}

@@ -24,7 +24,8 @@ export function formatGN(v: GNum | number): string {
       // 与 <100 档(四舍五入)一致,不再向下取整:999.6 显示 1000 而非 999
       return String(Math.round(n))
     }
-    return Math.floor(n).toLocaleString('en-US')
+    // 千位档也取整,与 <1000 档同口径:9999.6 该读 10,000,不是向下取整的 9,999
+    return Math.round(n).toLocaleString('en-US')
   }
   const unitIdx = Math.floor(g.e / 4) - 1
   if (unitIdx >= UNITS.length) {

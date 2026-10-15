@@ -432,7 +432,7 @@
         tag: '草',
         tagCls: B_TAG_CLS.herb ?? '',
         title: `募 灵草 ×${s.target}`,
-        desc: '交任意一品灵草,现货即结,价随所交之品',
+        desc: '自动交出最低可用一档灵草,现货即结,价随该品(高阶留作丹方)',
         rewardText: '价随品',
         extraText: '',
         claimed,

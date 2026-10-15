@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { rng } from '@/utils/random'
   import { rollLinggen } from '@/core/linggenGen'
@@ -94,7 +94,11 @@
   const inventory = useInventoryStore()
   const ui = useUiStore()
 
-  const name = ref(randomDaoName(rng))
+  const name = ref(game.createName || randomDaoName(rng))
+  // 刷新既不丢灵根草稿、也不丢手打的道号 —— 同一屏幕的两半不该一个留一个丢。
+  // 首次进来若还没草稿,把这次的随机道号也落一份,免得顺手一改就没了
+  if (!game.createName) game.setCreateName(name.value)
+  watch(name, n => game.setCreateName(n))
   // 建号草稿放在 game store 里持久化:刷新页面既不该白拿一次重掷,也不该洗掉已花掉的次数
   if (!game.createProfile) game.setCreateProfile(rollLinggen(rng))
   const profile = computed(() => game.createProfile!)

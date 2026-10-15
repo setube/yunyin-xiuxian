@@ -127,7 +127,11 @@
   })
 
   function toggleTitle(id: string): void {
-    player.setTitle(player.titleId === id ? null : id)
+    const def = TITLES.find(t => t.id === id)
+    const wearing = player.titleId === id
+    player.setTitle(wearing ? null : id)
+    // 佩戴/卸下都得有回响:顶栏只换了个名,名号还得当场说一句(与唤来灵兽对称)
+    if (def) ui.toast(wearing ? `收下「${def.name}」——名号藏锋` : `佩上「${def.name}」`, 'info')
   }
 
   // ---- 灵兽 ----

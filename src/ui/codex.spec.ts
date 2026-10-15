@@ -189,7 +189,7 @@ describe('图鉴 · 用具三类的收录深度', () => {
     expect(equipStage({ ...seen('mortal', 30), u: 1 }, true)).toBe(2)
     expect(equipStage({ ...seen('excellent', 12), u: 1 }, true)).toBe(2)
     expect(equipStage(seen('heaven', 12), true)).toBe(3)
-    expect(describeEquipment(t, seen('heaven', 18), true).desc).toContain('见过最好的:天品 · 18 阶')
+    expect(describeEquipment(t, seen('heaven', 18), true).desc).toContain('见过最好成色:天品 · 最高 18 阶')
     expect(describeEquipment(t, undefined, true).badge).toBe('')
     expect(describeEquipment(t, seen('heaven', 18), true).stageName).toBe(EQUIP_STAGE_NAMES[EQUIP_STAGE_MAX])
   })

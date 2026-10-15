@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { ACHIEVEMENTS } from '@/data/achievements'
-import { COUNTER_DIRECTIONS, achievementDirection } from '@/ui/achievementHint'
+import { COUNTER_DIRECTIONS, achievementDirection, COUNTER_GROUPS, ACHIEVEMENT_GROUP_LABEL, achievementGroup } from '@/ui/achievementHint'
 
 /**
  * 从类型声明里扫出 CounterKey 的联合成员 —— 手写联合,故只能扫源码。
@@ -61,5 +61,27 @@ describe('成就方向 · 每个「???」都有地方可去', () => {
       expect(achievementDirection(sample.cond), `条件类型 ${kind} 没有方向文案`).toBeTruthy()
     }
     expect(kinds.length, '成就只覆盖了一种条件类型,判据覆盖不到别的').toBeGreaterThanOrEqual(3)
+  })
+
+  it('每条成就在主题表里都有归属(分组标题读得到)', () => {
+    const bad: string[] = []
+    for (const a of ACHIEVEMENTS) {
+      const g = achievementGroup(a.cond)
+      if (!ACHIEVEMENT_GROUP_LABEL[g]) bad.push(a.id)
+    }
+    expect(bad, `这些成就没有主题标题:${bad.join('、')}`).toEqual([])
+  })
+
+  it('计数器联合类型的每个键,主题表里都有', () => {
+    const declared = counterKeysFromTypes()
+    expect(declared.length, '一个计数器都没扫到,断言形同虚设').toBeGreaterThan(10)
+    const missing = declared.filter(k => !(k in COUNTER_GROUPS))
+    expect(missing, `这些计数器没有主题:${missing.join('、')}`).toEqual([])
+  })
+
+  it('反向也不许多:主题表里不许有已经消失的计数器', () => {
+    const declared = new Set(counterKeysFromTypes())
+    const dead = Object.keys(COUNTER_GROUPS).filter(k => !declared.has(k))
+    expect(dead, `主题表里这些键已经不在 CounterKey 里了:${dead.join('、')}`).toEqual([])
   })
 })

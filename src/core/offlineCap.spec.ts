@@ -322,35 +322,45 @@ describe('离线总结报数 == 实发', () => {
   })
 
   it('封顶段:capped/cappedSeconds/seconds 报数正确,实发按 cap 折算且寿元不封顶', () => {
-    const game = useGameStore()
-    const player = usePlayerStore()
-    const dongfu = useDongfuStore()
-    player.major = 3
-    dongfu.setLevel('field', 3)
-    dongfu.setLevel('library', 3)
-    checkStateAchievements() // 排掉首次 track 补发的成就/主线一次性收益,保持断言纯净
-    game.markStarted()
-    game.lastActiveAt = Date.now() - 60 * 3600 * 1000 // 60h;洞府 0 级 cap 8h
+    // 与「非封顶段」同款冻时:lastActiveAt 与 settleOffline 各读一次真实时钟,
+    // 满负载下两次读数一旦跨秒,dtSec 会多 1 → seconds 偶发报 216001 而非 216000。
+    // 冻住让两处读同一时刻,dtSec 恰为 60h。
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_800_000_000_000)
+      setActivePinia(createPinia())
+      const game = useGameStore()
+      const player = usePlayerStore()
+      const dongfu = useDongfuStore()
+      player.major = 3
+      dongfu.setLevel('field', 3)
+      dongfu.setLevel('library', 3)
+      checkStateAchievements() // 排掉首次 track 补发的成就/主线一次性收益,保持断言纯净
+      game.markStarted()
+      game.lastActiveAt = Date.now() - 60 * 3600 * 1000 // 60h;洞府 0 级 cap 8h
 
-    const age0 = player.age
-    const rate = player.cultPerSec // 结算前速率(60h 修为可能当场越层,结算后会涨,须以结算前为准)
-    const summary = settleOffline(Date.now())
-    expect(summary, '60h 离线应结算').not.toBeNull()
-    const sm = summary!
+      const age0 = player.age
+      const rate = player.cultPerSec // 结算前速率(60h 修为可能当场越层,结算后会涨,须以结算前为准)
+      const summary = settleOffline(Date.now())
+      expect(summary, '60h 离线应结算').not.toBeNull()
+      const sm = summary!
 
-    const capSec = 8 * 3600 // 28800
-    const effSec = capSec * OFFLINE_EFFICIENCY
-    expect(sm.capped, '60h 超过 8h 封顶').toBe(true)
-    expect(sm.cappedSeconds, '报出真实 capSec').toBe(capSec)
-    expect(sm.seconds, '报出完整 dtSec').toBe(60 * 3600)
+      const capSec = 8 * 3600 // 28800
+      const effSec = capSec * OFFLINE_EFFICIENCY
+      expect(sm.capped, '60h 超过 8h 封顶').toBe(true)
+      expect(sm.cappedSeconds, '报出真实 capSec').toBe(capSec)
+      expect(sm.seconds, '报出完整 dtSec').toBe(60 * 3600)
 
-    // 实发按 capSec 折算:修为增益对应 ~7.2h(cap×0.9),而非 ~54h(60h×0.9)
-    expect(toNum(sm.exp), '增益按 cap 折算').toBeCloseTo(rate * effSec, 3)
-    expect(toNum(sm.exp), '不得越过 cap 多给').toBeLessThan(rate * (60 * 3600) * OFFLINE_EFFICIENCY * 0.5)
+      // 实发按 capSec 折算:修为增益对应 ~7.2h(cap×0.9),而非 ~54h(60h×0.9)
+      expect(toNum(sm.exp), '增益按 cap 折算').toBeCloseTo(rate * effSec, 3)
+      expect(toNum(sm.exp), '不得越过 cap 多给').toBeLessThan(rate * (60 * 3600) * OFFLINE_EFFICIENCY * 0.5)
 
-    // 寿元不封顶:60h 全额记账(≈60 年),而非 8h(≈8 年),且报数==实发
-    expect(sm.ageYears).toBe(Math.round(player.age - age0))
-    expect(sm.ageYears, '寿元按完整 60h 记账').toBeGreaterThanOrEqual(50)
+      // 寿元不封顶:60h 全额记账(≈60 年),而非 8h(≈8 年),且报数==实发
+      expect(sm.ageYears).toBe(Math.round(player.age - age0))
+      expect(sm.ageYears, '寿元按完整 60h 记账').toBeGreaterThanOrEqual(50)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

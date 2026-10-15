@@ -359,7 +359,8 @@
             <button
               class="btn-ghost"
               :disabled="isEquipped || inst?.locked"
-              aria-label="分解这件装备"
+              :aria-label="decomposeReason"
+              :title="decomposeReason"
               @click="decomposeArm = inst?.uid ?? null"
             >
               <GameIcon name="trash" :size="15" />
@@ -459,6 +460,12 @@
   const template = computed(() => (inst.value ? equipmentTemplate(inst.value.templateId) : undefined))
   const resolved = computed(() => (inst.value ? resolveEquipStats(inst.value) : null))
   const isEquipped = computed(() => (inst.value && template.value ? inventory.equipped[template.value.slot] === inst.value.uid : false))
+  /** 分解禁用缘由:禁用不该是猜谜(约定「禁用即给原因」)。佩戴/上锁各明示一条。 */
+  const decomposeReason = computed(() => {
+    if (isEquipped.value && inst.value) return '先卸下此件,方可分解'
+    if (inst.value?.locked) return '已上锁:先在行囊解锁,方可分解'
+    return '分解这件装备'
+  })
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
   /** 连升计划:受余额与上限约束,预览与执行同一份(升不动时 levels=0,隐藏整块) */
   const batchPlan = computed<UpgradeBatchPlan>(() =>

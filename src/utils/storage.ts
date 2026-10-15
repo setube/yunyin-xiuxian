@@ -260,10 +260,9 @@ export function preflightScan(): string[] {
  * 高阶丹」的统一口径,它就地沉淀为最粗的凡品(品 1),**不再按当前境界折算**。
  * 凡品永远有出口:喂凡品方子(准入境界 0-4),或坊市按品即时出售,不会成死货。
  *
- * @param _major 旧方案曾按玩家当前境界把旧草折算成那一品;如今旧草统一落凡品、
- *   不再依赖境界,此参数仅为保持导出签名与调用点稳定而保留(留待将来如需按境界分流)。
+ * @param resources 资源分片
  */
-export function migrateHerbSlice(resources: Record<string, unknown>, _major: number): Record<string, unknown> {
+export function migrateHerbSlice(resources: Record<string, unknown>): Record<string, unknown> {
   const hasMap = 'herbByGrade' in resources
   const scalar =
     typeof resources.herb === 'number' && Number.isFinite(resources.herb as number)
@@ -306,30 +305,24 @@ export function migrateInventorySlice(data: Record<string, unknown>): Record<str
  * 本地存档结构升级(在 Pinia 水合之前执行);顺带把旧明文档一次性转为密文
  */
 export function migrateLocalSchema(): void {
+  // 迁移是幂等 no-op 时不再回写:重加密 + 重写分片每次都白付一次 AES/parse,
+  // 与文件上部「避免无谓 AES/parse」的批处理口径一致 —— 只有真发生了迁移才落盘
   try {
     const invKey = storageKey('inventory')
     const invRaw = localStorage.getItem(invKey)
     if (invRaw !== null) {
       const inv = JSON.parse(readSaveText(invRaw)) as Record<string, unknown>
-      localStorage.setItem(invKey, encryptSave(JSON.stringify(migrateInventorySlice(inv))))
+      const migrated = migrateInventorySlice(inv)
+      if (migrated !== inv) localStorage.setItem(invKey, encryptSave(JSON.stringify(migrated)))
     }
-    // 灵草五品:旧档单标量 herb → 一律落凡品(品 1)分账(不丢草;不再按境界折算)
+    // 灵草五品:旧档单标量 herb → 一律落凡品(品 1)分账(不丢草;不再按境界折算,
+    // 也不再为此读玩家分片 —— 那个折算基准早已弃用)
     const resKey = storageKey('resources')
     const resRaw = localStorage.getItem(resKey)
     if (resRaw !== null) {
       const res = JSON.parse(readSaveText(resRaw)) as Record<string, unknown>
-      // 玩家当前境界不再作为折算基准(旧草统一落凡品),此读取仅为保持迁移签名而保留
-      let major = 0
-      const playerRaw = localStorage.getItem(storageKey('player'))
-      if (playerRaw !== null) {
-        try {
-          const player = JSON.parse(readSaveText(playerRaw)) as Record<string, unknown>
-          if (typeof player.major === 'number' && Number.isFinite(player.major)) major = Math.floor(player.major)
-        } catch {
-          /* player 分片损坏,按 0 折算 */
-        }
-      }
-      localStorage.setItem(resKey, encryptSave(JSON.stringify(migrateHerbSlice(res, major))))
+      const migrated = migrateHerbSlice(res)
+      if (migrated !== res) localStorage.setItem(resKey, encryptSave(JSON.stringify(migrated)))
     }
   } catch {
     // 损坏数据交由 preflightScan 兜底

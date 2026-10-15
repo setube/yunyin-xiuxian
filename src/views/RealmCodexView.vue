@@ -142,7 +142,7 @@
     <section class="card-ink px-4 py-3">
       <p class="text-[11px] leading-relaxed text-ink-faint">
         紫微斗数本当以生辰起五行局再安诸星,游戏内没有生辰 ——
-        故此门只取**{{ cnNumber(PALACES.length) }}宫所主**与**{{ cnNumber(STARS.length) }}主星的星性**,按灵根与轮回归属安星:是取象义,不是排盘。
+        故此门只取{{ cnNumber(PALACES.length) }}宫所主与{{ cnNumber(STARS.length) }}主星的星性,按灵根与轮回归属安星:是取象义,不是排盘。
         卦是一时之机(可问、有时限),命是一世之格(常驻、转世重算,力薄为底色)。
       </p>
       <p class="mt-2 font-kai text-[13px] leading-relaxed text-ink">{{ fateLordLineText }}</p>
@@ -182,7 +182,7 @@
       <p class="font-kai text-[13px] leading-relaxed text-ink">{{ mansionLine }}</p>
       <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">
         分野依《晋书·天文志》(诸家小异)只作来历读 —— 游戏里的地界不是九州。
-        管用的是下面这条**游戏约定**:{{ cnNumber(IMAGES.length) }}象配{{ cnNumber(WORLDS.length) }}界({{ imageWorldMap }}),
+        管用的是下面这条游戏约定:{{ cnNumber(IMAGES.length) }}象配{{ cnNumber(WORLDS.length) }}界({{ imageWorldMap }}),
         值日之宿所属之象,所配界域今日历练际遇更易(乘在历练际遇上 +{{ mansionLuckPercent() }}%),他处不加。
       </p>
       <p class="mt-1.5 text-[11px] text-azure">
@@ -212,7 +212,7 @@
       <p class="text-[11px] leading-relaxed text-ink-faint">
         {{ cnNumber(GATES.length) }}门依洛书九宫排布:{{ luoshuGatesText }}。
         远征启程前可择一门入界 —— 不是与天道立契(那换的是道源),
-        择门改的是这一趟的**打法**:续航、抢攻、守拙或速决。
+        择门改的是这一趟的打法:续航、抢攻、守拙或速决。
       </p>
       <div class="mt-2.5 divide-y divide-ink/6">
         <div v-for="g in GATES" :key="g.id" class="flex items-start gap-2 py-2">

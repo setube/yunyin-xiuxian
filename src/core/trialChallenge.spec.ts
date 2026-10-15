@@ -15,8 +15,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
-import { TRIALS, trialDef } from '@/data/endgame'
-import { challengeTrial } from './endgameService'
+import { TRIALS, trialDef, celestialWorldDef } from '@/data/endgame'
+import { challengeTrial, rewriteMark, REWRITE_ENTRY_COST } from './endgameService'
+import { gn } from '@/utils/gnum'
 import type { EquipSlot, EquipmentInstance } from '@/types'
 
 const S_SLOTS: EquipSlot[] = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman']
@@ -77,5 +78,30 @@ describe('天道试炼 · challengeTrial 清/败原子', () => {
       expect(Number.isInteger(t.fights) && t.fights > 0, `${t.id} fights`).toBe(true)
       expect(Number.isFinite(t.escalation) && t.escalation >= 1, `${t.id} escalation`).toBe(true)
     }
+  })
+
+  it('可重写世界道痕:扣 10 道源、真跑一趟并补新痕 —— 不再烧钱白回 null', () => {
+    seedTrialPlayer(true)
+    const e = useEndgameStore()
+    const world = celestialWorldDef('chiyan')!
+    e.addMark({
+      life: 1,
+      daoPathId: 'sword',
+      targetId: 'chiyan',
+      targetName: world.name,
+      cleared: true,
+      rounds: 9999, // 今日之速必快过,走「胜于旧我」也不碍断言
+      buildName: '天道自检',
+      powerText: '1e100',
+      at: Date.now(),
+      replay: { mods: {}, attack: gn(1), defense: gn(1), maxHp: gn(10), speed: 1, skills: [], artifacts: [], pactId: null }
+    })
+    const before = e.daoSource
+    const marksBefore = e.marks.length
+    const out = rewriteMark(e.marks[0]!)
+    // 回归:此前世界道痕在扣 10 道源后被 `if (!trial) return null` 拦死,零结果却照样烧钱。
+    expect(out, '世界道痕重写不应白回 null').not.toBeNull()
+    expect(before - e.daoSource).toBe(REWRITE_ENTRY_COST)
+    expect(e.marks.length).toBe(marksBefore + 1)
   })
 })

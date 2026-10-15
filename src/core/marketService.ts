@@ -101,7 +101,9 @@ function buildSlot(
   return {
     kind: 'equipment',
     idx,
-    tier: major,
+    // 身价随「市场标尺」:定价走 marketTier(=maxTierForMajor)的真实层级曲线,货也得是那个
+    // 层级的 —— 否则拿 major 层级(0-20 大阶)的东西按 1.9^市场层级 标价,买来的比掉落次一层
+    tier: marketTier(major),
     minQualityRank,
     price: stoneByTier(marketTier(major), MARKET_EQUIP_STONE_BASE + rank * MARKET_EQUIP_STONE_PER_RANK),
     sold: false

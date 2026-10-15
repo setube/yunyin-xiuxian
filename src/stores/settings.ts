@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { persistConfig } from '@/utils/storage'
 import { asArray, asFiniteNumber, asRecord } from '@/utils/saveShape'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
+import { QUALITIES } from '@/data/qualities'
 import { APP_VERSION, compareVersions } from '@/utils/appVersion'
 import { RELEASE_NOTES } from '@/ui/releaseNotes'
 
@@ -76,7 +77,13 @@ export const useSettingsStore = defineStore(
       lastExportAt.value = asFiniteNumber(lastExportAt.value, 0, 0)
       installNoticeDismissed.value = installNoticeDismissed.value === true
       lastSeenVersion.value = typeof lastSeenVersion.value === 'string' ? lastSeenVersion.value : ''
-      decomposeRanks.value = asArray<number>(decomposeRanks.value).filter(n => typeof n === 'number' && Number.isFinite(n))
+      decomposeRanks.value = [
+        ...new Set(
+          asArray<number>(decomposeRanks.value).filter(
+            n => typeof n === 'number' && Number.isFinite(n) && QUALITIES.some(q => q.rank === n)
+          )
+        )
+      ]
       const sk = asRecord<unknown>(smartKeep.value)
       smartKeep.value = {
         enabled: sk.enabled === true,

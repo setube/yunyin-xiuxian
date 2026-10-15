@@ -526,7 +526,7 @@
             <button
               v-for="q in KEEP_QUALITY_CHOICES"
               :key="q.rank"
-              class="chip-ink !py-1.5 text-[10px]"
+              class="chip-ink !py-2 text-[10px]"
               :class="settings.smartKeep.minQuality === q.rank ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
               @click="settings.smartKeep.minQuality = q.rank"
             >
@@ -544,7 +544,7 @@
             <button
               v-for="t in KEEP_TIER_CHOICES"
               :key="t"
-              class="chip-ink !py-1.5 text-[10px]"
+              class="chip-ink !py-2 text-[10px]"
               :class="settings.smartKeep.keepMinTier === t ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
               @click="settings.smartKeep.keepMinTier = t"
             >
@@ -659,7 +659,7 @@
     artifactSlotsFor
   } from '@/data/artifacts'
   import { REALMS } from '@/data/realms'
-  import { EQUIP_SLOT_NAMES, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
+  import { EQUIP_SLOT_NAMES, EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
   import { usePill, usePillBatch, availableRecipes, craftBatchPlan, craftPill, craftPillBatch, pillCraftCost } from '@/core/pillService'
   import { craftability, type Craftability } from '@/core/craftability'
@@ -678,7 +678,7 @@
   import { salvageOf } from '@/core/salvage'
   import { add, gnZero } from '@/utils/gnum'
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
-  import { bestEquipFor, equipAllBest, equipSetCombo, equipSetPreview, EQUIP_SLOTS, unequipAllEquipped } from '@/core/equipBest'
+  import { bestEquipFor, equipAllBest, equipSetCombo, equipSetPreview, unequipAllEquipped } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { studyEta } from '@/core/loreService'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
@@ -722,7 +722,7 @@
   ]
 
   // ---- 装备:部位槽 + 部位候选列表 ----
-  const SLOTS: EquipSlot[] = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman']
+  const SLOTS = EQUIP_SLOTS
   const pickerSlot = ref<EquipSlot | null>(null)
 
   /** 装备共鸣:已装备件里的同组计数(未满也列出来,让玩家知道差几件) */

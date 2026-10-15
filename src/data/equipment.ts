@@ -554,6 +554,13 @@ export function equipmentTemplate(id: string): EquipmentTemplate | undefined {
   return BY_ID.get(id)
 }
 
+/**
+ * 全身九个可穿戴部位(法宝不在此列 —— 法宝走另建的多法宝位)。
+ * 这是「穿一身」的唯一事实源:一建二参三目标、战斗审计、行囊页跟它走,
+ * 加/删一个部位只改这一处,别在几个文件各抄一份(抄多必分家)。
+ */
+export const EQUIP_SLOTS: EquipSlot[] = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman']
+
 export const EQUIP_SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '武器',
   head: '头冠',

@@ -166,11 +166,11 @@ export function recordEvent(
   const cur = memories[eventId]
   const next: EventMemory = cur
     ? { ...cur, times: cur.times + 1, lastAt: now, lastChoiceIdx: choiceIdx }
-    : { eventId, times: 1, lastAt: now, lastChoiceIdx: choiceIdx, aftermathSeen: false }
+    : { eventId, times: 1, lastAt: now, lastChoiceIdx: choiceIdx }
   return { ...memories, [eventId]: next }
 }
 
-/** 余波触发条件(纯函数):完成过(≥2次)且已完事件即可 */
+/** 余波触发条件(纯函数):完成过一次即可触发(余波是回声,可反复) */
 export function shouldTriggerAftermath(memories: Record<string, EventMemory>, eventId: string, rand: number): boolean {
   const m = memories[eventId]
   if (!m || m.times < 1) return false

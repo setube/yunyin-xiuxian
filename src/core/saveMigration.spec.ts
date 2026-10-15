@@ -24,7 +24,7 @@ import {
   migrateLocalSchema,
   storageKey
 } from '@/utils/storage'
-import { decryptSave } from '@/utils/crypto'
+import { decryptSave, encryptSave } from '@/utils/crypto'
 import { importSaveText } from './save'
 import { useInventoryStore } from '@/stores/inventory'
 import { useGameStore } from '@/stores/game'
@@ -114,6 +114,20 @@ describe('迁移 · 启动时就地升级本机分片', () => {
     bootStores()
     expect(usePlayerStore().major, '明文 player 分片没读回来').toBe(6)
     expect(useInventoryStore().equippedArtifacts).toEqual(['af_youming'])
+  })
+
+  it('已是新档的分片不再重写:迁移 no-op 时不重复加密落盘(不再白付 AES/parse)', () => {
+    // 现代档(已无旧字段)启动时 migrateLocalSchema 不得回写任何分片 ——
+    // 否则每次启动都重加密,密文因随机盐必变、字节绝不相同;这里断言原样不动
+    const inv = { equippedArtifacts: ['af_youming'] }
+    const res = { herbByGrade: { 1: 0, 2: 0, 3: 5, 4: 0, 5: 0 }, ore: 1 }
+    localStorage.setItem(storageKey('inventory'), encryptSave(JSON.stringify(inv)))
+    localStorage.setItem(storageKey('resources'), encryptSave(JSON.stringify(res)))
+    const invBefore = localStorage.getItem(storageKey('inventory'))!
+    const resBefore = localStorage.getItem(storageKey('resources'))!
+    migrateLocalSchema()
+    expect(localStorage.getItem(storageKey('inventory'))).toBe(invBefore)
+    expect(localStorage.getItem(storageKey('resources'))).toBe(resBefore)
   })
 })
 

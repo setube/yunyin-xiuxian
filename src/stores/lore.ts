@@ -10,9 +10,13 @@ import { computed, ref } from 'vue'
 import { LORE_MAX } from '@/data/materials'
 import { SKILL_IDS, skillLevelFromExp, type SkillId } from '@/data/crafting'
 import { persistConfig } from '@/utils/storage'
+import { QUALITIES } from '@/data/qualities'
 
 /** 敌人认知层上限:0 未识 / 1 眼熟 / 2 知路数 / 3 洞悉 */
 export const ENEMY_LORE_MAX = 3
+
+/** 品质阶上限:从数据派生的真实最大值(别写死 8,哪天加了高阶会自动跟上) */
+const MAX_QUALITY_RANK = Math.max(...QUALITIES.map(q => q.rank))
 
 export const ENEMY_LORE_STAGE_NAMES = ['未识', '眼熟', '知其路数', '洞悉'] as const
 
@@ -99,7 +103,7 @@ export const useLoreStore = defineStore(
      */
     function noteEquipSeen(templateId: string, qualityRank: number, tier: number): void {
       const cur = equipLore.value[templateId]
-      const q = Math.max(0, Math.min(8, Math.floor(qualityRank || 0)))
+      const q = Math.max(0, Math.min(MAX_QUALITY_RANK, Math.floor(qualityRank || 0)))
       const t = Math.max(0, Math.floor(tier || 0))
       if (cur && cur.q >= q && cur.t >= t) return
       equipLore.value = {
@@ -222,7 +226,7 @@ export const useLoreStore = defineStore(
         if (typeof q !== 'number' || typeof t !== 'number' || !Number.isFinite(q) || !Number.isFinite(t)) continue
         const u = (v as { u?: unknown })?.u
         seenFixed[id] = {
-          q: Math.max(0, Math.min(8, Math.floor(q))),
+          q: Math.max(0, Math.min(MAX_QUALITY_RANK, Math.floor(q))),
           t: Math.max(0, Math.floor(t)),
           u: u === 1 ? 1 : 0
         }

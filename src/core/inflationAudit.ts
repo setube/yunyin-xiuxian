@@ -25,12 +25,10 @@ import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { MAX_MAJOR } from '@/data/realms'
 import { enemyGearFactor, powerScale, powerScore } from './formulas'
 import { QUALITIES } from '@/data/qualities'
+import { EQUIP_SLOTS } from '@/data/equipment'
 import { generateEquipment, qualityWeightAt, resolveEquipStats } from './equipGen'
 import { celestialDepthScale } from './gauntlet'
 import { computeFinalStats, mergeMods, modDepth } from './statsCalc'
-
-/** 玩家同时佩戴的非法宝槽位 */
-const WEAR_SLOTS = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman'] as const
 
 // ---------------- 玩家成型度档位 ----------------
 
@@ -144,7 +142,7 @@ export function modelPlayer(major: number, sub: number, profile: GearProfile, se
 
   const flats = { attack: 0, defense: 0, maxHp: 0 }
   const equipModList: StatMods[] = []
-  for (const slot of WEAR_SLOTS) {
+  for (const slot of EQUIP_SLOTS) {
     const inst: EquipmentInstance = { ...generateEquipment(tier, rng, { slot, minQualityRank: qualityRank }), level }
     const resolved = resolveEquipStats(inst)
     flats.attack += toNum(resolved.flats.attack)

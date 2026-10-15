@@ -163,7 +163,7 @@
           >
             <p class="flex items-center justify-between">
               <span class="font-kai text-[14px] text-ink">{{ t.name }}</span>
-              <span class="text-[10px] text-ink-faint tabular">宿慧 +{{ t.insight }}</span>
+              <span class="text-[10px] text-ink-faint tabular">走成 +{{ t.insight }} 宿慧</span>
             </p>
             <p class="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{{ t.vow }}</p>
             <p class="mt-0.5 text-[11px] text-ink-faint">

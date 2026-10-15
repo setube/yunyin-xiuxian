@@ -202,10 +202,10 @@
   /** 散去形意同样二步确认:器魂是花道源与一件法器凝出来的,一脚碎掉连个反悔都没有 */
   const pendingDissolveUid = ref<string | null>(null)
 
-  /** 二步确认后真正入炉;成功后收拢确认态 */
+  /** 二步确认后真正入炉;成败都收起确认态(失败如道源不足也让玩家重挑) */
   function doRefine(uid: string): void {
-    if (refineEquipment(uid)) pendingRefineUid.value = null
-    else pendingRefineUid.value = null // 失败(如道源不足)也收起确认态,让玩家重挑
+    refineEquipment(uid)
+    pendingRefineUid.value = null
   }
 
   /** 二步确认后真正散去形意;散去不可逆,成功后收拢确认态 */

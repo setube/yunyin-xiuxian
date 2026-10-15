@@ -74,4 +74,17 @@ describe('建号「逆天改命」不限次', () => {
     expect(game.createRerolls, '转世后额度形态变了').toBe(CREATE_REROLL_QUOTA)
     expect(game.createProfile, '上一世的建号草稿没有作废').toBeNull()
   })
+
+  it('建号页刷新不丢道号:setCreateName 记下、超长截断、转世即清', () => {
+    const game = useGameStore()
+    expect(game.createName).toBe('')
+    game.setCreateName('清溪剑客')
+    expect(game.createName).toBe('清溪剑客')
+    // 与输入框 maxlength 同口径:只留 8 字
+    game.setCreateName('一二三四五六七八九十')
+    expect(game.createName).toBe('一二三四五六七八')
+    // 新的一世草稿作废,道号一并清空(不再把上一世的字带进新号)
+    game.resetCreateDraft()
+    expect(game.createName).toBe('')
+  })
 })

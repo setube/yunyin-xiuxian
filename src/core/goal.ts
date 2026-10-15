@@ -20,12 +20,12 @@ import { useInventoryStore } from '@/stores/inventory'
 import { detectBuild } from './buildDetect'
 import { breakthroughInfo } from './breakthrough'
 import { REGIONS } from '@/data/regions'
-import { EQUIP_SLOT_NAMES } from '@/data/equipment'
+import { EQUIP_SLOT_NAMES, EQUIP_SLOTS } from '@/data/equipment'
 import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
 import { pillDef } from '@/data/pills'
 import { herbGradeOfMajor } from '@/data/herbGrades'
 import { breakthroughGoalText } from '@/ui/cultivationText'
-import type { EquipSlot } from '@/types'
+import { formatNum } from '@/utils/format'
 
 export type GoalType = 'breakthrough' | 'equipment' | 'explore' | 'material' | 'build'
 
@@ -44,7 +44,7 @@ export interface Goal {
  * 武器占攻、衣袍护身居先;灵符是真槽(有整套模板),一并纳入。
  * 空槽扫描按此顺序挑第一个,保证建议具体且不来回跳。
  */
-const GEAR_SLOTS: EquipSlot[] = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman']
+const GEAR_SLOTS = EQUIP_SLOTS
 
 /**
  * 灵草的低位线:野外唯一被消耗的材料(丹方 4~30 一味),10 约等于两炉最廉丹方的余量,
@@ -67,6 +67,17 @@ function nearBreakthroughHint(needTribulation: boolean): string {
   return `这一步是小进阶,${prep}或${pill}可提升进阶成功率`
 }
 
+/**
+ * 临近突破的主页提示:除成功率口径外,把「灵气够不够破」也摆上台面 ——
+ * 破境要耗 qiCost = 灵气上限 × BT_QI_COST_RATIO,灵气没蓄满就冲,会在修炼页被
+ * 一口「灵气未满」弹回来。这里直接报还差几成,别等玩家点破才知道。
+ */
+function breakthroughNearHint(needTribulation: boolean, qiShort: number): string {
+  const base = nearBreakthroughHint(needTribulation)
+  if (qiShort <= 0) return base
+  return `${base};灵气还差 ${formatNum(qiShort)} 才够破境`
+}
+
 /** 纯函数:根据玩家状态生成当前目标 */
 export function generateCurrentGoal(player: ReturnType<typeof usePlayerStore>): Goal | null {
   // 1. 死后无目标
@@ -76,11 +87,13 @@ export function generateCurrentGoal(player: ReturnType<typeof usePlayerStore>): 
   if (!player.atMaxRealm && player.expProgress >= 0.5) {
     const near = player.expProgress >= 0.85
     const info = breakthroughInfo()
+    const res = useResourcesStore()
+    const qiShort = Math.max(0, info.qiCost - res.qi)
     return {
       type: 'breakthrough',
       text: breakthroughGoalText(near, info.needTribulation, info.targetLabel),
       progress: player.expProgress,
-      hint: near ? nearBreakthroughHint(info.needTribulation) : undefined
+      hint: near ? breakthroughNearHint(info.needTribulation, qiShort) : undefined
     }
   }
 
@@ -88,12 +101,15 @@ export function generateCurrentGoal(player: ReturnType<typeof usePlayerStore>): 
   const build = detectBuild(player.finalStats.mods)
   if (build) {
     const style = build.style.name
-    const core = Math.max(1, build.coreValues.length)
+    // 分母是流派真正的核心词条数(2 或 3),不是写死的 4 —— 否则 2 键/3 键流派
+    // 满筑也到不了 100%,这个中期目标结构性永不完成
+    const core = build.coreValues.length
+    const coreTotal = Object.keys(build.style.core).length
     return {
       type: 'build',
       text: `完善「${style}」流派`,
-      progress: Math.min(1, core / 4),
-      hint: `当前已凑出 ${core}/4 个核心词条,继续寻找关键装备`
+      progress: Math.min(1, core / coreTotal),
+      hint: `当前已凑出 ${core}/${coreTotal} 个核心词条,继续寻找关键装备`
     }
   }
 

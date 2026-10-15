@@ -14,6 +14,8 @@ import { rng } from '@/utils/random'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
+import { useLoreStore } from '@/stores/lore'
+import { collect } from '@/core/progress'
 import { pillDef } from '@/data/pills'
 import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
@@ -149,7 +151,13 @@ export const useMarketStore = defineStore(
           resources.addSmall('ore', slot.count)
         }
       } else {
-        inventory.addEquipment(marketEquipInstance(slot, stockedAt.value))
+        const inst = marketEquipInstance(slot, stockedAt.value)
+        inventory.addEquipment(inst)
+        // 买来的也计入见闻与收藏:否则图鉴(经装备触发/装备走一遍就有了)收录了、
+        // 收藏页却缺这一件,两处对不上。见闻深度与掉落同口径
+        const q = qualityDef(inst.quality)
+        useLoreStore().noteEquipSeen(inst.templateId, q.rank, inst.tier)
+        collect('equip', inst.templateId)
       }
       slot.sold = true
       return 'ok'

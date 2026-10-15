@@ -46,4 +46,18 @@ describe('洞府巡游 · 每日一巡(跨天再触发)', () => {
       vi.restoreAllMocks()
     }
   })
+
+  it('落点只发生在盖了对应建筑的地方:纯新人一座没盖,回落到灵田而非丹炉/灵兽园', () => {
+    // Math.random→0.6:旧实现会取到数组中部(如 array/丹炉),却没盖那些楼;
+    // 新实现按已建建筑过滤,一座没盖回落 field(灵草恒有意义)
+    vi.spyOn(Math, 'random').mockReturnValue(0.6)
+    try {
+      const player = usePlayerStore()
+      player.major = 1 // 炼气:存在感 1,必触发
+      expect(mayTriggerCaveEvent(), '纯新人也该有巡游可触').not.toBeNull()
+      expect(getCurrentCaveEvent()!.location, '没盖对应建筑,不得落在丹炉/灵兽园等').toBe('field')
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
 })

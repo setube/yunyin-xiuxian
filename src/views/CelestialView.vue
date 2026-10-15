@@ -161,7 +161,19 @@
                 决战 · {{ runWorld.guardian.name }}
               </button>
             </template>
-            <button class="btn-ghost mt-2 w-full !py-2 !text-[11px] !text-ink-faint" @click="abandonRun">中道而返(道源不退)</button>
+            <button
+              v-if="!abandonConfirm"
+              class="btn-ghost mt-2 w-full !py-2 !text-[11px] !text-ink-faint"
+              @click="abandonConfirm = true"
+            >
+              中道而返(道源不退)
+            </button>
+            <div v-else class="mt-2 grid grid-cols-2 gap-2">
+              <button class="btn-ghost !py-2 !text-[11px] !text-ink-soft" @click="abandonConfirm = false">再想想</button>
+              <button class="btn-seal !py-2 !text-[11px] !bg-cinnabar/15 !text-cinnabar" @click="abandonRun">
+                确认返还(不可逆)
+              </button>
+            </div>
           </div>
         </section>
 
@@ -298,8 +310,17 @@
               <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
                 <span v-for="(r, i) in trial.ruleText" :key="i">{{ r }}</span>
               </p>
-              <button class="btn-ghost mt-2.5 w-full !py-2 !text-[13px]" @click="goTrial(trial.id)">
-                应 试(道源 {{ trial.entryCost }} · 功成得 {{ trial.rewardDaoSource }})
+              <button
+                class="btn-ghost mt-2.5 w-full !py-2 !text-[13px]"
+                :disabled="endgame.daoSource < trial.entryCost"
+                :title="endgame.daoSource < trial.entryCost ? '道源不足' : undefined"
+                @click="goTrial(trial.id)"
+              >
+                {{
+                  endgame.daoSource < trial.entryCost
+                    ? `应 试(道源不足:需 ${trial.entryCost},余 ${formatNum(endgame.daoSource)})`
+                    : `应 试(道源 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)} · 功成得 ${trial.rewardDaoSource})`
+                }}
               </button>
             </div>
           </div>
@@ -1101,7 +1122,10 @@
     handleOutcome(challengeGuardian(), title)
   }
 
+  /** 中道而返二步确认:整场远征(沿途道源 + 推进 + 留一记殁痕)一脚就没了,要点明白再还 */
+  const abandonConfirm = ref(false)
   function abandonRun(): void {
+    abandonConfirm.value = false
     abandonExpedition()
   }
 

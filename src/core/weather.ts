@@ -19,6 +19,7 @@
  */
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
+import { gameDay } from './formulas'
 import { worldOf } from '@/data/realms'
 import { mulberry32, RandomService } from '@/utils/random'
 import type { StatMods, WorldId } from '@/types'
@@ -189,7 +190,7 @@ export function todayWeather(): WeatherDef {
   const world = worldOf(usePlayerStore().major)
   if (world.id !== 'mortal') {
     const pool = WORLD_WEATHERS[world.id as Exclude<WorldId, 'mortal'>]
-    const day = Math.floor(game.totalPlaySec / 86400)
+    const day = gameDay(game.totalPlaySec)
     const rng = new RandomService(mulberry32(day * 2654435761 + world.start * 131 + 0x51ed))
     return pool[rng.int(0, pool.length - 1)]!
   }

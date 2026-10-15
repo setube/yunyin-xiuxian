@@ -27,6 +27,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { useEndgameStore } from '@/stores/endgame'
+import { useAdventureStore } from '@/stores/adventure'
 
 export interface SecretRealmState {
   /** 秘境定义 id */
@@ -102,6 +103,17 @@ export function enterSecretRealm(defId: string): EnterResult {
   if (!def) return { ok: false, reason: '此境不存在' }
   if (player.major < def.minMajor) return { ok: false, reason: `${def.name}需更高境界` }
   if (player.secretRealm) return { ok: false, reason: '已在秘境之中' }
+  // 秘境与历练/远征互斥:不许同时在两处「在途」—— 否则历练心跳还会按秘境化了的新演算。
+  // 拒绝必须让玩家看见(与 startExploration 的拒绝同规:静默 return 等于「点了没反应」)
+  const adventure = useAdventureStore()
+  if (adventure.session) {
+    ui.toast('你正在历练途中,先了结这一程,再入秘境', 'warn')
+    return { ok: false, reason: '正在历练途中' }
+  }
+  if (endgame.worldRun) {
+    ui.toast('远征在途,须先结束远征方能入秘境', 'warn')
+    return { ok: false, reason: '远征在途' }
+  }
   const cost = entryCostOf(def, player.major)
   if (cost.kind === 'stone') {
     if (!resources.hasStone(cost.stone)) {

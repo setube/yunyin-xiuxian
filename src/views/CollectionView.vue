@@ -6,23 +6,28 @@
     <!-- 成就 -->
     <template v-if="tab === 'achievement'">
       <SectionTitle title="成就" :hint="`${quests.achieved.length}/${ACHIEVEMENTS.length}`" />
-      <div class="card-ink divide-y divide-ink/6 px-4">
-        <div v-for="row in achievementRows" :key="row.id" class="flex items-center gap-3 py-2.5">
-          <span
-            class="grid h-6 w-6 shrink-0 place-items-center rounded-full border text-[11px] font-kai"
-            :class="row.done ? 'border-gold-ink text-gold-ink' : 'border-ink/15 text-ink-faint'"
-          >
-            {{ row.done ? '成' : '未' }}
-          </span>
-          <div class="min-w-0">
-            <p class="font-kai text-[12px]" :class="row.done ? 'text-ink' : 'text-ink-faint'">{{ row.name }}</p>
-            <p class="text-[10px] text-ink-faint">{{ row.desc }}</p>
-            <p v-if="!row.done && row.progress" class="mt-0.5 text-[10px] tabular text-azure">
-              已 {{ row.progress.current }} / {{ row.progress.target }}
-            </p>
-            <p v-if="row.reward" class="mt-0.5 text-[10px] tabular text-azure">{{ row.reward }}</p>
+      <div class="card-ink px-4">
+        <template v-for="grp in achievementGroups" :key="grp.key">
+          <p class="pb-1 pt-2 text-[10px] font-kai tracking-widest text-ink-faint">{{ grp.label }}</p>
+          <div class="divide-y divide-ink/6">
+            <div v-for="row in grp.items" :key="row.id" class="flex items-center gap-3 py-2.5">
+              <span
+                class="grid h-6 w-6 shrink-0 place-items-center rounded-full border text-[11px] font-kai"
+                :class="row.done ? 'border-gold-ink text-gold-ink' : 'border-ink/15 text-ink-faint'"
+              >
+                {{ row.done ? '成' : '未' }}
+              </span>
+              <div class="min-w-0">
+                <p class="font-kai text-[12px]" :class="row.done ? 'text-ink' : 'text-ink-faint'">{{ row.name }}</p>
+                <p class="text-[10px] text-ink-faint">{{ row.desc }}</p>
+                <p v-if="!row.done && row.progress" class="mt-0.5 text-[10px] tabular text-azure">
+                  已 {{ row.progress.current }} / {{ row.progress.target }}
+                </p>
+                <p v-if="row.reward" class="mt-0.5 text-[10px] tabular text-azure">{{ row.reward }}</p>
+              </div>
+            </div>
           </div>
-        </div>
+        </template>
       </div>
       <p class="text-center text-[10px] text-ink-faint">功成之日,名目自现</p>
     </template>
@@ -110,7 +115,7 @@
   } from '@/ui/codex'
   import { gongfaFuncText, gongfaMetaText, petFuncText } from '@/ui/itemText'
   import { modsText } from '@/ui/statNames'
-  import { achievementDirection } from '@/ui/achievementHint'
+  import { achievementDirection, achievementGroup, ACHIEVEMENT_GROUP_LABEL, ACHIEVEMENT_GROUP_ORDER } from '@/ui/achievementHint'
   import { rewardPreview } from '@/core/progress'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
@@ -130,8 +135,8 @@
    * 成就一律先以「???」示人,达成之后才现名目。
    *
    * 既然未达成的全都遮住,原先的 hidden 标记(未达成时整行不列出)就没了着落 ——
-   * 它与寻常未达成者长得一模一样,却害得计数的分母(50)对不上列出的行数(48)。
-   * 故此处不再筛除,五十个位子一个不少。
+   * 它与寻常未达成者长得一模一样,却害得计数的分母对不上列出的行数。
+   * 故此处不再筛除,位子一个不少(计数一律读 ACHIEVEMENTS.length,不手工写死)。
    */
   const achievementRows = computed(() =>
     ACHIEVEMENTS.map(a => {
@@ -139,11 +144,17 @@
       return {
         id: a.id,
         done,
+        group: achievementGroup(a.cond),
         name: done ? a.name : '???',
         // 名字成时自现,但方向要给:六十多个「???」不给方向,这一页就是白纸
         desc: done ? a.desc : `尚未达成 · 方向:${achievementDirection(a.cond)}`,
         // 计数类成就在方向之外补进度数字:「已 46/50」比一句「历练征战」更让人知道还差几步
-        progress: a.cond.type === 'counter' ? { current: quests.counter(a.cond.key), target: a.cond.value } : null,
+        // current 封顶在 target:周期补扫前计数暂超阈值时,别显示「已 60/50」这种越界数,
+        // 也免得它在未达成段里压过所有其它条目
+        progress:
+          a.cond.type === 'counter'
+            ? { current: Math.min(quests.counter(a.cond.key), a.cond.value), target: a.cond.value }
+            : null,
         // 未达成不报赏,免得把称号提前说破;已达成的数额与 grantReward 同一套折算
         reward: done && a.reward ? rewardPreview(a.reward) : ''
       }
@@ -154,6 +165,15 @@
       const pb = b.progress ? b.progress.current / b.progress.target : -1
       return pb - pa
     })
+  )
+
+  /** 按主题归段:62 条平铺难回看,分成几段各带小标题;段内保留 achievementRows 的顺序 */
+  const achievementGroups = computed(() =>
+    ACHIEVEMENT_GROUP_ORDER.map(g => ({
+      key: g,
+      label: ACHIEVEMENT_GROUP_LABEL[g],
+      items: achievementRows.value.filter(r => r.group === g)
+    })).filter(grp => grp.items.length > 0)
   )
 
   /**
@@ -167,6 +187,9 @@
     defs: { id: string; name: string; desc?: string; meta?: string; color?: string }[]
   ): CodexCat {
     const owned = new Set(ownedIds)
+    // 标题计数要与彩签一致:ownedIds 可能含重复/已被移出图鉴的旧 id,
+    // 照 `ownedIds.length` 会多报 —— 数「实际落进 defs 的那几枚」才和渲染对得上
+    const ownedCount = defs.reduce((n, d) => (owned.has(d.id) ? n + 1 : n), 0)
     const entries: CodexEntry[] = defs
       .map(d => ({
         id: d.id,
@@ -181,7 +204,7 @@
         foot: { label: '收录时间', value: collectedTimeText(quests.collectedAt[`${key}:${d.id}`]) }
       }))
       .sort((a, b) => b.stage - a.stage)
-    return { key, name, hint: `${ownedIds.length}/${defs.length}`, source: CODEX_SOURCES[key], entries }
+    return { key, name, hint: `${ownedCount}/${defs.length}`, source: CODEX_SOURCES[key], entries }
   }
 
   /**

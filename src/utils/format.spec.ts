@@ -100,6 +100,9 @@ describe('数值格式化', () => {
   it('[100,1000) 档与 <100 档一致四舍五入', () => {
     expect(formatGN(999.9)).toBe('1000')
     expect(formatGN(999.4)).toBe('999')
+    // 千位档与 <1000 档同口径取整:9999.6 该读 10,000,不向下取成 9,999
+    expect(formatGN(9999.6)).toBe('10,000')
+    expect(formatGN(9999.4)).toBe('9,999')
     expect(formatGN(150)).toBe('150')
   })
 

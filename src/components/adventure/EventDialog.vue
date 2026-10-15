@@ -70,6 +70,7 @@
   import { afterEventResolved } from '@/core/exploration'
   import { aftermathText, shouldTriggerAftermath } from '@/core/worldMemory'
   import { echoFor, rollEcho, ECHO_CHANCE } from '@/core/fortuneEcho'
+  import { rng } from '@/utils/random'
   import { eventTierDef, eventTierOf, tierOddsText, type EventTier } from '@/core/eventTier'
   import { choiceHintText } from '@/ui/eventText'
   import BaseModal from '@/components/common/BaseModal.vue'
@@ -124,9 +125,9 @@
     if (!def.value || result.value) return null
     const mem = adventure.eventMemories[def.value.id]
     if (!mem) return null
-    // 打开时由事件 id 的确定性 hash 决定(同一事件在整个会话内行为一致)
-    const roll = ((def.value.id.length * 31 + def.value.id.charCodeAt(0) * 7) % 100) / 100
-    if (!shouldTriggerAftermath(adventure.eventMemories, def.value.id, roll)) return null
+    // 每次重遇都按 20% 掷一次:余波是「再次经历时的回声」,本该有反复;
+    // 用事件 id 的确定性 hash 锁死成恒真/恒假,同事件重遇 10 次也都是同一句、干脆不出现
+    if (!shouldTriggerAftermath(adventure.eventMemories, def.value.id, rng.float(0, 1))) return null
     return aftermathText(def.value.title, mem.times >= 3 ? 'good' : mem.times >= 2 ? 'echo' : 'silence')
   })
 

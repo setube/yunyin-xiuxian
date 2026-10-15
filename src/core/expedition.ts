@@ -222,6 +222,11 @@ export function startWorldExpedition(worldId: string, pactId: string | null, gat
     ui.toast('已有远征在途,先了结眼前的路', 'warn')
     return null
   }
+  // 秘境与远征互斥:身处秘境者不得再踏天门
+  if (usePlayerStore().secretRealm) {
+    ui.toast('你正身处秘境之中,先出了秘境再踏天门', 'warn')
+    return null
+  }
   const pact = pactId ? pactDef(pactId) : undefined
   const gate = gateId ? gateDef(gateId) : undefined
   let sealedMods: StatMods | undefined
@@ -485,7 +490,12 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
   const pact = pactId ? pactDef(pactId) : undefined
   // 预估须与真打同源:择了门就把门也算进去,否则玩家看到的胜算与实战不符
   const rules = chainRules(currentDaoRules(), world.rules, pactRules(pact), gateRulesOf(gateId))
-  const opts = pact?.special === 'endHp80' ? { minHpAfterFight: 0.8 } : {}
+  const endHp80 = pact?.special === 'endHp80' ? { minHpAfterFight: 0.8 } : {}
+  // 玩家侧预估须与真打同源:剑意 / 杀意逐胜叠层(perWin)也计入 ——
+  // 否则剑道/杀伐玩家看到的难度与星级低估真实通率。流派可行性是「标准构筑形状」
+  // 的比较,与玩家道途无关,故仍用不加叠层的 opts。
+  const opts = { ...endHp80 }
+  const playerOpts = { ...endHp80, perWinPlayerMods: perWinMods() }
   const seededRng = new RandomService(mulberry32(worldId.length * 1009 + (pactId?.length ?? 0) * 97 + world.name.length * 7))
 
   // 玩家构筑:含孤剑/逆命的快照修饰,敌人按玩家等比生成
@@ -503,7 +513,7 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
   playerFoes.push(worldFoeSnap(world.guardian, pRef, 1, pJudgement))
   let clears = 0
   for (let i = 0; i < 8; i += 1) {
-    if (runGauntlet(snap, playerFoes, rules, world.healBetweenPct, seededRng, opts).cleared) clears += 1
+    if (runGauntlet(snap, playerFoes, rules, world.healBetweenPct, seededRng, playerOpts).cleared) clears += 1
   }
   const pRate = clears / 8
 

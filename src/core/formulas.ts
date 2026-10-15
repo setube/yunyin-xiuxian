@@ -227,6 +227,11 @@ export function winChanceFromRatio(r: number): number {
   return Math.max(0.05, Math.min(0.95, chance))
 }
 
+/** 游戏日(秒 → 日,86400/日):一处定口径,勿在别处再手写 86400 */
+export function gameDay(totalPlaySec: number): number {
+  return Math.floor(totalPlaySec / 86400)
+}
+
 /**
  * 天劫单波伤害占玩家最大生命比例。
  *

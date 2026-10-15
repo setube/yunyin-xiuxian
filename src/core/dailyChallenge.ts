@@ -3,6 +3,7 @@
  * 按日期种子确定性生成(刷新不换题),复用挑战书的验证与定价管线,零人工维护
  */
 import { mulberry32, RandomService } from '@/utils/random'
+import { todayLocalNum } from '@/utils/time'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { MUTATORS } from '@/data/mutators'
 import { PACTS } from '@/data/pacts'
@@ -18,8 +19,13 @@ export interface DailyChallenge {
   verdict: ChallengeVerdict
 }
 
+/**
+ * 今日的日号。与洞府巡游/日课同一面「本地日历」(见 utils/time 注):
+ * 若按 UTC 日计,UTC+8 玩家在本地 08:00 就会被翻到「明天」,同一本地日能白嫖两份
+ * 今日天道赏,也跟「日落而息 / 明日再会」的文案相悖。故用本地日,跨本地午夜才换号。
+ */
 export function todayNumber(): number {
-  return Math.floor(Date.now() / 86400000)
+  return todayLocalNum()
 }
 
 /** 生成今日天道:日期种子确定性;裁判不受(无解/虚设)则顺延候选 */

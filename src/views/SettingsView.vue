@@ -194,6 +194,21 @@
         </div>
       </template>
     </BaseModal>
+
+    <!-- 导入确认(弹窗期间引擎暂停;与重置同级破坏,给一次反悔机会) -->
+    <BaseModal :open="importConfirm" title="导入存档" @close="closeImport">
+      <p class="text-[13px] leading-relaxed text-ink-soft">
+        导入「{{ importName || '所选备份' }}」会
+        <span class="text-cinnabar">整体覆盖</span>
+        本机当前存档,且不可回退。旧档若无备份将不复存在 —— 建议先导出存档留底。
+      </p>
+      <template #footer>
+        <div class="flex gap-2">
+          <button class="btn-ghost flex-1" @click="closeImport">再想想</button>
+          <button class="btn-seal flex-1 !bg-cinnabar-deep" @click="confirmImport">覆盖导入</button>
+        </div>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -273,6 +288,10 @@
   ] as const
 
   const resetConfirm = ref(false)
+  /** 导入二步确认:选完文件只读进内存,等玩家点头才真正覆盖(与「散尽修为」同级破坏) */
+  const importConfirm = ref(false)
+  const importText = ref<string | null>(null)
+  const importName = ref('')
   const privacyOpen = ref(false)
   const aboutOpen = ref(false)
   const releaseOpen = ref(false)
@@ -315,7 +334,7 @@
   // 弹窗开着就离开页面时兜底恢复
   onUnmounted(() => {
     unsubscribeSaveFailure()
-    if (resetConfirm.value) engine.resume()
+    if (resetConfirm.value || importConfirm.value) engine.resume()
   })
 
   function triggerImport(): void {
@@ -328,23 +347,47 @@
     const reader = new FileReader()
     reader.onload = () => {
       const text = String(reader.result ?? '')
-      // 先暂停引擎,防止 Pinia persist 插件在导入后覆盖数据
-      engine.pause()
-      const err = importSaveText(text)
-      if (err) {
-        ui.toast(err, 'warn')
-        engine.resume() // 导入失败时恢复引擎
+      if (!text.trim()) {
+        ui.toast('这个文件是空的,换一个再试', 'warn')
         return
       }
-      ui.toast('存档导入成功,即将重新入定', 'success')
-      // 导入已写盘,立即封存:阻止 persist 插件把旧内存回写覆盖
-      sealStorageWrites()
-      setTimeout(reloadGame, 800)
+      // 先只读进内存,不落地:等玩家在确认弹窗点头,才真正覆盖当前存档。
+      // 导入与「散尽修为」同级破坏 —— 一选文件就写盘,旧档连反悔的机会都没有。
+      importText.value = text
+      importName.value = file.name
+      importConfirm.value = true
+      engine.pause()
     }
     // 读文件本身也可能失败(权限/磁盘)—— 静默就等于「点了没反应」
     reader.onerror = () => ui.toast('这个文件读不出来,换一个再试', 'warn')
     reader.readAsText(file)
     // 清空 input,允许重复选择同一文件
     if (fileInput.value) fileInput.value.value = ''
+  }
+
+  function closeImport(): void {
+    importConfirm.value = false
+    importText.value = null
+    importName.value = ''
+    engine.resume()
+  }
+
+  function confirmImport(): void {
+    const text = importText.value
+    importConfirm.value = false
+    importText.value = null
+    if (text === null) return
+    // 先暂停引擎,防止 Pinia persist 插件在导入后覆盖数据
+    engine.pause()
+    const err = importSaveText(text)
+    if (err) {
+      ui.toast(err, 'warn')
+      engine.resume() // 导入失败时恢复引擎
+      return
+    }
+    ui.toast('存档导入成功,即将重新入定', 'success')
+    // 导入已写盘,立即封存:阻止 persist 插件把旧内存回写覆盖
+    sealStorageWrites()
+    setTimeout(reloadGame, 800)
   }
 </script>

@@ -12,6 +12,7 @@
  */
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
+import { gameDay } from './formulas'
 import { MANSIONS, imageDef, type MansionDef } from '@/data/xiangxiu'
 import { regionDef } from '@/data/regions'
 import { WORLDS, worldOf } from '@/data/realms'
@@ -41,7 +42,7 @@ export function todayMansion(): MansionDef {
 
 /** 当前游戏日(秒 → 日),固定口径一处出 */
 export function currentGameDay(): number {
-  return Math.floor(useGameStore().totalPlaySec / 86400)
+  return gameDay(useGameStore().totalPlaySec)
 }
 
 /** 此宿所利之界域(四象配四界的游戏约定) */

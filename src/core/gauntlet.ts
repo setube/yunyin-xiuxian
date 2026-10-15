@@ -326,10 +326,12 @@ export function runGauntlet(
     if (!result.win) {
       return { cleared: false, fightsWon, totalRounds, rows }
     }
+    fightsWon += 1
+    // 违契终止时这一胜也算(已胜该场):否则「止步第 N 战」会跟 rows 里这一行
+    // win=true 互相矛盾 —— 明明赢了却报失败
     if (opts.minHpAfterFight !== undefined && result.playerHpPct < opts.minHpAfterFight) {
       return { cleared: false, fightsWon, totalRounds, rows, pactBroken: true }
     }
-    fightsWon += 1
     carried = Math.min(startCap, result.playerHpPct + healBetweenPct)
   }
   return { cleared: true, fightsWon, totalRounds, rows }

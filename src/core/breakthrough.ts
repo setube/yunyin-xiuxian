@@ -2,7 +2,7 @@
  * 突破服务 —— 成功率计算 / 天劫 / 结算
  */
 import { mulberry32, rng } from '@/utils/random'
-import { formatNum, formatPercent } from '@/utils/format'
+import { formatNum, formatPercent, formatYears } from '@/utils/format'
 import {
   breakthroughExpReason,
   breakthroughPeakReason,
@@ -233,7 +233,7 @@ export function attemptBreakthrough(): BreakthroughView | null {
     const crossedWorld = info.isMajor && player.major > 0 && isWorldEntry(player.major)
     const world = crossedWorld ? worldOf(player.major) : null
     if (world) recordMilestone(`first_${world.id}`)
-    const baseMessage = `境界跃迁,天地翻覆。${realm.desc}。寿元增至 ${player.lifespanMax} 载。`
+    const baseMessage = `境界跃迁,天地翻覆。${realm.desc}。寿元增至 ${formatYears(player.lifespanMax)}。`
     // 大关进阶时附上这一境的出处(可解释性:境界名不是随手堆的字)
     const loreLine = `——「${realm.basis}」${realm.lore}`
     view = {
@@ -245,7 +245,7 @@ export function attemptBreakthrough(): BreakthroughView | null {
       message: !info.isMajor
         ? '灵台清明,经脉拓宽,修为更上一层。'
         : world
-          ? `天地改换,山河重立。你踏入${world.name}——${world.desc}。${realm.desc},寿元增至 ${player.lifespanMax} 载。${loreLine}`
+          ? `天地改换,山河重立。你踏入${world.name}——${world.desc}。${realm.desc},寿元增至 ${formatYears(player.lifespanMax)}。${loreLine}`
           : `${baseMessage}${loreLine}`
     }
   } else {

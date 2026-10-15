@@ -74,6 +74,12 @@ export function applyLoadout(id: string): boolean {
       inventory.unequip(slot)
     }
   }
+  // 恢复「存的时候是空的」的位:capture 只写了非空位,故「不在 equipment 里的位」= 存时
+  // 空着。如今若被占着必须卸掉 —— 跳过去切换会还原成 A(存)+B(现)的杂交构筑,流派与
+  // 连演都被带偏。
+  for (const slot of Object.keys(EQUIP_SLOT_NAMES) as EquipSlot[]) {
+    if (!(slot in loadout.equipment)) inventory.unequip(slot)
+  }
   // 功法
   if (loadout.mainGongfa && cultivation.learned[loadout.mainGongfa] && gongfaDef(loadout.mainGongfa)) {
     cultivation.equipMain(loadout.mainGongfa)

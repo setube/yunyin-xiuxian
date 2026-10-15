@@ -11,13 +11,15 @@
             <p class="flex items-baseline gap-2">
               <span class="font-kai text-[16px] tracking-widest text-ink">{{ build.displayName }}</span>
               <span class="text-[11px] text-cinnabar">{{ build.stageName }}</span>
-              <span class="ml-auto tabular text-[12px] text-ink-soft">契合 {{ Math.round(build.affinity * 100) }}%</span>
+              <!-- 契合向下取整:字样必须与「成形 ≥60% / 大成 ≥90%」的档位同口径 ——
+                   四舍五入会让 59.6% 印成「60%」却还是雏形,头一行就自相矛盾 -->
+              <span class="ml-auto tabular text-[12px] text-ink-soft">契合 {{ Math.floor(build.affinity * 100) }}%</span>
             </p>
             <div class="track-ink mt-1.5 h-1.25 w-full">
               <div class="bar-fill" :style="{ width: `${build.affinity * 100}%`, background: 'var(--color-cinnabar)' }" />
             </div>
             <p v-if="build.secondary" class="mt-1 text-[10px] text-ink-faint tabular">
-              副体系:{{ build.secondary.style.name }} {{ Math.round(build.secondary.affinity * 100) }}% —— 修行无职业,道路可以不纯
+              副体系:{{ build.secondary.style.name }} {{ Math.floor(build.secondary.affinity * 100) }}% —— 修行无职业,道路可以不纯
             </p>
           </div>
         </div>

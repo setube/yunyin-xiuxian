@@ -11,7 +11,7 @@ import {
   MARKET_SLOTS,
   type MarketEquipSlot
 } from '@/data/market'
-import { generateMarketStock, marketEquipInstance, salePills } from '@/core/marketService'
+import { generateMarketStock, marketEquipInstance, marketTier, salePills } from '@/core/marketService'
 import { equipBountyReward } from '@/core/bountyService'
 import { qualityDef } from '@/data/qualities'
 
@@ -36,6 +36,19 @@ describe('坊市 · 货架生成', () => {
       for (const slot of generateMarketStock(6, rng(s + 1), 1).goods) kinds.add(slot.kind)
     }
     expect([...kinds].sort()).toEqual(['equipment', 'material', 'pill'])
+  })
+
+  it('装备货按市场标尺(层级曲线)生成 —— 不拿 major 大阶按市场层级标价', () => {
+    for (let major = 3; major <= 20; major += 5) {
+      for (let s = 0; s < 10; s += 1) {
+        for (const slot of generateMarketStock(major, rng(major + s), 1).goods) {
+          if (slot.kind !== 'equipment') continue
+          // 定价骑在 1.9^市场层级 上,货也得是那个层级:major 层级的东西按市场层级标价,
+          // 买来的会无端比掉落次一层(身价与货对不上)
+          expect((slot as MarketEquipSlot).tier, `major ${major} 的装备货应为市场层级`).toBe(marketTier(major))
+        }
+      }
+    }
   })
 
   it('丹药价 = 炼制石耗 × 倍率,绝不比自炼便宜(无套利)', () => {

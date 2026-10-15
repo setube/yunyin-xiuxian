@@ -50,6 +50,22 @@ describe('洞府巡游(Phase 28)', () => {
     expect(player.lastCaveEventDay).toBe(today)
     expect(mayTriggerCaveEvent()).toBeNull()
   })
+
+  it('事件过期同样占用今日,不因一直无视而反复重掷', () => {
+    const player = usePlayerStore()
+    expect(mayTriggerCaveEvent(), '清场应能掷出事件').not.toBeNull()
+    const realNow = Date.now()
+    vi.useFakeTimers()
+    try {
+      // 越过 2 分钟事件窗口
+      vi.setSystemTime(realNow + 180_000)
+      expect(getCurrentCaveEvent()).toBeNull()
+      expect(player.lastCaveEventDay, '过期应视同今日已巡').toBe(todayLocalNum())
+      expect(mayTriggerCaveEvent(), '今日已占用,不该因无视而重掷').toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('悟道顿悟(Phase 28)', () => {

@@ -24,7 +24,7 @@ import { advanceRoute, canEnterNode, canEnterRegion, ensureMortalWorld, entryBlo
 import { generateMortalWorld } from './mortalWorldGen'
 import { useAdventureStore } from '@/stores/adventure'
 import { REGIONS, regionDef } from '@/data/regions'
-import { startExploration } from './exploration'
+import { startExploration, clearRegionAndUnlockNext } from './exploration'
 
 function regionName(id: string): string {
   return regionDef(id)?.name ?? id
@@ -159,6 +159,24 @@ describe('路线可达性 · 旧存档与换界', () => {
         '\n会回落旧解锁链,所以老存档确实能不按路线顺序去打那些地界。' +
         '\n这是为了避免新号「整页 0 个按钮」而付出的代价,不是疏漏'
     )
+  })
+
+  it('旧档全解锁的路线节点仍能推进:已清区域不把本世路线锁死', () => {
+    const adventure = useAdventureStore()
+    adventure.unlocked = REGIONS.map(r => r.id)
+    adventure.cleared = REGIONS.map(r => r.id)
+    const w = ensureMortalWorld()!
+    const first = w.chain[0]!
+    // 首段的地界恰在旧链里已「清」过 —— 这正是死锁的入口:boss 判定按旧链变 null
+    expect(adventure.cleared).toContain(first.fromId)
+    // 但本世节点还没通;此前 clearRegionAndUnlockNext 在一进就 return,首段永远清不掉
+    expect(isNodeCleared(first.nodeId)).toBe(false)
+    clearRegionAndUnlockNext(first.fromId)
+    // 现在仍把本世节点推进:路线不再被旧链已清记录卡死
+    expect(isNodeCleared(first.nodeId), '旧档已清区域的首段也要能推进本世路线').toBe(true)
+    if (w.chain.length > 1) {
+      expect(canEnterNode(w.chain[1]!.nodeId), '路线由此向前').toBe(true)
+    }
   })
 
   it('换界即换路:本世进度不跨界继承', () => {

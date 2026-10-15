@@ -49,6 +49,25 @@ describe('构筑快照(保存/一键切换)', () => {
     expect(inventory.equippedArtifacts).toContain('af_lihuo')
   })
 
+  it('切换还原「存时空着的位」:捕获时空着的槽,如今被占也要卸掉(不还原成杂交套)', () => {
+    const inventory = useInventoryStore()
+    const { weaponUid } = seed() // 只装了 weapon,head 空着
+    const loadout = captureLoadout('空槽')!
+    expect(loadout.equipment.head, '捕获时 head 空着 → 快照不记该位').toBeUndefined()
+
+    // 之后往 head 穿了件东西
+    const rng = new RandomService(mulberry32(11))
+    const helm = generateEquipment(3, rng, { slot: 'head' })
+    inventory.addEquipment(helm)
+    inventory.equip(helm.uid, 'head')
+    expect(inventory.equipped.head).toBe(helm.uid)
+
+    // 一键切换:head 存时是空的,如今应卸掉 —— 否则会还原成 A(存)+B(现)的杂交构筑
+    applyLoadout(loadout.id)
+    expect(inventory.equipped.head, '空槽位应还原为空').toBeUndefined()
+    expect(inventory.equipped.weapon, '存着的 weapon 应穿回').toBe(weaponUid)
+  })
+
   it('部件缺失时跳过而不崩溃,且缺件的名有姓地报出来', () => {
     const inventory = useInventoryStore()
     const ui = useUiStore()

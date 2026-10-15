@@ -26,7 +26,7 @@ export const APPRENTICE_TASKS: ApprenticeTaskDef[] = [
   { spec: 'herb', name: '采灵药', icon: 'leaf', seconds: 1800, desc: '上山采灵草,带回洞府药圃' },
   { spec: 'ore', name: '开矿脉', icon: 'mountain', seconds: 1800, desc: '凿一处小矿,送来玄铁' },
   { spec: 'adventure', name: '历练', icon: 'swords', seconds: 2700, desc: '下山历练,挣灵石、磨阅历' },
-  { spec: 'seek', name: '寻机缘', icon: 'gem', seconds: 3600, desc: '四处寻访,或得丹药、或得器尘' },
+  { spec: 'seek', name: '寻机缘', icon: 'gem', seconds: 3600, desc: '四处寻访,只求一丹机缘' },
   { spec: 'study', name: '参悟', icon: 'book', seconds: 5400, desc: '静坐参悟,为道基添悟道点' }
 ]
 

@@ -639,8 +639,6 @@ export interface EventMemory {
   lastAt: number
   /** 最近一次的选择索引 */
   lastChoiceIdx: number
-  /** 若事件有后续(余波)变体,标记已触发 */
-  aftermathSeen: boolean
 }
 
 export interface EventDef {

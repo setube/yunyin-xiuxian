@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { todayChallenge, todayNumber } from './dailyChallenge'
+import { todayLocalNum } from '@/utils/time'
 
 /**
  * 今日天道(Phase 27)—— 确定性守卫。
@@ -38,12 +39,12 @@ describe('今日天道 · 确定性(刷新不换题)', () => {
     expect(a!.draft).toEqual(b!.draft)
   })
 
-  it('不同 UTC 日:day 号递增,种子随之换(跨日必不同题)', () => {
+  it('不同本地日:day 号递增,种子随之换(跨日必不同题)', () => {
     vi.useFakeTimers()
     vi.setSystemTime(1_760_000_000_000)
     const day1 = todayNumber()
     const d1 = todayChallenge()
-    vi.setSystemTime(1_760_000_000_000 + 86_400_000) // +1 UTC 日
+    vi.setSystemTime(1_760_000_000_000 + 86_400_000) // +1 本地日(该时刻同月内,日号+1)
     const day2 = todayNumber()
     const d2 = todayChallenge()
     expect(day2).toBe(day1 + 1)
@@ -52,5 +53,15 @@ describe('今日天道 · 确定性(刷新不换题)', () => {
     expect(d2!.day).toBe(day2)
     // 种子随日换 → day 必不同;题面也应按新种子生成(跨日的题号对得上当天)
     expect(d2!.day).not.toBe(d1!.day)
+  })
+
+  it('日号走本地日历(不是 UTC 日):防 UTC+8 玩家本地 08:00 白嫖双份', () => {
+    // 回归:若有人把 todayNumber 改回 Math.floor(Date.now()/86400000)(UTC 日计数),
+    // 它绝无可能与 todayLocalNum 的 YYYYMMDD 相等 —— 这里立刻判红,
+    // 从而保证天道与洞府巡游/日课落在同一面本地日历上
+    vi.useFakeTimers()
+    vi.setSystemTime(1_760_000_000_000)
+    const local = todayLocalNum()
+    expect(todayNumber()).toBe(local)
   })
 })

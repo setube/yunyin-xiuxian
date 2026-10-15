@@ -7,6 +7,7 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useSettingsStore } from './settings'
+import { QUALITIES } from '@/data/qualities'
 import { APP_VERSION } from '@/utils/appVersion'
 
 describe('设置 · 版本与更新', () => {
@@ -41,5 +42,27 @@ describe('设置 · 版本与更新', () => {
     const s = useSettingsStore()
     s.lastSeenVersion = '1.36.0'
     expect(s.hasUnseenRelease).toBe(true)
+  })
+})
+
+describe('设置 · decomposeRanks 档位守卫', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('坏档的越界/负数/重复 rank 被滤净:只留真实存在的品质且去重', () => {
+    const s = useSettingsStore()
+    const valid = QUALITIES.map(q => q.rank)
+    s.decomposeRanks = [99, -4, 7, 7, NaN, 0, 0, 3]
+    s.sanitize()
+    // 全在真实品质 rank 内,且无重复
+    expect(s.decomposeRanks.every(r => valid.includes(r) && Number.isInteger(r))).toBe(true)
+    expect(new Set(s.decomposeRanks).size).toBe(s.decomposeRanks.length)
+    expect(s.decomposeRanks).not.toContain(99)
+    expect(s.decomposeRanks).not.toContain(-4)
+    expect(s.decomposeRanks).not.toContain(NaN)
+    // 合法值保留(0 与 3 都是真实存在的品质 rank)
+    expect(s.decomposeRanks).toContain(0)
+    expect(s.decomposeRanks).toContain(3)
   })
 })

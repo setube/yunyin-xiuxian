@@ -458,6 +458,10 @@ export const EQUIP_DROP_CHANCE = 0.3
 export const PILL_DROP_CHANCE = 0.08
 export const PAGE_DROP_CHANCE = 0.12
 export const ARTIFACT_DROP_CHANCE = 0.015
+// 材料掉落概率:历练 everyBattle 里 afterWin 的 herb/ore 掷点就走这两枚,
+// 经济审计的预期产量也读它们 —— 别在 loot.ts 和 economySim 各抄一份
+export const HERB_DROP_CHANCE = 0.5
+export const ORE_DROP_CHANCE = 0.35
 /** 战斗灵石基础掉落(按层级指数放大) */
 export const STONE_DROP_BASE = 12
 export const STONE_TIER_GROWTH = 1.9

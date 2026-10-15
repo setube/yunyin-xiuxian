@@ -12,14 +12,14 @@
  */
 import { useInventoryStore } from '@/stores/inventory'
 import { qualityDef } from '@/data/qualities'
-import { equipmentTemplate } from '@/data/equipment'
+import { EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
 import { resolveEquipStats } from './equipGen'
 import { POWER_STAT_WEIGHTS } from './powerRating'
 import { toNum } from '@/utils/gnum'
 import type { AnyStatKey, EquipmentInstance, EquipSlot } from '@/types'
 
-/** 常驻九衣(InventoryView 的 SLOTS 同款;法宝/神器另有切面) */
-export const EQUIP_SLOTS: EquipSlot[] = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman']
+/** 兼容别名:全身九部位的唯一事实源在 data/equipment(EQUIP_SLOTS) */
+export { EQUIP_SLOTS }
 
 function qualityRank(i: EquipmentInstance): number {
   return qualityDef(i.quality).rank

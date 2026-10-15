@@ -16,7 +16,9 @@ import {
   ARTIFACT_DROP_CHANCE,
   BATTLE_EXP_SECS,
   EQUIP_DROP_CHANCE,
+  HERB_DROP_CHANCE,
   INSTANT_EXP_LAYER_CAP,
+  ORE_DROP_CHANCE,
   PAGE_DROP_CHANCE,
   PILL_DROP_CHANCE
 } from '@/data/constants'
@@ -244,7 +246,6 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
   const tier = region.tier
   const bossMult = isBoss ? 4 : 1
   const doubled = rng.chance(capChance(modOf(mods, 'doubleDropRate'))) ? 2 : 1
-  if (doubled === 2) lines.push('福缘深厚,当场战利翻倍!')
 
   // 灵石
   const stoneAmt = rng.float(0.8, 1.2) * rewardMult * bossMult * doubled * (1 + modOf(mods, 'spiritStoneGain'))
@@ -264,14 +265,14 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
   // 材料 —— 数量进标量库存,同时抽出"你到底捡到了什么"推进认知。
   // 历练战报(本战所得)必须显式报品:五品经济里高 1 品 = 贵 10 倍,素写「灵草 ×N」
   // 会让玩家分不清采到的是哪一品 —— 与 eventEngine 的 `${HERB_GRADE_SHORT[grade]}灵草 +N` 同口径
-  if (rng.chance(0.5)) {
+  if (rng.chance(HERB_DROP_CHANCE)) {
     const n = rng.int(1, 3) * doubled
     const grade = herbGradeOfMajor(region.minRealm)
     resources.addHerb(grade, n)
     harvestMaterials(tier, 'herb', n)
     lines.push(`${HERB_GRADE_SHORT[grade]}灵草 +${n}`)
   }
-  if (rng.chance(0.35)) {
+  if (rng.chance(ORE_DROP_CHANCE)) {
     const n = rng.int(1, 2) * doubled
     resources.addSmall('ore', n)
     harvestMaterials(tier, 'ore', n)
@@ -318,5 +319,31 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
     }
   }
 
+  // 福缘翻倍:若有已列出的掉落,挂在「当场战利翻倍」上;若一行都没列(只翻了灵石/修为),
+  // 就直说翻的是灵石与修为 —— 「本战所得翻倍!」却不给可见之物,只会让人疑惑
+  if (doubled === 2) {
+    lines.unshift(lines.length ? '福缘深厚,当场战利翻倍!' : '福缘深厚,灵石与修为翻倍!')
+  }
+
   return { lines, stone, exp, items }
+}
+
+/**
+ * 一胜的期望所得(均值口径,与 afterWin 同一套公式 —— 所见即所打)。
+ * 灵石取 rng.float(0.8,1.2) 的均值 1.0、翻倍取 1、非首领 bossMult=1;
+ * 修为走 expFromSecs 同一把尺子。用于出行预览:玩家凭「一胜大概得多少」取舍,
+ * 而不是只看「收益 ×Y」这个没有尺度的相对数。
+ */
+export function expectedWinReward(region: RegionDef, rewardMult: number): { stone: GNum; exp: GNum } {
+  const player = usePlayerStore()
+  const mods = player.finalStats.mods
+  const tier = region.tier
+  const stone = stoneByTier(tier, 10 * rewardMult * (1 + modOf(mods, 'spiritStoneGain')))
+  const exp = expFromSecs(
+    player.expReq,
+    BATTLE_EXP_SECS * rewardMult * (1 + modOf(mods, 'expGain')),
+    player.cultPerSec,
+    INSTANT_EXP_LAYER_CAP
+  )
+  return { stone, exp }
 }

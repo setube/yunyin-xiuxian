@@ -44,7 +44,9 @@ import {
   EQUIP_DROP_CHANCE,
   FIELD_HERB_PER_HOUR,
   FIELD_ORE_PER_HOUR,
+  HERB_DROP_CHANCE,
   LIBRARY_WUDAO_PER_HOUR,
+  ORE_DROP_CHANCE,
   PAGE_DROP_CHANCE
 } from '@/data/constants'
 import { buildingCost, gongfaUpCost, qiCap, baseQiRegen, stoneByTier, upgradeCost } from './formulas'
@@ -132,8 +134,8 @@ export function auditEra(major: number): EraAudit {
 
   // ---- 生产 ----
   const stoneIncome = winsThisHour * toNum(stoneByTier(tier, 10))
-  const herbIncome = winsThisHour * 0.5 * 2 + fieldLv * FIELD_HERB_PER_HOUR
-  const oreIncome = winsThisHour * 0.35 * 1.5 + fieldLv * FIELD_ORE_PER_HOUR
+  const herbIncome = winsThisHour * HERB_DROP_CHANCE * 2 + fieldLv * FIELD_HERB_PER_HOUR
+  const oreIncome = winsThisHour * ORE_DROP_CHANCE * 1.5 + fieldLv * FIELD_ORE_PER_HOUR
   const pageIncome = winsThisHour * PAGE_DROP_CHANCE * 1.5
   const dustIncome = dropsPerHour * avgDustPerDrop(tier)
   const wudaoIncome = libLv * LIBRARY_WUDAO_PER_HOUR

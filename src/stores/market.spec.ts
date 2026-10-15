@@ -11,6 +11,7 @@ import { useMarketStore } from '@/stores/market'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
+import { useQuestsStore } from '@/stores/quests'
 
 /** 一份远在将来的货架,让 sync 不重上货(测的是「买」,不是「刷新」) */
 const FAR = 4_102_444_800_000 // 2099-12-31
@@ -71,6 +72,21 @@ describe('坊市 · 买卖', () => {
     seedStock([{ kind: 'material', idx: 0, matId: 'herb', count: 6, price: { m: 1, e: 0 }, sold: false }])
     expect(market.buy(0)).toBe('ok')
     expect(resources.herbOf(1)).toBe(6)
+  })
+
+  it('买装备计入收藏与见闻:collection 与图鉴不再分叉', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    const inventory = useInventoryStore()
+    const quests = useQuestsStore()
+    seedStock([{ kind: 'equipment', idx: 0, tier: 3, minQualityRank: 0, price: { m: 100, e: 0 }, sold: false }])
+    resources.spiritStone = gn(1e9)
+
+    expect(market.buy(0)).toBe('ok')
+    expect(inventory.items).toHaveLength(1)
+    const tpl = inventory.items[0]!.templateId
+    // 此前买来的件只入行囊、不进收藏,图鉴(经装备走)却收 —— 两处对不上
+    expect(quests.collections.equip, '买来的装备应计入收藏').toContain(tpl)
   })
 
   it('灵石不足:不成交、不扣钱、不标已售', () => {
