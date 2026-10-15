@@ -36,6 +36,22 @@ describe('图鉴收录', () => {
   })
 })
 
+describe('成就达成时刻', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('首次达成记下时间戳,重复达成不覆盖、不重记', () => {
+    const quests = useQuestsStore()
+    const before = Date.now()
+    expect(quests.unlockAchievement('a_test')).toBe(true)
+    const stamp = quests.achievedAt['a_test']
+    expect(stamp).toBeGreaterThanOrEqual(before)
+    // 重复达成:不重记,保持最初那刻(成就页回看的是达成时刻,不是最近一次)
+    expect(quests.unlockAchievement('a_test')).toBe(false)
+    expect(quests.achievedAt['a_test']).toBe(stamp)
+    expect(quests.achieved).toContain('a_test')
+  })
+})
+
 /**
  * 主线任务链是游戏的脊梁:它曾只铺到化神(第 5 个大境界)。
  * 扩界后若忘了往下铺,玩家在 16 个新境界里会失去全部主线指引。

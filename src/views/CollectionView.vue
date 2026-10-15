@@ -20,6 +20,9 @@
               <div class="min-w-0">
                 <p class="font-kai text-[12px]" :class="row.done ? 'text-ink' : 'text-ink-faint'">{{ row.name }}</p>
                 <p class="text-[10px] text-ink-faint">{{ row.desc }}</p>
+                <p v-if="row.done && row.achievedAt" class="mt-0.5 text-[10px] text-ink-faint">
+                  达成于 {{ collectedTimeText(row.achievedAt) }}
+                </p>
                 <p v-if="!row.done && row.progress" class="mt-0.5 text-[10px] tabular text-azure">
                   已 {{ row.progress.current }} / {{ row.progress.target }}
                 </p>
@@ -145,6 +148,7 @@
         id: a.id,
         done,
         group: achievementGroup(a.cond),
+        achievedAt: quests.achievedAt[a.id],
         name: done ? a.name : '???',
         // 名字成时自现,但方向要给:六十多个「???」不给方向,这一页就是白纸
         desc: done ? a.desc : `尚未达成 · 方向:${achievementDirection(a.cond)}`,

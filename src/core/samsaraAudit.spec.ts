@@ -427,7 +427,7 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
     },
     quests: {
       counters: 'keep', achieved: 'keep', mainIdx: 'keep', daily: 'keep',
-      titlesOwned: 'keep', collections: 'keep', collectedAt: 'keep'
+      titlesOwned: 'keep', collections: 'keep', collectedAt: 'keep', achievedAt: 'keep'
     },
     settings: {
       sfxOn: 'keep', musicOn: 'keep', musicVol: 'keep', sfxVol: 'keep', reduceMotion: 'keep',

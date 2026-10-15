@@ -31,6 +31,8 @@ export const useQuestsStore = defineStore(
     })
     /** 图鉴收录时刻,键为 `${category}:${id}`(旧档已收录条目无记录) */
     const collectedAt = ref<Record<string, number>>({})
+    /** 成就达成时刻,键为成就 id —— 与收藏页的「收录时间」同型而补在成就一侧 */
+    const achievedAt = ref<Record<string, number>>({})
 
     /** 存档修复:计数/图鉴表被写坏会让成就判定与图鉴页在渲染期抛错 */
     function sanitize(): void {
@@ -56,6 +58,7 @@ export const useQuestsStore = defineStore(
         talent: asStringArray(cats.talent)
       }
       collectedAt.value = asNumberRecord(collectedAt.value, 0)
+      achievedAt.value = asNumberRecord(achievedAt.value, 0)
     }
 
     const currentMainQuest = computed(() => MAIN_QUESTS[mainIdx.value])
@@ -75,6 +78,8 @@ export const useQuestsStore = defineStore(
     function unlockAchievement(id: string): boolean {
       if (achieved.value.includes(id)) return false
       achieved.value = [...achieved.value, id]
+      // 与收藏页同型:达成那刻落定,供成就页回看「何时达成某里程碑」
+      achievedAt.value = { ...achievedAt.value, [id]: Date.now() }
       return true
     }
 
@@ -116,6 +121,7 @@ export const useQuestsStore = defineStore(
       titlesOwned,
       collections,
       collectedAt,
+      achievedAt,
       currentMainQuest,
       counter,
       inc,
