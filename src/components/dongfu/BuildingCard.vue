@@ -159,8 +159,8 @@
     batchArm.value = false
     upgradeBuildingBatch(props.def.id) // 总账那一声与 toast 由服务自己报
   }
-  /** 未建且不可升 = 被境界闸门锁着(等级 0 时不可升只可能是境界不足,满级/辖限都要求 lv>0) */
-  const locked = computed(() => level.value === 0 && !info.value.canUpgrade)
+  /** 未建且被境界闸门锁着:等级 0 时满级/辖限都不可能,资源不足另有「尚差 X 石」置灰(不是封印该披露的境界闸) */
+  const locked = computed(() => level.value === 0 && player.major < props.def.unlockRealm)
   /** 境界闸名(meta 行的「至 X 境」):unlockRealm 就是 REALMS 下标,直接读表(见 buildingText) */
   const gateName = computed(() => buildingGateRealmName(props.def.unlockRealm))
   /** 灵兽园联动:洞府与宠物两系统彼此看见(只对 beast 这一座特例,其它建筑不理会) */
