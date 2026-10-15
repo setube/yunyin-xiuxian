@@ -208,9 +208,12 @@
             <span class="text-ink-faint">每波恢复</span>
             <span class="text-ink-soft">{{ formatPercent(tribLedger.sustain, 1) }}</span>
           </p>
-          <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
-            <span class="text-ink-faint">减伤</span>
-            <span class="text-ink-soft">{{ formatPercent(tribLedger.reduction, 0) }}</span>
+          <p class="flex flex-col gap-0.5 text-[10px] tabular">
+            <span class="flex items-baseline justify-between gap-2">
+              <span class="text-ink-faint">减伤</span>
+              <span class="text-ink-soft">{{ formatPercent(tribLedger.reduction, 0) }}</span>
+            </span>
+            <span v-if="tribLedger.lowHpReduction > 0" class="text-ink-faint">濒危垂危再 {{ formatPercent(tribLedger.lowHpReduction, 0) }}</span>
           </p>
           <p class="flex flex-col gap-0.5 text-[10px] tabular">
             <span class="text-ink-faint">开劫护持</span>
@@ -698,10 +701,13 @@
     const relief = def ? currentTribulationRelief(def.id) : undefined
     // Same cap and same fold as waveDamage: reduction 0.6, resist 0.8, linggen reductionToResist.
     const reduction = tribReduction(mods)
+    // 濒危减伤(背水/涅槃词条):结算在气血垂危(<30%)时按同款封顶再削一波,账上得看得见
+    const lowHpReduction = Math.min(0.6, modOf(mods, 'lowHpReduction'))
     return {
       resist: currentTribResist(mods, relief, stat),
       statResist: stat.resist,
       reduction,
+      lowHpReduction,
       sustain: def ? sustainScore(mods, def, relief) : 0,
       guard: (def ? guardScore(mods, def, relief) : 0) + stat.guard,
       statGuard: stat.guard

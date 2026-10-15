@@ -18,8 +18,8 @@
  * 若哪天这些门开始失败,说明渡劫又回到了"堆满四维"的旧最优解。
  */
 import { describe, it, expect } from 'vitest'
-import { buildTribulationPlan, SOULREND_BURST_RELIEF } from './tribulationDecision'
-import { TRIBULATIONS, type TribulationKind } from '@/data/tribulations'
+import { buildTribulationPlan, SOULREND_BURST_RELIEF, waveDamage } from './tribulationDecision'
+import { TRIBULATIONS, tribulationDef, type TribulationKind } from '@/data/tribulations'
 import { MAX_MAJOR, REALMS } from '@/data/realms'
 import { WEATHERS, WORLD_WEATHERS } from './weather'
 import { NO_RELIEF } from '@/data/linggenAffinity'
@@ -215,5 +215,18 @@ describe('UI 口径与结算口径一致性', () => {
     if (a.prep.sustain > b.prep.sustain) {
       expect(a.expectedRate, 'sustain 星级上升但生存推演无变化——UI 承诺了结算不兑现的恢复').toBeGreaterThan(b.expectedRate)
     }
+  })
+})
+
+describe('濒危减伤(背水/涅槃)——结算兑现,渡劫账也须看得见', () => {
+  it('气血垂危(<30%)时 waveDamage 按封顶削一波,≥30% 不受其扰', () => {
+    const def = tribulationDef('thunder')
+    const mods = { lowHpReduction: 0.4 }
+    // 同款封顶与结算一致:不设其他词条,减伤/抗性都为零,差值即纯濒危减伤
+    const dmgLow = waveDamage(def, mods, 1, 1, 0.2)
+    const dmgHigh = waveDamage(def, mods, 1, 1, 0.5)
+    const dmgNone = waveDamage(def, {}, 1, 1, 0.2)
+    expect(dmgLow).toBeCloseTo(dmgNone * (1 - 0.4), 9)
+    expect(dmgHigh).toBe(dmgNone) // ≥0.3 不触发濒危减伤
   })
 })
