@@ -52,4 +52,20 @@ describe('铁壁共鸣(ironwall)', () => {
     const count = res.log.filter(l => l.text.includes('铁壁共鸣')).length
     expect(count).toBeLessThanOrEqual(1)
   })
+
+  it('同份快照连打两场,每场各自的铁壁都该触发(不能把标记写回快照)', () => {
+    // bindSim/buildSearch 会复用一个 build 的快照连打整串战,若 resolveCombat
+    // 把 ironwallBrace 写回调用方快照,则「第一场触发、其后全场失效」,命中率被系统性低估。
+    // 铁壁是一次性消耗,但那是**每场各自**的一次性 —— 共享快照的两场都得各保一次命。
+    const shared = baseSnap({ maxHp: gn(10), ironwallBrace: true })
+    const enemy = makeEnemySnap(enemyDef('e_hmdemon')!, 20, 5)
+    const a = resolveCombat(shared, enemy, new RandomService(mulberry32(2)))
+    const b = resolveCombat(shared, enemy, new RandomService(mulberry32(2)))
+    const braceCount = (r: typeof a) => r.log.filter(l => l.text.includes('铁壁共鸣')).length
+    // 两场各自的日志都应包含保命记录;若第一场把 shared.ironwallBrace 置 false,第二场就没有
+    expect(braceCount(a), '第一场铁壁应触发').toBeGreaterThanOrEqual(1)
+    expect(braceCount(b), '第二场复用同快照仍应触发,而非被第一场消耗').toBeGreaterThanOrEqual(1)
+    // 且调用方的快照标记不能被写回消耗
+    expect(shared.ironwallBrace, '调用方快照的铁壁标记应保持原样').toBe(true)
+  })
 })

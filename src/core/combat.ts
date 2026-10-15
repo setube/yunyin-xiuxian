@@ -53,6 +53,8 @@ interface Fighter {
   defSunder: number
   /** 组合技已触发次数(每场限量) */
   comboUses: number
+  /** 铁壁共鸣本场是否尚可触发(一次性) —— 存入 Fighter 自身,不写回调用方快照,避免同份快照连打时抢先消费 */
+  brace: boolean
   stats: CombatSideStats
 }
 
@@ -215,6 +217,7 @@ export function resolveCombat(
     atkRamp: 1,
     defSunder: 0,
     comboUses: 0,
+    brace: !!pEff.ironwallBrace,
     stats: emptyStats()
   }
  const e: Fighter = {
@@ -226,6 +229,7 @@ export function resolveCombat(
     atkRamp: 1,
     defSunder: 0,
     comboUses: 0,
+    brace: !!eEff.ironwallBrace,
     stats: emptyStats()
   }
   const log: CombatLogEntry[] = []
@@ -283,8 +287,10 @@ export function resolveCombat(
     }
     target.hp = subClamp(target.hp, remain)
     // Phase 31 S5:铁壁共鸣 —— 近致命伤首次保命(保留 1 点气血,一次性)
-    if (isZero(target.hp) && target.snap.ironwallBrace && target.snap.isPlayer) {
-      target.snap.ironwallBrace = false
+    // 从 Fighter.brace 消费(该场一次性),绝不写回 target.snap —— 调用方快照可能被复用连打,
+    // 写回会让「第一场触发、后续全场失效」,玩家侧命中率被系统性低估
+    if (isZero(target.hp) && target.brace && target.snap.isPlayer) {
+      target.brace = false
       target.hp = { m: 1, e: 0 }
       push('proc', 'p', `${target.snap.name}气血将尽,铁壁共鸣铮然作响——性命保住了!`)
     }
@@ -446,6 +452,8 @@ export function resolveCombat(
     const regen = modOf(self.snap.mods, 'regenPerRound')
     if (regen > 0 && hpPct(self) < 1) {
       healSelf(self, mulN(self.snap.maxHp, regen))
+      // 与法宝/长生印的回血一致:回合自然回复也入账,否则血条涨了、回放里看不见来源
+      push('heal', side, `${name}气息平复,伤势缓缓愈合。`)
     }
     // 法宝自动触发(元婴起可佩两件)
     for (const owned of self.snap.artifacts ?? []) {
