@@ -89,6 +89,21 @@ function pactRules(pact: PactDef | undefined): CombatRules | undefined {
   return pact?.rules
 }
 
+/**
+ * 契约对玩家侧的一身约束(逆命契封核心、无相只带一件法宝)。
+ * 预估(forecastExpedition)与出发前天机预览(previewFight)共用这一份 ——
+ * 「所窥即所打」不能分叉:预览勾销不了真打要吃的负担。
+ */
+export function pactBoundedSnap(base: CombatantSnap, pact: PactDef | undefined): CombatantSnap {
+  let snap = base
+  if (pact?.special === 'soloArtifact') snap = { ...snap, artifacts: (snap.artifacts ?? []).slice(0, 1) }
+  if (pact?.special === 'sealCore') {
+    const sealed = sealCoreMods()
+    if (sealed) snap = { ...snap, mods: stackedMods(snap.mods, sealed, 1) }
+  }
+  return snap
+}
+
 /** 远征玩家快照:现取现算(层间换装立即生效)+ 契约与道途修饰 */
 function runSnap(run: WorldRunState): CombatantSnap {
   const snap = buildPlayerSnap(true)
@@ -359,7 +374,11 @@ export function previewFight(
   const heavy = foeShape.skills.find(sk => sk.mult >= 2)
   if (heavy) riskLines.push(`【${heavy.name}】足以重创,留足气血以备不测`)
   if ((rules?.healMult ?? 1) < 0.7) riskLines.push('此地生机稀薄,回血难以为继')
-  const snap = run ? runSnap(run) : buildPlayerSnap(true)
+  // 「所窥即所打」:在途 run 吃 runSnap 的契约修饰;出发前(prep)走同一份 pactBoundedSnap
+  // —— 逆命契封核心、无相只带一件法宝,预览不勾销这些负担
+  const snap = run
+    ? runSnap(run)
+    : pactBoundedSnap(buildPlayerSnap(true), prep?.pactId ? pactDef(prep.pactId) : undefined)
   const fightRules = world && run ? withCarriedHp(rules, run) : rules
   const rate = sampleWinRate(snap, foe, rand, 3, fightRules)
   const winText = rate >= 0.9 ? '胜算在握' : rate >= 0.6 ? '约有七成胜算' : rate >= 0.35 ? '五五之数,凶险参半' : '凶多吉少'
@@ -502,12 +521,7 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
   const player = usePlayerStore()
   // 预估与实战同源:同一份参照、同一个加厚系数(见 celestialFoeCaliber 的注释)
   const { ref: pRef, judgement: pJudgement } = celestialFoeCaliber(player.major, player.celestialStats.mods, world.anchorTier)
-  let snap = buildPlayerSnap(true)
-  if (pact?.special === 'soloArtifact') snap = { ...snap, artifacts: (snap.artifacts ?? []).slice(0, 1) }
-  if (pact?.special === 'sealCore') {
-    const sealed = sealCoreMods()
-    if (sealed) snap = { ...snap, mods: stackedMods(snap.mods, sealed, 1) }
-  }
+  const snap = pactBoundedSnap(buildPlayerSnap(true), pact)
   const playerFoes: CombatantSnap[] = []
   for (let i = 0; i < world.fights - 1; i += 1) playerFoes.push(worldFoeSnap(world.foes[i % world.foes.length]!, pRef, 1, pJudgement))
   playerFoes.push(worldFoeSnap(world.guardian, pRef, 1, pJudgement))

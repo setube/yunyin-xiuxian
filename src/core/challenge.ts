@@ -91,7 +91,10 @@ export function verifyChallenge(draft: ChallengeDraft): ChallengeVerdict | null 
   if (best > 0.97) {
     return { ok: false, reason: '此局形同虚设,不配称为挑战', difficulty, viable, reward: 0 }
   }
-  const reward = Math.round(Math.min(90, Math.max(30, 45 * (1.9 - best))))
+  // 奖励随通率下行而增大(越难给得越大)。viable 窗 best∈[0.15,0.97] 内 `45*(1.9-best)`
+  // 恒落在 [41.85, 78.75] —— 旧外层 Math.min(90, Math.max(30, …)) 在这个窗内永不生效,故删。
+  // 若有人放宽上下拒绝阈值,请把钳制加回来,不要以为它总会落在窗内。
+  const reward = Math.round(45 * (1.9 - best))
   return { ok: true, difficulty, viable, reward }
 }
 

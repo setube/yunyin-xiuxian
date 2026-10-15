@@ -14,7 +14,7 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { gnZero, sub, toNum } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
 import { EXPLORE_BOSS_AFTER_WINS, EVENT_AUTO_RESOLVE_SECONDS } from '@/data/constants'
-import { tickExploration, startExploration, winsUntilRegionBoss } from './exploration'
+import { tickExploration, startExploration, winsUntilRegionBoss, regionBossCleared } from './exploration'
 import { startRetreat } from './earlyGameService'
 
 /**
@@ -366,6 +366,31 @@ describe('首领门槛 · 界面提示与战斗判定同源', () => {
 
   it('已靖地界:不再有首领,提示返回 null', () => {
     expect(winsUntilRegionBoss(0, true)).toBeNull()
+  })
+
+  it('界面提示按本世路线判首领已靖(路线内的区域优先看本世节点,不看旧 REGIONS 链)', () => {
+    const adventure = useAdventureStore()
+    const regionId = 'qingyun'
+    // 本世路线上这个区域对应的节点已通,而旧 REGIONS cleared 链留空 ——
+    // 正是殛衰死锁出现过的构型:旧链清空后,regionBossCleared 仍应判「首领已靖」
+    adventure.$patch({
+      mortalWorld: {
+        seed: 1, shapeId: 's', shapeName: 's', rhythmId: 'r', rhythmName: 'r', ruleId: 'r',
+        chain: [{ nodeId: 'n1_qingyun', fromId: regionId, name: '落霞谷', tier: 1, enemies: [], boss: 'b', archetype: 'a', eventTags: [] }]
+      } as never,
+      mortalCleared: ['n1_qingyun'],
+      cleared: [] // 旧链没清 —— 老视图逻辑会误判「还差 N 胜」
+    })
+    expect(adventure.cleared.includes(regionId), '构型前提:旧链没清').toBe(false)
+    expect(regionBossCleared(regionId), '本世节点已通,界面该报首领已靖,不再差胜').toBe(true)
+  })
+
+  it('无本世路线节点(老档兼容):按旧 REGIONS cleared 链判', () => {
+    const adventure = useAdventureStore()
+    adventure.$patch({ mortalWorld: null, cleared: ['qingyun'] })
+    expect(regionBossCleared('qingyun')).toBe(true)
+    adventure.$patch({ cleared: [] })
+    expect(regionBossCleared('qingyun')).toBe(false)
   })
 })
 

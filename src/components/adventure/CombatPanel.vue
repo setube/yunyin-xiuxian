@@ -314,7 +314,7 @@
   import { useAdventureStore } from '@/stores/adventure'
   import { usePlayerStore } from '@/stores/player'
   import { useSettingsStore } from '@/stores/settings'
-  import { stopExploration, winsUntilRegionBoss } from '@/core/exploration'
+  import { stopExploration, winsUntilRegionBoss, regionBossCleared } from '@/core/exploration'
   import { COMBAT_PLAYBACK_BASE_MS, COMBAT_PLAYBACK_MIN_MS, EXPLORE_MODES } from '@/data/constants'
   import { WIN_STREAK_REWARDS } from '@/data/earlyGame'
   import { formatClock, formatCountdown, formatGN } from '@/utils/format'
@@ -384,7 +384,7 @@
     const s = session.value
     const r = region.value
     if (!s || !r) return null
-    return winsUntilRegionBoss(s.wins, adventure.cleared.includes(r.id))
+    return winsUntilRegionBoss(s.wins, regionBossCleared(r.id))
   })
   const bossSoon = computed(() => bossIn.value !== null && bossIn.value <= 0)
   const bossHint = computed(() => {

@@ -239,6 +239,17 @@ export function winsUntilRegionBoss(wins: number, cleared: boolean): number | nu
   return Math.max(0, EXPLORE_BOSS_AFTER_WINS - wins)
 }
 
+/**
+ * 某区域之主是否已靖 —— 界面提示与 runBattle 的首领判定共用这一个判据。
+ * 按**本世路线**判:路线内的区域看本世节点是否已通(不按旧 REGIONS cleared 链,
+ * 否则旧档清空旧链后,牌子的 boss 永不出、路线永不前进);路线外(老档兼容)才看旧链。
+ */
+export function regionBossCleared(regionId: string): boolean {
+  const adventure = useAdventureStore()
+  const routeNode = adventure.mortalWorld?.chain.find(p => p.fromId === regionId)
+  return routeNode ? adventure.mortalCleared.includes(routeNode.nodeId) : adventure.cleared.includes(regionId)
+}
+
 /** 战斗遭遇(含首领判定) */
 function runBattle(now: number): void {
   const adventure = useAdventureStore()
@@ -255,8 +266,7 @@ function runBattle(now: number): void {
   // cleared 链 —— 旧档把整条旧链清空后,规则里该链一旦参与判定,本世路线就会永远
   // 锁死(牌子的 boss 永不出、路线永不前进,mortalRouteAccess「旧档全解锁」那条旧断言
   // 正是把死锁当正确钉下的)。路线外(老档兼容)才按旧链判断区域之主
-  const routeNode = adventure.mortalWorld?.chain.find(p => p.fromId === region.id)
-  const bossCleared = routeNode ? adventure.mortalCleared.includes(routeNode.nodeId) : adventure.cleared.includes(region.id)
+  const bossCleared = regionBossCleared(region.id)
   const bossDue = winsUntilRegionBoss(s.wins, bossCleared) === 0
   // 敌群与首领取自**本世路线节点**,不是 REGIONS ——
   // 同一处地界放进不同世界,遇到的就该是不同的东西
@@ -468,7 +478,7 @@ export function exploreDurationSec(mode: ExploreMode, petId: string | null): num
 
 /** 两场遭遇的间隔(秒)。explorationSpeed 只收紧这一截,不缩短整程。 */
 export function exploreBattleGapSec(explorationSpeed: number): number {
-  const speed = 1 + explorationSpeed
+  const speed = 1 + Math.max(0, explorationSpeed)
   return (EXPLORE_BATTLE_INTERVAL * 1000) / speed / 1000
 }
 
