@@ -15,6 +15,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
 import { REALMS, WORLDS } from '@/data/realms'
+import { SUB_LEVELS } from '@/data/constants'
 
 describe('渡劫成功率推演', () => {
   beforeEach(() => {
@@ -217,6 +218,38 @@ describe('渡劫成功率推演', () => {
       console.log(`${REALMS[entry - 1]!.name}→${REALMS[entry]!.name}:needTribulation=${info.needTribulation}`)
       expect(info.needTribulation, `${REALMS[entry]!.name} 是界域入口,却没有劫`).toBe(true)
       expect(info.isMajor).toBe(true)
+    }
+  })
+})
+
+describe('大关不食突破准备(TASK-023 口径:渡劫背面是颗天劫骰,不是这颗 rate)', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('大关(需渡劫)展示率不受就绪准备影响,明细也剔除那一行(平概率掷点才吃此益)', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_000_000)
+      const player = usePlayerStore()
+      const resources = useResourcesStore()
+      // 顶格 sub → isMajorStep → needTribulation(大关皆劫)
+      player.$patch({ major: 0, sub: SUB_LEVELS - 1, exp: { m: 1e13, e: 0 } })
+      resources.$patch({ qi: 99999 })
+      expect(breakthroughInfo().needTribulation, '应是大关').toBe(true)
+      const base = breakthroughInfo().rate
+
+      resources.addStone(gn(80))
+      expect(prepareBreakthrough('pill')).toBe(true)
+      const withPrep = breakthroughInfo()
+      expect(withPrep.prep.ready, '大关若带着就绪的准备,应在状态里可见').toBe(true)
+      // 大关成败走天劫模拟(runTribulation),不吃准备加成 —— 展示率与明细都得如实不留那行
+      expect(withPrep.rate, '大关展示率不得被准备加成抬高').toBeCloseTo(base, 6)
+      expect(
+        withPrep.rateParts.some(p => p.label === '聚气丹' || p.label === '静坐调息'),
+        '大关明细不该出现突破准备的加成行'
+      ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+      vi.restoreAllMocks()
     }
   })
 })

@@ -253,3 +253,22 @@ describe('④ 预览与实结同乘界', () => {
     expect(max).toBeGreaterThan(1.13)
   })
 })
+
+describe('渡劫四维星 · 与结算同源(结算吃了它,星级就必须看得见它)', () => {
+  it('归属公报:雷鸣不虚注减伤→抗性 —— 抗性星与其它劫同档(无灵根亲和不自动折算)', () => {
+    // 旧实现 resistScore 把 thunder 特判加 0.5,抗性星比普通劫凭空高一档,而结算 currentTribResist
+    // 从不兑现这笔 —— 雷鸣玩家看到虚高的抗性星却扛不住。故障注入:在 resistScore 里给 thunder
+    // 加回折减率,这里 thunder ≠ ironbody 立刻红。
+    const mods = { tribulationResist: 0, damageReduction: 0.5 } as StatMods
+    const thunder = buildTribulationPlan(1, mods, 'thunder', NO_RELIEF, 1, NO_STAT_GUARD).prep.resist
+    const iron = buildTribulationPlan(1, mods, 'ironbody', NO_RELIEF, 1, NO_STAT_GUARD).prep.resist
+    expect(thunder, '雷鸣的抗性星不得高于普通劫').toBe(iron)
+  })
+
+  it('护持星把三维血量折算算进去(与抗性含 stat.resist 对称):血厚者护持档不偏低', () => {
+    // guardScore=0(无护盾词条)+ stat.guard 0.2 越过 0.08 门槛进一档;旧实现漏 stat.guard → 此档为 0
+    const guarded = buildTribulationPlan(1, {}, 'thunder', NO_RELIEF, 1, { resist: 0, guard: 0.2 } as { resist: number; guard: number }).prep.guard
+    const plain = buildTribulationPlan(1, {}, 'thunder', NO_RELIEF, 1, NO_STAT_GUARD).prep.guard
+    expect(guarded, '血厚者的护持星应含三维血量的折算,不偏低').toBeGreaterThan(plain)
+  })
+})

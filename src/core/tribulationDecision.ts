@@ -223,14 +223,11 @@ export function guardScore(mods: StatMods, def: TribulationDef, relief: Tribulat
   return modOf(mods, 'shieldOnStart') * easeDiscount(def.shieldMult, relief.shieldRestore)
 }
 
-/** 减伤可折算为天劫抗性的比例(雷鸣劫本有五成;同源灵根再添几分) */
-function reductionToResistRate(def: TribulationDef, relief: TribulationRelief): number {
-  return (def.id === 'thunder' ? 0.5 : 0) + relief.reductionToResist
-}
-
-/** 天劫抗性度量(雷鸣劫下减伤也能顶一部分抗性缺口) */
-export function resistScore(mods: StatMods, def: TribulationDef, relief: TribulationRelief = NO_RELIEF): number {
-  return modOf(mods, 'tribulationResist') + modOf(mods, 'damageReduction') * reductionToResistRate(def, relief)
+/** 天劫抗性度量(减伤按同源灵根的亲和折一部分为抗性)。
+ * 与结算 currentTribResist 同一口径:雷鸣并非「抗性/减伤」劫(其特点是雷光破盾+疗伤可撑),
+ * 也不再「虚注五成」把减伤算进抗性星 —— 结算从不兑现的那部分,星级不配看得见。 */
+export function resistScore(mods: StatMods, relief: TribulationRelief = NO_RELIEF): number {
+  return modOf(mods, 'tribulationResist') + modOf(mods, 'damageReduction') * relief.reductionToResist
 }
 
 /**
@@ -397,10 +394,12 @@ export function buildTribulationPlan(
 
   // 四维准备度(词条 → 维度;均为"这道劫下如何"的解读)
   const prep = {
-    guard: prepTier('guard', guardScore(mods, def, relief)),
+    // 护持这一维把三维血量折算算进去 —— 结算吃了它(1 + guardScore + stat.guard),
+    // 星级就必须看得见它,与抗性含 stat.resist 对称
+    guard: prepTier('guard', guardScore(mods, def, relief) + stat.guard),
     sustain: prepTier('sustain', sustainScore(mods, def, relief)),
     // 抗性这一维要把三维折算算进去 —— 结算吃了它,星级就必须看得见它
-    resist: prepTier('resist', resistScore(mods, def, relief) + stat.resist),
+    resist: prepTier('resist', resistScore(mods, relief) + stat.resist),
     burst: prepTier('burst', burstScore(mods))
   }
 

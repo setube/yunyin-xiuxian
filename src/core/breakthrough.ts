@@ -127,7 +127,9 @@ export function breakthroughInfo(): BreakthroughInfo {
   const baseRate = breakthroughBaseRate(player.major, player.sub)
   const rateMod = modOf(mods, 'breakthroughRate')
   const luckPart = modOf(mods, 'luck') * 0.05
-  const prepBonus = prep.ready ? prep.bonus : 0
+  // 大关皆劫,渡劫成败走的是天劫模拟(runTribulation),不是这颗 rate —— 突破准备只给平概率掷点那条路,
+  // 大关不食此益:既不抬高展示率,也不把它算进「成败」,与消费端(仅无劫分支)同一个口径
+  const prepBonus = !needTribulation && prep.ready ? prep.bonus : 0
   const rateParts: RatePart[] = [{ label: '基础', value: baseRate }]
   if (rateMod !== 0) rateParts.push({ label: '词条加成', value: rateMod })
   if (luckPart !== 0) rateParts.push({ label: '气运 (幸运×5%)', value: luckPart })

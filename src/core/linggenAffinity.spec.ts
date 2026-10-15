@@ -145,7 +145,7 @@ describe('灵根职能重构 ② 解法空间不是成功率', () => {
         const tag = `${def.name}劫 × ${ELEMENTS[el].name}灵根`
         expect(guardScore(bare, def, relief), `${tag}:无护盾却凭空得到护持`).toBe(guardScore(bare, def, NO_RELIEF))
         expect(sustainScore(bare, def, relief), `${tag}:无恢复却凭空得到续航`).toBe(sustainScore(bare, def, NO_RELIEF))
-        expect(resistScore(bare, def, relief), `${tag}:无减伤却凭空得到抗性`).toBe(resistScore(bare, def, NO_RELIEF))
+        expect(resistScore(bare, relief), `${tag}:无减伤却凭空得到抗性`).toBe(resistScore(bare, NO_RELIEF))
         expect(effectiveBurstTier(bare, relief), `${tag}:无攻势却凭空得到爆发档`).toBe(effectiveBurstTier(bare, NO_RELIEF))
       }
     }
