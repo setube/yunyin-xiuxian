@@ -126,4 +126,17 @@ describe('player.rebirth 转世状态重置', () => {
     expect(dongfu.veinMain, '灵脉主脉应清空').toBeNull()
     expect(Object.values(dongfu.veinPoints).every(v => v === 0), '灵脉投点应清零').toBe(true)
   })
+
+  it('转世不清当日账(wudaoExchange / mansionRedirect)—— 否则同游戏日转世重开兑换/改向配额', () => {
+    const p = usePlayerStore()
+    p.initCharacter('测试道友', { roots: [] } as never)
+    // 当日账:gameDay 相合才计入当日、次日由闸逻辑自动重置 —— 转世不掺和
+    p.wudaoExchange = { gameDay: 7, count: 3 }
+    p.mansionRedirect = { gameDay: 7, worldId: 'chiyan', count: 1 } as never
+
+    p.rebirth({ roots: [] } as never)
+
+    expect(p.wudaoExchange, '悟道兑换当日账应随神魂带走(否则同日转世重开兑换配额)').toEqual({ gameDay: 7, count: 3 })
+    expect(p.mansionRedirect, '值日定向当日账应随神魂带走(否则同日转世重开改向配额)').not.toBeNull()
+  })
 })

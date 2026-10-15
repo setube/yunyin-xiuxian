@@ -14,6 +14,7 @@ import {
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
+import type { PetDef } from '@/types'
 import { mentorDef } from '@/data/mentors'
 import { talentDef } from '@/data/talents'
 import { heritageDef } from '@/data/heritage'
@@ -262,10 +263,9 @@ export const usePlayerStore = defineStore(
       ...talentMods.value
     ])
 
-    const petMods = computed<StatMods>(() => {
-      if (!petId.value) return {}
-      const def = petDef(petId.value)
-      if (!def) return {}
+    // 灵兽出战加成:基础词缀 × 灵兽园等级(beastMult) × 安抚灵兽增益(beastPct)
+    // —— 这是「真到账」那份;图鉴/兽苑卡片必须也按它渲染,给 base 会与角色面板来源明细对不上
+    function petModsFor(def: PetDef): StatMods {
       const beastPct = 1 + modOf(mergeMods(ownedModSources.value), 'beastPct')
       const scaled: StatMods = {}
       for (const k in def.mods) {
@@ -273,6 +273,12 @@ export const usePlayerStore = defineStore(
         scaled[key] = (def.mods[key] ?? 0) * dongfu.beastMult * beastPct
       }
       return scaled
+    }
+    const petMods = computed<StatMods>(() => {
+      if (!petId.value) return {}
+      const def = petDef(petId.value)
+      if (!def) return {}
+      return petModsFor(def)
     })
 
     const qiCapValue = computed(() => {
@@ -625,10 +631,10 @@ export const usePlayerStore = defineStore(
       breakthroughPrep.value = null
       // 命格点化主星是"这一世侧重哪一路"的选择:转世命盘重排,点化随之散去
       fateFocus.value = null
-      // 星象值日定向是"今天利哪一界"的战术覆盖:新世从新手界从头走,覆盖随之散去
-      mansionRedirect.value = null
-      // 悟道兑换是"今日'限次出口"的当日账:新世重算
-      wudaoExchange.value = { gameDay: 0, count: 0 }
+      // 星象值日定向与悟道兑换都是「当日账」:gameDay 相合才计入当日、次日自动回落/重置,
+      // 转世**不**清它们 —— 否则同游戏日转世会重开当日兑换/改向配额(见 samsaraAudit
+      // wudaoExchange/mansionRedirect 行,「此生交割」也把它们列为随神魂带走)
+
       // 镇压权益随皮囊散去:旧世压下的远境(多为高阶)若跨世,新世炼气仍在按旧阶位
       // 派发高阶装备/灵石,数值当场爆炸 —— 妖气复聚、回到历练地。这属于「我拥有多少」
       // 而非「我是谁」;宿敌记忆与区域战绩(regionStats)仍随神魂不灭(见 samsaraAudit
@@ -1048,6 +1054,7 @@ export const usePlayerStore = defineStore(
       lifespanBonusYears,
       titleId,
       petId,
+      petModsFor,
       dead,
       reincarnation,
       eventChains,
