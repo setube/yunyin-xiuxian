@@ -35,7 +35,7 @@
       <div v-if="mansionRedirectOpen" class="mt-1.5 rounded border border-ink/10 bg-ink/4 p-2">
         <p class="text-[9px] leading-relaxed text-ink-faint">
           把今日所利界域定向到所选(每次耗 {{ redirectCostText }} 灵石;今日限 {{ mansionRedirectMax }} 次,
-          达上限当日回落到天数派生,默认仍随值日之宿)。
+          达上限当日不再允许继续改向,已定向之界保持生效——付费不白费)。
         </p>
         <div class="mt-1.5 flex flex-wrap gap-2">
           <button
