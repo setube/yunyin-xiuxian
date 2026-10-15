@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createPinia, setActivePinia } from 'pinia'
 import { BUILD_STYLES, buildSources, detectBuild } from './buildDetect'
 import { useCultivationStore } from '@/stores/cultivation'
+import { useDongfuStore } from '@/stores/dongfu'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 
@@ -107,5 +108,26 @@ describe('成路于与真正吃进属性的来路同源', () => {
     expect(view).toContain('statCaveat')
     expect(view).toContain('isSoftCapped')
     expect(view).toContain('coreCaveats')
+  })
+})
+
+describe('辅修槽位预算 · 成路于(和 gongfaMods 同一把尺)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('超洞府槽位预算的辅修不计成路(第二个辅修白占选位却不出词条)', () => {
+    const cultivation = useCultivationStore()
+    const dongfu = useDongfuStore()
+    // 藏书楼 0 级 → 1 个辅修槽
+    dongfu.setLevel('library', 0)
+    expect(dongfu.subGongfaSlots).toBe(1)
+    cultivation.learned = { s_budong: 1, s_xianguang: 1 }
+    // 两个都带罡盾核心词条的辅修;第二个超出预算 —— gongfaMods 只 slice 到第一个
+    cultivation.subGongfa = ['s_budong', 's_xianguang']
+    const gangdun = BUILD_STYLES.find(s => s.id === 'gangdun')!
+    const names = buildSources(gangdun)
+    expect(names).toContain('《不动如山章》') // 预算内的真算成路
+    expect(names).not.toContain('《仙光护体诀》') // 超预算的不算,别把没在账上词条当来路
   })
 })

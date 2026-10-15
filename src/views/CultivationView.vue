@@ -818,8 +818,12 @@
 
   function equipStateOf(id: string): string {
     if (cultivation.mainGongfa === id) return '主修'
-    if (cultivation.subGongfa.includes(id)) return gongfaDef(id)?.type === 'secret' ? '秘术' : '辅修'
-    return ''
+    const idx = cultivation.subGongfa.indexOf(id)
+    if (idx === -1) return ''
+    // 超出洞府辅修槽位预算的伴生功法:词条已不生效(cultivation.gongfaMods 只 slice 到预算),
+    // 别还标成 辅修/秘术 让玩家以为它在加 —— 藏书楼缩水/转世后槽位变少就会走到这
+    if (idx >= dongfu.subGongfaSlots) return '超席'
+    return gongfaDef(id)?.type === 'secret' ? '秘术' : '辅修'
   }
 
   /** 功行是否已至顶层 */

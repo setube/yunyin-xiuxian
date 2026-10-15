@@ -12,6 +12,7 @@ import { petDef } from '@/data/pets'
 import { talentDef } from '@/data/talents'
 import { titleDef } from '@/data/titles'
 import { useCultivationStore } from '@/stores/cultivation'
+import { useDongfuStore } from '@/stores/dongfu'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { resolveEquipStats } from './equipGen'
@@ -117,6 +118,7 @@ export function buildSources(style: BuildStyleDef): string[] {
   const cultivation = useCultivationStore()
   const inventory = useInventoryStore()
   const player = usePlayerStore()
+  const dongfu = useDongfuStore()
   const coreKeys = new Set(Object.keys(style.core))
   const names: string[] = []
 
@@ -130,7 +132,8 @@ export function buildSources(style: BuildStyleDef): string[] {
     names.push(equipmentTemplate(it.templateId)?.name ?? '法器')
   }
 
-  const equippedGongfa = [cultivation.mainGongfa, ...cultivation.subGongfa].filter((x): x is string => !!x)
+  // 只认「真在账上」的辅修:超洞府槽位预算的不计成路(与 cultivation.gongfaMods 的 slice 同口径)
+  const equippedGongfa = [cultivation.mainGongfa, ...cultivation.subGongfa.slice(0, dongfu.subGongfaSlots)].filter((x): x is string => !!x)
   for (const id of equippedGongfa) {
     const def = gongfaDef(id)
     if (def && (hasCore(def.baseMods) || hasCore(def.perLevelMods))) names.push(`《${def.name}》`)
