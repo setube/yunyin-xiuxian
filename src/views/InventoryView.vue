@@ -359,7 +359,8 @@
           <div class="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
             <p class="whitespace-nowrap text-[10px] text-ink-faint">
               把握
-              <span class="tabular text-[13px]" :class="rateClass(r.able.successRate)">{{ formatPercent(r.able.successRate) }}</span>
+              <span class="tabular text-[13px]" :class="rateClass(craftGuarantee > 0 ? 1 : r.able.successRate)">{{ formatPercent(craftGuarantee > 0 ? 1 : r.able.successRate) }}</span>
+              <span v-if="craftGuarantee > 0" class="ml-1 tabular text-gold-ink" title="浴火丹心:本世前几炉必成,开一炉耗 1 次额度">· 本世必成 ×{{ craftGuarantee }}</span>
               <span v-if="r.able.bonusChanceWithYield > 0" class="ml-1 tabular text-jade">· 双丹 {{ formatPercent(r.able.bonusChanceWithYield) }}</span>
             </p>
             <div class="ml-auto flex shrink-0 gap-1.5">
@@ -663,6 +664,7 @@
   import { BAG_CAPACITY } from '@/data/constants'
   import { usePill, usePillBatch, availableRecipes, craftBatchPlan, craftPill, craftPillBatch, pillCraftCost } from '@/core/pillService'
   import { craftability, type Craftability } from '@/core/craftability'
+  import { craftGuaranteeRemaining } from '@/core/heritageEffects'
   import {
     batchYieldText,
     type DecomposeBatch,
@@ -701,6 +703,10 @@
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
   const player = usePlayerStore()
+  // 浴火丹心(宿命传承):本世前几炉必成 —— 把握栏须如实反映(craftPill 真开炉强成 100%)
+  const craftGuarantee = computed(() =>
+    craftGuaranteeRemaining(player.reincarnation.heritage, player.reincarnation.heritageUses)
+  )
   const ui = useUiStore()
   const settings = useSettingsStore()
   const lore = useLoreStore()
