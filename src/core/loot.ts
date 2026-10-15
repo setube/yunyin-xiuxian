@@ -274,6 +274,8 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
     const n = rng.int(1, 2) * doubled
     resources.addSmall('ore', n)
     harvestMaterials(tier, 'ore', n)
+    // 与灵草同规:掉落要显式报品 —— 不然战报「本战拾获」查无此项,给而不报
+    lines.push(`玄铁×${n}`)
   }
   if (rng.chance(capChance(PAGE_DROP_CHANCE * rewardMult))) {
     const n = rng.int(1, 2) * doubled
@@ -336,10 +338,14 @@ export function expectedWinReward(region: RegionDef, rewardMult: number): { ston
   const player = usePlayerStore()
   const mods = player.finalStats.mods
   const tier = region.tier
-  const stone = stoneByTier(tier, 10 * rewardMult * (1 + modOf(mods, 'spiritStoneGain')))
+  // 福缘翻倍的均值:每次 rng.chance(capChance(doubleDropRate)) 掷出 2 倍、否则 1 倍,
+  // 期望 = 1 + capChance(p) —— 与 afterWin 的 doubled、离线的 doubleMult 同一把尺,
+  // 预览若漏掉这一乘,探宝/天眼通构筑的「一胜约」会比实打均值低 5~12%(所见即所打的对不齐)
+  const doubleMult = 1 + capChance(modOf(mods, 'doubleDropRate'))
+  const stone = stoneByTier(tier, 10 * rewardMult * (1 + modOf(mods, 'spiritStoneGain')) * doubleMult)
   const exp = expFromSecs(
     player.expReq,
-    BATTLE_EXP_SECS * rewardMult * (1 + modOf(mods, 'expGain')),
+    BATTLE_EXP_SECS * rewardMult * (1 + modOf(mods, 'expGain')) * doubleMult,
     player.cultPerSec,
     INSTANT_EXP_LAYER_CAP
   )

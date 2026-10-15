@@ -32,6 +32,8 @@ import { qualityDef } from '@/data/qualities'
 import { DECOMPOSE_DUST } from '@/data/constants'
 import { useLoreStore } from '@/stores/lore'
 import { gn, toNum } from '@/utils/gnum'
+import { stoneByTier } from './formulas'
+import { modOf, capChance } from './statsCalc'
 import type { EquipmentInstance, QualityId } from '@/types'
 
 describe('自动回收 · 装备入包前的第一道闸', () => {
@@ -416,5 +418,50 @@ describe('逆旅「独行」· 到手法宝不默认祭上', () => {
     usePlayerStore().setVow({ ...vow(false), themeId: 'lt_feisheng' }) // 不忌法宝的题
     acquireArtifact('af_muyu')
     expect(useInventoryStore().equippedArtifacts, '题目无关法宝时照常祭上').toEqual(['af_muyu'])
+  })
+})
+
+describe('出行预览 · 福缘翻倍均值', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('预览含 doubleDropRate 的均值期望(探宝构筑"一胜约" == 均值公式× (1+capChance(p)))', () => {
+    const player = usePlayerStore()
+    player.initCharacter('拾珍', { roots: [] } as never)
+    ;(player.reincarnation as { talents: string[] }).talents = ['t_tanbao'] // +0.05 双倍福缘
+    const region = regionDef('qingyun')!
+    const rewardMult = 1
+    const mods = player.finalStats.mods
+    const p = modOf(mods, 'doubleDropRate')
+    expect(p, '探宝应注入双倍福缘').toBeGreaterThan(0)
+    const r = expectedWinReward(region, rewardMult)
+    // 预览 = 同一均值公式 × (1+capChance(p)) —— 与 afterWin 的 doubled / 离线 doubleMult 同源;
+    // 若漏掉这一乘(color 的「一胜约」低 ~5%),此断言即红
+    expect(toNum(r.stone)).toBeCloseTo(
+      toNum(stoneByTier(region.tier, 10 * rewardMult * (1 + modOf(mods, 'spiritStoneGain')) * (1 + capChance(p)))),
+      6
+    )
+  })
+})
+
+describe('矿石掉落战报', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('矿石掉落要报进「本战拾获」(与灵草同规:给即报品,不能凭空到账)', () => {
+    const resources = useResourcesStore()
+    const before = resources.ore
+    // 只放行矿石这一支(rng.chance 判 ORE_DROP_CHANCE=0.35),rng.int 固定给 1
+    const spyC = vi.spyOn(rng, 'chance').mockImplementation(p => p === 0.35)
+    const spyI = vi.spyOn(rng, 'int').mockReturnValue(1)
+    let lines: string[] = []
+    try {
+      lines = afterWin(regionDef('qingyun')!, 1, false).lines
+    } finally {
+      spyC.mockRestore()
+      spyI.mockRestore()
+    }
+    expect(resources.ore, '矿石掉落实发').toBeGreaterThan(before)
+    expect(lines.some(l => l.includes('玄铁')), '掉落的矿石必须报进战报行,不能给而不报').toBe(true)
   })
 })
