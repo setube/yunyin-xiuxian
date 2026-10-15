@@ -50,7 +50,7 @@
           <span>{{ t.text }}</span>
         </p>
       </div>
-      <button class="btn-ghost mt-4 w-full" :disabled="starting" @click="reroll">{{ rerollLabel }}</button>
+      <button class="btn-ghost mt-4 w-full" :disabled="starting || (rerollsLeft !== null && rerollsLeft <= 0)" @click="reroll">{{ rerollLabel }}</button>
       <p v-if="unlimitedReroll" class="mt-2 text-center text-[11px] text-ink-faint">
         不满意就一直改,改到掷中你认的那副牌为止
       </p>
