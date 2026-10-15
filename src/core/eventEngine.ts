@@ -1,7 +1,7 @@
 /**
  * 事件引擎 —— 挑选事件 / 结算选项 / 应用效果
  */
-import type { EventChoice, EventDef, EventEffect, RegionDef } from '@/types'
+import type { EventChoice, EventDef, EventEffect, RegionDef, AdventureSession, GNum } from '@/types'
 import { RandomService, rng } from '@/utils/random'
 import { formatGN } from '@/utils/format'
 import { EVENTS, FORTUNE_EVENTS, eventDef } from '@/data/events'
@@ -29,6 +29,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useAdventureStore } from '@/stores/adventure'
+import { add } from '@/utils/gnum'
 import { useQuestsStore } from '@/stores/quests'
 
 const MATERIAL_NAMES = { herb: '灵草', ore: '玄铁', page: '功法残页', dust: '器灵尘', wudao: '悟道点' } as const
@@ -131,6 +132,25 @@ export function choiceAvailable(choice: EventChoice, tier: number): boolean {
   }
 }
 
+/**
+ * 事件落账并入历练会话账目 —— 与 runBattle 把 afterWin 真实入账写进 session 对称:
+ * 事件给出的灵石/修为/拾获(装备·丹药·法宝)若不并进去,「此行得灵石/修为/拾获」的
+ * 总结就只数战斗所得、漏掉际遇入账(所得对不上文案)。仅在历练途中(有 session)时折叠,
+ * 其余场景(测试/非途)跳过。只并「得」,事件里花掉的灵石不入账。
+ */
+function foldSession(stone?: GNum, exp?: GNum, items = 0): void {
+  const adventure = useAdventureStore()
+  const s = adventure.session
+  if (!s) return
+  const next: AdventureSession = {
+    ...s,
+    stoneGain: stone ? add(s.stoneGain, stone) : s.stoneGain,
+    expGain: exp ? add(s.expGain, exp) : s.expGain,
+    itemGain: s.itemGain + items
+  }
+  adventure.setSession(next)
+}
+
 function applyEffect(effect: EventEffect, tier: number): string | null {
   const player = usePlayerStore()
   const resources = useResourcesStore()
@@ -141,6 +161,7 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
       const v = stoneByTier(tier, Math.abs(effect.tierAmount))
       if (effect.tierAmount >= 0) {
         resources.addStone(v)
+        foldSession(v) // 灵石所得并入会话账目
         return `灵石 +${formatGN(v)}`
       }
       // 入不敷出就拒绝,不「把整份余额奉上」——传余额拷贝会让 gte 恒真、清零收场
@@ -151,6 +172,7 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
       // 与丹药、一场遭遇同一把尺子:等效闭关时长,封顶不满一层(见 formulas.expFromSecs)
       const v = expFromSecs(player.expReq, effect.secs, player.cultPerSec, INSTANT_EXP_LAYER_CAP)
       player.gainExp(v)
+      foldSession(undefined, v) // 修为所得并入会话账目
       return `修为 +${formatGN(v)}`
     }
     case 'material':
@@ -164,7 +186,9 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
         luck: modOf(player.finalStats.mods, 'luck') + personalityEffects(player.petId).dropLuck,
         minQualityRank: effect.minQualityRank
       })
-      return `获得 ${acquireEquipment(inst).line}`
+      const line = `获得 ${acquireEquipment(inst).line}`
+      foldSession(undefined, undefined, 1) // 拾获一件并入会话账目
+      return line
     }
     case 'pill': {
       const id = effect.id ?? randomEventPill(player.major)
@@ -173,6 +197,7 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
       if (!def) return null
       inventory.addPill(id, effect.count)
       collect('pill', id)
+      foldSession(undefined, undefined, effect.count) // 丹药所得并入会话账目
       return `丹药「${def.name}」×${effect.count}`
     }
     case 'gongfa': {
@@ -184,7 +209,9 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
     case 'artifact': {
       const id = effect.id ?? randomDropArtifact(tier)
       if (!id) return null
-      return `获得 ${acquireArtifact(id)}`
+      const line = `获得 ${acquireArtifact(id)}`
+      foldSession(undefined, undefined, 1) // 法宝所得并入会话账目
+      return line
     }
     case 'buff': {
       const def = buffDef(effect.id)

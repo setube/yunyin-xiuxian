@@ -8,14 +8,16 @@
  *     而不是「把余额全数奉上」(spendStone 传余额拷贝的写法会让 gte 恒真、
  *     subClamp 归零,一次越支 = 清零)。
  */
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { EventDef } from '@/types'
-import { add, gn, gte, mulN, sub } from '@/utils/gnum'
+import { add, gn, gte, mulN, sub, toNum } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
+import { useAdventureStore } from '@/stores/adventure'
 import { eventDef } from '@/data/events'
+import { rng } from '@/utils/random'
 import { resolveEventChoice } from './eventEngine'
 import { stoneByTier } from './formulas'
 
@@ -77,5 +79,27 @@ describe('事件结算 · 灵石代价守恒', () => {
     const res = resolveEventChoice(def, 0, 3)
     expect(res.lines.some(l => l.includes('灵品灵草 +6')), '事件发草也该报品').toBe(true)
     expect(res.lines.some(l => l.includes('灵草 +6') && !l.includes('灵品')), '不得退回不带品的裸数').toBe(false)
+  })
+})
+
+describe('际遇 haul(事件所得并入会话账目)', () => {
+  it('历练途中事件修为并入 session.expGain(总结「得修为」不再漏计际遇)', () => {
+    const adventure = useAdventureStore()
+    const player = usePlayerStore()
+    adventure.setSession({
+      regionId: 'qingyun', mode: 'normal', startedAt: 0, endsAt: Date.now() + 60_000,
+      nextBattleAt: 0, wins: 1, losses: 0, events: 0,
+      stoneGain: gn(0), expGain: gn(0), itemGain: 0
+    })
+    const expBefore = toNum(player.exp)
+    // 强制 c(泉水) 走 exp 结算支,落账修为
+    const spy = vi.spyOn(rng, 'chance').mockReturnValue(true)
+    try {
+      resolveEventChoice(eventDef('ev_spring')!, 0, 1)
+    } finally {
+      spy.mockRestore()
+    }
+    expect(toNum(player.exp)).toBeGreaterThan(expBefore)
+    expect(toNum(adventure.session!.expGain), '际遇给的修为要写进会话账目').toBeGreaterThan(0)
   })
 })
