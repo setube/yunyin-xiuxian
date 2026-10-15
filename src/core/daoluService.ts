@@ -405,6 +405,11 @@ export function chooseBondEvent(eventId: string, choiceId: string): ChoiceResult
   // 一世一事:同一段经历不重复发生
   if (b.doneEvents.includes(ev.id)) return null
 
+  // 「此前攒下」的信任/契合 —— 共命之险的生死判据见下,必须用事前的深度,
+  // 不能被这次选择自己的 +trust/+accord 事后救回来(设计文档:「死不死取决于此前攒下了什么」)
+  const beforeTrust = b.trust
+  const beforeAccord = b.accord
+
   const out = resolveChoice(def, ch, playerLean())
   // 记事件已历、清待决、记本次冲突类型,并把下一次机会点推远
   // —— 事件是人生节点,不是每日任务
@@ -423,7 +428,9 @@ export function chooseBondEvent(eventId: string, choiceId: string): ChoiceResult
 
   const after = player.bond!
   // 共命之险:关系够深则同生,不够则她殒落(唯一会死人的一条路,且玩家事先被 warning 过)
-  if (ch.peril && !(after.trust >= PERIL_SAFE_TRUST && after.accord >= PERIL_SAFE_ACCORD)) {
+  // 生死看「此前攒下的深度」,不看这次选择自己加成后的事后值 —— 否则刚够线的情侣
+  // 用一次 +trust 的挺身把自己「事后救活」,与「死不死取决于此前攒下了什么」的文案相悖
+  if (ch.peril && !(beforeTrust >= PERIL_SAFE_TRUST && beforeAccord >= PERIL_SAFE_ACCORD)) {
     fall()
     return {
       text: `${out.text}——可你回头时,劫云里已经没有第二个人了。`,

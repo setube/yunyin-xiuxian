@@ -24,13 +24,15 @@ import {
   advanceBond,
   archiveBond,
   candidatesFor,
+  chooseBondEvent,
   currentBond,
   destinedCandidate,
   fall,
   highestReachable,
   meet,
   nextGateHint,
-  part
+  part,
+  type BondState
 } from './daoluService'
 import { usePlayerStore } from '@/stores/player'
 
@@ -294,5 +296,33 @@ describe('道侣 · 边界', () => {
     const s2 = highestReachable(b)
     expect(s1).toBe(s2)
     expect(currentBond()!.stage).toBe(b.stage)
+  })
+})
+
+describe('道侣 · 共命之险的生死判据', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('生死看「此前攒下」的深度,不被这次选择自己的加成事后救回', () => {
+    const player = usePlayerStore()
+    player.setBond({
+      daoluId: 'dl_qingli',
+      stage: 'known',
+      fate: 50,
+      trust: 50, // 低于安全线 55
+      accord: 40, // 低于安全线 45
+      shared: 1,
+      metAt: 1,
+      fallen: false,
+      doneEvents: [],
+      pendingEventId: null,
+      opportunities: 0,
+      nextEventAt: 0
+    } as BondState)
+    // share 选择自带 +trust/+accord,会把事后值抬到 60/48 —— 但生死按事前 50/40 判
+    const res = chooseBondEvent('be_jie', 'share')
+    expect(res?.perished, '事前 trust50<55 应殒落,而非靠这次挺身的事后加成救活').toBe(true)
+    expect(player.bond?.fallen).toBe(true)
   })
 })
