@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { toNum } from '@/utils/gnum'
+import { maxTierForMajor } from '@/data/regions'
 import { BOUNTY_SLOTS, BOUNTY_MAT_TARGET } from '@/data/bounty'
 import { bountyRemainingSec, equipBountyReward, generateBounty, herbBountyReward } from '@/core/bountyService'
 
@@ -15,7 +16,7 @@ describe('悬赏板 · 订单生成与定价', () => {
     expect(board[1]!.kind).toBe('ore')
     expect(board[2]!.kind).toBe('pill')
     expect(board[3]!.kind).toBe('equip')
-    expect(board[3]!.tier, '贡器门槛该是当前境界').toBe(5)
+    expect(board[3]!.tier, '贡器门槛骑真实层级(与货架同尺 maxTierForMajor,不是境界大阶 major)').toBe(maxTierForMajor(5))
   })
 
   it('募材价都给得出正数(募草按所交品计价:生成时占位、交货现算),募丹价 > 售出倍率,未交货未盖戳', () => {

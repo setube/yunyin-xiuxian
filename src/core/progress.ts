@@ -12,6 +12,7 @@ import { titleDef } from '@/data/titles'
 import { pillDef } from '@/data/pills'
 import { buffDef } from '@/data/buffs'
 import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
+import { maxTierForMajor } from '@/data/regions'
 import { baseCultPerSec, stoneByTier } from './formulas'
 import { formatGN } from '@/utils/format'
 import { usePlayerStore } from '@/stores/player'
@@ -21,10 +22,9 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useUiStore } from '@/stores/ui'
 import type { CollectionCategory } from '@/stores/quests'
 
-/** 玩家当前所处的等效掉落层级 */
+/** 玩家当前所处的等效掉落层级 —— 骑真实区域阶梯(maxTierForMajor),与坊市/悬赏/丹药/锻造同尺 */
 export function playerTier(): number {
-  const player = usePlayerStore()
-  return Math.min(20, player.major * 2 + 1 + (player.sub >= 5 ? 1 : 0))
+  return maxTierForMajor(usePlayerStore().major)
 }
 
 /** 资源行与发放共用。灵石按当前层级折算,不写死一个数。 */

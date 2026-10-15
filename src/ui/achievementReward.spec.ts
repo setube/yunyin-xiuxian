@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { stoneByTier } from '@/core/formulas'
 import { playerTier, rewardPreview } from '@/core/progress'
+import { maxTierForMajor } from '@/data/regions'
 import { usePlayerStore } from '@/stores/player'
 import { formatGN } from '@/utils/format'
 
@@ -19,6 +20,14 @@ describe('已达成成就展示实发奖励', () => {
     const text = rewardPreview(a.reward!)
     expect(text).toContain(`灵石 +${formatGN(stoneByTier(playerTier(), a.reward!.stoneTier!))}`)
     expect(text).toContain('称号')
+  })
+
+  it('奖励折算骑真实区域层级(playerTier=maxTierForMajor),不退回境界大阶封顶', () => {
+    const player = usePlayerStore()
+    player.major = 12 // 金仙:旧尺在此被封到 20,真实阶梯 24(×13)
+    const t = playerTier()
+    expect(t, '应等于真实层级').toBe(maxTierForMajor(12))
+    expect(t, '旧公式在 12 大阶被封 20 —— 退回旧的 min(20, 2m+…) 这里会红').toBeGreaterThan(20)
   })
 
   it('成就页只在达成后接入 rewardPreview', () => {

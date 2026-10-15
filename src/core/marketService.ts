@@ -97,7 +97,7 @@ function buildSlot(
   const minQualityRank = rollQuality(major, rng).rank
   // 按「预览即购得的同一件」的真实品质档标价 —— 若按品质下限标价、实际却滚得更高,
   // 「坊市买入 → 悬赏贡器」会因贡器按实档结算而套利(见 data/bounty 的单位档比对)。
-  const rank = qualityDef(generateEquipment(major, new RandomService(mulberry32(equipSeed(now, idx))), { minQualityRank }).quality).rank
+  const rank = qualityDef(generateEquipment(marketTier(major), new RandomService(mulberry32(equipSeed(now, idx))), { minQualityRank }).quality).rank
   return {
     kind: 'equipment',
     idx,

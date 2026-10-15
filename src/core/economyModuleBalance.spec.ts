@@ -13,6 +13,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { stoneByTier } from './formulas'
+import { qualityDef } from '@/data/qualities'
 import { maxTierForMajor } from '@/data/regions'
 import { MAX_MAJOR } from '@/data/realms'
 import { mulberry32, RandomService } from '@/utils/random'
@@ -30,7 +31,7 @@ import {
   BOUNTY_EQUIP_STONE_BASE,
   BOUNTY_EQUIP_STONE_PER_RANK
 } from '@/data/bounty'
-import { pillSellPrice, consignPrice, herbSellPrice, materialSellPrice, herbSellBatch, generateMarketStock } from './marketService'
+import { pillSellPrice, consignPrice, herbSellPrice, materialSellPrice, herbSellBatch, generateMarketStock, marketEquipInstance } from './marketService'
 import { herbBountyReward, generateBounty } from './bountyService'
 import { apprenticeSpoils } from './apprenticeService'
 import { herbBuyPrice } from './herbPrice'
@@ -276,5 +277,33 @@ describe('坊市/悬赏 · 材与草骑同一区域层级之尺', () => {
     // 募铁悬赏(amount 4.5/单位 × target)同骑真实层级
     const oreBounty = generateBounty(major, 1_700_000_000_000).find(s => s.kind === 'ore')!.reward
     expect(toN(oreBounty)).toBeCloseTo(toN(stoneByTier(tier, BOUNTY_MAT_TARGET * BOUNTY_MAT_UNIT_AMOUNT)), 5)
+  })
+
+  it('坊市装备标价·按「真实交付那一件」的品质而非境界大阶 major —— 买到的品质必与价签对上', () => {
+    const major = 9
+    const stockedAt = 1_700_000_000_000
+    const tier = maxTierForMajor(major)
+    expect(tier, '前提:此境两把尺确实分叉').toBeGreaterThan(major)
+    let checked = 0
+    for (let s = 0; s < 40; s += 1) {
+      const stock = generateMarketStock(major, rng(s + 1), stockedAt)
+      for (const slot of stock.goods) {
+        if (slot.kind !== 'equipment') continue
+        const item = marketEquipInstance(slot, stockedAt)
+        const rank = qualityDef(item.quality).rank
+        const expectPrice = stoneByTier(tier, MARKET_EQUIP_STONE_BASE + rank * MARKET_EQUIP_STONE_PER_RANK)
+        expect(toN(slot.price), `货价必须等于交付件品质对应的价(slot#${slot.idx})`).toBe(toN(expectPrice))
+        checked += 1
+      }
+    }
+    expect(checked, '应验到若干件装备格').toBeGreaterThan(0)
+  })
+
+  it('悬赏贡器门槛用真实层级(marketTier)而非境界大阶 —— 否则「贡 ≥N 阶兵刃」在多数境形同虚设', () => {
+    const major = 9
+    const tier = maxTierForMajor(major)
+    expect(tier, '前提:此境两把尺确实分叉').toBeGreaterThan(major)
+    const slot = generateBounty(major, 1_700_000_000_000).find(s => s.kind === 'equip')!
+    expect(slot.tier, '贡器门槛应骑在真实层级上(不是拿 major 当层级)').toBe(tier)
   })
 })

@@ -70,7 +70,7 @@ export function generateBounty(major: number, now: number): BountySlot[] {
       extra: BOUNTY_PILL_WUDAO,
       claimed: false
     },
-    { idx: 3, kind: 'equip', kindId: '', target: 1, tier: major, reward: gnZero(), extra: 0, claimed: false }
+    { idx: 3, kind: 'equip', kindId: '', target: 1, tier: marketTier(major), reward: gnZero(), extra: 0, claimed: false }
   ]
   return slots.slice(0, Math.min(BOUNTY_SLOTS, slots.length))
 }
