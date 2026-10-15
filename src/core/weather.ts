@@ -194,7 +194,7 @@ export function todayWeather(): WeatherDef {
     const rng = new RandomService(mulberry32(day * 2654435761 + world.start * 131 + 0x51ed))
     return pool[rng.int(0, pool.length - 1)]!
   }
-  const day = Math.floor(game.totalPlaySec / 86400)
+  const day = gameDay(game.totalPlaySec)
   const rng = mulberry32(day * 2654435761 + 0x9e3779b9)
   const roll = rng()
   // 权重:清和 30%,其余各 ~17.5%
