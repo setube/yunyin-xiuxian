@@ -3,9 +3,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { formatGN } from '@/utils/format'
 import { buffDef } from '@/data/buffs'
-import { CULT_BASE_SPEED } from '@/data/constants'
+import { CULT_BASE_SPEED, CULT_SPEED_SOFT_CAP_T } from '@/data/constants'
 import { baseCultPerSec } from './formulas'
-import { retreatGainText, retreatGainedText, checkStateAchievements } from './progress'
+import { retreatGainText, retreatGainedText, checkStateAchievements, retreatMarginalSpeed } from './progress'
 import { useQuestsStore } from '@/stores/quests'
 
 /**
@@ -98,5 +98,20 @@ describe('主线任务同根补扫也应推进', () => {
     player.$patch({ major: 1 }) // 出生任务 realm_0_2(炼气二层)已满足
     checkStateAchievements()
     expect(quests.mainIdx, '出生任务应被补扫完成并把主线前推一步').toBe(1)
+  })
+})
+
+describe('retreatMarginalSpeed 闭关边际(修炼速度软上限)', () => {
+  it('低于阈:按全额加成报(预览与修炼行同口径)', () => {
+    expect(retreatMarginalSpeed(0, 1.5)).toBeCloseTo(1.5, 6)
+    expect(retreatMarginalSpeed(1.0, 1.5)).toBeCloseTo(1.5, 6)
+  })
+
+  it('越阈:越出部分按 CULT_SPEED_SOFT_CAP_DIMINISH 折算,不再全按 1.5 报', () => {
+    // cappedTotal=5.9(单世满配 ~4.4 + 闭关 1.5 被折算后的总况):
+    // 反解无封顶=5+(5.9−5)/0.5=6.8;+1.5=8.3;再封=5+(8.3−5)×0.5=6.65;净增量=6.65−5.9=0.75
+    expect(retreatMarginalSpeed(5.9, 1.5)).toBeCloseTo(0.75, 6)
+    // 恰在阈上:越出的 1.5 全按半价 → 净增量 0.75
+    expect(retreatMarginalSpeed(CULT_SPEED_SOFT_CAP_T, 1.5)).toBeCloseTo(0.75, 6)
   })
 })

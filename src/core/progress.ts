@@ -7,13 +7,14 @@ import { gte, sub, toNum } from '@/utils/gnum'
 import { todayStr } from '@/utils/time'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
-import { LIFESPAN_CRITICAL_RATIO, QI_RICH_RATIO } from '@/data/constants'
+import { LIFESPAN_CRITICAL_RATIO, QI_RICH_RATIO, CULT_SPEED_SOFT_CAP_T, CULT_SPEED_SOFT_CAP_DIMINISH } from '@/data/constants'
 import { titleDef } from '@/data/titles'
 import { pillDef } from '@/data/pills'
 import { buffDef } from '@/data/buffs'
 import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
 import { maxTierForMajor } from '@/data/regions'
 import { baseCultPerSec, stoneByTier } from './formulas'
+import { modOf } from './statsCalc'
 import { formatGN } from '@/utils/format'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
@@ -238,7 +239,25 @@ export function qiRichEtaSec(): number {
   return gap / rate
 }
 
-/** 闭关「每多得修为/秒」—— 预览与闭关中活数共用同一份 base 与加成,不各算一遍 */
+/**
+ * 闭关的边际修炼速度(已过修炼速度软上限折算,见 statsCalc CULT_SPEED_SOFT_CAP)。
+ *
+ * 入参 `cappedTotal` 是修炼行当前**已封顶**的 cultivationSpeed(越过 5.0 后半价折算的那份),
+ * `boost` 是闭关的词条加成(+1.5)。返回「加上闭关后,每 base 修炼的净增量」——
+ * 即 `封顶后的新 total − 封顶后的原 total`。低于阈值(≤5.0)时反解即恒等,增量恰为 boost;
+ * 越阈后把越出部分按 CULT_SPEED_SOFT_CAP_DIMINISH 压回,不能按全额 boost 报。
+ */
+export function retreatMarginalSpeed(cappedTotal: number, boost: number): number {
+  const U = cappedTotal > CULT_SPEED_SOFT_CAP_T ? CULT_SPEED_SOFT_CAP_T + (cappedTotal - CULT_SPEED_SOFT_CAP_T) / CULT_SPEED_SOFT_CAP_DIMINISH : cappedTotal
+  const U2 = U + boost
+  const C2 = U2 > CULT_SPEED_SOFT_CAP_T ? CULT_SPEED_SOFT_CAP_T + (U2 - CULT_SPEED_SOFT_CAP_T) * CULT_SPEED_SOFT_CAP_DIMINISH : U2
+  return C2 - cappedTotal
+}
+
+/**
+ * 闭关「约多得修为」的每多得速率 —— 报的是加成那部分,不是闭关期间全部产出。
+ * 过软上限时按 retreatMarginalSpeed 折算,与修炼行同走一道 soft cap。
+ */
 function retreatGainPerSec(): number {
   const player = usePlayerStore()
   const def = buffDef('retreat')
@@ -246,7 +265,8 @@ function retreatGainPerSec(): number {
   const boost = def.mods.cultivationSpeed ?? 0
   if (!(boost > 0)) return 0
   const base = baseCultPerSec(player.major, player.sub)
-  return base > 0 ? base * boost : 0
+  if (!(base > 0)) return 0
+  return base * retreatMarginalSpeed(modOf(player.finalStats.mods, 'cultivationSpeed'), boost)
 }
 
 /**
