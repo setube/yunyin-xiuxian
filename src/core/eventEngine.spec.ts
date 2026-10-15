@@ -92,10 +92,13 @@ describe('际遇 haul(事件所得并入会话账目)', () => {
       stoneGain: gn(0), expGain: gn(0), itemGain: 0
     })
     const expBefore = toNum(player.exp)
-    // 强制 c(泉水) 走 exp 结算支,落账修为
-    const spy = vi.spyOn(rng, 'chance').mockReturnValue(true)
+    // 结算取用 rng.weighted(依权重挑结局),不是 rng.chance —— 强制挑「饮下泉水」的 exp 结局,
+    // 避免 75%/25% 掷点让断言在 CI 里偶发翻车(取到 injury 时 expGain 不动)
+    const spring = eventDef('ev_spring')!
+    const expOutcome = spring.choices[0]!.outcomes[0]!
+    const spy = vi.spyOn(rng, 'weighted').mockReturnValue(expOutcome)
     try {
-      resolveEventChoice(eventDef('ev_spring')!, 0, 1)
+      resolveEventChoice(spring, 0, 1)
     } finally {
       spy.mockRestore()
     }
