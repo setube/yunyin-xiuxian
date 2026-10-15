@@ -1,6 +1,6 @@
 /* eslint-disable no-console -- 模拟器体检报告的正式输出(bun run test:report 依赖) */
 import { describe, expect, it } from 'vitest'
-import { fullEconomyAudit, qiFillSeconds } from './economySim'
+import { auditEra, avgQualityRank, fullEconomyAudit, qiFillSeconds } from './economySim'
 import { BT_QI_COST_RATIO } from '@/data/constants'
 import { MAX_MAJOR, worldOf } from '@/data/realms'
 import { maxTierForMajor } from '@/data/regions'
@@ -183,5 +183,21 @@ describe('经济闭环审计(Phase 19 · Phase 40 补界外与修为)', () => {
       rows.push(`第${m}境 ${fill.toFixed(0)}s`)
     }
     console.log(`\n  [灵气回满时长] ${rows.join(' · ')}`)
+  })
+
+  it('藏经阁没到建制境界不算产出:大境界 0(炼气)的悟道收入为 0(筑基才堪建)', () => {
+    // 故障注入:把 auditEra 里 libLv 的 buildingLevel 去掉 unlock 门槛(改回 2+2×major),
+    // 大境界 0 就会出现 2×LIBRARY_WUDAO_PER_HOUR 的悟道收入 → 红。
+    const w = auditEra(0).flows.find(f => f.resource === 'wudao')
+    expect(w, '炼气期应有悟道流').toBeDefined()
+    expect(w!.incomePerHour, '炼气期没有藏经阁,不应计入悟道产出').toBe(0)
+  })
+
+  it('强化耗尘按真实掉落品质估(非固定玄品):凡间低阶平均品阶 < 玄品 rank 3', () => {
+    // 故障注入:把 auditEra 的强化 upgradeCost 品阶改回写死的 3,低阶器灵尘两把不同的
+    // 尺会重新出现 —— 这里只锁住「真实取样品阶低于玄品」这一事实,防止回到固 3。
+    const r2 = avgQualityRank(2)
+    expect(r2, '炼气层级(2)掉落平均品阶应低于玄品').toBeLessThan(3)
+    expect(avgQualityRank(maxTierForMajor(MAX_MAJOR)), '终局层级平均品阶应不低于凡品').toBeGreaterThanOrEqual(1)
   })
 })

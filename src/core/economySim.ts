@@ -94,7 +94,13 @@ export interface EraAudit {
   daoCostHours?: number
 }
 
-function buildingLevel(major: number, maxLevel: number): number {
+/**
+ * 该境界下建筑能到多少级(归一曲线 2+2×major,封顶 maxLevel)。
+ * 受 unlockRealm 约束:没到建制境界就给它算产出,会把「灵田/藏经阁还没建」的
+ * 早期经济高估,审计的「瓶颈」便报不响。故大境界未及 unlockRealm 直接按 0。
+ */
+function buildingLevel(major: number, maxLevel: number, unlockRealm = 0): number {
+  if (major < unlockRealm) return 0
   return Math.min(maxLevel, 2 + 2 * major)
 }
 
@@ -116,6 +122,19 @@ export function avgDustPerDrop(tier: number, samples = 200): number {
   return total / samples
 }
 
+/** 该层级掉落装备的平均品质阶(与 avgDustPerDrop 同一把采样/种子)。
+ * 强化耗尘若固定按玄品(rank 3)估,而收入按真实品质分布,两源不在同一把尺上 ——
+ * 低阶多凡/良,固 3 会把耗尘估高、器灵尘闭环看得比真实紧。归到同一品质口径。 */
+export function avgQualityRank(tier: number, samples = 200): number {
+  const rng = new RandomService(mulberry32(tier * 131))
+  let total = 0
+  for (let i = 0; i < samples; i += 1) {
+    const inst = generateEquipment(tier, rng)
+    total += qualityDef(inst.quality).rank
+  }
+  return total / samples
+}
+
 /** 单个境界时期的资源流审计 */
 export function auditEra(major: number): EraAudit {
   const tier = maxTierForMajor(major)
@@ -129,8 +148,8 @@ export function auditEra(major: number): EraAudit {
   const winsThisHour = winsPerHour()
   const dropsPerHour = winsThisHour * EQUIP_DROP_CHANCE
 
-  const fieldLv = buildingLevel(major, 15)
-  const libLv = buildingLevel(major, 12)
+  const fieldLv = buildingLevel(major, 15, 0) // 灵田:境界 0 即可建
+  const libLv = buildingLevel(major, 12, 1) // 藏经阁:筑基(境 1)才堪建
 
   // ---- 生产 ----
   const stoneIncome = winsThisHour * toNum(stoneByTier(tier, 10))
@@ -166,8 +185,8 @@ export function auditEra(major: number): EraAudit {
   const avgPillStone = recipes.length
     ? recipes.reduce((s, p) => s + toNum(stoneByTier(maxTierForMajor(p.minRealm), p.recipe!.stoneBase / 10)), 0) / recipes.length
     : 0
-  // 装备强化
-  const up = upgradeCost(3, tier, 3, 0)
+  // 装备强化:耗尘品质按该层级真实掉落的平均品阶估(与分解收入的品质同尺),而非固定玄品
+  const up = upgradeCost(3, tier, avgQualityRank(tier), 0)
   const dustSinkHour = UPGRADES_PER_HOUR * up.dust
   const stoneSinkHour = UPGRADES_PER_HOUR * toNum(up.stone) + CRAFTS_PER_HOUR * avgPillStone + stoneSinkEra / amortizeHours
   const herbSinkHour = CRAFTS_PER_HOUR * avgHerbCost
