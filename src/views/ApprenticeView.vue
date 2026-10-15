@@ -77,6 +77,7 @@
   import { formatCountdown, formatGN } from '@/utils/format'
   import { stoneByTier } from '@/core/formulas'
   import { maxTierForMajor } from '@/data/regions'
+  import { pillDef } from '@/data/pills'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
   import { useApprenticeStore } from '@/stores/apprentice'
@@ -154,7 +155,7 @@
     if (s.dust) parts.push(`器尘×${s.dust}`)
     if (s.wudao) parts.push(`悟道×${s.wudao}`)
     if (s.stone) parts.push(`灵石 ${formatGN(s.stone)}`)
-    if (s.pillId) parts.push(`丹药×${s.pillCount ?? 1}`)
+    if (s.pillId) parts.push(`${pillDef(s.pillId)?.name ?? '丹药'}×${s.pillCount ?? 1}`)
     return parts.join(' · ')
   }
 
