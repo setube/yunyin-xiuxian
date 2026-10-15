@@ -14,7 +14,8 @@ import {
   tribulationWaveSpan,
   NO_STAT_GUARD,
   traceTribulation,
-  waveDamage
+  waveDamage,
+  effectiveBurstTier
 } from './tribulationDecision'
 import { baseCombatStats, tribulationWaveDamage } from './formulas'
 import { toNum } from '@/utils/gnum'
@@ -270,5 +271,19 @@ describe('渡劫四维星 · 与结算同源(结算吃了它,星级就必须看�
     const guarded = buildTribulationPlan(1, {}, 'thunder', NO_RELIEF, 1, { resist: 0, guard: 0.2 } as { resist: number; guard: number }).prep.guard
     const plain = buildTribulationPlan(1, {}, 'thunder', NO_RELIEF, 1, NO_STAT_GUARD).prep.guard
     expect(guarded, '血厚者的护持星应含三维血量的折算,不偏低').toBeGreaterThan(plain)
+  })
+})
+
+describe('裂魂爆发星(连灵根/凶兆加持)', () => {
+  it('展示星 == 结算吃的 effectiveBurstTier:有攻势被提升一档,推不动零', () => {
+    const fire = { ...NO_RELIEF, burstTierBonus: 1 }
+    // 有攻势但不到顶:burstScore = 0.2 → 基档 1;fire +1 → 档 2(未封顶,catch 得到的差值)
+    const boostable: StatMods = { critRate: 0.2 }
+    const plan = buildTribulationPlan(1, boostable, 'soulrend', fire)
+    expect(plan.prep.burst, '展示星必须与结算同档(结算吃 effectiveBurstTier)').toBe(effectiveBurstTier(boostable, fire))
+    expect(plan.prep.burst, '火灵根把已有攻势再推一档,不再停在 raw 档').toBeGreaterThan(effectiveBurstTier(boostable, NO_RELIEF))
+    // 无攻势者拿到加持推不动零(不白送裂魂减免)
+    const bare = buildTribulationPlan(1, {}, 'soulrend', fire)
+    expect(bare.prep.burst).toBe(0)
   })
 })

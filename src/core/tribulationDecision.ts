@@ -400,7 +400,10 @@ export function buildTribulationPlan(
     sustain: prepTier('sustain', sustainScore(mods, def, relief)),
     // 抗性这一维要把三维折算算进去 —— 结算吃了它,星级就必须看得见它
     resist: prepTier('resist', resistScore(mods, relief) + stat.resist),
-    burst: prepTier('burst', burstScore(mods))
+    // 爆发这一维要连灵根/凶兆的加持算进去 —— 结算吃的是 effectiveBurstTier(mods, relief)
+    // (base tier + relief.burstTierBonus 封顶 3),星级就得看得见他,否则火/光灵根该 +1 时
+    // 星级仍停在 raw、riskLines 还能对整个「攻势不足」误诊(见 SOULREND_BURST_RELIEF 下标注释)
+    burst: effectiveBurstTier(mods, relief)
   }
 
   // 决策档以"全程最低水位"为准:险过与稳过必须分得开,
