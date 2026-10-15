@@ -183,3 +183,17 @@ describe('三档触发 · 接线', () => {
     expect(engine, '概率又被写死在引擎里了').not.toMatch(/const (FORTUNE_CHANCE|CHAIN_STAGE_CHANCE)\s*=/)
   })
 })
+
+describe('际遇概览(anyChance 入参 = 引擎真掷同一条乘链)', () => {
+  it('抬高基础(星象/福缘/区域事件 eventMult)按同倍率放大各档,「约每 N 程」随之减少', () => {
+    const base = tierChances(false)
+    const x2 = EXPLORE_EVENT_CHANCE * 2
+    const boosted = tierChances(false, x2)
+    expect(boosted.jiyuan).toBeCloseTo(base.jiyuan * 2, 9)
+    expect(boosted.jingyu).toBeCloseTo(base.jingyu * 2, 9)
+    expect(boosted.qiyuan).toBeCloseTo(base.qiyuan * 2, 9)
+    expect(tierEncountersPerTrigger('jingyu', false, x2)).toBeLessThan(tierEncountersPerTrigger('jingyu', false))
+    // 缺省 = 裸基础,不破坏既有契约
+    expect(tierChances(false)).toEqual(base)
+  })
+})

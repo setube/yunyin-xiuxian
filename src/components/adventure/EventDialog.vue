@@ -67,7 +67,7 @@
   import { choiceAvailable, resolveEventChoice, type EventResolution } from '@/core/eventEngine'
   import { pendingChainStages } from '@/core/eventEngine'
   import { usePlayerStore } from '@/stores/player'
-  import { afterEventResolved } from '@/core/exploration'
+  import { afterEventResolved, exploreEventChance } from '@/core/exploration'
   import { aftermathText, shouldTriggerAftermath } from '@/core/worldMemory'
   import { echoFor, rollEcho, ECHO_CHANCE } from '@/core/fortuneEcho'
   import { rng } from '@/utils/random'
@@ -102,7 +102,14 @@
   )
   /** 档位定义(名字/颜色/一句话)与概率文案 */
   const tierDef = computed(() => eventTierDef(tierId.value))
-  const tierOdds = computed(() => tierOddsText(tierId.value, chainPending.value))
+  // 约每 N 程一次 与引擎真掷同一条乘法链(含星象/福缘/区域事件 eventMult),不许裸用基础值
+  const tierOdds = computed(() =>
+    tierOddsText(
+      tierId.value,
+      chainPending.value,
+      exploreEventChance(adventure.currentRegion?.id ?? '', usePlayerStore().finalStats.mods)
+    )
+  )
   /** 有没有缘在续 —— 奇缘与机缘的实际概率都受它影响(见 core/eventTier.tierChances) */
   const chainPending = computed(() => pendingChainStages(usePlayerStore().major).length > 0)
   const tier = computed(() => adventure.currentRegion?.tier ?? 1)

@@ -98,8 +98,8 @@ export function eventTierOf(eventId: string): EventTier {
  *   有缘在续 → 际遇 ≈ 每 9.1 程 · 奇缘 ≈ 每 20.8 程 · 机缘 ≈ 每 446 程
  * 判据 eventTier.spec 用真引擎做蒙特卡洛对账,两边不许分叉。
  */
-export function tierChances(stagePending: boolean): Record<EventTier, number> {
-  const any = EXPLORE_EVENT_CHANCE
+export function tierChances(stagePending: boolean, anyChance = EXPLORE_EVENT_CHANCE): Record<EventTier, number> {
+  const any = anyChance
   const chain = stagePending ? CHAIN_STAGE_CHANCE : 0
   return {
     qiyuan: any * chain,
@@ -109,14 +109,14 @@ export function tierChances(stagePending: boolean): Record<EventTier, number> {
 }
 
 /** 折成「平均多少程遭遇才见一次」—— 玩家真正读得懂的量级(0 = 这一档此刻不出现) */
-export function tierEncountersPerTrigger(tier: EventTier, stagePending: boolean): number {
-  const p = tierChances(stagePending)[tier]
+export function tierEncountersPerTrigger(tier: EventTier, stagePending: boolean, anyChance = EXPLORE_EVENT_CHANCE): number {
+  const p = tierChances(stagePending, anyChance)[tier]
   return p > 0 ? 1 / p : Number.POSITIVE_INFINITY
 }
 
 /** 界面用的一句话:「约每 6 程一次」;奇缘无缘在续时说明它为什么不来 */
-export function tierOddsText(tier: EventTier, stagePending: boolean): string {
-  const n = tierEncountersPerTrigger(tier, stagePending)
+export function tierOddsText(tier: EventTier, stagePending: boolean, anyChance = EXPLORE_EVENT_CHANCE): string {
+  const n = tierEncountersPerTrigger(tier, stagePending, anyChance)
   if (!Number.isFinite(n)) return tier === 'qiyuan' ? '缘起之后才来' : '不出现'
   if (n < 20) return `约每 ${Math.round(n)} 程一次`
   return `约每 ${Math.round(n / 10) * 10} 程一次`

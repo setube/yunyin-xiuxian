@@ -64,7 +64,7 @@
       <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px]">
         <span class="text-ink-faint">途中三档:</span>
         <span v-for="t in EVENT_TIERS" :key="t.id" class="chip-ink text-[10px]" :style="{ color: t.color }">
-          {{ t.name }} · {{ tierOddsText(t.id, chainPending) }}
+          {{ t.name }} · {{ tierOddsText(t.id, chainPending, exploreEventChance(adventure.session?.regionId ?? '', player.finalStats.mods)) }}
         </span>
       </p>
       <!--
@@ -338,6 +338,7 @@
   import {
     exploreBattleGapSec,
     exploreDurationSec,
+    exploreEventChance,
     exploreRewardMult,
     explorationFoeDanger,
     regionFoeOrigin,
