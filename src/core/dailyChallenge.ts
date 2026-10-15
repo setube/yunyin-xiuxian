@@ -51,13 +51,18 @@ export function todayChallenge(): DailyChallenge | null {
 export function undertakeDaily(daily: DailyChallenge): ExpeditionResult | null {
   const endgame = useEndgameStore()
   const ui = useUiStore()
-  if (endgame.dailyDoneDay === daily.day) {
+  // 用「当下」本地日号判闸,不能信调用方传入的 daily.day —— daily 常来自非响应式的
+  // todayChallenge()(Date.now() 不触发 computed 重算),玩家驻足跨过本地午夜时它仍是
+  // 昨天那天的考题:若按传参判,清了「昨天」一天后 dailyDoneDay 一跳、daily 重算成今天,
+  // 今天就再清一次 —— 同一会话连领两份天道赏。落闸只认当下日期。
+  const day = todayLocalNum()
+  if (endgame.dailyDoneDay === day) {
     ui.toast('今日天道已了,明日再会', 'info')
     return null
   }
   const result = undertakeChallenge(daily.draft, daily.verdict)
   if (result?.report.cleared) {
-    endgame.markDailyDone(daily.day)
+    endgame.markDailyDone(day)
     recordMilestone('first_daily')
   }
   return result

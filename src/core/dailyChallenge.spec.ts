@@ -65,3 +65,39 @@ describe('今日天道 · 确定性(刷新不换题)', () => {
     expect(todayNumber()).toBe(local)
   })
 })
+
+vi.mock('./challenge', async importOriginal => {
+  const mod = await importOriginal<typeof import('./challenge')>()
+  return {
+    ...mod,
+    undertakeChallenge: vi.fn(() => ({ cleared: true, report: { rows: [] }, title: 'mock', rewardDaoSource: 0 } as never))
+  }
+})
+
+import { undertakeDaily } from './dailyChallenge'
+import { undertakeChallenge } from './challenge'
+import type { DailyChallenge } from './dailyChallenge'
+import { useEndgameStore } from '@/stores/endgame'
+import { setActivePinia, createPinia } from 'pinia'
+
+describe('应战今日天道 · 跨午夜落闸(防一天双份赏)', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('今天的闸已关时,传昨日考题也能被当下日号拦下,不发起挑战', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_760_000_000_000)
+    setActivePinia(createPinia())
+    const endgame = useEndgameStore()
+    vi.mocked(undertakeChallenge).mockClear()
+    const today = todayLocalNum()
+    endgame.dailyDoneDay = today // 今天已了
+    // 模拟驻足跨午夜后缓存未刷新:传「昨日」考题(day 比当下小),题面任意
+    const stale: DailyChallenge = { day: today - 1, draft: todayChallenge()!.draft, verdict: todayChallenge()!.verdict }
+    // 旧逻辑按传参的 day(昨日)判闸 → 昨日没做 → 放行去打,清了再标记、重算成今天还能再打一次
+    expect(undertakeDaily(stale)).toBe(null)
+    expect(undertakeChallenge, '落闸只认当下日号,今日已了就该直接拒,不去打昨日考题').not.toHaveBeenCalled()
+    expect(endgame.dailyDoneDay).toBe(today)
+  })
+})
