@@ -47,10 +47,11 @@
             </span>
             <button
               class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
-              :disabled="c.sold || !c.afford"
+              :disabled="c.sold || !c.afford || (c.kind === 'equipment' && inventory.bagFull)"
+              :title="c.kind === 'equipment' && inventory.bagFull ? '行囊满' : undefined"
               @click="buyOne(c.idx)"
             >
-              {{ c.sold ? '已售' : c.afford ? '买下' : '灵石不足' }}
+              {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊满' : c.afford ? '买下' : '灵石不足' }}
             </button>
           </div>
         </div>
@@ -223,6 +224,7 @@
     idx: number
     tag: string
     tagCls: string
+    kind: string
     name: string
     nameCls: Record<string, string>
     sub: string
@@ -321,6 +323,7 @@
       idx: slot.idx,
       tag: slot.kind === 'pill' ? '丹' : slot.kind === 'material' ? '材' : '器',
       tagCls: TAG_CLS[slot.kind] ?? '',
+      kind: slot.kind,
       sold: slot.sold,
       afford: !slot.sold && cmp(resources.spiritStone, slot.price) >= 0
     }

@@ -223,12 +223,18 @@
             >
               {{ row.equipped ? '收回法宝' : '祭炼随身' }}
             </button>
-            <button v-if="row.upCost" class="btn-ghost flex-1 !py-1.5 !text-[12px] tabular" @click="upgradeArtifact(row.def.id)">
+            <button
+              v-if="row.upCost"
+              class="btn-ghost flex-1 !py-1.5 !text-[12px] tabular"
+              :disabled="!row.canUp"
+              :title="!row.canUp ? '悟道或灵石不足' : undefined"
+              @click="upgradeArtifact(row.def.id)"
+            >
               <!--
                 两种代价都要写出来:炼化既扣悟道点、也扣灵石(见 forge.artifactUpCost),
                 而按钮此前只报悟道 —— 玩家按标签算账,回头发现灵石也少了一大截。
               -->
-              炼化(悟道 {{ row.upCost.wudao }} · 灵石 {{ formatGN(row.upCost.stone) }})
+              炼化(悟道 {{ row.upCost.wudao }} · 灵石 {{ formatGN(row.upCost.stone) }}){{ row.canUp ? '' : '·不足' }}
             </button>
           </div>
           <!--
@@ -931,13 +937,17 @@
 
   const artifactRows = computed(() =>
     inventory.artifacts
-      .map(a => ({
-        owned: a,
-        def: artifactDef(a.defId)!,
-        upCost: artifactUpCost(a.defId),
-        artPlan: artifactBatchPlan(a.defId),
-        equipped: inventory.equippedArtifacts.includes(a.defId)
-      }))
+      .map(a => {
+        const upCost = artifactUpCost(a.defId)
+        return {
+          owned: a,
+          def: artifactDef(a.defId)!,
+          upCost,
+          canUp: upCost ? resources.hasSmall('wudao', upCost.wudao) && resources.hasStone(upCost.stone) : false,
+          artPlan: artifactBatchPlan(a.defId),
+          equipped: inventory.equippedArtifacts.includes(a.defId)
+        }
+      })
       // 与行囊同一套排法:品质降序 → 祭炼高的在前(此前按入手先后排,越捡越乱)
       .sort(
         (a, b) =>
