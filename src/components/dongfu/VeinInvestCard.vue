@@ -135,6 +135,7 @@
   import { computed, ref } from 'vue'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
+  import { useResourcesStore } from '@/stores/resources'
   import { VEINS, veinDef, type VeinId } from '@/data/veins'
   import { veinEffectText } from '@/ui/veinText'
   import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinSwitchCost, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
@@ -143,6 +144,7 @@
 
   const dongfu = useDongfuStore()
   const player = usePlayerStore()
+  const resources = useResourcesStore()
 
   /**
    * 四脉各配一色系。字面量类串,不许拼 —— Tailwind 的 JIT 只认源码里写全的类;
@@ -206,14 +208,16 @@
   function canInvest(veinId: VeinId): boolean {
     if (!veinsUnlocked.value) return false
     if (currentLevel(veinId) >= cap(veinId)) return false
-    return veinTotal.value < VEIN_TOTAL_CAPACITY
+    if (veinTotal.value >= VEIN_TOTAL_CAPACITY) return false
+    return resources.hasStone(investCost.value)
   }
 
-  /** 投点钮在不可投时的说辞:满却 / 总容量尽,各说各的 */
+  /** 投点钮在不可投时的说辞:缺灵石 / 满却 / 总容量尽,各说各的 */
   function investedStateLabel(veinId: VeinId): string {
     if (currentLevel(veinId) >= cap(veinId)) return isMain(veinId) ? '主脉圆满' : '副脉至限'
     if (veinTotal.value >= VEIN_TOTAL_CAPACITY) return '容量已尽'
     if (!veinsUnlocked.value) return '未开'
+    if (!resources.hasStone(investCost.value)) return '缺灵石'
     return '不可投'
   }
 

@@ -105,7 +105,7 @@
         <button v-else class="btn-seal flex-1" @click="toggleSub">
           {{ subActionText }}
         </button>
-        <button v-if="upCost" class="btn-ghost flex-1" @click="def && upgradeGongfa(def.id)">进 修</button>
+        <button v-if="upCost" class="btn-ghost flex-1" :disabled="!canAffordUp" :title="!canAffordUp ? '悟道点或残页不足' : undefined" @click="def && upgradeGongfa(def.id)">{{ canAffordUp ? '进 修' : '进 修(缺料)' }}</button>
       </div>
     </template>
   </BaseModal>
@@ -117,6 +117,7 @@
   import { useCultivationStore } from '@/stores/cultivation'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
+  import { useResourcesStore } from '@/stores/resources'
   import { gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import { ELEMENTS } from '@/data/linggen'
   import { branchesFor, gongfaBranchDef } from '@/data/gongfaBranches'
@@ -135,11 +136,18 @@
   const cultivation = useCultivationStore()
   const dongfu = useDongfuStore()
   const player = usePlayerStore()
+  const resources = useResourcesStore()
 
   const def = computed(() => (ui.gongfaDetailId ? gongfaDef(ui.gongfaDetailId) : undefined))
   const level = computed(() => (def.value ? (cultivation.learned[def.value.id] ?? 0) : 0))
   const learned = computed(() => level.value > 0)
   const upCost = computed(() => (def.value ? gongfaUpgradeCost(def.value.id) : null))
+  // 进修要悟道点+残页两样,一样不够就该置灰说清(upgradeGongfa 缺料只能吐 warn)
+  const canAffordUp = computed(() => {
+    const c = upCost.value
+    if (!c) return false
+    return resources.hasSmall('wudao', c.wudao) && resources.hasSmall('page', c.page)
+  })
 
   /** 与灵根同源?判据直接取自参悟权重函数,标签与实际权重不可能分叉 */
   const sameRoot = computed(() => gongfaAffinity(def.value?.element, rootElements(player.linggen?.roots)) > 1)

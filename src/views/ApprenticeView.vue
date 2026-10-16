@@ -10,8 +10,10 @@
         <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
           <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
         </p>
-        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull" @click="doRecruit">
-          收道童<span v-if="!slotsFull" class="ml-1 text-[10px]">({{ recruitCostLine }})</span>
+        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull || !canAffordRecruit" :title="!canAffordRecruit ? '灵石不足' : undefined" @click="doRecruit">
+          收道童<span v-if="!slotsFull" class="ml-1 text-[10px]">
+            {{ canAffordRecruit ? `(${recruitCostLine})` : `(灵石不足:需 ${formatGN(recruitCost)},余 ${formatGN(resources.spiritStone)})` }}
+          </span>
         </button>
       </div>
     </div>
@@ -108,7 +110,9 @@
   const slots = computed(() => apprenticeSlots(player.major))
   const slotsFull = computed(() => appr.apprentices.length >= slots.value)
   const hasIdle = computed(() => appr.apprentices.some(a => a.task === null))
-  const recruitCostLine = computed(() => `${formatGN(stoneByTier(maxTierForMajor(player.major), RECRUIT_COST_TIER_AMOUNT))} 灵石`)
+  const recruitCost = computed(() => stoneByTier(maxTierForMajor(player.major), RECRUIT_COST_TIER_AMOUNT))
+  const canAffordRecruit = computed(() => resources.hasStone(recruitCost.value))
+  const recruitCostLine = computed(() => `${formatGN(recruitCost.value)} 灵石`)
 
   const apprenticesList = computed(() =>
     appr.apprentices.map(a => {
