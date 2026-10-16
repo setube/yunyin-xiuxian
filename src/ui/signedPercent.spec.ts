@@ -37,9 +37,13 @@ describe('signedPercent', () => {
     expect(modsText({ alchemyYield: 0.1 })).toBe('双枚成丹 +10%(再得一枚之机;与手艺合计不过八成)')
     expect(modsText({ alchemyYield: 0.1 })).not.toContain('炼丹产出')
     const craft = readFileSync(resolve(__dirname, '../core/pillService.ts'), 'utf8')
-    expect(craft).toContain("modOf(player.finalStats.mods, 'alchemyYield')")
-    expect(craft).toContain('bonusChance + yieldMod')
-    expect(craft).toContain('Math.min(0.8')
+    // 结算直接读 craftability 算好的真实概率(含 alchemyYield、已按 PILL_SECOND_CAP 封顶)——
+    // 展示页写的那个数与这里掷的就是同一个,不再自算一遍 0.8 封顶
+    expect(craft).toContain('able.bonusChanceWithYield')
+    expect(craft, '封顶只在 craftability 一处,结算不得再内联 0.8').not.toContain('Math.min(0.8')
+    const able = readFileSync(resolve(__dirname, '../core/craftability.ts'), 'utf8')
+    expect(able).toContain("modOf(player.finalStats.mods, 'alchemyYield')")
+    expect(able).toContain('Math.min(PILL_SECOND_CAP')
   })
 
   it('breakRefund 只报失败少损修为,不说成突破返还', () => {

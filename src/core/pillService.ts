@@ -15,7 +15,6 @@ import { recipeCraft, type SkillId } from '@/data/crafting'
 import { expFromSecs, stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
 import { collect, track } from './progress'
-import { modOf } from './statsCalc'
 import { buffOverflowOf } from './buffCap'
 import { craftability, knownRecipes } from './craftability'
 import { noteMaterialUsed } from './loreService'
@@ -291,8 +290,9 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
     return { ok: false, count: 0 }
   }
 
-  const yieldMod = modOf(player.finalStats.mods, 'alchemyYield')
-  const extra = rng.chance(Math.min(0.8, able.bonusChance + yieldMod)) ? 1 : 0
+  // 双丹掷点读 craftability 算好的真实概率(含 alchemyYield、已按 PILL_SECOND_CAP 封顶)——
+  // 展示页写的那个数与这里掷的就是同一个,不再自算一遍(封顶单源)
+  const extra = rng.chance(able.bonusChanceWithYield) ? 1 : 0
   inventory.addPill(id, 1 + extra)
   track('pillsCrafted', 1 + extra)
   collect('pill', id)

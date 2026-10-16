@@ -11,6 +11,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 /** rng 的固定返回:0 → 所有概率判定都成;0.999 → 都不成 */
 let mockRand = 0
@@ -20,6 +22,7 @@ vi.mock('@/utils/random', async importOriginal => {
 })
 
 import { craftBatchPlan, craftPill, pillCraftCost, salvageRatio, usePill } from './pillService'
+import { rng } from '@/utils/random'
 import { craftability } from './craftability'
 import { pillDef } from '@/data/pills'
 import { PILLS } from '@/data/pills'
@@ -35,6 +38,7 @@ import { useLoreStore } from '@/stores/lore'
 import { usePlayerStore } from '@/stores/player'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useQuestsStore } from '@/stores/quests'
+import { useDongfuStore } from '@/stores/dongfu'
 import { mulN, toNum } from '@/utils/gnum'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { MAIN_QUESTS } from '@/data/quests'
@@ -482,5 +486,46 @@ describe('炼丹计划有限性(craftBatchPlan 不产 Infinity/NaN)', () => {
       checked += 1
     }
     expect(checked).toBeGreaterThan(0)
+  })
+})
+
+describe('双丹概率 · 展示与结算同一个数(封顶单源)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    settleRewards()
+  })
+
+  it('结算掷的就是 craftability 印出的 bonusChanceWithYield,不是自算的 0.8', () => {
+    knowRecipe(0.8)
+    giveMaterials()
+    useDongfuStore().setLevel('alchemy', 6) // 丹炉:alchemyYield 0.3,把双丹概率推过 0.4
+    const able = craftability(ID)!
+    const pSecond = able.bonusChanceWithYield
+    expect(pSecond, '丹炉+手艺该把双丹概率推起来').toBeGreaterThan(0.3)
+
+    // 恰落在 pSecond 之内:成丹且多得一枚;同时抓住结算真正掷的那个概率
+    mockRand = pSecond / 2
+    const chance = vi.spyOn(rng, 'chance')
+    const out = craftPill(ID)
+    expect(out.ok, '这一掷该成丹').toBe(true)
+    expect(out.count, '掷点 < 展示的双丹概率就该多得一枚').toBe(2)
+    const rollArgs = chance.mock.calls.map(c => c[0])
+    expect(
+      rollArgs,
+      '结算必须掷 craftability 印出的那个数 —— 展示与结算同源,不再自算 Math.min(0.8, …)'
+    ).toContain(pSecond)
+    chance.mockRestore()
+  })
+
+  it('封顶只在 craftability 一处:结算源码不内联 0.8', () => {
+    const service = readFileSync(resolve(__dirname, './pillService.ts'), 'utf8')
+    expect(service).toContain('able.bonusChanceWithYield')
+    expect(service, '结算不得再各写一遍 0.8 封顶').not.toContain('Math.min(0.8')
+    // 更硬的一条:结算不得自己再读 alchemyYield 重算一遍 —— 那条支路正是分叉的来源
+    expect(service, '结算须经 craftability 取含封顶的真实概率,不得自读 alchemyYield').not.toContain(
+      "'alchemyYield'"
+    )
+    const able = readFileSync(resolve(__dirname, './craftability.ts'), 'utf8')
+    expect(able).toContain('Math.min(PILL_SECOND_CAP')
   })
 })

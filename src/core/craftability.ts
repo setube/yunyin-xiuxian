@@ -11,6 +11,7 @@ import type { PillDef } from '@/types'
 import { LORE_MAX, materialDef } from '@/data/materials'
 import { recipeCraft, skillDef, type RecipeCraft, type SkillId } from '@/data/crafting'
 import { pillDef, PILLS } from '@/data/pills'
+import { PILL_SECOND_CAP } from '@/data/constants'
 import { modOf } from './statsCalc'
 import { useLoreStore } from '@/stores/lore'
 import { usePlayerStore } from '@/stores/player'
@@ -170,9 +171,10 @@ export function craftability(id: string, opts?: { omitWeakness?: boolean }): Cra
     overReach: over,
     successRate: composeSuccessRate(mastery, matLore, skill, over),
     bonusChance: bonusChanceOf(mastery, skill),
-    // 结算 real: min(0.8, bonusChance + alchemyYield) —— 展示给这个真实值,
-    // 别只给基础通道(否则 bonusChance=0 而丹心有 20% 时,双丹标签直接消失,误导)
-    bonusChanceWithYield: Math.min(0.8, bonusChanceOf(mastery, skill) + modOf(player.finalStats.mods, 'alchemyYield')),
+    // 结算 real: min(PILL_SECOND_CAP, bonusChance + alchemyYield) —— 展示给这个真实值,
+    // 别只给基础通道(否则 bonusChance=0 而丹心有 20% 时,双丹标签直接消失,误导)。
+    // 结算侧(pillService.craftPill)直接读这里的数,不再自算一遍 —— 封顶只此一处。
+    bonusChanceWithYield: Math.min(PILL_SECOND_CAP, bonusChanceOf(mastery, skill) + modOf(player.finalStats.mods, 'alchemyYield')),
     blockers,
     weakness:
       blockers.length > 0 || opts?.omitWeakness ? [] : weaknessLines({ mastery, matLore, skill, over, craft, loreOf, levelOf }),

@@ -465,6 +465,14 @@ export const QUALITY_WEIGHTS = [5000, 3000, 1500, 400, 80, 15, 2.5, 0.5, 0.05] a
 export const QUALITY_TIER_SHIFT = 1.18
 export const EQUIP_DROP_CHANCE = 0.3
 export const PILL_DROP_CHANCE = 0.08
+/**
+ * 双丹(一炉得二)概率的**同一封顶**(0.8)。
+ *
+ * 展示路径(craftability.bonusChanceWithYield)与结算路径(pillService.craftPill)
+ * 从前各写一遍 `Math.min(0.8, bonusChance + alchemyYield)`,注释还自称「与结算同一口径」。
+ * 收进这里:结算直接吃 craftability 算好的那个数,封顶一改展示与结算不再分叉。
+ */
+export const PILL_SECOND_CAP = 0.8
 export const PAGE_DROP_CHANCE = 0.12
 export const ARTIFACT_DROP_CHANCE = 0.015
 // 材料掉落概率:历练 everyBattle 里 afterWin 的 herb/ore 掷点就走这两枚,
