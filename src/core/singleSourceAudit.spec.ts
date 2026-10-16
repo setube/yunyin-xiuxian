@@ -152,3 +152,30 @@ describe('同源审计 · 词条能长在哪(议题 #22)', () => {
     expect(flow, '付不付得起必须来自 transferShort').toMatch(/transferShort\s*\(/)
   })
 })
+
+describe('同源审计 · 装备掉落概率的封顶', () => {
+  /**
+   * 在线 afterWin 把每场装备掉落概率夹在 `Math.min(0.9, equipChance)`、
+   * 离线 settleOffline 的期望式却从不夹取 —— 长线云游(×2.4)×区域加丰(商队 1.25)
+   * ×掉落词条叠起来会越过 0.9,在线每场封顶、离线按超顶值计,同一本世同一地界
+   * 两边的装备期望系统性分叉(HYP-015 家族)。封顶收进 constants 的
+   * EQUIP_DROP_CHANCE_CAP 后,两处都只许读这一枚,谁也不许再内联 0.9。
+   *
+   * 判据只针对装备掉落这条式子:`Math.min(0.9,` 这个字面只许出现在 constants;
+   * loreService 另有 `Math.min(0.9, base + familiarity)`(认知上限,语义无关),
+   * 故按「equip 封顶的字面」而非「一切 0.9」判,免得误伤。
+   * 故障注入:把 offline.ts 的封顶改回内联 `Math.min(0.9, …)` → 本条红。
+   */
+  it('在线与离线都只读 EQUIP_DROP_CHANCE_CAP,谁也不再内联 0.9 封顶', () => {
+    const read = (name: string): [string, string] => {
+      const hit = Object.entries(ALL_SOURCES).find(([path]) => path.split('/').pop() === name)
+      if (!hit) throw new Error(`审计读不到 ${name} —— glob 没匹配上,断言会假绿`)
+      return [name, stripComments(hit[1])]
+    }
+    for (const name of ['loot.ts', 'offline.ts']) {
+      const [file, src] = read(name)
+      expect(src, `${file} 该引用具名封顶常量`).toContain('EQUIP_DROP_CHANCE_CAP')
+      expect(src, `${file} 又内联了 0.9 装备封顶 —— 改常数时两边会分叉`).not.toMatch(/Math\.min\(\s*0\.9\b/)
+    }
+  })
+})

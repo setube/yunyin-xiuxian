@@ -16,6 +16,7 @@ import {
   AGE_YEARS_PER_HOUR,
   BATTLE_EXP_SECS,
   EQUIP_DROP_CHANCE,
+  EQUIP_DROP_CHANCE_CAP,
   HERB_DROP_CHANCE,
   ORE_DROP_CHANCE,
   EXPLORE_BATTLE_INTERVAL,
@@ -253,8 +254,14 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         resources.addSmall('page', pageGain)
         resources.addSmall('dust', dustGain)
         // 装备:最多实际生成 6 件,其余折算为器灵尘(掉落数与在线同源 ——
-        // 在线 afterWin 把 mode×regReward 折进 rewardMult,离线同乘模式倍率 × 事件加丰 × 福缘)
-        const equipCount = Math.round(wins * EQUIP_DROP_CHANCE * modeDef.rewardMult * regionEventReward * (1 + modOf(mods, 'dropRate')) * doubleMult)
+        // 在线 afterWin 把 mode×regReward 折进 rewardMult,离线同乘模式倍率 × 事件加丰 × 福缘)。
+        // 每场概率同样吃在线那道封顶(EQUIP_DROP_CHANCE_CAP):此前离线期望式不夹取,
+        // 长线云游×区域加丰×掉落词条叠过 0.9 时,离线按超顶值计、在线每场封顶,期望分叉。
+        const equipChance = Math.min(
+          EQUIP_DROP_CHANCE_CAP,
+          EQUIP_DROP_CHANCE * modeDef.rewardMult * regionEventReward * (1 + modOf(mods, 'dropRate'))
+        )
+        const equipCount = Math.round(wins * equipChance * doubleMult)
         const realCount = Math.min(6, equipCount)
         for (let i = 0; i < realCount; i += 1) {
           // 灵兽性格同样管离线掉落:贪宝更易稀出,谨慎稍稍寻常(与在线 afterWin 同源)

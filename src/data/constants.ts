@@ -464,6 +464,15 @@ export const QUALITY_WEIGHTS = [5000, 3000, 1500, 400, 80, 15, 2.5, 0.5, 0.05] a
 /** 层级每 +1,高品质权重乘数 */
 export const QUALITY_TIER_SHIFT = 1.18
 export const EQUIP_DROP_CHANCE = 0.3
+/**
+ * 每场装备掉落概率的**同一封顶**(0.9)。
+ *
+ * 在线 afterWin 从前内联 `Math.min(0.9, equipChance)`,离线 settleOffline 的
+ * 期望式却从不夹取 —— 长线云游(×2.4)×区域加丰(商队 1.25/妖潮 1.2)×掉落词条
+ * 叠起来 equipChance 会越过 0.9,在线每场封顶、离线仍按超顶值计,
+ * 同一本世同一地界的装备期望系统性分叉(HYP-015 家族)。收进这里:两处同读这一枚。
+ */
+export const EQUIP_DROP_CHANCE_CAP = 0.9
 export const PILL_DROP_CHANCE = 0.08
 /**
  * 双丹(一炉得二)概率的**同一封顶**(0.8)。

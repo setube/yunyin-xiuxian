@@ -16,6 +16,7 @@ import {
   ARTIFACT_DROP_CHANCE,
   BATTLE_EXP_SECS,
   EQUIP_DROP_CHANCE,
+  EQUIP_DROP_CHANCE_CAP,
   HERB_DROP_CHANCE,
   INSTANT_EXP_LAYER_CAP,
   ORE_DROP_CHANCE,
@@ -229,7 +230,7 @@ export function randomDropArtifact(tier: number): string | null {
 /**
  * 概率输入钳到 [0,1]:rng.chance 不钳制(rand()<p),法宝 ×(isBoss?6:1)×(1+luck)、
  * doubleDropRate、书页/丹药倍率堆叠出界时,>1 会变成"必然掉落"、<0 会"永不掉落"。
- * 此处与 equipChance 的 Math.min(0.9, ...) 同一纪律:概率在进判定前先归一
+ * 此处与 equipChance 的 Math.min(EQUIP_DROP_CHANCE_CAP, ...) 同一纪律:概率在进判定前先归一
  * (capChance 取 statsCalc 唯一一份,掉落侧与 combat 各机关共用)。
  */
 
@@ -289,7 +290,7 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
   const luck = modOf(mods, 'luck') + personalityEffects(player.petId).dropLuck
   const equipChance = EQUIP_DROP_CHANCE * rewardMult * (1 + modOf(mods, 'dropRate')) * (isBoss ? 2.5 : 1)
   for (let i = 0; i < doubled; i += 1) {
-    if (rng.chance(Math.min(0.9, equipChance)) || (isBoss && i === 0)) {
+    if (rng.chance(Math.min(EQUIP_DROP_CHANCE_CAP, equipChance)) || (isBoss && i === 0)) {
       // 普通战不传品质下限:传了(哪怕是 0)就算「显式下限」,品质窗口整个失效 ——
       // 在线因此比离线、比审计多掉一截低阶高品。只有首领是剧情给的例外
       const inst = generateEquipment(tier, rng, isBoss ? { luck, minQualityRank: 1 } : { luck })
