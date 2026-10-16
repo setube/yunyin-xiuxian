@@ -79,24 +79,31 @@
 
       <!-- 交割清单:带走什么、放下什么 —— 与 core/samsaraAudit 的继承表同源,不另写一份 -->
       <div class="mt-3 rounded-lg border border-ink/15 px-3 py-2">
-        <p class="text-[10px] text-ink-faint">此生交割 —— 留下的是「我是谁」,放下的是「我拥有多少」</p>
+        <p class="text-[10px] text-ink-faint">此生交割 —— 留下的是「我是谁」,放下的是「我拥有多少」 · 点一枚看取舍</p>
         <div v-for="g in heritageGroups()" :key="g.mode" class="mt-1.5">
           <p class="text-[11px]" :class="g.mode === 'reset' ? 'text-ink-faint' : 'text-ink-soft'">
             {{ g.title }}
             <span class="ml-1 text-[10px] text-ink-faint">{{ g.rows.length }} 项</span>
           </p>
-          <p class="mt-0.5 flex flex-wrap gap-1">
-            <span
+          <div class="mt-0.5 flex flex-wrap gap-1">
+            <button
+              type="button"
               v-for="r in g.rows"
               :key="r.id"
               class="chip-ink !text-[10px]"
-              :class="g.mode === 'full' ? 'border-jade/50 text-jade' : g.mode === 'partial' ? 'border-gold-ink/50 text-gold-ink' : 'border-ink/20 text-ink-faint'"
+              :class="[
+                g.mode === 'full' ? 'border-jade/50 text-jade' : g.mode === 'partial' ? 'border-gold-ink/50 text-gold-ink' : 'border-ink/20 text-ink-faint',
+                detailId === r.id ? 'ring-1 ring-current' : ''
+              ]"
+              :aria-pressed="detailId === r.id"
               :title="r.detail"
+              @click="detailId = detailId === r.id ? null : r.id"
             >
               {{ r.name }}
-            </span>
-          </p>
+            </button>
+          </div>
         </div>
+        <p v-if="detailRow" class="mt-2 text-[10px] leading-relaxed text-ink-soft tabular">{{ detailRow.name }} · {{ detailRow.detail }}</p>
       </div>
     </div>
     <template #footer>
@@ -212,6 +219,16 @@
   const chosen = ref<string | null>(null)
   const theme = ref<string | null>(null)
   const step = ref<'review' | 'next'>('review')
+  // 交割清单「点一枚看取舍」:detail 只 hover 可见,移动端读不到这全屏唯一的关键信息
+  const detailId = ref<string | null>(null)
+  const detailRow = computed(() => {
+    if (!detailId.value) return null
+    for (const g of heritageGroups()) {
+      const r = g.rows.find(r => r.id === detailId.value)
+      if (r) return r
+    }
+    return null
+  })
 
   const view = computed(() => ui.reincarnation)
   const reviewTheme = computed(() => (view.value?.review.themeId ? lifeThemeDef(view.value.review.themeId) : undefined))
