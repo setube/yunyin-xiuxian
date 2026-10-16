@@ -87,9 +87,9 @@
           </p>
           <div class="mt-0.5 flex flex-wrap gap-1">
             <button
-              type="button"
               v-for="r in g.rows"
               :key="r.id"
+              type="button"
               class="chip-ink !text-[10px]"
               :class="[
                 g.mode === 'full' ? 'border-jade/50 text-jade' : g.mode === 'partial' ? 'border-gold-ink/50 text-gold-ink' : 'border-ink/20 text-ink-faint',

@@ -13,7 +13,9 @@
       </div>
       <p class="mt-2 text-[12px] leading-relaxed text-ink-faint">{{ def.desc }}</p>
       <!-- 参悟门槛与藏经阁习得同源:minRealm ≤ major+1 已在池内(超前一层设计,spec 钉死),仅当再高一层的真参悟不到时才提示 -->
-      <p v-if="!learned && def.minRealm > player.major + 1" class="mt-1 text-[11px] text-cinnabar">需更高境界方可参悟其精义</p>
+      <p v-if="!learned && def.minRealm > player.major + 1" class="mt-1 text-[11px] text-cinnabar">
+        需 {{ REALMS[def.minRealm]?.name ?? '更高' }} 境方可参悟其精义
+      </p>
       <div class="ink-divider my-3" />
       <template v-if="learned">
         <div class="space-y-1.5">
@@ -121,6 +123,7 @@
   import { computed, ref, watch } from 'vue'
   import { useUiStore } from '@/stores/ui'
   import { useCultivationStore } from '@/stores/cultivation'
+  import { REALMS } from '@/data/realms'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'

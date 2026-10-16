@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <InkTabs v-model="tab" :tabs="[{ id: 'buy', label: '购' }, { id: 'sell', label: '售' }, { id: 'bounty', label: '悬赏' }]" />
+    <InkTabs v-model="tab" :tabs="tabs" />
 
     <!-- 购入货架 -->
     <section v-if="tab === 'buy'">
@@ -404,6 +404,12 @@
       .sort((a, b) => a.idx - b.idx)
       .map(s => renderBounty(s))
   )
+  // 逛「购/售」时有一单可交,「悬赏」签就该亮圆点(与 claimOne 的 ready 同源)
+  const tabs = computed<readonly { id: 'buy' | 'sell' | 'bounty'; label: string; dot?: boolean }[]>(() => [
+    { id: 'buy', label: '购' },
+    { id: 'sell', label: '售' },
+    { id: 'bounty', label: '悬赏', dot: bountyList.value.some(b => !b.claimed && b.ready) }
+  ])
 
   interface BountyView {
     idx: number

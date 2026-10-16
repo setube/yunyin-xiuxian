@@ -1,7 +1,7 @@
 <template>
   <div class="stagger-in px-4 pb-6 pt-4">
     <!-- 页签 -->
-    <InkTabs v-model="tab" :tabs="TABS" />
+    <InkTabs v-model="tab" :tabs="tabs" />
 
     <!-- 装备:部位槽,点击唤起部位列表 -->
     <template v-if="tab === 'equip'">
@@ -837,6 +837,10 @@
         const cb = b.plan.rounds > 0 ? 1 : 0
         return cb - ca || a.able.rank - b.able.rank
       })
+  )
+  // 闲置在「装备」页时,有一味现在能开炉就该在「丹药」签上亮圆点(与结算同源,不必进页)
+  const tabs = computed<readonly { id: Tab; label: string; dot?: boolean }[]>(() =>
+    TABS.map(t => (t.id === 'pill' ? { ...t, dot: recipes.value.some(r => r.plan.rounds > 0) } : t))
   )
   /** 「炼满」二步确认态:谁不按常量的炉数,一眼先交代总账 */
   const pillFullId = ref<string | null>(null)
