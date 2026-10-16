@@ -56,6 +56,25 @@ export interface ReforgeCost {
 export const AUTO_REFORGE_MAX_TARGETS = 3
 
 /**
+ * 自动重铸**一次最多洗多少次** —— 上限只此一处。
+ *
+ * 从前这个 500 有三份:输入框的 `max`、执行路径的 `Math.min(500, …)`、
+ * 以及确认前的「至多花销」预览(它压根没夹取)。手输 800 时,预览按 800 报花销、
+ * 执行只洗 500 —— 玩家按着虚高的账做决定,而实扣又对不上。
+ * 预览、执行与输入的 min/max 一律走 autoReforgeBudget()。
+ */
+export const AUTO_REFORGE_MAX_BUDGET = 500
+
+/**
+ * 自动重铸预算归一:非有限/缺省回落 1(与旧执行路径 `Math.floor(x || 0)` → 夹到 1 同义),
+ * 再夹到 [1, AUTO_REFORGE_MAX_BUDGET]。预览与执行同走这一处,不再各夹各的。
+ */
+export function autoReforgeBudget(raw: number): number {
+  const n = Number.isFinite(raw) ? Math.floor(raw) : 0
+  return Math.min(AUTO_REFORGE_MAX_BUDGET, Math.max(1, n))
+}
+
+/**
  * 重铸成本:灵石 = stoneByTier(阶数) × (1 + 封存数 × REFORGE_SEAL_LOAD);
  * 器灵尘 = REFORGE_DUST_BASE × (1 + 封存数)。
  *

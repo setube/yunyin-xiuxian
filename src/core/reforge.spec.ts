@@ -15,6 +15,7 @@ import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import { reforgeCost, reforgeEquipment, reforgeableAffixIds, sealCapacity, sealCost, sealAffix, unsealAffix } from './reforge'
 import { REFORGE_DUST_BASE, REFORGE_SEAL_LOAD, REFORGE_STONE_BASE } from '@/data/constants'
+import { AUTO_REFORGE_MAX_BUDGET, autoReforgeBudget } from './reforge'
 import { qualityDef } from '@/data/qualities'
 import { rng } from '@/utils/random'
 import { useInventoryStore } from '@/stores/inventory'
@@ -260,5 +261,41 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     expect(dialog, '上限应读 qualityDef(...).affixes[1]').toContain('qualityDef(inst.value.quality).affixes[1]')
     expect(dialog, '封存上限应读 sealCapacity(与判定同一处)').toContain('sealCapacity(')
     expect(dialog, '不该再出现「重铸次数 x/10」这类写死的分母').not.toMatch(/重铸次数\s*\{\{/)
+  })
+
+  /**
+   * 自动重铸的预算上限只许有一处(AUTO_REFORGE_MAX_BUDGET)。
+   *
+   * 从前 500 有三份:输入框 `max="500"`、执行路径 `Math.min(500, …)`、
+   * 以及「至多花销」预览(它没夹取)。手输 800 → 预览按 800 报、执行只洗 500,
+   * 玩家按虚高的账做决定。故障注入:把预览改回用 autoBudget 原值 → 末条红。
+   */
+  it('自动重铸预算:上限单源,预览与执行都走 autoReforgeBudget', () => {
+    expect(dialog, '输入框上限读具名常量,不写死 500').toContain(':max="AUTO_REFORGE_MAX_BUDGET"')
+    expect(dialog, '执行路径走归一 helper').toContain('autoReforgeBudget(autoBudget.value)')
+    // 预览 computed(autoMaxCost)必须也用归一后的预算 —— 独立抓这一段,
+    // 别让「执行那行还在」把预览侧的漂移掩盖过去
+    const preview = dialog.slice(dialog.indexOf('const autoMaxCost'), dialog.indexOf('watch([autoTargets, autoBudget]'))
+    expect(preview, '预览须走 autoReforgeBudget,不拿 autoBudget 原值虚报花销').toContain(
+      'autoReforgeBudget(autoBudget.value)'
+    )
+    expect(preview, '预览不许直接把 autoBudget 原值当次数').not.toMatch(/Math\.max\(0,\s*autoBudget/)
+    // 归一 helper 内部也必须读具名常量,别在 core 里又内联一份 500
+    const core = readFileSync(resolve(__dirname, './reforge.ts'), 'utf8')
+      .split('\n')
+      .filter(line => !line.trim().startsWith('*') && !line.trim().startsWith('//'))
+      .join('\n')
+    expect(core, 'core 不许再内联 500 上限').not.toMatch(/Math\.min\(500/)
+    expect(core, '归一 helper 读具名常量').toContain('Math.min(AUTO_REFORGE_MAX_BUDGET')
+  })
+
+  it('autoReforgeBudget 归一:越界夹取、非有限回落 1、小数取整', () => {
+    expect(autoReforgeBudget(500)).toBe(500)
+    expect(autoReforgeBudget(800)).toBe(AUTO_REFORGE_MAX_BUDGET)
+    expect(autoReforgeBudget(0)).toBe(1)
+    expect(autoReforgeBudget(-5)).toBe(1)
+    expect(autoReforgeBudget(Number.NaN)).toBe(1)
+    expect(autoReforgeBudget(Number.POSITIVE_INFINITY)).toBe(1)
+    expect(autoReforgeBudget(12.9)).toBe(12)
   })
 })

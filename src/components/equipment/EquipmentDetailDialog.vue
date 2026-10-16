@@ -284,8 +284,8 @@
           <input
             v-model.number="autoBudget"
             type="number"
-            min="1"
-            max="500"
+            :min="1"
+            :max="AUTO_REFORGE_MAX_BUDGET"
             class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
           />
           <span class="text-[10px] text-ink-faint tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
@@ -433,7 +433,7 @@
   import { detectBuild } from '@/core/buildDetect'
   import { endgameUnlocked } from '@/core/endgameService'
   import { whatIfEquip, type WhatIfReport } from '@/core/lab'
-  import { autoReforge, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, unsealAffix, AUTO_REFORGE_MAX_TARGETS, type ReforgeTarget } from '@/core/reforge'
+  import { autoReforge, autoReforgeBudget, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, unsealAffix, AUTO_REFORGE_MAX_BUDGET, AUTO_REFORGE_MAX_TARGETS, type ReforgeTarget } from '@/core/reforge'
   import { AFFIXES, affixDef, affixFitBlock, affixesByRarity } from '@/data/affixes'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
@@ -601,7 +601,7 @@
     if (!inst.value) return
     autoArm.value = false
     const targets = autoTargets.value
-    const budget = Math.min(500, Math.max(1, Math.floor(autoBudget.value || 0)))
+    const budget = autoReforgeBudget(autoBudget.value)
     const out = autoReforge(inst.value.uid, targets, budget)
     const cost = `花 ${formatGN(out.stone)} · 尘×${out.dust}`
     // 「没洗到目标」不等于「没洗动」:每次重铸词条都尽数重掷,结账要报清现在这一身落在哪
@@ -790,7 +790,9 @@
   const autoMaxCost = computed(() => {
     const r = reforgeCostVal.value
     if (!r) return null
-    const n = Math.max(0, autoBudget.value || 0)
+    // 预览用**归一后的**预算 —— 与执行同一处(autoReforgeBudget),
+    // 手输 800 时预览与实洗都是 500,不再按 800 虚报花销
+    const n = autoReforgeBudget(autoBudget.value)
     return { stone: mulN(r.stone, n), dust: r.dust * n }
   })
   // 改目标/预算后动作不再是同一笔,确认态一并复位
