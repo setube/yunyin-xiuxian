@@ -2,7 +2,7 @@
  * 终局服务 —— 道途 / 天道熔炉 / 特殊世界远征 / 天道试炼 / 道痕
  */
 import type { ArtifactDef, CombatantSnap, CombatRules, DaoMark, DaoPathId } from '@/types'
-import { rng } from '@/utils/random'
+import { mulberry32, RandomService, rng } from '@/utils/random'
 import { formatGN } from '@/utils/format'
 import { artifactDef } from '@/data/artifacts'
 import { pactDef } from '@/data/pacts'
@@ -373,7 +373,9 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
   }
   const rules = mergeRules(currentDaoRules(), trial.rules)
   const perWin = endgame.daoPath === 'sword' ? SWORD_PER_WIN : endgame.daoPath === 'slaughter' ? SLAUGHTER_PER_WIN : undefined
-  const report = runGauntlet(buildPlayerSnap(true), foes, rules, trial.healBetweenPct, rng, { perWinPlayerMods: perWin })
+  // 试炼押入场费(道源),清败须可复现 —— 用按试炼定死的种子,不随全局 rng 被别的动作推进而变
+  const trialRng = new RandomService(mulberry32(0x5eed ^ (trial.id.charCodeAt(0) * 2654435761)))
+  const report = runGauntlet(buildPlayerSnap(true), foes, rules, trial.healBetweenPct, trialRng, { perWinPlayerMods: perWin })
 
   let reward = 0
   if (report.cleared) {
