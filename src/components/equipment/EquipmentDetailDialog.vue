@@ -289,14 +289,25 @@
             class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
           />
           <span class="text-[10px] text-ink-faint tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
-          <button
-            class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
-            :disabled="!autoTargets.length"
-            :title="autoTargets.length ? undefined : '先点一条要洗到的词条'"
-            @click="runAutoReforge"
-          >
-            开 洗
-          </button>
+          <template v-if="!autoArm">
+            <button
+              class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
+              :disabled="!autoTargets.length"
+              :title="autoTargets.length ? undefined : '先点一条要洗到的词条'"
+              @click="autoArm = true"
+            >
+              开 洗
+            </button>
+          </template>
+          <template v-else>
+            <button
+              class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
+              @click="runAutoReforge"
+            >
+              洗?至多 灵石{{ autoMaxCost ? formatGN(autoMaxCost.stone) : '0' }}·尘×{{ autoMaxCost?.dust ?? 0 }}
+            </button>
+            <button class="btn-ghost !px-2.5 !py-1.5 !text-[11px] text-ink-faint" @click="autoArm = false">再想想</button>
+          </template>
         </div>
       </div>
     </div>
@@ -314,15 +325,27 @@
           <div class="flex gap-2 text-[11px]">
             <!-- 重铸是装备培养高频动作:!py-1 盒高仅 27px,低于 28px 可点阈值(弹窗内控件,巡页判据按「恰好打开的弹窗」才量得到它)。
                  !py-2 抬到 35px;封存格是静态展示,但同排按钮提高后也跟着对齐,视觉仍是一整行 -->
-            <button v-if="reforgeCostVal" class="btn-ghost flex-1 !py-2" @click="doReforge">
-              重铸词条
-              <span class="ml-1 tabular text-[10px] text-ink-faint">
-                {{ formatGN(reforgeCostVal.stone) }} · 尘×{{ reforgeCostVal.dust }}
-              </span>
-            </button>
-            <div v-if="sealCostVal" class="flex flex-1 items-center justify-center rounded-md border border-azure/20 bg-azure/5 px-2 py-2 text-azure">
-              封存一词 {{ formatGN(sealCostVal) }}
-            </div>
+            <template v-if="reforgeArm !== inst?.uid">
+              <button v-if="reforgeCostVal" class="btn-ghost flex-1 !py-2" @click="reforgeArm = inst?.uid ?? null">
+                重铸词条
+                <span class="ml-1 tabular text-[10px] text-ink-faint">
+                  {{ formatGN(reforgeCostVal.stone) }} · 尘×{{ reforgeCostVal.dust }}
+                </span>
+              </button>
+              <div v-if="sealCostVal" class="flex flex-1 items-center justify-center rounded-md border border-azure/20 bg-azure/5 px-2 py-2 text-azure">
+                封存一词 {{ formatGN(sealCostVal) }}
+              </div>
+            </template>
+            <template v-else>
+              <button
+                class="btn-seal flex-1 !py-2"
+                title="条数与数值一并重掷,封存的不动"
+                @click="doReforge"
+              >
+                重掷?{{ formatGN(reforgeCostVal?.stone ?? 0) }} · 尘×{{ reforgeCostVal?.dust ?? 0 }}
+              </button>
+              <button class="btn-ghost flex-1 !py-2 text-ink-faint" @click="reforgeArm = null">再想想</button>
+            </template>
           </div>
           <!--
             重铸到底做什么,得在按下之前说清:条数与数值一并重掷(封存的不动),
@@ -415,7 +438,7 @@
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
   import { formatGN, formatNum } from '@/utils/format'
-  import { gnZero, isZero, sub } from '@/utils/gnum'
+  import { gnZero, isZero, mulN, sub } from '@/utils/gnum'
   import { playSfx } from '@/core/audio'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/ui/statNames'
@@ -576,6 +599,7 @@
 
   function runAutoReforge(): void {
     if (!inst.value) return
+    autoArm.value = false
     const targets = autoTargets.value
     const budget = Math.min(500, Math.max(1, Math.floor(autoBudget.value || 0)))
     const out = autoReforge(inst.value.uid, targets, budget)
@@ -759,6 +783,20 @@
   }
 
   const decomposeArm = ref<string | null>(null)
+  // 重铸一次就重掷所有未封存词条(条数+数值),成本不低、可能盖掉好roll —— 与分解同款二步确认
+  const reforgeArm = ref<string | null>(null)
+  // 自动重铸一键烧到 autoBudget(默认 50,可 500)次 —— 比连炼/炼满还大的批量,同款二步确认 + 先亮至多总花销
+  const autoArm = ref(false)
+  const autoMaxCost = computed(() => {
+    const r = reforgeCostVal.value
+    if (!r) return null
+    const n = Math.max(0, autoBudget.value || 0)
+    return { stone: mulN(r.stone, n), dust: r.dust * n }
+  })
+  // 改目标/预算后动作不再是同一笔,确认态一并复位
+  watch([autoTargets, autoBudget], () => {
+    autoArm.value = false
+  })
 
   function doDecompose(): void {
     if (!inst.value) return
