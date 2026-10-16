@@ -266,8 +266,19 @@
               <span v-for="m in dailyMutators" :key="m!.id">◇ {{ m!.name }}:{{ m!.text }}</span>
               <span v-if="dailyPact" class="text-cinnabar">契·{{ dailyPact.name }}</span>
             </p>
-            <button class="btn-seal mt-2 w-full !py-2 !text-[12px]" :disabled="endgame.dailyDoneDay === daily.day" @click="goDaily">
-              {{ endgame.dailyDoneDay === daily.day ? '今日已成,明日再会' : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})` }}
+            <button
+              class="btn-seal mt-2 w-full !py-2 !text-[12px]"
+              :disabled="endgame.dailyDoneDay === daily.day || (endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST)"
+              :title="endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST ? '道源不足' : undefined"
+              @click="goDaily"
+            >
+              {{
+                endgame.dailyDoneDay === daily.day
+                  ? '今日已成,明日再会'
+                  : endgame.daoSource < CHALLENGE_ENTRY_COST
+                    ? `应 战(道源不足:需 ${CHALLENGE_ENTRY_COST},余 ${formatNum(endgame.daoSource)})`
+                    : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+              }}
             </button>
           </div>
         </section>
@@ -279,8 +290,17 @@
             <template v-if="mutationDraw.length">
               <p v-for="m in mutationRows" :key="m!.id" class="text-[11px] text-violet-ink">◇ {{ m!.name }}:{{ m!.text }}</p>
               <div class="mt-2 flex gap-2">
-                <button class="btn-seal flex-1 !py-2 !text-[12px]" @click="goMutation">
-                  应 战(道源 {{ MUTATION_ENTRY_COST }} · 余 {{ formatNum(endgame.daoSource) }} · 破解得 {{ MUTATION_BASE_REWARD }})
+                <button
+                  class="btn-seal flex-1 !py-2 !text-[12px]"
+                  :disabled="endgame.daoSource < MUTATION_ENTRY_COST"
+                  :title="endgame.daoSource < MUTATION_ENTRY_COST ? '道源不足' : undefined"
+                  @click="goMutation"
+                >
+                  {{
+                    endgame.daoSource < MUTATION_ENTRY_COST
+                      ? `应 战(道源不足:需 ${MUTATION_ENTRY_COST},余 ${formatNum(endgame.daoSource)})`
+                      : `应 战(道源 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)} · 破解得 ${MUTATION_BASE_REWARD})`
+                  }}
                 </button>
                 <button class="btn-ghost !px-3 !text-[12px]" @click="mutationDraw = rollMutators()">再探</button>
               </div>
@@ -405,8 +425,17 @@
             </div>
             <div class="mt-2 flex gap-2">
               <button class="btn-ghost flex-1 !py-2 !text-[12px]" @click="doVerify">验 约</button>
-              <button class="btn-seal flex-1 !py-2 !text-[12px]" :disabled="!challengeVerdict?.ok || run !== null" @click="doUndertake">
-                立 约(道源 {{ CHALLENGE_ENTRY_COST }} · 余 {{ formatNum(endgame.daoSource) }})
+              <button
+                class="btn-seal flex-1 !py-2 !text-[12px]"
+                :disabled="!challengeVerdict?.ok || run !== null || endgame.daoSource < CHALLENGE_ENTRY_COST"
+                :title="endgame.daoSource < CHALLENGE_ENTRY_COST ? '道源不足' : undefined"
+                @click="doUndertake"
+              >
+                {{
+                  endgame.daoSource < CHALLENGE_ENTRY_COST
+                    ? `立 约(道源不足:需 ${CHALLENGE_ENTRY_COST},余 ${formatNum(endgame.daoSource)})`
+                    : `立 约(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+                }}
               </button>
             </div>
           </div>
