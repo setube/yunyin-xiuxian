@@ -115,6 +115,7 @@
               class="whitespace-nowrap"
             > · 玄铁 {{ plan.ore }} 块</span>
           </span>
+          <span v-if="batchGain" class="mt-0.5 block text-[9px] text-jade tabular">累积净得:{{ batchGain }}</span>
         </p>
         <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = true">连 升</button>
       </template>
@@ -198,20 +199,32 @@
     return modsText(props.def.mods(level.value))
   })
 
-  /**
-   * 升级净得:本级与下一级词条的逐键差。买前把「再进 = 多拿什么」摊在眼前;
-   * 满了或不可点时返回空,免得对画不了的饼招手。
-   */
-  const nextGain = computed(() => {
-    if (!props.def.mods || level.value >= props.def.maxLevel || !info.value.canUpgrade) return ''
-    const cur: StatMods = level.value > 0 ? props.def.mods(level.value) : {}
-    const nxt = props.def.mods(level.value + 1)
+  /** 词条逐键差:第 from 级到第 to 级的净得。mods 是累计值,相减即该段增量的和 */
+  function deltaModsText(from: number, to: number): string {
+    if (!props.def.mods) return ''
+    const cur: StatMods = from > 0 ? props.def.mods(from) : {}
+    const nxt = props.def.mods(to)
     const delta: StatMods = {}
     for (const k of Object.keys(nxt) as (keyof StatMods)[]) {
       const diff = (nxt[k] ?? 0) - (cur[k] ?? 0)
       if (typeof diff === 'number' && diff !== 0) delta[k] = diff
     }
     return modsText(delta)
+  }
+
+  /**
+   * 升级净得:本级与下一级词条的逐键差。买前把「再进 = 多拿什么」摊在眼前;
+   * 满了或不可点时返回空,免得对画不了的饼招手。
+   */
+  const nextGain = computed(() => {
+    if (!props.def.mods || level.value >= props.def.maxLevel || !info.value.canUpgrade) return ''
+    return deltaModsText(level.value, level.value + 1)
+  })
+
+  /** 连升整段的累积净得:单步预告只讲「再升一层」,连升 N 级得的得加起来才是那笔总账 */
+  const batchGain = computed(() => {
+    if (!props.def.mods || !plan.value || plan.value.levels < 2) return ''
+    return deltaModsText(level.value, level.value + plan.value.levels)
   })
 
   // 升级落成:整卡金光一闪(动画播完自清);连升的确认态一并复位
