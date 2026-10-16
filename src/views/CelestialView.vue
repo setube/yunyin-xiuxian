@@ -406,7 +406,7 @@
             <div class="mt-2 flex gap-2">
               <button class="btn-ghost flex-1 !py-2 !text-[12px]" @click="doVerify">验 约</button>
               <button class="btn-seal flex-1 !py-2 !text-[12px]" :disabled="!challengeVerdict?.ok || run !== null" @click="doUndertake">
-                立 约(道源 {{ CHALLENGE_ENTRY_COST }})
+                立 约(道源 {{ CHALLENGE_ENTRY_COST }} · 余 {{ formatNum(endgame.daoSource) }})
               </button>
             </div>
           </div>
