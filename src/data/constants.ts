@@ -168,6 +168,15 @@ export const TRIB_DEF_RESIST_CAP = 0.18
 export const TRIB_HP_GUARD_PER_SURPLUS = 0.04
 export const TRIB_HP_GUARD_CAP = 0.35
 /**
+ * 天劫减伤与濒危减伤的**同一封顶**(0.6)。
+ *
+ * 从前 0.6 在三处各写一遍:waveDamage 的减伤、waveDamage 的濒危减伤、
+ * 以及渡劫台账(CultivationView)再抄一次 —— 常数一改就分叉,而界面上那本账
+ * 就是玩家判断「这一劫我扛不扛得住」的唯一读数。收进这里 + tribulationDecision
+ * 的两个 helper,结算与台账同源。
+ */
+export const TRIB_REDUCTION_CAP = 0.6
+/**
  * 天劫难度的境界封顶点(扩界)。
  *
  * 伤害与波次原为 = 0.15 + major×0.02(逐境) + wave×0.03(逐波),波次 = 3 + major,

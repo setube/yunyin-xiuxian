@@ -519,6 +519,7 @@
     statFoldAt,
     sustainScore,
     tribReduction,
+    tribLowHpReduction,
     tribulationWaveSpan,
     verdictLabel,
     type TribulationPlan
@@ -701,8 +702,9 @@
     const relief = def ? currentTribulationRelief(def.id) : undefined
     // Same cap and same fold as waveDamage: reduction 0.6, resist 0.8, linggen reductionToResist.
     const reduction = tribReduction(mods)
-    // 濒危减伤(背水/涅槃词条):结算在气血垂危(<30%)时按同款封顶再削一波,账上得看得见
-    const lowHpReduction = Math.min(0.6, modOf(mods, 'lowHpReduction'))
+    // 濒危减伤(背水/涅槃词条):结算在气血垂危(<LOW_HP_THRESHOLD)时按同款封顶再削一波,账上得看得见
+    // 封顶与结算同源(tribLowHpReduction),不在界面里再抄一遍 0.6
+    const lowHpReduction = tribLowHpReduction(mods)
     return {
       resist: currentTribResist(mods, relief, stat),
       statResist: stat.resist,

@@ -29,7 +29,9 @@ import {
   TRIB_DEF_RESIST_CAP,
   TRIB_DEF_RESIST_PER_SURPLUS,
   TRIB_HP_GUARD_CAP,
-  TRIB_HP_GUARD_PER_SURPLUS
+  TRIB_HP_GUARD_PER_SURPLUS,
+  TRIB_REDUCTION_CAP,
+  LOW_HP_THRESHOLD
 } from '@/data/constants'
 import { realmScale, tribulationWaveDamage } from './formulas'
 import { isWorldEntry } from '@/data/realms'
@@ -286,7 +288,17 @@ export function tribulationWaveSpan(
 
 /** 天劫减伤(0.6 上限)—— 结算与 UI 台账共用的唯一口径,防跨层漂移 */
 export function tribReduction(mods: StatMods): number {
-  return Math.min(0.6, modOf(mods, 'damageReduction'))
+  return Math.min(TRIB_REDUCTION_CAP, modOf(mods, 'damageReduction'))
+}
+
+/**
+ * 濒危减伤(背水/涅槃词条)的**唯一口径** —— 封顶与结算、UI 台账共用一处。
+ *
+ * 从前这个 `Math.min(0.6, …)` 在 waveDamage 与 CultivationView 的渡劫台账里各写一遍:
+ * 封顶值一改,结算与台账就分叉,而玩家正是拿台账上那个数决定"这一劫扛不扛得住"。
+ */
+export function tribLowHpReduction(mods: StatMods): number {
+  return Math.min(TRIB_REDUCTION_CAP, modOf(mods, 'lowHpReduction'))
 }
 
 /** 折算后天劫抗性(0.8 上限):减伤按灵根亲和折一部分为抗性,与词条抗性同项同上限 */
@@ -313,13 +325,13 @@ export function waveDamage(
   // 厚土分担天罚:减伤按灵根亲和折算一部分为天劫抗性(无减伤者折算为零)
   // 三维折算(防御→抗性)与词条抗性同处一项、同受 0.8 上限:血厚防高者由此硬抗一部分
   const resist = currentTribResist(mods, relief, stat)
-  const lowHpRed = Math.min(0.6, modOf(mods, 'lowHpReduction'))
+  const lowHpRed = tribLowHpReduction(mods)
   const waves = tribulationWaves(targetMajor)
   let dmg = tribulationWaveDamage(targetMajor, wave, resist) * (1 - reduction) * waveMultiplier(def, wave, waves, relief)
   // 裂魂:攻势足者可硬生生削去几分劫威(减免按 prep.burst 星级查表,UI 星级即结算输入)
   if (def.id === 'soulrend') dmg *= 1 - SOULREND_BURST_RELIEF[effectiveBurstTier(mods, relief)]!
   // 濒危减伤(背水路数)在气血垂危时同样护持渡劫
-  if (hpLeft < 0.3) dmg *= 1 - lowHpRed
+  if (hpLeft < LOW_HP_THRESHOLD) dmg *= 1 - lowHpRed
   // 天时(雷鸣日渡劫更难,tribulationMult>1):预览与结算共用同一乘数,审计基线不传则默认 1
   dmg *= weatherMult
   return dmg

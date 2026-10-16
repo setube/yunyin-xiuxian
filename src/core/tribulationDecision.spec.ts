@@ -6,18 +6,22 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import {
   buildTribulationPlan,
   rollTribulation,
   verdictLabel,
   statGuardOf,
   tribulationWaveSpan,
+  tribLowHpReduction,
   NO_STAT_GUARD,
   traceTribulation,
   waveDamage,
   effectiveBurstTier
 } from './tribulationDecision'
 import { baseCombatStats, tribulationWaveDamage } from './formulas'
+import { LOW_HP_THRESHOLD, TRIB_REDUCTION_CAP } from '@/data/constants'
 import { toNum } from '@/utils/gnum'
 import { RandomService, mulberry32 } from '@/utils/random'
 import { NO_RELIEF } from '@/data/linggenAffinity'
@@ -285,5 +289,42 @@ describe('裂魂爆发星(连灵根/凶兆加持)', () => {
     // 无攻势者拿到加持推不动零(不白送裂魂减免)
     const bare = buildTribulationPlan(1, {}, 'soulrend', fire)
     expect(bare.prep.burst).toBe(0)
+  })
+})
+
+describe('濒危减伤/低血阈值 · 单一事实源(结算与台账不许各写一遍)', () => {
+  it('封顶取自 TRIB_REDUCTION_CAP:tribLowHpReduction 与 waveDamage 吃同一个数', () => {
+    // 故障注入:把 waveDamage 里的 lowHpRed 换回写死 0.6,或把 helper 的封顶改成别的值,
+    // 下面「恰为 ×(1-封顶)」立刻红。
+    const capped = { lowHpReduction: 5 } as StatMods
+    expect(tribLowHpReduction(capped)).toBe(TRIB_REDUCTION_CAP)
+    const def = tribulationDef('thunder')!
+    const none = waveDamage(def, {}, 1, 1, 0.1, NO_RELIEF, 1, NO_STAT_GUARD)
+    const low = waveDamage(def, capped, 1, 1, 0.1, NO_RELIEF, 1, NO_STAT_GUARD)
+    expect(low, '结算必须吃到与 helper 同源的封顶').toBeCloseTo(none * (1 - TRIB_REDUCTION_CAP), 9)
+  })
+
+  it('低血判定线是 LOW_HP_THRESHOLD,不是裸字面量', () => {
+    // 阈值恰好落在 LOW_HP_THRESHOLD 上:低于它削一波,不低于它不削 ——
+    // 若源码把这条线写回裸 0.3,常量一改(界面词条按 LOW_HP_THRESHOLD 格式化)就分叉
+    const def = tribulationDef('thunder')!
+    const mods = { lowHpReduction: 0.4 } as StatMods
+    const justAt = waveDamage(def, mods, 1, 1, LOW_HP_THRESHOLD, NO_RELIEF, 1, NO_STAT_GUARD)
+    const justBelow = waveDamage(def, mods, 1, 1, LOW_HP_THRESHOLD - 0.01, NO_RELIEF, 1, NO_STAT_GUARD)
+    const bare = waveDamage(def, {}, 1, 1, LOW_HP_THRESHOLD, NO_RELIEF, 1, NO_STAT_GUARD)
+    expect(justAt, '恰在线上不触发濒危减伤').toBeCloseTo(bare, 9)
+    expect(justBelow, '越线即触发(与结算同一条阈值)').toBeLessThan(bare)
+  })
+
+  it('结算与 UI 台账读同一份封顶:0.6 不在 waveDamage / CultivationView 里各写', () => {
+    const core = readFileSync(resolve(__dirname, './tribulationDecision.ts'), 'utf8')
+    expect(core, 'waveDamage 的濒危减伤须走 tribLowHpReduction,不再内联 0.6').not.toContain(
+      "Math.min(0.6, modOf(mods, 'lowHpReduction'))"
+    )
+    expect(core, '低血判定线须引 LOW_HP_THRESHOLD,不得写死 hpLeft < 0.3').not.toContain('hpLeft < 0.3')
+    expect(core).toContain('LOW_HP_THRESHOLD')
+    const view = readFileSync(resolve(__dirname, '../views/CultivationView.vue'), 'utf8')
+    expect(view, '台账不得再抄一遍 0.6 封顶').not.toContain("Math.min(0.6, modOf(mods, 'lowHpReduction'))")
+    expect(view, '台账须调结算同源的 tribLowHpReduction').toContain('tribLowHpReduction(mods)')
   })
 })
