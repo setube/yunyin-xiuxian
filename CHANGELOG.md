@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 修复:存档分片的**中文显示名清单**补上守门断言 —— `STORE_NAMES` 与 `PERSISTED_STORES` 并列却靠人工同步,新增一片持久化 (如 pacing / diag) 忘了登记名字,坏档提示 `STORE_NAMES[id] ?? id` 就把原始分片键直接甩给玩家;现断言「每片有中文名、且无清单外多余项」,两向故障注入均能抓。
 - 修复:自动重铸「至多花销」预览不再虚报 —— 上限 500 此前在输入框 `max`、执行路径、确认预览三处各写一份,且夹取只写在执行路径:手输 800 时预览按 800 报、执行只洗 500;现抽 `AUTO_REFORGE_MAX_BUDGET` 与 `autoReforgeBudget()`,三处同源。
 - 修复:炼丹**双丹**概率收成单一事实源 —— 封顶 0.8 此前在展示路径(craftability.bonusChanceWithYield)与结算路径(pillService.craftPill)各写一遍,结算还自行重算而非复用展示值,常数一改「丹炉上写的双丹概率」就与实掷分叉;现抽 `PILL_SECOND_CAP`,结算直接吃 craftability 算好的那个数。
 - 修复:渡劫账的**濒危减伤**与结算收进单一事实源 —— 封顶 0.6 此前在 `waveDamage`、渡劫台账(CultivationView)各写一遍,低血判定线还在结算里写死裸 `0.3`(而非 `LOW_HP_THRESHOLD`);现抽出 `tribLowHpReduction` 与 `TRIB_REDUCTION_CAP`,渠道一改不再让「账上写的」与「结算吃的」分叉。

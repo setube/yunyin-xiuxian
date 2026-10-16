@@ -28,6 +28,7 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import {
   PERSISTED_STORES,
   SAVE_VERSION,
+  STORE_NAMES,
   clearAllSave,
   dropPendingWrites,
   flushSaveWrites,
@@ -106,6 +107,24 @@ describe('存档往返 · 分片清单从源码倒推', () => {
     clearAllSave()
     const leftover = PERSISTED_STORES.filter(id => localStorage.getItem(storageKey(id)) !== null)
     expect(leftover, `清档后仍有残留:${leftover.join('、')}`).toEqual([])
+  })
+
+  /**
+   * 分片显示名(STORE_NAMES)也是清单的一部分,同样不许手工同步漏项。
+   *
+   * 损坏提示走 `STORE_NAMES[id] ?? id`:某一片没有中文名时,界面就把
+   * 原始分片键(pacing / diag 这种)直接甩给玩家。storage.ts 的注释写着
+   * 「清单改了这个也得跟着改」,但此前没有任何断言守住这件事 ——
+   * 新增一个持久化分片、忘了加名字,不会有任何提示,直到真出了坏档才发现。
+   *
+   * 故障注入:从 STORE_NAMES 删掉任一键 → 第一条红;加一个清单外的键 → 第二条红。
+   */
+  it('每个持久化分片都有中文显示名,清单外不得有多余名字', () => {
+    const missing = PERSISTED_STORES.filter(id => !(STORE_NAMES[id] ?? '').trim())
+    expect(missing, `这些分片没有中文名,损坏提示会把原始 id 甩给玩家:${missing.join('、')}`).toEqual([])
+    const known = new Set<string>(PERSISTED_STORES)
+    const extra = Object.keys(STORE_NAMES).filter(id => !known.has(id))
+    expect(extra, `STORE_NAMES 里列着并不持久化的分片,清单已经与代码脱节:${extra.join('、')}`).toEqual([])
   })
 })
 
