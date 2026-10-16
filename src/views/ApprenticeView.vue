@@ -56,9 +56,10 @@
               v-for="t in TASKS"
               :key="t.spec"
               class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
+              :title="t.desc"
               @click="dispatcher(a.uid, t.spec)"
             >
-              <GameIcon :name="t.icon" :size="12" />{{ t.name }}
+              <GameIcon :name="t.icon" :size="12" />{{ t.name }}<span class="ml-0.5 text-[9px] text-ink-faint">{{ Math.round(t.seconds / 60) }}分</span>
             </button>
             <span v-if="!a.busy" class="text-[10px] text-ink-faint"> · {{ a.talentNote }}</span>
           </div>

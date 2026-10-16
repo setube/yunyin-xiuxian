@@ -507,10 +507,10 @@
               <button
                 v-else-if="mark.cleared && mark.replay"
                 class="shrink-0 min-h-[28px] rounded border border-cinnabar/40 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
-                :title="`以今日之你重打此战,快过 ${mark.rounds} 回合即【胜于旧我】`"
+                title="以今日之你重打此战,快过旧我之回合即【胜于旧我】"
                 @click="rewriteConfirm = i"
               >
-                写(道源{{ REWRITE_ENTRY_COST }})
+                写(道源{{ REWRITE_ENTRY_COST }} · 破{{ mark.rounds }}回合)
               </button>
             </div>
           </div>
