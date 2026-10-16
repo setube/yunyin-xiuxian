@@ -290,6 +290,9 @@
         换伙伴的决定点在这里,把它的跟脚照实摊开(departButtonText 同表)
       -->
       <p v-if="petTripLine" class="mb-2 text-[10px] leading-relaxed text-violet-ink tabular">{{ petTripLine }}</p>
+      <p class="mb-2 text-[10px] leading-relaxed text-ink-faint tabular">
+        途中三档:奇缘 {{ tierOddsText('qiyuan', chainPending, departEventChance) }} · 机缘 {{ tierOddsText('jiyuan', chainPending, departEventChance) }} · 际遇 {{ tierOddsText('jingyu', chainPending, departEventChance) }}
+      </p>
       <p class="text-[12px] text-ink-faint">此行欲作何打算?</p>
       <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">行程论这一程走多久;「历练遇敌」只令同程妖踪更密,不能缩地成寸。</p>
       <div class="mt-3 space-y-2">
@@ -383,6 +386,9 @@
    * 那三成去了奇缘)。档位胶囊按当前状态显示,而不是报一组永远同时成立的数。
    */
   const chainPending = computed(() => pendingChainStages(player.major).length > 0)
+  // 出发前的当境三档实算率:与途中的「途中三档」同一条乘链(星象/福缘/区域事件 eventMult),
+  // 但按选中地域算 —— 决策点就该看见它,不必等上路才见
+  const departEventChance = computed(() => exploreEventChance(modeTarget.value?.id ?? '', player.finalStats.mods))
 
   /** 顶部链接的一句话:说清这一世是什么世界 */
   const worldBrief = computed(() => {
