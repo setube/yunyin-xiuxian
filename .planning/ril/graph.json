@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 258,
+  "round": 263,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-12T08:31:26+00:00",
+  "updated_at": "2026-10-16T07:31:08+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -286,7 +286,7 @@
       "version": 1,
       "created_at": "2026-09-09T12:53:18+00:00",
       "updated_at": "2026-09-09T12:53:18+00:00",
-      "touched_round": 180,
+      "touched_round": 262,
       "summary": "SettingsView/存档系统(导出/导入/重置)"
     },
     "ISS-012": {
@@ -448,7 +448,7 @@
       "version": 1,
       "created_at": "2026-09-09T14:59:19+00:00",
       "updated_at": "2026-09-09T14:59:19+00:00",
-      "touched_round": 158,
+      "touched_round": 259,
       "summary": "突破系统(breakthrough.ts + 突破准备数据)"
     },
     "ISS-017": {
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 230,
+      "touched_round": 263,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -1545,7 +1545,7 @@
       "version": 1,
       "created_at": "2026-09-11T02:43:18+00:00",
       "updated_at": "2026-09-11T02:43:18+00:00",
-      "touched_round": 230,
+      "touched_round": 263,
       "summary": "掉落/拾取系统(loot.ts + equipGen + smartKeep)"
     },
     "TASK-027": {
@@ -11958,7 +11958,7 @@
       "version": 1,
       "created_at": "2026-09-16T01:33:21+00:00",
       "updated_at": "2026-09-16T01:33:21+00:00",
-      "touched_round": 258,
+      "touched_round": 260,
       "summary": "src/core/pillService.ts + src/core/breakthrough.ts + src/core/save.ts(炼丹/突破/存档三条主干)"
     },
     "CHG-239": {
@@ -17343,6 +17343,460 @@
       "confidence": 1,
       "effort": 1,
       "summary": "功法 apex 修复:道祖本源经(src/data/gongfa.ts,R20 主修)cultivationSpeed base 0.44/0.055→0.50/0.06,apex 不再回退低于 混元无极经(R18);combat 字段未动"
+    },
+    "ISS-901": {
+      "id": "ISS-901",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-16T06:15:44+00:00",
+      "updated_at": "2026-10-16T07:31:07+00:00",
+      "touched_round": 263,
+      "summary": "渡劫减伤口径三处各写:waveDamage 硬编码 hpLeft<0.3(LOW_HP_THRESHOLD 的裸值)+ Math.min(0.6,lowHpReduction),CultivationView 台账再抄一遍 Math.min(0.6,modOf(...)) —— 同一封顶两个来源,常量一改就分叉"
+    },
+    "HYP-105": {
+      "id": "HYP-105",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:15:44+00:00",
+      "updated_at": "2026-10-16T06:15:44+00:00",
+      "touched_round": 259,
+      "confidence": 0.9,
+      "summary": "把 0.6 封顶与低血阈值收进 tribulationDecision 的单一 helper,并把 hpLeft<0.3 改用 LOW_HP_THRESHOLD,可消除 UI 台账与结算分叉,且行为不变"
+    },
+    "EV-234": {
+      "id": "EV-234",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:15:51+00:00",
+      "updated_at": "2026-10-16T06:15:51+00:00",
+      "touched_round": 259,
+      "source": "src/core/tribulationDecision.ts:316,322",
+      "summary": "waveDamage 内 lowHpRed=Math.min(0.6,modOf(mods,'lowHpReduction')),阈值判定写死 hpLeft<0.3(等于 LOW_HP_THRESHOLD=0.3 的裸值,未 import)",
+      "confidence": 1.0
+    },
+    "EV-235": {
+      "id": "EV-235",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:15:51+00:00",
+      "updated_at": "2026-10-16T06:15:51+00:00",
+      "touched_round": 259,
+      "source": "src/views/CultivationView.vue:705",
+      "summary": "渡劫台账 tribLedger.lowHpReduction = Math.min(0.6, modOf(mods,'lowHpReduction')) —— 把 0.6 封顶在 UI 层再抄一遍,与结算同一数值但两个来源",
+      "confidence": 1.0
+    },
+    "TASK-324": {
+      "id": "TASK-324",
+      "type": "task",
+      "status": "resolved",
+      "version": 5,
+      "created_at": "2026-10-16T06:15:51+00:00",
+      "updated_at": "2026-10-16T06:36:04+00:00",
+      "touched_round": 259,
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.9,
+      "effort": 1,
+      "summary": "渡劫减伤单一口径:把 0.6 封顶抽 tribLowHpReduction(mods),hpLeft<0.3 改用 LOW_HP_THRESHOLD;CultivationView 台账改调该 helper,消除三处各写"
+    },
+    "EV-236": {
+      "id": "EV-236",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:19:50+00:00",
+      "updated_at": "2026-10-16T06:19:50+00:00",
+      "touched_round": 259,
+      "source": "src/core/tribulationDecision.spec.ts 新增 describe '濒危减伤/低血阈值 · 单一事实源'",
+      "summary": "三处故障注入均被新守卫捕获:waveDamage 封顶改 0.7 → 红;阈值改 0.25 → 红;CultivationView 台账改回 Math.min(0.6,modOf) → 红。撤销注入后 26/26 绿;全量 bun run test 2859/2859 绿,bun run check 绿",
+      "confidence": 1.0
+    },
+    "CHG-363": {
+      "id": "CHG-363",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:35:59+00:00",
+      "updated_at": "2026-10-16T06:35:59+00:00",
+      "touched_round": 263,
+      "commit": "11902de",
+      "summary": "fix(tribulation):渡劫减伤口径收成单一事实源 —— TRIB_REDUCTION_CAP + tribLowHpReduction;低血线改读 LOW_HP_THRESHOLD;台账改调同源 helper"
+    },
+    "ISS-902": {
+      "id": "ISS-902",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-16T06:36:55+00:00",
+      "updated_at": "2026-10-16T07:31:07+00:00",
+      "touched_round": 263,
+      "summary": "双丹(一炉得二)概率封顶 0.8 两处各写:展示路径 craftability.bonusChanceWithYield 与结算路径 pillService.craftPill 各自 Math.min(0.8, bonusChance + alchemyYield);结算未复用展示值,封顶一改展示与结算分叉"
+    },
+    "HYP-106": {
+      "id": "HYP-106",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:36:55+00:00",
+      "updated_at": "2026-10-16T06:36:55+00:00",
+      "touched_round": 260,
+      "confidence": 0.85,
+      "summary": "把 0.8 抽成 constants 的 PILL_SECOND_CAP,craftability 用它算 bonusChanceWithYield,pillService 直接读 able.bonusChanceWithYield —— 结算与展示同源,行为不变"
+    },
+    "EV-237": {
+      "id": "EV-237",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:36:55+00:00",
+      "updated_at": "2026-10-16T06:36:55+00:00",
+      "touched_round": 260,
+      "source": "src/core/pillService.ts:295",
+      "summary": "结算自算 Math.min(0.8, able.bonusChance + yieldMod),未读 able.bonusChanceWithYield(即 craftability.ts:175 展示的那个数)",
+      "confidence": 1.0
+    },
+    "EV-238": {
+      "id": "EV-238",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:36:55+00:00",
+      "updated_at": "2026-10-16T06:36:55+00:00",
+      "touched_round": 260,
+      "source": "src/core/craftability.ts:175",
+      "summary": "展示值 bonusChanceWithYield=Math.min(0.8,…),注释自称'结算 real …与结算同一口径',但结算并不读它",
+      "confidence": 1.0
+    },
+    "EV-239": {
+      "id": "EV-239",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:36:55+00:00",
+      "updated_at": "2026-10-16T06:36:55+00:00",
+      "touched_round": 260,
+      "source": "src/ui/signedPercent.spec.ts:41",
+      "summary": "红线测试直接断言 pillService 含 'bonusChance + yieldMod' 与 'Math.min(0.8' —— 两处各写的写法已被测试固化",
+      "confidence": 1.0
+    },
+    "TASK-325": {
+      "id": "TASK-325",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-16T06:37:01+00:00",
+      "updated_at": "2026-10-16T06:43:13+00:00",
+      "touched_round": 260,
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.85,
+      "effort": 1,
+      "summary": "双丹概率单一口径:常量 PILL_SECOND_CAP=0.8;pillService 改读 able.bonusChanceWithYield;craftability 用常量;更新 signedPercent.spec 的旧字面断言"
+    },
+    "CHG-364": {
+      "id": "CHG-364",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:43:03+00:00",
+      "updated_at": "2026-10-16T06:43:03+00:00",
+      "touched_round": 263,
+      "commit": "d02bf70",
+      "summary": "fix(pill):双丹概率收成单一事实源 —— PILL_SECOND_CAP + pillService 改读 able.bonusChanceWithYield;更新 signedPercent.spec 旧字面断言"
+    },
+    "EV-240": {
+      "id": "EV-240",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:43:03+00:00",
+      "updated_at": "2026-10-16T06:43:03+00:00",
+      "touched_round": 260,
+      "source": "src/core/pillService.spec.ts 新增 describe '双丹概率 · 展示与结算同一个数'",
+      "summary": "故障注入:常量 PILL_SECOND_CAP 改 0.7、结算仍内联 0.8(漂移),4 条守卫同时红(含 spy 抓 rng.chance 实参的行为断言);撤销后 28/28 绿。全量 bun run test 2861/2861 绿,bun run check 绿",
+      "confidence": 1.0
+    },
+    "ISS-903": {
+      "id": "ISS-903",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-16T06:49:15+00:00",
+      "updated_at": "2026-10-16T07:31:08+00:00",
+      "touched_round": 263,
+      "summary": "自动重铸预算上限 500 无具名常量且夹取只写在执行路径:界面 <input max=500> 与 runAutoReforge 的 Math.min(500,..) 各写一份,而确认预览 autoMaxCost 用原始 autoBudget 不夹取 —— 手输 800 时预览按 800 报花销、执行只洗 500"
+    },
+    "HYP-107": {
+      "id": "HYP-107",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:49:15+00:00",
+      "updated_at": "2026-10-16T06:49:15+00:00",
+      "touched_round": 261,
+      "confidence": 0.9,
+      "summary": "把上限抽 AUTO_REFORGE_MAX_BUDGET(与 AUTfor_REFORGE_MAX_TARGETS 同处),由 autoReforgeBudget(raw) 统一夹取;预览与执行、input 的 min/max 都读它,预览不再虚报"
+    },
+    "EV-241": {
+      "id": "EV-241",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:49:15+00:00",
+      "updated_at": "2026-10-16T06:49:15+00:00",
+      "touched_round": 261,
+      "source": "src/components/equipment/EquipmentDetailDialog.vue:604",
+      "summary": "runAutoReforge 内联 Math.min(500, Math.max(1, Math.floor(autoBudget.value||0))) 得执行预算",
+      "confidence": 1.0
+    },
+    "EV-242": {
+      "id": "EV-242",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:49:15+00:00",
+      "updated_at": "2026-10-16T06:49:15+00:00",
+      "touched_round": 261,
+      "source": "src/components/equipment/EquipmentDetailDialog.vue:790-793",
+      "summary": "autoMaxCost 预览 = reforgeCost × autoBudget 原值,未夹取;与执行预算在非 [1,500] 输入下分叉",
+      "confidence": 1.0
+    },
+    "EV-243": {
+      "id": "EV-243",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:49:15+00:00",
+      "updated_at": "2026-10-16T06:49:15+00:00",
+      "touched_round": 261,
+      "source": "src/components/equipment/EquipmentDetailDialog.vue:288",
+      "summary": "<input max=500 min=1> 第三处内联同一上限",
+      "confidence": 1.0
+    },
+    "TASK-326": {
+      "id": "TASK-326",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-16T06:49:22+00:00",
+      "updated_at": "2026-10-16T06:52:42+00:00",
+      "touched_round": 261,
+      "category": "correctness",
+      "severity": 0.4,
+      "confidence": 0.9,
+      "effort": 1,
+      "summary": "自动重铸预算单一口径:reforge.ts 出 AUTO_REFORGE_MAX_BUDGET + autoReforgeBudget(raw);界面 input 的 min/max、runAutoReforge、autoMaxCost 预览三处都读它"
+    },
+    "CHG-365": {
+      "id": "CHG-365",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:52:42+00:00",
+      "updated_at": "2026-10-16T06:52:42+00:00",
+      "touched_round": 263,
+      "commit": "fbad94d",
+      "summary": "fix(reforge):自动重铸预算上限单源 —— AUTO_REFORGE_MAX_BUDGET + autoReforgeBudget;界面 min/max、执行、预览三处同源"
+    },
+    "EV-244": {
+      "id": "EV-244",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T06:52:42+00:00",
+      "updated_at": "2026-10-16T06:52:42+00:00",
+      "touched_round": 261,
+      "source": "src/core/reforge.spec.ts 新增用例'自动重铸预算:上限单源…'与'autoReforgeBudget 归一'",
+      "summary": "故障注入:预览改回 autoBudget 原值 → 守卫红;归一边界 500/800/0/-5/NaN/Infinity/12.9 全绿。全量 bun run test 2863/2863,bun run check 绿",
+      "confidence": 1.0
+    },
+    "ISS-904": {
+      "id": "ISS-904",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-16T07:00:00+00:00",
+      "updated_at": "2026-10-16T07:31:08+00:00",
+      "touched_round": 263,
+      "summary": "存档分片显示名(STORE_NAMES)与持久化清单(PERSISTED_STORES)是两份手工清单,注释自述'清单改了这个也得跟着改',却无任何断言 —— 新增/改名持久化分片时 STORE_NAMES 漏项,损坏提示就把原始 id(pacing/diag 这类)直接甩给玩家"
+    },
+    "HYP-108": {
+      "id": "HYP-108",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:00:00+00:00",
+      "updated_at": "2026-10-16T07:00:00+00:00",
+      "touched_round": 262,
+      "confidence": 0.9,
+      "summary": "给 saveRoundTrip.spec 加一条:PERSISTED_STORES 每一项都必须在 STORE_NAMES 里有非空中文名,且 STORE_NAMES 不得有清单外的多余键 —— 与既有'从源码倒推清单'同规,把手工同步变成测试约束"
+    },
+    "EV-245": {
+      "id": "EV-245",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:00:00+00:00",
+      "updated_at": "2026-10-16T07:00:00+00:00",
+      "touched_round": 262,
+      "source": "src/utils/storage.ts:14,53",
+      "summary": "PERSISTED_STORES 17 项与 STORE_NAMES 17 键两处并列维护,注释:50 明言'清单改了这个也得跟着改',但 rg STORE_NAMES 无任何 spec 引用(仅 SettingsView 用)",
+      "confidence": 1.0
+    },
+    "EV-246": {
+      "id": "EV-246",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:00:00+00:00",
+      "updated_at": "2026-10-16T07:00:00+00:00",
+      "touched_round": 262,
+      "source": "src/views/SettingsView.vue:102",
+      "summary": "损坏提示 STORE_NAMES[id] ?? id —— 漏项即回落到原始分片键(pacing/diag 对玩家无意义)",
+      "confidence": 1.0
+    },
+    "TASK-327": {
+      "id": "TASK-327",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-16T07:00:00+00:00",
+      "updated_at": "2026-10-16T07:03:01+00:00",
+      "touched_round": 262,
+      "category": "test-quality",
+      "severity": 0.35,
+      "confidence": 0.9,
+      "effort": 1,
+      "summary": "存档分片名清单守门:PERSISTED_STORES ⊆ STORE_NAMES(每项有非空中文名),STORE_NAMES 无清单外多余键;补进 saveRoundTrip.spec"
+    },
+    "CHG-366": {
+      "id": "CHG-366",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:02:41+00:00",
+      "updated_at": "2026-10-16T07:02:41+00:00",
+      "touched_round": 263,
+      "commit": "776b990",
+      "summary": "存档分片中文名清单守门断言",
+      "detail": "saveRoundTrip.spec.ts 断言每个 PERSISTED_STORES 分片在 STORE_NAMES 有非空中文名且无清单外多余键;双向故障注入验证"
+    },
+    "EV-247": {
+      "id": "EV-247",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:02:58+00:00",
+      "updated_at": "2026-10-16T07:02:58+00:00",
+      "touched_round": 262,
+      "source": "commit:776b990",
+      "summary": "TASK-327 守门断言双向故障注入 + 全量绿",
+      "detail": "删 STORE_NAMES 任一键→saveRoundTrip 红(缺名分片);加清单外键→红(多余项);恢复后 6 passed。bun run test 284 文件/2864 例全绿;bun run check(tsc+eslint)干净",
+      "confidence": 1.0
+    },
+    "ISS-905": {
+      "id": "ISS-905",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-16T07:09:09+00:00",
+      "updated_at": "2026-10-16T07:31:08+00:00",
+      "touched_round": 263,
+      "severity": 0.45,
+      "summary": "在线 afterWin 把每场装备掉落概率夹在 Math.min(0.9, equipChance),离线 settleOffline 的 equipCount 期望式从不夹取 —— 高模式(长线云游 ×2.4)×区域加丰(商队/妖潮)×掉落词条叠加后 equipChance 可 >0.9(实测 risky×商队×摘星 ≈ 0.89、prolonged 更高),在线每场封顶 0.9 期望,离线仍按 >0.9 计,同一本世同一地界的装备期望系统性分叉,HYP-015 家族在线离线各写一遍的又一处"
+    },
+    "HYP-109": {
+      "id": "HYP-109",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:09:15+00:00",
+      "updated_at": "2026-10-16T07:09:15+00:00",
+      "touched_round": 263,
+      "confidence": 0.85,
+      "summary": "把每场装备掉落概率的封顶抽成具名常量 EQUIP_DROP_CHANCE_CAP=0.9(与 PILL_SECOND_CAP/TRIB_REDUCTION_CAP 同族的「单一封顶」),afterWin 与 settleOffline 的 equipCount 期望式都改读它;附一条 singleSourceAudit 断言钉死「0.9 只许出现在 constants,别处不许再内联」"
+    },
+    "TASK-328": {
+      "id": "TASK-328",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-16T07:09:15+00:00",
+      "updated_at": "2026-10-16T07:30:49+00:00",
+      "touched_round": 263,
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 0.85,
+      "effort": 1,
+      "summary": "装备掉落概率封顶收成单一事实源:constants 出 EQUIP_DROP_CHANCE_CAP=0.9,loot.afterWin 与 offline 普通战 equipCount 同读;singleSourceAudit 加断言禁止别处内联 0.9 封顶"
+    },
+    "CHG-367": {
+      "id": "CHG-367",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-16T07:13:30+00:00",
+      "updated_at": "2026-10-16T07:30:49+00:00",
+      "touched_round": 263,
+      "commit": "9be1c21",
+      "summary": "装备掉落概率封顶收成单一事实源",
+      "detail": "constants 出 EQUIP_DROP_CHANCE_CAP=0.9;loot.afterWin 与 offline 普通战 equipCount 同读;singleSourceAudit 禁内联 0.9 封顶;新增 offlineEquipCap.spec 行为层回归"
+    },
+    "EV-248": {
+      "id": "EV-248",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:13:30+00:00",
+      "updated_at": "2026-10-16T07:13:30+00:00",
+      "touched_round": 263,
+      "source": "test:offlineEquipCap.spec",
+      "summary": "离线装备期望吃 0.9 封顶(行为层)",
+      "detail": "prolonged×商队×鸿运 裸概率 0.99:离线期望件数 = wins×0.9(890),无封顶则为 1015;故障注入去掉离线封顶→红",
+      "confidence": 1.0
+    },
+    "EV-249": {
+      "id": "EV-249",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:13:31+00:00",
+      "updated_at": "2026-10-16T07:13:31+00:00",
+      "touched_round": 263,
+      "source": "test:singleSourceAudit.spec",
+      "summary": "0.9 封顶两处同读常量",
+      "detail": "loot.ts/offline.ts 都须含 EQUIP_DROP_CHANCE_CAP 且不得出现 Math.min(0.9,*);两处各自改回内联→红",
+      "confidence": 1.0
+    },
+    "EV-250": {
+      "id": "EV-250",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:13:36+00:00",
+      "updated_at": "2026-10-16T07:13:36+00:00",
+      "touched_round": 263,
+      "source": "commit:pending",
+      "summary": "全量绿:285 文件 / 2866 例",
+      "detail": "bun run test 285 文件 2866 例全绿;bun run check(tsc + eslint)干净",
+      "confidence": 1.0
+    },
+    "EV-251": {
+      "id": "EV-251",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-16T07:30:55+00:00",
+      "updated_at": "2026-10-16T07:30:55+00:00",
+      "touched_round": 263,
+      "source": "commit:9be1c21",
+      "summary": "全量绿:285 文件 / 2866 例",
+      "detail": "bun run test 285 文件 2866 例全绿;bun run check(tsc + eslint)干净;CHG-367 对应提交 9be1c21",
+      "confidence": 1.0
     }
   },
   "edges": [
@@ -25680,6 +26134,234 @@
       "to": "COMP-024",
       "type": "located_in",
       "created_at": "2026-10-12T08:31:26+00:00"
+    },
+    {
+      "from": "EV-234",
+      "to": "HYP-105",
+      "type": "validates",
+      "created_at": "2026-10-16T06:16:05+00:00"
+    },
+    {
+      "from": "EV-235",
+      "to": "HYP-105",
+      "type": "validates",
+      "created_at": "2026-10-16T06:16:05+00:00"
+    },
+    {
+      "from": "TASK-324",
+      "to": "ISS-901",
+      "type": "addresses",
+      "created_at": "2026-10-16T06:16:05+00:00"
+    },
+    {
+      "from": "ISS-901",
+      "to": "COMP-004",
+      "type": "located_in",
+      "created_at": "2026-10-16T06:16:05+00:00"
+    },
+    {
+      "from": "EV-236",
+      "to": "HYP-105",
+      "type": "validates",
+      "created_at": "2026-10-16T06:19:50+00:00"
+    },
+    {
+      "from": "CHG-363",
+      "to": "TASK-324",
+      "type": "implements",
+      "created_at": "2026-10-16T06:36:04+00:00"
+    },
+    {
+      "from": "EV-237",
+      "to": "HYP-106",
+      "type": "validates",
+      "created_at": "2026-10-16T06:37:01+00:00"
+    },
+    {
+      "from": "EV-238",
+      "to": "HYP-106",
+      "type": "validates",
+      "created_at": "2026-10-16T06:37:01+00:00"
+    },
+    {
+      "from": "EV-239",
+      "to": "HYP-106",
+      "type": "validates",
+      "created_at": "2026-10-16T06:37:01+00:00"
+    },
+    {
+      "from": "TASK-325",
+      "to": "ISS-902",
+      "type": "addresses",
+      "created_at": "2026-10-16T06:37:01+00:00"
+    },
+    {
+      "from": "ISS-902",
+      "to": "COMP-024",
+      "type": "located_in",
+      "created_at": "2026-10-16T06:37:01+00:00"
+    },
+    {
+      "from": "CHG-364",
+      "to": "TASK-325",
+      "type": "implements",
+      "created_at": "2026-10-16T06:43:03+00:00"
+    },
+    {
+      "from": "EV-240",
+      "to": "HYP-106",
+      "type": "validates",
+      "created_at": "2026-10-16T06:43:03+00:00"
+    },
+    {
+      "from": "EV-241",
+      "to": "HYP-107",
+      "type": "validates",
+      "created_at": "2026-10-16T06:49:22+00:00"
+    },
+    {
+      "from": "EV-242",
+      "to": "HYP-107",
+      "type": "validates",
+      "created_at": "2026-10-16T06:49:22+00:00"
+    },
+    {
+      "from": "EV-243",
+      "to": "HYP-107",
+      "type": "validates",
+      "created_at": "2026-10-16T06:49:22+00:00"
+    },
+    {
+      "from": "TASK-326",
+      "to": "ISS-903",
+      "type": "addresses",
+      "created_at": "2026-10-16T06:49:22+00:00"
+    },
+    {
+      "from": "ISS-903",
+      "to": "COMP-010",
+      "type": "located_in",
+      "created_at": "2026-10-16T06:49:22+00:00"
+    },
+    {
+      "from": "CHG-365",
+      "to": "TASK-326",
+      "type": "implements",
+      "created_at": "2026-10-16T06:52:42+00:00"
+    },
+    {
+      "from": "EV-244",
+      "to": "HYP-107",
+      "type": "validates",
+      "created_at": "2026-10-16T06:52:42+00:00"
+    },
+    {
+      "from": "EV-245",
+      "to": "HYP-108",
+      "type": "validates",
+      "created_at": "2026-10-16T07:00:00+00:00"
+    },
+    {
+      "from": "EV-246",
+      "to": "HYP-108",
+      "type": "validates",
+      "created_at": "2026-10-16T07:00:00+00:00"
+    },
+    {
+      "from": "TASK-327",
+      "to": "ISS-904",
+      "type": "addresses",
+      "created_at": "2026-10-16T07:00:00+00:00"
+    },
+    {
+      "from": "ISS-904",
+      "to": "COMP-001",
+      "type": "located_in",
+      "created_at": "2026-10-16T07:00:00+00:00"
+    },
+    {
+      "from": "CHG-366",
+      "to": "TASK-327",
+      "type": "implements",
+      "created_at": "2026-10-16T07:02:58+00:00"
+    },
+    {
+      "from": "EV-247",
+      "to": "HYP-108",
+      "type": "validates",
+      "created_at": "2026-10-16T07:03:27+00:00"
+    },
+    {
+      "from": "TASK-328",
+      "to": "ISS-905",
+      "type": "addresses",
+      "created_at": "2026-10-16T07:09:20+00:00"
+    },
+    {
+      "from": "ISS-905",
+      "to": "COMP-010",
+      "type": "located_in",
+      "created_at": "2026-10-16T07:09:29+00:00"
+    },
+    {
+      "from": "ISS-905",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-16T07:09:29+00:00"
+    },
+    {
+      "from": "CHG-367",
+      "to": "TASK-328",
+      "type": "implements",
+      "created_at": "2026-10-16T07:13:30+00:00"
+    },
+    {
+      "from": "EV-248",
+      "to": "HYP-109",
+      "type": "validates",
+      "created_at": "2026-10-16T07:13:36+00:00"
+    },
+    {
+      "from": "EV-249",
+      "to": "HYP-109",
+      "type": "validates",
+      "created_at": "2026-10-16T07:13:36+00:00"
+    },
+    {
+      "from": "CHG-367",
+      "to": "ISS-905",
+      "type": "resolves",
+      "created_at": "2026-10-16T07:30:55+00:00"
+    },
+    {
+      "from": "CHG-363",
+      "to": "ISS-901",
+      "type": "resolves",
+      "created_at": "2026-10-16T07:31:01+00:00"
+    },
+    {
+      "from": "CHG-364",
+      "to": "ISS-902",
+      "type": "resolves",
+      "created_at": "2026-10-16T07:31:01+00:00"
+    },
+    {
+      "from": "CHG-365",
+      "to": "ISS-903",
+      "type": "resolves",
+      "created_at": "2026-10-16T07:31:01+00:00"
+    },
+    {
+      "from": "CHG-366",
+      "to": "ISS-904",
+      "type": "resolves",
+      "created_at": "2026-10-16T07:31:01+00:00"
+    },
+    {
+      "from": "EV-251",
+      "to": "HYP-109",
+      "type": "validates",
+      "created_at": "2026-10-16T07:31:01+00:00"
     }
   ]
 }
