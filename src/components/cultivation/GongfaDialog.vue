@@ -102,8 +102,14 @@
         <button v-if="def?.type === 'main'" class="btn-seal flex-1" :disabled="isMain" @click="setMain">
           {{ isMain ? '主修中' : '设为主修' }}
         </button>
-        <button v-else class="btn-seal flex-1" @click="toggleSub">
-          {{ subActionText }}
+        <button
+          v-else
+          class="btn-seal flex-1 text-[12px]"
+          :disabled="subFull"
+          :title="subFull ? `辅修槽已满(${cultivation.subGongfa.length}/${dongfu.subGongfaSlots})` : undefined"
+          @click="toggleSub"
+        >
+          {{ subFull ? `辅修槽满 ${cultivation.subGongfa.length}/${dongfu.subGongfaSlots}` : subActionText }}
         </button>
         <button v-if="upCost" class="btn-ghost flex-1" :disabled="!canAffordUp" :title="!canAffordUp ? '悟道点或残页不足' : undefined" @click="def && upgradeGongfa(def.id)">{{ canAffordUp ? '进 修' : '进 修(缺料)' }}</button>
       </div>
@@ -177,6 +183,8 @@
 
   const isMain = computed(() => def.value && cultivation.mainGongfa === def.value.id)
   const isSub = computed(() => def.value && cultivation.subGongfa.includes(def.value.id))
+  // 辅修/秘术共一个槽位预算;满了且这本不是现有辅修时「设为…」点了只吃一发 warn toast —— 置灰 + 报 N/M
+  const subFull = computed(() => !isSub.value && cultivation.subGongfa.length >= dongfu.subGongfaSlots)
   // 秘术不该被叫「辅修」:两者都放进同一槽位,但门类是两块不同的印 —— 按钮如实点名
   const subActionText = computed(() => {
     const label = def.value?.type === 'secret' ? '秘术' : '辅修'
