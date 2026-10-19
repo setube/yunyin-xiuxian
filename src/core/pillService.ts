@@ -4,7 +4,7 @@
  * Phase 32.3 起,炼制不再是「够级必成」的兑换按钮:
  * 成败由认知与技艺决定(见 core/craftability.ts),失手要赔料,但也长本事。
  */
-import { gn, gnZero, mulN, ratio } from '@/utils/gnum'
+import { gnZero, mulN, ratio } from '@/utils/gnum'
 import { rng } from '@/utils/random'
 import { pillDef } from '@/data/pills'
 import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
@@ -65,7 +65,10 @@ export function usePill(id: string, quiet = false): boolean {
       lines.push(`修为 +${formatGN(gain)}(约抵闭关 ${classicalDuration(def.instant.expSecs)})`)
     }
     if (def.instant.expFixed) {
-      player.gainExp(gn(def.instant.expFixed))
+      // 固定点数丹同守「即时修为不满一层」:以 1 点=1 秒折算,走与 expSecs 同一个
+      // 结算函数(expFromSecs)统一收口层封顶 —— 入门丹写死 30/45/80,炼气一层
+      // 需求才几十,不封就一枚连跳多层(见 expIncome.spec 接线红线 / pillValue 审计)
+      player.gainExp(expFromSecs(player.expReq, def.instant.expFixed, 1, INSTANT_EXP_LAYER_CAP))
       lines.push('修为精进')
     }
     if (def.instant.qiPct) {

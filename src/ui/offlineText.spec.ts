@@ -3,7 +3,8 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { COUNTER_DIRECTIONS } from '@/ui/achievementHint'
-import { offlineAgeNote, offlineAwayPhrase } from '@/ui/offlineText'
+import { OFFLINE_BOSS_REWARD_MULT } from '@/data/constants'
+import { offlineAgeNote, offlineAwayPhrase, offlineBossNoteText } from '@/ui/offlineText'
 
 function src(from: string): string {
   return readFileSync(resolve(__dirname, from), 'utf8')
@@ -24,6 +25,14 @@ describe('离线归来 ≠ 闭关', () => {
   it('寿元说明也用「此去」,不冒充闭关', () => {
     expect(offlineAgeNote(60)).toBe('此去寿元流逝 60 载')
     expect(offlineAgeNote(60)).not.toContain('闭关')
+  })
+
+  it('离线首领战果的收益折损带数字,不吞成无字的「折损」(示=算)', () => {
+    const note = offlineBossNoteText('黑风老妖')
+    expect(note).toContain('黑风老妖')
+    expect(note).toContain(`×${Math.round(OFFLINE_BOSS_REWARD_MULT * 100)}%`)
+    // 折损≠0.9 离线效率,两者都带数才不算藏着
+    expect(note).not.toContain('闭关')
   })
 
   it('归来弹窗与离线结算源码不把离开写成闭关', () => {

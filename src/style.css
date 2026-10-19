@@ -622,7 +622,7 @@ html[data-theme='dark'] .btn-seal:disabled {
 
 .btn-ghost:active:not(:disabled) {
   transform: scale(0.96);
-  background: rgb(var(--shadow-ink-rgb) / 0.06);
+  background: rgb(var(--color-ink-rgb) / 0.06);
 }
 
 .btn-ghost:disabled {
@@ -698,11 +698,11 @@ html[data-theme='dark'] .btn-seal:disabled {
 
 .ink-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--shadow-ink-rgb) / 0.22), transparent);
+  background: linear-gradient(90deg, transparent, rgb(var(--color-ink-rgb) / 0.22), transparent);
 }
 
 .track-ink {
-  background: rgb(var(--shadow-ink-rgb) / 0.10);
+  background: rgb(var(--color-ink-rgb) / 0.10);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -871,7 +871,7 @@ html[data-theme='dark'] .btn-seal:disabled {
   margin-top: -65vmin;
   border-radius: 999px;
   pointer-events: none;
-  background: radial-gradient(circle, transparent 30%, rgb(168 63 57 / 0.28) 46%, rgb(var(--shadow-ink-rgb) / 0.22) 60%, transparent 72%);
+  background: radial-gradient(circle, transparent 30%, rgb(168 63 57 / 0.28) 46%, rgb(var(--color-ink-rgb) / 0.22) 60%, transparent 72%);
   animation: ink-wave 1.15s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 
@@ -1058,7 +1058,7 @@ html[data-theme='dark'] .btn-seal:disabled {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgb(var(--shadow-ink-rgb) / 0.18);
+  background: rgb(var(--color-ink-rgb) / 0.18);
   border-radius: 2px;
 }
 

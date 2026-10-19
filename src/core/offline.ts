@@ -5,7 +5,7 @@
 import type { EventDef, OfflineSummary } from '@/types'
 import { add, gn, gnZero, isZero, mulN, sub } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
-import { offlineAgeNote } from '@/ui/offlineText'
+import { offlineAgeNote, offlineBossNoteText } from '@/ui/offlineText'
 import { breakthroughReadyNote } from '@/ui/cultivationText'
 import { rng } from '@/utils/random'
 import { regionDef } from '@/data/regions'
@@ -321,7 +321,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             track('kills')
             track('bossKills')
             clearRegionAndUnlockNext(region.id)
-            notes.push(`挂单之间,你已将【${bossDef.name}】斩于剑下(离线战果,收益折损)`)
+            notes.push(offlineBossNoteText(bossDef.name))
           } else {
             notes.push(`曾遭遇区域之主【${bossDef.name}】,惜败而退,需再蓄力`)
           }

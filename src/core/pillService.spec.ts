@@ -315,6 +315,22 @@ describe('服丹 · 丹从包里出去,药力真的落下', () => {
     )
   })
 
+  it('expFixed 入门丹同样封顶不满一层(与 expSecs 同一把尺)', () => {
+    // 聚气丹 expFixed=80,炼气一层需求只几十 —— 不封就一枚连跳多层
+    const player = usePlayerStore()
+    const inventory = useInventoryStore()
+    player.$patch({ major: 0, sub: 0, exp: { m: 0, e: 0 } })
+    inventory.addPill('p_jvqidan', 1)
+    const req = toNum(expRequirement(0, 0))
+    const before = toNum(player.exp)
+    expect(usePill('p_jvqidan')).toBe(true)
+    const gain = toNum(player.exp) - before
+    expect(gain, 'expFixed 也该封顶「不满一层」,不复按裸点数连跳').toBeLessThanOrEqual(
+      req * INSTANT_EXP_LAYER_CAP + 1e-9
+    )
+    expect(gain, 'expFixed 把整层填满 —— 固定点数绕过层封顶').toBeLessThan(req)
+  })
+
   it('增益丹:状态真的加到身上(带到期时间),不是只弹一句话', () => {
     const inventory = useInventoryStore()
     const cultivation = useCultivationStore()

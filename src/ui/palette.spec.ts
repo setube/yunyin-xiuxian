@@ -418,6 +418,21 @@ describe('调色板 · 数据层颜色', () => {
   })
 })
 
+describe('调色板 · 投影墨不外泄', () => {
+  it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
+    // 剥掉注释、两处变量定义、整块 box-shadow 声明后,style.css 里不得再出现 shadow-ink。
+    // 任何把它当可见装饰(background/border/gradient/scrollbar)的意图都会留在残局里被抓住;
+    // 纸上可见的线/槽/波该用 --color-ink(夜主题翻转成亮墨)。
+    const residue = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/--shadow-ink-rgb:\s*[\d\s]+;/g, '')
+      .replace(/--shadow-ink:\s*rgb\([\d\s]+\);/g, '')
+      .replace(/box-shadow:\s*[^;]*;/g, '')
+    expect(residue).not.toMatch(/shadow-ink/)
+    // 保底:投影墨仍在 box-shadow 里被真正消费,不因重构变成死 token
+    expect(CSS).toMatch(/box-shadow:\s*[\s\S]*?shadow-ink/)
+  })
+})
+
 describe('调色板 · 色阶分得开', () => {
   it('品阶九色 / 五行十一色任意两档 ΔE≥10 —— 压深之后不糊成一团', () => {
     const q9 = QUALITIES.map(q => ({ name: q.name, rgb: resolveRgb(q.color) }))

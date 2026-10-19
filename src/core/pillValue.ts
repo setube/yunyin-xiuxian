@@ -149,8 +149,8 @@ export function pillGainSecAt(def: PillDef, major: number): number {
      * 唯一的上限是「不满一层」(INSTANT_EXP_LAYER_CAP),故低境界要 fold 一刀。
      */
     if (i.expSecs) return Math.min(i.expSecs, layerSeconds(m) * INSTANT_EXP_LAYER_CAP)
-    // gainExp 封顶于当前一层的需求,固定点数给不满一层
-    if (i.expFixed) return Math.min(i.expFixed, toNum(expRequirement(m, AUDIT_SUB))) / baseCultPerSec(m, AUDIT_SUB)
+    // gainExp 封顶于「不满一层」(INSTANT_EXP_LAYER_CAP),固定点数给不满一层
+    if (i.expFixed) return Math.min(i.expFixed, toNum(expRequirement(m, AUDIT_SUB)) * INSTANT_EXP_LAYER_CAP) / baseCultPerSec(m, AUDIT_SUB)
     if (i.qiPct) return (i.qiPct * qiCap(m, AUDIT_SUB)) / baseQiRegen(m)
     if (i.lifespanYears) return (i.lifespanYears * 3600) / AGE_YEARS_PER_HOUR
     if (i.wudao) return (i.wudao * 3600) / LIBRARY_WUDAO_PER_HOUR
