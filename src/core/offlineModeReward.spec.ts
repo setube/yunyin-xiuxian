@@ -21,6 +21,7 @@ import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { useResourcesStore } from '@/stores/resources'
+import { useInventoryStore } from '@/stores/inventory'
 import { EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
 
 // rng 全响应固定:概率判定处处 0.5、pick 恒取首项 —— 序列确定
@@ -79,7 +80,11 @@ function seedSession(mode: 'normal' | 'deep'): void {
 interface Yields {
   page: number
   equipChanceCount: number
+  pills: number
 }
+
+const invPills = (): number =>
+  Object.values(useInventoryStore().pills).reduce((a, b) => a + b, 0)
 
 /** mock 后全链路确定:同输入必得同产出 */
 function runOnce(mode: 'normal' | 'deep'): Yields {
@@ -87,11 +92,14 @@ function runOnce(mode: 'normal' | 'deep'): Yields {
   seedSession(mode)
   const beforePage = useResourcesStore().page
   const beforeDust = useResourcesStore().dust
+  const beforePills = invPills()
   settleOffline(Date.now())
   return {
     page: Math.max(0, useResourcesStore().page - beforePage),
     // 装备按期望计件(equipCount),实际生成受 rng 与 6 件 cap 约束;取器灵尘增量对比最稳
-    equipChanceCount: Math.max(0, useResourcesStore().dust - beforeDust)
+    equipChanceCount: Math.max(0, useResourcesStore().dust - beforeDust),
+    // 丹药入囊数(inventory.pills 各 id 计数之和)
+    pills: invPills() - beforePills
   }
 }
 
@@ -121,6 +129,16 @@ describe('离线普通战产出吃模式倍率(确定性)', () => {
     expect(normal.equipChanceCount).toBeGreaterThan(0)
     expect(deep.equipChanceCount).toBeGreaterThanOrEqual(Math.round(normal.equipChanceCount * 1.3))
     expect(deep.equipChanceCount).toBeLessThanOrEqual(Math.round(normal.equipChanceCount * 1.5))
+  })
+
+  it('普通战会拾得丹药,且与在线 afterWin 同源按模式倍率放大(≈1.4)', () => {
+    const deep = runOnce('deep')
+    const normal = runOnce('normal')
+    // 回归缺口:离线普通战此前只算石头/修为/材料/装备、独漏丹药 —— 正常战应确实拾丹
+    expect(normal.pills, '离线普通战应入囊丹药').toBeGreaterThan(0)
+    // 丹药与材料/装备同一把 rewardMult 尺子:deep(×1.4) 约 normal(×1) 的 1.4 倍(±取整噪声)
+    expect(deep.pills).toBeGreaterThanOrEqual(Math.round(normal.pills * 1.3))
+    expect(deep.pills).toBeLessThanOrEqual(Math.round(normal.pills * 1.5))
   })
 })
 

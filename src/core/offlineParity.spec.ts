@@ -54,6 +54,10 @@ describe('离线历练 · doubleDropRate 与在线同源', () => {
     expect(offline).toContain("modOf(mods, 'doubleDropRate')")
     // 期望值乘子(doubleMult)要真的乘进了四处产出公式(stones/exp/materials/equip)
     expect(offline).toContain('* doubleMult')
+    // 丹药与在线同源:福缘翻倍不作用于丹药(在线掷在 doubled 循环之外),离线也不该乘 doubleMult
+    const pillLine = offline.split('\n').find(l => l.includes('PILL_DROP_CHANCE * modeDef'))
+    expect(pillLine, '离线普通战应有丹药掉落行').toBeTruthy()
+    expect(pillLine, '丹药概率不应乘福缘翻倍').not.toContain('doubleMult')
   })
 })
 

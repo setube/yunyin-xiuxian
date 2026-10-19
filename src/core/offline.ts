@@ -21,6 +21,7 @@ import {
   ORE_DROP_CHANCE,
   EXPLORE_BATTLE_INTERVAL,
   PAGE_DROP_CHANCE,
+  PILL_DROP_CHANCE,
   EXPLORE_BOSS_AFTER_WINS,
   EXPLORE_MODES,
   INSTANT_EXP_LAYER_CAP,
@@ -31,7 +32,7 @@ import {
 import { makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
 import { buildPlayerSnap } from './playerSnap'
 import { generateEquipment } from './equipGen'
-import { onAcquire, acquireEquipment, afterWin } from './loot'
+import { onAcquire, acquireEquipment, afterWin, randomDropPill } from './loot'
 import { autoResolveEvent, regionEventPoolFor } from './eventEngine'
 import { clearRegionAndUnlockNext, exploreEventChance, regionBossCleared, dangerFactorFor, explorationRules } from './exploration'
 import { currentRegionEvent, regionEventDef } from './regionEvent'
@@ -40,12 +41,13 @@ import { expFromSecs, stoneByTier } from './formulas'
 import { breakthroughInfo } from './breakthrough'
 import { settleSuppressedRegions } from './suppress'
 import { harvestMaterials, studyTick } from './loreService'
-import { modOf } from './statsCalc'
+import { modOf, capChance } from './statsCalc'
 import { personalityEffects } from './petPersonality'
-import { track } from './progress'
+import { collect, track } from './progress'
 import { equipmentTemplate } from '@/data/equipment'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
+import { useInventoryStore } from '@/stores/inventory'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useAdventureStore } from '@/stores/adventure'
@@ -98,6 +100,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   const game = useGameStore()
   const player = usePlayerStore()
   const resources = useResourcesStore()
+  const inventory = useInventoryStore()
   const dongfu = useDongfuStore()
   const cultivation = useCultivationStore()
   const adventure = useAdventureStore()
@@ -273,6 +276,23 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         if (equipCount > realCount) {
           resources.addSmall('dust', (equipCount - realCount) * 4)
           notes.push(`另有 ${equipCount - realCount} 件寻常之物,已折作器灵尘`)
+        }
+        // 丹药 —— 补上离线普通战漏掉的掉落通道,与在线 afterWin 同源:
+        // 在线每战按 PILL_DROP_CHANCE × 模式 × 区域事件加丰掷一枚(福缘翻倍不作用于丹药,
+        // 在线也是掷在 doubled 循环之外);离线首领战后文直接复用 afterWin 因而会掉,
+        // 普通战此前却只算石头/修为/材料/装备、独漏丹药,与「离线≈在线 N 场」守恒不符。
+        // 单场概率夹在线那道封顶,离线按期望值结算:胜场 × 单场概率即丹药枚数。
+        const pillChance = capChance(PILL_DROP_CHANCE * modeDef.rewardMult * regionEventReward)
+        const pillCount = Math.round(wins * pillChance)
+        for (let i = 0; i < pillCount; i += 1) {
+          const pillId = randomDropPill(player.major)
+          if (!pillId) break
+          inventory.addPill(pillId, 1)
+          collect('pill', pillId)
+          trip.items += 1
+        }
+        if (pillCount > 0) {
+          notes.push(`途中拾得丹药 ${pillCount} 枚`)
         }
         if (wins < battles) {
           notes.push(`有 ${battles - wins} 战失利,幸而全身而退`)
