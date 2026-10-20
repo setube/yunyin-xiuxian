@@ -8,6 +8,8 @@ import { pillDef } from '@/data/pills'
 import { MAX_MAJOR } from '@/data/realms'
 import {
   MARKET_MAT_COUNT,
+  MARKET_CONSIGN_RENDER_MAX,
+  MARKET_CONSIGN_SLOTS,
   MARKET_PILL_MARKUP,
   MARKET_SLOTS,
   type MarketEquipSlot
@@ -22,6 +24,15 @@ function rng(seed = 0x5eed): RandomService {
 }
 
 describe('坊市 · 货架生成', () => {
+  /**
+   * 寄卖格有两个上限,别把它们搞混:能挂几件(SLOTS)是玩法,铺几格(RENDER_MAX)
+   * 是渲染护栏。坏档/导入档能塞进成千上万条,全铺出来会把这一页卡死。
+   */
+  it('寄卖渲染上限存在且不低于正常格数,也不至于铺出长列表', () => {
+    expect(MARKET_CONSIGN_RENDER_MAX).toBeGreaterThanOrEqual(MARKET_CONSIGN_SLOTS)
+    expect(MARKET_CONSIGN_RENDER_MAX).toBeLessThanOrEqual(10)
+  })
+
   it('一满架六格,每格有货、有价、未售,索引 0 起不重样', () => {
     const stock = generateMarketStock(3, rng(), 1700000000000)
     expect(stock.goods).toHaveLength(MARKET_SLOTS)

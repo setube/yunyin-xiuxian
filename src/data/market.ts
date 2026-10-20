@@ -42,6 +42,14 @@ export const MARKET_KIND_WEIGHTS: Record<MarketKind, number> = { pill: 4, materi
 // ---- 售出(摆摊) ----
 /** 装备寄卖格数与耗时(秒,真实时间;离线照走,到期自售入账) */
 export const MARKET_CONSIGN_SLOTS = 2
+/**
+ * 寄卖格的**渲染**上限 —— 与「同时能挂几件」是两回事。
+ *
+ * 正常玩法最多只有 MARKET_CONSIGN_SLOTS 条;但坏档/导入档能塞进成千上万条,
+ * 而它们都是玩家已交出去的货、不能悄悄丢。故:存档里全留(到点照样入账),
+ * 界面只铺这么多格,其余并成一行「还有 N 件」。
+ */
+export const MARKET_CONSIGN_RENDER_MAX = 6
 export const MARKET_CONSIGN_SECONDS = 2400
 /** 寄卖装备灵石档位(stoneByTier 的 amount)与每品质档增量 —— 恒低于坊市购入同档,无搬砖套利 */
 export const MARKET_CONSIGN_STONE_BASE = 25

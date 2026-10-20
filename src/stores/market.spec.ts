@@ -323,7 +323,7 @@ describe('坊市 · 买卖', () => {
    * 寄卖格号重复:界面按格号铺格子,同一个号会被后一条盖住 —— 玩家只看见一件,
    * 到点却两笔都入账(钱进了账,却有一件从不露面)。格号重排,不丢任何一件。
    */
-  it('sanitize:寄卖格号重复只理顺号,一件都不丢', () => {
+  it('sanitize:寄卖格号重复只理顺号,一件都不丢、各自内容不串', () => {
     const market = useMarketStore()
     const now = Date.now()
     market.$patch({
@@ -337,6 +337,10 @@ describe('坊市 · 买卖', () => {
     expect(market.consign.map(p => p.slot).sort()).toEqual([0, 1])
     // 先到期的那件在前:格号顺序与「谁先回来」一致
     expect(market.consign[0]!.name).toBe('甲')
+    // 两件的名字/价都要各归各位 —— 只数条数会放过「用第一件的副本顶替第二件」
+    expect(market.consign.map(p => p.name).sort(), '两件各自的名字都得在').toEqual(['乙', '甲'])
+    expect(market.consign.map(p => p.tier).sort(), '层级不串').toEqual([3, 4])
+    expect(market.consign.map(p => toNum(p.price)).sort(), '价不串').toEqual([5, 6])
   })
 
   it('sanitize:寄卖多于格子上限也不丢,照样入账', () => {

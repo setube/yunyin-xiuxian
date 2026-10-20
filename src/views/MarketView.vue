@@ -92,6 +92,10 @@
             <span v-else class="text-[11px] text-ink-faint">空</span>
           </div>
         </div>
+        <!-- 超出渲染上限的寄卖:照样在档里、照样到点入账,只是不各占一格 -->
+        <p v-if="consignHidden > 0" class="mb-2 text-[10px] leading-relaxed text-ink-faint">
+          另有 {{ consignHidden }} 件寄卖未在此展开(照常计时,到点自售入账)。
+        </p>
 
         <!-- 背包可寄卖清单 -->
         <div class="card-ink max-h-64 divide-y divide-ink/6 overflow-y-auto px-1">
@@ -206,7 +210,7 @@
   import type { GNum } from '@/types'
   import type { MarketSlot } from '@/data/market'
   import type { BountyKind, BountySlot } from '@/data/bounty'
-  import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS } from '@/data/market'
+  import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS, MARKET_CONSIGN_RENDER_MAX } from '@/data/market'
   import { useBountyStore } from '@/stores/bounty'
   import { bountyRemainingSec, equipBountyReward } from '@/core/bountyService'
   import { formatCountdown, formatGN } from '@/utils/format'
@@ -294,12 +298,15 @@
 
   const consignSlots = MARKET_CONSIGN_SLOTS
   /**
-   * 铺格子按「上限与实际条数取大」:坏档可能塞进多于上限的寄卖,那些件到点照样
-   * 入账 —— 只按上限铺两格会让多出来的那笔从不露面(钱进了账,玩家却不知道有它)。
+   * 铺格子按「上限与实际条数取大」,但**封顶**在 MARKET_CONSIGN_RENDER_MAX:
+   * 坏档可能塞进成千上万条寄卖,全铺出来会把这一页卡死。多出来的并成一行
+   * 「还有 N 件」—— 它们照样在存档里、到点照样入账,只是不各占一格。
    */
   const consignSlotsArr = computed(() =>
-    Array.from({ length: Math.max(consignSlots, market.consign.length) }, (_, i) => i)
+    Array.from({ length: Math.min(MARKET_CONSIGN_RENDER_MAX, Math.max(consignSlots, market.consign.length)) }, (_, i) => i)
   )
+  /** 超出渲染上限、没铺成格子的寄卖条数 */
+  const consignHidden = computed(() => Math.max(0, market.consign.length - MARKET_CONSIGN_RENDER_MAX))
   const consignSlotsFull = computed(() => market.consign.length >= consignSlots)
   /** 坏档能塞进多于上限的寄卖:照实报条数,别让「3/2」这种读数看起来像坏了 */
   const consignHint = computed(() =>

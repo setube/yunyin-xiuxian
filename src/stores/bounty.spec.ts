@@ -142,9 +142,18 @@ describe('坊市悬赏板 · 交货', () => {
     b.sanitize()
     expect(b.orders.map(o => o.idx).sort()).toEqual([0, 1])
     res.herbByGrade[1] = 10
+    res.spiritStone = { m: 0, e: 0 }
     expect(b.claim(0)).toBe('ok')
+    const afterFirst = toNum(res.spiritStone)
     expect(b.claim(1), '第二张单也该交得了').toBe('ok')
     expect(b.orders.every(o => o.claimed)).toBe(true)
+    // 第二张单的赏格必须还是它自己的 6,不是第一张的 5 —— 只断言两个 ok 会放过「赏格被改」
+    const secondReward = toNum(res.spiritStone) - afterFirst
+    expect(secondReward, '第二张单该按自己的赏格(herbBountyReward)入账').toBeCloseTo(
+      toNum(herbBountyReward(1, usePlayerStore().major, 1)),
+      5
+    )
+    expect(b.orders[1]!.reward, '修形不许改单子上的赏格').toEqual({ m: 6, e: 0 })
   })
 })
 
