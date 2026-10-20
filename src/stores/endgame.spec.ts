@@ -13,7 +13,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useEndgameStore, type WorldRunState } from './endgame'
-import { EXPEDITION_GUARDIAN_LAYER } from '@/data/endgame'
+import { EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS, celestialWorldDef } from '@/data/endgame'
 import { SOUL_SLOTS, soulGradeDef } from '@/data/souls'
 import { rerollVoidWorld, VOID_REROLL_COST } from '@/core/expedition'
 import { usePlayerStore } from '@/stores/player'
@@ -587,5 +587,60 @@ describe('道痕坏档 · 逐条逐字段修形', () => {
     e.$patch({ marks: many } as never)
     e.sanitize()
     expect(e.marks).toHaveLength(60)
+  })
+})
+
+/**
+ * 虚界是程序化生成的临时世界:天界页读 `foes.map` / `ruleText.map`,
+ * 远征读 `routes[layer][choice]` 与 `guardian`。缺一节就白屏或一点启程就抛错。
+ * 它没有目录可逐字段对照,故形状不成立时整座作废 —— 界面回到「窥探虚界」。
+ */
+describe('虚界坏档 · 形状不成立整座作废', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  /** 以手工天界为模板造一座形状完整的虚界(与生成器同一套结构) */
+  function voidWorld(): Record<string, unknown> {
+    const base = celestialWorldDef('chiyan')!
+    return { ...base, id: 'void', name: '虚界·试作' }
+  }
+
+  it('形状完整的虚界原样保留', () => {
+    const e = useEndgameStore()
+    e.$patch({ voidWorld: voidWorld() } as never)
+    e.sanitize()
+    expect(e.voidWorld?.id).toBe('void')
+    expect(e.voidWorld?.name).toBe('虚界·试作')
+    expect(e.voidWorld?.routes).toHaveLength(EXPEDITION_ROUTE_LAYERS)
+  })
+
+  it('缺敌阵/缺规则文案时整座作废,天界页不再对着 undefined 调 map', () => {
+    const e = useEndgameStore()
+    for (const patch of [{ foes: undefined }, { ruleText: 'x' }, { routes: [] }, { guardian: null }]) {
+      e.$patch({ voidWorld: { ...voidWorld(), ...patch } } as never)
+      e.sanitize()
+      expect(e.voidWorld, `${JSON.stringify(patch)} 不是一座能打的虚界`).toBeNull()
+    }
+  })
+
+  it('敌方比例被写成 0/NaN 时整座作废,而不是打一场负血或秒杀', () => {
+    const e = useEndgameStore()
+    const w = voidWorld()
+    const foes = (w.foes as Record<string, unknown>[]).map(f => ({ ...f, hpR: Number.NaN }))
+    e.$patch({ voidWorld: { ...w, foes } } as never)
+    e.sanitize()
+    expect(e.voidWorld, '血量为零的敌人不成立').toBeNull()
+
+    e.$patch({ voidWorld: { ...voidWorld(), guardian: { ...(voidWorld().guardian as object), speed: 0 } } } as never)
+    e.sanitize()
+    expect(e.voidWorld, '速度为 0 的界主永不先手').toBeNull()
+  })
+
+  it('id 不是 void 的残块不会被当成虚界', () => {
+    const e = useEndgameStore()
+    e.$patch({ voidWorld: { ...voidWorld(), id: 'chiyan' } } as never)
+    e.sanitize()
+    expect(e.voidWorld).toBeNull()
   })
 })

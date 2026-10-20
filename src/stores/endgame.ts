@@ -4,7 +4,13 @@ import { computed, ref } from 'vue'
 import type { CelestialWorldDef, DaoMark, DaoPathId, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { mergeMods } from '@/core/statsCalc'
-import { EXPEDITION_GUARDIAN_LAYER, celestialWorldDef, daoPathDef, trialDef } from '@/data/endgame'
+import {
+  EXPEDITION_GUARDIAN_LAYER,
+  EXPEDITION_ROUTE_LAYERS,
+  celestialWorldDef,
+  daoPathDef,
+  trialDef
+} from '@/data/endgame'
 import { SOUL_GRADES, SOUL_SLOTS, soulMods as soulModsOf, soulTypeDef, type SoulInstance } from '@/data/souls'
 import { milestoneDef, recordDef } from '@/data/identity'
 import { mutatorDef } from '@/data/mutators'
@@ -41,6 +47,97 @@ export interface WorldRunState {
 }
 
 const MAX_MARKS = 60
+
+/**
+ * 虚界的敌方形态修形:远征每一战都拿 `shape.skills.map` 与 `atkR/hpR` 现算三维,
+ * 缺一样就是「一点启程就白屏」。比例必须是正有限数 —— 0 或负数会把敌人算成
+ * 负血/秒杀,比报错更难察觉。
+ */
+function sanitizeFoeShape(raw: unknown): import('@/types').WorldFoeShape | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const f = raw as Partial<import('@/types').WorldFoeShape>
+  if (typeof f.name !== 'string' || !f.name) return null
+  const atkR = asFiniteNumber(f.atkR, 0, 0)
+  const defR = asFiniteNumber(f.defR, 0, 0)
+  const hpR = asFiniteNumber(f.hpR, 0, 0)
+  const speed = asFiniteNumber(f.speed, 0, 0)
+  if (atkR <= 0 || hpR <= 0 || speed <= 0) return null
+  if (!Array.isArray(f.skills)) return null
+  return {
+    name: f.name,
+    icon: typeof f.icon === 'string' ? f.icon : 'user',
+    atkR,
+    defR,
+    hpR,
+    speed,
+    skills: f.skills.filter(
+      s =>
+        !!s &&
+        typeof s === 'object' &&
+        typeof (s as { name?: unknown }).name === 'string' &&
+        Number.isFinite((s as { mult?: unknown }).mult) &&
+        Number.isFinite((s as { rate?: unknown }).rate)
+    ),
+    ...(f.mods && typeof f.mods === 'object' && !Array.isArray(f.mods) ? { mods: f.mods } : {})
+  }
+}
+
+/**
+ * 虚界是**程序化生成的临时世界**,与手工四界不同:它没有目录可以逐字段对照,
+ * 形状坏掉只能整座作废(界面回到「窥探虚界」,玩家可再窥一座)。
+ *
+ * 不修局部的原因:CelestialView 直接读 `foes.map(f => f.name)` / `ruleText.map`,
+ * 远征读 `routes[layer][choice]` 与 `guardian`;缺一节就会在真打或渲染时抛错。
+ * 而半份世界即使勉强不抛,「入场费/赏格/规则」之间也已不对应 —— 那不是同一座虚界。
+ */
+function sanitizeVoidWorld(raw: unknown): CelestialWorldDef | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const w = raw as Partial<CelestialWorldDef>
+  if (w.id !== 'void' || typeof w.name !== 'string' || typeof w.seal !== 'string') return null
+  if (!Array.isArray(w.ruleText) || !Array.isArray(w.foes) || w.foes.length === 0) return null
+  if (!Array.isArray(w.routes) || w.routes.length !== EXPEDITION_ROUTE_LAYERS) return null
+  const guardian = sanitizeFoeShape(w.guardian)
+  if (!guardian) return null
+  const foes = w.foes.map(sanitizeFoeShape)
+  if (foes.some(f => f === null)) return null
+  const routes: NonNullable<CelestialWorldDef['routes']> = []
+  for (const layer of w.routes) {
+    if (!Array.isArray(layer) || layer.length !== 2) return null
+    const nodes = layer.map(n => {
+      if (!n || typeof n !== 'object') return null
+      const node = n as Partial<import('@/types').WorldRouteNode>
+      const foe = sanitizeFoeShape(node.foe)
+      if (!foe || typeof node.id !== 'string' || typeof node.name !== 'string') return null
+      return {
+        id: node.id,
+        name: node.name,
+        desc: typeof node.desc === 'string' ? node.desc : '',
+        foe,
+        ...(node.rules && typeof node.rules === 'object' && !Array.isArray(node.rules) ? { rules: node.rules } : {}),
+        bonus: Math.floor(asFiniteNumber(node.bonus, 0, 0)),
+        riskText: typeof node.riskText === 'string' ? node.riskText : ''
+      }
+    })
+    if (nodes.some(n => n === null)) return null
+    routes.push(nodes as [import('@/types').WorldRouteNode, import('@/types').WorldRouteNode])
+  }
+  return {
+    id: 'void',
+    name: w.name,
+    seal: w.seal,
+    anchorTier: asFiniteNumber(w.anchorTier, 0, 0),
+    desc: typeof w.desc === 'string' ? w.desc : '',
+    ruleText: asStringArray(w.ruleText),
+    rules: w.rules && typeof w.rules === 'object' && !Array.isArray(w.rules) ? w.rules : {},
+    entryCost: Math.floor(asFiniteNumber(w.entryCost, 0, 0)),
+    fights: Math.max(1, Math.floor(asFiniteNumber(w.fights, 1, 1))),
+    healBetweenPct: asFiniteNumber(w.healBetweenPct, 0.5, 0),
+    foes: foes as import('@/types').WorldFoeShape[],
+    guardian,
+    rewardDaoSource: Math.floor(asFiniteNumber(w.rewardDaoSource, 0, 0)),
+    routes
+  }
+}
 
 /**
  * 忆战快照的修形 —— 快照就是「当年那一局」本身,少一样就不再是那一局。
@@ -260,7 +357,7 @@ export const useEndgameStore = defineStore(
           }
         }
       }
-      voidWorld.value = asObjectOrNull<CelestialWorldDef>(voidWorld.value)
+      voidWorld.value = sanitizeVoidWorld(voidWorld.value)
       dailyDoneDay.value =
         typeof dailyDoneDay.value === 'number' && Number.isFinite(dailyDoneDay.value) ? dailyDoneDay.value : null
       /**
