@@ -421,6 +421,31 @@ describe('镇压速率:显示与结算同源', () => {
     expect(gained).toBeCloseTo(uiStonePerHour('qingyun'), 6)
     expect(uiStonePerHour('qingyun')).toBeGreaterThan(toNum(suppressRateFor('qingyun')!.stonePerHour))
   })
+
+  /**
+   * 结算与界面必须读同一份胜场。
+   *
+   * 界面(`regionRecallFor`)已改读净胜场 `regionWins`,若结算仍读连败仗也算的
+   * `regionStats.totalFights`,同一地界会出现「界面上写着混乱、入账却按繁盛 110%」:
+   * 玩家按显示的速率算账,永远对不上。故障注入:把这里改回 totalFights → 红。
+   */
+  it('连输五十场、刚镇压不到 6 小时:界面混乱,入账也按混乱,不白给繁盛', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: Date.now() - 3600_000 } // 守 1 小时,未到稳定
+    player.regionStats = {
+      qingyun: { totalFights: 200, avgRounds: 9, avgDamageTakenPct: 0.9, consecutiveWins: 0, lastUpdateAt: Date.now() }
+    }
+    player.regionWins = { qingyun: 0 }
+
+    expect(regionRecallFor('qingyun').prosperity).toBe('chaos')
+    const before = { ...resources.spiritStone }
+    settleSuppressedRegions(3600, new RandomService(() => 0.99))
+    const gained = toNum(sub(resources.spiritStone, before))
+    expect(gained).toBeCloseTo(uiStonePerHour('qingyun'), 6)
+    expect(gained, '不是繁盛的 110%').toBeCloseTo(toNum(suppressRateFor('qingyun')!.stonePerHour), 6)
+  })
 })
 
 describe('镇压复苏 · settle 级(72h 复生当拍不产石)', () => {

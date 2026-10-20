@@ -224,7 +224,12 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
 
     // Phase 30.9:长期安稳 → 灵脉渐复(收益 99%);繁盛 → 商旅(100%)
     const recall = deriveProsperity({
-      totalWins: player.regionStats[regionId]?.totalFights ?? 0,
+      /**
+       * 与界面(`regionRecallFor`)同一把尺:胜场读 `regionWins`,不读连败仗
+       * 一起数的 `totalFights` —— 否则界面按净胜场显示混乱、结算却按总场次
+       * 给繁盛的 110%,玩家看到的速率与实际入账当场分叉。
+       */
+      totalWins: player.regionWins[regionId] ?? 0,
       hasSuppressed: true,
       suppressedAt: player.suppressedSince[regionId],
       lastActivityAt: player.regionStats[regionId]?.lastUpdateAt ?? now,
