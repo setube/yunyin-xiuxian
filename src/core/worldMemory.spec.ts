@@ -83,6 +83,36 @@ describe('S1 区域兴衰', () => {
     expect(prosperityName('flourish')).toBe('繁盛')
   })
 
+  /**
+   * 兴衰看的是「赢过多少」,不是「打过多少」。
+   *
+   * 此前 `regionRecallFor` 读 `regionStats.totalFights` —— 那里面连败仗一起数:
+   * 同一地界连输五十场也会被判成「繁盛」,而 `regionWins`(exploration 每胜一场
+   * 才 +1)一直只写不读。故障注入:把判据改回 totalFights → 本条红。
+   */
+  it('regionRecallFor 按净胜场判兴衰:连输再多也不算繁盛', () => {
+    const player = usePlayerStore()
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: Date.now() }
+    player.regionStats = {
+      qingyun: {
+        totalFights: FLOURISH_WINS + 50, // 打了这么多场,但一场没赢
+        avgRounds: 9,
+        avgDamageTakenPct: 0.9,
+        consecutiveWins: 0,
+        lastUpdateAt: Date.now()
+      }
+    }
+    player.regionWins = { qingyun: 0 }
+    expect(regionRecallFor('qingyun').prosperity, '一场没赢却因打得多久而判繁盛,是错的').toBe('chaos')
+
+    // 赢够场数才升档,阈值与 deriveProsperity 同一把尺
+    player.regionWins = { qingyun: STABLE_WINS }
+    expect(regionRecallFor('qingyun').prosperity).toBe('stable')
+    player.regionWins = { qingyun: FLOURISH_WINS }
+    expect(regionRecallFor('qingyun').prosperity).toBe('flourish')
+  })
+
   it('守土之年:镇压后守满时长也能走到稳定/繁盛(不必先刷满胜场)', () => {
     // 镇压后不再产出胜场,故「守多久」是另一条通往兴衰的路
     const held7h = deriveProsperity({

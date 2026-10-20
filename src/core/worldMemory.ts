@@ -214,7 +214,12 @@ export function regionRecallFor(regionId: string): RegionRecall {
   const stats = player.regionStats[regionId]
   const now = Date.now()
   return deriveProsperity({
-    totalWins: stats?.totalFights ?? 0,
+    /**
+     * 胜场取 `regionWins`(每胜一场 +1),不是 `regionStats.totalFights`。
+     * 后者连败仗一起数:同一地界连输五十场也会被判成「繁盛」,而兴衰的原意是
+     * 「你在这里赢过多少」。`recordRegionWin` 一直只写不读,正是这条接错了线。
+     */
+    totalWins: player.regionWins[regionId] ?? 0,
     hasSuppressed: player.suppressedRegions.includes(regionId),
     // 「镇压后稳定多久」的起点是镇压时刻,suppressedSince;不能拿最近战斗时间 lastUpdateAt 充数
     // —— 否则镇压后继续刷战,`since` 会随战斗一路前移,「此地已稳定 N 小时」越算越短
