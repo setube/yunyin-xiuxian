@@ -27,6 +27,7 @@ import {
   INSTANT_EXP_LAYER_CAP,
   OFFLINE_BOSS_REWARD_MULT,
   OFFLINE_EFFICIENCY,
+  OFFLINE_FLAT_DUST_PER_WIN,
   OFFLINE_MODAL_MIN_SECONDS
 } from '@/data/constants'
 import { makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
@@ -89,7 +90,7 @@ export function offlineMaterialGain(
     herb: Math.round(wins * HERB_DROP_CHANCE * 2 * doubleMult),
     ore: Math.round(wins * ORE_DROP_CHANCE * 1.5 * doubleMult),
     page: Math.round(wins * PAGE_DROP_CHANCE * 1.5 * rewardMult * doubleMult),
-    dust: Math.round(wins * 0.3 * doubleMult)
+    dust: Math.round(wins * OFFLINE_FLAT_DUST_PER_WIN * doubleMult)
   }
 }
 

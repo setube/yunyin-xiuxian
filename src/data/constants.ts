@@ -488,6 +488,11 @@ export const ARTIFACT_DROP_CHANCE = 0.015
 // 经济审计的预期产量也读它们 —— 别在 loot.ts 和 economySim 各抄一份
 export const HERB_DROP_CHANCE = 0.5
 export const ORE_DROP_CHANCE = 0.35
+/**
+ * 离线单胜的 flat 器灵尘 —— 离线独有的便捷值,在线并无此入口(在线尘埃自化尘/salvageOf):
+ * 纯粹图「离线几小时回来有点灰可用」,故与 herb/ore/page 的期望推导无关,单列一枚常量。
+ */
+export const OFFLINE_FLAT_DUST_PER_WIN = 0.3
 /** 战斗灵石基础掉落(按层级指数放大) */
 export const STONE_DROP_BASE = 12
 export const STONE_TIER_GROWTH = 1.9

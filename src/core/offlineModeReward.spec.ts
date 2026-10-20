@@ -148,7 +148,7 @@ describe('离线普通战产出吃模式倍率(确定性)', () => {
 })
 
 import { offlineMaterialGain } from './offline'
-import { HERB_DROP_CHANCE, ORE_DROP_CHANCE, PAGE_DROP_CHANCE } from '@/data/constants'
+import { HERB_DROP_CHANCE, ORE_DROP_CHANCE, PAGE_DROP_CHANCE, OFFLINE_FLAT_DUST_PER_WIN } from '@/data/constants'
 
 describe('离线单胜材料与在线 afterWin 同一期望(单源取 drop 常量)', () => {
   it('ore 取 ORE_DROP_CHANCE×1.5(0.525)而非写死 0.5;herb/page 同源;福缘/倍率各自放大', () => {
@@ -161,5 +161,8 @@ describe('离线单胜材料与在线 afterWin 同一期望(单源取 drop 常�
     expect(offlineMaterialGain(100, 2, 1).ore).toBe(Math.round(100 * ORE_DROP_CHANCE * 1.5 * 2))
     expect(offlineMaterialGain(100, 1, 1.4).page).toBe(Math.round(100 * PAGE_DROP_CHANCE * 1.5 * 1.4))
     expect(offlineMaterialGain(100, 1, 1.4).ore).toBe(Math.round(100 * ORE_DROP_CHANCE * 1.5))
+    // flat 尘是离线独有便捷值,须走命名常量,不可退回裸写 0.3(福缘翻倍同样放大)
+    expect(g.dust).toBe(Math.round(120 * OFFLINE_FLAT_DUST_PER_WIN))
+    expect(offlineMaterialGain(100, 2, 1).dust).toBe(Math.round(100 * OFFLINE_FLAT_DUST_PER_WIN * 2))
   })
 })
