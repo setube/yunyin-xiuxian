@@ -122,6 +122,27 @@ describe('坊市 · 买卖', () => {
     expect(market.stock[0]!.sold).toBe(false)
   })
 
+  /**
+   * 跨过换货窗口时点下「买」:屏幕上还是旧架,`sync` 却整架换新。
+   * 若照旧按 idx 扣钱,玩家买下的是他没看过的那件(灵石照扣,装备品质还按新的
+   * `(stockedAt, idx)` 再生)。宁可不成,让他按新货再买。
+   */
+  it('跨过换货窗口时买下:不成交、不扣灵石、不入袋', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    const inventory = useInventoryStore()
+    seedStock([pillSlot(0)])
+    market.stockedAt = 0 // 屏幕上画的还是这架旧货,但已过窗口
+    resources.spiritStone = gn(100)
+    const oldShelf = market.stock
+
+    expect(market.buy(0)).toBe('expired')
+    expect(market.stock, '已整架换新').not.toBe(oldShelf)
+    expect(oldShelf[0]!.sold, '旧架那格不动').toBe(false)
+    expect(toNum(resources.spiritStone), '灵石一枚不扣').toBe(100)
+    expect(inventory.pills['p_jvqisan'] ?? 0, '也不入袋').toBe(0)
+  })
+
   it('sanitize:货架塞满垃圾逐格修形,整格丢弃;时刻夹回非负', () => {
     const market = useMarketStore()
     market.$patch({

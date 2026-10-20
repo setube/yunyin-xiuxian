@@ -423,6 +423,7 @@
     if (result === 'ok') ui.toast(`于坊市购得「${name}」`, 'success')
     else if (result === 'poor') ui.toast('灵石不足', 'warn')
     else if (result === 'bagfull') ui.toast('行囊已满,腾一席再来', 'warn')
+    else if (result === 'expired') ui.toast('货架刚换新,请按新货再买', 'warn')
   }
 
   function consignOne(uid: string): void {

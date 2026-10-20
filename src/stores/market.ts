@@ -30,7 +30,13 @@ import type { HerbGrade } from '@/data/herbGrades'
 import { herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber, asPrice } from '@/utils/saveShape'
 
-export type MarketBuyResult = 'ok' | 'sold' | 'poor' | 'bagfull' | 'missing'
+/**
+ * `expired` = 点下去的这一瞬正好跨过换货窗口:货架已整架换新,`idx` 指的是另一格货。
+ *
+ * 单靠 idx 认货的话,这时会**买下玩家没看过的那件**:灵石照扣,装备品质还按新的
+ * `(stockedAt, idx)` 再生 —— 与屏幕上那格的标价、品相全对不上。宁可不成交。
+ */
+export type MarketBuyResult = 'ok' | 'sold' | 'poor' | 'bagfull' | 'missing' | 'expired'
 
 export const useMarketStore = defineStore(
   'market',
@@ -139,7 +145,10 @@ export const useMarketStore = defineStore(
     /** 买下第 idx 格;装备先验行囊满否、再扣灵石,次序错了会「花了钱没拿到货」 */
     function buy(idx: number): MarketBuyResult {
       const now = Date.now()
+      const before = stock.value
       sync(now)
+      // 换货了:idx 现在指的是另一格货,不能替玩家买下他没看过的那件
+      if (before.length > 0 && stock.value !== before) return 'expired'
       const slot = stock.value.find(s => s.idx === idx)
       if (!slot) return 'missing'
       if (slot.sold) return 'sold'
