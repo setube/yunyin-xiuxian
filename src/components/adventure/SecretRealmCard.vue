@@ -13,6 +13,10 @@
         {{ def?.name }} · {{ def?.desc }}
       </p>
       <p class="mt-1 text-[10px] leading-relaxed text-violet-ink">此地规则:{{ state.rules.join(' · ') }}</p>
+      <!-- 败场明写:再输一场就被逐出,却是打之前唯一看不见的数 -->
+      <p v-if="state.losses > 0" class="mt-0.5 text-[10px] leading-relaxed tabular text-cinnabar">
+        已败 {{ state.losses }} 场 · 再败 {{ SECRET_MAX_LOSSES - state.losses }} 场即被逐出
+      </p>
       <p v-if="state.spoils.length" class="mt-1 max-h-24 overflow-y-auto text-[10px] leading-relaxed text-ink-faint">
         <span v-for="(s, i) in state.spoils" :key="i" class="block">· {{ s }}</span>
       </p>
@@ -61,6 +65,7 @@
   import { cnNumber } from '@/utils/format'
   import {
     SECRET_LAYERS,
+    SECRET_MAX_LOSSES,
     abandonRealm,
     availableRealms,
     currentRealm,

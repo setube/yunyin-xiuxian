@@ -198,6 +198,28 @@ describe('秘境 · 推得动、出得来', () => {
     expect(SECRET_MAX_LOSSES).toBe(2)
   })
 
+  /**
+   * 逐出那一句曾经手写「连败两场」——门槛挪到数据里以后,文案仍留在 core 里。
+   * 现在那句从 SECRET_MAX_LOSSES 现算,并且卡片在**开打前**就把败场摆出来:
+   * 「再输一场就出局」是玩家决定要不要硬闯的唯一依据,却是原界面唯一看不见的数。
+   */
+  it('被逐出那句从 SECRET_MAX_LOSSES 现算,不再手写「两场」', () => {
+    const src = readFileSync(resolve(__dirname, 'secretRealm.ts'), 'utf8')
+    expect(src).toContain('cnNumber(SECRET_MAX_LOSSES)')
+    expect(src, '手写的「连败两场」会在门槛改成三场时当场撒谎').not.toContain('连败两场')
+  })
+
+  it('秘境卡片在开打前摆出已败场数与剩余容错,并读同一份门槛', () => {
+    const card = readFileSync(
+      resolve(__dirname, '../components/adventure/SecretRealmCard.vue'),
+      'utf8'
+    )
+    expect(card).toContain('state.losses')
+    expect(card).toContain('SECRET_MAX_LOSSES')
+    // 手写「再败 2 场」这类字面量正是改门槛时最容易漏的那处
+    expect(card).not.toMatch(/再败\s*[0-9]+\s*场/)
+  })
+
   it('放弃即出,状态清空(已得战利不退)', () => {
     ready(3)
     enterSecretRealm('sr_kurong')

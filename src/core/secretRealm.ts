@@ -9,7 +9,7 @@
  */
 import type { CombatantSnap, CombatRules, GNum } from '@/types'
 import type { WorldFoeShape } from '@/types'
-import { formatGN } from '@/utils/format'
+import { cnNumber, formatGN } from '@/utils/format'
 import { rng } from '@/utils/random'
 import { ENEMIES, enemyDef } from '@/data/enemies'
 import { beastIcon } from '@/data/beastFamilies'
@@ -259,7 +259,8 @@ export function fightSecretLayer(): SecretLayerResult | null {
   lines.push(`不敌 ${snap.name} · 气血余 ${Math.round(result.playerHpPct * 100)}%`)
   if (losses >= SECRET_MAX_LOSSES) {
     player.setSecretRealm(null)
-    lines.push('连败两场,被逐出秘境')
+    // 「两场」从 SECRET_MAX_LOSSES 现算:门槛写在数据里,文案跟着它走
+    lines.push(`连败 ${cnNumber(SECRET_MAX_LOSSES)} 场,被逐出秘境`)
     ui.toast('你被逐出了秘境', 'warn')
     return { win: false, finished: true, cleared: false, lines }
   }
