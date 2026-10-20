@@ -585,15 +585,15 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   it('炼丹缺草给去坊市的去路,坊市接住 focus=herb 并只高亮灵草格', () => {
     const inv = src('../views/InventoryView.vue')
     expect(inv, '缺草/草石都缺时该给「去坊市续草」').toMatch(
-      /name: 'market', query: \{ focus: 'herb' \}/,
+      /name: 'market', query: \{ focus: 'herb', grade: String\(r\.cost\.grade\) \}/,
     )
     expect(inv, '入口只该在草是短板时出现(不该给掌握不足指路)').toMatch(
       /r\.plan\.reason === 'herb' \|\| r\.plan\.reason === 'both'/,
     )
     const market = src('../views/MarketView.vue')
     expect(market, '坊市要读 focus 参数').toContain("route.query.focus === 'herb'")
-    expect(market, '高亮只认 material 且 matId=herb 的未售格').toMatch(
-      /c\.kind === 'material' && c\.matId === 'herb' && !c\.sold/,
+    expect(market, '按方子要的品阶挑草格(缺灵品却亮凡品,买回来照样开不了炉)').toContain(
+      'focusHerbSlot(market.stock, want,'
     )
     expect(market, '认到灵草格后要滚进视口').toContain('scrollIntoView(')
     // 货架六格随机,碰上没有草的那一架:不许静默停住,得说清「这一架没有」

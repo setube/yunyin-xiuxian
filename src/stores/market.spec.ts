@@ -6,7 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS, MARKET_REFRESH_SECONDS, type MarketSlot } from '@/data/market'
 import { gn, toNum } from '@/utils/gnum'
 import { BAG_CAPACITY } from '@/data/constants'
-import { marketRemainingSec, herbSellBatch, materialSellPrice } from '@/core/marketService'
+import { focusHerbSlot, marketRemainingSec, herbSellBatch, materialSellPrice } from '@/core/marketService'
 import { useMarketStore } from '@/stores/market'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -396,5 +396,44 @@ describe('即时售材/售草结算精额守恒', () => {
     expect(market.sellMaterial(0)).toBe(true)
     expect(res.ore).toBe(MARKET_MAT_COUNT)
     expect(toNum(res.spiritStone)).toBeCloseTo(toNum(materialSellPrice(0)), 6)
+  })
+
+  /**
+   * 议题 #130 的落点判据:「去坊市续草」指的是**方子要的那一品**。
+   * 这里把两品草同时摆上架,要求挑的必须是请求的那一品 —— 若按「有草就行」挑,
+   * 炼灵品丹缺草却高亮凡品格,玩家买回去照样开不了炉。
+   */
+  describe('focusHerbSlot —— 续草该指哪一格', () => {
+    const herb = (idx: number, grade: number | undefined, sold = false): MarketSlot =>
+      ({ kind: 'material', idx, matId: 'herb', ...(grade === undefined ? {} : { grade }), count: 12, price: { m: 5, e: 0 }, sold }) as MarketSlot
+    const ore = (idx: number): MarketSlot =>
+      ({ kind: 'material', idx, matId: 'ore', count: 12, price: { m: 5, e: 0 }, sold: false }) as MarketSlot
+
+    it('两品草同时在架:挑方子要的那一品,不挑先出现的那格', () => {
+      const stock = [herb(0, 1), ore(1), herb(2, 2)]
+      const { slot, soldOut } = focusHerbSlot(stock, 2, 1)
+      expect(slot?.idx, '要灵品草就该指灵品格').toBe(2)
+      expect(soldOut).toBe(false)
+    })
+
+    it('要的那一品已售罄:报 soldOut,而不是「压根没这品」', () => {
+      const stock = [herb(0, 2, true), herb(1, 1)]
+      const r = focusHerbSlot(stock, 2, 1)
+      expect(r.slot, '卖光的格不能当落点').toBeNull()
+      expect(r.soldOut, '有货但售罄与没进货是两种处境').toBe(true)
+    })
+
+    it('这架没进这一品草:落到 none —— 不拿别品的草冒充,也不去指玄铁格', () => {
+      const stock = [herb(0, 1), ore(1)]
+      const r = focusHerbSlot(stock, 2, 1)
+      expect(r.slot).toBeNull()
+      expect(r.soldOut).toBe(false)
+    })
+
+    it('旧档草格没有 grade:按显示兜底品认,与买下后入账同源', () => {
+      const stock = [herb(0, undefined)]
+      expect(focusHerbSlot(stock, 1, 1).slot?.idx, '兜底品就是显示品,该认得出').toBe(0)
+      expect(focusHerbSlot(stock, 2, 1).slot, '兜底品是凡品,不该冒充灵品').toBeNull()
+    })
   })
 })

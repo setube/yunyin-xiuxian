@@ -404,7 +404,7 @@
                 <span class="whitespace-nowrap text-[10px] text-cinnabar">{{ r.plan.blocked }}</span>
                 <RouterLink
                   v-if="r.plan.reason === 'herb' || r.plan.reason === 'both'"
-                  :to="{ name: 'market', query: { focus: 'herb' } }"
+                  :to="{ name: 'market', query: { focus: 'herb', grade: String(r.cost.grade) } }"
                   class="whitespace-nowrap rounded border border-jade/50 px-2 py-1 text-[10px] text-jade active:opacity-60"
                 >
                   去坊市续草 →

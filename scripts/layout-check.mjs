@@ -3597,9 +3597,10 @@ for (const vp of [
  * 「点了没反应」。这条端到端把三件事一起钉住:
  *   ① 缺草时丹炉里真的出现「去坊市续草」;
  *   ② 点下去落到 buy 签,并且 hash 带着 focus=herb;
- *   ③ 高亮的那一格是灵草、且**完整落在视口内**(不是停在页面顶部就算完)。
- * 夹具把灵草格排到货架最末一行,不调用 scrollIntoView 时它必在视口之外 ——
- * 否则这条判据会像旧版一样「跳过去也算过」。
+ *   ③ 高亮的那一格是**方子要的那一品**灵草、且完整落在视口内(不是停在页面顶部
+ *      就算完,也不是「有草就亮」—— 亮错品阶,买回来照样开不了炉)。
+ * 夹具把目标草格排到货架最末一行,并在它前面摆一格别品的草:不滚、不按品挑,
+ * 两种情况都会红。
  */
 {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
@@ -3608,18 +3609,27 @@ for (const vp of [
   const gn = (m, e) => ({ m, e })
   const now = Date.now()
   /*
-   * 货架固定 15 格:前 14 格玄铁把灵草挤到第 7 行(390 宽两列)。
+   * 货架摆 15 格,把目标草挤到最末一行(390 宽两列)。
    * 真实货架只有 6 格,但这里要量的是「滚没滚」,不是「货架多大」——
    * 6 格在 844 高的视口里本来就看得见,量不出这条 bug。
+   * 第 6 格是**另一品**的草:按「有草就亮」挑,它会抢先被点亮。
    */
-  const oreSlots = Array.from({ length: 14 }, (_, idx) => ({
+  const slot = (idx, matId, grade) => ({
     kind: 'material',
     idx,
-    matId: 'ore',
+    matId,
+    ...(grade === undefined ? {} : { grade }),
     count: 12,
     price: gn(1, 3),
     sold: false
-  }))
+  })
+  const stock = [
+    ...Array.from({ length: 6 }, (_, i) => slot(i, 'ore')),
+    slot(6, 'herb', 2),
+    ...Array.from({ length: 7 }, (_, i) => slot(7 + i, 'ore')),
+    // 玩家在炼气(3 境),天运丹要凡品草 —— 目标就是这一格
+    slot(14, 'herb', 1)
+  ]
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: now - 86400000, lastActiveAt: now, totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: {
@@ -3640,11 +3650,7 @@ for (const vp of [
     dongfu: { levels: { mansion: 1, field: 1, alchemy: 5, forge: 1, library: 1 }, offlineCapHours: 24 },
     // 只认这一张高耗草方子,免得入门三方的余量把「缺草」遮掉
     lore: { recipeLore: { p_tianyun: 0.5 } },
-    market: {
-      stock: [...oreSlots, { kind: 'material', idx: 14, matId: 'herb', grade: 1, count: 12, price: gn(1, 3), sold: false }],
-      stockedAt: now,
-      consign: []
-    },
+    market: { stock, stockedAt: now, consign: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
   }
   await ctx.addInitScript(
@@ -3663,9 +3669,12 @@ for (const vp of [
   await clearOverlays(page)
 
   checked += 1
-  await page.getByRole('button', { name: /开\s*炉\s*炼\s*丹/ }).first().click({ timeout: 3000 })
-  await page.waitForTimeout(600)
+  const opener = page.getByRole('button', { name: /开\s*炉\s*炼\s*丹/ }).first()
+  // 等入口真的可点再点:不吃固定等待的运气
+  await opener.waitFor({ state: 'visible', timeout: 8000 })
+  await opener.click({ timeout: 3000 })
   const card = page.locator('.modal-panel .card-ink', { hasText: '天运丹' }).first()
+  await card.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {})
   if ((await card.count()) === 0) {
     failures.push('[390] 续草场景:丹炉里没渲染出天运丹(夹具没铺到缺草那一档)')
   } else {
@@ -3676,7 +3685,14 @@ for (const vp of [
       failures.push('[390] 续草场景:灵草不足却没有「去坊市续草」的去路')
     } else {
       await link.click({ timeout: 3000 })
-      await page.waitForTimeout(1200)
+      // 等落点定下来(高亮或「续不上草」的说明),不赌固定延时
+      await page
+        .waitForFunction(
+          () => !!document.querySelector('[data-focus-herb-missing]') || !!document.querySelector('.card-ink.ring-2'),
+          undefined,
+          { timeout: 8000 }
+        )
+        .catch(() => {})
       const landed = await page.evaluate(() => ({
         hash: location.hash,
         scrollTop: document.querySelector('main')?.scrollTop ?? 0,
@@ -3687,7 +3703,7 @@ for (const vp of [
         })(),
         missing: !!document.querySelector('[data-focus-herb-missing]'),
         herb: (() => {
-          const el = document.querySelector('[data-idx="14"]')
+          const el = document.querySelector('[data-card="14"]')
           if (!el) return null
           const box = el.getBoundingClientRect()
           return {
@@ -3696,10 +3712,19 @@ for (const vp of [
             top: box.top,
             bottom: box.bottom
           }
+        })(),
+        // 另一品的那格草:不许被点亮
+        wrongGrade: (() => {
+          const el = document.querySelector('[data-card="6"]')
+          return el
+            ? { text: (el.textContent || '').replace(/\s+/g, ' ').trim(), highlighted: el.className.includes('ring-2') }
+            : null
         })()
       }))
       if (!/focus=herb/.test(landed.hash)) failures.push(`[390] 续草场景:跳转没带上 focus=herb(${landed.hash})`)
+      if (!/grade=1/.test(landed.hash)) failures.push(`[390] 续草场景:跳转没带上要补的品阶(${landed.hash})`)
       if (landed.missing) failures.push('[390] 续草场景:货架明明有灵草,却报「这一刻没有灵草」')
+      if (landed.wrongGrade?.highlighted) failures.push(`[390] 续草场景:点亮了别品的草 —— ${landed.wrongGrade.text.slice(0, 30)}`)
       if (!landed.herb) {
         failures.push('[390] 续草场景:坊市里找不到 fixture 的灵草格,判据没量到东西')
       } else {
@@ -3770,12 +3795,17 @@ for (const vp of [
   watchPageErrors(page, pageErrors)
   await page.goto(INDEX + '#/market?focus=herb', { waitUntil: 'load' })
   await page.waitForTimeout(2200)
+  // 等提示真的落进 DOM,不吃固定等待的运气
+  await page
+    .waitForFunction(() => !!document.querySelector('[data-focus-herb-missing]'), undefined, { timeout: 8000 })
+    .catch(() => {})
   checked += 1
   const said = await page.evaluate(() => {
     const el = document.querySelector('[data-focus-herb-missing]')
     return (el?.textContent || '').replace(/\s+/g, ' ').trim()
   })
-  if (!/没有灵草/.test(said)) failures.push(`[390] 空架续草:架上没有草却一声不响(${said || '无提示'})`)
+  // 这一架压根没进这一品草(而不是卖光了)—— 话得对得上处境
+  if (!/没有这一品灵草/.test(said)) failures.push(`[390] 空架续草:架上没有这一品草却没说清(${said || '无提示'})`)
   else console.log(`\n空架续草:「${said.slice(0, 40)}…」`)
   if (pageErrors.length) failures.push(`[390] 空架续草页面异常:${[...new Set(pageErrors)].join(' | ')}`)
   await ctx.close()

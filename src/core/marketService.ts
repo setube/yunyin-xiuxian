@@ -31,6 +31,7 @@ import {
   MARKET_SELL_MAT_STONE_UNITS,
   type MarketEquipSlot,
   type MarketKind,
+  type MarketMaterialSlot,
   type MarketSlot,
   type MarketStock
 } from '@/data/market'
@@ -139,6 +140,28 @@ export function marketEquipInstance(slot: MarketEquipSlot, stockedAt: number): E
   })
 }
 
+/**
+ * 「去坊市续草」该指哪一格 —— 丹炉缺的是**某一品**的草,不是随便一品。
+ *
+ * 不按品认会指错路:炼灵品丹缺草却高亮凡品格,玩家买回来照样开不了炉。
+ * 旧档货架格没有 grade(上货时未钉死品阶),按显示兜底品算 —— 与界面上
+ * 写的那一品、买下后入账的那一品同源。
+ *
+ * @returns slot 可高亮的未售格(没有则 null);soldOut 表示这一品有货但已售罄,
+ *          与「这一架压根没进这品草」是两种处境,话不能混着说。
+ */
+export function focusHerbSlot(
+  slots: readonly MarketSlot[],
+  grade: HerbGrade,
+  fallbackGrade: HerbGrade
+): { slot: MarketMaterialSlot | null; soldOut: boolean } {
+  const herbs = slots.filter(
+    (s): s is MarketMaterialSlot => s.kind === 'material' && s.matId === 'herb' && (s.grade ?? fallbackGrade) === grade
+  )
+  const slot = herbs.find(s => !s.sold) ?? null
+  return { slot, soldOut: slot === null && herbs.length > 0 }
+}
+
 /** 货架还剩多久刷新(秒);已过期返回 0 */
 export function marketRemainingSec(stockedAt: number, now: number): number {
   return Math.max(0, stockedAt + MARKET_REFRESH_SECONDS * 1000 - now) / 1000
@@ -175,4 +198,3 @@ export function herbSellPrice(grade: HerbGrade, major: number): number {
 export function herbSellBatch(grade: HerbGrade, major: number): GNum {
   return mulN(gn(herbSellPrice(grade, major)), MARKET_MAT_COUNT)
 }
-
