@@ -20,6 +20,7 @@ import { talentDef } from '@/data/talents'
 import { heritageDef } from '@/data/heritage'
 import { CHAINS } from '@/data/chains'
 import { birthMajorFloor } from '@/core/heritageEffects'
+import { sanitizeLinggen } from '@/core/linggenGen'
 import { randomDaoName } from '@/data/names'
 import { rng } from '@/utils/random'
 import { baseCultPerSec, baseQiRegen, expRequirement, gameDay, qiCap } from '@/core/formulas'
@@ -667,6 +668,14 @@ export const usePlayerStore = defineStore(
     /** 存档修复 */
     function sanitize(): void {
       exp.value = gn(exp.value)
+      /**
+       * 灵根是**裸下标 + 裸方法**的两处渲染点:角色页写 `ELEMENTS[root.element].color`
+       * 与 `linggen.growthMult.toFixed(2)`,建号页同样如此。坏档里元素名认不出时
+       * 对 undefined 取属性、倍率写成 null 时对 null 调方法,渲染期直接抛错 ——
+       * 而 Vue 会不断重试,玩家看到的是「出现异常,已记录」的 toast 反复弹出。
+       * 故整份过一遍形状修复(见 core/linggenGen.sanitizeLinggen)。
+       */
+      linggen.value = sanitizeLinggen(linggen.value)
       if (!Number.isFinite(age.value)) age.value = START_AGE
       if (!Number.isFinite(major.value) || major.value < 0) major.value = 0
       if (!Number.isFinite(sub.value) || sub.value < 0) sub.value = 0

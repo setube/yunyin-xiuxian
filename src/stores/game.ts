@@ -4,7 +4,8 @@ import { ref } from 'vue'
 import { persistConfig, SAVE_VERSION } from '@/utils/storage'
 import { CREATE_REROLL_QUOTA } from '@/data/constants'
 import type { LinggenProfile } from '@/types'
-import { asFiniteNumber, asObjectOrNull } from '@/utils/saveShape'
+import { asFiniteNumber } from '@/utils/saveShape'
+import { sanitizeLinggen } from '@/core/linggenGen'
 
 export const useGameStore = defineStore(
   'game',
@@ -39,7 +40,9 @@ export const useGameStore = defineStore(
               CREATE_REROLL_QUOTA,
               Math.max(0, Math.floor(asFiniteNumber(createRerolls.value, CREATE_REROLL_QUOTA, 0)))
             )
-      createProfile.value = asObjectOrNull<LinggenProfile>(createProfile.value)
+      // 建号草稿同样会被建号页裸下标读取(ELEMENTS[root.element] / growthMult.toFixed):
+      // 认不出的元素或坏倍率会让建号页白屏,故整份过形状修复,一根灵根都不剩即作废重掷
+      createProfile.value = sanitizeLinggen(createProfile.value)
       createName.value = typeof createName.value === 'string' ? createName.value.slice(0, 8) : ''
     }
 

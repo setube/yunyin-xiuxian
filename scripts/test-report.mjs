@@ -15,7 +15,7 @@ import { join, resolve } from 'node:path'
 const CATEGORIES = [
   {
     name: 'Unit        数值纯函数',
-    match: ['gnum', 'format', 'setMath', 'saveShape', 'savePlaintext', 'useNativeInsets', 'formulas', 'forgeUpgrade', 'forgeArtifactBatch', 'linggenGen', 'equipGen', 'equipmentIcon', 'crypto', 'quests', 'codex', 'craftability', 'reforge', 'theme', 'savePersistence', 'dongfu.spec', 'inventory.spec', 'ui.spec', 'inventoryNote', 'affixTransfer.spec', 'affixes', 'questNav', 'appVersion', 'timeUnits']
+    match: ['gnum', 'format', 'setMath', 'saveShape', 'savePlaintext', 'useNativeInsets', 'formulas', 'forgeUpgrade', 'forgeArtifactBatch', 'linggenGen', 'linggenShape', 'equipGen', 'equipmentIcon', 'crypto', 'quests', 'codex', 'craftability', 'reforge', 'theme', 'savePersistence', 'dongfu.spec', 'inventory.spec', 'ui.spec', 'inventoryNote', 'affixTransfer.spec', 'affixes', 'questNav', 'appVersion', 'timeUnits']
   },
   {
     name: 'Combat      战斗规则',

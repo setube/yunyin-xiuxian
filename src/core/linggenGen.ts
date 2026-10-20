@@ -70,3 +70,41 @@ function gradeName(count: number, hasSpecial: boolean, avgAptitude: number): str
 function round2(v: number): number {
   return Math.round(v * 100) / 100
 }
+
+/**
+ * 灵根画像的形状修复 —— 建号草稿与角色灵根都要过这一道。
+ *
+ * 两处界面都是**裸下标**:`ELEMENTS[root.element].color` 取元素元数据、
+ * `growthMult.toFixed(2)` 读倍率。坏档/手改档里出现野元素名或 `growthMult: null`
+ * 时,前者对 `undefined` 取属性、后者对 null 调方法,渲染期当场抛错 ——
+ * 而 Vue 会不断重试渲染,玩家看到的是「出现异常,已记录」的 toast 反复弹出。
+ *
+ * 修法:
+ *  - 认不出的元素整根剔掉(它既画不出圆章,也不参与任何亲和计算);
+ *  - 资质夹回 1~100 的整数(0 资质只是不可信的坏数,不是「废灵根」);
+ *  - 倍率非有限/非正回落 1(与 `linggen?.growthMult ?? 1` 的缺省同一口径);
+ *  - 一根都不剩时整份作废(没有灵根的画像不是画像):建号页会重新掷牌,
+ *    角色页各处本就按「无灵根」分支显示。
+ */
+export function sanitizeLinggen(raw: unknown): LinggenProfile | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const p = raw as Partial<LinggenProfile>
+  const roots: SpiritRoot[] = []
+  for (const r of Array.isArray(p.roots) ? p.roots : []) {
+    if (!r || typeof r !== 'object') continue
+    const element = (r as Partial<SpiritRoot>).element
+    if (typeof element !== 'string' || !ELEMENTS[element as ElementId]) continue
+    const aptitude = (r as Partial<SpiritRoot>).aptitude
+    roots.push({
+      element: element as ElementId,
+      aptitude: Math.min(100, Math.max(1, Math.floor(Number.isFinite(aptitude) ? (aptitude as number) : 1)))
+    })
+  }
+  if (roots.length === 0) return null
+  const growthMult = Number.isFinite(p.growthMult) && (p.growthMult as number) > 0 ? (p.growthMult as number) : 1
+  return {
+    roots,
+    gradeName: typeof p.gradeName === 'string' && p.gradeName ? p.gradeName : '灵根',
+    growthMult
+  }
+}
