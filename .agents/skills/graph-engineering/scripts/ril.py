@@ -145,12 +145,43 @@ def next_id(graph: dict, ntype: str) -> str:
     return f"{prefix}-{max_n + 1:03d}"
 
 
+# Fields whose value must stay a string, whatever it looks like.
+#
+# `parse_fields` JSON-decodes every value so callers can pass `severity=0.85` or
+# `alternatives_rejected=["a","b"]`. But a git short hash is *also* valid JSON
+# syntax when it happens to be all digits with an `e`: `--field commit=8564e98`
+# parses to the float 8.564e+98, and `83745e4` to 837450000.0. That silently
+# corrupts the store (three nodes were damaged this way in round 265 alone, and
+# the long-float form then breaks `vp fmt --check` on every commit). Strings
+# that never carry numeric or structured meaning belong here.
+STRING_FIELDS = {
+    "id",
+    "type",
+    "status",
+    "commit",
+    "source",
+    "category",
+    "summary",
+    "rationale",
+    "alternatives_rejected",
+    "created_at",
+    "updated_at",
+    "lock_owner",
+    "lock_until",
+}
+
+
 def parse_fields(pairs: list[str]) -> dict:
     fields: dict = {}
     for pair in pairs or []:
         if "=" not in pair:
             fail(f"field must be key=value, got: {pair!r}")
         key, value = pair.split("=", 1)
+        if key.rstrip(":") != key:
+            fail(f"field name must not end with ':': {key!r}")
+        if key in STRING_FIELDS:
+            fields[key] = value
+            continue
         try:
             fields[key] = json.loads(value)
         except json.JSONDecodeError:
@@ -267,6 +298,15 @@ def cmd_node_set(args: argparse.Namespace) -> None:
         for pair in args.field:
             if pair.split("=", 1)[0] not in editable:
                 fail("decision nodes are immutable; record a new decision and add a supersedes edge instead")
+    # `--unset` exists only to clear malformed field names (an old quoting
+    # mistake wrote `severity:` alongside `severity`). It is deliberately not a
+    # general eraser: append-only evidence stays append-only for real fields.
+    for key in args.unset or []:
+        if key.rstrip(":") == key:
+            fail(
+                f"refusing to unset well-formed field {key!r}; only malformed names may be removed"
+            )
+        node.pop(key, None)
     if node["type"] == "evidence" and args.field:
         fail("evidence nodes are append-only; add new evidence instead")
     fields = parse_fields(args.field)
@@ -467,12 +507,28 @@ def cmd_check(_args: argparse.Namespace) -> None:
             sev = node.get("severity")
             if sev is not None and not isinstance(sev, (int, float)):
                 problems.append(f"task {node['id']} severity is non-numeric: {sev!r} (expect 0-1 float)")
+        # A change node's `commit` is a git short hash. Numeric-looking hashes
+        # (`8564e98`, `83745e4`) used to be silently floated by parse_fields;
+        # check catches any that slip through (the long-float form also breaks
+        # `vp fmt --check` and fails every commit).
+        if node["type"] == "change":
+            commit = node.get("commit")
+            if not isinstance(commit, str):
+                problems.append(
+                    f"change {node['id']} commit is {type(commit).__name__} ({commit!r}), "
+                    "expect a short hash string"
+                )
         if node["type"] == "hypothesis" and node["status"] == "active":
             has_evidence = any(
                 edge["to"] == node["id"] and edge["type"] in {"validates", "refutes"} for edge in graph["edges"]
             )
             if not has_evidence:
                 problems.append(f"hypothesis {node['id']} has no validates/refutes evidence")
+        # Field names are exact keys; `severity:`/`status:`/`confidence:` are
+        # typos from an old quoting mistake that silently duplicate the field.
+        for key in node:
+            if key.rstrip(":") != key:
+                problems.append(f"node {node['id']} has malformed field name {key!r}")
     if problems:
         for problem in problems:
             print(f"  ! {problem}")
@@ -500,6 +556,7 @@ def main() -> None:
     ps.add_argument("--id", required=True)
     ps.add_argument("--field", action="append")
     ps.add_argument("--expect-version", type=int)
+    ps.add_argument("--unset", action="append", help="remove a malformed legacy field name")
     ps.set_defaults(fn=cmd_node_set)
 
     p = sub.add_parser("edge", help="edge operations")

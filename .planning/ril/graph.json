@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 265,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-20T20:43:31+00:00",
+  "updated_at": "2026-10-20T20:47:34+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -1677,11 +1677,11 @@
       "id": "CHANGE-034",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-11T06:25:42+00:00",
-      "updated_at": "2026-09-11T06:25:42+00:00",
-      "touched_round": 20,
-      "commit": 5044717,
+      "updated_at": "2026-10-20T20:47:20+00:00",
+      "touched_round": 265,
+      "commit": "5044717",
       "summary": "loot capChance:afterWin 全部概率输入钳到 [0,1],TASK-030 闭环"
     },
     "CHG-033": {
@@ -3423,11 +3423,11 @@
       "id": "CHG-087",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-11T17:12:13+00:00",
-      "updated_at": "2026-09-11T17:12:13+00:00",
-      "touched_round": 67,
-      "commit": 9594635,
+      "updated_at": "2026-10-20T20:47:20+00:00",
+      "touched_round": 265,
+      "commit": "6e86495",
       "summary": "界域志分册(InkTabs 六册)+ 分册契约 3 例"
     },
     "ISS-051": {
@@ -3694,11 +3694,11 @@
       "id": "CHG-094",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-11T17:39:26+00:00",
-      "updated_at": "2026-09-11T17:39:26+00:00",
-      "touched_round": 74,
-      "commit": 7147059,
+      "updated_at": "2026-10-20T20:47:20+00:00",
+      "touched_round": 265,
+      "commit": "0fc7eb7",
       "summary": "新增 dataIntegrity.spec(3 例);删掉自己写的正则白名单版拼写检查(类型系统已覆盖且实测更准)"
     },
     "EV-053": {
@@ -7398,12 +7398,11 @@
       "id": "HYP-065",
       "type": "hypothesis",
       "status": "stale",
-      "version": 2,
+      "version": 3,
       "created_at": "2026-09-12T09:03:48+00:00",
-      "updated_at": "2026-09-15T01:09:21+00:00",
-      "touched_round": 138,
+      "updated_at": "2026-10-20T20:47:24+00:00",
+      "touched_round": 265,
       "summary": "可读性也是可以量的,而*禁用态*最容易被漏:设计时只想着「把它灰掉」,忘了那行字往往正是「为什么不让我点」—— 玩家最需要读的一句。判据要按「算出来的对比度」量前景与背景,而不是按设计师记得的那几个色号",
-      "status:": "active",
       "confidence": 0.85
     },
     "ISS-115": {
@@ -7893,12 +7892,11 @@
       "id": "EV-128",
       "type": "evidence",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-12T11:38:41+00:00",
-      "updated_at": "2026-09-12T11:38:41+00:00",
-      "touched_round": 146,
+      "updated_at": "2026-10-20T20:47:24+00:00",
+      "touched_round": 265,
       "summary": "实测读数:开局 100万 → 投脉后页面 98.16万(磁盘暂为旧值,节流中)→ 切后台落盘 · 再投一次 96.32万 → pagehide 落盘。注入读数:单独去掉 storage.ts 的监听仍绿(engine.onVisibility 也刷一次盘,两处互为兜底);两处一起去掉才红:「切后台之后磁盘还是 1000000,页面已是 98.16万 —— 待刷存档没落盘」。排版自检 93 组全绿",
-      "confidence:": 0.95,
       "source": "scripts/layout-check.mjs",
       "confidence": 1.0
     },
@@ -7917,13 +7915,13 @@
       "id": "ISS-124",
       "type": "issue",
       "status": "resolved",
-      "version": 2,
+      "version": 4,
       "created_at": "2026-09-12T11:56:10+00:00",
-      "updated_at": "2026-09-12T11:56:15+00:00",
-      "touched_round": 147,
+      "updated_at": "2026-10-20T20:47:34+00:00",
+      "touched_round": 265,
       "summary": "战报回放这条链从没在真浏览器里走完过:出发 → 模式 → 等一场 → 逐行回放 → 结语 → 战斗分析。单元用例只跑引擎;而这是玩家看得最多的一屏 —— 回放卡住、结语不写、分析点不开,都会安静地留在那里",
-      "severity:": 0.3,
-      "confidence": 0.95
+      "confidence": 0.95,
+      "severity": 0.3
     },
     "TASK-115": {
       "id": "TASK-115",
@@ -8973,12 +8971,12 @@
       "id": "CHG-184",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-12T21:54:25+00:00",
-      "updated_at": "2026-09-12T21:54:25+00:00",
-      "touched_round": 159,
+      "updated_at": "2026-10-20T20:47:20+00:00",
+      "touched_round": 265,
       "summary": "previewFight 增 prep 上下文(世界/契约/奇门):出发前预览与首战同源合成 chainRules,CelestialView prep 弹层接上;新增 expeditionPrep.spec 钉住世界与契约规则可见",
-      "commit": 1086009
+      "commit": "b90ff41"
     },
     "TASK-134": {
       "id": "TASK-134",
@@ -11352,11 +11350,11 @@
       "id": "CHG-226",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-15T14:25:34+00:00",
-      "updated_at": "2026-09-15T14:25:34+00:00",
-      "touched_round": 193,
-      "commit": 5792978,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
+      "commit": "5792978",
       "summary": "装备 77→120 / 功法 46→63(分支 107→141)/ 法宝 33→45;新增 drain 法宝效果(引擎+文案对账+回血行为判据);修 ISS-196(未指定槽位时先按槽位分组,指定槽位路径逐位不变);法宝掉落加就近加成(32 阶高界占比 0.40→0.63);新增 realmNaming.spec 六条命名与可达红线;两件人间界旧物改名(混沌天衣→紫府道衣、道祖戒→玄元戒)"
     },
     "DEC-045": {
@@ -11712,11 +11710,11 @@
       "id": "CHG-233",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-15T23:22:55+00:00",
-      "updated_at": "2026-09-15T23:22:55+00:00",
-      "touched_round": 198,
-      "commit": 52573.0,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
+      "commit": "52573",
       "summary": "celestialStats 不再带凡界平铺三维(ISS-194 收口),判据从 0.5% 收紧到 0.05%;法宝 minTier → fromTier,图鉴补「N 阶起可现世」"
     },
     "CHG-234": {
@@ -12411,11 +12409,11 @@
       "id": "CHG-245",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-17T15:37:23+00:00",
-      "updated_at": "2026-09-17T15:37:23+00:00",
-      "touched_round": 208,
-      "commit": 6399648,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
+      "commit": "6399648",
       "summary": "界外定价三处根因:丹方/审计的层级映射统一读区域表 maxTierForMajor(旧口径 minRealm×2+1 最高算出层级 41 > 区域上限 32);熔炉灵石价改按玩家当前层级折算(旧口径冻死在第 20 层,道果到混沌海便宜 293 倍);审计改为量「凝一枚道果要多少小时材料产出」(界外 0.90~1.68h,不随层级量级漂移)。"
     },
     "ISS-216": {
@@ -13901,11 +13899,11 @@
       "id": "CHG-255",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-09-28T13:42:21+00:00",
-      "updated_at": "2026-09-28T13:42:21+00:00",
-      "touched_round": 230,
-      "commit": 3620961,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
+      "commit": "3620961",
       "summary": "offlineModeReward.spec 重写为确定性版本:vi.mock 固定 rng+sampleWinRate 使结算链路确定,断言改区间[×1.3,×1.5]包住取整噪声;修 regionId 误(qingshan→qingyun)与假绿;test-report.mjs 补 offlineModeReward 分类(Economy)修 CI 未过"
     },
     "EV-229": {
@@ -15949,12 +15947,12 @@
       "id": "CHG-327",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-09T22:27:23+00:00",
-      "updated_at": "2026-10-09T22:27:23+00:00",
-      "touched_round": 258,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
       "title": "test(rebirth): 师承跨世保留守卫",
-      "commit": 8606063
+      "commit": "8606063"
     },
     "ISS-285": {
       "id": "ISS-285",
@@ -16187,12 +16185,12 @@
       "id": "CHG-334",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-09T23:22:33+00:00",
-      "updated_at": "2026-10-09T23:22:33+00:00",
-      "touched_round": 258,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
       "title": "test(dongfu): 产出跨整界原子·拆批等值守卫",
-      "commit": 7984420
+      "commit": "7984420"
     },
     "ISS-292": {
       "id": "ISS-292",
@@ -16323,12 +16321,12 @@
       "id": "CHG-338",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-09T23:51:35+00:00",
-      "updated_at": "2026-10-09T23:51:35+00:00",
-      "touched_round": 258,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
       "title": "fix(test): 已过期聚灵断言冻时",
-      "commit": 0.0
+      "commit": "224cab2"
     },
     "ISS-296": {
       "id": "ISS-296",
@@ -16731,12 +16729,12 @@
       "id": "CHG-350",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-10T01:35:08+00:00",
-      "updated_at": "2026-10-10T01:35:08+00:00",
-      "touched_round": 258,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
       "title": "test(market): 寄卖多格部分回款守卫",
-      "commit": 6586029
+      "commit": "6586029"
     },
     "ISS-308": {
       "id": "ISS-308",
@@ -16765,12 +16763,12 @@
       "id": "CHG-351",
       "type": "change",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-10T01:44:32+00:00",
-      "updated_at": "2026-10-10T01:44:32+00:00",
-      "touched_round": 258,
+      "updated_at": "2026-10-20T20:47:21+00:00",
+      "touched_round": 265,
       "title": "test(rate): 修为速率折算守卫",
-      "commit": 4999321
+      "commit": "4999321"
     },
     "ISS-309": {
       "id": "ISS-309",
@@ -18471,11 +18469,11 @@
       "id": "CHG-412",
       "type": "change",
       "status": "resolved",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-20T20:43:00+00:00",
-      "updated_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:47:21+00:00",
       "touched_round": 265,
-      "commit": 4406069,
+      "commit": "4406069",
       "summary": "fix(endgame): 修行节点与极限纪录只认目录里的 id"
     },
     "CHG-413": {
