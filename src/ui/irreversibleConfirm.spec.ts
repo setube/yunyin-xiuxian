@@ -70,4 +70,21 @@ describe('不可逆确认的两次点击各写什么', () => {
       'const rewriteConfirm = ref<(typeof endgame.marks)[number] | null>(null)'
     )
   })
+
+  /**
+   * 构筑对照的选中态同理:不能拿落痕时刻当身份。
+   *
+   * 同一毫秒可以落两条痕(远征/试炼批量结算、读档夹具):按 `at` 认痕时两枚
+   * chip 一起高亮,而 `find(m => m.at === at)` 只取第一条 —— 玩家看见高亮的是
+   * 这条,读到的却是那条的构筑。故障注入:把 pickCompare 改回按 at 找 → 红。
+   */
+  it('构筑对照的选中态按道痕本身记,不按落痕时刻', () => {
+    const src = read('views/BuildView.vue')
+    expect(src, '选中态须记道痕本身').toContain(
+      'const compareAt = ref<(typeof endgame.marks)[number] | null>(null)'
+    )
+    expect(src, '点哪条就传哪条').toContain('function pickCompare(mark: (typeof endgame.marks)[number]): void')
+    expect(src, '不该再按落痕时刻回查道痕').not.toContain('endgame.marks.find(m => m.at === at)')
+    expect(src, '高亮也不该按落痕时刻比').not.toContain('compareAt === c.at')
+  })
 })

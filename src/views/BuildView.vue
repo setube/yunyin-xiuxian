@@ -196,11 +196,11 @@
         <p class="text-[11px] text-ink-faint">以当前构筑,对照道痕中冻结的一套过往构筑,看四天局面各有何异。</p>
         <div class="mt-2 flex flex-wrap gap-1.5">
           <button
-            v-for="c in compareCandidates"
-            :key="c.at"
+            v-for="(c, i) in compareCandidates"
+            :key="i"
             class="chip-ink !py-1.5"
-            :class="compareAt === c.at ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
-            @click="pickCompare(c.at)"
+            :class="compareAt === c ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
+            @click="pickCompare(c)"
           >
             第{{ c.life }}世·{{ c.buildName }}
           </button>
@@ -313,22 +313,25 @@
 
   // ---- 双构筑对照 ----
   const endgame = useEndgameStore()
-  const compareAt = ref<number | null>(null)
+  /**
+   * 对照选中态按道痕这一条本身记,不按落痕时刻记。
+   *
+   * 同一毫秒内可以落两条痕(远征/试炼批量结算、读档夹具),按 `at` 认痕迹时
+   * 两条 chip 会同时点亮,而 `find` 只取第一条 —— 高亮的是这条,算的是那条。
+   * 记对象引用:点哪条算哪条,列表重建则回落到未选。
+   */
+  const compareAt = ref<(typeof endgame.marks)[number] | null>(null)
   const compareResult = ref<CompareReport | null>(null)
 
   const compareCandidates = computed(() =>
     endgameUnlocked()
-      ? endgame.marks
-          .filter(m => m.replay !== undefined)
-          .slice(0, 8)
-          .map(m => ({ at: m.at, life: m.life, buildName: m.buildName }))
+      ? endgame.marks.filter(m => m.replay !== undefined).slice(0, 8)
       : []
   )
 
-  function pickCompare(at: number): void {
-    compareAt.value = at
-    const mark = endgame.marks.find(m => m.at === at)
-    if (!mark?.replay) return
+  function pickCompare(mark: (typeof endgame.marks)[number]): void {
+    compareAt.value = mark
+    if (!mark.replay) return
     compareResult.value = compareSnaps(buildPlayerSnap(), snapFromReplay('彼时构筑', mark.replay))
   }
 
