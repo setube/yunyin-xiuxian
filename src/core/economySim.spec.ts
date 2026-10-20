@@ -105,6 +105,24 @@ describe('经济闭环审计(Phase 19 · Phase 40 补界外与修为)', () => {
     }
   })
 
+  it('人间界玄铁/残页/悟道点有下限:允许早期瓶颈(流派摩擦),但不许砸成死资源', () => {
+    // stone/herb/dust 已有 ratio 守卫,补齐审计追踪的其余三种人间界材料。
+    // ore/page/wudao 早期偏低是设计摩擦(建建筑 / 藏经阁 gate),故不设瓶颈级(0.7)
+    // 上限——那会锁死流派——只守「不死资源」下限,专捉 loot.ts 掉率级联崩塌
+    // (例如 ORE_DROP_CHANCE 腰斩会让 ore 从 ~0.27 跌到 ~0.13,本守卫即断)。
+    for (const era of mortal) {
+      const ore = era.flows.find(f => f.resource === 'ore')!
+      expect(ore.ratio, `第${era.major}境玄铁`).toBeGreaterThan(0.15)
+      const page = era.flows.find(f => f.resource === 'page')!
+      expect(page.ratio, `第${era.major}境残页`).toBeGreaterThan(0.5)
+      // 悟道点靠藏经阁(筑基才堪建),凡人境(m0)本就无产出,守 m1 起即可
+      if (era.major >= 1) {
+        const wudao = era.flows.find(f => f.resource === 'wudao')!
+        expect(wudao.ratio, `第${era.major}境悟道点`).toBeGreaterThan(0.02)
+      }
+    }
+  })
+
   it('人间界闲置预警:允许过剩,但「全时期闲置」的资源不允许超过 1 种', () => {
     const idle: string[] = []
     for (const era of mortal) {
