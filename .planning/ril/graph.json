@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 264,
+  "round": 265,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-20T06:42:05+00:00",
+  "updated_at": "2026-10-20T20:43:31+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -17933,11 +17933,11 @@
       "id": "CHG-372",
       "type": "change",
       "status": "resolved",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-20T06:42:00+00:00",
-      "updated_at": "2026-10-20T06:42:00+00:00",
-      "touched_round": 263,
-      "commit": 795440000000.0,
+      "updated_at": "2026-10-20T20:43:31+00:00",
+      "touched_round": 265,
+      "commit": "79544e7",
       "summary": "fix(offline): 离线普通战补丹药掉落通道"
     },
     "CHG-373": {
@@ -18016,6 +18016,852 @@
       "touched_round": 263,
       "commit": "7880fa7",
       "summary": "test(scripts): 门禁接线 spec——CI 命令本地必有对等入口"
+    },
+    "TASK-337": {
+      "id": "TASK-337",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "category": "correctness",
+      "severity": 0.7,
+      "confidence": 0.95,
+      "effort": 3.0,
+      "summary": "坏档自愈批次:读档按 id 修形,野 id/坏字段不再让页面白屏、不再锁死镇压与事件"
+    },
+    "TASK-338": {
+      "id": "TASK-338",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "category": "correctness",
+      "severity": 0.6,
+      "confidence": 0.95,
+      "effort": 3.0,
+      "summary": "重复条目批次:同号/同 id 写两遍不再翻倍收益、不再互相误伤、不再占两格"
+    },
+    "TASK-339": {
+      "id": "TASK-339",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.9,
+      "effort": 2.0,
+      "summary": "换架/换单竞态批次:货架与悬赏刷新瞬间的点击不再落到新对象上"
+    },
+    "TASK-340": {
+      "id": "TASK-340",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.95,
+      "effort": 2.0,
+      "summary": "净胜场口径批次:地界兴衰、镇压结算与历练倒计时同读 regionWins 与实时时钟"
+    },
+    "TASK-341": {
+      "id": "TASK-341",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "category": "core-feature",
+      "severity": 0.3,
+      "confidence": 0.9,
+      "effort": 3.0,
+      "summary": "玄枢录移植批次:主修可升层 chip、收集进度条、秘境在境只认本册"
+    },
+    "TASK-342": {
+      "id": "TASK-342",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "category": "maintainability",
+      "severity": 0.4,
+      "confidence": 0.9,
+      "effort": 3.0,
+      "summary": "界面口径批次:确认词/播报级别/悬停直达/选中态按道痕/缺料分因/续草落点"
+    },
+    "TASK-343": {
+      "id": "TASK-343",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "category": "maintainability",
+      "severity": 0.4,
+      "confidence": 0.9,
+      "effort": 3.0,
+      "summary": "工程门禁批次:data 层属性名归位、暂停期时钟冻结、saveShape 守卫与门禁脚本"
+    },
+    "CHG-380": {
+      "id": "CHG-380",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "commit": "4fa3ffd",
+      "summary": "fix(engine): 暂停期时钟冻结,恢复时顺延按墙钟到期的状态"
+    },
+    "CHG-381": {
+      "id": "CHG-381",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "commit": "f36b163",
+      "summary": "fix(save): 坊市与悬赏的价格、序号守卫收进 saveShape"
+    },
+    "CHG-382": {
+      "id": "CHG-382",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:56+00:00",
+      "updated_at": "2026-10-20T20:42:56+00:00",
+      "touched_round": 265,
+      "commit": "a685cdb",
+      "summary": "refactor(data): 属性名归 data 层,词条说明的名字与面板同源"
+    },
+    "CHG-383": {
+      "id": "CHG-383",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:57+00:00",
+      "updated_at": "2026-10-20T20:42:57+00:00",
+      "touched_round": 265,
+      "commit": "402e5ad",
+      "summary": "test(gate): 分层审计、SW 状态机、冒烟句柄与文档例数反向守卫"
+    },
+    "CHG-384": {
+      "id": "CHG-384",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T20:42:57+00:00",
+      "updated_at": "2026-10-20T20:43:23+00:00",
+      "touched_round": 265,
+      "commit": "7638e82",
+      "summary": "fix(data): 词条说明复用 statCaveat,文档例数守卫认英文写法"
+    },
+    "CHG-385": {
+      "id": "CHG-385",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:57+00:00",
+      "updated_at": "2026-10-20T20:42:57+00:00",
+      "touched_round": 265,
+      "commit": "280de46",
+      "summary": "test(layout-check): 丹炉缺草去坊市必须真的落在灵草格上"
+    },
+    "CHG-386": {
+      "id": "CHG-386",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:57+00:00",
+      "updated_at": "2026-10-20T20:42:57+00:00",
+      "touched_round": 265,
+      "commit": "ba451e5",
+      "summary": "test(layout-check): 坏档启动提示的观测器挂到始终存在的 document 上"
+    },
+    "CHG-387": {
+      "id": "CHG-387",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:57+00:00",
+      "updated_at": "2026-10-20T20:42:57+00:00",
+      "touched_round": 265,
+      "commit": "098e43a",
+      "summary": "fix(a11y): 减少动效的默认值从系统偏好播种"
+    },
+    "CHG-388": {
+      "id": "CHG-388",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:57+00:00",
+      "updated_at": "2026-10-20T20:42:57+00:00",
+      "touched_round": 265,
+      "commit": "37ad546",
+      "summary": "fix(ui): 建号页退路、顶栏让位、天道熔炉按钮与首次凝道果教学"
+    },
+    "CHG-389": {
+      "id": "CHG-389",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:57+00:00",
+      "updated_at": "2026-10-20T20:42:57+00:00",
+      "touched_round": 265,
+      "commit": "45b011d",
+      "summary": "fix(alchemy): 缺料分清缺草/缺石,并给出坊市续草的去路"
+    },
+    "CHG-390": {
+      "id": "CHG-390",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:57+00:00",
+      "updated_at": "2026-10-20T20:42:57+00:00",
+      "touched_round": 265,
+      "commit": "fd7509e",
+      "summary": "fix(market): 续草按方子要的品阶认格,售罄与没进货分开说"
+    },
+    "CHG-391": {
+      "id": "CHG-391",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:58+00:00",
+      "updated_at": "2026-10-20T20:42:58+00:00",
+      "touched_round": 265,
+      "commit": "88a4dcb",
+      "summary": "fix(alchemy): 只缺灵石指去历练,别再把人指去坊市"
+    },
+    "CHG-392": {
+      "id": "CHG-392",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:58+00:00",
+      "updated_at": "2026-10-20T20:42:58+00:00",
+      "touched_round": 265,
+      "commit": "5b88975",
+      "summary": "fix(market): 换货后「续草」高亮跟着新货架重算"
+    },
+    "CHG-393": {
+      "id": "CHG-393",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:58+00:00",
+      "updated_at": "2026-10-20T20:42:58+00:00",
+      "touched_round": 265,
+      "commit": "39ef3a1",
+      "summary": "fix(forge): 强化与重铸缺料时只说缺的那一样"
+    },
+    "CHG-394": {
+      "id": "CHG-394",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:58+00:00",
+      "updated_at": "2026-10-20T20:42:58+00:00",
+      "touched_round": 265,
+      "commit": "0c7ecb0",
+      "summary": "fix(ui): 破坏性二次确认的两次点击说法全库统一"
+    },
+    "CHG-395": {
+      "id": "CHG-395",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:58+00:00",
+      "updated_at": "2026-10-20T20:42:58+00:00",
+      "touched_round": 265,
+      "commit": "486e3fb",
+      "summary": "fix(ui): 有得有获的播报归到成功级 —— 秘境胜利与分解得尘不再写成中性提示"
+    },
+    "CHG-396": {
+      "id": "CHG-396",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:58+00:00",
+      "updated_at": "2026-10-20T20:42:58+00:00",
+      "touched_round": 265,
+      "commit": "f3b8c3a",
+      "summary": "fix(endgame): 忆战重写的确认态改按道痕本身记 —— 不再跟着行号错位到别的痕"
+    },
+    "CHG-397": {
+      "id": "CHG-397",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:58+00:00",
+      "updated_at": "2026-10-20T20:42:58+00:00",
+      "touched_round": 265,
+      "commit": "5e4955b",
+      "summary": "feat(apprentice): 派活说明点开直出 —— 不再只挂在手机看不见的悬停提示里"
+    },
+    "CHG-398": {
+      "id": "CHG-398",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:58+00:00",
+      "updated_at": "2026-10-20T20:42:58+00:00",
+      "touched_round": 265,
+      "commit": "7bd0611",
+      "summary": "fix(ui): 构筑对照点哪条算哪条 —— 选中态改按道痕本身记"
+    },
+    "CHG-399": {
+      "id": "CHG-399",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:59+00:00",
+      "updated_at": "2026-10-20T20:42:59+00:00",
+      "touched_round": 265,
+      "commit": "802d3ef",
+      "summary": "fix(market): 坏档重复货格号不再留一格点不动的幽灵格"
+    },
+    "CHG-400": {
+      "id": "CHG-400",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:59+00:00",
+      "updated_at": "2026-10-20T20:42:59+00:00",
+      "touched_round": 265,
+      "commit": "38d252c",
+      "summary": "fix(market): 坏档格号先校验再认号,缺号格不顶掉好货"
+    },
+    "CHG-401": {
+      "id": "CHG-401",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:59+00:00",
+      "updated_at": "2026-10-20T20:42:59+00:00",
+      "touched_round": 265,
+      "commit": "8ef8079",
+      "summary": "fix(market): 寄卖格号重复不再有一件从不露面"
+    },
+    "CHG-402": {
+      "id": "CHG-402",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:59+00:00",
+      "updated_at": "2026-10-20T20:42:59+00:00",
+      "touched_round": 265,
+      "commit": "33c922a",
+      "summary": "fix(bounty): 坏档重复单号重排,两张单都交得了"
+    },
+    "CHG-403": {
+      "id": "CHG-403",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:59+00:00",
+      "updated_at": "2026-10-20T20:42:59+00:00",
+      "touched_round": 265,
+      "commit": "c9630c8",
+      "summary": "fix(market): 寄卖格渲染封顶,海量导入档不再卡死这一页"
+    },
+    "CHG-404": {
+      "id": "CHG-404",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:59+00:00",
+      "updated_at": "2026-10-20T20:42:59+00:00",
+      "touched_round": 265,
+      "commit": "4826df9",
+      "summary": "fix(inventory): 装备栏里对不上号的槽位不再让装备凭空消失"
+    },
+    "CHG-405": {
+      "id": "CHG-405",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:59+00:00",
+      "updated_at": "2026-10-20T20:42:59+00:00",
+      "touched_round": 265,
+      "commit": "232e1ef",
+      "summary": "fix(inventory): 祭炼位超出境界槽数时按上限裁剪"
+    },
+    "CHG-406": {
+      "id": "CHG-406",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:42:59+00:00",
+      "updated_at": "2026-10-20T20:42:59+00:00",
+      "touched_round": 265,
+      "commit": "0aa0d10",
+      "summary": "fix(save): 读档按 id 修形,坏数不再锁死镇压与事件"
+    },
+    "CHG-407": {
+      "id": "CHG-407",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:43:00+00:00",
+      "touched_round": 265,
+      "commit": "594a252",
+      "summary": "fix(endgame): 天界坏档按 id 认道、认界、认试炼"
+    },
+    "CHG-408": {
+      "id": "CHG-408",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:43:00+00:00",
+      "touched_round": 265,
+      "commit": "d35342d",
+      "summary": "fix(lore): 图鉴与宿慧不再把认不出的 id 算进门"
+    },
+    "CHG-409": {
+      "id": "CHG-409",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:43:00+00:00",
+      "touched_round": 265,
+      "commit": "f833155",
+      "summary": "fix(player): 佩戴物、师承与区域事件认不出的 id 不再占位"
+    },
+    "CHG-410": {
+      "id": "CHG-410",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:43:00+00:00",
+      "touched_round": 265,
+      "commit": "03b069a",
+      "summary": "fix(quests): 认不出的成就与名号不再虚增计数"
+    },
+    "CHG-411": {
+      "id": "CHG-411",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:43:00+00:00",
+      "touched_round": 265,
+      "commit": "b87f140",
+      "summary": "fix(inventory): 认不出的法宝 id 不再留在库与祭炼位"
+    },
+    "CHG-412": {
+      "id": "CHG-412",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:43:00+00:00",
+      "touched_round": 265,
+      "commit": 4406069,
+      "summary": "fix(endgame): 修行节点与极限纪录只认目录里的 id"
+    },
+    "CHG-413": {
+      "id": "CHG-413",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:43:00+00:00",
+      "touched_round": 265,
+      "commit": "868e4f9",
+      "summary": "fix(inventory): 丹匣只留认得的丹药"
+    },
+    "CHG-414": {
+      "id": "CHG-414",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:00+00:00",
+      "updated_at": "2026-10-20T20:43:00+00:00",
+      "touched_round": 265,
+      "commit": "e067d62",
+      "summary": "fix(cultivation): 野功法与野状态不再留在存档"
+    },
+    "CHG-415": {
+      "id": "CHG-415",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:01+00:00",
+      "updated_at": "2026-10-20T20:43:01+00:00",
+      "touched_round": 265,
+      "commit": "6042ec2",
+      "summary": "fix(bounty): 认不出的募丹单不再空挂一窗"
+    },
+    "CHG-416": {
+      "id": "CHG-416",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:01+00:00",
+      "updated_at": "2026-10-20T20:43:01+00:00",
+      "touched_round": 265,
+      "commit": "669dc57",
+      "summary": "fix(loadouts): 构筑快照里的野装备槽名不再让装备消失"
+    },
+    "CHG-417": {
+      "id": "CHG-417",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:01+00:00",
+      "updated_at": "2026-10-20T20:43:01+00:00",
+      "touched_round": 265,
+      "commit": "a0d5edd",
+      "summary": "fix(settings): 坏掉的智能收纳品质线不再吞掉全部掉落"
+    },
+    "CHG-418": {
+      "id": "CHG-418",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:01+00:00",
+      "updated_at": "2026-10-20T20:43:01+00:00",
+      "touched_round": 265,
+      "commit": "2fa2636",
+      "summary": "fix(player): 认不出的道侣待决事件不再永久堵线"
+    },
+    "CHG-419": {
+      "id": "CHG-419",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:01+00:00",
+      "updated_at": "2026-10-20T20:43:01+00:00",
+      "touched_round": 265,
+      "commit": "596dd92",
+      "summary": "fix(endgame): 器魂坏品阶与超槽装配不再让器魂页白屏或白送词条"
+    },
+    "CHG-420": {
+      "id": "CHG-420",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:01+00:00",
+      "updated_at": "2026-10-20T20:43:01+00:00",
+      "touched_round": 265,
+      "commit": "ca23ba1",
+      "summary": "fix(player): 灵根画像坏档不再让建号页与角色页白屏"
+    },
+    "CHG-421": {
+      "id": "CHG-421",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:01+00:00",
+      "updated_at": "2026-10-20T20:43:01+00:00",
+      "touched_round": 265,
+      "commit": "5b68f4d",
+      "summary": "fix(inventory): 坏件不再把整身攻防血打成 0,也不再让背包白屏"
+    },
+    "CHG-422": {
+      "id": "CHG-422",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:01+00:00",
+      "updated_at": "2026-10-20T20:43:01+00:00",
+      "touched_round": 265,
+      "commit": "b0ce90b",
+      "summary": "fix(player): 轮回履历/同行/命题的坏条目不再让轮回页白屏"
+    },
+    "CHG-423": {
+      "id": "CHG-423",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:02+00:00",
+      "updated_at": "2026-10-20T20:43:02+00:00",
+      "touched_round": 265,
+      "commit": "eb0a938",
+      "summary": "fix(endgame): 道痕与忆战快照的坏字段不再让画像与忆战打穿"
+    },
+    "CHG-424": {
+      "id": "CHG-424",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:02+00:00",
+      "updated_at": "2026-10-20T20:43:02+00:00",
+      "touched_round": 265,
+      "commit": "4d998de",
+      "summary": "fix(endgame): 虚界残块不再让天界页白屏或启程即炸"
+    },
+    "CHG-425": {
+      "id": "CHG-425",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:02+00:00",
+      "updated_at": "2026-10-20T20:43:02+00:00",
+      "touched_round": 265,
+      "commit": "5a72d5b",
+      "summary": "fix(player): 机缘选择记忆与宿敌名号的坏字段不再让身份页白屏"
+    },
+    "CHG-426": {
+      "id": "CHG-426",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:02+00:00",
+      "updated_at": "2026-10-20T20:43:02+00:00",
+      "touched_round": 265,
+      "commit": "16d9070",
+      "summary": "fix(endgame): 在途远征的野契约/门与坏封印词条不再静默失效"
+    },
+    "CHG-427": {
+      "id": "CHG-427",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:02+00:00",
+      "updated_at": "2026-10-20T20:43:02+00:00",
+      "touched_round": 265,
+      "commit": "bc92343",
+      "summary": "fix(inventory): 重复 uid 不再把一件装备/法宝/器魂算成两件"
+    },
+    "CHG-428": {
+      "id": "CHG-428",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:02+00:00",
+      "updated_at": "2026-10-20T20:43:02+00:00",
+      "touched_round": 265,
+      "commit": "a48acc3",
+      "summary": "fix(cultivation): 同一状态/同一门辅修写两条不再翻倍或占两格"
+    },
+    "CHG-429": {
+      "id": "CHG-429",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:02+00:00",
+      "updated_at": "2026-10-20T20:43:02+00:00",
+      "touched_round": 265,
+      "commit": "2a9fcae",
+      "summary": "fix(quests): 成就/日课/名号/图鉴的重复条目不再把计数撑破"
+    },
+    "CHG-430": {
+      "id": "CHG-430",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:02+00:00",
+      "updated_at": "2026-10-20T20:43:02+00:00",
+      "touched_round": 265,
+      "commit": "fe7f36f",
+      "summary": "fix(save): 修行节点/宿敌/道童/构筑同号不再互相误伤"
+    },
+    "CHG-431": {
+      "id": "CHG-431",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:03+00:00",
+      "updated_at": "2026-10-20T20:43:03+00:00",
+      "touched_round": 265,
+      "commit": "de2c70f",
+      "summary": "fix(suppress): 同一地界写两遍只结算一份镇压收益"
+    },
+    "CHG-432": {
+      "id": "CHG-432",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:03+00:00",
+      "updated_at": "2026-10-20T20:43:03+00:00",
+      "touched_round": 265,
+      "commit": "8419a20",
+      "summary": "fix(player): 同一条天赋/传承写两遍不再白送属性"
+    },
+    "CHG-433": {
+      "id": "CHG-433",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:03+00:00",
+      "updated_at": "2026-10-20T20:43:03+00:00",
+      "touched_round": 265,
+      "commit": "6ec4ce3",
+      "summary": "fix(cultivation): 合并重复 buff 时到期与本命时长同源"
+    },
+    "CHG-434": {
+      "id": "CHG-434",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:03+00:00",
+      "updated_at": "2026-10-20T20:43:03+00:00",
+      "touched_round": 265,
+      "commit": "3db97a6",
+      "summary": "fix(loadout): 构筑快照里的重复辅修/法宝不再算两次"
+    },
+    "CHG-435": {
+      "id": "CHG-435",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:03+00:00",
+      "updated_at": "2026-10-20T20:43:03+00:00",
+      "touched_round": 265,
+      "commit": "02e9949",
+      "summary": "fix(market): 悬赏换单那一刻按下交货不再成交到新单上"
+    },
+    "CHG-436": {
+      "id": "CHG-436",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:03+00:00",
+      "updated_at": "2026-10-20T20:43:03+00:00",
+      "touched_round": 265,
+      "commit": "f955cfb",
+      "summary": "fix(market): 坊市换货那一刻按下购买不再买到新架上的另一件"
+    },
+    "CHG-437": {
+      "id": "CHG-437",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:03+00:00",
+      "updated_at": "2026-10-20T20:43:03+00:00",
+      "touched_round": 265,
+      "commit": "749de03",
+      "summary": "fix(world): 地界兴衰改按净胜场算 —— 连输不再被判成繁盛"
+    },
+    "CHG-438": {
+      "id": "CHG-438",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:03+00:00",
+      "updated_at": "2026-10-20T20:43:03+00:00",
+      "touched_round": 265,
+      "commit": "a5c841c",
+      "summary": "fix(suppress): 镇压结算与界面读同一份净胜场"
+    },
+    "CHG-439": {
+      "id": "CHG-439",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:04+00:00",
+      "updated_at": "2026-10-20T20:43:04+00:00",
+      "touched_round": 265,
+      "commit": "bdc6e7f",
+      "summary": "fix(adventure): 镇压倒计时与已守时长跟着秒走,不再冻在进页那一刻"
+    },
+    "CHG-440": {
+      "id": "CHG-440",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:04+00:00",
+      "updated_at": "2026-10-20T20:43:04+00:00",
+      "touched_round": 265,
+      "commit": "2ff658f",
+      "summary": "feat(cultivation): 主修卡亮出「可升层」—— 攒够了当场看得出哪部升得动"
+    },
+    "CHG-441": {
+      "id": "CHG-441",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:04+00:00",
+      "updated_at": "2026-10-20T20:43:04+00:00",
+      "touched_round": 265,
+      "commit": "9f63b95",
+      "summary": "feat(progress): 成就/名号/灵兽三册的收集进度画成条"
+    },
+    "CHG-442": {
+      "id": "CHG-442",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:04+00:00",
+      "updated_at": "2026-10-20T20:43:04+00:00",
+      "touched_round": 265,
+      "commit": "644fb6a",
+      "summary": "fix(secret-realm): 秘境卡的在境状态只认本册 —— 另一册在境时就地说明"
+    },
+    "CHG-443": {
+      "id": "CHG-443",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:23+00:00",
+      "updated_at": "2026-10-20T20:43:23+00:00",
+      "touched_round": 265,
+      "commit": "506691b",
+      "summary": "docs(changelog): 校正重复条目修复的口径说明"
+    },
+    "CHG-444": {
+      "id": "CHG-444",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:23+00:00",
+      "updated_at": "2026-10-20T20:43:23+00:00",
+      "touched_round": 265,
+      "commit": "4eccf9a",
+      "summary": "docs(changelog): 记录镇压收益重复结算的修复"
+    },
+    "CHG-445": {
+      "id": "CHG-445",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:23+00:00",
+      "updated_at": "2026-10-20T20:43:23+00:00",
+      "touched_round": 265,
+      "commit": "eefee42",
+      "summary": "docs(changelog): 记录本轮坏档重复条目修复"
+    },
+    "CHG-446": {
+      "id": "CHG-446",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T20:43:23+00:00",
+      "updated_at": "2026-10-20T20:43:23+00:00",
+      "touched_round": 265,
+      "commit": "c517614",
+      "summary": "docs(changelog): 记下缺料分因与坊市续草落点"
+    },
+    "CHG-447": {
+      "id": "CHG-447",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T20:43:23+00:00",
+      "updated_at": "2026-10-20T20:43:31+00:00",
+      "touched_round": 265,
+      "commit": "1040e69",
+      "summary": "docs(changelog): 记下暂停顺延、首次凝果教学与词条同名"
     }
   },
   "edges": [
@@ -26653,6 +27499,414 @@
       "to": "TASK-335",
       "type": "implements",
       "created_at": "2026-10-20T06:42:01+00:00"
+    },
+    {
+      "from": "CHG-380",
+      "to": "TASK-343",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:56+00:00"
+    },
+    {
+      "from": "CHG-381",
+      "to": "TASK-343",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:56+00:00"
+    },
+    {
+      "from": "CHG-382",
+      "to": "TASK-343",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:56+00:00"
+    },
+    {
+      "from": "CHG-383",
+      "to": "TASK-343",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:57+00:00"
+    },
+    {
+      "from": "CHG-384",
+      "to": "TASK-343",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:57+00:00"
+    },
+    {
+      "from": "CHG-385",
+      "to": "TASK-343",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:57+00:00"
+    },
+    {
+      "from": "CHG-386",
+      "to": "TASK-343",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:57+00:00"
+    },
+    {
+      "from": "CHG-387",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:57+00:00"
+    },
+    {
+      "from": "CHG-388",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:57+00:00"
+    },
+    {
+      "from": "CHG-389",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:57+00:00"
+    },
+    {
+      "from": "CHG-390",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:57+00:00"
+    },
+    {
+      "from": "CHG-391",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:58+00:00"
+    },
+    {
+      "from": "CHG-392",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:58+00:00"
+    },
+    {
+      "from": "CHG-393",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:58+00:00"
+    },
+    {
+      "from": "CHG-394",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:58+00:00"
+    },
+    {
+      "from": "CHG-395",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:58+00:00"
+    },
+    {
+      "from": "CHG-396",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:58+00:00"
+    },
+    {
+      "from": "CHG-397",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:58+00:00"
+    },
+    {
+      "from": "CHG-398",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:58+00:00"
+    },
+    {
+      "from": "CHG-399",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:59+00:00"
+    },
+    {
+      "from": "CHG-400",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:59+00:00"
+    },
+    {
+      "from": "CHG-401",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:59+00:00"
+    },
+    {
+      "from": "CHG-402",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:59+00:00"
+    },
+    {
+      "from": "CHG-403",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:59+00:00"
+    },
+    {
+      "from": "CHG-404",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:59+00:00"
+    },
+    {
+      "from": "CHG-405",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:59+00:00"
+    },
+    {
+      "from": "CHG-406",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:42:59+00:00"
+    },
+    {
+      "from": "CHG-407",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:00+00:00"
+    },
+    {
+      "from": "CHG-408",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:00+00:00"
+    },
+    {
+      "from": "CHG-409",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:00+00:00"
+    },
+    {
+      "from": "CHG-410",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:00+00:00"
+    },
+    {
+      "from": "CHG-411",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:00+00:00"
+    },
+    {
+      "from": "CHG-412",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:00+00:00"
+    },
+    {
+      "from": "CHG-413",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:00+00:00"
+    },
+    {
+      "from": "CHG-414",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:00+00:00"
+    },
+    {
+      "from": "CHG-415",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:01+00:00"
+    },
+    {
+      "from": "CHG-416",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:01+00:00"
+    },
+    {
+      "from": "CHG-417",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:01+00:00"
+    },
+    {
+      "from": "CHG-418",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:01+00:00"
+    },
+    {
+      "from": "CHG-419",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:01+00:00"
+    },
+    {
+      "from": "CHG-420",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:01+00:00"
+    },
+    {
+      "from": "CHG-421",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:01+00:00"
+    },
+    {
+      "from": "CHG-422",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:01+00:00"
+    },
+    {
+      "from": "CHG-423",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:02+00:00"
+    },
+    {
+      "from": "CHG-424",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:02+00:00"
+    },
+    {
+      "from": "CHG-425",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:02+00:00"
+    },
+    {
+      "from": "CHG-426",
+      "to": "TASK-337",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:02+00:00"
+    },
+    {
+      "from": "CHG-427",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:02+00:00"
+    },
+    {
+      "from": "CHG-428",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:02+00:00"
+    },
+    {
+      "from": "CHG-429",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:02+00:00"
+    },
+    {
+      "from": "CHG-430",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:02+00:00"
+    },
+    {
+      "from": "CHG-431",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:03+00:00"
+    },
+    {
+      "from": "CHG-432",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:03+00:00"
+    },
+    {
+      "from": "CHG-433",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:03+00:00"
+    },
+    {
+      "from": "CHG-434",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:03+00:00"
+    },
+    {
+      "from": "CHG-435",
+      "to": "TASK-339",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:03+00:00"
+    },
+    {
+      "from": "CHG-436",
+      "to": "TASK-339",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:03+00:00"
+    },
+    {
+      "from": "CHG-437",
+      "to": "TASK-340",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:03+00:00"
+    },
+    {
+      "from": "CHG-438",
+      "to": "TASK-340",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:03+00:00"
+    },
+    {
+      "from": "CHG-439",
+      "to": "TASK-340",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:04+00:00"
+    },
+    {
+      "from": "CHG-440",
+      "to": "TASK-341",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:04+00:00"
+    },
+    {
+      "from": "CHG-441",
+      "to": "TASK-341",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:04+00:00"
+    },
+    {
+      "from": "CHG-442",
+      "to": "TASK-341",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:04+00:00"
+    },
+    {
+      "from": "CHG-443",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:23+00:00"
+    },
+    {
+      "from": "CHG-444",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:23+00:00"
+    },
+    {
+      "from": "CHG-445",
+      "to": "TASK-338",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:23+00:00"
+    },
+    {
+      "from": "CHG-446",
+      "to": "TASK-342",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:23+00:00"
+    },
+    {
+      "from": "CHG-447",
+      "to": "TASK-343",
+      "type": "implements",
+      "created_at": "2026-10-20T20:43:23+00:00"
     }
   ]
 }
