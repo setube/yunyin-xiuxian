@@ -11,6 +11,10 @@ import { useResourcesStore } from '@/stores/resources'
 import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { suppressionProgress } from '@/core/suppress'
+import { useCultivationStore } from '@/stores/cultivation'
+import { buildIdentity } from '@/core/identityService'
+import { mentorHint } from '@/core/fortuneChain'
+import { echoEligible } from '@/core/fortuneEcho'
 
 describe('sanitizeAllStores 逐仓自愈', () => {
   beforeEach(() => {
@@ -172,5 +176,43 @@ describe('sanitizeAllStores 修「按 id 认对象」的坏账', () => {
     sanitizeAllStores()
     expect(a.pendingEventId).toBeNull()
     expect(a.pendingEventSince).toBe(0)
+  })
+
+  /**
+   * 机缘选择记忆是人物页「修行身份」的根因之一:坏档写成 null 时,
+   * identityService 的 Object.entries、师承推荐与遗产回声三处一起抛错。
+   */
+  it('机缘选择记忆坏掉时回落空表:身份/师承推荐/回声都不再抛错', () => {
+    const p = usePlayerStore()
+    useCultivationStore()
+    p.$patch({
+      fortuneChoices: {
+        ft_sword_remnant: 'take',
+        ft_beast_pledge: 'yes',
+        ft_ancient_elixir: null
+      } as never
+    })
+    sanitizeAllStores()
+    expect(p.fortuneChoices, '只认 take/leave 两个字面值').toEqual({ ft_sword_remnant: 'take' })
+    expect(() => buildIdentity(), '人物页渲染期读它').not.toThrow()
+    expect(() => mentorHint(), '师承推荐按 ft_* 下标读').not.toThrow()
+    expect(() => echoEligible('ft_sword_remnant'), '遗产回声按 id 下标读').not.toThrow()
+
+    p.$patch({ fortuneChoices: null as never })
+    sanitizeAllStores()
+    expect(p.fortuneChoices, '整栏被抹成 null 时补回空表').toEqual({})
+  })
+
+  it('宿敌的名字/地界被写坏时征战录读到的是可读文本', () => {
+    const p = usePlayerStore()
+    p.$patch({
+      nemeses: [
+        { enemyId: 'e_shi', enemyName: 42, regionId: null, lossCount: Number.NaN, lastLossAt: Number.NaN },
+        { enemyId: 'e_gui', enemyName: '', regionId: 7, lossCount: 4, lastLossAt: 10 }
+      ] as never
+    })
+    sanitizeAllStores()
+    expect(p.nemeses[0]).toEqual({ enemyId: 'e_shi', enemyName: 'e_shi', regionId: '', lossCount: 0, lastLossAt: 0 })
+    expect(p.nemeses[1]).toEqual({ enemyId: 'e_gui', enemyName: 'e_gui', regionId: '', lossCount: 4, lastLossAt: 10 })
   })
 })

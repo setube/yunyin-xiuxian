@@ -998,6 +998,18 @@ export const usePlayerStore = defineStore(
         Object.entries(asNumberRecord(regionWins.value, 0)).map(([id, n]) => [id, Math.floor(n)])
       )
       /**
+       * 机缘选择记忆是「取 / 弃」的二元账:`identityService` 对它调 `Object.entries`、
+       * 师承推荐与遗产回声按下标读 —— 坏档写成 `null` 时三处一起抛错(人物页的
+       * 「修行身份」正是渲染期算的)。只留 `take`/`leave` 两个字面值:别的写法
+       * 既不构成「取」(拿不到身份词条),也不构成「弃」(不会触发回声),留着只会
+       * 让「曾选过」的账目看着有、实际哪一头都不算。
+       */
+      const fixedFortunes: Record<string, FortuneChoice> = {}
+      for (const [id, choice] of Object.entries(asRecord<unknown>(fortuneChoices.value))) {
+        if (choice === 'take' || choice === 'leave') fixedFortunes[id] = choice
+      }
+      fortuneChoices.value = fixedFortunes
+      /**
        * 宿敌按 enemyId 认人:坏档里同一位写两条时,征战录会画出两行同 key、
        * 「宿敌 N 位」多报;而 recordLoss / markAvenged / ghostOf 都只 find 第一条,
        * 败绩与雪耻各记各的,第二条永远「尚为宿敌」。
@@ -1012,15 +1024,28 @@ export const usePlayerStore = defineStore(
         const lossCount = Math.max(0, Math.floor(asFiniteNumber(n.lossCount, 0, 0)))
         const lastLossAt = asFiniteNumber(n.lastLossAt, 0, 0)
         const avengedAt = typeof n.avengedAt === 'number' && Number.isFinite(n.avengedAt) ? n.avengedAt : undefined
+        // 名字与地界都直接印在征战录上:坏值回落成可读文本,不让数字/null 露在「败我 N 次」前面
+        const enemyName = typeof n.enemyName === 'string' && n.enemyName ? n.enemyName : n.enemyId
+        const regionId = typeof n.regionId === 'string' ? n.regionId : ''
         const prev = mergedNemeses.get(n.enemyId)
         if (!prev) {
-          mergedNemeses.set(n.enemyId, { ...n, lossCount, lastLossAt, ...(avengedAt === undefined ? {} : { avengedAt }) })
+          mergedNemeses.set(n.enemyId, {
+            enemyId: n.enemyId,
+            enemyName,
+            regionId,
+            lossCount,
+            lastLossAt,
+            ...(avengedAt === undefined ? {} : { avengedAt })
+          })
           continue
         }
         const firstAvenged =
           prev.avengedAt === undefined ? avengedAt : avengedAt === undefined ? prev.avengedAt : Math.min(prev.avengedAt, avengedAt)
         mergedNemeses.set(n.enemyId, {
           ...prev,
+          // 同名宿敌合并时,先出现的那条若没有名字,后用后一条的
+          enemyName: prev.enemyName || enemyName,
+          regionId: prev.regionId || regionId,
           lossCount: Math.max(prev.lossCount, lossCount),
           lastLossAt: Math.max(prev.lastLossAt, lastLossAt),
           ...(firstAvenged === undefined ? {} : { avengedAt: firstAvenged })
