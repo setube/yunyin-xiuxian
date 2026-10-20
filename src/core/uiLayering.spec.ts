@@ -97,4 +97,17 @@ describe('界面分层 · 浮层只有一个出处', () => {
       .map(f => f.path)
     expect(offenders, '这些视图直接调了 back() —— 改用 @/router/goBack 的 goBack(router, 父页)').toEqual([])
   })
+
+  it('派活说明不许只挂 hover —— 手机上没有 hover,那是谁也看不见的死提示', () => {
+    // 道童派活会把弟子锁走 30~90 分钟,而任务说明此前只写在 :title 上。
+    // 现在与适配理由 / 天赋芯片同族:点一下展开一行,再点同枚才真派出(aria-expanded 报给读屏)。
+    // 故障注入:把 tapTask 改回 dispatcher、或把说明改回 :title → 红。
+    const f = FILES.find(x => x.path === 'views/ApprenticeView.vue')
+    expect(f, 'ApprenticeView 不见了').toBeDefined()
+    const src = f!.src
+    expect(src, '派活说明不许再挂 :title').not.toContain(':title="t.desc"')
+    expect(src, '说明要能点开').toContain('@click="tapTask(a.uid, t.spec)"')
+    expect(src, '读屏要报展开态').toContain(':aria-expanded="taskTap === `${a.uid}:${t.spec}`"')
+    expect(src, '再点同枚才派出').toContain('dispatcher(uid, spec)')
+  })
 })

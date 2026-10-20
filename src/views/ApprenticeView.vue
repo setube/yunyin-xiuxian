@@ -56,13 +56,24 @@
               v-for="t in TASKS"
               :key="t.spec"
               class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
-              :title="t.desc"
-              @click="dispatcher(a.uid, t.spec)"
+              :aria-expanded="taskTap === `${a.uid}:${t.spec}`"
+              @click="tapTask(a.uid, t.spec)"
             >
               <GameIcon :name="t.icon" :size="12" />{{ t.name }}<span class="ml-0.5 text-[9px] text-ink-faint">{{ Math.round(t.seconds / 60) }}分</span>
             </button>
             <span v-if="!a.busy" class="text-[10px] text-ink-faint"> · {{ a.talentNote }}</span>
           </div>
+          <!--
+            派活说明点按直出:此前只挂在 :title 上,手机没有 hover —— 那是谁也看不见的死提示。
+            说明放在按钮行下方整行,不挤按钮;同一枚按钮第一下展开、再点才真派出(与适配理由、
+            天赋芯片同一族「点一下展开一行」),顺手给「锁走道童 30~90 分钟」这个半承诺加一道闸。
+          -->
+          <p
+            v-if="!a.busy && tappedTask && tappedTask.uid === a.uid"
+            class="mt-1 text-[10px] leading-relaxed text-ink-faint"
+          >
+            {{ tappedTask.desc }} · 再点一次即派出
+          </p>
         </div>
         <p v-if="apprenticesList.length === 0" class="px-2 py-4 text-center text-[11px] text-ink-faint">
           尚无一童 —— 先收一名道童进门,门庭遂有生气。
@@ -138,6 +149,27 @@
     if (appr.dispatch(uid, spec, Date.now())) {
       ui.toast('已遣道童前往', 'info')
     }
+  }
+
+  /** 展开中的派活说明:键是 `弟子 uid:任务 spec`,跨弟子只开一份 */
+  const taskTap = ref<string | null>(null)
+  const tappedTask = computed(() => {
+    const key = taskTap.value
+    if (!key) return null
+    const i = key.indexOf(':')
+    const uid = key.slice(0, i)
+    const spec = key.slice(i + 1) as ApprenticeSpec
+    return { uid, spec, desc: APPRENTICE_TASKS.find(t => t.spec === spec)?.desc ?? '' }
+  })
+
+  function tapTask(uid: string, spec: ApprenticeSpec): void {
+    const key = `${uid}:${spec}`
+    if (taskTap.value === key) {
+      taskTap.value = null
+      dispatcher(uid, spec)
+      return
+    }
+    taskTap.value = key
   }
 
   function doDispatchAll(): void {
