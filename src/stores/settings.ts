@@ -107,7 +107,15 @@ export const useSettingsStore = defineStore(
       const sk = asRecord<unknown>(smartKeep.value)
       smartKeep.value = {
         enabled: sk.enabled === true,
-        minQuality: Math.floor(asFiniteNumber(sk.minQuality, 3, 0)),
+        /**
+         * 品质线必须是真实存在的 rank:坏档写成 99 时没有一件装备达线,
+         * 智能收纳又会把未达线的裸件静默化尘 —— 玩家会以为掉落没了。
+         * 认不出的值回落默认「灵品」,与首次进入游戏的设置同一档。
+         */
+        minQuality: (() => {
+          const v = Math.floor(asFiniteNumber(sk.minQuality, 3, 0))
+          return QUALITIES.some(q => q.rank === v) ? v : 3
+        })(),
         keepMinTier: Math.max(0, Math.min(MAX_EQUIP_TIER, Math.floor(asFiniteNumber(sk.keepMinTier, 0, 0)))),
         keepCoreAffix: sk.keepCoreAffix !== false,
         keepComboPiece: sk.keepComboPiece !== false,

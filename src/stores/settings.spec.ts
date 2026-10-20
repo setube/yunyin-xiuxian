@@ -95,6 +95,24 @@ describe('设置 · 布尔开关坏档清洗', () => {
   })
 })
 
+describe('设置 · 智能收纳品质线坏档清洗', () => {
+  it('认不出的品质线回落灵品:99 不再让所有掉落静默化尘', () => {
+    const s = useSettingsStore()
+    s.smartKeep = { ...s.smartKeep, enabled: true, minQuality: 99, keepMinTier: 0 }
+    s.sanitize()
+    const valid = QUALITIES.map(q => q.rank)
+    expect(valid.includes(s.smartKeep.minQuality), '只留真实存在的品质 rank').toBe(true)
+    expect(s.smartKeep.minQuality, '默认回落灵品').toBe(3)
+  })
+
+  it('合法品质线原样保留', () => {
+    const s = useSettingsStore()
+    s.smartKeep = { ...s.smartKeep, minQuality: 5 }
+    s.sanitize()
+    expect(s.smartKeep.minQuality).toBe(5)
+  })
+})
+
 describe('设置 · reduceMotion 系统偏好播种', () => {
   it('系统开了减少动效:首次创建的应用内默认值随之打开', () => {
     stubMatchMedia(true)
