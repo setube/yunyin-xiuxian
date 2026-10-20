@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
+import { useInventoryStore } from '@/stores/inventory'
 import type { SecretRealmState } from '@/core/secretRealm'
 
 function seedPlayer(p: ReturnType<typeof usePlayerStore>): void {
@@ -199,5 +200,18 @@ describe('player.rebirth 转世状态重置', () => {
     // 词条只算一次:再加一条同 id 也不该翻倍
     p.addTalent(talent)
     expect(p.reincarnation.talents).toEqual([talent, 't_not_real'])
+  })
+
+  /**
+   * 祭炼位是境界闸:低境界只有 1 个槽(元婴起 2 个)。坏档/降境界的旧档写满 4 件,
+   * 每一件的被动都会生效 —— 与 toggleArtifact / applyLoadout 的裁剪口径分叉。
+   */
+  it('sanitize:祭炼位按当前境界裁到槽位上限', () => {
+    const p = usePlayerStore()
+    const inv = useInventoryStore()
+    p.major = 0 // 未达 ARTIFACT_SLOT_UNLOCK_MAJOR:只有 1 个槽
+    inv.$patch({ equippedArtifacts: ['a1', 'a2', 'a3'] } as never)
+    p.sanitize()
+    expect(inv.equippedArtifacts, '低境界只留先祭炼的那一件').toEqual(['a1'])
   })
 })

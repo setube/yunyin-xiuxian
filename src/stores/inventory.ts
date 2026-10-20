@@ -7,7 +7,7 @@ import { persistConfig } from '@/utils/storage'
 import { resolveEquipStats } from '@/core/equipGen'
 import { mergeMods } from '@/core/statsCalc'
 import { useLoreStore } from '@/stores/lore'
-import { artifactDef, artifactValue } from '@/data/artifacts'
+import { ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
 import { BAG_CAPACITY } from '@/data/constants'
 import { EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
 import { asArray, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
@@ -73,8 +73,12 @@ export const useInventoryStore = defineStore(
         seenDef.add(a.defId)
         return true
       })
-      // 祭炼位同理:同一个 id 写两遍,被动会被算两次(实际只有一件)
-      equippedArtifacts.value = [...new Set(asStringArray(equippedArtifacts.value))]
+      /**
+       * 祭炼位:同一个 id 写两遍会让被动算两次(实际只有一件);
+       * 条数超过 ARTIFACT_MAX_SLOTS(坏档写 5 件)则会让每一件被动一起生效 ——
+       * 槽位上限是境界闸(toggleArtifact/applyLoadout 都按它裁),读档同一把尺。
+       */
+      equippedArtifacts.value = [...new Set(asStringArray(equippedArtifacts.value))].slice(0, ARTIFACT_MAX_SLOTS)
     }
 
     const equippedUids = computed(() => new Set(Object.values(equipped.value).filter(Boolean) as string[]))

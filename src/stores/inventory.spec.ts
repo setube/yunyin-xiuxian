@@ -136,4 +136,14 @@ describe('装备槽属性汇总(equipMods)守卫', () => {
     expect(inv.bagItems.map(i => i.uid).sort(), '其余件都回行囊').toEqual(['b1', 'h1'])
     expect(inv.equippedItems.map(i => i.uid), '一件只算一个槽').toEqual(['w1'])
   })
+
+  it('sanitize:祭炼位不超过法宝槽上限(坏档写满也只算前两件)', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: ['a1', 'a2', 'a3', 'a4'].map(defId => ({ defId, level: 0 })),
+      equippedArtifacts: ['a1', 'a2', 'a3', 'a4']
+    } as never)
+    inv.sanitize()
+    expect(inv.equippedArtifacts, '至多 ARTIFACT_MAX_SLOTS 件').toHaveLength(2)
+  })
 })

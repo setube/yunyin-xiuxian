@@ -31,6 +31,7 @@ import { asArray, asCarriedHpPct, asFiniteNumber, asStringArray } from '@/utils/
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
 import { regionDef } from '@/data/regions'
+import { artifactSlotsFor } from '@/data/artifacts'
 import { lifeTrialDef, type LifeTrialState } from '@/data/lifeTrials'
 import { STARS } from '@/data/ziwei'
 import { fateChart, fateFocusMods, fateSeed } from '@/core/fate'
@@ -869,6 +870,13 @@ export const usePlayerStore = defineStore(
         })
       }
       nemeses.value = [...mergedNemeses.values()]
+      /**
+       * 祭炼位按境界裁:超过当前境界的槽数(坏档/降境界的旧档)会让多出来的法宝
+       * 被动一起生效 —— 槽位上限在 toggleArtifact/applyLoadout 那里是硬闸,读档同一把尺。
+       * 截断而不是清空:保留先祭炼的那几件,与「槽满时替换最早」的顺序语义一致。
+       */
+      // sanitizeAll 里 player 先于 inventory,此处读到的是原始分片 —— 形状也要自己兜
+      inventory.equippedArtifacts = asStringArray(inventory.equippedArtifacts).slice(0, artifactSlotsFor(major.value))
       reincarnation.value = {
         count,
         daoFruit: Number.isFinite(r?.daoFruit) ? Math.max(0, r.daoFruit) : 0,
