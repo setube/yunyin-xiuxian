@@ -62,12 +62,16 @@ export const useInventoryStore = defineStore(
       }
       equipped.value = fixedEquipped
       pills.value = asNumberRecord(pills.value, 0)
-      // 同一件法宝只该有一条:库里两条同 defId 会让「是否已拥有」与祭炼判定各看各的
+      /**
+       * 同一件法宝只该有一条:库里两条同 defId 会让「是否已拥有」与祭炼判定各看各的。
+       * 认不出的 defId 一并清掉 —— 法宝页按 `artifactDef(a.defId)!` 取品质排序,
+       * 野 id 会在渲染期对 undefined 取 quality 当场抛错;而且它本就不产生任何被动。
+       */
       const seenDef = new Set<string>()
       artifacts.value = asArray<ArtifactOwned>(
         artifacts.value,
         [],
-        a => !!a && typeof (a as ArtifactOwned).defId === 'string'
+        a => !!a && typeof (a as ArtifactOwned).defId === 'string' && !!artifactDef((a as ArtifactOwned).defId)
       ).filter(a => {
         if (seenDef.has(a.defId)) return false
         seenDef.add(a.defId)
@@ -78,7 +82,11 @@ export const useInventoryStore = defineStore(
        * 条数超过 ARTIFACT_MAX_SLOTS(坏档写 5 件)则会让每一件被动一起生效 ——
        * 槽位上限是境界闸(toggleArtifact/applyLoadout 都按它裁),读档同一把尺。
        */
-      equippedArtifacts.value = [...new Set(asStringArray(equippedArtifacts.value))].slice(0, ARTIFACT_MAX_SLOTS)
+      // 祭炼位同样按 id 认物:清掉的野法宝不该继续占格(它既不产生被动,也画不出卡)
+      const ownedArtifactIds = new Set(artifacts.value.map(a => a.defId))
+      equippedArtifacts.value = [...new Set(asStringArray(equippedArtifacts.value))]
+        .filter(id => ownedArtifactIds.has(id))
+        .slice(0, ARTIFACT_MAX_SLOTS)
     }
 
     const equippedUids = computed(() => new Set(Object.values(equipped.value).filter(Boolean) as string[]))

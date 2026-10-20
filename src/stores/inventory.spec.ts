@@ -140,10 +140,24 @@ describe('装备槽属性汇总(equipMods)守卫', () => {
   it('sanitize:祭炼位不超过法宝槽上限(坏档写满也只算前两件)', () => {
     const inv = useInventoryStore()
     inv.$patch({
-      artifacts: ['a1', 'a2', 'a3', 'a4'].map(defId => ({ defId, level: 0 })),
-      equippedArtifacts: ['a1', 'a2', 'a3', 'a4']
+      artifacts: ['af_muyu', 'af_lihuo', 'af_xuantian', 'af_fuyao'].map(defId => ({ defId, level: 0 })),
+      equippedArtifacts: ['af_muyu', 'af_lihuo', 'af_xuantian', 'af_fuyao']
     } as never)
     inv.sanitize()
     expect(inv.equippedArtifacts, '至多 ARTIFACT_MAX_SLOTS 件').toHaveLength(2)
+  })
+
+  it('sanitize:认不出的法宝 id 清掉,法宝页不会再对 undefined 取品质', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: [
+        { defId: 'af_muyu', level: 2 },
+        { defId: 'af_ghost', level: 0 }
+      ],
+      equippedArtifacts: ['af_muyu', 'af_ghost']
+    } as never)
+    inv.sanitize()
+    expect(inv.artifacts.map(a => a.defId), '只留认得的法宝').toEqual(['af_muyu'])
+    expect(inv.equippedArtifacts, '野 id 不会在祭炼位上白占一格').toEqual(['af_muyu'])
   })
 })
