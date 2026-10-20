@@ -284,6 +284,8 @@
   const focusCard = ref<number | null>(null)
   /** 深链要续草却买不到:null=不必说;none=这架没进这品草;soldOut=有但卖光了 */
   const focusHerbState = ref<'none' | 'soldOut' | null>(null)
+  /** 上一次把落点算给哪一架货(stockedAt);换货后才需要重新滚动 */
+  let focusedStockAt: number | null = null
   const buySection = ref<HTMLElement | null>(null)
   /** 展开中的「贡兵刃」悬赏单(idx);null=全部收起 */
   const openEquipOrder = ref<number | null>(null)
@@ -600,7 +602,7 @@
    * 而高亮记的是渲染序号,换货后同一个序号多半变成另一件货,墨绿框就指着
    * 一件与灵草无关的东西,比不亮更误导。
    */
-  function applyHerbFocus(): void {
+  function applyHerbFocus(scroll = true): void {
     if (route.query.focus !== 'herb') return
     // 丹炉带过来的目标品阶;乱掷的参数忽略,落回当前境界该有的那一品
     const raw = Number(route.query.grade)
@@ -612,20 +614,23 @@
     if (slot && at >= 0) {
       focusCard.value = at
       focusHerbState.value = null
-      buySection.value?.querySelector<HTMLElement>(`[data-card="${at}"]`)?.scrollIntoView({ block: 'center' })
+      if (scroll) buySection.value?.querySelector<HTMLElement>(`[data-card="${at}"]`)?.scrollIntoView({ block: 'center' })
     } else {
       focusCard.value = null
       focusHerbState.value = soldOut ? 'soldOut' : 'none'
-      buySection.value?.scrollIntoView({ block: 'start' })
+      if (scroll) buySection.value?.scrollIntoView({ block: 'start' })
     }
+    focusedStockAt = market.stockedAt
   }
 
-  /** 换货后重定位:只跟货架走,不跟玩家自己切签走 */
+  /** 换货、或玩家从别的签切回「购」时重定位(离开期间换过货也算) */
   watch(
-    () => market.stockedAt,
-    () => {
-      if (route.query.focus !== 'herb' || tab.value !== 'buy') return
-      void nextTick(applyHerbFocus)
-    }
-  )
+      () => [market.stockedAt, tab.value] as const,
+      ([nextStockedAt, nextTab]) => {
+        if (route.query.focus !== 'herb' || nextTab !== 'buy') return
+        // 换过货才滚;只是切签回来时重算高亮即可,不把玩家刚看的货拽走
+        const restocked = nextStockedAt !== focusedStockAt
+        void nextTick(() => applyHerbFocus(restocked))
+      }
+    )
 </script>

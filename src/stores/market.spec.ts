@@ -191,18 +191,40 @@ describe('坊市 · 买卖', () => {
     expect(kept.kind === 'material' && kept.matId, '留下的是先出现、买得到的那格').toBe('herb')
   })
 
-  it('sanitize:缺 idx 的格子按位置补号,不与已有号撞车', () => {
+  /**
+   * 缺格号的格子无法确认原号:装备品质按 (stockedAt, idx) 确定性再生,
+   * 随手补一个号会让标价与实得品质分叉。故这类格子丢掉,但**不许顶掉**已有的货。
+   */
+  it('sanitize:缺 idx 的格子丢掉,已有的那格原样留下', () => {
     const market = useMarketStore()
     market.$patch({
       stock: [
         { kind: 'material', idx: 1, matId: 'herb', grade: 1, count: 12, price: { m: 5, e: 0 }, sold: false },
-        // 第 2 格缺号:按位置补 1,与已有号撞车 → 这格丢弃,不许覆盖已存在的货
+        // 第 2 格缺号:无从确认原号 → 丢弃
         { kind: 'material', matId: 'ore', count: 12, price: { m: 6, e: 0 }, sold: false }
       ] as unknown as MarketSlot[]
     })
     market.sanitize()
     expect(market.stock).toHaveLength(1)
     expect(market.stock[0]!.idx).toBe(1)
+    const kept = market.stock[0]!
+    // 留下的必须还是原来那格草,不能被缺号那格(玄铁)顶掉
+    expect(kept.kind === 'material' && kept.matId, '已有的草格不该被缺号格覆盖').toBe('herb')
+  })
+
+  it('sanitize:烂格先出现也不许占掉后面好货的格号', () => {
+    const market = useMarketStore()
+    market.$patch({
+      stock: [
+        // 同号但内容是坏丹方:先被丢掉,后面的好货应当留下
+        { kind: 'pill', idx: 2, pillId: 'p_nope', count: 1, price: { m: 1, e: 0 }, sold: false },
+        { kind: 'material', idx: 2, matId: 'herb', grade: 1, count: 12, price: { m: 5, e: 0 }, sold: false }
+      ] as unknown as MarketSlot[]
+    })
+    market.sanitize()
+    expect(market.stock, '烂格不该把好货的号占掉').toHaveLength(1)
+    const kept = market.stock[0]!
+    expect(kept.kind === 'material' && kept.matId).toBe('herb')
   })
 
   it('寄卖:背包一件离包上架,记价/记层/记时刻,行囊随之腾空', () => {

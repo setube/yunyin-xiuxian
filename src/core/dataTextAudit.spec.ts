@@ -607,8 +607,11 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   it('炼丹只缺灵石时指去历练,不给坊市(那儿只有花灵石)', () => {
     const inv = src('../views/InventoryView.vue')
     expect(inv, '只缺灵石给历练去路').toMatch(/r\.plan\.reason === 'stone'/)
-    expect(inv, '去历练').toContain('去历练攒石 →')
     expect(inv, '两条去路互斥,同屏只摆一条').toMatch(/v-else-if="r\.plan\.reason === 'stone'"/)
+    // 目标路由也要锁:只断言标签的话,把 link 改回 market 这条测试照样绿
+    expect(inv, '灵石那条必须指向历练').toMatch(
+      /v-else-if="r\.plan\.reason === 'stone'"[\s\S]{0,200}?:to="\{ name: 'adventure' \}"[\s\S]{0,200}?去历练攒石 →/,
+    )
   })
 
   it('灵兽的性子带数,出处与结算同源', () => {

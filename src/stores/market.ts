@@ -28,7 +28,7 @@ import {
 import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, materialSellPrice, pillSellPrice } from '@/core/marketService'
 import type { HerbGrade } from '@/data/herbGrades'
 import { herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
-import { asArray, asFiniteNumber, asNonNegInt, asPrice } from '@/utils/saveShape'
+import { asArray, asFiniteNumber, asPrice } from '@/utils/saveShape'
 
 export type MarketBuyResult = 'ok' | 'sold' | 'poor' | 'bagfull' | 'missing'
 
@@ -42,10 +42,12 @@ export const useMarketStore = defineStore(
     /**
      * 存档修复:货架逐格修形,烂格整格丢弃(少一件货好过白屏);时刻夹回非负。
      *
-     * 重复 idx 的格子整格丢弃:购买按 idx 认格,导入/坏档里两格同号时
-     * `buy(idx)` 只会命中先出现的那一格,后一格永远买不到(点了没反应),
-     * 且玩家以为在点 B、实际买到 A。丢弃是诚实的收场 —— 注意**不能改成重新编号**:
-     * 装备的品质由 (stockedAt, idx) 确定性再生,改号会让标价与实得品质分叉。
+     * 格号(idx)缺失或重复的格子整格丢弃。两件事都得这么做:
+     * - 重复:购买按 idx 认格,两格同号时 `buy(idx)` 只命中先出现的那一格,
+     *   后一格永远买不到(点了没反应),玩家还以为买到的是它;
+     * - 缺失/重编号:装备品质由 (stockedAt, idx) 确定性再生,**改号会让标价与
+     *   实得品质分叉**,而缺号时又无法确认原号 —— 丢一格好过卖出一件对不上账的货。
+     * 先完整校验、再按序认号:坏格不会抢走后面好货的号。
      */
     function sanitize(): void {
       stockedAt.value = Math.max(0, asFiniteNumber(stockedAt.value, 0))
@@ -56,10 +58,11 @@ export const useMarketStore = defineStore(
         const kind = raw.kind
         if (kind !== 'pill' && kind !== 'material' && kind !== 'equipment') continue
         const sold = 'sold' in raw && raw.sold === true
-        const idx = asNonNegInt('idx' in raw ? raw.idx : undefined, clean.length)
-        // 同号格只留先出现的那一格(买得到的那一格)
+        const rawIdx = 'idx' in raw ? raw.idx : undefined
+        if (typeof rawIdx !== 'number' || !Number.isFinite(rawIdx)) continue
+        const idx = Math.max(0, Math.floor(rawIdx))
+        // 已在校验 kind 之后才认号:坏格不会占掉后面好货的号
         if (usedIdx.has(idx)) continue
-        usedIdx.add(idx)
 
         if (kind === 'pill') {
           if (!('pillId' in raw) || typeof raw.pillId !== 'string' || !pillDef(raw.pillId)) continue
@@ -96,6 +99,7 @@ export const useMarketStore = defineStore(
             sold
           })
         }
+        usedIdx.add(idx)
       }
       stock.value = clean
 
