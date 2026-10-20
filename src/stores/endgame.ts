@@ -121,8 +121,20 @@ export const useEndgameStore = defineStore(
         records.value,
         r => !!r && typeof r === 'object' && Number.isFinite((r as { value?: unknown }).value as number)
       )
-      souls.value = asArray<SoulInstance>(souls.value, [], s => !!s && typeof (s as SoulInstance).uid === 'string')
-      equippedSouls.value = asStringArray(equippedSouls.value)
+      /**
+       * 器魂 uid 必须唯一:装配表按 uid 映射回魂仓,两条同号会让 `activeSouls`
+       * 把同一枚的主动与词条各算两次(实际只有一枚)。
+       */
+      const seenSoul = new Set<string>()
+      souls.value = asArray<SoulInstance>(souls.value, [], s => !!s && typeof (s as SoulInstance).uid === 'string').filter(
+        s => {
+          if (seenSoul.has(s.uid)) return false
+          seenSoul.add(s.uid)
+          return true
+        }
+      )
+      // 装配位亦然:同一个 uid 写两遍只会让同一枚占两个槽、算两遍词条
+      equippedSouls.value = [...new Set(asStringArray(equippedSouls.value))]
       // 装配表清掉已不存在的 uid(ghost):否则原始槽位与 activeSouls(过滤读数)分叉 ——
       // 幽灵占着槽、栏里看着有空位,再装配却静默失败
       const soulUids = new Set(souls.value.map(s => s.uid))

@@ -12,6 +12,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
 import { mergeMods } from '@/core/statsCalc'
 import { resolveEquipStats } from '@/core/equipGen'
+import { artifactDef, artifactValue } from '@/data/artifacts'
 import type { EquipmentInstance } from '@/types'
 
 function mk(uid: string, affixes: Array<{ id: string; roll: number }>): EquipmentInstance {
@@ -68,5 +69,41 @@ describe('装备槽属性汇总(equipMods)守卫', () => {
 
   it('空装备/空槽:equipMods 为空对象(无杂键)', () => {
     expect(useInventoryStore().equipMods).toEqual({})
+  })
+
+  /**
+   * 坏档/导入档里两件同 uid:`equippedUids` 是 uid 集合,装备一次会让两件同时
+   * 计入属性(翻倍),而两件又都从行囊里消失 —— 既看不见,也没拿到该得的那份。
+   * 修形只留先出现的一件。
+   */
+  it('sanitize:重复 uid 只留先出现的一件,属性不翻倍、另一件仍可行囊', () => {
+    const inv = useInventoryStore()
+    const first = mk('dup', [{ id: 'atk1', roll: 0.5 }])
+    const second = mk('dup', [{ id: 'atk1', roll: 0.9 }])
+    const other = mk('other', [])
+    inv.items = [first, second, other]
+    inv.sanitize()
+    expect(inv.items.map(i => i.uid), '同号只留先出现的那件').toEqual(['dup', 'other'])
+    inv.equip('dup', 'body')
+    expect(inv.equippedItems, '一次装备只该算一件').toHaveLength(1)
+    expect(inv.bagItems.map(i => i.uid), '另一件不同号的仍留在行囊').toEqual(['other'])
+    expect(inv.equipMods).toEqual(mergeMods([resolveEquipStats(first).mods]))
+  })
+
+  it('sanitize:同一件法宝写两条、祭炼位写两遍,被动都只算一次', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: [
+        { defId: 'af_muyu', level: 0 },
+        { defId: 'af_muyu', level: 0 }
+      ],
+      equippedArtifacts: ['af_muyu', 'af_muyu']
+    })
+    inv.sanitize()
+    expect(inv.artifacts, '库里同一件法宝只留一条').toHaveLength(1)
+    expect(inv.equippedArtifacts, '祭炼位同一件只占一个').toEqual(['af_muyu'])
+    const value = artifactValue(artifactDef('af_muyu')!, 0)
+    // 只算一次:与单件祭炼的值深等(算两次会把 maxHpPct 叠加成两倍)
+    expect(inv.equipMods).toEqual(mergeMods([value.passive]))
   })
 })

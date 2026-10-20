@@ -21,13 +21,39 @@ export const useInventoryStore = defineStore(
     /** 已祭炼的法宝(元婴起可佩两件) */
     const equippedArtifacts = ref<string[]>([])
 
-    /** 存档修复:行囊/丹药/法宝被写坏时,装备合计与图鉴会在渲染期抛错 */
+    /**
+     * 存档修复:行囊/丹药/法宝被写坏时,装备合计与图鉴会在渲染期抛错。
+     *
+     * 另把重复 uid 的件只留先出现的一件:`equippedUids` 是 uid 集合,两件同号时
+     * 一次装备会让**两件**同时算进属性(平白翻倍),而两件又都从行囊里消失 ——
+     * 玩家既看不见它们,又拿不到它们本该给的那一份。
+     */
     function sanitize(): void {
-      items.value = asArray<EquipmentInstance>(items.value, [], it => !!it && typeof (it as EquipmentInstance).uid === 'string')
+      const seenUid = new Set<string>()
+      items.value = asArray<EquipmentInstance>(
+        items.value,
+        [],
+        it => !!it && typeof (it as EquipmentInstance).uid === 'string'
+      ).filter(it => {
+        if (seenUid.has(it.uid)) return false
+        seenUid.add(it.uid)
+        return true
+      })
       equipped.value = asRecord<string>(equipped.value)
       pills.value = asNumberRecord(pills.value, 0)
-      artifacts.value = asArray<ArtifactOwned>(artifacts.value, [], a => !!a && typeof (a as ArtifactOwned).defId === 'string')
-      equippedArtifacts.value = asStringArray(equippedArtifacts.value)
+      // 同一件法宝只该有一条:库里两条同 defId 会让「是否已拥有」与祭炼判定各看各的
+      const seenDef = new Set<string>()
+      artifacts.value = asArray<ArtifactOwned>(
+        artifacts.value,
+        [],
+        a => !!a && typeof (a as ArtifactOwned).defId === 'string'
+      ).filter(a => {
+        if (seenDef.has(a.defId)) return false
+        seenDef.add(a.defId)
+        return true
+      })
+      // 祭炼位同理:同一个 id 写两遍,被动会被算两次(实际只有一件)
+      equippedArtifacts.value = [...new Set(asStringArray(equippedArtifacts.value))]
     }
 
     const equippedUids = computed(() => new Set(Object.values(equipped.value).filter(Boolean) as string[]))

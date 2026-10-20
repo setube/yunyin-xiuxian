@@ -291,4 +291,24 @@ describe('终局一次性引导标记 sanitize', () => {
     expect(e.resourceDialogSeen, '"true"不再永久压掉资源弹窗').toBe(false)
     expect(e.soulTutorialSeen, '0 → false').toBe(false)
   })
+
+  /**
+   * 器魂 uid 重复:装配表按 uid 映回魂仓,两条同号会让同一枚的词条被算两次。
+   * 这是「一件东西被当成两件」的同族缺陷(装备/法宝侧同一根因)。
+   */
+  it('sanitize:器魂 uid 与装配位都去重,同一枚不重复计词条', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      souls: [
+        { uid: 's1', type: 'fengmang', grade: 1, fromName: '剑' },
+        { uid: 's1', type: 'fengmang', grade: 1, fromName: '剑' },
+        { uid: 's2', type: 'gangdun', grade: 1, fromName: '盾' }
+      ],
+      equippedSouls: ['s1', 's1', 's2']
+    })
+    e.sanitize()
+    expect(e.souls.map(s => s.uid), '魂仓同号只留一枚').toEqual(['s1', 's2'])
+    expect(e.equippedSouls, '装配位同一枚只占一格').toEqual(['s1', 's2'])
+    expect(e.activeSouls, '装配出来的也是两枚,不是三枚').toHaveLength(2)
+  })
 })
