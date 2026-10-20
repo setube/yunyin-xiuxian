@@ -60,4 +60,20 @@ describe('区域凭吊(memorial)', () => {
   it('凭吊概率低(4%)', () => {
     expect(MEMORIAL_CHANCE).toBe(0.04)
   })
+
+  it('凭吊年数跟寿元同一把尺:现实 1 小时 = 1 岁', () => {
+    const player = usePlayerStore()
+    const t0 = 1_700_000_000_000
+    player.suppressRegion('qingyun')
+    player.suppressedSince = { qingyun: t0 - 10 * 3_600_000 }
+    expect(memorialLine('qingyun', player, t0), '镇压十小时应对上寿元十岁').toContain('已逾10载')
+  })
+
+  it('刚镇压不足一小时也至少说一载', () => {
+    const player = usePlayerStore()
+    const t0 = 1_700_000_000_000
+    player.suppressRegion('qingyun')
+    player.suppressedSince = { qingyun: t0 - 60_000 }
+    expect(memorialLine('qingyun', player, t0)).toContain('已逾1载')
+  })
 })

@@ -20,6 +20,7 @@ import type { GNum, QualityId } from '@/types'
 import { equipmentTemplate } from '@/data/equipment'
 import { deriveProsperity, isReviving, prosperityYieldMult } from './worldMemory'
 import { settleRegionRevivals } from './regionRevival'
+import { AGE_YEARS_PER_HOUR } from '@/data/constants'
 
 /** 区域统计数据(使用指数移动平均) */
 export interface RegionStats {
@@ -298,12 +299,21 @@ export const MEMORIAL_CHANCE = 0.04
  * 待念:进入已被你镇压的区域时,低概率触发一段"世界记得你"的叙事。
  * 纯文案,无奖励无属性。
  */
-export function memorialLine(regionId: string, player: ReturnType<typeof usePlayerStore>): string | null {
+export function memorialLine(
+  regionId: string,
+  player: ReturnType<typeof usePlayerStore>,
+  now: number = Date.now()
+): string | null {
   const since = player.suppressedSince[regionId]
   if (since === undefined) return null
   const region = regionDef(regionId)
   if (!region) return null
-  const years = Math.max(1, Math.floor((Date.now() - since) / 31_536_000)) // 现实秒 → ~年
+  /**
+   * 与寿元同一把尺:现实 1 小时 = AGE_YEARS_PER_HOUR 岁。
+   * 旧除数 31_536_000 ms(约 8.76 小时)会把守了十小时读成「一载」,
+   * 而同时顶栏的寿元已经走了十岁 —— 同一件事两处对不上。
+   */
+  const years = Math.max(1, Math.floor(((now - since) / 3_600_000) * AGE_YEARS_PER_HOUR))
   return [
     `行至${region.name},山道两侧立着两块石碑——一块刻着你的道号,另一块是空的。`,
     `你镇压此地已逾${years}载,此方妖邪至今不敢再聚。`,
