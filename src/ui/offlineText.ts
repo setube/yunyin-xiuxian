@@ -4,13 +4,14 @@
  * 离开游戏再回来,走的是 settleOffline,不是 startRetreat。
  * 卷轴上若写「闭关」,玩家会以为自己已经封洞,或反过来觉得闭关按钮没生效。
  *
- * 离线收益全体打 0.9(OFFLINE_EFFICIENCY):「离线可攒 X 时」指的是攒的上限,
- * 账面结算是按九成来的。这里一并交代,别让「说八小时、只得七成二」成了哑谜。
+ * 0.9 的 OFFLINE_EFFICIENCY 只削「闲置积蓄」(修炼/灵气/建筑/藏经阁,offline.ts 的 effSec):
+ * 历练(离线按在线 N 场同源结算)与镇压区域(豁免折扣是志在统治的补偿)都按全额。
+ * 披露只写闲置那份的折损 —— 别让「全体九成」成了乌虚,也别让玩家误以为历练也缩水。
  */
 import { OFFLINE_EFFICIENCY, OFFLINE_BOSS_REWARD_MULT } from '@/data/constants'
 
 export function offlineAwayPhrase(secondsText: string, cappedText?: string): string {
-  const effNote = OFFLINE_EFFICIENCY < 1 ? ` · 离线按 ${Math.round(OFFLINE_EFFICIENCY * 100)}% 收益计` : ''
+  const effNote = OFFLINE_EFFICIENCY < 1 ? ` · 离线修炼与洞府积蓄按 ${Math.round(OFFLINE_EFFICIENCY * 100)}% 计` : ''
   if (cappedText) return `此去 ${secondsText}(收益按 ${cappedText} 结算${effNote})`
   return `此去 ${secondsText}${effNote}`
 }

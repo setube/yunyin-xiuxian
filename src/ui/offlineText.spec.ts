@@ -20,6 +20,9 @@ describe('离线归来 ≠ 闭关', () => {
     expect(offlineAwayPhrase('8小时')).toContain('90%')
     expect(offlineAwayPhrase('60小时', '8小时')).toContain('收益按 8小时 结算')
     expect(offlineAwayPhrase('60小时', '8小时')).toContain('90%')
+    // 0.9 只削闲置积蓄(修炼/洞府),不虚称「全体按 90%」:历练与镇压按全额(TASK-331)
+    expect(offlineAwayPhrase('8小时')).toContain('修炼')
+    expect(offlineAwayPhrase('8小时')).not.toMatch(/离线按\s*9\d%/)
   })
 
   it('寿元说明也用「此去」,不冒充闭关', () => {
