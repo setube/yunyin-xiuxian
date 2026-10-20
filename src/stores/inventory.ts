@@ -2,16 +2,18 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { ArtifactOwned, EquipmentInstance, EquipSlot, GNum, StatMods } from '@/types'
-import { add, gnZero } from '@/utils/gnum'
+import { add, gn, gnZero } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
 import { resolveEquipStats } from '@/core/equipGen'
 import { mergeMods } from '@/core/statsCalc'
 import { useLoreStore } from '@/stores/lore'
 import { ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
-import { BAG_CAPACITY } from '@/data/constants'
-import { EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
+import { BAG_CAPACITY, EQUIP_MAX_LEVEL_BASE } from '@/data/constants'
+import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { pillDef } from '@/data/pills'
-import { asArray, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
+import { QUALITIES } from '@/data/qualities'
+import { affixDef } from '@/data/affixes'
+import { asArray, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 
 export const useInventoryStore = defineStore(
   'inventory',
@@ -29,18 +31,64 @@ export const useInventoryStore = defineStore(
      * 另把重复 uid 的件只留先出现的一件:`equippedUids` 是 uid 集合,两件同号时
      * 一次装备会让**两件**同时算进属性(平白翻倍),而两件又都从行囊里消失 ——
      * 玩家既看不见它们,又拿不到它们本该给的那一份。
+     *
+     * 每一件还要逐字段修形 —— 这是伤害面最大的一处:
+     * - `tier`/`level` 写成 `NaN` 会让 `powerScale`/`factor` 一路算出 NaN,
+     *   而 `finalStats` 的攻防血整份变成 0 —— 玩家看着装备还在,人却打不动任何东西;
+     * - 词条 `roll` 写成 `NaN` 同样污染 `attackPct` 之类的加成,把总属性打成 0;
+     * - `affixes` 不是数组时,背包、详情、重铸三处读 `.length` 当场抛错白屏。
+     * 认不出的品质/词条 id 一并清掉:它们算不出词条,只占存档。
      */
     function sanitize(): void {
       const seenUid = new Set<string>()
-      items.value = asArray<EquipmentInstance>(
-        items.value,
-        [],
-        it => !!it && typeof (it as EquipmentInstance).uid === 'string'
-      ).filter(it => {
-        if (seenUid.has(it.uid)) return false
+      const qualityIds = new Set(QUALITIES.map(q => q.id))
+      const cleanItems: EquipmentInstance[] = []
+      for (const raw of asArray<unknown>(items.value)) {
+        if (!raw || typeof raw !== 'object') continue
+        const it = raw as Partial<EquipmentInstance>
+        // 认不出的模板**不丢**:界面对这类件已有「旧物」兜底名(版本回退/模板改名时),
+        // 丢掉就是无声的档案损失;它只是穿不上,留着玩家还能自己处置
+        if (typeof it.uid !== 'string' || !it.uid || seenUid.has(it.uid)) continue
         seenUid.add(it.uid)
-        return true
-      })
+        const affixes = asArray<{ id: string; roll: number }>(
+          it.affixes,
+          [],
+          a => !!a && typeof a === 'object' && typeof (a as { id?: unknown }).id === 'string'
+        )
+          // 认不出的词条 id 不产生任何数值,也不该在「词条 N/M」里占一格
+          .filter(a => !!affixDef(a.id))
+          .map(a => ({
+            id: a.id,
+            // 掷点越界夹回 [0,1]:负数会被 affixValue 当成 0 却仍按满值显示,>1 则凭空超上限
+            roll: Math.min(1, asFiniteNumber(a.roll, 0, 0))
+          }))
+        const rawQuality = it.quality as unknown
+        cleanItems.push({
+          ...it,
+          uid: it.uid,
+          templateId: typeof it.templateId === 'string' ? it.templateId : '',
+          quality: typeof rawQuality === 'string' && qualityIds.has(rawQuality as never) ? (rawQuality as EquipmentInstance['quality']) : 'mortal',
+          tier: Math.min(MAX_EQUIP_TIER, Math.max(1, Math.floor(asFiniteNumber(it.tier, 1, 1)))),
+          // 强化上限随洞府炼器台抬高,故这里只夹到「基础上限 + 满建筑加成」的量级:
+          // 具体上限由 equipLevelCap() 在执行侧把关,读档只需挡住 NaN/负数这种会把数值算穿的坏数
+          level: Math.min(EQUIP_MAX_LEVEL_BASE + 10, Math.max(0, Math.floor(asFiniteNumber(it.level, 0, 0)))),
+          affixes,
+          locked: it.locked === true,
+          reforgeCount: Math.floor(asFiniteNumber(it.reforgeCount, 0, 0)),
+          sealedAffixIds: [...new Set(asStringArray(it.sealedAffixIds))].filter(id => affixes.some(a => a.id === id)),
+          transferCount: Math.floor(asFiniteNumber(it.transferCount, 0, 0)),
+          note: typeof it.note === 'string' && it.note ? it.note.slice(0, 4) : undefined,
+          ...(it.invested && typeof it.invested === 'object'
+            ? {
+                invested: {
+                  dust: Math.floor(asFiniteNumber((it.invested as { dust?: unknown }).dust, 0, 0)),
+                  stone: gn((it.invested as { stone?: unknown }).stone as never)
+                }
+              }
+            : {})
+        })
+      }
+      items.value = cleanItems
       /**
        * 装备栏要按「槽位与件」双向校验,不能只当普通 record 收下:
        * - 槽名认不得(旧版/手改):该 uid 会被排除出行囊,却没有任何槽卡显示它 —— 装备凭空消失
