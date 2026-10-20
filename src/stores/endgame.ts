@@ -5,7 +5,7 @@ import type { CelestialWorldDef, DaoMark, DaoPathId, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { mergeMods } from '@/core/statsCalc'
 import { EXPEDITION_GUARDIAN_LAYER, celestialWorldDef, daoPathDef, trialDef } from '@/data/endgame'
-import { SOUL_SLOTS, soulMods as soulModsOf, type SoulInstance } from '@/data/souls'
+import { SOUL_GRADES, SOUL_SLOTS, soulMods as soulModsOf, soulTypeDef, type SoulInstance } from '@/data/souls'
 import { milestoneDef, recordDef } from '@/data/identity'
 import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asObjectOrNull, asRecordOf, asStringArray } from '@/utils/saveShape'
 
@@ -186,21 +186,47 @@ export const useEndgameStore = defineStore(
       /**
        * 器魂 uid 必须唯一:装配表按 uid 映射回魂仓,两条同号会让 `activeSouls`
        * 把同一枚的主动与词条各算两次(实际只有一枚)。
+       *
+       * 同时逐枚修形:品阶是 `SOUL_GRADES[rank]!` 的裸下标 —— 坏档写成 `NaN`
+       * 时取到 `undefined`,器魂页渲染 `soulGradeDef(grade).color` 当场抛错,
+       * 而 Vue 会不断重试渲染,表现成「出现异常,已记录」的 toast 反复弹出。
+       * 类型同理:野 type 在 `soulTypeDef` 里查不到,器魂名与词条都成空壳。
+       * 品阶夹回 [0, 顶阶] 而不是丢弃这一枚 —— 器魂是玩家烧掉一件法器换来的,
+       * 坏数修平即可,没理由连带没收。
        */
       const seenSoul = new Set<string>()
-      souls.value = asArray<SoulInstance>(souls.value, [], s => !!s && typeof (s as SoulInstance).uid === 'string').filter(
-        s => {
+      const maxSoulGrade = SOUL_GRADES.length - 1
+      souls.value = asArray<SoulInstance>(
+        souls.value,
+        [],
+        s =>
+          !!s &&
+          typeof (s as SoulInstance).uid === 'string' &&
+          typeof (s as SoulInstance).type === 'string' &&
+          !!soulTypeDef((s as SoulInstance).type)
+      )
+        .filter(s => {
           if (seenSoul.has(s.uid)) return false
           seenSoul.add(s.uid)
           return true
-        }
-      )
+        })
+        .map(s => ({
+          uid: s.uid,
+          type: s.type,
+          grade: Math.min(maxSoulGrade, Math.floor(asFiniteNumber(s.grade, 0, 0))),
+          fromName: typeof s.fromName === 'string' ? s.fromName : ''
+        }))
       // 装配位亦然:同一个 uid 写两遍只会让同一枚占两个槽、算两遍词条
       equippedSouls.value = [...new Set(asStringArray(equippedSouls.value))]
       // 装配表清掉已不存在的 uid(ghost):否则原始槽位与 activeSouls(过滤读数)分叉 ——
       // 幽灵占着槽、栏里看着有空位,再装配却静默失败
       const soulUids = new Set(souls.value.map(s => s.uid))
-      equippedSouls.value = equippedSouls.value.filter(id => soulUids.has(id))
+      /**
+       * 装到第 SOUL_SLOTS 缕为止,与 equipSoul 的硬闸同一把尺:
+       * 坏档写进五缕会让五缕词条一起生效(写入侧根本装不上第三缕以外的),
+       * 「已凝 5/3」还会把读数顶破上限。截断保留先装的那几缕,与「槽满即拒」同序。
+       */
+      equippedSouls.value = equippedSouls.value.filter(id => soulUids.has(id)).slice(0, SOUL_SLOTS)
     }
 
     /** 已装配器魂(过滤掉已不存在的 uid) */

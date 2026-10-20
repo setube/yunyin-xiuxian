@@ -14,6 +14,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useEndgameStore, type WorldRunState } from './endgame'
 import { EXPEDITION_GUARDIAN_LAYER } from '@/data/endgame'
+import { SOUL_SLOTS, soulGradeDef } from '@/data/souls'
 import { rerollVoidWorld, VOID_REROLL_COST } from '@/core/expedition'
 import { usePlayerStore } from '@/stores/player'
 import type { GeneratedWorld } from '@/core/worldGen'
@@ -310,6 +311,50 @@ describe('终局一次性引导标记 sanitize', () => {
     expect(e.souls.map(s => s.uid), '魂仓同号只留一枚').toEqual(['s1', 's2'])
     expect(e.equippedSouls, '装配位同一枚只占一格').toEqual(['s1', 's2'])
     expect(e.activeSouls, '装配出来的也是两枚,不是三枚').toHaveLength(2)
+  })
+
+  /**
+   * 器魂品阶是 `SOUL_GRADES[rank]!` 的裸下标:坏档写成 NaN 时取到 undefined,
+   * 器魂页渲染 `soulGradeDef(grade).color` 当场抛错,而 Vue 会不断重试渲染 ——
+   * 玩家看到的是「出现异常,已记录」的 toast 反复弹出。类型认不出同理(名与词条皆空)。
+   */
+  it('sanitize:器魂的坏品阶夹回合法档、野类型清掉,不再让器魂页白屏', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      souls: [
+        { uid: 's1', type: 'fengmang', grade: Number.NaN, fromName: '剑' },
+        { uid: 's2', type: 'gangdun', grade: -3, fromName: '盾' },
+        { uid: 's3', type: 'fengmang', grade: 99, fromName: '刀' },
+        { uid: 's4', type: 'bogus_type', grade: 1, fromName: '棍' }
+      ] as never
+    })
+    e.sanitize()
+    expect(e.souls.map(s => [s.uid, s.grade]), '坏品阶修平,野类型整枚清掉').toEqual([
+      ['s1', 0],
+      ['s2', 0],
+      ['s3', 5]
+    ])
+    expect(e.souls.every(s => typeof soulGradeDef(s.grade).color === 'string'), '每一枚都能取到品阶名色').toBe(true)
+  })
+
+  /**
+   * 装配位是硬闸(equipSoul 装到 SOUL_SLOTS 即拒):坏档写进五缕时若不截断,
+   * 五缕词条会一起生效,「已凝 5/3」还会把读数顶破上限。
+   */
+  it('sanitize:装配位超出器魂槽数时按上限裁剪,多出来的不生效', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      souls: ['s1', 's2', 's3', 's4', 's5'].map((uid, i) => ({
+        uid,
+        type: i % 2 === 0 ? 'fengmang' : 'gangdun',
+        grade: 1,
+        fromName: '器'
+      })),
+      equippedSouls: ['s1', 's2', 's3', 's4', 's5']
+    })
+    e.sanitize()
+    expect(e.equippedSouls, '只留先装的三缕').toEqual(['s1', 's2', 's3'])
+    expect(e.activeSouls, '生效的也只有三缕').toHaveLength(SOUL_SLOTS)
   })
 
   /**
