@@ -12,8 +12,7 @@ import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { classicalDuration } from '@/data/timeUnits'
 import { formatGN } from '@/utils/format'
 import { recipeCraft, type SkillId } from '@/data/crafting'
-import { expFromSecs, stoneByTier } from './formulas'
-import { maxTierForMajor } from '@/data/regions'
+import { expFromSecs, pillStoneCost } from './formulas'
 import { collect, track } from './progress'
 import { buffOverflowOf } from './buffCap'
 import { craftability, knownRecipes } from './craftability'
@@ -28,7 +27,7 @@ import { useLoreStore } from '@/stores/lore'
 import { useUiStore } from '@/stores/ui'
 import { playSfx } from './audio'
 import { craftOkToast, craftShortToast, craftUnknownToast, pillGoneToast, pillTakenToast } from '@/ui/pillText'
-import type { GNum, PillDef } from '@/types'
+import type { GNum } from '@/types'
 
 /** 服用丹药 */
 /**
@@ -155,11 +154,9 @@ export function pillCraftCost(id: string): { herb: number; stone: GNum; grade: H
   return { herb: def.recipe.herb, stone: pillStoneCost(def), grade }
 }
 
-/** 一枚丹药的「炼制石耗」基准(按方子准入境界的最高层级折算,与上面灵石开销同源) */
-export function pillStoneCost(def: PillDef): GNum {
-  if (!def.recipe?.stoneBase) return gnZero()
-  return stoneByTier(maxTierForMajor(def.minRealm), def.recipe.stoneBase / 10)
-}
+// 「炼制石耗」基准已抽到纯公式层 core/formulas(见其定义),此处 re-export 保持公开 API:
+// 坊市买/售、悬赏募丹都从 ./pillService 引入它,签名与语义不变。
+export { pillStoneCost }
 
 /**
  * 当前看得见的丹方 —— 你知道的,不是你够级的。

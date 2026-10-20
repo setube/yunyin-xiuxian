@@ -79,7 +79,7 @@ const AUDIT_MATERIAL_LORE = 1
 /** 一场战斗的期望灵草产出(见 core/loot.ts:afterWin —— 五成概率掉 1~3 株) */
 const HERB_PER_BATTLE = 0.5 * 2
 /** 一场战斗的期望灵石产出系数(rng.float(0.8,1.2) 的均值为 1.0) */
-const STONE_AMT_PER_BATTLE = 10
+export const STONE_AMT_PER_BATTLE = 10
 
 /**
  * 掉落品的药力上限:同族同规格可炼品的六成。

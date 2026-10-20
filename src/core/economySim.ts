@@ -49,8 +49,9 @@ import {
   ORE_DROP_CHANCE,
   PAGE_DROP_CHANCE
 } from '@/data/constants'
-import { buildingCost, gongfaUpCost, qiCap, baseQiRegen, stoneByTier, upgradeCost } from './formulas'
+import { buildingCost, gongfaUpCost, qiCap, baseQiRegen, pillStoneCost, stoneByTier, upgradeCost } from './formulas'
 import { generateEquipment } from './equipGen'
+import { STONE_AMT_PER_BATTLE } from './pillValue'
 import { secondsForMajor } from './progressionSim'
 import { tripExpSecsPerHour, winsPerHour } from './expIncome'
 
@@ -152,7 +153,7 @@ export function auditEra(major: number): EraAudit {
   const libLv = buildingLevel(major, 12, 1) // 藏经阁:筑基(境 1)才堪建
 
   // ---- 生产 ----
-  const stoneIncome = winsThisHour * toNum(stoneByTier(tier, 10))
+  const stoneIncome = winsThisHour * toNum(stoneByTier(tier, STONE_AMT_PER_BATTLE))
   const herbIncome = winsThisHour * HERB_DROP_CHANCE * 2 + fieldLv * FIELD_HERB_PER_HOUR
   const oreIncome = winsThisHour * ORE_DROP_CHANCE * 1.5 + fieldLv * FIELD_ORE_PER_HOUR
   const pageIncome = winsThisHour * PAGE_DROP_CHANCE * 1.5
@@ -183,7 +184,7 @@ export function auditEra(major: number): EraAudit {
   const recipes = PILLS.filter(p => p.recipe && p.minRealm <= major)
   const avgHerbCost = recipes.length ? recipes.reduce((s, p) => s + p.recipe!.herb, 0) / recipes.length : 0
   const avgPillStone = recipes.length
-    ? recipes.reduce((s, p) => s + toNum(stoneByTier(maxTierForMajor(p.minRealm), p.recipe!.stoneBase / 10)), 0) / recipes.length
+    ? recipes.reduce((s, p) => s + toNum(pillStoneCost(p)), 0) / recipes.length
     : 0
   // 装备强化:耗尘品质按该层级真实掉落的平均品阶估(与分解收入的品质同尺),而非固定玄品
   const up = upgradeCost(3, tier, avgQualityRank(tier), 0)

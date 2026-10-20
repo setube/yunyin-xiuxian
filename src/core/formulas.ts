@@ -2,8 +2,9 @@
  * GameFormula —— 所有成长曲线公式集中管理
  * 关键设计:装备与敌人共用 powerScale 曲线,保证任何阶段数值对齐
  */
-import type { GNum } from '@/types'
-import { gn, gnMin, mulN, powN, mul, add } from '@/utils/gnum'
+import type { GNum, PillDef } from '@/types'
+import { gn, gnMin, gnZero, mulN, powN, mul, add } from '@/utils/gnum'
+import { maxTierForMajor } from '@/data/regions'
 import {
   COMBAT_ATK_BASE,
   COMBAT_DEF_BASE,
@@ -183,6 +184,20 @@ export function clampRate(rate: number): number {
 /** 灵石掉落基准(战斗/事件按层级换算) */
 export function stoneByTier(tier: number, amount: number): GNum {
   return mulN(powN(STONE_TIER_GROWTH, Math.max(0, tier - 1)), STONE_DROP_BASE * amount * 0.1)
+}
+
+/**
+ * 一枚丹药的「炼制石耗」基准(按方子准入境界的最高层级折算)。
+ *
+ * 这是「炼制石耗」的唯一事实源:坊市买/售、悬赏募丹、balance 审计都读它。
+ * 层级只有一个事实源是区域表(maxTierForMajor) —— 从前写石耗时按 `minRealm × 2 + 1`
+ * 自算,第 18 境的方子算出层级 37,超出混沌海上限 32,一张方子的价格凭空高出 322 倍
+ * (1.9^5),界外炼丹被自己的报价挡在门外(ISS-211)。函数放在纯公式层而不是 stores
+ * 依赖的 service 里,正是为了让纯审计(economySim)也能引它而不把整条服务链带进来。
+ */
+export function pillStoneCost(def: PillDef): GNum {
+  if (!def.recipe?.stoneBase) return gnZero()
+  return stoneByTier(maxTierForMajor(def.minRealm), def.recipe.stoneBase / 10)
 }
 
 /**

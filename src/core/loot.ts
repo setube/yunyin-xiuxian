@@ -9,6 +9,7 @@ import { salvageYieldText } from '@/ui/forgeText'
 import { isRareQuality, qualityDef } from '@/data/qualities'
 import { equipmentTemplate } from '@/data/equipment'
 import { PILLS, pillRank } from '@/data/pills'
+import { STONE_AMT_PER_BATTLE } from './pillValue'
 import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
 import { ARTIFACTS, artifactDef } from '@/data/artifacts'
 import { lifeThemeDef } from '@/data/lifeThemes'
@@ -248,7 +249,7 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
 
   // 灵石
   const stoneAmt = rng.float(0.8, 1.2) * rewardMult * bossMult * doubled * (1 + modOf(mods, 'spiritStoneGain'))
-  const stone = stoneByTier(tier, 10 * stoneAmt)
+  const stone = stoneByTier(tier, STONE_AMT_PER_BATTLE * stoneAmt)
   resources.addStone(stone)
 
   /**
