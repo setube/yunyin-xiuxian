@@ -225,11 +225,24 @@ describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压
     expect(summary.battles, '这一档该打上不少场').toBeGreaterThan(0)
     expect(summary.wins, '不该一场没赢').toBeGreaterThan(0)
     const session = adventure.session!
-    // 首领战胜时在线也会把这一场记进会话,故 wins 是「普通战胜场 + 至多 1」
-    const bossWin = session.wins - summary.wins
-    expect(bossWin, '会话胜场 = 离线普通战胜场(加至多一场首领胜)').toBeGreaterThanOrEqual(0)
-    expect(bossWin).toBeLessThanOrEqual(1)
+    // 首领战也算一场,且**两本账同一口径**:会话与归来卷轴都该是「普通战 + 至多一场首领战」
+    expect(session.wins, '会话胜场与归来卷轴同源').toBe(summary.wins)
     expect(session.losses, '离线败场必须写进会话').toBe(summary.battles - summary.wins)
-    expect(session.wins + session.losses, '胜+负 = 这趟真打过的场次').toBe(summary.battles + bossWin)
+    expect(session.wins + session.losses, '胜+负 = 这趟真打过的场次').toBe(summary.battles)
+  })
+
+  /**
+   * 首领战是这趟历练里的一场,不是编外的一笔。
+   *
+   * 在线 `runBattle` 不论首领胜败都先 `track('battles')` 再按结果记账;
+   * 离线从前只在首领**取胜**时往会话补一场,归来卷轴的 `battles`/`wins` 却不动,
+   * 于是卷轴写「胜 12 / 战 12」而这一趟其实交了 13 次手,首领落败更是整趟像没打过。
+   */
+  it('离线首领战计入归来卷轴与进度计数,与在线同一本账', () => {
+    const offline = readFileSync(src('./offline.ts'), 'utf8')
+    // 首领分支必须同时推进计数与两本账,缺一样就又回到「两套账」
+    expect(offline, '首领战要计入战斗总场次').toMatch(/track\('battles'\)\s*\n\s*battles \+= 1/)
+    expect(offline, '首领胜也要计入胜场').toMatch(/track\('bossKills'\)\s*\n\s*wins \+= 1/)
+    expect(offline, '首领败也要计入会话败场').toMatch(/sessionLosses \+= 1/)
   })
 })

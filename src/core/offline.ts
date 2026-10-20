@@ -378,6 +378,18 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
           const bossDanger = dangerFactorFor(modeDef.dangerMult, region.danger, petDangerMult, regionEventDanger)
           const bossResult = resolveCombat(buildPlayerSnap(), makeEnemySnap(bossDef, region.tier, bossDanger), rng, explorationRules(), false)
           noteEnemy(bossDef.id, bossResult.win)
+          /**
+           * 首领战本身就是一场战斗 —— 与在线 runBattle 同一本账:
+           * 在线不论胜败都先 `track('battles')` 并记一场,再按结果记 wins/losses。
+           * 从前离线只在这里 `track('bossKills')` 与 `sessionWins += 1`:
+           * 归来卷轴写「胜 12 / 战 12」,可这一趟其实打了 13 场;
+           * 首领落败更是连会话 losses 都不记,整趟像没交过手。
+           *
+           * 这一场加在奖励计算**之后**:`wins` 是普通战按胜率折出的期望值,
+           * 掉落/修为/材料都已按它结算完毕,事后补一场不会把奖励再乘一遍。
+           */
+          track('battles')
+          battles += 1
           if (bossResult.win) {
             // 首领战奖励同样并入事件加丰倍率(在线 boss 也是 mode×regReward,离线再叠收益折损)
             const drops = afterWin(region, modeDef.rewardMult * OFFLINE_BOSS_REWARD_MULT * regionEventReward, true)
@@ -386,6 +398,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             trip.items += drops.items
             track('kills')
             track('bossKills')
+            wins += 1
             sessionWins += 1
             player.updateRegionStats(region.id, true, bossResult.rounds, Math.max(0, 1 - bossResult.playerHpPct))
             player.recordRegionWin(region.id)
@@ -397,6 +410,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             clearRegionAndUnlockNext(region.id)
             notes.push(offlineBossNoteText(bossDef.name))
           } else {
+            sessionLosses += 1
             notes.push(`曾遭遇区域之主【${bossDef.name}】,惜败而退,需再蓄力`)
           }
         }
