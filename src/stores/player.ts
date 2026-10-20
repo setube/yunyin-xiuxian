@@ -30,6 +30,7 @@ import { gameNow } from '@/core/enginePause'
 import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
+import { bondEventDef } from '@/data/bondEvents'
 import { regionDef } from '@/data/regions'
 // 事件表放在 data/ 是有意的:core/regionEvent 依赖本 store,这里反向 import 会成环
 import { regionEventDef } from '@/data/regionEvents'
@@ -796,7 +797,13 @@ export const usePlayerStore = defineStore(
             doneEvents: asStringArray(b.doneEvents),
             opportunities: Math.floor(asFiniteNumber(b.opportunities, 0, 0)),
             nextEventAt: Math.floor(asFiniteNumber(b.nextEventAt, 0, 0)),
-            pendingEventId: typeof b.pendingEventId === 'string' ? b.pendingEventId : null,
+            /**
+             * 待决事件按 id 认事:认不出的 id 弹窗永远打不开(角色页读 pendingBondEvent 得 undefined),
+             * 而 offerBondEvent 见到非空 pendingEventId 就不再出新事件 —— 整条道侣线会被一个
+             * 野 id 永久堵死。认不得即回落「无待决」,下一次历练机会照常来。
+             */
+            pendingEventId:
+              typeof b.pendingEventId === 'string' && bondEventDef(b.pendingEventId) ? b.pendingEventId : null,
             intentPending: b.intentPending === true,
             // 意图结构复杂且由经历催生:形状不对就整块作废,让她重新酝酿
             intent: b.intent && Array.isArray(b.intent.sparks) && typeof b.intent.wish === 'string' ? b.intent : null

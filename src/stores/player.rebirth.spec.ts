@@ -257,4 +257,36 @@ describe('读写档:认不出的称号/灵兽/师承回落空', () => {
     p.sanitize()
     expect(p.regionEvent?.eventId).toBe('yaochao')
   })
+
+  /**
+   * 待决的道侣事件认不出时,弹窗永远打不开;而 offerBondEvent 看到非空
+   * pendingEventId 就不再出新事件 —— 整条线被一个野 id 永久堵死。
+   */
+  it('道侣待决事件认不出的 id 清回 null,真事件原样保留', () => {
+    const p = usePlayerStore()
+    p.$patch({
+      bond: {
+        daoluId: 'dl_qingli',
+        stage: 'met',
+        fate: 0,
+        trust: 0,
+        accord: 0,
+        shared: 1,
+        metAt: 1,
+        fallen: false,
+        doneEvents: [],
+        pendingEventId: 'bond_ghost',
+        opportunities: 6,
+        nextEventAt: 6
+      }
+    } as never)
+    // 先确认这个 daoLu id 是真的,免得用例因认不出道侣整块作废而「假通过」
+    p.sanitize()
+    expect(p.bond, '道侣本体应认得').not.toBeNull()
+    expect(p.bond?.pendingEventId, '野事件 id 不再堵住下一次机会').toBeNull()
+
+    p.$patch({ bond: { ...p.bond!, pendingEventId: 'be_relic' } } as never)
+    p.sanitize()
+    expect(p.bond?.pendingEventId, '认得的事件原样保留').toBe('be_relic')
+  })
 })
