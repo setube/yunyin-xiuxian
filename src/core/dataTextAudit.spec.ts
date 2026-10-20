@@ -355,6 +355,31 @@ describe('文案数值对账 · 手写的门槛与容量', () => {
     expect(dialog, '大跃倍数应读 ascensionLeap()').toContain('ascensionLeap()')
     expect(dialog, '手写的 约 ×100 与寿元表差了一档').not.toContain('约 ×100')
   })
+
+  /**
+   * 「七/二十 战」这种数字长得最像人话,也最容易被当成装饰 ——
+   * 可它读的是一个会变的门槛。界面必须从 SUPPRESS_THRESHOLDS 现取。
+   */
+  it('镇压门槛的「20」与「胜」都取自 SUPPRESS_THRESHOLDS,界面不手抄', () => {
+    const view = src('../views/AdventureView.vue')
+    expect(view, '总纲应读 minWins').toContain('SUPPRESS_THRESHOLDS.minWins')
+    expect(view, '进度应读 needWins').toContain('row.progress.needWins')
+    // 这一项数的是胜场:写成「战」会让人以为败场也算(曾因此误导过一次修复)
+    expect(view, '门槛说成「胜」而不是「战」').toContain('胜 {{ SUPPRESS_THRESHOLDS.minWins }} 场')
+    expect(view, '进度也说成「胜」').toContain('}} 胜')
+    expect(view, '手写的「20 战」应改读常数').not.toContain('20 战')
+  })
+
+  /**
+   * 八门带的是**真规则**,不是文案。界面上必须由 rules 派生,
+   * 否则改 rules 时那句散文不会跟,玩家读到的与结算里的数当场分家。
+   */
+  it('八门的行军数值由 gateRuleSummary 派生,图鉴与选门都不手写', () => {
+    const view = src('../views/RealmCodexView.vue')
+    const celestial = src('../views/CelestialView.vue')
+    expect(view, '奇门册应读 gateRuleSummary').toContain('gateRuleSummary(g.rules)')
+    expect(celestial, '选门详情应读 gateRuleSummary').toContain('gateRuleSummary(selectedGate.rules)')
+  })
 })
 
 /**
