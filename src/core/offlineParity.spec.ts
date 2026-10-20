@@ -16,8 +16,13 @@ import { describe, expect, it, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
+import { gnZero } from '@/utils/gnum'
 import { explorationRules } from './exploration'
+import { settleOffline } from './offline'
 import { usePlayerStore } from '@/stores/player'
+import { useGameStore } from '@/stores/game'
+import { useAdventureStore } from '@/stores/adventure'
+import { useLoreStore } from '@/stores/lore'
 
 const src = (f: string) => resolve(__dirname, f)
 
@@ -110,5 +115,73 @@ describe('离线历练 · 首领判定与在线同源(本世路线)', () => {
     expect(offline).toContain('regionBossCleared(region.id)')
     // 显式钉死「不再用裸 adventure.cleared 判定」—— 有人改回旧链即红
     expect(offline).not.toMatch(/!adventure\.cleared\.includes\(region\.id\)/)
+  })
+})
+
+describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压)', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  /** 一份 60 小时在途历练:挂机整段按期望结算,战后语义也该整段落账 */
+  function seedOfflineTrip(): void {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    const now = Date.now()
+    game.markStarted()
+    game.lastActiveAt = now - 60 * 3600 * 1000
+    player.major = 10
+    adventure.session = {
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: now - 60 * 3600 * 1000,
+      endsAt: now + 999 * 3600 * 1000,
+      nextBattleAt: 0,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: gnZero(),
+      expGain: gnZero(),
+      itemGain: 0
+    }
+  }
+
+  it('离线普通战写入区域统计与兴衰胜场,N 场一次入账与逐场 EMA 等价', () => {
+    const player = usePlayerStore()
+    const lore = useLoreStore()
+    seedOfflineTrip()
+
+    expect(settleOffline(Date.now()), '这一档应当结算出离线收益').not.toBeNull()
+
+    const summary = useAdventureStore().session
+    expect(summary, '60 小时该赢下不少场').not.toBeNull()
+    // 首领战另记一场(离线与在线一样,首领胜也进区域账),故这里是 ≥
+    const stats = player.regionStats.qingyun
+    expect(stats, '离线胜场必须写入 regionStats').toBeDefined()
+    expect(stats!.totalFights, '离线打了多少胜场,账面就得有多少场').toBeGreaterThan(0)
+    expect(stats!.totalFights, '离线打赢的场次不该少于会话胜场').toBeGreaterThanOrEqual(summary!.wins)
+    expect(player.regionWins.qingyun, '离线胜场必须写入区域兴衰').toBe(stats!.totalFights)
+    const seen = Object.values(lore.enemySeen).reduce((n, v) => n + v, 0)
+    expect(seen, '离线交手必须推进敌人图鉴').toBeGreaterThan(0)
+  })
+
+  it('批量净胜的 EMA 与逐场调用一致(单源口径)', () => {
+    const player = usePlayerStore()
+    player.updateRegionStats('luoxia', true, 9, 0.5)
+    const once = { ...player.regionStats.luoxia! }
+
+    setActivePinia(createPinia())
+    const fresh = usePlayerStore()
+    fresh.updateRegionStats('luoxia', true, 9, 0.5)
+    fresh.applyRegionWinBatch('luoxia', 3, 2, 0.01)
+    let expectedRounds = once.avgRounds
+    let expectedDamage = once.avgDamageTakenPct
+    for (let i = 0; i < 3; i += 1) {
+      expectedRounds = expectedRounds * 0.7 + 2 * 0.3
+      expectedDamage = expectedDamage * 0.7 + 0.01 * 0.3
+    }
+    expect(fresh.regionStats.luoxia!.avgRounds).toBeCloseTo(expectedRounds, 10)
+    expect(fresh.regionStats.luoxia!.avgDamageTakenPct).toBeCloseTo(expectedDamage, 10)
+    expect(fresh.regionStats.luoxia!.totalFights, '一次批量与逐场计数等价').toBe(4)
+    expect(fresh.regionWins.luoxia, '批量也要记兴衰胜场').toBe(3)
   })
 })

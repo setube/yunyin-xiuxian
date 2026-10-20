@@ -1129,6 +1129,42 @@ export const usePlayerStore = defineStore(
       regionStats.value = { ...regionStats.value, [regionId]: newStats }
     }
 
+    /**
+     * 一次写入 N 场同质净胜(离线整段结算用)。
+     *
+     * 指数移动平均与逐场调用 `updateRegionStats` 等价:
+     * avg' = avg × 0.7^n + x × (1 - 0.7^n)。
+     * 同时累计区域兴衰的胜场 —— 离线与在线写同一本账。
+     */
+    function applyRegionWinBatch(
+      regionId: string,
+      n: number,
+      rounds: number,
+      damageTakenPct: number,
+    ): void {
+      const count = Math.floor(n)
+      if (count <= 0) return
+      const current = regionStats.value[regionId] ?? {
+        consecutiveWins: 0,
+        totalFights: 0,
+        avgRounds: 0,
+        avgDamageTakenPct: 0,
+        lastUpdateAt: Date.now(),
+      }
+      const decay = 0.7 ** count
+      regionStats.value = {
+        ...regionStats.value,
+        [regionId]: {
+          consecutiveWins: current.consecutiveWins + count,
+          totalFights: current.totalFights + count,
+          avgRounds: current.avgRounds * decay + rounds * (1 - decay),
+          avgDamageTakenPct: current.avgDamageTakenPct * decay + damageTakenPct * (1 - decay),
+          lastUpdateAt: Date.now(),
+        },
+      }
+      regionWins.value = { ...regionWins.value, [regionId]: (regionWins.value[regionId] ?? 0) + count }
+    }
+
     function suppressRegion(regionId: string): void {
       if (!suppressedRegions.value.includes(regionId)) {
         suppressedRegions.value = [...suppressedRegions.value, regionId]
@@ -1406,6 +1442,7 @@ export const usePlayerStore = defineStore(
       resetWinStreak,
       markCaveEventToday,
       updateRegionStats,
+      applyRegionWinBatch,
       suppressRegion,
       unsuppressRegion,
       markSuppressQualified,

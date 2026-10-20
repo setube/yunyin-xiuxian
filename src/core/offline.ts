@@ -41,8 +41,8 @@ import { currentRegionEvent, regionEventDef } from './regionEvent'
 import { placeContent } from './mortalWorldService'
 import { expFromSecs, stoneByTier } from './formulas'
 import { breakthroughInfo } from './breakthrough'
-import { settleSuppressedRegions } from './suppress'
-import { harvestMaterials, studyTick } from './loreService'
+import { checkSuppression, settleSuppressedRegions } from './suppress'
+import { harvestMaterials, noteEnemy, noteEnemyMany, studyTick } from './loreService'
 import { modOf, capChance } from './statsCalc'
 import { personalityEffects } from './petPersonality'
 import { collect, track } from './progress'
@@ -307,6 +307,33 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         }
         track('kills', wins)
         track('battles', battles)
+        /**
+         * 图鉴与区域战绩从前是**在线专属**:离线砍了一夜,归来后敌人认知、
+         * 区域统计与镇压进度纹丝不动,历练页和界域志悄悄与账本分叉。
+         * 这里按同一套口径整段补写:N 场净胜一次入账(见 applyRegionWinBatch),
+         * 照面按胜 +1 / 负 ×ENEMY_LORE_LOSS_WEIGHT 折算。
+         */
+        if (mobId) noteEnemyMany(mobId, wins, battles - wins)
+        if (wins > 0 && mobDef) {
+          // 抽一场代表战取回合数/受伤比(与在线 checkSuppression 吃同一份数据)
+          const sampleFight = resolveCombat(
+            buildPlayerSnap(),
+            makeEnemySnap(mobDef, region.tier, dangerFactor),
+            rng,
+            explorationRules()
+          )
+          player.applyRegionWinBatch(
+            region.id,
+            wins,
+            sampleFight.rounds,
+            Math.max(0, 1 - sampleFight.playerHpPct)
+          )
+          if (checkSuppression(player, region.id) && !player.suppressQualified.includes(region.id)) {
+            player.markSuppressQualified(region.id)
+            player.suppressRegion(region.id)
+            notes.push(`你已彻底镇压${region.name},此地将自动产出资源`)
+          }
+        }
       }
       // 事件按默认选项自动结算
       const evCap = Math.min(events, 40)
@@ -340,6 +367,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         if (bossDef) {
           const bossDanger = dangerFactorFor(modeDef.dangerMult, region.danger, petDangerMult, regionEventDanger)
           const bossResult = resolveCombat(buildPlayerSnap(), makeEnemySnap(bossDef, region.tier, bossDanger), rng, explorationRules(), false)
+          noteEnemy(bossDef.id, bossResult.win)
           if (bossResult.win) {
             // 首领战奖励同样并入事件加丰倍率(在线 boss 也是 mode×regReward,离线再叠收益折损)
             const drops = afterWin(region, modeDef.rewardMult * OFFLINE_BOSS_REWARD_MULT * regionEventReward, true)
@@ -348,6 +376,13 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             trip.items += drops.items
             track('kills')
             track('bossKills')
+            player.updateRegionStats(region.id, true, bossResult.rounds, Math.max(0, 1 - bossResult.playerHpPct))
+            player.recordRegionWin(region.id)
+            if (checkSuppression(player, region.id) && !player.suppressQualified.includes(region.id)) {
+              player.markSuppressQualified(region.id)
+              player.suppressRegion(region.id)
+              notes.push(`你已彻底镇压${region.name},此地将自动产出资源`)
+            }
             clearRegionAndUnlockNext(region.id)
             notes.push(offlineBossNoteText(bossDef.name))
           } else {
