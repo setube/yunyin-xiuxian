@@ -708,7 +708,11 @@
 
   const currentTitleName = computed(() => (player.titleId ? titleDef(player.titleId)?.name : undefined))
   const currentPetName = computed(() => (player.petId ? petDef(player.petId)?.name : undefined))
-  const currentPetIcon = computed(() => (player.petId ? beastIcon(petDef(player.petId)!.family) : undefined))
+  // 灵兽 id 认不出时宁可不出图,也不要在渲染期对 undefined 取 family
+  const currentPetIcon = computed(() => {
+    const def = player.petId ? petDef(player.petId) : undefined
+    return def ? beastIcon(def.family) : undefined
+  })
   const ownedTalents = computed(() => player.reincarnation.talents.map(id => talentDef(id)).filter(t => t !== undefined))
   const ownedHeritage = computed(() => player.reincarnation.heritage.map(id => heritageDef(id)).filter(d => d !== undefined))
 

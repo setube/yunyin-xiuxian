@@ -215,3 +215,46 @@ describe('player.rebirth 转世状态重置', () => {
     expect(inv.equippedArtifacts, '低境界只留先祭炼的那一件').toEqual(['a1'])
   })
 })
+
+/**
+ * 佩戴物与师承都按 id 认对象:认不出的 id 此前会在读档后继续占位 ——
+ * 灵兽占位会让角色页 `petDef(...)!` 抛错白屏,师承占位会把拜师入口永久堵死。
+ */
+describe('读写档:认不出的称号/灵兽/师承回落空', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('titleId / petId / mentor 为野 id 时回落 null,真 id 原样保留', () => {
+    const p = usePlayerStore()
+    p.$patch({ titleId: 'ti_ghost', petId: 'pet_ghost', mentor: 'ghost' } as never)
+    p.sanitize()
+    expect(p.titleId).toBeNull()
+    expect(p.petId).toBeNull()
+    expect(p.mentor).toBeNull()
+
+    p.$patch({ titleId: 'ti_churu', petId: 'pet_qingyu', mentor: 'swordsman' } as never)
+    p.sanitize()
+    expect(p.titleId).toBe('ti_churu')
+    expect(p.petId).toBe('pet_qingyu')
+    expect(p.mentor).toBe('swordsman')
+  })
+
+  it('野师承清掉之后仍能正常拜师', () => {
+    const p = usePlayerStore()
+    p.$patch({ mentor: 'ghost' } as never)
+    p.sanitize()
+    p.adoptMentor('alchemist')
+    expect(p.mentor).toBe('alchemist')
+  })
+
+  it('区域事件认不出的 eventId 整块清掉,真事件原样保留', () => {
+    const p = usePlayerStore()
+    // 野事件 id 不产生任何倍率,却会一直占住「本轮已有事件」这个槽
+    p.$patch({ regionEvent: { regionId: 'qingyun', eventId: 'ghost', endsAt: Date.now() + 60_000 } } as never)
+    p.sanitize()
+    expect(p.regionEvent).toBeNull()
+
+    p.$patch({ regionEvent: { regionId: 'qingyun', eventId: 'yaochao', endsAt: Date.now() + 60_000 } } as never)
+    p.sanitize()
+    expect(p.regionEvent?.eventId).toBe('yaochao')
+  })
+})

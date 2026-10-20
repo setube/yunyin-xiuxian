@@ -14,8 +14,7 @@ import { usePlayerStore } from '@/stores/player'
 import { rng } from '@/utils/random'
 import type { RegionDef } from '@/types'
 import { gameNow } from './enginePause'
-
-export type RegionEventId = 'yaochao' | 'lingmai' | 'gumu' | 'shangdui'
+import { REGION_EVENTS, regionEventDef, type RegionEventDef, type RegionEventId } from '@/data/regionEvents'
 
 export interface RegionEventState {
   regionId: string
@@ -24,30 +23,9 @@ export interface RegionEventState {
   endsAt: number
 }
 
-export interface RegionEventDef {
-  id: RegionEventId
-  name: string
-  desc: string
-  /** 掉落倍率 */
-  rewardMult: number
-  /** 敌人危险倍率 */
-  dangerMult: number
-  /** 事件触发率修正 */
-  eventMult: number
-}
-
-export const REGION_EVENTS: RegionEventDef[] = [
-  { id: 'yaochao', name: '妖潮', desc: '妖气翻涌,群妖躁动。多段敌人更多,掉落更丰,也更凶险。', rewardMult: 1.2, dangerMult: 1.15, eventMult: 1 },
-  { id: 'lingmai', name: '灵脉暴动', desc: '地底灵脉喷薄,天地灵气大盛。', rewardMult: 1, dangerMult: 1, eventMult: 1 },
-  { id: 'gumu', name: '古墓开启', desc: '尘封古墓裂开一道缝隙,际遇与凶险并存。', rewardMult: 1.15, dangerMult: 1.05, eventMult: 1.5 },
-  { id: 'shangdui', name: '商队遇袭', desc: '过路商队遭袭,遍地灵石遗落,亦有匪徒潜伏。', rewardMult: 1.25, dangerMult: 1.1, eventMult: 1 }
-]
-
-const BY_ID = new Map(REGION_EVENTS.map(e => [e.id, e]))
-
-export function regionEventDef(id: RegionEventId): RegionEventDef | undefined {
-  return BY_ID.get(id)
-}
+// 事件表是纯静态内容,放在 data/ 免得 player store 为了校验 id 反向依赖本模块(会成环)
+export { REGION_EVENTS, regionEventDef }
+export type { RegionEventDef, RegionEventId }
 
 /** 事件持续时间(分钟,30~120) */
 const DURATION_MIN = [30, 60, 90, 120] as const

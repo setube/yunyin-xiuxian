@@ -31,6 +31,8 @@ import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asSt
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
 import { regionDef } from '@/data/regions'
+// 事件表放在 data/ 是有意的:core/regionEvent 依赖本 store,这里反向 import 会成环
+import { regionEventDef } from '@/data/regionEvents'
 import { artifactSlotsFor } from '@/data/artifacts'
 import { lifeTrialDef, type LifeTrialState } from '@/data/lifeTrials'
 import { STARS } from '@/data/ziwei'
@@ -667,6 +669,18 @@ export const usePlayerStore = defineStore(
       if (!Number.isFinite(age.value)) age.value = START_AGE
       if (!Number.isFinite(major.value) || major.value < 0) major.value = 0
       if (!Number.isFinite(sub.value) || sub.value < 0) sub.value = 0
+      /**
+       * 佩戴物按 id 认物:认不出的称号/灵兽既不产出词条,也不该继续占着位置。
+       * 灵兽尤其致命 —— 角色页取它的族类画图标,`petDef(...)!` 对野 id 当场抛错。
+       */
+      if (titleId.value !== null && !titleDef(titleId.value)) titleId.value = null
+      if (petId.value !== null && !petDef(petId.value)) petId.value = null
+      /**
+       * 师承同理,只是后果更隐蔽:一经拜定便「不再更改」,认不出的旧 id 会把
+       * mentor 占成非 null,此后每一次拜师都被挡回 —— 与天界认不出的道途 id
+       * 属同一类彻底锁死。认不得即回落「尚未拜师」。
+       */
+      if (mentor.value !== null && !mentorDef(mentor.value)) mentor.value = null
       // 寿元加算:lifespanMax = floor(base×(1+pct) + 此栏),写坏(字符串/NaN)会让它变 NaN,
       // 而引擎死亡判据 `age < lifespanMax` 恒为 false → 下一拍即「油尽灯枯」。坏档必死,必须修回
       lifespanBonusYears.value = asFiniteNumber(lifespanBonusYears.value, 0)
@@ -792,10 +806,12 @@ export const usePlayerStore = defineStore(
       /**
        * 区域动态事件:它靠 endsAt 自己过期(currentRegionEvent 里比较)。
        * 坏了就有两种结果 —— endsAt=NaN 永不失效,或者负值当场失效,故按「认不出就清掉」处理。
+       * 事件 id 同样要认:野 id 不产生任何倍率,却照样占住「本轮已有事件」这一个槽,
+       * 使真正的事件在它到期前一直掷不进来。
        */
       if (regionEvent.value) {
         const ev = regionEvent.value
-        const regionOk = !!regionDef(ev.regionId)
+        const regionOk = !!regionDef(ev.regionId) && !!regionEventDef(ev.eventId)
         const endsAt = asFiniteNumber(ev.endsAt, 0, 0)
         if (!regionOk || endsAt <= 0) regionEvent.value = null
         else regionEvent.value = { ...ev, endsAt }
