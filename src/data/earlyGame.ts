@@ -31,7 +31,7 @@ export const ENLIGHTENMENT_OPTIONS: EnlightenmentOption[] = [
   {
     type: 'combat',
     label: '凝气护体',
-    desc: '战斗防御 +12%',
+    desc: '受到伤害 -12%',
     buffId: 'enlighten_def',
     duration: 600
   },

@@ -46,7 +46,13 @@ export const BUFFS: BuffDef[] = [
   b('enlighten_cult', '静心凝神', 'blessing', 600, '心神沉静,修炼速度提升 20%', { cultivationSpeed: 0.2 }, 'moon'),
   b('enlighten_cult_strong', '道心通明', 'blessing', 300, '道心澄澈,修炼速度提升 35%', { cultivationSpeed: 0.35 }, 'sun'),
   b('enlighten_dmg', '锤炼筋骨', 'blessing', 600, '筋骨如钢,战斗伤害提升 15%', { damageBonus: 0.15 }, 'sword'),
-  b('enlighten_def', '凝气护体', 'blessing', 600, '真气护体,防御提升 12%', { defensePct: 0.12 }, 'shield'),
+  /**
+   * 减伤走纯乘数,不走「防御加成」——
+   * 防御加成经 `攻×攻/(攻+防)` 那条除法曲线折损:防御只有敌方攻击一半时,
+   * 名义 12% 到手只有 3.8%;而并列的「锤炼筋骨」是纯乘数 +15%,
+   * 两个选项实际差到 3.4 倍,二选一退化成唯一解(判据见 enlightenBalance.spec)。
+   */
+  b('enlighten_def', '凝气护体', 'blessing', 600, '真气护体,受到伤害降低 12%', { damageReduction: 0.12 }, 'shield'),
   b('enlighten_bt', '悟透瓶颈', 'blessing', 1800, '瓶颈松动,小进阶成功率提升 8%(大关天劫,不与此悟)', { breakthroughRate: 0.08 }, 'zap'),
   b('enlighten_qi', '吐纳有序', 'blessing', 600, '气息绵长,灵气回复提升 25%', { qiRegen: 0.25 }, 'wind'),
   // ---- Phase 28 洞府巡游奖励 buff(修复前是纯空转:addBuff 查无此定义静默返回) ----
