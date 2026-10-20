@@ -7,6 +7,12 @@ import { mergeMods } from '@/core/statsCalc'
 import { EXPEDITION_GUARDIAN_LAYER, celestialWorldDef, daoPathDef, trialDef } from '@/data/endgame'
 import { SOUL_GRADES, SOUL_SLOTS, soulMods as soulModsOf, soulTypeDef, type SoulInstance } from '@/data/souls'
 import { milestoneDef, recordDef } from '@/data/identity'
+import { mutatorDef } from '@/data/mutators'
+import { gateDef } from '@/data/qimen'
+import { artifactDef } from '@/data/artifacts'
+import { STAT_KEYS } from '@/data/statNames'
+import { MAX_MAJOR } from '@/data/realms'
+import { gn } from '@/utils/gnum'
 import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asObjectOrNull, asRecordOf, asStringArray } from '@/utils/saveShape'
 
 interface TrialRecord {
@@ -35,6 +41,120 @@ export interface WorldRunState {
 }
 
 const MAX_MARKS = 60
+
+/**
+ * 忆战快照的修形 —— 快照就是「当年那一局」本身,少一样就不再是那一局。
+ *
+ * `snapFromReplay` 直接把 `skills`/`artifacts` 拿去 `.map`,坏档里写成非数组时
+ * 玩家一点「忆」就抛错;三维经 `gn()` 归一,归零则这一战根本打不起来。
+ * 故此处只保留「三维成数、技能与法宝都还是表」的快照;认不出的技能/法宝条目
+ * 逐条剔掉(它们在战斗里本就查不到定义),认不出的契约/组合技回落空。
+ * 快照不成立就整块作废 —— 界面按「此痕年代久远,战况已不可考」处理,
+ * 比拿一份缺胳膊的快照重打、再把结果写回道痕要诚实。
+ */
+function sanitizeMarkReplay(raw: unknown): DaoMark['replay'] | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const r = raw as Partial<NonNullable<DaoMark['replay']>>
+  if (!Array.isArray(r.skills) || !Array.isArray(r.artifacts)) return undefined
+  // 存档里的三维是 unknown(可能缺栏、可能是裸数字或半截对象):gn() 运行时都能归一
+  const gnumOf = (v: unknown): import('@/types').GNum => gn(v as number | import('@/types').GNum)
+  const attack = gnumOf(r.attack)
+  const defense = gnumOf(r.defense)
+  const maxHp = gnumOf(r.maxHp)
+  const speed = asFiniteNumber(r.speed, 0, 0)
+  if (attack.m === 0 || defense.m === 0 || maxHp.m === 0 || speed <= 0) return undefined
+  // 词条只认目录里的键与有限数:野键会被 modDepth 一并计入「构筑厚度」,
+  // 进而让忆战里的天道判定与当年对不上
+  const mods: StatMods = {}
+  for (const key of STAT_KEYS) {
+    const v = (r.mods as StatMods | undefined)?.[key]
+    if (typeof v === 'number' && Number.isFinite(v)) mods[key] = v
+  }
+  const skills = r.skills
+    .filter(
+      s =>
+        !!s &&
+        typeof s === 'object' &&
+        typeof (s as { name?: unknown }).name === 'string' &&
+        Number.isFinite((s as { mult?: unknown }).mult) &&
+        Number.isFinite((s as { rate?: unknown }).rate)
+    )
+    .map(s => ({
+      name: s.name,
+      mult: s.mult,
+      rate: s.rate,
+      ...(typeof s.effect === 'string' ? { effect: s.effect } : {})
+    }))
+  const artifacts = r.artifacts
+    .filter(a => !!a && typeof a === 'object' && typeof (a as { defId?: unknown }).defId === 'string')
+    .map(a => ({ defId: a.defId, level: Math.floor(asFiniteNumber(a.level, 0, 0)) }))
+    .filter(a => !!artifactDef(a.defId))
+  return {
+    mods,
+    attack,
+    defense,
+    maxHp,
+    speed,
+    skills,
+    artifacts,
+    ...(typeof r.comboArt === 'string' ? { comboArt: r.comboArt } : {}),
+    pactId: typeof r.pactId === 'string' ? r.pactId : null
+  }
+}
+
+/**
+ * 道痕逐条修形 —— 天界「道痕」栏与轮回页「修行画像」的共同底账。
+ *
+ * 此前只挡了「条目是不是对象、targetId 是不是字符串」,字段原样进界面:
+ *   - `buildName` 不是字符串时,`cultivatorProfile` 的 `m.buildName.includes('·')`
+ *     当场抛错 —— 道痕满五则,轮回页整页白屏;
+ *   - `life`/`rounds` 是 NaN 时写出「第 NaN 世」「NaN 回合」,`at` 是 NaN 时
+ *     「今昔之比」按坏时刻排序,早晚两世会颠倒;
+ *   - `cleared` 写成 `'yes'` 这类真值会被当成破界,败绩被记成功;
+ *   - `daoPathId` 认不出时道途名留空,`markRules` 也取不到当年的道途规则。
+ *
+ * 认不出的 `targetId` 不丢:挑战书(custom)与天道变数(mutation)本就不是
+ * 天界/试炼目录里的 id,但它们同样是真道痕。只剔掉完全没有 id 的残骸。
+ */
+function sanitizeMarks(raw: unknown): DaoMark[] {
+  const out: DaoMark[] = []
+  for (const item of asArray<unknown>(raw)) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue
+    const m = item as Partial<DaoMark>
+    if (typeof m.targetId !== 'string' || m.targetId === '') continue
+    const major = asFiniteNumber(m.major, 0, 0)
+    const replay = sanitizeMarkReplay(m.replay)
+    const context = m.context
+    let fixedContext: DaoMark['context']
+    if (context && typeof context === 'object' && !Array.isArray(context)) {
+      const c = context as NonNullable<DaoMark['context']>
+      fixedContext = {
+        ...(typeof c.worldId === 'string' ? { worldId: c.worldId } : {}),
+        ...(Array.isArray(c.mutatorIds)
+          ? { mutatorIds: asStringArray(c.mutatorIds).filter(id => !!mutatorDef(id)) }
+          : {}),
+        ...(typeof c.gateId === 'string' && gateDef(c.gateId) ? { gateId: c.gateId } : {})
+      }
+    }
+    out.push({
+      life: Math.max(1, Math.floor(asFiniteNumber(m.life, 1, 1))),
+      daoPathId: typeof m.daoPathId === 'string' && daoPathDef(m.daoPathId) ? (m.daoPathId as DaoPathId) : null,
+      ...(Number.isFinite(m.major) ? { major: Math.min(MAX_MAJOR, Math.floor(major)) } : {}),
+      targetId: m.targetId,
+      targetName: typeof m.targetName === 'string' && m.targetName ? m.targetName : m.targetId,
+      cleared: m.cleared === true,
+      rounds: Math.floor(asFiniteNumber(m.rounds, 0, 0)),
+      buildName: typeof m.buildName === 'string' && m.buildName ? m.buildName : '杂学',
+      powerText: typeof m.powerText === 'string' ? m.powerText : '',
+      at: Math.floor(asFiniteNumber(m.at, 0, 0)),
+      ...(typeof m.ruleset === 'string' ? { ruleset: m.ruleset } : {}),
+      ...(fixedContext ? { context: fixedContext } : {}),
+      ...(replay ? { replay } : {})
+    })
+  }
+  // 写入侧 addMark 只留最近 MAX_MARKS 则:坏档塞进上千条会把道痕栏与画像统计一并撑爆
+  return out.slice(0, MAX_MARKS)
+}
 
 export const useEndgameStore = defineStore(
   'endgame',
@@ -107,7 +227,7 @@ export const useEndgameStore = defineStore(
         fixedTrials[id] = { clears, bestRounds: Math.floor(asFiniteNumber(r.bestRounds, 0, 0)) }
       }
       trialRecords.value = fixedTrials
-      marks.value = asArray<DaoMark>(marks.value, [], m => !!m && typeof (m as DaoMark).targetId === 'string')
+      marks.value = sanitizeMarks(marks.value)
       worldRun.value = asObjectOrNull<WorldRunState>(worldRun.value)
       /**
        * 远征进行时同样是活状态(每一场都读 layer/carriedHpPct/winStacks):

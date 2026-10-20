@@ -18,6 +18,10 @@ import { SOUL_SLOTS, soulGradeDef } from '@/data/souls'
 import { rerollVoidWorld, VOID_REROLL_COST } from '@/core/expedition'
 import { usePlayerStore } from '@/stores/player'
 import type { GeneratedWorld } from '@/core/worldGen'
+import { cultivatorProfile } from '@/core/identity'
+import { legacyComparisons } from '@/core/compare'
+import { snapFromReplay } from '@/core/endgameService'
+import { gn } from '@/utils/gnum'
 
 // generateApprovedWorld 的成败由 h.genResult 开关:让重掷代价的「扣/退」可确定性断言
 const h = vi.hoisted(() => ({ genResult: 'world' as 'world' | 'null' }))
@@ -450,5 +454,138 @@ describe('天界终局坏档 · 按 id 认道/认界/认试炼', () => {
     expect(e.records, '野键没有卡会读它，留着只会污染存档').toEqual({
       fastest_world: { value: 0, life: 2, note: '赤炎天' }
     })
+  })
+})
+
+/**
+ * 道痕是「修行画像」「今昔之比」「忆战/重写」的共同底账:
+ * 一条缺字段或坏字段的道痕就能把这三处一起打穿 ——
+ * 画像读 `buildName.includes('·')`、今昔之比按 `at` 排序、忆战直接拿快照开打。
+ */
+describe('道痕坏档 · 逐条逐字段修形', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('非对象/无 targetId 的条目被剔掉,坏字段按语义兜底', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      marks: [
+        null,
+        'x',
+        { life: 1 },
+        {
+          life: Number.NaN,
+          daoPathId: 'ghost_dao',
+          targetId: 'chiyan',
+          targetName: 42,
+          cleared: 'yes',
+          rounds: Number.NaN,
+          buildName: 7,
+          powerText: null,
+          at: Number.NaN
+        }
+      ]
+    } as never)
+    e.sanitize()
+
+    expect(e.marks, '没有 targetId 的残骸不是道痕').toHaveLength(1)
+    const m = e.marks[0]!
+    expect(m.life, '第 0 世没有来路,回落第 1 世').toBe(1)
+    expect(m.daoPathId, '认不出的道途取不到当年的规则').toBeNull()
+    expect(m.targetName, '没名字就拿 id 顶上,不印 42').toBe('chiyan')
+    expect(m.cleared, '只有字面 true 才算破界').toBe(false)
+    expect(m.rounds).toBe(0)
+    expect(m.buildName, '画像按它做字符串匹配').toBe('杂学')
+    expect(m.powerText).toBe('')
+    expect(m.at).toBe(0)
+
+    // 画像与今昔之比都要能跑 —— 这两处正是坏字段的爆点
+    expect(() => cultivatorProfile(e.marks)).not.toThrow()
+    expect(() => legacyComparisons(e.marks)).not.toThrow()
+  })
+
+  it('忆战快照成不了那一局时整块作废,界面按「不可考」处理', () => {
+    const e = useEndgameStore()
+    const base = { life: 2, targetId: 'chiyan', targetName: '赤炎天', cleared: true, rounds: 9, buildName: '剑', powerText: '1', at: 5 }
+    e.$patch({
+      marks: [
+        { ...base, replay: { artifacts: null, skills: 'x' } },
+        { ...base, at: 6, replay: { mods: {}, attack: gn(1), defense: gn(1), maxHp: gn(0), speed: 1, skills: [], artifacts: [], pactId: null } }
+      ]
+    } as never)
+    e.sanitize()
+
+    expect(e.marks[0]!.replay, '技能表不是数组,快照开不了打').toBeUndefined()
+    expect(e.marks[1]!.replay, '气血为零的一战不成立').toBeUndefined()
+    expect(() => legacyComparisons(e.marks), '无快照的痕不参与今昔之比').not.toThrow()
+  })
+
+  it('快照本身合法时原样保留,野技能/野法宝逐条剔掉', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      marks: [
+        {
+          life: 3,
+          daoPathId: 'sword',
+          major: 12,
+          targetId: 'chiyan',
+          targetName: '赤炎天',
+          cleared: true,
+          rounds: 9,
+          buildName: '剑修',
+          powerText: '1.2e9',
+          at: 7,
+          ruleset: '25.0',
+          context: { worldId: 'chiyan', mutatorIds: ['heal_down', 'ghost_mutator'], gateId: 'ghost_gate' },
+          replay: {
+            mods: { attackPct: 0.2, ghostStat: 99 },
+            attack: gn(120),
+            defense: gn(80),
+            maxHp: gn(1000),
+            speed: 1.4,
+            skills: [
+              { name: '斩', mult: 2, rate: 0.25, effect: 'pierce' },
+              { name: '坏', mult: Number.NaN, rate: 0.1 }
+            ],
+            artifacts: [
+              { defId: 'ghost_artifact', level: 3 },
+              { defId: 'af_muyu', level: Number.NaN }
+            ],
+            pactId: 'xue'
+          }
+        }
+      ]
+    } as never)
+    e.sanitize()
+
+    const m = e.marks[0]!
+    expect(m.targetName).toBe('赤炎天')
+    expect(m.context, '认不出的变数与门取不到规则,一并剔掉').toEqual({ worldId: 'chiyan', mutatorIds: ['heal_down'] })
+    const replay = m.replay!
+    expect(replay, '三维齐备的快照要留住').toBeDefined()
+    expect(replay.skills, '坏技能没有倍率可言').toEqual([{ name: '斩', mult: 2, rate: 0.25, effect: 'pierce' }])
+    expect(replay.artifacts, '认不出的法宝与坏重数都不进当年那一局').toEqual([{ defId: 'af_muyu', level: 0 }])
+    expect(replay.mods, '野词条键会让构筑厚度与当年对不上').toEqual({ attackPct: 0.2 })
+    expect(replay.pactId).toBe('xue')
+    expect(() => snapFromReplay('当年', replay), '忆战入口').not.toThrow()
+  })
+
+  it('道痕超过 MAX_MARKS 时按写入侧同一把尺截断', () => {
+    const e = useEndgameStore()
+    const many = Array.from({ length: 100 }, (_, i) => ({
+      life: 1,
+      daoPathId: null,
+      targetId: 'chiyan',
+      targetName: '赤炎天',
+      cleared: true,
+      rounds: i,
+      buildName: '剑',
+      powerText: '',
+      at: i
+    }))
+    e.$patch({ marks: many } as never)
+    e.sanitize()
+    expect(e.marks).toHaveLength(60)
   })
 })
