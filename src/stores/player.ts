@@ -30,7 +30,8 @@ import { readingFromState, readingMods } from '@/core/divination'
 import { gameNow } from '@/core/enginePause'
 import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
-import { DAOLU, STAGE_ORDER } from '@/data/daolu'
+import { DAOLU, ENDING_NAMES, STAGE_NAMES, STAGE_ORDER, type BondEnding, type BondStage } from '@/data/daolu'
+import { lifeThemeDef } from '@/data/lifeThemes'
 import { bondEventDef } from '@/data/bondEvents'
 import { regionDef } from '@/data/regions'
 // 事件表放在 data/ 是有意的:core/regionEvent 依赖本 store,这里反向 import 会成环
@@ -541,6 +542,88 @@ export const usePlayerStore = defineStore(
     }
 
     /**
+     * 历世履历修形:条目本身要是个对象,字段要能直接印到「第 N 世 · 化神 · 寿终 320 载」。
+     *
+     * 从前只做了 `Array.isArray` 就原样收下,一条 `null` 就能让轮回页 `l.index` 抛错白屏,
+     * 而 `NaN` 会印成「第 NaN 世」。认不出的命题/逆旅契 id 回落 null(与「本世未立题/未签约」
+     * 同一语义);认不出的结局同样回落 null,由界面按「未竟」兜底,不让一个野值把
+     * `RESULT_TEXTS[...]` 读成 undefined。
+     */
+    function sanitizeLives(raw: unknown): import('@/data/samsara').LifeRecord[] {
+      const out: import('@/data/samsara').LifeRecord[] = []
+      for (const item of asArray<unknown>(raw)) {
+        if (!item || typeof item !== 'object') continue
+        const l = item as Partial<import('@/data/samsara').LifeRecord>
+        const themeResult =
+          l.themeResult === 'done' || l.themeResult === 'broken' || l.themeResult === 'unfinished' ? l.themeResult : null
+        const bond = l.bond && typeof l.bond === 'object' ? l.bond : null
+        out.push({
+          index: Math.max(0, Math.floor(asFiniteNumber(l.index, 0, 0))),
+          major: Math.max(0, Math.floor(asFiniteNumber(l.major, 0, 0))),
+          realmLabel: typeof l.realmLabel === 'string' ? l.realmLabel : '',
+          age: Math.max(0, Math.floor(asFiniteNumber(l.age, 0, 0))),
+          themeId: typeof l.themeId === 'string' && lifeThemeDef(l.themeId) ? l.themeId : null,
+          themeResult,
+          insight: Math.max(0, Math.floor(asFiniteNumber(l.insight, 0, 0))),
+          trialId: typeof l.trialId === 'string' && lifeTrialDef(l.trialId) ? l.trialId : null,
+          bond: bond
+            ? {
+                name: typeof bond.name === 'string' ? bond.name : '',
+                stage: typeof bond.stage === 'string' && bond.stage in STAGE_NAMES ? bond.stage : '',
+                ending: typeof bond.ending === 'string' && bond.ending in ENDING_NAMES ? bond.ending : ''
+              }
+            : null,
+          at: Math.max(0, Math.floor(asFiniteNumber(l.at, 0, 0)))
+        })
+      }
+      return out
+    }
+
+    /**
+     * 历世同行修形:`CharacterView` 直接读 `r.name`,并把 `r.stage`/`r.ending` 当下标
+     * 去查 `STAGE_NAMES`/`ENDING_NAMES`。一条 `null` 就会白屏,野枚举会印出英文原文。
+     *
+     * 认不出的道侣 id 不丢:这段同行确实发生过,只是那个人已从名册里撤下 ——
+     * 名字仍在履历里,阶位与结局回落「素昧平生 / 缘悭一面」。
+     */
+    function sanitizeBonds(raw: unknown): import('@/core/daoluService').BondRecord[] {
+      const out: import('@/core/daoluService').BondRecord[] = []
+      for (const item of asArray<unknown>(raw)) {
+        if (!item || typeof item !== 'object') continue
+        const r = item as Partial<import('@/core/daoluService').BondRecord>
+        out.push({
+          daoluId: typeof r.daoluId === 'string' ? r.daoluId : '',
+          name: typeof r.name === 'string' ? r.name : '',
+          stage: (typeof r.stage === 'string' && r.stage in STAGE_NAMES ? r.stage : 'none') as BondStage,
+          ending: (typeof r.ending === 'string' && r.ending in ENDING_NAMES ? r.ending : 'missed') as BondEnding,
+          shared: Math.max(0, Math.floor(asFiniteNumber(r.shared, 0, 0)))
+        })
+      }
+      return out
+    }
+
+    /**
+     * 本世命题修形:野 `themeId` 会让 `vowProgress()` 恒返回 null(界面写着「在途」却
+     * 永不推进),而 `broken: 'yes'` 这类非字面真值会让「已破」判定失真。
+     *
+     * 认不出的命题整块作废 —— 等同于「这一世不曾立题」,下次兵解时可重新择题;
+     * 反过来若只清 id 保留外壳,玩家会卡在一个既无定义又不可再选的空题上。
+     */
+    function sanitizeVow(raw: unknown): import('@/data/samsara').LifeVow | null {
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+      const v = raw as Partial<import('@/data/samsara').LifeVow>
+      if (typeof v.themeId !== 'string' || !lifeThemeDef(v.themeId)) return null
+      return {
+        themeId: v.themeId,
+        at: Math.max(0, asFiniteNumber(v.at, 0, 0)),
+        base: asNumberRecord(v.base, 0),
+        baseBranches: Math.max(0, Math.floor(asFiniteNumber(v.baseBranches, 0, 0))),
+        baseAvenged: Math.max(0, Math.floor(asFiniteNumber(v.baseAvenged, 0, 0))),
+        broken: v.broken === true
+      }
+    }
+
+    /**
      * 花掉道果。
      *
      * 余额**真的减少** —— 不是记一笔「已花费」了事。
@@ -967,10 +1050,10 @@ export const usePlayerStore = defineStore(
         heritage: [...new Set(asStringArray(r?.heritage).filter(id => !!heritageDef(id)))],
         heritageUses: sanitizeHeritageUses(r?.heritageUses),
         insight: Number.isFinite(r?.insight) ? Math.max(0, r.insight) : legacyInsightOf(count),
-        lives: Array.isArray(r?.lives) ? r.lives : [],
-        vow: r?.vow ?? null,
+        lives: sanitizeLives(r?.lives),
+        vow: sanitizeVow(r?.vow),
         trial: sanitizeTrial(r?.trial),
-        bonds: Array.isArray(r?.bonds) ? r.bonds : []
+        bonds: sanitizeBonds(r?.bonds)
       }
     }
 
