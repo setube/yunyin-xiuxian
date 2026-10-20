@@ -600,6 +600,17 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(market, '这一架没有灵草时要明说').toContain('data-focus-herb-missing')
   })
 
+  /**
+   * 只缺灵石时同理:灵石只能从历练/悬赏挣,坊市是花灵石的地方。
+   * 若给「去坊市」就是把玩家指反了方向 —— 那里只会再缺一次。
+   */
+  it('炼丹只缺灵石时指去历练,不给坊市(那儿只有花灵石)', () => {
+    const inv = src('../views/InventoryView.vue')
+    expect(inv, '只缺灵石给历练去路').toMatch(/r\.plan\.reason === 'stone'/)
+    expect(inv, '去历练').toContain('去历练攒石 →')
+    expect(inv, '两条去路互斥,同屏只摆一条').toMatch(/v-else-if="r\.plan\.reason === 'stone'"/)
+  })
+
   it('灵兽的性子带数,出处与结算同源', () => {
     const view = src('../views/TitlesView.vue')
     expect(view, '性子该读 petTraitText(与 core/petPersonality 同源)').toContain('petTraitText(')

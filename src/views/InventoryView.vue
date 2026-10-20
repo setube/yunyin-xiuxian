@@ -397,8 +397,9 @@
               </template>
               <!--
                 缺料/掌握不足:不摆注定点不动的按钮,把真实阻拦摊在眼前。
-                缺草/草石都缺时另给一条去路 —— 只说「未足」而不给去处,玩家
-                只能自己翻页找坊市(议题 #130)。
+                缺料时另给一条去路 —— 只说「未足」而不给去处,玩家只能自己翻页
+                找坊市或历练(议题 #130)。草石都缺先指坊市:买回草之后这句会
+                变成「只缺灵石」,那时再给历练那条,一次只摆一条,窄屏也不挤。
               -->
               <span v-else class="flex items-center gap-2">
                 <span class="whitespace-nowrap text-[10px] text-cinnabar">{{ r.plan.blocked }}</span>
@@ -408,6 +409,14 @@
                   class="whitespace-nowrap rounded border border-jade/50 px-2 py-1 text-[10px] text-jade active:opacity-60"
                 >
                   去坊市续草 →
+                </RouterLink>
+                <!-- 灵石只从历练/悬赏来,坊市是花灵石的地方 —— 指去坊市等于指反方向 -->
+                <RouterLink
+                  v-else-if="r.plan.reason === 'stone'"
+                  :to="{ name: 'adventure' }"
+                  class="whitespace-nowrap rounded border border-azure/50 px-2 py-1 text-[10px] text-azure active:opacity-60"
+                >
+                  去历练攒石 →
                 </RouterLink>
               </span>
             </div>
