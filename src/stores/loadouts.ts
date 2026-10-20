@@ -5,6 +5,7 @@ import type { EquipSlot } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { asArray, asFiniteNumber, asRecord, asStringArray } from '@/utils/saveShape'
 import { uid } from '@/utils/id'
+import { EQUIP_SLOTS } from '@/data/equipment'
 
 export interface Loadout {
   id: string
@@ -36,7 +37,14 @@ export const useLoadoutsStore = defineStore(
         .map(l => {
           const equipment: Partial<Record<EquipSlot, string>> = {}
           for (const [slot, itemUid] of Object.entries(asRecord<string>(l.equipment))) {
-            if (typeof itemUid === 'string' && itemUid) equipment[slot as EquipSlot] = itemUid
+            /**
+             * 槽名必须是九个真部位之一。坏档写进 `artifact` 之类不存在的槽时,
+             * `applyLoadout` 会照字面 `equip(u, 'artifact')`:该件随即被排除出行囊,
+             * 却没有任何槽卡画它 —— 整套快照一切换,装备就凭空消失。
+             */
+            if (typeof itemUid === 'string' && itemUid && (EQUIP_SLOTS as string[]).includes(slot)) {
+              equipment[slot as EquipSlot] = itemUid
+            }
           }
           return {
             id: l.id,

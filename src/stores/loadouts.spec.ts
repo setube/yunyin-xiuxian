@@ -142,4 +142,20 @@ describe('构筑 · 换装接线(applyLoadout)', () => {
     expect(applyLoadout('load2')).toBe(true)
     expect(inv.equipped['weapon'], '缺件槽不该被穿上').toBeUndefined()
   })
+
+  /**
+   * 坏档里写进不存在的槽名(`artifact` 不在九槽之列):照字面穿上后,
+   * 该件会被排除出行囊,却没有任何槽卡画它 —— 装备凭空消失。
+   */
+  it('快照里的野槽名被清掉,那件装备留在行囊里看得见', () => {
+    const inv = useInventoryStore()
+    inv.$patch({ items: [{ uid: 'sword1', templateId: 'w_zhuqing', quality: 'fine', tier: 1, level: 0, affixes: [] }] })
+    const l = useLoadoutsStore()
+    l.$patch({ list: [mk('bad', { equipment: { artifact: 'sword1' } as never })] } as never)
+    l.sanitize()
+    expect(l.list[0]!.equipment, '野槽名不留在快照里').toEqual({})
+    applyLoadout('bad')
+    expect(inv.equipped.artifact, '不会凭空多出一个装备槽').toBeUndefined()
+    expect(inv.bagItems.map(i => i.uid), '件仍在行囊里,看得见也穿得回').toEqual(['sword1'])
+  })
 })

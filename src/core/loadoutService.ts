@@ -3,7 +3,7 @@
  */
 import type { EquipSlot } from '@/types'
 import { uid } from '@/utils/id'
-import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
+import { EQUIP_SLOT_NAMES, EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
 import { artifactDef, artifactSlotsFor } from '@/data/artifacts'
 import { gongfaDef } from '@/data/gongfa'
 import { usePlayerStore } from '@/stores/player'
@@ -63,6 +63,8 @@ export function applyLoadout(id: string): boolean {
 
   // 装备
   for (const slot of Object.keys(loadout.equipment) as EquipSlot[]) {
+    // 执行路径也认槽名:未经 sanitize 的快照(旧档/内存直塞)不能把件穿进幽灵槽
+    if (!EQUIP_SLOTS.includes(slot)) continue
     const itemUid = loadout.equipment[slot]
     if (!itemUid) continue
     const item = inventory.findItem(itemUid)
