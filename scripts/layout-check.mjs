@@ -1847,6 +1847,10 @@ for (const vp of VIEWPORTS) {
     window.__beforeImport = 'alive'
   })
   await page.locator('input[type=file]').first().setInputFiles(savePath)
+  await page.waitForTimeout(500)
+  // 导入是「整体替换本机进度」的不可逆操作 —— 与重置同纪律,先弹确认,点「覆盖导入」才落库。
+  // 判据仍盯着原来的事(成功提示 + 重新入定 + 灵石回到导出那一刻),只是要穿过这扇确认门。
+  await page.getByRole('button', { name: /覆盖导入/ }).click({ timeout: 3000 })
   await page.waitForTimeout(700)
   const toast = await page.evaluate(() => [...document.querySelectorAll('.pointer-events-none.fixed button')].map(b => (b.textContent || '').trim()).join('|'))
   await page.waitForTimeout(2600)
@@ -3294,21 +3298,38 @@ for (const vp of [
     },
     Object.fromEntries(Object.entries(slices).map(([k, v]) => [`yunyin.${k}`, enc(v)]))
   )
+  // 启动提示只活 2.6 秒:在页面脚本跑起来之前就装好观察器,提示一进 DOM 就抄下来
+  await ctx.addInitScript(() => {
+    window.__bootToastSaid = ''
+    const pick = () => {
+      const t = [...document.querySelectorAll('.pointer-events-none.fixed button')].map(b => (b.textContent || '').trim()).join('|')
+      if (/损坏|异常|隔离/.test(t)) window.__bootToastSaid = t
+    }
+    const start = () => {
+      const root = document.querySelector('#app')
+      if (!root) return
+      new MutationObserver(pick).observe(root, { childList: true, subtree: true, characterData: true })
+      pick()
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start)
+    else start()
+  })
   const page = await ctx.newPage()
   const pageErrors = []
   watchPageErrors(page, pageErrors)
   await page.goto(INDEX, { waitUntil: 'load' })
   checked += 1
   /**
-   * 启动提示只活两秒多,而冷启动到首帧的耗时是浮动的 —— 固定读一次会偶发读空
-   * (实测同一份产物两次跑,一次读到、一次读到空串)。故轮询到它出现为止:
-   * 判据不变(提示文本必须含「损坏/异常/隔离」),只是不再拿运气当判据。
+   * 启动提示只活两秒多,而 `goto(..., waitUntil:'load')` 在冷启动(字体/产物首次加载)
+   * 时可能先耗掉这段时间 —— 等 load 回来再开始轮询,提示可能已经收走(实测两次跑,
+   * 一次读到、一次读空)。故在页面脚本执行前装一只 MutationObserver 记账:
+   * 提示一进 DOM 就抄下来,判据仍是「启动时必须说过这句话」,不再靠读的时机。
    *
-   * 但「等到它出现」和「再读一次」之间还有一次往返:CI 机器慢的时候这一步就超过两秒,
-   * 再读时提示已经收走、位子上换成了别的提示(实测读到「成就达成「万古长生」」而误判)。
-   * 所以匹配那一刻**顺手把提示文本带回来**,断言用带回来的那份,不再第二次去读。
+   * 优先用记账:两者都空才算「没说」。
    */
-  const bootToasts = await page
+  let bootToasts = await page.evaluate(() => window.__bootToastSaid || '')
+  if (!bootToasts) {
+    const live = await page
     .waitForFunction(
       () => {
         const t = [...document.querySelectorAll('.pointer-events-none.fixed button')].map(b => (b.textContent || '').trim()).join('|')
@@ -3318,6 +3339,8 @@ for (const vp of [
     )
     .then(h => h.jsonValue())
     .catch(() => '')
+    if (live) bootToasts = live
+  }
   const boot = await page.evaluate(() => ({
     alive: !!document.querySelector('#app')?.firstElementChild,
     hash: location.hash,

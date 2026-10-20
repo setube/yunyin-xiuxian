@@ -25,6 +25,20 @@
  * ⚠ --late 很慢(一轮约十分钟):终局页面上的按钮会真的触发模拟
  * (突破推演 / 远征预估 / 挑战书定价),不是脚本卡住了。日常冒烟用默认模式。
  */
+/**
+ * 元素句柄,不用 nth 序号定位器 —— 一处曾被当作「游戏性能问题」的教训
+ * --------
+ * 抓按钮清单若用 `getByRole('button').all()`,拿到的是一串**钉了序号**的定位器
+ * (nth(0), nth(1), …):toast 进出、弹窗开合、点了「← 返回」/入口卡跳页,
+ * 都会让序号指向别的节点或空号 —— 而 Playwright 的查询会按可操作性**自动等待**,
+ * 空号一路等到默认 30s 超时。实测后果:/market /apprentice /dongfu 三页被拖到
+ * ~44s/点击(点击「返回」离页后,余下 9 个序号 × 30s 纯等待),墙钟 626s 里
+ * 一半以上是它;CDP 采样证明等待期间主线程全闲 —— 游戏侧毫无问题,玩家无感。
+ *
+ * 改用 `elementHandles()`:句柄钉住**DOM 节点本身**,toast 进出不挪它,节点一没
+ * innerText/click 立即抛错(被 .catch 吃掉,快进快出)。另加一道离页守卫:
+ * hash 一变即断循环 —— 离页后旧页的按钮本就无从点起。
+ */
 import { classifySmoke, namePattern, SMOKE_ALLOWLIST } from './smoke-classify.ts'
 import { chromium } from 'playwright'
 import { lateSlices, seedSave } from './lib/saveFixture.mjs'
@@ -74,6 +88,25 @@ const browser = await chromium.launch({
   args: ['--allow-file-access-from-files', '--disable-web-security', '--no-sandbox', '--disable-dev-shm-usage']
 })
 const context = await browser.newContext({ viewport: { width: 375, height: 812 } })
+/**
+ * 外域请求一律拦掉,但**分两类记账**:
+ *   · 已知统计脚本(sdk.51.la)是 index.html 里唯一的第三方资源,拦掉只为确定性
+ *     (它慢或不通时 goto(load) 会被别人的服务器拖住,实测能卡满 30s 超时);
+ *   · 其它外域一律算失败 —— 将来谁顺手加了外链,门在**这里**红,而不是让线上
+ *     决定我们的自检要不要绿。
+ */
+let knownAnalyticsBlocked = 0
+const unknownExternal = []
+await context.route('**/*', route => {
+  const url = route.request().url()
+  if (/^(file|data|blob):/.test(url)) return route.continue()
+  if (url.startsWith('https://sdk.51.la/')) {
+    knownAnalyticsBlocked += 1
+    return route.abort()
+  }
+  unknownExternal.push(url)
+  return route.abort()
+})
 if (LATE) {
   await seedSave(context, lateSlices())
 }
@@ -167,6 +200,13 @@ async function numericLeak() {
   }, NUMERIC_LEAK)
 }
 /**
+ * 点击之后再量一次数字泄漏 —— 本作大量数值渲染在弹窗/交互之后才出现
+ * (炼丹、收纳、人物入口、天界册页)。这类 NaN/Infinity 不抛异常,pageerror 逮不到。
+ */
+async function scanNumericLeaks(where) {
+  for (const l of await numericLeak()) errors.push({ where, msg: l })
+}
+/**
  * 命中测试:导航链接中心点此刻归谁?
  * - 'clear':链接自己(或其子节点)占据 —— 可以安全 dispatch,箭头不会点错对象;
  * - 'gone':链接不在页面上;
@@ -227,7 +267,8 @@ let clicked = 0
 async function clickInsideModal(route) {
   const panel = page.locator('.modal-panel').first()
   if (!(await panel.count())) return
-  const inner = await panel.getByRole('button').all()
+  // 元素句柄(见文件头):toast 进出会让 nth 序号换指,句柄钉节点,没了一抛即走
+  const inner = await panel.getByRole('button').elementHandles()
   for (const b of inner.slice(0, 6)) {
     const label = ((await b.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
     if (!label || SKIP.test(label)) continue
@@ -241,6 +282,7 @@ async function clickInsideModal(route) {
     if (errors.length > before) errors[errors.length - 1].where = `${route} 弹窗内点「${label}」`
     // 弹窗按钮此前只查了 pageerror,点了没反应的同样会被静默吞掉 —— 一并纳入指纹判定
     else if ((await fingerprint()) === beforeFp) await classifySilent(route, 'modal', label)
+    await scanNumericLeaks(`${route} 弹窗内点「${label}」后泄漏`)
   }
 }
 
@@ -254,8 +296,12 @@ for (const route of ROUTES) {
    */
   const leaked = await numericLeak()
   for (const l of leaked) errors.push({ where: `${route} 正文泄漏`, msg: l })
-  const buttons = await page.getByRole('button').all()
+  // 元素句柄(见文件头):.all() 钉序号,toast/弹窗/跳页一变就空号空等 30s
+  const buttons = await page.getByRole('button').elementHandles()
+  const startHash = await page.evaluate(() => location.hash)
   for (const b of buttons.slice(0, DEPTH)) {
+    // 离页守卫:点了「← 返回」/入口卡这类导航钮,旧页按钮已无从点起,断循环
+    if ((await page.evaluate(() => location.hash)) !== startHash) break
     const label = ((await b.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
     if (!label || SKIP.test(label)) continue
     if (!(await b.isVisible().catch(() => false))) continue
@@ -267,6 +313,7 @@ for (const route of ROUTES) {
     await settle()
     if (errors.length > before) errors[errors.length - 1].where = `${route} 点「${label}」`
     else if ((await fingerprint()) === beforeFp) await classifySilent(route, 'page', label)
+    await scanNumericLeaks(`${route} 点「${label}」后泄漏`)
     await clickInsideModal(route)
     // 点开弹窗后关掉,免得挡住后面的按钮
     await page.keyboard.press('Escape').catch(() => {})
@@ -338,6 +385,14 @@ for (const route of ROUTES) {
 
 await browser.close()
 console.log(`\n界面冒烟:${ROUTES.length} 页,点击 ${clicked} 次(导航 ${navClicked.size} 条边;按钮每页上限 ${DEPTH})`)
+if (knownAnalyticsBlocked) {
+  console.log(`  已拦下第三方统计脚本 ${knownAnalyticsBlocked} 次(唯一允许的外域,拦掉只为不随它超时)`)
+}
+if (unknownExternal.length) {
+  const hosts = [...new Set(unknownExternal.map(u => u.replace(/^https?:\/\//, '').split('/')[0]))]
+  console.log(`✗ 出现未登记的外域请求 ${unknownExternal.length} 次:${hosts.join(', ')}`)
+  process.exitCode = 1
+}
 if (silent.length) {
   console.log(`点了没反应 ${silent.length} 处(读数,不判失败):`)
   for (const s of silent.slice(0, 20)) console.log(`  · ${s}`)
