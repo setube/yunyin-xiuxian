@@ -20,14 +20,24 @@
     <InkTabs v-model="tab" :tabs="tabs" />
 
     <!-- 购入货架 -->
-    <section v-if="tab === 'buy'">
+    <!-- ref 供「去坊市续草」跳进来后滚到货架(见剧本 onMounted 的 focus 处理) -->
+    <section v-if="tab === 'buy'" ref="buySection">
       <SectionTitle title="货架" :hint="`${cards.length} 格`" />
+      <!-- 深链进来却碰上这架没草:先说实话,别让「续草」落成一架看不懂的货 -->
+      <p
+        v-if="focusHerbMissed"
+        class="mt-2 rounded-md border border-gold-ink/30 bg-gold-ink/10 px-3 py-2 text-[10px] leading-relaxed text-gold-ink"
+        data-focus-herb-missing
+      >
+        架上这一刻没有灵草,货郎两时辰后换新 —— 也可先去历练采些,回头再来。
+      </p>
       <div class="mt-2 grid grid-cols-2 gap-2">
         <div
           v-for="c in cards"
           :key="c.idx"
+          :data-idx="c.idx"
           class="card-ink flex flex-col p-2.5"
-          :class="c.sold ? 'opacity-50' : ''"
+          :class="[c.sold ? 'opacity-50' : '', c.idx === focusIdx ? 'ring-2 ring-jade/70' : '']"
         >
           <div class="flex items-center gap-2">
             <span
@@ -190,7 +200,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, onUnmounted, ref } from 'vue'
+  import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+  import { useRoute } from 'vue-router'
   import type { GNum } from '@/types'
   import type { MarketSlot } from '@/data/market'
   import type { BountyKind, BountySlot } from '@/data/bounty'
@@ -225,6 +236,8 @@
     tag: string
     tagCls: string
     kind: string
+    /** 仅 material 格有:灵草 / 玄铁(深链高亮要靠它认出哪一格是草) */
+    matId?: 'herb' | 'ore'
     name: string
     nameCls: Record<string, string>
     sub: string
@@ -250,8 +263,19 @@
   const bounty = useBountyStore()
   const player = usePlayerStore()
   const ui = useUiStore()
+  const route = useRoute()
 
   const tab = ref<'buy' | 'sell' | 'bounty'>('buy')
+  /**
+   * 从「开炉炼丹 → 缺料 → 去坊市续草」跳进来时高亮的货格。
+   *
+   * 只在有灵草可买的那一格上亮:货架是六格随机,灵草不一定排在第一屏,
+   * 不指出来玩家还是得自己一格格找。
+   */
+  const focusIdx = ref<number | null>(null)
+  /** 深链要续草,而这架货恰好没有灵草 —— 界面上得说出来 */
+  const focusHerbMissed = ref(false)
+  const buySection = ref<HTMLElement | null>(null)
   /** 展开中的「贡兵刃」悬赏单(idx);null=全部收起 */
   const openEquipOrder = ref<number | null>(null)
   const now = ref(Date.now())
@@ -343,6 +367,7 @@
       const grade = slot.grade ?? herbGradeOfMajor(player.major)
       return {
         ...base,
+        matId: slot.matId,
         name: slot.matId === 'herb' ? HERB_GRADE_NAMES[grade] : meta.name,
         nameCls: {},
         sub: slot.matId === 'herb' ? `${herbGradeBandLabel(grade)} · ×${slot.count}` : `补洞府之材 · ×${slot.count}`,
@@ -537,6 +562,25 @@
     market.sync(Date.now())
     bounty.sync(Date.now())
     reapConsign()
+    /*
+     * 「去坊市续草」深链:落在坊市后把灵草那一格滚进视口并高亮。
+     * 只做一次(不改 tab 的后续切换):玩家自己切去售/悬赏时不该被拽回来。
+     * 货架此刻可能没有灵草格(六格随机)——那就只停在货架顶部,不硬滚到不存在的东西。
+     */
+    if (route.query.focus === 'herb') {
+      tab.value = 'buy'
+      void nextTick(() => {
+        const herbCard = cards.value.find(c => c.kind === 'material' && c.matId === 'herb' && !c.sold)
+        if (herbCard) {
+          focusIdx.value = herbCard.idx
+          const el = buySection.value?.querySelector<HTMLElement>(`[data-idx="${herbCard.idx}"]`)
+          el?.scrollIntoView({ block: 'center' })
+        } else {
+          focusHerbMissed.value = true
+          buySection.value?.scrollIntoView({ block: 'start' })
+        }
+      })
+    }
     timer = setInterval(() => {
       now.value = Date.now()
       reapConsign()

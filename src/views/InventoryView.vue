@@ -395,8 +395,21 @@
                   </button>
                 </template>
               </template>
-              <!-- 缺料/掌握不足:不摆注定点不动的按钮,把真实阻拦摊在眼前 -->
-              <span v-else class="whitespace-nowrap text-[10px] text-cinnabar">{{ r.plan.blocked }}</span>
+              <!--
+                缺料/掌握不足:不摆注定点不动的按钮,把真实阻拦摊在眼前。
+                缺草/草石都缺时另给一条去路 —— 只说「未足」而不给去处,玩家
+                只能自己翻页找坊市(议题 #130)。
+              -->
+              <span v-else class="flex items-center gap-2">
+                <span class="whitespace-nowrap text-[10px] text-cinnabar">{{ r.plan.blocked }}</span>
+                <RouterLink
+                  v-if="r.plan.reason === 'herb' || r.plan.reason === 'both'"
+                  :to="{ name: 'market', query: { focus: 'herb' } }"
+                  class="whitespace-nowrap rounded border border-jade/50 px-2 py-1 text-[10px] text-jade active:opacity-60"
+                >
+                  去坊市续草 →
+                </RouterLink>
+              </span>
             </div>
           </div>
           <p

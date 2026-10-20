@@ -166,6 +166,9 @@ export function availableRecipes(): string[] {
   return knownRecipes().map(p => p.id)
 }
 
+/** 炼不动的原因 —— 界面要靠它决定「去哪补」,不能只有一句含糊的「料不足」 */
+export type CraftBlockReason = 'unknown' | 'mastery' | 'herb' | 'stone' | 'both'
+
 export interface CraftBatchPlan {
   /** 按当前料保底可开的最大炉数(炉炉皆成也够);0 = 炼不动 */
   rounds: number
@@ -175,6 +178,16 @@ export interface CraftBatchPlan {
   stone: GNum
   /** rounds=0 时的阻塞理由(未知此方 / 掌握不够 / 料不足);炼得动时为 undefined */
   blocked?: string
+  /**
+   * rounds=0 时的**结构化**原因。
+   *
+   * 一句「灵草或灵石未足」分不出该去坊市续草、还是该去历练攒石 —— 界面想给
+   * 一条能点的去路,就得先知道缺的是哪一头。unknown / mastery 是「补不了料」的
+   * 两类,不该给采购入口。
+   */
+  reason?: CraftBlockReason
+  /** reason 含 herb 时,还差多少株当前品灵草 */
+  shortHerb?: number
 }
 
 /**
@@ -187,19 +200,37 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
   const def = pillDef(id)
   const cost = pillCraftCost(id)
   const able = craftability(id)
-  const blocked = (msg: string): CraftBatchPlan => ({ rounds: 0, herb: 0, stone: gnZero(), blocked: msg })
+  const blocked = (msg: string, reason: CraftBlockReason, shortHerb?: number): CraftBatchPlan => ({
+    rounds: 0,
+    herb: 0,
+    stone: gnZero(),
+    blocked: msg,
+    reason,
+    ...(shortHerb === undefined ? {} : { shortHerb })
+  })
   // 方子并不存在/没解析出配方:这与「知道方子但缺料」是两回事 —— 分开说,
   // 调用方才能区分掌握问题与材料问题(未知方先于掌握度阻塞返回)
-  if (!def || !cost || !able) return blocked(craftUnknownToast())
-  if (able.blockers.length > 0) return blocked(able.blockers[0]!)
-  const herbRounds = Math.floor(resources.herbOf(cost.grade) / cost.herb)
+  if (!def || !cost || !able) return blocked(craftUnknownToast(), 'unknown')
+  if (able.blockers.length > 0) return blocked(able.blockers[0]!, 'mastery')
+  const herbHeld = resources.herbOf(cost.grade)
+  const herbRounds = Math.floor(herbHeld / cost.herb)
   // 灵石可开几炉:直接求商,不逐炉减 —— 库存大时按炉计数会跑成百万次 GNum 减法
   // (ratio 的指数差钳制只会把币额超大的情况估算得略保守,再与 herbRounds 取小,安全)
-  const stoneRounds = Math.max(0, Math.floor(ratio(resources.spiritStone, cost.stone)))
+  const stoneRoundsRaw = Math.floor(ratio(resources.spiritStone, cost.stone))
+  /** 灵石是否真构成了约束 —— ratio 在除数为 0 时给 Infinity,那不是「一分不剩」 */
+  const stoneLimited = Number.isFinite(stoneRoundsRaw)
+  const stoneRounds = Math.max(0, stoneLimited ? stoneRoundsRaw : 0)
   // ratio 在除数(cost.stone)为 0/NaN 时返回 Infinity/NaN —— 此处把非有限的「灵石可开炉数」
   // 显式收束为「不构成限制」:此时炉数由灵草维度唯一决定,绝不把 Infinity 传进 round/plan。
-  const rounds = Math.min(herbRounds, Number.isFinite(stoneRounds) ? stoneRounds : herbRounds)
-  if (rounds === 0) return blocked(craftShortToast())
+  const rounds = Math.min(herbRounds, stoneLimited ? stoneRounds : herbRounds)
+  if (rounds === 0) {
+    const shortHerb = Math.max(0, cost.herb - herbHeld)
+    const shortStone = stoneLimited && stoneRounds === 0
+    // 只缺草时把缺口报成株数:玩家拿着这个数去坊市,才知道该买几摞
+    if (shortStone && shortHerb > 0) return blocked(craftShortToast(), 'both', shortHerb)
+    if (shortStone) return blocked('灵石未足,难开此炉', 'stone')
+    return blocked(`灵草未足,还差 ${shortHerb} 株`, 'herb', shortHerb)
+  }
   return { rounds, herb: rounds * cost.herb, stone: mulN(cost.stone, rounds) }
 }
 

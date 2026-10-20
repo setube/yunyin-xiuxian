@@ -420,6 +420,39 @@ describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底�
     const plan = craftBatchPlan(ID)
     expect(plan.rounds).toBe(0)
     expect(plan.blocked).toContain('灵草或灵石未足')
+    // 草与石同时见底:reason=both,界面才知道两头都得补
+    expect(plan.reason).toBe('both')
+    expect(plan.shortHerb).toBeGreaterThan(0)
+  })
+
+  /**
+   * 议题 #130 的根:一句「灵草或灵石未足」分不出该去坊市买草、还是去历练攒石。
+   * 判据按两头分开给 —— 只缺草就得报出还差几株,只缺石就不该出现草的去路。
+   */
+  it('只缺草:reason=herb 且报出还差几株(界面靠它决定给不给采购入口)', () => {
+    knowRecipe()
+    const cost = pillCraftCost(ID)!
+    const resources = useResourcesStore()
+    resources.addStone({ m: 1, e: 9 })
+    resources.addSmall('herb', Math.max(0, cost.herb - 1))
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds).toBe(0)
+    expect(plan.reason).toBe('herb')
+    expect(plan.shortHerb, '短缺数按「差多少才够一炉」算').toBe(1)
+    expect(plan.blocked, '把缺口写进话里,玩家拿着数去坊市').toContain('还差 1 株')
+  })
+
+  it('只缺灵石:reason=stone,不给草的去路', () => {
+    knowRecipe()
+    const cost = pillCraftCost(ID)!
+    const resources = useResourcesStore()
+    resources.addSmall('herb', cost.herb * 3)
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds).toBe(0)
+    expect(plan.reason).toBe('stone')
+    expect(plan.shortHerb, '草够的时候不该报草的缺口').toBeUndefined()
+    expect(plan.blocked).toContain('灵石')
+    expect(plan.blocked).not.toContain('灵草')
   })
 
   it('纯未知的方子 id:报「不知此方」而非「料不足」—— 掌握问题与材料问题分得开', () => {
@@ -427,6 +460,7 @@ describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底�
     expect(plan.rounds).toBe(0)
     expect(plan.blocked).toContain('不知此方')
     expect(plan.blocked).not.toContain('灵草')
+    expect(plan.reason, '未知方子补不了料,不该指去坊市').toBe('unknown')
   })
 
   it('计划绝不动材料 —— 调多少次,资源原样', () => {

@@ -577,6 +577,29 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(view, '丹方读到几分熟取自 lore.recipeMastery').toContain('recipeMastery(')
   })
 
+  /**
+   * 议题 #130:缺料只说「未足」而不给去路,玩家得自己翻到坊市、再自己往下滚找草。
+   * 这条锁住两端:① 缺草时真的给一条带 focus=herb 的入口;② 坊市真接得住这个参数,
+   * 且只在渲染出灵草格时才高亮 —— 货架六格随机,没有草还硬指一格就是指错路。
+   */
+  it('炼丹缺草给去坊市的去路,坊市接住 focus=herb 并只高亮灵草格', () => {
+    const inv = src('../views/InventoryView.vue')
+    expect(inv, '缺草/草石都缺时该给「去坊市续草」').toMatch(
+      /name: 'market', query: \{ focus: 'herb' \}/,
+    )
+    expect(inv, '入口只该在草是短板时出现(不该给掌握不足指路)').toMatch(
+      /r\.plan\.reason === 'herb' \|\| r\.plan\.reason === 'both'/,
+    )
+    const market = src('../views/MarketView.vue')
+    expect(market, '坊市要读 focus 参数').toContain("route.query.focus === 'herb'")
+    expect(market, '高亮只认 material 且 matId=herb 的未售格').toMatch(
+      /c\.kind === 'material' && c\.matId === 'herb' && !c\.sold/,
+    )
+    expect(market, '认到灵草格后要滚进视口').toContain('scrollIntoView(')
+    // 货架六格随机,碰上没有草的那一架:不许静默停住,得说清「这一架没有」
+    expect(market, '这一架没有灵草时要明说').toContain('data-focus-herb-missing')
+  })
+
   it('灵兽的性子带数,出处与结算同源', () => {
     const view = src('../views/TitlesView.vue')
     expect(view, '性子该读 petTraitText(与 core/petPersonality 同源)').toContain('petTraitText(')
