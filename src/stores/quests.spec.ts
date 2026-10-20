@@ -53,6 +53,31 @@ describe('成就达成时刻', () => {
 })
 
 /**
+ * 成就/名号/图鉴都是「集合」语义:坏档里同一条写两遍时,
+ * 界面按 Set 判「有没有」只画一枚,而计数按 `.length` 数会多报 ——
+ * 于是出现「成就 70/62」「名号 N/总数」这类自相矛盾的读数。
+ */
+describe('sanitize:重复条目不再把计数撑破', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('成就/日课/名号/图鉴同一条写两遍,计数与列表一致', () => {
+    const quests = useQuestsStore()
+    quests.$patch({
+      achieved: ['a_one', 'a_one'],
+      daily: { date: '2026-10-20', base: {}, done: ['d_one', 'd_one'] },
+      titlesOwned: ['t_one', 't_one'],
+      collections: { equip: ['e1', 'e1'], gongfa: [], pill: [], artifact: [], pet: ['p1', 'p1'], event: [], talent: [] }
+    } as never)
+    quests.sanitize()
+    expect(quests.achieved, '成就同一条只留一次').toEqual(['a_one'])
+    expect(quests.daily.done, '日课同一条只留一次').toEqual(['d_one'])
+    expect(quests.titlesOwned, '名号同一条只留一次').toEqual(['t_one'])
+    expect(quests.collections.equip, '装备图鉴去重').toEqual(['e1'])
+    expect(quests.collections.pet, '灵兽册去重后不会画两行同 key').toEqual(['p1'])
+  })
+})
+
+/**
  * 主线任务链是游戏的脊梁:它曾只铺到化神(第 5 个大境界)。
  * 扩界后若忘了往下铺,玩家在 16 个新境界里会失去全部主线指引。
  */

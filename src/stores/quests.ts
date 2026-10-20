@@ -37,25 +37,32 @@ export const useQuestsStore = defineStore(
     /** 存档修复:计数/图鉴表被写坏会让成就判定与图鉴页在渲染期抛错 */
     function sanitize(): void {
       counters.value = asNumberRecord(counters.value, 0)
-      achieved.value = asStringArray(achieved.value)
+      // 成就是集合语义(达成与否),坏档里同一条写两遍会让「成就 N/总数」多报、
+      // 甚至报出 N > 总数;与 unlockAchievement 的「已有就不再记」同口径去重。
+      achieved.value = [...new Set(asStringArray(achieved.value))]
       const maxIdx = Math.max(0, MAIN_QUESTS.length - 1)
       mainIdx.value = Math.min(Math.floor(asFiniteNumber(mainIdx.value, 0, 0)), maxIdx)
       const d = asObjectOrNull<{ date?: unknown; base?: unknown; done?: unknown }>(daily.value)
       daily.value = {
         date: typeof d?.date === 'string' ? d.date : '',
         base: asNumberRecord(d?.base, 0),
-        done: asStringArray(d?.done)
+        // 日课同样按条认 id:重复条目既不该多算,也没有「同一门日课成两次」这回事
+        done: [...new Set(asStringArray(d?.done))]
       }
-      titlesOwned.value = asStringArray(titlesOwned.value)
+      // 名号是集合:重复条目会把「名号 N/总数」撑过总数,列表却只画
+      // 已拥有的那几枚(按 Set 判),计数与界面当场分叉。
+      titlesOwned.value = [...new Set(asStringArray(titlesOwned.value))]
       const cats = asRecord<string[]>(collections.value)
+      // 图鉴各类都是集合语义(collect 只在没有时才追加):重复 id 会让「已收 N」多报,
+      // 灵兽册还会把同一只灵兽画两行、配两个相同的 v-for key。
       collections.value = {
-        equip: asStringArray(cats.equip),
-        gongfa: asStringArray(cats.gongfa),
-        pill: asStringArray(cats.pill),
-        artifact: asStringArray(cats.artifact),
-        pet: asStringArray(cats.pet),
-        event: asStringArray(cats.event),
-        talent: asStringArray(cats.talent)
+        equip: [...new Set(asStringArray(cats.equip))],
+        gongfa: [...new Set(asStringArray(cats.gongfa))],
+        pill: [...new Set(asStringArray(cats.pill))],
+        artifact: [...new Set(asStringArray(cats.artifact))],
+        pet: [...new Set(asStringArray(cats.pet))],
+        event: [...new Set(asStringArray(cats.event))],
+        talent: [...new Set(asStringArray(cats.talent))]
       }
       collectedAt.value = asNumberRecord(collectedAt.value, 0)
       achievedAt.value = asNumberRecord(achievedAt.value, 0)
