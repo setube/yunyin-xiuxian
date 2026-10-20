@@ -79,25 +79,30 @@ function seedSession(mode: 'normal' | 'deep'): void {
 
 interface Yields {
   page: number
-  equipChanceCount: number
+  /** 溢出件数 = 期望件数 − 6(从归来卷轴读回,吃模式倍率;不受 flat 尘污染) */
+  overflowCount: number
   pills: number
 }
 
 const invPills = (): number =>
   Object.values(useInventoryStore().pills).reduce((a, b) => a + b, 0)
 
+/** 从归来卷轴读回「另有 N 件寻常之物」的 N(无该行即 0) */
+function overflowOf(notes: string[]): number {
+  const line = notes.find(n => n.includes('件寻常之物'))
+  return line ? Number(/另有\s*(\d+)\s*件/.exec(line)![1]) : 0
+}
+
 /** mock 后全链路确定:同输入必得同产出 */
 function runOnce(mode: 'normal' | 'deep'): Yields {
   setActivePinia(createPinia())
   seedSession(mode)
   const beforePage = useResourcesStore().page
-  const beforeDust = useResourcesStore().dust
   const beforePills = invPills()
-  settleOffline(Date.now())
+  const summary = settleOffline(Date.now())!
   return {
     page: Math.max(0, useResourcesStore().page - beforePage),
-    // 装备按期望计件(equipCount),实际生成受 rng 与 6 件 cap 约束;取器灵尘增量对比最稳
-    equipChanceCount: Math.max(0, useResourcesStore().dust - beforeDust),
+    overflowCount: overflowOf(summary.notes),
     // 丹药入囊数(inventory.pills 各 id 计数之和)
     pills: invPills() - beforePills
   }
@@ -126,9 +131,9 @@ describe('离线普通战产出吃模式倍率(确定性)', () => {
   it('装备掉落同样按模式倍率约 1.4 放大', () => {
     const deep = runOnce('deep')
     const normal = runOnce('normal')
-    expect(normal.equipChanceCount).toBeGreaterThan(0)
-    expect(deep.equipChanceCount).toBeGreaterThanOrEqual(Math.round(normal.equipChanceCount * 1.3))
-    expect(deep.equipChanceCount).toBeLessThanOrEqual(Math.round(normal.equipChanceCount * 1.5))
+    expect(normal.overflowCount).toBeGreaterThan(0)
+    expect(deep.overflowCount).toBeGreaterThanOrEqual(Math.round(normal.overflowCount * 1.3))
+    expect(deep.overflowCount).toBeLessThanOrEqual(Math.round(normal.overflowCount * 1.5))
   })
 
   it('普通战会拾得丹药,且与在线 afterWin 同源按模式倍率放大(≈1.4)', () => {

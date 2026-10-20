@@ -33,6 +33,7 @@ import { makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
 import { buildPlayerSnap } from './playerSnap'
 import { generateEquipment } from './equipGen'
 import { onAcquire, acquireEquipment, afterWin, randomDropPill } from './loot'
+import { avgDustPerDrop } from './economySim'
 import { autoResolveEvent, regionEventPoolFor } from './eventEngine'
 import { clearRegionAndUnlockNext, exploreEventChance, regionBossCleared, dangerFactorFor, explorationRules } from './exploration'
 import { currentRegionEvent, regionEventDef } from './regionEvent'
@@ -274,7 +275,13 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         }
         trip.items += realCount
         if (equipCount > realCount) {
-          resources.addSmall('dust', (equipCount - realCount) * 4)
+          // 溢出件数本应是「这批新掉落被分解」的尘 —— 与在线 afterWin 同一把尺:
+          // 在线每件掉落经 acquireInto→salvageOf 化尘(底材,按品质阶),离线按同层级的
+          // 平均分解尘 avgDustPerDrop(tier) 折算(单源取 economySim 的采样口径)。
+          // 旧固定 4 尘只在中阶(约 tier 12)碰巧对得上,低阶多发、高阶却少给近一个数量级,
+          // 与「离线≈在线 N 场」不变量相背。
+          const overflowDust = Math.round((equipCount - realCount) * avgDustPerDrop(region.tier))
+          resources.addSmall('dust', overflowDust)
           notes.push(`另有 ${equipCount - realCount} 件寻常之物,已折作器灵尘`)
         }
         // 丹药 —— 补上离线普通战漏掉的掉落通道,与在线 afterWin 同源:

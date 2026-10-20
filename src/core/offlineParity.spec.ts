@@ -61,6 +61,16 @@ describe('离线历练 · doubleDropRate 与在线同源', () => {
   })
 })
 
+describe('离线历练 · 溢出装备折尘与在线化尘口径同源(单一事实源)', () => {
+  it('溢出件数折尘走 avgDustPerDrop(tier),不再写死固定 4 尘', () => {
+    const offline = readFileSync(src('./offline.ts'), 'utf8')
+    // 溢出件数折尘 = 溢出数 × 同层平均分解尘(economySim 采样口径,与在线 salvageOf 同族)
+    expect(offline).toContain('overflowDust = Math.round((equipCount - realCount) * avgDustPerDrop(region.tier))')
+    // 不再存在写死的「×4」化尘:退回固定 4 即红
+    expect(offline).not.toMatch(/realCount\) \* 4/)
+  })
+})
+
 describe('离线历练 · 事件池与在线同源(本世路线)', () => {
   it('离线事件走 placeContent 的 regionEventPoolFor,不再只剩硬编码通用池', () => {
     const offline = readFileSync(src('./offline.ts'), 'utf8')

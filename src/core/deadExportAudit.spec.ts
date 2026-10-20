@@ -304,7 +304,10 @@ describe('死导出审计', () => {
     div: '数值原语:gNum 库的除法(含零除分支),gnum.spec 覆盖;库完整性优先于"当前无人调"',
     lt: '数值原语:gNum 比较,供公式单调性用例读',
     gt: '数值原语:gNum 比较,与 lt 成对',
-    parseClassicalDuration: '反查原语:classicalDuration 把时长渲染成古语时制后,由它对文案做 round-trip 自检(timeUnits.spec 守卫),运行时从不解析古语文案'
+    parseClassicalDuration: '反查原语:classicalDuration 把时长渲染成古语时制后,由它对文案做 round-trip 自检(timeUnits.spec 守卫),运行时从不解析古语文案',
+    fullEconomyAudit: '经济闭环审计主入口:平均每境产出/自给/死资源汇总,仅 economySim.spec 读;economySim 因 avgDustPerDrop 被离线借用而成为运行时共享源,此审计汇总不由运行时接线',
+    qiFillSeconds: '灵脉充盈计时审计口径:仅 economySim.spec 校验灵所充盈曲线用时,运行时走灵脉实时投点',
+    expIncomeAudit: '修为收入审计汇总:仅 expIncome.spec 读;economySim 经 expIncome 取 winsPerHour/tripExpSecsPerHour 使 expIncome 成为运行时共享源,此审计头不进运行时'
   }
 
   it('运行时模块里的导出,不能只被 spec 用到 —— 那是骨架空转的样子', () => {

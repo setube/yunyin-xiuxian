@@ -20,6 +20,9 @@ import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { useDongfuStore } from '@/stores/dongfu'
+import { useResourcesStore } from '@/stores/resources'
+import { regionDef } from '@/data/regions'
+import { avgDustPerDrop } from './economySim'
 import { EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
 
 // rng 全响应固定:概率判定处处 0.5、pick 恒取首项、int/float 取左端 —— 全链路确定
@@ -101,5 +104,49 @@ describe('离线装备掉落 · 每场概率吃在线那道封顶(行为层·确
     )
     // 钉死这不是「0.99 恰好与 0.9 同 round」的巧合:两者必须真的分得开
     expect(Math.round(summary.wins * 0.99)).not.toBe(Math.round(summary.wins * 0.9))
+  })
+
+  /**
+   * 溢出件数折尘与在线化尘口径同源(avgDustPerDrop),而非固定 4 尘。
+   * 旧固定 4 只在中阶(约 tier 12,avgDust≈4.2)碰巧对得上:低阶多发、高阶少给近一个数量级。
+   * 用高阶地界(道祖悟道崖 tier 32,avgDust≈77)验:溢出折尘 ≥ 溢出数 × 同层分解尘均值;
+   * 若退回固定 4(只给溢出×4),该下界必不满足 —— 稳红。
+   */
+  it('溢出件数折尘按 avgDustPerDrop(tier) 折算,高阶不再按固定 4 少付', () => {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    const dongfu = useDongfuStore()
+    game.markStarted()
+    const started = Date.now() - SESSION_HOURS * 3600 * 1000
+    game.lastActiveAt = started
+    game.totalPlaySec = 60 * 60 // 本日第 1 小时,避开跨天时序
+    player.major = 20 // 混沌道祖,打得动高阶地界
+    player.exp = { m: 0, e: 0 }
+    dongfu.setLevel('mansion', 8) // 拉高离线上限,保证 simSec 不被 dt 掐短、溢出足够多
+    adventure.setSession({
+      regionId: 'wudaoya', // 道祖悟道崖,tier 32
+      mode: 'normal',
+      startedAt: started,
+      endsAt: started + 999 * 3600 * 1000,
+      nextBattleAt: started + EXPLORE_BATTLE_INTERVAL * 1000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: { m: 0, e: 0 },
+      expGain: { m: 0, e: 0 },
+      itemGain: 0
+    })
+
+    const beforeDust = useResourcesStore().dust
+    const summary = settleOffline(Date.now())!
+    const dustGain = useResourcesStore().dust - beforeDust
+    const overflow = overflowFromNotes(summary.notes)
+    const tier = regionDef('wudaoya')!.tier
+    // 溢出折尘下界 = 溢出数 × 同层平均分解尘;旧固定 4(溢出×4)在 32 阶远低于它,退回必红
+    const floor = Math.round(overflow * avgDustPerDrop(tier))
+    expect(dustGain, `溢出折尘应 ≥ 溢出${overflow} × avgDustPerDrop(${tier})=${floor},不可退回固定 4`).toBeGreaterThanOrEqual(floor)
+    // 显式卡死这不是「4 恰好也过下界」的巧合:必须明显高于固定 4 的溢出贡献
+    expect(dustGain).toBeGreaterThan(overflow * 6)
   })
 })
