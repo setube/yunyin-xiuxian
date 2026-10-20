@@ -161,4 +161,20 @@ describe('player.rebirth 转世状态重置', () => {
     expect(e1.lastLossAt, '最后败北取较晚者').toBe(300)
     expect(e1.avengedAt, '首次雪耻取较早那次').toBe(800)
   })
+
+  /**
+   * 镇压结算逐条遍历 suppressedRegions:同一位写两遍会让同一片地界
+   * 每拍产出两份灵石(离线一并放大)。资格表重复则让「是否已取得」判重。
+   */
+  it('sanitize:镇压表/资格表按地界去重(不重复结算收益)', () => {
+    const p = usePlayerStore()
+    p.major = 20 // 让所有地界都「在境界之内」,专测去重而非可达性过滤
+    p.$patch({
+      suppressedRegions: ['qingyun', 'qingyun'],
+      suppressQualified: ['qingyun', 'qingyun', 'luoxia', 'luoxia']
+    } as never)
+    p.sanitize()
+    expect(p.suppressedRegions, '镇压表同一位只留一份').toEqual(['qingyun'])
+    expect(p.suppressQualified, '资格表同一位只留一份').toEqual(['qingyun', 'luoxia'])
+  })
 })

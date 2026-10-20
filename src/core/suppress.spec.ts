@@ -292,6 +292,28 @@ describe('区域镇压系统', () => {
       const gain = resources.spiritStone.m - initialStone.m
       expect(gain).toBeGreaterThan(0)
     })
+
+    /**
+     * 结算逐条遍历镇压表:同一位写两遍(坏档/重复导入)会产出两份灵石。
+     * 读档 sanitize 已去重,这里兜住内存里直接塞进来的重复,收益只该结一次。
+     */
+    it('同一地界写两遍只结算一份收益', () => {
+      const player = usePlayerStore()
+      player.major = 3
+
+      player.suppressedRegions = ['qingyun']
+      const one = settleSuppressedRegions(3600)!
+      const singleStone = one.stone
+
+      setActivePinia(createPinia())
+      const p2 = usePlayerStore()
+      p2.major = 3
+      p2.suppressedRegions = ['qingyun', 'qingyun']
+      const dup = settleSuppressedRegions(3600)!
+
+      // 同一小时、同一地界:重复条目不该多出一份
+      expect(dup.stone, '重复地界不该结算两份灵石').toEqual(singleStone)
+    })
   })
 })
 

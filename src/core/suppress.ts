@@ -214,7 +214,8 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
     useUiStore().toast(`${names}妖气复聚,镇压松动——此地重新成为历练之地`, 'info')
     // 复苏后本 tick 不再为这些区域结算
   }
-  const active = player.suppressedRegions.filter(id => !revived.includes(id))
+  // 同一位写两遍时逐条结算会产出两份收益(读档 sanitize 已去重,此处兜住内存里的重复)
+  const active = [...new Set(player.suppressedRegions)].filter(id => !revived.includes(id))
   if (active.length === 0) return null
 
   for (const regionId of active) {

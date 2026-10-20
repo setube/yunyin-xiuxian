@@ -829,8 +829,12 @@ export const usePlayerStore = defineStore(
       // (minRealm≤境界,转世前也这么压过)原样保留。suppressedSince 同步清,免得一旧一新。
       if (typeof suppressedSince.value !== 'object' || suppressedSince.value === null) suppressedSince.value = {}
       const suppressReachable = (id: string): boolean => (regionDef(id)?.minRealm ?? Infinity) <= major.value
-      suppressedRegions.value = suppressedRegions.value.filter(suppressReachable)
-      suppressQualified.value = suppressQualified.value.filter(suppressReachable)
+      /**
+       * 镇压表按地界去重:结算逐条遍历它,同一位写两遍会让同一片地界
+       * 每拍产出两份灵石/物产/装备(离线一并放大);资格表同理会把「已镇压」判重。
+       */
+      suppressedRegions.value = [...new Set(asStringArray(suppressedRegions.value))].filter(suppressReachable)
+      suppressQualified.value = [...new Set(asStringArray(suppressQualified.value))].filter(suppressReachable)
       suppressedSince.value = Object.fromEntries(Object.entries(suppressedSince.value).filter(([id]) => suppressReachable(id)))
       for (const id of suppressedRegions.value) {
         if (!suppressQualified.value.includes(id)) suppressQualified.value.push(id)
