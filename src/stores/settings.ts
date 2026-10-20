@@ -18,7 +18,20 @@ export const useSettingsStore = defineStore(
     /** 音量 0~100 */
     const musicVol = ref(50)
     const sfxVol = ref(70)
-    const reduceMotion = ref(false)
+    /**
+     * 减少动效 —— 默认值从**系统偏好**播种(prefers-reduced-motion)。
+     *
+     * style.css 的媒体查询只压得住 CSS 动画,战斗回放是 JS 驱动的
+     * (CombatPanel / GauntletPanel 的逐条投入),只认这个应用内开关 ——
+     * 系统关了动效的人,若这里永远 false 起步,照样被迫逐条看战报。
+     * 播种只在**无持久化档的首次创建**生效:持久化水合随后盖回,老玩家
+     * 显式存下的 true/false 不会被系统偏好改写。
+     */
+    const reduceMotion = ref(
+      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        : false
+    )
     /**
      * 遇事勿扰(玩家反馈「手动关闭际遇事件触发」):历练撞见际遇/机缘/奇缘时,
      * 不再弹窗 —— 立刻按默认好愿了结(与超时自动处置同一条路),奖励照拿、不卡手。

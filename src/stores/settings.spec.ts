@@ -4,11 +4,23 @@
  * 这条判据直接影响顶栏那颗朱砂圆点与设置行的「新」角标 —— 就算永远不亮,
  * 也不许在「已是当前版本」时还亮着(那会让玩家反复点、点了又不熄)。
  */
-import { describe, expect, it, beforeEach } from 'vitest'
+import { afterEach, describe, expect, it, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useSettingsStore } from './settings'
 import { QUALITIES } from '@/data/qualities'
 import { APP_VERSION } from '@/utils/appVersion'
+
+function stubMatchMedia(matches: boolean): void {
+  vi.stubGlobal('window', {
+    matchMedia: (query: string) => ({
+      matches: query.includes('prefers-reduced-motion') ? matches : false
+    })
+  })
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('设置 · 版本与更新', () => {
   beforeEach(() => {
@@ -80,5 +92,25 @@ describe('设置 · 布尔开关坏档清洗', () => {
     expect(s.musicOn, '数字 1 不再当成交(on)').toBe(false)
     expect(s.sfxOn, '字符串"true"不再当成交(on)').toBe(false)
     expect(s.privacyAccepted, '字符串"false"不再假装已同意').toBe(false)
+  })
+})
+
+describe('设置 · reduceMotion 系统偏好播种', () => {
+  it('系统开了减少动效:首次创建的应用内默认值随之打开', () => {
+    stubMatchMedia(true)
+    setActivePinia(createPinia())
+    expect(useSettingsStore().reduceMotion).toBe(true)
+  })
+
+  it('系统没开:维持 false,行为不变', () => {
+    stubMatchMedia(false)
+    setActivePinia(createPinia())
+    expect(useSettingsStore().reduceMotion).toBe(false)
+  })
+
+  it('环境没有 window(node / 未来宿主):不抛,回落 false', () => {
+    vi.stubGlobal('window', undefined)
+    setActivePinia(createPinia())
+    expect(useSettingsStore().reduceMotion).toBe(false)
   })
 })
