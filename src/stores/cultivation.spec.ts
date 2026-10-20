@@ -221,9 +221,10 @@ describe('sanitize:功法等级与悟道分支加固', () => {
 
   /**
    * 同一状态写两条,`buffMods` 会把词条叠两次(聚灵 +50% 变 +100%)。
-   * 正常写入口按 defId 合并,重复条目只来自坏档 —— 合并回一条,时长取较晚者。
+   * 写入口 addBuff 只会有一条,故重复行是坏档复制 —— 只留剩余最久的那一行,
+   * 到期与本命时长都取该行,详情页报的份数与剩余时间才对得上。
    */
-  it('sanitize:同一状态两条合并成一条,词条不再翻倍,时长取较晚', () => {
+  it('sanitize:同一状态两条只留剩余最久的一条,词条不再翻倍', () => {
     const c = useCultivationStore()
     const now = Date.now()
     c.$patch({
@@ -234,8 +235,8 @@ describe('sanitize:功法等级与悟道分支加固', () => {
     } as never)
     c.sanitize()
     expect(c.buffs, '同一状态只留一条').toHaveLength(1)
-    expect(c.buffs[0]!.endsAt, '时长取较晚的到期时刻').toBe(now + 900_000)
-    expect(c.buffs[0]!.added, '本命累计相加,与连服两份等价').toBe(3_600_000)
+    expect(c.buffs[0]!.endsAt, '留剩余最久的那一行').toBe(now + 900_000)
+    expect(c.buffs[0]!.added, '本命时长与留下的那一行同源,不虚报两份').toBe(1_800_000)
     expect(c.buffMods.cultivationSpeed, '聚灵只算一次').toBe(0.5)
   })
 })

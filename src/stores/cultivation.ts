@@ -58,37 +58,35 @@ export const useCultivationStore = defineStore(
       subGongfa.value = [...new Set(asStringArray(subGongfa.value))].filter(id => fixedLearned[id] !== undefined)
       /**
        * Buff 同一状态写两条时,`buffMods` 会把同一份词条叠加两次(面板/战斗凭空多一截)。
-       * 正常写入口(addBuff)总是按 defId 合并,重复条目只可能来自坏档/重复导入 ——
-       * 这里按 defId 合并回一条:时长取较晚的到期时刻、本命累计相加,与「连服两份」等价。
+       *
+       * 写入口 addBuff 始终按 defId 合并成**一条**(旧实现也只是刷新同一条),
+       * 故同一 defId 的多行只可能来自坏档/重复导入 —— 不是「两次独立服药」。
+       * 因此这里只留**剩余最久**的那一行,连同它自己的 added:显示与到期同源
+       * (不会报两份剂量却提前失效),也不把一条坏档复制成凭空多出的药力。
        */
       const now = Date.now()
-      const mergedBuffs = new Map<string, BuffInstance>()
-      for (const b of asArray<BuffInstance>(buffs.value, [], b => !!b && typeof (b as BuffInstance).defId === 'string')) {
-        const prev = mergedBuffs.get(b.defId)
-        const curAdded = asFiniteNumber(b.added, 0, 0)
-        // 老档没有 added 时保持「缺省」,不要写成 0 —— BuffDialog 用 `added ?? 单份时长`
-        // 兜底,0 会让「全程」变成 0、进度条永远空着。
-        const added = prev?.added === undefined && b.added === undefined ? undefined : (prev?.added ?? 0) + curAdded
-        mergedBuffs.set(b.defId, {
-          defId: b.defId,
-          endsAt: Math.max(prev?.endsAt ?? 0, asFiniteNumber(b.endsAt, now, 0)),
-          ...(added === undefined ? {} : { added })
-        })
+      const surviving = new Map<string, BuffInstance>()
+      for (const b of asArray<BuffInstance>(buffs.value, [], x => !!x && typeof (x as BuffInstance).defId === 'string')) {
+        const cur = { ...b, endsAt: asFiniteNumber(b.endsAt, now, 0) }
+        const prev = surviving.get(b.defId)
+        if (!prev || cur.endsAt > prev.endsAt) surviving.set(b.defId, cur)
       }
-      buffs.value = [...mergedBuffs.values()].map(b => {
+      buffs.value = [...surviving.values()].map(b => {
         const capSec = buffCapSec(b.defId)
         const capMs = capSec === undefined ? undefined : capSec * 1000
+        const added =
+          typeof b.added === 'number' && Number.isFinite(b.added) && b.added > 0 ? b.added : undefined
         if (capMs === undefined) {
           // 不受丹药上限约束的状态(闭关/重伤/祝福):仅保证时限是有限数字,不另加局部上限
-          return b
+          return { defId: b.defId, endsAt: b.endsAt, ...(added === undefined ? {} : { added }) }
         }
         // 受上限的丹药 buff:读档复钳到 2× 单颗上限(与 addBuff 同口径)。
         // 此前只钳写入口、没钳读档——坏档/老档若带超限时长(如 5× 的「无限囤」残留),
-        // 会横跨整段会话有效,尤以修速类(+50% 聚灵)为甚。endsAt 钳在 now+cap、added 钳在 cap。
+        // 会横跨整段会话有效,尤以修速类(+50% 聚灵)为甚。
         return {
-          ...b,
+          defId: b.defId,
           endsAt: Math.min(b.endsAt, now + capMs),
-          ...(b.added === undefined ? {} : { added: Math.min(b.added, capMs) })
+          ...(added === undefined ? {} : { added: Math.min(added, capMs) })
         }
       })
       // 悟道分支:只留「bid 真属于 gid 且该功法已习得」的条目 —— 分支是不装配仍生效的永久
