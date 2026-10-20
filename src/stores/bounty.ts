@@ -58,10 +58,16 @@ export const useBountyStore = defineStore(
       const bm = asFiniteNumber(bountyMajor.value, -1)
       bountyMajor.value = bm >= 0 ? Math.min(MAX_MAJOR, Math.floor(bm)) : null
       const clean: BountySlot[] = []
+      /**
+       * 单号必须唯一:交货按 idx 认单,两张单同号时 `claim(idx)` 只会命中先出现的
+       * 那一张,后一张永远交不了(点了没反应),玩家还以为交的是它。
+       * 这里直接重排成 0..n-1 —— 与货架不同,订单的赏格都写在单子上(不按 idx 再生),
+       * 改号不会让价与货分叉,故理顺号比丢单更合适。
+       */
       for (const raw of asArray<unknown>(orders.value)) {
         if (!raw || typeof raw !== 'object' || !('kind' in raw) || !isKind(raw.kind)) continue
         clean.push({
-          idx: asNonNegInt('idx' in raw ? raw.idx : clean.length, clean.length),
+          idx: clean.length,
           kind: raw.kind,
           kindId: 'kindId' in raw && typeof raw.kindId === 'string' ? raw.kindId : '',
           target: Math.max(1, asNonNegInt('target' in raw ? raw.target : 1, 1)),

@@ -122,6 +122,30 @@ describe('坊市悬赏板 · 交货', () => {
     expect(b.orders[1]!.claimed, 'claimed 非真即假').toBe(false)
     expect(b.bountyAt).toBe(0)
   })
+
+  /**
+   * 交货按 idx 认单:两张单同号时 `claim(idx)` 只命中先出现的那张,后一张
+   * 永远交不了(点了没反应)。订单赏格都写在单子上(不按 idx 再生),故理顺号
+   * 比丢单更合适 —— 但必须**每张单都还能交**。
+   */
+  it('sanitize:重复单号重排成唯一号,两张单都交得了', () => {
+    const b = useBountyStore()
+    const res = useResourcesStore()
+    b.$patch({
+      orders: [
+        { kind: 'herb', kindId: 'herb', idx: 0, target: 1, tier: 0, reward: { m: 5, e: 0 }, extra: 0, claimed: false },
+        { kind: 'herb', kindId: 'herb', idx: 0, target: 1, tier: 0, reward: { m: 6, e: 0 }, extra: 0, claimed: false }
+      ] as unknown as never,
+      // 别让 sync 换掉这版单(测的是修形后的交货,不是刷新)
+      bountyAt: FAR
+    })
+    b.sanitize()
+    expect(b.orders.map(o => o.idx).sort()).toEqual([0, 1])
+    res.herbByGrade[1] = 10
+    expect(b.claim(0)).toBe('ok')
+    expect(b.claim(1), '第二张单也该交得了').toBe('ok')
+    expect(b.orders.every(o => o.claimed)).toBe(true)
+  })
 })
 
 describe('坊市悬赏板 · 募草工价上货时刻冻结', () => {
