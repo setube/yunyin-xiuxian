@@ -24,6 +24,11 @@ import { AGE_YEARS_PER_HOUR } from '@/data/constants'
 
 /** 区域统计数据(使用指数移动平均) */
 export interface RegionStats {
+  /**
+   * 只有**胜场**会写进这里:在线 `runBattle` 的 `updateRegionStats` 位于
+   * `if (result.win)` 内,且一败即中止历练。字段名沿用旧档,别按字面读成
+   * 「打过的总场次」—— 界面上它显示为「胜 N 场」。
+   */
   totalFights: number
   avgRounds: number          // 指数移动平均回合数
   avgDamageTakenPct: number  // 指数移动平均受伤百分比
@@ -33,7 +38,7 @@ export interface RegionStats {
 
 /** 镇压判定阈值(界面也用它写规则说明,避免两处各写一套数字) */
 export const SUPPRESS_THRESHOLDS = {
-  minFights: 20,              // 最少战斗次数
+  minWins: 20,                // 最少胜场(败场不计,见 RegionStats.totalFights)
   maxAvgRounds: 3,            // 平均回合数上限
   maxAvgDamageTaken: 0.10,    // 平均受伤百分比上限 10%
 }
@@ -98,32 +103,41 @@ export function suppressYield(regionId: string): { id: SuppressResource; name: s
 
 /**
  * 判定玩家是否已镇压某区域
- * 条件:≥20 战,平均回合 ≤3,平均受伤 ≤10%
+ * 条件:胜 ≥20 场,平均回合 ≤3,平均受伤 ≤10%
+ *
+ * 「20」数的是**胜场**而不是交战次数:在线 `runBattle` 的 `updateRegionStats`
+ * 就在 `if (result.win)` 内,而且一败即 `stopExploration` 中止这趟历练 ——
+ * 败场走不到区域账。镇压的语义是「在此地已成统治之势」,连败不该帮着凑数。
  */
 export function checkSuppression(player: ReturnType<typeof usePlayerStore>, regionId: string): boolean {
   if (player.suppressedRegions.includes(regionId)) return false
 
   const p = suppressionProgress(player.regionStats[regionId])
-  return p.fightsOk && p.roundsOk && p.damageOk
+  return p.winsOk && p.roundsOk && p.damageOk
 }
 
 /**
  * 镇压资格进度 —— 三条判据各差多少,给界面直接把未达标项指出来。
  *
- * 从前三条阈值(20 战 / 均≤3 回合 / 均受伤≤10%)只活在 checkSuppression 里,
- * 玩家只看到「能不能镇压」这个结果,看不到自己卡在哪一项上 —— 打够了场数却总压不住时,
+ * 从前三条阈值(20 胜 / 均≤3 回合 / 均受伤≤10%)只活在 checkSuppression 里,
+ * 玩家只看到「能不能镇压」这个结果,看不到自己卡在哪一项上 —— 打够了胜场却总压不住时,
  * 唯一的解释渠道是去读源码。纯函数:吃 stats,不碰 store,便于断言。
+ *
+ * 字段叫 `wins` 而不是 `fights`:它读的是 `RegionStats.totalFights`,而那个字段
+ * 历史上只由胜场写入(见 checkSuppression 的说明)。叫「战」会让界面写着
+ * 「7/20 战」、实际却在数胜场,读的人都以为败场也算 —— 这个歧义曾让一次修复
+ * 把离线败场塞进地界账,反而给挂机开出一条镇压捷径。
  */
 export interface SuppressionProgress {
-  fights: number
-  needFights: number
+  wins: number
+  needWins: number
   /** 指数移动平均回合数;无战绩时为 Infinity(界面据此不显示假平均值) */
   avgRounds: number
   maxAvgRounds: number
   /** 指数移动平均受伤百分比(0~1,界面乘 100 显示);无战绩时为 1 */
   avgDamagePct: number
   maxAvgDamagePct: number
-  fightsOk: boolean
+  winsOk: boolean
   roundsOk: boolean
   damageOk: boolean
   /** 是否已有战绩可谈平均值 */
@@ -133,25 +147,25 @@ export interface SuppressionProgress {
 }
 
 export function suppressionProgress(stats: RegionStats | undefined): SuppressionProgress {
-  const fights = Math.max(0, stats?.totalFights ?? 0)
-  const hasStats = fights > 0
+  const wins = Math.max(0, stats?.totalFights ?? 0)
+  const hasStats = wins > 0
   const avgRounds = stats ? stats.avgRounds : Number.POSITIVE_INFINITY
   const avgDamagePct = stats ? stats.avgDamageTakenPct : 1
-  const fightsOk = fights >= SUPPRESS_THRESHOLDS.minFights
+  const winsOk = wins >= SUPPRESS_THRESHOLDS.minWins
   const roundsOk = avgRounds <= SUPPRESS_THRESHOLDS.maxAvgRounds
   const damageOk = avgDamagePct <= SUPPRESS_THRESHOLDS.maxAvgDamageTaken
   return {
-    fights,
-    needFights: SUPPRESS_THRESHOLDS.minFights,
+    wins,
+    needWins: SUPPRESS_THRESHOLDS.minWins,
     avgRounds,
     maxAvgRounds: SUPPRESS_THRESHOLDS.maxAvgRounds,
     avgDamagePct,
     maxAvgDamagePct: SUPPRESS_THRESHOLDS.maxAvgDamageTaken,
-    fightsOk,
+    winsOk,
     roundsOk,
     damageOk,
     hasStats,
-    qualified: fightsOk && roundsOk && damageOk
+    qualified: winsOk && roundsOk && damageOk
   }
 }
 

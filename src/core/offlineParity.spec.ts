@@ -186,6 +186,33 @@ describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压
   })
 
   /**
+   * 地界战绩只数**胜场** —— 这是与在线同源的那把尺,不是「漏了败场」。
+   *
+   * 在线 `runBattle` 的 `updateRegionStats` 就在 `if (result.win)` 内,而且一败
+   * 即 `stopExploration` 中止这趟历练,败场根本走不到区域账;离线按期望值整段
+   * 结算没有「一败即止」,若照打过的每一场去记,7 胜 13 负也能凑满镇压的
+   * 「20 胜」,凭空多出一条挂机捷径。
+   *
+   * 故障注入:把离线改回传入 `battles - wins` 的批量 → 本条红。
+   */
+  it('离线批量只按胜场入账,不把败场掺进地界战绩', () => {
+    const offline = readFileSync(src('./offline.ts'), 'utf8')
+    // 传进去的必须是胜场 wins;把 battles - wins 塞进区域账就是又开了一条挂机捷径
+    expect(offline, '离线区域账按胜场批量入账').toMatch(/applyRegionWinBatch\(\s*region\.id,\s*wins,/)
+    expect(offline, '不许把败场数塞进地界战绩').not.toMatch(
+      /applyRegion\w*\([^)]*\bbattles\s*-\s*wins/
+    )
+
+    const player = usePlayerStore()
+    // 20 场里胜 7 负 13:只记 7 胜,不够镇压门槛
+    player.applyRegionWinBatch('luoxia', 7, 2, 0.01)
+    const stats = player.regionStats.luoxia!
+    expect(stats.totalFights, '批量写的是胜场数,不是打过的总场次').toBe(7)
+    expect(stats.consecutiveWins, '净胜批次里连胜照常累加').toBe(7)
+    expect(player.regionWins.luoxia, '兴衰胜场与区域战绩同一把尺').toBe(7)
+  })
+
+  /**
    * 会话账里的 losses 不是摆设:在线每败一场就 +1,提前收手时
    * 「胜+负 ≥3 才算走过一趟」的判据也读它。离线从前只加 wins,
    * 挂一夜回来这趟仍像「只赢没输」,3 战门槛也永远差着。

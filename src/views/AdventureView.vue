@@ -72,7 +72,7 @@
         这里只交代一句总纲(四条长句堆在列表前面就是一堵文字墙)。
       -->
       <p class="text-[10px] leading-relaxed text-ink-faint">
-        镇压门槛:{{ SUPPRESS_THRESHOLDS.minFights }} 战 · 均
+        镇压门槛:胜 {{ SUPPRESS_THRESHOLDS.minWins }} 场 · 均
         {{ SUPPRESS_THRESHOLDS.maxAvgRounds }} 回合 · 受伤 ≤{{ Math.round(SUPPRESS_THRESHOLDS.maxAvgDamageTaken * 100) }}%;
         资格永久,守满 {{ REVIVE_AFTER_HOURS }} 小时妖气复聚。
       </p>
@@ -215,8 +215,8 @@
             class="mt-1 text-[10px] leading-relaxed tabular"
           >
             <span class="text-ink-soft">镇压资格</span>
-            <span class="ml-1" :class="row.progress.fightsOk ? 'text-jade' : 'text-ink-soft'">
-              {{ row.progress.fights }}/{{ row.progress.needFights }} 战
+            <span class="ml-1" :class="row.progress.winsOk ? 'text-jade' : 'text-ink-soft'">
+              {{ row.progress.wins }}/{{ row.progress.needWins }} 胜
             </span>
             <template v-if="row.progress.hasStats">
               <span class="ml-1.5" :class="row.progress.roundsOk ? 'text-ink-faint' : 'text-cinnabar'">
