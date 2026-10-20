@@ -460,8 +460,22 @@ describe('镇压速率:显示与结算同源', () => {
     const view = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
     expect(view, '要有一枚每秒推进的读数').toContain('const now = useNow()')
     expect(view, '复聚倒计时读 now.value').toContain('hoursUntilRevive(player.suppressedSince[r.id], now.value)')
-    expect(view, '复苏判定读同一读数').toContain('isReviving(player.suppressedSince[r.id], now.value)')
     expect(view, '已守时长也读同一读数').toContain('(now.value - since) / 3_600_000')
+  })
+
+  /**
+   * 「妖气复聚」是落盘的世界状态,不是镇压到点的临时读数。
+   *
+   * `adventure.revived` 由 core/regionRevival 写入并存档;界面若拿
+   * `isReviving(suppressedSince)` 现算,两件事就被混成一件 —— 复聚只在结算
+   * 那一瞬的 toast 里露过面,之后再进历练页,地界既没有「妖气复聚」章、
+   * 也不说「再历一程即可复靖」,玩家看不出旧主已经回来了。
+   * 故障注入:把 `adventure.revived.includes` 改回 `isReviving(...)` → 本条红。
+   */
+  it('历练页的「妖气复聚」读落盘状态 adventure.revived,不拿镇压到期现算', () => {
+    const view = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
+    expect(view, '复聚章与一行指引要读同一份落盘状态').toContain('const revived = adventure.revived.includes(r.id)')
+    expect(view, '旧主归来要说出下一步:再历一程即可复靖').toContain('旧主归来,再历一程即可复靖')
   })
 })
 

@@ -124,6 +124,8 @@
                 {{ REALMS[row.def.minRealm]?.name }}境相宜 ·
                 <span :class="row.def.danger >= 4 ? 'text-cinnabar' : ''">{{ DANGER_NAMES[row.def.danger] }}</span>
                 <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界尚浅,恐有性命之忧</span>
+                <!-- 复聚要说出「该怎么办」:旧主归来了,再历一程即可复靖 -->
+                <span v-if="row.revived" class="ml-1 text-cinnabar">· 旧主归来,再历一程即可复靖</span>
                 <!-- 掉落阶位与 generateEquipment 用的同一档(region.tier):「此界掉几阶」出发前就亮着。
                      nowrap:320px 上这句曾被从空格处断行,数字与量词拆成两行(layout-check 抓的) -->
                 <span class="ml-1 whitespace-nowrap text-ink-soft">· {{ produceTierText(row.def.tier) }}</span>
@@ -359,7 +361,7 @@
   import { pendingChainStages } from '@/core/eventEngine'
   import { foeOriginPartsText } from '@/core/battleAnalysis'
   import { SUPPRESS_THRESHOLDS, suppressRateFor, suppressionProgress } from '@/core/suppress'
-  import { REVIVE_AFTER_HOURS, hoursUntilRevive, regionRecallFor, prosperityName, isReviving, prosperityYieldMult } from '@/core/worldMemory'
+  import { REVIVE_AFTER_HOURS, hoursUntilRevive, regionRecallFor, prosperityName, prosperityYieldMult } from '@/core/worldMemory'
   import { mulN, gn } from '@/utils/gnum'
   import type { WorldId } from '@/types'
   import { detectBuild } from '@/core/buildDetect'
@@ -472,7 +474,14 @@
       const eco = regionEcology(r)
       const suppressed = player.suppressedRegions.includes(r.id)
       const recall = regionRecallFor(r.id)
-      const revived = suppressed && isReviving(player.suppressedSince[r.id], now.value)
+      /**
+       * 妖气复聚是**落盘的世界状态**(core/regionRevival 写 adventure.revived),
+       * 不是「镇压到点的临时读数」:两者含义不同 —— 复聚只发生在已靖地界,
+       * 而镇压满 72 小时只是松开镇压。此前这里拿 `isReviving` 现算,
+       * 于是 `adventure.revived` 只写不读,复聚只在结算那一瞬的 toast 里出现过,
+       * 之后再进历练页,地界既没有「妖气复聚」章、也不说「再历一程即可复靖」。
+       */
+      const revived = adventure.revived.includes(r.id)
       return {
         def: r,
         // 旧链:这处地界是否**已被发现** —— 决定列表可见性、锁图标与简介
