@@ -29,7 +29,7 @@ import { gongfaModsAt } from '@/stores/cultivation'
 import { personalityEffects } from '@/core/petPersonality'
 import { formatNum, formatPercent } from '@/utils/format'
 import { classicalDuration } from '@/data/timeUnits'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 
 // ============ 装备 ============
 

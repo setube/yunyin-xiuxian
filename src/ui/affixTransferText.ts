@@ -8,7 +8,7 @@ import type { AffixRoll, AnyStatKey, GNum, StatMods } from '@/types'
 import { affixDef, affixValue } from '@/data/affixes'
 import { QUALITIES } from '@/data/qualities'
 import { formatGN } from '@/utils/format'
-import { STAT_NAMES, signedPercent } from './statNames'
+import { STAT_NAMES, signedPercent } from '@/data/statNames'
 import type { TransferBlock, TransferShort } from '@/core/affixTransfer'
 
 /** 原因码 → 标签。rank 另由 transferBlockText 补上「需某品」 */

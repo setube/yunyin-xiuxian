@@ -261,7 +261,7 @@
   import { applyLoadout, captureLoadout, deleteLoadout, renameLoadout } from '@/core/loadoutService'
   import { useLoadoutsStore, MAX_LOADOUTS, type Loadout } from '@/stores/loadouts'
   import { cnNumber } from '@/utils/format'
-  import { STAT_NAMES, signedPercent, statCaveat } from '@/ui/statNames'
+  import { STAT_NAMES, signedPercent, statCaveat } from '@/data/statNames'
   import { isSoftCapped } from '@/core/statsCalc'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import BuildLabPanel from '@/components/build/BuildLabPanel.vue'

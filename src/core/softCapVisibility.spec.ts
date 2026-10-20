@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { SOFT_CAPS } from '@/data/constants'
 import { isSoftCapped, mergeMods } from '@/core/statsCalc'
-import { STAT_KEYS } from '@/ui/statNames'
+import { STAT_KEYS } from '@/data/statNames'
 import type { AnyStatKey } from '@/types'
 
 /** 去掉注释与模板注释,免得注释里提一嘴就算「接上了」 */

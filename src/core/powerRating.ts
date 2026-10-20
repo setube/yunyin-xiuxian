@@ -6,7 +6,7 @@
  * 星级基于词条合计的定性分段,不做精确排名——两个 4 星构筑谁强,由环境与相性决定。
  */
 import type { AnyStatKey, FinalStats, StatMods } from '@/types'
-import { STAT_NAMES } from '@/ui/statNames'
+import { STAT_NAMES } from '@/data/statNames'
 import { detectBuild } from './buildDetect'
 import { modOf } from './statsCalc'
 

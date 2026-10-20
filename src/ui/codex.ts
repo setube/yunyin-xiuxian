@@ -34,7 +34,7 @@ import { useLoreStore } from '@/stores/lore'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useQuestsStore } from '@/stores/quests'
 import type { CollectionCategory } from '@/stores/quests'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 import { artifactFuncText, artifactMetaText, equipFuncText, equipMetaText, pillFuncText, pillMetaText } from './itemText'
 
 /** 图鉴条目 —— 收藏图鉴九类共用的呈现形状 */

@@ -50,7 +50,7 @@
   import { useCultivationStore } from '@/stores/cultivation'
   import { useNow } from '@/composables/useNow'
   import { buffDef } from '@/data/buffs'
-  import { STAT_NAMES, statValueText } from '@/ui/statNames'
+  import { STAT_NAMES, statValueText } from '@/data/statNames'
   import { formatCountdown, formatDuration } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
   import BaseModal from '@/components/common/BaseModal.vue'

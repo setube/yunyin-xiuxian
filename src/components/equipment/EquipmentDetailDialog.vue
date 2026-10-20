@@ -441,7 +441,7 @@
   import { gnZero, isZero, mulN, sub } from '@/utils/gnum'
   import { playSfx } from '@/core/audio'
   import type { AnyStatKey, GNum } from '@/types'
-  import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/ui/statNames'
+  import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/data/statNames'
   import { affixRollHint, affixRollText, equipNextLevelText, powerCompareLabel } from '@/ui/equipText'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
   import { useAffixTransfer } from '@/composables/useAffixTransfer'

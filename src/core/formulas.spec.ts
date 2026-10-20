@@ -13,7 +13,7 @@ import {
   tribulationWaveDamage,
   winChanceFromRatio
 } from './formulas'
-import { powerBreakdownRows, powerExplainText } from '@/ui/statNames'
+import { powerBreakdownRows, powerExplainText } from '@/ui/powerText'
 
 describe('GameFormula 成长曲线', () => {
   it('战力：算式 = 攻×3 + 防×2 + 血×0.15，权重与释义同源，不许改一处漏一处', () => {

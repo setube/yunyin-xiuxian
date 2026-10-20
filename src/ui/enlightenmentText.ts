@@ -8,7 +8,7 @@
 import type { EnlightenmentOption } from '@/types'
 import { buffDef } from '@/data/buffs'
 import { formatChoiceSpan } from '@/utils/format'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 
 export function enlightenmentOptionText(opt: EnlightenmentOption): string {
   if (opt.reward?.type === 'wudao') return `立即获得 ${opt.reward.value} 悟道点`

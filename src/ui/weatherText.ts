@@ -6,7 +6,7 @@
  */
 import { formatPercent } from '@/utils/format'
 import type { WeatherDef } from '@/core/weather'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 
 /** 今日实际加减;清和(空词条且渡劫倍率 1)说「无加减」,不留空白让人去猜 */
 export function weatherEffectText(w: WeatherDef): string {

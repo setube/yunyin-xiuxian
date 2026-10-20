@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { talentDef } from '@/data/talents'
-import { modsText } from '@/ui/statNames'
+import { modsText } from '@/data/statNames'
 
 describe('轮回择姿', () => {
   it('三选一与自开天资都露出实际词条', () => {

@@ -168,7 +168,7 @@
   import { affixDef } from '@/data/affixes'
   import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
   import { qualityDef } from '@/data/qualities'
-  import { AFFIX_RARITY_META } from '@/ui/statNames'
+  import { AFFIX_RARITY_META } from '@/data/statNames'
   import {
     TRANSFER_LABELS,
     transferBlockText,

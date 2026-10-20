@@ -7,7 +7,7 @@ import { MAX_MAJOR } from '@/data/realms'
 import type { HerbGrade } from '@/data/herbGrades'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
-import { modsText } from '@/ui/statNames'
+import { modsText } from '@/data/statNames'
 import { readFileSync } from 'node:fs'
 import type { BuildingId } from '@/types'
 

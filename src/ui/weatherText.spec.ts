@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { WEATHERS, WORLD_WEATHERS, type WeatherDef } from '@/core/weather'
 import { formatPercent } from '@/utils/format'
-import { STAT_NAMES } from './statNames'
+import { STAT_NAMES } from '@/data/statNames'
 import { weatherEffectText, weatherTribulationLine } from './weatherText'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 import type { AnyStatKey } from '@/types'
 
 const ALL: WeatherDef[] = [...WEATHERS, ...Object.values(WORLD_WEATHERS).flat()]

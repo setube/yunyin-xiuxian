@@ -13,7 +13,7 @@
  * 逐键在下面用 statCaveat 断言 —— 未来新增一个掷点/闸门词条若不配说明,这里即红。
  */
 import { describe, expect, it } from 'vitest'
-import { statCaveat, statValueText } from './statNames'
+import { statCaveat, statValueText } from '@/data/statNames'
 import { CRIT_BASE, CRIT_DMG_BASE } from '@/data/constants'
 import { formatPercent } from '@/utils/format'
 

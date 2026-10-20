@@ -19,7 +19,7 @@ import { worldNameOfTier } from '@/core/formulas'
 import { personalityEffects } from '@/core/petPersonality'
 import { gongfaModsAt } from '@/stores/cultivation'
 import { formatNum, formatPercent } from '@/utils/format'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 import {
   artifactFuncText,
   artifactMetaText,

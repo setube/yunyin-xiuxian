@@ -36,6 +36,8 @@ import { ARTIFACT_MAX_SLOTS, ARTIFACT_SLOT_UNLOCK_MAJOR } from '@/data/artifacts
 import { EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
 import { MUTATION_FIGHTS } from '@/core/expedition'
 import { PROFILE_MIN_MARKS } from '@/core/identity'
+import { AFFIXES } from '@/data/affixes'
+import { STAT_NAMES } from '@/data/statNames'
 
 /** 文案里的百分比是否能在同一条目的数值里找到对应 */
 function percentBacked(percent: number, nums: number[]): boolean {
@@ -69,6 +71,28 @@ describe('文案数值对账 · 天道变数', () => {
       }
     }
     expect(checked, '一条百分比都没扫到,断言形同虚设').toBeGreaterThanOrEqual(5)
+  })
+})
+
+describe('文案数值对账 · 词条说明的名字只有一处', () => {
+  /**
+   * 说明曾经逐条手写:「造成伤害提升」「受到伤害降低」「生命上限提升」,
+   * 而面板、战报、图鉴里同一个键叫「伤害增幅」「伤害减免」「气血上限」。
+   * 同一个键两套名字,玩家没法把装备上那条与面板上那条对上号。
+   *
+   * 现在 desc 由 STAT_NAMES[key] 派生,数值位只留一个 {v}。
+   * 故障注入:把任一条 desc 改回手写旧名 → 本条红。
+   */
+  it('每条词条说明以自己的键名为开头,且 {v} 恰好一个', () => {
+    const offenders = AFFIXES.flatMap(a => {
+      const name = STAT_NAMES[a.key]
+      if (!a.desc.startsWith(name)) return [`${a.id}「${a.name}」:${a.desc} —— 该以「${name}」开头`]
+      const holes = a.desc.split('{v}').length - 1
+      if (holes !== 1) return [`${a.id}「${a.name}」:${a.desc} —— {v} 有 ${holes} 个`]
+      return []
+    })
+    expect(offenders, '词条说明自己手写了第二套名字').toEqual([])
+    expect(AFFIXES.length, '词条池没读到,判据会假绿').toBeGreaterThan(100)
   })
 })
 

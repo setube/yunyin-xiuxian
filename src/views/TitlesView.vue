@@ -89,7 +89,7 @@
   import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
   import { petTraitText } from '@/ui/itemText'
   import { qualityDef } from '@/data/qualities'
-  import { modsText } from '@/ui/statNames'
+  import { modsText } from '@/data/statNames'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import GameIcon from '@/components/common/GameIcon.vue'

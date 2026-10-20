@@ -20,10 +20,10 @@ src/stores/ Pinia 状态（持久化 <-> 内存）
 src/ui/    展示层字符串/图标注册（非逻辑）
 ```
 
-- **src/data/** — 纯静态声明式数据，无副作用、单一事实源。55 个模块：realms、regions、enemies（132）、equipment（288 模板）、affixes（119）、gongfa、gongfaBranches、pills、artifacts、souls、xiangxiu、ziwei、yijing、qimen、daolu、endgame、mutators、constants（556 行，含 `TICK_MS`、`OFFLINE_MIN_SECONDS`、`AGE_YEARS_PER_HOUR`、`ACTIVE_STAMP_MS` 等）。**这里的数字就是真实游戏数值，改动会影响全流程。**
+- **src/data/** — 纯静态声明式数据，无副作用、单一事实源。55 个模块：realms、regions、enemies（132）、equipment（288 模板）、affixes（119）、statNames（属性键→中文名，唯一命名表）、gongfa、gongfaBranches、pills、artifacts、souls、xiangxiu、ziwei、yijing、qimen、daolu、endgame、mutators、constants（556 行，含 `TICK_MS`、`OFFLINE_MIN_SECONDS`、`AGE_YEARS_PER_HOUR`、`ACTIVE_STAMP_MS` 等）。**这里的数字就是真实游戏数值，改动会影响全流程。**
 - **src/core/** — 游戏逻辑。关键模块：`engine.ts`（在线心跳 1000ms 单例，含 start/stop 与防重复 interval 守卫）、`combat.ts`（后台完整预演后回放）、`statsCalc.ts`（词缀递减 + 软上限）、`equipGen.ts`、`exploration.ts`、`offline.ts`、`progress.ts`（任务/成就横向总线）、`theme.ts`、`worldGen.ts`（终局世界生成，三重审计门）；另有 19 个 `*Service.ts` 与 6 个 `*Sim.ts` 平衡模拟器。
 - **src/stores/** — 19 个 Pinia store；除 `ui.ts` 外 18 个经 `persistConfig('<id>')`（`utils/storage.ts`）持久化。**任何持久化 store 必须暴露 `sanitize()`** 修复损坏存档——`storeResilience.spec.ts` 会从源码正则 `/persistConfig\('([a-zA-Z]+)'\)/` 抓取列表并逐一跑恶意损坏用例，缺 `sanitize` 即测试红。
-- **src/ui/** — 展示层数据（icons 注册、statNames、codex、enemyLore、releaseNotes、`*Text.ts`）。注意 "palette" 不是模块，是 `src/ui/palette.spec.ts` 治理测试。
+- **src/ui/** — 展示层数据（icons 注册、codex、enemyLore、releaseNotes、powerText、`*Text.ts`）。注意 "palette" 不是模块，是 `src/ui/palette.spec.ts` 治理测试。
 - **src/utils/** — `GNum`（大数 `{m,e}=m×10^e`，`gn/ad/mul/div/powN/cmp/toNum`；**`toNum` 在 e>308 返回 Infinity，需守卫**）、`format`（formatGN/Num/Rate/Percent/Duration/Countdown/Clock/Years）、`random`（mulberry32 + RandomService 单例）、`storage`（前缀 `yunyin.`，SAVE_VERSION 2，AES 加密，节流合并写入 `SAVE_FLUSH_MS` 5000，`PERSISTED_STORES` 列表，`subscribeSaveWriteFailure`，preflightScan 隔离，v1→v2 迁移）、`saveShape`（asArray/asStringArray/asRecord/asRecordOf/asFiniteNumber 守卫）、`platform`、`colorToken`（tint）。
 - **src/types/** — 领域类型（CombatResult、CombatSideStats、FoeOrigin、GNum、EquipSlot…）。
 
@@ -32,7 +32,7 @@ src/ui/    展示层字符串/图标注册（非逻辑）
 | 路径 | 用途 |
 |---|---|
 | `src/data/` | 静态声明式游戏内容（唯一事实源）|
-| `src/core/` | 游戏逻辑 + 209 个同目录 `*.spec.ts` |
+| `src/core/` | 游戏逻辑 + 211 个同目录 `*.spec.ts` |
 | `src/stores/` | Pinia 状态（18 持久化 + ui 临时）|
 | `src/ui/` | 展示层字符串 / 图标 | 
 | `src/utils/` | 大数、格式化、随机、存储、存档守卫 |
@@ -113,7 +113,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 
 ## Testing & QA
 
-- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 286 个 spec：core 209、ui 39、stores 18、utils 9、data 8、composables 2、router 1；全量约 2814 用例）。
+- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 290 个 spec：core 211、ui 39、stores 18、utils 10、data 8、composables 3、router 1）。用例条数不写进文档(`bun run test:report` 每次自己打)。
 - **运行**：全量 `bun run test`；分桶报告 `bun run test:report`。
 - **红线测试（改了相关逻辑必须保住）**：
   - `storeResilience.spec.ts` — 持久化 store 必须带 `sanitize`，且经恶意损坏用例。

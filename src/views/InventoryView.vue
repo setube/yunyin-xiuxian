@@ -692,7 +692,7 @@
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
   import { cnNumber, formatDuration, formatGN, formatNum, formatPercent } from '@/utils/format'
   import { tint } from '@/utils/colorToken'
-  import { STAT_NAMES, statCaveat, statModPhrase } from '@/ui/statNames'
+  import { STAT_NAMES, statCaveat, statModPhrase } from '@/data/statNames'
   import {
     artifactSlotReplacedToast,
     decomposeEmptyToast,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { TALENTS } from '@/data/talents'
 import { PETS } from '@/data/pets'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 import { petFuncText } from './itemText'
 
 describe('天赋与灵兽详情带上实际词条', () => {

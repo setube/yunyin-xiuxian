@@ -9,7 +9,7 @@ import type { AffixDef } from '@/types'
 import { affixValue } from '@/data/affixes'
 import { QUALITIES } from '@/data/qualities'
 import { EQUIP_SLOT_NAMES } from '@/data/equipment'
-import { AFFIX_RARITY_META } from './statNames'
+import { AFFIX_RARITY_META } from '@/data/statNames'
 
 /** 效果整句:把 {v} 填上「低端~高端」(定值词条两端相等时只写一个数) */
 export function affixRangeText(def: AffixDef): string {

@@ -179,7 +179,7 @@
   import { useRouter } from 'vue-router'
   import { goBack } from '@/router/goBack'
   import { formatNum } from '@/utils/format'
-  import { modsText } from '@/ui/statNames'
+  import { modsText } from '@/data/statNames'
   import { dissolveNote, refineCostLine } from '@/ui/soulText'
   import { equipmentTemplate } from '@/data/equipment'
   import { SOUL_SLOTS, soulGradeDef, soulMods, soulName, soulTypeDef, type SoulInstance } from '@/data/souls'

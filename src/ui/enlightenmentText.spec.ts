@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ENLIGHTENMENT_OPTIONS } from '@/data/earlyGame'
 import { buffDef } from '@/data/buffs'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 import { enlightenmentOptionText } from './enlightenmentText'
 import { readFileSync } from 'node:fs'
 

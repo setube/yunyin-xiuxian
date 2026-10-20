@@ -119,7 +119,7 @@
     codexOwnedCount
   } from '@/ui/codex'
   import { gongfaFuncText, gongfaMetaText } from '@/ui/itemText'
-  import { modsText } from '@/ui/statNames'
+  import { modsText } from '@/data/statNames'
   import { achievementDirection, achievementGroup, ACHIEVEMENT_GROUP_LABEL, ACHIEVEMENT_GROUP_ORDER } from '@/ui/achievementHint'
   import { rewardPreview } from '@/core/progress'
   import SectionTitle from '@/components/common/SectionTitle.vue'

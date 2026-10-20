@@ -187,7 +187,7 @@ src/
 │   ├── endgame.ts            # 道途 / 天界 / 试炼
 │   ├── mutators.ts           # 8 变数
 │   └── constants.ts          # 全局平衡参数
-├── core/                 # 逻辑层（115 个模块 + 208 个同目录 spec）
+├── core/                 # 逻辑层（117 个模块 + 211 个同目录 spec）
 │   ├── engine.ts             # 在线心跳驱动（1000ms）
 │   ├── offline.ts            # 离线收益结算
 │   ├── combat.ts             # 回合制战斗预解算

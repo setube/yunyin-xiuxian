@@ -140,7 +140,7 @@
   import GameIcon from '@/components/common/GameIcon.vue'
   import { buildingUpgradeInfo, buildingBatchPlan, upgradeBuilding, upgradeBuildingBatch } from '@/core/buildingService'
   import { studyEta } from '@/core/loreService'
-  import { modsText } from '@/ui/statNames'
+  import { modsText } from '@/data/statNames'
   import { buildingActLabel, buildingGateRealmName } from '@/ui/buildingText'
   import { formatDuration, formatGN } from '@/utils/format'
 

@@ -195,7 +195,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { prepareReincarnation, confirmReincarnation } from '@/core/reincarnation'
   import { talentDef, TALENT_GRADE_COLORS, TALENT_GRADE_NAMES } from '@/data/talents'
-  import { modsText } from '@/ui/statNames'
+  import { modsText } from '@/data/statNames'
   import { lifeThemeDef, TABOO_NAMES } from '@/data/lifeThemes'
   import { heritageGroups } from '@/core/samsaraAudit'
   import { engine } from '@/core/engine'

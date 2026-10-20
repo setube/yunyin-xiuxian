@@ -6,7 +6,7 @@
  */
 import { formatPercent } from '@/utils/format'
 import { INSIGHT_DISCOUNT_CAP, INSIGHT_DISCOUNT_PER_POINT, INSIGHT_EFFECT_NAME, type VeinDef } from '@/data/veins'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 
 export function veinEffectText(def: VeinDef, points: number): string {
   const scaled: Record<string, number> = {}

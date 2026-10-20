@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { MENTORS } from '@/data/mentors'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 
 describe('师承说明不承诺词条里没有的机制', () => {
   it('四门说明都不点名命中、控制、异兽', () => {

@@ -9,8 +9,9 @@ import { affixRangeEnds, affixRangeText, affixRankText, affixRarityColor, affixR
 
 describe('词条图 · 字面现算', () => {
   it('效果区间 = 两端填进 {v}:攻击 2~5、暴伤整数档不落地碎数', () => {
-    expect(affixRangeText(affixDef('atk1')!)).toBe('攻击提升 2~5%')
-    expect(affixRangeText(affixDef('cdmg4')!)).toBe('暴击伤害提升 50~80%')
+    // 名字取 STAT_NAMES:与面板、战报同一条词条同一个叫法
+    expect(affixRangeText(affixDef('atk1')!)).toBe('攻击 +2~5%')
+    expect(affixRangeText(affixDef('cdmg4')!)).toBe('暴击伤害 +50~80%')
   })
 
   it('区间两头由 affixValue(roll 0/1) 给出,与掉落同式', () => {

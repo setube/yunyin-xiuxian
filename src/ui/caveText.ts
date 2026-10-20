@@ -10,7 +10,7 @@ import { formatChoiceSpan, formatNum, formatGN } from '@/utils/format'
 import { expFromSecs } from '@/core/formulas'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { usePlayerStore } from '@/stores/player'
-import { modsText } from './statNames'
+import { modsText } from '@/data/statNames'
 
 type CaveOption = CaveEvent['options'][number]
 

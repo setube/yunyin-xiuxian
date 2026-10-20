@@ -8,7 +8,7 @@ import { branchesFor, canEnlighten, gongfaBranchDef, GONGFA_BRANCHES } from '@/d
 import { GONGFA, gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 import { AFFIXES } from '@/data/affixes'
 import { qualityDef } from '@/data/qualities'
-import { STAT_NAMES } from '@/ui/statNames'
+import { STAT_NAMES } from '@/data/statNames'
 import type { AnyStatKey } from '@/types'
 import { modOf } from './statsCalc'
 

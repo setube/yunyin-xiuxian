@@ -544,7 +544,7 @@
   import { todayWeather } from '@/core/weather'
   import { weatherTribulationLine } from '@/ui/weatherText'
   import { formatCountdown, formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
-  import { signedPercent } from '@/ui/statNames'
+  import { signedPercent } from '@/data/statNames'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
   import { prepPillDisabledLabel, prepPillShortToast, repairActLabel, exchangeOkToast, exchangeFailText } from '@/ui/cultivationText'
   import { qualityDef } from '@/data/qualities'

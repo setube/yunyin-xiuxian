@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { signedPercent, modsText } from './statNames'
+import { signedPercent, modsText } from '@/data/statNames'
 
 describe('signedPercent', () => {
   it('负值是减号,不会拼出 +-', () => {

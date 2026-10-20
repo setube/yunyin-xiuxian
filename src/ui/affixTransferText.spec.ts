@@ -68,7 +68,8 @@ describe('词条转移文案 · 长度与措辞', () => {
 
   it('数值行:价签带灵石;词条整句代入数值;属性变化只列变了的', () => {
     expect(transferStoneText(gn(12345))).toMatch(/^灵石 /)
-    expect(transferAffixText({ id: 'atk1', roll: 1 })).toBe('「锋锐」攻击提升 5%')
+    // 名字取 STAT_NAMES:与面板、战报同一条词条同一个叫法
+    expect(transferAffixText({ id: 'atk1', roll: 1 })).toBe('「锋锐」攻击 +5%')
     // 重名的「破妄」靠效果句分得开
     expect(transferAffixText({ id: 'dmg1', roll: 0 })).not.toBe(transferAffixText({ id: 'ac2', roll: 0 }))
     expect(transferDeltaText({ attackPct: 0.05, defensePct: 0.03 }, { attackPct: 0.1, defensePct: 0.03 })).toBe('攻击 +5%')

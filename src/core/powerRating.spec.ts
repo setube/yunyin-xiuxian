@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { ratePower, ratingStars } from './powerRating'
-import { STAT_NAMES } from '@/ui/statNames'
+import { STAT_NAMES } from '@/data/statNames'
 import type { FinalStats, StatMods } from '@/types'
 
 const statsWith = (mods: StatMods): FinalStats => ({ mods }) as FinalStats

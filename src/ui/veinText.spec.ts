@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { VEINS } from '@/data/veins'
 import { INSIGHT_DISCOUNT_CAP, INSIGHT_DISCOUNT_PER_POINT, INSIGHT_EFFECT_NAME } from '@/data/veins'
 import { formatPercent } from '@/utils/format'
-import { STAT_NAMES } from './statNames'
+import { STAT_NAMES } from '@/data/statNames'
 import {
   veinEffectText,
   veinFullToast,

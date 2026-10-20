@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DAO_PATHS } from '@/data/endgame'
 import { GONGFA_BRANCHES } from '@/data/gongfaBranches'
-import { modsText } from '@/ui/statNames'
+import { modsText } from '@/data/statNames'
 
 describe('不可逆确认要看见真正规则', () => {
   it('定下道途时把 deepText 一并摆上,长生印不留在卡片背面', () => {

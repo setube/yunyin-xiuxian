@@ -134,7 +134,7 @@
   import { gongfaAffinity, rootElements } from '@/core/linggenAffinity'
   import { mergeMods } from '@/core/statsCalc'
   import { gongfaModsAt } from '@/stores/cultivation'
-  import { STAT_NAMES, modsText, statValueText } from '@/ui/statNames'
+  import { STAT_NAMES, modsText, statValueText } from '@/data/statNames'
   import { gongfaSkillLine } from '@/ui/itemText'
   import { gongfaSubFullToast } from '@/ui/gongfaText'
   import type { AnyStatKey, StatMods } from '@/types'
