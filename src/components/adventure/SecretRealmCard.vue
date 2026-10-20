@@ -97,6 +97,8 @@
     const r = fightSecretLayer()
     if (!r) return
     // 战报合并为单条多行 toast:逐条 push 会被 toast 位(上限 5)把自己前面的行挤掉,长战报读不全
-    if (r.lines.length) ui.toast(r.lines.join('\n'), r.win ? 'info' : 'warn')
+    // 级别跟结果性质走:胜 = 得了战利,与全库「有得有获」同归 success;败 = 气血折损,归 warn。
+    // 此前胜也写 info,与「已换上 N 件」那批正结果不在一个级别,胜负两级配色分不开。
+    if (r.lines.length) ui.toast(r.lines.join('\n'), r.win ? 'success' : 'warn')
   }
 </script>

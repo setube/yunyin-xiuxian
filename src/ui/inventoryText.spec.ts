@@ -36,6 +36,8 @@ describe('行囊页与提示同源', () => {
     expect(view).toContain('artifactSlotReplacedToast()')
     expect(view).toContain('decomposeEmptyToast()')
     expect(view).toContain('smartCleanToast(')
+    // 化尘有得按正结果播报;一件没化时才落回中性 info
+    expect(view).toContain("got.count > 0 ? 'success' : 'info'")
     expect(view).not.toContain('无可分解之物')
     expect(view).not.toContain('法宝位已满')
   })

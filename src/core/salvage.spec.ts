@@ -167,7 +167,10 @@ describe('分解返还 · 强化投入的八成随件退回', () => {
     expect(inventory.findItem('keep')).toBeDefined()
     // 逐件弹提示只会互相顶掉(提示窗只留 5 条),批量只报一条总账
     expect(ui.toasts.filter(t => /此器化尘/.test(t.text))).toHaveLength(0)
-    expect(ui.toasts.some(t => /炉中化去 3 件,得器灵尘×\d+/.test(t.text))).toBe(true)
+    const ledger = ui.toasts.find(t => /炉中化去 3 件,得器灵尘×\d+/.test(t.text))
+    expect(ledger).toBeDefined()
+    // 总账报了实物所得,按正结果播报(success);写 info 时配色与提示音都停在「中性」档
+    expect(ledger?.kind).toBe('success')
   })
 })
 

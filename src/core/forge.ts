@@ -177,7 +177,7 @@ export function decomposeEquipment(uid: string, opts: { quiet?: boolean } = {}):
       isZero(gain.stone)
         ? decomposeToast(gain.dust)
         : decomposeToast(gain.dust, formatGN(gain.stone), salvageRefundPhrase()),
-      'info'
+      'success'
     )
   }
   return true
@@ -234,7 +234,7 @@ export function decomposeByRanks(ranks: readonly number[]): number {
   const got = decomposeBatch(decomposeTargets(ranks))
   if (got.count > 0) {
     playSfx('success') // 逐件走的是 quiet,总账这一层只发一声
-    ui.toast(batchDecomposeToast(got.count, batchYieldText(got)), 'info')
+    ui.toast(batchDecomposeToast(got.count, batchYieldText(got)), 'success')
   }
   return got.count
 }

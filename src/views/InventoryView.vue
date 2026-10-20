@@ -1128,7 +1128,8 @@
     cleanConfirm.value = false
     const snapshot = sweepTargets(inventory.bagItems) // 与确认页同源,兜底再取一次
     const got = decomposeBatch(snapshot.map(t => t.item))
-    ui.toast(smartCleanToast(got.count, batchYieldText(got)), 'info')
+    // 有化尘 = 有得,归 success;一件都没化 = 中性播报,留 info(与一键换装同族口径)
+    ui.toast(smartCleanToast(got.count, batchYieldText(got)), got.count > 0 ? 'success' : 'info')
     smartOpen.value = false
   }
 

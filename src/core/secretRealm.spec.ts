@@ -248,6 +248,9 @@ describe('秘境 · 推得动、出得来', () => {
     expect(corpus).toContain('enterSecretRealm(')
     expect(corpus).toContain('fightSecretLayer(')
     expect(corpus).toContain('abandonRealm(')
+    // 战报级别跟胜负走:胜 = 得了战利(success),败 = 气血折损(warn);
+    // 两级同写 info 时配色与提示音分不开这一局是赢是输
+    expect(corpus, '秘境战报的胜级须是 success').toContain("r.win ? 'success' : 'warn'")
   })
 })
 
