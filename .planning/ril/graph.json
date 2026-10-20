@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 263,
+  "round": 264,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-16T07:31:08+00:00",
+  "updated_at": "2026-10-20T06:42:05+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -11979,7 +11979,7 @@
       "version": 2,
       "created_at": "2026-09-17T13:52:33+00:00",
       "updated_at": "2026-09-17T14:05:49+00:00",
-      "touched_round": 204,
+      "touched_round": 263,
       "severity": 0.9,
       "confidence": 1.0,
       "effort": 2,
@@ -12151,7 +12151,7 @@
       "version": 2,
       "created_at": "2026-09-17T14:20:49+00:00",
       "updated_at": "2026-09-17T15:37:31+00:00",
-      "touched_round": 208,
+      "touched_round": 263,
       "severity": 0.5,
       "confidence": 0.8,
       "effort": 3,
@@ -17797,6 +17797,225 @@
       "summary": "全量绿:285 文件 / 2866 例",
       "detail": "bun run test 285 文件 2866 例全绿;bun run check(tsc + eslint)干净;CHG-367 对应提交 9be1c21",
       "confidence": 1.0
+    },
+    "DEC-065": {
+      "id": "DEC-065",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T06:41:59+00:00",
+      "updated_at": "2026-10-20T06:41:59+00:00",
+      "touched_round": 263,
+      "summary": "本批收口:离线路径逐项对齐在线单一事实源 + 单源重构 + 字体按需切片 + 工具/门禁接线 + 修为按等效时长计价",
+      "rationale": "离线是玩家不在时照常成长的路径,长期与在线分叉:丹药掉落缺失、溢出装备折尘裸4、归来虚称整体9折、flat尘0.3魔数、修为奖励按当前层百分比而与星级耗时脱节。单一事实源纪律要求每笔报价/奖励/披露只有一个口径。release仓需要可复验的工具脚本与门禁。",
+      "alternatives_rejected": "维持离线独立口径(丢一致性,已有 ISS-149/154/166/244/245 离线分叉证据);在展示层补文案掩盖(治标);每境手写捷径不骑区域阶梯(stoneByTier 旧尺二次踩坑)。"
+    },
+    "TASK-332": {
+      "id": "TASK-332",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "category": "core-feature",
+      "severity": 0.4,
+      "confidence": 0.9,
+      "effort": 3,
+      "unlock_factor": 1.0,
+      "summary": "妖气复聚,已靖地界72h复聚旧主归来,转世/轮回复位(Phase 30.11)"
+    },
+    "TASK-333": {
+      "id": "TASK-333",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "category": "performance",
+      "severity": 0.35,
+      "confidence": 0.9,
+      "effort": 3,
+      "unlock_factor": 1.0,
+      "summary": "楷体按用法频次切20余片按需下载,首屏取最热几片(~30KB)"
+    },
+    "TASK-334": {
+      "id": "TASK-334",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "category": "correctness",
+      "severity": 0.6,
+      "confidence": 0.9,
+      "effort": 3,
+      "unlock_factor": 1.0,
+      "summary": "离线口径对齐:普通战补丹药掉落/溢出装备折尘对在线/归来披露限缩到闲置积蓄/flat尘命名常量"
+    },
+    "TASK-335": {
+      "id": "TASK-335",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "category": "dx",
+      "severity": 0.3,
+      "confidence": 0.9,
+      "effort": 2,
+      "unlock_factor": 1.0,
+      "summary": "工具脚本接线:docs-check/first-paint/perf-profile + 门禁 spec(CI命令本地必有对等入口)"
+    },
+    "TASK-336": {
+      "id": "TASK-336",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "category": "test-quality",
+      "severity": 0.3,
+      "confidence": 0.9,
+      "effort": 1,
+      "unlock_factor": 1.0,
+      "summary": "经济审计补 ore/page/wudao 不死资源下限守卫"
+    },
+    "CHG-368": {
+      "id": "CHG-368",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "commit": "caca496",
+      "summary": "refactor(pill): 炼制石耗收拢唯一事实源 pillStoneCost,修 ISS-211 报价 322 倍超价"
+    },
+    "CHG-369": {
+      "id": "CHG-369",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "commit": "0a7cf59",
+      "summary": "feat(region): 已靖地界妖气复聚——旧主归来(Phase 30.11)"
+    },
+    "CHG-370": {
+      "id": "CHG-370",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "commit": "1ebed74",
+      "summary": "refactor(fonts): 楷体按用法频次切二十余片按需下载,首屏取最热几片"
+    },
+    "CHG-371": {
+      "id": "CHG-371",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "commit": "e6ffbe7",
+      "summary": "fix(exp): 修为丹expFixed封层 + 离线boss折损带数 + 投影墨不外泄"
+    },
+    "CHG-372": {
+      "id": "CHG-372",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "commit": 795440000000.0,
+      "summary": "fix(offline): 离线普通战补丹药掉落通道"
+    },
+    "CHG-373": {
+      "id": "CHG-373",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:00+00:00",
+      "updated_at": "2026-10-20T06:42:00+00:00",
+      "touched_round": 263,
+      "commit": "9f9ae9a",
+      "summary": "fix(offline): 离线溢出装备折尘对齐在线化尘口径"
+    },
+    "CHG-374": {
+      "id": "CHG-374",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:01+00:00",
+      "updated_at": "2026-10-20T06:42:01+00:00",
+      "touched_round": 263,
+      "commit": "9fb73af",
+      "summary": "refactor(offline): 离线 flat 尘抽成命名常量 OFFLINE_FLAT_DUST_PER_WIN"
+    },
+    "CHG-375": {
+      "id": "CHG-375",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:01+00:00",
+      "updated_at": "2026-10-20T06:42:01+00:00",
+      "touched_round": 263,
+      "commit": "f142ab3",
+      "summary": "fix(offline): 归来披露 0.9 折扣限缩到闲置积蓄,不再虚称整体九成"
+    },
+    "CHG-376": {
+      "id": "CHG-376",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:01+00:00",
+      "updated_at": "2026-10-20T06:42:01+00:00",
+      "touched_round": 263,
+      "commit": "ff124cf",
+      "summary": "feat(reward): 即时修为奖励改按等效闭关时长(secs)计价,展示与结算同源"
+    },
+    "CHG-377": {
+      "id": "CHG-377",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:01+00:00",
+      "updated_at": "2026-10-20T06:42:01+00:00",
+      "touched_round": 263,
+      "commit": "fb58521",
+      "summary": "test(economy): 经济审计补 ore/page/wudao 不死资源下限守卫"
+    },
+    "CHG-378": {
+      "id": "CHG-378",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:01+00:00",
+      "updated_at": "2026-10-20T06:42:01+00:00",
+      "touched_round": 263,
+      "commit": "7c2dc17",
+      "summary": "chore(scripts): 新增 docs-check/first-paint/perf-profile 体检脚本并接进 package.json"
+    },
+    "CHG-379": {
+      "id": "CHG-379",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T06:42:01+00:00",
+      "updated_at": "2026-10-20T06:42:01+00:00",
+      "touched_round": 263,
+      "commit": "7880fa7",
+      "summary": "test(scripts): 门禁接线 spec——CI 命令本地必有对等入口"
     }
   },
   "edges": [
@@ -26362,6 +26581,78 @@
       "to": "HYP-109",
       "type": "validates",
       "created_at": "2026-10-16T07:31:01+00:00"
+    },
+    {
+      "from": "CHG-368",
+      "to": "ISS-211",
+      "type": "resolves",
+      "created_at": "2026-10-20T06:42:00+00:00"
+    },
+    {
+      "from": "CHG-369",
+      "to": "TASK-332",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:00+00:00"
+    },
+    {
+      "from": "CHG-370",
+      "to": "TASK-333",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:00+00:00"
+    },
+    {
+      "from": "CHG-371",
+      "to": "ISS-208",
+      "type": "resolves",
+      "created_at": "2026-10-20T06:42:00+00:00"
+    },
+    {
+      "from": "CHG-372",
+      "to": "TASK-334",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:00+00:00"
+    },
+    {
+      "from": "CHG-373",
+      "to": "TASK-334",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:00+00:00"
+    },
+    {
+      "from": "CHG-374",
+      "to": "TASK-334",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:01+00:00"
+    },
+    {
+      "from": "CHG-375",
+      "to": "TASK-334",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:01+00:00"
+    },
+    {
+      "from": "CHG-376",
+      "to": "ISS-208",
+      "type": "resolves",
+      "created_at": "2026-10-20T06:42:01+00:00"
+    },
+    {
+      "from": "CHG-377",
+      "to": "TASK-336",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:01+00:00"
+    },
+    {
+      "from": "CHG-378",
+      "to": "TASK-335",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:01+00:00"
+    },
+    {
+      "from": "CHG-379",
+      "to": "TASK-335",
+      "type": "implements",
+      "created_at": "2026-10-20T06:42:01+00:00"
     }
   ]
 }
