@@ -65,7 +65,7 @@ bun run build
 # 预览构建结果
 bun preview
 
-# 全量测试（数值/战斗/流派/曲线/经济/回归/终局/决策，全量 298 个 spec）
+# 全量测试（数值/战斗/流派/曲线/经济/回归/终局/决策，全量 299 个 spec）
 # 注意用 bun run test,不能用 bun test —— 后者会调 Bun 自带的测试器而非 Vitest
 bun run test
 
@@ -101,6 +101,9 @@ bun run test -- src/ui/kaiFontCoverage.spec.ts
 > 由 `images/brand/favicon-source-128.png` 缩出 16/32/48 三档 —— 换画改母图后跑
 > `bun run build:favicon`,别手工改 .ico;桌面快捷方式与安装图标是另一条线
 > (`public/icon.svg` → `bun run pwa-icons`)。
+> 两条线都走仓里已有的 Playwright/Chromium 光栅化,不需要另装图像库 ——
+> `scripts/gen-pwa-icons.mjs` 早先依赖过 `sharp`,而它从没进过 `package.json`,
+> 在干净 clone 上这条命令根本跑不起来(现由 `scriptDepsAudit.spec.ts` 钉住)。
 
 ```bash
 # Windows 桌面客户端（Electron，输出 pkg/*.zip）
@@ -165,7 +168,7 @@ docker run -d -p 8080:80 yunyin-xiuxian
 | Tone.js         | 15    | FluidR3 乐器采样播放（BGM + SFX）           |
 | CryptoJS        | 4     | 存档 AES 加密                               |
 | lucide-vue-next | 0.577 | 图标库                                      |
-| Vitest          | 5     | 单元测试与平衡审计（全量 298 个 spec）        |
+| Vitest          | 5     | 单元测试与平衡审计（全量 299 个 spec）        |
 | Electron        | 39    | Windows 桌面客户端打包                      |
 | Capacitor       | 8     | Android 客户端打包                          |
 
@@ -192,7 +195,7 @@ src/
 │   ├── endgame.ts            # 道途 / 天界 / 试炼
 │   ├── mutators.ts           # 8 变数
 │   └── constants.ts          # 全局平衡参数
-├── core/                 # 逻辑层（117 个模块 + 214 个同目录 spec）
+├── core/                 # 逻辑层（117 个模块 + 215 个同目录 spec）
 │   ├── engine.ts             # 在线心跳驱动（1000ms）
 │   ├── offline.ts            # 离线收益结算
 │   ├── combat.ts             # 回合制战斗预解算
