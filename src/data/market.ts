@@ -10,11 +10,12 @@
  *
  * 一、丹药:口袋价 = 炼制石耗 × MARKET_PILL_MARKUP。买丹跳过的是「集灵草→习丹方→
  *     升炉火→炸炉」整条炼丹线,故要比自炼贵、又不至于离谱。
- * 二、材料:每单位 = stoneByTier(major, MARKET_MAT_STONE_UNITS)(一场遭遇 ≈ amount 10),
- *     MARKET_MAT_COUNT 单位一摞。给洞府生产续料,是灵石最常见的销处。
- * 三、装备:价随品质档递增 = stoneByTier(major, 基准 + 档 × 每档)。装备本就由掉落白送,
+ * 二、材料:每单位 = stoneByTier(marketTier(major), MARKET_MAT_STONE_UNITS)(marketTier = maxTierForMajor,
+ *     区域真实梯级,至 32 阶;一场遭遇 ≈ amount 10),MARKET_MAT_COUNT 单位一摞。给洞府生产续料,
+ *     是灵石最常见的销处。
+ * 三、装备:价随品质档递增 = stoneByTier(marketTier(major), 基准 + 档 × 每档)。装备本就由掉落白送,
  *     坊市卖的是「省一场运气」,故按品质溢价;而品质下限即用该境界 rollQuality 掷出,
- *     与掉落同源。装备层数即当前境界(major)。
+ *     与掉落同源。装备层数即市场标尺 marketTier(major)(=maxTierForMajor,区域梯级,不是境界大阶)。
  */
 import type { GNum } from '@/types'
 import type { HerbGrade } from '@/data/herbGrades'
