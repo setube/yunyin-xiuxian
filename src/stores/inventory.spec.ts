@@ -15,8 +15,8 @@ import { resolveEquipStats } from '@/core/equipGen'
 import { artifactDef, artifactValue } from '@/data/artifacts'
 import type { EquipmentInstance } from '@/types'
 
-function mk(uid: string, affixes: Array<{ id: string; roll: number }>): EquipmentInstance {
-  return { uid, templateId: 'b_qingyun', quality: 'mortal', tier: 3, level: 0, affixes }
+function mk(uid: string, affixes: Array<{ id: string; roll: number }>, templateId = 'b_qingyun'): EquipmentInstance {
+  return { uid, templateId, quality: 'mortal', tier: 3, level: 0, affixes }
 }
 
 describe('装备槽属性汇总(equipMods)守卫', () => {
@@ -105,5 +105,35 @@ describe('装备槽属性汇总(equipMods)守卫', () => {
     const value = artifactValue(artifactDef('af_muyu')!, 0)
     // 只算一次:与单件祭炼的值深等(算两次会把 maxHpPct 叠加成两倍)
     expect(inv.equipMods).toEqual(mergeMods([value.passive]))
+  })
+
+  /**
+   * 装备栏里的坏映射会让一件装备从行囊消失、却不出现在任何槽卡上:
+   * 槽名认不得(旧版/手改)、uid 对不上任何一件、件与槽不符、一件占两槽。
+   * 只保留「槽名合法 + 件存在 + 件属该槽 + 未被占用」的映射。
+   */
+  it('sanitize:坏槽位映射被清掉,装备回到行囊而不是凭空消失', () => {
+    const inv = useInventoryStore()
+    const weapon = mk('w1', [], 'w_qingshuang')
+    const head = mk('h1', [], 'h_heifengjin')
+    const body = mk('b1', [])
+    inv.items = [weapon, head, body]
+    inv.$patch({
+      equipped: {
+        weapon: 'w1',
+        // 同一件占两个槽:第二个槽不该成立
+        head: 'w1',
+        // uid 对不上任何一件(ghost)
+        body: 'ghost',
+        // 件与槽不符:这其实是头冠
+        boots: 'h1',
+        // 槽名认不得
+        unknownSlot: 'b1'
+      }
+    } as never)
+    inv.sanitize()
+    expect(inv.equipped, '只留成立的那一条映射').toEqual({ weapon: 'w1' })
+    expect(inv.bagItems.map(i => i.uid).sort(), '其余件都回行囊').toEqual(['b1', 'h1'])
+    expect(inv.equippedItems.map(i => i.uid), '一件只算一个槽').toEqual(['w1'])
   })
 })

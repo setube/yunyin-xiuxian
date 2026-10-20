@@ -9,6 +9,7 @@ import { mergeMods } from '@/core/statsCalc'
 import { useLoreStore } from '@/stores/lore'
 import { artifactDef, artifactValue } from '@/data/artifacts'
 import { BAG_CAPACITY } from '@/data/constants'
+import { EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
 import { asArray, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 
 export const useInventoryStore = defineStore(
@@ -39,7 +40,27 @@ export const useInventoryStore = defineStore(
         seenUid.add(it.uid)
         return true
       })
-      equipped.value = asRecord<string>(equipped.value)
+      /**
+       * 装备栏要按「槽位与件」双向校验,不能只当普通 record 收下:
+       * - 槽名认不得(旧版/手改):该 uid 会被排除出行囊,却没有任何槽卡显示它 —— 装备凭空消失
+       * - uid 对不上任何一件(ghost):槽位看着已占,点进去却是空的
+       * - 件与槽不符(把武器塞进头冠):属性照算,槽卡与候选列表却各说各话
+       * - 同一件占两个槽:一件装备被当成两个槽位用,行囊里还看不见
+       * 只保留「槽名合法 + 件存在 + 件属该槽 + 未被前面的槽占用」的映射。
+       */
+      const rawEquipped = asRecord<unknown>(equipped.value)
+      const validUids = new Set(items.value.map(it => it.uid))
+      const usedUids = new Set<string>()
+      const fixedEquipped: Partial<Record<EquipSlot, string>> = {}
+      for (const slot of EQUIP_SLOTS) {
+        const uid = rawEquipped[slot]
+        if (typeof uid !== 'string' || !uid || usedUids.has(uid) || !validUids.has(uid)) continue
+        const inst = items.value.find(it => it.uid === uid)
+        if (!inst || equipmentTemplate(inst.templateId)?.slot !== slot) continue
+        fixedEquipped[slot] = uid
+        usedUids.add(uid)
+      }
+      equipped.value = fixedEquipped
       pills.value = asNumberRecord(pills.value, 0)
       // 同一件法宝只该有一条:库里两条同 defId 会让「是否已拥有」与祭炼判定各看各的
       const seenDef = new Set<string>()
