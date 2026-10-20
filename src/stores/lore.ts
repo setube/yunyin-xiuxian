@@ -7,8 +7,10 @@
  */
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { LORE_MAX } from '@/data/materials'
+import { LORE_MAX, materialDef } from '@/data/materials'
 import { SKILL_IDS, skillLevelFromExp, type SkillId } from '@/data/crafting'
+import { pillDef } from '@/data/pills'
+import { enemyDef } from '@/data/enemies'
 import { persistConfig } from '@/utils/storage'
 import { QUALITIES } from '@/data/qualities'
 
@@ -203,19 +205,35 @@ export const useLoreStore = defineStore(
         fixedExp[id] = Number.isFinite(v) ? Math.max(0, v as number) : 0
       }
       skillExp.value = fixedExp as Record<SkillId, number>
-      const clampMap = (src: Record<string, number>, lo: number, hi: number): Record<string, number> => {
+      /**
+       * 按 id 认对象:认不出的条目一律清掉。
+       *
+       * 这四张表不是"有多少条就懂多少"的账本 —— 图鉴的「已识 N 味」与宿慧折算都按
+       * `Object.values` 数条目,坏档里塞几个野 id 就能凭空多出几味药、几张方、几种敌,
+       * 甚至提前拿到宿慧。写入侧已各自校验(encounterMaterial/noteEnemy/研读只喂真 id),
+       * 读档侧若只夹数值,这些幽灵条目就会一直留在存档里继续计数。
+       */
+      const clampMap = (
+        src: Record<string, number>,
+        lo: number,
+        hi: number,
+        known?: (id: string) => boolean
+      ): Record<string, number> => {
         const out: Record<string, number> = {}
         for (const [k, v] of Object.entries(src)) {
+          if (known && !known(k)) continue
           if (Number.isFinite(v)) out[k] = Math.max(lo, Math.min(hi, v))
         }
         return out
       }
-      materialLore.value = clampMap(materialLore.value, 0, LORE_MAX)
+      materialLore.value = clampMap(materialLore.value, 0, LORE_MAX, id => !!materialDef(id))
+      // 照面次数只做「这一味见过几回」的底料,不参与任何计数/展示;即便 id 认不出
+      // 也无处冒充,故只夹值不认 id —— 旧档改名或版本回退时,这点进度不该被抹掉。
       materialSeen.value = clampMap(materialSeen.value, 0, Number.MAX_SAFE_INTEGER)
-      recipeLore.value = clampMap(recipeLore.value, 0, 1)
+      recipeLore.value = clampMap(recipeLore.value, 0, 1, id => !!pillDef(id)?.recipe)
       blueprintLore.value = clampMap(blueprintLore.value, 0, 1)
       // 旧存档没有这两张表,?? {} 保证补齐而非留 undefined
-      enemyLore.value = clampMap(enemyLore.value ?? {}, 0, ENEMY_LORE_MAX)
+      enemyLore.value = clampMap(enemyLore.value ?? {}, 0, ENEMY_LORE_MAX, id => !!enemyDef(id))
       enemySeen.value = clampMap(enemySeen.value ?? {}, 0, Number.MAX_SAFE_INTEGER)
       // 装备见闻:每个条目是 { q, t } 两个数,形状烂掉就整条丢掉
       const seenFixed: Record<string, { q: number; t: number; u: number }> = {}

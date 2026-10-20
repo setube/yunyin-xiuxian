@@ -71,4 +71,44 @@ describe('图鉴见闻收录守卫(useLoreStore)', () => {
     expect(lore.addBlueprintMastery('bp1', 9)).toBe(1)
     expect(lore.blueprintLore['bp1']).toBe(1)
   })
+
+  it('sanitize:认不出的灵材/丹方/敌人 id 清掉,不再计入图鉴与宿慧', () => {
+    const lore = useLoreStore()
+    lore.$patch({
+      materialLore: { mat_qingzhi: 1, mat_ghost: 3 },
+      materialSeen: { mat_qingzhi: 4, mat_ghost: 99 },
+      // 真丹药(p_hundunjing)却没有方子,同样不该占「通晓 N 张」
+      recipeLore: { p_jvqidan: 1, p_ghost: 1, p_hundunjing: 1 },
+      enemyLore: { e_wolf: 3, e_ghost: 3 },
+      enemySeen: { e_wolf: 20, e_ghost: 20 }
+    } as never)
+
+    lore.sanitize()
+
+    expect(lore.materialLore).toEqual({ mat_qingzhi: 1 })
+    // 照面次数不参与计数,认不出的 id 只夹值保留,不冒充任何「已识」
+    expect(lore.materialSeen).toEqual({ mat_qingzhi: 4, mat_ghost: 99 })
+    expect(lore.recipeLore).toEqual({ p_jvqidan: 1 })
+    expect(lore.enemyLore).toEqual({ e_wolf: 3 })
+    expect(lore.enemySeen).toEqual({ e_wolf: 20, e_ghost: 20 })
+    expect(lore.knownMaterialCount, '幽灵灵材不进「已识」').toBe(1)
+    expect(lore.masteredRecipeCount, '幽灵丹方不进「通晓」').toBe(1)
+    expect(lore.masteredEnemyCount, '幽灵敌人不进「洞悉」').toBe(1)
+  })
+
+  it('sanitize:健康存档幂等,认得的值原样保留', () => {
+    const lore = useLoreStore()
+    lore.$patch({
+      materialLore: { mat_qingzhi: 2 },
+      materialSeen: { mat_qingzhi: 7 },
+      recipeLore: { p_jvqidan: 0.4 },
+      enemyLore: { e_wolf: 1 },
+      enemySeen: { e_wolf: 2 }
+    } as never)
+    const before = JSON.parse(JSON.stringify(lore.$state))
+
+    lore.sanitize()
+
+    expect(JSON.parse(JSON.stringify(lore.$state))).toEqual(before)
+  })
 })
