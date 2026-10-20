@@ -5,6 +5,7 @@ import type { AdventureSession, CombatRules, ExploreMode, FoeOrigin, RegionDef }
 import { rng } from '@/utils/random'
 import { add, gnZero } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
+import { sessionRecordText } from '@/ui/adventureText'
 import { enemyDef } from '@/data/enemies'
 import { beastIcon } from '@/data/beastFamilies'
 import { regionDef, REGIONS } from '@/data/regions'
@@ -140,19 +141,21 @@ export function stopExploration(reason: 'manual' | 'defeat' | 'complete' | 'retr
   if (s.wins + s.losses >= 3 || reason === 'complete') {
     track('explores')
   }
-  // 总结带上这一趟的实际所得(会话账目即 afterWin 的真实入账):只说胜场与际遇,
-  // 玩家还得自己去翻行囊才知道赚没赚
+  // 总结带上这一趟的实际所得(会话账目即 afterWin 的真实入账)。
+  // 战绩报「胜/负」两本账:只报胜场时,「胜 2 场」分不出是两战全胜还是九战两胜,
+  // 而这恰恰是「这趟值不值得再来」与「胜+负 ≥3 算不算走过一趟」要看的数。
+  const record = sessionRecordText(s)
   const haul = `得灵石 ${formatGN(s.stoneGain)}、修为 ${formatGN(s.expGain)}${
     s.itemGain > 0 ? `、拾获 ${s.itemGain} 件` : ''
   }`
   if (reason === 'complete') {
-    ui.toast(`此行${region?.name ?? ''}历练圆满,胜 ${s.wins} 场,际遇 ${s.events} 次;${haul}`, 'success')
+    ui.toast(`此行${region?.name ?? ''}历练圆满,${record},际遇 ${s.events} 次;${haul}`, 'success')
   } else if (reason === 'defeat') {
-    ui.toast(`你身负重伤,不得不中断历练归来疗伤;此行${haul}`, 'warn')
+    ui.toast(`你身负重伤,不得不中断历练归来疗伤;此行${record},${haul}`, 'warn')
   } else if (reason === 'retreat') {
-    ui.toast(`你与此敌鏖战多时难分胜负,对方遁走,你无功而返;此行${haul}`, 'info')
+    ui.toast(`你与此敌鏖战多时难分胜负,对方遁走,你无功而返;此行${record},${haul}`, 'info')
   } else {
-    ui.toast(`你收拾行囊,提前结束了这次历练;此行${haul}`, 'info')
+    ui.toast(`你收拾行囊,提前结束了这次历练;此行${record},${haul}`, 'info')
   }
 }
 

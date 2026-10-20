@@ -18,7 +18,7 @@
         </span>
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
-        胜 {{ session?.wins ?? 0 }} 场 · 际遇 {{ session?.events ?? 0 }} 次 · 拾获 {{ session?.itemGain ?? 0 }} 件
+        {{ session ? sessionRecordText(session) : '胜 0 场' }} · 际遇 {{ session?.events ?? 0 }} 次 · 拾获 {{ session?.itemGain ?? 0 }} 件
         <!--
           本场「胜 N 场」是一趟历练里的账,连胜是跨趟的「还没输过」—— 两本账。
           连胜只在 3/5/10 的奖励 toast 里现身过一次,平时是多少、距下一档还剩几场,
@@ -327,6 +327,7 @@
   import { playSfx } from '@/core/audio'
   import { enemyDef } from '@/data/enemies'
   import { enemyLoreView } from '@/ui/enemyLore'
+  import { sessionRecordText } from '@/ui/adventureText'
   import type { CombatLogEntry } from '@/types'
   import ProgressBar from '@/components/common/ProgressBar.vue'
   import GameIcon from '@/components/common/GameIcon.vue'

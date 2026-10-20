@@ -4,7 +4,7 @@ import { EXPLORE_BATTLE_INTERVAL, EXPLORE_MODES } from '@/data/constants'
 import { PETS } from '@/data/pets'
 import { exploreBattleGapSec, exploreDurationSec, exploreRewardMult } from '@/core/exploration'
 import { personalityEffects } from '@/core/petPersonality'
-import { departButtonText, petTraitTripLine } from './adventureText'
+import { departButtonText, petTraitTripLine, sessionRecordText } from './adventureText'
 
 describe('出发按钮与结算同一套数', () => {
   it('行程按灵兽之性折算,与 startExploration 同一公式', () => {
@@ -71,5 +71,33 @@ describe('出发按钮与结算同一套数', () => {
     // 下一档的缺口由表里的下一档现算,不许手写「距 5 连胜」
     expect(view).not.toMatch(/距\s*[3,5,10]\s*连胜/)
     expect(view).not.toMatch(/\{\{\s*10\s*\}\}/)
+  })
+})
+
+describe('一趟历练的战绩 · 胜负两本账', () => {
+  it('有败场时两本账都报 —— 「胜 2 场」分不出是两战全胜还是九战两胜', () => {
+    expect(sessionRecordText({ wins: 2, losses: 0 })).toBe('胜 2 场')
+    expect(sessionRecordText({ wins: 2, losses: 7 })).toBe('胜 2 场 · 负 7 场')
+  })
+
+  it('全败也说得出口(胜 0 场 · 负 N 场),不因为胜场是零就整行消失', () => {
+    expect(sessionRecordText({ wins: 0, losses: 3 })).toBe('胜 0 场 · 负 3 场')
+  })
+
+  it('坏数不印成 NaN / 负数:非有限值与负数都按 0 收口', () => {
+    expect(sessionRecordText({ wins: Number.NaN, losses: -4 })).toBe('胜 0 场')
+    expect(sessionRecordText({ wins: 2.7, losses: 1.2 })).toBe('胜 2 场 · 负 1 场')
+  })
+
+  it('战斗面板与会话结算读同一份战绩文案,不各抄一遍格式', () => {
+    const panel = readFileSync(
+      new URL('../components/adventure/CombatPanel.vue', import.meta.url),
+      'utf8'
+    )
+    const core = readFileSync(new URL('../core/exploration.ts', import.meta.url), 'utf8')
+    expect(panel).toContain('sessionRecordText(')
+    expect(core).toContain('sessionRecordText(')
+    // 手写「胜 {{ session?.wins }} 场」那一版正是会把败场吞掉的形状
+    expect(panel).not.toMatch(/胜\s*\{\{\s*session\?\.wins/)
   })
 })

@@ -14,7 +14,15 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { gnZero, sub, toNum } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
 import { EXPLORE_BOSS_AFTER_WINS, EVENT_AUTO_RESOLVE_SECONDS } from '@/data/constants'
-import { tickExploration, startExploration, winsUntilRegionBoss, regionBossCleared, exploreEventChance } from './exploration'
+import {
+  tickExploration,
+  startExploration,
+  stopExploration,
+  winsUntilRegionBoss,
+  regionBossCleared,
+  exploreEventChance
+} from './exploration'
+import { useUiStore } from '@/stores/ui'
 import { startRetreat } from './earlyGameService'
 
 /**
@@ -177,6 +185,63 @@ describe('连胜(TASK-022 接线 · runBattle 胜负驱动 player.winStreak)', (
     forgeSession(now)
     tickExploration(now)
     expect(player.winStreak).toBe(0)
+  })
+})
+
+/**
+ * 收尾总结的账 —— 会话里的 losses 与 wins 是同一本账,总结就不能只报一半。
+ * 「胜 2 场」分不出是两战全胜还是九战两胜,而玩家判断这趟值不值得再来、
+ * 以及成就门槛「胜+负 ≥3 算走过一趟」,看的正是总量。
+ */
+describe('收尾总结 · 战绩报胜负两本账', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    protect.value = false
+    combatWin.value = false
+    combatHpPct.value = 0
+  })
+
+  function sessionWith(wins: number, losses: number): void {
+    const now = Date.now()
+    useAdventureStore().setSession({
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: now - 5000,
+      endsAt: now + 60000,
+      nextBattleAt: now,
+      wins,
+      losses,
+      events: 1,
+      stoneGain: gnZero(),
+      expGain: gnZero(),
+      itemGain: 0
+    })
+  }
+
+  function lastToast(): string {
+    const toasts = useUiStore().toasts
+    return toasts[toasts.length - 1]?.text ?? ''
+  }
+
+  it('圆满结束:报「胜 N 场 · 负 M 场」,不再省略败场', () => {
+    sessionWith(9, 4)
+    stopExploration('complete')
+    expect(lastToast()).toContain('胜 9 场 · 负 4 场')
+    expect(lastToast()).toContain('际遇 1 次')
+  })
+
+  it('被打断归来:同样带上战绩与所得,让玩家知道这趟赚没赚', () => {
+    sessionWith(1, 2)
+    stopExploration('defeat')
+    expect(lastToast()).toContain('胜 1 场 · 负 2 场')
+    expect(lastToast()).toContain('得灵石')
+  })
+
+  it('全胜时只说胜场(没有败场就不摆一行「负 0 场」)', () => {
+    sessionWith(5, 0)
+    stopExploration('manual')
+    expect(lastToast()).toContain('胜 5 场')
+    expect(lastToast()).not.toContain('负 0 场')
   })
 })
 

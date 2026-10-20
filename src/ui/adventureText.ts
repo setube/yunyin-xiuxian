@@ -33,3 +33,19 @@ export function petTraitTripLine(petName: string, effects: PetPersonalityEffects
   if (effects.lossReduction > 0) parts.push('败北偶有护持')
   return parts.length > 0 ? `${petName}之性:${parts.join(' · ')}` : ''
 }
+
+/**
+ * 一趟历练的战绩 —— 胜 N 场、负 M 场。
+ *
+ * 只报胜场时,「胜 2 场」分不出是打了两场全胜,还是打了九场只赢了两场;
+ * 而「胜 + 负 ≥ 3 才算走过一趟」的成就门槛、以及这趟值不值得再来,
+ * 恰恰要的是**总量**。两本账本来就是会话里现成的 `wins` / `losses`,
+ * 这里只负责把它们排成一行,不另算一遍。
+ */
+export function sessionRecordText(s: { wins: number; losses: number }): string {
+  // Math.max(0, NaN) 仍是 NaN —— 先把非有限值按 0 收口,坏档才不会印出「胜 NaN 场」
+  const count = (v: number): number => (Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0)
+  const wins = count(s.wins)
+  const losses = count(s.losses)
+  return losses > 0 ? `胜 ${wins} 场 · 负 ${losses} 场` : `胜 ${wins} 场`
+}
