@@ -15,6 +15,7 @@ import { SOUL_GRADES, SOUL_SLOTS, soulMods as soulModsOf, soulTypeDef, type Soul
 import { milestoneDef, recordDef } from '@/data/identity'
 import { mutatorDef } from '@/data/mutators'
 import { gateDef } from '@/data/qimen'
+import { pactDef } from '@/data/pacts'
 import { artifactDef } from '@/data/artifacts'
 import { STAT_KEYS } from '@/data/statNames'
 import { MAX_MAJOR } from '@/data/realms'
@@ -47,6 +48,23 @@ export interface WorldRunState {
 }
 
 const MAX_MARKS = 60
+
+/**
+ * 词条表修形:只留属性目录里的键,且值必须是有限非零数。
+ *
+ * 野键会被 `modDepth` 一并算进「构筑厚度」(天界判定据此加厚敌人),坏值则会
+ * 顺着 `stackedMods` 把整身攻防染成 NaN。一条可用词条都没有时返回 null,
+ * 与「这一层没有加成」同一语义。
+ */
+function sanitizeMods(raw: unknown): StatMods | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const out: StatMods = {}
+  for (const key of STAT_KEYS) {
+    const v = (raw as StatMods)[key]
+    if (typeof v === 'number' && Number.isFinite(v) && v !== 0) out[key] = v
+  }
+  return Object.keys(out).length > 0 ? out : null
+}
 
 /**
  * 虚界的敌方形态修形:远征每一战都拿 `shape.skills.map` 与 `atkR/hpR` 现算三维,
@@ -339,8 +357,14 @@ export const useEndgameStore = defineStore(
         } else {
           worldRun.value = {
             ...run,
-            pactId: typeof run.pactId === 'string' ? run.pactId : null,
-            gateId: typeof run.gateId === 'string' ? run.gateId : null,
+            /**
+             * 契约与门都按 id 认:认不出的 id 在 `pactDef`/`gateDef` 里查不到,
+             * 于是「契约束缚」与「门之规则」双双静默失效 —— 玩家签了一份血契、
+             * 走的是死门,打的却是无契无门的白板局,而界面上还挂着那个名字。
+             * 认不得即回落「未立契约 / 未择门」,与启程时同一语义。
+             */
+            pactId: typeof run.pactId === 'string' && pactDef(run.pactId) ? run.pactId : null,
+            gateId: typeof run.gateId === 'string' && gateDef(run.gateId) ? run.gateId : null,
             layer: Math.min(EXPEDITION_GUARDIAN_LAYER, Math.max(0, Math.floor(asFiniteNumber(run.layer, 0, 0)))),
             bonus: Math.floor(asFiniteNumber(run.bonus, 0, 0)),
             // 每一行都是战报读数:坏行留着会写出「NaN回合 · 余血 NaN%」,
@@ -353,7 +377,14 @@ export const useEndgameStore = defineStore(
             })),
             carriedHpPct: asCarriedHpPct(run.carriedHpPct),
             totalRounds: Math.floor(asFiniteNumber(run.totalRounds, 0, 0)),
-            winStacks: Math.floor(asFiniteNumber(run.winStacks, 0, 0))
+            winStacks: Math.floor(asFiniteNumber(run.winStacks, 0, 0)),
+            /**
+             * 逆命契封印的是「主流派核心词条」的负值快照,每一场都并入玩家属性:
+             * 坏档里的 NaN 会顺着 `stackedMods` 把整身攻防染成 NaN(玩家打不动任何东西),
+             * 野键则会被 `modDepth` 算进构筑厚度,让天道判定凭空加厚。
+             * 词条只留目录里的键与有限数;整份不可用就当作「没有封印」。
+             */
+            sealedMods: sanitizeMods(run.sealedMods) ?? undefined
           }
         }
       }

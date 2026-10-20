@@ -104,7 +104,7 @@ describe('远征读档恢复 · worldRun sanitize', () => {
     }
   })
 
-  it('pactId/gateId 只收 string,非串一律置 null', () => {
+  it('pactId/gateId 按 id 认:非串与认不出的 id 一律置 null', () => {
     const endgame = useEndgameStore()
     endgame.$patch({
       worldRun: hostileRun({ pactId: 123 as unknown as null, gateId: 5 as unknown as null })
@@ -113,10 +113,43 @@ describe('远征读档恢复 · worldRun sanitize', () => {
     expect(endgame.worldRun?.pactId).toBeNull()
     expect(endgame.worldRun?.gateId).toBeNull()
 
-    endgame.$patch({ worldRun: hostileRun({ pactId: 'p', gateId: 'g' }) })
+    /**
+     * 野 id 在 pactDef/gateDef 里查不到:签约时的规则与门之规则会双双静默失效,
+     * 玩家打的是无契无门的白板局,界面却还挂着那个名字。
+     */
+    endgame.$patch({ worldRun: hostileRun({ pactId: 'ghost_pact', gateId: 'ghost_gate' }) })
     endgame.sanitize()
-    expect(endgame.worldRun?.pactId).toBe('p')
-    expect(endgame.worldRun?.gateId).toBe('g')
+    expect(endgame.worldRun?.pactId, '认不出的契约等同未立约').toBeNull()
+    expect(endgame.worldRun?.gateId, '认不出的门等同未择门').toBeNull()
+
+    endgame.$patch({ worldRun: hostileRun({ pactId: 'xue', gateId: 'xiu' }) })
+    endgame.sanitize()
+    expect(endgame.worldRun?.pactId, '真契约原样保留').toBe('xue')
+    expect(endgame.worldRun?.gateId, '真门原样保留').toBe('xiu')
+  })
+
+  /**
+   * 逆命契封印的词条每一场都并入玩家属性:
+   * NaN 会顺着 stackedMods 把整身攻防染成 NaN(玩家打不动任何东西),
+   * 野键则会被 modDepth 算进构筑厚度,让天道判定凭空加厚。
+   */
+  it('sealedMods 只留目录里的有限数词条,坏整份当作没有封印', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({
+      worldRun: hostileRun({
+        sealedMods: { attackPct: -0.2, defensePct: Number.NaN, ghostStat: 9, critRate: Number.POSITIVE_INFINITY } as never
+      })
+    })
+    endgame.sanitize()
+    expect(endgame.worldRun?.sealedMods, '野键与坏值都不该进当年那一局').toEqual({ attackPct: -0.2 })
+
+    endgame.$patch({ worldRun: hostileRun({ sealedMods: { attackPct: Number.NaN } as never }) })
+    endgame.sanitize()
+    expect(endgame.worldRun?.sealedMods, '一条可用的都没有,等同未封印').toBeUndefined()
+
+    endgame.$patch({ worldRun: hostileRun({ sealedMods: 'x' as never }) })
+    endgame.sanitize()
+    expect(endgame.worldRun?.sealedMods, '整块形状不对同样当作没有').toBeUndefined()
   })
 
   it('bonus/totalRounds/winStacks 取非负整数,非数兜底 0', () => {
