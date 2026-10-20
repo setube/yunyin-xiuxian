@@ -13,16 +13,17 @@
       <div class="min-w-0 leading-tight">
         <p class="truncate font-kai text-[13px] tracking-wider text-ink">{{ player.name }}</p>
         <p class="flex items-center gap-1.5 whitespace-nowrap text-[10px] text-ink-faint">
-          <span>{{ player.realmName }}</span>
+          <!-- 局促时先让境界名吃省略号:寿元(告急转朱砂)与「N 世」都 shrink-0 保住 -->
+          <span class="min-w-0 flex-1 truncate">{{ player.realmName }}</span>
           <!-- 年龄:寿元将尽时转朱砂,顶栏常驻便于随时察觉 -->
-          <span class="tabular" :class="player.lifespanRatio < LIFESPAN_WARN_RATIO ? 'text-cinnabar' : ''">
+          <span class="tabular shrink-0" :class="player.lifespanRatio < LIFESPAN_WARN_RATIO ? 'text-cinnabar' : ''">
             {{ Math.floor(player.age) }}/{{ formatYears(player.lifespanMax) }}
           </span>
           <!--
             轮回次数:从主页人物卡移来,置于全局顶栏常驻。
             但它是最闲的一格 —— 340px 以下宁可不要,也不能把灵石挤走。
           -->
-          <span v-if="player.reincarnation.count > 0" class="hidden text-violet-ink min-[340px]:inline">
+          <span v-if="player.reincarnation.count > 0" class="hidden shrink-0 text-violet-ink min-[340px]:inline">
             {{ player.reincarnation.count }} 世
           </span>
         </p>

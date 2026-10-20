@@ -591,4 +591,39 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(view, '收录时刻的口径收在 codex,界面不再自己写一份').toContain('collectedTimeText(')
     expect(view, '界面里不该再出现日期格式化的第二份').not.toContain('toLocaleString(')
   })
+
+  it('建号页未定格前有回到欢迎页的入口 —— 否则 web 端建号无退路可比', () => {
+    const create = src('../views/CreateView.vue')
+    // 路由守卫允许 create→welcome(未开始前);建号全程可逆(无限重掷),
+    // 但没有「上一步」控件时 web 端就只能卡在这一页(手机可借系统返回,桌面无处退)
+    expect(create, '建号页该有回欢迎页的 RouterLink').toMatch(
+      /<RouterLink[\s\S]{0,120}to="\/welcome"[\s\S]{0,240}欢迎/,
+    )
+  })
+
+  it('登临导览的「天道熔炉」是真按钮 —— 无 href 的 <a> 键盘到不了', () => {
+    const view = src('../views/CelestialView.vue')
+    expect(view, '天道熔炉该是可聚焦的 button').toMatch(
+      /<button[\s\S]{0,240}@click="tutorialOpen = false"[\s\S]{0,80}天道熔炉/,
+    )
+    // 无 href 却挂 @click 的 <a>:不在 Tab 序列里,读屏也只念「链接」
+    const deadLinks = [...view.matchAll(/<a\b[^>]*>/g)]
+      .map(m => m[0])
+      .filter(tag => !/\shref=/.test(tag) && /@click=/.test(tag))
+    expect(deadLinks, `这些 <a> 没有 href 却挂了点击:${deadLinks.join(' | ')}`).toEqual([])
+  })
+
+  it('凝道果先采样首次教学标志,再执行凝果 —— 否则教学弹窗永不弹出', () => {
+    const view = src('../views/CelestialView.vue')
+    const body = /function doCondense\(\)[^{]*\{([\s\S]*?)\n  \}/.exec(view)?.[1] ?? ''
+    expect(body, '没读到 doCondense —— 判据会假绿').toContain('shouldShowFruitTutorial')
+    // condenseDaoFruit 首次成功时会自己置 seen=true,后读判定恒为假
+    const sampleAt = body.indexOf('shouldShowFruitTutorial()')
+    const condenseAt = body.indexOf('condenseDaoFruit()')
+    expect(sampleAt, 'doCondense 里先采样 shouldShowFruitTutorial()').toBeGreaterThanOrEqual(0)
+    expect(condenseAt, 'doCondense 里应调用 condenseDaoFruit()').toBeGreaterThanOrEqual(0)
+    expect(sampleAt, 'shouldShowFruitTutorial() 必须在 condenseDaoFruit() 之前采样').toBeLessThan(
+      condenseAt,
+    )
+  })
 })

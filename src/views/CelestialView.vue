@@ -800,7 +800,14 @@
         <p class="font-kai text-ink">凡间所得,终有尽时。</p>
         <p class="text-ink-soft">
           玄铁、残页、灵石……到了此境,皆可献入
-          <a class="-my-2 inline-block py-2 text-azure" @click="tutorialOpen = false">天道熔炉</a>
+          <!-- 无 href 的 <a> 不在 Tab 序列里 —— 键盘用户走不到;它做的是按钮的事就写成按钮 -->
+          <button
+            type="button"
+            class="-my-2 inline-block py-2 align-baseline text-azure underline underline-offset-2 active:opacity-60"
+            @click="tutorialOpen = false"
+          >
+            天道熔炉
+          </button>
           ,熔作道源。
         </p>
         <p class="text-ink-soft">
@@ -990,9 +997,13 @@
   const fruitDialog = computed(() => daoFruitDialog())
   function doCondense(): void {
     const before = player.reincarnation.daoFruit
+    // 标志序陷阱:condenseDaoFruit 首次成功时自己就置 daoFruitTutorialSeen=true,
+    // 若在它之后才读 shouldShowFruitTutorial(),判定恒为假 —— 这条「首次凝道果」
+    // 教学弹窗就永不弹出。必须先于凝果采样。
+    const firstFruit = shouldShowFruitTutorial()
     condenseDaoFruit()
     if (player.reincarnation.daoFruit === before) return
-    if (shouldShowFruitTutorial()) {
+    if (firstFruit) {
       fruitDialogOpen.value = true
       markFruitTutorialSeen()
     }

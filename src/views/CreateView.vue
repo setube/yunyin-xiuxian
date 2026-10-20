@@ -1,5 +1,14 @@
 <template>
   <div class="stagger-in flex min-h-full flex-col px-6 py-8">
+    <!-- 上一步:未定格前可回欢迎页核隐私(路由守卫允许 create→welcome) -->
+    <div class="flex items-center">
+      <RouterLink
+        to="/welcome"
+        class="-my-1.5 py-1.5 text-[12px] text-ink-faint active:text-ink-soft"
+        >← 欢迎</RouterLink
+      >
+    </div>
+
     <!-- 题字 -->
     <div class="mt-6 text-center">
       <h1 class="font-kai text-[42px] leading-tight tracking-[0.35em] text-ink">云隐修仙录</h1>
@@ -28,7 +37,8 @@
         <p class="font-kai text-[13px] tracking-[0.3em] text-ink-faint">灵 根</p>
         <span class="font-kai text-[15px] tracking-widest text-cinnabar">{{ profile.gradeName }}</span>
       </div>
-      <div :key="rollSeq" class="stagger-in mt-4 flex justify-center gap-3">
+      <!-- 五根灵根在 320 宽下并排放不下:给圆环行留 flex-wrap,窄屏折行而不是横向越界 -->
+      <div :key="rollSeq" class="stagger-in mt-4 flex flex-wrap justify-center gap-3">
         <div v-for="root in profile.roots" :key="root.element" class="flex flex-col items-center gap-1.5">
           <span
             class="grid h-12 w-12 place-items-center rounded-full border-2 font-kai text-lg animate-breathe"
