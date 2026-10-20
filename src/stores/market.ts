@@ -39,16 +39,27 @@ export const useMarketStore = defineStore(
     const stockedAt = ref(0)
     const consign = ref<ConsignPost[]>([])
 
-    /** 存档修复:货架逐格修形,烂格整格丢弃(少一件货好过白屏);时刻夹回非负 */
+    /**
+     * 存档修复:货架逐格修形,烂格整格丢弃(少一件货好过白屏);时刻夹回非负。
+     *
+     * 重复 idx 的格子整格丢弃:购买按 idx 认格,导入/坏档里两格同号时
+     * `buy(idx)` 只会命中先出现的那一格,后一格永远买不到(点了没反应),
+     * 且玩家以为在点 B、实际买到 A。丢弃是诚实的收场 —— 注意**不能改成重新编号**:
+     * 装备的品质由 (stockedAt, idx) 确定性再生,改号会让标价与实得品质分叉。
+     */
     function sanitize(): void {
       stockedAt.value = Math.max(0, asFiniteNumber(stockedAt.value, 0))
       const clean: MarketSlot[] = []
+      const usedIdx = new Set<number>()
       for (const raw of asArray<unknown>(stock.value)) {
         if (!raw || typeof raw !== 'object' || !('kind' in raw)) continue
         const kind = raw.kind
         if (kind !== 'pill' && kind !== 'material' && kind !== 'equipment') continue
         const sold = 'sold' in raw && raw.sold === true
         const idx = asNonNegInt('idx' in raw ? raw.idx : undefined, clean.length)
+        // 同号格只留先出现的那一格(买得到的那一格)
+        if (usedIdx.has(idx)) continue
+        usedIdx.add(idx)
 
         if (kind === 'pill') {
           if (!('pillId' in raw) || typeof raw.pillId !== 'string' || !pillDef(raw.pillId)) continue

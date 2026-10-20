@@ -171,6 +171,40 @@ describe('坊市 · 买卖', () => {
     if (s1?.kind === 'material') expect(s1.grade, '99 不是合法品阶,应落回无级兜底').toBeUndefined()
   })
 
+  /**
+   * 购买按 idx 认格:两格同号时 `buy(idx)` 只会命中先出现的那一格,后一格永远
+   * 买不到 —— 玩家点它没有任何反应,还会以为买到的是它。故重复号只留先出现的
+   * 那格(能买到的那个),丢掉注定点不动的幽灵格。
+   */
+  it('sanitize:重复 idx 只留先出现的那格(后一格原本永远买不到)', () => {
+    const market = useMarketStore()
+    market.$patch({
+      stock: [
+        { kind: 'material', idx: 3, matId: 'herb', grade: 1, count: 12, price: { m: 5, e: 0 }, sold: false },
+        { kind: 'material', idx: 3, matId: 'ore', count: 12, price: { m: 6, e: 0 }, sold: false }
+      ] as MarketSlot[]
+    })
+    market.sanitize()
+    expect(market.stock, '两格同号只能留一格').toHaveLength(1)
+    const kept = market.stock[0]!
+    expect(kept.idx).toBe(3)
+    expect(kept.kind === 'material' && kept.matId, '留下的是先出现、买得到的那格').toBe('herb')
+  })
+
+  it('sanitize:缺 idx 的格子按位置补号,不与已有号撞车', () => {
+    const market = useMarketStore()
+    market.$patch({
+      stock: [
+        { kind: 'material', idx: 1, matId: 'herb', grade: 1, count: 12, price: { m: 5, e: 0 }, sold: false },
+        // 第 2 格缺号:按位置补 1,与已有号撞车 → 这格丢弃,不许覆盖已存在的货
+        { kind: 'material', matId: 'ore', count: 12, price: { m: 6, e: 0 }, sold: false }
+      ] as unknown as MarketSlot[]
+    })
+    market.sanitize()
+    expect(market.stock).toHaveLength(1)
+    expect(market.stock[0]!.idx).toBe(1)
+  })
+
   it('寄卖:背包一件离包上架,记价/记层/记时刻,行囊随之腾空', () => {
     const market = useMarketStore()
     const inventory = useInventoryStore()
