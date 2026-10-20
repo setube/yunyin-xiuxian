@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -445,6 +447,21 @@ describe('镇压速率:显示与结算同源', () => {
     const gained = toNum(sub(resources.spiritStone, before))
     expect(gained).toBeCloseTo(uiStonePerHour('qingyun'), 6)
     expect(gained, '不是繁盛的 110%').toBeCloseTo(toNum(suppressRateFor('qingyun')!.stonePerHour), 6)
+  })
+
+  /**
+   * 倒计时与「已守多久」必须跟着秒走。
+   *
+   * 这两处读的都是墙钟,而所在 computed 只依赖 player 的少数字段 —— 停在历练页
+   * 不动时不会重算,倒计时会冻在进页那一刻。故障注入:把 now.value 改回
+   * `Date.now()` → 本条红(读数再次失去每秒推进的来源)。
+   */
+  it('历练页的镇压倒计时与已守时长读每秒推进的 now,不直接调 Date.now()', () => {
+    const view = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
+    expect(view, '要有一枚每秒推进的读数').toContain('const now = useNow()')
+    expect(view, '复聚倒计时读 now.value').toContain('hoursUntilRevive(player.suppressedSince[r.id], now.value)')
+    expect(view, '复苏判定读同一读数').toContain('isReviving(player.suppressedSince[r.id], now.value)')
+    expect(view, '已守时长也读同一读数').toContain('(now.value - since) / 3_600_000')
   })
 })
 

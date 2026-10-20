@@ -365,6 +365,7 @@
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, ecologyChips, ECO_LEVEL_NAMES, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { formatGN } from '@/utils/format'
+  import { useNow } from '@/composables/useNow'
   import GameIcon from '@/components/common/GameIcon.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import CombatPanel from '@/components/adventure/CombatPanel.vue'
@@ -375,6 +376,14 @@
   const player = usePlayerStore()
   const ui = useUiStore()
   const resources = useResourcesStore()
+  /**
+   * 镇压倒计时与「已守多久」都按墙钟走,得有一枚每秒推进的读数。
+   *
+   * 此前这两处直接调 `Date.now()`,而所在 computed 只依赖 player 的那几个字段 ——
+   * 玩家停在历练页不动时,exp 之类的变化不会让它们重算,倒计时便冻在进页那一刻:
+   * 「妖气 71 时后复聚」可以挂一整天不动,「已守 3 时」也不会长大。
+   */
+  const now = useNow()
 
   const modeTarget = ref<RegionDef | null>(null)
 
@@ -463,7 +472,7 @@
       const eco = regionEcology(r)
       const suppressed = player.suppressedRegions.includes(r.id)
       const recall = regionRecallFor(r.id)
-      const revived = suppressed && isReviving(player.suppressedSince[r.id], Date.now())
+      const revived = suppressed && isReviving(player.suppressedSince[r.id], now.value)
       return {
         def: r,
         // 旧链:这处地界是否**已被发现** —— 决定列表可见性、锁图标与简介
@@ -482,7 +491,7 @@
         /** 镇压资格进度(三条判据的当前值/阈值) */
         progress: suppressionProgress(player.regionStats[r.id]),
         /** 距妖气复聚还剩几小时(未镇压为 0) */
-        reviveInHours: suppressed ? hoursUntilRevive(player.suppressedSince[r.id]) : 0,
+        reviveInHours: suppressed ? hoursUntilRevive(player.suppressedSince[r.id], now.value) : 0,
         tooHard: r.minRealm > player.major,
         /** 此地之敌的加成来源(层级补偿 × 地界凶险;出行方式那一档另算) */
         foeOrigin: regionFoeOrigin(r),
@@ -635,7 +644,7 @@
   function heldText(regionId: string): string {
     const since = player.suppressedSince[regionId]
     if (since === undefined) return '—'
-    const hours = Math.max(0, Math.floor((Date.now() - since) / 3_600_000))
+    const hours = Math.max(0, Math.floor((now.value - since) / 3_600_000))
     return hours < 24 ? `${hours} 时` : `${Math.floor(hours / 24)} 日`
   }
 </script>
