@@ -150,16 +150,22 @@ describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压
     const lore = useLoreStore()
     seedOfflineTrip()
 
-    expect(settleOffline(Date.now()), '这一档应当结算出离线收益').not.toBeNull()
-
-    const summary = useAdventureStore().session
-    expect(summary, '60 小时该赢下不少场').not.toBeNull()
-    // 首领战另记一场(离线与在线一样,首领胜也进区域账),故这里是 ≥
+    const summary = settleOffline(Date.now())
+    expect(summary, '这一档应当结算出离线收益').not.toBeNull()
+    expect(summary!.battles, '60 小时该打上不少场').toBeGreaterThan(0)
     const stats = player.regionStats.qingyun
-    expect(stats, '离线胜场必须写入 regionStats').toBeDefined()
-    expect(stats!.totalFights, '离线打了多少胜场,账面就得有多少场').toBeGreaterThan(0)
-    expect(stats!.totalFights, '离线打赢的场次不该少于会话胜场').toBeGreaterThanOrEqual(summary!.wins)
-    expect(player.regionWins.qingyun, '离线胜场必须写入区域兴衰').toBe(stats!.totalFights)
+    expect(stats, '离线战绩必须写入 regionStats').toBeDefined()
+    // 在线每一场(含败场)都进 totalFights,镇压的「20 战」门槛读的正是它;
+    // 离线从前只写胜场,于是同样的战况挂机永远差着门槛、连胜还会被虚记。
+    expect(stats!.totalFights, '离线打过的每一场都要进 totalFights').toBeGreaterThanOrEqual(
+      summary!.battles
+    )
+    expect(stats!.totalFights, "败场不许被顺手抹掉").toBeGreaterThan(summary!.wins)
+    // 兴衰只认净胜:胜场数(普通胜 + 至多一场首领胜),不是总场次
+    expect(player.regionWins.qingyun, '兴衰胜场只记净胜').toBeLessThan(stats!.totalFights)
+    expect(player.regionWins.qingyun, '兴衰胜场不该少于普通战胜场').toBeGreaterThanOrEqual(
+      summary!.wins
+    )
     const seen = Object.values(lore.enemySeen).reduce((n, v) => n + v, 0)
     expect(seen, '离线交手必须推进敌人图鉴').toBeGreaterThan(0)
   })
@@ -183,6 +189,68 @@ describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压
     expect(fresh.regionStats.luoxia!.avgDamageTakenPct).toBeCloseTo(expectedDamage, 10)
     expect(fresh.regionStats.luoxia!.totalFights, '一次批量与逐场计数等价').toBe(4)
     expect(fresh.regionWins.luoxia, '批量也要记兴衰胜场').toBe(3)
+  })
+
+  /**
+   * 在线是「每一场都进 updateRegionStats」—— 胜场与败场都算进 `totalFights`,
+   * 而镇压门槛「至少 20 战」读的正是它。离线从前只写胜场:
+   * 同样的战况,守着屏幕打能拿镇压资格,挂机回来却永远差着;
+   * 连败还会被虚记成连胜(那一栏只加不减)。
+   */
+  describe('批量净胜/净负 · 与在线逐场等价', () => {
+    it('胜负都进 totalFights(镇压门槛读的是总场次)', () => {
+      const player = usePlayerStore()
+      player.applyRegionBatch('luoxia', 7, 3, 2, 0.01)
+
+      const stats = player.regionStats.luoxia!
+      expect(stats.totalFights, '10 场就是 10 场,不能只数赢的那 7 场').toBe(10)
+      expect(player.regionWins.luoxia, '兴衰只认净胜').toBe(7)
+    })
+
+    it('整段里有败场时连胜归零 —— 与逐场打完的最终值一致', () => {
+      const player = usePlayerStore()
+      player.updateRegionStats('luoxia', true, 2, 0.01)
+      player.updateRegionStats('luoxia', true, 2, 0.01)
+      expect(player.regionStats.luoxia!.consecutiveWins, '先赢两场').toBe(2)
+
+      player.applyRegionBatch('luoxia', 5, 1, 2, 0.01)
+      expect(
+        player.regionStats.luoxia!.consecutiveWins,
+        '这一整段里输过,连胜就不该还挂着'
+      ).toBe(0)
+    })
+
+    it('全胜时才保留连胜累加(没有败场不该被清零)', () => {
+      const player = usePlayerStore()
+      player.updateRegionStats('luoxia', true, 2, 0.01)
+      player.applyRegionBatch('luoxia', 3, 0, 2, 0.01)
+      expect(player.regionStats.luoxia!.consecutiveWins).toBe(4)
+    })
+
+    it('EMA 与逐场调用逐字等价(胜+负一起推进衰减)', () => {
+      const player = usePlayerStore()
+      player.applyRegionBatch('luoxia', 3, 2, 9, 0.5)
+      const batch = { ...player.regionStats.luoxia! }
+
+      setActivePinia(createPinia())
+      const perFight = usePlayerStore()
+      // 与批量的顺序无关:EMA 只取决于次数与取值
+      for (let i = 0; i < 5; i += 1) perFight.updateRegionStats('luoxia', true, 9, 0.5)
+
+      expect(batch.totalFights).toBe(perFight.regionStats.luoxia!.totalFights)
+      expect(batch.avgRounds).toBeCloseTo(perFight.regionStats.luoxia!.avgRounds, 10)
+      expect(batch.avgDamageTakenPct).toBeCloseTo(
+        perFight.regionStats.luoxia!.avgDamageTakenPct,
+        10
+      )
+    })
+
+    it('非正场次不写入(空批次不会凭空造出一条战绩)', () => {
+      const player = usePlayerStore()
+      player.applyRegionBatch('luoxia', 0, 0, 2, 0.01)
+      expect(player.regionStats.luoxia).toBeUndefined()
+      expect(player.regionWins.luoxia).toBeUndefined()
+    })
   })
 
   /**
