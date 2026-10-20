@@ -27,7 +27,7 @@
  */
 import { classifySmoke, namePattern, SMOKE_ALLOWLIST } from './smoke-classify.ts'
 import { chromium } from 'playwright'
-import CryptoJS from 'crypto-js'
+import { lateSlices, seedSave } from './lib/saveFixture.mjs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -75,51 +75,7 @@ const browser = await chromium.launch({
 })
 const context = await browser.newContext({ viewport: { width: 375, height: 812 } })
 if (LATE) {
-  const gn = (m, e) => ({ m, e })
-  const SAVE_SECRET = 'yunyin-xiuxian::dao-in-the-clouds::v1'
-  const enc = o => CryptoJS.AES.encrypt(JSON.stringify(o), SAVE_SECRET).toString()
-  const slices = {
-    /**
-     * 时间戳用"现在":夹具若写 1970,离线结算会去补算半个世纪的挂机收益 ——
-     * 冒烟脚本每翻一页都要重算一次,一轮要跑十分钟(实测)。
-     */
-    game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
-    player: {
-      major: 14,
-      sub: 0,
-      exp: gn(0, 0),
-      age: 3000,
-      lifespanBonusYears: 0,
-      dead: false,
-      reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
-      linggen: { roots: [{ element: 'fire', aptitude: 88 }, { element: 'water', aptitude: 70 }], gradeName: '双灵根', growthMult: 1.4 }
-    },
-    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 900, page: 300, dust: 500 },
-    /**
-     * 装备两件「背水」词条 —— 攒出一路流派。没有这一步,流派页的成路界面
-     * (五维评级 / 组合技 / 成路来源)在冒烟里根本不会渲染,等于没测。
-     */
-    inventory: {
-      items: [
-        { uid: 'smoke_w', templateId: 'w_zidian', quality: 'heaven', tier: 20, level: 0, affixes: [{ id: 'bs3', roll: 1 }] },
-        { uid: 'smoke_a', templateId: 'a_hufu', quality: 'heaven', tier: 20, level: 0, affixes: [{ id: 'low2', roll: 1 }] }
-      ],
-      equipped: { weapon: 'smoke_w', armor: 'smoke_a' },
-      pills: {},
-      artifacts: [],
-      equippedArtifacts: []
-    },
-    endgame: { daoPath: 'sword', daoSource: 1200, souls: [], equippedSouls: [] },
-    settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'dark' }
-  }
-  await context.addInitScript(
-    data => {
-      if (localStorage.getItem('__smokeFixture')) return
-      for (const [k, v] of Object.entries(data)) localStorage.setItem(k, v)
-      localStorage.setItem('__smokeFixture', '1')
-    },
-    Object.fromEntries(Object.entries(slices).map(([k, v]) => [`yunyin.${k}`, enc(v)]))
-  )
+  await seedSave(context, lateSlices())
 }
 const page = await context.newPage()
 const errors = []
