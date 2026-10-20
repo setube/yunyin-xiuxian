@@ -53,4 +53,21 @@ describe('不可逆确认的两次点击各写什么', () => {
     expect(TRANSFER_LABELS.confirm).toBe('确认转移')
     expect(TRANSFER_LABELS.cancel).toBe('再想想')
   })
+
+  /**
+   * 确认态必须钉在「那一条」上,不能钉在它的行号上。
+   *
+   * 道痕表新痕插头部,而重写一次就会补一条新痕:按行号记的话,重写第一行后
+   * 第二行的确认态会挪到刚写进来的那一行 —— 玩家再点确认,花掉的是另一条的道源。
+   * 故障注入:把 rewriteConfirm === mark 改回 === i → 红。
+   */
+  it('忆战重写的确认态按道痕身份记,不按行号', () => {
+    const src = read('views/CelestialView.vue')
+    expect(src, '确认态须按那条痕本身比对').toContain('rewriteConfirm === mark')
+    expect(src, '武装须写入那条痕本身').toContain('rewriteConfirm = mark')
+    expect(src, '列表键也不该拿行号当身份').not.toContain('v-for="(mark, i) in endgame.marks"')
+    expect(src, '重写确认态须记道痕本身,不再记行号').toContain(
+      'const rewriteConfirm = ref<(typeof endgame.marks)[number] | null>(null)'
+    )
+  })
 })

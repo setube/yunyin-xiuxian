@@ -466,7 +466,13 @@
             </div>
           </div>
           <div v-if="endgame.marks.length" class="card-ink mt-2 max-h-64 divide-y divide-ink/6 overflow-y-auto px-4">
-            <div v-for="(mark, i) in endgame.marks" :key="i" class="flex items-center gap-2 py-2">
+            <!-- 行键按痕本身(落痕时刻 + 目标 + 世数):新痕插头部时,旧行仍认得出自己,
+                 确认态不跟着行号错位 -->
+            <div
+              v-for="mark in endgame.marks"
+              :key="`${mark.at}|${mark.targetId}|${mark.life}`"
+              class="flex items-center gap-2 py-2"
+            >
               <span class="shrink-0 font-kai text-[11px] text-ink-faint">第{{ mark.life }}世</span>
               <span class="shrink-0 text-[11px] text-violet-ink">{{ mark.daoPathId ? daoPathDef(mark.daoPathId)?.name : '无道' }}</span>
               <span class="min-w-0 truncate font-kai text-[12px]" :class="mark.cleared ? 'text-ink' : 'text-ink-faint'">
@@ -490,7 +496,7 @@
                 忆
               </button>
               <!-- 重写要花道源,代价内联在按钮上(不再是 hover 专属),触控面放大,并加一步确认 -->
-              <template v-if="mark.cleared && mark.replay && rewriteConfirm === i">
+              <template v-if="mark.cleared && mark.replay && rewriteConfirm === mark">
                 <button
                   class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
                   @click="rewriteConfirm = null"
@@ -508,7 +514,7 @@
                 v-else-if="mark.cleared && mark.replay"
                 class="shrink-0 min-h-[28px] rounded border border-cinnabar/40 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
                 title="以今日之你重打此战,快过旧我之回合即【胜于旧我】"
-                @click="rewriteConfirm = i"
+                @click="rewriteConfirm = mark"
               >
                 写(道源{{ REWRITE_ENTRY_COST }} · 破{{ mark.rounds }}回合)
               </button>
@@ -1216,8 +1222,15 @@
   }
 
   // ---- 重写此痕:以今日之你,快过当年 ----
-  /** 重写确认态(按道痕索引):写入要花道源,需要看明白再点 */
-  const rewriteConfirm = ref<number | null>(null)
+  /**
+   * 重写确认态(按道痕这一条本身,不按行号)。
+   *
+   * 道痕表是「新痕插在头部」,而重写本身就会补一条新痕 —— 若按行号记,
+   * 列表一变(重写、远征归来、切页后重新读档)确认态就会落到**另一条**道痕上,
+   * 玩家点「确认重写」时花的是那条的道源,不是他挑的那条。
+   * 记对象引用:同一条痕在列表里挪位也认得出,列表重建则自动回落未武装。
+   */
+  const rewriteConfirm = ref<(typeof endgame.marks)[number] | null>(null)
   function goRewrite(mark: (typeof endgame.marks)[number]): void {
     const result = rewriteMark(mark)
     if (result) {
