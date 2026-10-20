@@ -76,7 +76,7 @@
     <section v-else-if="tab === 'sell'" class="space-y-4">
       <!-- 寄卖装备 -->
       <div>
-        <SectionTitle title="装备寄卖" :hint="`${market.consign.length}/${consignSlots}`" />
+        <SectionTitle title="装备寄卖" :hint="consignHint" />
         <p class="mb-2 text-[10px] text-ink-faint">
           离包即定,约一炷香售出,灵石入账;离线照走,不可撤回。价比坊市购入同档更廉,唯图个落袋为安。
         </p>
@@ -293,8 +293,20 @@
   let timer: ReturnType<typeof setInterval> | undefined
 
   const consignSlots = MARKET_CONSIGN_SLOTS
-  const consignSlotsArr = Array.from({ length: consignSlots }, (_, i) => i)
+  /**
+   * 铺格子按「上限与实际条数取大」:坏档可能塞进多于上限的寄卖,那些件到点照样
+   * 入账 —— 只按上限铺两格会让多出来的那笔从不露面(钱进了账,玩家却不知道有它)。
+   */
+  const consignSlotsArr = computed(() =>
+    Array.from({ length: Math.max(consignSlots, market.consign.length) }, (_, i) => i)
+  )
   const consignSlotsFull = computed(() => market.consign.length >= consignSlots)
+  /** 坏档能塞进多于上限的寄卖:照实报条数,别让「3/2」这种读数看起来像坏了 */
+  const consignHint = computed(() =>
+    market.consign.length > consignSlots
+      ? `${market.consign.length} 件(超出上限 ${consignSlots},售出后不再补)`
+      : `${market.consign.length}/${consignSlots}`
+  )
 
   const remainingSec = computed(() => marketRemainingSec(market.stockedAt, now.value))
   const cards = computed<CardView[]>(() =>

@@ -318,6 +318,42 @@ describe('坊市 · 买卖', () => {
     expect(market.consign).toHaveLength(1)
     expect(market.consign[0]!.name).toBe('贝甲')
   })
+
+  /**
+   * 寄卖格号重复:界面按格号铺格子,同一个号会被后一条盖住 —— 玩家只看见一件,
+   * 到点却两笔都入账(钱进了账,却有一件从不露面)。格号重排,不丢任何一件。
+   */
+  it('sanitize:寄卖格号重复只理顺号,一件都不丢', () => {
+    const market = useMarketStore()
+    const now = Date.now()
+    market.$patch({
+      consign: [
+        { slot: 0, tier: 3, qualityRank: 1, price: { m: 5, e: 0 }, finishAt: now + 1000, name: '甲' },
+        { slot: 0, tier: 4, qualityRank: 2, price: { m: 6, e: 0 }, finishAt: now + 2000, name: '乙' }
+      ]
+    })
+    market.sanitize()
+    expect(market.consign, '两件都是玩家的东西,一条都不许丢').toHaveLength(2)
+    expect(market.consign.map(p => p.slot).sort()).toEqual([0, 1])
+    // 先到期的那件在前:格号顺序与「谁先回来」一致
+    expect(market.consign[0]!.name).toBe('甲')
+  })
+
+  it('sanitize:寄卖多于格子上限也不丢,照样入账', () => {
+    const market = useMarketStore()
+    const now = Date.now()
+    const many = Array.from({ length: MARKET_CONSIGN_SLOTS + 2 }, (_, i) => ({
+      slot: i,
+      tier: 3,
+      qualityRank: 1,
+      price: { m: 5, e: 0 },
+      finishAt: now + 1000 + i,
+      name: `件${i}`
+    }))
+    market.$patch({ consign: many })
+    market.sanitize()
+    expect(market.consign.length, '超出上限的也是玩家已交出去的货,不能悄悄吞掉').toBe(MARKET_CONSIGN_SLOTS + 2)
+  })
 })
 
 describe('坊市 · 刷新窗口时序(sync 与到期)', () => {

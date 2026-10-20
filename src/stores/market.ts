@@ -117,7 +117,14 @@ export const useMarketStore = defineStore(
           name: 'name' in raw && typeof raw.name === 'string' ? raw.name : ''
         })
       }
+      /*
+       * 寄卖格号重排成唯一的 0..n-1:界面按格号铺格子,坏档里两条寄卖写同一个号时,
+       * 后一条会被前一条盖住 —— 玩家只看见一件,到点却两笔都入账(给而不报)。
+       * 这里不丢任何一条(那是玩家的东西),只把号理顺;格子数由界面按实际条数铺。
+       */
       consign.value = posts
+        .sort((a, b) => a.finishAt - b.finishAt || a.slot - b.slot)
+        .map((p, i) => ({ ...p, slot: i }))
     }
 
     /** 货架空、或已过刷新窗口则重上一架;此刻的架内货不动 */
