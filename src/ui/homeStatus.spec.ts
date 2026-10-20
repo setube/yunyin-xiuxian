@@ -4,6 +4,8 @@ import { homeStatusText, type HomePresence } from './homeStatus'
 function presence(over: Partial<HomePresence> = {}): HomePresence {
   return {
     dead: false,
+    exploringSecret: false,
+    expedition: false,
     adventuring: false,
     regionName: '',
     injured: false,
@@ -34,7 +36,19 @@ describe('主页状态行', () => {
     expect(homeStatusText(presence({ adventuring: true, regionName: '青云山麓' }))).toBe('历练中 · 青云山麓')
   })
 
+  it('身在秘境写探秘中,不写修炼中', () => {
+    expect(homeStatusText(presence({ exploringSecret: true }))).toBe('探秘中')
+  })
+
+  it('远征在外写远征中,且比历练会话优先', () => {
+    expect(
+      homeStatusText(presence({ expedition: true, adventuring: true, regionName: '青云山麓' }))
+    ).toBe('远征中')
+  })
+
   it('陨落压过其余一切', () => {
-    expect(homeStatusText(presence({ dead: true, adventuring: true, regionName: '青云山麓' }))).toBe('陨落')
+    expect(
+      homeStatusText(presence({ dead: true, exploringSecret: true, expedition: true, adventuring: true, regionName: '青云山麓' }))
+    ).toBe('陨落')
   })
 })

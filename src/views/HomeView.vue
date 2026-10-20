@@ -178,6 +178,7 @@
   import { useDongfuStore } from '@/stores/dongfu'
   import { useAdventureStore } from '@/stores/adventure'
   import { useCultivationStore } from '@/stores/cultivation'
+  import { useEndgameStore } from '@/stores/endgame'
   import { useQuestsStore } from '@/stores/quests'
   import { BUILDINGS } from '@/data/buildings'
   import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
@@ -203,6 +204,7 @@
   const dongfu = useDongfuStore()
   const adventure = useAdventureStore()
   const cultivation = useCultivationStore()
+  const endgame = useEndgameStore()
   const quests = useQuestsStore()
 
   // 法球尺寸:380px 以下卡片内宽骤减,法球随断点同步缩到 108px(与模板容器 max-[380px] 一致)。
@@ -234,6 +236,8 @@
   const statusText = computed(() =>
     homeStatusText({
       dead: player.dead,
+      exploringSecret: player.secretRealm !== null,
+      expedition: endgame.worldRun !== null,
       adventuring: adventure.sessionActive,
       regionName: adventure.currentRegion?.name ?? '',
       injured: cultivation.hasBuff('injury'),
