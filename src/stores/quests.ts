@@ -4,6 +4,8 @@ import { computed, ref } from 'vue'
 import type { CounterKey } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { MAIN_QUESTS } from '@/data/quests'
+import { ACHIEVEMENTS } from '@/data/achievements'
+import { TITLES } from '@/data/titles'
 import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
 
 export type CollectionCategory = 'equip' | 'gongfa' | 'pill' | 'artifact' | 'pet' | 'event' | 'talent'
@@ -37,9 +39,13 @@ export const useQuestsStore = defineStore(
     /** 存档修复:计数/图鉴表被写坏会让成就判定与图鉴页在渲染期抛错 */
     function sanitize(): void {
       counters.value = asNumberRecord(counters.value, 0)
-      // 成就是集合语义(达成与否),坏档里同一条写两遍会让「成就 N/总数」多报、
-      // 甚至报出 N > 总数;与 unlockAchievement 的「已有就不再记」同口径去重。
-      achieved.value = [...new Set(asStringArray(achieved.value))]
+      /**
+       * 成就是集合语义(达成与否),坏档里同一条写两遍会让「成就 N/总数」多报、
+       * 甚至报出 N > 总数;与 unlockAchievement 的「已有就不再记」同口径去重。
+       * 同时只留认得的成就 id:界面只按 ACHIEVEMENTS 陈列,野 id 永远画不出来却照样计数。
+       */
+      const achievementIds = new Set(ACHIEVEMENTS.map(a => a.id))
+      achieved.value = [...new Set(asStringArray(achieved.value))].filter(id => achievementIds.has(id))
       const maxIdx = Math.max(0, MAIN_QUESTS.length - 1)
       mainIdx.value = Math.min(Math.floor(asFiniteNumber(mainIdx.value, 0, 0)), maxIdx)
       const d = asObjectOrNull<{ date?: unknown; base?: unknown; done?: unknown }>(daily.value)
@@ -49,9 +55,13 @@ export const useQuestsStore = defineStore(
         // 日课同样按条认 id:重复条目既不该多算,也没有「同一门日课成两次」这回事
         done: [...new Set(asStringArray(d?.done))]
       }
-      // 名号是集合:重复条目会把「名号 N/总数」撑过总数,列表却只画
-      // 已拥有的那几枚(按 Set 判),计数与界面当场分叉。
-      titlesOwned.value = [...new Set(asStringArray(titlesOwned.value))]
+      /**
+       * 名号是集合:重复条目会把「名号 N/总数」撑过总数,列表却只画
+       * 已拥有的那几枚(按 Set 判),计数与界面当场分叉。认不出的旧 id 同理 ——
+       * 它不产生任何词条(titleDef 查不到),只会在计数上虚增一位。
+       */
+      const titleIds = new Set(TITLES.map(t => t.id))
+      titlesOwned.value = [...new Set(asStringArray(titlesOwned.value))].filter(id => titleIds.has(id))
       const cats = asRecord<string[]>(collections.value)
       // 图鉴各类都是集合语义(collect 只在没有时才追加):重复 id 会让「已收 N」多报,
       // 灵兽册还会把同一只灵兽画两行、配两个相同的 v-for key。

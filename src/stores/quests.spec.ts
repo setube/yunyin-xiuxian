@@ -63,17 +63,28 @@ describe('sanitize:重复条目不再把计数撑破', () => {
   it('成就/日课/名号/图鉴同一条写两遍,计数与列表一致', () => {
     const quests = useQuestsStore()
     quests.$patch({
-      achieved: ['a_one', 'a_one'],
-      daily: { date: '2026-10-20', base: {}, done: ['d_one', 'd_one'] },
-      titlesOwned: ['t_one', 't_one'],
+      achieved: ['a_r0', 'a_r0'],
+      daily: { date: '2026-10-20', base: {}, done: ['d_kill', 'd_kill'] },
+      titlesOwned: ['ti_churu', 'ti_churu'],
       collections: { equip: ['e1', 'e1'], gongfa: [], pill: [], artifact: [], pet: ['p1', 'p1'], event: [], talent: [] }
     } as never)
     quests.sanitize()
-    expect(quests.achieved, '成就同一条只留一次').toEqual(['a_one'])
-    expect(quests.daily.done, '日课同一条只留一次').toEqual(['d_one'])
-    expect(quests.titlesOwned, '名号同一条只留一次').toEqual(['t_one'])
+    expect(quests.achieved, '成就同一条只留一次').toEqual(['a_r0'])
+    expect(quests.daily.done, '日课同一条只留一次').toEqual(['d_kill'])
+    expect(quests.titlesOwned, '名号同一条只留一次').toEqual(['ti_churu'])
     expect(quests.collections.equip, '装备图鉴去重').toEqual(['e1'])
     expect(quests.collections.pet, '灵兽册去重后不会画两行同 key').toEqual(['p1'])
+  })
+
+  it('认不出的成就/名号 id 清掉,不再虚增「N/总数」', () => {
+    const quests = useQuestsStore()
+    quests.$patch({
+      achieved: ['a_r0', 'a_ghost'],
+      titlesOwned: ['ti_churu', 'ti_ghost']
+    } as never)
+    quests.sanitize()
+    expect(quests.achieved, '野成就画不出来,也不该占一格计数').toEqual(['a_r0'])
+    expect(quests.titlesOwned, '野名号不产生词条,也不该占一格计数').toEqual(['ti_churu'])
   })
 })
 
