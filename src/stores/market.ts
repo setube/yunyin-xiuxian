@@ -7,8 +7,6 @@
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { GNum } from '@/types'
-import { gn, gnZero } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
 import { rng } from '@/utils/random'
 import { usePlayerStore } from '@/stores/player'
@@ -30,23 +28,9 @@ import {
 import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, materialSellPrice, pillSellPrice } from '@/core/marketService'
 import type { HerbGrade } from '@/data/herbGrades'
 import { herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
-import { asArray, asFiniteNumber } from '@/utils/saveShape'
+import { asArray, asFiniteNumber, asNonNegInt, asPrice } from '@/utils/saveShape'
 
 export type MarketBuyResult = 'ok' | 'sold' | 'poor' | 'bagfull' | 'missing'
-
-/** 货架里的价格坏了就归零(归零意味着「买得起」;上货会重填,故不会真以零成交) */
-function gprice(v: unknown): GNum {
-  if (v && typeof v === 'object' && 'm' in v && 'e' in v) {
-    const m = v.m as number
-    const e = v.e as number
-    if (Number.isFinite(m) && Number.isFinite(e)) return gn({ m, e })
-  }
-  return gnZero()
-}
-
-function safeIdx(v: unknown, fallback: number): number {
-  return Number.isFinite(v) ? Math.max(0, Math.floor(v as number)) : fallback
-}
 
 export const useMarketStore = defineStore(
   'market',
@@ -64,7 +48,7 @@ export const useMarketStore = defineStore(
         const kind = raw.kind
         if (kind !== 'pill' && kind !== 'material' && kind !== 'equipment') continue
         const sold = 'sold' in raw && raw.sold === true
-        const idx = safeIdx('idx' in raw ? raw.idx : undefined, clean.length)
+        const idx = asNonNegInt('idx' in raw ? raw.idx : undefined, clean.length)
 
         if (kind === 'pill') {
           if (!('pillId' in raw) || typeof raw.pillId !== 'string' || !pillDef(raw.pillId)) continue
@@ -73,7 +57,7 @@ export const useMarketStore = defineStore(
             idx,
             pillId: raw.pillId,
             count: Math.max(1, Math.floor(Number('count' in raw ? raw.count : 1) || 1)),
-            price: gprice('price' in raw ? raw.price : undefined),
+            price: asPrice('price' in raw ? raw.price : undefined),
             sold
           })
         } else if (kind === 'material') {
@@ -88,7 +72,7 @@ export const useMarketStore = defineStore(
             matId,
             grade: isHerbGrade(g) ? g : undefined,
             count: Math.max(1, Math.floor(Number('count' in raw ? raw.count : 1) || 1)),
-            price: gprice('price' in raw ? raw.price : undefined),
+            price: asPrice('price' in raw ? raw.price : undefined),
             sold
           })
         } else {
@@ -97,7 +81,7 @@ export const useMarketStore = defineStore(
             idx,
             tier: Math.max(0, Math.floor(Number('tier' in raw ? raw.tier : 0) || 0)),
             minQualityRank: Math.max(0, Math.floor(Number('minQualityRank' in raw ? raw.minQualityRank : 0) || 0)),
-            price: gprice('price' in raw ? raw.price : undefined),
+            price: asPrice('price' in raw ? raw.price : undefined),
             sold
           })
         }
@@ -113,7 +97,7 @@ export const useMarketStore = defineStore(
           slot: Math.max(0, Math.floor(Number('slot' in raw ? raw.slot : posts.length) || 0)),
           tier: Math.max(0, Math.floor(Number('tier' in raw ? raw.tier : 0) || 0)),
           qualityRank: Math.max(0, Math.floor(Number('qualityRank' in raw ? raw.qualityRank : 0) || 0)),
-          price: gprice('price' in raw ? raw.price : undefined),
+          price: asPrice('price' in raw ? raw.price : undefined),
           finishAt,
           name: 'name' in raw && typeof raw.name === 'string' ? raw.name : ''
         })

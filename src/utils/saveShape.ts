@@ -10,6 +10,8 @@
  * 故这里提供四个最小判据,让各 store 的 sanitize 一行写完:
  * 形状不对就用兜底值,而不是抛错。
  */
+import type { GNum } from '@/types'
+import { gn, gnZero } from './gnum'
 
 /**
  * 是数组就用它,否则兜底。
@@ -69,4 +71,25 @@ export function asNumberRecord(v: unknown, min?: number): Record<string, number>
 /** 对象或 null(用于"可以为空"的状态,如进行中的会话) */
 export function asObjectOrNull<T extends object>(v: unknown): T | null {
   return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as T) : null
+}
+
+/**
+ * 存档里的价格(GNum):形状不对就归零。
+ *
+ * 归零意味着「买得起」,但货架/悬赏会重新上货、重填价格,不会真以零成交;
+ * 相反,一个 NaN 或半个对象会让算价一路算出 NaN。坊市与悬赏共用这一份,
+ * 别各写一份 —— 前者写坏了后者照样漏。
+ */
+export function asPrice(v: unknown): GNum {
+  if (!v || typeof v !== 'object' || !('m' in v) || !('e' in v)) return gnZero()
+  const { m, e } = v as { m: unknown; e: unknown }
+  if (typeof m === 'number' && typeof e === 'number' && Number.isFinite(m) && Number.isFinite(e)) {
+    return gn({ m, e })
+  }
+  return gnZero()
+}
+
+/** 存档里的非负整数(索引/层数/件数):非数用兜底,负数夹回 0 */
+export function asNonNegInt(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : fallback
 }
