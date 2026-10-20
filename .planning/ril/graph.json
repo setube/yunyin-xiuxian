@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 265,
+  "round": 274,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-20T20:47:34+00:00",
+  "updated_at": "2026-10-20T23:11:11+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 263,
+      "touched_round": 273,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -6476,7 +6476,7 @@
       "version": 2,
       "created_at": "2026-09-12T04:35:19+00:00",
       "updated_at": "2026-09-12T05:26:30+00:00",
-      "touched_round": 182,
+      "touched_round": 267,
       "summary": "界面外壳与底部导航(App.vue 外壳 + TopStatusBar + BottomNavigation + 全局浮层 ToastHost + scripts/layout-check.mjs):承载所有页面的固定骨架,也是「真机排版」的观测面"
     },
     "ISS-099": {
@@ -8770,7 +8770,7 @@
       "version": 1,
       "created_at": "2026-09-12T21:00:41+00:00",
       "updated_at": "2026-09-12T21:00:41+00:00",
-      "touched_round": 205,
+      "touched_round": 269,
       "summary": "工程工具链:CI 工作流(build/deploy/yunyin)、自检脚本(ui-smoke/layout-check/test-report)、包脚本编排"
     },
     "EV-142": {
@@ -12482,7 +12482,7 @@
       "version": 1,
       "created_at": "2026-09-18T05:20:11+00:00",
       "updated_at": "2026-09-18T05:20:11+00:00",
-      "touched_round": 210,
+      "touched_round": 274,
       "summary": "区域解锁链(data/regions 的 requireCleared 链与 unlockClosure 闭包 + adventure store 的 unlocked/cleared 与读档补票 + exploration 的开放与推进)"
     },
     "ISS-217": {
@@ -18860,6 +18860,352 @@
       "touched_round": 265,
       "commit": "1040e69",
       "summary": "docs(changelog): 记下暂停顺延、首次凝果教学与词条同名"
+    },
+    "TASK-344": {
+      "id": "TASK-344",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T21:20:24+00:00",
+      "updated_at": "2026-10-20T21:20:24+00:00",
+      "touched_round": 266,
+      "title": "离线历练补写图鉴、区域统计与镇压,与在线同源",
+      "round": 266,
+      "priority": "P1",
+      "category": "correctness",
+      "resolved_at": "2026-10-21"
+    },
+    "ISS-906": {
+      "id": "ISS-906",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T21:20:26+00:00",
+      "updated_at": "2026-10-20T21:20:26+00:00",
+      "touched_round": 266,
+      "title": "离线历练不写敌人图鉴、区域统计与镇压进度",
+      "round": 266,
+      "severity": "high"
+    },
+    "ISS-907": {
+      "id": "ISS-907",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T21:59:35+00:00",
+      "updated_at": "2026-10-20T21:59:35+00:00",
+      "touched_round": 267,
+      "title": "标签页 favicon 是单条 256 原图,130KB 每次冷启动都走一遍网络",
+      "severity": "low",
+      "round": 267,
+      "summary": "favicon.ico 只被浏览器标签页引用(16/32)与 Electron 托盘/窗口图标(48 上限);256 那档没有任何调用方"
+    },
+    "TASK-345": {
+      "id": "TASK-345",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T21:59:39+00:00",
+      "updated_at": "2026-10-20T21:59:39+00:00",
+      "touched_round": 267,
+      "title": "favicon 从 128 母图缩 16/32/48,并补像素级同源判据",
+      "priority": "P2",
+      "category": "perf",
+      "round": 267,
+      "summary": "新增 scripts/favicon.mjs + build:favicon 脚本;新增 src/ui/favicon.spec.ts 11 例;130485B -> 10543B"
+    },
+    "CHG-448": {
+      "id": "CHG-448",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T22:00:05+00:00",
+      "updated_at": "2026-10-20T22:00:05+00:00",
+      "touched_round": 267,
+      "title": "favicon 瘦身到 16/32/48 三档",
+      "round": 267,
+      "commit": "8649ae3",
+      "summary": "scripts/favicon.mjs 读 images/brand/favicon-source-128.png 出 16/32/48;src/ui/favicon.spec.ts 钉尺寸集合/预算/目录自洽/引用不悬空/与母图同源"
+    },
+    "ISS-908": {
+      "id": "ISS-908",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T22:08:06+00:00",
+      "updated_at": "2026-10-20T22:08:06+00:00",
+      "touched_round": 268,
+      "title": "历练收尾总结只报胜场,分不出两战全胜还是九战两胜",
+      "severity": "medium",
+      "round": 268,
+      "summary": "AdventureSession 已有 wins/losses 两本账,但 CombatPanel 与 stopExploration 只渲染 wins;成就门槛「胜+负>=3」也看不出差多少"
+    },
+    "TASK-346": {
+      "id": "TASK-346",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T22:08:26+00:00",
+      "updated_at": "2026-10-20T22:08:26+00:00",
+      "touched_round": 268,
+      "title": "历练战绩补 losses 呈现,并收成单一文案函数",
+      "priority": "P2",
+      "category": "correctness",
+      "round": 268,
+      "summary": "sessionRecordText 统一战斗面板与 stopExploration 四路收尾;追加 7 例"
+    },
+    "CHG-449": {
+      "id": "CHG-449",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T22:08:26+00:00",
+      "updated_at": "2026-10-20T22:08:26+00:00",
+      "touched_round": 268,
+      "title": "历练战绩报胜负两本账",
+      "round": 268,
+      "commit": "0da7db2",
+      "summary": "ui/adventureText.sessionRecordText 出唯一文案;探索结算与 CombatPanel 同读"
+    },
+    "ISS-909": {
+      "id": "ISS-909",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T22:14:38+00:00",
+      "updated_at": "2026-10-20T22:14:38+00:00",
+      "touched_round": 269,
+      "title": "bun run pwa-icons 在干净 clone 上跑不起来 —— sharp 从未进 package.json",
+      "severity": "medium",
+      "round": 269,
+      "summary": "scripts/gen-pwa-icons.mjs import sharp,但 package.json/bun.lock 都没有它;文档把该命令写成改图标的正确姿势,实际只有本机残留安装能跑通"
+    },
+    "TASK-347": {
+      "id": "TASK-347",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T22:14:56+00:00",
+      "updated_at": "2026-10-20T22:14:56+00:00",
+      "touched_round": 269,
+      "title": "PWA 图标脚本改走 Playwright,并加脚本依赖对账判据",
+      "priority": "P1",
+      "category": "correctness",
+      "round": 269,
+      "summary": "gen-pwa-icons.mjs 去 sharp;scriptDepsAudit.spec 3 例扫 scripts/ 第三方裸模块对 package.json"
+    },
+    "CHG-450": {
+      "id": "CHG-450",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T22:14:56+00:00",
+      "updated_at": "2026-10-20T22:14:56+00:00",
+      "touched_round": 269,
+      "title": "pwa-icons 去隐式 sharp 依赖",
+      "round": 269,
+      "commit": "b0f7f1f",
+      "summary": "Chromium 光栅化替代 sharp;新增 scriptDepsAudit 判据;README 补两条图标线说明"
+    },
+    "ISS-910": {
+      "id": "ISS-910",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T22:21:03+00:00",
+      "updated_at": "2026-10-20T22:21:03+00:00",
+      "touched_round": 270,
+      "title": "秘境卡片开打前看不见已败场数与剩余容错",
+      "severity": "medium",
+      "round": 270,
+      "summary": "SECRET_MAX_LOSSES=2 的逐出门槛只在被逐出那一刻才现身;卡片无 losses 呈现,逐出文案「连败两场」手写"
+    },
+    "TASK-348": {
+      "id": "TASK-348",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-20T22:21:21+00:00",
+      "updated_at": "2026-10-20T22:21:21+00:00",
+      "touched_round": 270,
+      "title": "秘境卡补 losses 呈现,逐出文案跟门槛同源",
+      "priority": "P2",
+      "category": "correctness",
+      "round": 270,
+      "summary": "SecretRealmCard 显示已败/剩余容错;secretRealm.ts 用 cnNumber(SECRET_MAX_LOSSES) 派生文案;追加 2 例"
+    },
+    "CHG-451": {
+      "id": "CHG-451",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T22:21:21+00:00",
+      "updated_at": "2026-10-20T22:21:21+00:00",
+      "touched_round": 270,
+      "title": "秘境败场与剩余容错可见",
+      "round": 270,
+      "commit": "446632b",
+      "summary": "卡片显示 losses;逐出文案由 SECRET_MAX_LOSSES 派生"
+    },
+    "ISS-911": {
+      "id": "ISS-911",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T22:29:58+00:00",
+      "updated_at": "2026-10-20T22:30:15+00:00",
+      "touched_round": 271,
+      "title": "离线挂机的败场没进地界战绩,镇压门槛与连胜都被记错",
+      "severity": "high",
+      "round": 271,
+      "summary": "\"在线每场(胜/负)都进 updateRegionStats,totalFights 是镇压「至少 20 战」的依据;离线只写胜场,同样战况挂机永远差门槛,连败还被虚记成连胜\""
+    },
+    "TASK-349": {
+      "id": "TASK-349",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T22:29:58+00:00",
+      "updated_at": "2026-10-20T22:30:15+00:00",
+      "touched_round": 271,
+      "title": "离线整段结算按胜负入账,与在线同一本账",
+      "priority": "P1",
+      "category": "\"correctness\"",
+      "round": 271,
+      "summary": "\"player.applyRegionBatch(regionId,wins,losses,rounds,dmg) 取代只写胜场的批处理;有败场时连胜归零,regionWins 只加净胜;offline.ts 以 battles>0 触发并传 battles-wins\""
+    },
+    "CHG-452": {
+      "id": "CHG-452",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T22:30:09+00:00",
+      "updated_at": "2026-10-20T22:30:09+00:00",
+      "touched_round": 271,
+      "title": "离线败场与胜场一并入账地界战绩",
+      "round": 271,
+      "commit": "\"043346e\"",
+      "summary": "\"applyRegionBatch 按 wins+losses 写 regionStats;有败场清零连胜;regionWins 只加净胜;offlineParity 追加 5 例\""
+    },
+    "ISS-912": {
+      "id": "ISS-912",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T22:52:03+00:00",
+      "updated_at": "2026-10-20T22:52:33+00:00",
+      "touched_round": 272,
+      "title": "地界战绩只数胜场,界面与注释却一律写成「战」",
+      "severity": "medium",
+      "round": 272,
+      "summary": "\"RegionStats.totalFights 自 Phase 30.1 起只由胜场写入(updateRegionStats 位于 if(result.win) 内,且一败即 stopExploration),但字段名、界面「7/20 战」与三处注释都声称它含败场;这一歧义曾诱导一次修复把离线败场也塞进地界账\""
+    },
+    "TASK-350": {
+      "id": "TASK-350",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T22:52:03+00:00",
+      "updated_at": "2026-10-20T22:52:32+00:00",
+      "touched_round": 272,
+      "title": "镇压口径统一说成胜场,并补判据钉死离线只写净胜",
+      "priority": "P2",
+      "category": "\"correctness\"",
+      "round": 272,
+      "summary": "\"SUPPRESS_THRESHOLDS.minFights→minWins;SuppressionProgress fights/needFights/fightsOk→wins/needWins/winsOk;界面改「胜 N 场」「7/20 胜」;RegionStats.totalFights 与 checkSuppression 补注释;offlineParity 补一例源码守卫+行为断言\""
+    },
+    "CHG-454": {
+      "id": "CHG-454",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T22:52:32+00:00",
+      "updated_at": "2026-10-20T22:52:32+00:00",
+      "touched_round": 272,
+      "title": "镇压进度改称胜场,地界战绩语义写明",
+      "round": 272,
+      "commit": "\"b8b6413\"",
+      "summary": "\"minFights→minWins;SuppressionProgress wins/needWins/winsOk;界面「胜 20 场」「7/20 胜」;totalFights 与 checkSuppression 补注释;offlineParity 源码守卫+行为断言\""
+    },
+    "ISS-913": {
+      "id": "ISS-913",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T23:01:26+00:00",
+      "updated_at": "2026-10-20T23:01:40+00:00",
+      "touched_round": 273,
+      "title": "离线归来卷轴的首领战两本账:胜只补会话,败哪本都不记",
+      "severity": "medium",
+      "round": 273,
+      "summary": "\"在线 runBattle 不论首领胜败都先 track(battles) 再按结果记账;离线首领分支只在取胜时 sessionWins+=1,归来卷轴 battles/wins 不动(胜 N/战 N 少一场),落败连会话 losses 都不记\""
+    },
+    "TASK-351": {
+      "id": "TASK-351",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T23:01:27+00:00",
+      "updated_at": "2026-10-20T23:01:40+00:00",
+      "touched_round": 273,
+      "title": "离线首领战计入 battles/wins 与会话 losses,与在线同源",
+      "priority": "P2",
+      "category": "\"correctness\"",
+      "round": 273,
+      "summary": "\"首领分支补 track(battles)/battles+=1;胜补 wins+=1;败补 sessionLosses+=1;追加断言钉住会话与卷轴同口径\""
+    },
+    "CHG-455": {
+      "id": "CHG-455",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T23:01:40+00:00",
+      "updated_at": "2026-10-20T23:01:40+00:00",
+      "touched_round": 273,
+      "title": "离线首领战计入归来卷轴与进度计数",
+      "round": 273,
+      "commit": "\"64b4579\"",
+      "summary": "\"track(battles)+battles+=1;胜 wins+=1;败 sessionLosses+=1;offlineParity 断言会话与卷轴同口径\""
+    },
+    "ISS-914": {
+      "id": "ISS-914",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T23:10:55+00:00",
+      "updated_at": "2026-10-20T23:11:11+00:00",
+      "touched_round": 274,
+      "title": "八门只给定性描述,真实行军数值从不露面",
+      "severity": "low",
+      "round": 274,
+      "summary": "\"GATES 每门带一份真正参与结算的 CombatRules,但图鉴与远征选门只渲染 desc/gist;改 rules 时散文不会跟着变,玩家读到的「攻势大增」与结算里的 +15% 分家\""
+    },
+    "TASK-352": {
+      "id": "TASK-352",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T23:10:55+00:00",
+      "updated_at": "2026-10-20T23:11:10+00:00",
+      "touched_round": 274,
+      "title": "八门数值由 CombatRules 派生,接进图鉴与选门",
+      "priority": "P2",
+      "category": "\"visibility\"",
+      "round": 274,
+      "summary": "\"移植 xian 的 gateRuleSummary:把 rules 每个生效字段摊成一行;RealmCodexView 与 CelestialView 选门各接一处;新增 gateRuleText.spec 5 例(逐门对齐/字段不漏/空串/坏数)\""
+    },
+    "CHG-456": {
+      "id": "CHG-456",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-20T23:11:10+00:00",
+      "updated_at": "2026-10-20T23:11:10+00:00",
+      "touched_round": 274,
+      "title": "八门行军数值由 CombatRules 派生并上界面",
+      "round": 274,
+      "commit": "\"af142ae\"",
+      "summary": "\"gateRuleSummary 摊开全部生效字段;图鉴奇门册与远征选门各接一处;gateRuleText.spec 5 例\""
     }
   },
   "edges": [
@@ -27905,6 +28251,210 @@
       "to": "TASK-343",
       "type": "implements",
       "created_at": "2026-10-20T20:43:23+00:00"
+    },
+    {
+      "from": "TASK-344",
+      "to": "ISS-906",
+      "type": "addresses",
+      "created_at": "2026-10-20T21:53:05+00:00"
+    },
+    {
+      "from": "ISS-906",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-20T21:53:05+00:00"
+    },
+    {
+      "from": "TASK-345",
+      "to": "ISS-907",
+      "type": "addresses",
+      "created_at": "2026-10-20T21:59:44+00:00"
+    },
+    {
+      "from": "ISS-907",
+      "to": "COMP-015",
+      "type": "located_in",
+      "created_at": "2026-10-20T21:59:44+00:00"
+    },
+    {
+      "from": "CHG-448",
+      "to": "TASK-345",
+      "type": "implements",
+      "created_at": "2026-10-20T22:00:09+00:00"
+    },
+    {
+      "from": "CHG-448",
+      "to": "ISS-907",
+      "type": "resolves",
+      "created_at": "2026-10-20T22:00:09+00:00"
+    },
+    {
+      "from": "TASK-346",
+      "to": "ISS-908",
+      "type": "addresses",
+      "created_at": "2026-10-20T22:08:30+00:00"
+    },
+    {
+      "from": "ISS-908",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-20T22:08:30+00:00"
+    },
+    {
+      "from": "CHG-449",
+      "to": "TASK-346",
+      "type": "implements",
+      "created_at": "2026-10-20T22:08:30+00:00"
+    },
+    {
+      "from": "CHG-449",
+      "to": "ISS-908",
+      "type": "resolves",
+      "created_at": "2026-10-20T22:08:30+00:00"
+    },
+    {
+      "from": "TASK-347",
+      "to": "ISS-909",
+      "type": "addresses",
+      "created_at": "2026-10-20T22:15:00+00:00"
+    },
+    {
+      "from": "ISS-909",
+      "to": "COMP-016",
+      "type": "located_in",
+      "created_at": "2026-10-20T22:15:00+00:00"
+    },
+    {
+      "from": "CHG-450",
+      "to": "TASK-347",
+      "type": "implements",
+      "created_at": "2026-10-20T22:15:00+00:00"
+    },
+    {
+      "from": "CHG-450",
+      "to": "ISS-909",
+      "type": "resolves",
+      "created_at": "2026-10-20T22:15:00+00:00"
+    },
+    {
+      "from": "TASK-348",
+      "to": "ISS-910",
+      "type": "addresses",
+      "created_at": "2026-10-20T22:21:25+00:00"
+    },
+    {
+      "from": "ISS-910",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-20T22:21:25+00:00"
+    },
+    {
+      "from": "CHG-451",
+      "to": "TASK-348",
+      "type": "implements",
+      "created_at": "2026-10-20T22:21:25+00:00"
+    },
+    {
+      "from": "CHG-451",
+      "to": "ISS-910",
+      "type": "resolves",
+      "created_at": "2026-10-20T22:21:25+00:00"
+    },
+    {
+      "from": "TASK-349",
+      "to": "ISS-911",
+      "type": "addresses",
+      "created_at": "2026-10-20T22:29:58+00:00"
+    },
+    {
+      "from": "ISS-911",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-20T22:29:58+00:00"
+    },
+    {
+      "from": "CHG-452",
+      "to": "TASK-349",
+      "type": "implements",
+      "created_at": "2026-10-20T22:30:09+00:00"
+    },
+    {
+      "from": "CHG-452",
+      "to": "ISS-911",
+      "type": "resolves",
+      "created_at": "2026-10-20T22:30:09+00:00"
+    },
+    {
+      "from": "TASK-350",
+      "to": "ISS-912",
+      "type": "addresses",
+      "created_at": "2026-10-20T22:52:03+00:00"
+    },
+    {
+      "from": "ISS-912",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-20T22:52:03+00:00"
+    },
+    {
+      "from": "CHG-454",
+      "to": "TASK-350",
+      "type": "implements",
+      "created_at": "2026-10-20T22:52:32+00:00"
+    },
+    {
+      "from": "CHG-454",
+      "to": "ISS-912",
+      "type": "resolves",
+      "created_at": "2026-10-20T22:52:32+00:00"
+    },
+    {
+      "from": "TASK-351",
+      "to": "ISS-913",
+      "type": "addresses",
+      "created_at": "2026-10-20T23:01:27+00:00"
+    },
+    {
+      "from": "ISS-913",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-20T23:01:27+00:00"
+    },
+    {
+      "from": "CHG-455",
+      "to": "TASK-351",
+      "type": "implements",
+      "created_at": "2026-10-20T23:01:40+00:00"
+    },
+    {
+      "from": "CHG-455",
+      "to": "ISS-913",
+      "type": "resolves",
+      "created_at": "2026-10-20T23:01:40+00:00"
+    },
+    {
+      "from": "TASK-352",
+      "to": "ISS-914",
+      "type": "addresses",
+      "created_at": "2026-10-20T23:10:55+00:00"
+    },
+    {
+      "from": "ISS-914",
+      "to": "COMP-027",
+      "type": "located_in",
+      "created_at": "2026-10-20T23:10:55+00:00"
+    },
+    {
+      "from": "CHG-456",
+      "to": "TASK-352",
+      "type": "implements",
+      "created_at": "2026-10-20T23:11:10+00:00"
+    },
+    {
+      "from": "CHG-456",
+      "to": "ISS-914",
+      "type": "resolves",
+      "created_at": "2026-10-20T23:11:10+00:00"
     }
   ]
 }
