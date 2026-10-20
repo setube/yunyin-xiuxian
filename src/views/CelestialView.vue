@@ -587,6 +587,12 @@
           <span class="text-ink-faint"> · {{ selectedGate.gua }}{{ selectedGate.direction }}{{ selectedGate.palace }}宫 · {{ selectedGate.kind }}</span>
           <br />
           {{ selectedGate.desc }}
+          <!--
+            数值与结算同源:上面那句是「打法」的散文,这一行是真正进 resolveCombat 的数。
+            从前只有散文,改规则时那句话不会跟着变,玩家读到的「攻势大增」与结算当场分家。
+          -->
+          <br />
+          <span class="tabular text-ink-faint">{{ gateRuleSummary(selectedGate.rules) }}</span>
           <br />
           <span class="text-ink-faint">{{ selectedGate.gist }}</span>
         </p>
@@ -864,6 +870,7 @@
   } from '@/data/endgame'
   import { PACTS, pactDef } from '@/data/pacts'
   import { GATES, gateDef } from '@/data/qimen'
+  import { gateRuleSummary } from '@/core/gateRuleText'
   import { MUTATORS, mutatorDef } from '@/data/mutators'
   import { legacyComparisons } from '@/core/compare'
   import { todayChallenge, undertakeDaily } from '@/core/dailyChallenge'

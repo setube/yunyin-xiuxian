@@ -220,7 +220,11 @@
             {{ g.fullName }}
           </span>
           <span class="w-20 shrink-0 text-[10px] text-ink-faint tabular">{{ g.gua }}{{ g.direction }} · {{ g.palace }}宫 · {{ g.kind }}</span>
-          <span class="min-w-0 text-[11px] leading-relaxed text-ink-soft">{{ g.gist }}</span>
+          <span class="min-w-0 text-[11px] leading-relaxed text-ink-soft">
+            {{ g.gist }}
+            <!-- 数值与结算同源:gist 讲门义,这一行是真正进 resolveCombat 的数 -->
+            <span class="mt-0.5 block tabular text-[10px] text-ink-faint">{{ gateRuleSummary(g.rules) }}</span>
+          </span>
         </div>
       </div>
       <p class="mt-2 text-[10px] leading-relaxed text-ink-faint">
@@ -259,6 +263,7 @@
   import { fateLordLine } from '@/core/fate'
   import { IMAGES, MANSIONS, type ImageId } from '@/data/xiangxiu'
   import { GATES } from '@/data/qimen'
+  import { gateRuleSummary } from '@/core/gateRuleText'
   import { cnNumber, formatGN } from '@/utils/format'
   import { gn } from '@/utils/gnum'
   import { STAR_FOCUS_COST_BASE } from '@/data/constants'
