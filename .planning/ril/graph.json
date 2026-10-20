@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 274,
+  "round": 275,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-20T23:11:11+00:00",
+  "updated_at": "2026-10-20T23:35:46+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 273,
+      "touched_round": 275,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -19206,6 +19206,46 @@
       "round": 274,
       "commit": "\"af142ae\"",
       "summary": "\"gateRuleSummary 摊开全部生效字段;图鉴奇门册与远征选门各接一处;gateRuleText.spec 5 例\""
+    },
+    "ISS-915": {
+      "id": "ISS-915",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T23:23:11+00:00",
+      "updated_at": "2026-10-20T23:23:25+00:00",
+      "touched_round": 275,
+      "title": "镇压门槛与八门数值缺静态判据,改回手写不会报红",
+      "severity": "low",
+      "round": 275,
+      "summary": "\"dataTextAudit 覆盖了灵脉容量与流派分母,但镇压门槛「20 战」与八门行军数值两处没有守卫:界面改回手写字面量,单测仍全绿\""
+    },
+    "TASK-353": {
+      "id": "TASK-353",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-20T23:23:11+00:00",
+      "updated_at": "2026-10-20T23:23:25+00:00",
+      "touched_round": 275,
+      "title": "把这两处接进 dataTextAudit,并做故障注入验证",
+      "priority": "P2",
+      "category": "\"guard\"",
+      "round": 275,
+      "summary": "\"新增两例:镇压门槛须读 minWins/needWins 且说「胜」,八门须读 gateRuleSummary;两例都实测改回手写即红\""
+    },
+    "CHG-457": {
+      "id": "CHG-457",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-20T23:23:25+00:00",
+      "updated_at": "2026-10-20T23:35:46+00:00",
+      "touched_round": 275,
+      "title": "镇压门槛与八门数值的静态守卫",
+      "round": 275,
+      "commit": "\"444a21c\"",
+      "summary": "\"dataTextAudit 新增两例:minWins/needWins 与「胜」措辞;gateRuleSummary 派生;均经故障注入验证\""
     }
   },
   "edges": [
@@ -28455,6 +28495,30 @@
       "to": "ISS-914",
       "type": "resolves",
       "created_at": "2026-10-20T23:11:10+00:00"
+    },
+    {
+      "from": "TASK-353",
+      "to": "ISS-915",
+      "type": "addresses",
+      "created_at": "2026-10-20T23:23:11+00:00"
+    },
+    {
+      "from": "ISS-915",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-20T23:23:11+00:00"
+    },
+    {
+      "from": "CHG-457",
+      "to": "TASK-353",
+      "type": "implements",
+      "created_at": "2026-10-20T23:23:25+00:00"
+    },
+    {
+      "from": "CHG-457",
+      "to": "ISS-915",
+      "type": "resolves",
+      "created_at": "2026-10-20T23:23:25+00:00"
     }
   ]
 }
