@@ -17,6 +17,7 @@
     "check": "bun run type-check && bun run lint && bun run docs-check",
     "docs-check": "bun scripts/docs-check.mjs",
     "pwa-icons": "bun scripts/gen-pwa-icons.mjs",
+    "build:favicon": "bun scripts/favicon.mjs",
     "commitlint": "commitlint",
     "prepare": "husky",
     "smoke": "bun run build && bun scripts/ui-smoke.mjs",
