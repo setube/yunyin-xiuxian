@@ -13,9 +13,13 @@ import {
 describe('重铸与封存提示 · 文言仍报清条数与尘石', () => {
   it('缺料、成铸、封存不说不足', () => {
     expect(reforgeEmptyToast()).toContain('余地')
-    expect(reforgeShortToast()).toContain('器灵尘')
-    expect(reforgeShortToast()).toContain('灵石')
-    expect(reforgeShortToast()).not.toContain('不足')
+    // 缺哪一样就只说哪一样:两种料的去路相反,一句「或」会把玩家指得两头跑
+    expect(reforgeShortToast('stone')).toContain('灵石')
+    expect(reforgeShortToast('stone')).not.toContain('器灵尘')
+    expect(reforgeShortToast('stone')).toContain('历练')
+    expect(reforgeShortToast('dust')).toContain('器灵尘')
+    expect(reforgeShortToast('dust')).not.toContain('灵石')
+    expect(reforgeShortToast('dust')).toContain('分解')
     expect(reforgeDoneToast('2 → 4 条', reforgeSealedNote(1))).toBe(
       '天机重铸,词条 2 → 4 条(封存 1 条未动)'
     )

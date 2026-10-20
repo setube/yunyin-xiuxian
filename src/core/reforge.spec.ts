@@ -13,13 +13,24 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
-import { reforgeCost, reforgeEquipment, reforgeableAffixIds, sealCapacity, sealCost, sealAffix, unsealAffix } from './reforge'
+import {
+  autoReforge,
+  reforgeCost,
+  reforgeEquipment,
+  reforgeShort,
+  reforgeableAffixIds,
+  sealCapacity,
+  sealCost,
+  sealAffix,
+  unsealAffix
+} from './reforge'
 import { REFORGE_DUST_BASE, REFORGE_SEAL_LOAD, REFORGE_STONE_BASE } from '@/data/constants'
 import { AUTO_REFORGE_MAX_BUDGET, autoReforgeBudget } from './reforge'
 import { qualityDef } from '@/data/qualities'
 import { rng } from '@/utils/random'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
+import { useUiStore } from '@/stores/ui'
 import { gn } from '@/utils/gnum'
 import type { EquipmentInstance } from '@/types'
 
@@ -196,6 +207,42 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
     useInventoryStore().items = [inst]
     expect(reforgeEquipment('poor')).toBe(false)
     expect(useInventoryStore().findItem('poor')!.reforgeCount).toBe(0)
+  })
+
+  /**
+   * 缺哪一样就报哪一样(议题 #130 同族):灵石来自历练与悬赏,器灵尘来自分解,
+   * 两条去路相反。一句「灵石或器灵尘未足」会把玩家指得两头都跑。
+   */
+  it('缺料分得清灵石与器灵尘,提示不再两头都说', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'short' }
+    useInventoryStore().items = [inst]
+    const res = useResourcesStore()
+    res.addStone(gn(1e30))
+    res.addSmall('dust', 0)
+    expect(reforgeShort(reforgeCost(inst)!)).toBe('dust')
+    reforgeEquipment('short')
+    expect(useUiStore().toasts.at(-1)?.text).toContain('器灵尘')
+    expect(useUiStore().toasts.at(-1)?.text).not.toContain('灵石')
+
+    res.spendStone(gn(1e30))
+    res.addSmall('dust', 100_000)
+    expect(reforgeShort(reforgeCost(inst)!)).toBe('stone')
+    reforgeEquipment('short')
+    expect(useUiStore().toasts.at(-1)?.text).toContain('灵石')
+    expect(useUiStore().toasts.at(-1)?.text).not.toContain('器灵尘')
+  })
+
+  it('自动重铸第一炉就缺料时,结果里写明缺的是哪一样', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'auto-short' }
+    useInventoryStore().items = [inst]
+    const res = useResourcesStore()
+    res.addStone(gn(1e30))
+    res.addSmall('dust', 0)
+    // 目标不能选它已有的那条 —— 否则首轮就命中,压根走不到缺料那一支
+    const out = autoReforge('auto-short', [{ affixId: 'hp1' }], 10)
+    expect(out.stop).toBe('broke')
+    expect(out.rolls).toBe(0)
+    expect(out.short).toBe('dust')
   })
 
   it('封存要付费,且封满之后不再可封', () => {

@@ -48,6 +48,14 @@ export interface ReforgeCost {
   dust: number
 }
 
+/** 这一炉缺哪一样(付得起时为 null)—— 提示按它说清去路,与结算同一处判定 */
+export function reforgeShort(cost: ReforgeCost): 'stone' | 'dust' | null {
+  const resources = useResourcesStore()
+  if (!resources.hasStone(cost.stone)) return 'stone'
+  if (!resources.hasSmall('dust', cost.dust)) return 'dust'
+  return null
+}
+
 /**
  * 自动重铸可同时设为目标的最大词条数。
  * 命中其一即停,故目标是「这批里洗到哪一个都算数」的并集;上限太小翻不中要的,
@@ -134,10 +142,11 @@ export function reforgeEquipment(uid: string, quiet = false): boolean {
     }
     return false
   }
-  if (!resources.hasStone(cost.stone) || !resources.hasSmall('dust', cost.dust)) {
+  const short = reforgeShort(cost)
+  if (short) {
     if (!quiet) {
       playSfx('warn')
-      ui.toast(reforgeShortToast(), 'warn')
+      ui.toast(reforgeShortToast(short), 'warn')
     }
     return false
   }
@@ -292,6 +301,8 @@ export interface AutoReforgeOutcome {
   /** 这几次的器灵尘账 */
   dust: number
   stop: AutoReforgeStop
+  /** stop === 'broke' 时缺的是哪一样(界面据此只说那一样) */
+  short?: 'stone' | 'dust'
   /** 命中目标的那一条(null = 没洗到,撞了预算/没钱/无位可洗) */
   hit: { id: string; roll: number } | null
   /** 收手时这件装备的词条 id 全表 */
@@ -309,7 +320,6 @@ export interface AutoReforgeOutcome {
  */
 export function autoReforge(uid: string, targets: readonly ReforgeTarget[], maxRolls: number): AutoReforgeOutcome {
   const inventory = useInventoryStore()
-  const resources = useResourcesStore()
   let stone = gnZero()
   let dust = 0
   // 一个目标都没给:收手,不烧预算 —— 面板上按钮禁用只是挡层,服务本身不当
@@ -326,8 +336,9 @@ export function autoReforge(uid: string, targets: readonly ReforgeTarget[], maxR
     const inst = inventory.findItem(uid)
     const cost = inst && reforgeCost(inst)
     if (!inst || !cost) return { rolls: i, stone, dust, stop: 'frozen', hit: null, affixIds: [] }
-    if (!resources.hasStone(cost.stone) || !resources.hasSmall('dust', cost.dust)) {
-      return { rolls: i, stone, dust, stop: 'broke', hit: null, affixIds: inst.affixes.map(a => a.id) }
+    const short = reforgeShort(cost)
+    if (short) {
+      return { rolls: i, stone, dust, stop: 'broke', short, hit: null, affixIds: inst.affixes.map(a => a.id) }
     }
     if (!reforgeEquipment(uid, true)) {
       return { rolls: i, stone, dust, stop: 'frozen', hit: null, affixIds: inst.affixes.map(a => a.id) }

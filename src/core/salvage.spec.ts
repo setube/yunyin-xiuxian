@@ -14,7 +14,7 @@ import { qualityDef } from '@/data/qualities'
 import { cmp, gn, toNum } from '@/utils/gnum'
 import { upgradeCost } from './formulas'
 import { enhanceInvested, salvageOf, salvageRefundPhrase } from './salvage'
-import { decomposeByRanks, decomposeEquipment, upgradeEquipment } from './forge'
+import { decomposeByRanks, decomposeEquipment, upgradeEquipment, upgradeEquipmentBatch } from './forge'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
@@ -91,6 +91,38 @@ describe('分解返还 · 强化投入的八成随件退回', () => {
     const after = inventory.findItem('e')!
     expect(after.level).toBe(3)
     expect(after.invested?.dust).toBe(spentDust)
+  })
+
+  it('强化缺料时说清缺的是尘还是石:两条去路相反', () => {
+    const inventory = useInventoryStore()
+    const resources = useResourcesStore()
+    const ui = useUiStore()
+    inventory.addEquipment(mk('g', 'earth', 0, 8))
+
+    // 只缺尘:该去分解闲置装备,不该被指去历练
+    resources.addStone(gn(1e30))
+    resources.addSmall('dust', 0)
+    expect(upgradeEquipment('g')).toBe(false)
+    expect(ui.toasts.at(-1)?.text).toContain('器灵尘')
+    expect(ui.toasts.at(-1)?.text).not.toContain('灵石')
+
+    // 只缺石:该去历练/悬赏
+    resources.spendStone(gn(1e30))
+    resources.addSmall('dust', 100_000)
+    expect(upgradeEquipment('g')).toBe(false)
+    expect(ui.toasts.at(-1)?.text).toContain('灵石')
+    expect(ui.toasts.at(-1)?.text).not.toContain('器灵尘')
+  })
+
+  it('连升一级都升不动时也按「下一级」的真实报价说缺哪样', () => {
+    const inventory = useInventoryStore()
+    const resources = useResourcesStore()
+    const ui = useUiStore()
+    inventory.addEquipment(mk('h', 'earth', 0, 8))
+    resources.addStone(gn(1e30))
+    resources.addSmall('dust', 0)
+    expect(upgradeEquipmentBatch('h')).toBe(0)
+    expect(ui.toasts.at(-1)?.text).toContain('器灵尘')
   })
 
   it('分解一件练过的件:到账的就是预告那份(尘 + 灵石)', () => {

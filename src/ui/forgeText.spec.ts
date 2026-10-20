@@ -16,8 +16,13 @@ describe('炼器提示 · 文言仍报清尘与石', () => {
   it('强化到顶、料不足、成功,三句各说一件事', () => {
     expect(upgradeCapToast()).toContain('锤炼之极')
     expect(upgradeCapToast()).not.toContain('上限')
-    expect(upgradeShortToast()).toContain('器灵尘')
-    expect(upgradeShortToast()).toContain('灵石')
+    // 缺哪一样就说哪一样:尘靠分解、石靠历练,指错方向只会再缺一次
+    expect(upgradeShortToast('dust')).toContain('器灵尘')
+    expect(upgradeShortToast('dust')).not.toContain('灵石')
+    expect(upgradeShortToast('dust')).toContain('分解')
+    expect(upgradeShortToast('stone')).toContain('灵石')
+    expect(upgradeShortToast('stone')).not.toContain('器灵尘')
+    expect(upgradeShortToast('stone')).toContain('历练')
     expect(upgradeDoneToast('玄铁剑', 3)).toBe('「玄铁剑」再经一锤,已至 +3')
   })
 

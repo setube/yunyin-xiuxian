@@ -7,8 +7,15 @@ export function reforgeEmptyToast(): string {
   return '此物已无重铸余地'
 }
 
-export function reforgeShortToast(): string {
-  return '灵石或器灵尘未足,难移天机'
+/**
+ * 缺料提示 —— 必须说清是缺哪一样。
+ *
+ * 「灵石或器灵尘未足」一句两头都堵死:灵石自历练与悬赏来,器灵尘自分解闲置装备来,
+ * 两者去路相反。玩家拿着这句话只能两处都跑一趟,再各缺一次。
+ * 与炼丹缺料(#130)同一条纪律:只缺哪一样就说哪一样,并顺手交代它的来处。
+ */
+export function reforgeShortToast(short: 'stone' | 'dust'): string {
+  return short === 'stone' ? '灵石未足,难移天机(灵石自历练与悬赏来)' : '器灵尘未足,难移天机(分解闲置装备可得)'
 }
 
 export function reforgeSealedNote(count: number): string {

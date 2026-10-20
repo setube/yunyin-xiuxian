@@ -47,6 +47,14 @@ export function equipUpgradeCost(uid: string): { dust: number; stone: GNum } | n
   return upgradeCost(inst.level, inst.tier, q.rank, modOf(player.finalStats.mods, 'forgeDiscount'))
 }
 
+/** 这次强化缺哪一样(付得起时为 null)—— 提示据此只说缺的那一样,与结算同一处判定 */
+export function upgradeShort(cost: { dust: number; stone: GNum }): 'stone' | 'dust' | null {
+  const resources = useResourcesStore()
+  if (!resources.hasSmall('dust', cost.dust)) return 'dust'
+  if (!resources.hasStone(cost.stone)) return 'stone'
+  return null
+}
+
 export function upgradeEquipment(uid: string, opts: { quiet?: boolean } = {}): boolean {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
@@ -60,10 +68,11 @@ export function upgradeEquipment(uid: string, opts: { quiet?: boolean } = {}): b
     }
     return false
   }
-  if (!resources.hasSmall('dust', cost.dust) || !resources.hasStone(cost.stone)) {
+  const short = upgradeShort(cost)
+  if (short) {
     if (!opts.quiet) {
       playSfx('warn')
-      ui.toast(upgradeShortToast(), 'warn')
+      ui.toast(upgradeShortToast(short), 'warn')
     }
     return false
   }
@@ -136,7 +145,12 @@ export function upgradeEquipmentBatch(uid: string): number {
   const plan = upgradeBatchPlan(uid)
   if (plan.levels === 0) {
     playSfx('warn')
-    useUiStore().toast(plan.atCap ? upgradeCapToast() : upgradeShortToast(), 'warn')
+    // 到顶与缺料是两件事;缺料时还要分清缺尘(去分解)还是缺石(去历练)。
+    // 计划里的 dust/stone 是「已够的那几级」的累计,连一级都不够时它们是 0 ——
+    // 故缺料判定必须看下一级的真实报价,不能拿计划金额充数。
+    const next = equipUpgradeCost(uid)
+    const short = next ? upgradeShort(next) : null
+    useUiStore().toast(plan.atCap ? upgradeCapToast() : upgradeShortToast(short ?? 'stone'), 'warn')
     return 0
   }
   for (let i = 0; i < plan.levels; i += 1) upgradeEquipment(uid, { quiet: true })
