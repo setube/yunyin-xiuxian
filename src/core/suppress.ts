@@ -19,6 +19,7 @@ import { gnZero, add } from '@/utils/gnum'
 import type { GNum, QualityId } from '@/types'
 import { equipmentTemplate } from '@/data/equipment'
 import { deriveProsperity, isReviving, prosperityYieldMult } from './worldMemory'
+import { settleRegionRevivals } from './regionRevival'
 
 /** 区域统计数据(使用指数移动平均) */
 export interface RegionStats {
@@ -191,6 +192,10 @@ export interface SuppressedYield {
 export function settleSuppressedRegions(dt: number, service: RandomService = rng): SuppressedYield | null {
   const player = usePlayerStore()
   const resources = useResourcesStore()
+
+  // 妖气复聚(已靖旧主归来)先结算 —— 已靖却从不镇压的地界一份镇压都没有,
+  // 必须排在「没有镇压直接返回」之前,否则那条路永远走不到。
+  settleRegionRevivals()
 
   if (player.suppressedRegions.length === 0) return null
 

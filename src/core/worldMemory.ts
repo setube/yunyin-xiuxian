@@ -47,6 +47,23 @@ export function hoursUntilRevive(suppressedAt: number | undefined, now: number =
   return Math.max(0, REVIVE_AFTER_HOURS - (now - suppressedAt) / 3600_000)
 }
 
+/**
+ * 妖气复聚的钟:最后一次在当地战斗、或把它镇压下来、或把它靖平。
+ * 三个时刻取最晚 —— 任一活动都会推迟旧主归来。
+ */
+export function regionTouchedAt(
+  lastUpdateAt: number | undefined,
+  suppressedSince: number | undefined,
+  clearedAt: number | undefined
+): number {
+  return Math.max(lastUpdateAt ?? 0, suppressedSince ?? 0, clearedAt ?? 0)
+}
+
+/** 够钟(超过 REVIVE_AFTER_HOURS 小时)地界妖气复聚,旧主归来(纯函数) */
+export function isRegionRevived(touchedAt: number, now: number): boolean {
+  return touchedAt > 0 && (now - touchedAt) / 3600_000 > REVIVE_AFTER_HOURS
+}
+
 interface RegionStateInput {
   totalWins: number
   hasSuppressed: boolean

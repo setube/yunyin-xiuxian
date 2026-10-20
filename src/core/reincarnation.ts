@@ -230,6 +230,8 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
   const bondRec = archiveBond()
   if (bondRec) player.recordBond(bondRec)
   adventure.cleared = []
+  adventure.clearedAt = {}
+  adventure.revived = []
   adventure.lastBattle = null
   // (洞府/灵脉/灵兽的归零在 player.rebirth() 里,与其余「本世进程」同处一地)
 

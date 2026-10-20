@@ -5,7 +5,7 @@ import type { AdventureSession, CombatResult, GNum } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { regionDef, unlockClosure } from '@/data/regions'
 import { gn } from '@/utils/gnum'
-import { asFiniteNumber, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
+import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
 
 export interface LastBattleView {
   enemyName: string
@@ -53,6 +53,10 @@ export const useAdventureStore = defineStore(
      */
     const mortalCleared = ref<string[]>([])
     const cleared = ref<string[]>([])
+    /** 已靖起钟:妖气复聚(旧主归来)从这一刻算,见 core/regionRevival */
+    const clearedAt = ref<Record<string, number>>({})
+    /** 旧主已归来的地界(正待再靖);归来的不再是「已靖」 */
+    const revived = ref<string[]>([])
     const session = ref<AdventureSession | null>(null)
     const pendingEventId = ref<string | null>(null)
     const pendingEventSince = ref(0)
@@ -67,6 +71,15 @@ export const useAdventureStore = defineStore(
       if (unlocked.value.length === 0) unlocked.value = ['qingyun']
       mortalCleared.value = asStringArray(mortalCleared.value)
       cleared.value = asStringArray(cleared.value)
+      /**
+       * 妖气复聚状态(Phase 30.11):两者都只认真存在的区域:
+       * revived 与 cleared 互斥(归来的不再是「已靖」),坏档里若重叠以 cleared 为准收掉 revived。
+       * clearedAt 是已靖起钟时刻,认不得/非正数一律丢弃(宁可晚复聚,不拿坏时刻误触)。
+       */
+      revived.value = asStringArray(revived.value).filter(id => !!regionDef(id) && !cleared.value.includes(id))
+      clearedAt.value = Object.fromEntries(
+        Object.entries(asNumberRecord(clearedAt.value, 0)).filter(([id, at]) => at > 0 && !!regionDef(id))
+      )
       /**
        * 旧档补票(境界扩界)—— 「前置已靖 → 此地已开」。
        *
@@ -143,6 +156,26 @@ export const useAdventureStore = defineStore(
     function markCleared(regionId: string): boolean {
       if (cleared.value.includes(regionId)) return false
       cleared.value = [...cleared.value, regionId]
+      // 已靖即起钟:妖气从这一刻重新聚(离线斩首也走这里,故离线也认得这个起点)
+      clearedAt.value = { ...clearedAt.value, [regionId]: Date.now() }
+      // 再靖:收掉此地的「旧主归来」标记 —— 已归过一次,复位待下一次复聚
+      if (revived.value.includes(regionId)) revived.value = revived.value.filter(id => id !== regionId)
+      return true
+    }
+
+    /**
+     * 妖气复聚:该地界不再「已靖」,旧主归来(见 core/regionRevival)。
+     *
+     * 只动「已靖」与起钟:镇压资格是永久的,松开镇压由 core 单独做 ——
+     * 复聚不构成对挂机的惩罚。
+     */
+    function markRevived(regionId: string): boolean {
+      if (revived.value.includes(regionId)) return false
+      cleared.value = cleared.value.filter(id => id !== regionId)
+      const nextAt = { ...clearedAt.value }
+      delete nextAt[regionId]
+      clearedAt.value = nextAt
+      revived.value = [...revived.value, regionId]
       return true
     }
 
@@ -181,6 +214,8 @@ export const useAdventureStore = defineStore(
       markNodeCleared,
       unlocked,
       cleared,
+      clearedAt,
+      revived,
       session,
       pendingEventId,
       pendingEventSince,
@@ -192,6 +227,7 @@ export const useAdventureStore = defineStore(
       setSession,
       unlock,
       markCleared,
+      markRevived,
       setPendingEvent,
       markEventSeen,
       recordBattle,

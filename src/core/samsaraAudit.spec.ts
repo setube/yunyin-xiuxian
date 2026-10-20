@@ -422,6 +422,7 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
     adventure: {
       // rerollMortalWorld 换界即清 mortalCleared;事件/历练/区域/战役 为本世进程
       mortalWorld: 'reset', mortalCleared: 'reset', unlocked: 'reset', cleared: 'reset',
+      clearedAt: 'reset', revived: 'reset', // 已靖/复聚是本世区域进程,随 cleared 同清
       session: 'reset', pendingEventId: 'reset', pendingEventSince: 'reset', lastBattle: 'reset',
       seenOnceEvents: 'keep', eventMemories: 'keep' // 世界记忆/见闻,随神魂不灭
     },
