@@ -2,16 +2,16 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { BuildingId, StatMods } from '@/types'
-import type { VeinId } from '@/data/veins'
 import { persistConfig } from '@/utils/storage'
 import { BUILDINGS, buildingDef, ARRAY_QI_CAP_PER_LEVEL, BEAST_EFFECT_PER_LEVEL } from '@/data/buildings'
-import { INSIGHT_DISCOUNT_PER_POINT, VEINS } from '@/data/veins'
+import { INSIGHT_DISCOUNT_PER_POINT, VEINS, type VeinId } from '@/data/veins'
 import {
   FIELD_HERB_PER_HOUR,
   FIELD_ORE_PER_HOUR,
   FORGE_LEVEL_PER_CAP,
   LIBRARY_WUDAO_PER_HOUR,
-  OFFLINE_CAP_HOURS
+  OFFLINE_CAP_HOURS,
+  VEIN_MAIN_CAPACITY
 } from '@/data/constants'
 import { mergeMods } from '@/core/statsCalc'
 import { usePlayerStore } from '@/stores/player'
@@ -119,11 +119,25 @@ export const useDongfuStore = defineStore(
         if (!Number.isFinite(nextFrac[key])) nextFrac[key] = 0
       }
       frac.value = nextFrac
-      const nextVein = { ...veinPoints.value }
-      for (const id of Object.keys(nextVein) as VeinId[]) {
-        if (!Number.isFinite(nextVein[id]) || nextVein[id] < 0) nextVein[id] = 0
+      /**
+       * 灵脉点数按**认得的那几条脉**重建:坏档塞进来的多余键会一并算进 veinTotal
+       * (界面「已投 N/100」虚高),却没有任何一张卡能显示或迁出它。
+       * 单条上限取主脉容量 —— 迁移主脉后旧主脉的点数原样保留(可以超过副脉 30),
+       * 但它从投资入口就再也堆不到 70 以上,故超出即是坏档/改档。
+       */
+      const nextVein = {} as Record<VeinId, number>
+      const rawVein = typeof veinPoints.value === 'object' && veinPoints.value !== null ? veinPoints.value : ({} as Record<VeinId, number>)
+      for (const def of VEINS) {
+        const cur = (rawVein as Record<string, number | undefined>)[def.id]
+        nextVein[def.id] =
+          typeof cur === 'number' && Number.isFinite(cur) && cur > 0 ? Math.min(Math.floor(cur), VEIN_MAIN_CAPACITY) : 0
       }
       veinPoints.value = nextVein
+      /**
+       * 主脉认不出时按「未定主脉」处理:否则 `veinCap` 会把四条脉全判成副脉(各 30),
+       * 卡面却仍标着一条不存在的主脉,玩家既投不满也迁不走 —— 灵脉永久卡死在 30 点档。
+       */
+      if (veinMain.value !== null && !VEINS.some(v => v.id === veinMain.value)) veinMain.value = null
     }
 
     /** 灵脉投点(校验由 veinService 负责) */

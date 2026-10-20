@@ -6,6 +6,94 @@ import { persistConfig } from '@/utils/storage'
 import { regionDef, unlockClosure } from '@/data/regions'
 import { gn } from '@/utils/gnum'
 import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
+import { eventDef } from '@/data/events'
+
+/**
+ * 本世之界只收「结构完整、认得出」的那一份。
+ *
+ * 这份数据是生成器一次写成的,玩家永远不会逐字段改它 —— 形状不对只可能来自
+ * 坏档/旧版。留着半份的代价不是「少看一点」:`worldView` 直接 map chain、
+ * `worldIdentity` 读 `sorted[0]`,空链或非数组会让历练页与主页在渲染期抛错,
+ * 整页白屏。故宁可整份丢掉(下次进页面会重新生成),也不让残骸进渲染。
+ */
+function sanitizeMortalWorld(raw: unknown): import('@/core/mortalWorldGen').MortalWorld | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const w = raw as Partial<import('@/core/mortalWorldGen').MortalWorld>
+  if (!Array.isArray(w.chain) || w.chain.length === 0) return null
+  if (typeof w.ruleId !== 'string' || typeof w.ruleName !== 'string' || typeof w.bias !== 'string') return null
+  const chain: import('@/core/mortalWorldGen').MortalPlace[] = []
+  for (const rawPlace of w.chain) {
+    if (!rawPlace || typeof rawPlace !== 'object') return null
+    const p = rawPlace as Partial<import('@/core/mortalWorldGen').MortalPlace>
+    if (
+      typeof p.nodeId !== 'string' ||
+      typeof p.fromId !== 'string' ||
+      typeof p.name !== 'string' ||
+      typeof p.boss !== 'string' ||
+      typeof p.archetype !== 'string' ||
+      !Number.isFinite(p.tier) ||
+      !Array.isArray(p.enemies) ||
+      !Array.isArray(p.eventTags)
+    ) {
+      return null
+    }
+    chain.push({
+      nodeId: p.nodeId,
+      fromId: p.fromId,
+      name: p.name,
+      tier: p.tier as number,
+      enemies: asStringArray(p.enemies),
+      boss: p.boss,
+      archetype: p.archetype,
+      eventTags: asStringArray(p.eventTags)
+    })
+  }
+  const rules = w.rules && typeof w.rules === 'object' && !Array.isArray(w.rules) ? w.rules : {}
+  return {
+    seed: asFiniteNumber(w.seed, 0),
+    chain,
+    shapeId: typeof w.shapeId === 'string' ? w.shapeId : '',
+    shapeName: typeof w.shapeName === 'string' ? w.shapeName : '',
+    rhythmId: typeof w.rhythmId === 'string' ? w.rhythmId : '',
+    rhythmName: typeof w.rhythmName === 'string' ? w.rhythmName : '',
+    ruleId: w.ruleId,
+    ruleName: w.ruleName,
+    rules,
+    bias: w.bias,
+    bossFallbackAt: Array.isArray(w.bossFallbackAt)
+      ? w.bossFallbackAt.filter((n): n is number => typeof n === 'number' && Number.isFinite(n))
+      : []
+  }
+}
+
+/**
+ * 上一场战报:渲染层直接读 `result.win / result.log / result.rounds`,
+ * 形状坏掉就是整块战斗面板白屏。结果对象或日志不对,整份作废(旧档没有它也能活)。
+ */
+function sanitizeLastBattle(raw: unknown): LastBattleView | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const b = raw as Partial<LastBattleView>
+  if (typeof b.enemyName !== 'string' || typeof b.enemyIcon !== 'string') return null
+  const r = b.result as Partial<CombatResult> | undefined
+  if (!r || typeof r !== 'object' || typeof r.win !== 'boolean' || !Array.isArray(r.log)) return null
+  return {
+    ...b,
+    enemyName: b.enemyName,
+    enemyIcon: b.enemyIcon,
+    isBoss: b.isBoss === true,
+    result: {
+      ...r,
+      win: r.win,
+      log: r.log.filter(x => !!x && typeof x === 'object' && typeof x.text === 'string'),
+      rounds: Math.max(0, Math.floor(asFiniteNumber(r.rounds, 0))),
+      playerHpPct: Math.min(1, asFiniteNumber(r.playerHpPct, 0, 0))
+    },
+    at: asFiniteNumber(b.at, 0),
+    loot: b.loot === undefined ? undefined : asStringArray(b.loot),
+    enemyPower: b.enemyPower === undefined ? undefined : gnStrict(b.enemyPower),
+    playerPower: b.playerPower === undefined ? undefined : gnStrict(b.playerPower)
+  }
+}
 
 export interface LastBattleView {
   enemyName: string
@@ -69,8 +157,8 @@ export const useAdventureStore = defineStore(
     function sanitize(): void {
       unlocked.value = asStringArray(unlocked.value)
       if (unlocked.value.length === 0) unlocked.value = ['qingyun']
-      mortalCleared.value = asStringArray(mortalCleared.value)
-      cleared.value = asStringArray(cleared.value)
+      mortalCleared.value = [...new Set(asStringArray(mortalCleared.value))]
+      cleared.value = [...new Set(asStringArray(cleared.value))]
       /**
        * 妖气复聚状态(Phase 30.11):两者都只认真存在的区域:
        * revived 与 cleared 互斥(归来的不再是「已靖」),坏档里若重叠以 cleared 为准收掉 revived。
@@ -121,23 +209,49 @@ export const useAdventureStore = defineStore(
           }
         }
       }
-      pendingEventId.value = typeof pendingEventId.value === 'string' ? pendingEventId.value : null
-      pendingEventSince.value = asFiniteNumber(pendingEventSince.value, 0, 0)
-      seenOnceEvents.value = asStringArray(seenOnceEvents.value)
-      // 战报的 loot 是新增栏:形状不对就清成空表,别让损坏档在战报渲染里炸
-      const lb = asObjectOrNull<LastBattleView>(lastBattle.value)
-      lastBattle.value = lb
-        ? {
-            ...lb,
-            loot: lb.loot === undefined ? undefined : asStringArray(lb.loot),
-            // 两个战力栏同款修形:坏对象(含 m/e 非数)经 gn() 归零,归零即当作缺失 ——
-            // 卡片 v-if 只认有值的 GNum,坏了就不渲染,格式GN 不会拿到坏数抛错
-            enemyPower: lb.enemyPower === undefined ? undefined : gnStrict(lb.enemyPower),
-            playerPower: lb.playerPower === undefined ? undefined : gnStrict(lb.playerPower)
-          }
-        : null
-      eventMemories.value = asRecord(eventMemories.value)
-      mortalWorld.value = asObjectOrNull(mortalWorld.value)
+      /**
+       * 待处理事件按事件 id 认事:认不出的 id 弹窗永远打不开(EventDialog 查不到定义),
+       * 历练却会被它一直堵着,直到 120 秒超时自动结算一个「不存在的事件」。
+       * 认不出就清掉,让下一拍照常开战。
+       */
+      const pendingId = typeof pendingEventId.value === 'string' ? pendingEventId.value : null
+      pendingEventId.value = pendingId && eventDef(pendingId) ? pendingId : null
+      pendingEventSince.value = pendingEventId.value ? asFiniteNumber(pendingEventSince.value, 0, 0) : 0
+      /**
+       * 「一次就没了」的见闻与事件记忆都按事件 id 认事。
+       * 记忆条目形状坏掉时,LegacyView 直接读 `m.times`/`m.lastAt` ——
+       * `times` 是 NaN 就排在乱序、`lastAt` 是 NaN 就写出「NaN 次际遇」。
+       * 同一条事件写两遍同理:余波文案按「完成过几次」分档,两行会各算各的。
+       * 故这里按 id 合并取较大计数与较晚时刻,并把选择索引夹回选项数内。
+       * 认不出的事件 id 不清:它可能是改名/下线的旧档内容,认得的部分照旧生效。
+       */
+      seenOnceEvents.value = [...new Set(asStringArray(seenOnceEvents.value))]
+      const fixedMemories: Record<string, import('@/types').EventMemory> = {}
+      for (const [id, raw] of Object.entries(asRecord<unknown>(eventMemories.value))) {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue
+        const m = raw as Partial<import('@/types').EventMemory>
+        const times = Math.floor(asFiniteNumber(m.times, 0, 0))
+        if (times <= 0) continue
+        const lastAt = asFiniteNumber(m.lastAt, 0, 0)
+        const choiceCount = eventDef(id)?.choices.length ?? 0
+        const rawIdx = Math.floor(asFiniteNumber(m.lastChoiceIdx, 0, 0))
+        const lastChoiceIdx = choiceCount > 0 ? Math.min(choiceCount - 1, rawIdx) : 0
+        const prev = fixedMemories[id]
+        fixedMemories[id] = prev
+          ? {
+              eventId: id,
+              times: Math.max(prev.times, times),
+              lastAt: Math.max(prev.lastAt, lastAt),
+              lastChoiceIdx: lastAt >= prev.lastAt ? lastChoiceIdx : prev.lastChoiceIdx
+            }
+          : { eventId: id, times, lastAt, lastChoiceIdx }
+      }
+      eventMemories.value = fixedMemories
+      // 战报的 loot 是新增栏:形状不对就清成空表,别让损坏档在战报渲染里炸。
+      // 两个战力栏同款修形:坏对象(含 m/e 非数)经 gn() 归零,归零即当作缺失 ——
+      // 卡片 v-if 只认有值的 GNum,坏了就不渲染,格式GN 不会拿到坏数抛错
+      lastBattle.value = sanitizeLastBattle(lastBattle.value)
+      mortalWorld.value = sanitizeMortalWorld(mortalWorld.value)
     }
 
     const sessionActive = computed(() => session.value !== null)

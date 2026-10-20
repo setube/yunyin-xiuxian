@@ -27,7 +27,7 @@ import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
 import { readingFromState, readingMods } from '@/core/divination'
 import { gameNow } from '@/core/enginePause'
-import { asArray, asCarriedHpPct, asFiniteNumber, asStringArray } from '@/utils/saveShape'
+import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
 import { regionDef } from '@/data/regions'
@@ -836,10 +836,52 @@ export const usePlayerStore = defineStore(
        */
       suppressedRegions.value = [...new Set(asStringArray(suppressedRegions.value))].filter(suppressReachable)
       suppressQualified.value = [...new Set(asStringArray(suppressQualified.value))].filter(suppressReachable)
-      suppressedSince.value = Object.fromEntries(Object.entries(suppressedSince.value).filter(([id]) => suppressReachable(id)))
+      /**
+       * 镇压起钟只认「认得的地界 + 正数时刻」:坏档里的 NaN 会被
+       * `now - NaN > 72h` 判成假,那片地界从此**永不复苏**(且界面写着
+       * 「妖气 NaN 后复聚」);负值/0 则当场绕过守时直接复聚。两种都是坏档,
+       * 不是「刚镇压」——按此刻重新起钟:收益照拿,72 小时后照常回到历练,
+       * 既不会永久白拿,也不会因为一个坏数把已镇压的地界一并没收。
+       * 不在镇压表里的起钟一并丢掉,免得旧档残项在「转为历练」后还留着。
+       */
+      const rawSince = asNumberRecord(suppressedSince.value)
+      const fixedSince: Record<string, number> = {}
+      for (const id of suppressedRegions.value) {
+        const at = rawSince[id]
+        fixedSince[id] = at !== undefined && at > 0 ? at : Date.now()
+      }
+      suppressedSince.value = fixedSince
       for (const id of suppressedRegions.value) {
         if (!suppressQualified.value.includes(id)) suppressQualified.value.push(id)
       }
+      /**
+       * 区域战绩是镇压判定与兴衰展示的共同底账:
+       * - `avgRounds` 写成 NaN 时 `avgRounds <= 3` 恒假,玩家打满二十场也永远压不住;
+       * - `lastUpdateAt` 写成 NaN 会让 `regionTouchedAt` 取 max 得 NaN,复聚钟停摆;
+       * - 界面还会直接报「均 NaN 回合」「均受伤 NaN%」。
+       * 逐项修平,认不出的区域整条丢掉(战绩只对真实地界有意义)。
+       */
+      const fixedRegionStats: Record<string, import('@/core/suppress').RegionStats> = {}
+      for (const [id, raw] of Object.entries(asRecord<unknown>(regionStats.value))) {
+        if (!regionDef(id) || !raw || typeof raw !== 'object' || Array.isArray(raw)) continue
+        const st = raw as Partial<import('@/core/suppress').RegionStats>
+        fixedRegionStats[id] = {
+          totalFights: Math.floor(asFiniteNumber(st.totalFights, 0, 0)),
+          avgRounds: asFiniteNumber(st.avgRounds, 0, 0),
+          // 受伤占比是 0~1 的比率(界面乘 100),越界只可能来自坏档
+          avgDamageTakenPct: Math.min(1, asFiniteNumber(st.avgDamageTakenPct, 0, 0)),
+          consecutiveWins: Math.floor(asFiniteNumber(st.consecutiveWins, 0, 0)),
+          lastUpdateAt: asFiniteNumber(st.lastUpdateAt, 0, 0)
+        }
+      }
+      regionStats.value = fixedRegionStats
+      // 连胜/巡游日期都直接进界面与「今日已抽」判定:NaN 会让连胜显示成 NaN、
+      // 巡游判定恒假(每 30 秒重掷一次)。按非负整数收口。
+      winStreak.value = Math.floor(asFiniteNumber(winStreak.value, 0, 0))
+      lastCaveEventDay.value = Math.floor(asFiniteNumber(lastCaveEventDay.value, 0, 0))
+      regionWins.value = Object.fromEntries(
+        Object.entries(asNumberRecord(regionWins.value, 0)).map(([id, n]) => [id, Math.floor(n)])
+      )
       /**
        * 宿敌按 enemyId 认人:坏档里同一位写两条时,征战录会画出两行同 key、
        * 「宿敌 N 位」多报;而 recordLoss / markAvenged / ghostOf 都只 find 第一条,

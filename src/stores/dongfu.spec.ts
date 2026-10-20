@@ -56,6 +56,24 @@ describe('dongfu store · sanitize', () => {
     expect(dongfu.veinPoints.craft).toBe(0)
     expect(dongfu.veinPoints.alchemy).toBe(5)
   })
+
+  it('灵脉点数只留认得的四条脉,单脉超出主脉容量的部分裁回', () => {
+    const dongfu = useDongfuStore()
+    // 坏档塞进来的多余键会计进「已投 N/100」,却没有卡能显示或迁出它
+    dongfu.veinPoints = { gather: 60, craft: 999, alchemy: 2, insight: 0, ghost: 400 } as never
+    dongfu.sanitize()
+    expect(Object.keys(dongfu.veinPoints).sort()).toEqual(['alchemy', 'craft', 'gather', 'insight'])
+    expect(dongfu.veinPoints.craft).toBe(70)
+    expect(dongfu.veinTotal).toBe(132)
+  })
+
+  it('主脉认不出时回落到「未定主脉」,四条脉重新按主脉档可投', () => {
+    const dongfu = useDongfuStore()
+    dongfu.veinMain = 'ghost' as never
+    dongfu.veinPoints = { gather: 30, craft: 0, alchemy: 0, insight: 0 }
+    dongfu.sanitize()
+    expect(dongfu.veinMain).toBeNull()
+  })
 })
 
 describe('dongfu store · buildingCap', () => {
