@@ -65,7 +65,7 @@ bun run build
 # 预览构建结果
 bun preview
 
-# 全量测试（数值/战斗/流派/曲线/经济/回归/终局/决策，155 个 spec）
+# 全量测试（数值/战斗/流派/曲线/经济/回归/终局/决策，全量 287 个 spec）
 # 注意用 bun run test,不能用 bun test —— 后者会调 Bun 自带的测试器而非 Vitest
 bun run test
 
@@ -75,6 +75,25 @@ bun run test:report
 # 类型检查 + ESLint
 bun run check
 ```
+
+### 性能自检
+
+```bash
+# 首屏:冷启动字节 / FCP / 楷体换上时刻,并报告「楷体按需取了几片」(预算见 scripts/first-paint.mjs)
+bun run first-paint
+
+# 运行时:每个视图采几秒帧间隔,量最差帧 / 长帧有没有回来(预算见 scripts/perf-profile.mjs)
+bun run perf-profile
+
+# 楷体分片覆盖门(单测之一,证 slices 与 @font-face 的 unicode-range 一致、无孤儿片)
+bun run test -- src/ui/kaiFontCoverage.spec.ts
+```
+
+> 楷体(霞鹜文楷 GB 屏幕阅读版,随包分发)按用法频次切成二十来片 woff2,每片一段
+> `unicode-range` 按需下载 —— 首屏只取最热的几片(~30KB 起步,而不是整份 1.8MB)。
+> 重新切分:**`uv run scripts/fonts/build-kai-font.py --source scripts/fonts/lxgw-wenkai-gb-screen-subset.woff2`**
+> (离线,从已入库的全量字库再切;能联网时去掉 `--source` 会自动下载母体)。母体 24.4MB 不入库,
+> 协议全文在 `public/fonts/OFL.txt`(再分发须保留)。
 
 ### 多端构建
 
@@ -141,7 +160,7 @@ docker run -d -p 8080:80 yunyin-xiuxian
 | Tone.js         | 15    | FluidR3 乐器采样播放（BGM + SFX）           |
 | CryptoJS        | 4     | 存档 AES 加密                               |
 | lucide-vue-next | 0.577 | 图标库                                      |
-| Vitest          | 5     | 单元测试与平衡审计（155 个 spec）           |
+| Vitest          | 5     | 单元测试与平衡审计（全量 287 个 spec）        |
 | Electron        | 39    | Windows 桌面客户端打包                      |
 | Capacitor       | 8     | Android 客户端打包                          |
 
@@ -168,7 +187,7 @@ src/
 │   ├── endgame.ts            # 道途 / 天界 / 试炼
 │   ├── mutators.ts           # 8 变数
 │   └── constants.ts          # 全局平衡参数
-├── core/                 # 逻辑层（102 个模块 + 143 个 spec）
+├── core/                 # 逻辑层（115 个模块 + 208 个同目录 spec）
 │   ├── engine.ts             # 在线心跳驱动（1000ms）
 │   ├── offline.ts            # 离线收益结算
 │   ├── combat.ts             # 回合制战斗预解算

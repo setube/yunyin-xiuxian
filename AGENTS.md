@@ -32,7 +32,7 @@ src/ui/    展示层字符串/图标注册（非逻辑）
 | 路径 | 用途 |
 |---|---|
 | `src/data/` | 静态声明式游戏内容（唯一事实源）|
-| `src/core/` | 游戏逻辑 + 206 个同目录 `*.spec.ts` |
+| `src/core/` | 游戏逻辑 + 209 个同目录 `*.spec.ts` |
 | `src/stores/` | Pinia 状态（18 持久化 + ui 临时）|
 | `src/ui/` | 展示层字符串 / 图标 | 
 | `src/utils/` | 大数、格式化、随机、存储、存档守卫 |
@@ -113,7 +113,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 
 ## Testing & QA
 
-- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 283 个 spec：core 206、ui 39、stores 18、utils 9、data 8、composables 2、router 1；全量约 2814 用例）。README 里的 "155/143" 已过时——按当前计 283/2814，别信旧数。
+- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 286 个 spec：core 209、ui 39、stores 18、utils 9、data 8、composables 2、router 1；全量约 2814 用例）。
 - **运行**：全量 `bun run test`；分桶报告 `bun run test:report`。
 - **红线测试（改了相关逻辑必须保住）**：
   - `storeResilience.spec.ts` — 持久化 store 必须带 `sanitize`，且经恶意损坏用例。
