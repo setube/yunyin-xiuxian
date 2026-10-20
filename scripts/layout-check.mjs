@@ -77,6 +77,8 @@
  *      正文之外没有第二个滚动盒、正文超长时上下有渐隐提示。
  *   三十八 词条转移面板(议题 #22):最挤的一档(九条词条的神品源件、满条带封存的目标)
  *      三档宽度真走一遍,每步过通用尺子,确认后器灵尘照价签扣。
+ *   三十九 丹炉缺草 → 「去坊市续草」(议题 #130):跳过去必须切到「购」、带上
+ *      focus=herb、把灵草格滚进视口并高亮;这一架恰好没有草时,要直说没有。
  *
  * 判据是「横向溢出」这一类——它正是窄屏上最常见的排版事故。
  * 说明:这是无头 Chromium 的视口模拟,不是真机;字体渲染与安全区(刘海/手势条)
@@ -3585,6 +3587,197 @@ for (const vp of [
     return true
   })
   if (pageErrors.length) failures.push(`[弹窗巡逻] 页面异常:${[...new Set(pageErrors)].join(' | ')}`)
+  await ctx.close()
+}
+
+// ---- 第三十九件事:丹炉缺草 → 去坊市,落点必须真的滚到灵草格上(议题 #130) ----
+/*
+ * 由来:炼丹缺料只写一句「灵草或灵石未足」,玩家不知道该去坊市还是去历练;
+ * 就算给了链接,跳过去之后货架在页面下方、灵草还只是六格之一 —— 看起来仍像
+ * 「点了没反应」。这条端到端把三件事一起钉住:
+ *   ① 缺草时丹炉里真的出现「去坊市续草」;
+ *   ② 点下去落到 buy 签,并且 hash 带着 focus=herb;
+ *   ③ 高亮的那一格是灵草、且**完整落在视口内**(不是停在页面顶部就算完)。
+ * 夹具把灵草格排到货架最末一行,不调用 scrollIntoView 时它必在视口之外 ——
+ * 否则这条判据会像旧版一样「跳过去也算过」。
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
+  const SAVE_SECRET = 'yunyin-xiuxian::dao-in-the-clouds::v1'
+  const enc = o => CryptoJS.AES.encrypt(JSON.stringify(o), SAVE_SECRET).toString()
+  const gn = (m, e) => ({ m, e })
+  const now = Date.now()
+  /*
+   * 货架固定 15 格:前 14 格玄铁把灵草挤到第 7 行(390 宽两列)。
+   * 真实货架只有 6 格,但这里要量的是「滚没滚」,不是「货架多大」——
+   * 6 格在 844 高的视口里本来就看得见,量不出这条 bug。
+   */
+  const oreSlots = Array.from({ length: 14 }, (_, idx) => ({
+    kind: 'material',
+    idx,
+    matId: 'ore',
+    count: 12,
+    price: gn(1, 3),
+    sold: false
+  }))
+  const slices = {
+    game: { started: true, saveVersion: 2, createdAt: now - 86400000, lastActiveAt: now, totalPlaySec: 0, createRerolls: 8, createProfile: null },
+    player: {
+      name: '续草自检',
+      major: 3,
+      sub: 2,
+      exp: gn(1, 2),
+      age: 30,
+      lifespanBonusYears: 0,
+      dead: false,
+      reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] },
+      linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 }
+    },
+    // 五品灵草全空;天运丹要 30 株凡品草,开局成就至多补到 10,仍缺 20
+    resources: { spiritStone: gn(1, 9), qi: 1000, wudao: 0, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 0, page: 0, dust: 0 },
+    inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
+    endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
+    dongfu: { levels: { mansion: 1, field: 1, alchemy: 5, forge: 1, library: 1 }, offlineCapHours: 24 },
+    // 只认这一张高耗草方子,免得入门三方的余量把「缺草」遮掉
+    lore: { recipeLore: { p_tianyun: 0.5 } },
+    market: {
+      stock: [...oreSlots, { kind: 'material', idx: 14, matId: 'herb', grade: 1, count: 12, price: gn(1, 3), sold: false }],
+      stockedAt: now,
+      consign: []
+    },
+    settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
+  }
+  await ctx.addInitScript(
+    data => {
+      if (localStorage.getItem('__layoutSeeded')) return
+      for (const [k, v] of Object.entries(data)) localStorage.setItem(k, v)
+      localStorage.setItem('__layoutSeeded', '1')
+    },
+    Object.fromEntries(Object.entries(slices).map(([k, v]) => [`yunyin.${k}`, enc(v)]))
+  )
+  const page = await ctx.newPage()
+  const pageErrors = []
+  watchPageErrors(page, pageErrors)
+  await page.goto(INDEX + '#/inventory?tab=pill', { waitUntil: 'load' })
+  await page.waitForTimeout(2200)
+  await clearOverlays(page)
+
+  checked += 1
+  await page.getByRole('button', { name: /开\s*炉\s*炼\s*丹/ }).first().click({ timeout: 3000 })
+  await page.waitForTimeout(600)
+  const card = page.locator('.modal-panel .card-ink', { hasText: '天运丹' }).first()
+  if ((await card.count()) === 0) {
+    failures.push('[390] 续草场景:丹炉里没渲染出天运丹(夹具没铺到缺草那一档)')
+  } else {
+    const blockedText = (await card.innerText()).replace(/\s+/g, ' ')
+    if (!/灵草/.test(blockedText)) failures.push(`[390] 续草场景:缺草卡片没说是灵草不足 —— ${blockedText.slice(0, 60)}`)
+    const link = card.getByRole('link', { name: /去坊市续草/ })
+    if ((await link.count()) === 0) {
+      failures.push('[390] 续草场景:灵草不足却没有「去坊市续草」的去路')
+    } else {
+      await link.click({ timeout: 3000 })
+      await page.waitForTimeout(1200)
+      const landed = await page.evaluate(() => ({
+        hash: location.hash,
+        scrollTop: document.querySelector('main')?.scrollTop ?? 0,
+        // 内容区的可视范围:上沿在顶栏之下,下沿在底栏之上
+        view: (() => {
+          const box = document.querySelector('main')?.getBoundingClientRect()
+          return box ? { top: box.top, bottom: box.bottom } : null
+        })(),
+        missing: !!document.querySelector('[data-focus-herb-missing]'),
+        herb: (() => {
+          const el = document.querySelector('[data-idx="14"]')
+          if (!el) return null
+          const box = el.getBoundingClientRect()
+          return {
+            text: (el.textContent || '').replace(/\s+/g, ' ').trim(),
+            highlighted: el.className.includes('ring-2'),
+            top: box.top,
+            bottom: box.bottom
+          }
+        })()
+      }))
+      if (!/focus=herb/.test(landed.hash)) failures.push(`[390] 续草场景:跳转没带上 focus=herb(${landed.hash})`)
+      if (landed.missing) failures.push('[390] 续草场景:货架明明有灵草,却报「这一刻没有灵草」')
+      if (!landed.herb) {
+        failures.push('[390] 续草场景:坊市里找不到 fixture 的灵草格,判据没量到东西')
+      } else {
+        if (!/灵草/.test(landed.herb.text)) failures.push(`[390] 续草场景:高亮格不是灵草 —— ${landed.herb.text.slice(0, 40)}`)
+        if (!landed.herb.highlighted) failures.push('[390] 续草场景:灵草格没被高亮(玩家仍要自己一格格找)')
+        // 完整落在内容区可视范围里:顶边不能被顶栏吃掉,底边不能被底栏压住
+        const view = landed.view
+        if (!view) failures.push('[390] 续草场景:找不到内容区(main),判据没量到东西')
+        else if (landed.herb.top < view.top || landed.herb.bottom > view.bottom) {
+          failures.push(`[390] 续草场景:灵草格仍在视口外(top ${landed.herb.top.toFixed(0)} / bottom ${landed.herb.bottom.toFixed(0)},内容区 ${view.top.toFixed(0)}~${view.bottom.toFixed(0)})`)
+        }
+        if (landed.scrollTop <= 0) failures.push('[390] 续草场景:内容区一步都没滚 —— 灵草格是碰巧本来就在视口里?')
+      }
+      console.log(`\n续草落点:${landed.hash} · 灵草格 ${landed.herb ? `${landed.herb.top.toFixed(0)}~${landed.herb.bottom.toFixed(0)}px` : '未找到'} · 内容区 scrollTop ${landed.scrollTop.toFixed(0)}`)
+    }
+  }
+  if (pageErrors.length) failures.push(`[390] 续草场景页面异常:${[...new Set(pageErrors)].join(' | ')}`)
+  await ctx.close()
+}
+
+// ---- 第三十九件事(续):这一架真的没有草,也得说实话 ----
+/*
+ * 六格随机,总有架上没草的时候。此时若只是滚到货架顶部,玩家看到的还是一架
+ * 看不懂的货 —— 以为「续草」点空了。故这条把「没有草」也钉成一句话。
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
+  const SAVE_SECRET = 'yunyin-xiuxian::dao-in-the-clouds::v1'
+  const enc = o => CryptoJS.AES.encrypt(JSON.stringify(o), SAVE_SECRET).toString()
+  const gn = (m, e) => ({ m, e })
+  const now = Date.now()
+  const slices = {
+    game: { started: true, saveVersion: 2, createdAt: now - 86400000, lastActiveAt: now, totalPlaySec: 0, createRerolls: 8, createProfile: null },
+    player: {
+      name: '空架自检',
+      major: 3,
+      sub: 2,
+      exp: gn(1, 2),
+      age: 30,
+      lifespanBonusYears: 0,
+      dead: false,
+      reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] },
+      linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 }
+    },
+    resources: { spiritStone: gn(1, 9), qi: 1000, wudao: 0, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 0, page: 0, dust: 0 },
+    inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
+    endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
+    dongfu: { levels: { mansion: 1, field: 1, alchemy: 5, forge: 1, library: 1 }, offlineCapHours: 24 },
+    lore: { recipeLore: { p_tianyun: 0.5 } },
+    // 六格一件草都没有
+    market: {
+      stock: Array.from({ length: 6 }, (_, idx) => ({ kind: 'material', idx, matId: 'ore', count: 12, price: gn(1, 3), sold: false })),
+      stockedAt: now,
+      consign: []
+    },
+    settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
+  }
+  await ctx.addInitScript(
+    data => {
+      if (localStorage.getItem('__layoutSeeded')) return
+      for (const [k, v] of Object.entries(data)) localStorage.setItem(k, v)
+      localStorage.setItem('__layoutSeeded', '1')
+    },
+    Object.fromEntries(Object.entries(slices).map(([k, v]) => [`yunyin.${k}`, enc(v)]))
+  )
+  const page = await ctx.newPage()
+  const pageErrors = []
+  watchPageErrors(page, pageErrors)
+  await page.goto(INDEX + '#/market?focus=herb', { waitUntil: 'load' })
+  await page.waitForTimeout(2200)
+  checked += 1
+  const said = await page.evaluate(() => {
+    const el = document.querySelector('[data-focus-herb-missing]')
+    return (el?.textContent || '').replace(/\s+/g, ' ').trim()
+  })
+  if (!/没有灵草/.test(said)) failures.push(`[390] 空架续草:架上没有草却一声不响(${said || '无提示'})`)
+  else console.log(`\n空架续草:「${said.slice(0, 40)}…」`)
+  if (pageErrors.length) failures.push(`[390] 空架续草页面异常:${[...new Set(pageErrors)].join(' | ')}`)
   await ctx.close()
 }
 
