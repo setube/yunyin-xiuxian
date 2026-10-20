@@ -201,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+  import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import type { GNum } from '@/types'
   import type { MarketSlot } from '@/data/market'
@@ -579,22 +579,7 @@
      */
     if (route.query.focus === 'herb') {
       tab.value = 'buy'
-      void nextTick(() => {
-        // 丹炉带过来的目标品阶;乱掷的参数忽略,落回当前境界该有的那一品
-        const raw = Number(route.query.grade)
-        const want = isHerbGrade(raw) ? raw : herbGradeOfMajor(player.major)
-        const { slot, soldOut } = focusHerbSlot(market.stock, want, herbGradeOfMajor(player.major))
-        // 按**对象身份**在排好序的货架里取序号:重复 idx 的坏档不会把高亮挪到邻格
-        const at = slot ? market.stock.slice().sort((a, b) => a.idx - b.idx).indexOf(slot) : -1
-        if (slot && at >= 0) {
-          focusCard.value = at
-          const el = buySection.value?.querySelector<HTMLElement>(`[data-card="${at}"]`)
-          el?.scrollIntoView({ block: 'center' })
-        } else {
-          focusHerbState.value = soldOut ? 'soldOut' : 'none'
-          buySection.value?.scrollIntoView({ block: 'start' })
-        }
-      })
+      void nextTick(applyHerbFocus)
     }
     timer = setInterval(() => {
       now.value = Date.now()
@@ -607,4 +592,40 @@
   onUnmounted(() => {
     if (timer !== undefined) clearInterval(timer)
   })
+
+  /**
+   * 把「续草」的落点定到当前货架上 —— 首次进入,以及**每次换货之后**都要重算。
+   *
+   * 只在 onMounted 里算一次是不够的:货架两小时一换(离线归来也立刻换新),
+   * 而高亮记的是渲染序号,换货后同一个序号多半变成另一件货,墨绿框就指着
+   * 一件与灵草无关的东西,比不亮更误导。
+   */
+  function applyHerbFocus(): void {
+    if (route.query.focus !== 'herb') return
+    // 丹炉带过来的目标品阶;乱掷的参数忽略,落回当前境界该有的那一品
+    const raw = Number(route.query.grade)
+    const fallback = herbGradeOfMajor(player.major)
+    const want = isHerbGrade(raw) ? raw : fallback
+    const { slot, soldOut } = focusHerbSlot(market.stock, want, fallback)
+    // 按**对象身份**在排好序的货架里取序号:重复 idx 的坏档不会把高亮挪到邻格
+    const at = slot ? market.stock.slice().sort((a, b) => a.idx - b.idx).indexOf(slot) : -1
+    if (slot && at >= 0) {
+      focusCard.value = at
+      focusHerbState.value = null
+      buySection.value?.querySelector<HTMLElement>(`[data-card="${at}"]`)?.scrollIntoView({ block: 'center' })
+    } else {
+      focusCard.value = null
+      focusHerbState.value = soldOut ? 'soldOut' : 'none'
+      buySection.value?.scrollIntoView({ block: 'start' })
+    }
+  }
+
+  /** 换货后重定位:只跟货架走,不跟玩家自己切签走 */
+  watch(
+    () => market.stockedAt,
+    () => {
+      if (route.query.focus !== 'herb' || tab.value !== 'buy') return
+      void nextTick(applyHerbFocus)
+    }
+  )
 </script>
