@@ -45,10 +45,13 @@ export const useCultivationStore = defineStore(
     function sanitize(): void {
       const fixedLearned: Record<string, number> = {}
       for (const [id, lv] of Object.entries(asNumberRecord(learned.value, 0))) {
-        if (lv > 0) {
+        const def = gongfaDef(id)
+        // 认不出的功法 id 不该留在「已习得」里:它既升不了级也练不出效果,却会被转世
+        // 原样带走(见 reincarnation.carryGongfa),还会让藏书统计多出一门。
+        if (def && lv > 0) {
           // 等级钳到该功法满级(秘术 3 / 主辅 9,以数据源为准)——坏档把等级写远超上限
           // 会按 perLevel 无限放大属性且游戏内无降级路径,永久膨胀
-          fixedLearned[id] = Math.min(Math.max(1, Math.floor(lv)), gongfaMaxLevel(gongfaDef(id)))
+          fixedLearned[id] = Math.min(Math.max(1, Math.floor(lv)), gongfaMaxLevel(def))
         }
       }
       learned.value = fixedLearned
@@ -66,7 +69,12 @@ export const useCultivationStore = defineStore(
        */
       const now = Date.now()
       const surviving = new Map<string, BuffInstance>()
-      for (const b of asArray<BuffInstance>(buffs.value, [], x => !!x && typeof (x as BuffInstance).defId === 'string')) {
+      // 认不出的状态 id 同样清掉:面板与到期提示都按定义取名,野 id 永远露不出来。
+      for (const b of asArray<BuffInstance>(
+        buffs.value,
+        [],
+        x => !!x && typeof (x as BuffInstance).defId === 'string' && buffDef((x as BuffInstance).defId) !== undefined
+      )) {
         const cur = { ...b, endsAt: asFiniteNumber(b.endsAt, now, 0) }
         const prev = surviving.get(b.defId)
         if (!prev || cur.endsAt > prev.endsAt) surviving.set(b.defId, cur)

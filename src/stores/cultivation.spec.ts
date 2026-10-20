@@ -205,6 +205,27 @@ describe('sanitize:功法等级与悟道分支加固', () => {
     expect(Object.keys(c.gongfaBranch), '未习得功法的分支仍应被清').toHaveLength(0)
   })
 
+  it('坏档里的野功法与野状态 id 被清,真条目原样保留', () => {
+    const c = useCultivationStore()
+    const now = Date.now()
+    c.$patch({
+      learned: { m_taixuan: 2, s_tuna: 1, x_wild_gongfa: 5 },
+      mainGongfa: 'x_wild_gongfa',
+      subGongfa: ['x_wild_gongfa', 's_tuna'],
+      buffs: [
+        { defId: 'x_wild_buff', endsAt: now + 600_000 },
+        { defId: 'buff_juling', endsAt: now + 600_000 }
+      ]
+    } as never)
+    c.sanitize()
+    // 野功法升不了级、练不出效果,却会被转世原样带走,不能留
+    expect(Object.keys(c.learned), '只留目录里认得的功法').toEqual(['m_taixuan', 's_tuna'])
+    expect(c.mainGongfa, '野功法不能继续占主修位').toBeNull()
+    expect(c.subGongfa, '野功法从辅修列表清掉,真辅修保留').toEqual(['s_tuna'])
+    // 野状态在面板上永远画不出来,只会白占到期检查
+    expect(c.buffs.map(b => b.defId), '只留认得的状态').toEqual(['buff_juling'])
+  })
+
   /**
    * 坏档里同一门辅修写两遍:槽位预算按数组条数算,重复项会白占一格,
    * 把真正想上的后一门挤出去(装配页显示已选两门,实际只有一门在生效)。
