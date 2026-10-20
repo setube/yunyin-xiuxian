@@ -10,6 +10,7 @@ import { useLoreStore } from '@/stores/lore'
 import { ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
 import { BAG_CAPACITY } from '@/data/constants'
 import { EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
+import { pillDef } from '@/data/pills'
 import { asArray, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 
 export const useInventoryStore = defineStore(
@@ -61,7 +62,16 @@ export const useInventoryStore = defineStore(
         usedUids.add(uid)
       }
       equipped.value = fixedEquipped
-      pills.value = asNumberRecord(pills.value, 0)
+      /**
+       * 丹匣按 id 认丹:认不出的 id 在丹匣/坊市/修行快捷栏里都画不出来,
+       * 却会一直留在存档里,并被道童「寻药」的缺口统计当成存量(凭空少派一趟)。
+       * 归零的条目也不必留 —— spendPill 吃完就删,零条只可能来自坏档。
+       */
+      pills.value = Object.fromEntries(
+        Object.entries(asNumberRecord(pills.value, 0)).filter(
+          ([id, n]) => !!pillDef(id) && Math.floor(n) > 0
+        )
+      )
       /**
        * 同一件法宝只该有一条:库里两条同 defId 会让「是否已拥有」与祭炼判定各看各的。
        * 认不出的 defId 一并清掉 —— 法宝页按 `artifactDef(a.defId)!` 取品质排序,

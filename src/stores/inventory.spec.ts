@@ -160,4 +160,11 @@ describe('装备槽属性汇总(equipMods)守卫', () => {
     expect(inv.artifacts.map(a => a.defId), '只留认得的法宝').toEqual(['af_muyu'])
     expect(inv.equippedArtifacts, '野 id 不会在祭炼位上白占一格').toEqual(['af_muyu'])
   })
+
+  it('sanitize:丹匣只留认得的丹药,零条与野 id 一并清掉', () => {
+    const inv = useInventoryStore()
+    inv.$patch({ pills: { p_jvqisan: 3, p_ghost: 9, p_huichun: 0 } } as never)
+    inv.sanitize()
+    expect(inv.pills, '野 id 画不出来，零条也没有可服的').toEqual({ p_jvqisan: 3 })
+  })
 })
