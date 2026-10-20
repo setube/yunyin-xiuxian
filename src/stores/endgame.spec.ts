@@ -322,11 +322,15 @@ describe('终局一次性引导标记 sanitize', () => {
       milestones: [
         { id: 'first_dao', life: 1, at: 100 },
         { id: 'first_dao', life: 2, at: 200 },
-        { id: 'first_world', life: 2, at: 300 }
+        { id: 'first_world', life: 2, at: 300 },
+        { id: 'first_ghost', life: 3, at: 400 }
       ]
     })
     e.sanitize()
-    expect(e.milestones.map(m => m.id), '同一条只留先出现的那次').toEqual(['first_dao', 'first_world'])
+    expect(e.milestones.map(m => m.id), '同一条只留先出现的那次，认不出的节点直接清掉').toEqual([
+      'first_dao',
+      'first_world'
+    ])
   })
 })
 
@@ -387,5 +391,19 @@ describe('天界终局坏档 · 按 id 认道/认界/认试炼', () => {
     e.sanitize()
     expect(e.worldRun!.rows[0]).toEqual({ foeName: '妖王', win: false, rounds: 0, hpLeftPct: 1 })
     expect(e.worldRun!.rows[1]).toEqual({ foeName: '鬼将', win: true, rounds: 3, hpLeftPct: 0.4 })
+  })
+
+  it('极限纪录只留 RECORD_DEFS 认得的键,坏值照旧收口', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      records: {
+        fastest_world: { value: Number.NaN, life: 2, note: '赤炎天' },
+        bogus_record: { value: 9, life: 1, note: '无名' }
+      } as never
+    })
+    e.sanitize()
+    expect(e.records, '野键没有卡会读它，留着只会污染存档').toEqual({
+      fastest_world: { value: 0, life: 2, note: '赤炎天' }
+    })
   })
 })

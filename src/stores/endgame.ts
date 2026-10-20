@@ -6,6 +6,7 @@ import { persistConfig } from '@/utils/storage'
 import { mergeMods } from '@/core/statsCalc'
 import { EXPEDITION_GUARDIAN_LAYER, celestialWorldDef, daoPathDef, trialDef } from '@/data/endgame'
 import { SOUL_SLOTS, soulMods as soulModsOf, type SoulInstance } from '@/data/souls'
+import { milestoneDef, recordDef } from '@/data/identity'
 import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asObjectOrNull, asRecordOf, asStringArray } from '@/utils/saveShape'
 
 interface TrialRecord {
@@ -144,13 +145,13 @@ export const useEndgameStore = defineStore(
         typeof dailyDoneDay.value === 'number' && Number.isFinite(dailyDoneDay.value) ? dailyDoneDay.value : null
       /**
        * 修行节点的 life/at 是直接报给玩家的读数,坏数会写出「第 NaN 世」;
-       * 按非负整数修平。认不出的 id 保留:它只影响这一行怎么称呼,
-       * 而节点本身(首次语义)是真的发生过的事。
+       * 按非负整数修平。认不出的 id 则清掉:节点页只按 MILESTONE_DEFS 取名,
+       * 野 id 会把「修行节点 N/13」顶过总数,时间线上还只剩一行原始 id。
        */
       milestones.value = asArray<{ id: string; life: number; at: number }>(
         milestones.value,
         [],
-        m => !!m && typeof (m as { id?: unknown }).id === 'string'
+        m => !!m && typeof (m as { id?: unknown }).id === 'string' && !!milestoneDef((m as { id: string }).id)
       ).map(m => ({
         id: m.id,
         life: Math.floor(asFiniteNumber(m.life, 0, 0)),
@@ -164,12 +165,16 @@ export const useEndgameStore = defineStore(
         seenMilestone.add(m.id)
         return true
       })
-      /** 极限纪录的 value/life 是被直接读出来的数,坏值会让「最快破界」显示成 NaN */
+      /**
+       * 极限纪录的 value/life 是被直接读出来的数,坏值会让「最快破界」显示成 NaN。
+       * 键同样按 RECORD_DEFS 认:纪录页只遍历这四条,野键永远不会被画出来。
+       */
       const fixedRecords: Record<string, { value: number; life: number; note: string }> = {}
       // 条目本身先要是个对象:records = { a: null } 这类坏档不能直接读 .value
       for (const [id, raw] of Object.entries(
         asRecordOf<{ value: number; life: number; note: string }>(records.value, r => !!r && typeof r === 'object' && !Array.isArray(r))
       )) {
+        if (!recordDef(id)) continue
         const r = raw as Partial<{ value: number; life: number; note: string }>
         fixedRecords[id] = {
           value: asFiniteNumber(r.value, 0),
