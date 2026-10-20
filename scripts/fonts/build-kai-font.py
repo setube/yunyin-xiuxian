@@ -4,11 +4,29 @@
 # dependencies = ["fonttools>=4.50", "brotli>=1.1"]
 # ///
 """
-生成随游戏分发的楷体子集(src/assets/fonts/lxgw-wenkai-gb-screen-subset.woff2)
+生成随游戏分发的楷体子集(切片):src/assets/fonts/lxgw-wenkai-gb-screen-subset-*.woff2
+与它们的 @font-face 声明(src/assets/fonts/kai-subset.css)
 
 用法:
     uv run scripts/fonts/build-kai-font.py                # 母体在缓存里就直接用
     uv run scripts/fonts/build-kai-font.py --master path/to/LXGWWenKaiGBScreen.ttf
+    uv run scripts/fonts/build-kai-font.py --source public/fonts/lxgw-full.woff2  # 离线:从已入库的全量字库再切
+
+为什么要**切片**而不是一份大子集
+--------------------------------
+一份 1.8MB 的子集在冷启动时是整份下载的:首屏要传的字节里 67% 是它(实测 2681KB 里
+1783KB),而首屏真正用到的字不过一两百个 —— 剩下的是「将来可能会用」的储备。
+
+浏览器的 `unicode-range` 正好能按需取:同一族声明多份 @font-face,每份一段码位区间,
+只有页面上真出现该区间里的字时,那一份才会被下载。于是这里按**用法频次**切片:
+
+    第 1 片 —— 语料里出现最多的那些字(累计占全部出现次数的一半以上):日常界面基本被它兜住
+    第 2、3、4 片 —— 依次更冷的字(各方神兽、生僻名号、罕见功法名)
+    第 5 片 —— 语料里没出现过、但 GB2312 里有的字(玩家自己起名要用的储备)
+
+冷启动因此只取第 1 片(必要时加第 2 片),而「名字里有个生僻字」这种情况照旧能画出来
+—— 取不到的字仍会回退系统字体,只是那一份也会被按需拉下来。取舍与实测见
+scripts/first-paint.mjs 与 docs/development.md 的首屏一节。
 
 为什么要有这个脚本
 ------------------
@@ -60,10 +78,14 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 # 产物放 src/assets 而不是 public:style.css 里用相对 url() 引它,Vite 才会改写
 # 成带 hash、且认得 base 的地址(vite.config 的 base 是 './',写死 /fonts/… 在
 # GitHub Pages 那种子路径部署下会 404)。协议文本放 public,原样进产物。
-OUT_FONT = ROOT / "src/assets/fonts/lxgw-wenkai-gb-screen-subset.woff2"
+OUT_DIR = ROOT / "src/assets/fonts"
+OUT_CSS = OUT_DIR / "kai-subset.css"
 META = ROOT / "scripts/fonts/kai-subset.meta.json"
 CHARS = ROOT / "scripts/fonts/kai-subset.chars.txt"
 CACHE = pathlib.Path("/tmp/lxgw-wenkai-cache")
+
+# 切片数:再多就只是把请求数堆上去(每片都要一次往返),再少则第一片太肥。
+CHUNKS = 5
 
 # 界面一定会用到、但未必出现在源码字面量里的字符:ASCII、常用标点与全角符号
 EXTRA = (
@@ -128,33 +150,128 @@ def needed_chars() -> set[str]:
     return {c for c in chars if not c.isspace()}
 
 
+def ui_corpus() -> str:
+    """
+    界面语料 —— 用来给字排频次,决定谁进第一片。
+
+    取的是**源码与模板里的全部文本**(含 src/data 里的名字与文案),跳过 *.spec.ts
+    (与 needed_chars 同一条规则)。频次只是个权重,不要求精确:哪一片先到,只影响
+    冷启动那几次请求的大小,不影响覆盖。
+    """
+    parts: list[str] = []
+    for pattern in ("*.ts", "*.vue", "*.js"):
+        for p in (ROOT / "src").rglob(pattern):
+            if p.name.endswith(".spec.ts"):
+                continue
+            parts.append(p.read_text(encoding="utf-8", errors="ignore"))
+    parts.append((ROOT / "index.html").read_text(encoding="utf-8", errors="ignore"))
+    return "".join(parts)
+
+
+def split_chunks(chars: set[str], corpus: str, per_band: int, per_cold: int) -> list[list[str]]:
+    """
+    按用法频次把字切片:每片约 `per_band` 个字,热的在前;最后一片收「语料里没出现过」
+    的字(GB2312 储备,玩家自己起名要用的那些)。
+
+    为什么按频次排序 + 按字数均分,而不是按累计出现次数分档:界面上的字是长尾分布,
+    前两三百个字就占了全部出现次数的一半以上。按出现次数分档会让前面几片小得可笑
+    (实测第一片 19 字、第二片 35 字),而后面一片 2474 字 —— 首屏只要碰到一个中频字,
+    那片 650KB 就整份下来了,等于没切。按字数均分才是浏览器真正吃的那一档:页面碰到
+    哪些字,就只取它们所在的那几片。
+
+    片数(每片多大)是取舍:片越小首屏越省字节,但请求数越多。取值与实测见
+    docs/development.md 的首屏一节,量法是 scripts/first-paint.mjs。
+    """
+    weight = {c: corpus.count(c) for c in chars if c in corpus}
+    hot = sorted([c for c in chars if weight.get(c, 0) > 0], key=lambda c: (-weight[c], c))
+    cold = sorted([c for c in chars if weight.get(c, 0) == 0])
+    bands: list[list[str]] = [hot[i : i + per_band] for i in range(0, len(hot), per_band)]
+    # 储备那一段(GB2312 里语料没用到的那几千字)按码位切:它们只在「玩家起了个生僻名字」
+    # 时才用得上,整段一千多 KB 一份太贵 —— 切小之后,那一个名字只拽下来一小片。
+    bands += [cold[i : i + per_cold] for i in range(0, len(cold), per_cold)]
+    return bands
+
+
+def unicode_range(chars: list[str]) -> str:
+    """一串字 → CSS 的 unicode-range(连续码位并成区间,免得写几千个 U+xxxx)"""
+    points = sorted({ord(c) for c in chars})
+    runs: list[tuple[int, int]] = []
+    for cp in points:
+        if runs and cp == runs[-1][1] + 1:
+            runs[-1] = (runs[-1][0], cp)
+        else:
+            runs.append((cp, cp))
+    return ", ".join(f"U+{a:X}" if a == b else f"U+{a:X}-{b:X}" for a, b in runs)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--master", help="母体 TTF 路径(不给就按上面的 URL 下载到缓存)")
+    ap.add_argument(
+        "--source",
+        help="离线切片的全量字库路径(已入库的 lxgw-wenkai-gb-screen-subset.woff2);"
+        "给则跳过母体下载,直接从这份已含全部需用字的字库再切",
+    )
+    ap.add_argument(
+        "--per-band",
+        type=int,
+        default=180,
+        help="常用字每片大约几个字(默认 180,实测的口径见 docs/development.md 首屏一节)",
+    )
+    ap.add_argument(
+        "--per-cold",
+        type=int,
+        default=700,
+        help="储备字(语料里没出现过)每片大约几个字 —— 玩家起生僻名时才取",
+    )
     args = ap.parse_args()
 
     from fontTools import subset
     from fontTools.ttLib import TTFont
 
-    master = ensure_master(args.master)
-    text = "".join(sorted(needed_chars()))
+    # --source 是离线再切的入口:直接复用已入库的全量字库(已含全部需用字),
+    # 不必能连外网下载母体。选 --source 时 sha256 校验的是这份待切的字库本身。
+    source = pathlib.Path(args.source) if args.source else ensure_master(args.master)
+    chars = needed_chars()
+    bands = split_chunks(chars, ui_corpus(), args.per_band, args.per_cold)
 
     opts = subset.Options()
     opts.flavor = "woff2"
     opts.drop_tables += ["DSIG"]
     opts.notdef_outline = True
-    font = subset.load_font(str(master), opts)
-    subsetter = subset.Subsetter(options=opts)
-    subsetter.populate(text=text)
-    subsetter.subset(font)
-    OUT_FONT.parent.mkdir(parents=True, exist_ok=True)
-    subset.save_font(font, str(OUT_FONT), opts)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 从**产物**读回真实覆盖,而不是记「我要求包含的字」—— 两者会差:母体里没有的字
-    # (那些符号)pyftsubset 直接跳过,若字表照抄请求集,判据就成了空头支票。
-    produced = TTFont(str(OUT_FONT), lazy=True)
-    covered = {chr(cp) for cp in produced.getBestCmap()}
-    missing = sorted(set(text) - covered)
+    covered_all: set[str] = set()
+    missing_all: set[str] = set()
+    chunks: list[dict[str, object]] = []
+    for i, band in enumerate(bands, start=1):
+        if not band:
+            continue
+        out = OUT_DIR / f"lxgw-wenkai-gb-screen-subset-{i}.woff2"
+        font = subset.load_font(str(source), opts)
+        subsetter = subset.Subsetter(options=opts)
+        subsetter.populate(text="".join(band))
+        subsetter.subset(font)
+        subset.save_font(font, str(out), opts)
+
+        # 从**产物**读回真实覆盖,而不是记「我要求包含的字」—— 两者会差:母体里没有的字
+        # (那些符号)pyftsubset 直接跳过,若字表照抄请求集,判据就成了空头支票。
+        produced = TTFont(str(out), lazy=True)
+        covered = {chr(cp) for cp in produced.getBestCmap()}
+        missing_all |= set(band) - covered
+        covered_all |= covered
+        chunks.append(
+            {
+                "file": out.name,
+                "chars": len(covered),
+                "bytes": out.stat().st_size,
+                "sha256": sha256_of(out),
+                "unicode_range": unicode_range(sorted(covered)),
+            }
+        )
+        print(f"  第 {i} 片:{len(covered)} 字 · {out.stat().st_size / 1024:.0f} KB")
+
+    missing = sorted(missing_all)
     unexpected = [c for c in missing if c not in SYMBOLS_FROM_SYSTEM]
     if unexpected:
         sys.exit(
@@ -162,7 +279,26 @@ def main() -> None:
             + "".join(unexpected)
             + "\n要么换母体,要么把确实该由系统字体画的字符加进 SYMBOLS_FROM_SYSTEM"
         )
-    CHARS.write_text("".join(sorted(covered)), encoding="utf-8")
+    CHARS.write_text("".join(sorted(covered_all)), encoding="utf-8")
+
+    # @font-face 声明也由脚本写:每一片的 unicode-range 必须与那一份**产物**的 cmap 一致,
+    # 手抄一份到 style.css 里迟早会与字体对不上(而那种错只表现为「有字拉不下来」)。
+    rules = [
+        "/* 生成物 —— 由 scripts/fonts/build-kai-font.py 写出,判据在 src/ui/kaiFontCoverage.spec.ts。",
+        "   手改会被下一次生成覆盖。 */",
+    ]
+    for chunk in chunks:
+        rules.append(
+            "@font-face {\n"
+            "  font-family: 'LXGW WenKai GB Screen';\n"
+            "  src:\n"
+            "    local('LXGW WenKai GB Screen'),\n"
+            f"    url('./{chunk['file']}') format('woff2');\n"
+            "  font-display: swap;\n"
+            f"  unicode-range: {chunk['unicode_range']};\n"
+            "}"
+        )
+    OUT_CSS.write_text("\n".join(rules) + "\n", encoding="utf-8")
 
     META.write_text(
         json.dumps(
@@ -172,11 +308,11 @@ def main() -> None:
                 "url": MASTER_URL,
                 "master_sha256": MASTER_SHA256,
                 "license": "SIL OFL 1.1 —— 全文见 public/fonts/OFL.txt",
-                "requested_chars": len(text),
-                "subset_chars": len(covered),
+                "requested_chars": len(chars),
+                "subset_chars": len(covered_all),
                 "delegated_to_system": "".join(missing),
-                "subset_sha256": sha256_of(OUT_FONT),
-                "subset_bytes": OUT_FONT.stat().st_size,
+                "subset_bytes": sum(int(c["bytes"]) for c in chunks),
+                "chunks": chunks,
                 "generated_by": "scripts/fonts/build-kai-font.py",
             },
             ensure_ascii=False,
@@ -185,10 +321,14 @@ def main() -> None:
         + "\n",
         encoding="utf-8",
     )
+    total_bytes = sum(int(c["bytes"]) for c in chunks)
+    hot_bytes = int(chunks[0]["bytes"]) if chunks else 0
     print(
-        f"请求 {len(text)} 字 · 字体实收 {len(covered)} 字"
+        f"请求 {len(chars)} 字 · 字体实收 {len(covered_all)} 字 · {len(chunks)} 片"
         + (f" · 交给系统字体:{''.join(missing)}" if missing else "")
-        + f"\n→ {OUT_FONT.relative_to(ROOT)} ({OUT_FONT.stat().st_size / 1024:.0f} KB)"
+        + f"\n→ {OUT_DIR.relative_to(ROOT)}/lxgw-wenkai-gb-screen-subset-*.woff2"
+        + f"(合计 {total_bytes / 1024:.0f} KB,第一片 {hot_bytes / 1024:.0f} KB)"
+        + f"\n→ {OUT_CSS.relative_to(ROOT)}(每一片的 @font-face 与 unicode-range)"
     )
 
 
