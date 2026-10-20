@@ -177,4 +177,27 @@ describe('player.rebirth 转世状态重置', () => {
     expect(p.suppressedRegions, '镇压表同一位只留一份').toEqual(['qingyun'])
     expect(p.suppressQualified, '资格表同一位只留一份').toEqual(['qingyun', 'luoxia'])
   })
+
+  /**
+   * 天赋是「有或没有」:同一条写两遍时 talentMods 会把同一份词条算两次,
+   * 相当于白送一份属性;传承清单也会重复列出同一件。
+   */
+  it('sanitize:天赋/传承同一条写两遍只留一份,不白送属性', () => {
+    const p = usePlayerStore()
+    const talent = 't_jianxin'
+    p.$patch({
+      reincarnation: {
+        ...p.reincarnation,
+        talents: [talent, talent, 't_not_real'],
+        heritage: ['danxin', 'danxin', 'h_not_real']
+      }
+    } as never)
+    p.sanitize()
+    expect(p.reincarnation.talents, '同一条天赋只留一份(认不出的旧 id 保留,不产生词条)').toEqual([talent, 't_not_real'])
+    expect(p.reincarnation.heritage, '同一条传承只留一份,认不出的清掉').toEqual(['danxin'])
+
+    // 词条只算一次:再加一条同 id 也不该翻倍
+    p.addTalent(talent)
+    expect(p.reincarnation.talents).toEqual([talent, 't_not_real'])
+  })
 })

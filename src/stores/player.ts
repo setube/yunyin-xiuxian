@@ -872,8 +872,17 @@ export const usePlayerStore = defineStore(
       reincarnation.value = {
         count,
         daoFruit: Number.isFinite(r?.daoFruit) ? Math.max(0, r.daoFruit) : 0,
-        talents: Array.isArray(r?.talents) ? r.talents : [],
-        heritage: Array.isArray(r?.heritage) ? r.heritage.filter((h: unknown): boolean => !!heritageDef(String(h))) : [],
+        /**
+         * 天赋/传承都是「有或没有」的集合(addTalent/addHeritage 只在没有时才加):
+         * 坏档里同一条写两遍,talentMods 会把同一份词条算两次(白送属性),
+         * 传承清单也会重复列出同一件。去重并只留认识的 id。
+         *
+         * 天赋不按数据表清未知 id:认不出的 id 本就不产生词条(talentDef 返回 undefined),
+         * 但可能来自改名/下线的旧档,留着只在履历里显示原名,丢掉则是无声的档案损失。
+         * 传承不同 —— 它参与「是否持有」判定,未知 id 必须清,否则会挡住发放路径。
+         */
+        talents: [...new Set(asStringArray(r?.talents))],
+        heritage: [...new Set(asStringArray(r?.heritage).filter(id => !!heritageDef(id)))],
         heritageUses: sanitizeHeritageUses(r?.heritageUses),
         insight: Number.isFinite(r?.insight) ? Math.max(0, r.insight) : legacyInsightOf(count),
         lives: Array.isArray(r?.lives) ? r.lives : [],
