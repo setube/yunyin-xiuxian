@@ -19,6 +19,8 @@ import { mayTriggerEnlightenment, mayTriggerCaveEvent } from './earlyGameService
 import { settleSuppressedRegions } from './suppress'
 import { studyTick, seedLoreIfNeeded } from './loreService'
 import { flushSaveWrites } from '@/utils/storage'
+import { enginePaused, pauseElapsedMs, setEnginePaused } from './enginePause'
+import { shiftEarlyGameWindows } from './earlyGameService'
 
 const PERIODIC_CHECK_SEC = 30
 
@@ -28,7 +30,6 @@ class GameEngine {
   private lastStampAt = 0
   private periodicAccum = 0
   private deathAnnounced = false
-  private paused = false
 
   start(): void {
     const now = Date.now()
@@ -82,7 +83,7 @@ class GameEngine {
   private onVisibility = (): void => {
     const game = useGameStore()
     if (document.visibilityState === 'hidden') {
-      if (!this.paused) game.stampActive(Date.now())
+      if (!enginePaused.value) game.stampActive(Date.now())
       // 盖完时间戳再刷盘。storage 模块也监听了 visibilitychange,但它注册得更早,
       // 先跑完就轮到这里盖章,那一次盖章会留在待刷队列里没人写
       flushSaveWrites()
@@ -107,7 +108,7 @@ class GameEngine {
   private tick(): void {
     const game = useGameStore()
     const now = Date.now()
-    if (this.paused) {
+    if (enginePaused.value) {
       // 暂停期间只推平时间基准,不结算、不写档
       this.lastTickAt = now
       return
@@ -209,16 +210,32 @@ class GameEngine {
 
   /** 暂停心跳(如重置确认弹窗期间):不结算、不写档;入停前记录一次活跃时刻 */
   pause(): void {
+    if (enginePaused.value) return
     useGameStore().stampActive(Date.now())
-    this.paused = true
+    setEnginePaused(true)
   }
 
+  /**
+   * 恢复心跳,并把暂停这段时长补回所有按墙钟到期的状态。
+   *
+   * 只停心跳不够:Buff、卦、区域事件、突破准备、历练窗口都拿 `Date.now()`
+   * 判到期,暂停五分钟就会「在确认窗背后」自己过期。补回后与 `gameNow()`
+   * 的冻结语义一致 —— 暂停的那段时间不算进游戏时间。
+   */
   resume(): void {
+    if (!enginePaused.value) return
     const now = Date.now()
+    const pausedMs = pauseElapsedMs(now)
+    if (pausedMs > 0) {
+      useCultivationStore().shiftBuffEnds(pausedMs)
+      usePlayerStore().shiftTimedState(pausedMs)
+      useAdventureStore().shiftTimedState(pausedMs)
+      shiftEarlyGameWindows(pausedMs)
+    }
     this.lastTickAt = now
     this.lastStampAt = now
     useGameStore().stampActive(now)
-    this.paused = false
+    setEnginePaused(false)
   }
 }
 

@@ -253,6 +253,7 @@
   import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm } from '@/data/classics'
   import { HEXAGRAMS, TRIGRAMS, trigramDef } from '@/data/yijing'
   import { DIVINATION_COST, drawLines, readingCounsel, readingFromState } from '@/core/divination'
+  import { gameNow } from '@/core/enginePause'
   import { askDivination } from '@/core/divinationService'
   import { PALACES, STARS } from '@/data/ziwei'
   import { fateLordLine } from '@/core/fate'
@@ -299,7 +300,8 @@
     void game.totalPlaySec
     const state = player.activeDivination
     if (!state) return ''
-    const ms = Math.max(0, state.expiresAt - Date.now())
+    // 与 activeDivination 同一条暂停冻结口径:确认窗背后不能把卦耗掉
+    const ms = Math.max(0, state.expiresAt - gameNow())
     const m = Math.floor(ms / 60_000)
     const sec = Math.floor((ms % 60_000) / 1000)
     return m > 0 ? `尚余 ${m} 分 ${sec} 秒` : `尚余 ${sec} 秒`

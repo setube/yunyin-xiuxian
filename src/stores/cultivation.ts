@@ -196,6 +196,17 @@ export const useCultivationStore = defineStore(
       return false
     }
 
+    /**
+     * 暂停恢复:把每条 Buff 的到期时刻顺延暂停时长。
+     *
+     * 暂停期间心跳不结算,`endsAt` 却是墙钟 —— 不顺延就等于「开着重置确认窗,
+     * 丹药自己过期」。与 `enginePause.gameNow()` 的冻结语义配套。
+     */
+    function shiftBuffEnds(pausedMs: number): void {
+      if (pausedMs <= 0 || buffs.value.length === 0) return
+      buffs.value = buffs.value.map(b => ({ ...b, endsAt: b.endsAt + pausedMs }))
+    }
+
     function clearNegativeBuffs(): void {
       buffs.value = buffs.value.filter(b => buffDef(b.defId)?.kind !== 'injury')
     }
@@ -226,6 +237,7 @@ export const useCultivationStore = defineStore(
       addBuff,
       hasBuff,
       pruneBuffs,
+      shiftBuffEnds,
       clearNegativeBuffs,
       chooseBranch,
       sanitize

@@ -26,6 +26,7 @@ import { baseCultPerSec, baseQiRegen, expRequirement, gameDay, qiCap } from '@/c
 import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
 import { readingFromState, readingMods } from '@/core/divination'
+import { gameNow } from '@/core/enginePause'
 import { asCarriedHpPct, asFiniteNumber, asStringArray } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
@@ -205,7 +206,7 @@ export const usePlayerStore = defineStore(
       // 读一次心跳:过期判定要随引擎推进被重新计算(见 engine 的 addPlayTime)
       void useGameStore().totalPlaySec
       const state = divination.value
-      return state && state.expiresAt > Date.now() ? state : null
+      return state && state.expiresAt > gameNow() ? state : null
     })
     const divinationMods = computed<StatMods>(() => {
       const state = activeDivination.value
@@ -1044,6 +1045,44 @@ export const usePlayerStore = defineStore(
       fortuneChoices.value = choices
     }
 
+    /**
+     * 暂停恢复:把按墙钟到期的状态顺延暂停时长。
+     *
+     * 暂停(重置 / 导入确认窗)期间心跳不结算,但这些时间戳仍按真实时钟走 ——
+     * 不顺延就会「确认窗背后自己散卦、区域事件自己过期、调息自己变就绪」。
+     * 与 `enginePause.gameNow()` 的冻结语义配套;持续时长的起点
+     * (suppressedSince / regionStats.lastUpdateAt)同样顺延,免得暂停吃掉
+     * 镇压复聚或世界记忆的计时。
+     */
+    function shiftTimedState(pausedMs: number): void {
+      if (pausedMs <= 0) return
+      if (divination.value) {
+        divination.value = { ...divination.value, expiresAt: divination.value.expiresAt + pausedMs }
+      }
+      if (regionEvent.value) {
+        regionEvent.value = { ...regionEvent.value, endsAt: regionEvent.value.endsAt + pausedMs }
+      }
+      if (breakthroughPrep.value) {
+        breakthroughPrep.value = {
+          ...breakthroughPrep.value,
+          readyAt: breakthroughPrep.value.readyAt + pausedMs
+        }
+      }
+      if (enlightenmentAt.value > 0) enlightenmentAt.value += pausedMs
+
+      const nextSince: Record<string, number> = {}
+      for (const [id, at] of Object.entries(suppressedSince.value)) {
+        nextSince[id] = at > 0 ? at + pausedMs : at
+      }
+      suppressedSince.value = nextSince
+
+      const nextStats: Record<string, (typeof regionStats.value)[string]> = {}
+      for (const [id, st] of Object.entries(regionStats.value)) {
+        nextStats[id] = { ...st, lastUpdateAt: st.lastUpdateAt > 0 ? st.lastUpdateAt + pausedMs : st.lastUpdateAt }
+      }
+      regionStats.value = nextStats
+    }
+
     return {
       name,
       linggen,
@@ -1145,7 +1184,8 @@ export const usePlayerStore = defineStore(
       setDivination,
       setBreakthroughPrep,
       setEnlightenmentAt,
-      setFortuneChoices
+      setFortuneChoices,
+      shiftTimedState
     }
   },
   { persist: persistConfig('player') }

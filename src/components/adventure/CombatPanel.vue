@@ -319,6 +319,7 @@
   import { WIN_STREAK_REWARDS } from '@/data/earlyGame'
   import { formatClock, formatCountdown, formatGN } from '@/utils/format'
   import { useNow } from '@/composables/useNow'
+  import { gameClock } from '@/composables/useGameClock'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, enemyTraits, starsText, TRAIT_NAMES, type RegionEcology } from '@/core/buildAdvisor'
   import { analyzeBattle } from '@/core/battleAnalysis'
@@ -343,7 +344,8 @@
   const defeated = ref<'p' | 'e' | null>(null)
   const logBox = ref<HTMLElement | null>(null)
 
-  let playTimer: number | undefined
+  /** 回放的收表函数(gameClock 收口:暂停冻结) */
+  let playTimer: (() => void) | undefined
   let floatSeq = 1
 
   const session = computed(() => adventure.session)
@@ -496,10 +498,8 @@
   }
 
   function stopPlayback(): void {
-    if (playTimer !== undefined) {
-      window.clearInterval(playTimer)
-      playTimer = undefined
-    }
+    playTimer?.()
+    playTimer = undefined
   }
 
   function playBattle(instant = false): void {
@@ -522,7 +522,8 @@
     ehp.value = 1
     let idx = 0
     const interval = Math.max(COMBAT_PLAYBACK_MIN_MS, COMBAT_PLAYBACK_BASE_MS / settings.battleSpeed)
-    playTimer = window.setInterval(() => {
+    // 回放是已结算战局的演出:心跳停着(重置/导入确认)就该跟着停
+    playTimer = gameClock(() => {
       const entry = entries[idx]
       if (!entry) {
         stopPlayback()

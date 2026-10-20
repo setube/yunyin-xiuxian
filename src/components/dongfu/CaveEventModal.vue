@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { getCurrentCaveEvent, chooseCaveOption, dismissCaveEvent } from '@/core/earlyGameService'
+import { gameNow } from '@/core/enginePause'
+import { useGameClock } from '@/composables/useGameClock'
 import { caveOptionText } from '@/ui/caveText'
 import type { CaveEvent } from '@/types'
 import BaseModal from '@/components/common/BaseModal.vue'
@@ -12,7 +14,6 @@ import BaseModal from '@/components/common/BaseModal.vue'
  */
 const event = ref<CaveEvent | null>(null)
 const remaining = ref(0)
-let timer: number | undefined
 
 const locationNames: Record<string, string> = {
   field: '灵田',
@@ -25,7 +26,7 @@ const locationNames: Record<string, string> = {
 function refresh() {
   event.value = getCurrentCaveEvent()
   if (event.value) {
-    remaining.value = Math.max(0, Math.ceil((event.value.expiresAt - Date.now()) / 1000))
+    remaining.value = Math.max(0, Math.ceil((event.value.expiresAt - gameNow()) / 1000))
   }
 }
 
@@ -41,12 +42,10 @@ function handleIgnore() {
 
 onMounted(() => {
   refresh()
-  timer = window.setInterval(refresh, 1000)
 })
 
-onUnmounted(() => {
-  if (timer !== undefined) window.clearInterval(timer)
-})
+// 轮询随心跳冻结:确认窗背后不该再叠一扇巡游窗(与 useNow 同一条口径)
+useGameClock(refresh, 1000)
 
 const show = computed(() => event.value !== null)
 const locationLabel = computed(() =>

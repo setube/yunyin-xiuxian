@@ -15,6 +15,8 @@ import { settleOffline } from './offline'
 import type * as OfflineMod from './offline'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
+import { useCultivationStore } from '@/stores/cultivation'
+import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { TICK_MS, OFFLINE_MIN_SECONDS } from '@/data/constants'
 
@@ -129,6 +131,52 @@ describe('引擎心跳 · start/stop/dt 路由直测', () => {
     capturedTick!()
     expect(settle, '大 dt 应走离线结算').toHaveBeenCalled()
     expect(gainExpSpy, '大 dt 不再按单拍 advance 前推').not.toHaveBeenCalled()
+  })
+
+  it('暂停恢复:按墙钟到期的 Buff / 历练 / 卦 / 突破准备一并顺延暂停时长', () => {
+    const cult = useCultivationStore()
+    const adv = useAdventureStore()
+    const player = usePlayerStore()
+    const { t0 } = startStarted()
+
+    cult.buffs = [{ defId: 'buff_juling', endsAt: t0 + 60_000, added: 60_000 }]
+    adv.session = {
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: t0,
+      endsAt: t0 + 120_000,
+      nextBattleAt: t0 + 30_000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      itemGain: 0,
+      stoneGain: { m: 0, e: 0 },
+      expGain: { m: 0, e: 0 }
+    }
+    player.setDivination({
+      hexagram: '乾',
+      upper: 'qian',
+      lower: 'qian',
+      changed: null,
+      changing: 0,
+      lines: [7, 8, 7, 8, 7, 8],
+      changingAt: [],
+      castAt: t0,
+      expiresAt: t0 + 300_000
+    })
+    player.regionEvent = { regionId: 'qingyun', eventId: 'yaochao', endsAt: t0 + 900_000 }
+    player.setBreakthroughPrep({ bonus: 0.08, readyAt: t0 + 180_000, kind: 'meditate' })
+
+    engine.pause()
+    vi.setSystemTime(t0 + 300_000)
+    engine.resume()
+
+    expect(cult.buffs[0]!.endsAt, '丹药不该在确认窗背后过期').toBe(t0 + 360_000)
+    expect(adv.session!.endsAt, '历练不该在确认窗背后走完').toBe(t0 + 420_000)
+    expect(adv.session!.nextBattleAt).toBe(t0 + 330_000)
+    expect(player.divination?.expiresAt, '卦不该在确认窗背后散掉').toBe(t0 + 600_000)
+    expect(player.regionEvent?.endsAt, '区域事件不该在确认窗背后翻篇').toBe(t0 + 1_200_000)
+    expect(player.breakthroughPrep!.readyAt, '调息不该在确认窗背后变得过久').toBe(t0 + 480_000)
   })
 })
 

@@ -184,6 +184,30 @@ export const useAdventureStore = defineStore(
       pendingEventSince.value = id ? now : 0
     }
 
+    /**
+     * 暂停恢复:把按墙钟到期的历练状态顺延暂停时长。
+     *
+     * 暂停期间心跳不结算,但会话的 endsAt / nextBattleAt 仍是墙钟 ——
+     * 不顺延的话,开着重置 / 导入确认窗几分钟,回来这一程就「自己走完」了。
+     * 已靖起钟与待处理事件的超时同样顺延,免得暂停吃掉复聚与自动处置的宽限。
+     */
+    function shiftTimedState(pausedMs: number): void {
+      if (pausedMs <= 0) return
+      if (session.value) {
+        session.value = {
+          ...session.value,
+          endsAt: session.value.endsAt + pausedMs,
+          nextBattleAt: session.value.nextBattleAt + pausedMs
+        }
+      }
+      const nextAt: Record<string, number> = {}
+      for (const [id, at] of Object.entries(clearedAt.value)) {
+        nextAt[id] = at > 0 ? at + pausedMs : at
+      }
+      clearedAt.value = nextAt
+      if (pendingEventSince.value > 0) pendingEventSince.value += pausedMs
+    }
+
     function markEventSeen(id: string): void {
       if (!seenOnceEvents.value.includes(id)) {
         seenOnceEvents.value = [...seenOnceEvents.value, id]
@@ -229,6 +253,7 @@ export const useAdventureStore = defineStore(
       markCleared,
       markRevived,
       setPendingEvent,
+      shiftTimedState,
       markEventSeen,
       recordBattle,
       sanitize

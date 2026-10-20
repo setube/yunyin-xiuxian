@@ -62,6 +62,7 @@
   import type { GauntletFightRow } from '@/core/gauntlet'
   import { COMBAT_PLAYBACK_BASE_MS, COMBAT_PLAYBACK_MIN_MS } from '@/data/constants'
   import { useSettingsStore } from '@/stores/settings'
+  import { gameClock } from '@/composables/useGameClock'
 
   const props = defineProps<{
     rows: GauntletFightRow[]
@@ -75,7 +76,8 @@
   const php = ref(1)
   const ehp = ref(1)
   const logBox = ref<HTMLElement | null>(null)
-  let timer: number | undefined
+  /** 回放的收表函数(gameClock 收口:暂停冻结) */
+  let timer: (() => void) | undefined
 
   const row = computed(() => props.rows[current.value])
   const logs = computed(() => row.value?.logs ?? [])
@@ -95,10 +97,8 @@
   }
 
   function stop(): void {
-    if (timer !== undefined) {
-      window.clearInterval(timer)
-      timer = undefined
-    }
+    timer?.()
+    timer = undefined
   }
 
   /** 按日志里的血量快照推进血条(战报自带 php/ehp,不必重算战斗) */
@@ -126,7 +126,8 @@
     }
     let i = 0
     const interval = Math.max(COMBAT_PLAYBACK_MIN_MS, COMBAT_PLAYBACK_BASE_MS / settings.battleSpeed)
-    timer = window.setInterval(() => {
+    // 回放是已结算战局的演出:心跳停着(重置/导入确认)就该跟着停
+    timer = gameClock(() => {
       const entry = all[i]
       if (!entry) {
         stop()

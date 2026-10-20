@@ -39,6 +39,7 @@
 <script setup lang="ts">
   import { ref, computed, onUnmounted, nextTick } from 'vue'
   import { useSettingsStore } from '@/stores/settings'
+  import { gameClock } from '@/composables/useGameClock'
 
   const settings = useSettingsStore()
 
@@ -58,8 +59,8 @@
 
   /** 定格收尾:停掉轮换 → 显示真实灵根 → 约定时间后淡出并回调 onDone(只回调一次) */
   function settle(onDone?: () => void): void {
-    if (timer) clearInterval(timer)
-    timer = null
+    stopCycle?.()
+    stopCycle = null
     animating.value = false
     // 先让 live 区挂载/保持空内容,下一帧再填结果,确保 change 事件触发播报
     void nextTick(() => {
@@ -89,7 +90,8 @@
 
   /** 当前轮换位置(轮换中随机,结束时定格为真实灵根;必须用 ref 才能触发 computed 重算) */
   const cycleIdx = ref(0)
-  let timer: ReturnType<typeof setInterval> | null = null
+  /** 轮换表的收表函数(gameClock 收口:暂停冻结) */
+  let stopCycle: (() => void) | null = null
   let stopTimers: (() => void) | null = null
   /** 卸载后不再回填定时器,也不再回调 onDone(防路由切换后仍被 2200ms 定时器推回首页) */
   let unmounted = false
@@ -118,7 +120,8 @@
 
     animating.value = true
     // 随机闪现所有灵根品阶(100ms 一次,约 20 次后显出真容)
-    timer = setInterval(() => {
+    // 建号流程里的演出:心跳停着时轮换也跟着停(与 useNow / 事件轮询同一出处)
+    stopCycle = gameClock(() => {
       cycleIdx.value = Math.floor(Math.random() * GRADES.length)
     }, 100)
     const doneTimeout = setTimeout(() => {
@@ -126,7 +129,7 @@
       settle(onDone)
     }, 2200)
     stopTimers = () => {
-      if (timer) clearInterval(timer)
+      stopCycle?.()
       clearTimeout(doneTimeout)
     }
   }

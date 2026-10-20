@@ -24,6 +24,7 @@ import { enlightenmentOptionText } from '@/ui/enlightenmentText'
 import { caveOptionText } from '@/ui/caveText'
 import { streakRewardText } from '@/ui/streakText'
 import { todayLocalNum } from '@/utils/time'
+import { gameNow } from './enginePause'
 
 function telemetry(): ReturnType<typeof usePacingTelemetry> {
   return usePacingTelemetry()
@@ -44,7 +45,8 @@ const CAVE_LOCATION_BUILDING: Record<keyof typeof CAVE_EVENT_POOL, BuildingId> =
 /** 获取当前悟道顿悟事件(60秒窗口) */
 export function getCurrentEnlightenment(): EnlightenmentEvent | null {
   if (!enlightenmentEvent) return null
-  const now = Date.now()
+  // gameNow() 在暂停时冻住:确认窗背后不该把 60 秒机缘窗耗掉
+  const now = gameNow()
   if (now > enlightenmentEvent.expiresAt) {
     enlightenmentEvent = null
     return null
@@ -151,7 +153,7 @@ export function isRetreating(): boolean {
 }
 
 /** 闭关剩余秒数(已过期或未闭关为 0) */
-export function getRetreatRemainingSec(at: number = Date.now()): number {
+export function getRetreatRemainingSec(at: number = gameNow()): number {
   const inst = useCultivationStore().buffs.find(b => b.defId === 'retreat')
   if (!inst) return 0
   return Math.max(0, Math.ceil((inst.endsAt - at) / 1000))
@@ -209,7 +211,7 @@ export function breakthroughPrepState(): BreakthroughPrepView {
   void useGameStore().totalPlaySec
   const state = usePlayerStore().breakthroughPrep
   if (!state) return { sitting: false, remainingSec: 0, ready: false, bonus: 0, kind: null }
-  const remainSec = Math.ceil((state.readyAt - Date.now()) / 1000)
+  const remainSec = Math.ceil((state.readyAt - gameNow()) / 1000)
   if (remainSec > 0) {
     return { sitting: true, remainingSec: remainSec, ready: false, bonus: 0, kind: state.kind }
   }
@@ -292,7 +294,7 @@ export function mayTriggerCaveEvent(): CaveEvent | null {
 /** 获取当前洞府巡游事件 */
 export function getCurrentCaveEvent(): CaveEvent | null {
   if (!caveEvent) return null
-  const now = Date.now()
+  const now = gameNow()
   if (now > caveEvent.expiresAt) {
     caveEvent = null
     // 过期同样是「今日已巡过」:不记这天的额度,30s 轮询就会天天反复重掷,
@@ -301,6 +303,22 @@ export function getCurrentCaveEvent(): CaveEvent | null {
     return null
   }
   return caveEvent
+}
+
+/**
+ * 暂停恢复:把机缘 / 巡游两扇窗的到期时刻顺延暂停时长。
+ *
+ * 它们只活 60~120 秒,暂停(重置 / 导入确认)几十秒就足以让窗口在背后消失,
+ * 玩家甚至没看见它出现过。与 `enginePause.gameNow()` 的冻结语义配套。
+ */
+export function shiftEarlyGameWindows(pausedMs: number): void {
+  if (pausedMs <= 0) return
+  if (enlightenmentEvent) {
+    enlightenmentEvent = { ...enlightenmentEvent, expiresAt: enlightenmentEvent.expiresAt + pausedMs }
+  }
+  if (caveEvent) {
+    caveEvent = { ...caveEvent, expiresAt: caveEvent.expiresAt + pausedMs }
+  }
 }
 
 /** 选择洞府巡游选项 */
