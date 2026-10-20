@@ -74,13 +74,23 @@ interface RegionStateInput {
 
 /** 派生区域兴衰状态(纯函数,无副作用) */
 export function deriveProsperity(input: RegionStateInput): RegionRecall {
-  const idleHours = (input.now - input.lastActivityAt) / 3600_000
   // 守土时长:镇压后守了多久(与「打赢过多少场」是两条路)
   const heldHours = input.suppressedAt !== undefined ? (input.now - input.suppressedAt) / 3600_000 : 0
+  const idleHours = (input.now - input.lastActivityAt) / 3600_000
   let prosperity: RegionProsperity = 'chaos'
   // 镇压过才有资格谈「稳定/繁盛」;持续活动(或一直守着)才可维持
   if (input.hasSuppressed) {
-    const alive = idleHours < DECAY_HOURS
+    /**
+     * 「一直守着」本身就是活动。
+     *
+     * 此前只看 `lastActivityAt`(最后一战):镇压后不再产胜场,该地界的
+     * `lastUpdateAt` 就停在镇压前那一战,守到 48 小时便被判成「久无人烟」
+     * 回落混乱 —— 可它要到 72 小时才妖气复聚,守满 24 小时的繁盛收益
+     * 在 48~72 小时这一段凭空消失,与「持续活动(或一直守着)才可维持」自相矛盾。
+     * `suppressedAt` 有值 = 此刻仍在镇压中,按守算;没有则仍按最后一战回落
+     * (坏档里只有镇压标记、缺起钟时,宁可回落也不白给收益)。
+     */
+    const alive = input.suppressedAt !== undefined || idleHours < DECAY_HOURS
     if (alive && (input.totalWins >= FLOURISH_WINS || heldHours >= FLOURISH_HOURS)) {
       prosperity = 'flourish'
     } else if (alive && (input.totalWins >= STABLE_WINS || heldHours >= STABLE_HOURS)) {

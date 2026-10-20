@@ -60,6 +60,43 @@ describe('S1 区域兴衰', () => {
     expect(idle.prosperity).toBe('chaos')
   })
 
+  /**
+   * 「守着」本身就是活动。
+   *
+   * 镇压后该地不再产胜场,`lastUpdateAt` 停在镇压前最后一战;若闲置判定只看它,
+   * 守到 48 小时就会被判「久无人烟」回落混乱,可镇压要到 72 小时才复聚 ——
+   * 守满 24 小时的繁盛收益会在 48~72 小时这一段凭空消失。
+   * 故障注入:把 `lastTouchedAt` 改回 `input.lastActivityAt` → 本条红。
+   */
+  it('镇压中一直守着不算无活动:守满一日仍繁盛,直到复聚那一刻', () => {
+    const held10h = deriveProsperity({
+      totalWins: 0,
+      hasSuppressed: true,
+      suppressedAt: now - 10 * HOUR,
+      lastActivityAt: now - 60 * HOUR, // 最后一战比镇压还早
+      now
+    })
+    expect(held10h.prosperity, '守到稳定档却被「久无人烟」打回混乱').toBe('stable')
+
+    const held50h = deriveProsperity({
+      totalWins: 0,
+      hasSuppressed: true,
+      suppressedAt: now - 50 * HOUR,
+      lastActivityAt: now - 60 * HOUR, // 最后一战比镇压还早
+      now
+    })
+    expect(held50h.prosperity, '守了 50 小时却判成混乱,等于把守土收益吃掉').toBe('flourish')
+
+    // 未镇压的地界仍按最后一战回落 —— 修的是「守着」,不是把回落一并废掉
+    const idleUnsuppressed = deriveProsperity({
+      totalWins: FLOURISH_WINS,
+      hasSuppressed: false,
+      lastActivityAt: now - 100 * HOUR,
+      now
+    })
+    expect(idleUnsuppressed.prosperity).toBe('chaos')
+  })
+
   it('regionRecallFor 的 since 取镇压时刻(suppressedSince),而非最近战斗时间 — 镇压后刷战不该把「稳定时长」越打越短', () => {
     const player = usePlayerStore()
     const suppressedAt = Date.now() - 50 * HOUR
