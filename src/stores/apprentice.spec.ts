@@ -145,6 +145,31 @@ describe('收徒 · 派发与收割', () => {
     expect(a.apprentices[0]!.task, 'finishAt<startAt 应置闲,不许开局即收割').toBeNull()
   })
 
+  /**
+   * 派活按 uid 认人(find):两位同号时第二位在册却永远派不动,
+   * 界面点它的「派活」静默无反应,还白占一个槽位。弟子是不同的人,不能丢 —— 重排号。
+   */
+  it('sanitize:弟子 uid 重复时重排,两位都派得动、互不串账', () => {
+    const a = useApprenticeStore()
+    a.$patch({
+      apprentices: [
+        { uid: 'dup', archId: 'ap_luanniao', level: 1, bond: 0, task: null },
+        { uid: 'dup', archId: 'ap_youxia', level: 1, bond: 0, task: null }
+      ] as unknown as OwnedApprentice[]
+    })
+    a.sanitize()
+    expect(a.apprentices, '两位都留下(不丢人)').toHaveLength(2)
+    const uids = a.apprentices.map(x => x.uid)
+    expect(new Set(uids).size, '号必须唯一').toBe(2)
+
+    // 两人各派一趟:都能派得动,且各自的状态只落在自己身上
+    const [first, second] = uids
+    expect(a.dispatch(first!, 'herb', 0)).toBe(true)
+    expect(a.dispatch(second!, 'ore', 0)).toBe(true)
+    expect(a.apprentices[0]!.task!.spec).toBe('herb')
+    expect(a.apprentices[1]!.task!.spec).toBe('ore')
+  })
+
   it('各尽其长一键:缺灵草时闲置道童全体去采药,忙的不动', () => {
     const a = useApprenticeStore()
     const player = usePlayerStore()

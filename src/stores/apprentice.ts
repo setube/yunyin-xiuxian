@@ -86,11 +86,19 @@ export const useApprenticeStore = defineStore(
     function sanitize(): void {
       rebirthKarma.value = clampKarma(rebirthKarma.value)
       const clean: OwnedApprentice[] = []
+      const seenUid = new Set<string>()
       for (const raw of asArray<unknown>(apprentices.value)) {
         if (!raw || typeof raw !== 'object' || !('archId' in raw)) continue
         const archId = raw.archId
         if (typeof archId !== 'string' || !apprenticeDef(archId)) continue
-        const uid = 'uid' in raw && typeof raw.uid === 'string' && raw.uid ? raw.uid : nextUid()
+        let uid = 'uid' in raw && typeof raw.uid === 'string' && raw.uid ? raw.uid : nextUid()
+        /**
+         * uid 是派活/收割时「认人」的唯一凭据(find(uid)):坏档里两位同号,
+         * 第二位在册却永远派不动,还白占一个槽。弟子是不同的人,不能像坏货格那样丢弃 ——
+         * 重排一个新号,两人各自可派、各自收割。
+         */
+        while (seenUid.has(uid)) uid = nextUid()
+        seenUid.add(uid)
         const level = clampLevel('level' in raw ? raw.level : 1)
         const bond = clampBond('bond' in raw ? raw.bond : 0)
         let task: OwnedApprentice['task'] = null

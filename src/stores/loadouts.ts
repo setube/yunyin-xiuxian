@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { EquipSlot } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { asArray, asFiniteNumber, asRecord, asStringArray } from '@/utils/saveShape'
+import { uid } from '@/utils/id'
 
 export interface Loadout {
   id: string
@@ -34,8 +35,8 @@ export const useLoadoutsStore = defineStore(
         .filter(l => l !== null && typeof l === 'object' && typeof l.id === 'string')
         .map(l => {
           const equipment: Partial<Record<EquipSlot, string>> = {}
-          for (const [slot, uid] of Object.entries(asRecord<string>(l.equipment))) {
-            if (typeof uid === 'string' && uid) equipment[slot as EquipSlot] = uid
+          for (const [slot, itemUid] of Object.entries(asRecord<string>(l.equipment))) {
+            if (typeof itemUid === 'string' && itemUid) equipment[slot as EquipSlot] = itemUid
           }
           return {
             id: l.id,
@@ -48,6 +49,16 @@ export const useLoadoutsStore = defineStore(
             savedAt: asFiniteNumber(l.savedAt, 0, 0)
           }
         })
+      /**
+       * 构筑 id 是 apply/rename/remove 的唯一凭据:坏档两套同号时,
+       * `find` 只会切到第一套、`remove` 却把两套一起删、`rename` 把两套一起改名。
+       * 构筑是玩家亲手存的不同快照,不能丢 —— 从第二套起换一个新 id。
+       */
+      const seen = new Set<string>()
+      for (const l of list.value) {
+        while (seen.has(l.id)) l.id = uid()
+        seen.add(l.id)
+      }
     }
 
     function add(loadout: Loadout): boolean {

@@ -58,6 +58,25 @@ describe('构筑 · sanitize 深度修形', () => {
     l.sanitize()
     expect(l.list[0]).toEqual(clean)
   })
+
+  /**
+   * 同号两套:apply/rename 走 find 只命中第一套,remove 却按 id 过滤把两套一起删。
+   * 构筑是玩家亲手存的不同快照,不能丢 —— 从第二套起换新号。
+   */
+  it('同号构筑重排 id:两套都留、各自可切可删,不相互误伤', () => {
+    const l = useLoadoutsStore()
+    l.$patch({ list: [mk('dup', { name: '甲' }), mk('dup', { name: '乙' })] } as never)
+    l.sanitize()
+    expect(l.list, '两套都留下').toHaveLength(2)
+    const ids = l.list.map(x => x.id)
+    expect(new Set(ids).size, 'id 必须唯一').toBe(2)
+    expect(l.list.map(x => x.name), '名字/内容不串').toEqual(['甲', '乙'])
+
+    l.rename(ids[1]!, '乙改')
+    expect(l.list.map(x => x.name), '改名只动目标那套').toEqual(['甲', '乙改'])
+    l.remove(ids[0]!)
+    expect(l.list.map(x => x.name), '删一套不漏另一套').toEqual(['乙改'])
+  })
 })
 
 describe('构筑 · 上限与增删改', () => {

@@ -27,7 +27,7 @@ import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
 import { readingFromState, readingMods } from '@/core/divination'
 import { gameNow } from '@/core/enginePause'
-import { asCarriedHpPct, asFiniteNumber, asStringArray } from '@/utils/saveShape'
+import { asArray, asCarriedHpPct, asFiniteNumber, asStringArray } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { DAOLU, STAGE_ORDER } from '@/data/daolu'
 import { regionDef } from '@/data/regions'
@@ -835,6 +835,36 @@ export const usePlayerStore = defineStore(
       for (const id of suppressedRegions.value) {
         if (!suppressQualified.value.includes(id)) suppressQualified.value.push(id)
       }
+      /**
+       * 宿敌按 enemyId 认人:坏档里同一位写两条时,征战录会画出两行同 key、
+       * 「宿敌 N 位」多报;而 recordLoss / markAvenged / ghostOf 都只 find 第一条,
+       * 败绩与雪耻各记各的,第二条永远「尚为宿敌」。
+       * 合并回一条:败绩取较大、最后败北取较晚、首次雪耻取较早那次。
+       */
+      const mergedNemeses = new Map<string, import('@/types').NemesisRecord>()
+      for (const n of asArray<import('@/types').NemesisRecord>(
+        nemeses.value,
+        [],
+        x => !!x && typeof (x as import('@/types').NemesisRecord).enemyId === 'string'
+      )) {
+        const lossCount = Math.max(0, Math.floor(asFiniteNumber(n.lossCount, 0, 0)))
+        const lastLossAt = asFiniteNumber(n.lastLossAt, 0, 0)
+        const avengedAt = typeof n.avengedAt === 'number' && Number.isFinite(n.avengedAt) ? n.avengedAt : undefined
+        const prev = mergedNemeses.get(n.enemyId)
+        if (!prev) {
+          mergedNemeses.set(n.enemyId, { ...n, lossCount, lastLossAt, ...(avengedAt === undefined ? {} : { avengedAt }) })
+          continue
+        }
+        const firstAvenged =
+          prev.avengedAt === undefined ? avengedAt : avengedAt === undefined ? prev.avengedAt : Math.min(prev.avengedAt, avengedAt)
+        mergedNemeses.set(n.enemyId, {
+          ...prev,
+          lossCount: Math.max(prev.lossCount, lossCount),
+          lastLossAt: Math.max(prev.lastLossAt, lastLossAt),
+          ...(firstAvenged === undefined ? {} : { avengedAt: firstAvenged })
+        })
+      }
+      nemeses.value = [...mergedNemeses.values()]
       reincarnation.value = {
         count,
         daoFruit: Number.isFinite(r?.daoFruit) ? Math.max(0, r.daoFruit) : 0,

@@ -117,6 +117,14 @@ export const useEndgameStore = defineStore(
         [],
         m => !!m && typeof (m as { id?: unknown }).id === 'string'
       )
+      // 修行节点是「首次」语义(addMilestone 只在没有时才记):坏档同一条写两遍会让
+      // 「修行节点 N/总数」多报、时间线上同一件事出现两次。只留先出现的那条。
+      const seenMilestone = new Set<string>()
+      milestones.value = milestones.value.filter(m => {
+        if (seenMilestone.has(m.id)) return false
+        seenMilestone.add(m.id)
+        return true
+      })
       records.value = asRecordOf<{ value: number; life: number; note: string }>(
         records.value,
         r => !!r && typeof r === 'object' && Number.isFinite((r as { value?: unknown }).value as number)

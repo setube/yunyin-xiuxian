@@ -139,4 +139,26 @@ describe('player.rebirth 转世状态重置', () => {
     expect(p.wudaoExchange, '悟道兑换当日账应随神魂带走(否则同日转世重开兑换配额)').toEqual({ gameDay: 7, count: 3 })
     expect(p.mansionRedirect, '值日定向当日账应随神魂带走(否则同日转世重开改向配额)').not.toBeNull()
   })
+
+  /**
+   * 宿敌按 enemyId 认人(recordLoss/markAvenged/ghostOf 都只 find 第一条):
+   * 坏档里同一位写两条,第二条永远「尚为宿敌」,征战录还会画出两行同 key。
+   */
+  it('sanitize:宿敌同一位写两条合并成一条,败绩取较大、雪耻取较早', () => {
+    const p = usePlayerStore()
+    p.$patch({
+      nemeses: [
+        { enemyId: 'e1', enemyName: '血魔', regionId: 'qingyun', lossCount: 3, lastLossAt: 100 },
+        { enemyId: 'e1', enemyName: '血魔', regionId: 'qingyun', lossCount: 5, lastLossAt: 300, avengedAt: 900 },
+        { enemyId: 'e1', enemyName: '血魔', regionId: 'qingyun', lossCount: 4, lastLossAt: 200, avengedAt: 800 },
+        { enemyId: 'e2', enemyName: '阴煞', regionId: 'qingyun', lossCount: 3, lastLossAt: 50 }
+      ]
+    } as never)
+    p.sanitize()
+    expect(p.nemeses.map(n => n.enemyId), '同一位只留一条,不同位各自保留').toEqual(['e1', 'e2'])
+    const e1 = p.nemeses.find(n => n.enemyId === 'e1')!
+    expect(e1.lossCount, '败北次数取较大者').toBe(5)
+    expect(e1.lastLossAt, '最后败北取较晚者').toBe(300)
+    expect(e1.avengedAt, '首次雪耻取较早那次').toBe(800)
+  })
 })

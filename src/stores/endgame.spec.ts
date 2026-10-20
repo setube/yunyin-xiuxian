@@ -311,4 +311,21 @@ describe('终局一次性引导标记 sanitize', () => {
     expect(e.equippedSouls, '装配位同一枚只占一格').toEqual(['s1', 's2'])
     expect(e.activeSouls, '装配出来的也是两枚,不是三枚').toHaveLength(2)
   })
+
+  /**
+   * 修行节点是「首次」语义(addMilestone 只在没有时才记):坏档同一条写两遍,
+   * 「修行节点 N/总数」会多报,时间线上同一件事还要出现两次。
+   */
+  it('sanitize:修行节点同一条只留一次', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      milestones: [
+        { id: 'first_dao', life: 1, at: 100 },
+        { id: 'first_dao', life: 2, at: 200 },
+        { id: 'first_world', life: 2, at: 300 }
+      ]
+    })
+    e.sanitize()
+    expect(e.milestones.map(m => m.id), '同一条只留先出现的那次').toEqual(['first_dao', 'first_world'])
+  })
 })
