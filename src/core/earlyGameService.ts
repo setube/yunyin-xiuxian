@@ -18,6 +18,8 @@ import {
   earlyEventDecay
 } from '@/data/earlyGame'
 import { gn } from '@/utils/gnum'
+import { expFromSecs } from '@/core/formulas'
+import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { enlightenmentOptionText } from '@/ui/enlightenmentText'
 import { caveOptionText } from '@/ui/caveText'
 import { streakRewardText } from '@/ui/streakText'
@@ -314,7 +316,9 @@ export function chooseCaveOption(optionIndex: number): void {
   if (opt.reward) {
     switch (opt.reward.type) {
       case 'exp':
-        player.gainExp(gn(opt.reward.value as number))
+        player.gainExp(
+          expFromSecs(player.expReq, opt.reward.secs, player.cultPerSec, INSTANT_EXP_LAYER_CAP)
+        )
         break
       case 'stone':
         resources.addStone(gn(opt.reward.value as number))

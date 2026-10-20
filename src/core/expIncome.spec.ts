@@ -132,19 +132,20 @@ describe('修为收入 · 设计不变量', () => {
 /**
  * 接线红线 —— 算得对,还得**真的有人在用**。
  *
- * 读源码:四条即时修为来源(丹药 / 一场遭遇 / 离线 N 场 / 际遇)都必须走
+ * 读源码:五条即时修为来源(丹药 / 一场遭遇 / 离线 N 场 / 际遇 / 洞府巡游)都必须走
  * formulas.expFromSecs。从前它们各写一遍「需求 × 百分比」,于是每一处都随境界
  * 指数膨胀 —— 只要有一处被漏回去,这里就红。
  */
 describe('即时修为 · 同源接线', () => {
   const src = (p: string): string => readFileSync(resolve(__dirname, p), 'utf8')
 
-  it('丹药 / 战斗 / 离线 / 际遇四条来源共用同一个结算函数', () => {
+  it('丹药 / 战斗 / 离线 / 际遇 / 巡游五条来源共用同一个结算函数', () => {
     for (const [file, why] of [
       ['./pillService.ts', '丹药'],
       ['./loot.ts', '一场遭遇'],
       ['./offline.ts', '离线 N 场'],
-      ['./eventEngine.ts', '际遇与机缘']
+      ['./eventEngine.ts', '际遇与机缘'],
+      ['./earlyGameService.ts', '洞府巡游']
     ] as const) {
       const text = src(file)
       expect(text, `${why} 没有走 expFromSecs —— 又在自己算百分比了`).toContain('expFromSecs(')

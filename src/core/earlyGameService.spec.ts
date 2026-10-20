@@ -13,6 +13,7 @@ import {
   getCurrentEnlightenment,
   mayTriggerCaveEvent,
   mayTriggerEnlightenment,
+  chooseCaveOption,
   recordWin,
   recordLoss,
   prepareBreakthrough,
@@ -22,6 +23,8 @@ import {
   isRetreating,
   getRetreatRemainingSec
 } from './earlyGameService'
+import { expFromSecs } from './formulas'
+import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
 
 describe('洞府巡游(Phase 28)', () => {
@@ -65,6 +68,24 @@ describe('洞府巡游(Phase 28)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('巡游修为按等效闭关时长入账,且不满一层(与丹药/际遇同一把尺)', () => {
+    const player = usePlayerStore()
+    const req = player.expReq
+    const speed = player.cultPerSec
+    // 无建筑 → 回落灵田;低 random 命中 presence 且选中 field_1
+    vi.spyOn(Math, 'random').mockReturnValue(0.01)
+    expect(mayTriggerCaveEvent()).not.toBeNull()
+    // 灵田「疏导灵气」= 修速 × 60s,封顶不满一层
+    chooseCaveOption(0)
+    const gained = toNum(player.exp)
+    const expected = toNum(expFromSecs(req, 60, speed, INSTANT_EXP_LAYER_CAP))
+    expect(gained).toBeCloseTo(expected, 9)
+    expect(gained, '即时修为不得填满当前这一层').toBeLessThanOrEqual(
+      toNum(req) * INSTANT_EXP_LAYER_CAP + 1e-9
+    )
+    vi.restoreAllMocks()
   })
 })
 

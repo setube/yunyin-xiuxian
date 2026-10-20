@@ -6,7 +6,10 @@
  */
 import type { CaveEvent } from '@/types'
 import { buffDef } from '@/data/buffs'
-import { formatChoiceSpan, formatNum } from '@/utils/format'
+import { formatChoiceSpan, formatNum, formatGN } from '@/utils/format'
+import { expFromSecs } from '@/core/formulas'
+import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
+import { usePlayerStore } from '@/stores/player'
 import { modsText } from './statNames'
 
 type CaveOption = CaveEvent['options'][number]
@@ -30,9 +33,19 @@ export function caveOptionText(opt: CaveOption): string {
     if (opt.reward.type === 'buff') {
       const line = buffLine(String(opt.reward.value))
       if (line) parts.push(line)
+    } else if (opt.reward.type === 'exp') {
+      // 修为按「等效闭关时长 + 不满一层」计价,展示与结算同一把 expFromSecs(示=算)
+      const player = usePlayerStore()
+      const gained = expFromSecs(
+        player.expReq,
+        opt.reward.secs,
+        player.cultPerSec,
+        INSTANT_EXP_LAYER_CAP
+      )
+      parts.push(`修为 +${formatGN(gained)}`)
     } else {
-      const n = Number(opt.reward.value)
-      if (Number.isFinite(n) && n > 0) parts.push(`${REWARD_NAME[opt.reward.type]} +${formatNum(n)}`)
+      const n = opt.reward.value
+      if (n > 0) parts.push(`${REWARD_NAME[opt.reward.type]} +${formatNum(n)}`)
     }
   }
   if (opt.penalty) {

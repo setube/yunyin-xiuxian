@@ -49,8 +49,15 @@ export interface CaveEvent {
   options: Array<{
     label: string
     effect: string
-    /** 奖励或惩罚 */
-    reward?: { type: 'exp' | 'stone' | 'herb' | 'wudao' | 'buff'; value: number | string }
+    /**
+     * 奖励或惩罚。
+     * 修为按「等效闭关时长」计价(secs)—— 与丹药/际遇同一把尺,封顶不满一层;
+     * 其余资源走固定 value。
+     */
+    reward?:
+      | { type: 'exp'; secs: number }
+      | { type: 'stone' | 'herb' | 'wudao'; value: number }
+      | { type: 'buff'; value: string }
     penalty?: { type: 'cultivationSpeed' | 'qiMax'; value: number; duration: number }
   }>
   /** 触发时间戳 */

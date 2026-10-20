@@ -95,8 +95,8 @@ export const CAVE_EVENT_POOL = {
       title: '灵田异象',
       desc: '灵田中灵气波动异常',
       options: [
-        { label: '疏导灵气', effect: '获得少量修为', reward: { type: 'exp' as const, value: 50 } },
-        { label: '强行吸收', effect: '获得更多修为,但短时间修炼速度下降', reward: { type: 'exp' as const, value: 120 }, penalty: { type: 'cultivationSpeed' as const, value: -0.15, duration: 300 } },
+        { label: '疏导灵气', effect: '获得少量修为', reward: { type: 'exp' as const, secs: 60 } },
+        { label: '强行吸收', effect: '获得更多修为,但短时间修炼速度下降', reward: { type: 'exp' as const, secs: 120 }, penalty: { type: 'cultivationSpeed' as const, value: -0.15, duration: 300 } },
         { label: '观察记录', effect: '获得悟道点', reward: { type: 'wudao' as const, value: 3 } }
       ]
     }
@@ -132,7 +132,7 @@ export const CAVE_EVENT_POOL = {
       desc: '聚灵阵中灵气不稳',
       options: [
         { label: '修复阵法', effect: '提升灵气上限', reward: { type: 'buff' as const, value: 'cave_array_qicap' } },
-        { label: '导出灵气', effect: '立即获得修为', reward: { type: 'exp' as const, value: 80 } },
+        { label: '导出灵气', effect: '立即获得修为', reward: { type: 'exp' as const, secs: 90 } },
         { label: '任其自然', effect: '无事发生', reward: { type: 'stone' as const, value: 0 } }
       ]
     }
