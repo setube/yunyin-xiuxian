@@ -178,6 +178,14 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   let battles = 0
   let wins = 0
   let events = 0
+  /**
+   * 这趟历练记进会话的账(与在线 runBattle 同一本):
+   * 普通战按估算的胜负场,首领战胜则再算一场 —— 在线首领战同样计入会话 wins。
+   * 从前只写 wins 不写 losses,挂一夜回来「此行胜 2 场」却判不出打过 5 场,
+   * 提前收手时连「这趟算不算历练过」的 3 战门槛都过不去。
+   */
+  let sessionWins = 0
+  let sessionLosses = 0
   const stoneBefore = { ...resources.spiritStone }
   const session = adventure.session
   /**
@@ -221,6 +229,8 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
           ? sampleWinRate(buildPlayerSnap(), makeEnemySnap(mobDef, region.tier, dangerFactor), rng, 3, explorationRules())
           : 0.3
         wins = Math.round(battles * winRate)
+        sessionWins += wins
+        sessionLosses += battles - wins
 
         // 灵石与修为 —— 与在线 afterWin 同源:取胜奖励乘区域事件加丰倍率(rewardMult)
         // 福缘(doubleDropRate)也同源:在线每战掷一次翻倍、期望 ×(1+p);
@@ -376,6 +386,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             trip.items += drops.items
             track('kills')
             track('bossKills')
+            sessionWins += 1
             player.updateRegionStats(region.id, true, bossResult.rounds, Math.max(0, 1 - bossResult.playerHpPct))
             player.recordRegionWin(region.id)
             if (checkSuppression(player, region.id) && !player.suppressQualified.includes(region.id)) {
@@ -398,7 +409,8 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
       } else {
         adventure.setSession({
           ...session,
-          wins: session.wins + wins,
+          wins: session.wins + sessionWins,
+          losses: session.losses + sessionLosses,
           events: session.events + events,
           // 挂机所得计入这趟总账(与在线同一份会话字段,回来接着打的数才是整趟的数)
           stoneGain: add(session.stoneGain, trip.stone),

@@ -184,4 +184,25 @@ describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压
     expect(fresh.regionStats.luoxia!.totalFights, '一次批量与逐场计数等价').toBe(4)
     expect(fresh.regionWins.luoxia, '批量也要记兴衰胜场').toBe(3)
   })
+
+  /**
+   * 会话账里的 losses 不是摆设:在线每败一场就 +1,提前收手时
+   * 「胜+负 ≥3 才算走过一趟」的判据也读它。离线从前只加 wins,
+   * 挂一夜回来这趟仍像「只赢没输」,3 战门槛也永远差着。
+   */
+  it('离线把败场写进会话 losses,与在线同一本账', () => {
+    const adventure = useAdventureStore()
+    seedOfflineTrip()
+    const summary = settleOffline(Date.now())!
+
+    expect(summary.battles, '这一档该打上不少场').toBeGreaterThan(0)
+    expect(summary.wins, '不该一场没赢').toBeGreaterThan(0)
+    const session = adventure.session!
+    // 首领战胜时在线也会把这一场记进会话,故 wins 是「普通战胜场 + 至多 1」
+    const bossWin = session.wins - summary.wins
+    expect(bossWin, '会话胜场 = 离线普通战胜场(加至多一场首领胜)').toBeGreaterThanOrEqual(0)
+    expect(bossWin).toBeLessThanOrEqual(1)
+    expect(session.losses, '离线败场必须写进会话').toBe(summary.battles - summary.wins)
+    expect(session.wins + session.losses, '胜+负 = 这趟真打过的场次').toBe(summary.battles + bossWin)
+  })
 })
