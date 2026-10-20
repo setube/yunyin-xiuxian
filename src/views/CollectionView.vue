@@ -6,9 +6,20 @@
     <!-- 成就 -->
     <template v-if="tab === 'achievement'">
       <SectionTitle title="成就" :hint="`${quests.achieved.length}/${ACHIEVEMENTS.length}`" />
+      <!-- 整体走多远了:数字要读,条是扫一眼(与全库 ProgressBar 同一把尺) -->
+      <ProgressBar
+        class="mt-2"
+        :value="ACHIEVEMENTS.length > 0 ? quests.achieved.length / ACHIEVEMENTS.length : 0"
+        :height="3"
+      />
       <div class="card-ink px-4">
         <template v-for="grp in achievementGroups" :key="grp.key">
-          <p class="pb-1 pt-2 text-[10px] font-kai tracking-widest text-ink-faint">{{ grp.label }}</p>
+          <p class="pb-1 pt-2 text-[10px] font-kai tracking-widest text-ink-faint">
+            {{ grp.label }}
+            <span class="ml-1 tabular">{{ grp.done }}/{{ grp.items.length }}</span>
+          </p>
+          <!-- 组内细条:比页级条细一档,层级靠粗细分开,不与总进度争眼 -->
+          <ProgressBar class="pb-1.5" :value="grp.items.length > 0 ? grp.done / grp.items.length : 0" :height="2" />
           <div class="divide-y divide-ink/6">
             <div v-for="row in grp.items" :key="row.id" class="flex items-center gap-3 py-2.5">
               <span
@@ -126,6 +137,7 @@
   import InkTabs from '@/components/common/InkTabs.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
+  import ProgressBar from '@/components/common/ProgressBar.vue'
 
   const quests = useQuestsStore()
   const player = usePlayerStore()
@@ -179,7 +191,9 @@
     ACHIEVEMENT_GROUP_ORDER.map(g => ({
       key: g,
       label: ACHIEVEMENT_GROUP_LABEL[g],
-      items: achievementRows.value.filter(r => r.group === g)
+      items: achievementRows.value.filter(r => r.group === g),
+      /** 该方向已达成数:组头数字与细条读同一份,不另算一套 */
+      done: achievementRows.value.filter(r => r.group === g && r.done).length
     })).filter(grp => grp.items.length > 0)
   )
 

@@ -35,4 +35,20 @@ describe('已达成成就展示实发奖励', () => {
     expect(src).toContain('rewardPreview(a.reward)')
     expect(src).toContain('done && a.reward')
   })
+
+  /**
+   * 收集进度要能「扫一眼」:只有 N/M 数字时,玩家得自己算走到哪了。
+   * 页级条与组内细条都读同一份计数,粗细分层次 —— 故障注入:把组头数字
+   * 改成另算一遍,或删掉细条,本条即红。
+   */
+  it('成就页与名号/灵兽册的收集进度都接了同一枚 ProgressBar', () => {
+    const ach = readFileSync(resolve(__dirname, '../views/CollectionView.vue'), 'utf8')
+    expect(ach, '页级总条').toContain(':value="ACHIEVEMENTS.length > 0 ? quests.achieved.length / ACHIEVEMENTS.length : 0"')
+    expect(ach, '组头数字与细条同读 grp.done').toContain('{{ grp.done }}/{{ grp.items.length }}')
+    expect(ach, '组内细条比页级条细一档').toContain(':height="2"')
+
+    const titles = readFileSync(resolve(__dirname, '../views/TitlesView.vue'), 'utf8')
+    expect(titles, '名号册进度条').toContain(':value="TITLES.length > 0 ? ownedCount / TITLES.length : 0"')
+    expect(titles, '灵兽册进度条').toContain(':value="PETS.length > 0 ? petRows.length / PETS.length : 0"')
+  })
 })

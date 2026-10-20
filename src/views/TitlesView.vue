@@ -6,6 +6,8 @@
     <!-- 名号:成就式列表,全量陈列 -->
     <template v-if="tab === 'title'">
       <SectionTitle title="名号" :hint="`${ownedCount}/${TITLES.length} · 佩一枚`" />
+      <!-- 收集进度:数字要读,条是扫一眼 —— 与全库 ProgressBar 同一把尺 -->
+      <ProgressBar class="mt-2" :value="TITLES.length > 0 ? ownedCount / TITLES.length : 0" :height="3" />
       <div class="card-ink divide-y divide-ink/6 px-4">
         <div v-for="row in titleRows" :key="row.def.id" class="flex items-center gap-3 py-2.5">
           <span
@@ -32,6 +34,8 @@
     <!-- 灵兽:同样的列表式 -->
     <template v-else>
       <SectionTitle title="灵兽" :hint="`${petRows.length}/${PETS.length} · 伴一只`" />
+      <!-- 「还差多少」是这一册此刻最有用的读数,给一根条 -->
+      <ProgressBar class="mt-2" :value="PETS.length > 0 ? petRows.length / PETS.length : 0" :height="3" />
       <div v-if="petRows.length" class="space-y-2">
         <div
           v-for="row in petRows"
@@ -93,6 +97,7 @@
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
+  import ProgressBar from '@/components/common/ProgressBar.vue'
 
   const player = usePlayerStore()
   const quests = useQuestsStore()
