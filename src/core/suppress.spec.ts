@@ -459,8 +459,28 @@ describe('镇压速率:显示与结算同源', () => {
   it('历练页的镇压倒计时与已守时长读每秒推进的 now,不直接调 Date.now()', () => {
     const view = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
     expect(view, '要有一枚每秒推进的读数').toContain('const now = useNow()')
-    expect(view, '复聚倒计时读 now.value').toContain('hoursUntilRevive(player.suppressedSince[r.id], now.value)')
+    expect(view, '复聚倒计时读 now.value').toContain('hoursUntilRevive(player.suppressedSince[row.def.id], now.value)')
     expect(view, '已守时长也读同一读数').toContain('(now.value - since) / 3_600_000')
+  })
+
+  /**
+   * 每秒一跳的读数不该拖着整张区域表重算。
+   *
+   * `regionRows` 为每处地界跑 `regionEcology` / `detectionAdaptation` /
+   * `suppressionProgress`,只依赖「构筑 × 区域」。复聚倒计时一旦写在这个
+   * computed 里,`now` 每秒一跳就让它整表重算四十余遍 —— 页面停着不动也在
+   * 白烧 CPU。判据:大表里不出现 `now`;倒计时改由 `reviveNow` 就地读秒。
+   * 故障注入:把 `reviveInHours` 放回 regionRows → 本条红。
+   */
+  it('复聚倒计时不写进 regionRows 大表,只让那一格跟秒走', () => {
+    const view = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
+    const start = view.indexOf('const regionRows = computed(')
+    expect(start, '找不到 regionRows,判据会假绿').toBeGreaterThan(0)
+    const end = view.indexOf('\n  /** 出发预览', start)
+    expect(end, '找不到 regionRows 的收尾,判据会假绿').toBeGreaterThan(start)
+    const body = view.slice(start, end)
+    expect(body, 'regionRows 里不该出现每秒一跳的 now').not.toMatch(/\bnow\.value\b/)
+    expect(view, '倒计时改成就地读秒的函数').toContain('function reviveNow(')
   })
 
   /**
