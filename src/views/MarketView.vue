@@ -554,6 +554,7 @@
     if (result === 'ok') ui.toast(`悬赏 ${label} 已交货,灵石入账`, 'success')
     else if (result === 'insufficient') ui.toast('存货不足,凑齐再来', 'warn')
     else if (result === 'nobag') ui.toast('行囊里没有够格的兵刃', 'warn')
+    else if (result === 'expired') ui.toast('悬赏已换新单,请按新单再交', 'warn')
   }
 
   /** 某一纸贡兵刃悬赏可交付的行囊兵刃(≥门槛阶),含各自实交收益;点选再交,不再自动取第一件 */
@@ -586,6 +587,10 @@
       ui.toast(`悬赏 「${b.title}」 已交货,灵石入账`, 'success')
     } else if (result === 'insufficient') ui.toast('这件兵刃不够门槛', 'warn')
     else if (result === 'missing') ui.toast('行囊里找不到这件兵刃', 'warn')
+    else if (result === 'expired') {
+      openEquipOrder.value = null
+      ui.toast('悬赏已换新单,请按新单再交', 'warn')
+    }
   }
 
   onMounted(() => {
@@ -605,7 +610,10 @@
     timer = setInterval(() => {
       now.value = Date.now()
       reapConsign()
+      const prevOrders = bounty.orders
       bounty.sync(now.value)
+      // 换版了:展开中的贡器清单盯的是旧单,留着会挂在新单下面选货交
+      if (bounty.orders !== prevOrders) openEquipOrder.value = null
       // 跨过货架刷新窗口的当口重上一架货(离线归来同理,这一拍立刻换新)
       if (marketRemainingSec(market.stockedAt, now.value) <= 0) market.sync(now.value)
     }, 1000)

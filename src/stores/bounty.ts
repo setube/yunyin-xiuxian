@@ -27,7 +27,13 @@ function pickHerbDeliverGrade(resources: { herbOf(g: HerbGrade): number }, targe
   return null
 }
 
-export type BountyClaimResult = 'ok' | 'claimed' | 'insufficient' | 'nobag' | 'missing'
+/**
+ * `expired` = 点下去的这一瞬正好跨过换版窗口:屏幕上那张单已不在,整版被新单顶替。
+ *
+ * 单靠 idx 认货的话,这时会**把货交给一张玩家没看过的单** —— 新单可能收别的货、
+ * 赏格也不同,扣了东西却只报「已交货」。故宁可不成交,让玩家按新单再点。
+ */
+export type BountyClaimResult = 'ok' | 'claimed' | 'insufficient' | 'nobag' | 'missing' | 'expired'
 
 function isKind(v: unknown): v is BountyKind {
   return v === 'herb' || v === 'ore' || v === 'pill' || v === 'equip'
@@ -106,7 +112,10 @@ export const useBountyStore = defineStore(
     /** 交货第 idx 单;验货→扣货→入账;贡器按所交之品的品质现算价 */
     function claim(idx: number): BountyClaimResult {
       const now = Date.now()
+      const before = orders.value
       sync(now)
+      // 换版了:idx 现在指的是另一张单,不能拿玩家没看过的单成交
+      if (before.length > 0 && orders.value !== before) return 'expired'
       const slot = orders.value.find(s => s.idx === idx)
       if (!slot) return 'missing'
       if (slot.claimed) return 'claimed'
@@ -144,7 +153,9 @@ export const useBountyStore = defineStore(
     /** 交货一柄玩家点选的够格兵刃(不再自动取第一件,见 C5) */
     function claimEquip(idx: number, uid: string): BountyClaimResult {
       const now = Date.now()
+      const before = orders.value
       sync(now)
+      if (before.length > 0 && orders.value !== before) return 'expired'
       const slot = orders.value.find(s => s.idx === idx)
       if (!slot || slot.kind !== 'equip') return 'missing'
       if (slot.claimed) return 'claimed'

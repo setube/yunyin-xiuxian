@@ -194,6 +194,39 @@ describe('坊市悬赏板 · 交货', () => {
     expect(b.orders[0]!.kindId).toBe('p_jvqisan')
     expect(b.bountyAt, '好单不该被重挂').toBe(FAR)
   })
+
+  /**
+   * 点下去的那一瞬正好跨过换版窗口:屏幕上是旧单,而 `sync` 会整版换新。
+   * 若照旧按 idx 交货,扣的是玩家的货、成交的是**他没看过的新单**(新单收的货与
+   * 赏格都可能不同)。宁可不成,让玩家按新单再点。
+   */
+  it('跨过换版窗口时按下交货:不成交,也不扣货', () => {
+    const b = useBountyStore()
+    const res = useResourcesStore()
+    seedSlots([mat('herb')])
+    // 上货时刻推到窗口之外(屏幕上画的还是这版旧单)
+    b.bountyAt = 0
+    res.herbByGrade[1] = 30
+    res.spiritStone = { m: 0, e: 0 }
+    const oldOrder = b.orders[0]!
+    const oldList = b.orders
+    expect(b.claim(0)).toBe('expired')
+    expect(oldOrder.claimed, '旧单不动').toBe(false)
+    expect(res.herb, '货一枚不许扣').toBe(30)
+    expect(b.orders, '已整版换新').not.toBe(oldList)
+    expect(b.orders.includes(oldOrder), '旧单一纸不留').toBe(false)
+    expect(toNum(res.spiritStone), '也不许入账').toBe(0)
+  })
+
+  it('贡器点选跨过换版窗口:同样不成交、不扣兵刃', () => {
+    const b = useBountyStore()
+    const inv = useInventoryStore()
+    seedSlots([{ idx: 0, kind: 'equip', kindId: '', target: 1, tier: 3, reward: { m: 0, e: 0 }, extra: 0, claimed: false }])
+    inv.$patch({ items: [{ uid: 'give', templateId: 'y', quality: 'fine', tier: 4, level: 0, affixes: [] }] })
+    b.bountyAt = 0
+    expect(b.claimEquip(0, 'give')).toBe('expired')
+    expect(inv.items.map(i => i.uid)).toEqual(['give'])
+  })
 })
 
 describe('坊市悬赏板 · 募草工价上货时刻冻结', () => {
