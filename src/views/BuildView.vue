@@ -181,8 +181,8 @@
           <template v-else>
             <!-- 确认态是同一条行内替换:纯 10px 文字盒高仅 15px 拇指点不中(layout-check 页面层量不到这段「打开才存在」的控件),
                  与删除钮同法 —— 负外边距配正内边距把触面抬到 28px+,视觉占位不变 -->
-            <button class="btn-seal -my-4 !px-2 !py-2.5 !text-[10px]" @click="doDeleteLoadout(lo.id)">确信删除</button>
-            <button class="-my-4 py-2.5 text-[10px] text-ink-faint active:text-ink" @click="confirmDelete = null">取消</button>
+            <button class="btn-seal -my-4 !px-2 !py-2.5 !text-[10px]" @click="doDeleteLoadout(lo.id)">确认删除</button>
+            <button class="-my-4 py-2.5 text-[10px] text-ink-faint active:text-ink" @click="confirmDelete = null">再想想</button>
           </template>
         </div>
       </div>

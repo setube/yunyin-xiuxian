@@ -495,7 +495,7 @@
                   class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
                   @click="rewriteConfirm = null"
                 >
-                  算了
+                  再想想
                 </button>
                 <button
                   class="shrink-0 min-h-[28px] rounded bg-cinnabar px-2 py-1 font-kai text-[10px] seal-face active:scale-90"

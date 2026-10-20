@@ -48,7 +48,7 @@ export const TRANSFER_LABELS = {
   cost: '花费',
   go: '转 移',
   confirm: '确认转移',
-  cancel: '取消',
+  cancel: '再想想',
   pendingAffix: '未选词条',
   pendingTarget: '未选目标',
   pendingSlot: '未选位置',

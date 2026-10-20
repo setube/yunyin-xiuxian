@@ -4,6 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { DAO_PATHS } from '@/data/endgame'
 import { GONGFA_BRANCHES } from '@/data/gongfaBranches'
 import { modsText } from '@/data/statNames'
+import { TRANSFER_LABELS } from './affixTransferText'
+
+const read = (rel: string): string => readFileSync(resolve(__dirname, '..', rel), 'utf8')
 
 describe('不可逆确认要看见真正规则', () => {
   it('定下道途时把 deepText 一并摆上,长生印不留在卡片背面', () => {
@@ -19,5 +22,35 @@ describe('不可逆确认要看见真正规则', () => {
     expect(src).toContain('modsText(gongfaBranchDef(branchConfirm)!.mods)')
     const branch = GONGFA_BRANCHES[0]!
     expect(modsText(branch.mods).length).toBeGreaterThan(0)
+  })
+})
+
+describe('不可逆确认的两次点击各写什么', () => {
+  /**
+   * 同一族两步确认,确认词须是「确认+动词」、取消词须是「再想想」。
+   * 此前本仓这四处各写各的:确 散 / 凝 炼 / 分解? / 确信删除,取消词散成
+   * 取 消 / 算了 / 取消 —— 玩家在同一个游戏里要认四套反悔的说法。
+   * 故障注入:把任一取消词改回「取消」→ 红。
+   */
+  const FAMILY: Array<[string, string[]]> = [
+    ['views/BuildView.vue', ['确认删除']],
+    ['components/equipment/EquipmentDetailDialog.vue', ['确认分解']],
+    ['views/SoulsView.vue', ['确认散去', '确认凝炼']],
+    ['views/CelestialView.vue', ['确认重写', '确认熔尽', '确认返还']]
+  ]
+  const CANCEL_BANNED = ['确 散', '凝 炼', '分解?', '确信删除', '>算了<', '>取 消<', '>取消<']
+
+  it('确认词带「确认」,取消词不带别的说法', () => {
+    for (const [rel, words] of FAMILY) {
+      const src = read(rel)
+      for (const word of words) expect(src, `${rel} 少了「${word}」`).toContain(word)
+      for (const banned of CANCEL_BANNED) expect(src, `${rel} 仍有旧写法「${banned}」`).not.toContain(banned)
+      expect(src, `${rel} 的取消词须是「再想想」`).toContain('再想想')
+    }
+  })
+
+  it('词条转移的取消钮同一个说法', () => {
+    expect(TRANSFER_LABELS.confirm).toBe('确认转移')
+    expect(TRANSFER_LABELS.cancel).toBe('再想想')
   })
 })

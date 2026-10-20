@@ -119,8 +119,8 @@
               <button class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint" @click="pendingDissolveUid = soul.uid">散去</button>
             </template>
             <template v-else>
-              <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="doDissolve(soul.uid)">确 散</button>
-              <button class="btn-ghost !px-2 !py-2 !text-[11px]" @click="pendingDissolveUid = null">取 消</button>
+              <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="doDissolve(soul.uid)">确认散去</button>
+              <button class="btn-ghost !px-2 !py-2 !text-[11px]" @click="pendingDissolveUid = null">再想想</button>
             </template>
           </div>
         </div>
@@ -157,8 +157,8 @@
             入 炉
           </button>
           <div v-else class="flex shrink-0 items-center gap-1.5">
-            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doRefine(row.inst.uid)">凝 炼</button>
-            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pendingRefineUid = null">取 消</button>
+            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doRefine(row.inst.uid)">确认凝炼</button>
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pendingRefineUid = null">再想想</button>
           </div>
         </div>
       </div>

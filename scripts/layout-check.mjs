@@ -2482,7 +2482,7 @@ for (const vp of VIEWPORTS) {
     const dustBeforeSplit = await readDust()
     await page.locator('.modal-panel footer button').filter({ hasText: /^$/ }).first().click({ timeout: 3000 }).catch(() => {})
     await page.waitForTimeout(300)
-    await page.locator('.modal-panel button', { hasText: /分解\?/ }).first().click({ timeout: 3000 }).catch(() => {})
+    await page.locator('.modal-panel button', { hasText: /确认分解/ }).first().click({ timeout: 3000 }).catch(() => {})
     await page.waitForTimeout(700)
     const toast = await page.evaluate(() =>
       [...document.querySelectorAll('.pointer-events-none.fixed button')].map(b => (b.textContent || '').trim()).join('|')

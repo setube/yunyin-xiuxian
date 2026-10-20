@@ -390,8 +390,8 @@
             </button>
           </template>
           <template v-else>
-            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doDecompose">分解?</button>
-            <button class="btn-ghost !px-2.5 !py-2 !text-[11px] text-ink-faint" @click="decomposeArm = null">算了</button>
+            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doDecompose">确认分解</button>
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px] text-ink-faint" @click="decomposeArm = null">再想想</button>
           </template>
         </div>
       </div>
