@@ -40,12 +40,20 @@ describe('同源审计 · 镇压速率', () => {
 })
 
 describe('同源审计 · 区域之主的门槛', () => {
-  it('在线与离线都不许再写死 10 胜,只认 EXPLORE_BOSS_AFTER_WINS', () => {
+  it('在线与离线都不许再写死 10 胜,门槛只认具名常数或 winsUntilRegionBoss', () => {
     for (const fileName of ['exploration.ts', 'offline.ts']) {
       const src = readSrc(fileName)
-      expect(src, `${fileName} 该引用具名常数`).toContain('EXPLORE_BOSS_AFTER_WINS')
+      expect(src, `${fileName} 该引用具名常数`).toMatch(/EXPLORE_BOSS_AFTER_WINS|winsUntilRegionBoss/)
       expect(src, `${fileName} 里又出现了 wins >= 10 这种字面量`).not.toMatch(/wins\s*>=\s*10\b/)
     }
+  })
+
+  it('离线问首领资格也走 winsUntilRegionBoss,不自己再造一份「本段胜场够不够」', () => {
+    const src = readSrc('offline.ts')
+    // 在线只认整趟会话的 s.wins;离线若拿本段 wins 去比,同一趟历练就有两套判据
+    expect(src, '离线首领资格应与在线同一个判定函数').toContain('winsUntilRegionBoss(')
+    expect(src, '离线门槛须并入会话累计胜场').toMatch(/winsUntilRegionBoss\(\s*session\.wins\s*\+\s*wins/)
+    expect(src, '不许再拿本段胜场直接比门槛').not.toMatch(/wins\s*>=\s*EXPLORE_BOSS_AFTER_WINS/)
   })
 
   it('战斗页的头目提示走 winsUntilRegionBoss,不自己比门槛', () => {

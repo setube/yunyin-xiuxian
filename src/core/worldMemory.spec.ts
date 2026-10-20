@@ -11,6 +11,7 @@ import {
   hoursUntilRevive,
   prosperityName,
   recordLoss,
+  recordLossBatch,
   isNemesis,
   markAvenged,
   recordEvent,
@@ -263,6 +264,37 @@ describe('S2 宿敌记忆', () => {
     }
     expect(list.length).toBe(1)
     expect(list[0]?.lossCount).toBe(5)
+  })
+
+  /**
+   * 整批败北(离线整段结算)与逐场等价:
+   * 一批 N 场与连调 N 次 recordLoss 得到同一份账,且 only 过门槛那一批报「新成宿敌」。
+   */
+  it('整批败北与逐场入账等价,门槛只在跨过的那一批报一次', () => {
+    const now = Date.now()
+    let single: NemesisRecord[] = []
+    for (let i = 0; i < 5; i++) single = recordLoss(single, 'e_wolf', '赤目野狼', 'qingyun', now).list
+
+    const first = recordLossBatch([], 'e_wolf', '赤目野狼', 'qingyun', now, 2)
+    expect(first.list[0]?.lossCount, '两场一批记两次').toBe(2)
+    expect(first.list[0]?.lastLossAt, '最后败北时刻与本批同一时刻').toBe(now)
+    expect(first.becameNemesis, '两场还没过门槛').toBe(false)
+
+    const second = recordLossBatch(first.list, 'e_wolf', '赤目野狼', 'qingyun', now, 3)
+    expect(second.list[0]?.lossCount, '累计与本批相加').toBe(5)
+    expect(second.becameNemesis, '这一批跨过门槛 → 报一次').toBe(true)
+    expect(second.list, '整批与逐场得到同一份账').toEqual(single)
+
+    const third = recordLossBatch(second.list, 'e_wolf', '赤目野狼', 'qingyun', now, 1)
+    expect(third.becameNemesis, '已过门槛的再败不重复报').toBe(false)
+  })
+
+  it('整批次数不是正数时原样返回,不凭空立敌', () => {
+    const before: NemesisRecord[] = []
+    expect(recordLossBatch(before, 'e_wolf', '赤目野狼', 'qingyun', Date.now(), 0)).toEqual({
+      list: before,
+      becameNemesis: false
+    })
   })
 })
 

@@ -42,11 +42,12 @@ vi.mock('@/utils/random', async importOriginal => {
 
 // 胜率 mock 成固定 0.5:wins = round(battles×0.5),与 mode 的危险差无关。
 // 否则 deep 危险高→胜率低→wins 少,会把倍率差淹没(初版测试正是栽在这)
+const winRate = vi.hoisted(() => ({ value: 0.5 }))
 vi.mock('./combat', async importOriginal => {
   const mod = await importOriginal<typeof import('./combat')>()
   return {
     ...mod,
-    sampleWinRate: () => 0.5
+    sampleWinRate: () => winRate.value
   }
 })
 
@@ -111,6 +112,7 @@ function runOnce(mode: 'normal' | 'deep'): Yields {
 describe('离线普通战产出吃模式倍率(确定性)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    winRate.value = 0.5
   })
 
   /**
@@ -144,6 +146,48 @@ describe('离线普通战产出吃模式倍率(确定性)', () => {
     // 丹药与材料/装备同一把 rewardMult 尺子:deep(×1.4) 约 normal(×1) 的 1.4 倍(±取整噪声)
     expect(deep.pills).toBeGreaterThanOrEqual(Math.round(normal.pills * 1.3))
     expect(deep.pills).toBeLessThanOrEqual(Math.round(normal.pills * 1.5))
+  })
+})
+
+/**
+ * 宿敌账:在线每败一场走一次 `recordLoss`,三次即标宿敌。
+ * 离线整段结算从前完全不碰 `player.nemeses` —— 挂机被打死几十回,
+ * 图鉴、区域账、会话败场都记了,唯独征战录永远空白。
+ */
+describe('离线败北记宿敌(与在线同源)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 0.5
+  })
+
+  it('整段败场按批入账,成宿敌时归来卷轴报一声', () => {
+    seedSession('normal')
+    const summary = settleOffline(Date.now())!
+    const losses = summary.battles - summary.wins
+    const nemeses = usePlayerStore().nemeses
+
+    expect(losses, '胜率 0.5 时这一趟该有败场').toBeGreaterThan(0)
+    expect(nemeses.length, '离线败北必须进征战录').toBeGreaterThan(0)
+    // 普通战与首领战各记各的敌手(首领败也记在它自己名下),合计须与本趟败场同源
+    expect(
+      nemeses.reduce((n, x) => n + x.lossCount, 0),
+      '败绩合计与这一趟的败场同源'
+    ).toBe(losses)
+    expect(summary.notes.some(n => n.includes('宿敌')), '成宿敌要在归来卷轴里说一声').toBe(true)
+  })
+
+  it('一场未败时不凭空生出宿敌', () => {
+    winRate.value = 1
+    seedSession('normal')
+    const summary = settleOffline(Date.now())!
+
+    // 首领战走真实战斗,顶多惜败那一场;普通战一场不该输
+    expect(summary.wins, '胜率固定为 1,普通战不该有败场').toBeGreaterThanOrEqual(summary.battles - 1)
+    expect(
+      usePlayerStore().nemeses.every(n => n.lossCount < 3),
+      '没连败三场就不该成宿敌'
+    ).toBe(true)
+    expect(summary.notes.some(n => n.includes('宿敌')), '未成宿敌不该播报').toBe(false)
   })
 })
 

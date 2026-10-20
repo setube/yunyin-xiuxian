@@ -186,8 +186,19 @@ describe('离线的作用域 · 在途的东西一律不动', () => {
 
     // 必须动:修为、寿元、道侣的**机会点**(历练照跑,机会照攒)
     const required = ['age', 'bond', 'exp']
-    // 可选:战后语义,在线 runBattle 也写同一本账(区域统计/兴衰/镇压)
-    const optional = ['regionStats', 'regionWins', 'suppressQualified', 'suppressedRegions', 'suppressedSince']
+    /**
+     * 可选:战后语义,在线 runBattle 也写同一本账
+     * (区域统计/兴衰/镇压资格/宿敌)。宿敌是败场账 —— 在线每败一次 +1,
+     * 离线整段按败场数补写,少记这一栏就又回到「图鉴记了、征战录没记」的分叉。
+     */
+    const optional = [
+      'regionStats',
+      'regionWins',
+      'suppressQualified',
+      'suppressedRegions',
+      'suppressedSince',
+      'nemeses'
+    ]
     const allowed = new Set([...required, ...optional])
     expect(
       playerChanged.filter(k => !allowed.has(k)),

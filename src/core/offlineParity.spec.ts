@@ -116,6 +116,50 @@ describe('离线历练 · 首领判定与在线同源(本世路线)', () => {
     // 显式钉死「不再用裸 adventure.cleared 判定」—— 有人改回旧链即红
     expect(offline).not.toMatch(/!adventure\.cleared\.includes\(region\.id\)/)
   })
+
+  /**
+   * 首领门槛数的是**整趟会话**的胜场,不是这一段挂机窗口的胜场。
+   *
+   * 在线 `runBattle` 拿 `s.wins`(这趟从出发起累计的胜场)去比门槛;离线从前拿
+   * 本次结算的 `wins` 去比 —— 先在线赢 9 场、再挂机赢 1 场,整趟已够 10 胜,
+   * 离线却因「本段只赢 1 场」不出首领,同一趟历练在线离线两套判据。
+   *
+   * 断言看播报而不看战斗胜负:首领无论胜败都留一句 —— 胜则靖平、败则「惜败而退」,
+   * 两种都证明它**真的出场了**。
+   */
+  it('离线首领资格并入会话累计胜场,与在线同一趟账', () => {
+    /** 只挂两分钟:本段远赢不到 10 场,门槛只能靠「在线已赢的那些」补齐 */
+    function run(sessionWins: number): boolean {
+      setActivePinia(createPinia())
+      const game = useGameStore()
+      const player = usePlayerStore()
+      const adventure = useAdventureStore()
+      const now = Date.now()
+      game.markStarted()
+      game.lastActiveAt = now - 2 * 60 * 1000
+      player.major = 10
+      adventure.session = {
+        regionId: 'qingyun',
+        mode: 'normal',
+        startedAt: now - 3600 * 1000,
+        endsAt: now + 999 * 3600 * 1000,
+        nextBattleAt: 0,
+        wins: sessionWins,
+        losses: 0,
+        events: 0,
+        stoneGain: gnZero(),
+        expGain: gnZero(),
+        itemGain: 0
+      }
+      const summary = settleOffline(now)!
+      return summary.notes.some(n => n.includes('区域之主')) || adventure.cleared.includes('qingyun')
+    }
+
+    // 对照组:整趟只有本段那几场,不够门槛 → 不出首领
+    expect(run(0), '本段不满 10 胜时不该出首领').toBe(false)
+    // 实验组:在线已赢 9 场,同一次挂机就该补上最后一场
+    expect(run(9), '整趟已够门槛,挂机这段就该遇首领').toBe(true)
+  })
 })
 
 describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压)', () => {

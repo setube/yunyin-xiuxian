@@ -173,6 +173,39 @@ export function isNemesis(nemeses: NemesisRecord[], enemyId: string): boolean {
   return n !== undefined && n.lossCount >= NEMESIS_THRESHOLD && n.avengedAt === undefined
 }
 
+/**
+ * 整段败北一次入账(离线整段结算用)。
+ *
+ * 在线每败一场就 `recordLoss` 一次;离线按期望值整段结算,没有「哪一场」可言,
+ * 但败了几场的账是有的 —— 从前这一段整段漏记,挂机一夜被打死几回也不算宿敌,
+ * 「此敌败我三次」的征战录与图鉴、区域账各说各话。
+ *
+ * @param times 这一批败北次数(向下取整、非正数即不动)
+ * @returns 入账后的列表,以及这批之后是否**新**达门槛(与单场 recordLoss 同义)
+ */
+export function recordLossBatch(
+  nemeses: NemesisRecord[],
+  enemyId: string,
+  enemyName: string,
+  regionId: string,
+  now: number,
+  times: number,
+  threshold = NEMESIS_THRESHOLD
+): { list: NemesisRecord[]; becameNemesis: boolean } {
+  const count = Math.floor(times)
+  if (!Number.isFinite(count) || count <= 0) return { list: nemeses, becameNemesis: false }
+  const existing = nemeses.find(n => n.enemyId === enemyId)
+  const wasNemesis = existing !== undefined && existing.lossCount >= threshold
+  const next: NemesisRecord = existing
+    ? { ...existing, lossCount: existing.lossCount + count, lastLossAt: now }
+    : { enemyId, enemyName, regionId, lossCount: count, lastLossAt: now }
+  const list = existing
+    ? nemeses.map(n => (n.enemyId === enemyId ? next : n))
+    : [...nemeses.slice(-49), next]
+  // 与单场同义:只有「这一批把它推过门槛」才算新成宿敌,已过门槛的再败不重复播报
+  return { list, becameNemesis: !wasNemesis && next.lossCount >= threshold }
+}
+
 /** 首次雪耻:记录击破宿敌时间 */
 export function markAvenged(nemeses: NemesisRecord[], enemyId: string, now: number): NemesisRecord[] {
   return nemeses.map(n => (n.enemyId === enemyId && n.avengedAt === undefined ? { ...n, avengedAt: now } : n))

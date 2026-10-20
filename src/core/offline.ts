@@ -22,7 +22,6 @@ import {
   EXPLORE_BATTLE_INTERVAL,
   PAGE_DROP_CHANCE,
   PILL_DROP_CHANCE,
-  EXPLORE_BOSS_AFTER_WINS,
   EXPLORE_MODES,
   INSTANT_EXP_LAYER_CAP,
   OFFLINE_BOSS_REWARD_MULT,
@@ -36,13 +35,21 @@ import { generateEquipment } from './equipGen'
 import { onAcquire, acquireEquipment, afterWin, randomDropPill } from './loot'
 import { avgDustPerDrop } from './economySim'
 import { autoResolveEvent, regionEventPoolFor } from './eventEngine'
-import { clearRegionAndUnlockNext, exploreEventChance, regionBossCleared, dangerFactorFor, explorationRules } from './exploration'
+import {
+  clearRegionAndUnlockNext,
+  exploreEventChance,
+  regionBossCleared,
+  dangerFactorFor,
+  explorationRules,
+  winsUntilRegionBoss
+} from './exploration'
 import { currentRegionEvent, regionEventDef } from './regionEvent'
 import { placeContent } from './mortalWorldService'
 import { expFromSecs, stoneByTier } from './formulas'
 import { breakthroughInfo } from './breakthrough'
 import { checkSuppression, settleSuppressedRegions } from './suppress'
 import { harvestMaterials, noteEnemy, noteEnemyMany, studyTick } from './loreService'
+import { recordLossBatch, NEMESIS_THRESHOLD } from './worldMemory'
 import { modOf, capChance } from './statsCalc'
 import { personalityEffects } from './petPersonality'
 import { collect, track } from './progress'
@@ -324,6 +331,26 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
          * 照面按胜 +1 / 负 ×ENEMY_LORE_LOSS_WEIGHT 折算。
          */
         if (mobId) noteEnemyMany(mobId, wins, battles - wins)
+        /**
+         * 宿敌账与在线同源:在线每败一场走一次 `recordLoss`,达到三次即标记宿敌;
+         * 离线整段结算没有「哪一场」,但败了几场是确定的,按整批入账。
+         * 从前这里整段漏记 —— 挂机被打死几回不算宿敌,征战录永远空白,
+         * 而图鉴与区域账都已经记了这些败场。
+         */
+        if (mobId && mobDef && battles > wins) {
+          const { list, becameNemesis } = recordLossBatch(
+            player.nemeses,
+            mobDef.id,
+            mobDef.name,
+            region.id,
+            nowMs,
+            battles - wins
+          )
+          player.setNemeses(list)
+          if (becameNemesis) {
+            notes.push(`【宿敌】你已在${mobDef.name}手下败北${NEMESIS_THRESHOLD}次——此敌已成你的宿敌!`)
+          }
+        }
         if (wins > 0 && mobDef) {
           // 抽一场代表战取回合数/受伤比(与在线 checkSuppression 吃同一份数据)
           const sampleFight = resolveCombat(
@@ -368,11 +395,21 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
       // 并非真实经历。总结与旅途记录若按全量上报,玩家会看到「际会 3456 次」
       // 而实际只结算了 40 次——把 count 收敛为真实经历再写进 summary 与 session
       events = evCap
-      // 离线自动挑战区域首领(收益折损,胜则连锁解锁;门槛与在线一致,避免离线早一步解锁下一区)
-      // 「首领是否已清」按**本世路线**判(与在线 exploration.regionBossCleared 同源):
-      // 旧 REGIONS cleared 链在本世路线下会留空,若离线仍按它判,已清的 boss 会被离线再砍一遍、
-      // 还能顺手解锁下一区 —— 与在线判定分叉
-      if (!regionBossCleared(region.id) && wins >= EXPLORE_BOSS_AFTER_WINS) {
+      /**
+       * 离线自动挑战区域首领(收益折损,胜则连锁解锁)。
+       *
+       * 「首领是否已清」按**本世路线**判(与在线 exploration.regionBossCleared 同源):
+       * 旧 REGIONS cleared 链在本世路线下会留空,若离线仍按它判,已清的 boss 会被离线再砍一遍、
+       * 还能顺手解锁下一区 —— 与在线判定分叉。
+       *
+       * 门槛数的是**整趟会话**的胜场,不是这一段挂机窗口的胜场:在线只看 `s.wins`
+       * (这趟历练从出发起累计的胜场),离线从前却拿本次结算的 `wins` 去比 ——
+       * 先在线赢 9 场再挂机赢 1 场,整趟已够 10 胜,离线却因「本段只赢 1 场」不出首领,
+       * 同一趟历练在线离线两套判据。这里把本段胜场并回会话再问同一个函数。
+       */
+      // 仍要求本段真的交过手:在线是「这一战恰好轮到首领」,不是凭空开一场
+      const bossDue = winsUntilRegionBoss(session.wins + wins, regionBossCleared(region.id)) === 0
+      if (bossDue && battles > 0) {
         const bossDef = enemyDef(placeContent(region.id).boss)
         if (bossDef) {
           const bossDanger = dangerFactorFor(modeDef.dangerMult, region.danger, petDangerMult, regionEventDanger)
@@ -411,6 +448,19 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             notes.push(offlineBossNoteText(bossDef.name))
           } else {
             sessionLosses += 1
+            // 首领败北也是一次败北:在线败在谁手里就记谁的宿敌账,离线同一本
+            const { list, becameNemesis } = recordLossBatch(
+              player.nemeses,
+              bossDef.id,
+              bossDef.name,
+              region.id,
+              nowMs,
+              1
+            )
+            player.setNemeses(list)
+            if (becameNemesis) {
+              notes.push(`【宿敌】你已在${bossDef.name}手下败北${NEMESIS_THRESHOLD}次——此敌已成你的宿敌!`)
+            }
             notes.push(`曾遭遇区域之主【${bossDef.name}】,惜败而退,需再蓄力`)
           }
         }
