@@ -23,6 +23,8 @@ import { useAdventureStore } from '@/stores/adventure'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { ARTIFACT_DROP_CHANCE, EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
+import { WIN_STREAK_REWARDS } from '@/data/earlyGame'
+import { toNum } from '@/utils/gnum'
 
 // rng 全响应固定:概率判定处处 0.5、pick 恒取首项 —— 序列确定
 vi.mock('@/utils/random', async importOriginal => {
@@ -235,5 +237,36 @@ describe('离线普通战法宝掉落(与在线同源)', () => {
     expect(inventory.artifacts.length, '离线也要走法宝掉落通道').toBeGreaterThan(0)
     expect(inventory.equippedArtifacts, '玩家不在场,不该替他祭炼').toHaveLength(0)
     expect(summary.notes.some(n => n.includes('法宝')), '拾得法宝要在归来卷轴里说一声').toBe(true)
+  })
+})
+
+/**
+ * 离线连胜:在线逐场 recordWin/recordLoss,离线整段结算从前完全不碰 winStreak。
+ * 这里钉住「赏格真的发到账」「败场真的归零」两件事。
+ */
+describe('离线连胜(与在线同源)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 0.5
+  })
+
+  it('整段连胜跨过赏格档时,灵石与悟道点按表发放,卷轴写明', () => {
+    seedSession('normal')
+    const player = usePlayerStore()
+    const stoneBefore = toNum(useResourcesStore().spiritStone)
+    const wudaoBefore = useResourcesStore().wudao
+    const summary = settleOffline(Date.now())!
+
+    const tiers = WIN_STREAK_REWARDS.filter(r => r.streak <= summary.wins)
+    expect(tiers.length, '这一趟胜场该跨过全部赏格档').toBe(WIN_STREAK_REWARDS.length)
+    const expectStone = tiers.reduce((n, r) => n + r.stone, 0)
+    const expectWudao = tiers.reduce((n, r) => n + r.wudao, 0)
+    // 悟道点与灵石另有战斗/际遇收益,只能验下界
+    expect(useResourcesStore().wudao - wudaoBefore, '赏格悟道点要真的到账').toBeGreaterThanOrEqual(expectWudao)
+    expect(toNum(useResourcesStore().spiritStone) - stoneBefore, '赏格灵石要真的到账').toBeGreaterThanOrEqual(
+      expectStone
+    )
+    expect(player.winStreak, '本段有败场 → 连胜归零').toBe(0)
+    expect(summary.notes.some(n => n.includes('连胜')), '发了赏格要在卷轴里说一声').toBe(true)
   })
 })

@@ -188,8 +188,9 @@ describe('离线的作用域 · 在途的东西一律不动', () => {
     const required = ['age', 'bond', 'exp']
     /**
      * 可选:战后语义,在线 runBattle 也写同一本账
-     * (区域统计/兴衰/镇压资格/宿敌)。宿敌是败场账 —— 在线每败一次 +1,
-     * 离线整段按败场数补写,少记这一栏就又回到「图鉴记了、征战录没记」的分叉。
+     * (区域统计/兴衰/镇压资格/宿敌/连胜)。宿敌是败场账 —— 在线每败一次 +1,
+     * 离线整段按败场数补写;连胜同理,在线逐场推进、跨档发赏格,离线整批结算。
+     * 少记这几栏就又回到「图鉴记了、征战录没记」「战斗页写着还差几场、数字不动」的分叉。
      */
     const optional = [
       'regionStats',
@@ -197,7 +198,8 @@ describe('离线的作用域 · 在途的东西一律不动', () => {
       'suppressQualified',
       'suppressedRegions',
       'suppressedSince',
-      'nemeses'
+      'nemeses',
+      'winStreak'
     ]
     const allowed = new Set([...required, ...optional])
     expect(

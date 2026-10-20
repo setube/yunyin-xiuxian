@@ -53,6 +53,8 @@ import { harvestMaterials, noteEnemy, noteEnemyMany, studyTick } from './loreSer
 import { recordLossBatch, NEMESIS_THRESHOLD } from './worldMemory'
 import { modOf, capChance } from './statsCalc'
 import { personalityEffects } from './petPersonality'
+import { recordWinStreakBatch } from './earlyGameService'
+import { streakRewardText } from '@/ui/streakText'
 import { collect, track } from './progress'
 import { equipmentTemplate } from '@/data/equipment'
 import { usePlayerStore } from '@/stores/player'
@@ -344,6 +346,15 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         if (wins < battles) {
           notes.push(`有 ${battles - wins} 战失利,幸而全身而退`)
         }
+        /**
+         * 连胜与在线同源:在线逐场 recordWin/recordLoss,跨过 3/5/10 档即发赏格、
+         * 败一场归零。离线整段结算从前完全不碰 `winStreak` —— 挂一夜连胜数字纹丝不动,
+         * 赏格也从不发放,战斗页那句「再连胜 N 场可得…」在离线时成了空话。
+         * 这里按「胜场接上、败场收尾」的同一顺序整批结算。
+         */
+        for (const reward of recordWinStreakBatch(wins, battles - wins)) {
+          notes.push(`途中${streakRewardText(reward.streak, reward.stone, reward.wudao)}`)
+        }
         track('kills', wins)
         track('battles', battles)
         /**
@@ -459,6 +470,10 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             track('bossKills')
             wins += 1
             sessionWins += 1
+            // 首领胜也是一场胜:连胜照推,跨过赏格档照发(与在线 runBattle 同一本账)
+            for (const reward of recordWinStreakBatch(1, 0)) {
+              notes.push(`斩将之后${streakRewardText(reward.streak, reward.stone, reward.wudao)}`)
+            }
             player.updateRegionStats(region.id, true, bossResult.rounds, Math.max(0, 1 - bossResult.playerHpPct))
             player.recordRegionWin(region.id)
             if (checkSuppression(player, region.id) && !player.suppressQualified.includes(region.id)) {
@@ -470,6 +485,8 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             notes.push(offlineBossNoteText(bossDef.name))
           } else {
             sessionLosses += 1
+            // 首领败也是败:连胜归零,与在线「非胜即清」同一条
+            recordWinStreakBatch(0, 1)
             // 首领败北也是一次败北:在线败在谁手里就记谁的宿敌账,离线同一本
             const { list, becameNemesis } = recordLossBatch(
               player.nemeses,

@@ -16,6 +16,7 @@ import {
   chooseCaveOption,
   recordWin,
   recordLoss,
+  recordWinStreakBatch,
   prepareBreakthrough,
   breakthroughPrepState,
   consumeBreakthroughPrep,
@@ -167,6 +168,34 @@ describe('连胜(Phase 28 · 曾经无调用方,TASK-022 接线后)', () => {
     player.winStreak = 7
     recordLoss()
     expect(player.winStreak).toBe(0)
+  })
+
+  /**
+   * 整批连胜(离线整段结算):与逐场 recordWin 同一张赏格表、同一条「一败归零」。
+   * 只发**这一批跨过去**的档 —— 门槛已被上一批发过的,不许重发。
+   */
+  it('整批连胜与逐场同源:跨档发赏、已发过的档不重发、败场归零', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.initCharacter('整批连胜', { roots: [] } as never)
+
+    // 从 0 连赢 6 场:跨 3、5 两档,10 档还差得远
+    const granted = recordWinStreakBatch(6, 0)
+    expect(granted.map(r => r.streak), '跨过的档才发').toEqual([3, 5])
+    expect(player.winStreak).toBe(6)
+    expect(toNum(resources.spiritStone), '3 档 20 + 5 档 40').toBe(60)
+    expect(resources.wudao).toBe(3)
+
+    // 接着再赢 4 场(6→10):只补 10 档这一次
+    const second = recordWinStreakBatch(4, 0)
+    expect(second.map(r => r.streak), '已发过的档不重发').toEqual([10])
+    expect(player.winStreak).toBe(10)
+    expect(toNum(resources.spiritStone)).toBe(160)
+
+    // 有败场即归零:在线一败就中止这趟历练,不可能败后再接着赢
+    const third = recordWinStreakBatch(5, 1)
+    expect(player.winStreak, '败场收尾归零').toBe(0)
+    expect(third, '归零那一批不补发旧档').toEqual([])
   })
 })
 
