@@ -22,7 +22,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
-import { EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
+import { ARTIFACT_DROP_CHANCE, EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
 
 // rng 全响应固定:概率判定处处 0.5、pick 恒取首项 —— 序列确定
 vi.mock('@/utils/random', async importOriginal => {
@@ -208,5 +208,32 @@ describe('离线单胜材料与在线 afterWin 同一期望(单源取 drop 常�
     // flat 尘是离线独有便捷值,须走命名常量,不可退回裸写 0.3(福缘翻倍同样放大)
     expect(g.dust).toBe(Math.round(120 * OFFLINE_FLAT_DUST_PER_WIN))
     expect(offlineMaterialGain(100, 2, 1).dust).toBe(Math.round(100 * OFFLINE_FLAT_DUST_PER_WIN * 2))
+  })
+})
+
+/**
+ * 离线法宝掉落 —— 与在线 afterWin 同源。
+ *
+ * 在线每胜一场按 `ARTIFACT_DROP_CHANCE × (1 + luck)` 掷一次;离线普通战从前
+ * 只补了丹药与装备,法宝这一条整段缺席。这里把「这一趟的期望件数」和
+ * 「离线不替玩家祭炼」两件事都钉住。
+ */
+describe('离线普通战法宝掉落(与在线同源)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 0.5
+  })
+
+  it('按 ARTIFACT_DROP_CHANCE × 胜场折算,且只入囊不自动祭上', () => {
+    seedSession('normal')
+    const summary = settleOffline(Date.now())!
+    const inventory = useInventoryStore()
+
+    const expected = Math.round(summary.wins * ARTIFACT_DROP_CHANCE)
+    // 实际件数随池子与权重浮动,但「有期望就该有产出」这一条必须成立
+    expect(expected, '这一趟的胜场该足以期望出法宝').toBeGreaterThan(0)
+    expect(inventory.artifacts.length, '离线也要走法宝掉落通道').toBeGreaterThan(0)
+    expect(inventory.equippedArtifacts, '玩家不在场,不该替他祭炼').toHaveLength(0)
+    expect(summary.notes.some(n => n.includes('法宝')), '拾得法宝要在归来卷轴里说一声').toBe(true)
   })
 })

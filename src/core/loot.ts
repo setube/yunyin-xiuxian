@@ -165,7 +165,12 @@ function acquireInto(inst: EquipmentInstance, opts: { quiet?: boolean; forceKeep
  * 否则系统替他祭出第一件,等于他一句话没说到底(玩家反馈:默认装备打破逆旅契)。
  * 破题必须是他自己的选择:想用,自己去祭炼,那由 exploration 的 taboo 判定负责。
  */
-export function acquireArtifact(defId: string, quiet = false): string {
+/**
+ * 收入一件法宝。
+ * @param quiet 不弹 toast(离线等批量结算用)
+ * @param autoEquip 空祭炼位时自动祭上。离线传 false:玩家不在场,不该替他改这一身构筑
+ */
+export function acquireArtifact(defId: string, quiet = false, autoEquip = true): string {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
   const ui = useUiStore()
@@ -175,7 +180,7 @@ export function acquireArtifact(defId: string, quiet = false): string {
   const player = usePlayerStore()
   const vow = player.reincarnation.vow
   const forbidArtifact = Boolean(vow && !vow.broken && lifeThemeDef(vow.themeId)?.taboo === 'artifact')
-  if (!inventory.addArtifact(defId, !forbidArtifact)) {
+  if (!inventory.addArtifact(defId, autoEquip && !forbidArtifact)) {
     resources.addSmall('wudao', 10)
     return `法宝「${def.name}」(已拥有,化作悟道点×10)`
   }

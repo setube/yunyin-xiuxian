@@ -20,6 +20,7 @@ import {
   HERB_DROP_CHANCE,
   ORE_DROP_CHANCE,
   EXPLORE_BATTLE_INTERVAL,
+  ARTIFACT_DROP_CHANCE,
   PAGE_DROP_CHANCE,
   PILL_DROP_CHANCE,
   EXPLORE_MODES,
@@ -32,7 +33,7 @@ import {
 import { makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
 import { buildPlayerSnap } from './playerSnap'
 import { generateEquipment } from './equipGen'
-import { onAcquire, acquireEquipment, afterWin, randomDropPill } from './loot'
+import { onAcquire, acquireEquipment, acquireArtifact, afterWin, randomDropArtifact, randomDropPill } from './loot'
 import { avgDustPerDrop } from './economySim'
 import { autoResolveEvent, regionEventPoolFor } from './eventEngine'
 import {
@@ -318,6 +319,27 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         }
         if (pillCount > 0) {
           notes.push(`途中拾得丹药 ${pillCount} 枚`)
+        }
+        /**
+         * 法宝 —— 与在线 afterWin 同源的最后一条掉落通道。
+         *
+         * 在线每胜一场按 `ARTIFACT_DROP_CHANCE ×(1+luck)` 掷一次(概率先归到 [0,1]);
+         * 离线此前只补了丹药与装备,法宝这一条整段缺席 —— 挂一夜的期望法宝数恒为 0,
+         * 而同样时长在线打下来是 `wins × 1.5% × (1+luck)`。
+         *
+         * 按期望折算成「这一趟出几件」:与丹药同一纪律,福缘翻倍不作用于法宝
+         * (在线也掷在 doubled 循环之外);概率同样先夹在线那道封顶。
+         * 只入囊、不自动祭上 —— 祭炼由玩家亲手决定(见本世逆命契的同一原则)。
+         */
+        const artifactChance = capChance(ARTIFACT_DROP_CHANCE * (1 + modOf(mods, 'luck') + personalityEffects(player.petId).dropLuck))
+        const artifactCount = Math.round(wins * artifactChance)
+        for (let i = 0; i < artifactCount; i += 1) {
+          const artId = randomDropArtifact(region.tier)
+          if (!artId) break
+          const line = acquireArtifact(artId, true, false)
+          if (!line) break
+          trip.items += 1
+          notes.push(`途中拾得${line}`)
         }
         if (wins < battles) {
           notes.push(`有 ${battles - wins} 战失利,幸而全身而退`)
