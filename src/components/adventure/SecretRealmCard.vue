@@ -24,7 +24,11 @@
 
     <!-- 未入:择一处 -->
     <template v-else>
-      <div class="mt-2 space-y-1.5">
+      <!-- 身在另一册的境中:先说明进不去,不摆一列点了才被拒的门 -->
+      <p v-if="elsewhere" class="mt-1 text-[10px] leading-relaxed text-ink-faint">
+        身在「{{ elsewhere.name }}」秘境之中 —— 出而后再来择境。
+      </p>
+      <div v-else class="mt-2 space-y-1.5">
         <button
           v-for="r in list"
           :key="r.id"
@@ -75,7 +79,23 @@
   const endgame = useEndgameStore()
 
   const unlocked = computed(() => realmUnlock(props.gate))
-  const state = computed(() => currentRealm())
+  /**
+   * 在境中(仅认本册):`currentRealm` 是全局单份、不分册 —— 不筛的话,身在凡境
+   * 的境中时,天界册(试炼域)这张卡也会以「天界秘境」的册头渲染凡境的境况,
+   * 册头与内容当场对不上。两册互不串门,与 `availableRealms` 的 gate 过滤同口径。
+   */
+  const state = computed(() => {
+    const s = currentRealm()
+    if (!s) return null
+    return secretRealmDef(s.realmId)?.gate === props.gate ? s : null
+  })
+  /** 身在**另一册**的境中:本册卡不摆入口,就地说明为什么进不去 */
+  const elsewhere = computed(() => {
+    const s = currentRealm()
+    if (!s) return null
+    const d = secretRealmDef(s.realmId)
+    return d && d.gate !== props.gate ? d : null
+  })
   const list = computed(() => availableRealms(props.gate))
   const def = computed<SecretRealmDef | undefined>(() => (state.value ? secretRealmDef(state.value.realmId) : undefined))
 

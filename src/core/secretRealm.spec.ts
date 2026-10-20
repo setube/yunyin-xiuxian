@@ -252,6 +252,23 @@ describe('秘境 · 推得动、出得来', () => {
     // 两级同写 info 时配色与提示音分不开这一局是赢是输
     expect(corpus, '秘境战报的胜级须是 success').toContain("r.win ? 'success' : 'warn'")
   })
+
+  /**
+   * 两张卡(历练页凡境册 / 试炼域天界册)共用同一份「在境中」状态,
+   * 而 `currentRealm()` 是全局单份、不分册 —— 不筛就会串门:身在凡境时
+   * 天界卡的册头写着「天界秘境」,内容却是凡境那一局。
+   *
+   * 故障注入:把 state 改回 `computed(() => currentRealm())` → 本条红。
+   */
+  it('秘境卡的「在境中」只认本册,身在另一册时就地说明', () => {
+    const src = readFileSync(resolve(__dirname, '../components/adventure/SecretRealmCard.vue'), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+    expect(src, '在境中须按本册 gate 过滤').toContain("secretRealmDef(s.realmId)?.gate === props.gate ? s : null")
+    expect(src, '另一册在境时要单独算出提示').toContain('const elsewhere = computed')
+    expect(src, '另一册在境时不摆入口').toContain('v-if="elsewhere"')
+  })
 })
 
 describe('秘境 · 两阶(凡境灵石 / 天界道源)', () => {
