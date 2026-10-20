@@ -8,12 +8,12 @@
  * 图鉴里同一个键叫「伤害增幅」「伤害减免」「气血上限」「战斗修为」。同一个键
  * 两套名字,玩家没法把装备上那条与面板上那条对上号。
  *
- * 现在 desc 由 `data/statNames.STAT_NAMES` 派生:一条词条的键只有一处,名字
- * 也只有一处。少数几个名字脱离语境会读歧的(命中/双倍战利/震慑…),在后面缀
- * 一句注解 —— 那是**含义**的补充,不承载数值,数值仍只有 `{v}` 一处。
+ * 现在 desc 由 `data/statNames` 派生:名字取 `STAT_NAMES`,作用域取 `statCaveat`
+ * —— 与面板 `statValueText` / `statModPhrase` 同一条装配,键、名字、条件都只有
+ * 一处。数值位只留 `{v}`,不在这里写第二个数。
  */
 import type { AffixDef, AnyStatKey, EquipSlot, AffixRarity } from '@/types'
-import { STAT_NAMES } from '@/data/statNames'
+import { STAT_NAMES, statCaveat } from '@/data/statNames'
 
 const W = ['weapon'] as EquipSlot[]
 const A = ['head', 'body', 'wrist', 'belt', 'boots'] as EquipSlot[]
@@ -22,19 +22,15 @@ const WJ = [...W, ...J]
 const AJ = [...A, ...J]
 
 /**
- * 名字脱离语境会读歧的那几条,补一句注解。
+ * 词条说明:名字取 STAT_NAMES,条件取 statCaveat —— 与面板 `statValueText` 同款
+ * 装配,数值位留 `{v}`(引擎按它切 before/value/after)。
  *
- * 只补条件与作用域,不写数值 —— 数值仍只有说明里的 `{v}` 一个落点。
+ * 不在这里另设一张「注解表」:那样只会把作用域说明变成第二份,新增一个带条件的
+ * 键就悄悄漏掉条件(处决只打残血、背水须己身残血、护盾开战才凝…)。
  */
-const AFFIX_GLOSS: Partial<Record<AnyStatKey, string>> = {
-  accuracy: '(无视目标闪避)',
-  doubleDropRate: '(触发概率)',
-  stunRate: '(触发概率)'
-}
-
-/** 词条说明:名字取 STAT_NAMES,数值位留 `{v}`(引擎按它切 before/value/after) */
 function affixDesc(key: AnyStatKey): string {
-  return `${STAT_NAMES[key]} +{v}%${AFFIX_GLOSS[key] ?? ''}`
+  const caveat = statCaveat(key)
+  return `${STAT_NAMES[key]} +{v}%${caveat ? `(${caveat})` : ''}`
 }
 
 function a(

@@ -9,9 +9,16 @@ import { affixRangeEnds, affixRangeText, affixRankText, affixRarityColor, affixR
 
 describe('词条图 · 字面现算', () => {
   it('效果区间 = 两端填进 {v}:攻击 2~5、暴伤整数档不落地碎数', () => {
-    // 名字取 STAT_NAMES:与面板、战报同一条词条同一个叫法
+    // 名字取 STAT_NAMES、条件取 statCaveat:与面板 statValueText 同一条装配
     expect(affixRangeText(affixDef('atk1')!)).toBe('攻击 +2~5%')
-    expect(affixRangeText(affixDef('cdmg4')!)).toBe('暴击伤害 +50~80%')
+    expect(affixRangeText(affixDef('cdmg4')!)).toMatch(/^暴击伤害 \+50~80%\(叠于固有会心之伤/)
+  })
+
+  it('带条件的词条把条件带出来 —— 处决只打残血、背水须己身残血', () => {
+    // 这些条件本来只在 STAT_CAVEATS 里,词条说明若自建注解表就会漏
+    expect(affixRangeText(affixDef('exe1')!)).toContain('只伤气血未满')
+    expect(affixRangeText(affixDef('bs1')!)).toContain('须己身气血未满')
+    expect(affixRangeText(affixDef('shd1')!)).toContain('开战凝盾')
   })
 
   it('区间两头由 affixValue(roll 0/1) 给出,与掉落同式', () => {

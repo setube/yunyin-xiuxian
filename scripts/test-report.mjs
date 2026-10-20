@@ -75,8 +75,12 @@ function caseCountHits(text) {
   const hits = []
   text.split(/\r?\n/).forEach((line, i) => {
     if (/(不许写例数|用例条数不写进文档|不写进文档)/.test(line)) return
-    // 只认真正的用例数写法:中文里「条」是通用量词,「四条去路」不是用例数
-    if (/(\d[\d,]*)\s*(例|个用例|条用例|个断言|条断言)/.exec(line)) {
+    /*
+     * 只认真正的用例数写法:中文里「条」是通用量词,「四条去路」不是用例数。
+     * 英文后缀也要认 —— 中文档里偶尔夹一句 `292 tests` 一样是把例数写进文档
+     * (英文复数后缀要求后面不再接字母,免得 `1 caseX` 之类误伤)。
+     */
+    if (/(\d[\d,]*)\s*(例|个用例|条用例|个断言|条断言)|\b(\d[\d,]*)\s*(?:tests?|cases?|specs?|assertions?)\b/i.exec(line)) {
       hits.push(`第 ${i + 1} 行: ${line.trim().slice(0, 80)}`)
     }
   })
