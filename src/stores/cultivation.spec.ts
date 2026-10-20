@@ -204,6 +204,40 @@ describe('sanitize:功法等级与悟道分支加固', () => {
     c.sanitize()
     expect(Object.keys(c.gongfaBranch), '未习得功法的分支仍应被清').toHaveLength(0)
   })
+
+  /**
+   * 坏档里同一门辅修写两遍:槽位预算按数组条数算,重复项会白占一格,
+   * 把真正想上的后一门挤出去(装配页显示已选两门,实际只有一门在生效)。
+   */
+  it('sanitize:辅修同一门写两遍只占一格,后面的辅修不被挤掉', () => {
+    const c = useCultivationStore()
+    c.$patch({
+      learned: { s_tuna: 1, s_lianti: 1 },
+      subGongfa: ['s_tuna', 's_tuna', 's_lianti']
+    } as never)
+    c.sanitize()
+    expect(c.subGongfa, '同门去重后按首次出现保序').toEqual(['s_tuna', 's_lianti'])
+  })
+
+  /**
+   * 同一状态写两条,`buffMods` 会把词条叠两次(聚灵 +50% 变 +100%)。
+   * 正常写入口按 defId 合并,重复条目只来自坏档 —— 合并回一条,时长取较晚者。
+   */
+  it('sanitize:同一状态两条合并成一条,词条不再翻倍,时长取较晚', () => {
+    const c = useCultivationStore()
+    const now = Date.now()
+    c.$patch({
+      buffs: [
+        { defId: 'buff_juling', endsAt: now + 600_000, added: 1_800_000 },
+        { defId: 'buff_juling', endsAt: now + 900_000, added: 1_800_000 }
+      ]
+    } as never)
+    c.sanitize()
+    expect(c.buffs, '同一状态只留一条').toHaveLength(1)
+    expect(c.buffs[0]!.endsAt, '时长取较晚的到期时刻').toBe(now + 900_000)
+    expect(c.buffs[0]!.added, '本命累计相加,与连服两份等价').toBe(3_600_000)
+    expect(c.buffMods.cultivationSpeed, '聚灵只算一次').toBe(0.5)
+  })
 })
 
 describe('辅修槽位约束:超出预算的伴生功法不白给(gongfaMods 与装配页同口径)', () => {

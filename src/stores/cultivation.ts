@@ -53,22 +53,42 @@ export const useCultivationStore = defineStore(
       }
       learned.value = fixedLearned
       if (typeof mainGongfa.value !== 'string' || !fixedLearned[mainGongfa.value]) mainGongfa.value = null
-      subGongfa.value = asStringArray(subGongfa.value).filter(id => fixedLearned[id] !== undefined)
-      buffs.value = asArray<BuffInstance>(buffs.value, [], b => !!b && typeof (b as BuffInstance).defId === 'string').map(b => {
+      // 辅修同一门写两遍会白占一个槽(槽位预算按条数算),把真正想上的后一门挤出去。
+      // 与 toggleSub 的「已在列表就不再加」同口径:按首次出现保序去重。
+      subGongfa.value = [...new Set(asStringArray(subGongfa.value))].filter(id => fixedLearned[id] !== undefined)
+      /**
+       * Buff 同一状态写两条时,`buffMods` 会把同一份词条叠加两次(面板/战斗凭空多一截)。
+       * 正常写入口(addBuff)总是按 defId 合并,重复条目只可能来自坏档/重复导入 ——
+       * 这里按 defId 合并回一条:时长取较晚的到期时刻、本命累计相加,与「连服两份」等价。
+       */
+      const now = Date.now()
+      const mergedBuffs = new Map<string, BuffInstance>()
+      for (const b of asArray<BuffInstance>(buffs.value, [], b => !!b && typeof (b as BuffInstance).defId === 'string')) {
+        const prev = mergedBuffs.get(b.defId)
+        const curAdded = asFiniteNumber(b.added, 0, 0)
+        // 老档没有 added 时保持「缺省」,不要写成 0 —— BuffDialog 用 `added ?? 单份时长`
+        // 兜底,0 会让「全程」变成 0、进度条永远空着。
+        const added = prev?.added === undefined && b.added === undefined ? undefined : (prev?.added ?? 0) + curAdded
+        mergedBuffs.set(b.defId, {
+          defId: b.defId,
+          endsAt: Math.max(prev?.endsAt ?? 0, asFiniteNumber(b.endsAt, now, 0)),
+          ...(added === undefined ? {} : { added })
+        })
+      }
+      buffs.value = [...mergedBuffs.values()].map(b => {
         const capSec = buffCapSec(b.defId)
         const capMs = capSec === undefined ? undefined : capSec * 1000
         if (capMs === undefined) {
           // 不受丹药上限约束的状态(闭关/重伤/祝福):仅保证时限是有限数字,不另加局部上限
-          return { ...b, endsAt: asFiniteNumber(b.endsAt, Date.now(), 0) }
+          return b
         }
         // 受上限的丹药 buff:读档复钳到 2× 单颗上限(与 addBuff 同口径)。
         // 此前只钳写入口、没钳读档——坏档/老档若带超限时长(如 5× 的「无限囤」残留),
         // 会横跨整段会话有效,尤以修速类(+50% 聚灵)为甚。endsAt 钳在 now+cap、added 钳在 cap。
-        const now = Date.now()
         return {
           ...b,
-          endsAt: Math.min(asFiniteNumber(b.endsAt, now, 0), now + capMs),
-          added: Math.min(asFiniteNumber(b.added, 0, 0), capMs)
+          endsAt: Math.min(b.endsAt, now + capMs),
+          ...(b.added === undefined ? {} : { added: Math.min(b.added, capMs) })
         }
       })
       // 悟道分支:只留「bid 真属于 gid 且该功法已习得」的条目 —— 分支是不装配仍生效的永久
