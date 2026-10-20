@@ -329,3 +329,63 @@ describe('终局一次性引导标记 sanitize', () => {
     expect(e.milestones.map(m => m.id), '同一条只留先出现的那次').toEqual(['first_dao', 'first_world'])
   })
 })
+
+describe('天界终局坏档 · 按 id 认道/认界/认试炼', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('认不出的道途回落 null,不再把「此生道途已定」永久锁死', () => {
+    const e = useEndgameStore()
+    e.$patch({ daoPath: 'ghost_dao' as never })
+    e.sanitize()
+    expect(e.daoPath).toBeNull()
+    // 回落之后这一世重新选得动 —— 这正是坏 id 最要命的后果
+    expect(e.chooseDao('sword')).toBe(true)
+  })
+
+  it('认得 four 道途原样保留', () => {
+    for (const id of ['sword', 'longevity', 'fate', 'slaughter'] as const) {
+      setActivePinia(createPinia())
+      const e = useEndgameStore()
+      e.$patch({ daoPath: id })
+      e.sanitize()
+      expect(e.daoPath).toBe(id)
+    }
+  })
+
+  it('世界破界次数只留认得的天界/虚界,次数按非负整数收口', () => {
+    const e = useEndgameStore()
+    e.$patch({ worldClears: { chiyan: 3.7, void: 2, nowhere: 9, bogus: Number.NaN } as never })
+    e.sanitize()
+    expect(e.worldClears).toEqual({ chiyan: 3, void: 2 })
+  })
+
+  it('试炼纪录的 NaN 回合不再挂出「最佳 NaN 回合」', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      trialRecords: {
+        qisha: { clears: 2, bestRounds: Number.NaN },
+        bogus: { clears: 4, bestRounds: 5 }
+      } as never
+    })
+    e.sanitize()
+    expect(e.trialRecords.qisha).toEqual({ clears: 2, bestRounds: 0 })
+    expect(e.trialRecords.bogus, '认不出的试炼没有卡会读它').toBeUndefined()
+  })
+
+  it('在途远征的战报行逐项修平:回合与余血不再写出 NaN', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      worldRun: hostileRun({
+        rows: [
+          { foeName: '妖王', win: 'yes', rounds: Number.NaN, hpLeftPct: 7 },
+          { foeName: '鬼将', win: true, rounds: 3, hpLeftPct: 0.4 }
+        ] as never
+      })
+    })
+    e.sanitize()
+    expect(e.worldRun!.rows[0]).toEqual({ foeName: '妖王', win: false, rounds: 0, hpLeftPct: 1 })
+    expect(e.worldRun!.rows[1]).toEqual({ foeName: '鬼将', win: true, rounds: 3, hpLeftPct: 0.4 })
+  })
+})

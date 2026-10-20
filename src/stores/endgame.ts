@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import type { CelestialWorldDef, DaoMark, DaoPathId, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { mergeMods } from '@/core/statsCalc'
-import { EXPEDITION_GUARDIAN_LAYER, celestialWorldDef } from '@/data/endgame'
+import { EXPEDITION_GUARDIAN_LAYER, celestialWorldDef, daoPathDef, trialDef } from '@/data/endgame'
 import { SOUL_SLOTS, soulMods as soulModsOf, type SoulInstance } from '@/data/souls'
 import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asObjectOrNull, asRecordOf, asStringArray } from '@/utils/saveShape'
 
@@ -70,7 +70,12 @@ export const useEndgameStore = defineStore(
      * (activeSouls 已有一层防御读取,但那是补丁;这里把形状一次修平)
      */
     function sanitize(): void {
-      daoPath.value = typeof daoPath.value === 'string' ? daoPath.value : null
+      /**
+       * 道途按 id 认道:认不出的 string 会被 `chooseDao` 当成「此生道途已定」,
+       * 之后每一次选道都被「来世方可另择」挡回去 —— 天界此后再也走不进去。
+       * 认不得就回落 null(等同于本世尚未择道),与「转世归还天地」同一状态。
+       */
+      daoPath.value = typeof daoPath.value === 'string' && daoPathDef(daoPath.value) ? (daoPath.value as DaoPathId) : null
       daoSource.value = asFiniteNumber(daoSource.value, 0, 0)
       // 一次性引导标记:损坏档里混入真值(1/"true")会永久压掉引导,混入假值(0/"")又可能重播。
       // 一律 ===true 归一,与 settings 的布尔开关同一套清洗纪律。
@@ -78,11 +83,29 @@ export const useEndgameStore = defineStore(
       daoFruitTutorialSeen.value = daoFruitTutorialSeen.value === true
       resourceDialogSeen.value = resourceDialogSeen.value === true
       soulTutorialSeen.value = soulTutorialSeen.value === true
-      worldClears.value = asNumberRecord(worldClears.value, 0)
-      trialRecords.value = asRecordOf<TrialRecord>(
-        trialRecords.value,
-        r => !!r && typeof r === 'object' && Number.isFinite((r as TrialRecord).clears)
-      )
+      /**
+       * 「已破 ×N」按世界 id 认界:认不出的键只会占一行读数,而其值若是 NaN/负数
+       * 还会把「已破」写成负数。只留认得的天界/虚界,次数按非负整数收口。
+       */
+      const fixedClears: Record<string, number> = {}
+      for (const [id, n] of Object.entries(asNumberRecord(worldClears.value, 0))) {
+        if (id !== 'void' && !celestialWorldDef(id)) continue
+        fixedClears[id] = Math.floor(n)
+      }
+      worldClears.value = fixedClears
+      /**
+       * 试炼纪录同理:键认不出就没有卡会读它;bestRounds 写成 NaN 会让
+       * 「最佳 NaN 回合」挂在那张试炼卡上,且 `Math.min(NaN, x)` 之后再也好不了。
+       */
+      const fixedTrials: Record<string, TrialRecord> = {}
+      for (const [id, raw] of Object.entries(asRecordOf<TrialRecord>(trialRecords.value, r => !!r && typeof r === 'object'))) {
+        if (!trialDef(id)) continue
+        const r = raw as Partial<TrialRecord>
+        const clears = Math.floor(asFiniteNumber(r.clears, 0, 0))
+        if (clears <= 0) continue
+        fixedTrials[id] = { clears, bestRounds: Math.floor(asFiniteNumber(r.bestRounds, 0, 0)) }
+      }
+      trialRecords.value = fixedTrials
       marks.value = asArray<DaoMark>(marks.value, [], m => !!m && typeof (m as DaoMark).targetId === 'string')
       worldRun.value = asObjectOrNull<WorldRunState>(worldRun.value)
       /**
@@ -102,7 +125,14 @@ export const useEndgameStore = defineStore(
             gateId: typeof run.gateId === 'string' ? run.gateId : null,
             layer: Math.min(EXPEDITION_GUARDIAN_LAYER, Math.max(0, Math.floor(asFiniteNumber(run.layer, 0, 0)))),
             bonus: Math.floor(asFiniteNumber(run.bonus, 0, 0)),
-            rows: asArray<WorldRunState['rows'][number]>(run.rows, [], r => !!r && typeof (r as { foeName?: unknown }).foeName === 'string'),
+            // 每一行都是战报读数:坏行留着会写出「NaN回合 · 余血 NaN%」,
+            // 故按行逐项修平;认不出名字的行直接丢掉(没有可报的对象)
+            rows: asArray<WorldRunState['rows'][number]>(run.rows, [], r => !!r && typeof (r as { foeName?: unknown }).foeName === 'string').map(r => ({
+              foeName: r.foeName,
+              win: r.win === true,
+              rounds: Math.floor(asFiniteNumber(r.rounds, 0, 0)),
+              hpLeftPct: Math.min(1, asFiniteNumber(r.hpLeftPct, 0, 0))
+            })),
             carriedHpPct: asCarriedHpPct(run.carriedHpPct),
             totalRounds: Math.floor(asFiniteNumber(run.totalRounds, 0, 0)),
             winStacks: Math.floor(asFiniteNumber(run.winStacks, 0, 0))
@@ -112,11 +142,20 @@ export const useEndgameStore = defineStore(
       voidWorld.value = asObjectOrNull<CelestialWorldDef>(voidWorld.value)
       dailyDoneDay.value =
         typeof dailyDoneDay.value === 'number' && Number.isFinite(dailyDoneDay.value) ? dailyDoneDay.value : null
+      /**
+       * 修行节点的 life/at 是直接报给玩家的读数,坏数会写出「第 NaN 世」;
+       * 按非负整数修平。认不出的 id 保留:它只影响这一行怎么称呼,
+       * 而节点本身(首次语义)是真的发生过的事。
+       */
       milestones.value = asArray<{ id: string; life: number; at: number }>(
         milestones.value,
         [],
         m => !!m && typeof (m as { id?: unknown }).id === 'string'
-      )
+      ).map(m => ({
+        id: m.id,
+        life: Math.floor(asFiniteNumber(m.life, 0, 0)),
+        at: Math.floor(asFiniteNumber(m.at, 0, 0))
+      }))
       // 修行节点是「首次」语义(addMilestone 只在没有时才记):坏档同一条写两遍会让
       // 「修行节点 N/总数」多报、时间线上同一件事出现两次。只留先出现的那条。
       const seenMilestone = new Set<string>()
@@ -125,10 +164,20 @@ export const useEndgameStore = defineStore(
         seenMilestone.add(m.id)
         return true
       })
-      records.value = asRecordOf<{ value: number; life: number; note: string }>(
-        records.value,
-        r => !!r && typeof r === 'object' && Number.isFinite((r as { value?: unknown }).value as number)
-      )
+      /** 极限纪录的 value/life 是被直接读出来的数,坏值会让「最快破界」显示成 NaN */
+      const fixedRecords: Record<string, { value: number; life: number; note: string }> = {}
+      // 条目本身先要是个对象:records = { a: null } 这类坏档不能直接读 .value
+      for (const [id, raw] of Object.entries(
+        asRecordOf<{ value: number; life: number; note: string }>(records.value, r => !!r && typeof r === 'object' && !Array.isArray(r))
+      )) {
+        const r = raw as Partial<{ value: number; life: number; note: string }>
+        fixedRecords[id] = {
+          value: asFiniteNumber(r.value, 0),
+          life: Math.floor(asFiniteNumber(r.life, 0, 0)),
+          note: typeof r.note === 'string' ? r.note : ''
+        }
+      }
+      records.value = fixedRecords
       /**
        * 器魂 uid 必须唯一:装配表按 uid 映射回魂仓,两条同号会让 `activeSouls`
        * 把同一枚的主动与词条各算两次(实际只有一枚)。
