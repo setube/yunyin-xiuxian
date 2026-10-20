@@ -324,7 +324,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
          * 照面按胜 +1 / 负 ×ENEMY_LORE_LOSS_WEIGHT 折算。
          */
         if (mobId) noteEnemyMany(mobId, wins, battles - wins)
-        if (battles > 0 && mobDef) {
+        if (wins > 0 && mobDef) {
           // 抽一场代表战取回合数/受伤比(与在线 checkSuppression 吃同一份数据)
           const sampleFight = resolveCombat(
             buildPlayerSnap(),
@@ -332,15 +332,9 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             rng,
             explorationRules()
           )
-          /**
-           * 胜**与负**一起入账:在线每一场(含败场)都进 `updateRegionStats`,
-           * 而镇压门槛读的是 `totalFights`。从前这里只写胜场,于是同样的战况
-           * 守着屏幕打能拿镇压资格、挂机回来永远差着 —— 同一件事两套账。
-           */
-          player.applyRegionBatch(
+          player.applyRegionWinBatch(
             region.id,
             wins,
-            battles - wins,
             sampleFight.rounds,
             Math.max(0, 1 - sampleFight.playerHpPct)
           )

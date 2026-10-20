@@ -1130,28 +1130,19 @@ export const usePlayerStore = defineStore(
     }
 
     /**
-     * 一次写入 N 胜 M 负(离线整段结算用)。
+     * 一次写入 N 场同质净胜(离线整段结算用)。
      *
-     * 在线是**每一场**都进 `updateRegionStats` —— 胜场和败场都算进 `totalFights`,
-     * 而镇压门槛「至少 20 战」读的正是 `totalFights`。离线从前只把胜场写进去,
-     * 于是一趟 30 战 10 胜的挂机只记 10 战:同样的战况,守着屏幕打能拿镇压资格、
-     * 挂机回来却永远差着,界面还会把连败虚记成连胜。
-     *
-     * 指数移动平均与逐场调用等价:avg' = avg × 0.7^n + x × (1 - 0.7^n)。
-     * 连败是否会清空连胜:只要这一段里出现过败场就归零 —— 在线最终值取决于
-     * 败场落在哪一场,整段结算推不出来,取保守的那一端,免得界面报一个假的连胜。
-     * 兴衰胜场(`regionWins`)只加净胜,与「你在这一地赢过多少」的叙事一致。
+     * 指数移动平均与逐场调用 `updateRegionStats` 等价:
+     * avg' = avg × 0.7^n + x × (1 - 0.7^n)。
+     * 同时累计区域兴衰的胜场 —— 离线与在线写同一本账。
      */
-    function applyRegionBatch(
+    function applyRegionWinBatch(
       regionId: string,
-      wins: number,
-      losses: number,
+      n: number,
       rounds: number,
       damageTakenPct: number,
     ): void {
-      const w = Math.max(0, Math.floor(wins))
-      const l = Math.max(0, Math.floor(losses))
-      const count = w + l
+      const count = Math.floor(n)
       if (count <= 0) return
       const current = regionStats.value[regionId] ?? {
         consecutiveWins: 0,
@@ -1164,26 +1155,14 @@ export const usePlayerStore = defineStore(
       regionStats.value = {
         ...regionStats.value,
         [regionId]: {
-          consecutiveWins: l > 0 ? 0 : current.consecutiveWins + w,
+          consecutiveWins: current.consecutiveWins + count,
           totalFights: current.totalFights + count,
           avgRounds: current.avgRounds * decay + rounds * (1 - decay),
           avgDamageTakenPct: current.avgDamageTakenPct * decay + damageTakenPct * (1 - decay),
           lastUpdateAt: Date.now(),
         },
       }
-      if (w > 0) {
-        regionWins.value = { ...regionWins.value, [regionId]: (regionWins.value[regionId] ?? 0) + w }
-      }
-    }
-
-    /** 只写净胜的简写(调用方明确没有败场时用) */
-    function applyRegionWinBatch(
-      regionId: string,
-      n: number,
-      rounds: number,
-      damageTakenPct: number,
-    ): void {
-      applyRegionBatch(regionId, n, 0, rounds, damageTakenPct)
+      regionWins.value = { ...regionWins.value, [regionId]: (regionWins.value[regionId] ?? 0) + count }
     }
 
     function suppressRegion(regionId: string): void {
@@ -1463,7 +1442,6 @@ export const usePlayerStore = defineStore(
       resetWinStreak,
       markCaveEventToday,
       updateRegionStats,
-      applyRegionBatch,
       applyRegionWinBatch,
       suppressRegion,
       unsuppressRegion,
