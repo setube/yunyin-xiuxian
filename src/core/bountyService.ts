@@ -58,19 +58,26 @@ export function generateBounty(major: number, now: number): BountySlot[] {
   const pd = pillDef(pillId)
   const matTarget = BOUNTY_MAT_TARGET
   const oreReward = stoneByTier(marketTier(major), matTarget * BOUNTY_MAT_UNIT_AMOUNT)
+  /**
+   * 这一境若一味可炼丹都挑不出来,募丹位就落回募草:
+   * 空 kindId 的丹单既没有货名、也交不掉,还会按 0 赏格挂满一窗。
+   */
+  const pillSlot: BountySlot = pd
+    ? {
+        idx: 2,
+        kind: 'pill',
+        kindId: pd.id,
+        target: BOUNTY_PILL_COUNT,
+        tier: 0,
+        reward: pd.recipe?.stoneBase ? mulN(pillStoneCost(pd), BOUNTY_PILL_COUNT * BOUNTY_PILL_REWARD_FACTOR) : gnZero(),
+        extra: BOUNTY_PILL_WUDAO,
+        claimed: false
+      }
+    : { idx: 2, kind: 'herb', kindId: 'herb', target: matTarget, tier: 0, reward: gnZero(), extra: 0, claimed: false }
   const slots: BountySlot[] = [
     { idx: 0, kind: 'herb', kindId: 'herb', target: matTarget, tier: 0, reward: gnZero(), extra: 0, claimed: false },
     { idx: 1, kind: 'ore', kindId: 'ore', target: matTarget, tier: 0, reward: oreReward, extra: 0, claimed: false },
-    {
-      idx: 2,
-      kind: 'pill',
-      kindId: pd?.id ?? '',
-      target: BOUNTY_PILL_COUNT,
-      tier: 0,
-      reward: pd?.recipe?.stoneBase ? mulN(pillStoneCost(pd), BOUNTY_PILL_COUNT * BOUNTY_PILL_REWARD_FACTOR) : gnZero(),
-      extra: BOUNTY_PILL_WUDAO,
-      claimed: false
-    },
+    pillSlot,
     { idx: 3, kind: 'equip', kindId: '', target: 1, tier: marketTier(major), reward: gnZero(), extra: 0, claimed: false }
   ]
   return slots.slice(0, Math.min(BOUNTY_SLOTS, slots.length))

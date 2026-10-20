@@ -14,6 +14,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { qualityDef } from '@/data/qualities'
 import { BOUNTY_REFRESH_SECONDS, type BountyKind, type BountySlot } from '@/data/bounty'
 import { MAX_MAJOR } from '@/data/realms'
+import { pillDef } from '@/data/pills'
 import { equipBountyReward, generateBounty, herbBountyReward } from '@/core/bountyService'
 import { HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber, asNonNegInt, asPrice } from '@/utils/saveShape'
@@ -58,6 +59,7 @@ export const useBountyStore = defineStore(
       const bm = asFiniteNumber(bountyMajor.value, -1)
       bountyMajor.value = bm >= 0 ? Math.min(MAX_MAJOR, Math.floor(bm)) : null
       const clean: BountySlot[] = []
+      let stalePill = false
       /**
        * 单号必须唯一:交货按 idx 认单,两张单同号时 `claim(idx)` 只会命中先出现的
        * 那一张,后一张永远交不了(点了没反应),玩家还以为交的是它。
@@ -66,10 +68,20 @@ export const useBountyStore = defineStore(
        */
       for (const raw of asArray<unknown>(orders.value)) {
         if (!raw || typeof raw !== 'object' || !('kind' in raw) || !isKind(raw.kind)) continue
+        const kindId = 'kindId' in raw && typeof raw.kindId === 'string' ? raw.kindId : ''
+        /**
+         * 募丹单靠 kindId 认货:认不出的丹 id 既画不出名字、也永远凑不齐
+         * (丹匣里不会有它),这张单要挂满整个窗口才换新,玩家只会反复看到
+         * 「存货不足」却无货可备。整版重挂,比留一张交不掉的死单诚实。
+         */
+        if (raw.kind === 'pill' && !pillDef(kindId)) {
+          stalePill = true
+          continue
+        }
         clean.push({
           idx: clean.length,
           kind: raw.kind,
-          kindId: 'kindId' in raw && typeof raw.kindId === 'string' ? raw.kindId : '',
+          kindId,
           target: Math.max(1, asNonNegInt('target' in raw ? raw.target : 1, 1)),
           tier: asNonNegInt('tier' in raw ? raw.tier : 0, 0),
           reward: asPrice('reward' in raw ? raw.reward : undefined),
@@ -78,6 +90,8 @@ export const useBountyStore = defineStore(
         })
       }
       orders.value = clean
+      // 归零上货时刻:下一次 sync 整版换新(含被丢掉的那张),不留下短一格的板子
+      if (stalePill) bountyAt.value = 0
     }
 
     /** 订单空、或已过刷新窗口则换新一版(此刻的订单不动,交货中的不打断) */

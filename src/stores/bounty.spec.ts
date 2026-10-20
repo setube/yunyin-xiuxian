@@ -10,6 +10,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { herbBountyReward } from '@/core/bountyService'
+import { pillDef } from '@/data/pills'
 
 const FAR = 4_102_444_800_000 // 2099-12-31
 
@@ -154,6 +155,44 @@ describe('坊市悬赏板 · 交货', () => {
       5
     )
     expect(b.orders[1]!.reward, '修形不许改单子上的赏格').toEqual({ m: 6, e: 0 })
+  })
+
+  /**
+   * 募丹单靠 kindId 认货:野丹 id 既画不出名字、也永远凑不齐 —— 它只会
+   * 挂满整个窗口反复报「存货不足」。整版重挂才是玩家能走的下一步。
+   */
+  it('sanitize:认不出的募丹单整版重挂,不吃掉货架上的好单', () => {
+    const b = useBountyStore()
+    b.$patch({
+      orders: [
+        { kind: 'herb', kindId: 'herb', idx: 0, target: 30, tier: 0, reward: { m: 5, e: 0 }, extra: 0, claimed: false },
+        { kind: 'pill', kindId: 'p_not_real', idx: 1, target: 3, tier: 0, reward: { m: 9, e: 0 }, extra: 2, claimed: false }
+      ] as unknown as never,
+      bountyAt: FAR
+    })
+    b.sanitize()
+    expect(b.orders.map(o => o.kind), '交不掉的死单不留').toEqual(['herb'])
+    expect(b.bountyAt, '归零上货时刻,让下一拍整版换新').toBe(0)
+
+    b.sync(Date.now())
+    expect(b.orders, '换新后是完整一版').toHaveLength(4)
+    expect(
+      b.orders.filter(o => o.kind === 'pill').every(o => !!pillDef(o.kindId)),
+      '新挂的募丹单必须认得出是哪味丹'
+    ).toBe(true)
+  })
+
+  it('sanitize:认得出的募丹单原样保留,不白白换掉玩家的那一版', () => {
+    const b = useBountyStore()
+    b.$patch({
+      orders: [
+        { kind: 'pill', kindId: 'p_jvqisan', idx: 0, target: 3, tier: 0, reward: { m: 9, e: 0 }, extra: 2, claimed: false }
+      ] as unknown as never,
+      bountyAt: FAR
+    })
+    b.sanitize()
+    expect(b.orders[0]!.kindId).toBe('p_jvqisan')
+    expect(b.bountyAt, '好单不该被重挂').toBe(FAR)
   })
 })
 
