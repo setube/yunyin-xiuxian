@@ -3307,14 +3307,20 @@ for (const vp of [
       const t = [...document.querySelectorAll('.pointer-events-none.fixed button')].map(b => (b.textContent || '').trim()).join('|')
       if (/损坏|异常|隔离/.test(t)) window.__bootToastSaid = t
     }
-    const start = () => {
-      const root = document.querySelector('#app')
-      if (!root) return
-      new MutationObserver(pick).observe(root, { childList: true, subtree: true, characterData: true })
-      pick()
-    }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start)
-    else start()
+    /*
+     * 观察器必须挂在**一装好就存在**的节点上。
+     * 踩过两个坑:① 原先等 #app 出现再挂,而 app.mount 与那句坏档提示是同一次同步
+     * 执行 —— 等 DOMContentLoaded 再挂时提示早已飘出来(实测六跑一空);
+     * ② 改挂 documentElement 时 init script 仍在 document_start,`documentElement`
+     * 还是 null,observe(null) 直接抛错,观察器等于没装。
+     * 挂在 `document` 这个始终存在的节点上,两处都躲开。
+     */
+    new MutationObserver(pick).observe(document, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    })
+    pick()
   })
   const page = await ctx.newPage()
   const pageErrors = []
