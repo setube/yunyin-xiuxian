@@ -43,8 +43,10 @@ export const useLoadoutsStore = defineStore(
             name: typeof l.name === 'string' ? l.name : '',
             seal: typeof l.seal === 'string' ? l.seal : '',
             mainGongfa: typeof l.mainGongfa === 'string' ? l.mainGongfa : null,
-            subGongfa: asStringArray(l.subGongfa),
-            artifactIds: asStringArray(l.artifactIds),
+            // 快照里的辅修/法宝同样是集合:重复项被 applyLoadout 原样写回当前状态,
+            // 同一门功法或同一件法宝就会被算两次(槽位也被白占)。
+            subGongfa: [...new Set(asStringArray(l.subGongfa))],
+            artifactIds: [...new Set(asStringArray(l.artifactIds))],
             equipment,
             savedAt: asFiniteNumber(l.savedAt, 0, 0)
           }

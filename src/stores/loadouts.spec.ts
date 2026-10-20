@@ -77,6 +77,28 @@ describe('构筑 · sanitize 深度修形', () => {
     l.remove(ids[0]!)
     expect(l.list.map(x => x.name), '删一套不漏另一套').toEqual(['乙改'])
   })
+
+  /**
+   * 快照里的辅修/法宝是集合:重复项会被 applyLoadout 原样写回当前状态,
+   * 同一门功法或同一件法宝算两次、槽位也被白占。
+   */
+  it('快照里重复的辅修/法宝去重,应用时不重复占槽', () => {
+    const l = useLoadoutsStore()
+    l.$patch({
+      list: [mk('a', { subGongfa: ['g1', 'g1'], artifactIds: ['art1', 'art1'] })]
+    } as never)
+    l.sanitize()
+    expect(l.list[0]!.subGongfa, '同门辅修只留一次').toEqual(['g1'])
+    expect(l.list[0]!.artifactIds, '同一件法宝只留一次').toEqual(['art1'])
+
+    // 未过 sanitize 的旧快照(内存里直接塞重复)在应用路径上同样不该重复占槽
+    const raw = mk('raw', { subGongfa: ['g1', 'g1'], artifactIds: ['art1', 'art1'] })
+    l.$patch({ list: [raw] } as never)
+    const inv = useInventoryStore()
+    inv.$patch({ artifacts: [{ defId: 'art1', level: 0 }], equippedArtifacts: [] } as never)
+    applyLoadout('raw')
+    expect(inv.equippedArtifacts, '应用重复快照也只装备一次').toEqual(['art1'])
+  })
 })
 
 describe('构筑 · 上限与增删改', () => {

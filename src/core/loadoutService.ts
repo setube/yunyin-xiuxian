@@ -88,17 +88,20 @@ export function applyLoadout(id: string): boolean {
     missingNames.push(gongfaDef(loadout.mainGongfa)?.name ?? '主修功法')
   }
   const subCap = dongfu.subGongfaSlots
-  const validSubs = loadout.subGongfa.filter(g => cultivation.learned[g]).slice(0, subCap)
-  const unlearnedSubs = loadout.subGongfa.filter(g => !cultivation.learned[g])
-  missing += loadout.subGongfa.length - validSubs.length
+  // 快照里的重复项(sanitize 之前存下的旧档)不能占两次槽、也不能报两次缺件
+  const snapshotSubs = [...new Set(loadout.subGongfa)]
+  const validSubs = snapshotSubs.filter(g => cultivation.learned[g]).slice(0, subCap)
+  const unlearnedSubs = snapshotSubs.filter(g => !cultivation.learned[g])
+  missing += snapshotSubs.length - validSubs.length
   for (const g of unlearnedSubs) missingNames.push(gongfaDef(g)?.name ?? g)
   cultivation.subGongfa = validSubs
   // 法宝
   const artifactCap = artifactSlotsFor(player.major)
   const owned = new Set(inventory.artifacts.map(a => a.defId))
-  const validArts = loadout.artifactIds.filter(a => owned.has(a)).slice(0, artifactCap)
-  const unownedArts = loadout.artifactIds.filter(a => !owned.has(a))
-  missing += loadout.artifactIds.length - validArts.length
+  const snapshotArts = [...new Set(loadout.artifactIds)]
+  const validArts = snapshotArts.filter(a => owned.has(a)).slice(0, artifactCap)
+  const unownedArts = snapshotArts.filter(a => !owned.has(a))
+  missing += snapshotArts.length - validArts.length
   for (const a of unownedArts) missingNames.push(artifactDef(a)?.name ?? a)
   inventory.equippedArtifacts = validArts
 
