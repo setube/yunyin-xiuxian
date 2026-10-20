@@ -406,7 +406,11 @@
         >
           <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-cinnabar/10 font-kai text-cinnabar">主</span>
           <span class="min-w-0 grow">
-            <span class="block truncate font-kai text-[14px] text-ink">{{ mainDef.name }}</span>
+            <span class="flex items-center gap-1.5">
+              <span class="min-w-0 truncate font-kai text-[14px] text-ink">{{ mainDef.name }}</span>
+              <!-- 「攒够了」的信号提到卡面:否则玩家得逐部点开详情,才知道升得动哪一部 -->
+              <span v-if="mainCanUpgrade" class="shrink-0 rounded bg-jade/10 px-1.5 py-0.5 text-[10px] text-jade">可升层</span>
+            </span>
             <span class="block text-[11px] text-ink-faint">
               第 {{ cultivation.learned[mainDef.id] }} 层 · {{ qualityDef(mainDef.quality).name }}
             </span>
@@ -525,7 +529,7 @@
     type TribulationPlan
   } from '@/core/tribulationDecision'
   import { reliefElements, rootElements } from '@/core/linggenAffinity'
-  import { comprehendGongfa } from '@/core/gongfaService'
+  import { comprehendGongfa, gongfaUpgradeCost } from '@/core/gongfaService'
   import { expEtaSec, qiBankEtaSec, qiEtaSec, qiRichEtaSec, retreatGainText, retreatGainedText } from '@/core/progress'
   import { usePill } from '@/core/pillService'
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
@@ -808,6 +812,22 @@
   }
 
   const mainDef = computed(() => (cultivation.mainGongfa ? gongfaDef(cultivation.mainGongfa) : undefined))
+
+  /**
+   * 主修能不能立升一层 —— 把「现在就能变强」的信号提到列表层。
+   *
+   * 升层是主动消费(悟道点 + 残页),没有层内进度可画;从前玩家攒够了也看不出
+   * 哪部功法升得动,要一部部点开详情才知道。成本走 `gongfaUpgradeCost` 同源
+   * (含寒冥灵脉折扣),判据与 `upgradeGongfa` 的扣费前检查同一句,不另立口径。
+   * 只做主修:书目行每行都亮会太密,完整成本账仍在详情层。
+   */
+  const mainCanUpgrade = computed(() => {
+    const def = mainDef.value
+    if (!def) return false
+    const cost = gongfaUpgradeCost(def.id)
+    if (!cost) return false
+    return resources.hasSmall('wudao', cost.wudao) && resources.hasSmall('page', cost.page)
+  })
 
   /** 参悟池里还剩几部 —— 与 comprehendGongfa 的池条件同源(minRealm ≤ 当前 + 1 且未习得) */
   const comprehendLeft = computed(

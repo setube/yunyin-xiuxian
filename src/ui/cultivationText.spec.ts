@@ -62,3 +62,23 @@ describe('修行页与提示同源', () => {
     expect(offline).toContain('atMaxRealm')
   })
 })
+
+/**
+ * 「现在就能变强」的信号要在列表上看得见。
+ *
+ * 升层是主动消费(悟道点 + 残页),没有层内进度可画;主修卡从前只印「第 X 层」,
+ * 玩家攒够了也看不出升得动,得逐部点开详情。故障注入:删掉 mainCanUpgrade,
+ * 或把它改成恒 true(付不起也亮)→ 本条红。
+ */
+describe('修行页 · 主修可升层信号', () => {
+  const view = readFileSync(new URL('../views/CultivationView.vue', import.meta.url), 'utf8')
+
+  it('可升层 chip 只在付得起下一层时亮,成本走与升级同一处', () => {
+    expect(view, '卡面要有可升层信号').toContain('可升层')
+    expect(view, '信号挂在主修卡上').toContain('v-if="mainCanUpgrade"')
+    expect(view, '成本取 gongfaUpgradeCost,不另写一套').toContain('const cost = gongfaUpgradeCost(def.id)')
+    expect(view, '判据与 upgradeGongfa 同源').toContain("resources.hasSmall('wudao', cost.wudao)")
+    expect(view, '判据与 upgradeGongfa 同源').toContain("resources.hasSmall('page', cost.page)")
+    expect(view, '取不到成本(已圆满/未习得)就不该亮').toContain('if (!cost) return false')
+  })
+})
