@@ -12,9 +12,10 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { qualityDef } from '@/data/qualities'
-import { BOUNTY_REFRESH_SECONDS, type BountyKind, type BountySlot } from '@/data/bounty'
+import { BOUNTY_PILL_WUDAO, BOUNTY_REFRESH_SECONDS, type BountyKind, type BountySlot } from '@/data/bounty'
 import { MAX_MAJOR } from '@/data/realms'
 import { pillDef } from '@/data/pills'
+import { MAX_EQUIP_TIER } from '@/data/equipment'
 import { equipBountyReward, generateBounty, herbBountyReward } from '@/core/bountyService'
 import { HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber, asNonNegInt, asPrice } from '@/utils/saveShape'
@@ -84,14 +85,28 @@ export const useBountyStore = defineStore(
           stalePill = true
           continue
         }
+        const reward = asPrice('reward' in raw ? raw.reward : undefined)
+        // 募矿/募丹的赏格是上货时钉死的实价;归零只能是坏档,不能留一张白交货的单。
+        // 募草按交付品阶现算、贡器按所交之物现算,它们的零价是占位符。
+        if ((raw.kind === 'ore' || raw.kind === 'pill') && reward.m <= 0) {
+          stalePill = true
+          continue
+        }
+        const tier =
+          raw.kind === 'equip'
+            ? Math.min(MAX_EQUIP_TIER, Math.max(1, asNonNegInt('tier' in raw ? raw.tier : 1, 1)))
+            : 0
         clean.push({
           idx: clean.length,
           kind: raw.kind,
           kindId,
           target: Math.max(1, asNonNegInt('target' in raw ? raw.target : 1, 1)),
-          tier: asNonNegInt('tier' in raw ? raw.tier : 0, 0),
-          reward: asPrice('reward' in raw ? raw.reward : undefined),
-          extra: asNonNegInt('extra' in raw ? raw.extra : 0, 0),
+          tier,
+          reward,
+          extra:
+            raw.kind === 'pill'
+              ? Math.min(BOUNTY_PILL_WUDAO, asNonNegInt('extra' in raw ? raw.extra : 0, 0))
+              : 0,
           claimed: 'claimed' in raw && raw.claimed === true
         })
       }

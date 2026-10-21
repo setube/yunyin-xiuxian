@@ -11,6 +11,8 @@ import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { herbBountyReward } from '@/core/bountyService'
 import { pillDef } from '@/data/pills'
+import { BOUNTY_PILL_WUDAO } from '@/data/bounty'
+import { MAX_EQUIP_TIER } from '@/data/equipment'
 
 const FAR = 4_102_444_800_000 // 2099-12-31
 
@@ -193,6 +195,59 @@ describe('坊市悬赏板 · 交货', () => {
     b.sanitize()
     expect(b.orders[0]!.kindId).toBe('p_jvqisan')
     expect(b.bountyAt, '好单不该被重挂').toBe(FAR)
+  })
+
+  /**
+   * 募矿/募丹的 reward 是单子上钉死的实价;坏档把它归零后仍能交货,等于白交一批货。
+   * 募草/贡器的 reward 本就是占位零,不能按同一条判据误杀。
+   */
+  it('sanitize:募矿/募丹零赏格视为坏单整版重挂,占位零赏的募草/贡器保留', () => {
+    const b = useBountyStore()
+    b.$patch({
+      orders: [
+        { kind: 'herb', kindId: 'herb', idx: 0, target: 30, tier: 0, reward: { m: 0, e: 0 }, extra: 0, claimed: false },
+        { kind: 'equip', kindId: '', idx: 1, target: 1, tier: 3, reward: { m: 0, e: 0 }, extra: 0, claimed: false }
+      ] as unknown as never,
+      bountyAt: FAR
+    })
+    b.sanitize()
+    expect(b.orders.map(o => o.kind), '占位零赏不是坏单').toEqual(['herb', 'equip'])
+    expect(b.bountyAt).toBe(FAR)
+
+    b.$patch({
+      orders: [
+        { kind: 'ore', kindId: 'ore', idx: 0, target: 30, tier: 0, reward: { m: 0, e: 0 }, extra: 0, claimed: false }
+      ] as unknown as never,
+      bountyAt: FAR
+    })
+    b.sanitize()
+    expect(b.orders, '零赏募矿单没有可交的价').toEqual([])
+    expect(b.bountyAt, '归零后下一拍整版换新').toBe(0)
+
+    b.$patch({
+      orders: [
+        { kind: 'pill', kindId: 'p_jvqisan', idx: 0, target: 3, tier: 0, reward: { m: 0, e: 0 }, extra: 2, claimed: false }
+      ] as unknown as never,
+      bountyAt: FAR
+    })
+    b.sanitize()
+    expect(b.orders, '零赏募丹单同样不许留').toEqual([])
+    expect(b.bountyAt).toBe(0)
+  })
+
+  it('sanitize:悟道添头只归募丹并夹回上限,贡器层级夹回合法域', () => {
+    const b = useBountyStore()
+    b.$patch({
+      orders: [
+        { kind: 'pill', kindId: 'p_jvqisan', idx: 0, target: 3, tier: 0, reward: { m: 5, e: 0 }, extra: 999, claimed: false },
+        { kind: 'ore', kindId: 'ore', idx: 1, target: 30, tier: 0, reward: { m: 5, e: 0 }, extra: 999, claimed: false },
+        { kind: 'equip', kindId: '', idx: 2, target: 1, tier: 999, reward: { m: 0, e: 0 }, extra: 999, claimed: false }
+      ] as unknown as never,
+      bountyAt: FAR
+    })
+    b.sanitize()
+    expect(b.orders.map(o => o.extra), '只有募丹配悟道添头,且不越上限').toEqual([BOUNTY_PILL_WUDAO, 0, 0])
+    expect(b.orders[2]!.tier).toBe(MAX_EQUIP_TIER)
   })
 
   /**
