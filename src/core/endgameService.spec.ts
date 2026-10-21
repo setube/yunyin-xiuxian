@@ -3,13 +3,15 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
+import { useUiStore } from '@/stores/ui'
 import { FURNACE_RATES, DAO_SOURCE_PER_FRUIT, FURNACE_STONE_TIER_AMOUNT, FURNACE_STONE_DAO_SOURCE } from '@/data/endgame'
 import { chooseDaoPath, condenseDaoFruit, currentDaoRules, endgameUnlocked, furnaceConvert, furnaceStoneCost, furnaceConvertStone } from './endgameService'
 import { stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
 import { resolveWorld, startWorldExpedition } from './expedition'
 import { attemptBreakthrough } from './breakthrough'
-import { gnZero } from '@/utils/gnum'
+import { gn, gnZero } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
 
 /**
  * 飞升也要渡天劫(大关皆劫)。
@@ -61,6 +63,24 @@ describe('真仙终局服务', () => {
     expect(gained).toBe(5)
     expect(endgame.daoSource).toBe(5)
     expect(resources.ore).toBe(5) // 余数保留
+  })
+
+  it('熔炉预览通过后扣料失败:必须报出回执,不能点了没反应', () => {
+    ascend()
+    const resources = useResourcesStore()
+    const endgame = useEndgameStore()
+    const rate = FURNACE_RATES.find(r => r.resource === 'ore')!
+    resources.ore = rate.per
+    const before = endgame.daoSource
+    vi.spyOn(resources, 'spendSmall').mockImplementation(() => {
+      resources.ore = 0
+      return false
+    })
+    expect(furnaceConvert(rate)).toBe(0)
+    expect(endgame.daoSource).toBe(before)
+    expect(useUiStore().toasts.at(-1)).toEqual(
+      expect.objectContaining({ text: `${rate.name}不足 ${rate.per},不够熔铸一缕道源`, kind: 'warn' })
+    )
   })
 
   it('熔炉的草唯仙品起可熔:凡/灵不入炉、按品实扣,不白拿道源(over-credit 修)', () => {
@@ -226,5 +246,21 @@ describe('天道熔炉 · 灵石熔铸价随层级(现役函数直测)', () => {
     expect(furnaceConvertStone()).toBe(true)
     expect(endgame.daoSource, '熔作道源入账').toBe(FURNACE_STONE_DAO_SOURCE)
     expect(toN(resources.spiritStone), '足额扣掉一份').toBe(before - toN(cost))
+  })
+
+  it('灵石熔铸扣款瞬时失败:回执点名尚差多少,不静默', () => {
+    const resources = useResourcesStore()
+    const player = usePlayerStore()
+    player.major = 14
+    resources.spiritStone = gn(furnaceStoneCost())
+    const cost = furnaceStoneCost()
+    vi.spyOn(resources, 'spendStone').mockImplementation(() => {
+      resources.spiritStone = gnZero()
+      return false
+    })
+    expect(furnaceConvertStone()).toBe(false)
+    expect(useUiStore().toasts.at(-1)).toEqual(
+      expect.objectContaining({ text: `尚差 ${formatGN(cost)} 石`, kind: 'warn' })
+    )
   })
 })

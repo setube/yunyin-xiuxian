@@ -4,6 +4,7 @@
 import type { ArtifactDef, CombatantSnap, CombatRules, DaoMark, DaoPathId } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
 import { formatGN } from '@/utils/format'
+import { subClamp } from '@/utils/gnum'
 import { artifactDef } from '@/data/artifacts'
 import { pactDef } from '@/data/pacts'
 import { mutatorDef } from '@/data/mutators'
@@ -82,7 +83,10 @@ export function furnaceConvert(rate: FurnaceRate): number {
   }
   const spent = daoSource * rate.per
   const ok = rate.resource === 'herb' ? resources.spendHerbMeltable(spent) : resources.spendSmall(rate.resource, spent)
-  if (!ok) return 0
+  if (!ok) {
+    ui.toast(`${rate.name}不足 ${rate.per},不够熔铸一缕道源`, 'warn')
+    return 0
+  }
   endgame.addDaoSource(daoSource)
   ui.toast(`${rate.name}×${spent} 熔作道源 +${daoSource}`, 'success')
   return daoSource
@@ -108,7 +112,8 @@ export function furnaceConvertStone(): boolean {
   const ui = useUiStore()
   const cost = furnaceStoneCost()
   if (!resources.spendStone(cost)) {
-    ui.toast('灵石不足', 'warn')
+    const short = subClamp(cost, resources.spiritStone)
+    ui.toast(`尚差 ${formatGN(short)} 石`, 'warn')
     return false
   }
   endgame.addDaoSource(FURNACE_STONE_DAO_SOURCE)
