@@ -4,11 +4,11 @@
       <div v-if="visible" class="warp-overlay">
         <!-- 星辰:朱砂金粒子自中心散射 -->
         <div class="warp-star-field">
-          <span v-for="i in STAR_COUNT" :key="i" class="warp-star" :style="starStyle(i)" />
+          <span v-for="(style, i) in starStyles" :key="i" class="warp-star" :style="style" />
         </div>
         <!-- 速度线:放射状金色光线 -->
         <div class="warp-speed-lines">
-          <span v-for="i in LINE_COUNT" :key="i" class="warp-speed-line" :style="lineStyle(i)" />
+          <span v-for="(style, i) in lineStyles" :key="i" class="warp-speed-line" :style="style" />
         </div>
         <!-- 中心光圈:三层同心圆 + 光核 -->
         <div class="warp-center">
@@ -28,9 +28,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { onUnmounted, ref } from 'vue'
+  import { buildWarpParticleStyles } from '@/ui/warpParticles'
 
   const visible = ref(false)
+  const starStyles = ref<Record<string, string>[]>([])
+  const lineStyles = ref<Record<string, string>[]>([])
+  let hideTimer: ReturnType<typeof setTimeout> | undefined
 
   const STAR_COUNT = 60
   const LINE_COUNT = 28
@@ -42,42 +46,28 @@
   function show(opts?: { title?: string; subtitle?: string }): void {
     title.value = opts?.title ?? '云深不知处'
     subtitle.value = opts?.subtitle ?? '一念修行 · 仙路自此始'
+    const particles = buildWarpParticleStyles(STAR_COUNT, LINE_COUNT)
+    starStyles.value = particles.stars
+    lineStyles.value = particles.lines
     visible.value = true
+    if (hideTimer !== undefined) clearTimeout(hideTimer)
+    // 路由跳转失败时也要把遮罩收掉,不能把人永久困在黑场里
+    hideTimer = setTimeout(hide, 2600)
   }
 
   function hide(): void {
+    if (hideTimer !== undefined) {
+      clearTimeout(hideTimer)
+      hideTimer = undefined
+    }
     visible.value = false
   }
 
   defineExpose({ show, hide })
 
-  /** 星辰样式:均匀角度 + 随机距离 / 大小 / 延迟 / 时长 */
-  function starStyle(index: number): Record<string, string> {
-    const angle = (index / STAR_COUNT) * 360
-    const distance = 20 + Math.random() * 80
-    const size = 1 + Math.random() * 2
-    const delay = Math.random() * 0.5
-    const duration = 0.8 + Math.random() * 0.4
-    return {
-      '--angle': `${angle}deg`,
-      '--distance': `${distance}%`,
-      '--size': `${size}px`,
-      '--delay': `${delay}s`,
-      '--duration': `${duration}s`
-    }
-  }
-
-  /** 速度线样式:均匀角度 + 随机长度 / 延迟 */
-  function lineStyle(index: number): Record<string, string> {
-    const angle = (index / LINE_COUNT) * 360
-    const length = 100 + Math.random() * 200
-    const delay = Math.random() * 0.3
-    return {
-      '--angle': `${angle}deg`,
-      '--length': `${length}px`,
-      '--delay': `${delay}s`
-    }
-  }
+  onUnmounted(() => {
+    if (hideTimer !== undefined) clearTimeout(hideTimer)
+  })
 </script>
 
 <style>
