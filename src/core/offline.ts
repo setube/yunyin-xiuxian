@@ -50,7 +50,7 @@ import { expFromSecs, stoneByTier } from './formulas'
 import { breakthroughInfo } from './breakthrough'
 import { checkSuppression, settleSuppressedRegions } from './suppress'
 import { harvestMaterials, noteEnemy, noteEnemyMany, studyTick } from './loreService'
-import { recordLossBatch, NEMESIS_THRESHOLD } from './worldMemory'
+import { recordLossBatch, isNemesis, markAvenged, NEMESIS_THRESHOLD } from './worldMemory'
 import { modOf, capChance } from './statsCalc'
 import { personalityEffects } from './petPersonality'
 import { recordWinStreakBatch } from './earlyGameService'
@@ -383,6 +383,15 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
           if (becameNemesis) {
             notes.push(`【宿敌】你已在${mobDef.name}手下败北${NEMESIS_THRESHOLD}次——此敌已成你的宿敌!`)
           }
+        }
+        /**
+         * 雪耻与在线同源:在线打赢一位仍在账上的宿敌,当场清账并播报。
+         * 离线整段结算里这一段净胜为正,就等于在它手下赢过。
+         * 从前只补败北不补雪耻,挂机把它打回去几十次,征战录仍写着「尚为宿敌」。
+         */
+        if (mobDef && wins > 0 && isNemesis(player.nemeses, mobDef.id)) {
+          player.setNemeses(markAvenged(player.nemeses, mobDef.id, nowMs))
+          notes.push(`【雪耻】宿敌${mobDef.name}已被斩于剑下!`)
         }
         if (wins > 0 && mobDef) {
           // 抽一场代表战取回合数/受伤比(与在线 checkSuppression 吃同一份数据)

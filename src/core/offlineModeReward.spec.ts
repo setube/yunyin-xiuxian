@@ -25,6 +25,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { ARTIFACT_DROP_CHANCE, EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
 import { WIN_STREAK_REWARDS } from '@/data/earlyGame'
 import { toNum } from '@/utils/gnum'
+import { recordLoss, NEMESIS_THRESHOLD } from '@/core/worldMemory'
 
 // rng 全响应固定:概率判定处处 0.5、pick 恒取首项 —— 序列确定
 vi.mock('@/utils/random', async importOriginal => {
@@ -268,5 +269,34 @@ describe('离线连胜(与在线同源)', () => {
     )
     expect(player.winStreak, '本段有败场 → 连胜归零').toBe(0)
     expect(summary.notes.some(n => n.includes('连胜')), '发了赏格要在卷轴里说一声').toBe(true)
+  })
+})
+
+/**
+ * 离线雪耻:在线打赢一位仍在账上的宿敌当场清账。离线整段若净胜为正,
+ * 就该同样清账 —— 从前只补败北不补雪耻,挂机把它打回去几十次,
+ * 征战录仍写「尚为宿敌」。
+ */
+describe('离线雪耻(与在线同源)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 1
+  })
+
+  it('净胜为正时,账上的宿敌被标记为已雪耻并写进卷轴', () => {
+    seedSession('normal')
+    const player = usePlayerStore()
+    // 先按同名敌手欠下三次败绩 —— 离线这一趟的敌群取首项 e_wolf
+    let list = player.nemeses
+    for (let i = 0; i < NEMESIS_THRESHOLD; i += 1) {
+      list = recordLoss(list, 'e_wolf', '赤目野狼', 'qingyun', Date.now()).list
+    }
+    player.setNemeses(list)
+
+    const summary = settleOffline(Date.now())!
+
+    expect(summary.wins, '这一趟该净胜').toBeGreaterThan(0)
+    expect(player.nemeses.find(n => n.enemyId === 'e_wolf')?.avengedAt, '离线打赢就该雪耻').toBeDefined()
+    expect(summary.notes.some(n => n.includes('雪耻')), '雪耻要在卷轴里说一声').toBe(true)
   })
 })
