@@ -30,6 +30,13 @@
             <!-- 炼出来是什么:方子清单此前只报代价与把握,不报成品 -->
             <p class="text-[10px] leading-relaxed text-azure">{{ pillFuncText(r.def) }}</p>
             <p v-for="w in r.able.weakness" :key="w" class="mt-0.5 text-[10px] text-ink-faint">· {{ w }}</p>
+            <!--
+              炉前存货账:只摊代价与把握时,玩家不知道行囊里已存几枚,容易重复炼制。
+              存货读 inventory.pills(与丹匣同一份账),不另数一遍。
+            -->
+            <p class="mt-0.5 text-[10px] tabular" :class="r.stock > 0 ? 'text-ink-soft' : 'text-ink-faint'">
+              存 {{ r.stock }}
+            </p>
           </div>
         </div>
         <div class="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">

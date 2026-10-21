@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useLoreStore } from '@/stores/lore'
@@ -22,21 +23,39 @@ import type { GNum, PillDef } from '@/types'
 export function useBrewing() {
   const resources = useResourcesStore()
   const player = usePlayerStore()
+  const inventory = useInventoryStore()
   const lore = useLoreStore()
 
   const herbGrade = computed<HerbGrade>(() => herbGradeOfMajor(player.major))
 
   const recipes = computed(() =>
     availableRecipes()
-      .map(id => ({
-        def: pillDef(id),
-        cost: pillCraftCost(id),
-        able: craftability(id),
-        plan: craftBatchPlan(id)
-      }))
+      .map(id => {
+        const def = pillDef(id)
+        const cost = pillCraftCost(id)
+        const able = craftability(id)
+        const plan = craftBatchPlan(id)
+        if (!def || !cost || !able) return null
+        return {
+          def,
+          cost,
+          able,
+          plan,
+          /** 行囊里已存几枚 —— 与丹匣同一份账(inventory.pills),不另数一遍 */
+          stock: inventory.pills[id] ?? 0
+        }
+      })
       .filter(
-        (x): x is { def: PillDef; cost: { herb: number; stone: GNum; grade: HerbGrade }; able: Craftability; plan: ReturnType<typeof craftBatchPlan> } =>
-          x.def !== undefined && x.cost !== null && x.able !== null
+        (
+          x
+        ): x is {
+          def: PillDef
+          cost: { herb: number; stone: GNum; grade: HerbGrade }
+          able: Craftability
+          plan: ReturnType<typeof craftBatchPlan>
+          stock: number
+        } =>
+          x !== null
       )
       // 现在能开炉的置顶,其余再按阶位 —— 进弹窗一眼看见此刻哪味立刻可炼
       .sort((a, b) => {
