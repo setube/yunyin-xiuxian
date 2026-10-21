@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 280,
+  "round": 283,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T05:02:19+00:00",
+  "updated_at": "2026-10-21T06:04:54+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -448,7 +448,7 @@
       "version": 1,
       "created_at": "2026-09-09T14:59:19+00:00",
       "updated_at": "2026-09-09T14:59:19+00:00",
-      "touched_round": 259,
+      "touched_round": 283,
       "summary": "突破系统(breakthrough.ts + 突破准备数据)"
     },
     "ISS-017": {
@@ -10817,7 +10817,7 @@
       "version": 1,
       "created_at": "2026-09-15T12:18:37+00:00",
       "updated_at": "2026-09-15T12:18:37+00:00",
-      "touched_round": 189,
+      "touched_round": 283,
       "summary": "排版/交互自检(scripts/layout-check.mjs):全量路由 × 五档视口的渲染判据与夹具"
     },
     "EV-165": {
@@ -12319,7 +12319,7 @@
       "version": 1,
       "created_at": "2026-09-17T14:56:12+00:00",
       "updated_at": "2026-09-17T14:56:12+00:00",
-      "touched_round": 206,
+      "touched_round": 283,
       "summary": "历练三档触发与修为收入口径(core/eventTier + core/expIncome):档位稀度、渠道倍率、与引擎的对账"
     },
     "ISS-214": {
@@ -12482,7 +12482,7 @@
       "version": 1,
       "created_at": "2026-09-18T05:20:11+00:00",
       "updated_at": "2026-09-18T05:20:11+00:00",
-      "touched_round": 274,
+      "touched_round": 283,
       "summary": "区域解锁链(data/regions 的 requireCleared 链与 unlockClosure 闭包 + adventure store 的 unlocked/cleared 与读档补票 + exploration 的开放与推进)"
     },
     "ISS-217": {
@@ -19853,6 +19853,127 @@
       "title": "封存操作与重铸页脚迁 EquipSealPanel 与 EquipReforgeFooter",
       "commit": "2db7414",
       "summary": "EquipmentDetailDialog 404 行"
+    },
+    "ISS-931": {
+      "id": "ISS-931",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T06:03:19+00:00",
+      "updated_at": "2026-10-21T06:03:19+00:00",
+      "touched_round": 283,
+      "title": "修行页把劫势、破境与功法三大域与修为/灵气读数挤在同一文件",
+      "severity": "medium",
+      "summary": "CultivationView"
+    },
+    "ISS-932": {
+      "id": "ISS-932",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T06:03:32+00:00",
+      "updated_at": "2026-10-21T06:03:32+00:00",
+      "touched_round": 283,
+      "title": "排版自检的量法在四处分叉:中间帧、左缘越界、装饰层按类名豁免、开箱子集量尺漏注入",
+      "severity": "medium",
+      "summary": "layout-check.mjs"
+    },
+    "TASK-369": {
+      "id": "TASK-369",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T06:03:32+00:00",
+      "updated_at": "2026-10-21T06:03:32+00:00",
+      "touched_round": 283,
+      "title": "修行页三刀:劫势、破境与功法逐域迁出,判据随本体走",
+      "category": "maintainability",
+      "priority": "P2",
+      "summary": "cultivation"
+    },
+    "TASK-370": {
+      "id": "TASK-370",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T06:03:32+00:00",
+      "updated_at": "2026-10-21T06:03:32+00:00",
+      "touched_round": 283,
+      "title": "排版自检量法收口并立判据,补开箱子集量尺",
+      "category": "test-quality",
+      "priority": "P2",
+      "summary": "check"
+    },
+    "COMP-028": {
+      "id": "COMP-028",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T06:04:33+00:00",
+      "updated_at": "2026-10-21T06:04:33+00:00",
+      "touched_round": 283,
+      "title": "修行页(CultivationView + components/cultivation 子面板 + composables/useTribulation)",
+      "summary": "cultivation"
+    },
+    "CHG-482": {
+      "id": "CHG-482",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T06:04:53+00:00",
+      "updated_at": "2026-10-21T06:04:53+00:00",
+      "touched_round": 283,
+      "title": "劫势摘要与详情迁出修行页",
+      "commit": "c9b7900",
+      "summary": "useTribulation + TribulationCard/Detail"
+    },
+    "CHG-483": {
+      "id": "CHG-483",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T06:04:53+00:00",
+      "updated_at": "2026-10-21T06:04:53+00:00",
+      "touched_round": 283,
+      "title": "破境卡迁出修行页",
+      "commit": "017d4ff",
+      "summary": "BreakthroughCard; CultivationView 565 行"
+    },
+    "CHG-484": {
+      "id": "CHG-484",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T06:04:53+00:00",
+      "updated_at": "2026-10-21T06:04:53+00:00",
+      "touched_round": 283,
+      "title": "功法区迁 GongfaSection",
+      "commit": "20faa61",
+      "summary": "含本门参悟余量/置灰/aria 关联; CultivationView 325 行"
+    },
+    "CHG-485": {
+      "id": "CHG-485",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T06:04:53+00:00",
+      "updated_at": "2026-10-21T06:04:53+00:00",
+      "touched_round": 283,
+      "title": "排版自检量法三处收口",
+      "commit": "2fa5ac3",
+      "summary": "中间帧/左缘越界/装饰层豁免 + layoutMeasure.spec"
+    },
+    "CHG-486": {
+      "id": "CHG-486",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T06:04:54+00:00",
+      "updated_at": "2026-10-21T06:04:54+00:00",
+      "touched_round": 283,
+      "title": "开箱子集量尺补动画禁令",
+      "commit": "98ff8f8",
+      "summary": "measureSmallTargets 同口径"
     }
   },
   "edges": [
@@ -29498,6 +29619,90 @@
       "to": "ISS-930",
       "type": "resolves",
       "created_at": "2026-10-21T05:02:16+00:00"
+    },
+    {
+      "from": "TASK-369",
+      "to": "ISS-931",
+      "type": "addresses",
+      "created_at": "2026-10-21T06:03:38+00:00"
+    },
+    {
+      "from": "TASK-370",
+      "to": "ISS-932",
+      "type": "addresses",
+      "created_at": "2026-10-21T06:03:38+00:00"
+    },
+    {
+      "from": "ISS-931",
+      "to": "COMP-028",
+      "type": "located_in",
+      "created_at": "2026-10-21T06:04:39+00:00"
+    },
+    {
+      "from": "ISS-932",
+      "to": "COMP-019",
+      "type": "located_in",
+      "created_at": "2026-10-21T06:04:39+00:00"
+    },
+    {
+      "from": "CHG-482",
+      "to": "TASK-369",
+      "type": "implements",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-482",
+      "to": "ISS-931",
+      "type": "resolves",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-483",
+      "to": "TASK-369",
+      "type": "implements",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-483",
+      "to": "ISS-931",
+      "type": "resolves",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-484",
+      "to": "TASK-369",
+      "type": "implements",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-484",
+      "to": "ISS-931",
+      "type": "resolves",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-485",
+      "to": "TASK-370",
+      "type": "implements",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-485",
+      "to": "ISS-932",
+      "type": "resolves",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-486",
+      "to": "TASK-370",
+      "type": "implements",
+      "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "CHG-486",
+      "to": "ISS-932",
+      "type": "resolves",
+      "created_at": "2026-10-21T06:04:54+00:00"
     }
   ]
 }
