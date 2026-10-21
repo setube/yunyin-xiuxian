@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 287,
+  "round": 288,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T10:43:14+00:00",
+  "updated_at": "2026-10-21T11:05:10+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20235,6 +20235,120 @@
       "commit": "60b4401",
       "title": "建筑缺料拒因收口到 buildingShortfall",
       "description": "单升、连升与卡片共用精确缺口判据，toast 点名缺石、缺铁或双缺及实际差额。"
+    },
+    "TASK-375": {
+      "id": "TASK-375",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T10:54:18+00:00",
+      "updated_at": "2026-10-21T11:05:10+00:00",
+      "touched_round": 288,
+      "title": "秘境入口付不起仍可点且只报总价",
+      "description": "SecretRealmCard 付不起只降透明度、入口仍可点击；enterSecretRealm 拒绝只回道源/灵石不足总价，不报实际差额。需要收口为 core 缺口判据，卡片禁用并就地列差，服务拒因同源。",
+      "category": "correctness",
+      "severity": 0.72,
+      "confidence": 0.96,
+      "effort": 2,
+      "unlock_factor": 1
+    },
+    "TASK-376": {
+      "id": "TASK-376",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T11:02:54+00:00",
+      "updated_at": "2026-10-21T11:05:10+00:00",
+      "touched_round": 288,
+      "title": "天道熔炉扣款失败静默且灵石熔铸不列差",
+      "description": "furnaceConvert 预览通过后扣料失败直接返回 0 无回执；furnaceConvertStone 扣款失败只写笼统灵石不足。需要失败路径可观测并报实际差额。",
+      "category": "correctness",
+      "severity": 0.66,
+      "confidence": 0.96,
+      "effort": 1,
+      "unlock_factor": 1
+    },
+    "COMP-034": {
+      "id": "COMP-034",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:04:08+00:00",
+      "updated_at": "2026-10-21T11:04:08+00:00",
+      "touched_round": 288,
+      "title": "秘境入口与终局熔炉服务",
+      "description": "secretRealm 入口代价/缺口判据与 SecretRealmCard 入口卡；endgameService 天道熔炉兑换与回执。"
+    },
+    "ISS-937": {
+      "id": "ISS-937",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T11:04:13+00:00",
+      "updated_at": "2026-10-21T11:05:06+00:00",
+      "touched_round": 288,
+      "title": "秘境入口付不起仍可点且只报总价",
+      "description": "SecretRealmCard 付不起只降透明度、入口仍可点击；enterSecretRealm 拒绝只报灵石/道源不足总价，不报实际差额。"
+    },
+    "ISS-938": {
+      "id": "ISS-938",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T11:04:17+00:00",
+      "updated_at": "2026-10-21T11:05:06+00:00",
+      "touched_round": 288,
+      "title": "天道熔炉扣款失败静默且灵石熔铸不列差",
+      "description": "furnaceConvert 预览通过后扣料失败直接返回 0 无回执；furnaceConvertStone 扣款失败只写笼统灵石不足。"
+    },
+    "EV-257": {
+      "id": "EV-257",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:04:24+00:00",
+      "updated_at": "2026-10-21T11:04:24+00:00",
+      "touched_round": 288,
+      "title": "秘境与熔炉失败路径故障注入转红",
+      "source": "src/core/secretRealm.spec.ts; src/core/endgameService.spec.ts; commits 6d9ca40,0b8dd4b",
+      "description": "恢复只降透明度+泛称拒因时秘境两条判据红；恢复熔炉静默与灵石不足时两条回执判据红。",
+      "confidence": 0.98
+    },
+    "CHG-489": {
+      "id": "CHG-489",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:04:30+00:00",
+      "updated_at": "2026-10-21T11:04:30+00:00",
+      "touched_round": 288,
+      "title": "秘境入口缺口收口到 entryShortfallOf",
+      "commit": "6d9ca40",
+      "description": "入口卡禁用并就地列差，服务拒因与扣款瞬时失败共用 core 缺口判据。"
+    },
+    "CHG-490": {
+      "id": "CHG-490",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:04:38+00:00",
+      "updated_at": "2026-10-21T11:04:38+00:00",
+      "touched_round": 288,
+      "title": "熔炉失败回执与灵石熔铸列差",
+      "commit": "0b8dd4b",
+      "description": "扣料失败也回执；灵石熔铸失败按最新余额写尚差。"
+    },
+    "HYP-111": {
+      "id": "HYP-111",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:04:58+00:00",
+      "updated_at": "2026-10-21T11:04:58+00:00",
+      "touched_round": 288,
+      "title": "熔炉扣料失败静默与秘境入口泛称同属可观测性缺口",
+      "description": "两处均在资源判据通过后扣款失败时缺少可读回执，玩家无法区分余额变化与界面失效。",
+      "confidence": 0.9
     }
   },
   "edges": [
@@ -30048,6 +30162,60 @@
       "to": "TASK-374",
       "type": "implements",
       "created_at": "2026-10-21T10:43:10+00:00"
+    },
+    {
+      "from": "ISS-937",
+      "to": "COMP-034",
+      "type": "located_in",
+      "created_at": "2026-10-21T11:04:48+00:00"
+    },
+    {
+      "from": "ISS-938",
+      "to": "COMP-034",
+      "type": "located_in",
+      "created_at": "2026-10-21T11:04:49+00:00"
+    },
+    {
+      "from": "TASK-375",
+      "to": "ISS-937",
+      "type": "addresses",
+      "created_at": "2026-10-21T11:04:49+00:00"
+    },
+    {
+      "from": "TASK-376",
+      "to": "ISS-938",
+      "type": "addresses",
+      "created_at": "2026-10-21T11:04:49+00:00"
+    },
+    {
+      "from": "CHG-489",
+      "to": "TASK-375",
+      "type": "implements",
+      "created_at": "2026-10-21T11:04:53+00:00"
+    },
+    {
+      "from": "CHG-489",
+      "to": "ISS-937",
+      "type": "resolves",
+      "created_at": "2026-10-21T11:04:53+00:00"
+    },
+    {
+      "from": "CHG-490",
+      "to": "TASK-376",
+      "type": "implements",
+      "created_at": "2026-10-21T11:04:53+00:00"
+    },
+    {
+      "from": "CHG-490",
+      "to": "ISS-938",
+      "type": "resolves",
+      "created_at": "2026-10-21T11:04:53+00:00"
+    },
+    {
+      "from": "EV-257",
+      "to": "HYP-111",
+      "type": "validates",
+      "created_at": "2026-10-21T11:05:01+00:00"
     }
   ]
 }
