@@ -37,12 +37,15 @@ export interface QiRepairView {
   injured: boolean
   cost: number
   affordable: boolean
+  /** 灵气尚差;足够时为 0 */
+  shortfall: number
 }
 
 export function qiRepairView(): QiRepairView {
   const resources = useResourcesStore()
   const cost = qiRepairCost()
-  return { injured: isInjured(), cost, affordable: resources.qi >= cost }
+  const shortfall = Math.max(0, cost - resources.qi)
+  return { injured: isInjured(), cost, affordable: shortfall === 0, shortfall }
 }
 
 /** 以灵气疗伤:付得起且确有伤势才生效 */
@@ -55,13 +58,13 @@ export function repairWithQi(): boolean {
     ui.toast(repairIdleToast(), 'warn')
     return false
   }
-  const cost = qiRepairCost()
-  if (resources.qi < cost) {
-    ui.toast(repairShortToast(formatNum(cost)), 'warn')
+  const view = qiRepairView()
+  if (!view.affordable) {
+    ui.toast(repairShortToast(formatNum(view.shortfall), formatNum(view.cost)), 'warn')
     return false
   }
-  resources.setQi(resources.qi - cost, player.qiCapValue)
+  resources.setQi(resources.qi - view.cost, player.qiCapValue)
   cultivation.clearNegativeBuffs()
-  ui.toast(repairDoneToast(formatNum(cost)), 'success')
+  ui.toast(repairDoneToast(formatNum(view.cost)), 'success')
   return true
 }

@@ -9,7 +9,7 @@ import { SUB_LEVELS, START_AGE } from '@/data/constants'
 import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
 import {
   STAR_FOCUS_COST_BASE, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX,
-  WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PRICE_BASE, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PER_DAY
+  WUDAO_EXCHANGE_PRICE_BASE, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PER_DAY
 } from '@/data/constants'
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
@@ -42,6 +42,7 @@ import { STARS } from '@/data/ziwei'
 import { fateChart, fateFocusMods, fateSeed } from '@/core/fate'
 import type { MansionRedirect } from '@/core/astronomy'
 import { mansionRedirectCheck } from '@/core/mansionRedirect'
+import { wudaoExchangeState as evaluateWudaoExchange, type WudaoExchangeState } from '@/core/wudaoExchange'
 import type { FortuneChoice } from '@/core/fortuneChain'
 import { useInventoryStore } from './inventory'
 import { useCultivationStore } from './cultivation'
@@ -1286,11 +1287,10 @@ export const usePlayerStore = defineStore(
      * 只动灵石→悟道这条**可选的限量**出口,不重建效率回路、不动熔炉(审计敏感点)。
      */
     function exchangeStoneForWudao(): boolean {
-      if (major.value < WUDAO_EXCHANGE_MIN_MAJOR) return false
+      if (!wudaoExchangeState.value.canExchange) return false
       const day = gameDay(useGameStore().totalPlaySec)
       const cur = wudaoExchange.value
       const today = cur && cur.gameDay === day ? cur : { gameDay: day, count: 0 }
-      if (today.count >= WUDAO_EXCHANGE_PER_DAY) return false
       if (!resources.spendStone(gn(WUDAO_EXCHANGE_PRICE_BASE))) return false
       resources.addSmall('wudao', WUDAO_EXCHANGE_GAIN)
       wudaoExchange.value = { gameDay: day, count: today.count + 1 }
@@ -1302,10 +1302,12 @@ export const usePlayerStore = defineStore(
       const cur = wudaoExchange.value
       return cur && cur.gameDay === day ? cur.count : 0
     })
-    /** 现在能不能再兑(境界到门 + 当日未兑满) */
-    const canExchangeWudao = computed(
-      () => major.value >= WUDAO_EXCHANGE_MIN_MAJOR && wudaoExchangeToday.value < WUDAO_EXCHANGE_PER_DAY
+    /** 兑换判据:境界、当日限额与灵石余额同源 */
+    const wudaoExchangeState = computed<WudaoExchangeState>(() =>
+      evaluateWudaoExchange(major.value, wudaoExchangeToday.value, resources.spiritStone)
     )
+    /** 现在能不能再兑(境界到门 + 当日未兑满 + 灵石够) */
+    const canExchangeWudao = computed(() => wudaoExchangeState.value.canExchange)
 
     // ---------- Phase 31.1 机缘链 ----------
     function setFortuneChoices(choices: Record<string, FortuneChoice>): void {
@@ -1405,6 +1407,7 @@ export const usePlayerStore = defineStore(
       redirectFavoredWorld,
       wudaoExchange,
       wudaoExchangeToday,
+      wudaoExchangeState,
       canExchangeWudao,
       exchangeStoneForWudao,
       cultPerSec,

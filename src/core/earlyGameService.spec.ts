@@ -18,6 +18,7 @@ import {
   recordLoss,
   recordWinStreakBatch,
   prepareBreakthrough,
+  breakthroughPrepShortfall,
   breakthroughPrepState,
   consumeBreakthroughPrep,
   startRetreat,
@@ -263,6 +264,7 @@ describe('突破准备(Phase 28 · TASK-023 接线后)', () => {
     // 灵石不足:拒绝且不动加成
     resources.$patch({ spiritStone: gn(10) })
     expect(prepareBreakthrough('pill')).toBe(false)
+    expect(toNum(breakthroughPrepShortfall('pill')!)).toBeCloseTo(70)
     expect(breakthroughPrepState().ready).toBe(false)
   })
 

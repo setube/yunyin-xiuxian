@@ -7,25 +7,25 @@ export function repairIdleToast(): string {
   return '周身无恙,无须静养'
 }
 
-export function repairShortToast(qiText: string): string {
-  return `灵气未足,静养需 ${qiText} 缕`
+export function repairShortToast(shortText: string, qiText: string): string {
+  return `灵气尚差 ${shortText} 缕,静养需 ${qiText} 缕`
 }
 
 export function repairDoneToast(qiText: string): string {
   return `你引灵气静养,伤势尽复(耗灵气 ${qiText})`
 }
 
-export function repairActLabel(affordable: boolean, qiText: string): string {
-  return affordable ? `引气疗伤 · 耗灵气 ${qiText}` : repairShortToast(qiText)
+export function repairActLabel(affordable: boolean, qiText: string, shortText: string): string {
+  return affordable ? `引气疗伤 · 耗灵气 ${qiText}` : repairShortToast(shortText, qiText)
 }
 
-export function prepPillShortToast(): string {
-  return '灵石未足,无以备药'
+export function prepPillShortToast(shortText: string): string {
+  return `灵石尚差 ${shortText},无以备药`
 }
 
-/** 服聚气丹按钮欠资时的禁用说明 —— 与备药 toast 同一句「灵石未足」,不在模板里手打 */
-export function prepPillDisabledLabel(): string {
-  return '灵石未足'
+/** 服聚气丹按钮欠资时的禁用说明 —— 与备药 toast 同读一份实际石差 */
+export function prepPillDisabledLabel(shortText: string): string {
+  return `灵石尚差 ${shortText}`
 }
 
 export function breakthroughPeakReason(): string {
@@ -57,6 +57,8 @@ export function breakthroughReadyNote(needTribulation: boolean): string {
 export function exchangeOkToast(reward: number): string {
   return `悟道点 +${reward}`
 }
-export function exchangeFailText(lockedByRealm: boolean): string {
-  return lockedByRealm ? '境界未到,兑换未开' : '灵石未足 / 今日已兑满'
+export function exchangeFailText(lockedByRealm: boolean, dailyFull: boolean, stoneShortText: string): string {
+  if (lockedByRealm) return '境界未到,兑换未开'
+  if (dailyFull) return '今日已兑满,明日再来'
+  return `灵石尚差 ${stoneShortText},难兑悟道`
 }

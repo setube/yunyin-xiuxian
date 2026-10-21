@@ -7,6 +7,7 @@ import {
   breakthroughPeakReason,
   breakthroughQiReason,
   breakthroughReadyNote,
+  exchangeFailText,
   prepPillDisabledLabel,
   prepPillShortToast,
   repairActLabel,
@@ -18,20 +19,20 @@ import {
 describe('修行页提示 · 文言仍报清缕数与药资', () => {
   it('疗伤缺气、落成、无伤,不说不足', () => {
     expect(repairIdleToast()).toContain('无恙')
-    expect(repairShortToast('120')).toBe('灵气未足,静养需 120 缕')
-    expect(repairShortToast('120')).not.toContain('不足')
+    expect(repairShortToast('20', '120')).toBe('灵气尚差 20 缕,静养需 120 缕')
+    expect(repairShortToast('20', '120')).not.toContain('不足')
     expect(repairDoneToast('120')).toContain('耗灵气 120')
-    expect(repairActLabel(true, '80')).toContain('引气疗伤')
-    expect(repairActLabel(false, '80')).toBe(repairShortToast('80'))
+    expect(repairActLabel(true, '80', '0')).toContain('引气疗伤')
+    expect(repairActLabel(false, '80', '20')).toBe(repairShortToast('20', '80'))
   })
 
   it('备药与突破门槛仍报灵石、灵气', () => {
-    expect(prepPillShortToast()).toContain('灵石')
-    expect(prepPillShortToast()).toContain('备药')
-    expect(prepPillShortToast()).not.toContain('不足')
+    expect(prepPillShortToast('20')).toContain('灵石尚差 20')
+    expect(prepPillShortToast('20')).toContain('备药')
+    expect(prepPillShortToast('20')).not.toContain('不足')
     // 欠资禁用说明与备药 toast 同一句「未足」,也不够硬
-    expect(prepPillDisabledLabel()).toContain('灵石')
-    expect(prepPillDisabledLabel()).not.toContain('不足')
+    expect(prepPillDisabledLabel('20')).toContain('灵石尚差 20')
+    expect(prepPillDisabledLabel('20')).not.toContain('不足')
     expect(breakthroughPeakReason()).toContain('大道尽头')
     expect(breakthroughExpReason()).toContain('圆满')
     expect(breakthroughQiReason('40')).toBe('灵气未足,此关需 40 缕')
@@ -41,6 +42,13 @@ describe('修行页提示 · 文言仍报清缕数与药资', () => {
     expect(breakthroughGoalText(true, false, '炼气中期')).toBe('尝试突破「炼气中期」')
     expect(breakthroughReadyNote(true)).toBe('修为已至圆满,可引劫突破')
     expect(breakthroughReadyNote(false)).not.toContain('引劫')
+  })
+
+  it('悟道兑换三种拒因分开报,石差直接写数', () => {
+    expect(exchangeFailText(true, false, '0')).toBe('境界未到,兑换未开')
+    expect(exchangeFailText(false, true, '0')).toBe('今日已兑满,明日再来')
+    expect(exchangeFailText(false, false, '20')).toBe('灵石尚差 20,难兑悟道')
+    expect(exchangeFailText(false, false, '20')).not.toContain('今日已兑满')
   })
 })
 
@@ -52,7 +60,8 @@ describe('修行页与提示同源', () => {
     // 劫势读数拆出后判据随本体走(composables/useTribulation.ts),宿主只留「进阶成功率」与备药
     const trib = readFileSync(new URL('../composables/useTribulation.ts', import.meta.url), 'utf8')
     expect(view).toContain('repairActLabel(')
-    expect(card).toContain('prepPillShortToast()')
+    expect(card).toContain('prepPillShortToast(formatGN(prepPillShort.value))')
+    expect(card, '备药禁用说明读同一份石差').toContain('prepPillDisabledLabel(formatGN(prepPillShort))')
     // 破境按钮与准备板只此一份:宿主若把整块再抄回来,两处文案迟早分叉
     expect(view, '宿主只挂载破境卡').toContain('<BreakthroughCard />')
     expect(view, '宿主不再自带突破按钮').not.toContain('引 劫 突 破')

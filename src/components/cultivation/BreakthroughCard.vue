@@ -59,7 +59,7 @@
         </button>
         <button type="button" class="chip-ink chip-ink-wrap !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
           {{ prepPill.label }} · {{ prepPillCost }}灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
-          <span v-if="!prepCanPill" class="text-ink-faint">({{ prepPillDisabledLabel() }})</span>
+          <span v-if="!prepCanPill" class="text-ink-faint">({{ prepPillDisabledLabel(formatGN(prepPillShort)) }})</span>
         </button>
       </div>
     </div>
@@ -76,12 +76,11 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { useResourcesStore } from '@/stores/resources'
   import { useUiStore } from '@/stores/ui'
   import { attemptBreakthrough, breakthroughInfo } from '@/core/breakthrough'
-  import { prepareBreakthrough } from '@/core/earlyGameService'
-  import { toNum } from '@/utils/gnum'
-  import { formatCountdown } from '@/utils/format'
+  import { breakthroughPrepShortfall, prepareBreakthrough } from '@/core/earlyGameService'
+  import { gnZero } from '@/utils/gnum'
+  import { formatCountdown, formatGN } from '@/utils/format'
   import { signedPercent } from '@/data/statNames'
   import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
   import { prepPillDisabledLabel, prepPillShortToast } from '@/ui/cultivationText'
@@ -96,7 +95,6 @@
    * 成功率与备药判据仍读 core/breakthrough 与 BREAKTHROUGH_PREP_OPTIONS,
    * 准备的两个选项文案与耗时也不在视图里写第二份。
    */
-  const resources = useResourcesStore()
   const ui = useUiStore()
   const now = useNow()
 
@@ -107,18 +105,14 @@
   const prepMeditate = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === 'meditate')!
   const prepPill = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === 'pill')!
   const prepPillCost = prepPill.cost?.stone ?? 0
-  // toNum 在指数 >308 时返回 Infinity(见 utils/gnum)—— 先排掉非有限值,
-  // 否则 Infinity >= cost 恒真会让「药价不足」的按钮误亮(与 progress.ts 同判据)
-  const prepCanPill = computed(() => {
-    const stone = toNum(resources.spiritStone)
-    return Number.isFinite(stone) && stone >= prepPillCost
-  })
+  const prepPillShort = computed(() => breakthroughPrepShortfall('pill') ?? gnZero())
+  const prepCanPill = computed(() => prepPillShort.value.m === 0)
 
   function startPrep(option: 'meditate' | 'pill'): void {
     if (prepareBreakthrough(option)) {
       ui.toast(option === 'meditate' ? '你盘膝入定,静待调息完成' : '丹药入腹,气机已然蓄足', 'info')
     } else {
-      ui.toast(prepPillShortToast(), 'warn')
+      ui.toast(prepPillShortToast(formatGN(prepPillShort.value)), 'warn')
     }
   }
 </script>

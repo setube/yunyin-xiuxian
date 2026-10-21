@@ -18,6 +18,7 @@ import {
   WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PRICE_BASE
 } from '@/data/constants'
 import type { LinggenProfile } from '@/types'
+import { wudaoExchangeState } from './wudaoExchange'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -62,6 +63,27 @@ describe('后期限量灵石→悟道兑换(Phase C-1)', () => {
     expect(res.wudao).toBe(0)
     // 部分扣款也不发生:余额保持原样
     expect(toNum(res.spiritStone)).toBe(WUDAO_EXCHANGE_PRICE_BASE - 1)
+    expect(player.canExchangeWudao, '付不起灵石时按钮不该亮').toBe(false)
+    expect(toNum(player.wudaoExchangeState.stoneShort)).toBeCloseTo(1, 9)
+  })
+
+  it('兑换判据把境界、当日限额与灵石余额分开报', () => {
+    expect(wudaoExchangeState(WUDAO_EXCHANGE_MIN_MAJOR - 1, 0, gn(0))).toMatchObject({
+      lockedByRealm: true,
+      dailyFull: false,
+      canExchange: false
+    })
+    expect(wudaoExchangeState(WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, gn(999))).toMatchObject({
+      lockedByRealm: false,
+      dailyFull: true,
+      canExchange: false
+    })
+    expect(wudaoExchangeState(WUDAO_EXCHANGE_MIN_MAJOR, 0, gn(WUDAO_EXCHANGE_PRICE_BASE - 7))).toMatchObject({
+      lockedByRealm: false,
+      dailyFull: false,
+      canExchange: false
+    })
+    expect(wudaoExchangeState(WUDAO_EXCHANGE_MIN_MAJOR, 0, gn(WUDAO_EXCHANGE_PRICE_BASE)).canExchange).toBe(true)
   })
 
   it('每游戏日限次:兑满当日拒兑;次日(另一天)计数自动归零可再兑', () => {

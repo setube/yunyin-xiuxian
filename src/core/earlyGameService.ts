@@ -8,7 +8,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { usePacingTelemetry } from '@/stores/pacingTelemetry'
-import type { EnlightenmentEvent, EnlightenmentOption, CaveEvent, BuildingId } from '@/types'
+import type { EnlightenmentEvent, EnlightenmentOption, CaveEvent, BuildingId, GNum } from '@/types'
 import {
   ENLIGHTENMENT_OPTIONS,
   CAVE_EVENT_POOL,
@@ -16,7 +16,7 @@ import {
   BREAKTHROUGH_PREP_OPTIONS,
   earlyEventDecay
 } from '@/data/earlyGame'
-import { gn } from '@/utils/gnum'
+import { gn, gnZero, gte, subClamp } from '@/utils/gnum'
 import { expFromSecs } from '@/core/formulas'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { enlightenmentOptionText } from '@/ui/enlightenmentText'
@@ -164,10 +164,7 @@ export function prepareBreakthrough(optionId: string): boolean {
   if (!opt || opt.bonusRate <= 0) return false // direct/未知项 = 不是准备动作,不产生加成
 
   const resources = useResourcesStore()
-  if (opt.cost?.stone) {
-    if (!resources.hasStone(gn(opt.cost.stone))) return false
-    resources.spendStone(gn(opt.cost.stone))
-  }
+  if (opt.cost?.stone && !resources.spendStone(gn(opt.cost.stone))) return false
   // duration 单位为秒(meditate=180);=0 表示支付即了就绪(聚气丹)
   usePlayerStore().setBreakthroughPrep({
     bonus: opt.bonusRate,
@@ -176,6 +173,20 @@ export function prepareBreakthrough(optionId: string): boolean {
   })
   telemetry().record('breakthrough_prep', 'modal', `突破准备:${opt.label}`)
   return true
+}
+
+/**
+ * 突破准备的灵石缺口(纯算,不消费)。
+ *
+ * `null` 表示不是需要灵石的准备项;余额够时返回 0。界面与失败回执
+ * 都读这一份,避免按钮上写「未足」、toast 里却报不出还差多少。
+ */
+export function breakthroughPrepShortfall(optionId: string): GNum | null {
+  const opt = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === optionId)
+  if (!opt || opt.bonusRate <= 0 || !opt.cost?.stone) return null
+  const cost = gn(opt.cost.stone)
+  const stone = useResourcesStore().spiritStone
+  return gte(stone, cost) ? gnZero() : subClamp(cost, stone)
 }
 
 /** 存进档的准备态:加成、就绪时刻、来源(见 player store 的注释) */

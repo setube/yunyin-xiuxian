@@ -131,7 +131,7 @@
           :disabled="!repair.affordable"
           @click="repairWithQi()"
         >
-          {{ repairActLabel(repair.affordable, formatNum(repair.cost)) }}
+          {{ repairActLabel(repair.affordable, formatNum(repair.cost), formatNum(repair.shortfall)) }}
         </button>
       </div>
 

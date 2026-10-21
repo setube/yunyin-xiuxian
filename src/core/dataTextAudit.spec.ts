@@ -781,12 +781,13 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
       ['试炼册', trial],
       ['远征册', expedition],
       ['道痕册', marks],
-      ['天道熔炉', furnace],
-      ['器魂', souls]
+      ['天道熔炉', furnace]
     ] as const) {
       expect(view, `${name}该用同一份道源差额`).toContain('daoSourceShortText(')
       expect(view, `${name}不许退回笼统道源不足`).not.toContain('道源不足')
     }
+    expect(souls, '器魂该用同一份道源差额').toContain('daoSourceShortfall(')
+    expect(souls, '器魂不许退回笼统道源不足').not.toContain('道源不足')
     expect(trial, '今日天道付不起要置灰').toContain('endgame.daoSource < CHALLENGE_ENTRY_COST')
     expect(trial, '天道变数付不起要置灰').toContain(':disabled="endgame.daoSource < MUTATION_ENTRY_COST"')
     expect(trial, '天道试炼付不起要置灰').toContain(':disabled="endgame.daoSource < trial.entryCost"')
@@ -807,13 +808,37 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(souls, '入炉与确认凝炼都按缺口置灰').toMatch(
       /:disabled="refineShort\.short\.m > 0"[\s\S]{0,500}?:disabled="refineShort\.short\.m > 0"/
     )
-    expect(souls, '入炉按钮就地写尚差').toContain('入 炉(尚差${daoSourceShortText(SOUL_REFINE_COST, endgame.daoSource)})')
+    expect(souls, '入炉按钮直接复用已算好的拒因').toContain('refineShort.reason ? `入 炉(${refineShort.reason})`')
+    expect(souls, '同一份道源缺口不在模板里重算第二次').not.toContain('daoSourceShortText(SOUL_REFINE_COST')
 
     const apprentice = src('../views/ApprenticeView.vue')
     expect(apprentice, '道童报价与缺口同源').toContain('apprenticeRecruitShortfall(player.major, resources.spiritStone)')
     expect(apprentice, '招募付不起要置灰').toContain(':disabled="slotsFull || !canAffordRecruit"')
     expect(apprentice, '招募按钮就地写实际差额').toContain('尚差 ${formatGN(recruitShort)} 灵石')
     expect(apprentice, '招募失败 toast 也报实际差额').toContain('灵石尚差 ${formatGN(recruitShort.value)}')
+  })
+
+  /**
+   * 修行页三处「付不起」同族:悟道兑换、突破备药、灵气疗伤。
+   *
+   * 从前按钮亮着等点、toast 只报总需求,玩家得自己拿余额做减法。
+   * 现在禁用判据与文案都读 core 的同一份差额;故障注入:删掉余额判据、
+   * 或把「尚差」改回「未足」→ 本条红。
+   */
+  it('修行页三处付不起都前置置灰并写出实际差额', () => {
+    const gongfa = src('../components/cultivation/GongfaSection.vue')
+    const card = src('../components/cultivation/BreakthroughCard.vue')
+    const view = src('../views/CultivationView.vue')
+    const service = src('./earlyGameService.ts')
+    const exchange = src('./wudaoExchange.ts')
+    expect(gongfa, '兑换钮读同源判据').toContain(':disabled="!player.canExchangeWudao"')
+    expect(gongfa, '兑换钮就地写拒因').toContain("{{ player.canExchangeWudao ? '兑换' : exchangeBlockedText }}")
+    expect(exchange, '灵石余额进入兑换判据').toContain('stoneShort')
+    expect(card, '备药钮按石差置灰').toContain(':disabled="!prepCanPill"')
+    expect(card, '备药钮写实际石差').toContain('prepPillDisabledLabel(formatGN(prepPillShort))')
+    expect(card, '备药 toast 写实际石差').toContain('prepPillShortToast(formatGN(prepPillShort.value))')
+    expect(service, '突破准备缺口单源').toContain('breakthroughPrepShortfall')
+    expect(view, '疗伤钮写实际气差').toContain('formatNum(repair.shortfall)')
   })
 
   it('强化缺料时置灰并写出实际差额', () => {

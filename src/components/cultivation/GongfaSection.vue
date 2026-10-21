@@ -15,7 +15,14 @@
           {{ formatGN(gn(WUDAO_EXCHANGE_PRICE_BASE)) }} 灵石得 {{ WUDAO_EXCHANGE_GAIN }} 点
         </p>
       </div>
-      <button class="chip-ink shrink-0 !text-[10px]" :disabled="!player.canExchangeWudao" @click="doExchange">兑换</button>
+      <button
+        class="chip-ink shrink-0 !text-[10px]"
+        :disabled="!player.canExchangeWudao"
+        :title="player.canExchangeWudao ? undefined : exchangeBlockedText"
+        @click="doExchange"
+      >
+        {{ player.canExchangeWudao ? '兑换' : exchangeBlockedText }}
+      </button>
     </div>
     <div class="mt-2 space-y-2">
       <!-- 主修 -->
@@ -178,6 +185,11 @@
   const dongfu = useDongfuStore()
   const cultivation = useCultivationStore()
   const ui = useUiStore()
+  const exchangeState = computed(() => player.wudaoExchangeState)
+  const exchangeBlockedText = computed(() => {
+    const state = exchangeState.value
+    return exchangeFailText(state.lockedByRealm, state.dailyFull, formatGN(state.stoneShort))
+  })
 
   const GONGFA_CAT_ORDER: GongfaType[] = ['main', 'sub', 'secret']
 
@@ -309,7 +321,13 @@
   function doExchange(): void {
     const ok = player.exchangeStoneForWudao()
     ui.toast(
-      ok ? exchangeOkToast(WUDAO_EXCHANGE_GAIN) : exchangeFailText(player.major < WUDAO_EXCHANGE_MIN_MAJOR),
+      ok
+        ? exchangeOkToast(WUDAO_EXCHANGE_GAIN)
+        : exchangeFailText(
+            exchangeState.value.lockedByRealm,
+            exchangeState.value.dailyFull,
+            formatGN(exchangeState.value.stoneShort)
+          ),
       ok ? 'success' : 'warn'
     )
   }
