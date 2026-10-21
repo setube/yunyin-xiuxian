@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 279,
+  "round": 280,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T03:03:15+00:00",
+  "updated_at": "2026-10-21T05:02:19+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -19548,6 +19548,311 @@
       "title": "战报弹窗迁 BattleReportDialog",
       "commit": "\"d231773\"",
       "summary": "\"模板块与 ReportView 迁入 77 行组件;CelestialView 1338→1285;零行为变化\""
+    },
+    "ISS-926": {
+      "id": "ISS-926",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:12+00:00",
+      "updated_at": "2026-10-21T05:02:13+00:00",
+      "touched_round": 279,
+      "title": "CelestialView 各册与战报/熔炉/导览同处一文件,1300 余行的页面里找一处弹窗要跨半屏",
+      "severity": "medium",
+      "summary": "CelestialView 各册与战报/熔炉/导览同处一文件,1300 余行的页面里找一处弹窗要跨半屏"
+    },
+    "TASK-364": {
+      "id": "TASK-364",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:12+00:00",
+      "updated_at": "2026-10-21T05:02:13+00:00",
+      "touched_round": 279,
+      "title": "天界各册逐个迁出 CelestialView,战报与浮层随本体走",
+      "priority": "P2",
+      "category": "maintainability",
+      "summary": "celestial"
+    },
+    "CHG-467": {
+      "id": "CHG-467",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:12+00:00",
+      "updated_at": "2026-10-21T05:02:12+00:00",
+      "touched_round": 279,
+      "title": "天道熔炉弹窗迁 FurnaceDialog",
+      "commit": "304551d",
+      "summary": "CelestialView 1163 行"
+    },
+    "CHG-468": {
+      "id": "CHG-468",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:12+00:00",
+      "updated_at": "2026-10-21T05:02:12+00:00",
+      "touched_round": 279,
+      "title": "登临真仙导览弹窗迁 TutorialDialog",
+      "commit": "1c48b73",
+      "summary": "CelestialView 1129 行"
+    },
+    "CHG-469": {
+      "id": "CHG-469",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:12+00:00",
+      "updated_at": "2026-10-21T05:02:12+00:00",
+      "touched_round": 279,
+      "title": "道痕册迁 MarksPanel",
+      "commit": "e7fc948",
+      "summary": "CelestialView 967 行"
+    },
+    "CHG-470": {
+      "id": "CHG-470",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:13+00:00",
+      "updated_at": "2026-10-21T05:02:13+00:00",
+      "touched_round": 279,
+      "title": "远征册迁 ExpeditionPanel",
+      "commit": "ef0e1b0",
+      "summary": "CelestialView 594 行"
+    },
+    "CHG-471": {
+      "id": "CHG-471",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:13+00:00",
+      "updated_at": "2026-10-21T05:02:13+00:00",
+      "touched_round": 279,
+      "title": "试炼册迁 TrialPanel",
+      "commit": "4671b12",
+      "summary": "CelestialView 277 行"
+    },
+    "ISS-927": {
+      "id": "ISS-927",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:13+00:00",
+      "updated_at": "2026-10-21T05:02:14+00:00",
+      "touched_round": 279,
+      "title": "InventoryView 把法宝册、开炉炼丹、部位候选、分解与收纳全挤在同一个文件里",
+      "severity": "medium",
+      "summary": "InventoryView 把法宝册、开炉炼丹、部位候选、分解与收纳全挤在同一个文件里"
+    },
+    "TASK-365": {
+      "id": "TASK-365",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:13+00:00",
+      "updated_at": "2026-10-21T05:02:14+00:00",
+      "touched_round": 279,
+      "title": "行囊页四刀:法宝册、开炉弹窗、分解收纳与部位候选逐个迁出",
+      "priority": "P2",
+      "category": "maintainability",
+      "summary": "inventory"
+    },
+    "CHG-472": {
+      "id": "CHG-472",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:13+00:00",
+      "updated_at": "2026-10-21T05:02:13+00:00",
+      "touched_round": 279,
+      "title": "法宝册迁 ArtifactPanel",
+      "commit": "a73a927",
+      "summary": "InventoryView 989 行"
+    },
+    "CHG-473": {
+      "id": "CHG-473",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:14+00:00",
+      "updated_at": "2026-10-21T05:02:14+00:00",
+      "touched_round": 279,
+      "title": "开炉炼丹迁 BrewingDialog 与 useBrewing",
+      "commit": "bc6bfd7",
+      "summary": "InventoryView 798 行"
+    },
+    "CHG-474": {
+      "id": "CHG-474",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:14+00:00",
+      "updated_at": "2026-10-21T05:02:14+00:00",
+      "touched_round": 279,
+      "title": "部位候选与分解/收纳迁 SlotCandidatesDialog 与 DismantleDialog",
+      "commit": "c95b3cf",
+      "summary": "InventoryView 454 行"
+    },
+    "ISS-928": {
+      "id": "ISS-928",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:14+00:00",
+      "updated_at": "2026-10-21T05:02:15+00:00",
+      "touched_round": 279,
+      "title": "CharacterView 里画像、道侣、师承、轮回与逆旅契各自只读一份投影,却都堆在 894 行页面里",
+      "severity": "medium",
+      "summary": "CharacterView 里画像、道侣、师承、轮回与逆旅契各自只读一份投影,却都堆在 894 行页面里"
+    },
+    "TASK-366": {
+      "id": "TASK-366",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:14+00:00",
+      "updated_at": "2026-10-21T05:02:15+00:00",
+      "touched_round": 279,
+      "title": "人物页三浮层与轮回弹窗迁出,投影收进 composable",
+      "priority": "P2",
+      "category": "maintainability",
+      "summary": "character"
+    },
+    "CHG-475": {
+      "id": "CHG-475",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:14+00:00",
+      "updated_at": "2026-10-21T05:02:14+00:00",
+      "touched_round": 279,
+      "title": "画像/道侣/师承迁出并抽 useBondOverview",
+      "commit": "031e8a3",
+      "summary": "CharacterView 648 行"
+    },
+    "CHG-476": {
+      "id": "CHG-476",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:14+00:00",
+      "updated_at": "2026-10-21T05:02:14+00:00",
+      "touched_round": 279,
+      "title": "轮回弹窗迁 RebirthDialog",
+      "commit": "5653302",
+      "summary": "CharacterView 433 行"
+    },
+    "ISS-929": {
+      "id": "ISS-929",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:15+00:00",
+      "updated_at": "2026-10-21T05:02:15+00:00",
+      "touched_round": 279,
+      "title": "CultivationView 的闭关卡自带每秒时钟与 beginRetreat,却与丹道/劫势同处 872 行页面",
+      "severity": "low",
+      "summary": "CultivationView 的闭关卡自带每秒时钟与 beginRetreat,却与丹道/劫势同处 872 行页面"
+    },
+    "TASK-367": {
+      "id": "TASK-367",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:15+00:00",
+      "updated_at": "2026-10-21T05:02:15+00:00",
+      "touched_round": 279,
+      "title": "修行页逐个拆卡,先迁闭关卡",
+      "priority": "P2",
+      "category": "maintainability",
+      "summary": "cultivation"
+    },
+    "CHG-477": {
+      "id": "CHG-477",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:15+00:00",
+      "updated_at": "2026-10-21T05:02:15+00:00",
+      "touched_round": 279,
+      "title": "闭关卡迁 RetreatCard",
+      "commit": "c1a9567",
+      "summary": "CultivationView 828 行"
+    },
+    "ISS-930": {
+      "id": "ISS-930",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:15+00:00",
+      "updated_at": "2026-10-21T05:02:16+00:00",
+      "touched_round": 279,
+      "title": "EquipmentDetailDialog 把备注、属性对比、强化、推演、重铸、封存、自动重铸与词条图全挂在一个 817 行组件里",
+      "severity": "high",
+      "summary": "EquipmentDetailDialog 把备注、属性对比、强化、推演、重铸、封存、自动重铸与词条图全挂在一个 817 行组件里"
+    },
+    "TASK-368": {
+      "id": "TASK-368",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T05:02:15+00:00",
+      "updated_at": "2026-10-21T05:02:16+00:00",
+      "touched_round": 279,
+      "title": "装备详情按域拆成子面板与 composable,判据随本体迁移",
+      "priority": "P2",
+      "category": "maintainability",
+      "summary": "equipment"
+    },
+    "CHG-478": {
+      "id": "CHG-478",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:15+00:00",
+      "updated_at": "2026-10-21T05:02:15+00:00",
+      "touched_round": 279,
+      "title": "自动重铸迁 AutoReforgePanel 与 useAutoReforge",
+      "commit": "a3247c8",
+      "summary": "EquipmentDetailDialog 618 行"
+    },
+    "CHG-479": {
+      "id": "CHG-479",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:16+00:00",
+      "updated_at": "2026-10-21T05:02:16+00:00",
+      "touched_round": 279,
+      "title": "强化与连升迁 UpgradePanel",
+      "commit": "bb84e09",
+      "summary": "EquipmentDetailDialog 567 行"
+    },
+    "CHG-480": {
+      "id": "CHG-480",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:16+00:00",
+      "updated_at": "2026-10-21T05:02:16+00:00",
+      "touched_round": 279,
+      "title": "备注与天机推演迁 EquipNotePanel 与 EquipWhatIfPanel",
+      "commit": "777f392",
+      "summary": "EquipmentDetailDialog 496 行"
+    },
+    "CHG-481": {
+      "id": "CHG-481",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T05:02:16+00:00",
+      "updated_at": "2026-10-21T05:02:16+00:00",
+      "touched_round": 279,
+      "title": "封存操作与重铸页脚迁 EquipSealPanel 与 EquipReforgeFooter",
+      "commit": "2db7414",
+      "summary": "EquipmentDetailDialog 404 行"
     }
   },
   "edges": [
@@ -28983,6 +29288,216 @@
       "to": "ISS-925",
       "type": "resolves",
       "created_at": "2026-10-21T03:03:15+00:00"
+    },
+    {
+      "from": "TASK-364",
+      "to": "ISS-926",
+      "type": "addresses",
+      "created_at": "2026-10-21T05:02:12+00:00"
+    },
+    {
+      "from": "CHG-467",
+      "to": "TASK-364",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:12+00:00"
+    },
+    {
+      "from": "CHG-467",
+      "to": "ISS-926",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:12+00:00"
+    },
+    {
+      "from": "CHG-468",
+      "to": "TASK-364",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:12+00:00"
+    },
+    {
+      "from": "CHG-468",
+      "to": "ISS-926",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:12+00:00"
+    },
+    {
+      "from": "CHG-469",
+      "to": "TASK-364",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:12+00:00"
+    },
+    {
+      "from": "CHG-469",
+      "to": "ISS-926",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:13+00:00"
+    },
+    {
+      "from": "CHG-470",
+      "to": "TASK-364",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:13+00:00"
+    },
+    {
+      "from": "CHG-470",
+      "to": "ISS-926",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:13+00:00"
+    },
+    {
+      "from": "CHG-471",
+      "to": "TASK-364",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:13+00:00"
+    },
+    {
+      "from": "CHG-471",
+      "to": "ISS-926",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:13+00:00"
+    },
+    {
+      "from": "TASK-365",
+      "to": "ISS-927",
+      "type": "addresses",
+      "created_at": "2026-10-21T05:02:13+00:00"
+    },
+    {
+      "from": "CHG-472",
+      "to": "TASK-365",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:13+00:00"
+    },
+    {
+      "from": "CHG-472",
+      "to": "ISS-927",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:13+00:00"
+    },
+    {
+      "from": "CHG-473",
+      "to": "TASK-365",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:14+00:00"
+    },
+    {
+      "from": "CHG-473",
+      "to": "ISS-927",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:14+00:00"
+    },
+    {
+      "from": "CHG-474",
+      "to": "TASK-365",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:14+00:00"
+    },
+    {
+      "from": "CHG-474",
+      "to": "ISS-927",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:14+00:00"
+    },
+    {
+      "from": "TASK-366",
+      "to": "ISS-928",
+      "type": "addresses",
+      "created_at": "2026-10-21T05:02:14+00:00"
+    },
+    {
+      "from": "CHG-475",
+      "to": "TASK-366",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:14+00:00"
+    },
+    {
+      "from": "CHG-475",
+      "to": "ISS-928",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:14+00:00"
+    },
+    {
+      "from": "CHG-476",
+      "to": "TASK-366",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:15+00:00"
+    },
+    {
+      "from": "CHG-476",
+      "to": "ISS-928",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:15+00:00"
+    },
+    {
+      "from": "TASK-367",
+      "to": "ISS-929",
+      "type": "addresses",
+      "created_at": "2026-10-21T05:02:15+00:00"
+    },
+    {
+      "from": "CHG-477",
+      "to": "TASK-367",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:15+00:00"
+    },
+    {
+      "from": "CHG-477",
+      "to": "ISS-929",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:15+00:00"
+    },
+    {
+      "from": "TASK-368",
+      "to": "ISS-930",
+      "type": "addresses",
+      "created_at": "2026-10-21T05:02:15+00:00"
+    },
+    {
+      "from": "CHG-478",
+      "to": "TASK-368",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:16+00:00"
+    },
+    {
+      "from": "CHG-478",
+      "to": "ISS-930",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:16+00:00"
+    },
+    {
+      "from": "CHG-479",
+      "to": "TASK-368",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:16+00:00"
+    },
+    {
+      "from": "CHG-479",
+      "to": "ISS-930",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:16+00:00"
+    },
+    {
+      "from": "CHG-480",
+      "to": "TASK-368",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:16+00:00"
+    },
+    {
+      "from": "CHG-480",
+      "to": "ISS-930",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:16+00:00"
+    },
+    {
+      "from": "CHG-481",
+      "to": "TASK-368",
+      "type": "implements",
+      "created_at": "2026-10-21T05:02:16+00:00"
+    },
+    {
+      "from": "CHG-481",
+      "to": "ISS-930",
+      "type": "resolves",
+      "created_at": "2026-10-21T05:02:16+00:00"
     }
   ]
 }
