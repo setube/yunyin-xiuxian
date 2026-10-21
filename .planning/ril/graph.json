@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 319,
+  "round": 320,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T22:01:34+00:00",
+  "updated_at": "2026-10-21T22:15:14+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23129,6 +23129,70 @@
       "touched_round": 319,
       "commit": "fe32d88",
       "summary": "跨世资源与时间累加只认合法增量,道源扣款拒绝负数与非有限值"
+    },
+    "ISS-988": {
+      "id": "ISS-988",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:09:34+00:00",
+      "updated_at": "2026-10-21T22:15:12+00:00",
+      "touched_round": 320,
+      "severity": 0.78,
+      "confidence": 0.95,
+      "title": "挑战书在世界确认前扣费，终局公共写入仍可收坏形状",
+      "detail": "undertakeChallenge 先 spendDaoSource 再查 celestialWorldDef，非法 worldId 会白扣 15 道源；endgame.addSoul/addMark/recordTrial/recordWorldClear/addMilestone/updateRecord 直接写入未校验对象、未知 id 或非有限值，读档 sanitize 只能在下次加载补救"
+    },
+    "COMP-053": {
+      "id": "COMP-053",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:09:36+00:00",
+      "updated_at": "2026-10-21T22:09:36+00:00",
+      "touched_round": 320,
+      "name": "挑战书与终局公共写入",
+      "path": "src/core/challenge.ts,src/stores/endgame.ts"
+    },
+    "TASK-433": {
+      "id": "TASK-433",
+      "type": "task",
+      "status": "resolved",
+      "version": 3,
+      "created_at": "2026-10-21T22:09:40+00:00",
+      "updated_at": "2026-10-21T22:15:08+00:00",
+      "touched_round": 320,
+      "category": "correctness",
+      "severity": 0.78,
+      "confidence": 0.95,
+      "effort": 2,
+      "title": "挑战书先验界后扣费，终局公共写入只认合法输入",
+      "description": "undertakeChallenge 在扣入场费前确认世界存在；endgame 的器魂、道痕、试炼、破界、节点与纪录写入按目录 id 和有限值收口；补行为测试与故障注入",
+      "lock_owner": "codex-iteration-320",
+      "lock_until": "2026-10-21T23:09:47+00:00"
+    },
+    "EV-986": {
+      "id": "EV-986",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:14:54+00:00",
+      "updated_at": "2026-10-21T22:14:54+00:00",
+      "touched_round": 320,
+      "source": "src/core/challenge.spec.ts; src/stores/endgame.spec.ts; bun run test:report 3393 pass / 0 fail; commit 28d3a53",
+      "confidence": 0.99,
+      "summary": "回退守卫后新增 6 条断言转红,恢复后定向 58/58 通过,全量 3393/0,构建通过"
+    },
+    "CHG-533": {
+      "id": "CHG-533",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:14:57+00:00",
+      "updated_at": "2026-10-21T22:15:14+00:00",
+      "touched_round": 320,
+      "commit": "28d3a53",
+      "summary": "挑战书先验界后扣费;终局器魂、道痕、破界、试炼、节点、纪录、道途与每日落闸写入按目录 id、唯一性和有限值收口"
     }
   },
   "edges": [
@@ -34160,6 +34224,24 @@
       "to": "ISS-987",
       "type": "resolves",
       "created_at": "2026-10-21T22:01:21+00:00"
+    },
+    {
+      "from": "TASK-433",
+      "to": "ISS-988",
+      "type": "addresses",
+      "created_at": "2026-10-21T22:09:43+00:00"
+    },
+    {
+      "from": "CHG-533",
+      "to": "TASK-433",
+      "type": "implements",
+      "created_at": "2026-10-21T22:15:03+00:00"
+    },
+    {
+      "from": "CHG-533",
+      "to": "ISS-988",
+      "type": "resolves",
+      "created_at": "2026-10-21T22:15:05+00:00"
     }
   ]
 }
