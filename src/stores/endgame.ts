@@ -16,7 +16,7 @@ import { milestoneDef, recordDef } from '@/data/identity'
 import { mutatorDef } from '@/data/mutators'
 import { gateDef } from '@/data/qimen'
 import { pactDef } from '@/data/pacts'
-import { artifactDef } from '@/data/artifacts'
+import { ARTIFACT_MAX_LEVEL, artifactDef } from '@/data/artifacts'
 import { STAT_KEYS } from '@/data/statNames'
 import { MAX_MAJOR } from '@/data/realms'
 import { gn } from '@/utils/gnum'
@@ -200,10 +200,26 @@ function sanitizeMarkReplay(raw: unknown): DaoMark['replay'] | undefined {
       rate: s.rate,
       ...(typeof s.effect === 'string' ? { effect: s.effect } : {})
     }))
+  /**
+   * 快照里的法宝也要按「真实佩带规则」收口:
+   *   - 重数坏成 999 时,artifactValue 会在读档后给出远超上限的神通数值;
+   *   - 同一 defId 写两遍,战斗循环会每回合替它触发两次 —— 实际一局里
+   *     inventory.sanitize 早就不允许同件法宝并存。
+   * 故认不出的 defId 剔掉、同 id 只留首件,重数夹回 0..ARTIFACT_MAX_LEVEL。
+   */
+  const seenArtifact = new Set<string>()
   const artifacts = r.artifacts
     .filter(a => !!a && typeof a === 'object' && typeof (a as { defId?: unknown }).defId === 'string')
-    .map(a => ({ defId: a.defId, level: Math.floor(asFiniteNumber(a.level, 0, 0)) }))
     .filter(a => !!artifactDef(a.defId))
+    .filter(a => {
+      if (seenArtifact.has(a.defId)) return false
+      seenArtifact.add(a.defId)
+      return true
+    })
+    .map(a => ({
+      defId: a.defId,
+      level: Math.min(ARTIFACT_MAX_LEVEL, Math.max(0, Math.floor(asFiniteNumber(a.level, 0, 0))))
+    }))
   return {
     mods,
     attack,
@@ -355,6 +371,18 @@ export const useEndgameStore = defineStore(
         if (!worldOk) {
           worldRun.value = null
         } else {
+          // 每一行都是战报读数:坏行留着会写出「NaN回合 · 余血 NaN%」,
+          // 故按行逐项修平;认不出名字的行直接丢掉(没有可报的对象)
+          const rows = asArray<WorldRunState['rows'][number]>(
+            run.rows,
+            [],
+            r => !!r && typeof (r as { foeName?: unknown }).foeName === 'string'
+          ).map(r => ({
+            foeName: r.foeName,
+            win: r.win === true,
+            rounds: Math.floor(asFiniteNumber(r.rounds, 0, 0)),
+            hpLeftPct: Math.min(1, asFiniteNumber(r.hpLeftPct, 0, 0))
+          }))
           worldRun.value = {
             ...run,
             /**
@@ -367,16 +395,15 @@ export const useEndgameStore = defineStore(
             gateId: typeof run.gateId === 'string' && gateDef(run.gateId) ? run.gateId : null,
             layer: Math.min(EXPEDITION_GUARDIAN_LAYER, Math.max(0, Math.floor(asFiniteNumber(run.layer, 0, 0)))),
             bonus: Math.floor(asFiniteNumber(run.bonus, 0, 0)),
-            // 每一行都是战报读数:坏行留着会写出「NaN回合 · 余血 NaN%」,
-            // 故按行逐项修平;认不出名字的行直接丢掉(没有可报的对象)
-            rows: asArray<WorldRunState['rows'][number]>(run.rows, [], r => !!r && typeof (r as { foeName?: unknown }).foeName === 'string').map(r => ({
-              foeName: r.foeName,
-              win: r.win === true,
-              rounds: Math.floor(asFiniteNumber(r.rounds, 0, 0)),
-              hpLeftPct: Math.min(1, asFiniteNumber(r.hpLeftPct, 0, 0))
-            })),
+            rows,
             carriedHpPct: asCarriedHpPct(run.carriedHpPct),
-            totalRounds: Math.floor(asFiniteNumber(run.totalRounds, 0, 0)),
+            // 总回合与逐行战报必须同账:二者不一致时,结算的杀伐速战赏与道痕
+            // 会按「没有发生过的快仗」多给。逐行战报是这一趟唯一可复核的记录,
+            // 故以其回合和为准;旧档没有 rows 时仍保留原字段。
+            totalRounds:
+              rows.length > 0
+                ? rows.reduce((sum, row) => sum + row.rounds, 0)
+                : Math.floor(asFiniteNumber(run.totalRounds, 0, 0)),
             winStacks: Math.floor(asFiniteNumber(run.winStacks, 0, 0)),
             /**
              * 逆命契封印的是「主流派核心词条」的负值快照,每一场都并入玩家属性:

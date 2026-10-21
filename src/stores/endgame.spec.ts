@@ -183,6 +183,37 @@ describe('远征读档恢复 · worldRun sanitize', () => {
     endgame.sanitize()
     expect(endgame.worldRun?.rows.map(r => r.foeName)).toEqual(['某某妖王', '另有其人'])
   })
+
+  /**
+   * 结算时杀伐速战赏与道痕纪录都读 totalRounds,而界面只逐行报 rows。
+   * 坏档写「rows 五场共 60 回合、totalRounds 0」时,速战赏会按 0 回合给满,
+   * 道痕还记成一场没发生过的快仗。总回合必须由逐行战报重建。
+   */
+  it('totalRounds 与逐行战报不一致时,以逐行回合和为准', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({
+      worldRun: hostileRun({
+        rows: [
+          { foeName: '甲', win: true, rounds: 8, hpLeftPct: 0.7 },
+          { foeName: '乙', win: true, rounds: 12, hpLeftPct: 0.5 },
+          { foeName: '丙', win: true, rounds: 20, hpLeftPct: 0.3 },
+          { foeName: '丁', win: true, rounds: 10, hpLeftPct: 0.2 },
+          { foeName: '戊', win: true, rounds: 10, hpLeftPct: 0.1 }
+        ],
+        totalRounds: 0
+      })
+    })
+    endgame.sanitize()
+    expect(endgame.worldRun?.totalRounds, '总回合等于逐行回合和').toBe(60)
+  })
+
+  it('旧档没有 rows 时仍保留 totalRounds 原值', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ worldRun: hostileRun({ rows: undefined as never, totalRounds: 42 }) })
+    endgame.sanitize()
+    expect(endgame.worldRun?.rows).toEqual([])
+    expect(endgame.worldRun?.totalRounds).toBe(42)
+  })
 })
 
 describe('混元界重掷代价 · rerollVoidWorld 扣/退与失效分支', () => {
@@ -583,7 +614,9 @@ describe('道痕坏档 · 逐条逐字段修形', () => {
             ],
             artifacts: [
               { defId: 'ghost_artifact', level: 3 },
-              { defId: 'af_muyu', level: Number.NaN }
+              { defId: 'af_muyu', level: Number.NaN },
+              { defId: 'af_muyu', level: 9 },
+              { defId: 'af_lihuo', level: 999 }
             ],
             pactId: 'xue'
           }
@@ -598,7 +631,10 @@ describe('道痕坏档 · 逐条逐字段修形', () => {
     const replay = m.replay!
     expect(replay, '三维齐备的快照要留住').toBeDefined()
     expect(replay.skills, '坏技能没有倍率可言').toEqual([{ name: '斩', mult: 2, rate: 0.25, effect: 'pierce' }])
-    expect(replay.artifacts, '认不出的法宝与坏重数都不进当年那一局').toEqual([{ defId: 'af_muyu', level: 0 }])
+    expect(replay.artifacts, '认不出的法宝、坏重数越界与重复佩带都不进当年那一局').toEqual([
+      { defId: 'af_muyu', level: 0 },
+      { defId: 'af_lihuo', level: 9 }
+    ])
     expect(replay.mods, '野词条键会让构筑厚度与当年对不上').toEqual({ attackPct: 0.2 })
     expect(replay.pactId).toBe('xue')
     expect(() => snapFromReplay('当年', replay), '忆战入口').not.toThrow()
