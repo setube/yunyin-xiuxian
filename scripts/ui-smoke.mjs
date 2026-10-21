@@ -263,21 +263,88 @@ if (!LATE) {
 await page.waitForTimeout(LATE ? 1800 : 1500)
 
 let clicked = 0
-/** 弹窗里的按钮也要点 —— 大部分交互都藏在 modal 里(炼丹/收纳/人物各入口/天界册页) */
+/**
+ * 只点**当前最上层**的弹窗。
+ *
+ * 此前固定取 `.modal-panel` 的第一扇,并把它的按钮句柄先抓成一串:一旦某个按钮
+ * 打开详情(候选列表点名称 → 装备详情),后面的句柄仍属于被盖住的底层弹窗,
+ * 点击会被上层背板拦下,冒烟却把它记成「死按钮」。真实原因是巡逻顺序,不是控件坏。
+ *
+ * 现在每一轮都重新取最高层的可见弹窗:先走完详情里的按钮,再按 Esc 回到列表,
+ * 继续走列表里尚未点过的按钮。按钮打上一次性标记,弹窗重排/替换也不会重复点。
+ */
 async function clickInsideModal(route) {
-  const panel = page.locator('.modal-panel').first()
-  if (!(await panel.count())) return
-  // 元素句柄(见文件头):toast 进出会让 nth 序号换指,句柄钉节点,没了一抛即走
-  const inner = await panel.getByRole('button').elementHandles()
-  for (const b of inner.slice(0, 6)) {
-    const label = ((await b.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
-    if (!label || SKIP.test(label)) continue
-    if (!(await b.isVisible().catch(() => false))) continue
-    if (await b.isDisabled().catch(() => false)) continue
+  let steps = 0
+  while (steps < 12) {
+    const topIndex = await page.evaluate(() => {
+      const panels = [...document.querySelectorAll('.modal-panel')]
+      let best = -1
+      let bestZ = -Infinity
+      panels.forEach((panel, index) => {
+        const rect = panel.getBoundingClientRect()
+        if (rect.width <= 0 || rect.height <= 0) return
+        let z = 0
+        for (let node = panel; node; node = node.parentElement) {
+          const n = Number.parseInt(getComputedStyle(node).zIndex, 10)
+          if (Number.isFinite(n)) z = Math.max(z, n)
+        }
+        if (z >= bestZ) {
+          bestZ = z
+          best = index
+        }
+      })
+      return best
+    })
+    if (topIndex < 0) return
+
+    const panel = page.locator('.modal-panel').nth(topIndex)
+    const inner = await panel.getByRole('button').elementHandles()
+    let target = null
+    let label = ''
+    for (const b of inner) {
+      const done = await b.evaluate(el => el.dataset.smokeClicked === '1').catch(() => true)
+      if (done) continue
+      const text = ((await b.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
+      // 无名图标键与破坏性按钮都不点;仍标成已处理,免得每一轮都重新检查
+      if (!text || SKIP.test(text)) {
+        await b.evaluate(el => (el.dataset.smokeClicked = '1')).catch(() => {})
+        continue
+      }
+      if (!(await b.isVisible().catch(() => false)) || (await b.isDisabled().catch(() => false))) {
+        await b.evaluate(el => (el.dataset.smokeClicked = '1')).catch(() => {})
+        continue
+      }
+      // 顶层弹窗自己的按钮仍可能被 toast 等更高浮层盖住;被盖住不等于控件坏
+      const hit = await b.evaluate(el => {
+        const r = el.getBoundingClientRect()
+        const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+        return !!at && (at === el || el.contains(at))
+      }).catch(() => false)
+      if (!hit) {
+        await b.evaluate(el => (el.dataset.smokeClicked = '1')).catch(() => {})
+        continue
+      }
+      target = b
+      label = text
+      break
+    }
+
+    if (!target) {
+      // 这一层已走完;若下面还有列表弹窗,收掉顶层继续走,别把底层按钮永远盖在下面
+      if ((await page.locator('.modal-panel').count()) > 1) {
+        await page.keyboard.press('Escape').catch(() => {})
+        await settle()
+        continue
+      }
+      return
+    }
+
+    await target.evaluate(el => (el.dataset.smokeClicked = '1')).catch(() => {})
     const before = errors.length
     const beforeFp = await fingerprint()
-    await b.click({ timeout: 800 }).catch(() => {})
+    await target.click({ timeout: 800 }).catch(() => {})
     clicked += 1
+    steps += 1
     await settle()
     if (errors.length > before) errors[errors.length - 1].where = `${route} 弹窗内点「${label}」`
     // 弹窗按钮此前只查了 pageerror,点了没反应的同样会被静默吞掉 —— 一并纳入指纹判定

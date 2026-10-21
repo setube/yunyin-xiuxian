@@ -42,9 +42,10 @@ describe('冒烟死按钮分类器(纯决策)', () => {
     expect(classifySmoke('/a', 'modal', 'X', false).line).toBe('/a 弹窗内点「X」')
   })
 
-  it('白名单保持两条幂等选中项 —— 未来去重不得静默把工作控件翻成死按钮', () => {
+  it('白名单保持三条幂等选中项 —— 未来去重不得静默把工作控件翻成死按钮', () => {
     expect(SMOKE_ALLOWLIST).toContain('/settings 点「×1」')
     expect(SMOKE_ALLOWLIST).toContain('/settings 点「跟随系统」')
+    expect(SMOKE_ALLOWLIST).toContain('/inventory 弹窗内点「不设」')
   })
 
   it('namePattern 定位同一按钮:在捕获到的空白处容忍空白多寡,别处不松口', () => {

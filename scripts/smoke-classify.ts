@@ -9,7 +9,8 @@
 /** 幂等选中项:点「当前已选中值」本身就该没反应(×1 当已在 ×1、跟随系统当已开) —— 属设计内,不判失败 */
 export const SMOKE_ALLOWLIST: readonly string[] = [
   '/settings 点「×1」', // 战报速度默认 ×1,点当下的选中值 = 无变化
-  '/settings 点「跟随系统」' // 主题默认跟随系统,点当下的选中值 = 无变化
+  '/settings 点「跟随系统」', // 主题默认跟随系统,点当下的选中值 = 无变化
+  '/inventory 弹窗内点「不设」' // 智能收纳的阶级线默认就是「不设」,点当下的选中值 = 无变化
 ]
 
 export function escapeRe(s: string): string {
