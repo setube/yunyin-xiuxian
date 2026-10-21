@@ -98,7 +98,7 @@ describe('凝炼装备(refineEquipment)', () => {
     const endgame = useEndgameStore()
     endgame.daoSource = SOUL_REFINE_COST - 1
     expect(refineEquipment(inst.uid)).toBe(false)
-    expect(useUiStore().toasts).toContainEqual(expect.objectContaining({ text: `道源不足 ${SOUL_REFINE_COST}`, kind: 'warn' }))
+    expect(useUiStore().toasts).toContainEqual(expect.objectContaining({ text: '道源尚差 1', kind: 'warn' }))
     expect(endgame.daoSource).toBe(SOUL_REFINE_COST - 1)
   })
 

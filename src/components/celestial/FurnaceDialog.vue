@@ -56,8 +56,17 @@
       <div class="py-2.5">
         <div class="flex items-center justify-between">
           <span class="text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
-          <button class="btn-ghost !px-3 !py-2 !text-[11px] tabular" @click="doCondense()">
-            {{ DAO_SOURCE_PER_FRUIT }} 道源 → 道果 +1
+          <button
+            class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
+            :disabled="fruitShort.short.m > 0"
+            :title="fruitShort.reason ?? undefined"
+            @click="doCondense()"
+          >
+            {{
+              fruitShort.short.m > 0
+                ? `道果 +1(道源尚差 ${daoSourceShortText(DAO_SOURCE_PER_FRUIT, endgame.daoSource)})`
+                : `${DAO_SOURCE_PER_FRUIT} 道源 → 道果 +1`
+            }}
           </button>
         </div>
         <!-- S3 链路:本次凝聚后,下世收益变化 -->
@@ -102,6 +111,7 @@ import { computed, ref, watch } from 'vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import { useResourcesStore } from '@/stores/resources'
 import { usePlayerStore } from '@/stores/player'
+import { useEndgameStore } from '@/stores/endgame'
 import {
   DAO_SOURCE_PER_FRUIT,
   FURNACE_RATES,
@@ -122,12 +132,14 @@ import {
   shouldShowFruitTutorial
 } from '@/core/resourceGuidance'
 import { formatGN, formatNum } from '@/utils/format'
+import { daoSourceShortfall, daoSourceShortText } from '@/core/daoSource'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
 const resources = useResourcesStore()
 const player = usePlayerStore()
+const endgame = useEndgameStore()
 
 /** 熔炉全熔确认态(按资源键)。熔炉弹窗关闭即复位,不残留旧行 */
 const furnaceConfirm = ref<FurnaceRate['resource'] | null>(null)
@@ -154,6 +166,7 @@ function doFurnace(rate: FurnaceRate): void {
 }
 
 const fruitInfo = computed(() => fruitMarginalInfo())
+const fruitShort = computed(() => daoSourceShortfall(DAO_SOURCE_PER_FRUIT, endgame.daoSource))
 
 /**
  * 凝道果 —— 首次成功时把「道果是什么」讲一次。

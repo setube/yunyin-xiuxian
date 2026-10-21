@@ -14,9 +14,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
+import { useUiStore } from '@/stores/ui'
 import { CELESTIAL_WORLDS, EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
 import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes } from './expedition'
 import { celestialJudgementLines } from './gauntlet'
+import { daoSourceShortfall } from './daoSource'
+import { gn } from '@/utils/gnum'
 import type { EquipSlot, EquipmentInstance } from '@/types'
 
 const SLOTS: EquipSlot[] = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman']
@@ -65,9 +68,20 @@ describe('远征 · 账目', () => {
     seated(9, MORTAL_TOP, 'heaven', 20)
     const eg = useEndgameStore()
     eg.daoSource = 1 // 连一界都进不去
+    const cost = world('chiyan').entryCost
     expect(startWorldExpedition('chiyan', null)).toBeNull()
     expect(eg.worldRun).toBeNull()
     expect(eg.daoSource, '不开船还扣了道源').toBe(1)
+    expect(useUiStore().toasts.at(-1)?.text).toContain(`道源尚差 ${cost - 1}`)
+  })
+
+  it('道源只差一部分:远征拒因报实际差额,不报总价', () => {
+    const eg = useEndgameStore()
+    eg.daoSource = 10
+    const cost = 50
+    const short = daoSourceShortfall(cost, eg.daoSource)
+    expect(short.short).toEqual(gn(cost - 10))
+    expect(short.reason).toBe(`道源尚差 ${cost - 10}`)
   })
 })
 

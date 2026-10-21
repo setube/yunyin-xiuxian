@@ -18,8 +18,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
+import { useUiStore } from '@/stores/ui'
 import type { EquipSlot, EquipmentInstance } from '@/types'
+import { gn } from '@/utils/gnum'
 import { CHALLENGE_ENTRY_COST, verifyChallenge, undertakeChallenge, type ChallengeDraft } from './challenge'
+import { daoSourceShortfall } from './daoSource'
 
 const S_SLOTS: EquipSlot[] = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman']
 const S_CHAOS_TOP = ['w_benyuan', 'h_benyuan', 'b_benyuanshen', 'wr_benyuan', 'bl_benyuan', 'bo_benyuan', 'n_hongmengzhu', 'r_daozu', 'tl_daozuzhuan']
@@ -96,6 +99,16 @@ describe('相元挑战 · undertakeChallenge 清/败原子', () => {
     const out = undertakeChallenge(DRAFT, verdict)
     expect(out).toBeNull()
     expect(e.daoSource).toBe(before)
+    expect(useUiStore().toasts.at(-1)).toEqual(expect.objectContaining({ text: '道源尚差 5', kind: 'warn' }))
+  })
+
+  it('道源不足:拒因报实际差额,不把总价当缺口', () => {
+    const endgame = useEndgameStore()
+    endgame.daoSource = 10
+    const short = daoSourceShortfall(CHALLENGE_ENTRY_COST, endgame.daoSource)
+    expect(short.short).toEqual(gn(CHALLENGE_ENTRY_COST - 10))
+    expect(short.reason).toBe(`道源尚差 ${CHALLENGE_ENTRY_COST - 10}`)
+    expect(short.reason).not.toContain(`道源不足 ${CHALLENGE_ENTRY_COST}`)
   })
 
   it('入场费单一来源:常数为正且有限(原子守卫的经济根基)', () => {

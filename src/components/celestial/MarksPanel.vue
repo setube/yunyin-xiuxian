@@ -70,11 +70,12 @@
         </template>
         <button
           v-else-if="mark.cleared && mark.replay"
-          class="shrink-0 min-h-[28px] rounded border border-cinnabar/40 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
-          title="以今日之你重打此战,快过旧我之回合即【胜于旧我】"
+          class="shrink-0 min-h-[28px] rounded border border-cinnabar/40 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90 disabled:border-ink/15 disabled:text-ink-faint"
+          :disabled="endgame.daoSource < REWRITE_ENTRY_COST"
+          :title="endgame.daoSource < REWRITE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)}` : '以今日之你重打此战,快过旧我之回合即【胜于旧我】'"
           @click="rewriteConfirm = mark"
         >
-          写(道源{{ REWRITE_ENTRY_COST }} · 破{{ mark.rounds }}回合)
+          {{ endgame.daoSource < REWRITE_ENTRY_COST ? `写(尚差${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${mark.rounds}回合)` }}
         </button>
       </div>
     </div>
@@ -114,6 +115,7 @@ import { RULESET_CHANGELOG, RULESET_VERSION, isStaleRuleset, rulesetChangesSince
 import { daoPathDef } from '@/data/endgame'
 import { legacyComparisons } from '@/core/compare'
 import { replayMark, rewriteMark, REWRITE_ENTRY_COST } from '@/core/endgameService'
+import { daoSourceShortText } from '@/core/daoSource'
 import SectionTitle from '@/components/common/SectionTitle.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import type { ReportView } from '@/components/celestial/BattleReportDialog.vue'

@@ -19,6 +19,7 @@ import { SLAUGHTER_PER_WIN, SWORD_PER_WIN } from './daoDepth'
 import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
+import { daoSourceShortfall } from './daoSource'
 
 export const CHALLENGE_ENTRY_COST = 15
 export const CHALLENGE_MAX_MUTATORS = 3
@@ -103,8 +104,9 @@ export function undertakeChallenge(draft: ChallengeDraft, verdict: ChallengeVerd
   const endgame = useEndgameStore()
   const ui = useUiStore()
   if (!endgameUnlocked() || !endgame.daoPath || !verdict.ok) return null
+  const short = daoSourceShortfall(CHALLENGE_ENTRY_COST, endgame.daoSource)
   if (!endgame.spendDaoSource(CHALLENGE_ENTRY_COST)) {
-    ui.toast(`道源不足 ${CHALLENGE_ENTRY_COST}`, 'warn')
+    ui.toast(short.reason ?? `道源不足 ${CHALLENGE_ENTRY_COST}`, 'warn')
     return null
   }
   const player = usePlayerStore()

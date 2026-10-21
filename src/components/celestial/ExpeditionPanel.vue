@@ -107,8 +107,13 @@
         <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
           <span v-for="(r, i) in world.ruleText" :key="i">{{ r }}</span>
         </p>
-        <button class="btn-seal mt-2.5 w-full !py-2 !text-[13px]" :disabled="run !== null" @click="openPrep(world.id)">
-          {{ run ? '远征在途' : `启 程(道源 ${world.entryCost} · 余 ${formatNum(endgame.daoSource)} · 破界底赏 ${world.rewardDaoSource})` }}
+        <button
+          class="btn-seal mt-2.5 w-full !py-2 !text-[13px]"
+          :disabled="run !== null || endgame.daoSource < world.entryCost"
+          :title="endgame.daoSource < world.entryCost ? `道源尚差 ${daoSourceShortText(world.entryCost, endgame.daoSource)}` : undefined"
+          @click="openPrep(world.id)"
+        >
+          {{ run ? '远征在途' : endgame.daoSource < world.entryCost ? `启 程(道源尚差 ${daoSourceShortText(world.entryCost, endgame.daoSource)} · 需 ${world.entryCost} · 余 ${formatNum(endgame.daoSource)})` : `启 程(道源 ${world.entryCost} · 余 ${formatNum(endgame.daoSource)} · 破界底赏 ${world.rewardDaoSource})` }}
         </button>
       </div>
 
@@ -135,18 +140,33 @@
             盘踞:{{ endgame.voidWorld.foes.map(f => f.name).join('、') }} · 界主「{{ endgame.voidWorld.guardian.name }}」
           </p>
           <div class="mt-2.5 flex gap-2">
-            <button class="btn-seal flex-1 !py-2 !text-[13px]" :disabled="run !== null" @click="openPrep('void')">
-              {{ run ? '远征在途' : `启 程(道源 ${endgame.voidWorld.entryCost} · 余 ${formatNum(endgame.daoSource)} · 破界底赏 ${endgame.voidWorld.rewardDaoSource})` }}
+            <button
+              class="btn-seal flex-1 !py-2 !text-[13px]"
+              :disabled="run !== null || endgame.daoSource < endgame.voidWorld.entryCost"
+              :title="endgame.daoSource < endgame.voidWorld.entryCost ? `道源尚差 ${daoSourceShortText(endgame.voidWorld.entryCost, endgame.daoSource)}` : undefined"
+              @click="openPrep('void')"
+            >
+              {{ run ? '远征在途' : endgame.daoSource < endgame.voidWorld.entryCost ? `启 程(道源尚差 ${daoSourceShortText(endgame.voidWorld.entryCost, endgame.daoSource)} · 需 ${endgame.voidWorld.entryCost} · 余 ${formatNum(endgame.daoSource)})` : `启 程(道源 ${endgame.voidWorld.entryCost} · 余 ${formatNum(endgame.daoSource)} · 破界底赏 ${endgame.voidWorld.rewardDaoSource})` }}
             </button>
-            <button class="btn-ghost !px-3 !text-[12px]" @click="rerollVoidWorld()">再窥({{ VOID_REROLL_COST }})</button>
+            <button
+              class="btn-ghost !px-3 !text-[12px]"
+              :disabled="endgame.daoSource < VOID_REROLL_COST"
+              :title="endgame.daoSource < VOID_REROLL_COST ? `道源尚差 ${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)}` : undefined"
+              @click="rerollVoidWorld()"
+            >{{ endgame.daoSource < VOID_REROLL_COST ? `再窥(尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `再窥(${VOID_REROLL_COST})` }}</button>
           </div>
         </template>
         <template v-else>
           <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">
             天道以变数织界:随机规则、随机敌阵、随机路线,经天机推演过审方能成形——每一座虚界都独一无二。
           </p>
-          <button class="btn-ghost mt-2.5 w-full !py-2 !text-[12px]" @click="rerollVoidWorld()">
-            窥探虚界(道源 {{ VOID_REROLL_COST }})
+          <button
+            class="btn-ghost mt-2.5 w-full !py-2 !text-[12px]"
+            :disabled="endgame.daoSource < VOID_REROLL_COST"
+            :title="endgame.daoSource < VOID_REROLL_COST ? `道源尚差 ${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)}` : undefined"
+            @click="rerollVoidWorld()"
+          >
+            {{ endgame.daoSource < VOID_REROLL_COST ? `窥探虚界(尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `窥探虚界(道源 ${VOID_REROLL_COST})` }}
           </button>
         </template>
       </div>
@@ -278,6 +298,7 @@
   } from '@/core/expedition'
   import { BUILD_PROFILES } from '@/core/buildSim'
   import { cnNumber, formatNum } from '@/utils/format'
+  import { daoSourceShortText } from '@/core/daoSource'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import type { ReportView } from '@/components/celestial/BattleReportDialog.vue'

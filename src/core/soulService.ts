@@ -11,6 +11,7 @@ import { track } from './progress'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
+import { daoSourceShortfall } from './daoSource'
 
 /** 凝炼一枚器魂需耗的道源 */
 export const SOUL_REFINE_COST = 20
@@ -38,8 +39,9 @@ export function refineEquipment(uid: string): boolean {
     ui.toast('此器平平无奇,无形意可存', 'warn')
     return false
   }
+  const short = daoSourceShortfall(SOUL_REFINE_COST, endgame.daoSource)
   if (!endgame.spendDaoSource(SOUL_REFINE_COST)) {
-    ui.toast(`道源不足 ${SOUL_REFINE_COST}`, 'warn')
+    ui.toast(short.reason ?? `道源不足 ${SOUL_REFINE_COST}`, 'warn')
     return false
   }
 
@@ -85,4 +87,3 @@ export function dissolveSoul(uid: string): void {
 }
 
 export { previewSoul, canRefine }
-

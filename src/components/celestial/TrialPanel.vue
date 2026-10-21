@@ -16,14 +16,14 @@
       <button
         class="btn-seal mt-2 w-full !py-2 !text-[12px]"
         :disabled="endgame.dailyDoneDay === daily.day || (endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST)"
-        :title="endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST ? '道源不足' : undefined"
+        :title="endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)}` : undefined"
         @click="goDaily"
       >
         {{
           endgame.dailyDoneDay === daily.day
             ? '今日已成,明日再会'
             : endgame.daoSource < CHALLENGE_ENTRY_COST
-              ? `应 战(道源不足:需 ${CHALLENGE_ENTRY_COST},余 ${formatNum(endgame.daoSource)})`
+              ? `应 战(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
               : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
         }}
       </button>
@@ -40,12 +40,12 @@
           <button
             class="btn-seal flex-1 !py-2 !text-[12px]"
             :disabled="endgame.daoSource < MUTATION_ENTRY_COST"
-            :title="endgame.daoSource < MUTATION_ENTRY_COST ? '道源不足' : undefined"
+            :title="endgame.daoSource < MUTATION_ENTRY_COST ? `道源尚差 ${daoSourceShortText(MUTATION_ENTRY_COST, endgame.daoSource)}` : undefined"
             @click="goMutation"
           >
             {{
               endgame.daoSource < MUTATION_ENTRY_COST
-                ? `应 战(道源不足:需 ${MUTATION_ENTRY_COST},余 ${formatNum(endgame.daoSource)})`
+                ? `应 战(道源尚差 ${daoSourceShortText(MUTATION_ENTRY_COST, endgame.daoSource)} · 需 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
                 : `应 战(道源 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)} · 破解得 ${MUTATION_BASE_REWARD})`
             }}
           </button>
@@ -80,12 +80,12 @@
         <button
           class="btn-ghost mt-2.5 w-full !py-2 !text-[13px]"
           :disabled="endgame.daoSource < trial.entryCost"
-          :title="endgame.daoSource < trial.entryCost ? '道源不足' : undefined"
+          :title="endgame.daoSource < trial.entryCost ? `道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)}` : undefined"
           @click="goTrial(trial.id)"
         >
           {{
             endgame.daoSource < trial.entryCost
-              ? `应 试(道源不足:需 ${trial.entryCost},余 ${formatNum(endgame.daoSource)})`
+              ? `应 试(道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)} · 需 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)})`
               : `应 试(道源 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)} · 功成得 ${trial.rewardDaoSource})`
           }}
         </button>
@@ -175,12 +175,12 @@
         <button
           class="btn-seal flex-1 !py-2 !text-[12px]"
           :disabled="!challengeVerdict?.ok || run !== null || endgame.daoSource < CHALLENGE_ENTRY_COST"
-          :title="endgame.daoSource < CHALLENGE_ENTRY_COST ? '道源不足' : undefined"
+          :title="endgame.daoSource < CHALLENGE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)}` : undefined"
           @click="doUndertake"
         >
           {{
             endgame.daoSource < CHALLENGE_ENTRY_COST
-              ? `立 约(道源不足:需 ${CHALLENGE_ENTRY_COST},余 ${formatNum(endgame.daoSource)})`
+              ? `立 约(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
               : `立 约(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
           }}
         </button>
@@ -214,6 +214,7 @@
   } from '@/core/challenge'
   import { BUILD_PROFILES } from '@/core/buildSim'
   import { cnNumber, formatNum } from '@/utils/format'
+  import { daoSourceShortText } from '@/core/daoSource'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
   import type { ReportView } from '@/components/celestial/BattleReportDialog.vue'

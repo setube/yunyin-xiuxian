@@ -34,6 +34,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore, type WorldRunState } from '@/stores/endgame'
 import { gateDef } from '@/data/qimen'
 import { useUiStore } from '@/stores/ui'
+import { daoSourceShortfall } from './daoSource'
 
 /** 单场战果 */
 export interface StepOutcome {
@@ -253,8 +254,9 @@ export function startWorldExpedition(worldId: string, pactId: string | null, gat
     }
     sealedMods = sealed
   }
+  const short = daoSourceShortfall(world.entryCost, endgame.daoSource)
   if (!endgame.spendDaoSource(world.entryCost)) {
-    ui.toast(`道源不足 ${world.entryCost}(天道熔炉可献祭闲置资财)`, 'warn')
+    ui.toast(`${short.reason ?? `道源尚差 ${world.entryCost}`}(天道熔炉可献祭闲置资财)`, 'warn')
     return null
   }
   const rules = chainRules(currentDaoRules(), world.rules, pactRules(pact), gateRulesOf(gate?.id))
@@ -417,8 +419,9 @@ export function challengeMutation(mutatorIds: string[]): MutationResult | null {
     ui.toast('先择道途,方可应变数', 'warn')
     return null
   }
+  const short = daoSourceShortfall(MUTATION_ENTRY_COST, endgame.daoSource)
   if (!endgame.spendDaoSource(MUTATION_ENTRY_COST)) {
-    ui.toast(`道源不足 ${MUTATION_ENTRY_COST}`, 'warn')
+    ui.toast(short.reason ?? `道源不足 ${MUTATION_ENTRY_COST}`, 'warn')
     return null
   }
   const muts = mutatorIds.map(id => MUTATORS.find(m => m.id === id)).filter(m => m !== undefined)
@@ -459,8 +462,9 @@ export function rerollVoidWorld(): boolean {
     ui.toast('虚界远征在途,此界尚不能散去', 'warn')
     return false
   }
+  const short = daoSourceShortfall(VOID_REROLL_COST, endgame.daoSource)
   if (!endgame.spendDaoSource(VOID_REROLL_COST)) {
-    ui.toast(`道源不足 ${VOID_REROLL_COST}`, 'warn')
+    ui.toast(short.reason ?? `道源不足 ${VOID_REROLL_COST}`, 'warn')
     return false
   }
   const generated = generateApprovedWorld(Date.now() % 999983, 40, voidHistory())
@@ -570,4 +574,3 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
     stars: '★'.repeat(starN) + '☆'.repeat(5 - starN)
   }
 }
-

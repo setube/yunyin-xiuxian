@@ -32,6 +32,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
+import { daoSourceShortfall } from './daoSource'
 
 /**
  * 真仙(仙界门槛)方可踏足天界。
@@ -126,8 +127,9 @@ export function condenseDaoFruit(): boolean {
   const endgame = useEndgameStore()
   const player = usePlayerStore()
   const ui = useUiStore()
+  const short = daoSourceShortfall(DAO_SOURCE_PER_FRUIT, endgame.daoSource)
   if (!endgame.spendDaoSource(DAO_SOURCE_PER_FRUIT)) {
-    ui.toast(`道源不足 ${DAO_SOURCE_PER_FRUIT}`, 'warn')
+    ui.toast(short.reason ?? `道源不足 ${DAO_SOURCE_PER_FRUIT}`, 'warn')
     return false
   }
   player.addDaoFruit(1)
@@ -325,8 +327,9 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
     ui.toast('此界早已散于天道,无从重写', 'warn')
     return null
   }
+  const short = daoSourceShortfall(REWRITE_ENTRY_COST, endgame.daoSource)
   if (!endgame.spendDaoSource(REWRITE_ENTRY_COST)) {
-    ui.toast(`道源不足 ${REWRITE_ENTRY_COST}`, 'warn')
+    ui.toast(short.reason ?? `道源不足 ${REWRITE_ENTRY_COST}`, 'warn')
     return null
   }
   const player = usePlayerStore()
@@ -386,8 +389,9 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
     ui.toast('先择道途,方可赴试炼', 'warn')
     return null
   }
+  const short = daoSourceShortfall(trial.entryCost, endgame.daoSource)
   if (!endgame.spendDaoSource(trial.entryCost)) {
-    ui.toast(`道源不足 ${trial.entryCost}`, 'warn')
+    ui.toast(short.reason ?? `道源不足 ${trial.entryCost}`, 'warn')
     return null
   }
   const stats = player.celestialStats

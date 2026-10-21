@@ -152,12 +152,21 @@
           <button
             v-if="pendingRefineUid !== row.inst.uid"
             class="btn-ghost !px-3 !py-2 !text-[11px]"
+            :disabled="refineShort.short.m > 0"
+            :title="refineShort.reason ?? undefined"
             @click="pendingRefineUid = row.inst.uid"
           >
-            入 炉
+            {{ refineShort.short.m > 0 ? `入 炉(尚差${daoSourceShortText(SOUL_REFINE_COST, endgame.daoSource)})` : '入 炉' }}
           </button>
           <div v-else class="flex shrink-0 items-center gap-1.5">
-            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doRefine(row.inst.uid)">确认凝炼</button>
+            <button
+              class="btn-seal !px-2.5 !py-2 !text-[11px]"
+              :disabled="refineShort.short.m > 0"
+              :title="refineShort.reason ?? undefined"
+              @click="doRefine(row.inst.uid)"
+            >
+              确认凝炼
+            </button>
             <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pendingRefineUid = null">再想想</button>
           </div>
         </div>
@@ -184,6 +193,7 @@
   import { equipmentTemplate } from '@/data/equipment'
   import { SOUL_SLOTS, soulGradeDef, soulMods, soulName, soulTypeDef, type SoulInstance } from '@/data/souls'
   import { canRefine, dissolveSoul, previewSoul, refineEquipment, removeSoul, SOUL_REFINE_COST, wearSoul } from '@/core/soulService'
+  import { daoSourceShortfall, daoSourceShortText } from '@/core/daoSource'
   import { endgameUnlocked } from '@/core/endgameService'
   import { useEndgameStore } from '@/stores/endgame'
   import { useInventoryStore } from '@/stores/inventory'
@@ -193,6 +203,7 @@
   const router = useRouter()
   const endgame = useEndgameStore()
   const inventory = useInventoryStore()
+  const refineShort = computed(() => daoSourceShortfall(SOUL_REFINE_COST, endgame.daoSource))
 
   const unlocked = computed(() => endgameUnlocked())
   const idleOpen = ref(false)
