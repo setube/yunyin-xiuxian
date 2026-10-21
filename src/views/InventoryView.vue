@@ -183,10 +183,32 @@
         <p v-if="pillMasteryText(currentPill.def.id)" class="mt-1 text-[11px] text-ink-faint">
           {{ pillMasteryText(currentPill.def.id) }}
         </p>
+        <!--
+          服前把顶满/将顶摊明(与 usePill 的 buffOverflowOf 同一判据):
+          顶满再服 = 白费,贴着上限只续到顶 —— 决策就地可见,不等服后 toast。
+        -->
+        <p
+          v-if="currentPillHint"
+          class="mt-1 text-[11px]"
+          :class="currentPillHint.tone === 'cinnabar' ? 'text-cinnabar' : 'text-amber-ink'"
+        >
+          {{ currentPillHint.text }}
+        </p>
       </template>
       <template #footer>
         <div class="grid grid-cols-2 gap-2">
-          <button class="btn-seal" @click="onUsePill()">服 用</button>
+          <!--
+            药力顶满时再服会真·白吃一枚(usePill 照扣库存,只把「白费」放进服后 toast)。
+            与修行快捷卡对同一个 buffOverflowOf 判据相反:那里顶满置灰,这里此前仍可点。
+            不可行就置灰,拦因已由 currentPillHint 就地摊开。
+          -->
+          <button
+            class="btn-seal"
+            :disabled="currentPillOverflow === 'full'"
+            @click="onUsePill()"
+          >
+            服 用
+          </button>
           <!-- 批量吃丹:存量够几枚就连服几枚。文案把「×5」改成真数 —— 只剩 2 枚还挂着 ×5,
                结算却吃到没有就停,界面说的与做的对不上;只够 1 枚时连服没有意义,直接不摆。
                增益丹每次只服 1 枚(药力顶格,多服白费),不摆「连服」免得点了没反应 -->
@@ -235,6 +257,7 @@
   import { useResourcesStore } from '@/stores/resources'
   import { useUiStore } from '@/stores/ui'
   import { useSettingsStore } from '@/stores/settings'
+  import { useCultivationStore } from '@/stores/cultivation'
   import { qualityDef } from '@/data/qualities'
   import { pillDef, pillQualityColor, pillQualityName, pillRank } from '@/data/pills'
   import { HERB_GRADE_SHORT } from '@/data/herbGrades'
@@ -243,6 +266,7 @@
   import { EQUIP_SLOT_NAMES, EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
   import { usePill, usePillBatch } from '@/core/pillService'
+  import { buffOverflowOf, type BuffOverflow } from '@/core/buffCap'
 
   import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
   import { bestEquipFor, equipAllBest, equipSetCombo, equipSetPreview, unequipAllEquipped } from '@/core/equipBest'
@@ -269,6 +293,7 @@
   const ui = useUiStore()
   const settings = useSettingsStore()
   const lore = useLoreStore()
+  const cultivation = useCultivationStore()
 
   type Tab = 'equip' | 'pill' | 'material' | 'artifact'
   const tab = ref<Tab>('equip')
@@ -391,6 +416,24 @@
 
   const pillDetail = ref<string | null>(null)
   const currentPill = computed(() => (pillDetail.value ? (pillRows.value.find(r => r.def?.id === pillDetail.value) ?? null) : null))
+
+  /**
+   * 增益丹服前判定(与 usePill 同口径 buffOverflowOf):
+   * full = 顶满再服即白费,partial = 贴着上限只续到顶。
+   * 「服 用」在 full 态一并置灰;拦因由 currentPillHint 就地摊开。
+   */
+  const currentPillOverflow = computed<BuffOverflow | null>(() => {
+    const def = currentPill.value?.def
+    if (!def || def.kind !== 'buff' || !def.buffId) return null
+    return buffOverflowOf(cultivation.buffs, def.buffId, Date.now())
+  })
+
+  const currentPillHint = computed<{ text: string; tone: 'cinnabar' | 'amber' } | null>(() => {
+    const overflow = currentPillOverflow.value
+    if (overflow === 'full') return { text: '药力已顶满——这一颗将白费', tone: 'cinnabar' }
+    if (overflow === 'partial') return { text: '药力将触上限——这一颗只续到顶', tone: 'amber' }
+    return null
+  })
 
   const craftOpen = ref(false)
   const decomposeOpen = ref(false)

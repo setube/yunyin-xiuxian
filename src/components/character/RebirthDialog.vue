@@ -114,7 +114,17 @@
     </div>
     <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">{{ rebirthHint }}</p>
     <template #footer>
-      <button class="btn-ghost w-full !text-[12px]" @click="rebirth">兵解转世</button>
+      <!--
+        未达金丹仍可点、点了才 toast 拦 —— 与全库「不可行就置灰 + 就地列因」相反。
+        门槛读 MANUAL_REBIRTH_MIN_MAJOR,境名读 REALMS,不手写「金丹」。
+      -->
+      <button class="btn-ghost w-full !text-[12px]" :disabled="!canRebirth" @click="rebirth">
+        {{
+          canRebirth
+            ? '兵解转世'
+            : `${REALMS[MANUAL_REBIRTH_MIN_MAJOR]?.name ?? ''}境方可自行兵解`
+        }}
+      </button>
     </template>
   </BaseModal>
 

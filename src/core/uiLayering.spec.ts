@@ -110,6 +110,23 @@ describe('界面分层 · 浮层只有一个出处', () => {
     expect(src, '读屏要报展开态').toContain(':aria-expanded="taskTap === `${a.uid}:${t.spec}`"')
     expect(src, '再点同枚才派出').toContain('dispatcher(uid, spec)')
   })
+
+  it('白费/未达门槛要置灰 —— 丹药顶满、兵解未达境,不许点了才 toast', () => {
+    // 同族规:不可行就置灰 + 就地列因,别让点下去才知道。
+    // ① 丹药详情「服 用」顶满仍可点,按下就真·白吃一颗;修行快捷卡对同一个
+    //    buffOverflowOf 判据置灰「已顶」,两处此前相反。
+    // ② 兵解转世未达金丹仍可点,点了才 toast 拦。
+    const inv = FILES.find(f => f.path === 'views/InventoryView.vue')
+    expect(inv, 'InventoryView 不见了').toBeDefined()
+    expect(inv!.src, '丹药顶满要置灰(判据 currentPillOverflow)').toContain(
+      ':disabled="currentPillOverflow === \'full\'"'
+    )
+    expect(inv!.src, '丹药顶满拦因要就地摊(白费)').toContain('药力已顶满——这一颗将白费')
+    const rebirth = FILES.find(f => f.path === 'components/character/RebirthDialog.vue')
+    expect(rebirth, 'RebirthDialog 不见了').toBeDefined()
+    expect(rebirth!.src, '兵解未达境要置灰(canRebirth)').toContain(':disabled="!canRebirth"')
+    expect(rebirth!.src, '兵解置灰要列门槛境名,不许只有定性').toContain('境方可自行兵解')
+  })
 })
 
 /**
