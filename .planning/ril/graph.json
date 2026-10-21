@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 288,
+  "round": 289,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T11:05:10+00:00",
+  "updated_at": "2026-10-21T11:25:28+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20349,6 +20349,81 @@
       "title": "熔炉扣料失败静默与秘境入口泛称同属可观测性缺口",
       "description": "两处均在资源判据通过后扣款失败时缺少可读回执，玩家无法区分余额变化与界面失效。",
       "confidence": 0.9
+    },
+    "TASK-377": {
+      "id": "TASK-377",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T11:18:44+00:00",
+      "updated_at": "2026-10-21T11:25:28+00:00",
+      "touched_round": 289,
+      "title": "逆旅契付不起仍可点且只报道果不足总价",
+      "description": "RebirthDialog 的逆旅契卡付不起只降透明度，按钮仍可点击；signLifeTrial 拒因只写道果不足，不报尚差多少。需卡面与服务共用缺口判据，付不起即禁用并就地列差。",
+      "category": "correctness",
+      "severity": 0.67,
+      "confidence": 0.96,
+      "effort": 1,
+      "unlock_factor": 1
+    },
+    "COMP-035": {
+      "id": "COMP-035",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:24:50+00:00",
+      "updated_at": "2026-10-21T11:24:50+00:00",
+      "touched_round": 289,
+      "title": "逆旅契服务与转世弹窗",
+      "description": "src/core/lifeTrialService.ts 的逆旅契判据/签约与 src/components/character/RebirthDialog.vue 的契约卡呈现。"
+    },
+    "ISS-939": {
+      "id": "ISS-939",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T11:24:54+00:00",
+      "updated_at": "2026-10-21T11:25:28+00:00",
+      "touched_round": 289,
+      "title": "逆旅契付不起仍可点且只报道果不足总价",
+      "description": "逆旅契卡在道果不足时只降低透明度但按钮仍可点击；signLifeTrial 拒因只写「道果不足」，不报实际尚差。"
+    },
+    "HYP-112": {
+      "id": "HYP-112",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:24:59+00:00",
+      "updated_at": "2026-10-21T11:24:59+00:00",
+      "touched_round": 289,
+      "title": "逆旅契入口与签约同属资源缺口可观测性缺陷",
+      "description": "卡面判据与服务扣款各自表达余额不足，导致可点击的伪入口和不可行动的泛称回执。",
+      "confidence": 0.93
+    },
+    "EV-258": {
+      "id": "EV-258",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:25:05+00:00",
+      "updated_at": "2026-10-21T11:25:05+00:00",
+      "touched_round": 289,
+      "title": "逆旅契缺口与禁用判据故障注入转红",
+      "source": "src/core/lifeTrialService.spec.ts; commit a2e4f74",
+      "description": "新增差额、付得起归空、已立契不报缺与卡面禁用判据；恢复只降透明度与「道果不足」旧写法时两条卡面判据转红，恢复修复后全绿。",
+      "confidence": 0.98
+    },
+    "CHG-491": {
+      "id": "CHG-491",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T11:25:10+00:00",
+      "updated_at": "2026-10-21T11:25:10+00:00",
+      "touched_round": 289,
+      "title": "逆旅契缺口收口到 lifeTrialShortfall",
+      "commit": "a2e4f74",
+      "description": "卡面禁用与就地列差，入口和服务同报实际差额。"
     }
   },
   "edges": [
@@ -30216,6 +30291,36 @@
       "to": "HYP-111",
       "type": "validates",
       "created_at": "2026-10-21T11:05:01+00:00"
+    },
+    {
+      "from": "ISS-939",
+      "to": "COMP-035",
+      "type": "located_in",
+      "created_at": "2026-10-21T11:25:13+00:00"
+    },
+    {
+      "from": "TASK-377",
+      "to": "ISS-939",
+      "type": "addresses",
+      "created_at": "2026-10-21T11:25:19+00:00"
+    },
+    {
+      "from": "EV-258",
+      "to": "HYP-112",
+      "type": "validates",
+      "created_at": "2026-10-21T11:25:19+00:00"
+    },
+    {
+      "from": "CHG-491",
+      "to": "ISS-939",
+      "type": "resolves",
+      "created_at": "2026-10-21T11:25:19+00:00"
+    },
+    {
+      "from": "CHG-491",
+      "to": "TASK-377",
+      "type": "implements",
+      "created_at": "2026-10-21T11:25:19+00:00"
     }
   ]
 }
