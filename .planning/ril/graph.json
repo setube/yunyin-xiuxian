@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 313,
+  "round": 314,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T20:25:01+00:00",
+  "updated_at": "2026-10-21T20:55:54+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -22683,6 +22683,203 @@
       "touched_round": 313,
       "commit": "d286616",
       "description": "settleOffline 先 collectFinished 再转世,离线卷轴报道童产出;道童页与离线账共用 apprenticeText。"
+    },
+    "ISS-981": {
+      "id": "ISS-981",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:52:10+00:00",
+      "updated_at": "2026-10-21T20:55:40+00:00",
+      "touched_round": 314,
+      "title": "远征 totalRounds 与逐行战报不同账",
+      "severity": 0.65,
+      "detail": "sanitize 只各自修形;坏档 rows 五场 60 回合而 totalRounds 0 时,杀伐速战赏按零回合给满,道痕也记成假快仗"
+    },
+    "TASK-426": {
+      "id": "TASK-426",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:52:10+00:00",
+      "updated_at": "2026-10-21T20:55:40+00:00",
+      "touched_round": 314,
+      "category": "correctness",
+      "severity": 0.65,
+      "confidence": 1,
+      "effort": 1,
+      "title": "在途远征总回合由逐行战报重建",
+      "description": "endgame.sanitize 在 rows 非空时以回合和覆盖 totalRounds,旧档无 rows 保留原值;补两例行为测试与故障注入"
+    },
+    "ISS-982": {
+      "id": "ISS-982",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:52:20+00:00",
+      "updated_at": "2026-10-21T20:55:40+00:00",
+      "touched_round": 314,
+      "title": "忆战快照法宝坏重数与重复佩带未收口",
+      "severity": 0.7,
+      "detail": "sanitizeMarkReplay 只 floor level,999 重会放大忆战法宝神通;同 defId 重复条目会让战斗循环每回合触发两次"
+    },
+    "TASK-427": {
+      "id": "TASK-427",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:52:21+00:00",
+      "updated_at": "2026-10-21T20:55:40+00:00",
+      "touched_round": 314,
+      "category": "correctness",
+      "severity": 0.7,
+      "confidence": 1,
+      "effort": 1,
+      "title": "忆战快照法宝按行囊同一把尺修形",
+      "description": "sanitizeMarkReplay 对 level 夹 0..ARTIFACT_MAX_LEVEL,同 defId 只留首件;补行为测试与故障注入"
+    },
+    "ISS-983": {
+      "id": "ISS-983",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:52:28+00:00",
+      "updated_at": "2026-10-21T20:55:40+00:00",
+      "touched_round": 314,
+      "title": "开炉炼满确认态跨关闭残留",
+      "severity": 0.55,
+      "detail": "BrewingDialog 常驻只切 open,pillFullId 不随关闭复位;下次开炉直接停在上次开炉确认上"
+    },
+    "TASK-428": {
+      "id": "TASK-428",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:52:28+00:00",
+      "updated_at": "2026-10-21T20:55:40+00:00",
+      "touched_round": 314,
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 1,
+      "title": "开炉弹窗关闭即撤销炼满确认",
+      "description": "BrewingDialog watch open,关闭时 pillFullId=null;补静态守卫与故障注入"
+    },
+    "COMP-046": {
+      "id": "COMP-046",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:52:33+00:00",
+      "updated_at": "2026-10-21T20:52:33+00:00",
+      "touched_round": 314,
+      "title": "道痕与忆战快照修形",
+      "path": "src/stores/endgame.ts"
+    },
+    "COMP-047": {
+      "id": "COMP-047",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:52:33+00:00",
+      "updated_at": "2026-10-21T20:52:33+00:00",
+      "touched_round": 314,
+      "title": "开炉炼丹弹窗与账本",
+      "path": "src/components/inventory/BrewingDialog.vue"
+    },
+    "EV-979": {
+      "id": "EV-979",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:52:48+00:00",
+      "updated_at": "2026-10-21T20:52:48+00:00",
+      "touched_round": 314,
+      "source": "src/stores/endgame.spec.ts:204-217 (totalRounds 重建与旧档保留)",
+      "summary": "故障注入去掉 rows 回合和重建后新用例转红;恢复后 41 例全绿",
+      "confidence": 1
+    },
+    "EV-980": {
+      "id": "EV-980",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:52:48+00:00",
+      "updated_at": "2026-10-21T20:52:48+00:00",
+      "touched_round": 314,
+      "source": "src/stores/endgame.spec.ts:582-607 (忆战法宝重数/重复)",
+      "summary": "故障注入去掉 ARTIFACT_MAX_LEVEL 夹取后新断言转红;恢复后全绿",
+      "confidence": 1.0
+    },
+    "EV-981": {
+      "id": "EV-981",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:52:48+00:00",
+      "updated_at": "2026-10-21T20:52:48+00:00",
+      "touched_round": 314,
+      "source": "src/ui/irreversibleConfirm.spec.ts:74-82 (关闭复位守卫)",
+      "summary": "故障注入删掉 watch 复位后新用例转红;恢复后全绿",
+      "confidence": 1.0
+    },
+    "CHG-527": {
+      "id": "CHG-527",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:55:21+00:00",
+      "updated_at": "2026-10-21T20:55:21+00:00",
+      "touched_round": 314,
+      "commit": "25ef51f",
+      "description": "endgame.sanitize 以逐行战报重建 totalRounds,并收口忆战快照法宝重数与重复佩带;补行为测试与故障注入"
+    },
+    "CHG-528": {
+      "id": "CHG-528",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:55:25+00:00",
+      "updated_at": "2026-10-21T20:55:25+00:00",
+      "touched_round": 314,
+      "commit": "25ef51f",
+      "description": "endgame.sanitize 以逐行战报重建 totalRounds,并收口忆战快照法宝重数与重复佩带;补行为测试与故障注入"
+    },
+    "HYP-158": {
+      "id": "HYP-158",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:55:49+00:00",
+      "updated_at": "2026-10-21T20:55:54+00:00",
+      "touched_round": 314,
+      "confidence": 1,
+      "title": "远征总回合可由逐行战报重建",
+      "description": "rows 是唯一可复核记录,totalRounds 与 rows 回合和不一致时应以 rows 为准"
+    },
+    "HYP-159": {
+      "id": "HYP-159",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:55:49+00:00",
+      "updated_at": "2026-10-21T20:55:54+00:00",
+      "touched_round": 314,
+      "confidence": 1,
+      "title": "忆战法宝应与行囊同一把尺",
+      "description": "快照法宝 level 越界与同 defId 重复会放大/双触发,应与 inventory.sanitize 同一夹取与去重"
+    },
+    "HYP-160": {
+      "id": "HYP-160",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:55:49+00:00",
+      "updated_at": "2026-10-21T20:55:54+00:00",
+      "touched_round": 314,
+      "confidence": 1,
+      "title": "开炉炼满确认态随弹窗关闭失效",
+      "description": "BrewingDialog 常驻只切 open,确认态必须在关闭时复位"
     }
   },
   "edges": [
@@ -33540,6 +33737,84 @@
       "to": "ISS-979",
       "type": "resolves",
       "created_at": "2026-10-21T20:25:01+00:00"
+    },
+    {
+      "from": "TASK-426",
+      "to": "ISS-981",
+      "type": "addresses",
+      "created_at": "2026-10-21T20:52:43+00:00"
+    },
+    {
+      "from": "ISS-981",
+      "to": "COMP-046",
+      "type": "located_in",
+      "created_at": "2026-10-21T20:52:43+00:00"
+    },
+    {
+      "from": "TASK-427",
+      "to": "ISS-982",
+      "type": "addresses",
+      "created_at": "2026-10-21T20:52:43+00:00"
+    },
+    {
+      "from": "ISS-982",
+      "to": "COMP-046",
+      "type": "located_in",
+      "created_at": "2026-10-21T20:52:43+00:00"
+    },
+    {
+      "from": "TASK-428",
+      "to": "ISS-983",
+      "type": "addresses",
+      "created_at": "2026-10-21T20:52:43+00:00"
+    },
+    {
+      "from": "ISS-983",
+      "to": "COMP-047",
+      "type": "located_in",
+      "created_at": "2026-10-21T20:52:43+00:00"
+    },
+    {
+      "from": "CHG-527",
+      "to": "ISS-983",
+      "type": "resolves",
+      "created_at": "2026-10-21T20:55:30+00:00"
+    },
+    {
+      "from": "CHG-527",
+      "to": "TASK-428",
+      "type": "implements",
+      "created_at": "2026-10-21T20:55:30+00:00"
+    },
+    {
+      "from": "CHG-528",
+      "to": "TASK-426",
+      "type": "implements",
+      "created_at": "2026-10-21T20:55:30+00:00"
+    },
+    {
+      "from": "CHG-528",
+      "to": "TASK-427",
+      "type": "implements",
+      "created_at": "2026-10-21T20:55:30+00:00"
+    },
+    {
+      "from": "EV-979",
+      "to": "HYP-158",
+      "type": "validates",
+      "created_at": "2026-10-21T20:55:53+00:00"
+    },
+    {
+      "from": "EV-980",
+      "to": "HYP-159",
+      "type": "validates",
+      "created_at": "2026-10-21T20:55:53+00:00"
+    },
+    {
+      "from": "EV-981",
+      "to": "HYP-160",
+      "type": "validates",
+      "created_at": "2026-10-21T20:55:53+00:00"
     }
   ]
 }
