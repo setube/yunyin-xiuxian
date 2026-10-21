@@ -154,7 +154,7 @@
 
           <!--
             镇压中的产出条:整行铺开、可换行。
-            速率放在这里而不是右上角,长数字(1.2 亿灵石/时 · 玄铁 12/时)才有地方舒展
+            速率放在这里而不是右上角,长数字(1.2 亿灵石每小时 · 玄铁 12/时)才有地方舒展
           -->
           <div
             v-if="row.suppressed"
@@ -360,9 +360,9 @@
   import { EVENT_TIERS, tierOddsText } from '@/core/eventTier'
   import { pendingChainStages } from '@/core/eventEngine'
   import { foeOriginPartsText } from '@/core/battleAnalysis'
-  import { SUPPRESS_THRESHOLDS, suppressRateFor, suppressionProgress } from '@/core/suppress'
-  import { REVIVE_AFTER_HOURS, hoursUntilRevive, regionRecallFor, prosperityName, prosperityYieldMult } from '@/core/worldMemory'
-  import { mulN, gn } from '@/utils/gnum'
+  import { SUPPRESS_THRESHOLDS, suppressRateLine, suppressionProgress } from '@/core/suppress'
+  import { REVIVE_AFTER_HOURS, hoursUntilRevive, regionRecallFor, prosperityName } from '@/core/worldMemory'
+  import { gn } from '@/utils/gnum'
   import type { WorldId } from '@/types'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, ecologyChips, ECO_LEVEL_NAMES, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
@@ -632,13 +632,7 @@
    * 常量一改界面就开始撒谎),并乘上当前兴衰系数 —— 显示的数与真正入账的数同源。
    */
   function rateText(r: RegionDef, recall: RegionRecall): string {
-    const rate = suppressRateFor(r.id)
-    if (!rate) return '—'
-    const mult = prosperityYieldMult(recall.prosperity)
-    const stone = `${formatGN(mulN(rate.stonePerHour, mult))}灵石/时`
-    if (!rate.resource) return stone
-    const perHour = Math.max(1, Math.round(rate.resource.perHour * mult))
-    return `${stone} · ${rate.resource.name}${perHour}/时`
+    return suppressRateLine(r.id, recall.prosperity)
   }
 
   /** 复聚倒计时文案:一天以上说日,一天以内说时 */

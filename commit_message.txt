@@ -1,0 +1,13 @@
+fix(suppress): 镇压达成回执报出产出账 —— 产出行收成单源
+
+- 缺口:历练页的「自动产出 · 灵石 X/时 · 灵草 Y/时」原是 AdventureView 里
+  手拼的一段,而首次镇压成功的 toast 只喊「此地将自动产出资源」—— 成就时刻
+  恰恰是玩家唯一听不到数字的地方
+- 新增 core/suppress.suppressRateLine(regionId, prosperity):速率仍只读
+  suppressRateFor,兴衰系数与物产名一并折算;界面卡片与达成回执共用这一份
+- exploration.runBattle 的镇压回执改报「此后将自动产出:灵石 X/时 · 灵草 Y/时」,
+  与卡片同一串数
+- suppress.spec 补两例:产出行与速率表同源(灵石段逐字相等)、未知地界不印半行残句
+- singleSourceAudit 判据升级:界面必须调 suppressRateLine 且不许自拼「灵石/时」,
+  回执不许退回「此地将自动产出资源」这种定性话
+- 故障注入:界面改回手拼速率 → 红;回执改回旧文案 → 红

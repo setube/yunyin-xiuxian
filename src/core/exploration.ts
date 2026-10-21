@@ -36,8 +36,8 @@ import type { LastBattleView } from '@/stores/adventure'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
-import { checkSuppression, memorialLine, MEMORIAL_CHANCE } from './suppress'
-import { recordLoss, isNemesis, markAvenged, ghostOf, ghostTitle, ghostLeadIn, ECHO_GHOST_CHANCE, NEMESIS_THRESHOLD } from './worldMemory'
+import { checkSuppression, memorialLine, suppressRateLine, MEMORIAL_CHANCE } from './suppress'
+import { recordLoss, isNemesis, markAvenged, ghostOf, ghostTitle, ghostLeadIn, ECHO_GHOST_CHANCE, NEMESIS_THRESHOLD, regionRecallFor } from './worldMemory'
 import { personalityEffects } from './petPersonality'
 // 连胜与宿敌各有一个 recordLoss,一个管连胜清空、一个管宿敌(败北阈值):
 // 前者来自 Phase 28 前期玩法(earlyGameService),后者来自世界记忆(worldMemory),
@@ -368,7 +368,10 @@ function runBattle(now: number): void {
     if (suppressed && !player.suppressQualified.includes(region.id)) {
       player.markSuppressQualified(region.id)
       player.suppressRegion(region.id)
-      ui.toast(`你已彻底镇压${region.name},此地将自动产出资源`, 'rare')
+      ui.toast(
+        `你已彻底镇压${region.name},此后将自动产出:${suppressRateLine(region.id, regionRecallFor(region.id).prosperity)}`,
+        'rare'
+      )
     }
 
     // Phase 30.9 S2: 击中宿敌 → 雪耻

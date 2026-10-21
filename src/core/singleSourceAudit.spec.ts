@@ -31,11 +31,18 @@ function readSrc(fileName: string): string {
 }
 
 describe('同源审计 · 镇压速率', () => {
-  it('历练页的镇压速率走 suppressRateFor,自己不许再算一遍 stoneByTier', () => {
+  it('历练页的镇压速率走 suppressRateLine,自己不许再算一遍 stoneByTier', () => {
     const src = readSrc('AdventureView.vue')
-    expect(src, '界面必须用唯一那份速率实现').toContain('suppressRateFor')
+    expect(src, '界面必须用唯一那份速率实现').toContain('suppressRateLine')
     // 判「有没有再算一遍」而不是「有没有提到这个词」:注释里解释这件事本身是好事
     expect(src, '界面自己算一遍就等于第二份真相源(调常数时界面开始撒谎)').not.toMatch(/stoneByTier\s*\(/)
+    expect(src, '产出行文案连拼接都不许自己写').not.toMatch(/灵石\/时/)
+  })
+
+  it('镇压达成回执报的是同一份产出数字,不是一句「自动产出资源」', () => {
+    const src = readSrc('exploration.ts')
+    expect(src, '回执该调唯一那份产出行').toContain('suppressRateLine(')
+    expect(src, '回执缺数字就等于成就时刻不报账').not.toMatch(/此地将自动产出资源/)
   })
 })
 

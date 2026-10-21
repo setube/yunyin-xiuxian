@@ -15,8 +15,9 @@ import { stoneByTier } from '@/core/formulas'
 import { generateEquipment } from '@/core/equipGen'
 import { acquireEquipment } from '@/core/loot'
 import { rng, type RandomService } from '@/utils/random'
-import { gnZero, add } from '@/utils/gnum'
-import type { GNum, QualityId } from '@/types'
+import { gnZero, add, mulN } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
+import type { GNum, QualityId, RegionRecall } from '@/types'
 import { equipmentTemplate } from '@/data/equipment'
 import { deriveProsperity, isReviving, prosperityYieldMult } from './worldMemory'
 import { settleRegionRevivals } from './regionRevival'
@@ -188,6 +189,23 @@ export function suppressRateFor(regionId: string): SuppressRate | null {
     stonePerHour: stoneByTier(region.tier, SUPPRESS_YIELD_PER_HOUR.stoneMultiplier),
     resource: suppressYield(regionId)
   }
+}
+
+/**
+ * 镇压产出行文案:灵石/时 × 物产,乘兴衰系数 —— 界面与「镇压达成」回执共用一份。
+ *
+ * 从前这段只活在 AdventureView 里,镇压达成那一瞬间的 toast 却只喊一句「自动产出」,
+ * 成就时刻恰恰是玩家唯一听不到数字的地方。抽出这份单源实现,两处都报数,
+ * 也免得界面一处、回执一处各写一套格式。
+ */
+export function suppressRateLine(regionId: string, prosperity: RegionRecall['prosperity']): string {
+  const rate = suppressRateFor(regionId)
+  if (!rate) return '—'
+  const mult = prosperityYieldMult(prosperity)
+  const stone = `${formatGN(mulN(rate.stonePerHour, mult))}灵石/时`
+  if (!rate.resource) return stone
+  const perHour = Math.max(1, Math.round(rate.resource.perHour * mult))
+  return `${stone} · ${rate.resource.name}${perHour}/时`
 }
 
 /**
