@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 315,
+  "round": 316,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T21:26:39+00:00",
+  "updated_at": "2026-10-21T21:36:36+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -22951,6 +22951,66 @@
       "touched_round": 315,
       "commit": "2279687",
       "description": "以 asCombatSkills/asCombatSkill 单源修形忆战与虚界技能，夹 rate/mult 与 effect 枚举；战斗技能选择补 capChance；测试覆盖坏存档与故障注入"
+    },
+    "COMP-049": {
+      "id": "COMP-049",
+      "type": "component",
+      "status": "superseded",
+      "version": 2,
+      "created_at": "2026-10-21T21:32:29+00:00",
+      "updated_at": "2026-10-21T21:36:36+00:00",
+      "touched_round": 316,
+      "title": "所知与熟练度写入",
+      "path": "src/stores/lore.ts"
+    },
+    "COMP-050": {
+      "id": "COMP-050",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T21:33:02+00:00",
+      "updated_at": "2026-10-21T21:33:02+00:00",
+      "touched_round": 316,
+      "title": "所知与熟练度写入",
+      "path": "src/stores/lore.ts"
+    },
+    "ISS-985": {
+      "id": "ISS-985",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T21:33:12+00:00",
+      "updated_at": "2026-10-21T21:36:24+00:00",
+      "touched_round": 316,
+      "title": "所知写入接口接受负数与非有限增量",
+      "severity": 0.62,
+      "detail": "markSeen/markEnemySeen/addRecipeMastery/addBlueprintMastery 直接累加或相减，负 n 会倒扣照面，NaN 会污染熟练度；公共 store API 缺统一非负有限值守卫"
+    },
+    "TASK-430": {
+      "id": "TASK-430",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T21:33:16+00:00",
+      "updated_at": "2026-10-21T21:36:24+00:00",
+      "touched_round": 316,
+      "category": "correctness",
+      "severity": 0.62,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "所知写入统一挡住负数与非有限值",
+      "description": "markSeen/markEnemySeen 只接受有限正增量；addRecipeMastery/addBlueprintMastery/addSkillExp 对非有限值归零且不允许负增量倒扣；补行为测试与故障注入"
+    },
+    "CHG-530": {
+      "id": "CHG-530",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T21:36:10+00:00",
+      "updated_at": "2026-10-21T21:36:10+00:00",
+      "touched_round": 316,
+      "commit": "9395ab8",
+      "description": "所知写入统一只接受有限正增量；补 lore store 行为测试与故障注入"
     }
   },
   "edges": [
@@ -33910,6 +33970,30 @@
       "to": "ISS-984",
       "type": "resolves",
       "created_at": "2026-10-21T21:26:39+00:00"
+    },
+    {
+      "from": "TASK-430",
+      "to": "ISS-985",
+      "type": "addresses",
+      "created_at": "2026-10-21T21:36:16+00:00"
+    },
+    {
+      "from": "ISS-985",
+      "to": "COMP-050",
+      "type": "located_in",
+      "created_at": "2026-10-21T21:36:21+00:00"
+    },
+    {
+      "from": "CHG-530",
+      "to": "TASK-430",
+      "type": "implements",
+      "created_at": "2026-10-21T21:36:27+00:00"
+    },
+    {
+      "from": "CHG-530",
+      "to": "ISS-985",
+      "type": "resolves",
+      "created_at": "2026-10-21T21:36:35+00:00"
     }
   ]
 }
