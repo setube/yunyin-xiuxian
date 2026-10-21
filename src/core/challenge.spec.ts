@@ -102,6 +102,17 @@ describe('相元挑战 · undertakeChallenge 清/败原子', () => {
     expect(useUiStore().toasts.at(-1)).toEqual(expect.objectContaining({ text: '道源尚差 5', kind: 'warn' }))
   })
 
+  it('世界认不出：先验界再扣费，返回 null 且道源分文不动', () => {
+    seed(true)
+    const e = useEndgameStore()
+    e.daoSource = 100
+    const verdict = { ok: true, difficulty: '凶险', viable: 1, reward: 10 }
+    const out = undertakeChallenge({ ...DRAFT, worldId: 'ghost_world' }, verdict)
+    expect(out).toBeNull()
+    expect(e.daoSource, '非法世界不得先扣入场费再失败').toBe(100)
+    expect(e.marks, '没有开打就不该留道痕').toEqual([])
+  })
+
   it('道源不足:拒因报实际差额,不把总价当缺口', () => {
     const endgame = useEndgameStore()
     endgame.daoSource = 10

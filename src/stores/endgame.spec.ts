@@ -369,6 +369,91 @@ describe('天道试炼 · recordTrial best-min 守谱', () => {
   })
 })
 
+describe('终局公共写入 · 只认目录 id 与合法值', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('器魂只收认得类型、唯一 uid 与有限品阶；坏值不污染魂仓', () => {
+    const e = useEndgameStore()
+    e.addSoul({ uid: 's1', type: 'fengmang', grade: 1, fromName: '剑' })
+    e.addSoul({ uid: 's1', type: 'gangdun', grade: 2, fromName: '同号' })
+    e.addSoul({ uid: 's2', type: 'ghost_type' as never, grade: 1, fromName: '野类型' })
+    e.addSoul({ uid: 's3', type: 'fengmang', grade: Number.NaN, fromName: '坏品阶' })
+    e.addSoul({ uid: 's4', type: 'gangdun', grade: 99, fromName: '越界品阶' })
+    expect(e.souls.map(s => [s.uid, s.type, s.grade])).toEqual([
+      ['s1', 'fengmang', 1],
+      ['s4', 'gangdun', 5]
+    ])
+  })
+
+  it('破界与试炼只认目录 id，回合按有限正整数收口', () => {
+    const e = useEndgameStore()
+    e.recordWorldClear('ghost_world')
+    e.recordWorldClear('chiyan')
+    e.recordTrial('ghost_trial', 5)
+    e.recordTrial('qisha', Number.NaN)
+    e.recordTrial('qisha', -1)
+    e.recordTrial('qisha', 6.8)
+    expect(e.worldClears).toEqual({ chiyan: 1 })
+    expect(e.trialRecords).toEqual({ qisha: { clears: 1, bestRounds: 6 } })
+  })
+
+  it('道痕写入复用读档修形：残骸不收，坏字段按语义兜底', () => {
+    const e = useEndgameStore()
+    e.addMark({ targetName: '无主残骸' } as never)
+    e.addMark({
+      life: Number.NaN,
+      targetId: 'chiyan',
+      targetName: 42,
+      cleared: 'yes',
+      rounds: Number.NaN,
+      buildName: 7,
+      powerText: null,
+      at: Number.NaN
+    } as never)
+    expect(e.marks).toHaveLength(1)
+    expect(e.marks[0]).toEqual(
+      expect.objectContaining({
+        life: 1,
+        targetId: 'chiyan',
+        targetName: 'chiyan',
+        cleared: false,
+        rounds: 0,
+        buildName: '杂学',
+        powerText: '',
+        at: 0
+      })
+    )
+  })
+
+  it('节点、纪录与道途只认目录 id 和有限值', () => {
+    const e = useEndgameStore()
+    expect(e.addMilestone('ghost_milestone', 1)).toBe(false)
+    expect(e.addMilestone('first_world', Number.NaN)).toBe(false)
+    expect(e.addMilestone('first_world', 3)).toBe(true)
+    expect(e.updateRecord('ghost_record', 10, 1, '野键', 'max')).toBe(false)
+    expect(e.updateRecord('fastest_world', Number.NaN, 1, '赤炎天', 'min')).toBe(false)
+    expect(e.updateRecord('fastest_world', 10, Number.NaN, '赤炎天', 'min')).toBe(false)
+    expect(e.updateRecord('fastest_world', 10, 1, 42 as never, 'min')).toBe(false)
+    expect(e.updateRecord('fastest_world', 10, 1, '赤炎天', 'max')).toBe(false)
+    expect(e.updateRecord('fastest_world', 10, 1, '赤炎天', 'min')).toBe(true)
+    expect(e.chooseDao('ghost_dao' as never)).toBe(false)
+    expect(e.daoPath).toBeNull()
+    expect(e.milestones.map(m => m.id)).toEqual(['first_world'])
+    expect(e.records.fastest_world).toEqual({ value: 10, life: 1, note: '赤炎天' })
+  })
+
+  it('每日落闸不接受非有限日号，避免 NaN 让当日赏无限重领', () => {
+    const e = useEndgameStore()
+    e.markDailyDone(Number.NaN)
+    e.markDailyDone(Number.POSITIVE_INFINITY)
+    expect(e.dailyDoneDay).toBeNull()
+    e.markDailyDone(20261022.8)
+    expect(e.dailyDoneDay).toBe(20261022)
+  })
+})
+
 describe('终局一次性引导标记 sanitize', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

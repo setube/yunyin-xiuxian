@@ -506,7 +506,26 @@ export const useEndgameStore = defineStore(
     const soulMods = computed<StatMods>(() => mergeMods(activeSouls.value.map(soulModsOf)))
 
     function addSoul(soul: SoulInstance): void {
-      souls.value = [...soulList.value, soul]
+      if (
+        !soul ||
+        typeof soul.uid !== 'string' ||
+        !soul.uid ||
+        typeof soul.type !== 'string' ||
+        !soulTypeDef(soul.type) ||
+        !Number.isFinite(soul.grade) ||
+        soulList.value.some(s => s.uid === soul.uid)
+      ) {
+        return
+      }
+      souls.value = [
+        ...soulList.value,
+        {
+          uid: soul.uid,
+          type: soul.type,
+          grade: Math.min(SOUL_GRADES.length - 1, Math.max(0, Math.floor(soul.grade))),
+          fromName: typeof soul.fromName === 'string' ? soul.fromName : ''
+        }
+      ]
     }
 
     /** 装配器魂;槽位已满或已装配则返回 false */
@@ -537,6 +556,7 @@ export const useEndgameStore = defineStore(
 
     function chooseDao(id: DaoPathId): boolean {
       if (daoPath.value !== null) return false
+      if (!daoPathDef(id)) return false
       daoPath.value = id
       return true
     }
@@ -558,40 +578,50 @@ export const useEndgameStore = defineStore(
     }
 
     function recordWorldClear(worldId: string): void {
+      if (worldId !== 'void' && !celestialWorldDef(worldId)) return
       worldClears.value = { ...worldClears.value, [worldId]: (worldClears.value[worldId] ?? 0) + 1 }
     }
 
     function recordTrial(trialId: string, rounds: number): void {
+      if (!trialDef(trialId) || !Number.isFinite(rounds) || rounds <= 0) return
+      const fixedRounds = Math.max(1, Math.floor(rounds))
       const prev = trialRecords.value[trialId]
       trialRecords.value = {
         ...trialRecords.value,
         [trialId]: {
           clears: (prev?.clears ?? 0) + 1,
-          bestRounds: prev ? Math.min(prev.bestRounds, rounds) : rounds
+          bestRounds: prev ? Math.min(prev.bestRounds, fixedRounds) : fixedRounds
         }
       }
     }
 
     function addMark(mark: DaoMark): void {
-      marks.value = [mark, ...marks.value].slice(0, MAX_MARKS)
+      const fixed = sanitizeMarks([mark])
+      if (fixed.length === 0) return
+      marks.value = [...fixed, ...marks.value].slice(0, MAX_MARKS)
     }
 
     function markDailyDone(day: number): void {
-      dailyDoneDay.value = day
+      if (!Number.isFinite(day)) return
+      dailyDoneDay.value = Math.floor(day)
     }
 
     /** 记一个修行节点(首次才记),返回是否新增 */
     function addMilestone(id: string, life: number): boolean {
+      if (!milestoneDef(id) || !Number.isFinite(life) || life < 1) return false
       if (milestones.value.some(m => m.id === id)) return false
-      milestones.value = [...milestones.value, { id, life, at: Date.now() }]
+      milestones.value = [...milestones.value, { id, life: Math.floor(life), at: Date.now() }]
       return true
     }
 
     /** 更新极限纪录;better 决定方向(如最少回合取小),返回是否刷新 */
     function updateRecord(id: string, value: number, life: number, note: string, better: 'min' | 'max'): boolean {
+      const def = recordDef(id)
+      if (!def || def.better !== better) return false
+      if (!Number.isFinite(value) || !Number.isFinite(life) || life < 1 || typeof note !== 'string') return false
       const prev = records.value[id]
       if (prev && (better === 'min' ? value >= prev.value : value <= prev.value)) return false
-      records.value = { ...records.value, [id]: { value, life, note } }
+      records.value = { ...records.value, [id]: { value, life: Math.floor(life), note } }
       return true
     }
 

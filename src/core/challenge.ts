@@ -104,14 +104,15 @@ export function undertakeChallenge(draft: ChallengeDraft, verdict: ChallengeVerd
   const endgame = useEndgameStore()
   const ui = useUiStore()
   if (!endgameUnlocked() || !endgame.daoPath || !verdict.ok) return null
+  // 先认界再扣费:草案可能来自过期 UI 状态或外部调用,非法世界不应白烧入场道源
+  const world = celestialWorldDef(draft.worldId)
+  if (!world) return null
   const short = daoSourceShortfall(CHALLENGE_ENTRY_COST, endgame.daoSource)
   if (!endgame.spendDaoSource(CHALLENGE_ENTRY_COST)) {
     ui.toast(short.reason ?? `道源不足 ${CHALLENGE_ENTRY_COST}`, 'warn')
     return null
   }
   const player = usePlayerStore()
-  const world = celestialWorldDef(draft.worldId)
-  if (!world) return null
   // 与远征/试炼同源:敌人按本界锚点定标,判定按玩家的厚度与境界算(见 celestialFoeCaliber)
   const { ref, judgement } = celestialFoeCaliber(player.major, player.celestialStats.mods, world.anchorTier)
   const rules = mergeRules(currentDaoRules(), draftRules(draft))
