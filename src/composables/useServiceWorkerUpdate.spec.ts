@@ -18,10 +18,16 @@ function makeInstalling() {
     addEventListener(type: string, fn: () => void) {
       if (type === "statechange") listeners.push(fn);
     },
+    removeEventListener(type: string, fn: () => void) {
+      if (type !== "statechange") return;
+      const i = listeners.indexOf(fn);
+      if (i >= 0) listeners.splice(i, 1);
+    },
     postMessage: vi.fn(),
   };
   return {
     worker,
+    listenerCount: () => listeners.length,
     setState(s: ServiceWorkerState) {
       worker.state = s;
       for (const fn of listeners) fn();
@@ -38,10 +44,16 @@ function makeRegistration(installing: ReturnType<typeof makeInstalling> | null) 
     addEventListener(type: string, fn: () => void) {
       if (type === "updatefound") updateFoundListeners.push(fn);
     },
+    removeEventListener(type: string, fn: () => void) {
+      if (type !== "updatefound") return;
+      const i = updateFoundListeners.indexOf(fn);
+      if (i >= 0) updateFoundListeners.splice(i, 1);
+    },
     update: vi.fn(() => Promise.resolve()),
   };
   return {
     registration,
+    listenerCount: () => updateFoundListeners.length,
     found: () => {
       for (const fn of updateFoundListeners) fn();
     },
@@ -136,6 +148,36 @@ describe("useServiceWorkerUpdate · 更新提示", () => {
     found();
     second.setState("installed");
     expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it("stop() 会解绑 updatefound 与当前 installing 的 statechange", () => {
+    stubBrowser({} as ServiceWorker);
+    const installing = makeInstalling();
+    const { registration, found, listenerCount } = makeRegistration(installing);
+    const handle = useServiceWorkerUpdate(
+      registration as unknown as ServiceWorkerRegistration,
+    );
+    found();
+    expect(listenerCount()).toBe(1);
+    expect(installing.listenerCount()).toBe(1);
+    handle.stop();
+    expect(listenerCount(), "registration 上不该再留 updatefound 闭包").toBe(0);
+    expect(installing.listenerCount(), "worker 上不该再留 statechange 闭包").toBe(0);
+    handle.stop();
+    expect(listenerCount()).toBe(0);
+  });
+
+  it("换上新 installing 时先解绑旧 worker,监听不随更新次数累积", () => {
+    stubBrowser({} as ServiceWorker);
+    const first = makeInstalling();
+    const second = makeInstalling();
+    const { registration, found } = makeRegistration(first);
+    useServiceWorkerUpdate(registration as unknown as ServiceWorkerRegistration);
+    found();
+    (registration as { installing: unknown }).installing = second.worker;
+    found();
+    expect(first.listenerCount()).toBe(0);
+    expect(second.listenerCount()).toBe(1);
   });
 });
 

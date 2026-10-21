@@ -30,19 +30,25 @@ export function useServiceWorkerUpdate(
   onUpdate?: () => void
 ): ServiceWorkerUpdateHandle {
   let stopped = false
+  let installing: ServiceWorker | null = null
 
-  const handleInstallerState = (installing: ServiceWorker): void => {
-    if (installing.state !== 'installed') return
+  const handleInstallerState = (): void => {
+    if (!installing || installing.state !== 'installed') return
     if (stopped) return
     // 首次安装(controller 为空)时玩家看到的就是最新版,不提示;仅更新时常驻提示
     if (navigator.serviceWorker.controller) onUpdate?.()
   }
 
-  registration.addEventListener('updatefound', () => {
-    const installing = registration.installing
-    if (!installing) return
-    installing.addEventListener('statechange', () => handleInstallerState(installing))
-  })
+  const handleUpdateFound = (): void => {
+    if (stopped) return
+    const next = registration.installing
+    if (!next) return
+    installing?.removeEventListener('statechange', handleInstallerState)
+    installing = next
+    installing.addEventListener('statechange', handleInstallerState)
+  }
+
+  registration.addEventListener('updatefound', handleUpdateFound)
 
   // 注册是异步的,updatefound 只在后台检测发现新脚本时派发;注册完成后再主动
   // 要求检测一次,免得更新恰好发生在注册那一下被漏掉。
@@ -63,7 +69,11 @@ export function useServiceWorkerUpdate(
       location.reload()
     },
     stop() {
+      if (stopped) return
       stopped = true
+      registration.removeEventListener('updatefound', handleUpdateFound)
+      installing?.removeEventListener('statechange', handleInstallerState)
+      installing = null
     }
   }
 }
