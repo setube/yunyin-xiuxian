@@ -91,13 +91,13 @@
         <p class="mt-1.5 text-[11px] text-azure">在身之力:{{ powerText }}</p>
       </div>
 
-      <div class="mt-2.5 flex items-center gap-2">
+      <div class="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
         <button
-          class="btn-ghost !py-1.5 !text-[12px]"
-          :disabled="!!player.activeDivination"
+          class="btn-ghost shrink-0 whitespace-nowrap !py-1.5 !text-[12px]"
+          :disabled="askDisabled"
           @click="ask"
         >
-          {{ player.activeDivination ? '卦在身,待其自过' : `问 卦(悟道点 ${DIVINATION_COST})` }}
+          {{ askLabel }}
         </button>
         <span class="text-[10px] leading-relaxed text-ink-faint">
           卜以决疑,不疑何卜 —— 一事不二卜,卦力随动爻而盛,亦随时而尽。
@@ -163,9 +163,24 @@
           </span>
           <button
             class="shrink-0 cursor-pointer text-[10px]"
-            :class="player.fateFocus === s.id ? 'font-kai text-gold-ink' : 'text-azure'"
+            :class="
+              player.fateFocus === s.id
+                ? 'font-kai text-gold-ink'
+                : focusShort > 0
+                  ? 'cursor-not-allowed text-ink-faint'
+                  : 'text-azure'
+            "
+            :disabled="player.fateFocus !== s.id && focusShort > 0"
             @click="focusStar(s.id)"
-          >{{ player.fateFocus === s.id ? '已显化' : `点化 ${focusCostText}` }}</button>
+          >
+            {{
+              player.fateFocus === s.id
+                ? '已显化'
+                : focusShort > 0
+                  ? `点化 · 灵石尚差 ${formatGN(focusShortGN)}`
+                  : `点化 ${focusCostText}`
+            }}
+          </button>
         </div>
         <p class="mt-2 text-[10px] leading-relaxed text-ink-faint">
           点化一位主星,其力二倍显化(其余十三颗仍作底色,十四星一颗不误)—— 花的是灵石({{ focusCostText }}),
@@ -253,6 +268,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { useGameStore } from '@/stores/game'
   import { useUiStore } from '@/stores/ui'
+  import { useResourcesStore } from '@/stores/resources'
   import { REALMS, WORLDS, realmDef } from '@/data/realms'
   import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm } from '@/data/classics'
   import { HEXAGRAMS, TRIGRAMS, trigramDef } from '@/data/yijing'
@@ -265,7 +281,7 @@
   import { GATES } from '@/data/qimen'
   import { gateRuleSummary } from '@/core/gateRuleText'
   import { cnNumber, formatGN } from '@/utils/format'
-  import { gn } from '@/utils/gnum'
+  import { gn, gnZero, subClamp } from '@/utils/gnum'
   import { STAR_FOCUS_COST_BASE } from '@/data/constants'
   import { mansionLuckPercent, effectiveFavoredWorld, todayMansionLine } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
@@ -277,6 +293,7 @@
   const player = usePlayerStore()
   const game = useGameStore()
   const ui = useUiStore()
+  const resources = useResourcesStore()
 
   /** 分册:六门各占一册 —— 页越长越该分,免得一路拉到底找不着北 */
   type CodexTab = 'realm' | 'classics' | 'yi' | 'ziwei' | 'xiang' | 'qimen' | 'todo'
@@ -312,6 +329,15 @@
     return m > 0 ? `尚余 ${m} 分 ${sec} 秒` : `尚余 ${sec} 秒`
   })
 
+  /** 问卦付不起就置灰并列差:判据与 askDivination 的 hasSmall 同一本账 */
+  const askShort = computed(() => Math.max(0, DIVINATION_COST - resources.wudao))
+  const askDisabled = computed(() => !!player.activeDivination || askShort.value > 0)
+  const askLabel = computed(() => {
+    if (player.activeDivination) return '卦在身,待其自过'
+    if (askShort.value > 0) return `问卦 · 尚差 ${askShort.value} 悟道点`
+    return `问 卦(悟道点 ${DIVINATION_COST})`
+  })
+
   function ask(): void {
     const out = askDivination()
     if (!out.ok) {
@@ -327,12 +353,20 @@
   const fateModsText = computed(() => modsText(player.fateMods))
 
   /** 点化主星的灵石单价(一处出,文案与扣费同源) */
-  const focusCostText = formatGN(gn(STAR_FOCUS_COST_BASE))
+  const focusCost = gn(STAR_FOCUS_COST_BASE)
+  const focusCostText = formatGN(focusCost)
+  /** 点化尚差灵石:付得起为 0;指数感知减法,跨数量级不会报错差额 */
+  const focusShortGN = computed(() => (resources.hasStone(focusCost) ? gnZero() : subClamp(focusCost, resources.spiritStone)))
+  const focusShort = computed(() => focusShortGN.value.m)
   function focusStar(id: string): void {
     const name = STARS.find(s => s.id === id)?.name ?? id
     // 已显化同星:不是灵石不足,另提示
     if (player.fateFocus === id) {
       ui.toast(`「${name}」已显化,无需再点`, 'info')
+      return
+    }
+    if (focusShort.value > 0) {
+      ui.toast(`尚差 ${formatGN(focusShortGN.value)} 灵石,点化不成`, 'warn')
       return
     }
     const ok = player.focusFateStar(id)

@@ -143,6 +143,21 @@ describe('界面分层 · 浮层只有一个出处', () => {
     expect(rebirth!.src, '兵解未达境要置灰(canRebirth)').toContain(':disabled="!canRebirth"')
     expect(rebirth!.src, '兵解置灰要列门槛境名,不许只有定性').toContain('境方可自行兵解')
   })
+
+  it('问卦与点化付不起就置灰列差 —— 缺哪样、直说,不许点了才弹', () => {
+    // 同族规:付不起的按钮当场置灰、内联写出差额(防御臂仍在 core)。
+    // 故障注入:把 :disabled 改回只看「卦在身」/删掉点化 disabled → 本条红。
+    const codex = FILES.find(f => f.path === 'views/RealmCodexView.vue')
+    expect(codex, 'RealmCodexView 不见了').toBeDefined()
+    expect(codex!.src, '问卦置灰要合成「卦在身或不足」').toContain(':disabled="askDisabled"')
+    expect(codex!.src, '问卦差额与置灰同源').toContain('const askShort = computed(')
+    expect(codex!.src, '问卦按钮要直说差几枚悟道').toContain('尚差 ${askShort.value} 悟道点')
+    expect(codex!.src, '点化付不起要置灰(已显化那枚仍保留)').toContain(
+      ':disabled="player.fateFocus !== s.id && focusShort > 0"'
+    )
+    expect(codex!.src, '点化差额要走指数感知减法').toContain('subClamp(focusCost, resources.spiritStone)')
+    expect(codex!.src, '点化按钮要直说差多少灵石').toContain('灵石尚差 ${formatGN(focusShortGN)}')
+  })
 })
 
 /**
