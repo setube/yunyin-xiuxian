@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 320,
+  "round": 321,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T22:15:14+00:00",
+  "updated_at": "2026-10-21T22:35:40+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23193,6 +23193,82 @@
       "touched_round": 320,
       "commit": "28d3a53",
       "summary": "挑战书先验界后扣费;终局器魂、道痕、破界、试炼、节点、纪录、道途与每日落闸写入按目录 id、唯一性和有限值收口"
+    },
+    "ISS-989": {
+      "id": "ISS-989",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:32:04+00:00",
+      "updated_at": "2026-10-21T22:35:34+00:00",
+      "touched_round": 320,
+      "severity": 0.82,
+      "confidence": 0.95,
+      "title": "功法公共写入与悟道分支仍可越门类/越满级生效",
+      "detail": "cultivation.learn 可写入目录外 id;upgrade 可直接越过 maxLevel;equipMain/toggleSub 允许辅修占主修席或主修占辅修席;loadout apply 绕过同一门类闸;gongfaBranch 加成在转世回一层或换下装配后仍照算。读档 sanitize 只清野 id,未清主辅门类错位。"
+    },
+    "COMP-054": {
+      "id": "COMP-054",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:32:07+00:00",
+      "updated_at": "2026-10-21T22:32:07+00:00",
+      "touched_round": 320,
+      "title": "功法装配与构筑快照",
+      "detail": "src/stores/cultivation.ts、src/core/loadoutService.ts、src/core/buildDetect.ts:主/辅/秘门类、满级、槽位预算与悟道分支生效条件。"
+    },
+    "TASK-434": {
+      "id": "TASK-434",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T22:32:11+00:00",
+      "updated_at": "2026-10-21T22:35:31+00:00",
+      "touched_round": 320,
+      "category": "correctness",
+      "severity": 0.82,
+      "confidence": 0.95,
+      "effort": 2,
+      "title": "收口功法公共写入与悟道分支生效条件",
+      "detail": "公共写入只认目录内 id、满级前、主修/辅修门类匹配;快照切换同门类闸;分支选择随转世保留,加成只随满级且装配生效;补行为测试与故障注入。"
+    },
+    "EV-987": {
+      "id": "EV-987",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:33:45+00:00",
+      "updated_at": "2026-10-21T22:33:45+00:00",
+      "touched_round": 320,
+      "source": "523c7a3 + src/stores/cultivation.spec.ts/src/core/loadoutService.spec.ts/src/core/buildDetect.spec.ts",
+      "title": "功法写入与分支生效条件的行为证据",
+      "detail": "定向 104 例全绿;逐条故障注入:upgrade 去满级闸、sanitize 去门类闸、toggleSub 去槽位/NaN 闸、equipMain 去门类闸、loadout 去门类闸、gongfaMods 去满级/装配闸均转红。全量 3413 过/0 败,bun run check 与 build 通过。",
+      "confidence": 1.0
+    },
+    "CHG-534": {
+      "id": "CHG-534",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:33:50+00:00",
+      "updated_at": "2026-10-21T22:33:50+00:00",
+      "touched_round": 320,
+      "commit": "523c7a3",
+      "title": "收口功法公共写入与悟道分支生效条件",
+      "detail": "cultivation 公共写入、sanitize、loadout 快照与 buildSources 统一门类/满级/槽位判据;分支只随满级且装配生效。"
+    },
+    "HYP-161": {
+      "id": "HYP-161",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:34:05+00:00",
+      "updated_at": "2026-10-21T22:35:37+00:00",
+      "touched_round": 320,
+      "confidence": 0.95,
+      "title": "功法写入与分支越界由公共接口缺少统一判据造成",
+      "detail": "learn/upgrade/equipMain/toggleSub 及快照写入各自只做局部检查;分支词条只查归属不查满级与装配,故同门双算与转世虚高并存。"
     }
   },
   "edges": [
@@ -34242,6 +34318,36 @@
       "to": "ISS-988",
       "type": "resolves",
       "created_at": "2026-10-21T22:15:05+00:00"
+    },
+    {
+      "from": "TASK-434",
+      "to": "ISS-989",
+      "type": "addresses",
+      "created_at": "2026-10-21T22:33:53+00:00"
+    },
+    {
+      "from": "ISS-989",
+      "to": "COMP-054",
+      "type": "located_in",
+      "created_at": "2026-10-21T22:33:57+00:00"
+    },
+    {
+      "from": "EV-987",
+      "to": "HYP-161",
+      "type": "validates",
+      "created_at": "2026-10-21T22:34:08+00:00"
+    },
+    {
+      "from": "CHG-534",
+      "to": "TASK-434",
+      "type": "implements",
+      "created_at": "2026-10-21T22:34:12+00:00"
+    },
+    {
+      "from": "CHG-534",
+      "to": "ISS-989",
+      "type": "resolves",
+      "created_at": "2026-10-21T22:34:16+00:00"
     }
   ]
 }
