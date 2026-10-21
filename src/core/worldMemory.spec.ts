@@ -151,6 +151,28 @@ describe('S1 区域兴衰', () => {
     expect(regionRecallFor('qingyun').prosperity).toBe('flourish')
   })
 
+  /**
+   * 兴衰要能按调用时刻重算。
+   *
+   * 界面停在历练页时不会重进页面,只靠每秒游戏钟重算这一张卡;若 `now`
+   * 仍藏在函数体内读墙钟,传进来的时刻就被无视,守满 6 / 24 小时仍冻在
+   * 进页那一刻。故障注入:删掉 `now` 形参、改回 `const now = Date.now()` → 红。
+   */
+  it('regionRecallFor 接受注入时刻:同一份存档随守土时长从混乱走到稳定、繁盛', () => {
+    const player = usePlayerStore()
+    const suppressedAt = Date.now()
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: suppressedAt }
+    player.regionStats = {
+      qingyun: { totalFights: 0, avgRounds: 0, avgDamageTakenPct: 0, consecutiveWins: 0, lastUpdateAt: suppressedAt }
+    }
+    player.regionWins = { qingyun: 0 }
+
+    expect(regionRecallFor('qingyun', suppressedAt + 1 * HOUR).prosperity).toBe('chaos')
+    expect(regionRecallFor('qingyun', suppressedAt + 6 * HOUR).prosperity).toBe('stable')
+    expect(regionRecallFor('qingyun', suppressedAt + 24 * HOUR).prosperity).toBe('flourish')
+  })
+
   it('守土之年:镇压后守满时长也能走到稳定/繁盛(不必先刷满胜场)', () => {
     // 镇压后不再产出胜场,故「守多久」是另一条通往兴衰的路
     const held7h = deriveProsperity({

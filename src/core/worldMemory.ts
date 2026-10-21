@@ -251,11 +251,15 @@ export function aftermathText(eventTitle: string, kind: 'good' | 'echo' | 'silen
 
 // ============ 通用查询(供 UI 使用) ============
 
-/** 当前区域兴衰(UI 用) */
-export function regionRecallFor(regionId: string): RegionRecall {
+/**
+ * 当前区域兴衰(UI 用)。
+ *
+ * `now` 必须可注入:界面用每秒推进的游戏钟调用,守满 6 / 24 小时的那一刻
+ * 兴衰章与镇压速率才会自己翻档,而不是冻在进页那一刻。
+ */
+export function regionRecallFor(regionId: string, now = Date.now()): RegionRecall {
   const player = usePlayerStore()
   const stats = player.regionStats[regionId]
-  const now = Date.now()
   return deriveProsperity({
     /**
      * 胜场取 `regionWins`(每胜一场 +1),不是 `regionStats.totalFights`。

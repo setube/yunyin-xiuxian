@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { FoeOrigin, RegionDef, RegionRecall } from '@/types'
+import type { FoeOrigin, RegionDef } from '@/types'
 import type { WorldDef } from '@/data/realms'
 import { REGIONS } from '@/data/regions'
 import { worldOf } from '@/data/realms'
@@ -8,7 +8,6 @@ import { usePlayerStore } from '@/stores/player'
 import { canEnterRegion, entryBlockReason } from '@/core/mortalWorldService'
 import { regionBossCleared, regionFoeOrigin } from '@/core/exploration'
 import { suppressionProgress, type SuppressionProgress } from '@/core/suppress'
-import { regionRecallFor } from '@/core/worldMemory'
 import { detectBuild } from '@/core/buildDetect'
 import {
   detectionAdaptation,
@@ -35,7 +34,6 @@ export interface RegionRow {
   suppressed: boolean
   revived: boolean
   qualified: boolean
-  recall: RegionRecall
   progress: SuppressionProgress
   tooHard: boolean
   foeOrigin: FoeOrigin
@@ -60,7 +58,6 @@ export function useRegionRows() {
     REGIONS.map(r => {
       const eco = regionEcology(r)
       const suppressed = player.suppressedRegions.includes(r.id)
-      const recall = regionRecallFor(r.id)
       /**
        * 妖气复聚是**落盘的世界状态**(core/regionRevival 写 adventure.revived),
        * 不是「镇压到点的临时读数」:两者含义不同 —— 复聚只发生在已靖地界,
@@ -83,7 +80,6 @@ export function useRegionRows() {
         revived,
         /** 是否取得过镇压资格(取得即永久,此后可自由在历练/收益之间切换) */
         qualified: player.suppressQualified.includes(r.id),
-        recall,
         /** 镇压资格进度(三条判据的当前值/阈值) */
         progress: suppressionProgress(player.regionStats[r.id]),
         tooHard: r.minRealm > player.major,

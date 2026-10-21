@@ -27,11 +27,11 @@
           <span v-else-if="row.cleared" class="chip-ink border-jade/60 text-[9px] text-jade">已靖</span>
           <!-- 世界记忆(Phase 30.9):区域兴衰状态 -->
           <span
-            v-if="row.recall.prosperity !== 'chaos'"
+            v-if="recall.prosperity !== 'chaos'"
             class="chip-ink text-[9px]"
-            :class="row.recall.prosperity === 'flourish' ? 'border-azure/60 text-azure' : 'border-jade/60 text-jade'"
+            :class="recall.prosperity === 'flourish' ? 'border-azure/60 text-azure' : 'border-jade/60 text-jade'"
           >
-            {{ prosperityName(row.recall.prosperity) }}
+            {{ prosperityName(recall.prosperity) }}
           </span>
         </p>
         <p class="mt-0.5 text-[11px] text-ink-faint">
@@ -180,7 +180,7 @@
   import { ECO_LEVEL_NAMES, starsText } from '@/core/buildAdvisor'
   import { foeOriginPartsText } from '@/core/battleAnalysis'
   import { suppressRateLine } from '@/core/suppress'
-  import { hoursUntilRevive, prosperityName } from '@/core/worldMemory'
+  import { hoursUntilRevive, prosperityName, regionRecallFor } from '@/core/worldMemory'
   import { usePlayerStore } from '@/stores/player'
   import { useNow } from '@/composables/useNow'
   import { produceTierText } from '@/ui/produceText'
@@ -208,8 +208,17 @@
   /** 适配原因点按展开(移动端无 hover) */
   const adaptExpand = ref(false)
 
+  /**
+   * 兴衰随守土时长自己翻档。
+   *
+   * 此前 `recall` 在区域大表里一次性算好,卡片只读那份静态快照 —— 玩家停在
+   * 历练页跨过 6 / 24 小时时,「稳定 / 繁盛」章与产出速率都冻住,直到别处
+   * store 变化或重进页面。现在只让这张卡随每秒游戏钟重算兴衰。
+   */
+  const recall = computed(() => regionRecallFor(props.row.def.id, now.value))
+
   /** 产出行文案收进 core/suppress 的单源实现 —— 与「镇压达成」回执共用一份数字 */
-  const rateText = computed(() => suppressRateLine(props.row.def.id, props.row.recall.prosperity))
+  const rateText = computed(() => suppressRateLine(props.row.def.id, recall.value.prosperity))
 
   /**
    * 复聚剩余小时:整卡里唯一随时间变的一列。

@@ -487,6 +487,24 @@ describe('镇压速率:显示与结算同源', () => {
   })
 
   /**
+   * 兴衰章与产出速率也必须跟同一枚游戏钟走。
+   *
+   * 这两处此前读 `row.recall`(区域大表进页时算好的静态快照):停在历练页
+   * 守满 6 / 24 小时不会翻档。故障注入:把卡片改回 `props.row.recall` 或
+   * `regionRecallFor(props.row.def.id)`(无 now 实参) → 本条红。
+   */
+  it('兴衰章与镇压速率按 now 就地重算,不读区域大表的静态快照', () => {
+    const card = readFileSync(resolve(__dirname, '../components/adventure/RegionCard.vue'), 'utf8')
+    expect(card, '兴衰要由卡片就地派生').toContain('const recall = computed(() => regionRecallFor(props.row.def.id, now.value))')
+    expect(card, '速率读同一份兴衰').toContain('suppressRateLine(props.row.def.id, recall.value.prosperity)')
+    expect(card, '不许再读大表里的静态快照').not.toMatch(/props\.row\.recall/)
+
+    const rows = readFileSync(resolve(__dirname, '../composables/useRegionRows.ts'), 'utf8')
+    expect(rows, '区域大表不该再持有第二份兴衰').not.toMatch(/\brecall\s*:/)
+    expect(rows, '区域大表不该再调用 regionRecallFor').not.toContain('regionRecallFor')
+  })
+
+  /**
    * 每秒一跳的读数不该拖着整张区域表重算。
    *
    * `regionRows` 为每处地界跑 `regionEcology` / `detectionAdaptation` /
