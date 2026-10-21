@@ -174,7 +174,8 @@ describe('signedPercent', () => {
   it('功法、装备详情和法宝被动都走同源词条句,不再手写加号', () => {
     const gongfa = readFileSync(resolve(__dirname, '../components/cultivation/GongfaDialog.vue'), 'utf8')
     const equip = readFileSync(resolve(__dirname, '../components/equipment/EquipmentDetailDialog.vue'), 'utf8')
-    const bag = readFileSync(resolve(__dirname, '../views/InventoryView.vue'), 'utf8')
+    // 法宝被动行随法宝册迁入 components/inventory/ArtifactPanel.vue
+    const bag = readFileSync(resolve(__dirname, '../components/inventory/ArtifactPanel.vue'), 'utf8')
     expect(gongfa).toContain('statValueText(k, v as number)')
     expect(gongfa).not.toContain('+${formatPercent')
     expect(equip).toContain('statValueText(k, v as number)')

@@ -32,7 +32,11 @@ describe('行囊提示 · 文言仍报清件数与尘石', () => {
 
 describe('行囊页与提示同源', () => {
   it('法宝位、化尘空、收纳走 inventoryText', () => {
-    const view = readFileSync(new URL('../views/InventoryView.vue', import.meta.url), 'utf8')
+    // 法宝位替换提示随法宝册迁入 components/inventory/ArtifactPanel.vue;
+    // 化尘与收纳仍在宿主 —— 两处合扫,防拆分后只查一边假绿
+    const view =
+      readFileSync(new URL('../views/InventoryView.vue', import.meta.url), 'utf8') +
+      readFileSync(new URL('../components/inventory/ArtifactPanel.vue', import.meta.url), 'utf8')
     expect(view).toContain('artifactSlotReplacedToast()')
     expect(view).toContain('decomposeEmptyToast()')
     expect(view).toContain('smartCleanToast(')

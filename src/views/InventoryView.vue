@@ -155,118 +155,9 @@
       </div>
     </template>
 
-    <!-- 法宝 -->
+    <!-- 法宝(面板本体在 components/inventory/ArtifactPanel.vue) -->
     <template v-else>
-      <!-- 随身法宝槽:装着谁、空着哪一格,一眼即知 —— 不再只是一个 "x/2" 数字 -->
-      <div class="mt-3 flex items-center gap-2 px-1">
-        <span class="shrink-0 text-[11px] text-ink-soft">随身</span>
-        <template v-for="(row, k) in artifactSlotRows" :key="k">
-          <div class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-dashed border-ink/20 bg-paper-deep/50">
-            <GameIcon v-if="row" :name="row.def.icon" :size="20" :style="{ color: qualityDef(row.def.quality).color }" />
-            <span v-else class="font-kai text-[11px] text-ink-faint">空</span>
-          </div>
-        </template>
-        <span v-if="artifactSlots < ARTIFACT_MAX_SLOTS" class="text-[10px] text-ink-faint">
-          · {{ artifactUnlockRealm }}境开第{{ cnNumber(ARTIFACT_MAX_SLOTS) }}位
-        </span>
-      </div>
-      <!-- 祭炼到底给什么:数值都从上界常数来,不在界面里再写一份 -->
-      <p class="mt-1 px-1 text-[10px] text-ink-faint">
-        祭炼一重,被动与神通各强 {{ formatPercent(ARTIFACT_LEVEL_BONUS) }},至多 {{ cnNumber(ARTIFACT_MAX_LEVEL) }} 重 ——
-        顶到封顶的不再涨,卡片上标着
-      </p>
-      <div v-if="artifactRows.length" class="mt-2 space-y-2.5">
-        <div v-for="row in artifactRows" :key="row.def.id" class="card-ink px-4 py-3">
-          <div class="flex items-center gap-2">
-            <GameIcon :name="row.def.icon" :size="18" :style="{ color: qualityDef(row.def.quality).color }" />
-            <span class="font-kai text-[14px]" :style="{ color: qualityDef(row.def.quality).color }">{{ row.def.name }}</span>
-            <QualityTag :quality="row.def.quality" />
-            <!-- 「重」而不是「阶」:阶是地界与装备层级的词,法宝这一头说的是祭炼了几重 -->
-            <span class="ml-auto tabular text-[11px] text-gold-ink">{{ artifactLevelLabel(row.owned.level) }}</span>
-          </div>
-          <!-- 祭炼进度:九段横条,练几重亮几格;满九整条转金 —— 进度不再只是一枚数字标签 -->
-          <div class="mt-1.5 flex items-center gap-1.5">
-            <span class="shrink-0 text-[10px] text-ink-faint">祭炼</span>
-            <span
-              v-for="n in ARTIFACT_MAX_LEVEL"
-              :key="n"
-              class="h-1.5 grow rounded-full transition-colors"
-              :class="n <= row.owned.level ? (row.owned.level >= ARTIFACT_MAX_LEVEL ? 'bg-gold-ink' : 'bg-cinnabar/80') : 'bg-ink/6 border border-ink/15'"
-            />
-          </div>
-          <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">{{ row.def.desc }}</p>
-          <p class="mt-1 flex items-baseline gap-1.5 text-[11px]">
-            <span class="shrink-0 rounded bg-azure/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-azure">被动</span>
-            <span class="text-azure">{{ passiveLines(row.def.id, row.owned.level).join(' · ') }}</span>
-          </p>
-          <!--
-            神通说明按品阶与祭炼等级现算:效果随「品阶 × (1+0.08×重数)」走,
-            文案不能停在基线那一句
-            (见 data/artifacts.artifactActiveText —— 战斗与这句话读的是同一个函数)
-          -->
-          <p class="mt-1 flex items-baseline gap-1.5 text-[11px]">
-            <span class="shrink-0 rounded bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-violet-ink">神通</span>
-            <span class="text-violet-ink">「{{ row.def.active.name }}」:{{ artifactActiveText(row.def, row.owned.level) }}</span>
-          </p>
-          <!--
-            下一重给多少:按钮只报代价,玩家得自己按 ×1.08 心算 —— 而「值不值」
-            正是按下之前要想清楚的事(数值由 artifactNextLevelGain 算,含封顶提示)。
-          -->
-          <p v-if="nextGainText(row.def.id, row.owned.level)" class="mt-1 text-[10px] leading-relaxed text-ink-faint tabular">
-            下一重:{{ nextGainText(row.def.id, row.owned.level) }}
-          </p>
-          <div class="mt-2.5 flex gap-2">
-            <button
-              class="btn-seal flex-1 !py-1.5 !text-[12px]"
-              :class="{ '!bg-ink-faint': row.equipped }"
-              @click="toggleArtifact(row.def.id)"
-            >
-              {{ row.equipped ? '收回法宝' : '祭炼随身' }}
-            </button>
-            <button
-              v-if="row.upCost"
-              class="btn-ghost flex-1 !py-1.5 !text-[12px] tabular"
-              :disabled="!row.canUp"
-              :title="!row.canUp ? '悟道或灵石不足' : undefined"
-              @click="upgradeArtifact(row.def.id)"
-            >
-              <!--
-                两种代价都要写出来:炼化既扣悟道点、也扣灵石(见 forge.artifactUpCost),
-                而按钮此前只报悟道 —— 玩家按标签算账,回头发现灵石也少了一大截。
-              -->
-              炼化(悟道 {{ row.upCost.wudao }} · 灵石 {{ formatGN(row.upCost.stone) }}){{ row.canUp ? '' : '·不足' }}
-            </button>
-          </div>
-          <!--
-            祭炼连炼:一重一重点太累,与强化连升同一套二步确认 ——
-            行只在一口气能连炼 ≥2 重时出现(只够一重时,单炼按钮就是那一重)。
-            flex-wrap + 文本保底宽:窄屏放不下说明与双钮同排时,说明独占整行、钮换行 ——
-            与强化连升/洞府连升同一处外伤(320 下说明被 shrink-0 钮压成 0 宽竖排)。
-          -->
-          <div v-if="row.artPlan.levels >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
-            <template v-if="batchArtConfirm !== row.def.id">
-              <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
-                连炼至 <span class="font-kai text-[11px] text-cinnabar">第 {{ row.owned.level + row.artPlan.levels }} 重</span>
-                <span class="mt-0.5 block text-[9px] text-ink-faint tabular">共耗 悟道×{{ row.artPlan.wudao }} · 灵石 {{ formatGN(row.artPlan.stone) }}</span>
-              </p>
-              <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArtConfirm = row.def.id">连 炼</button>
-            </template>
-            <template v-else>
-              <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
-                一步连炼 {{ row.artPlan.levels }} 重,花上面那笔总账 —— 仍要?
-              </p>
-              <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArtConfirm = null">再想想</button>
-              <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runArtifactBatch(row.def.id)">连 炼</button>
-            </template>
-          </div>
-        </div>
-      </div>
-      <p v-else class="mt-16 text-center text-[12px] text-ink-faint">
-        尚无法宝随身
-        <br />
-        <span class="text-[11px]">法宝多出自际遇与强敌之手</span>
-      </p>
-      <p v-if="player.petId" class="mt-4 text-center text-[11px] text-ink-faint">灵兽相伴,可前往「人物」页查看</p>
+      <ArtifactPanel />
     </template>
 
     <!-- 丹药详情 -->
@@ -675,19 +566,6 @@
   import { HERB_GRADE_SHORT, herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
   import { herbStashText } from '@/ui/herbText'
   import { pillFuncText } from '@/ui/itemText'
-  import {
-    artifactActiveText,
-    artifactDef,
-    artifactLevelLabel,
-    artifactNextLevelGain,
-    artifactValue,
-    ARTIFACT_LEVEL_BONUS,
-    ARTIFACT_MAX_LEVEL,
-    ARTIFACT_MAX_SLOTS,
-    ARTIFACT_SLOT_UNLOCK_MAJOR,
-    artifactSlotsFor
-  } from '@/data/artifacts'
-  import { REALMS } from '@/data/realms'
   import { EQUIP_SLOT_NAMES, EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
   import { usePill, usePillBatch, availableRecipes, craftBatchPlan, craftPill, craftPillBatch, pillCraftCost } from '@/core/pillService'
@@ -698,11 +576,7 @@
     type DecomposeBatch,
     decomposeBatch,
     decomposeByRanks,
-    decomposePreview,
-    artifactUpCost,
-    artifactBatchPlan,
-    upgradeArtifact,
-    upgradeArtifactBatch
+    decomposePreview
   } from '@/core/forge'
   import { sweepTargets } from '@/core/smartKeep'
   import { salvageOf } from '@/core/salvage'
@@ -712,20 +586,15 @@
   import { useLoreStore } from '@/stores/lore'
   import { studyEta } from '@/core/loreService'
   import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
-  import { cnNumber, formatDuration, formatGN, formatNum, formatPercent } from '@/utils/format'
+  import { formatDuration, formatGN, formatNum, formatPercent } from '@/utils/format'
   import { tint } from '@/utils/colorToken'
-  import { STAT_NAMES, statCaveat, statModPhrase } from '@/data/statNames'
-  import {
-    artifactSlotReplacedToast,
-    decomposeEmptyToast,
-    smartCleanToast
-  } from '@/ui/inventoryText'
+  import { decomposeEmptyToast, smartCleanToast } from '@/ui/inventoryText'
   import type { EquipSlot, GNum, PillDef } from '@/types'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
-  import QualityTag from '@/components/common/QualityTag.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
+  import ArtifactPanel from '@/components/inventory/ArtifactPanel.vue'
   import EquipmentCard from '@/components/equipment/EquipmentCard.vue'
 
   const inventory = useInventoryStore()
@@ -951,50 +820,6 @@
     if (!pillRows.value.some(r => r.def?.id === id)) pillDetail.value = null
   }
 
-  const artifactSlots = computed(() => artifactSlotsFor(player.major))
-  /** 已祭炼随身的法宝行(槽位按此顺序填充) */
-  const equippedRows = computed(() => artifactRows.value.filter(r => r.equipped))
-  /** 逐槽映射:第 k 格对应的随身法宝;不足 slots 的补 undefined,画空位 */
-  const artifactSlotRows = computed(() =>
-    Array.from({ length: artifactSlots.value }, (_, k) => equippedRows.value[k])
-  )
-  /** 开第二法宝位的那一境的名字 —— 门槛挪动时文案跟着走,不手写「元婴」 */
-  const artifactUnlockRealm = computed(() => REALMS[ARTIFACT_SLOT_UNLOCK_MAJOR]?.name ?? '')
-
-  const artifactRows = computed(() =>
-    inventory.artifacts
-      .map(a => {
-        const upCost = artifactUpCost(a.defId)
-        return {
-          owned: a,
-          def: artifactDef(a.defId)!,
-          upCost,
-          canUp: upCost ? resources.hasSmall('wudao', upCost.wudao) && resources.hasStone(upCost.stone) : false,
-          artPlan: artifactBatchPlan(a.defId),
-          equipped: inventory.equippedArtifacts.includes(a.defId)
-        }
-      })
-      // 与行囊同一套排法:品质降序 → 祭炼高的在前(此前按入手先后排,越捡越乱)
-      .sort(
-        (a, b) =>
-          qualityDef(b.def.quality).rank - qualityDef(a.def.quality).rank ||
-          b.owned.level - a.owned.level ||
-          a.def.name.localeCompare(b.def.name)
-      )
-  )
-
-  function toggleArtifact(defId: string): void {
-    const result = inventory.toggleArtifact(defId, artifactSlots.value)
-    if (result === 'replaced') ui.toast(artifactSlotReplacedToast(), 'info')
-  }
-
-  /** 祭炼连炼的二步确认态;换件/换重自动重算,行与确认自会随之进退 */
-  const batchArtConfirm = ref<string | null>(null)
-  function runArtifactBatch(defId: string): void {
-    batchArtConfirm.value = null
-    upgradeArtifactBatch(defId) // 总账那一声与 toast 由服务自己报
-  }
-
   function batchDecompose(): void {
     // 总账那一条由服务自己报(逐件弹提示只会互相顶掉)
     if (decomposeByRanks(settings.decomposeRanks) === 0) ui.toast(decomposeEmptyToast(), 'info')
@@ -1131,58 +956,6 @@
     // 有化尘 = 有得,归 success;一件都没化 = 中性播报,留 info(与一键换装同族口径)
     ui.toast(smartCleanToast(got.count, batchYieldText(got)), got.count > 0 ? 'success' : 'info')
     smartOpen.value = false
-  }
-
-  function passiveLines(defId: string, level: number): string[] {
-    const def = artifactDef(defId)
-    if (!def) return []
-    // 与属性汇总(store/inventory)同源:卡片上写多少,身上加的就是多少
-    return Object.entries(artifactValue(def, level).passive).map(([k, v]) => statModPhrase(k, v as number))
-  }
-
-  /** 神通主体那个数说的是什么(用药名之外的话:威力 / 护盾 / 破解…) */
-  const ACTIVE_NOUNS: Record<string, string> = {
-    damage: '威力',
-    drain: '威力',
-    heal: '回复',
-    shield: '护盾',
-    weaken: '削弱',
-    sunder: '破甲',
-    purge: '挣脱'
-  }
-
-  /**
-   * 祭炼下一重的账:被动逐项 + 神通主体 + 吸命回补,到顶的标「已至上限」。
-   * 已达满重(artifactNextLevelGain 返回 null)时不显示这一行。
-   */
-  function nextGainText(defId: string, level: number): string {
-    const def = artifactDef(defId)
-    const gain = def ? artifactNextLevelGain(def, level) : null
-    if (!gain) return ''
-    const parts = gain.passive.map(p => {
-      const caveat = statCaveat(p.key)
-      const span = `${STAT_NAMES[p.key] ?? p.key} ${formatPercent(p.from)} → ${formatPercent(p.to)}`
-      return caveat ? `${span}(${caveat})` : span
-    })
-    if (gain.active) {
-      const noun = ACTIVE_NOUNS[def!.active.effect.type] ?? '效果'
-      /**
-       * 零重就顶到封顶的那几件(神鞭的破甲、神魔镜的回补…)再炼也不会更高,
-       * 写「50% → 50%(已至上限)」等于让人自己看出来 —— 直接说清只涨被动。
-       */
-      const alreadyCapped = gain.active.capped && Math.abs(gain.active.to - gain.active.from) < 1e-9
-      parts.push(
-        alreadyCapped
-          ? `神通${noun}已至上限(${formatPercent(gain.active.to)}),祭炼只涨被动`
-          : `神通${noun} ${formatPercent(gain.active.from)} → ${formatPercent(gain.active.to)}${gain.active.capped ? '(已至上限)' : ''}`
-      )
-    } else {
-      parts.push('神通不随祭炼变')
-    }
-    if (gain.heal) {
-      parts.push(`回补 ${formatPercent(gain.heal.from)} → ${formatPercent(gain.heal.to)}${gain.heal.capped ? '(已至上限)' : ''}`)
-    }
-    return parts.join(' · ')
   }
 
   /**
