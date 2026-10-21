@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 300,
+  "round": 302,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T15:36:05+00:00",
+  "updated_at": "2026-10-21T16:41:51+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20075,7 +20075,7 @@
       "version": 1,
       "created_at": "2026-10-21T10:12:52+00:00",
       "updated_at": "2026-10-21T10:12:52+00:00",
-      "touched_round": 299,
+      "touched_round": 302,
       "name": "装备重铸页脚",
       "path": "src/components/equipment/EquipReforgeFooter.vue"
     },
@@ -21235,6 +21235,319 @@
       "touched_round": 300,
       "title": "熔炉灵石熔铸前置石差",
       "commit": "8e17f7f"
+    },
+    "ISS-952": {
+      "id": "ISS-952",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:12:29+00:00",
+      "updated_at": "2026-10-21T16:41:40+00:00",
+      "touched_round": 302,
+      "title": "封存词条付不起时按钮仍可点",
+      "description": "EquipSealPanel 的封存钮只查 sealCost 是否存在,不查灵石余额;付不起仍亮着,点下才由 sealAffix 弹石差。页脚也只摆总价,不写尚差。",
+      "severity": 0.62
+    },
+    "TASK-395": {
+      "id": "TASK-395",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T16:12:34+00:00",
+      "updated_at": "2026-10-21T16:41:36+00:00",
+      "touched_round": 302,
+      "title": "封存按石差前置置灰并就地写出尚差",
+      "description": "在 core/reforge 增加 sealShortfall,sealAffix 与封存钮、页脚同读;付不起即禁用并写灵石尚差。补行为、界面静态守卫与故障注入。",
+      "category": "correctness",
+      "severity": 0.62,
+      "confidence": 0.98,
+      "effort": 2,
+      "unlock_factor": 1
+    },
+    "ISS-953": {
+      "id": "ISS-953",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:12:39+00:00",
+      "updated_at": "2026-10-21T16:41:46+00:00",
+      "touched_round": 302,
+      "title": "词条转移缺料仍只报未足",
+      "description": "useAffixTransfer 的主按钮与服务拒因读 transferShort,却只写「灵石未足 / 器灵尘未足」;价签已有总额,界面本来算得出尚差多少。",
+      "severity": 0.54
+    },
+    "TASK-396": {
+      "id": "TASK-396",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T16:12:44+00:00",
+      "updated_at": "2026-10-21T16:41:36+00:00",
+      "touched_round": 302,
+      "title": "词条转移缺料写出灵石与器灵尘实际差额",
+      "description": "core/affixTransfer 增加 transferShortfall;流程按钮、服务拒因与文案同源写出尚差。补行为、静态守卫与故障注入。",
+      "category": "correctness",
+      "severity": 0.54,
+      "confidence": 0.98,
+      "effort": 2,
+      "unlock_factor": 1
+    },
+    "EV-963": {
+      "id": "EV-963",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:12:49+00:00",
+      "updated_at": "2026-10-21T16:12:49+00:00",
+      "touched_round": 301,
+      "title": "封存钮只判 sealCost 存在",
+      "source": "src/components/equipment/EquipSealPanel.vue:39-41; src/core/reforge.ts:217-240",
+      "description": "canSealAffix 仅查 sealCostVal !== null 与未封存;余额检查只在 sealAffix 扣款前发生,按钮不看 hasStone。",
+      "confidence": 1.0
+    },
+    "HYP-149": {
+      "id": "HYP-149",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:12:53+00:00",
+      "updated_at": "2026-10-21T16:12:53+00:00",
+      "touched_round": 301,
+      "title": "封存入口应以 sealCost 与余额的共同缺口为准",
+      "description": "sealAffix 已有扣款前余额判据;界面若与它共用 sealShortfall,付不起时就能前置置灰并写实际差额。",
+      "confidence": 0.98
+    },
+    "EV-964": {
+      "id": "EV-964",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:12:58+00:00",
+      "updated_at": "2026-10-21T16:12:58+00:00",
+      "touched_round": 301,
+      "title": "词条转移缺料文案只有未足",
+      "source": "src/ui/affixTransferText.ts:67-69; src/core/affixTransfer.ts:254-261; src/composables/useAffixTransfer.ts:102-119",
+      "description": "transferShort 已能分辨 stone/dust,但 transferShortText 只接收类型,没有缺口金额;流程主按钮与 transferAffix 服务拒因都只得到未足。",
+      "confidence": 1.0
+    },
+    "HYP-150": {
+      "id": "HYP-150",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:13:03+00:00",
+      "updated_at": "2026-10-21T16:13:03+00:00",
+      "touched_round": 301,
+      "title": "转移入口应复用 transferShort 与实扣成本算差额",
+      "description": "plan.cost 已是实扣价;用 transferShortfall 一次算出灵石与尘的尚差,按钮与服务拒因同读,不会与扣款分叉。",
+      "confidence": 0.98
+    },
+    "ISS-954": {
+      "id": "ISS-954",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:29:26+00:00",
+      "updated_at": "2026-10-21T16:41:46+00:00",
+      "touched_round": 302,
+      "title": "灵脉改立付不起仍可点且只报未足",
+      "description": "VeinInvestCard 的改立入口与确认钮不查迁移费余额;canSwitchTo 只判已解锁与是否当前主脉。switchMainVein 付不起时只弹笼统「灵石未足」,不写实际石差。",
+      "severity": 0.6
+    },
+    "HYP-151": {
+      "id": "HYP-151",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:29:26+00:00",
+      "updated_at": "2026-10-21T16:29:26+00:00",
+      "touched_round": 302,
+      "title": "改立入口、确认钮与服务拒因各自判余额导致不一致",
+      "description": "若三处同读 veinSwitchShortfall,付不起时即可前置置灰并统一写出实际石差。",
+      "confidence": 0.95
+    },
+    "TASK-397": {
+      "id": "TASK-397",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:29:31+00:00",
+      "updated_at": "2026-10-21T16:41:36+00:00",
+      "touched_round": 302,
+      "title": "灵脉改立按迁移费前置置灰并写出石差",
+      "description": "新增 veinSwitchShortfall,让改立入口、确认钮与 switchMainVein 拒因同读;付不起即禁用,按钮、确认行与 toast 写实际石差。补行为、界面静态守卫与故障注入。",
+      "category": "correctness",
+      "severity": 0.6,
+      "confidence": 0.95,
+      "effort": 2,
+      "unlock_factor": 1
+    },
+    "EV-965": {
+      "id": "EV-965",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:29:31+00:00",
+      "updated_at": "2026-10-21T16:29:31+00:00",
+      "touched_round": 302,
+      "title": "改立费不足时入口无置灰且服务只报未足",
+      "source": "src/components/dongfu/VeinInvestCard.vue:68; src/core/veinService.ts:150; src/ui/veinText.ts:39",
+      "description": "源码确认 canSwitchTo 与两个按钮均不判余额;switchMainVein 拒因无差额参数。",
+      "confidence": 1.0
+    },
+    "ISS-955": {
+      "id": "ISS-955",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:40:44+00:00",
+      "updated_at": "2026-10-21T16:41:46+00:00",
+      "touched_round": 302,
+      "title": "自动重铸确认钮不按整批总账置灰",
+      "description": "至多花销只报总价,灵石或器灵尘不足以支付整批预算时确认钮仍可点,开洗后才在首炉失败。",
+      "severity": 0.58
+    },
+    "HYP-152": {
+      "id": "HYP-152",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:40:44+00:00",
+      "updated_at": "2026-10-21T16:40:44+00:00",
+      "touched_round": 302,
+      "title": "整批预算缺口可由单次成本与归一预算一次算出",
+      "description": "reforgePlanShortfall(cost, budget) 与确认钮、价签共用同一份缺口,即可前置置灰。",
+      "confidence": 0.96
+    },
+    "TASK-398": {
+      "id": "TASK-398",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:40:50+00:00",
+      "updated_at": "2026-10-21T16:41:40+00:00",
+      "touched_round": 302,
+      "title": "自动重铸按整批总账置灰并单源目标上限",
+      "description": "新增 reforgePlanShortfall,确认钮按整批预算缺口置灰并写出灵石/尘差;词条弹框满位文案改读 AUTO_REFORGE_MAX_TARGETS。",
+      "category": "correctness",
+      "severity": 0.58,
+      "confidence": 0.96,
+      "effort": 2,
+      "unlock_factor": 1
+    },
+    "EV-966": {
+      "id": "EV-966",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:40:50+00:00",
+      "updated_at": "2026-10-21T16:40:50+00:00",
+      "touched_round": 302,
+      "title": "自动重铸整批缺口未被界面读取",
+      "source": "src/components/equipment/AutoReforgePanel.vue:75; src/composables/useAutoReforge.ts:72; src/components/equipment/AffixInfoSheet.vue:91",
+      "description": "确认钮只判目标数,至多花销只算总价;满位文案手写 3。",
+      "confidence": 1.0
+    },
+    "ISS-956": {
+      "id": "ISS-956",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:40:59+00:00",
+      "updated_at": "2026-10-21T16:41:46+00:00",
+      "touched_round": 302,
+      "title": "悬赏交不齐只写暂不足",
+      "description": "募草、募矿、募丹与贡器未达门槛时按钮只写「暂不足」,不足回执也只说存货不足,玩家仍需自行减余额。",
+      "severity": 0.5
+    },
+    "HYP-153": {
+      "id": "HYP-153",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:40:59+00:00",
+      "updated_at": "2026-10-21T16:40:59+00:00",
+      "touched_round": 302,
+      "title": "订单投影可同时给出 ready 与可读差量",
+      "description": "renderBounty 按四类存货算 ready 时一并产出 shortText,按钮与回执同读即可消除笼统状态。",
+      "confidence": 0.95
+    },
+    "TASK-399": {
+      "id": "TASK-399",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:41:04+00:00",
+      "updated_at": "2026-10-21T16:41:40+00:00",
+      "touched_round": 302,
+      "title": "悬赏不足时写出实际差量",
+      "description": "订单投影新增 shortText,四类订单分别报尚差株/块/枚或兵刃门槛;按钮与不足回执同读。",
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.95,
+      "effort": 2,
+      "unlock_factor": 1
+    },
+    "EV-967": {
+      "id": "EV-967",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T16:41:04+00:00",
+      "updated_at": "2026-10-21T16:41:04+00:00",
+      "touched_round": 302,
+      "title": "悬赏按钮只写暂不足",
+      "source": "src/components/market/BountyBoardSection.vue:28; src/composables/useBountyRows.ts:54",
+      "description": "ready 只返回布尔值,界面没有可展示的差量字段。",
+      "confidence": 1.0
+    },
+    "CHG-508": {
+      "id": "CHG-508",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:41:13+00:00",
+      "updated_at": "2026-10-21T16:41:51+00:00",
+      "touched_round": 302,
+      "title": "封存石差与词条转移差额",
+      "commit": "3a5fb0b",
+      "description": "封存前置置灰并写石差;词条转移缺料写出灵石与器灵尘实际差额。"
+    },
+    "CHG-509": {
+      "id": "CHG-509",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:41:13+00:00",
+      "updated_at": "2026-10-21T16:41:51+00:00",
+      "touched_round": 302,
+      "title": "灵脉改立前置置灰与石差",
+      "commit": "9847d83",
+      "description": "改立入口、确认钮与服务拒因同读 veinSwitchShortfall。"
+    },
+    "CHG-510": {
+      "id": "CHG-510",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:41:18+00:00",
+      "updated_at": "2026-10-21T16:41:51+00:00",
+      "touched_round": 302,
+      "title": "自动重铸整批置灰与目标上限单源",
+      "commit": "c1d890d",
+      "description": "reforgePlanShortfall 整批缺口置灰;满位文案读 AUTO_REFORGE_MAX_TARGETS。"
+    },
+    "CHG-511": {
+      "id": "CHG-511",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T16:41:18+00:00",
+      "updated_at": "2026-10-21T16:41:51+00:00",
+      "touched_round": 302,
+      "title": "悬赏交不齐写出实际差量",
+      "commit": "2363db2",
+      "description": "订单投影新增 shortText,四类订单按钮与不足回执同读。"
     }
   },
   "edges": [
@@ -31474,6 +31787,150 @@
       "to": "HYP-111",
       "type": "validates",
       "created_at": "2026-10-21T15:35:49+00:00"
+    },
+    {
+      "from": "EV-963",
+      "to": "HYP-149",
+      "type": "validates",
+      "created_at": "2026-10-21T16:13:06+00:00"
+    },
+    {
+      "from": "TASK-395",
+      "to": "ISS-952",
+      "type": "addresses",
+      "created_at": "2026-10-21T16:13:10+00:00"
+    },
+    {
+      "from": "ISS-952",
+      "to": "COMP-030",
+      "type": "located_in",
+      "created_at": "2026-10-21T16:13:14+00:00"
+    },
+    {
+      "from": "EV-964",
+      "to": "HYP-150",
+      "type": "validates",
+      "created_at": "2026-10-21T16:13:18+00:00"
+    },
+    {
+      "from": "TASK-396",
+      "to": "ISS-953",
+      "type": "addresses",
+      "created_at": "2026-10-21T16:13:22+00:00"
+    },
+    {
+      "from": "ISS-954",
+      "to": "COMP-030",
+      "type": "located_in",
+      "created_at": "2026-10-21T16:29:35+00:00"
+    },
+    {
+      "from": "EV-965",
+      "to": "HYP-151",
+      "type": "validates",
+      "created_at": "2026-10-21T16:29:35+00:00"
+    },
+    {
+      "from": "TASK-397",
+      "to": "ISS-954",
+      "type": "addresses",
+      "created_at": "2026-10-21T16:29:35+00:00"
+    },
+    {
+      "from": "ISS-955",
+      "to": "COMP-030",
+      "type": "located_in",
+      "created_at": "2026-10-21T16:40:54+00:00"
+    },
+    {
+      "from": "EV-966",
+      "to": "HYP-152",
+      "type": "validates",
+      "created_at": "2026-10-21T16:40:54+00:00"
+    },
+    {
+      "from": "TASK-398",
+      "to": "ISS-955",
+      "type": "addresses",
+      "created_at": "2026-10-21T16:40:54+00:00"
+    },
+    {
+      "from": "ISS-956",
+      "to": "COMP-030",
+      "type": "located_in",
+      "created_at": "2026-10-21T16:41:08+00:00"
+    },
+    {
+      "from": "EV-967",
+      "to": "HYP-153",
+      "type": "validates",
+      "created_at": "2026-10-21T16:41:08+00:00"
+    },
+    {
+      "from": "TASK-399",
+      "to": "ISS-956",
+      "type": "addresses",
+      "created_at": "2026-10-21T16:41:08+00:00"
+    },
+    {
+      "from": "CHG-508",
+      "to": "TASK-395",
+      "type": "implements",
+      "created_at": "2026-10-21T16:41:23+00:00"
+    },
+    {
+      "from": "CHG-508",
+      "to": "ISS-952",
+      "type": "resolves",
+      "created_at": "2026-10-21T16:41:23+00:00"
+    },
+    {
+      "from": "CHG-508",
+      "to": "TASK-396",
+      "type": "implements",
+      "created_at": "2026-10-21T16:41:23+00:00"
+    },
+    {
+      "from": "CHG-508",
+      "to": "ISS-953",
+      "type": "resolves",
+      "created_at": "2026-10-21T16:41:23+00:00"
+    },
+    {
+      "from": "CHG-509",
+      "to": "TASK-397",
+      "type": "implements",
+      "created_at": "2026-10-21T16:41:27+00:00"
+    },
+    {
+      "from": "CHG-509",
+      "to": "ISS-954",
+      "type": "resolves",
+      "created_at": "2026-10-21T16:41:27+00:00"
+    },
+    {
+      "from": "CHG-510",
+      "to": "TASK-398",
+      "type": "implements",
+      "created_at": "2026-10-21T16:41:27+00:00"
+    },
+    {
+      "from": "CHG-510",
+      "to": "ISS-955",
+      "type": "resolves",
+      "created_at": "2026-10-21T16:41:27+00:00"
+    },
+    {
+      "from": "CHG-511",
+      "to": "TASK-399",
+      "type": "implements",
+      "created_at": "2026-10-21T16:41:27+00:00"
+    },
+    {
+      "from": "CHG-511",
+      "to": "ISS-956",
+      "type": "resolves",
+      "created_at": "2026-10-21T16:41:28+00:00"
     }
   ]
 }
