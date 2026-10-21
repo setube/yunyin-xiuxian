@@ -47,12 +47,18 @@ describe('修行页提示 · 文言仍报清缕数与药资', () => {
 describe('修行页与提示同源', () => {
   it('疗伤按钮与备药 toast 走 cultivationText', () => {
     const view = readFileSync(new URL('../views/CultivationView.vue', import.meta.url), 'utf8')
+    // 破境卡(成功率/准备/引劫)拆出后判据随本体走:宿主办疗伤,卡办备药 —— 两处合扫
+    const card = readFileSync(new URL('../components/cultivation/BreakthroughCard.vue', import.meta.url), 'utf8')
     // 劫势读数拆出后判据随本体走(composables/useTribulation.ts),宿主只留「进阶成功率」与备药
     const trib = readFileSync(new URL('../composables/useTribulation.ts', import.meta.url), 'utf8')
     expect(view).toContain('repairActLabel(')
-    expect(view).toContain('prepPillShortToast()')
-    expect(view).not.toContain('灵气不足')
-    expect(view).not.toContain('灵石不足')
+    expect(card).toContain('prepPillShortToast()')
+    // 破境按钮与准备板只此一份:宿主若把整块再抄回来,两处文案迟早分叉
+    expect(view, '宿主只挂载破境卡').toContain('<BreakthroughCard />')
+    expect(view, '宿主不再自带突破按钮').not.toContain('引 劫 突 破')
+    expect(card, '引劫/尝试按钮在卡里').toContain('attemptBreakthrough()')
+    expect(view + card).not.toContain('灵气不足')
+    expect(view + card).not.toContain('灵石不足')
     expect(trib, '天威区间须乘入今日 tribulationMult,与劫势/引劫同源').toContain(
       'tribulationWaveSpan(tribPlan.value.def, tribTargetMajor.value, tribWeather.value.tribulationMult)'
     )
