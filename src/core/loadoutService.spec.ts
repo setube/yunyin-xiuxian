@@ -100,6 +100,18 @@ describe('构筑快照(保存/一键切换)', () => {
     }
   })
 
+  it('快照里的主修/辅修门类写错时,切换构筑不把主修塞进辅修席', () => {
+    const cultivation = useCultivationStore()
+    seed()
+    const loadout = captureLoadout('错门类')!
+    // 坏快照:主修位指向辅修,辅修席同时含主修与自身
+    loadout.mainGongfa = 's_tuna'
+    loadout.subGongfa = ['m_taixuan', 's_tuna']
+    applyLoadout(loadout.id)
+    expect(cultivation.mainGongfa, '辅修不能借快照占主修席').toBe('m_taixuan')
+    expect(cultivation.subGongfa, '主修不能借快照占辅修席').toEqual(['s_tuna'])
+  })
+
   it('容量上限生效', () => {
     seed()
     const loadouts = useLoadoutsStore()

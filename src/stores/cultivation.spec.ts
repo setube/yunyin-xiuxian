@@ -240,6 +240,31 @@ describe('sanitize:功法等级与悟道分支加固', () => {
     expect(c.subGongfa, '同门去重后按首次出现保序').toEqual(['s_tuna', 's_lianti'])
   })
 
+  it('sanitize:主修席只收主修门类,辅修席不收主修', () => {
+    const c = useCultivationStore()
+    c.$patch({
+      learned: { m_taixuan: 1, s_tuna: 1, s_lianti: 1 },
+      // 主修位被写成辅修,辅修席又同时塞了主修与主修位上的同一门
+      mainGongfa: 's_tuna',
+      subGongfa: ['m_taixuan', 's_tuna', 's_lianti']
+    } as never)
+    c.sanitize()
+    expect(c.mainGongfa, '辅修不能占主修席').toBeNull()
+    expect(c.subGongfa, '主修不能占辅修席,真辅修照旧保留').toEqual(['s_tuna', 's_lianti'])
+  })
+
+  it('sanitize:主修与辅修写同一门时,辅修席那一份被清掉', () => {
+    const c = useCultivationStore()
+    c.$patch({
+      learned: { m_taixuan: 1, s_tuna: 1 },
+      mainGongfa: 'm_taixuan',
+      subGongfa: ['m_taixuan', 's_tuna']
+    } as never)
+    c.sanitize()
+    expect(c.mainGongfa).toBe('m_taixuan')
+    expect(c.subGongfa, '同一门不得主/辅各算一遍').toEqual(['s_tuna'])
+  })
+
   /**
    * 同一状态写两条,`buffMods` 会把词条叠两次(聚灵 +50% 变 +100%)。
    * 写入口 addBuff 只会有一条,故重复行是坏档复制 —— 只留剩余最久的那一行,
@@ -259,6 +284,53 @@ describe('sanitize:功法等级与悟道分支加固', () => {
     expect(c.buffs[0]!.endsAt, '留剩余最久的那一行').toBe(now + 900_000)
     expect(c.buffs[0]!.added, '本命时长与留下的那一行同源,不虚报两份').toBe(1_800_000)
     expect(c.buffMods.cultivationSpeed, '聚灵只算一次').toBe(0.5)
+  })
+})
+
+describe('功法公共写入:只认目录内、满级前、门类匹配', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('learn:目录外的 id 不进已习表,也不占主修席', () => {
+    const c = useCultivationStore()
+    expect(c.learn('x_not_a_gongfa')).toBe(false)
+    expect(c.learned).toEqual({})
+    expect(c.mainGongfa).toBeNull()
+  })
+
+  it('upgrade:未习得与满级都不再加层,满级功法永不过顶', () => {
+    const c = useCultivationStore()
+    c.learn('m_taixuan')
+    expect(c.learned.m_taixuan).toBe(1)
+    c.upgrade('x_not_a_gongfa')
+    expect(c.learned).toEqual({ m_taixuan: 1 })
+    const max = gongfaMaxLevel(gongfaDef('m_taixuan')!)
+    for (let i = 0; i < max + 3; i += 1) c.upgrade('m_taixuan')
+    expect(c.learned.m_taixuan, '超过满级的直接写入必须被挡').toBe(max)
+  })
+
+  it('equipMain:只收已习得的主修;辅修/秘术/野 id 都不能占主修席', () => {
+    const c = useCultivationStore()
+    c.learn('s_tuna')
+    c.learn('m_taixuan')
+    c.equipMain('m_taixuan')
+    expect(c.mainGongfa).toBe('m_taixuan')
+    c.equipMain('s_tuna')
+    c.equipMain('x_not_a_gongfa')
+    expect(c.mainGongfa, '拒绝后主修席保持原值').toBe('m_taixuan')
+  })
+
+  it('toggleSub:主修/未习得/野 id 不能占辅修席,满槽与坏槽数也不放行', () => {
+    const c = useCultivationStore()
+    c.learn('m_taixuan')
+    c.learn('s_tuna')
+    c.learn('s_lianti')
+    expect(c.toggleSub('m_taixuan', 2), '主修不得同时占辅修席').toBe(false)
+    expect(c.toggleSub('x_not_a_gongfa', 2)).toBe(false)
+    expect(c.toggleSub('s_tuna', 0), '没有辅修槽时不能装').toBe(false)
+    expect(c.toggleSub('s_tuna', Number.NaN), '坏槽数不能当成无上限').toBe(false)
+    expect(c.toggleSub('s_tuna', 1)).toBe(true)
+    expect(c.toggleSub('s_lianti', 1), '槽满不得再塞').toBe(false)
+    expect(c.subGongfa).toEqual(['s_tuna'])
   })
 })
 
@@ -295,5 +367,56 @@ describe('辅修槽位约束:超出预算的伴生功法不白给(gongfaMods 与
     // 只有先装的 s_tuna 生效;s_lianti 的 maxHpPct 掉回基准 —— 不再免费白给
     expect(modOf(player.finalStats.mods, 'cultivationSpeed'), '槽内首门仍生效').toBeGreaterThan(0)
     expect(modOf(player.finalStats.mods, 'maxHpPct'), '超槽辅修不得再白给词条').toBeCloseTo(hpBeforeLianti, 6)
+  })
+})
+
+describe('悟道分支:选择随转世保留,加成只随满级且装配生效', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('转世落回一层:分支选择还在,但满级专属词条不再白给', () => {
+    const c = useCultivationStore()
+    c.learn('m_taixuan')
+    const max = gongfaMaxLevel(gongfaDef('m_taixuan')!)
+    while ((c.learned.m_taixuan ?? 0) < max) c.upgrade('m_taixuan')
+    expect(c.chooseBranch('m_taixuan', 'b_taixuan_sha')).toBe(true)
+    expect(c.gongfaMods.attackPct, '满级装配时应吃到分支').toBeCloseTo(0.1, 6)
+
+    // 转世折损只保留「记得哪些功法/选过哪条路」,层数回到一层
+    c.learned = { m_taixuan: 1 }
+    expect(c.gongfaBranch.m_taixuan, '分支选择是永久记忆').toBe('b_taixuan_sha')
+    expect(c.gongfaMods.attackPct, '未重新修满前不兑现满级分支').toBeUndefined()
+  })
+
+  it('满级但被换下主修席:分支词条随装配失效,换回后恢复', () => {
+    const c = useCultivationStore()
+    c.learn('m_taixuan')
+    c.learn('m_qingmu')
+    const max = gongfaMaxLevel(gongfaDef('m_taixuan')!)
+    while ((c.learned.m_taixuan ?? 0) < max) c.upgrade('m_taixuan')
+    c.chooseBranch('m_taixuan', 'b_taixuan_sha')
+    c.equipMain('m_qingmu')
+    expect(c.gongfaMods.attackPct, '未装配的功法分支不该进属性').toBeUndefined()
+    c.equipMain('m_taixuan')
+    expect(c.gongfaMods.attackPct, '重新装配后分支恢复').toBeCloseTo(0.1, 6)
+  })
+
+  it('辅修超出藏书楼槽位预算:分支词条与功法本体一起失效', () => {
+    const c = useCultivationStore()
+    const dongfu = useDongfuStore()
+    dongfu.setLevel('library', 3) // 2 个辅修槽
+    c.learn('s_tuna')
+    c.learn('s_lianti')
+    const max = gongfaMaxLevel(gongfaDef('s_tuna')!)
+    while ((c.learned.s_tuna ?? 0) < max) c.upgrade('s_tuna')
+    c.chooseBranch('s_tuna', 'b_tuna_mian')
+    c.toggleSub('s_tuna', 2)
+    c.toggleSub('s_lianti', 2)
+    expect(c.gongfaMods.qiRegen, '槽内满级辅修应吃分支').toBeCloseTo(0.06, 6)
+
+    dongfu.setLevel('library', 0) // 只剩 1 个辅修槽,s_tuna 超席
+    // 换一门不带 qiRegen 的辅修占住唯一席位,让「分支残留」与「槽内本体」分开可判
+    c.toggleSub('s_lianti', 1)
+    c.subGongfa = ['s_lianti', 's_tuna']
+    expect(c.gongfaMods.qiRegen, '超席后分支词条不得残留').toBeUndefined()
   })
 })

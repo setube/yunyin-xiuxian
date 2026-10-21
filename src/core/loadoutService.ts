@@ -83,19 +83,29 @@ export function applyLoadout(id: string): boolean {
     if (!(slot in loadout.equipment)) inventory.unequip(slot)
   }
   // 功法
-  if (loadout.mainGongfa && cultivation.learned[loadout.mainGongfa] && gongfaDef(loadout.mainGongfa)) {
+  if (
+    loadout.mainGongfa &&
+    cultivation.learned[loadout.mainGongfa] &&
+    gongfaDef(loadout.mainGongfa)?.type === 'main'
+  ) {
     cultivation.equipMain(loadout.mainGongfa)
   } else if (loadout.mainGongfa) {
     missing += 1
     missingNames.push(gongfaDef(loadout.mainGongfa)?.name ?? '主修功法')
   }
-  const subCap = dongfu.subGongfaSlots
+  const subCap = Math.max(0, Math.floor(dongfu.subGongfaSlots))
   // 快照里的重复项(sanitize 之前存下的旧档)不能占两次槽、也不能报两次缺件
   const snapshotSubs = [...new Set(loadout.subGongfa)]
-  const validSubs = snapshotSubs.filter(g => cultivation.learned[g]).slice(0, subCap)
-  const unlearnedSubs = snapshotSubs.filter(g => !cultivation.learned[g])
+  // 快照是旧档/手改数据时,主修门类可能被写进辅修席。与 toggleSub 同一道门类闸,
+  // 否则一键切换会把主修同时算两遍,还把真正的辅修挤出去。
+  const eligibleSubs = snapshotSubs.filter(g => {
+    const def = gongfaDef(g)
+    return !!cultivation.learned[g] && !!def && def.type !== 'main' && g !== cultivation.mainGongfa
+  })
+  const validSubs = eligibleSubs.slice(0, subCap)
+  const missingSubs = snapshotSubs.filter(g => !eligibleSubs.includes(g))
   missing += snapshotSubs.length - validSubs.length
-  for (const g of unlearnedSubs) missingNames.push(gongfaDef(g)?.name ?? g)
+  for (const g of missingSubs) missingNames.push(gongfaDef(g)?.name ?? g)
   cultivation.subGongfa = validSubs
   // 法宝
   const artifactCap = artifactSlotsFor(player.major)

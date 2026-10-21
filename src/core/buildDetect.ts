@@ -5,7 +5,7 @@ import type { AnyStatKey, StatMods } from '@/types'
 import { artifactDef } from '@/data/artifacts'
 import { buffDef } from '@/data/buffs'
 import { equipmentTemplate } from '@/data/equipment'
-import { gongfaDef } from '@/data/gongfa'
+import { gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 import { gongfaBranchDef } from '@/data/gongfaBranches'
 import { mentorDef } from '@/data/mentors'
 import { petDef } from '@/data/pets'
@@ -138,11 +138,21 @@ export function buildSources(style: BuildStyleDef): string[] {
     const def = gongfaDef(id)
     if (def && (hasCore(def.baseMods) || hasCore(def.perLevelMods))) names.push(`《${def.name}》`)
   }
-  // 悟道分支并进 gongfaMods,不看是否仍在主修位
+  // 悟道分支并进 gongfaMods,但只在「仍满级且仍在装配席」时生效(与 store 同一把尺):
+  // 转世把层数折回、或换下主/辅修后,分支只是永久记忆,不再算作当前来路。
+  const activeSubs = cultivation.subGongfa.slice(0, dongfu.subGongfaSlots)
   for (const [gid, bid] of Object.entries(cultivation.gongfaBranch)) {
     const def = gongfaBranchDef(bid)
-    if (def?.gongfaId === gid && hasCore(def.mods)) {
-      const book = gongfaDef(gid)?.name ?? gid
+    const gdef = gongfaDef(gid)
+    const lv = cultivation.learned[gid] ?? 0
+    if (
+      def?.gongfaId === gid &&
+      gdef &&
+      lv >= gongfaMaxLevel(gdef) &&
+      (gid === cultivation.mainGongfa || activeSubs.includes(gid)) &&
+      hasCore(def.mods)
+    ) {
+      const book = gdef.name
       names.push(`《${book}》·${def.name}`)
     }
   }

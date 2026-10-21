@@ -55,10 +55,17 @@ export const useCultivationStore = defineStore(
         }
       }
       learned.value = fixedLearned
-      if (typeof mainGongfa.value !== 'string' || !fixedLearned[mainGongfa.value]) mainGongfa.value = null
+      // 主修席只收主修门类:坏档把辅修/秘术写进 mainGongfa 时,gongfaMods 会照算,
+      // 界面却仍按「主修」展示 —— 门类与席位从此各说各话。
+      if (typeof mainGongfa.value !== 'string' || gongfaDef(mainGongfa.value)?.type !== 'main' || !fixedLearned[mainGongfa.value]) {
+        mainGongfa.value = null
+      }
       // 辅修同一门写两遍会白占一个槽(槽位预算按条数算),把真正想上的后一门挤出去。
       // 与 toggleSub 的「已在列表就不再加」同口径:按首次出现保序去重。
-      subGongfa.value = [...new Set(asStringArray(subGongfa.value))].filter(id => fixedLearned[id] !== undefined)
+      // 主修也不能同时占辅修席:同一门词条会被算两遍,且「装配门类」与席位分叉。
+      subGongfa.value = [...new Set(asStringArray(subGongfa.value))].filter(
+        id => fixedLearned[id] !== undefined && gongfaDef(id)?.type !== 'main' && id !== mainGongfa.value
+      )
       /**
        * Buff 同一状态写两条时,`buffMods` 会把同一份词条叠加两次(面板/战斗凭空多一截)。
        *
@@ -122,10 +129,22 @@ export const useCultivationStore = defineStore(
       for (const id of subGongfa.value.slice(0, subCap)) {
         if (learned.value[id]) sources.push(gongfaModsAt(id, learned.value[id]!))
       }
-      // Phase 31 A3:悟道分支追加词条(选过的功法)
+      // Phase 31 A3:悟道分支追加词条(选过的功法)。分支只在满级可择,加成也要随
+      // 「仍满级且仍装配」生效 —— 否则转世把层数折回后,一门 lv1 功法照旧吃满级专属分支;
+      // 换下装配席后分支仍永久叠加,与「功法=装配规则」相悖。
       for (const [gid, bid] of Object.entries(gongfaBranch.value)) {
         const def = gongfaBranchDef(bid)
-        if (def?.gongfaId === gid) sources.push(def.mods)
+        const gdef = gongfaDef(gid)
+        const lv = learned.value[gid]
+        if (
+          def?.gongfaId === gid &&
+          gdef &&
+          lv != null &&
+          lv >= gongfaMaxLevel(gdef) &&
+          (gid === mainGongfa.value || subGongfa.value.slice(0, subCap).includes(gid))
+        ) {
+          sources.push(def.mods)
+        }
       }
       return mergeMods(sources)
     })
@@ -147,21 +166,29 @@ export const useCultivationStore = defineStore(
     })
 
     function learn(id: string): boolean {
-      if (learned.value[id]) return false
-      learned.value = { ...learned.value, [id]: 1 }
       const def = gongfaDef(id)
+      if (!def || learned.value[id]) return false
+      learned.value = { ...learned.value, [id]: 1 }
       if (def?.type === 'main' && !mainGongfa.value) mainGongfa.value = id
       return true
     }
 
     function upgrade(id: string): void {
+      const def = gongfaDef(id)
       const lv = learned.value[id]
-      if (!lv) return
+      // 满级闸不能只靠服务层 gongfaUpgradeCost:公共写入一旦被绕过,perLevel 词条
+      // 会无限放大,而读档 sanitize 只能在下次加载补救。
+      if (!def || !lv || lv >= gongfaMaxLevel(def)) return
       learned.value = { ...learned.value, [id]: lv + 1 }
     }
 
-    function equipMain(id: string): void {
-      if (learned.value[id]) mainGongfa.value = id
+    function equipMain(id: string): boolean {
+      const def = gongfaDef(id)
+      if (!def || def.type !== 'main' || !learned.value[id]) return false
+      mainGongfa.value = id
+      // 防御性收口:若内存里已被直接写成主辅重叠,设主修时顺手撤掉辅修席那一份。
+      if (subGongfa.value.includes(id)) subGongfa.value = subGongfa.value.filter(x => x !== id)
+      return true
     }
 
     function toggleSub(id: string, maxSlots: number): boolean {
@@ -169,7 +196,12 @@ export const useCultivationStore = defineStore(
         subGongfa.value = subGongfa.value.filter(x => x !== id)
         return true
       }
-      if (subGongfa.value.length >= maxSlots) return false
+      // NaN 会让 `length >= maxSlots` 恒为 false,坏调用等于绕过槽位上限。
+      if (!Number.isFinite(maxSlots) || maxSlots < 1) return false
+      const def = gongfaDef(id)
+      // 主修门类不得占辅修席(否则同一门被主/辅各算一遍);秘术与辅修共用槽位。
+      if (!def || def.type === 'main' || id === mainGongfa.value) return false
+      if (subGongfa.value.length >= Math.floor(maxSlots)) return false
       if (!learned.value[id]) return false
       subGongfa.value = [...subGongfa.value, id]
       return true

@@ -6,6 +6,7 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
+import { gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 
 describe('流派识别(Build 面板数据层)', () => {
   it('无相关词条时不识别', () => {
@@ -83,6 +84,10 @@ describe('成路于与真正吃进属性的来路同源', () => {
   it('悟道分支、丹效、灵兽、师承、称号按实有词条入列', () => {
     const cultivation = useCultivationStore()
     const player = usePlayerStore()
+    cultivation.learn('m_xuanbing')
+    const max = gongfaMaxLevel(gongfaDef('m_xuanbing')!)
+    while ((cultivation.learned.m_xuanbing ?? 0) < max) cultivation.upgrade('m_xuanbing')
+    cultivation.equipMain('m_xuanbing')
     cultivation.gongfaBranch = { m_xuanbing: 'b_xuanbing_liuli' }
     cultivation.buffs = [{ defId: 'buff_jingang', endsAt: Date.now() + 60_000 }]
     player.petId = 'pet_taotie'
@@ -129,5 +134,16 @@ describe('辅修槽位预算 · 成路于(和 gongfaMods 同一把尺)', () => {
     const names = buildSources(gangdun)
     expect(names).toContain('《不动如山章》') // 预算内的真算成路
     expect(names).not.toContain('《仙光护体诀》') // 超预算的不算,别把没在账上词条当来路
+  })
+
+  it('分支选择保留但未满级/未装配时,不把满级分支算成来路', () => {
+    const cultivation = useCultivationStore()
+    cultivation.learn('m_xuanbing')
+    const max = gongfaMaxLevel(gongfaDef('m_xuanbing')!)
+    while ((cultivation.learned.m_xuanbing ?? 0) < max) cultivation.upgrade('m_xuanbing')
+    cultivation.gongfaBranch = { m_xuanbing: 'b_xuanbing_liuli' }
+    cultivation.mainGongfa = null
+    const gangdun = BUILD_STYLES.find(s => s.id === 'gangdun')!
+    expect(buildSources(gangdun), '满级但未装配时,分支不该出现').not.toContain('《玄冰道典》·琉璃')
   })
 })
