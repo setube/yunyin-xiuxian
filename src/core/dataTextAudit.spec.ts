@@ -664,9 +664,10 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   })
 
   it('登临导览的「天道熔炉」是真按钮 —— 无 href 的 <a> 键盘到不了', () => {
-    const view = src('../views/CelestialView.vue')
+    // 导览弹窗拆出后判据随本体走,宿主与子组件合扫(防只查宿主假绿)
+    const view = src('../views/CelestialView.vue') + src('../components/celestial/TutorialDialog.vue')
     expect(view, '天道熔炉该是可聚焦的 button').toMatch(
-      /<button[\s\S]{0,240}@click="tutorialOpen = false"[\s\S]{0,80}天道熔炉/,
+      /<button[\s\S]{0,240}@click="emit\('close'\)"[\s\S]{0,80}天道熔炉/,
     )
     // 无 href 却挂 @click 的 <a>:不在 Tab 序列里,读屏也只念「链接」
     const deadLinks = [...view.matchAll(/<a\b[^>]*>/g)]
