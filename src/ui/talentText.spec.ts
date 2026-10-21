@@ -7,7 +7,8 @@ import { petFuncText } from './itemText'
 
 describe('天赋与灵兽详情带上实际词条', () => {
   it('人物页点开天赋会印 modsText,图鉴把词条接进说明', () => {
-    const character = readFileSync(new URL('../views/CharacterView.vue', import.meta.url), 'utf8')
+    // 天赋芯片在轮回弹窗内(拆出后判据随本体走)
+    const character = readFileSync(new URL('../components/character/RebirthDialog.vue', import.meta.url), 'utf8')
     const collection = readFileSync(new URL('../views/CollectionView.vue', import.meta.url), 'utf8')
     expect(character).toContain('modsText(tappedTalent.mods)')
     expect(collection).toContain('modsText(t.mods)')

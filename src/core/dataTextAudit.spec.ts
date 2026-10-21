@@ -187,7 +187,8 @@ describe('文案数值对账 · 视图不手抄数字', () => {
       .replace(/\/\/.*$/gm, '')
 
   it('人物页的道果说明与边际收益都取自 DAO_FRUIT_* 常数', () => {
-    const view = src('../views/CharacterView.vue')
+    // 轮回弹窗拆出后判据随本体走
+    const view = src('../components/character/RebirthDialog.vue')
     expect(view, '道果每枚加成应读常数').toContain('DAO_FRUIT_CULT_BONUS')
     expect(view, '道躯加成应读常数').toContain('DAO_FRUIT_COMBAT_BONUS')
     // 手抄过的两处字面量必须消失(改了常数却忘了改文案,正是这条要拦的)

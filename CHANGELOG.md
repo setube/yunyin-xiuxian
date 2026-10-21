@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 调整:**轮回弹窗迁 `RebirthDialog`** —— 道果边际、天赋芯片、传承与转世去留一览、逆旅契及其二次确认同出一域,却把 `talentTap`/`heritageOpen`/`trialOpen`/`pendingTrial` 与兵解 toast 留在页面里;现整块(含两个从属浮层)迁入 `components/character/RebirthDialog.vue`,关弹窗复位行为不变,`CharacterView` 收至 433 行。
 - 调整:**人物页三浮层迁 `IdentityDialog` / `BondDialog` / `MentorDialog`** —— 修行画像、道侣与师承三个弹窗各自只读一份投影,却连 `lastEventText`/`heritageOpen`/拜师契合预读都挂在 894 行的页面里;现整块迁入 `components/character/`,道侣的关系投影另收 `composables/useBondOverview.ts` 由入口卡与弹窗共用,`CharacterView` 收至 648 行。
 - 调整:**试炼册迁 `TrialPanel`** —— 今日天道、天道变数、天道试炼与天道挑战书四节只读 `endgame` 与各自的草稿态,却把 `mutationDraw`、挑战书 `draft`、验约结果全留在页面里;现整册迁入 `components/celestial/TrialPanel.vue`(自取 store,草稿与抽签态随本体走),战报仍经 `emit('report')` 交宿主 `openReport` 统一判定归因,`CelestialView` 收至 277 行。
 - 调整:**远征册迁 `ExpeditionPanel`** —— 在途行程、特殊规则世界、虚界之门与「择契 · 择门 · 启程」准备弹窗同属一域,却把 `prepWorldId`/`prepPact`/`prepGate`/`abandonConfirm` 四个开关全留在页面里;现整域迁入 `components/celestial/ExpeditionPanel.vue`(自取 store、确认态随本体走),战报仍经 `emit('report')` 交宿主 `openReport` 统一判定归因,`CelestialView` 收至 594 行。
