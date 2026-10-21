@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 321,
+  "round": 322,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T22:35:40+00:00",
+  "updated_at": "2026-10-21T22:58:56+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23269,6 +23269,180 @@
       "confidence": 0.95,
       "title": "功法写入与分支越界由公共接口缺少统一判据造成",
       "detail": "learn/upgrade/equipMain/toggleSub 及快照写入各自只做局部检查;分支词条只查归属不查满级与装配,故同门双算与转世虚高并存。"
+    },
+    "TASK-435": {
+      "id": "TASK-435",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T22:48:08+00:00",
+      "updated_at": "2026-10-21T22:57:41+00:00",
+      "touched_round": 322,
+      "category": "correctness",
+      "severity": 0.88,
+      "confidence": 0.92,
+      "effort": 2,
+      "title": "坊市坏档可零元购或超量到货",
+      "detail": "sanitize 将坏价归零、count 无上限、装备 tier/品质下限越界；购买会以零价成交或按一件价带走超量货物，寄卖坏价归零静默吞货。"
+    },
+    "TASK-436": {
+      "id": "TASK-436",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:48:16+00:00",
+      "updated_at": "2026-10-21T22:57:40+00:00",
+      "touched_round": 322,
+      "category": "correctness",
+      "severity": 0.84,
+      "confidence": 0.9,
+      "effort": 2,
+      "title": "悬赏坏档可零赏交货或超量悟道",
+      "detail": "非贡器订单坏价归零后仍可交；丹药 extra 无上限；贡器 tier 未夹合法层级。"
+    },
+    "TASK-437": {
+      "id": "TASK-437",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:48:19+00:00",
+      "updated_at": "2026-10-21T22:57:40+00:00",
+      "touched_round": 322,
+      "category": "correctness",
+      "severity": 0.86,
+      "confidence": 0.93,
+      "effort": 2,
+      "title": "法宝公共写入可绕过目录、拥有与满重判据",
+      "detail": "addArtifact 收野 id；levelUpArtifact 可升级未拥有/满重/野 id；toggleArtifact 可佩戴未拥有或野 id，坏槽数仍进入替换分支。"
+    },
+    "COMP-055": {
+      "id": "COMP-055",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:56:54+00:00",
+      "updated_at": "2026-10-21T22:56:54+00:00",
+      "touched_round": 322,
+      "title": "坊市与悬赏持久化边界",
+      "detail": "market/bounty store 的读档修形、货架与订单成交、寄卖回款边界。"
+    },
+    "COMP-056": {
+      "id": "COMP-056",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:56:57+00:00",
+      "updated_at": "2026-10-21T22:56:57+00:00",
+      "touched_round": 322,
+      "title": "法宝库存公共写入",
+      "detail": "inventory store 的法宝获得、升级、祭炼/收回与槽位边界。"
+    },
+    "ISS-990": {
+      "id": "ISS-990",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:57:01+00:00",
+      "updated_at": "2026-10-21T22:57:40+00:00",
+      "touched_round": 322,
+      "title": "坊市坏档可零元购、超量到货与静默吞寄卖货",
+      "detail": "坏价归零后仍可成交；丹/材 count 无上限；装备 tier/minQualityRank 越界；寄卖坏价到期只入账零。"
+    },
+    "ISS-991": {
+      "id": "ISS-991",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:57:04+00:00",
+      "updated_at": "2026-10-21T22:57:40+00:00",
+      "touched_round": 322,
+      "title": "悬赏坏档可零赏交货或超量领悟道",
+      "detail": "募矿/募丹零赏仍可交；丹药 extra 无上限；贡器 tier 未夹合法域。"
+    },
+    "ISS-992": {
+      "id": "ISS-992",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:57:08+00:00",
+      "updated_at": "2026-10-21T22:57:40+00:00",
+      "touched_round": 322,
+      "title": "法宝公共写入可绕过目录、拥有与满重判据",
+      "detail": "addArtifact 收野 id；levelUpArtifact 可升未拥有/满重/野 id；toggleArtifact 可佩野 id，坏槽数绕过法宝位上限。"
+    },
+    "HYP-162": {
+      "id": "HYP-162",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:57:12+00:00",
+      "updated_at": "2026-10-21T22:57:41+00:00",
+      "touched_round": 322,
+      "confidence": 0.92,
+      "title": "持久化与公共写入缺少值域闭环是同类根因",
+      "detail": "读档修形把坏价/坏数量变成可成交值，公共写入又未校验目录与上限，故坏输入能转成资源收益。"
+    },
+    "EV-988": {
+      "id": "EV-988",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:57:16+00:00",
+      "updated_at": "2026-10-21T22:57:16+00:00",
+      "touched_round": 322,
+      "source": "src/stores/{market,bounty,inventory}.spec.ts 新增 10 例",
+      "confidence": 0.98,
+      "title": "旧实现在 10 条坏档/坏调用行为测试上全红",
+      "detail": "零元购、超量到货、寄卖零入账、零赏交货、超量悟道、越界层级与法宝野 id/满重/槽数均被行为测试直接抓住。"
+    },
+    "EV-989": {
+      "id": "EV-989",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:57:32+00:00",
+      "updated_at": "2026-10-21T22:57:32+00:00",
+      "touched_round": 322,
+      "source": "bun run test:report (322 轮)",
+      "confidence": 1.0,
+      "title": "修复后全量 3431 用例通过,类型检查/lint/构建通过",
+      "detail": "market/bounty/inventory 定向 68 例全绿；全量 3431 过 0 败；bun run check 与 bun run build 均成功。"
+    },
+    "CHG-535": {
+      "id": "CHG-535",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:58:45+00:00",
+      "updated_at": "2026-10-21T22:58:45+00:00",
+      "touched_round": 322,
+      "commit": "c6f80d6",
+      "title": "坊市坏档货架与寄卖边界收口",
+      "detail": "零价货格丢弃、丹材数量归一、装备层级与品质下限夹取、寄卖坏价按公式重建。"
+    },
+    "CHG-536": {
+      "id": "CHG-536",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:58:48+00:00",
+      "updated_at": "2026-10-21T22:58:48+00:00",
+      "touched_round": 322,
+      "commit": "76ffef9",
+      "title": "悬赏坏单与悟道添头收口",
+      "detail": "零赏实价单整版重挂、添头只归募丹并夹上限、贡器层级夹合法域。"
+    },
+    "CHG-537": {
+      "id": "CHG-537",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:58:51+00:00",
+      "updated_at": "2026-10-21T22:58:51+00:00",
+      "touched_round": 322,
+      "commit": "6c1fe1f",
+      "title": "法宝公共写入收口",
+      "detail": "目录/拥有/满重/槽位四道判据，rejected 返回坏调用。"
     }
   },
   "edges": [
@@ -34348,6 +34522,90 @@
       "to": "ISS-989",
       "type": "resolves",
       "created_at": "2026-10-21T22:34:16+00:00"
+    },
+    {
+      "from": "ISS-990",
+      "to": "COMP-055",
+      "type": "located_in",
+      "created_at": "2026-10-21T22:57:20+00:00"
+    },
+    {
+      "from": "ISS-991",
+      "to": "COMP-055",
+      "type": "located_in",
+      "created_at": "2026-10-21T22:57:20+00:00"
+    },
+    {
+      "from": "ISS-992",
+      "to": "COMP-056",
+      "type": "located_in",
+      "created_at": "2026-10-21T22:57:21+00:00"
+    },
+    {
+      "from": "TASK-435",
+      "to": "ISS-990",
+      "type": "addresses",
+      "created_at": "2026-10-21T22:57:21+00:00"
+    },
+    {
+      "from": "TASK-436",
+      "to": "ISS-991",
+      "type": "addresses",
+      "created_at": "2026-10-21T22:57:21+00:00"
+    },
+    {
+      "from": "TASK-437",
+      "to": "ISS-992",
+      "type": "addresses",
+      "created_at": "2026-10-21T22:57:21+00:00"
+    },
+    {
+      "from": "EV-988",
+      "to": "HYP-162",
+      "type": "validates",
+      "created_at": "2026-10-21T22:57:21+00:00"
+    },
+    {
+      "from": "EV-989",
+      "to": "HYP-162",
+      "type": "validates",
+      "created_at": "2026-10-21T22:57:36+00:00"
+    },
+    {
+      "from": "CHG-535",
+      "to": "TASK-435",
+      "type": "implements",
+      "created_at": "2026-10-21T22:58:56+00:00"
+    },
+    {
+      "from": "CHG-535",
+      "to": "ISS-990",
+      "type": "resolves",
+      "created_at": "2026-10-21T22:58:56+00:00"
+    },
+    {
+      "from": "CHG-536",
+      "to": "TASK-436",
+      "type": "implements",
+      "created_at": "2026-10-21T22:58:56+00:00"
+    },
+    {
+      "from": "CHG-536",
+      "to": "ISS-991",
+      "type": "resolves",
+      "created_at": "2026-10-21T22:58:56+00:00"
+    },
+    {
+      "from": "CHG-537",
+      "to": "TASK-437",
+      "type": "implements",
+      "created_at": "2026-10-21T22:58:56+00:00"
+    },
+    {
+      "from": "CHG-537",
+      "to": "ISS-992",
+      "type": "resolves",
+      "created_at": "2026-10-21T22:58:56+00:00"
     }
   ]
 }
