@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 322,
+  "round": 323,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T22:58:56+00:00",
+  "updated_at": "2026-10-21T23:15:53+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23443,6 +23443,201 @@
       "commit": "6c1fe1f",
       "title": "法宝公共写入收口",
       "detail": "目录/拥有/满重/槽位四道判据，rejected 返回坏调用。"
+    },
+    "COMP-057": {
+      "id": "COMP-057",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:05:23+00:00",
+      "updated_at": "2026-10-21T23:05:23+00:00",
+      "touched_round": 323,
+      "title": "道童持久化与派工边界",
+      "detail": "src/stores/apprentice.ts 的派工、收割与收徒公共入口缺少 spec、now 与境界校验。"
+    },
+    "ISS-993": {
+      "id": "ISS-993",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:05:26+00:00",
+      "updated_at": "2026-10-21T23:13:13+00:00",
+      "touched_round": 323,
+      "title": "道童坏调用可写坏任务或绕过槽位",
+      "detail": "dispatch 收野 spec 抛错；dispatch/dispatchAll/collectFinished 收 NaN now 写坏 finishAt；recruit 收坏 major 可绕过槽位与报价。"
+    },
+    "TASK-438": {
+      "id": "TASK-438",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:05:28+00:00",
+      "updated_at": "2026-10-21T23:13:16+00:00",
+      "touched_round": 323,
+      "category": "correctness",
+      "severity": 0.84,
+      "confidence": 0.92,
+      "effort": 2,
+      "title": "道童公共写入与收割边界收口",
+      "detail": "校验 spec/now/major，坏调用不写任务、不入账、不绕过收徒槽位。"
+    },
+    "COMP-058": {
+      "id": "COMP-058",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:05:35+00:00",
+      "updated_at": "2026-10-21T23:05:35+00:00",
+      "touched_round": 323,
+      "title": "洞府等级与灵脉公共写入",
+      "detail": "src/stores/dongfu.ts 的 setLevel/addVeinPoint/setVeinMain/produce 对目录、有限性、容量与时长缺少边界。"
+    },
+    "ISS-994": {
+      "id": "ISS-994",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:05:35+00:00",
+      "updated_at": "2026-10-21T23:13:13+00:00",
+      "touched_round": 323,
+      "title": "洞府坏调用可越上限或反向产资源",
+      "detail": "setLevel 可写野建筑、NaN、负数与超上限；addVeinPoint 无单脉容量；setVeinMain 收野脉；produce 收 NaN/Infinity/负数会污染余数或反向扣资源。"
+    },
+    "TASK-439": {
+      "id": "TASK-439",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:05:35+00:00",
+      "updated_at": "2026-10-21T23:13:16+00:00",
+      "touched_round": 323,
+      "category": "correctness",
+      "severity": 0.82,
+      "confidence": 0.91,
+      "effort": 2,
+      "title": "洞府公共写入与产出边界收口",
+      "detail": "setLevel 只认目录并夹 0..maxLevel；灵脉单脉夹容量且主脉只认目录；produce 拒绝非有限或非正时长。"
+    },
+    "COMP-059": {
+      "id": "COMP-059",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:05:42+00:00",
+      "updated_at": "2026-10-21T23:05:42+00:00",
+      "touched_round": 323,
+      "title": "任务成就公共写入",
+      "detail": "src/stores/quests.ts 的 inc/advanceMain/collect/markDailyDone 缺少输入与终点边界。"
+    },
+    "ISS-995": {
+      "id": "ISS-995",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:05:42+00:00",
+      "updated_at": "2026-10-21T23:13:13+00:00",
+      "touched_round": 323,
+      "title": "任务计数可被坏调用污染或越界推进",
+      "detail": "inc 可写入 NaN/Infinity/负数；advanceMain 可越过 MAIN_QUESTS；collect 野 category 抛错；markDailyDone 可重复写入且收野 id。"
+    },
+    "TASK-440": {
+      "id": "TASK-440",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:05:42+00:00",
+      "updated_at": "2026-10-21T23:13:16+00:00",
+      "touched_round": 323,
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 0.93,
+      "effort": 2,
+      "title": "任务与日课公共写入边界收口",
+      "detail": "inc 只收有限正数；主线推进夹到终点；collect 校验类别与 id；markDailyDone 只认日课且去重。"
+    },
+    "EV-990": {
+      "id": "EV-990",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:12:31+00:00",
+      "updated_at": "2026-10-21T23:12:31+00:00",
+      "touched_round": 323,
+      "source": "src/stores/apprentice.spec.ts 新增 4 条边界测试,定向 75/75 过",
+      "title": "道童坏调用边界行为测试",
+      "confidence": 1.0
+    },
+    "EV-991": {
+      "id": "EV-991",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:12:31+00:00",
+      "updated_at": "2026-10-21T23:12:31+00:00",
+      "touched_round": 323,
+      "source": "src/stores/dongfu.spec.ts 新增 3 条边界测试,定向 75/75 过",
+      "title": "洞府公共写入与时长边界测试",
+      "confidence": 1.0
+    },
+    "EV-992": {
+      "id": "EV-992",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:12:31+00:00",
+      "updated_at": "2026-10-21T23:12:31+00:00",
+      "touched_round": 323,
+      "source": "src/stores/quests.spec.ts 新增 4 条边界测试,定向 75/75 过",
+      "title": "任务与日课公共写入边界测试",
+      "confidence": 1.0
+    },
+    "HYP-163": {
+      "id": "HYP-163",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:12:35+00:00",
+      "updated_at": "2026-10-21T23:12:35+00:00",
+      "touched_round": 323,
+      "confidence": 0.9,
+      "title": "三个 store 的公共写入缺少统一输入边界",
+      "detail": "道童、洞府与任务 store 都以 UI 调用可信为前提，坏门类/坏时钟/坏境界/野目录可直接污染持久化状态。"
+    },
+    "CHG-538": {
+      "id": "CHG-538",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-21T23:13:06+00:00",
+      "updated_at": "2026-10-21T23:15:53+00:00",
+      "touched_round": 323,
+      "commit": "9934fb2",
+      "title": "道童公共写入与收割边界收口",
+      "detail": "校验 spec/now/major,坏调用不写任务、不入账、不绕过收徒槽位。"
+    },
+    "CHG-539": {
+      "id": "CHG-539",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-21T23:13:06+00:00",
+      "updated_at": "2026-10-21T23:15:53+00:00",
+      "touched_round": 323,
+      "commit": "fcd45b2",
+      "title": "洞府公共写入与产出边界收口",
+      "detail": "setLevel 只认目录并夹 0..maxLevel;灵脉单脉夹容量且主脉只认目录;produce 拒绝非有限或非正时长。"
+    },
+    "CHG-540": {
+      "id": "CHG-540",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-21T23:13:06+00:00",
+      "updated_at": "2026-10-21T23:15:53+00:00",
+      "touched_round": 323,
+      "commit": "0f8ca94",
+      "title": "任务与日课公共写入边界收口",
+      "detail": "inc 只收有限正数;主线推进夹到终点;collect 校验类别与 id;markDailyDone 只认日课且去重。"
     }
   },
   "edges": [
@@ -34606,6 +34801,96 @@
       "to": "ISS-992",
       "type": "resolves",
       "created_at": "2026-10-21T22:58:56+00:00"
+    },
+    {
+      "from": "ISS-993",
+      "to": "COMP-057",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:05:31+00:00"
+    },
+    {
+      "from": "TASK-438",
+      "to": "ISS-993",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:05:31+00:00"
+    },
+    {
+      "from": "ISS-994",
+      "to": "COMP-058",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:05:38+00:00"
+    },
+    {
+      "from": "TASK-439",
+      "to": "ISS-994",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:05:38+00:00"
+    },
+    {
+      "from": "ISS-995",
+      "to": "COMP-059",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:05:44+00:00"
+    },
+    {
+      "from": "TASK-440",
+      "to": "ISS-995",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:05:44+00:00"
+    },
+    {
+      "from": "EV-990",
+      "to": "HYP-163",
+      "type": "validates",
+      "created_at": "2026-10-21T23:12:38+00:00"
+    },
+    {
+      "from": "EV-991",
+      "to": "HYP-163",
+      "type": "validates",
+      "created_at": "2026-10-21T23:12:38+00:00"
+    },
+    {
+      "from": "EV-992",
+      "to": "HYP-163",
+      "type": "validates",
+      "created_at": "2026-10-21T23:12:38+00:00"
+    },
+    {
+      "from": "CHG-538",
+      "to": "ISS-993",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:13:09+00:00"
+    },
+    {
+      "from": "CHG-538",
+      "to": "TASK-438",
+      "type": "implements",
+      "created_at": "2026-10-21T23:13:09+00:00"
+    },
+    {
+      "from": "CHG-539",
+      "to": "ISS-994",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:13:09+00:00"
+    },
+    {
+      "from": "CHG-539",
+      "to": "TASK-439",
+      "type": "implements",
+      "created_at": "2026-10-21T23:13:09+00:00"
+    },
+    {
+      "from": "CHG-540",
+      "to": "ISS-995",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:13:09+00:00"
+    },
+    {
+      "from": "CHG-540",
+      "to": "TASK-440",
+      "type": "implements",
+      "created_at": "2026-10-21T23:13:10+00:00"
     }
   ]
 }
