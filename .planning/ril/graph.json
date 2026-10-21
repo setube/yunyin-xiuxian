@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 312,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T19:20:52+00:00",
+  "updated_at": "2026-10-21T19:49:35+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -3601,7 +3601,7 @@
       "version": 4,
       "created_at": "2026-09-11T17:31:16+00:00",
       "updated_at": "2026-09-28T02:42:55+00:00",
-      "touched_round": 186,
+      "touched_round": 312,
       "confidence": 0.95,
       "summary": "凡是同一件事有两处算法(在线/离线、预估/实战、展示/结算),新机制接进来时必漏一处 —— 判据:抽成一个函数,并让「另一处不得再出现原常数」成为红线"
     },
@@ -22449,6 +22449,106 @@
       "source": "64de37e,55a4941; bun run check; bun run test:report 3330/0; bun run build; 故障注入 uiLayering/dataTextAudit 均红",
       "description": "两处修复分别通过定向用例与源码守卫;全量类型、lint、文档检查、3329→3330 用例与生产构建通过。",
       "confidence": 1.0
+    },
+    "ISS-977": {
+      "id": "ISS-977",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T19:34:58+00:00",
+      "updated_at": "2026-10-21T19:45:52+00:00",
+      "touched_round": 312,
+      "title": "历练页区域兴衰读数不随守土时长刷新",
+      "severity": 0.8,
+      "description": "RegionRow 在进入页面时一次性计算 recall，RegionCard 读取静态 row.recall；玩家停留历练页跨过 6/24 小时时，稳定/繁盛章与镇压产出速率冻结，直到其它 store 变化或重进页面。"
+    },
+    "TASK-422": {
+      "id": "TASK-422",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T19:35:01+00:00",
+      "updated_at": "2026-10-21T19:45:56+00:00",
+      "touched_round": 312,
+      "title": "区域兴衰随守土时长在历练卡内刷新",
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 0.95,
+      "effort": 2,
+      "description": "regionRecallFor 接受注入时刻；RegionCard 用每秒游戏钟派生 recall，移除 RegionRow 静态 recall 第二真相源；补行为测试与源码守卫，故障注入验证。"
+    },
+    "ISS-978": {
+      "id": "ISS-978",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T19:42:16+00:00",
+      "updated_at": "2026-10-21T19:45:52+00:00",
+      "touched_round": 312,
+      "title": "流派实验室异步检索离页后仍跑满全部模拟",
+      "severity": 0.75,
+      "description": "BuildLabPanel 卸载只设置 isUnmounted 并阻止回写；searchBuildsAsync 没有取消判据，离页后仍继续执行 600×7×16 场模拟，重进再检索会叠加旧任务。"
+    },
+    "TASK-423": {
+      "id": "TASK-423",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T19:42:20+00:00",
+      "updated_at": "2026-10-21T19:45:56+00:00",
+      "touched_round": 312,
+      "title": "流派实验室检索支持离页协作取消",
+      "category": "performance",
+      "severity": 0.75,
+      "confidence": 0.95,
+      "effort": 2,
+      "description": "searchBuildsAsync 接受 shouldStop，命中即返回 null；BuildLabPanel 传 isUnmounted；补行为测试与组件源码守卫，故障注入验证。"
+    },
+    "EV-975": {
+      "id": "EV-975",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T19:45:32+00:00",
+      "updated_at": "2026-10-21T19:45:32+00:00",
+      "touched_round": 312,
+      "source": "src/core/buildSearch.spec.ts shouldStop 命中后停止评分并返回 null",
+      "description": "注入 shouldStop 后返回 null 且进度停在 10；删掉取消判据时得到完整报告并继续报满进度。",
+      "confidence": 1.0
+    },
+    "EV-976": {
+      "id": "EV-976",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T19:45:37+00:00",
+      "updated_at": "2026-10-21T19:45:37+00:00",
+      "touched_round": 312,
+      "source": "src/core/worldMemory.spec.ts regionRecallFor 接受注入时刻",
+      "description": "同一份镇压存档在 1h/6h/24h 注入时刻分别得到 chaos/stable/flourish；移除 now 形参或卡片 now.value 时源码守卫变红。",
+      "confidence": 1.0
+    },
+    "CHG-523": {
+      "id": "CHG-523",
+      "type": "change",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T19:48:15+00:00",
+      "updated_at": "2026-10-21T19:49:35+00:00",
+      "touched_round": 312,
+      "commit": "e5ec69d",
+      "description": "区域兴衰由地界卡按每秒游戏钟派生；区域大表移除静态 recall 第二真相源。"
+    },
+    "CHG-524": {
+      "id": "CHG-524",
+      "type": "change",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T19:48:19+00:00",
+      "updated_at": "2026-10-21T19:49:35+00:00",
+      "touched_round": 312,
+      "commit": "f9640fa",
+      "description": "searchBuildsAsync 支持 shouldStop 协作取消，流派实验室卸载即停止检索。"
     }
   },
   "edges": [
@@ -33204,6 +33304,54 @@
       "to": "ISS-976",
       "type": "resolves",
       "created_at": "2026-10-21T19:20:24+00:00"
+    },
+    {
+      "from": "TASK-422",
+      "to": "ISS-977",
+      "type": "addresses",
+      "created_at": "2026-10-21T19:35:04+00:00"
+    },
+    {
+      "from": "TASK-423",
+      "to": "ISS-978",
+      "type": "addresses",
+      "created_at": "2026-10-21T19:42:23+00:00"
+    },
+    {
+      "from": "EV-975",
+      "to": "HYP-015",
+      "type": "validates",
+      "created_at": "2026-10-21T19:45:37+00:00"
+    },
+    {
+      "from": "EV-976",
+      "to": "HYP-015",
+      "type": "validates",
+      "created_at": "2026-10-21T19:45:40+00:00"
+    },
+    {
+      "from": "CHG-523",
+      "to": "TASK-422",
+      "type": "implements",
+      "created_at": "2026-10-21T19:48:23+00:00"
+    },
+    {
+      "from": "CHG-523",
+      "to": "ISS-977",
+      "type": "resolves",
+      "created_at": "2026-10-21T19:48:23+00:00"
+    },
+    {
+      "from": "CHG-524",
+      "to": "TASK-423",
+      "type": "implements",
+      "created_at": "2026-10-21T19:48:23+00:00"
+    },
+    {
+      "from": "CHG-524",
+      "to": "ISS-978",
+      "type": "resolves",
+      "created_at": "2026-10-21T19:48:23+00:00"
     }
   ]
 }
