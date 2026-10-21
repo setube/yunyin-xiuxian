@@ -27,7 +27,7 @@ import {
 import { stoneByTier } from './formulas'
 import { track } from './progress'
 import { noteSmithingUsed } from './loreService'
-import { add, gnZero, subClamp } from '@/utils/gnum'
+import { add, gnZero, mulN, subClamp } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
@@ -73,6 +73,12 @@ export function reforgeShortfall(cost: ReforgeCost): ReforgeShortfall {
 /** 这一炉缺哪一样(付得起时为 null)—— 提示按它说清去路,与结算同一处判定 */
 export function reforgeShort(cost: ReforgeCost): 'stone' | 'dust' | null {
   return reforgeShortfall(cost).short
+}
+
+/** 至多花销还差多少:一次重铸的成本 × 归一后的预算;付得起时为全 0 */
+export function reforgePlanShortfall(cost: ReforgeCost, rolls: number): ReforgeShortfall {
+  const n = autoReforgeBudget(rolls)
+  return reforgeShortfall({ stone: mulN(cost.stone, n), dust: cost.dust * n })
 }
 
 /**

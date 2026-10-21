@@ -7,6 +7,7 @@ import { qualityDef } from '@/data/qualities'
 import {
   autoReforge,
   autoReforgeBudget,
+  reforgePlanShortfall,
   reforgeCost,
   reforgeShortfall,
   AUTO_REFORGE_MAX_TARGETS,
@@ -78,6 +79,13 @@ export function useAutoReforge() {
     return { stone: mulN(r.stone, n), dust: r.dust * n }
   })
 
+  /** 至多花销的缺口:按归一后的预算整批算,与确认钮和开洗结账同源 */
+  const autoMaxGap = computed(() => {
+    const r = reforgeCostVal.value
+    if (!r) return null
+    return reforgePlanShortfall(r, autoBudget.value)
+  })
+
   // 改目标/预算后动作不再是同一笔,确认态一并复位
   watch([autoTargets, autoBudget], () => {
     autoArm.value = false
@@ -136,6 +144,7 @@ export function useAutoReforge() {
     affixOptions,
     rarityGroups,
     autoMaxCost,
+    autoMaxGap,
     isAutoTarget,
     targetColor,
     toggleAutoTarget,

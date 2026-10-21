@@ -73,9 +73,17 @@
         </button>
       </template>
       <template v-else>
-        <button class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]" @click="runAutoReforge">
+        <button
+          class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
+          :disabled="autoMaxGap?.short != null"
+          :title="autoMaxShortText"
+          @click="runAutoReforge"
+        >
           洗?至多 灵石{{ autoMaxCost ? formatGN(autoMaxCost.stone) : '0' }}·尘×{{ autoMaxCost?.dust ?? 0 }}
         </button>
+        <span v-if="autoMaxGap?.short" class="w-full text-[10px] leading-relaxed text-cinnabar tabular">
+          {{ autoMaxShortText }}
+        </span>
         <button class="btn-ghost !px-2.5 !py-1.5 !text-[11px] text-ink-faint" @click="autoArm = false">再想想</button>
       </template>
     </div>
@@ -117,6 +125,7 @@
     autoArm,
     rarityGroups,
     autoMaxCost,
+    autoMaxGap,
     isAutoTarget,
     targetColor,
     toggleAutoTarget,
@@ -134,4 +143,13 @@
   /** 弹框里这条当前是不是自动重铸目标;目标未满三才有「再设」(满的位子只留给取消) */
   const codexSelected = computed(() => codexAffixId.value !== null && isAutoTarget(codexAffixId.value))
   const codexCanSelect = computed(() => autoTargets.value.length < AUTO_REFORGE_MAX_TARGETS)
+
+  const autoMaxShortText = computed(() => {
+    const gap = autoMaxGap.value
+    if (!gap?.short) return undefined
+    const parts: string[] = []
+    if (gap.stone.m > 0) parts.push(`灵石尚差 ${formatGN(gap.stone)}`)
+    if (gap.dust > 0) parts.push(`器灵尘尚差 ${gap.dust}`)
+    return parts.join(' · ')
+  })
 </script>

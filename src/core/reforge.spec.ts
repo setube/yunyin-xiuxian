@@ -17,6 +17,7 @@ import {
   autoReforge,
   reforgeCost,
   reforgeEquipment,
+  reforgePlanShortfall,
   reforgeShort,
   reforgeShortfall,
   reforgeableAffixIds,
@@ -453,5 +454,40 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     expect(autoReforgeBudget(Number.NaN)).toBe(1)
     expect(autoReforgeBudget(Number.POSITIVE_INFINITY)).toBe(1)
     expect(autoReforgeBudget(12.9)).toBe(12)
+  })
+
+  it('自动重铸确认钮按整批总账缺口置灰并写出尚差', () => {
+    const panel = readFileSync(resolve(__dirname, '../components/equipment/AutoReforgePanel.vue'), 'utf8')
+    const flow = readFileSync(resolve(__dirname, '../composables/useAutoReforge.ts'), 'utf8')
+    expect(flow, '整批缺口走 reforgePlanShortfall').toContain('reforgePlanShortfall(r, autoBudget.value)')
+    expect(panel, '确认钮按整批缺口置灰').toContain(':disabled="autoMaxGap?.short != null"')
+    expect(panel, '缺口就地写灵石').toContain('灵石尚差 ${formatGN(gap.stone)}')
+    expect(panel, '缺口就地写器灵尘').toContain('器灵尘尚差 ${gap.dust}')
+  })
+
+  it('reforgePlanShortfall 按归一预算整批算缺口,不只看一炉', () => {
+    setActivePinia(createPinia())
+    const inst = { ...base, uid: 'plan-gap' }
+    useInventoryStore().items = [inst]
+    const cost = reforgeCost(inst)!
+    const res = useResourcesStore()
+    const three = reforgePlanShortfall(cost, 3)
+    expect(three.short, '灵石与尘都缺时按服务旧序先报灵石').toBe('stone')
+    expect(stoneOf(three.stone)).toBeCloseTo(stoneOf(cost.stone) * 3, 6)
+    expect(three.dust).toBe(cost.dust * 3)
+
+    res.spiritStone = gn(1e30)
+    res.dust = 0
+    res.dust = cost.dust * 3 - 2
+    const dustOnly = reforgePlanShortfall(cost, 3)
+    expect(dustOnly.short).toBe('dust')
+    expect(dustOnly.stone.m).toBe(0)
+    expect(dustOnly.dust).toBe(2)
+  })
+
+  it('词条弹框的目标上限读具名常量,不手写 3', () => {
+    const sheet = readFileSync(resolve(__dirname, '../components/equipment/AffixInfoSheet.vue'), 'utf8')
+    expect(sheet, '满位文案读 AUTO_REFORGE_MAX_TARGETS').toContain('目标已满(${AUTO_REFORGE_MAX_TARGETS})')
+    expect(sheet, '不再手写目标上限').not.toContain('目标已满(3)')
   })
 })

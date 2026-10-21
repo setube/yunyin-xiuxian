@@ -64,6 +64,7 @@
     affixSlotsText
   } from '@/ui/affixInfoText'
   import BaseModal from '@/components/common/BaseModal.vue'
+  import { AUTO_REFORGE_MAX_TARGETS } from '@/core/reforge'
 
   const props = defineProps<{
     open: boolean
@@ -73,7 +74,7 @@
     targetable?: boolean
     /** 这条当前是不是已设为自动重铸目标(决定按钮文案与可否再设) */
     selected?: boolean
-    /** 目标还没满三个时才能再设(满的位子给「取消」留着) */
+    /** 目标还没满 AUTO_REFORGE_MAX_TARGETS 时才能再设(满的位子给「取消」留着) */
     canSelect?: boolean
   }>()
   const emit = defineEmits<{ close: []; 'toggle-target': [id: string] }>()
@@ -88,7 +89,7 @@
   /** 目标按钮文案即缘由:满位/已选各明示,禁用不是猜谜(约定「按钮上的字就是原因」) */
   const toggleLabel = computed(() => {
     if (props.selected) return '取消自动重铸目标'
-    if (!props.canSelect) return '目标已满(3)'
+    if (!props.canSelect) return `目标已满(${AUTO_REFORGE_MAX_TARGETS})`
     return '设为自动重铸目标'
   })
 </script>
