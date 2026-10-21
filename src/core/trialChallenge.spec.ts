@@ -16,7 +16,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
 import { TRIALS, trialDef, celestialWorldDef } from '@/data/endgame'
-import { challengeTrial, rewriteMark, REWRITE_ENTRY_COST } from './endgameService'
+import { challengeTrial, replayMark, rewriteMark, REWRITE_ENTRY_COST } from './endgameService'
 import { gn } from '@/utils/gnum'
 import type { EquipSlot, EquipmentInstance } from '@/types'
 
@@ -103,5 +103,42 @@ describe('天道试炼 · challengeTrial 清/败原子', () => {
     expect(out, '世界道痕重写不应白回 null').not.toBeNull()
     expect(before - e.daoSource).toBe(REWRITE_ENTRY_COST)
     expect(e.marks.length).toBe(marksBefore + 1)
+  })
+
+  /**
+   * 忆战/重写卖的是「重打当年那一场(同界同契同变数)」。
+   * 共享 rng 下,别的动作推进全局随机流,同一痕连打两次战报就不同 —— 付了道源
+   * 买的确定性承诺落空。这里连打两次,逐回合战报必须逐字相同。
+   */
+  it('忆战/重写是「同变数」:同一道痕连打两次,逐回合战报相同', () => {
+    seedTrialPlayer(true)
+    const e = useEndgameStore()
+    const world = celestialWorldDef('chiyan')!
+    e.addMark({
+      life: 1,
+      daoPathId: 'sword',
+      targetId: 'chiyan',
+      targetName: world.name,
+      cleared: true,
+      rounds: 9999,
+      buildName: '天道自检',
+      powerText: '1e100',
+      at: Date.now(),
+      replay: { mods: {}, attack: gn(1000), defense: gn(600), maxHp: gn(20000), speed: 2, skills: [], artifacts: [], pactId: null }
+    })
+    const mark = e.marks[0]!
+    const replayA = replayMark(mark)!
+    const replayB = replayMark(mark)!
+    expect(JSON.stringify(replayB.report.rows), '忆战该逐回合同变数').toBe(JSON.stringify(replayA.report.rows))
+    const rewriteA = rewriteMark(mark)!
+    const rewriteB = rewriteMark(mark)!
+    expect(JSON.stringify(rewriteB.report.rows), '重写该逐回合同变数').toBe(JSON.stringify(rewriteA.report.rows))
+  })
+
+  it('天道试炼押道源入场,同一试炼连打两次战报相同', () => {
+    seedTrialPlayer(true)
+    const a = challengeTrial('qisha')!
+    const b = challengeTrial('qisha')!
+    expect(JSON.stringify(b.report.rows), '同一试炼该逐回合同变数').toBe(JSON.stringify(a.report.rows))
   })
 })
