@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 278,
+  "round": 279,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T00:50:00+00:00",
+  "updated_at": "2026-10-21T03:03:15+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -19474,6 +19474,80 @@
       "title": "离线首领雪耻与在线同源",
       "commit": "\"c3ade32\"",
       "summary": "\"offline.ts 首领 win 分支补雪耻;offlineModeReward 新用例(普通战全败、只赢首领)\""
+    },
+    "ISS-924": {
+      "id": "ISS-924",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T03:03:14+00:00",
+      "updated_at": "2026-10-21T03:03:15+00:00",
+      "touched_round": 279,
+      "title": "块级空态四处在各自写法里重复,卡片中央一行淡字像渲染失败留下的空白",
+      "severity": "low",
+      "summary": "\"道途尚未成路/尚无快照/此世气象尚未凝成/尚无秘境可探四处各写一行居中淡字,字号 10px 与 12px 混用;缺一条可判据的空态范式\""
+    },
+    "TASK-362": {
+      "id": "TASK-362",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T03:03:14+00:00",
+      "updated_at": "2026-10-21T03:03:15+00:00",
+      "touched_round": 279,
+      "title": "新增 .empty-note 空态范式并接入四处块级空态,补 uiLayering 判据",
+      "priority": "P2",
+      "category": "\"maintainability\"",
+      "summary": "\"style.css 加 .empty-note::before 收笔渐变短横;BuildView 两处/MortalWorldView/SecretRealmCard 接线;uiLayering 两段判据(渐变形态+四处挂类)\""
+    },
+    "CHG-465": {
+      "id": "CHG-465",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T03:03:15+00:00",
+      "updated_at": "2026-10-21T03:03:15+00:00",
+      "touched_round": 279,
+      "title": "块级空态收进 .empty-note 范式",
+      "commit": "\"d08e386\"",
+      "summary": "\"新增 empty-note 样式并接入四处;字号随族归一到 11px;uiLayering 补反假绿判据\""
+    },
+    "ISS-925": {
+      "id": "ISS-925",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T03:03:15+00:00",
+      "updated_at": "2026-10-21T03:03:15+00:00",
+      "touched_round": 279,
+      "title": "战报弹窗六处共用同一形状却挤在 CelestialView 1300 余行里",
+      "severity": "low",
+      "summary": "\"远征终局/天道试炼/天道变数/忆战/重写/挑战共用同一战报形状,模板块与页面其余部分同处一个文件;ReportView 形状与本体分离\""
+    },
+    "TASK-363": {
+      "id": "TASK-363",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T03:03:15+00:00",
+      "updated_at": "2026-10-21T03:03:15+00:00",
+      "touched_round": 279,
+      "title": "战报弹窗整块迁 BattleReportDialog,ReportView 类型随本体迁出",
+      "priority": "P2",
+      "category": "\"maintainability\"",
+      "summary": "\"新建 components/celestial/BattleReportDialog.vue,宿主只留 openReport 的 foeOriginLines 归因;宿主收至 1285 行\""
+    },
+    "CHG-466": {
+      "id": "CHG-466",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T03:03:15+00:00",
+      "updated_at": "2026-10-21T03:03:15+00:00",
+      "touched_round": 279,
+      "title": "战报弹窗迁 BattleReportDialog",
+      "commit": "\"d231773\"",
+      "summary": "\"模板块与 ReportView 迁入 77 行组件;CelestialView 1338→1285;零行为变化\""
     }
   },
   "edges": [
@@ -28873,6 +28947,42 @@
       "to": "ISS-923",
       "type": "resolves",
       "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "TASK-362",
+      "to": "ISS-924",
+      "type": "addresses",
+      "created_at": "2026-10-21T03:03:15+00:00"
+    },
+    {
+      "from": "TASK-363",
+      "to": "ISS-925",
+      "type": "addresses",
+      "created_at": "2026-10-21T03:03:15+00:00"
+    },
+    {
+      "from": "CHG-465",
+      "to": "TASK-362",
+      "type": "implements",
+      "created_at": "2026-10-21T03:03:15+00:00"
+    },
+    {
+      "from": "CHG-466",
+      "to": "TASK-363",
+      "type": "implements",
+      "created_at": "2026-10-21T03:03:15+00:00"
+    },
+    {
+      "from": "CHG-465",
+      "to": "ISS-924",
+      "type": "resolves",
+      "created_at": "2026-10-21T03:03:15+00:00"
+    },
+    {
+      "from": "CHG-466",
+      "to": "ISS-925",
+      "type": "resolves",
+      "created_at": "2026-10-21T03:03:15+00:00"
     }
   ]
 }
