@@ -58,18 +58,43 @@ describe('图鉴见闻收录守卫(useLoreStore)', () => {
     expect(lore.enemyLoreOf('e_a')).toBe(3)
   })
 
-  it('addRecipeMastery/addBlueprintMastery:钳进 [0,1](过冲→1、下穿→0)', () => {
+  it('addRecipeMastery/addBlueprintMastery:钳进 [0,1],负增量与非有限值不倒扣', () => {
     const lore = useLoreStore()
     expect(lore.addRecipeMastery('r1', 0.6)).toBe(0.6)
     expect(lore.recipeLore['r1']).toBe(0.6)
     expect(lore.addRecipeMastery('r1', 5)).toBe(1) // 过冲
     expect(lore.recipeLore['r1']).toBe(1)
-    expect(lore.addRecipeMastery('r1', -5)).toBe(0) // 下穿
-    expect(lore.recipeLore['r1']).toBe(0)
-    expect(lore.addBlueprintMastery('bp1', -2)).toBe(0)
-    expect(lore.blueprintLore['bp1']).toBe(0)
+    expect(lore.addRecipeMastery('r1', -5), '负增量不得倒扣掌握度').toBe(1)
+    expect(lore.recipeLore['r1']).toBe(1)
+    expect(lore.addRecipeMastery('r1', Number.NaN), 'NaN 不得污染掌握度').toBe(1)
+    expect(lore.recipeLore['r1']).toBe(1)
+    expect(lore.addRecipeMastery('r1', Number.POSITIVE_INFINITY), 'Infinity 不得污染掌握度').toBe(1)
+    expect(lore.recipeLore['r1']).toBe(1)
+    expect(lore.addBlueprintMastery('bp1', 0.3)).toBe(0.3)
+    expect(lore.addBlueprintMastery('bp1', -2), '负增量不得倒扣图纸掌握度').toBe(0.3)
+    expect(lore.blueprintLore['bp1']).toBe(0.3)
     expect(lore.addBlueprintMastery('bp1', 9)).toBe(1)
     expect(lore.blueprintLore['bp1']).toBe(1)
+  })
+
+  it('markSeen/markEnemySeen/addSkillExp:只接受有限正增量', () => {
+    const lore = useLoreStore()
+    lore.markSeen('mat_qingzhi', 2)
+    lore.markSeen('mat_qingzhi', -1)
+    lore.markSeen('mat_qingzhi', Number.NaN)
+    lore.markSeen('mat_qingzhi', Number.POSITIVE_INFINITY)
+    expect(lore.seenOf('mat_qingzhi')).toBe(2)
+
+    lore.markEnemySeen('e_wolf', 3)
+    lore.markEnemySeen('e_wolf', -1)
+    lore.markEnemySeen('e_wolf', Number.NaN)
+    lore.markEnemySeen('e_wolf', Number.POSITIVE_INFINITY)
+    expect(lore.enemySeenOf('e_wolf')).toBe(3)
+
+    lore.addSkillExp('discern', 10)
+    lore.addSkillExp('discern', Number.NaN)
+    lore.addSkillExp('discern', Number.POSITIVE_INFINITY)
+    expect(lore.expOf('discern')).toBe(10)
   })
 
   it('sanitize:认不出的灵材/丹方/敌人 id 清掉,不再计入图鉴与宿慧', () => {

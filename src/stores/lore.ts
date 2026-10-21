@@ -119,6 +119,7 @@ export const useLoreStore = defineStore(
     }
 
     function markSeen(id: string, n = 1): void {
+      if (!Number.isFinite(n) || n <= 0) return
       materialSeen.value = { ...materialSeen.value, [id]: seenOf(id) + n }
     }
 
@@ -137,6 +138,7 @@ export const useLoreStore = defineStore(
 
     /** 增进丹方掌握度(上限 1);返回增进后的值 */
     function addRecipeMastery(id: string, delta: number): number {
+      if (!Number.isFinite(delta) || delta <= 0) return recipeMastery(id)
       const next = Math.max(0, Math.min(1, recipeMastery(id) + delta))
       recipeLore.value = { ...recipeLore.value, [id]: next }
       return next
@@ -147,6 +149,7 @@ export const useLoreStore = defineStore(
     }
 
     function addBlueprintMastery(id: string, delta: number): number {
+      if (!Number.isFinite(delta) || delta <= 0) return blueprintMastery(id)
       const next = Math.max(0, Math.min(1, blueprintMastery(id) + delta))
       blueprintLore.value = { ...blueprintLore.value, [id]: next }
       return next
@@ -161,7 +164,7 @@ export const useLoreStore = defineStore(
     }
 
     function addSkillExp(id: SkillId, n: number): void {
-      if (n <= 0) return
+      if (!Number.isFinite(n) || n <= 0) return
       skillExp.value = { ...skillExp.value, [id]: expOf(id) + n }
     }
 
@@ -174,6 +177,7 @@ export const useLoreStore = defineStore(
     }
 
     function markEnemySeen(id: string, n = 1): void {
+      if (!Number.isFinite(n) || n <= 0) return
       enemySeen.value = { ...enemySeen.value, [id]: enemySeenOf(id) + n }
     }
 
