@@ -131,6 +131,8 @@
       sealStorageWrites()
       setTimeout(reloadGame, 800)
     }
+    // 读文件本身也可能失败(权限/磁盘)—— 静默就等于「点了没反应」
+    reader.onerror = () => ui.toast('这个文件读不出来,换一个再试', 'warn')
     reader.readAsText(file)
     if (fileInput.value) fileInput.value.value = ''
   }

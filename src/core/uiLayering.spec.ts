@@ -174,6 +174,19 @@ describe('界面分层 · 浮层只有一个出处', () => {
     expect(codex!.src, '卦象倒计时要走定宽格式').toContain('formatCountdown(')
     expect(codex!.src, '卦象倒计时不得再借修行时长刷新').not.toContain('game.totalPlaySec')
   })
+
+  it('存档导入读取失败要当场回执 —— 两处入口同一条退路', () => {
+    const RECEIPT = "reader.onerror = () => ui.toast('这个文件读不出来,换一个再试', 'warn')"
+    for (const path of ['views/WelcomeView.vue', 'components/settings/SettingsSaveSection.vue']) {
+      const f = FILES.find(x => x.path === path)
+      expect(f, `${path} 不见了`).toBeDefined()
+      const src = f!.src
+      const receiptAt = src.indexOf(RECEIPT)
+      const readAt = src.indexOf('reader.readAsText(file)')
+      expect(receiptAt, `${path} 读文件失败会静默`).toBeGreaterThan(-1)
+      expect(receiptAt, `${path} 要在开始读取前挂好失败回执`).toBeLessThan(readAt)
+    }
+  })
 })
 
 /**
