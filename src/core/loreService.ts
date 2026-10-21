@@ -339,7 +339,12 @@ export function studyTick(dtSec: number): void {
     const room = 1 - lore.recipeMastery(target)
     const gain = Math.min(room, lore.studyFrac)
     lore.studyFrac -= gain
-    lore.addRecipeMastery(target, gain)
+    const after = lore.addRecipeMastery(target, gain)
+    // 读通要有一声:与翻出新方、灵材通晓、敌人洞悉同族,挂机等来的里程碑不许静默。
+    if (after >= 1) {
+      const def = pillDef(target)
+      if (def) useUiStore().toast(`丹方已通晓:「${def.name}」火候节点烂熟于心`, 'rare')
+    }
     return
   }
 

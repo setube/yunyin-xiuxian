@@ -21,6 +21,7 @@ import { NEW_RECIPE_COST, NEW_RECIPE_START, STUDY_MASTERY_PER_HOUR, STUDY_REACH_
 import { useLoreStore } from '@/stores/lore'
 import { useDongfuStore } from '@/stores/dongfu'
 import { usePlayerStore } from '@/stores/player'
+import { useUiStore } from '@/stores/ui'
 
 const CRAFTABLE = PILLS.filter(p => p.recipe)
 const NOTHING_KNOWN = (): number => 0
@@ -145,6 +146,21 @@ describe('藏经阁钻研(挂机推演)', () => {
     expect(lore.recipeMastery('p_jvqidan')).toBeCloseTo(1, 6)
     // 盈余保留(δ=本拍 dt 累计的微小增量),而不是整段清零
     expect(lore.studyFrac).toBeGreaterThan(0.49)
+  })
+
+  it('丹方读通要有一声 —— 完成不静默(与翻出新方/灵材通晓同族)', () => {
+    const player = usePlayerStore()
+    player.major = 1
+    useDongfuStore().setLevel('library', 4)
+    const ui = useUiStore()
+    const lore = useLoreStore()
+    lore.recipeLore = { p_jvqidan: 0.999 }
+    lore.studyFrac = 0.5
+    studyTick(0.001)
+    expect(lore.recipeMastery('p_jvqidan')).toBe(1)
+    const hit = ui.toasts.find(t => t.text.includes('聚气丹'))
+    expect(hit?.text, '读通要报方名与通晓').toContain('通晓')
+    expect(hit?.kind, '与灵材通晓同属过程里程碑').toBe('rare')
   })
 
   it('架上无书可读时钻研量归零,不会无限膨胀', () => {
