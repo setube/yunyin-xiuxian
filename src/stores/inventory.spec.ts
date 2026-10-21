@@ -12,7 +12,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
 import { mergeMods } from '@/core/statsCalc'
 import { resolveEquipStats } from '@/core/equipGen'
-import { artifactDef, artifactValue } from '@/data/artifacts'
+import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
 import { artifactUpCost, upgradeArtifact } from '@/core/forge'
 import { useResourcesStore } from '@/stores/resources'
 import type { EquipmentInstance } from '@/types'
@@ -223,5 +223,71 @@ describe('丹匣公共写入边界 · 非有限值与反向扣丹', () => {
     expect(inv.pills.p_jvqisan).toBe(5)
     expect(inv.spendPill('p_jvqisan', 0), '零扣款仍按成功且不动账').toBe(true)
     expect(inv.pills.p_jvqisan).toBe(5)
+  })
+})
+
+describe('法宝公共写入边界 · 目录、拥有、满重与祭炼槽', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('获得法宝只认目录内 id,野 id 不入库也不自动占祭炼位', () => {
+    const inv = useInventoryStore()
+    expect(inv.addArtifact('af_ghost')).toBe(false)
+    expect(inv.artifacts).toEqual([])
+    expect(inv.equippedArtifacts).toEqual([])
+    expect(inv.addArtifact('af_muyu')).toBe(true)
+    expect(inv.artifacts.map(a => a.defId)).toEqual(['af_muyu'])
+  })
+
+  it('升级只认已拥有且未满重者,野 id/未拥有/满重都不动库存', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: [
+        { defId: 'af_muyu', level: 2 },
+        { defId: 'af_lihuo', level: ARTIFACT_MAX_LEVEL }
+      ]
+    })
+    expect(inv.levelUpArtifact('af_ghost')).toBe(false)
+    expect(inv.levelUpArtifact('af_xuantian')).toBe(false)
+    expect(inv.levelUpArtifact('af_lihuo')).toBe(false)
+    expect(inv.artifacts).toEqual([
+      { defId: 'af_muyu', level: 2 },
+      { defId: 'af_lihuo', level: ARTIFACT_MAX_LEVEL }
+    ])
+    expect(inv.levelUpArtifact('af_muyu')).toBe(true)
+    expect(inv.artifacts[0]!.level).toBe(3)
+  })
+
+  it('祭炼只认已拥有法宝,野 id/未拥有/坏槽数一律拒绝且不改当前佩带', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: [{ defId: 'af_muyu', level: 0 }],
+      equippedArtifacts: []
+    })
+    for (const id of ['af_ghost', 'af_lihuo']) {
+      expect(inv.toggleArtifact(id, ARTIFACT_MAX_SLOTS)).toBe('rejected')
+    }
+    for (const slots of [NaN, Infinity, 0, 0.5, -1]) {
+      expect(inv.toggleArtifact('af_muyu', slots)).toBe('rejected')
+    }
+    expect(inv.equippedArtifacts).toEqual([])
+  })
+
+  it('外部传入超大槽数仍受法宝位绝对上限约束,不会无限佩带', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: [
+        { defId: 'af_muyu', level: 0 },
+        { defId: 'af_lihuo', level: 0 },
+        { defId: 'af_xuantian', level: 0 }
+      ],
+      equippedArtifacts: []
+    })
+    expect(inv.toggleArtifact('af_muyu', 99)).toBe('equipped')
+    expect(inv.toggleArtifact('af_lihuo', 99)).toBe('equipped')
+    expect(inv.toggleArtifact('af_xuantian', 99)).toBe('replaced')
+    expect(inv.equippedArtifacts).toHaveLength(ARTIFACT_MAX_SLOTS)
+    expect(inv.equippedArtifacts).toEqual(['af_lihuo', 'af_xuantian'])
   })
 })

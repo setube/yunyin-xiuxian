@@ -257,23 +257,32 @@ export const useInventoryStore = defineStore(
      * 手动祭炼(loot.ts)才交给 taboo 判定,破题必须是玩家自己的选择。
      */
     function addArtifact(defId: string, autoEquip = true): boolean {
+      if (!artifactDef(defId)) return false
       if (artifacts.value.some(a => a.defId === defId)) return false
       artifacts.value = [...artifacts.value, { defId, level: 0 }]
       if (autoEquip && equippedArtifacts.value.length === 0) equippedArtifacts.value = [defId]
       return true
     }
 
-    function levelUpArtifact(defId: string): void {
+    /** 升级一件已拥有且未满重的法宝;拒绝野 id/未拥有/满重,返回是否真的升了一重 */
+    function levelUpArtifact(defId: string): boolean {
+      const owned = artifacts.value.find(a => a.defId === defId)
+      if (!owned || owned.level >= ARTIFACT_MAX_LEVEL) return false
       artifacts.value = artifacts.value.map(a => (a.defId === defId ? { ...a, level: a.level + 1 } : a))
+      return true
     }
 
     /** 祭炼/收回法宝;槽满时替换最早佩戴的一件 */
-    function toggleArtifact(defId: string, maxSlots: number): 'equipped' | 'unequipped' | 'replaced' {
+    function toggleArtifact(defId: string, maxSlots: number): 'equipped' | 'unequipped' | 'replaced' | 'rejected' {
+      if (!artifactDef(defId) || !artifacts.value.some(a => a.defId === defId)) return 'rejected'
       if (equippedArtifacts.value.includes(defId)) {
         equippedArtifacts.value = equippedArtifacts.value.filter(id => id !== defId)
         return 'unequipped'
       }
-      if (equippedArtifacts.value.length < maxSlots) {
+      if (!Number.isFinite(maxSlots)) return 'rejected'
+      const slots = Math.min(ARTIFACT_MAX_SLOTS, Math.floor(maxSlots))
+      if (slots < 1) return 'rejected'
+      if (equippedArtifacts.value.length < slots) {
         equippedArtifacts.value = [...equippedArtifacts.value, defId]
         return 'equipped'
       }
