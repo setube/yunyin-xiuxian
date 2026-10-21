@@ -272,6 +272,7 @@
   import { bestEquipFor, equipAllBest, equipSetCombo, equipSetPreview, unequipAllEquipped } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { useBrewing } from '@/composables/useBrewing'
+  import { useWallNow } from '@/composables/useWallClock'
 
   import { formatGN, formatNum } from '@/utils/format'
   import { tint } from '@/utils/colorToken'
@@ -294,6 +295,9 @@
   const settings = useSettingsStore()
   const lore = useLoreStore()
   const cultivation = useCultivationStore()
+  // 丹药详情里的「顶满」判据随墙钟走:药效到期,置灰的「服 用」要自己亮回来。
+  // 用墙钟而非 useNow:暂停引擎(重置 / 导入确认)时,药效本身仍按墙钟走。
+  const now = useWallNow()
 
   type Tab = 'equip' | 'pill' | 'material' | 'artifact'
   const tab = ref<Tab>('equip')
@@ -425,7 +429,7 @@
   const currentPillOverflow = computed<BuffOverflow | null>(() => {
     const def = currentPill.value?.def
     if (!def || def.kind !== 'buff' || !def.buffId) return null
-    return buffOverflowOf(cultivation.buffs, def.buffId, Date.now())
+    return buffOverflowOf(cultivation.buffs, def.buffId, now.value)
   })
 
   const currentPillHint = computed<{ text: string; tone: 'cinnabar' | 'amber' } | null>(() => {

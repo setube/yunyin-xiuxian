@@ -122,6 +122,11 @@ describe('界面分层 · 浮层只有一个出处', () => {
       ':disabled="currentPillOverflow === \'full\'"'
     )
     expect(inv!.src, '丹药顶满拦因要就地摊(白费)').toContain('药力已顶满——这一颗将白费')
+    // 顶满判据读墙钟响应式读数:药效到期后按钮要自己亮回来,不许停在灰里。
+    expect(inv!.src, '顶满判据要随墙钟刷新').toContain('const now = useWallNow()')
+    expect(inv!.src, '顶满判据读 now.value,不读一次性 Date.now()').toContain(
+      'buffOverflowOf(cultivation.buffs, def.buffId, now.value)'
+    )
     const rebirth = FILES.find(f => f.path === 'components/character/RebirthDialog.vue')
     expect(rebirth, 'RebirthDialog 不见了').toBeDefined()
     expect(rebirth!.src, '兵解未达境要置灰(canRebirth)').toContain(':disabled="!canRebirth"')
