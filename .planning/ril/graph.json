@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 324,
+  "round": 325,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T23:26:36+00:00",
+  "updated_at": "2026-10-21T23:44:14+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23833,6 +23833,153 @@
       "confidence": 0.9,
       "title": "历练、构筑与修行公共入口仍以 UI 调用可信为前提",
       "detail": "三个 store 的公共写入未统一校验目录、唯一性与墙钟，坏调用可直接污染持久化状态。"
+    },
+    "COMP-063": {
+      "id": "COMP-063",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:36:17+00:00",
+      "updated_at": "2026-10-21T23:36:17+00:00",
+      "touched_round": 325,
+      "summary": "诊断异常留档 store 的公共写入边界"
+    },
+    "COMP-064": {
+      "id": "COMP-064",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:36:17+00:00",
+      "updated_at": "2026-10-21T23:36:17+00:00",
+      "touched_round": 325,
+      "summary": "玩家 store 的区域统计/奇缘/暂停顺延公共写入边界"
+    },
+    "COMP-065": {
+      "id": "COMP-065",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:36:17+00:00",
+      "updated_at": "2026-10-21T23:36:17+00:00",
+      "touched_round": 325,
+      "summary": "游戏元状态 store 的建号草稿/最后活跃时刻边界"
+    },
+    "ISS-999": {
+      "id": "ISS-999",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:36:22+00:00",
+      "updated_at": "2026-10-21T23:44:10+00:00",
+      "touched_round": 325,
+      "summary": "diag.record 信任运行时入参:null/非对象会抛,坏 message/at/info/route 会污染诊断分片",
+      "severity": 0.65,
+      "confidence": 0.95,
+      "effort": 1
+    },
+    "ISS-1000": {
+      "id": "ISS-1000",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:36:22+00:00",
+      "updated_at": "2026-10-21T23:44:10+00:00",
+      "touched_round": 325,
+      "summary": "player 区域统计/奇缘与暂停顺延公共写入可收野 id 与 NaN,污染持久化状态",
+      "severity": 0.75,
+      "confidence": 0.95,
+      "effort": 2
+    },
+    "ISS-1001": {
+      "id": "ISS-1001",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:36:22+00:00",
+      "updated_at": "2026-10-21T23:44:10+00:00",
+      "touched_round": 325,
+      "summary": "game 建号草稿绕过灵根修形,setCreateName 非字符串会抛,stampActive 可写坏最后活跃时刻",
+      "severity": 0.7,
+      "confidence": 0.95,
+      "effort": 1
+    },
+    "TASK-444": {
+      "id": "TASK-444",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:36:26+00:00",
+      "updated_at": "2026-10-21T23:44:14+00:00",
+      "touched_round": 325,
+      "category": "correctness",
+      "severity": 0.65,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "诊断记录公共写入边界收口",
+      "detail": "record 对 null/非对象入参不抛,message/info/route 只收字符串,at 只认有限非负时刻。"
+    },
+    "TASK-445": {
+      "id": "TASK-445",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:36:26+00:00",
+      "updated_at": "2026-10-21T23:44:14+00:00",
+      "touched_round": 325,
+      "category": "correctness",
+      "severity": 0.75,
+      "confidence": 0.95,
+      "effort": 2,
+      "title": "玩家区域统计与奇缘写入边界收口",
+      "detail": "区域类入口只认 regionDef,战斗统计只认有限非负值;奇缘只认 CHAINS 并夹合法阶段。"
+    },
+    "TASK-446": {
+      "id": "TASK-446",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:36:26+00:00",
+      "updated_at": "2026-10-21T23:44:14+00:00",
+      "touched_round": 325,
+      "category": "correctness",
+      "severity": 0.7,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "建号草稿与最后活跃时刻边界收口",
+      "detail": "setCreateProfile 走 sanitizeLinggen,setCreateName 只收字符串,stampActive 只认有限非负时刻。"
+    },
+    "CHG-544": {
+      "id": "CHG-544",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:43:53+00:00",
+      "updated_at": "2026-10-21T23:43:53+00:00",
+      "touched_round": 325,
+      "summary": "诊断记录对坏入参收安全形状,文本字段只认字符串,坏时刻回落当前时间",
+      "commit": "1b813db"
+    },
+    "CHG-545": {
+      "id": "CHG-545",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:43:53+00:00",
+      "updated_at": "2026-10-21T23:43:53+00:00",
+      "touched_round": 325,
+      "summary": "建号灵根草稿过 sanitizeLinggen,道号只收字符串,最后活跃时刻只认有限非负值",
+      "commit": "3d4be02"
+    },
+    "CHG-546": {
+      "id": "CHG-546",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:43:53+00:00",
+      "updated_at": "2026-10-21T23:43:53+00:00",
+      "touched_round": 325,
+      "summary": "玩家区域统计/批量净胜/镇压/奇缘/暂停顺延统一目录与有限值边界",
+      "commit": "fb6cac6"
     }
   },
   "edges": [
@@ -35176,6 +35323,78 @@
       "to": "TASK-443",
       "type": "implements",
       "created_at": "2026-10-21T23:26:31+00:00"
+    },
+    {
+      "from": "ISS-999",
+      "to": "COMP-063",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:36:30+00:00"
+    },
+    {
+      "from": "ISS-1000",
+      "to": "COMP-064",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:36:30+00:00"
+    },
+    {
+      "from": "ISS-1001",
+      "to": "COMP-065",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:36:30+00:00"
+    },
+    {
+      "from": "TASK-444",
+      "to": "ISS-999",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:36:33+00:00"
+    },
+    {
+      "from": "TASK-445",
+      "to": "ISS-1000",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:36:33+00:00"
+    },
+    {
+      "from": "TASK-446",
+      "to": "ISS-1001",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:36:33+00:00"
+    },
+    {
+      "from": "CHG-544",
+      "to": "ISS-999",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:43:57+00:00"
+    },
+    {
+      "from": "CHG-545",
+      "to": "ISS-1001",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:43:57+00:00"
+    },
+    {
+      "from": "CHG-546",
+      "to": "ISS-1000",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:43:57+00:00"
+    },
+    {
+      "from": "CHG-544",
+      "to": "TASK-444",
+      "type": "implements",
+      "created_at": "2026-10-21T23:44:01+00:00"
+    },
+    {
+      "from": "CHG-545",
+      "to": "TASK-446",
+      "type": "implements",
+      "created_at": "2026-10-21T23:44:01+00:00"
+    },
+    {
+      "from": "CHG-546",
+      "to": "TASK-445",
+      "type": "implements",
+      "created_at": "2026-10-21T23:44:02+00:00"
     }
   ]
 }
