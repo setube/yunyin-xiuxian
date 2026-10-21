@@ -509,7 +509,7 @@ export function resolveCombat(
     let isSkill = false
     let effect: string | undefined
     for (const sk of self.snap.skills) {
-      if (rng.chance(sk.rate)) {
+      if (rng.chance(capChance(sk.rate))) {
         mult = sk.mult
         label = sk.name
         isSkill = true

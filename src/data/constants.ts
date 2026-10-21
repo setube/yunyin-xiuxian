@@ -232,6 +232,15 @@ export const SKILL_SHIELD_HP = 0.1
 export const SKILL_BLEED_ATK = 0.3
 export const SKILL_MULTI_HITS = 2
 export const SKILL_MULTI_RATIO = 0.45
+/**
+ * 战斗技能威力倍率上限 —— 只防坏档,不参与平衡。
+ *
+ * 现有功法/敌人/天界技能最高约 4.2;留到 10 给后续内容设计余量,
+ * 同时阻断手改存档写出 1e300 后一击碾平整场战斗。
+ */
+export const SKILL_MULT_CAP = 10
+/** 战斗技能可执行的附加效果;存档里认不出的 effect 一律丢弃 */
+export const COMBAT_SKILL_EFFECTS = ['stun', 'bleed', 'drain', 'shield', 'multi', 'pierce'] as const
 /** 护盾总量上限(占最大生命比例)——护体灵光有极限,防盾系滚雪球 */
 export const SHIELD_CAP_RATIO = 0.5
 /**

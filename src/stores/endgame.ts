@@ -20,7 +20,16 @@ import { ARTIFACT_MAX_LEVEL, artifactDef } from '@/data/artifacts'
 import { STAT_KEYS } from '@/data/statNames'
 import { MAX_MAJOR } from '@/data/realms'
 import { gn } from '@/utils/gnum'
-import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asObjectOrNull, asRecordOf, asStringArray } from '@/utils/saveShape'
+import {
+  asArray,
+  asCarriedHpPct,
+  asCombatSkills,
+  asFiniteNumber,
+  asNumberRecord,
+  asObjectOrNull,
+  asRecordOf,
+  asStringArray
+} from '@/utils/saveShape'
 
 interface TrialRecord {
   clears: number
@@ -88,15 +97,8 @@ function sanitizeFoeShape(raw: unknown): import('@/types').WorldFoeShape | null 
     defR,
     hpR,
     speed,
-    skills: f.skills.filter(
-      s =>
-        !!s &&
-        typeof s === 'object' &&
-        typeof (s as { name?: unknown }).name === 'string' &&
-        Number.isFinite((s as { mult?: unknown }).mult) &&
-        Number.isFinite((s as { rate?: unknown }).rate)
-    ),
-    ...(f.mods && typeof f.mods === 'object' && !Array.isArray(f.mods) ? { mods: f.mods } : {})
+    skills: asCombatSkills(f.skills),
+    mods: sanitizeMods(f.mods) ?? {}
   }
 }
 
@@ -180,26 +182,8 @@ function sanitizeMarkReplay(raw: unknown): DaoMark['replay'] | undefined {
   if (attack.m === 0 || defense.m === 0 || maxHp.m === 0 || speed <= 0) return undefined
   // 词条只认目录里的键与有限数:野键会被 modDepth 一并计入「构筑厚度」,
   // 进而让忆战里的天道判定与当年对不上
-  const mods: StatMods = {}
-  for (const key of STAT_KEYS) {
-    const v = (r.mods as StatMods | undefined)?.[key]
-    if (typeof v === 'number' && Number.isFinite(v)) mods[key] = v
-  }
-  const skills = r.skills
-    .filter(
-      s =>
-        !!s &&
-        typeof s === 'object' &&
-        typeof (s as { name?: unknown }).name === 'string' &&
-        Number.isFinite((s as { mult?: unknown }).mult) &&
-        Number.isFinite((s as { rate?: unknown }).rate)
-    )
-    .map(s => ({
-      name: s.name,
-      mult: s.mult,
-      rate: s.rate,
-      ...(typeof s.effect === 'string' ? { effect: s.effect } : {})
-    }))
+  const mods = sanitizeMods(r.mods) ?? {}
+  const skills = asCombatSkills(r.skills)
   /**
    * 快照里的法宝也要按「真实佩带规则」收口:
    *   - 重数坏成 999 时,artifactValue 会在读档后给出远超上限的神通数值;

@@ -10,7 +10,8 @@
  * 故这里提供四个最小判据,让各 store 的 sanitize 一行写完:
  * 形状不对就用兜底值,而不是抛错。
  */
-import type { GNum } from '@/types'
+import type { CombatSkill, GNum } from '@/types'
+import { COMBAT_SKILL_EFFECTS, SKILL_MULT_CAP } from '@/data/constants'
 import { gn, gnZero } from './gnum'
 
 /**
@@ -57,6 +58,37 @@ export function asFiniteNumber(v: unknown, fallback: number, min?: number): numb
 /** 残余生命占比:有限数字取之并夹到 [0.05, 1],否则兜底 1(天界/凡界远征共用同一口径) */
 export function asCarriedHpPct(v: unknown): number {
   return Math.min(1, asFiniteNumber(v, 1, 0.05))
+}
+
+/**
+ * 战斗技能修形 —— 忆战快照与虚界敌形共用这一份。
+ *
+ * `rate` 超过 1 会让技能必定触发、负数会让它永不触发;`mult` 为负或极大有限数
+ * 会直接进入伤害公式。坏档里这两项都必须夹回可玩值域;名字与倍率/概率本身
+ * 缺失或非有限的条目则没有可执行语义,整条丢弃。认不出的 effect 只去掉附加效果,
+ * 不影响这一击本身。
+ */
+export function asCombatSkill(v: unknown): CombatSkill | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null
+  const s = v as Partial<CombatSkill>
+  if (typeof s.name !== 'string' || s.name.trim() === '') return null
+  if (typeof s.mult !== 'number' || !Number.isFinite(s.mult)) return null
+  if (typeof s.rate !== 'number' || !Number.isFinite(s.rate)) return null
+  const effect =
+    typeof s.effect === 'string' && (COMBAT_SKILL_EFFECTS as readonly string[]).includes(s.effect) ? s.effect : undefined
+  return {
+    name: s.name,
+    mult: Math.min(SKILL_MULT_CAP, Math.max(0, s.mult)),
+    rate: Math.min(1, Math.max(0, s.rate)),
+    ...(effect ? { effect } : {})
+  }
+}
+
+/** 技能表修形:非数组回落空表,逐条走 asCombatSkill */
+export function asCombatSkills(v: unknown): CombatSkill[] {
+  return asArray<unknown>(v)
+    .map(asCombatSkill)
+    .filter((s): s is CombatSkill => s !== null)
 }
 
 /** 记录里每一项都取有限数字(非数字的键直接丢掉) */

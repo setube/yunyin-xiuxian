@@ -151,6 +151,16 @@ describe('自动战斗', () => {
     expect(typeof result.win).toBe('boolean')
   })
 
+  it('技能概率在战斗判定前归一:rate>1 不会绕过 capChance 的随机数语义', () => {
+    const enemy = makeEnemySnap(wolf, 1, 1)
+    const p = playerSnap(100)
+    // 若直接拿 999 去比随机数,这个 0.999 的固定骰子会被判成「没触发」;
+    // 归一为 1 后必中,遥测里就应记下一次技能施展。
+    p.skills = [{ name: '必中', mult: 1.2, rate: 999 }]
+    const result = resolveCombat(p, enemy, new RandomService(() => 0.999))
+    expect(result.stats!.player.skillCasts).toBeGreaterThan(0)
+  })
+
   it('流派机制生效:罡盾+满血增伤使输出显著提升(统计性)', () => {
     const base = playerSnap(1.2)
     const build: CombatantSnap = {

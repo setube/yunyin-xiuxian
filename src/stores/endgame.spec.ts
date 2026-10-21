@@ -640,6 +640,43 @@ describe('道痕坏档 · 逐条逐字段修形', () => {
     expect(() => snapFromReplay('当年', replay), '忆战入口').not.toThrow()
   })
 
+  it('忆战技能概率与倍率按可玩值域收口,野 effect 不再带进当年那一局', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      marks: [
+        {
+          life: 3,
+          targetId: 'chiyan',
+          targetName: '赤炎天',
+          cleared: true,
+          rounds: 9,
+          buildName: '剑修',
+          powerText: '1.2e9',
+          at: 7,
+          replay: {
+            mods: {},
+            attack: gn(120),
+            defense: gn(80),
+            maxHp: gn(1000),
+            speed: 1.4,
+            skills: [
+              { name: '必中', mult: 2, rate: 999, effect: 'pierce' },
+              { name: '封印', mult: -5, rate: -1, effect: 'ghost_effect' }
+            ],
+            artifacts: [],
+            pactId: null
+          }
+        }
+      ]
+    } as never)
+    e.sanitize()
+
+    expect(e.marks[0]!.replay!.skills).toEqual([
+      { name: '必中', mult: 2, rate: 1, effect: 'pierce' },
+      { name: '封印', mult: 0, rate: 0 }
+    ])
+  })
+
   it('道痕超过 MAX_MARKS 时按写入侧同一把尺截断', () => {
     const e = useEndgameStore()
     const many = Array.from({ length: 100 }, (_, i) => ({
@@ -711,5 +748,31 @@ describe('虚界坏档 · 形状不成立整座作废', () => {
     e.$patch({ voidWorld: { ...voidWorld(), id: 'chiyan' } } as never)
     e.sanitize()
     expect(e.voidWorld).toBeNull()
+  })
+
+  it('虚界敌形技能与词条逐项修形:概率/倍率不越界,野词条键不参与天道判定', () => {
+    const e = useEndgameStore()
+    const w = voidWorld()
+    const foes = (w.foes as Record<string, unknown>[]).map((f, i) =>
+      i === 0
+        ? {
+            ...f,
+            mods: { dodgeRate: 0.2, ghostStat: 99 },
+            skills: [
+              { name: '必中', mult: 999, rate: 999, effect: 'stun' },
+              { name: '封印', mult: -2, rate: -1, effect: 'ghost_effect' }
+            ]
+          }
+        : f
+    )
+    e.$patch({ voidWorld: { ...w, foes } } as never)
+    e.sanitize()
+
+    const foe = e.voidWorld!.foes[0]!
+    expect(foe.skills).toEqual([
+      { name: '必中', mult: 10, rate: 1, effect: 'stun' },
+      { name: '封印', mult: 0, rate: 0 }
+    ])
+    expect(foe.mods, '野词条键会让构筑厚度虚增').toEqual({ dodgeRate: 0.2 })
   })
 })
