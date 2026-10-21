@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 323,
+  "round": 324,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T23:15:53+00:00",
+  "updated_at": "2026-10-21T23:26:36+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23638,6 +23638,201 @@
       "commit": "0f8ca94",
       "title": "任务与日课公共写入边界收口",
       "detail": "inc 只收有限正数;主线推进夹到终点;collect 校验类别与 id;markDailyDone 只认日课且去重。"
+    },
+    "COMP-060": {
+      "id": "COMP-060",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:22:21+00:00",
+      "updated_at": "2026-10-21T23:22:21+00:00",
+      "touched_round": 324,
+      "title": "历练公共写入边界",
+      "detail": "src/stores/adventure.ts 的会话、区域、事件与暂停顺延入口缺少目录与有限值校验。"
+    },
+    "ISS-996": {
+      "id": "ISS-996",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:22:21+00:00",
+      "updated_at": "2026-10-21T23:26:35+00:00",
+      "touched_round": 324,
+      "title": "历练坏调用可写野区域、坏会话或坏事件",
+      "detail": "setSession 收野区域/NaN 时刻；unlock/markCleared/markRevived 收野区域；setPendingEvent 收野事件与坏时刻；shiftTimedState 收 NaN 可把会话写坏；markEventSeen 收野事件。"
+    },
+    "TASK-441": {
+      "id": "TASK-441",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:22:21+00:00",
+      "updated_at": "2026-10-21T23:26:36+00:00",
+      "touched_round": 324,
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 0.92,
+      "effort": 2,
+      "title": "历练公共写入边界收口",
+      "detail": "会话/区域/事件/暂停顺延统一校验目录与非有限值，坏调用不覆盖现有状态。"
+    },
+    "COMP-061": {
+      "id": "COMP-061",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:22:31+00:00",
+      "updated_at": "2026-10-21T23:22:31+00:00",
+      "touched_round": 324,
+      "title": "构筑快照公共写入",
+      "detail": "src/stores/loadouts.ts 的 add/remove/rename 对空 id、重复 id 与非字符串缺少边界。"
+    },
+    "ISS-997": {
+      "id": "ISS-997",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:22:31+00:00",
+      "updated_at": "2026-10-21T23:26:35+00:00",
+      "touched_round": 324,
+      "title": "构筑公共写入可收空号或同号快照",
+      "detail": "add 可收重复/空 id；remove/rename 收非字符串会与 sanitize 后的条目语义漂移。"
+    },
+    "TASK-442": {
+      "id": "TASK-442",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:22:31+00:00",
+      "updated_at": "2026-10-21T23:26:36+00:00",
+      "touched_round": 324,
+      "category": "correctness",
+      "severity": 0.72,
+      "confidence": 0.9,
+      "effort": 1,
+      "title": "构筑快照公共写入边界收口",
+      "detail": "add 只收非空唯一 id；remove/rename 只认非空字符串 id，坏调用不动现有快照。"
+    },
+    "COMP-062": {
+      "id": "COMP-062",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:23:10+00:00",
+      "updated_at": "2026-10-21T23:23:10+00:00",
+      "touched_round": 324,
+      "title": "修行状态公共时钟",
+      "detail": "src/stores/cultivation.ts 的 addBuff/pruneBuffs/shiftBuffEnds 接受坏墙钟。"
+    },
+    "ISS-998": {
+      "id": "ISS-998",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:23:11+00:00",
+      "updated_at": "2026-10-21T23:26:36+00:00",
+      "touched_round": 324,
+      "title": "修行坏时钟可写坏状态或误清全部状态",
+      "detail": "addBuff 收 NaN/Infinity/负数写坏 endsAt；pruneBuffs 收 NaN 会清空全部状态；shiftBuffEnds 收 NaN/Infinity 会写坏到期时刻。"
+    },
+    "TASK-443": {
+      "id": "TASK-443",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:23:11+00:00",
+      "updated_at": "2026-10-21T23:26:36+00:00",
+      "touched_round": 324,
+      "category": "correctness",
+      "severity": 0.75,
+      "confidence": 0.92,
+      "effort": 1,
+      "title": "修行状态公共时钟边界收口",
+      "detail": "addBuff/pruneBuffs/shiftBuffEnds 只认有限非负时刻，坏调用不写状态也不误清。"
+    },
+    "EV-993": {
+      "id": "EV-993",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:26:15+00:00",
+      "updated_at": "2026-10-21T23:26:15+00:00",
+      "touched_round": 324,
+      "source": "src/stores/adventure.spec.ts 5 条公共写入测试,定向 45/45 过",
+      "title": "历练边界行为测试",
+      "confidence": 1.0
+    },
+    "EV-994": {
+      "id": "EV-994",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:26:15+00:00",
+      "updated_at": "2026-10-21T23:26:15+00:00",
+      "touched_round": 324,
+      "source": "src/stores/loadouts.spec.ts 新增公共写入测试,定向 45/45 过",
+      "title": "构筑快照边界行为测试",
+      "confidence": 1.0
+    },
+    "EV-995": {
+      "id": "EV-995",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:26:15+00:00",
+      "updated_at": "2026-10-21T23:26:15+00:00",
+      "touched_round": 324,
+      "source": "src/stores/cultivation.spec.ts 2 条时钟测试,定向 45/45 过",
+      "title": "修行状态时钟边界测试",
+      "confidence": 1.0
+    },
+    "CHG-541": {
+      "id": "CHG-541",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:26:19+00:00",
+      "updated_at": "2026-10-21T23:26:19+00:00",
+      "touched_round": 324,
+      "commit": "9e8de67",
+      "title": "历练公共写入边界收口",
+      "detail": "会话/区域/事件/暂停顺延统一校验目录与有限值。"
+    },
+    "CHG-542": {
+      "id": "CHG-542",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:26:19+00:00",
+      "updated_at": "2026-10-21T23:26:19+00:00",
+      "touched_round": 324,
+      "commit": "a5d266a",
+      "title": "构筑快照公共写入边界收口",
+      "detail": "add 只收非空唯一 id;remove/rename 只认非空字符串 id。"
+    },
+    "CHG-543": {
+      "id": "CHG-543",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:26:19+00:00",
+      "updated_at": "2026-10-21T23:26:19+00:00",
+      "touched_round": 324,
+      "commit": "300450f",
+      "title": "修行状态公共时钟边界收口",
+      "detail": "addBuff/pruneBuffs/shiftBuffEnds 只认有限非负时刻。"
+    },
+    "HYP-164": {
+      "id": "HYP-164",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:26:26+00:00",
+      "updated_at": "2026-10-21T23:26:26+00:00",
+      "touched_round": 324,
+      "confidence": 0.9,
+      "title": "历练、构筑与修行公共入口仍以 UI 调用可信为前提",
+      "detail": "三个 store 的公共写入未统一校验目录、唯一性与墙钟，坏调用可直接污染持久化状态。"
     }
   },
   "edges": [
@@ -34891,6 +35086,96 @@
       "to": "TASK-440",
       "type": "implements",
       "created_at": "2026-10-21T23:13:10+00:00"
+    },
+    {
+      "from": "ISS-996",
+      "to": "COMP-060",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:22:25+00:00"
+    },
+    {
+      "from": "TASK-441",
+      "to": "ISS-996",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:22:25+00:00"
+    },
+    {
+      "from": "ISS-997",
+      "to": "COMP-061",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:22:34+00:00"
+    },
+    {
+      "from": "TASK-442",
+      "to": "ISS-997",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:22:34+00:00"
+    },
+    {
+      "from": "ISS-998",
+      "to": "COMP-062",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:23:14+00:00"
+    },
+    {
+      "from": "TASK-443",
+      "to": "ISS-998",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:23:14+00:00"
+    },
+    {
+      "from": "EV-993",
+      "to": "HYP-164",
+      "type": "validates",
+      "created_at": "2026-10-21T23:26:30+00:00"
+    },
+    {
+      "from": "EV-994",
+      "to": "HYP-164",
+      "type": "validates",
+      "created_at": "2026-10-21T23:26:31+00:00"
+    },
+    {
+      "from": "EV-995",
+      "to": "HYP-164",
+      "type": "validates",
+      "created_at": "2026-10-21T23:26:31+00:00"
+    },
+    {
+      "from": "CHG-541",
+      "to": "ISS-996",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:26:31+00:00"
+    },
+    {
+      "from": "CHG-541",
+      "to": "TASK-441",
+      "type": "implements",
+      "created_at": "2026-10-21T23:26:31+00:00"
+    },
+    {
+      "from": "CHG-542",
+      "to": "ISS-997",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:26:31+00:00"
+    },
+    {
+      "from": "CHG-542",
+      "to": "TASK-442",
+      "type": "implements",
+      "created_at": "2026-10-21T23:26:31+00:00"
+    },
+    {
+      "from": "CHG-543",
+      "to": "ISS-998",
+      "type": "resolves",
+      "created_at": "2026-10-21T23:26:31+00:00"
+    },
+    {
+      "from": "CHG-543",
+      "to": "TASK-443",
+      "type": "implements",
+      "created_at": "2026-10-21T23:26:31+00:00"
     }
   ]
 }
