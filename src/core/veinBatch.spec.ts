@@ -6,11 +6,12 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { gn, mulN, sub } from '@/utils/gnum'
-import { investVeinBatch, veinInvestPlan, veinPointCost } from './veinService'
+import { gn, mulN, sub, toNum } from '@/utils/gnum'
+import { investVeinBatch, veinInvestPlan, veinPointCost, veinPointShortfall } from './veinService'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useResourcesStore } from '@/stores/resources'
+import { useUiStore } from '@/stores/ui'
 import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP } from '@/data/constants'
 
 const BUDGET = 1e9
@@ -79,10 +80,12 @@ describe('灵脉连投 · 批量账', () => {
 
   it('一注都不成(灵石见底)时:返回 0,分文不扣、点数不动', () => {
     seat('gather')
-    useResourcesStore().spiritStone = gn(0)
+    const cost = toNum(veinPointCost())
+    useResourcesStore().spiritStone = gn(cost - 3)
     const n = investVeinBatch('gather')
     expect(n).toBe(0)
     expect(useDongfuStore().veinPoints.gather).toBe(0)
-    expect(useResourcesStore().spiritStone).toEqual(gn(0))
+    expect(toNum(veinPointShortfall())).toBeCloseTo(3, 9)
+    expect(useUiStore().toasts.at(-1)?.text, '批量拒因也写实际石差').toContain('灵石尚差 3')
   })
 })

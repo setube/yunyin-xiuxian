@@ -59,6 +59,16 @@ export function veinSwitchShortfall(): GNum {
 }
 
 /**
+ * 单点投脉还差多少灵石:付得起为 0。
+ * 单点、连投与服务拒因同读这一处,余额不足时不再只写笼统「未足」。
+ */
+export function veinPointShortfall(): GNum {
+  const cost = veinPointCost()
+  const resources = useResourcesStore()
+  return resources.hasStone(cost) ? gnZero() : subClamp(cost, resources.spiritStone)
+}
+
+/**
  * 向某条脉投一点。
  * 未定主脉时,首次投点的脉自动成为主脉。
  */
@@ -79,7 +89,7 @@ export function investVein(id: VeinId): boolean {
   }
   const cost = veinPointCost()
   if (!resources.hasStone(cost)) {
-    ui.toast(veinShortToast(), 'warn')
+    ui.toast(veinShortToast(formatGN(veinPointShortfall())), 'warn')
     return false
   }
   // 只有这次真投下去,才立为首投之脉(此前在守卫之前就把主脉定死,
@@ -136,7 +146,7 @@ export function investVeinBatch(veinId: VeinId): number {
   if (plan.points === 0) {
     if (plan.blocked === 'full') ui.toast(veinFullToast(), 'warn')
     else if (plan.blocked === 'peak') ui.toast(veinPeakToast(dongfu.veinMain === veinId), 'warn')
-    else ui.toast(veinShortToast(), 'warn')
+    else ui.toast(veinShortToast(formatGN(veinPointShortfall())), 'warn')
     playSfx('warn')
     return 0
   }

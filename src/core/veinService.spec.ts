@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { gn, toNum } from '@/utils/gnum'
-import { investVein, switchMainVein, veinCap, veinInvestPlan, investVeinBatch, veinPointCost, veinSwitchCost, veinSwitchShortfall } from './veinService'
+import { investVein, switchMainVein, veinCap, veinInvestPlan, investVeinBatch, veinPointCost, veinPointShortfall, veinSwitchCost, veinSwitchShortfall } from './veinService'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useResourcesStore } from '@/stores/resources'
@@ -40,10 +40,13 @@ describe('灵脉投资(Phase 30.3)', () => {
   it('失败的首次投资不立主脉:灵石不足的被拒点击,主脉仍空置', () => {
     const dongfu = useDongfuStore()
     expect(dongfu.veinMain).toBeNull()
-    useResourcesStore().spiritStone = gn(0) // 一穷二白
+    const cost = toNum(veinPointCost())
+    useResourcesStore().spiritStone = gn(cost - 1) // 只差一枚灵石
     expect(investVein('gather'), '灵石不足应被拒').toBe(false)
     expect(dongfu.veinMain, '被拒的投资不该立主脉').toBeNull()
     expect(dongfu.veinPoints.gather ?? 0).toBe(0)
+    expect(toNum(veinPointShortfall()), '单点缺口要按实际石差报').toBeCloseTo(1, 9)
+    expect(useUiStore().toasts.at(-1)?.text, '拒因写实际石差').toContain('灵石尚差 1')
     // 主脉仍可择:有了灵石,gather 照常能成为首投之脉
     useResourcesStore().spiritStone = gn(1e9)
     expect(investVein('gather')).toBe(true)

@@ -802,6 +802,19 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(furnace, '灵石熔铸未付时直接写尚差').toContain('熔铸(灵石尚差 ${formatGN(stoneShort)})')
   })
 
+  /**
+   * 天道熔炉的材料熔铸同族:预览只显示能换几缕,回执却只报总门槛。
+   * 现差额由 furnaceMaterialShortfall 单源给出,两条失败路径都写实际差量。
+   */
+  it('天道熔炉材料不足时回执写出实际差量', () => {
+    const service = src('./endgameService.ts')
+    expect(service, '材料差额单源').toContain('export function furnaceMaterialShortfall(')
+    expect(service, '预览失败写实际差量').toContain('ui.toast(`${rate.name}尚差 ${furnaceMaterialShortfall(rate)},不够熔铸一缕道源`')
+    expect(service, '扣料失败同写实际差量').toMatch(
+      /spendSmall\(rate\.resource, spent\)[\s\S]{0,180}furnaceMaterialShortfall\(rate\)/,
+    )
+  })
+
   it('器魂与道童付不起时置灰并写出实际差额', () => {
     const souls = src('../views/SoulsView.vue')
     expect(souls, '凝炼入口读同一份道源缺口').toContain('daoSourceShortfall(SOUL_REFINE_COST, endgame.daoSource)')
@@ -839,6 +852,22 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(card, '备药 toast 写实际石差').toContain('prepPillShortToast(formatGN(prepPillShort.value))')
     expect(service, '突破准备缺口单源').toContain('breakthroughPrepShortfall')
     expect(view, '疗伤钮写实际气差').toContain('formatNum(repair.shortfall)')
+  })
+
+  /**
+   * 灵脉投点与改立同族:付不起时按钮与回执都只写「灵石未足 / 缺灵石」,
+   * 玩家还得拿单价减余额。现单点、连投与服务拒因同读 veinPointShortfall。
+   * 故障注入:把按钮改回「缺灵石」、或把服务 toast 改回不带差数 → 本条红。
+   */
+  it('灵脉单点与连投付不起时写出实际石差', () => {
+    const card = src('../components/dongfu/VeinInvestCard.vue')
+    const service = src('./veinService.ts')
+    const text = src('../ui/veinText.ts')
+    expect(card, '投点钮读同源差额').toContain('veinPointShortfall')
+    expect(card, '投点钮就地写实际石差').toContain('灵石尚差 ${formatGN(investGap.value)}')
+    expect(service, '单点拒因写实际石差').toContain('veinShortToast(formatGN(veinPointShortfall()))')
+    expect(service, '批量拒因同写实际石差').toContain('else ui.toast(veinShortToast(formatGN(veinPointShortfall())), \'warn\')')
+    expect(text, '短差文案只在传入差数时才写尚差').toContain('`灵石尚差 ${stoneText},难注此脉`')
   })
 
   it('强化缺料时置灰并写出实际差额', () => {
@@ -880,6 +909,21 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(inv, '灵石那条必须指向历练').toMatch(
       /v-else-if="r\.plan\.reason === 'stone'"[\s\S]{0,200}?:to="\{ name: 'adventure' \}"[\s\S]{0,200}?去历练攒石 →/,
     )
+  })
+
+  /**
+   * 计划、单炉与连炼零炉同读 craftShortfall:只缺哪样就说哪样,并报实际差额。
+   * 故障注入:把单炉回执改回无参 craftShortToast()、或把计划石差写死「未足」→ 本条红。
+   */
+  it('炼丹计划与单炉回执写出实际草石差额', () => {
+    const service = src('./pillService.ts')
+    const text = src('../ui/pillText.ts')
+    expect(service, '单炉与计划共用差额函数').toContain('export function craftShortfall(')
+    expect(service, '单炉回执传实际草石差').toMatch(/craftShortToast\(\{[\s\S]{0,120}herb: gap\.herb,[\s\S]{0,120}stone: formatGN\(gap\.stone\)/)
+    expect(service, '计划只缺石时带 shortStone').toContain('shortStone?: GNum')
+    expect(service, '计划回执不再写死灵石未足').not.toContain("blocked('灵石未足,难开此炉'")
+    expect(text, '缺料文案分开报草石').toContain('灵草尚差 ${gap.herb} 株')
+    expect(text, '缺料文案报石差').toContain('灵石尚差 ${gap.stone}')
   })
 
   it('灵兽的性子带数,出处与结算同源', () => {

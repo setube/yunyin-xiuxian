@@ -156,7 +156,7 @@
   import { useResourcesStore } from '@/stores/resources'
   import { VEINS, veinDef, type VeinId } from '@/data/veins'
   import { veinEffectText } from '@/ui/veinText'
-  import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinSwitchCost, veinSwitchShortfall, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
+  import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinPointShortfall, veinSwitchCost, veinSwitchShortfall, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
   import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { formatGN } from '@/utils/format'
 
@@ -177,6 +177,8 @@
   }
 
   const investCost = computed(() => veinPointCost())
+  /** 单点投脉还差多少灵石:按钮与服务拒因同源 */
+  const investGap = computed(() => veinPointShortfall())
   const switchCost = computed(() => veinSwitchCost())
   /** 改立还差多少灵石:付得起为 0,与入口、确认钮和服务拒因同源 */
   const switchGap = computed(() => veinSwitchShortfall())
@@ -238,7 +240,7 @@
     if (currentLevel(veinId) >= cap(veinId)) return isMain(veinId) ? '主脉圆满' : '副脉至限'
     if (veinTotal.value >= VEIN_TOTAL_CAPACITY) return '容量已尽'
     if (!veinsUnlocked.value) return '未开'
-    if (!resources.hasStone(investCost.value)) return '缺灵石'
+    if (!resources.hasStone(investCost.value)) return `灵石尚差 ${formatGN(investGap.value)}`
     return '不可投'
   }
 

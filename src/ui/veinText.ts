@@ -32,8 +32,8 @@ export function veinPeakToast(isMain: boolean): string {
   return isMain ? '主脉已至圆满' : '副脉有其上限,欲再进须立为主脉'
 }
 
-export function veinShortToast(): string {
-  return '灵石未足,难注此脉'
+export function veinShortToast(stoneText?: string): string {
+  return stoneText === undefined ? '灵石未足,难注此脉' : `灵石尚差 ${stoneText},难注此脉`
 }
 
 export function veinSwitchShortToast(stoneText?: string): string {
