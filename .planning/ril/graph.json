@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 277,
+  "round": 278,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T00:16:44+00:00",
+  "updated_at": "2026-10-21T00:50:00+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -19263,10 +19263,10 @@
       "id": "TASK-358",
       "type": "task",
       "status": "resolved",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-21T00:08:00+00:00",
-      "updated_at": "2026-10-21T00:08:00+00:00",
-      "touched_round": 275,
+      "updated_at": "2026-10-21T00:49:59+00:00",
+      "touched_round": 278,
       "title": "离线净胜且敌手仍是宿敌时,按在线同一 markAvenged 清账",
       "priority": "P1",
       "category": "correctness",
@@ -19357,6 +19357,123 @@
       "title": "离线连胜与跨档赏格同源结算",
       "commit": "\"866dfeb\"",
       "summary": "\"earlyGameService 增 recordWinStreakBatch;offline 普通战与首领战接上;earlyGameService.spec/offlineModeReward/offlineScope 补判据\""
+    },
+    "ISS-921": {
+      "id": "ISS-921",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T00:49:38+00:00",
+      "updated_at": "2026-10-21T00:49:59+00:00",
+      "touched_round": 278,
+      "title": "离线历练不记法宝破题,「独行」之誓挂机永不落空",
+      "severity": "medium",
+      "summary": "\"在线每战 equippedArtifacts 非空即 noteTaboo(artifact);离线整段用含法宝被动的同一快照却从不记,挂机刷够几百杀题还立着\""
+    },
+    "TASK-359": {
+      "id": "TASK-359",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T00:49:47+00:00",
+      "updated_at": "2026-10-21T00:49:59+00:00",
+      "touched_round": 278,
+      "title": "离线整段按 equippedArtifacts 记一次 noteTaboo(artifact),并在卷轴报破题",
+      "priority": "P1",
+      "category": "\"correctness\"",
+      "summary": "\"offline.ts 普通战开打前记一次(幂等);vowResult 前后比对决定是否补卷轴行;offlineModeReward 补行为用例\""
+    },
+    "CHG-462": {
+      "id": "CHG-462",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T00:49:47+00:00",
+      "updated_at": "2026-10-21T00:49:47+00:00",
+      "touched_round": 278,
+      "title": "离线法宝破题与在线同源",
+      "commit": "\"1caf561\"",
+      "summary": "\"offline.ts 补 noteTaboo(artifact);卷轴补破题行;offlineModeReward 新用例\""
+    },
+    "ISS-922": {
+      "id": "ISS-922",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T00:49:51+00:00",
+      "updated_at": "2026-10-21T00:49:59+00:00",
+      "touched_round": 278,
+      "title": "离线历练不攒道侣机会点,「走得多才有机会」挂机时成空话",
+      "severity": "medium",
+      "summary": "\"在线每遇一个历练情境走一次 offerBondEvent 使 opportunities+1;离线整段从不调用,offlineScope 的断言只写 >= 恒真\""
+    },
+    "TASK-360": {
+      "id": "TASK-360",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T00:49:51+00:00",
+      "updated_at": "2026-10-21T00:49:59+00:00",
+      "touched_round": 278,
+      "title": "离线按在线情境数补记道侣机会点,但不抽事件不推关系",
+      "priority": "P1",
+      "category": "\"correctness\"",
+      "severity": 0.6,
+      "confidence": 0.95,
+      "effort": 2,
+      "summary": "\"daoluService 增 gainBondOpportunities;offline 按 (胜>0)+(败>0) 封顶两次;offlineScope 断言收紧为 >\""
+    },
+    "CHG-463": {
+      "id": "CHG-463",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T00:49:51+00:00",
+      "updated_at": "2026-10-21T00:49:51+00:00",
+      "touched_round": 278,
+      "title": "离线道侣机会点补记与在线同源",
+      "commit": "\"7413716\"",
+      "summary": "\"daoluService.gainBondOpportunities;offline 整段补记;offlineScope 断言收紧;offlineModeReward 新用例\""
+    },
+    "ISS-923": {
+      "id": "ISS-923",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T00:49:56+00:00",
+      "updated_at": "2026-10-21T00:49:59+00:00",
+      "touched_round": 278,
+      "title": "离线打赢首领不雪耻,只赢在首领头上时征战录仍写尚为宿敌",
+      "severity": "medium",
+      "summary": "\"在线首领取胜走同一 result.win 分支 markAvenged;离线只补了普通战分支,首领取胜分支漏记\""
+    },
+    "TASK-361": {
+      "id": "TASK-361",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T00:49:56+00:00",
+      "updated_at": "2026-10-21T00:49:59+00:00",
+      "touched_round": 278,
+      "title": "离线首领取胜分支补 isNemesis/markAvenged 并写进卷轴",
+      "priority": "P1",
+      "category": "\"correctness\"",
+      "severity": 0.6,
+      "confidence": 0.95,
+      "effort": 2,
+      "summary": "\"offline.ts 首领 win 分支补清账;用例置 winRate=0 造出只赢首领的场景,并临时放开 rng.chance 让真打有胜负\""
+    },
+    "CHG-464": {
+      "id": "CHG-464",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T00:49:56+00:00",
+      "updated_at": "2026-10-21T00:49:56+00:00",
+      "touched_round": 278,
+      "title": "离线首领雪耻与在线同源",
+      "commit": "\"c3ade32\"",
+      "summary": "\"offline.ts 首领 win 分支补雪耻;offlineModeReward 新用例(普通战全败、只赢首领)\""
     }
   },
   "edges": [
@@ -28702,6 +28819,60 @@
       "to": "ISS-919",
       "type": "resolves",
       "created_at": "2026-10-21T00:09:37+00:00"
+    },
+    {
+      "from": "TASK-359",
+      "to": "ISS-921",
+      "type": "addresses",
+      "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "CHG-462",
+      "to": "TASK-359",
+      "type": "implements",
+      "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "CHG-462",
+      "to": "ISS-921",
+      "type": "resolves",
+      "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "TASK-360",
+      "to": "ISS-922",
+      "type": "addresses",
+      "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "CHG-463",
+      "to": "TASK-360",
+      "type": "implements",
+      "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "CHG-463",
+      "to": "ISS-922",
+      "type": "resolves",
+      "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "TASK-361",
+      "to": "ISS-923",
+      "type": "addresses",
+      "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "CHG-464",
+      "to": "TASK-361",
+      "type": "implements",
+      "created_at": "2026-10-21T00:50:00+00:00"
+    },
+    {
+      "from": "CHG-464",
+      "to": "ISS-923",
+      "type": "resolves",
+      "created_at": "2026-10-21T00:50:00+00:00"
     }
   ]
 }
