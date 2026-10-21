@@ -80,13 +80,42 @@ describe('修行页与提示同源', () => {
  */
 describe('修行页 · 主修可升层信号', () => {
   const view = readFileSync(new URL('../views/CultivationView.vue', import.meta.url), 'utf8')
+  // 功法区迁出后判据随本体走:宿主只挂载,信号与成本账都在 GongfaSection
+  const section = readFileSync(new URL('../components/cultivation/GongfaSection.vue', import.meta.url), 'utf8')
 
   it('可升层 chip 只在付得起下一层时亮,成本走与升级同一处', () => {
-    expect(view, '卡面要有可升层信号').toContain('可升层')
-    expect(view, '信号挂在主修卡上').toContain('v-if="mainCanUpgrade"')
-    expect(view, '成本取 gongfaUpgradeCost,不另写一套').toContain('const cost = gongfaUpgradeCost(def.id)')
-    expect(view, '判据与 upgradeGongfa 同源').toContain("resources.hasSmall('wudao', cost.wudao)")
-    expect(view, '判据与 upgradeGongfa 同源').toContain("resources.hasSmall('page', cost.page)")
-    expect(view, '取不到成本(已圆满/未习得)就不该亮').toContain('if (!cost) return false')
+    expect(view, '宿主只挂载功法区').toContain('<GongfaSection />')
+    expect(section, '卡面要有可升层信号').toContain('可升层')
+    expect(section, '信号挂在主修卡上').toContain('v-if="mainCanUpgrade"')
+    expect(section, '成本取 gongfaUpgradeCost,不另写一套').toContain('const cost = gongfaUpgradeCost(def.id)')
+    expect(section, '判据与 upgradeGongfa 同源').toContain("resources.hasSmall('wudao', cost.wudao)")
+    expect(section, '判据与 upgradeGongfa 同源').toContain("resources.hasSmall('page', cost.page)")
+    expect(section, '取不到成本(已圆满/未习得)就不该亮').toContain('if (!cost) return false')
+  })
+
+  /**
+   * 参悟按钮付不起时只换来一句 toast —— 按钮本身亮着,玩家按下去才知道差几页。
+   * 故障注入:把 :disabled 去掉、或把 pageShort 判据换成恒 false → 本条红。
+   */
+  it('参悟按钮按残页实付能力置灰,并写出还差几页', () => {
+    expect(section, '付不起就置灰').toContain(':disabled="!canComprehend"')
+    expect(section, '可参悟 = 池里还有货且残页够').toContain('comprehendLeft.value > 0 && pageShort.value === 0')
+    expect(section, '差额与 comprehendGongfa 的消耗同源').toContain('COMPREHEND_PAGE_COST - resources.page')
+    expect(section, '差额要写出来').toContain('尚差 {{ pageShort }} 残页')
+  })
+
+  /**
+   * 只报全局参悟余量,玩家分不清想补的那一门还剩几部。
+   * 故障注入:把 poolLeft 换成 comprehendLeft → 本条红。
+   */
+  it('门类栏报的是本门参悟池余量,不是全局余量', () => {
+    expect(section, '按门过滤同一条池条件').toContain('g.type === gongfaCat.value && g.minRealm <= player.major + 1')
+    expect(section, '栏内读本门余量').toContain('参悟池尚余 {{ poolLeft }} 部')
+    expect(section, '收全时说清是此门此境').toContain('此门此境已收全')
+  })
+
+  it('门类 tabs 与面板用 aria-controls 关联,不只报 aria-label', () => {
+    expect(section).toContain(':aria-controls="`gongfa-cat-panel-${g.type}`"')
+    expect(section).toContain(':aria-labelledby="`gongfa-cat-tab-${gongfaCat}`"')
   })
 })
