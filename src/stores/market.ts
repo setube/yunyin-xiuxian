@@ -15,7 +15,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
 import { collect } from '@/core/progress'
 import { pillDef } from '@/data/pills'
-import { equipmentTemplate } from '@/data/equipment'
+import { MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import {
   MARKET_REFRESH_SECONDS,
@@ -72,17 +72,21 @@ export const useMarketStore = defineStore(
 
         if (kind === 'pill') {
           if (!('pillId' in raw) || typeof raw.pillId !== 'string' || !pillDef(raw.pillId)) continue
+          const price = asPrice('price' in raw ? raw.price : undefined)
+          if (price.m <= 0) continue
           clean.push({
             kind,
             idx,
             pillId: raw.pillId,
-            count: Math.max(1, Math.floor(Number('count' in raw ? raw.count : 1) || 1)),
-            price: asPrice('price' in raw ? raw.price : undefined),
+            count: 1,
+            price,
             sold
           })
         } else if (kind === 'material') {
           const matId = 'matId' in raw ? raw.matId : undefined
           if (matId !== 'herb' && matId !== 'ore') continue
+          const price = asPrice('price' in raw ? raw.price : undefined)
+          if (price.m <= 0) continue
           // 上货时钉死的灵草品阶要跨读档保留 —— 否则每次读档都掉回无级,
           // 「标价/入账/显示同源」约定失效,还可靠出入档白赚品阶差
           const g = 'grade' in raw ? raw.grade : undefined
@@ -91,17 +95,22 @@ export const useMarketStore = defineStore(
             idx,
             matId,
             grade: isHerbGrade(g) ? g : undefined,
-            count: Math.max(1, Math.floor(Number('count' in raw ? raw.count : 1) || 1)),
-            price: asPrice('price' in raw ? raw.price : undefined),
+            count: MARKET_MAT_COUNT,
+            price,
             sold
           })
         } else {
+          const price = asPrice('price' in raw ? raw.price : undefined)
+          if (price.m <= 0) continue
           clean.push({
             kind,
             idx,
-            tier: Math.max(0, Math.floor(Number('tier' in raw ? raw.tier : 0) || 0)),
-            minQualityRank: Math.max(0, Math.floor(Number('minQualityRank' in raw ? raw.minQualityRank : 0) || 0)),
-            price: asPrice('price' in raw ? raw.price : undefined),
+            tier: Math.min(MAX_EQUIP_TIER, Math.max(1, Math.floor(Number('tier' in raw ? raw.tier : 1) || 1))),
+            minQualityRank: Math.min(
+              qualityDef('divine').rank,
+              Math.max(0, Math.floor(Number('minQualityRank' in raw ? raw.minQualityRank : 0) || 0))
+            ),
+            price,
             sold
           })
         }
@@ -114,11 +123,23 @@ export const useMarketStore = defineStore(
         if (!raw || typeof raw !== 'object' || !('finishAt' in raw)) continue
         const finishAt = Number.isFinite(raw.finishAt) ? Math.max(0, Math.floor(raw.finishAt as number)) : -1
         if (finishAt < 0) continue
+        const rawTier = Number('tier' in raw ? raw.tier : 1)
+        const rawQualityRank = Number('qualityRank' in raw ? raw.qualityRank : 0)
+        const tier = Math.min(MAX_EQUIP_TIER, Math.max(1, Math.floor(rawTier || 1)))
+        const qualityRank = Math.min(
+          qualityDef('divine').rank,
+          Math.max(0, Math.floor(rawQualityRank || 0))
+        )
+        const price = asPrice('price' in raw ? raw.price : undefined)
+        const badTier = !Number.isFinite(rawTier) || rawTier < 1 || rawTier > MAX_EQUIP_TIER
+        const badQualityRank =
+          !Number.isFinite(rawQualityRank) || rawQualityRank < 0 || rawQualityRank > qualityDef('divine').rank
         posts.push({
           slot: Math.max(0, Math.floor(Number('slot' in raw ? raw.slot : posts.length) || 0)),
-          tier: Math.max(0, Math.floor(Number('tier' in raw ? raw.tier : 0) || 0)),
-          qualityRank: Math.max(0, Math.floor(Number('qualityRank' in raw ? raw.qualityRank : 0) || 0)),
-          price: asPrice('price' in raw ? raw.price : undefined),
+          tier,
+          qualityRank,
+          // 寄卖价是玩家交货时定下的契约;只有价格或层级/品质坏掉时才按同一公式重建。
+          price: price.m > 0 && !badTier && !badQualityRank ? price : consignPrice(tier, qualityRank),
           finishAt,
           name: 'name' in raw && typeof raw.name === 'string' ? raw.name : ''
         })

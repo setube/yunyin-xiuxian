@@ -6,7 +6,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS, MARKET_REFRESH_SECONDS, type MarketSlot } from '@/data/market'
 import { gn, toNum } from '@/utils/gnum'
 import { BAG_CAPACITY } from '@/data/constants'
-import { focusHerbSlot, marketRemainingSec, herbSellBatch, materialSellPrice } from '@/core/marketService'
+import { consignPrice, focusHerbSlot, marketRemainingSec, herbSellBatch, materialSellPrice } from '@/core/marketService'
+import { MAX_EQUIP_TIER } from '@/data/equipment'
+import { qualityDef } from '@/data/qualities'
 import { useMarketStore } from '@/stores/market'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -172,6 +174,69 @@ describe('坊市 · 买卖', () => {
     market.sanitize()
     expect(market.stockedAt).toBe(0)
     expect(() => JSON.stringify(market.$state)).not.toThrow()
+  })
+
+  /**
+   * 坏价会被 asPrice 归零;若保留该格,buy 会把零价当成「付得起」,
+   * 玩家可零元拿走丹药/材料/装备。数量也无上限时,还能按一件的价带走一整批。
+   * 故坏价格整格丢弃,数量按上货口径归一。
+   */
+  it('sanitize:零价货格丢弃,丹/材数量按上货口径归一,不能零元购或超量到货', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    const inventory = useInventoryStore()
+    market.$patch({
+      stock: [
+        { kind: 'pill', idx: 0, pillId: 'p_jvqisan', count: 9999, price: { m: 0, e: 0 }, sold: false },
+        { kind: 'material', idx: 1, matId: 'herb', grade: 1, count: 9999, price: { m: 0, e: 0 }, sold: false },
+        { kind: 'pill', idx: 2, pillId: 'p_jvqisan', count: 9999, price: { m: 20, e: 0 }, sold: false },
+        { kind: 'material', idx: 3, matId: 'ore', count: 9999, price: { m: 20, e: 0 }, sold: false }
+      ] as MarketSlot[],
+      stockedAt: FAR
+    })
+    resources.spiritStone = gn(100)
+
+    market.sanitize()
+    expect(market.stock.map(s => s.idx), '零价格不许留下').toEqual([2, 3])
+    const pill = market.stock[0]!
+    const ore = market.stock[1]!
+    expect(pill.kind === 'pill' && pill.count).toBe(1)
+    expect(ore.kind === 'material' && ore.count).toBe(MARKET_MAT_COUNT)
+
+    expect(market.buy(2)).toBe('ok')
+    expect(market.buy(3)).toBe('ok')
+    expect(inventory.pills['p_jvqisan']).toBe(1)
+    expect(resources.ore).toBe(MARKET_MAT_COUNT)
+    expect(toNum(resources.spiritStone), '两格都按各自标价扣款').toBe(60)
+  })
+
+  it('sanitize:装备层级与品质下限夹回合法域,越界坏格买下也不崩', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    const inventory = useInventoryStore()
+    market.$patch({
+      stock: [
+        {
+          kind: 'equipment',
+          idx: 0,
+          tier: 999,
+          minQualityRank: 999,
+          price: { m: 100, e: 0 },
+          sold: false
+        }
+      ] as MarketSlot[],
+      stockedAt: FAR
+    })
+    resources.spiritStone = gn(1000)
+
+    market.sanitize()
+    const slot = market.stock[0]!
+    expect(slot.kind === 'equipment' && slot.tier).toBe(MAX_EQUIP_TIER)
+    expect(slot.kind === 'equipment' && slot.minQualityRank).toBe(qualityDef('divine').rank)
+    expect(market.buy(0)).toBe('ok')
+    expect(inventory.items).toHaveLength(1)
+    expect(inventory.items[0]!.tier).toBe(MAX_EQUIP_TIER)
+    expect(qualityDef(inventory.items[0]!.quality).rank).toBe(qualityDef('divine').rank)
   })
 
   it('sanitize:合法灵草货架的品阶跨读档保留,坏品阶落回无级', () => {
@@ -340,6 +405,29 @@ describe('坊市 · 买卖', () => {
     expect(market.consign[0]!.name).toBe('贝甲')
   })
 
+  it('sanitize:寄卖坏价按层级与品质重算,玩家交出的货不会到期零元入账', () => {
+    const market = useMarketStore()
+    const now = Date.now()
+    market.$patch({
+      consign: [
+        { slot: 0, tier: 3, qualityRank: 1, price: { m: 0, e: 0 }, finishAt: now + 1000, name: '贝甲' },
+        { slot: 1, tier: 999, qualityRank: 999, price: { m: 0, e: 0 }, finishAt: now + 2000, name: '坏层' }
+      ]
+    })
+
+    market.sanitize()
+    expect(toNum(market.consign[0]!.price), '正常寄卖价按同一公式重建').toBeCloseTo(
+      toNum(consignPrice(3, 1)),
+      5
+    )
+    expect(market.consign[1]!.tier).toBe(MAX_EQUIP_TIER)
+    expect(market.consign[1]!.qualityRank).toBe(qualityDef('divine').rank)
+    expect(toNum(market.consign[1]!.price), '越界坏层也按合法上界重建,不吞成零').toBeCloseTo(
+      toNum(consignPrice(MAX_EQUIP_TIER, qualityDef('divine').rank)),
+      5
+    )
+  })
+
   /**
    * 寄卖格号重复:界面按格号铺格子,同一个号会被后一条盖住 —— 玩家只看见一件,
    * 到点却两笔都入账(钱进了账,却有一件从不露面)。格号重排,不丢任何一件。
@@ -361,7 +449,7 @@ describe('坊市 · 买卖', () => {
     // 两件的名字/价都要各归各位 —— 只数条数会放过「用第一件的副本顶替第二件」
     expect(market.consign.map(p => p.name).sort(), '两件各自的名字都得在').toEqual(['乙', '甲'])
     expect(market.consign.map(p => p.tier).sort(), '层级不串').toEqual([3, 4])
-    expect(market.consign.map(p => toNum(p.price)).sort(), '价不串').toEqual([5, 6])
+    expect(market.consign.map(p => toNum(p.price)).sort(), '合法寄卖价原样保留,不串').toEqual([5, 6])
   })
 
   it('sanitize:寄卖多于格子上限也不丢,照样入账', () => {
