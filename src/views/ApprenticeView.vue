@@ -103,13 +103,14 @@
   import {
     APPRENTICE_TASKS,
     APPRENTICE_MAX_LEVEL,
+    taskDef,
     apprenticeDef,
     apprenticeSlots,
     bondTitle,
     type ApprenticeSpec
   } from '@/data/apprentices'
   import { apprenticeRecruitCost, apprenticeRecruitShortfall } from '@/core/apprenticeService'
-  import { apprenticeReturnText } from '@/ui/apprenticeText'
+  import { apprenticeHerbName, apprenticeReturnText } from '@/ui/apprenticeText'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 
@@ -135,7 +136,7 @@
     appr.apprentices.map(a => {
       const def = apprenticeDef(a.archId)!
       const busy = a.task !== null
-      const task = busy ? APPRENTICE_TASKS.find(t => t.spec === a.task!.spec)! : null
+      const task = busy ? APPRENTICE_TASKS.find(t => t.spec === a.task!.spec) : null
       return {
         uid: a.uid,
         level: a.level,
@@ -145,7 +146,7 @@
         taskName: task?.name ?? '',
         taskIcon: task?.icon ?? '',
         remainingSec: busy ? Math.max(0, (a.task!.finishAt - now.value) / 1000) : 0,
-        talentNote: `天赋:${APPRENTICE_TASKS.find(t => t.spec === def.talent)?.name ?? ''}`
+        talentNote: `天赋:${taskDef(def.talent).name}${def.talent === 'herb' ? `(${apprenticeHerbName(player.major)})` : ''}`
       }
     })
   )

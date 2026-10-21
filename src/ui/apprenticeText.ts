@@ -10,10 +10,15 @@ import { HERB_GRADE_NAMES, herbGradeOfMajor } from '@/data/herbGrades'
 import { pillDef } from '@/data/pills'
 import { formatGN } from '@/utils/format'
 
+/** 某一品灵草的名字 —— 道童采药与结算同一套品阶换算 */
+export function apprenticeHerbName(major: number): string {
+  return HERB_GRADE_NAMES[herbGradeOfMajor(major)]
+}
+
 /** 一趟产出的逐项文案;空产出返回空串 */
 export function apprenticeSpoilsText(s: TaskSpoils, major: number): string {
   const parts: string[] = []
-  if (s.herb) parts.push(`${HERB_GRADE_NAMES[herbGradeOfMajor(major)]}×${s.herb}`)
+  if (s.herb) parts.push(`${apprenticeHerbName(major)}×${s.herb}`)
   if (s.ore) parts.push(`玄铁×${s.ore}`)
   if (s.dust) parts.push(`器尘×${s.dust}`)
   if (s.wudao) parts.push(`悟道×${s.wudao}`)
