@@ -34,6 +34,13 @@ describe('图鉴收录', () => {
     expect(quests.collectedAt['equip:same-id']).toBeDefined()
     expect(quests.collectedAt['pill:same-id']).toBeDefined()
   })
+
+  it('野类别与空 id 不收录、不抛错', () => {
+    const quests = useQuestsStore()
+    expect(quests.collect('ghost' as never, 'x')).toBe(false)
+    expect(quests.collect('equip', '')).toBe(false)
+    expect(quests.collectedAt).toEqual({})
+  })
 })
 
 describe('成就达成时刻', () => {
@@ -111,6 +118,35 @@ describe('主线任务链覆盖', () => {
 
   it('每日任务仍为三条(扩界不得挤占日课)', () => {
     expect(DAILY_TASKS.length).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe('任务与日课公共写入边界', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('计数器只收有限正数:NaN/Infinity/负数/零都不污染 dailyDelta', () => {
+    const quests = useQuestsStore()
+    quests.inc('kills', 3)
+    for (const n of [NaN, Infinity, -5, 0]) quests.inc('kills', n)
+    expect(quests.counter('kills')).toBe(3)
+    expect(quests.dailyDelta('kills')).toBe(3)
+  })
+
+  it('主线推进止于终点:不会推成 currentMainQuest=undefined', () => {
+    const quests = useQuestsStore()
+    quests.$patch({ mainIdx: MAIN_QUESTS.length - 1 })
+    quests.advanceMain()
+    quests.advanceMain()
+    expect(quests.mainIdx).toBe(MAIN_QUESTS.length - 1)
+    expect(quests.currentMainQuest).toBe(MAIN_QUESTS[MAIN_QUESTS.length - 1])
+  })
+
+  it('日课标记只认目录并去重:野 id 与重复写入都不进 done', () => {
+    const quests = useQuestsStore()
+    quests.markDailyDone(DAILY_TASKS[0]!.id)
+    quests.markDailyDone(DAILY_TASKS[0]!.id)
+    quests.markDailyDone('d_ghost')
+    expect(quests.daily.done).toEqual([DAILY_TASKS[0]!.id])
   })
 })
 

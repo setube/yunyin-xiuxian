@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { CounterKey } from '@/types'
 import { persistConfig } from '@/utils/storage'
-import { MAIN_QUESTS } from '@/data/quests'
+import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { TITLES } from '@/data/titles'
 import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
@@ -85,6 +85,7 @@ export const useQuestsStore = defineStore(
     }
 
     function inc(key: CounterKey, n = 1): void {
+      if (!Number.isFinite(n) || n <= 0) return
       counters.value = { ...counters.value, [key]: (counters.value[key] ?? 0) + n }
     }
 
@@ -101,7 +102,8 @@ export const useQuestsStore = defineStore(
     }
 
     function advanceMain(): void {
-      mainIdx.value += 1
+      const last = MAIN_QUESTS.length - 1
+      if (mainIdx.value < last) mainIdx.value += 1
     }
 
     function ownTitle(id: string): boolean {
@@ -112,6 +114,7 @@ export const useQuestsStore = defineStore(
 
     function collect(category: CollectionCategory, id: string): boolean {
       const list = collections.value[category]
+      if (!Array.isArray(list) || typeof id !== 'string' || id.trim() === '') return false
       if (list.includes(id)) return false
       collections.value = { ...collections.value, [category]: [...list, id] }
       collectedAt.value = { ...collectedAt.value, [`${category}:${id}`]: Date.now() }
@@ -127,6 +130,7 @@ export const useQuestsStore = defineStore(
     }
 
     function markDailyDone(taskId: string): void {
+      if (!DAILY_TASKS.some(t => t.id === taskId) || daily.value.done.includes(taskId)) return
       daily.value = { ...daily.value, done: [...daily.value.done, taskId] }
     }
 
