@@ -3,6 +3,7 @@ import {
   artifactBatchDoneToast,
   artifactCapToast,
   artifactDoneToast,
+  artifactShortToast,
   batchDecomposeToast,
   decomposeToast,
   salvageYieldText,
@@ -42,6 +43,15 @@ describe('炼器提示 · 文言仍报清尘与石', () => {
     expect(artifactCapToast()).toContain('再祭无益')
     expect(artifactDoneToast('紫电')).toContain('祭炼')
     expect(artifactDoneToast('紫电')).not.toContain('炼化')
+  })
+
+  it('祭炼缺料分得清悟道点与灵石,提示不再两头都说', () => {
+    expect(artifactShortToast('wudao')).toContain('悟道点')
+    expect(artifactShortToast('wudao')).not.toContain('灵石')
+    expect(artifactShortToast('wudao')).toContain('藏经阁')
+    expect(artifactShortToast('stone')).toContain('灵石')
+    expect(artifactShortToast('stone')).not.toContain('悟道点')
+    expect(artifactShortToast('stone')).toContain('历练')
   })
 
   it('祭炼连升只报一次总况:重数、现重、悟道、石都在', () => {

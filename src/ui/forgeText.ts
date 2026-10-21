@@ -43,8 +43,10 @@ export function artifactCapToast(): string {
   return '此宝已臻圆满,再祭无益'
 }
 
-export function artifactShortToast(): string {
-  return '悟道点或灵石未足,祭炼难继'
+export function artifactShortToast(short: 'wudao' | 'stone'): string {
+  return short === 'wudao'
+    ? '悟道点未足,祭炼难继(藏经阁与顿悟可得)'
+    : '灵石未足,祭炼难继(灵石自历练与悬赏来)'
 }
 
 export function artifactDoneToast(name: string): string {

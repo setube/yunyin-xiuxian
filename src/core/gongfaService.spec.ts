@@ -12,7 +12,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useResourcesStore } from '@/stores/resources'
-import { comprehendGongfa, gongfaUpgradeCost, upgradeGongfa } from '@/core/gongfaService'
+import { useUiStore } from '@/stores/ui'
+import { comprehendGongfa, gongfaUpgradeCost, gongfaUpgradeShort, upgradeGongfa } from '@/core/gongfaService'
 import { COMPREHEND_PAGE_COST } from '@/data/constants'
 import { GONGFA, gongfaDef } from '@/data/gongfa'
 
@@ -66,6 +67,34 @@ describe('功法到顶守卫(upgradeGongfa / gongfaUpgradeCost)', () => {
     expect(upgradeGongfa(G)).toBe(false)
     expect(cul.learned[G]).toBe(1)
     expect(res.wudao).toBe(1_000_000) // 悟道点没被扣
+  })
+
+  it('缺料判据分得清悟道点、残页与两样俱缺', () => {
+    const res = useResourcesStore()
+    const cost = { wudao: 10, page: 4 }
+    res.wudao = 0
+    res.page = 100
+    expect(gongfaUpgradeShort(cost)).toBe('wudao')
+    res.wudao = 100
+    res.page = 0
+    expect(gongfaUpgradeShort(cost)).toBe('page')
+    res.wudao = 0
+    expect(gongfaUpgradeShort(cost)).toBe('both')
+    res.wudao = 10
+    res.page = 4
+    expect(gongfaUpgradeShort(cost)).toBeNull()
+  })
+
+  it('缺残页时提示只报残页,不再说悟道点也未足', () => {
+    const cul = useCultivationStore()
+    const res = useResourcesStore()
+    cul.learned = { [G]: 1 }
+    res.wudao = 1_000_000
+    res.page = 0
+    expect(upgradeGongfa(G)).toBe(false)
+    const text = useUiStore().toasts.at(-1)?.text ?? ''
+    expect(text).toContain('残页')
+    expect(text).not.toContain('悟道点')
   })
 
   it('成功:返回 true、等级 +1、精确扣 gongfaUpgradeCost 的悟道点+残页', () => {

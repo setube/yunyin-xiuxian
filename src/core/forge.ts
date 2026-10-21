@@ -7,7 +7,7 @@ import { equipmentTemplate } from '@/data/equipment'
 import { artifactDef, ARTIFACT_MAX_LEVEL, ARTIFACT_UP_STONE_TIER, ARTIFACT_UP_WUDAO_BASE } from '@/data/artifacts'
 import { EQUIP_MAX_LEVEL_BASE } from '@/data/constants'
 import { stoneByTier, upgradeCost } from './formulas'
-import { add, gnZero, isZero } from '@/utils/gnum'
+import { add, gnZero, isZero, subClamp } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import {
   artifactBatchDoneToast,
@@ -256,6 +256,32 @@ export function artifactUpCost(defId: string): { wudao: number; stone: GNum } | 
   return artifactUpCostAt(def, owned.level)
 }
 
+export interface ArtifactShortfall {
+  /** 服务提示优先报的那一样;两样都缺时先报悟道点 */
+  short: 'wudao' | 'stone' | null
+  /** 悟道点还差多少(够则为 0) */
+  wudao: number
+  /** 灵石还差多少(够则为 0) */
+  stone: GNum
+}
+
+/** 这一重两样各差多少 —— 界面置灰、价签与提示共用这一处判定 */
+export function artifactShortfall(cost: { wudao: number; stone: GNum }): ArtifactShortfall {
+  const resources = useResourcesStore()
+  const wudao = resources.hasSmall('wudao', cost.wudao) ? 0 : Math.max(0, cost.wudao - resources.wudao)
+  const stone = resources.hasStone(cost.stone) ? gnZero() : subClamp(cost.stone, resources.spiritStone)
+  return {
+    short: wudao > 0 ? 'wudao' : stone.m > 0 ? 'stone' : null,
+    wudao,
+    stone
+  }
+}
+
+/** 这一重缺哪一样(付得起时为 null)—— 服务与界面共用同一处判定 */
+export function artifactShort(cost: { wudao: number; stone: GNum }): 'wudao' | 'stone' | null {
+  return artifactShortfall(cost).short
+}
+
 export function upgradeArtifact(defId: string, opts: { quiet?: boolean } = {}): boolean {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
@@ -269,10 +295,11 @@ export function upgradeArtifact(defId: string, opts: { quiet?: boolean } = {}): 
     }
     return false
   }
-  if (!resources.hasSmall('wudao', cost.wudao) || !resources.hasStone(cost.stone)) {
+  const short = artifactShort(cost)
+  if (short) {
     if (!opts.quiet) {
       playSfx('warn')
-      ui.toast(artifactShortToast(), 'warn')
+      ui.toast(artifactShortToast(short), 'warn')
     }
     return false
   }
@@ -331,7 +358,12 @@ export function upgradeArtifactBatch(defId: string): number {
   const plan = artifactBatchPlan(defId)
   if (plan.levels === 0) {
     playSfx('warn')
-    useUiStore().toast(plan.atCap ? artifactCapToast() : artifactShortToast(), 'warn')
+    const next = artifactUpCost(defId)
+    const short = next ? artifactShort(next) : null
+    // 计划 0 而仍有下一重,说明卡在余额;此时 short 必非 null。
+    // 防御性兜底报「悟道点」会指错去路,故宁可退回通用句。
+    const text = plan.atCap ? artifactCapToast() : short ? artifactShortToast(short) : '祭炼未成,请稍后再试'
+    useUiStore().toast(text, 'warn')
     return 0
   }
   // 当前流程里回合内不可能失败(计划刚验过账、同步无 await);防御性的断了就往回退一重照实报

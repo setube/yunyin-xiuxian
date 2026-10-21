@@ -658,6 +658,31 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(view, '祭炼上限应读 ARTIFACT_MAX_LEVEL').toContain('ARTIFACT_MAX_LEVEL')
   })
 
+  /**
+   * 付不起时按钮置灰只是第一层:玩家还得看得见差哪一样、差多少。
+   * 故障注入:把 canUp 改回只查布尔、删掉行内缺口 → 本条红。
+   */
+  it('法宝炼化按缺口置灰,行内写清悟道点与灵石各差多少', () => {
+    const view = src('../components/inventory/ArtifactPanel.vue')
+    expect(view, '禁用态读同一份缺口判定').toContain('artifactShortfall(upCost)')
+    expect(view, '禁用态按缺的那一样判,不能拿整个缺口对象当布尔').toContain(
+      ':disabled="row.short?.short != null"'
+    )
+    expect(view, '行内写悟道缺口').toContain('悟道尚差 ${short.wudao}')
+    expect(view, '行内写灵石缺口').toContain('灵石尚差 ${formatGN(short.stone)}')
+    expect(view, '提示按缺的那一样走').toContain('artifactShortToast(short.short!)')
+    expect(view, '不许再用笼统的「悟道或灵石不足」').not.toContain('悟道或灵石不足')
+  })
+
+  it('功法进修按缺口置灰,行内写清悟道点与残页各差多少', () => {
+    const view = src('../components/cultivation/GongfaDialog.vue')
+    expect(view, '禁用态读同一份缺口判定').toContain('gongfaUpgradeShort(upCost.value)')
+    expect(view, '付得起才不置灰').toContain(':disabled="upShort !== null"')
+    expect(view, '行内写悟道缺口').toContain('悟道点尚差 ${Math.max(0, c.wudao - resources.wudao)}')
+    expect(view, '行内写残页缺口').toContain('残页尚差 ${Math.max(0, c.page - resources.page)}')
+    expect(view, '不许再用笼统的「悟道点或残页不足」').not.toContain('悟道点或残页不足')
+  })
+
   it('装备详情写着共鸣与界域', () => {
     const view = src('../components/equipment/EquipmentDetailDialog.vue')
     expect(view, '共鸣状态应读 setCounts').toContain('setCounts(')

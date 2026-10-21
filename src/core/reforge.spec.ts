@@ -18,6 +18,7 @@ import {
   reforgeCost,
   reforgeEquipment,
   reforgeShort,
+  reforgeShortfall,
   reforgeableAffixIds,
   sealCapacity,
   sealCost,
@@ -232,6 +233,19 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
     expect(useUiStore().toasts.at(-1)?.text).not.toContain('器灵尘')
   })
 
+  it('界面置灰与价签读同一份缺口:灵石与器灵尘各差多少都算得出来', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'shortfall' }
+    useInventoryStore().items = [inst]
+    const res = useResourcesStore()
+    const cost = reforgeCost(inst)!
+    res.addStone(gn(1))
+    res.addSmall('dust', cost.dust - 3)
+    const s = reforgeShortfall(cost)
+    expect(s.short).toBe('stone')
+    expect(s.stone.m).toBeGreaterThan(0)
+    expect(s.dust).toBe(3)
+  })
+
   it('自动重铸第一炉就缺料时,结果里写明缺的是哪一样', () => {
     const inst: EquipmentInstance = { ...base, uid: 'auto-short' }
     useInventoryStore().items = [inst]
@@ -314,6 +328,19 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     expect(dialog, '上限应读 qualityDef(...).affixes[1]').toContain('qualityDef(inst.value.quality).affixes[1]')
     expect(dialog, '封存上限应读 sealCapacity(与判定同一处)').toContain('sealCapacity(')
     expect(dialog, '不该再出现「重铸次数 x/10」这类写死的分母').not.toMatch(/重铸次数\s*\{\{/)
+  })
+
+  /**
+   * 付不起时两个重铸钮都该置灰,并把缺口写出来。
+   * 故障注入:删掉任一处 :disabled、或退回 click-then-toast → 本条红。
+   */
+  it('重铸入口与确认钮都按缺口置灰,并就地写出尚差多少', () => {
+    const footer = readFileSync(resolve(__dirname, '../components/equipment/EquipReforgeFooter.vue'), 'utf8')
+    expect(footer, '入口钮按缺口置灰').toMatch(/v-if="reforgeCostVal"[\s\S]*?:disabled="reforgeShortVal\?\.short != null"/)
+    expect(footer, '确认钮同样按缺口置灰').toMatch(/:disabled="reforgeShortVal\?\.short != null"[\s\S]*?@click="doReforge"/)
+    expect(footer, '缺口就地写出来').toContain('灵石尚差 ${formatGN(s.stone)}')
+    expect(footer, '缺尘也单独报数').toContain('器灵尘尚差 ${s.dust}')
+    expect(footer, '提示与结算同源').toContain('reforgeShortfall(reforgeCostVal.value)')
   })
 
   /**

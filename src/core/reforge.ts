@@ -27,7 +27,7 @@ import {
 import { stoneByTier } from './formulas'
 import { track } from './progress'
 import { noteSmithingUsed } from './loreService'
-import { add, gnZero } from '@/utils/gnum'
+import { add, gnZero, subClamp } from '@/utils/gnum'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
 import { useResourcesStore } from '@/stores/resources'
@@ -48,12 +48,30 @@ export interface ReforgeCost {
   dust: number
 }
 
+export interface ReforgeShortfall {
+  /** 服务提示优先报的那一样;两样都缺时先报灵石(与旧判定一致) */
+  short: 'stone' | 'dust' | null
+  /** 灵石还差多少(够则为 0) */
+  stone: GNum
+  /** 器灵尘还差多少(够则为 0) */
+  dust: number
+}
+
+/** 这一炉两样各差多少 —— 界面置灰、价签与提示共用这一处判定 */
+export function reforgeShortfall(cost: ReforgeCost): ReforgeShortfall {
+  const resources = useResourcesStore()
+  const stone = resources.hasStone(cost.stone) ? gnZero() : subClamp(cost.stone, resources.spiritStone)
+  const dust = resources.hasSmall('dust', cost.dust) ? 0 : Math.max(0, cost.dust - resources.dust)
+  return {
+    short: stone.m > 0 ? 'stone' : dust > 0 ? 'dust' : null,
+    stone,
+    dust
+  }
+}
+
 /** 这一炉缺哪一样(付得起时为 null)—— 提示按它说清去路,与结算同一处判定 */
 export function reforgeShort(cost: ReforgeCost): 'stone' | 'dust' | null {
-  const resources = useResourcesStore()
-  if (!resources.hasStone(cost.stone)) return 'stone'
-  if (!resources.hasSmall('dust', cost.dust)) return 'dust'
-  return null
+  return reforgeShortfall(cost).short
 }
 
 /**

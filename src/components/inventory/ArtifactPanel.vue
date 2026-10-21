@@ -69,17 +69,20 @@
         <button
           v-if="row.upCost"
           class="btn-ghost flex-1 !py-1.5 !text-[12px] tabular"
-          :disabled="!row.canUp"
-          :title="!row.canUp ? '悟道或灵石不足' : undefined"
+          :disabled="row.short?.short != null"
           @click="upgradeArtifact(row.def.id)"
         >
           <!--
             两种代价都要写出来:炼化既扣悟道点、也扣灵石(见 forge.artifactUpCost),
             而按钮此前只报悟道 —— 玩家按标签算账,回头发现灵石也少了一大截。
           -->
-          炼化(悟道 {{ row.upCost.wudao }} · 灵石 {{ formatGN(row.upCost.stone) }}){{ row.canUp ? '' : '·不足' }}
+          炼化(悟道 {{ row.upCost.wudao }} · 灵石 {{ formatGN(row.upCost.stone) }})
         </button>
       </div>
+      <!-- 缺料就地报缺口,不靠 hover 才看得见:悟道点与灵石的来路不同 -->
+      <p v-if="row.upCost && row.short?.short" class="mt-1 text-right text-[10px] leading-relaxed text-cinnabar tabular">
+        {{ artifactShortText(row.short) }}
+      </p>
       <!--
         祭炼连炼:一重一重点太累,与强化连升同一套二步确认 ——
         行只在一口气能连炼 ≥2 重时出现(只够一重时,单炼按钮就是那一重)。
@@ -115,7 +118,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
-import { useResourcesStore } from '@/stores/resources'
 import { usePlayerStore } from '@/stores/player'
 import { useUiStore } from '@/stores/ui'
 import { qualityDef } from '@/data/qualities'
@@ -132,9 +134,10 @@ import {
   ARTIFACT_SLOT_UNLOCK_MAJOR,
   artifactSlotsFor
 } from '@/data/artifacts'
-import { artifactBatchPlan, artifactUpCost, upgradeArtifact, upgradeArtifactBatch } from '@/core/forge'
+import { artifactBatchPlan, artifactShortfall, artifactUpCost, upgradeArtifact, upgradeArtifactBatch } from '@/core/forge'
 import { STAT_NAMES, statCaveat, statModPhrase } from '@/data/statNames'
 import { artifactSlotReplacedToast } from '@/ui/inventoryText'
+import { artifactShortToast } from '@/ui/forgeText'
 import { cnNumber, formatGN, formatPercent } from '@/utils/format'
 
 /**
@@ -144,7 +147,6 @@ import { cnNumber, formatGN, formatPercent } from '@/utils/format'
  * 不共享状态;确认态 batchArtConfirm 随本体走,宿主不再代管。
  */
 const inventory = useInventoryStore()
-const resources = useResourcesStore()
 const player = usePlayerStore()
 const ui = useUiStore()
 
@@ -162,11 +164,12 @@ const artifactRows = computed(() =>
   inventory.artifacts
     .map(a => {
       const upCost = artifactUpCost(a.defId)
+      const short = upCost ? artifactShortfall(upCost) : null
       return {
         owned: a,
         def: artifactDef(a.defId)!,
         upCost,
-        canUp: upCost ? resources.hasSmall('wudao', upCost.wudao) && resources.hasStone(upCost.stone) : false,
+        short,
         artPlan: artifactBatchPlan(a.defId),
         equipped: inventory.equippedArtifacts.includes(a.defId)
       }
@@ -190,6 +193,14 @@ const batchArtConfirm = ref<string | null>(null)
 function runArtifactBatch(defId: string): void {
   batchArtConfirm.value = null
   upgradeArtifactBatch(defId) // 总账那一声与 toast 由服务自己报
+}
+
+/** 缺口文案:两样都缺就都报出来,并给同一条 toast 的来路提示 */
+function artifactShortText(short: NonNullable<(typeof artifactRows.value)[number]['short']>): string {
+  const parts: string[] = []
+  if (short.wudao > 0) parts.push(`悟道尚差 ${short.wudao}`)
+  if (short.stone.m > 0) parts.push(`灵石尚差 ${formatGN(short.stone)}`)
+  return `${parts.join(' · ')} —— ${artifactShortToast(short.short!)}`
 }
 
 function passiveLines(defId: string, level: number): string[] {

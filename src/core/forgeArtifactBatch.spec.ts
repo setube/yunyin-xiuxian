@@ -9,9 +9,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { GNum } from '@/types'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
+import { useUiStore } from '@/stores/ui'
 import { add, gn, sub } from '@/utils/gnum'
 import { ARTIFACT_MAX_LEVEL, artifactDef } from '@/data/artifacts'
-import { artifactBatchPlan, artifactUpCostAt, upgradeArtifactBatch } from './forge'
+import { artifactBatchPlan, artifactShortfall, artifactUpCostAt, upgradeArtifact, upgradeArtifactBatch } from './forge'
 
 /** 夹具一律凡品 af_muyu(fromTier 1)→ 悟道公式里品阶系数恒 ×1 */
 const DEF_ID = 'af_muyu'
@@ -122,5 +123,39 @@ describe('祭炼连升 · 批量账', () => {
     expect(useInventoryStore().artifacts[0]!.level).toBe(ARTIFACT_MAX_LEVEL)
     expect(useResourcesStore().wudao).toBe(WUDAO_BUDGET)
     expect(useResourcesStore().spiritStone).toEqual(STONE_BUDGET())
+  })
+
+  /**
+   * 缺哪一样就报哪一样:悟道点靠藏经阁/顿悟,灵石靠历练/悬赏。
+   * 故障注入:把 upgradeArtifact 的缺料检查改回一句「或」→ 本条红。
+   */
+  it('缺料判据分得清悟道点与灵石,并算出各自缺口', () => {
+    seat(0)
+    const cost = costOf(0)
+    const r = useResourcesStore()
+    r.spiritStone = STONE_BUDGET()
+    r.wudao = cost.wudao - 2
+    const wudaoOnly = artifactShortfall(cost)
+    expect(wudaoOnly.short).toBe('wudao')
+    expect(wudaoOnly.wudao).toBe(2)
+    expect(wudaoOnly.stone.m).toBe(0)
+
+    r.wudao = WUDAO_BUDGET
+    r.spiritStone = sub(cost.stone, gn(1))
+    const stoneOnly = artifactShortfall(cost)
+    expect(stoneOnly.short).toBe('stone')
+    expect(stoneOnly.wudao).toBe(0)
+    expect(stoneOnly.stone.m).toBeGreaterThan(0)
+  })
+
+  it('缺悟道点时提示只报悟道点,不再说灵石也未足', () => {
+    seat(0)
+    const r = useResourcesStore()
+    r.wudao = 0
+    r.spiritStone = STONE_BUDGET()
+    expect(upgradeArtifact(DEF_ID)).toBe(false)
+    const text = useUiStore().toasts.at(-1)?.text ?? ''
+    expect(text).toContain('悟道点')
+    expect(text).not.toContain('灵石')
   })
 })

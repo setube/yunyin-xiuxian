@@ -83,14 +83,26 @@ export function gongfaUpgradeCost(id: string): { wudao: number; page: number } |
   return { wudao: Math.max(1, Math.ceil(gongfaUpCost(q.rank, lv) * (1 - discount))), page: Math.ceil(lv * (1 + q.rank * 0.5)) }
 }
 
+/** 这一层缺哪一样(付得起时为 null);两样都缺时明确报 both */
+export function gongfaUpgradeShort(cost: { wudao: number; page: number }): 'wudao' | 'page' | 'both' | null {
+  const resources = useResourcesStore()
+  const wudao = !resources.hasSmall('wudao', cost.wudao)
+  const page = !resources.hasSmall('page', cost.page)
+  if (wudao && page) return 'both'
+  if (wudao) return 'wudao'
+  if (page) return 'page'
+  return null
+}
+
 export function upgradeGongfa(id: string): boolean {
   const resources = useResourcesStore()
   const cultivation = useCultivationStore()
   const ui = useUiStore()
   const cost = gongfaUpgradeCost(id)
   if (!cost) return false
-  if (!resources.hasSmall('wudao', cost.wudao) || !resources.hasSmall('page', cost.page)) {
-    ui.toast(gongfaUpShortToast(), 'warn')
+  const short = gongfaUpgradeShort(cost)
+  if (short) {
+    ui.toast(gongfaUpShortToast(short), 'warn')
     return false
   }
   resources.spendSmall('wudao', cost.wudao)

@@ -15,8 +15,11 @@ export function gongfaComprehendToast(name: string): string {
   return `残卷拼合,你参悟出《${name}》`
 }
 
-export function gongfaUpShortToast(): string {
-  return '悟道点或残页未足,难以精进'
+export function gongfaUpShortToast(short: 'wudao' | 'page' | 'both'): string {
+  if (short === 'both') return '悟道点与残页俱缺,难以精进(悟道点自藏经阁/顿悟,残页自历练/际遇)'
+  return short === 'wudao'
+    ? '悟道点未足,难以精进(藏经阁与顿悟可得)'
+    : '残页未足,难以精进(历练与际遇可得)'
 }
 
 export function gongfaUpDoneToast(name: string, level: number): string {

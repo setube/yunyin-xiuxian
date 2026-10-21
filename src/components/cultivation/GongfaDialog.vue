@@ -34,6 +34,10 @@
         <p v-if="upCost" class="mt-3 text-right text-[11px] text-ink-faint tabular">
           进修需 悟道点×{{ upCost.wudao }} · 残页×{{ upCost.page }}
         </p>
+        <!-- 缺料先说清差哪一样、差多少;悟道点与残页的来路不同 -->
+        <p v-if="upShort" class="mt-1 text-right text-[11px] leading-relaxed text-cinnabar tabular">
+          {{ upShortText }}
+        </p>
         <!-- Phase 31 A3:满级悟道,择一分支。文案须自解释——给什么、要不要慎重,按下之前就得看见 -->
         <div v-if="fullLevel && branches.length" class="mt-3">
           <p class="mb-1 font-kai text-[12px] tracking-[0.2em] text-ink-faint">功 行 圆 满 · 悟 道</p>
@@ -113,7 +117,9 @@
         >
           {{ subFull ? `辅修槽满 ${cultivation.subGongfa.length}/${dongfu.subGongfaSlots}` : subActionText }}
         </button>
-        <button v-if="upCost" class="btn-ghost flex-1" :disabled="!canAffordUp" :title="!canAffordUp ? '悟道点或残页不足' : undefined" @click="def && upgradeGongfa(def.id)">{{ canAffordUp ? '进 修' : '进 修(缺料)' }}</button>
+        <button v-if="upCost" class="btn-ghost flex-1" :disabled="upShort !== null" @click="def && upgradeGongfa(def.id)">
+          {{ upShort ? '进 修(缺料)' : '进 修' }}
+        </button>
       </div>
     </template>
   </BaseModal>
@@ -130,13 +136,13 @@
   import { gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import { ELEMENTS } from '@/data/linggen'
   import { branchesFor, gongfaBranchDef } from '@/data/gongfaBranches'
-  import { gongfaUpgradeCost, upgradeGongfa } from '@/core/gongfaService'
+  import { gongfaUpgradeCost, gongfaUpgradeShort, upgradeGongfa } from '@/core/gongfaService'
   import { gongfaAffinity, rootElements } from '@/core/linggenAffinity'
   import { mergeMods } from '@/core/statsCalc'
   import { gongfaModsAt } from '@/stores/cultivation'
   import { STAT_NAMES, modsText, statValueText } from '@/data/statNames'
   import { gongfaSkillLine } from '@/ui/itemText'
-  import { gongfaSubFullToast } from '@/ui/gongfaText'
+  import { gongfaSubFullToast, gongfaUpShortToast } from '@/ui/gongfaText'
   import type { AnyStatKey, StatMods } from '@/types'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
@@ -151,11 +157,16 @@
   const level = computed(() => (def.value ? (cultivation.learned[def.value.id] ?? 0) : 0))
   const learned = computed(() => level.value > 0)
   const upCost = computed(() => (def.value ? gongfaUpgradeCost(def.value.id) : null))
-  // 进修要悟道点+残页两样,一样不够就该置灰说清(upgradeGongfa 缺料只能吐 warn)
-  const canAffordUp = computed(() => {
+  /** 缺哪一样 —— 与服务升级路径同一处判定 */
+  const upShort = computed(() => (upCost.value ? gongfaUpgradeShort(upCost.value) : null))
+  const upShortText = computed(() => {
     const c = upCost.value
-    if (!c) return false
-    return resources.hasSmall('wudao', c.wudao) && resources.hasSmall('page', c.page)
+    const s = upShort.value
+    if (!c || !s) return ''
+    const parts: string[] = []
+    if (s === 'wudao' || s === 'both') parts.push(`悟道点尚差 ${Math.max(0, c.wudao - resources.wudao)}`)
+    if (s === 'page' || s === 'both') parts.push(`残页尚差 ${Math.max(0, c.page - resources.page)}`)
+    return `${parts.join(' · ')} —— ${gongfaUpShortToast(s)}`
   })
 
   /** 与灵根同源?判据直接取自参悟权重函数,标签与实际权重不可能分叉 */
