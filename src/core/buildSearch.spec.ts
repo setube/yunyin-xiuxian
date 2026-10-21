@@ -1,5 +1,7 @@
 /* eslint-disable no-console -- 模拟器体检报告的正式输出(bun run test:report 依赖) */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { ENEMY_ARCHETYPES } from './buildSim'
 import { searchBuilds, searchBuildsAsync } from './buildSearch'
 import { fingerprintOf, FINGERPRINT_NAMES } from './fingerprints'
@@ -58,11 +60,12 @@ describe('searchBuildsAsync · 分块异步与同源', () => {
   it('同参(同 n/场次/种子)与同步版逐位一致 —— 同一内核,别出来两本账', async () => {
     const sync = searchBuilds(80, 8, 20261004)
     const asyncRep = await searchBuildsAsync({ n: 80, fightsPerArch: 8, seed: 20261004 })
-    expect(asyncRep.results.map(r => r.avg)).toEqual(sync.results.map(r => r.avg))
-    expect(asyncRep.results.map(r => r.identity)).toEqual(sync.results.map(r => r.identity))
-    expect(asyncRep.powerCorrelation).toBe(sync.powerCorrelation)
-    expect(asyncRep.universals.length).toBe(sync.universals.length)
-    expect(asyncRep.traps.length).toBe(sync.traps.length)
+    expect(asyncRep, '未取消时应返回完整报告').not.toBeNull()
+    expect(asyncRep!.results.map(r => r.avg)).toEqual(sync.results.map(r => r.avg))
+    expect(asyncRep!.results.map(r => r.identity)).toEqual(sync.results.map(r => r.identity))
+    expect(asyncRep!.powerCorrelation).toBe(sync.powerCorrelation)
+    expect(asyncRep!.universals.length).toBe(sync.universals.length)
+    expect(asyncRep!.traps.length).toBe(sync.traps.length)
   })
 
   it('进度回调单调递增、首尾齐整(0→n,按 yieldEvery 步进)', async () => {
@@ -73,5 +76,48 @@ describe('searchBuildsAsync · 分块异步与同源', () => {
     for (let i = 1; i < seen.length; i += 1) {
       expect(seen[i]!).toBeGreaterThan(seen[i - 1]!)
     }
+  })
+
+  /**
+   * 离页取消要真的收手,而不只是别再回写。
+   *
+   * 组件卸载后长任务若仍跑满全部模拟,后台会继续烧 CPU;重新进页再检索还会
+   * 与旧任务叠加。故障注入:删掉 shouldStop 检查 → 本用例拿到完整报告、
+   * 进度继续到 100,必红。
+   */
+  it('shouldStop 命中后停止评分并返回 null,不再报满进度', async () => {
+    const seen: number[] = []
+    let stop = false
+    const report = await searchBuildsAsync({
+      n: 100,
+      fightsPerArch: 1,
+      yieldEvery: 10,
+      shouldStop: () => stop,
+      onProgress: done => {
+        seen.push(done)
+        if (done === 10) stop = true
+      }
+    })
+    expect(report, '取消后不该再给出一份可被误当成结果的报告').toBeNull()
+    expect(seen, '取消之后不该继续报进度').toEqual([10])
+  })
+
+  it('开跑前已取消则一套都不评 —— 短任务不足一个 yield 也不能漏掉取消', async () => {
+    const seen: number[] = []
+    const report = await searchBuildsAsync({
+      n: 5,
+      fightsPerArch: 1,
+      yieldEvery: 10,
+      shouldStop: () => true,
+      onProgress: done => seen.push(done)
+    })
+    expect(report).toBeNull()
+    expect(seen).toEqual([])
+  })
+
+  it('组件把卸载标志接进 shouldStop,否则只挡回写仍是空烧', () => {
+    const src = readFileSync(resolve(__dirname, '../components/build/BuildLabPanel.vue'), 'utf8')
+    expect(src, '检索调用要带协作取消').toContain('shouldStop: () => isUnmounted')
+    expect(src, '取消结果是 null,不能冒充检索失败').toContain('result === null')
   })
 })

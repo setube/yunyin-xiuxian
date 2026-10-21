@@ -84,13 +84,16 @@
         fightsPerArch: 16,
         seed: 20261004,
         yieldEvery: 24,
+        // 只挡回写不够:长任务本身也要收到离页信号,否则仍会跑满全部模拟
+        shouldStop: () => isUnmounted,
         onProgress: (d, t) => {
           if (isUnmounted) return
           progress.value = d
           total.value = t
         }
       })
-      if (isUnmounted) return
+      // null = 本轮已在离页时取消;没有报告可写,也不把 canceled 冒充成「检索夭折」
+      if (isUnmounted || result === null) return
       report.value = result
     } catch {
       if (isUnmounted) return

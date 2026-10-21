@@ -190,13 +190,20 @@ export interface SearchBuildsAsyncOptions {
   yieldEvery?: number
   /** 进度回调:(已完成, 总数) */
   onProgress?: (done: number, total: number) => void
+  /**
+   * 协作取消:每评完一套就查一次,命中即收手并返回 null。
+   *
+   * 让出事件循环只保证主线程能响应,不会自己停下长任务 —— 组件卸载后若仍跑满
+   * 六百套,重进流派页再检索就会与旧任务叠加,手机后台继续空烧。
+   */
+  shouldStop?: () => boolean
 }
 
 /**
  * 分块异步版。与 searchBuilds 共享 scoreOne/assembleResults 同一内核,
  * 同参(同 n/场次/种子)结果逐位一致;差别只在让出事件循环与报进度。
  */
-export async function searchBuildsAsync(opts: SearchBuildsAsyncOptions = {}): Promise<SearchReport> {
+export async function searchBuildsAsync(opts: SearchBuildsAsyncOptions = {}): Promise<SearchReport | null> {
   const n = opts.n ?? 1000
   const fightsPerArch = opts.fightsPerArch ?? 20
   const seed = opts.seed ?? 20260830
@@ -204,11 +211,13 @@ export async function searchBuildsAsync(opts: SearchBuildsAsyncOptions = {}): Pr
   const rng = new RandomService(mulberry32(seed))
   const scored: ScoredBuild[] = []
   for (let i = 0; i < n; i += 1) {
+    if (opts.shouldStop?.()) return null
     scored.push(scoreOne(randomBuild(rng, i), rng, fightsPerArch))
     // 以「已评分套数」为节拍:凑满一批就报(套数即读数,不差一);末批留给收尾
     if (scored.length % yieldEvery === 0 && i < n - 1) {
       opts.onProgress?.(scored.length, n)
       await new Promise(res => setTimeout(res, 0))
+      if (opts.shouldStop?.()) return null
     }
   }
   opts.onProgress?.(n, n)
