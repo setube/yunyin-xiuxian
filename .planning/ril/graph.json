@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 305,
+  "round": 306,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T17:21:40+00:00",
+  "updated_at": "2026-10-21T17:32:06+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -21880,6 +21880,45 @@
       "title": "天道熔炉材料不足写出实际差量",
       "description": "新增 furnaceMaterialShortfall；预览与扣料失败同源。",
       "commit": "e877d82"
+    },
+    "ISS-964": {
+      "id": "ISS-964",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:31:47+00:00",
+      "updated_at": "2026-10-21T17:31:51+00:00",
+      "touched_round": 306,
+      "title": "功法参悟与进修拒因不报实际差额",
+      "description": "参悟缺残页只写残页未足；进修回执只报缺料类型，详情弹窗另算一份余额差。",
+      "severity": 0.5
+    },
+    "TASK-407": {
+      "id": "TASK-407",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T17:31:47+00:00",
+      "updated_at": "2026-10-21T17:31:51+00:00",
+      "touched_round": 306,
+      "title": "功法参悟与进修写出实际差额",
+      "description": "新增 gongfaUpgradeShortfall；参悟与进修回执、详情文案同源写出尚差。",
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.98,
+      "effort": 0.8
+    },
+    "CHG-516": {
+      "id": "CHG-516",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T17:32:05+00:00",
+      "updated_at": "2026-10-21T17:32:05+00:00",
+      "touched_round": 306,
+      "title": "功法参悟与进修写出实际差额",
+      "description": "新增 gongfaUpgradeShortfall；参悟、进修与详情文案同源写尚差。",
+      "commit": "93bcd90"
     }
   },
   "edges": [
@@ -32419,6 +32458,24 @@
       "to": "ISS-963",
       "type": "resolves",
       "created_at": "2026-10-21T17:21:40+00:00"
+    },
+    {
+      "from": "TASK-407",
+      "to": "ISS-964",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:31:50+00:00"
+    },
+    {
+      "from": "CHG-516",
+      "to": "TASK-407",
+      "type": "implements",
+      "created_at": "2026-10-21T17:32:06+00:00"
+    },
+    {
+      "from": "CHG-516",
+      "to": "ISS-964",
+      "type": "resolves",
+      "created_at": "2026-10-21T17:32:06+00:00"
     }
   ]
 }
