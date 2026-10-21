@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 286,
+  "round": 287,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T10:30:41+00:00",
+  "updated_at": "2026-10-21T10:43:14+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20171,6 +20171,70 @@
       "source": "f1a3e7a src/core/reforge.spec.ts src/core/forgeArtifactBatch.spec.ts src/core/gongfaService.spec.ts src/core/dataTextAudit.spec.ts",
       "title": "缺料置灰与精确缺口已落地,全量 3232 过/0 败、check 与 build 绿",
       "confidence": 1.0
+    },
+    "TASK-374": {
+      "id": "TASK-374",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T10:38:35+00:00",
+      "updated_at": "2026-10-21T10:43:14+00:00",
+      "touched_round": 286,
+      "category": "correctness",
+      "severity": 0.72,
+      "confidence": 0.95,
+      "effort": 2,
+      "unlock_factor": 1,
+      "title": "建筑二次校验与连升拒因仍报「灵石或玄铁」泛称",
+      "description": "buildingUpgradeInfo 已算精确缺口，但 upgradeBuilding 的第二道资源闸与 buildingBatchPlan 的 0 级拒因仍走 buildingShortToast()，只报「灵石或玄铁」，玩家无法从 toast 知道究竟缺哪一样、差多少。收敛为单一 buildingShortfall 判据，供卡片、单升、连升共用。"
+    },
+    "ISS-936": {
+      "id": "ISS-936",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T10:38:39+00:00",
+      "updated_at": "2026-10-21T10:43:14+00:00",
+      "touched_round": 286,
+      "title": "建筑资源拒因双口径：卡片精确、toast 泛称",
+      "description": "buildingUpgradeInfo 的 reason 已精确列差，但 upgradeBuilding 二次校验、buildingBatchPlan 0 级资源拒因仍调用 buildingShortToast()，同一笔失败在不同入口给出不同粒度的话。",
+      "severity": 0.72
+    },
+    "COMP-033": {
+      "id": "COMP-033",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:38:39+00:00",
+      "updated_at": "2026-10-21T10:38:39+00:00",
+      "touched_round": 286,
+      "title": "洞府建筑服务与文案",
+      "description": "src/core/buildingService.ts 的升级/连升判据与 src/ui/buildingText.ts 的拒因文案。"
+    },
+    "EV-256": {
+      "id": "EV-256",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:43:05+00:00",
+      "updated_at": "2026-10-21T10:43:05+00:00",
+      "touched_round": 286,
+      "source": "60b4401 / bunx vitest run buildingService.spec.ts buildingBatch.spec.ts dongfuGongfaText.spec.ts",
+      "title": "建筑缺口三入口同源且故障注入转红",
+      "description": "buildingShortfall 在卡片、单升二次闸与连升 0 级拒因共用；恢复 buildingShortToast() 泛称后两条新测试失败，修复后 3 个 spec 20 例通过。",
+      "confidence": 1.0
+    },
+    "CHG-488": {
+      "id": "CHG-488",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:43:05+00:00",
+      "updated_at": "2026-10-21T10:43:05+00:00",
+      "touched_round": 286,
+      "commit": "60b4401",
+      "title": "建筑缺料拒因收口到 buildingShortfall",
+      "description": "单升、连升与卡片共用精确缺口判据，toast 点名缺石、缺铁或双缺及实际差额。"
     }
   },
   "edges": [
@@ -29960,6 +30024,30 @@
       "to": "HYP-110",
       "type": "validates",
       "created_at": "2026-10-21T10:30:29+00:00"
+    },
+    {
+      "from": "TASK-374",
+      "to": "ISS-936",
+      "type": "addresses",
+      "created_at": "2026-10-21T10:38:43+00:00"
+    },
+    {
+      "from": "ISS-936",
+      "to": "COMP-033",
+      "type": "located_in",
+      "created_at": "2026-10-21T10:38:43+00:00"
+    },
+    {
+      "from": "CHG-488",
+      "to": "ISS-936",
+      "type": "resolves",
+      "created_at": "2026-10-21T10:43:10+00:00"
+    },
+    {
+      "from": "CHG-488",
+      "to": "TASK-374",
+      "type": "implements",
+      "created_at": "2026-10-21T10:43:10+00:00"
     }
   ]
 }
