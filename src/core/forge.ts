@@ -11,6 +11,7 @@ import { add, gnZero, isZero, subClamp } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import {
   artifactBatchDoneToast,
+  artifactBatchInterruptedToast,
   artifactCapToast,
   artifactDoneToast,
   artifactShortToast,
@@ -313,7 +314,8 @@ export function upgradeArtifact(defId: string, opts: { quiet?: boolean } = {}): 
   if (short) {
     if (!opts.quiet) {
       playSfx('warn')
-      ui.toast(artifactShortToast(short), 'warn')
+      const gap = artifactShortfall(cost)
+      ui.toast(artifactShortToast(short, { wudao: gap.wudao, stone: formatGN(gap.stone) }), 'warn')
     }
     return false
   }
@@ -376,18 +378,38 @@ export function upgradeArtifactBatch(defId: string): number {
     const short = next ? artifactShort(next) : null
     // 计划 0 而仍有下一重,说明卡在余额;此时 short 必非 null。
     // 防御性兜底报「悟道点」会指错去路,故宁可退回通用句。
-    const text = plan.atCap ? artifactCapToast() : short ? artifactShortToast(short) : '祭炼未成,请稍后再试'
+    const gap = next ? artifactShortfall(next) : null
+    const text = plan.atCap
+      ? artifactCapToast()
+      : short && gap
+        ? artifactShortToast(short, { wudao: gap.wudao, stone: formatGN(gap.stone) })
+        : '祭炼未成,请稍后再试'
     useUiStore().toast(text, 'warn')
     return 0
   }
   // 当前流程里回合内不可能失败(计划刚验过账、同步无 await);防御性的断了就往回退一重照实报
   let done = 0
+  let spentWudao = 0
+  let spentStone = gnZero()
+  const startLevel = useInventoryStore().artifacts.find(a => a.defId === defId)?.level ?? 0
+  const def = artifactDef(defId)
   for (let i = 0; i < plan.levels; i += 1) {
+    const stepCost = def ? artifactUpCostAt(def, startLevel + i) : null
     if (!upgradeArtifact(defId, { quiet: true })) break
     done += 1
+    if (stepCost) {
+      spentWudao += stepCost.wudao
+      spentStone = add(spentStone, stepCost.stone)
+    }
   }
   const owned = useInventoryStore().artifacts.find(a => a.defId === defId)
-  playSfx('success')
-  useUiStore().toast(artifactBatchDoneToast(done, owned?.level ?? 0, plan.wudao, formatGN(plan.stone)), 'success')
+  const complete = done === plan.levels
+  playSfx(complete ? 'success' : 'warn')
+  useUiStore().toast(
+    complete
+      ? artifactBatchDoneToast(done, owned?.level ?? 0, spentWudao, formatGN(spentStone))
+      : artifactBatchInterruptedToast(done, owned?.level ?? 0, spentWudao, formatGN(spentStone)),
+    complete ? 'success' : 'warn'
+  )
   return done
 }

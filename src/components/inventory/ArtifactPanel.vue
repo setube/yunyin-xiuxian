@@ -200,7 +200,10 @@ function artifactShortText(short: NonNullable<(typeof artifactRows.value)[number
   const parts: string[] = []
   if (short.wudao > 0) parts.push(`悟道尚差 ${short.wudao}`)
   if (short.stone.m > 0) parts.push(`灵石尚差 ${formatGN(short.stone)}`)
-  return `${parts.join(' · ')} —— ${artifactShortToast(short.short!)}`
+  return `${parts.join(' · ')} —— ${artifactShortToast(short.short!, {
+    wudao: short.wudao,
+    stone: formatGN(short.stone)
+  })}`
 }
 
 function passiveLines(defId: string, level: number): string[] {

@@ -670,7 +670,9 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     )
     expect(view, '行内写悟道缺口').toContain('悟道尚差 ${short.wudao}')
     expect(view, '行内写灵石缺口').toContain('灵石尚差 ${formatGN(short.stone)}')
-    expect(view, '提示按缺的那一样走').toContain('artifactShortToast(short.short!)')
+    expect(view, '提示按缺的那一样走').toContain('artifactShortToast(short.short!, {')
+    expect(view, '提示与行内读同一份差额').toContain('wudao: short.wudao')
+    expect(view, '灵石差额也走同源').toContain('stone: formatGN(short.stone)')
     expect(view, '不许再用笼统的「悟道或灵石不足」').not.toContain('悟道或灵石不足')
   })
 

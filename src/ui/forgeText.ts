@@ -47,10 +47,15 @@ export function artifactCapToast(): string {
   return '此宝已臻圆满,再祭无益'
 }
 
-export function artifactShortToast(short: 'wudao' | 'stone'): string {
+export function artifactShortToast(
+  short: 'wudao' | 'stone',
+  gap?: { wudao: number; stone: string }
+): string {
+  const amount = short === 'wudao' ? gap?.wudao : gap?.stone
+  const missing = amount === undefined ? '未足' : `尚差 ${amount}`
   return short === 'wudao'
-    ? '悟道点未足,祭炼难继(藏经阁与顿悟可得)'
-    : '灵石未足,祭炼难继(灵石自历练与悬赏来)'
+    ? `悟道点${missing},祭炼难继(藏经阁与顿悟可得)`
+    : `灵石${missing},祭炼难继(灵石自历练与悬赏来)`
 }
 
 export function artifactDoneToast(name: string): string {
@@ -60,4 +65,14 @@ export function artifactDoneToast(name: string): string {
 /** 祭炼连升的总结账:一重一重报太吵,连炼只报一次总况(stoneText 由调用方 formatGN 好) */
 export function artifactBatchDoneToast(levels: number, newLevel: number, wudao: number, stoneText: string): string {
   return `连炼 ${levels} 重,已至第 ${newLevel} 重,共耗悟道×${wudao} · 灵石 ${stoneText}`
+}
+
+/** 连炼中途停手:只报已经炼成的重数与实际花掉的那笔账 */
+export function artifactBatchInterruptedToast(
+  levels: number,
+  newLevel: number,
+  wudao: number,
+  stoneText: string
+): string {
+  return `连炼 ${levels} 重即止,已至第 ${newLevel} 重,实耗悟道×${wudao} · 灵石 ${stoneText}`
 }

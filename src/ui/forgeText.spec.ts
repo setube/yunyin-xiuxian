@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   artifactBatchDoneToast,
+  artifactBatchInterruptedToast,
   artifactCapToast,
   artifactDoneToast,
   artifactShortToast,
@@ -54,9 +55,12 @@ describe('炼器提示 · 文言仍报清尘与石', () => {
     expect(artifactShortToast('stone')).toContain('灵石')
     expect(artifactShortToast('stone')).not.toContain('悟道点')
     expect(artifactShortToast('stone')).toContain('历练')
+    expect(artifactShortToast('wudao', { wudao: 2, stone: '0' })).toContain('悟道点尚差 2')
+    expect(artifactShortToast('stone', { wudao: 0, stone: '7' })).toContain('灵石尚差 7')
   })
 
   it('祭炼连升只报一次总况:重数、现重、悟道、石都在', () => {
     expect(artifactBatchDoneToast(3, 5, 32, '240')).toBe('连炼 3 重,已至第 5 重,共耗悟道×32 · 灵石 240')
+    expect(artifactBatchInterruptedToast(1, 3, 8, '60')).toBe('连炼 1 重即止,已至第 3 重,实耗悟道×8 · 灵石 60')
   })
 })

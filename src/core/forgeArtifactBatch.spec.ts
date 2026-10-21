@@ -158,4 +158,33 @@ describe('祭炼连升 · 批量账', () => {
     expect(text).toContain('悟道点')
     expect(text).not.toContain('灵石')
   })
+
+  /**
+   * 按钮下方早已列出「悟道尚差 N」,点下去的回执却退回「未足」。
+   * 故障注入:把 upgradeArtifact 的 artifactShortToast 第二参删掉 → 本条红。
+   */
+  it('单炼缺料回执写出实际差额,不只说未足', () => {
+    seat(0)
+    const cost = costOf(0)
+    const r = useResourcesStore()
+    r.spiritStone = STONE_BUDGET()
+    r.wudao = cost.wudao - 2
+    expect(upgradeArtifact(DEF_ID)).toBe(false)
+    const text = useUiStore().toasts.at(-1)?.text ?? ''
+    expect(text).toContain(`悟道点尚差 ${cost.wudao - r.wudao}`)
+    expect(text).not.toContain('悟道点未足')
+  })
+
+  it('连炼零重回执与单炼同源,写出实际差额', () => {
+    seat(0)
+    const cost = costOf(0)
+    const r = useResourcesStore()
+    r.wudao = WUDAO_BUDGET
+    r.spiritStone = sub(cost.stone, gn(3))
+    expect(upgradeArtifactBatch(DEF_ID)).toBe(0)
+    const text = useUiStore().toasts.at(-1)?.text ?? ''
+    expect(text).toContain('灵石尚差 3')
+    expect(text).not.toContain('灵石未足')
+  })
+
 })
