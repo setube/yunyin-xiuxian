@@ -28,6 +28,7 @@ import { stoneByTier } from './formulas'
 import { track } from './progress'
 import { noteSmithingUsed } from './loreService'
 import { add, gnZero, subClamp } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
 import { useResourcesStore } from '@/stores/resources'
@@ -164,7 +165,8 @@ export function reforgeEquipment(uid: string, quiet = false): boolean {
   if (short) {
     if (!quiet) {
       playSfx('warn')
-      ui.toast(reforgeShortToast(short), 'warn')
+      const gap = reforgeShortfall(cost)
+      ui.toast(reforgeShortToast(short, { stone: formatGN(gap.stone), dust: gap.dust }), 'warn')
     }
     return false
   }
@@ -234,7 +236,7 @@ export function sealAffix(uid: string, affixId: string): boolean {
     return false
   }
   if (!resources.hasStone(cost)) {
-    ui.toast(sealShortToast(), 'warn')
+    ui.toast(sealShortToast(formatGN(subClamp(cost, resources.spiritStone))), 'warn')
     return false
   }
   resources.spendStone(cost)

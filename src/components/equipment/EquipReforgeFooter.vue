@@ -106,7 +106,10 @@
     const parts: string[] = []
     if (s.stone.m > 0) parts.push(`灵石尚差 ${formatGN(s.stone)}`)
     if (s.dust > 0) parts.push(`器灵尘尚差 ${s.dust}`)
-    return `${parts.join(' · ')} —— ${reforgeShortToast(s.short!)}`
+    return `${parts.join(' · ')} —— ${reforgeShortToast(s.short!, {
+      stone: formatGN(s.stone),
+      dust: s.dust
+    })}`
   })
   const sealCostVal = computed(() => (inst.value ? sealCost(inst.value) : null))
   /** 这一件按品质能有多少条词条:上限来自品质表,不在界面里另写一份 */

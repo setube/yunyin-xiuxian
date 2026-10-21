@@ -8,6 +8,7 @@ import {
   autoReforge,
   autoReforgeBudget,
   reforgeCost,
+  reforgeShortfall,
   AUTO_REFORGE_MAX_TARGETS,
   type ReforgeTarget
 } from '@/core/reforge'
@@ -104,7 +105,11 @@ export function useAutoReforge() {
       playSfx('warn')
       if (out.rolls === 0) {
         // 缺哪一样说哪一样:灵石去历练/悬赏挣,器灵尘靠分解闲置装备 —— 两条去路相反
-        const short = out.short === 'dust' ? '器灵尘未足(分解闲置装备可得)' : '灵石未足(历练与悬赏可得)'
+        const gap = reforgeCostVal.value ? reforgeShortfall(reforgeCostVal.value) : null
+        const short =
+          out.short === 'dust'
+            ? `器灵尘${gap ? `尚差 ${gap.dust}` : '未足'}(分解闲置装备可得)`
+            : `灵石${gap ? `尚差 ${formatGN(gap.stone)}` : '未足'}(历练与悬赏可得)`
         ui.toast(`${short},难开这一炉,${cost}`, 'warn')
       } else {
         ui.toast(`灵石/器灵尘见底,洗了 ${out.rolls} 次即止;今一身为 ${now},${cost}`, 'warn')

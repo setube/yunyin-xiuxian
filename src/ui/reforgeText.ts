@@ -14,8 +14,15 @@ export function reforgeEmptyToast(): string {
  * 两者去路相反。玩家拿着这句话只能两处都跑一趟,再各缺一次。
  * 与炼丹缺料(#130)同一条纪律:只缺哪一样就说哪一样,并顺手交代它的来处。
  */
-export function reforgeShortToast(short: 'stone' | 'dust'): string {
-  return short === 'stone' ? '灵石未足,难移天机(灵石自历练与悬赏来)' : '器灵尘未足,难移天机(分解闲置装备可得)'
+export function reforgeShortToast(
+  short: 'stone' | 'dust',
+  gap?: { stone: string; dust: number }
+): string {
+  const amount = short === 'stone' ? gap?.stone : gap?.dust
+  const missing = amount === undefined ? '未足' : `尚差 ${amount}`
+  return short === 'stone'
+    ? `灵石${missing},难移天机(灵石自历练与悬赏来)`
+    : `器灵尘${missing},难移天机(分解闲置装备可得)`
 }
 
 export function reforgeSealedNote(count: number): string {
@@ -30,8 +37,8 @@ export function sealMustLeaveToast(): string {
   return '至少须留一个词条随天意流转'
 }
 
-export function sealShortToast(): string {
-  return '灵石未足,难封此纹'
+export function sealShortToast(shortText?: string): string {
+  return `灵石${shortText === undefined ? '未足' : `尚差 ${shortText}`},难封此纹`
 }
 
 export function sealDoneToast(name: string): string {

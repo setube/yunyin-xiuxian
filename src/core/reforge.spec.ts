@@ -32,7 +32,8 @@ import { rng } from '@/utils/random'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
-import { gn } from '@/utils/gnum'
+import { useAutoReforge } from '@/composables/useAutoReforge'
+import { gn, sub } from '@/utils/gnum'
 import type { EquipmentInstance } from '@/types'
 
 const stoneOf = (g: { m: number; e: number }): number => g.m * Math.pow(10, g.e)
@@ -210,6 +211,31 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
     expect(useInventoryStore().findItem('poor')!.reforgeCount).toBe(0)
   })
 
+  it('手动重铸缺料回执写出实际差额,不只说未足', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'short-receipt' }
+    useInventoryStore().items = [inst]
+    const res = useResourcesStore()
+    const cost = reforgeCost(inst)!
+    res.spiritStone = sub(cost.stone, gn(4))
+    res.dust = cost.dust
+    expect(reforgeEquipment('short-receipt')).toBe(false)
+    const text = useUiStore().toasts.at(-1)?.text ?? ''
+    expect(text).toContain('灵石尚差 4')
+    expect(text).not.toContain('灵石未足')
+  })
+
+  it('封存缺石回执写出实际差额,不只说未足', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'seal-short' }
+    useInventoryStore().items = [inst]
+    const res = useResourcesStore()
+    const cost = sealCost(inst)!
+    res.spiritStone = sub(cost, gn(5))
+    expect(sealAffix('seal-short', 'atk1')).toBe(false)
+    const text = useUiStore().toasts.at(-1)?.text ?? ''
+    expect(text).toContain('灵石尚差 5')
+    expect(text).not.toContain('灵石未足')
+  })
+
   /**
    * 缺哪一样就报哪一样(议题 #130 同族):灵石来自历练与悬赏,器灵尘来自分解,
    * 两条去路相反。一句「灵石或器灵尘未足」会把玩家指得两头都跑。
@@ -257,6 +283,26 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
     expect(out.stop).toBe('broke')
     expect(out.rolls).toBe(0)
     expect(out.short).toBe('dust')
+  })
+
+  /**
+   * 首炉缺料若只写「未足」,面板上却已算得出器灵尘尚差 N —— 同一笔账两套口径。
+   * 故障注入:把 useAutoReforge 的 gap 改回不传 / 固定写「未足」→ 本条红。
+   */
+  it('自动重铸首炉缺料回执写出实际差额', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'auto-short-receipt' }
+    useInventoryStore().items = [inst]
+    const cost = reforgeCost(inst)!
+    const res = useResourcesStore()
+    res.spiritStone = gn(1e30)
+    res.dust = cost.dust - 2
+    useUiStore().equipDetailUid = inst.uid
+    const flow = useAutoReforge()
+    flow.toggleAutoTarget('hp1')
+    flow.runAutoReforge()
+    const text = useUiStore().toasts.at(-1)?.text ?? ''
+    expect(text).toContain(`器灵尘尚差 2`)
+    expect(text).not.toContain('器灵尘未足')
   })
 
   it('封存要付费,且封满之后不再可封', () => {
@@ -341,6 +387,7 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     expect(footer, '缺口就地写出来').toContain('灵石尚差 ${formatGN(s.stone)}')
     expect(footer, '缺尘也单独报数').toContain('器灵尘尚差 ${s.dust}')
     expect(footer, '提示与结算同源').toContain('reforgeShortfall(reforgeCostVal.value)')
+    expect(footer, 'toast 也带同一份差额').toContain('stone: formatGN(s.stone)')
   })
 
   /**
