@@ -204,6 +204,17 @@ describe('文案数值对账 · 视图不手抄数字', () => {
     expect(view).not.toContain('5 分钟,修炼速度 +150%')
     expect(view).not.toContain('5分钟 修炼 +150%')
   })
+
+  it('坊市售出段的四类价签取自同一套定价函数', () => {
+    // 售出段随本体迁入 MarketSellSection:判据跟着走
+    const sell = src('../components/market/MarketSellSection.vue')
+    for (const fn of ['consignPrice(', 'herbSellBatch(', 'materialSellPrice(', 'pillSellPrice(']) {
+      expect(sell, `售出段该读 ${fn} 定价`).toContain(fn)
+    }
+    expect(sell, '批量售出的门槛与按钮文案同源').toContain('MARKET_MAT_COUNT')
+    const host = src('../views/MarketView.vue')
+    expect(host, '宿主只切签,不再自己拼售出价').not.toMatch(/consignPrice\(|herbSellBatch\(|materialSellPrice\(|pillSellPrice\(/)
+  })
 })
 
 /**
