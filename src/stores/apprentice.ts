@@ -12,6 +12,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { herbGradeOfMajor } from '@/data/herbGrades'
+import { MAX_MAJOR } from '@/data/realms'
 import {
   APPRENTICE_MAX_LEVEL,
   APPRENTICES,
@@ -58,6 +59,18 @@ const REBIRTH_KARMA_CAP = BOND_TITLES[BOND_TITLES.length - 1]!.min
 function clampKarma(v: unknown): number {
   const n = Math.floor(Number(v) || 0)
   return Math.min(REBIRTH_KARMA_CAP, Math.max(0, n))
+}
+
+/** 公共入口的境界入参:夹到真实大境界,坏数按凡境,不让槽位/报价/寻宝池漂移 */
+function clampMajor(v: unknown): number {
+  const n = Math.floor(Number(v))
+  if (!Number.isFinite(n)) return 0
+  return Math.min(MAX_MAJOR, Math.max(0, n))
+}
+
+/** 公共入口的墙钟:只认有限非负数(毫秒时间戳);坏数直接拒绝写任务/入账 */
+function validNow(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0
 }
 
 /** 把一趟产出入账到资源/背包;采药品阶按「结算同一趟的 major」定,不另读 player(一处函数不再两把尺) */
@@ -125,6 +138,7 @@ export const useApprenticeStore = defineStore(
 
     /** 收割所有已完工的弟子,return 尾账供界面报「弟子归来,带回…」 */
     function collectFinished(now: number, major: number): TaskSpoils[] {
+      if (!validNow(now)) return []
       const reaped: TaskSpoils[] = []
       for (const appr of apprentices.value) {
         if (!taskDone(appr, now)) continue
@@ -141,6 +155,7 @@ export const useApprenticeStore = defineStore(
 
     /** 派一名闲置弟子去跑一趟;忙着的、找不到的都派不动 */
     function dispatch(uid: string, spec: ApprenticeSpec, now: number): boolean {
+      if (!isSpec(spec) || !validNow(now)) return false
       const appr = apprentices.value.find(x => x.uid === uid)
       if (!appr || appr.task) return false
       appr.task = { spec, startAt: now, finishAt: now + apprenticeTaskSeconds(spec) * 1000 }
@@ -149,11 +164,12 @@ export const useApprenticeStore = defineStore(
 
     /** 收一名新弟子;槽满或灵石不够则不成 */
     function recruit(major: number): 'full' | 'poor' | 'ok' {
-      if (apprentices.value.length >= apprenticeSlots(major)) return 'full'
+      const safeMajor = clampMajor(major)
+      if (apprentices.value.length >= apprenticeSlots(safeMajor)) return 'full'
       const owned = new Set(apprentices.value.map(a => a.archId))
       const pool = APPRENTICES.filter(x => x.id !== STARTER_APPRENTICE && !owned.has(x.id))
       if (pool.length === 0) return 'full'
-      const cost = apprenticeRecruitCost(major)
+      const cost = apprenticeRecruitCost(safeMajor)
       if (!useResourcesStore().spendStone(cost)) return 'poor'
       apprentices.value.push({ uid: nextUid(), archId: rng.pick(pool).id, level: 1, bond: 0, task: null })
       return 'ok'
@@ -161,6 +177,7 @@ export const useApprenticeStore = defineStore(
 
     /** 一键「各尽其长」:把每名闲置道童派到当前最缺的门;忙的不动;返回实际派了几个 */
     function dispatchAll(now: number): number {
+      if (!validNow(now)) return 0
       const idle = apprentices.value
         .filter(a => !a.task)
         .map(a => ({ uid: a.uid, talent: apprenticeDef(a.archId)!.talent }))

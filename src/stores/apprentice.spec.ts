@@ -10,6 +10,7 @@ import { gn, toNum } from '@/utils/gnum'
 import { useApprenticeStore } from '@/stores/apprentice'
 import { useResourcesStore } from '@/stores/resources'
 import { usePlayerStore } from '@/stores/player'
+import { MAX_MAJOR } from '@/data/realms'
 
 function make(archId = 'ap_luanniao', over: Partial<OwnedApprentice> = {}): OwnedApprentice {
   return { uid: 'u1', archId, level: 3, bond: 0, task: null, ...over }
@@ -35,6 +36,17 @@ describe('收徒 · 派发与收割', () => {
     expect(a.dispatch('u1', 'herb', 2000), '忙中不可再派').toBe(false)
   })
 
+  it('坏派工:野门类与坏时钟都不写任务,也不抛错', () => {
+    const a = useApprenticeStore()
+    a.$patch({ apprentices: [make()] })
+    expect(a.dispatch('u1', 'nope' as never, 1000), '野门类派不动').toBe(false)
+    expect(a.apprentices[0]!.task).toBeNull()
+    for (const now of [NaN, Infinity, -1]) {
+      expect(a.dispatch('u1', 'study', now), `坏时钟 ${now} 派不动`).toBe(false)
+      expect(a.apprentices[0]!.task).toBeNull()
+    }
+  })
+
   it('完工:入账资材、弟子进阶一层、清空任务、返回尾账', () => {
     const a = useApprenticeStore()
     const res = useResourcesStore()
@@ -55,6 +67,20 @@ describe('收徒 · 派发与收割', () => {
     expect(a.collectFinished(100, 0)).toEqual([])
     expect(res.herbOf(herbGradeOfMajor(0))).toBe(0)
     expect(a.apprentices[0]!.level).toBe(3)
+  })
+
+  it('坏收割时钟不入账,任务不被白吞', () => {
+    const a = useApprenticeStore()
+    const res = useResourcesStore()
+    a.$patch({ apprentices: [make('ap_luanniao', { task: { spec: 'herb', startAt: 0, finishAt: 1 } })] })
+    for (const now of [NaN, Infinity, -1]) {
+      expect(a.collectFinished(now, 0), `坏时钟 ${now} 不收割`).toEqual([])
+    }
+    expect(a.apprentices[0]!.task, '任务仍在,没有白吞').not.toBeNull()
+    expect(res.herb, '没有入账').toBe(0)
+
+    expect(a.collectFinished(2, NaN), '好时钟仍可正常收割').toHaveLength(1)
+    expect(res.herbOf(herbGradeOfMajor(0)), '坏境界经品阶换算仍落凡品').toBeGreaterThan(0)
   })
 
   it('位阶(羁绊)纯叙事:不同位阶的道童完成同一任务,产出逐项相同', () => {
@@ -109,6 +135,29 @@ describe('收徒 · 派发与收割', () => {
     expect(a.apprentices[0]!.level).toBe(1)
     expect(toNum(res.spiritStone)).toBeLessThan(100000) // 扣了灵石
     expect(a.recruit(player.major), '槽满').toBe('full')
+  })
+
+  it('坏境界收徒:不能绕过五槽上限,也不异常扣费', () => {
+    const a = useApprenticeStore()
+    const res = useResourcesStore()
+    res.spiritStone = gn(1_000_000)
+    a.$patch({
+      apprentices: [
+        { uid: 'a', archId: 'ap_luanniao', level: 1, bond: 0, task: null },
+        { uid: 'b', archId: 'ap_kuangtou', level: 1, bond: 0, task: null },
+        { uid: 'c', archId: 'ap_youxia', level: 1, bond: 0, task: null },
+        { uid: 'd', archId: 'ap_lingtong', level: 1, bond: 0, task: null },
+        { uid: 'e', archId: 'ap_daotong', level: 1, bond: 0, task: null }
+      ] as OwnedApprentice[]
+    })
+    const before = toNum(res.spiritStone)
+    expect(a.recruit(NaN), '坏境界夹回凡境,五槽已满').toBe('full')
+    expect(a.apprentices, '没有第六人').toHaveLength(5)
+    expect(toNum(res.spiritStone), '满槽不扣费').toBe(before)
+    a.$patch({ apprentices: [] })
+    res.spiritStone = gn(1e12)
+    expect(a.recruit(MAX_MAJOR + 99), '超界境界夹回最高境后仍可收').toBe('ok')
+    expect(a.apprentices, '只收一人,不因超界境界多开槽').toHaveLength(1)
   })
 
   it('sanitize:坏弟子整位丢弃、坏任务当作闲置、坏等级/羁绊夹回', () => {
@@ -185,6 +234,18 @@ describe('收徒 · 派发与收割', () => {
     expect(a.apprentices.find(x => x.uid === 'x')!.task!.spec).toBe('herb')
     expect(a.apprentices.find(x => x.uid === 'y')!.task!.spec).toBe('herb')
     expect(a.apprentices.find(x => x.uid === 'z')!.task!.spec, '忙的道童不动').toBe('ore')
+  })
+
+  it('各尽其长坏时钟:一名都不派,也不写坏完工时刻', () => {
+    const a = useApprenticeStore()
+    a.$patch({
+      apprentices: [
+        { uid: 'x', archId: 'ap_youxia', level: 1, bond: 0, task: null },
+        { uid: 'y', archId: 'ap_daotong', level: 1, bond: 0, task: null }
+      ] as OwnedApprentice[]
+    })
+    expect(a.dispatchAll(NaN)).toBe(0)
+    expect(a.apprentices.every(x => x.task === null), '全员仍闲置').toBe(true)
   })
 
   it('真传道童转世:最高羁绊凝成跨世之缘,新世 starter 带传承羁绊入场并被消耗', () => {
