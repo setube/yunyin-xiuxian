@@ -106,6 +106,17 @@ describe('状态时长叠加(addBuff)', () => {
     expect(cultivation.buffs).toHaveLength(0)
   })
 
+  it('坏墙钟不施加状态,也不把现有状态写成坏值', () => {
+    const cultivation = useCultivationStore()
+    const t0 = 1_000_000
+    cultivation.addBuff('buff_juling', t0)
+    const before = cultivation.buffs[0]!.endsAt
+    for (const now of [NaN, Infinity, -1]) cultivation.addBuff('buff_juling', now)
+    expect(cultivation.buffs[0]!.endsAt, '坏时钟不叠加也不重置').toBe(before)
+    cultivation.addBuff('buff_ningshen', NaN)
+    expect(cultivation.buffs).toHaveLength(1)
+  })
+
   it('重伤同样叠加:重复受创不会把已有时长清零', () => {
     const cultivation = useCultivationStore()
     const injury = buffDef('injury')!
@@ -164,6 +175,19 @@ describe('修炼速度 buff 叠加与单方到期撤除(buffMods)', () => {
     cul.pruneBuffs(julingEnd + 1)
     expect(cul.buffs).toHaveLength(0)
     expect(cul.buffMods.cultivationSpeed).toBeUndefined()
+  })
+
+  it('坏时钟清理与暂停顺延不误删状态、不写坏到期时刻', () => {
+    const cul = useCultivationStore()
+    const t0 = 2_000_000
+    cul.addBuff('buff_juling', t0)
+    const before = cul.buffs[0]!.endsAt
+    expect(cul.pruneBuffs(NaN), '坏时钟不清理').toBe(false)
+    expect(cul.buffs[0]!.endsAt).toBe(before)
+    for (const ms of [NaN, Infinity, -1]) cul.shiftBuffEnds(ms)
+    expect(cul.buffs[0]!.endsAt).toBe(before)
+    cul.shiftBuffEnds(500)
+    expect(cul.buffs[0]!.endsAt).toBe(before + 500)
   })
 })
 

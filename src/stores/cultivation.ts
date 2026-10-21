@@ -218,6 +218,7 @@ export const useCultivationStore = defineStore(
      * 不把历史负剩余时间叠进来。
      */
     function addBuff(defId: string, now: number): void {
+      if (!Number.isFinite(now) || now < 0) return
       const def = buffDef(defId)
       if (!def) return
       const add = def.durationSec * 1000
@@ -246,6 +247,7 @@ export const useCultivationStore = defineStore(
 
     /** 移除过期 Buff,返回是否有变化 */
     function pruneBuffs(now: number): boolean {
+      if (!Number.isFinite(now)) return false
       const next = buffs.value.filter(b => b.endsAt > now)
       if (next.length !== buffs.value.length) {
         buffs.value = next
@@ -261,7 +263,7 @@ export const useCultivationStore = defineStore(
      * 丹药自己过期」。与 `enginePause.gameNow()` 的冻结语义配套。
      */
     function shiftBuffEnds(pausedMs: number): void {
-      if (pausedMs <= 0 || buffs.value.length === 0) return
+      if (!Number.isFinite(pausedMs) || pausedMs <= 0 || buffs.value.length === 0) return
       buffs.value = buffs.value.map(b => ({ ...b, endsAt: b.endsAt + pausedMs }))
     }
 
