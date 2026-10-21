@@ -13,7 +13,10 @@ import { useInventoryStore } from '@/stores/inventory'
 import { mergeMods } from '@/core/statsCalc'
 import { resolveEquipStats } from '@/core/equipGen'
 import { artifactDef, artifactValue } from '@/data/artifacts'
+import { artifactUpCost, upgradeArtifact } from '@/core/forge'
+import { useResourcesStore } from '@/stores/resources'
 import type { EquipmentInstance } from '@/types'
+import { gn } from '@/utils/gnum'
 
 function mk(uid: string, affixes: Array<{ id: string; roll: number }>, templateId = 'b_qingyun'): EquipmentInstance {
   return { uid, templateId, quality: 'mortal', tier: 3, level: 0, affixes }
@@ -159,6 +162,33 @@ describe('装备槽属性汇总(equipMods)守卫', () => {
     inv.sanitize()
     expect(inv.artifacts.map(a => a.defId), '只留认得的法宝').toEqual(['af_muyu'])
     expect(inv.equippedArtifacts, '野 id 不会在祭炼位上白占一格').toEqual(['af_muyu'])
+  })
+
+  /**
+   * 法宝重数写成字符串/NaN 时,`level >= ARTIFACT_MAX_LEVEL` 为假,祭炼价
+   * `Math.pow(1.6, level)` 变成 NaN;服务又把 NaN 当成「不缺料」,照扣灵石、
+   * 报成功,并把悟道点写成 NaN。sanitize 必须把重数也修成有限整数。
+   *
+   * 故障注入:去掉 level 归一化 → 本条第一个断言即红,后续会以 NaN 价/库存失败。
+   */
+  it('sanitize:法宝坏重数归一后,祭炼不会把悟道点写成 NaN', () => {
+    const inv = useInventoryStore()
+    const res = useResourcesStore()
+    inv.$patch({
+      artifacts: [{ defId: 'af_muyu', level: 'x' }],
+      equippedArtifacts: ['af_muyu']
+    } as never)
+    inv.sanitize()
+    expect(inv.artifacts[0]!.level, '坏重数夹回 0').toBe(0)
+
+    res.wudao = 1000
+    res.spiritStone = gn(1e9)
+    const cost = artifactUpCost('af_muyu')!
+    expect(Number.isFinite(cost.wudao), '祭炼价不该是 NaN').toBe(true)
+    expect(Number.isFinite(cost.stone.m), '灵石价不该是 NaN').toBe(true)
+    expect(upgradeArtifact('af_muyu')).toBe(true)
+    expect(inv.artifacts[0]!.level).toBe(1)
+    expect(res.wudao, '悟道点按价扣,不是 NaN').toBe(1000 - cost.wudao)
   })
 
   it('sanitize:丹匣只留认得的丹药,零条与野 id 一并清掉', () => {

@@ -7,7 +7,7 @@ import { persistConfig } from '@/utils/storage'
 import { resolveEquipStats } from '@/core/equipGen'
 import { mergeMods } from '@/core/statsCalc'
 import { useLoreStore } from '@/stores/lore'
-import { ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
+import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
 import { BAG_CAPACITY, EQUIP_MAX_LEVEL_BASE } from '@/data/constants'
 import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { pillDef } from '@/data/pills'
@@ -130,11 +130,18 @@ export const useInventoryStore = defineStore(
         artifacts.value,
         [],
         a => !!a && typeof (a as ArtifactOwned).defId === 'string' && !!artifactDef((a as ArtifactOwned).defId)
-      ).filter(a => {
-        if (seenDef.has(a.defId)) return false
-        seenDef.add(a.defId)
-        return true
-      })
+      )
+        .filter(a => {
+          if (seenDef.has(a.defId)) return false
+          seenDef.add(a.defId)
+          return true
+        })
+        // 重数也要逐条修形:坏档里的 'x'/NaN 会绕过满重判断,祭炼价算成 NaN,
+        // 点一次还把悟道点写成 NaN;夹回 [0, ARTIFACT_MAX_LEVEL] 后价与被动同源。
+        .map(a => ({
+          defId: a.defId,
+          level: Math.min(ARTIFACT_MAX_LEVEL, Math.max(0, Math.floor(asFiniteNumber(a.level, 0, 0))))
+        }))
       /**
        * 祭炼位:同一个 id 写两遍会让被动算两次(实际只有一件);
        * 条数超过 ARTIFACT_MAX_SLOTS(坏档写 5 件)则会让每一件被动一起生效 ——
