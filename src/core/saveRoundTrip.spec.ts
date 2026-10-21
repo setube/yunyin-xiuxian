@@ -35,7 +35,7 @@ import {
   storageKey
 } from '@/utils/storage'
 import { readSaveText } from '@/utils/crypto'
-import { exportSaveText, importSaveText } from './save'
+import { exportSaveText, importSaveText, inspectImportText } from './save'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
@@ -293,5 +293,36 @@ describe('存档往返 · 导出再导入一模一样', () => {
     const err = importSaveText('这不是存档')
     expect(err, '坏文本应报错').not.toBeNull()
     expect(localStorage.getItem(storageKey('player')), '导入失败却动了现有存档').toBe(before)
+  })
+
+  it('检视导入能看到备份的身份与版本(确认前摊开,不改存档)', async () => {
+    const player = usePlayerStore()
+    useGameStore().markStarted()
+    player.name = '青崖子'
+    player.major = 7
+    player.sub = 3
+    await nextTick()
+    flushSaveWrites()
+    const text = exportSaveText()
+
+    const info = inspectImportText(text)
+    expect(info, '自己导的档应当检视得出身份').not.toBeNull()
+    expect(info!.name, '应读出存档里的玩家名').toBe('青崖子')
+    expect(info!.version, '检视版本应与当前一致').toBe(SAVE_VERSION)
+    expect(info!.tooNew, '同版本的档不该误报高于当前').toBe(false)
+    expect(info!.exportedAt, '应如实报导出时间').toBeGreaterThan(0)
+    expect(info!.realmLabel).not.toBe('')
+
+    // tooNew:版本比当前大,确认前就该被标出来
+    const tooNew = inspectImportText(
+      `{"game":"yunyin-xiuxian","version":${SAVE_VERSION + 1},"exportedAt":1,"data":{"player":{"name":"未来客","major":1},"game":{}}}`
+    )
+    expect(tooNew?.tooNew, '更高版本应在确认前标出').toBe(true)
+
+    // 无名/缺字段时仍能读出结构,而不是抛错
+    expect(
+      inspectImportText(`{"game":"yunyin-xiuxian","version":1,"exportedAt":2,"data":{"player":{},"game":{}}}`)?.name
+    ).toBe('无名散修')
+    expect(inspectImportText('完全不是存档')).toBeNull()
   })
 })

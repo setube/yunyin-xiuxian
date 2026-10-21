@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 调整:**设置页拆成四段自取 store 的组件** —— 偏好开关、存档导出/导入/重置、异常留档与关于浮层本来全挤在 393 行的页面里,连 `engine.pause/resume` 的兜底与订阅收尾都挂在宿主;现分别迁入 `components/settings/SettingsPreferenceSection.vue`、`SettingsSaveSection.vue`、`SettingsDiagnosticsSection.vue`、`SettingsAboutSection.vue`,宿主收至 29 行,只摆节标题与顺序。导入确认同时吸收 xian 的「决策前摊数字」:先读出备份的玩家名、境界、版本与导出时间,高于当前版本的备份当场置灰。
 - 修复:**坊市墙钟倒计时不再随引擎暂停冻结** —— 寄卖剩余时辰与悬赏换新单本按墙钟结算、离线照走,拆分时却误接了随心跳暂停的 `useNow`:重置 / 导入确认窗一开,这两处读数便停在原地,回来时比实际结算晚一截。现新增 `useWallNow`(不读 `enginePaused`,挂载起表、卸载收表),两处改走墙钟;`dataTextAudit` 增判据钉住坊市墙钟域不得再引 `useNow` / `useGameClock`。
 - 调整:**坊市悬赏板迁 `BountyBoardSection`** —— 换单倒计时、四类订单、贡器点选清单与展开态本来都压在坊市页里,连「页签亮不亮圆点」都得让宿主再摊一遍订单;现整段迁入 `components/market/BountyBoardSection.vue`,订单投影收进 `composables/useBountyRows.ts`,板上的「交货」与页签圆点读同一份 ready 判据,换单收起清单随本体。`MarketView` 收至 95 行,只剩门面、切签、寄卖收割与货架刷新。
 - 调整:**坊市售出段迁 `MarketSellSection`** —— 寄卖格的剩余时辰、背包逐件寄卖价、材料按批售与丹药逐味售,本来都跟购货架挤在同一个 469 行页面里,三套价签各自读一遍 store;现整段迁入 `components/market/MarketSellSection.vue`(自取 store,寄卖倒计时走墙钟),宿主只切签,`MarketView` 收至 289 行。判据随本体改指子文件,并反断言宿主不再自带四类定价调用。

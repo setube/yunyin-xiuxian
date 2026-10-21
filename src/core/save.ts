@@ -12,6 +12,7 @@ import {
   type ExportPayload
 } from '@/utils/storage'
 import { encryptSave, readSaveText } from '@/utils/crypto'
+import { realmLabel } from '@/data/realms'
 import { useGameStore } from '@/stores/game'
 import { engine } from './engine'
 
@@ -57,6 +58,42 @@ export function importSaveText(text: string): string | null {
     return e instanceof Error ? e.message : '写入存档失败,浏览器存储可能不可用'
   }
   return null
+}
+
+export interface ImportInspect {
+  name: string
+  realmLabel: string
+  version: number
+  exportedAt: number
+  /** 备份版本高于当前游戏:确认前就该亮出来,别等点完「覆盖导入」才弹错 */
+  tooNew: boolean
+}
+
+/**
+ * 只读检视一份待导入的存档(不落库):把「这是谁的档、什么版本、什么时候导的」
+ * 摆到确认框里 —— 整体覆盖是不可逆动作,玩家签之前该知道这份备份的底细。
+ * 解析失败返回 null(交由导入路径报具体错)。
+ */
+export function inspectImportText(text: string): ImportInspect | null {
+  try {
+    const parsed = JSON.parse(readSaveText(text.trim())) as Partial<
+      ExportPayload & { data?: { player?: { name?: unknown; major?: unknown; sub?: unknown } } }
+    >
+    if (typeof parsed !== 'object' || parsed === null) return null
+    if (typeof parsed.version !== 'number' || typeof parsed.exportedAt !== 'number') return null
+    const player = parsed.data?.player
+    const major = typeof player?.major === 'number' && Number.isFinite(player.major) ? player.major : 0
+    const sub = typeof player?.sub === 'number' && Number.isFinite(player.sub) ? player.sub : 0
+    return {
+      name: typeof player?.name === 'string' && player.name ? player.name : '无名散修',
+      realmLabel: realmLabel(major, sub),
+      version: parsed.version,
+      exportedAt: parsed.exportedAt,
+      tooNew: parsed.version > SAVE_VERSION
+    }
+  } catch {
+    return null
+  }
 }
 
 /**
