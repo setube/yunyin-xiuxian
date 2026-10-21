@@ -21,7 +21,7 @@ vi.mock('@/utils/random', async importOriginal => {
   return { ...mod, rng: new mod.RandomService(() => mockRand) }
 })
 
-import { craftBatchPlan, craftPill, pillCraftCost, salvageRatio, usePill } from './pillService'
+import { craftBatchPlan, craftPill, craftShortfall, pillCraftCost, salvageRatio, usePill } from './pillService'
 import { rng } from '@/utils/random'
 import { craftability } from './craftability'
 import { pillDef } from '@/data/pills'
@@ -419,7 +419,8 @@ describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底�
     knowRecipe()
     const plan = craftBatchPlan(ID)
     expect(plan.rounds).toBe(0)
-    expect(plan.blocked).toContain('灵草或灵石未足')
+    expect(plan.blocked).toContain('灵草尚差')
+    expect(plan.blocked).toContain('灵石尚差')
     // 草与石同时见底:reason=both,界面才知道两头都得补
     expect(plan.reason).toBe('both')
     expect(plan.shortHerb).toBeGreaterThan(0)
@@ -439,7 +440,8 @@ describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底�
     expect(plan.rounds).toBe(0)
     expect(plan.reason).toBe('herb')
     expect(plan.shortHerb, '短缺数按「差多少才够一炉」算').toBe(1)
-    expect(plan.blocked, '把缺口写进话里,玩家拿着数去坊市').toContain('还差 1 株')
+    expect(plan.blocked, '把缺口写进话里,玩家拿着数去坊市').toContain('灵草尚差 1 株')
+    expect(plan.shortStone, '草不够时石若充足,不该报石差').toBeUndefined()
   })
 
   it('只缺灵石:reason=stone,不给草的去路', () => {
@@ -453,6 +455,22 @@ describe('炼丹连开计划 craftBatchPlan —— 纯算不动炉,按料保底�
     expect(plan.shortHerb, '草够的时候不该报草的缺口').toBeUndefined()
     expect(plan.blocked).toContain('灵石')
     expect(plan.blocked).not.toContain('灵草')
+    expect(plan.shortStone?.m, '只缺石时计划要带实际石差').toBeGreaterThan(0)
+    expect(plan.blocked, '石差按大数格式写进话里').toContain('灵石尚差')
+  })
+
+  it('一炉差额与计划同源:草按当前品库存、石按大数减法', () => {
+    knowRecipe()
+    const cost = pillCraftCost(ID)!
+    const resources = useResourcesStore()
+    resources.addSmall('herb', cost.herb - 2)
+    resources.spiritStone = { m: 0, e: 0 }
+    const gap = craftShortfall(cost)
+    expect(gap.herb).toBe(2)
+    expect(gap.stone.m).toBeGreaterThan(0)
+    const plan = craftBatchPlan(ID)
+    expect(plan.shortHerb).toBe(gap.herb)
+    expect(plan.shortStone).toEqual(gap.stone)
   })
 
   it('纯未知的方子 id:报「不知此方」而非「料不足」—— 掌握问题与材料问题分得开', () => {

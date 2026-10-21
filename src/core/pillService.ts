@@ -4,7 +4,7 @@
  * Phase 32.3 起,炼制不再是「够级必成」的兑换按钮:
  * 成败由认知与技艺决定(见 core/craftability.ts),失手要赔料,但也长本事。
  */
-import { gnZero, mulN, ratio } from '@/utils/gnum'
+import { gnZero, mulN, ratio, subClamp } from '@/utils/gnum'
 import { rng } from '@/utils/random'
 import { pillDef } from '@/data/pills'
 import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
@@ -188,6 +188,20 @@ export interface CraftBatchPlan {
   reason?: CraftBlockReason
   /** reason 含 herb 时,还差多少株当前品灵草 */
   shortHerb?: number
+  /** reason 含 stone 时,还差多少灵石 */
+  shortStone?: GNum
+}
+
+/**
+ * 一炉的草石差额:草按当前品库存算,石按大数减法算。
+ * 计划、单炉开炉与连炼零炉回执同读这一处,不在三处各减一遍余额。
+ */
+export function craftShortfall(cost: { herb: number; stone: GNum; grade: HerbGrade }): { herb: number; stone: GNum } {
+  const resources = useResourcesStore()
+  return {
+    herb: Math.max(0, cost.herb - resources.herbOf(cost.grade)),
+    stone: resources.hasStone(cost.stone) ? gnZero() : subClamp(cost.stone, resources.spiritStone)
+  }
 }
 
 /**
@@ -200,13 +214,14 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
   const def = pillDef(id)
   const cost = pillCraftCost(id)
   const able = craftability(id)
-  const blocked = (msg: string, reason: CraftBlockReason, shortHerb?: number): CraftBatchPlan => ({
+  const blocked = (msg: string, reason: CraftBlockReason, shortHerb?: number, shortStone?: GNum): CraftBatchPlan => ({
     rounds: 0,
     herb: 0,
     stone: gnZero(),
     blocked: msg,
     reason,
-    ...(shortHerb === undefined ? {} : { shortHerb })
+    ...(shortHerb === undefined ? {} : { shortHerb }),
+    ...(shortStone === undefined ? {} : { shortStone })
   })
   // 方子并不存在/没解析出配方:这与「知道方子但缺料」是两回事 —— 分开说,
   // 调用方才能区分掌握问题与材料问题(未知方先于掌握度阻塞返回)
@@ -224,12 +239,15 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
   // 显式收束为「不构成限制」:此时炉数由灵草维度唯一决定,绝不把 Infinity 传进 round/plan。
   const rounds = Math.min(herbRounds, stoneLimited ? stoneRounds : herbRounds)
   if (rounds === 0) {
-    const shortHerb = Math.max(0, cost.herb - herbHeld)
-    const shortStone = stoneLimited && stoneRounds === 0
-    // 只缺草时把缺口报成株数:玩家拿着这个数去坊市,才知道该买几摞
-    if (shortStone && shortHerb > 0) return blocked(craftShortToast(), 'both', shortHerb)
-    if (shortStone) return blocked('灵石未足,难开此炉', 'stone')
-    return blocked(`灵草未足,还差 ${shortHerb} 株`, 'herb', shortHerb)
+    const gap = craftShortfall(cost)
+    const stoneShort = stoneLimited && stoneRounds === 0 && gap.stone.m > 0
+    // 只缺草时把缺口报成株数:玩家拿着这个数去坊市,才知道该买几摞。
+    // 石差同报,避免「只缺石」时仍写一句笼统的「未足」。
+    if (stoneShort && gap.herb > 0) {
+      return blocked(craftShortToast({ herb: gap.herb, stone: formatGN(gap.stone) }), 'both', gap.herb, gap.stone)
+    }
+    if (stoneShort) return blocked(craftShortToast({ stone: formatGN(gap.stone) }), 'stone', undefined, gap.stone)
+    return blocked(craftShortToast({ herb: gap.herb }), 'herb', gap.herb)
   }
   return { rounds, herb: rounds * cost.herb, stone: mulN(cost.stone, rounds) }
 }
@@ -287,8 +305,17 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
     if (!quiet) ui.toast(able.blockers[0]!, 'warn')
     return { ok: false, count: 0, aborted: true }
   }
-  if (!resources.hasHerb(cost.grade, cost.herb) || !resources.hasStone(cost.stone)) {
-    if (!quiet) ui.toast(craftShortToast(), 'warn')
+  const gap = craftShortfall(cost)
+  if (gap.herb > 0 || gap.stone.m > 0) {
+    if (!quiet) {
+      ui.toast(
+        craftShortToast({
+          herb: gap.herb,
+          ...(gap.stone.m > 0 ? { stone: formatGN(gap.stone) } : {})
+        }),
+        'warn'
+      )
+    }
     return { ok: false, count: 0, aborted: true }
   }
 
