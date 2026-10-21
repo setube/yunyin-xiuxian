@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 294,
+  "round": 296,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T13:33:29+00:00",
+  "updated_at": "2026-10-21T14:23:40+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20816,6 +20816,158 @@
       "source": "fault injection: lore notification removed; askDisabled/focus disabled reverted",
       "summary": "删掉读通通知后新用例转红;问卦恢复只看卦在身、点化禁用写死 false 后 uiLayering 守卫转红;均已恢复。",
       "confidence": 1
+    },
+    "TASK-387": {
+      "id": "TASK-387",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T13:47:41+00:00",
+      "updated_at": "2026-10-21T13:48:38+00:00",
+      "touched_round": 295,
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 0.98,
+      "effort": 1,
+      "title": "丹方熟练度文案漏两条来路",
+      "description": "丹方详情的熟练度提示只写开炉与研读,藏经阁被动钻研与炸炉长记性未点名;机制实际三路都会积累,文案需与结算同向并由静态判据钉住。"
+    },
+    "TASK-388": {
+      "id": "TASK-388",
+      "type": "task",
+      "status": "abandoned",
+      "version": 4,
+      "created_at": "2026-10-21T13:47:47+00:00",
+      "updated_at": "2026-10-21T13:48:49+00:00",
+      "touched_round": 295,
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 0.98,
+      "effort": 1,
+      "title": "丹方熟练度文案漏两条来路",
+      "description": "丹方详情的熟练度提示只写开炉与研读,藏经阁被动钻研与炸炉长记性未点名;机制实际三路都会积累,文案需与结算同向并由静态判据钉住。"
+    },
+    "ISS-944": {
+      "id": "ISS-944",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T13:48:06+00:00",
+      "updated_at": "2026-10-21T13:48:11+00:00",
+      "touched_round": 295,
+      "title": "丹方熟练度提示遗漏真实来路",
+      "description": "熟练度可由成功开炉、炸炉与藏经阁被动钻研三路积累;丹药详情只泛称开炉与研读,玩家无法知道挂机也在涨、炸炉也在涨。"
+    },
+    "EV-957": {
+      "id": "EV-957",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T13:48:17+00:00",
+      "updated_at": "2026-10-21T13:48:17+00:00",
+      "touched_round": 295,
+      "source": "src/core/pillService.ts:315,332;src/core/loreService.ts:339-342",
+      "title": "三路熟练度增量与文案同向",
+      "description": "成功开炉 +0.01、炸炉 +0.02、studyTick 按剩余 room 补熟;文案现点名开炉、藏经阁钻研与炸炉三路,dataTextAudit 钉住。",
+      "confidence": 1.0
+    },
+    "HYP-147": {
+      "id": "HYP-147",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T13:48:22+00:00",
+      "updated_at": "2026-10-21T13:48:22+00:00",
+      "touched_round": 295,
+      "confidence": 0.97,
+      "title": "熟练度提示与结算三路同源",
+      "description": "把三路来源逐一点名并加静态守卫,可让界面承诺与 pillService/loreService 的真实增量保持一致,防止日后回潮为单路或假承诺。"
+    },
+    "CHG-496": {
+      "id": "CHG-496",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-21T13:48:34+00:00",
+      "updated_at": "2026-10-21T13:52:02+00:00",
+      "touched_round": 295,
+      "title": "丹方熟练度文案三路同向",
+      "commit": "441061f",
+      "description": "丹方详情把成功开炉、藏经阁被动钻研与炸炉三条熟练度来路全部点名,dataTextAudit 增静态判据;CHANGELOG 记入修复。"
+    },
+    "ISS-945": {
+      "id": "ISS-945",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T14:23:07+00:00",
+      "updated_at": "2026-10-21T14:23:07+00:00",
+      "touched_round": 296,
+      "title": "突破准备倒计时借五秒心跳刷新",
+      "description": "BreakthroughCard 调息倒计时与坐满转就绪只随 totalPlaySec 更新,该字段每 5 秒才推进一次,倒计时最多滞后 5 秒。"
+    },
+    "ISS-946": {
+      "id": "ISS-946",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T14:23:12+00:00",
+      "updated_at": "2026-10-21T14:23:12+00:00",
+      "touched_round": 296,
+      "title": "卦已过期但缓存判据仍拒绝再问",
+      "description": "askDivination 读 activeDivination 缓存,而该 computed 仅随 totalPlaySec 五秒心跳重算;卦到期后的心跳间隙仍报一事不二卜,并且界域志手写倒计时会跳宽。"
+    },
+    "HYP-148": {
+      "id": "HYP-148",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T14:23:17+00:00",
+      "updated_at": "2026-10-21T14:23:17+00:00",
+      "touched_round": 296,
+      "confidence": 0.98,
+      "title": "显式时刻注入可统一到期判据",
+      "description": "把突破准备、卦象在身与界面倒计时统一改为接收 gameNow/useNow 的显式时刻,可消除对 totalPlaySec 五秒心跳的依赖,并让暂停冻结语义保持一致。"
+    },
+    "TASK-389": {
+      "id": "TASK-389",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T14:23:22+00:00",
+      "updated_at": "2026-10-21T14:23:22+00:00",
+      "touched_round": 296,
+      "category": "correctness",
+      "severity": 0.72,
+      "confidence": 0.98,
+      "effort": 2,
+      "title": "统一到期状态为一秒游戏钟",
+      "description": "让突破准备和卦象状态接受显式游戏时刻,界面统一 useNow 与 formatCountdown,并覆盖心跳间隙的可达回归。"
+    },
+    "EV-958": {
+      "id": "EV-958",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T14:23:28+00:00",
+      "updated_at": "2026-10-21T14:23:28+00:00",
+      "touched_round": 296,
+      "confidence": 1,
+      "source": "fbb89b5;src/core/divination.spec.ts:245-262;src/core/earlyGameService.spec.ts:239-253",
+      "title": "心跳间隙再问卦与调息边界均转绿",
+      "description": "新增用例在系统时间越过 expiresAt 后不推进 totalPlaySec,新实现成功再问;breakthroughPrepState(readyAt) 即时转就绪。全量 3269 过 / 0 败,构建与 17 页冒烟通过。"
+    },
+    "CHG-497": {
+      "id": "CHG-497",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T14:23:35+00:00",
+      "updated_at": "2026-10-21T14:23:35+00:00",
+      "touched_round": 296,
+      "commit": "fbb89b5",
+      "title": "到期倒计时改读每秒游戏钟",
+      "description": "突破准备与卦象状态接收显式游戏时刻;BreakthroughCard 与 RealmCodexView 改用 useNow,卦象剩余时间走 formatCountdown;补可达回归与界面静态守卫。"
     }
   },
   "edges": [
@@ -30857,6 +31009,72 @@
       "to": "HYP-116",
       "type": "validates",
       "created_at": "2026-10-21T13:33:10+00:00"
+    },
+    {
+      "from": "TASK-387",
+      "to": "ISS-944",
+      "type": "addresses",
+      "created_at": "2026-10-21T13:48:11+00:00"
+    },
+    {
+      "from": "EV-957",
+      "to": "HYP-147",
+      "type": "validates",
+      "created_at": "2026-10-21T13:48:22+00:00"
+    },
+    {
+      "from": "CHG-496",
+      "to": "TASK-387",
+      "type": "implements",
+      "created_at": "2026-10-21T13:48:34+00:00"
+    },
+    {
+      "from": "CHG-496",
+      "to": "ISS-944",
+      "type": "resolves",
+      "created_at": "2026-10-21T13:48:34+00:00"
+    },
+    {
+      "from": "TASK-388",
+      "to": "ISS-944",
+      "type": "addresses",
+      "created_at": "2026-10-21T13:48:49+00:00"
+    },
+    {
+      "from": "TASK-389",
+      "to": "ISS-945",
+      "type": "addresses",
+      "created_at": "2026-10-21T14:23:40+00:00"
+    },
+    {
+      "from": "TASK-389",
+      "to": "ISS-946",
+      "type": "addresses",
+      "created_at": "2026-10-21T14:23:40+00:00"
+    },
+    {
+      "from": "EV-958",
+      "to": "HYP-148",
+      "type": "validates",
+      "created_at": "2026-10-21T14:23:40+00:00"
+    },
+    {
+      "from": "CHG-497",
+      "to": "TASK-389",
+      "type": "implements",
+      "created_at": "2026-10-21T14:23:40+00:00"
+    },
+    {
+      "from": "CHG-497",
+      "to": "ISS-945",
+      "type": "resolves",
+      "created_at": "2026-10-21T14:23:40+00:00"
+    },
+    {
+      "from": "CHG-497",
+      "to": "ISS-946",
+      "type": "resolves",
+      "created_at": "2026-10-21T14:23:40+00:00"
     }
   ]
 }
