@@ -7,7 +7,7 @@ import { bountyRemainingSec } from '@/core/bountyService'
 import { formatGN } from '@/utils/format'
 import { pillDef } from '@/data/pills'
 import { HERB_GRADES } from '@/data/herbGrades'
-import { useNow } from '@/composables/useNow'
+import { useWallNow } from '@/composables/useWallClock'
 
 /** 一纸悬赏摊成订单视图;ready 判「此刻交不交得起」 */
 export interface BountyRow {
@@ -44,9 +44,9 @@ export function useBountyRows() {
    * 只有换单倒计时需要秒针;订单投影只依赖 orders 与存货。
    *
    * 此前整页共用一个 `now`,秒针一跳就把悬赏板整表重算一遍;迁出后把两者拆开:
-   * 换单读数走 useNow(随游戏心跳暂停冻结),ready 只随存货/订单变化。
+   * 换单读数走墙钟(暂停时也照走),ready 只随存货/订单变化。
    */
-  const now = useNow()
+  const now = useWallNow()
 
   const bountyRemaining = computed(() => bountyRemainingSec(bounty.bountyAt, now.value))
 

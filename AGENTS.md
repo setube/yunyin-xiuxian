@@ -32,13 +32,13 @@ src/ui/    展示层字符串/图标注册（非逻辑）
 | 路径 | 用途 |
 |---|---|
 | `src/data/` | 静态声明式游戏内容（唯一事实源）|
-| `src/core/` | 游戏逻辑 + 215 个同目录 `*.spec.ts` |
+| `src/core/` | 游戏逻辑 + 217 个同目录 `*.spec.ts` |
 | `src/stores/` | Pinia 状态（18 持久化 + ui 临时）|
 | `src/ui/` | 展示层字符串 / 图标 | 
 | `src/utils/` | 大数、格式化、随机、存储、存档守卫 |
 | `src/types/` | 领域类型 |
 | `src/router/` | hash 路由 + 首启流程守卫 |
-| `src/composables/` | useNow 等 |
+| `src/composables/` | useNow / useWallClock 等 |
 | `scripts/` | test-report.mjs、ui-smoke.mjs、layout-check.mjs、offline-check.mjs、fonts/build-kai-font.py |
 | `.github/workflows/` | CI（PR 检查、发布 Pages/PWA/Docker/Electron/APK）|
 | `.planning/ril/` | RIL 图（工程记忆，勿手改 JSON）|
@@ -113,7 +113,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 
 ## Testing & QA
 
-- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 300 个 spec：core 216、ui 40、stores 21、utils 10、data 8、composables 4、router 1）。用例条数不写进文档(`bun run test:report` 每次自己打)。
+- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 302 个 spec：core 217、ui 40、stores 21、utils 10、data 8、composables 5、router 1）。用例条数不写进文档(`bun run test:report` 每次自己打)。
 - **运行**：全量 `bun run test`；分桶报告 `bun run test:report`。
 - **红线测试（改了相关逻辑必须保住）**：
   - `storeResilience.spec.ts` — 持久化 store 必须带 `sanitize`，且经恶意损坏用例。

@@ -4,8 +4,9 @@
 
 ## [Unreleased]
 
+- 修复:**坊市墙钟倒计时不再随引擎暂停冻结** —— 寄卖剩余时辰与悬赏换新单本按墙钟结算、离线照走,拆分时却误接了随心跳暂停的 `useNow`:重置 / 导入确认窗一开,这两处读数便停在原地,回来时比实际结算晚一截。现新增 `useWallNow`(不读 `enginePaused`,挂载起表、卸载收表),两处改走墙钟;`dataTextAudit` 增判据钉住坊市墙钟域不得再引 `useNow` / `useGameClock`。
 - 调整:**坊市悬赏板迁 `BountyBoardSection`** —— 换单倒计时、四类订单、贡器点选清单与展开态本来都压在坊市页里,连「页签亮不亮圆点」都得让宿主再摊一遍订单;现整段迁入 `components/market/BountyBoardSection.vue`,订单投影收进 `composables/useBountyRows.ts`,板上的「交货」与页签圆点读同一份 ready 判据,换单收起清单随本体。`MarketView` 收至 95 行,只剩门面、切签、寄卖收割与货架刷新。
-- 调整:**坊市售出段迁 `MarketSellSection`** —— 寄卖格的剩余时辰、背包逐件寄卖价、材料按批售与丹药逐味售,本来都跟购货架挤在同一个 469 行页面里,三套价签各自读一遍 store;现整段迁入 `components/market/MarketSellSection.vue`(自取 store,寄卖倒计时改走 `useNow` 暂停守卫),宿主只切签,`MarketView` 收至 289 行。判据随本体改指子文件,并反断言宿主不再自带四类定价调用。
+- 调整:**坊市售出段迁 `MarketSellSection`** —— 寄卖格的剩余时辰、背包逐件寄卖价、材料按批售与丹药逐味售,本来都跟购货架挤在同一个 469 行页面里,三套价签各自读一遍 store;现整段迁入 `components/market/MarketSellSection.vue`(自取 store,寄卖倒计时走墙钟),宿主只切签,`MarketView` 收至 289 行。判据随本体改指子文件,并反断言宿主不再自带四类定价调用。
 - 调整:**坊市货架段迁 `MarketShelfSection`** —— 六格货的卡片投影、买下回执与「深链续草」的高亮/滚动本来都挂在 664 行的坊市页里,连「换货后高亮序号会指错格」都得靠一条 watch 兜着;现整段迁入 `components/market/MarketShelfSection.vue`(自取 store,落点重算与换货重定位随本体),宿主只把签切到「购」,`MarketView` 收至 469 行。
 - 修复:**离线镇压达成的回执也报产出账** —— 在线达成时已改报 `suppressRateLine` 的「灵石 X/时 · 灵草 Y/时」,离线普通战与首领战两处却仍只喊一句「此地将自动产出资源」:同一件大事两套口径,玩家算不出挂机一夜在这一区值多少。现两处改走同一份产出行(含兴衰系数),`offlineParity` 增补一条判据钉住两处都报数且空话不许回潮。
 - 调整:**战斗情报迁 `BattleIntelPanel`** —— 战后统计行、本战所得、此物所知与战斗分析四块只在这一处消费,却与逐行回放(血条/浮伤/因果环)和敌我半卡挤在同一个 581 行文件里;现整块迁入 `components/adventure/BattleIntelPanel.vue`(自取 store,战败自动展开与战果音随本体),`CombatPanel` 收至 401 行,只留回放引擎与敌我半卡。

@@ -86,7 +86,7 @@
   import { useInventoryStore } from '@/stores/inventory'
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
-  import { useNow } from '@/composables/useNow'
+  import { useWallNow } from '@/composables/useWallClock'
   import { pillDef, pillQualityColor } from '@/data/pills'
   import { HERB_GRADE_NAMES, HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
@@ -101,7 +101,8 @@
   const inventory = useInventoryStore()
   const player = usePlayerStore()
   const ui = useUiStore()
-  const now = useNow()
+  // 寄卖按墙钟到点入账,引擎暂停(重置 / 导入确认)时读数也必须照走。
+  const now = useWallNow()
 
   const consignSlots = MARKET_CONSIGN_SLOTS
   /**
