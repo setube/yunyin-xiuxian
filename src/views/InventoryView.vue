@@ -184,7 +184,7 @@
           {{ pillMasteryText(currentPill.def.id) }}
         </p>
         <!--
-          服前把顶满/将顶摊明(与 usePill 的 buffOverflowOf 同一判据):
+          服前把顶满/将顶摊明(与 usePill 的 buffOverflowOf 同一判据、同一把游戏时钟):
           顶满再服 = 白费,贴着上限只续到顶 —— 决策就地可见,不等服后 toast。
         -->
         <p
@@ -272,7 +272,7 @@
   import { bestEquipFor, equipAllBest, equipSetCombo, equipSetPreview, unequipAllEquipped } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { useBrewing } from '@/composables/useBrewing'
-  import { useWallNow } from '@/composables/useWallClock'
+  import { useNow } from '@/composables/useNow'
 
   import { formatGN, formatNum } from '@/utils/format'
   import { tint } from '@/utils/colorToken'
@@ -295,9 +295,9 @@
   const settings = useSettingsStore()
   const lore = useLoreStore()
   const cultivation = useCultivationStore()
-  // 丹药详情里的「顶满」判据随墙钟走:药效到期,置灰的「服 用」要自己亮回来。
-  // 用墙钟而非 useNow:暂停引擎(重置 / 导入确认)时,药效本身仍按墙钟走。
-  const now = useWallNow()
+  // 丹药详情里的「顶满」判据跟暂停结算同一把游戏时钟:确认窗开着时药效冻住,
+  // 恢复时引擎又顺延 endsAt;若读墙钟,按钮会先亮回来、恢复后再次变灰。
+  const now = useNow()
 
   type Tab = 'equip' | 'pill' | 'material' | 'artifact'
   const tab = ref<Tab>('equip')
