@@ -233,7 +233,7 @@ describe('离线的作用域 · 在途的东西一律不动', () => {
     expect(bondAfter.fate, '缘分被离线推进了 —— 关系不该自己长').toBe(bondBefore.fate)
     expect(bondAfter.trust, '信任被离线推进了').toBe(bondBefore.trust)
     expect(bondAfter.accord, '契合被离线推进了').toBe(bondBefore.accord)
-    expect(Number(bondAfter.opportunities), '机会点该随历练攒起来').toBeGreaterThanOrEqual(
+    expect(Number(bondAfter.opportunities), '机会点该随历练攒起来(不是只「没变少」)').toBeGreaterThan(
       Number(bondBefore.opportunities)
     )
 

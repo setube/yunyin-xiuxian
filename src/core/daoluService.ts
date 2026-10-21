@@ -361,6 +361,22 @@ export function pendingBondEvent(): BondEventDef | null {
   return id ? (bondEventDef(id) ?? null) : null
 }
 
+/**
+ * 离线用:只攒机会点,不抽事件。
+ *
+ * 在线每遇到一个历练情境(首胜、败北、击破首领)都会走一次 `offerBondEvent`,
+ * 由它推进机会点;离线整段没有「哪一刻」,不能替玩家抽一件待决之事
+ * —— 关系怎么走必须由玩家自己选 —— 但机会点本身是「走得多才有」的记账,
+ * 不该因为挂机就少攒。故这里只补记账,不碰缘分/信任/契合,也不设待决。
+ */
+export function gainBondOpportunities(n: number): void {
+  const player = usePlayerStore()
+  const b = player.bond
+  const add = Math.floor(n)
+  if (!b || b.fallen || b.departed || add <= 0) return
+  player.setBond({ ...b, opportunities: b.opportunities + add })
+}
+
 /** 她此刻是否会先自己表态 */
 export function herStance(ev: BondEventDef): string | null {
   const b = currentBond()

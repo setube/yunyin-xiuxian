@@ -49,6 +49,7 @@ import { placeContent } from './mortalWorldService'
 import { expFromSecs, stoneByTier } from './formulas'
 import { breakthroughInfo } from './breakthrough'
 import { checkSuppression, settleSuppressedRegions } from './suppress'
+import { gainBondOpportunities } from './daoluService'
 import { harvestMaterials, noteEnemy, noteEnemyMany, studyTick } from './loreService'
 import { recordLossBatch, isNemesis, markAvenged, NEMESIS_THRESHOLD } from './worldMemory'
 import { noteTaboo, vowResult } from './samsaraService'
@@ -371,6 +372,16 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         for (const reward of recordWinStreakBatch(wins, battles - wins)) {
           notes.push(`途中${streakRewardText(reward.streak, reward.stone, reward.wudao)}`)
         }
+        /**
+         * 道侣机会点与在线同源:在线每个历练情境走一次 `offerBondEvent`
+         * (首胜一次、败北一次;败一场这趟历练就中止),由它把机会点 +1。
+         * 离线整段从前一个都不攒 —— 「走得多才有机会」在挂机时成了空话。
+         *
+         * 这里只补**记账**:不抽事件、不碰缘分/信任/契合 —— 关系怎么走
+         * 必须由玩家亲手选。次数按在线情境数封顶(胜一次 + 败一次最多两回),
+         * 不按胜场数放大,免得挂一夜攒出几十个机会点。
+         */
+        gainBondOpportunities((wins > 0 ? 1 : 0) + (battles > wins ? 1 : 0))
         track('kills', wins)
         track('battles', battles)
         /**

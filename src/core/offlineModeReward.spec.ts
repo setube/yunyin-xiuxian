@@ -330,3 +330,32 @@ describe('离线历练也照在线记法宝破题', () => {
     expect(summary.notes.some(n => n.includes('破题')), '破题要在归来卷轴里说一声').toBe(true)
   })
 })
+
+/**
+ * 道侣机会点:在线每遇一个历练情境走一次 `offerBondEvent`,由它给机会点 +1;
+ * 离线整段从前一个都不攒 —— `offlineScope.spec` 里那句「机会点该随历练攒起来」
+ * 只断言了 ≥,没有真值;而「只补记账、不替玩家抽事件」是同一套边界。
+ */
+describe('离线只攒道侣机会点,不替玩家推进关系', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 0.5
+  })
+
+  it('整段历练攒下机会点,但缘分/信任/契合与待决事件一律不动', () => {
+    seedSession('normal')
+    meet('dl_qingli')
+    const player = usePlayerStore()
+    const before = { ...player.bond! }
+
+    const summary = settleOffline(Date.now())!
+    expect(summary.battles, '这一趟得真的交过手').toBeGreaterThan(0)
+
+    const after = player.bond!
+    expect(after.opportunities, '走过这么多场,机会点该攒起来').toBeGreaterThan(before.opportunities)
+    expect(after.fate, '缘分不该在缺席期间自己长').toBe(before.fate)
+    expect(after.trust, '信任不该在缺席期间自己长').toBe(before.trust)
+    expect(after.accord, '契合不该在缺席期间自己长').toBe(before.accord)
+    expect(after.pendingEventId, '不能替玩家决定遇上哪件事').toBe(before.pendingEventId)
+  })
+})
