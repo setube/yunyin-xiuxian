@@ -21,8 +21,14 @@
             {{ formatGN(reforgeCostVal.stone) }} · 尘×{{ reforgeCostVal.dust }}
           </span>
         </button>
-        <div v-if="sealCostVal" class="flex flex-1 items-center justify-center rounded-md border border-azure/20 bg-azure/5 px-2 py-2 text-azure">
-          封存一词 {{ formatGN(sealCostVal) }}
+        <div
+          v-if="sealCostVal"
+          class="flex flex-1 flex-col items-center justify-center rounded-md border border-azure/20 bg-azure/5 px-2 py-2 text-azure"
+        >
+          <span>封存一词 {{ formatGN(sealCostVal) }}</span>
+          <span v-if="sealGap && sealGap.m > 0" class="text-[9px] text-cinnabar tabular">
+            灵石尚差 {{ formatGN(sealGap) }}
+          </span>
         </div>
       </template>
       <template v-else>
@@ -78,7 +84,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useInventoryStore } from '@/stores/inventory'
   import { qualityDef } from '@/data/qualities'
-  import { reforgeEquipment, reforgeCost, reforgeShortfall, sealCapacity, sealCost } from '@/core/reforge'
+  import { reforgeEquipment, reforgeCost, reforgeShortfall, sealCapacity, sealCost, sealShortfall } from '@/core/reforge'
   import { reforgeShortToast } from '@/ui/reforgeText'
   import { formatGN } from '@/utils/format'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
@@ -86,7 +92,7 @@
   /**
    * 重铸与封存的页脚块 —— 自 EquipmentDetailDialog 迁入。
    *
-   * 价签与动作全读 core/reforge(reforgeCost / sealCost / sealCapacity),
+   * 价签与动作全读 core/reforge(reforgeCost / sealCost / sealShortfall / sealCapacity),
    * 条数上限读品质表,不在界面另写一份。重铸二步确认态按件 uid 记,换件自然失效。
    * 「自动重铸」的开关留在宿主:展开后的面板在正文里,与页脚不是同一个位置。
    */
@@ -112,6 +118,8 @@
     })}`
   })
   const sealCostVal = computed(() => (inst.value ? sealCost(inst.value) : null))
+  /** 封存还差多少灵石;封满为 null,付得起为 0 —— 与封存钮、服务拒因同源 */
+  const sealGap = computed(() => (inst.value ? sealShortfall(inst.value) : null))
   /** 这一件按品质能有多少条词条:上限来自品质表,不在界面里另写一份 */
   const affixCap = computed(() => (inst.value ? qualityDef(inst.value.quality).affixes[1] : 0))
 

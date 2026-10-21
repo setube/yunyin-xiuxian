@@ -22,6 +22,7 @@ import {
   reforgeableAffixIds,
   sealCapacity,
   sealCost,
+  sealShortfall,
   sealAffix,
   unsealAffix
 } from './reforge'
@@ -33,7 +34,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { useAutoReforge } from '@/composables/useAutoReforge'
-import { gn, sub } from '@/utils/gnum'
+import { gn, gnZero, sub } from '@/utils/gnum'
 import type { EquipmentInstance } from '@/types'
 
 const stoneOf = (g: { m: number; e: number }): number => g.m * Math.pow(10, g.e)
@@ -236,6 +237,18 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
     expect(text).not.toContain('灵石未足')
   })
 
+  it('封存缺口与扣款同源:付不起时给出实际石差,够时归零,封满无价', () => {
+    const inst: EquipmentInstance = { ...base, uid: 'seal-gap' }
+    useInventoryStore().items = [inst]
+    const res = useResourcesStore()
+    const cost = sealCost(inst)!
+    res.spiritStone = sub(cost, gn(7))
+    expect(sealShortfall(inst)!.m).toBeCloseTo(7, 6)
+    res.spiritStone = cost
+    expect(sealShortfall(inst)).toEqual(gnZero())
+    expect(sealShortfall({ ...inst, sealedAffixIds: ['atk1'] })).toBeNull()
+  })
+
   /**
    * 缺哪一样就报哪一样(议题 #130 同族):灵石来自历练与悬赏,器灵尘来自分解,
    * 两条去路相反。一句「灵石或器灵尘未足」会把玩家指得两头都跑。
@@ -388,6 +401,21 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     expect(footer, '缺尘也单独报数').toContain('器灵尘尚差 ${s.dust}')
     expect(footer, '提示与结算同源').toContain('reforgeShortfall(reforgeCostVal.value)')
     expect(footer, 'toast 也带同一份差额').toContain('stone: formatGN(s.stone)')
+  })
+
+  /**
+   * 封存钮此前只查「有没有价」,余额不足仍亮着,点下才弹石差。
+   * 故障注入:把 :disabled 或 sealShortfall 删掉、钮面改回只写「封存」→ 本条红。
+   */
+  it('封存钮按石差置灰,钮面与页脚都写出实际尚差', () => {
+    const seal = readFileSync(resolve(__dirname, '../components/equipment/EquipSealPanel.vue'), 'utf8')
+    const footer = readFileSync(resolve(__dirname, '../components/equipment/EquipReforgeFooter.vue'), 'utf8')
+    expect(seal, '封存钮读同一份石差').toContain('sealShortfall(inst.value)')
+    expect(seal, '付不起时置灰').toContain(':disabled="sealShort"')
+    expect(seal, '钮面直接写实际石差').toContain('`差${formatGN(sealGap!)}`')
+    expect(seal, '无障碍标签也报石差').toContain('灵石尚差 ${formatGN(sealGap.value!)}')
+    expect(footer, '页脚价签同读石差').toContain('sealShortfall(inst.value)')
+    expect(footer, '页脚就地写实际尚差').toContain('灵石尚差 {{ formatGN(sealGap) }}')
   })
 
   /**

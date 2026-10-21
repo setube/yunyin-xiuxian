@@ -221,10 +221,20 @@ export function sealCost(inst: EquipmentInstance): GNum | null {
   return stoneByTier(inst.tier, SEAL_STONE_BASE * (sealed.length + 1))
 }
 
+/**
+ * 封存还差多少灵石:封满(无价)为 null,付得起为 0。
+ * 封存钮、页脚价签与服务拒因同读这一处 —— 界面不再只判「有没有价」而漏看余额。
+ */
+export function sealShortfall(inst: EquipmentInstance): GNum | null {
+  const cost = sealCost(inst)
+  if (!cost) return null
+  const resources = useResourcesStore()
+  return resources.hasStone(cost) ? gnZero() : subClamp(cost, resources.spiritStone)
+}
+
 /** 封存一个词条:重铸永不替换之 */
 export function sealAffix(uid: string, affixId: string): boolean {
   const inventory = useInventoryStore()
-  const resources = useResourcesStore()
   const ui = useUiStore()
   const inst = inventory.findItem(uid)
   if (!inst) return false
@@ -235,11 +245,12 @@ export function sealAffix(uid: string, affixId: string): boolean {
     ui.toast(sealMustLeaveToast(), 'warn')
     return false
   }
-  if (!resources.hasStone(cost)) {
-    ui.toast(sealShortToast(formatGN(subClamp(cost, resources.spiritStone))), 'warn')
+  const gap = sealShortfall(inst)
+  if (gap && gap.m > 0) {
+    ui.toast(sealShortToast(formatGN(gap)), 'warn')
     return false
   }
-  resources.spendStone(cost)
+  useResourcesStore().spendStone(cost)
   inventory.replaceItem({ ...inst, sealedAffixIds: [...(inst.sealedAffixIds ?? []), affixId] })
   const name = affixDef(affixId)?.name ?? '词条'
   ui.toast(sealDoneToast(name), 'success')
