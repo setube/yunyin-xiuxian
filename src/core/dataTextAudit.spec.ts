@@ -763,6 +763,58 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(market, '不再用笼统的灵石不足作按钮文案').not.toContain("? '灵石不足'")
   })
 
+  it('天界道源付不起时按钮置灰并写出实际差额', () => {
+    // 天界各册共用 daoSourceShortfall;付不起仍可点,等于让玩家拿一次点击去试余额。
+    // 故障注入:把任一处的 `daoSourceShortText(` 换回 `道源不足`,或删掉 :disabled → 本条红。
+    const trial = src('../components/celestial/TrialPanel.vue')
+    const expedition = src('../components/celestial/ExpeditionPanel.vue')
+    const marks = src('../components/celestial/MarksPanel.vue')
+    const furnace = src('../components/celestial/FurnaceDialog.vue')
+    const souls = src('../views/SoulsView.vue')
+    for (const [name, view] of [
+      ['试炼册', trial],
+      ['远征册', expedition],
+      ['道痕册', marks],
+      ['天道熔炉', furnace],
+      ['器魂', souls]
+    ] as const) {
+      expect(view, `${name}该用同一份道源差额`).toContain('daoSourceShortText(')
+      expect(view, `${name}不许退回笼统道源不足`).not.toContain('道源不足')
+    }
+    expect(trial, '今日天道付不起要置灰').toContain('endgame.daoSource < CHALLENGE_ENTRY_COST')
+    expect(trial, '天道变数付不起要置灰').toContain(':disabled="endgame.daoSource < MUTATION_ENTRY_COST"')
+    expect(trial, '天道试炼付不起要置灰').toContain(':disabled="endgame.daoSource < trial.entryCost"')
+    expect(expedition, '特殊世界付不起要置灰').toContain('endgame.daoSource < world.entryCost')
+    expect(expedition, '虚界重摇付不起要置灰').toContain('endgame.daoSource < VOID_REROLL_COST')
+    expect(marks, '道痕重写付不起要置灰').toContain(':disabled="endgame.daoSource < REWRITE_ENTRY_COST"')
+    expect(furnace, '道果付不起要置灰').toContain(':disabled="fruitShort.short.m > 0"')
+  })
+
+  it('器魂与道童付不起时置灰并写出实际差额', () => {
+    const souls = src('../views/SoulsView.vue')
+    expect(souls, '凝炼入口读同一份道源缺口').toContain('daoSourceShortfall(SOUL_REFINE_COST, endgame.daoSource)')
+    expect(souls, '入炉与确认凝炼都按缺口置灰').toMatch(
+      /:disabled="refineShort\.short\.m > 0"[\s\S]{0,500}?:disabled="refineShort\.short\.m > 0"/
+    )
+    expect(souls, '入炉按钮就地写尚差').toContain('入 炉(尚差${daoSourceShortText(SOUL_REFINE_COST, endgame.daoSource)})')
+
+    const apprentice = src('../views/ApprenticeView.vue')
+    expect(apprentice, '道童报价与缺口同源').toContain('apprenticeRecruitShortfall(player.major, resources.spiritStone)')
+    expect(apprentice, '招募付不起要置灰').toContain(':disabled="slotsFull || !canAffordRecruit"')
+    expect(apprentice, '招募按钮就地写实际差额').toContain('尚差 ${formatGN(recruitShort)} 灵石')
+    expect(apprentice, '招募失败 toast 也报实际差额').toContain('灵石尚差 ${formatGN(recruitShort.value)}')
+  })
+
+  it('强化缺料时置灰并写出实际差额', () => {
+    const detail = src('../components/equipment/EquipmentDetailDialog.vue')
+    const panel = src('../components/equipment/UpgradePanel.vue')
+    expect(detail, '强化按钮按缺口置灰').toContain(':disabled="upShort !== null"')
+    expect(detail, '强化按钮就地写石差/尘差').toContain('强 化(石差')
+    expect(detail, '强化按钮就地写尘差').toContain('强 化(尘差')
+    expect(panel, '强化面板列实际缺口').toContain('器灵尘尚差 {{ gap.dust }}')
+    expect(panel, '强化面板列灵石缺口').toContain('灵石尚差 {{ formatGN(gap.stone) }}')
+  })
+
   /**
    * 只缺灵石时同理:灵石只能从历练/悬赏挣,坊市是花灵石的地方。
    * 若给「去坊市」就是把玩家指反了方向 —— 那里只会再缺一次。

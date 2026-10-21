@@ -10,9 +10,9 @@
         <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
           <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
         </p>
-        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull || !canAffordRecruit" :title="!canAffordRecruit ? '灵石不足' : undefined" @click="doRecruit">
+        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull || !canAffordRecruit" :title="!canAffordRecruit ? `灵石尚差 ${formatGN(recruitShort)}` : undefined" @click="doRecruit">
           收道童<span v-if="!slotsFull" class="ml-1 text-[10px]">
-            {{ canAffordRecruit ? `(${recruitCostLine})` : `(灵石不足:需 ${formatGN(recruitCost)},余 ${formatGN(resources.spiritStone)})` }}
+            {{ canAffordRecruit ? `(${recruitCostLine})` : `(尚差 ${formatGN(recruitShort)} 灵石)` }}
           </span>
         </button>
       </div>
@@ -96,8 +96,6 @@
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { formatCountdown, formatGN } from '@/utils/format'
-  import { stoneByTier } from '@/core/formulas'
-  import { maxTierForMajor } from '@/data/regions'
   import { pillDef } from '@/data/pills'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
@@ -106,13 +104,13 @@
   import {
     APPRENTICE_TASKS,
     APPRENTICE_MAX_LEVEL,
-    RECRUIT_COST_TIER_AMOUNT,
     apprenticeDef,
     apprenticeSlots,
     bondTitle,
     type ApprenticeSpec
   } from '@/data/apprentices'
   import type { TaskSpoils } from '@/core/apprenticeService'
+  import { apprenticeRecruitCost, apprenticeRecruitShortfall } from '@/core/apprenticeService'
   import { HERB_GRADE_NAMES, herbGradeOfMajor } from '@/data/herbGrades'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -130,8 +128,9 @@
   const slots = computed(() => apprenticeSlots(player.major))
   const slotsFull = computed(() => appr.apprentices.length >= slots.value)
   const hasIdle = computed(() => appr.apprentices.some(a => a.task === null))
-  const recruitCost = computed(() => stoneByTier(maxTierForMajor(player.major), RECRUIT_COST_TIER_AMOUNT))
+  const recruitCost = computed(() => apprenticeRecruitCost(player.major))
   const canAffordRecruit = computed(() => resources.hasStone(recruitCost.value))
+  const recruitShort = computed(() => apprenticeRecruitShortfall(player.major, resources.spiritStone))
   const recruitCostLine = computed(() => `${formatGN(recruitCost.value)} 灵石`)
 
   const apprenticesList = computed(() =>
@@ -189,7 +188,7 @@
   function doRecruit(): void {
     const result = appr.recruit(player.major)
     if (result === 'ok') ui.toast('新收一名道童入门', 'success')
-    else if (result === 'poor') ui.toast('灵石不足', 'warn')
+    else if (result === 'poor') ui.toast(`灵石尚差 ${formatGN(recruitShort.value)}`, 'warn')
     else ui.toast('门中已满', 'info')
   }
 

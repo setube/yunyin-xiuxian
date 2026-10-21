@@ -11,20 +11,18 @@ import { rng } from '@/utils/random'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
-import { stoneByTier } from '@/core/formulas'
 import { herbGradeOfMajor } from '@/data/herbGrades'
-import { maxTierForMajor } from '@/data/regions'
 import {
   APPRENTICE_MAX_LEVEL,
   APPRENTICES,
   BOND_TITLES,
-  RECRUIT_COST_TIER_AMOUNT,
   STARTER_APPRENTICE,
   apprenticeDef,
   apprenticeSlots,
   type ApprenticeSpec
 } from '@/data/apprentices'
 import {
+  apprenticeRecruitCost,
   apprenticeSpoils,
   apprenticeTaskSeconds,
   dispatchAllToNeed,
@@ -155,7 +153,7 @@ export const useApprenticeStore = defineStore(
       const owned = new Set(apprentices.value.map(a => a.archId))
       const pool = APPRENTICES.filter(x => x.id !== STARTER_APPRENTICE && !owned.has(x.id))
       if (pool.length === 0) return 'full'
-      const cost = stoneByTier(maxTierForMajor(major), RECRUIT_COST_TIER_AMOUNT)
+      const cost = apprenticeRecruitCost(major)
       if (!useResourcesStore().spendStone(cost)) return 'poor'
       apprentices.value.push({ uid: nextUid(), archId: rng.pick(pool).id, level: 1, bond: 0, task: null })
       return 'ok'

@@ -6,7 +6,7 @@
  * 可测、可复现)。天赋门类产出 ×TALENT_BONUS,不另立一套数值源。
  */
 import type { GNum } from '@/types'
-import { mulN } from '@/utils/gnum'
+import { mulN, subClamp } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { PILLS } from '@/data/pills'
 import { maxTierForMajor } from '@/data/regions'
@@ -14,10 +14,21 @@ import {
   APPRENTICE_TALENT_BONUS,
   DISPATCH_ADVENTURE_FIXED_SCORE,
   DISPATCH_NEED_TARGET,
+  RECRUIT_COST_TIER_AMOUNT,
   apprenticeDef,
   taskDef,
   type ApprenticeSpec
 } from '@/data/apprentices'
+
+/** 收一名道童的灵石价 —— 卡面报价、服务扣款与缺口共用这一处 */
+export function apprenticeRecruitCost(major: number): GNum {
+  return stoneByTier(maxTierForMajor(major), RECRUIT_COST_TIER_AMOUNT)
+}
+
+/** 收道童还差多少灵石 —— 卡面置灰、报价行与拒因共用这一处 */
+export function apprenticeRecruitShortfall(major: number, balance: GNum): GNum {
+  return subClamp(apprenticeRecruitCost(major), balance)
+}
 
 /** 一名已收弟子(与 store 里同形;类型放 service 供两端共用) */
 export interface OwnedApprentice {

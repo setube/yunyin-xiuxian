@@ -7,7 +7,23 @@
  * 本文件把它们逐一钉死,守的是导演口径「040/030/030/030」与历练固定兜底分。
  */
 import { describe, it, expect } from 'vitest'
-import { dispatchAllToNeed, needTargetDoor, type DispatchNeedStock } from './apprenticeService'
+import {
+  apprenticeRecruitCost,
+  apprenticeRecruitShortfall,
+  dispatchAllToNeed,
+  needTargetDoor,
+  type DispatchNeedStock
+} from './apprenticeService'
+import { sub } from '@/utils/gnum'
+
+describe('收道童 · 报价与缺口同源', () => {
+  it('只差一部分时报实际差额,余额够时缺口归零', () => {
+    const cost = apprenticeRecruitCost(6)
+    const gap = apprenticeRecruitShortfall(6, sub(cost, { m: 7, e: 0 }))
+    expect(gap.m).toBeGreaterThan(0)
+    expect(apprenticeRecruitShortfall(6, cost).m).toBe(0)
+  })
+})
 
 describe('各尽其长 · needTargetDoor 取最缺之门', () => {
   it('采药最缺时,取「采药」为唯一目标', () => {
