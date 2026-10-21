@@ -1096,7 +1096,10 @@ export const usePlayerStore = defineStore(
      * 推进与断绝都只是"把它设到哪一程",故只留这一个写入口。
      */
     function setEventChain(chainId: string, stage: number): void {
-      eventChains.value = { ...eventChains.value, [chainId]: Math.max(0, Math.floor(stage)) }
+      const chain = CHAINS.find(c => c.id === chainId)
+      if (!chain || !Number.isFinite(stage)) return
+      const next = Math.min(chain.stages.length, Math.max(0, Math.floor(stage)))
+      eventChains.value = { ...eventChains.value, [chainId]: next }
     }
 
     function incrementWinStreak(): void {
@@ -1118,6 +1121,9 @@ export const usePlayerStore = defineStore(
       rounds: number,
       damageTakenPct: number,
     ): void {
+      if (!regionDef(regionId) || !Number.isFinite(rounds) || rounds < 0) return
+      if (!Number.isFinite(damageTakenPct) || damageTakenPct < 0) return
+      const damage = Math.min(1, damageTakenPct)
       const current = regionStats.value[regionId] ?? {
         consecutiveWins: 0,
         totalFights: 0,
@@ -1130,7 +1136,7 @@ export const usePlayerStore = defineStore(
         consecutiveWins: win ? current.consecutiveWins + 1 : 0,
         totalFights: current.totalFights + 1,
         avgRounds: current.avgRounds * 0.7 + rounds * 0.3,
-        avgDamageTakenPct: current.avgDamageTakenPct * 0.7 + damageTakenPct * 0.3,
+        avgDamageTakenPct: current.avgDamageTakenPct * 0.7 + damage * 0.3,
         lastUpdateAt: Date.now(),
       }
 
@@ -1150,8 +1156,11 @@ export const usePlayerStore = defineStore(
       rounds: number,
       damageTakenPct: number,
     ): void {
+      if (!regionDef(regionId) || !Number.isFinite(rounds) || rounds < 0) return
+      if (!Number.isFinite(damageTakenPct) || damageTakenPct < 0) return
       const count = Math.floor(n)
-      if (count <= 0) return
+      if (!Number.isFinite(n) || count <= 0) return
+      const damage = Math.min(1, damageTakenPct)
       const current = regionStats.value[regionId] ?? {
         consecutiveWins: 0,
         totalFights: 0,
@@ -1166,7 +1175,7 @@ export const usePlayerStore = defineStore(
           consecutiveWins: current.consecutiveWins + count,
           totalFights: current.totalFights + count,
           avgRounds: current.avgRounds * decay + rounds * (1 - decay),
-          avgDamageTakenPct: current.avgDamageTakenPct * decay + damageTakenPct * (1 - decay),
+          avgDamageTakenPct: current.avgDamageTakenPct * decay + damage * (1 - decay),
           lastUpdateAt: Date.now(),
         },
       }
@@ -1174,6 +1183,7 @@ export const usePlayerStore = defineStore(
     }
 
     function suppressRegion(regionId: string): void {
+      if (!regionDef(regionId)) return
       if (!suppressedRegions.value.includes(regionId)) {
         suppressedRegions.value = [...suppressedRegions.value, regionId]
         suppressedSince.value = { ...suppressedSince.value, [regionId]: Date.now() }
@@ -1182,12 +1192,14 @@ export const usePlayerStore = defineStore(
 
     /** 记下镇压资格(幂等) —— 资格一旦取得便不再失,故与收益开关分开存 */
     function markSuppressQualified(regionId: string): void {
+      if (!regionDef(regionId)) return
       if (!suppressQualified.value.includes(regionId)) {
         suppressQualified.value = [...suppressQualified.value, regionId]
       }
     }
 
     function unsuppressRegion(regionId: string): void {
+      if (!regionDef(regionId)) return
       suppressedRegions.value = suppressedRegions.value.filter(id => id !== regionId)
       const next = { ...suppressedSince.value }
       delete next[regionId]
@@ -1204,6 +1216,7 @@ export const usePlayerStore = defineStore(
     // ---------- Phase 30.9 世界记忆 ----------
     /** 记录一次净胜(用于区域兴衰的累计胜场) */
     function recordRegionWin(regionId: string): void {
+      if (!regionDef(regionId)) return
       regionWins.value = { ...regionWins.value, [regionId]: (regionWins.value[regionId] ?? 0) + 1 }
     }
 
@@ -1331,7 +1344,7 @@ export const usePlayerStore = defineStore(
      * 镇压复聚或世界记忆的计时。
      */
     function shiftTimedState(pausedMs: number): void {
-      if (pausedMs <= 0) return
+      if (!Number.isFinite(pausedMs) || pausedMs <= 0) return
       if (divination.value) {
         divination.value = { ...divination.value, expiresAt: divination.value.expiresAt + pausedMs }
       }
