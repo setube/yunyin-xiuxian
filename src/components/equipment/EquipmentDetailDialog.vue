@@ -19,17 +19,8 @@
         </button>
       </div>
       <p class="mt-2 text-[12px] leading-relaxed text-ink-faint">{{ template.desc }}</p>
-      <!-- 装备标记(玩家反馈:同名装备想按不同流派区分) -->
-      <div class="mt-2 flex items-center gap-2">
-        <input
-          v-model="noteDraft"
-          :maxlength="4"
-          placeholder="加个标记区分流派(≤4字)"
-          class="min-w-0 grow rounded-md border border-ink/15 bg-paper-deep/60 px-2 py-1 text-[12px] text-ink outline-none placeholder:text-ink-faint focus:border-azure"
-          @change="applyNote"
-        />
-        <button v-if="noteDraft" class="-my-1 flex min-h-[28px] items-center px-1 py-1 text-[11px] text-ink-faint active:opacity-60" @click="clearNote">清除</button>
-      </div>
+      <!-- 装备标记子面板:草稿随当前件走(EquipNotePanel) -->
+      <EquipNotePanel />
       <!--
         共鸣是机制而非数值,但装备卡片此前一个字都不提:玩家在「要不要换掉这件」时,
         看不到它身上拴着一条会断的机制(见 core/equipSet)。
@@ -167,35 +158,7 @@
           <template v-if="!isZero(salvage.stone)"> · 灵石 {{ formatGN(salvage.stone) }}</template>
         </span>
       </p>
-      <!-- 修士实验室:反事实换装推演(真仙可用) -->
-      <template v-if="canWhatIf">
-        <div class="ink-divider my-3" />
-        <button v-if="!whatIf" class="btn-ghost w-full !py-2 !text-[12px]" @click="runWhatIf">天机推演 · 若换此装,四天局面如何?</button>
-        <template v-else>
-          <p class="mb-1.5 font-kai text-[12px] tracking-[0.3em] text-ink-faint">天机推演</p>
-          <p class="text-[11px] text-ink-soft tabular">
-            构筑:{{ whatIf.buildBefore?.displayName ?? '未成路' }}
-            <span class="text-ink-faint">→</span>
-            {{ whatIf.buildAfter?.displayName ?? '流派散去' }}
-          </p>
-          <div class="mt-1 space-y-0.5">
-            <p v-for="w in whatIf.worlds" :key="w.name" class="flex justify-between text-[11px]">
-              <span class="text-ink-faint">{{ w.name }}</span>
-              <span class="tabular">
-                <span class="text-ink-faint">{{ w.beforeText }}</span>
-                <span class="mx-1 text-ink-faint">→</span>
-                <span :class="w.trend === 'up' ? 'text-jade' : w.trend === 'down' ? 'text-cinnabar' : 'text-ink-soft'">
-                  {{ w.afterText }}
-                </span>
-              </span>
-            </p>
-          </div>
-          <p v-if="whatIf.modChanges.length" class="mt-1 text-[10px] text-azure tabular">
-            主要变化:{{ whatIf.modChanges.map(c => `${c.label} ${c.delta > 0 ? '+' : ''}${Math.round(c.delta * 100)}%`).join(' · ') }}
-          </p>
-          <p class="mt-0.5 text-[10px] text-ink-faint">推演只述局面,不替你定夺。</p>
-        </template>
-      </template>
+      <EquipWhatIfPanel />
 
       <AutoReforgePanel v-if="autoOpen" :flow="reforgeFlow" />
     </div>
@@ -301,8 +264,6 @@
   import { decomposeEquipment, equipUpgradeCost, upgradeEquipment } from '@/core/forge'
   import { salvageOf, salvageRefundPhrase } from '@/core/salvage'
   import { detectBuild } from '@/core/buildDetect'
-  import { endgameUnlocked } from '@/core/endgameService'
-  import { whatIfEquip, type WhatIfReport } from '@/core/lab'
   import { reforgeEquipment, sealAffix, sealCapacity, sealCost, unsealAffix } from '@/core/reforge'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
@@ -318,6 +279,8 @@
   import QualityTag from '@/components/common/QualityTag.vue'
   import AutoReforgePanel from './AutoReforgePanel.vue'
   import UpgradePanel from './UpgradePanel.vue'
+  import EquipNotePanel from './EquipNotePanel.vue'
+  import EquipWhatIfPanel from './EquipWhatIfPanel.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import AffixTransferPanel from './AffixTransferPanel.vue'
   import AffixTransferFooter from './AffixTransferFooter.vue'
@@ -332,28 +295,6 @@
 
   const inst = computed(() => (ui.equipDetailUid ? inventory.findItem(ui.equipDetailUid) : undefined))
 
-  /** 装备标记(玩家反馈:同名装备想按不同流派区分)。草稿随当前件走,空串 = 清除 */
-  const noteDraft = ref('')
-  watch(
-    () => inst.value?.note,
-    (n, old) => {
-      // 只在来源变化时同步草稿;自己写回(applyNote)引发的同一值回灌不迭代
-      if (n === noteDraft.value || n === old) return
-      noteDraft.value = n ?? ''
-    },
-    { immediate: true }
-  )
-
-  function applyNote(): void {
-    if (!inst.value) return
-    const note = noteDraft.value.trim()
-    inventory.replaceItem({ ...inst.value, note: note.length > 0 ? note.slice(0, 4) : undefined })
-  }
-
-  function clearNote(): void {
-    noteDraft.value = ''
-    applyNote()
-  }
   const template = computed(() => (inst.value ? equipmentTemplate(inst.value.templateId) : undefined))
   const resolved = computed(() => (inst.value ? resolveEquipStats(inst.value) : null))
   const isEquipped = computed(() => (inst.value && template.value ? inventory.equipped[template.value.slot] === inst.value.uid : false))
@@ -405,18 +346,6 @@
   function doReforge(): void {
     if (inst.value) reforgeEquipment(inst.value.uid)
   }
-
-  // ---- 修士实验室:反事实换装推演 ----
-  const whatIf = ref<WhatIfReport | null>(null)
-  const canWhatIf = computed(() => endgameUnlocked() && !isEquipped.value && inst.value !== undefined)
-
-  function runWhatIf(): void {
-    if (inst.value) whatIf.value = whatIfEquip(inst.value.uid)
-  }
-
-  watch(inst, () => {
-    whatIf.value = null
-  })
 
   // ---- 词条转移(议题 #22):本件作源件,挑一条转到另一件上 ----
   const transferOpen = ref(false)
