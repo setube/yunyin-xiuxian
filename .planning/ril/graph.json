@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 312,
+  "round": 313,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T19:49:35+00:00",
+  "updated_at": "2026-10-21T20:25:01+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -22549,6 +22549,140 @@
       "touched_round": 312,
       "commit": "f9640fa",
       "description": "searchBuildsAsync 支持 shouldStop 协作取消，流派实验室卸载即停止检索。"
+    },
+    "TASK-424": {
+      "id": "TASK-424",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:14:47+00:00",
+      "updated_at": "2026-10-21T20:24:38+00:00",
+      "touched_round": 313,
+      "title": "离线结算收割道童",
+      "category": "correctness",
+      "severity": 0.9,
+      "confidence": 1,
+      "effort": 1.5,
+      "priority_score": 9
+    },
+    "ISS-979": {
+      "id": "ISS-979",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:15:01+00:00",
+      "updated_at": "2026-10-21T20:25:01+00:00",
+      "touched_round": 313,
+      "title": "离线归来不收割已完工道童",
+      "severity": 0.9,
+      "detail": "settleOffline 未调用 collectFinished;仅 ApprenticeView 收割,归来先转世会清空未领取产出"
+    },
+    "COMP-044": {
+      "id": "COMP-044",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:15:07+00:00",
+      "updated_at": "2026-10-21T20:15:07+00:00",
+      "touched_round": 313,
+      "title": "离线结算",
+      "path": "src/core/offline.ts"
+    },
+    "COMP-045": {
+      "id": "COMP-045",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:23:41+00:00",
+      "updated_at": "2026-10-21T20:23:41+00:00",
+      "touched_round": 313,
+      "title": "行囊与法宝库",
+      "path": "src/stores/inventory.ts"
+    },
+    "ISS-980": {
+      "id": "ISS-980",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:23:48+00:00",
+      "updated_at": "2026-10-21T20:24:38+00:00",
+      "touched_round": 313,
+      "title": "法宝坏重数绕过满重并污染悟道点",
+      "severity": 0.72,
+      "detail": "inventory.sanitize 只修法宝 defId/去重,不修 level;字符串或 NaN 让 level>=ARTIFACT_MAX_LEVEL 为假,祭炼价 Math.pow 产出 NaN,upgradeArtifact 照报成功并把悟道点写成 NaN"
+    },
+    "TASK-425": {
+      "id": "TASK-425",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T20:23:51+00:00",
+      "updated_at": "2026-10-21T20:24:38+00:00",
+      "touched_round": 313,
+      "category": "correctness",
+      "severity": 0.72,
+      "confidence": 1,
+      "effort": 1,
+      "title": "法宝坏重数读档归一",
+      "description": "inventory.sanitize 用 asFiniteNumber + floor + clamp 修法宝 level;补行为测试与故障注入"
+    },
+    "EV-977": {
+      "id": "EV-977",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:24:15+00:00",
+      "updated_at": "2026-10-21T20:24:15+00:00",
+      "touched_round": 313,
+      "source": "src/stores/inventory.spec.ts sanitize:法宝坏重数归一后,祭炼不会把悟道点写成 NaN;故障注入去掉 level 归一该用例转红",
+      "title": "坏重数故障注入转红,恢复后 inventory 12 条绿",
+      "confidence": 1
+    },
+    "HYP-157": {
+      "id": "HYP-157",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:24:18+00:00",
+      "updated_at": "2026-10-21T20:24:18+00:00",
+      "touched_round": 313,
+      "confidence": 0.95,
+      "title": "法宝重数未在读档时修形会让坏档绕过上限并污染余额",
+      "description": "level 非有限数时,满重比较与 Math.pow 成本同时失真,服务层仍按成功路径扣账。"
+    },
+    "CHG-525": {
+      "id": "CHG-525",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:24:32+00:00",
+      "updated_at": "2026-10-21T20:24:32+00:00",
+      "touched_round": 313,
+      "commit": "01d27b8",
+      "description": "inventory.sanitize 归一法宝重数并夹到 0..ARTIFACT_MAX_LEVEL,补坏档祭炼回归与故障注入。"
+    },
+    "EV-978": {
+      "id": "EV-978",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:24:49+00:00",
+      "updated_at": "2026-10-21T20:24:49+00:00",
+      "touched_round": 313,
+      "source": "src/core/offlineLedger.spec.ts 离线归来先收割已完工道童;故障注入去掉 settleOffline collectFinished 该用例转红",
+      "title": "道童离线收割有行为回归",
+      "confidence": 1
+    },
+    "CHG-526": {
+      "id": "CHG-526",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T20:24:58+00:00",
+      "updated_at": "2026-10-21T20:24:58+00:00",
+      "touched_round": 313,
+      "commit": "d286616",
+      "description": "settleOffline 先 collectFinished 再转世,离线卷轴报道童产出;道童页与离线账共用 apprenticeText。"
     }
   },
   "edges": [
@@ -33352,6 +33486,60 @@
       "to": "ISS-978",
       "type": "resolves",
       "created_at": "2026-10-21T19:48:23+00:00"
+    },
+    {
+      "from": "TASK-424",
+      "to": "ISS-979",
+      "type": "addresses",
+      "created_at": "2026-10-21T20:15:04+00:00"
+    },
+    {
+      "from": "ISS-979",
+      "to": "COMP-044",
+      "type": "located_in",
+      "created_at": "2026-10-21T20:15:10+00:00"
+    },
+    {
+      "from": "TASK-425",
+      "to": "ISS-980",
+      "type": "addresses",
+      "created_at": "2026-10-21T20:23:54+00:00"
+    },
+    {
+      "from": "ISS-980",
+      "to": "COMP-045",
+      "type": "located_in",
+      "created_at": "2026-10-21T20:23:54+00:00"
+    },
+    {
+      "from": "CHG-525",
+      "to": "TASK-425",
+      "type": "implements",
+      "created_at": "2026-10-21T20:24:35+00:00"
+    },
+    {
+      "from": "CHG-525",
+      "to": "ISS-980",
+      "type": "resolves",
+      "created_at": "2026-10-21T20:24:35+00:00"
+    },
+    {
+      "from": "EV-977",
+      "to": "HYP-157",
+      "type": "validates",
+      "created_at": "2026-10-21T20:24:35+00:00"
+    },
+    {
+      "from": "CHG-526",
+      "to": "TASK-424",
+      "type": "implements",
+      "created_at": "2026-10-21T20:25:01+00:00"
+    },
+    {
+      "from": "CHG-526",
+      "to": "ISS-979",
+      "type": "resolves",
+      "created_at": "2026-10-21T20:25:01+00:00"
     }
   ]
 }
