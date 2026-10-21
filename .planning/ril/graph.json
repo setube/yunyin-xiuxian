@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 318,
+  "round": 319,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T21:51:12+00:00",
+  "updated_at": "2026-10-21T22:01:34+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23070,6 +23070,65 @@
       "touched_round": 318,
       "commit": "585c15e",
       "summary": "资源与丹匣公共写入只认有限正数,扣款拒绝负数与非有限值,灵石与熔炉同边界"
+    },
+    "ISS-987": {
+      "id": "ISS-987",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:01:08+00:00",
+      "updated_at": "2026-10-21T22:01:34+00:00",
+      "touched_round": 319,
+      "title": "跨世资源与时间累加接口未挡住非有限值和负数",
+      "severity": 0.85
+    },
+    "COMP-052": {
+      "id": "COMP-052",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:01:12+00:00",
+      "updated_at": "2026-10-21T22:01:12+00:00",
+      "touched_round": 319,
+      "name": "跨世资源与时间累加接口",
+      "path": "src/stores/endgame.ts,src/stores/player.ts,src/stores/dongfu.ts,src/stores/game.ts"
+    },
+    "TASK-432": {
+      "id": "TASK-432",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T22:01:12+00:00",
+      "updated_at": "2026-10-21T22:01:34+00:00",
+      "touched_round": 319,
+      "category": "correctness",
+      "severity": 0.85,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "收口道源、道果、宿慧、灵脉、寿元与游玩时长累加边界"
+    },
+    "EV-985": {
+      "id": "EV-985",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T22:01:17+00:00",
+      "updated_at": "2026-10-21T22:01:17+00:00",
+      "touched_round": 319,
+      "source": "src/stores/endgame.spec.ts; src/stores/player.rebirth.spec.ts; src/stores/dongfu.spec.ts; src/stores/game.spec.ts; bun run test:report 3382 pass / 0 fail",
+      "confidence": 0.99,
+      "summary": "回退守卫后 6 条断言转红,恢复后定向 104/104 通过,全量 3382/0"
+    },
+    "CHG-532": {
+      "id": "CHG-532",
+      "type": "change",
+      "status": "resolved",
+      "version": 3,
+      "created_at": "2026-10-21T22:01:17+00:00",
+      "updated_at": "2026-10-21T22:01:34+00:00",
+      "touched_round": 319,
+      "commit": "fe32d88",
+      "summary": "跨世资源与时间累加只认合法增量,道源扣款拒绝负数与非有限值"
     }
   },
   "edges": [
@@ -34077,6 +34136,30 @@
       "to": "ISS-986",
       "type": "resolves",
       "created_at": "2026-10-21T21:51:08+00:00"
+    },
+    {
+      "from": "TASK-432",
+      "to": "ISS-987",
+      "type": "addresses",
+      "created_at": "2026-10-21T22:01:21+00:00"
+    },
+    {
+      "from": "ISS-987",
+      "to": "COMP-052",
+      "type": "located_in",
+      "created_at": "2026-10-21T22:01:21+00:00"
+    },
+    {
+      "from": "CHG-532",
+      "to": "TASK-432",
+      "type": "implements",
+      "created_at": "2026-10-21T22:01:21+00:00"
+    },
+    {
+      "from": "CHG-532",
+      "to": "ISS-987",
+      "type": "resolves",
+      "created_at": "2026-10-21T22:01:21+00:00"
     }
   ]
 }
