@@ -55,6 +55,15 @@ export function upgradeShort(cost: { dust: number; stone: GNum }): 'stone' | 'du
   return null
 }
 
+/** 强化这一级两样各差多少 —— 界面价签、置灰与提示共用这一份 */
+export function upgradeShortfall(cost: { dust: number; stone: GNum }): { dust: number; stone: GNum } {
+  const resources = useResourcesStore()
+  return {
+    dust: Math.max(0, cost.dust - resources.dust),
+    stone: subClamp(cost.stone, resources.spiritStone)
+  }
+}
+
 export function upgradeEquipment(uid: string, opts: { quiet?: boolean } = {}): boolean {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
@@ -72,7 +81,8 @@ export function upgradeEquipment(uid: string, opts: { quiet?: boolean } = {}): b
   if (short) {
     if (!opts.quiet) {
       playSfx('warn')
-      ui.toast(upgradeShortToast(short), 'warn')
+      const gap = upgradeShortfall(cost)
+      ui.toast(upgradeShortToast(short, { stone: formatGN(gap.stone), dust: gap.dust }), 'warn')
     }
     return false
   }
@@ -150,7 +160,11 @@ export function upgradeEquipmentBatch(uid: string): number {
     // 故缺料判定必须看下一级的真实报价,不能拿计划金额充数。
     const next = equipUpgradeCost(uid)
     const short = next ? upgradeShort(next) : null
-    useUiStore().toast(plan.atCap ? upgradeCapToast() : upgradeShortToast(short ?? 'stone'), 'warn')
+    const gap = next ? upgradeShortfall(next) : { dust: 0, stone: gnZero() }
+    useUiStore().toast(
+      plan.atCap ? upgradeCapToast() : upgradeShortToast(short ?? 'stone', { stone: formatGN(gap.stone), dust: gap.dust }),
+      'warn'
+    )
     return 0
   }
   for (let i = 0; i < plan.levels; i += 1) upgradeEquipment(uid, { quiet: true })

@@ -10,11 +10,12 @@ import type { EquipmentInstance, GNum } from '@/types'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useQuestsStore } from '@/stores/quests'
+import { useUiStore } from '@/stores/ui'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { MAIN_QUESTS } from '@/data/quests'
 import { add, gn, sub, toNum } from '@/utils/gnum'
 import { upgradeCost } from './formulas'
-import { equipLevelCap, equipUpgradeCost, upgradeBatchPlan, upgradeEquipment, upgradeEquipmentBatch } from './forge'
+import { equipLevelCap, equipUpgradeCost, upgradeBatchPlan, upgradeEquipment, upgradeEquipmentBatch, upgradeShortfall } from './forge'
 
 /** 夹具一律凡品 rank 0 → upgradeCost 只吃 level/tier,折扣恒 0 */
 function mk(uid: string, level: number): EquipmentInstance {
@@ -126,6 +127,17 @@ describe('强化连升 · 批量账', () => {
     expect(useInventoryStore().findItem('f')!.level).toBe(0)
     expect(r.dust).toBe(0)
   })
+
+  it('缺料写实际差额:只差一点时不是报总价', () => {
+    seat(mk('g', 0))
+    const r = useResourcesStore()
+    const cost = costOf(0)
+    r.dust = Math.max(0, cost.dust - 2)
+    r.spiritStone = sub(cost.stone, gn(7))
+    const gap = upgradeShortfall(cost)
+    expect(gap.dust).toBe(2)
+    expect(toNum(gap.stone)).toBeCloseTo(7, 6)
+  })
 })
 
 describe('炼器 · 单步强化(upgradeEquipment)边界', () => {
@@ -182,6 +194,7 @@ describe('炼器 · 单步强化(upgradeEquipment)边界', () => {
     expect(upgradeEquipment('a')).toBe(false)
     expect(useInventoryStore().findItem('a')!.level).toBe(0)
     expect(r.dust).toBe(d0)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('尚差 1')
   })
 
   it('灵石不足:不扣、level 不动', () => {
@@ -196,5 +209,6 @@ describe('炼器 · 单步强化(upgradeEquipment)边界', () => {
     expect(useInventoryStore().findItem('a')!.level).toBe(0)
     expect(r.dust).toBe(d0)
     expect(r.spiritStone).toEqual(s0)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('尚差 1')
   })
 })

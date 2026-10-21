@@ -159,7 +159,13 @@
         />
         <div class="flex gap-2">
           <button class="btn-seal flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
-          <button v-if="upCost" class="btn-ghost flex-1" @click="doUpgrade">强 化</button>
+          <button
+            v-if="upCost"
+            class="btn-ghost flex-1"
+            :disabled="upShort !== null"
+            :title="upShort === 'stone' ? `灵石尚差 ${formatGN(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `器灵尘尚差 ${upGap?.dust ?? 0}` : undefined"
+            @click="doUpgrade"
+          >{{ upShort === 'stone' ? `强 化(石差${formatGN(upGap?.stone ?? { m: 0, e: 0 })})` : upShort === 'dust' ? `强 化(尘差${upGap?.dust ?? 0})` : '强 化' }}</button>
           <!-- 分解二步确认:一件淬养过的装备(强化/封存/重铸)误触垃圾桶不该直接没 -->
           <template v-if="decomposeArm !== inst?.uid">
             <button
@@ -193,7 +199,7 @@
   import { worldNameOfTier } from '@/core/formulas'
   import { resolveEquipStats } from '@/core/equipGen'
   import { equippablePower } from '@/core/equipBest'
-  import { decomposeEquipment, equipUpgradeCost, upgradeEquipment } from '@/core/forge'
+  import { decomposeEquipment, equipUpgradeCost, upgradeEquipment, upgradeShort, upgradeShortfall } from '@/core/forge'
   import { salvageOf, salvageRefundPhrase } from '@/core/salvage'
   import { detectBuild } from '@/core/buildDetect'
   import { qualityDef } from '@/data/qualities'
@@ -237,6 +243,8 @@
     return '分解这件装备'
   })
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
+  const upShort = computed(() => (upCost.value ? upgradeShort(upCost.value) : null))
+  const upGap = computed(() => (upCost.value ? upgradeShortfall(upCost.value) : null))
   /** 分解返还:底材 + 强化投入的八成(练过的件拆了不至于血本无归,先把账摆出来) */
   const salvage = computed(() => (inst.value ? salvageOf(inst.value) : null))
 

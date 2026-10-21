@@ -24,6 +24,8 @@ describe('炼器提示 · 文言仍报清尘与石', () => {
     expect(upgradeShortToast('stone')).toContain('灵石')
     expect(upgradeShortToast('stone')).not.toContain('器灵尘')
     expect(upgradeShortToast('stone')).toContain('历练')
+    expect(upgradeShortToast('stone', { stone: '7', dust: 0 })).toContain('尚差 7')
+    expect(upgradeShortToast('dust', { stone: '0', dust: 2 })).toContain('尚差 2')
     expect(upgradeDoneToast('玄铁剑', 3)).toBe('「玄铁剑」再经一锤,已至 +3')
   })
 

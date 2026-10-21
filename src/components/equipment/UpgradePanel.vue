@@ -6,6 +6,9 @@
       <span class="tabular">器灵尘×{{ upCost.dust }} · 灵石 {{ formatGN(upCost.stone) }}</span>
     </p>
     <p class="mt-1 text-[11px] tabular text-azure">{{ equipNextLevelText(inst.level) }}</p>
+    <p v-if="short" class="mt-1 text-[10px] leading-relaxed text-cinnabar tabular">
+      <template v-if="gap.dust > 0">器灵尘尚差 {{ gap.dust }}</template><template v-if="gap.dust > 0 && gap.stone.m > 0"> · </template><template v-if="gap.stone.m > 0">灵石尚差 {{ formatGN(gap.stone) }}</template>
+    </p>
     <!--
       连升:逐级成本一次算清(预览与执行共用 upgradeBatchPlan),省掉逐级一按。
       花的是累计总账,按一下不该就此了结 —— 二步确认与分解/散去同款。
@@ -37,7 +40,7 @@
   import { computed, ref } from 'vue'
   import { useUiStore } from '@/stores/ui'
   import { useInventoryStore } from '@/stores/inventory'
-  import { equipLevelCap, equipUpgradeCost, upgradeBatchPlan, upgradeEquipmentBatch, type UpgradeBatchPlan } from '@/core/forge'
+  import { equipLevelCap, equipUpgradeCost, upgradeBatchPlan, upgradeEquipmentBatch, upgradeShort, upgradeShortfall, type UpgradeBatchPlan } from '@/core/forge'
   import { formatGN } from '@/utils/format'
   import { gnZero } from '@/utils/gnum'
   import { equipNextLevelText } from '@/ui/equipText'
@@ -54,6 +57,8 @@
 
   const inst = computed(() => (ui.equipDetailUid ? inventory.findItem(ui.equipDetailUid) : undefined))
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
+  const short = computed(() => (upCost.value ? upgradeShort(upCost.value) : null))
+  const gap = computed(() => (upCost.value ? upgradeShortfall(upCost.value) : { dust: 0, stone: gnZero() }))
   /** 连升计划:受余额与上限约束,预览与执行同一份(升不动时 levels=0,隐藏整块) */
   const batchPlan = computed<UpgradeBatchPlan>(() =>
     inst.value ? upgradeBatchPlan(inst.value.uid) : { levels: 0, dust: 0, stone: gnZero(), atCap: false }

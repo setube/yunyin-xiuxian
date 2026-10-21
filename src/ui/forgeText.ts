@@ -12,8 +12,12 @@ export function upgradeCapToast(): string {
  * 强化缺料 —— 同重铸:灵石与器灵尘来路相反,不能一句「或」糊过去。
  * 只缺尘时玩家该去分解闲置装备,只缺石时该去历练/悬赏,指错方向只会在另一处再缺一次。
  */
-export function upgradeShortToast(short: 'stone' | 'dust'): string {
-  return short === 'stone' ? '灵石未足,炉火难续(灵石自历练与悬赏来)' : '器灵尘未足,炉火难续(分解闲置装备可得)'
+export function upgradeShortToast(short: 'stone' | 'dust', gap?: { stone: string; dust: number }): string {
+  const amount = short === 'stone' ? gap?.stone : gap?.dust
+  const missing = amount ? `尚差 ${amount}` : '未足'
+  return short === 'stone'
+    ? `灵石${missing},炉火难续(灵石自历练与悬赏来)`
+    : `器灵尘${missing},炉火难续(分解闲置装备可得)`
 }
 
 export function upgradeDoneToast(name: string, level: number): string {
