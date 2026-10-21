@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 调整:**试炼册迁 `TrialPanel`** —— 今日天道、天道变数、天道试炼与天道挑战书四节只读 `endgame` 与各自的草稿态,却把 `mutationDraw`、挑战书 `draft`、验约结果全留在页面里;现整册迁入 `components/celestial/TrialPanel.vue`(自取 store,草稿与抽签态随本体走),战报仍经 `emit('report')` 交宿主 `openReport` 统一判定归因,`CelestialView` 收至 277 行。
 - 调整:**远征册迁 `ExpeditionPanel`** —— 在途行程、特殊规则世界、虚界之门与「择契 · 择门 · 启程」准备弹窗同属一域,却把 `prepWorldId`/`prepPact`/`prepGate`/`abandonConfirm` 四个开关全留在页面里;现整域迁入 `components/celestial/ExpeditionPanel.vue`(自取 store、确认态随本体走),战报仍经 `emit('report')` 交宿主 `openReport` 统一判定归因,`CelestialView` 收至 594 行。
 - 调整:**法宝册迁 `ArtifactPanel`** —— 随身槽、祭炼进度、被动/神通读数与炼化、连炼二步确认只读法宝自身定义与库存,却和丹药/材料/装备三册挤在 1200 行里;现整册迁入 `components/inventory/ArtifactPanel.vue`(自取 store,确认态随本体走),`InventoryView` 收至 989 行。
 - 调整:**道痕册迁 `MarksPanel`** —— 历世履历、今昔之比、忆战与重写、规则纪元变迁本就只读 `endgame.marks`,却把确认态与纪元弹窗状态留在页面里;现整册(含「天道已变」浮层)迁入 `components/celestial/MarksPanel.vue`,战报仍由宿主 `openReport` 统一判定归因,`CelestialView` 收至 967 行。

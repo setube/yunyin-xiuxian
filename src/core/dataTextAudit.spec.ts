@@ -272,7 +272,10 @@ describe('文案数值对账 · 视图不手抄数量', () => {
 
   it('远征行程与变数连战数取自 EXPEDITION_* / MUTATION_FIGHTS', () => {
     // 远征册拆出后判据随本体走。宿主与子面板合扫:拆分只搬了位置,数仍只有一份
-    const view = src('../views/CelestialView.vue') + src('../components/celestial/ExpeditionPanel.vue')
+    const view =
+      src('../views/CelestialView.vue') +
+      src('../components/celestial/ExpeditionPanel.vue') +
+      src('../components/celestial/TrialPanel.vue')
     expect(view).toContain('cnNumber(EXPEDITION_ROUTE_LAYERS)')
     expect(view).toContain('cnNumber(MUTATION_FIGHTS)')
     expect(view, '界主层判定读常数,不写 3').toContain('EXPEDITION_GUARDIAN_LAYER')
@@ -343,7 +346,8 @@ describe('文案数值对账 · 手写的门槛与容量', () => {
 
   it('「可行流派 x/N」的分母取自 BUILD_PROFILES(界面与生态健康度同源)', () => {
     expect(BUILD_PROFILES.length).toBe(6)
-    const view = src('../views/CelestialView.vue')
+    // 今日天道与挑战书的「可行流派 x/N」随试炼册迁入 components/celestial/TrialPanel.vue
+    const view = src('../views/CelestialView.vue') + src('../components/celestial/TrialPanel.vue')
     expect(view, '分母应读构筑流派数').toContain('BUILD_PROFILES.length')
     expect(view, '界面里的分母不该手写').not.toMatch(/\}\}\s*\/6\b/)
     const health = src('./ecosystemHealth.ts')
