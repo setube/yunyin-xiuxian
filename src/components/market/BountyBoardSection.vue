@@ -22,10 +22,10 @@
             <span v-if="b.extraText" class="text-azure">· {{ b.extraText }}</span>
           </span>
           <button v-if="b.kind === 'equip'" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="b.claimed || !b.ready" @click="openEquipOrder = openEquipOrder === b.idx ? null : b.idx">
-            {{ b.claimed ? '已交' : openEquipOrder === b.idx ? '收起' : '选一件交货' }}
+            {{ b.claimed ? '已交' : openEquipOrder === b.idx ? '收起' : b.ready ? '选一件交货' : b.shortText }}
           </button>
           <button v-else class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="b.claimed || !b.ready" @click="claimOne(b.idx)">
-            {{ b.claimed ? '已交' : b.ready ? '交货' : '暂不足' }}
+            {{ b.claimed ? '已交' : b.ready ? '交货' : b.shortText }}
           </button>
         </div>
         <div
@@ -79,7 +79,7 @@
     const result = bounty.claim(idx)
     const label = view ? `「${view.title}」` : ''
     if (result === 'ok') ui.toast(`悬赏 ${label} 已交货,灵石入账`, 'success')
-    else if (result === 'insufficient') ui.toast('存货不足,凑齐再来', 'warn')
+    else if (result === 'insufficient') ui.toast(`${label}${view?.shortText ?? '存货不足'},凑齐再来`, 'warn')
     else if (result === 'nobag') ui.toast('行囊里没有够格的兵刃', 'warn')
     else if (result === 'expired') ui.toast('悬赏已换新单,请按新单再交', 'warn')
   }

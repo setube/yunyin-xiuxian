@@ -21,6 +21,8 @@ export interface BountyRow {
   extraText: string
   claimed: boolean
   ready: boolean
+  /** 交不齐时的实际缺口;ready 为 true 时 null */
+  shortText: string | null
 }
 
 const B_TAG_CLS: Record<string, string> = {
@@ -38,8 +40,6 @@ const B_TAG_CLS: Record<string, string> = {
  */
 export function useBountyRows() {
   const bounty = useBountyStore()
-  const resources = useResourcesStore()
-  const inventory = useInventoryStore()
   /**
    * 只有换单倒计时需要秒针;订单投影只依赖 orders 与存货。
    *
@@ -50,10 +50,24 @@ export function useBountyRows() {
 
   const bountyRemaining = computed(() => bountyRemainingSec(bounty.bountyAt, now.value))
 
-  function renderBounty(s: BountySlot): BountyRow {
+  const bountyRows = computed(() =>
+    bounty.orders
+      .slice()
+      .sort((a, b) => a.idx - b.idx)
+      .map(s => renderBounty(s))
+  )
+
+  return { bountyRemaining, bountyRows, renderBounty }
+}
+
+/** 单张订单摊成视图 —— 自取两本存货账,供 composable 与行为测试共用 */
+export function renderBounty(s: BountySlot): BountyRow {
+    const resources = useResourcesStore()
+    const inventory = useInventoryStore()
     const claimed = s.claimed
     if (s.kind === 'herb') {
       const anyGrade = HERB_GRADES.some(g => resources.herbOf(g) >= s.target)
+      const bestGrade = Math.max(...HERB_GRADES.map(g => resources.herbOf(g)))
       return {
         idx: s.idx,
         kind: s.kind,
@@ -64,10 +78,12 @@ export function useBountyRows() {
         rewardText: '价随品',
         extraText: '',
         claimed,
-        ready: anyGrade
+        ready: anyGrade,
+        shortText: anyGrade ? null : `尚差 ${Math.max(0, s.target - bestGrade)} 株`
       }
     }
     if (s.kind === 'ore') {
+      const ready = resources.ore >= s.target
       return {
         idx: s.idx,
         kind: s.kind,
@@ -78,11 +94,14 @@ export function useBountyRows() {
         rewardText: formatGN(s.reward),
         extraText: '',
         claimed,
-        ready: resources.ore >= s.target
+        ready,
+        shortText: ready ? null : `尚差 ${s.target - resources.ore} 块玄铁`
       }
     }
     if (s.kind === 'pill') {
       const def = pillDef(s.kindId)
+      const owned = s.kindId ? (inventory.pills[s.kindId] ?? 0) : 0
+      const ready = s.kindId ? owned >= s.target : false
       return {
         idx: s.idx,
         kind: s.kind,
@@ -93,9 +112,11 @@ export function useBountyRows() {
         rewardText: formatGN(s.reward),
         extraText: s.extra ? `另赠 悟道×${s.extra}` : '',
         claimed,
-        ready: s.kindId ? (inventory.pills[s.kindId] ?? 0) >= s.target : false
+        ready,
+        shortText: ready ? null : s.kindId ? `尚差 ${s.target - owned} 枚` : '此丹不可辨识'
       }
     }
+    const ready = inventory.bagItems.some(e => e.tier >= s.tier)
     return {
       idx: s.idx,
       kind: s.kind,
@@ -106,16 +127,7 @@ export function useBountyRows() {
       rewardText: '价随品',
       extraText: '另赠 器尘',
       claimed,
-      ready: inventory.bagItems.some(e => e.tier >= s.tier)
+      ready,
+      shortText: ready ? null : `无 ${s.tier} 阶以上兵刃`
     }
-  }
-
-  const bountyRows = computed(() =>
-    bounty.orders
-      .slice()
-      .sort((a, b) => a.idx - b.idx)
-      .map(s => renderBounty(s))
-  )
-
-  return { bountyRemaining, bountyRows, renderBounty }
 }
