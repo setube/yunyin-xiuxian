@@ -187,6 +187,21 @@ describe('界面分层 · 浮层只有一个出处', () => {
       expect(receiptAt, `${path} 要在开始读取前挂好失败回执`).toBeLessThan(readAt)
     }
   })
+
+  it('首页法球的断点监听随组件卸载 —— 重进首页不许累积闭包', () => {
+    const f = FILES.find(x => x.path === 'views/HomeView.vue')
+    expect(f, 'HomeView 不见了').toBeDefined()
+    const src = f!.src
+    expect(src, '断点监听要留名,匿名回调卸不掉').toContain(
+      "orbMq.addEventListener('change', onOrbMqChange)"
+    )
+    expect(src, '离页要解绑同一条回调').toContain(
+      "orbMq.removeEventListener('change', onOrbMqChange)"
+    )
+    expect(src, '解绑挂在卸载钩子上').toMatch(
+      /onUnmounted\(\(\) => orbMq\.removeEventListener\('change', onOrbMqChange\)\)/
+    )
+  })
 })
 
 /**

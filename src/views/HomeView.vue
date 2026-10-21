@@ -195,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, onUnmounted, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
   import { useDongfuStore } from '@/stores/dongfu'
   import { useAdventureStore } from '@/stores/adventure'
@@ -239,9 +239,11 @@
   // 直接平铺、不用 {} 作用域块 —— 该块内容在 script setup 里会被编译器提升重排,花括号反而碍事
   const orbMq = window.matchMedia('(max-width: 380px)')
   narrower.value = orbMq.matches
-  orbMq.addEventListener('change', e => {
+  const onOrbMqChange = (e: MediaQueryListEvent): void => {
     narrower.value = e.matches
-  })
+  }
+  orbMq.addEventListener('change', onOrbMqChange)
+  onUnmounted(() => orbMq.removeEventListener('change', onOrbMqChange))
 
   /** 洞府入口右侧实况:离线可攒小时 + 已营座数(与洞府页纪要同源现算) */
   const offlineHrs = computed(() => dongfu.offlineCapHours)
