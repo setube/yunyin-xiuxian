@@ -718,6 +718,15 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(src('../views/InventoryView.vue'), '丹方读到几分熟取自 lore.recipeMastery').toContain('recipeMastery(')
   })
 
+  it('丹方熟练度的来路与机制同向 —— 三路都点名', () => {
+    // 成功开炉 +0.01、炸炉 +0.02、藏经阁被动钻研都会积累熟练;
+    // 文案三路都说清,不把任何一条真实来路藏起来。
+    const view = src('../views/InventoryView.vue')
+    expect(view, '要说明开炉成功也精进').toContain('开炉')
+    expect(view, '要说明藏经阁钻研这条主路').toContain('藏经阁钻研')
+    expect(view, '炸炉也长记性是该机制的独特性格').toContain('炸炉都会长记性')
+  })
+
   /**
    * 议题 #130:缺料只说「未足」而不给去路,玩家得自己翻到坊市、再自己往下滚找草。
    * 这条锁住两端:① 缺草时真的给一条带 focus=herb 的入口;② 坊市真接得住这个参数,

@@ -495,7 +495,9 @@
     const m = lore.recipeMastery(id)
     if (m <= 0) return '此方尚未到手 —— 去藏经阁翻书,或向师长讨教'
     if (m >= 1) return '此方已通晓:火候节点烂熟于心'
-    return `此方已得,熟练 ${Math.round(m * 100)}% —— 多多开炉、研读数番可增熟稔`
+    // 成功开炉 +0.01、炸炉 +0.02、藏经阁被动钻研都会积累熟练。
+    // 三路都说清,免得玩家误以为只有某一条来路(dataTextAudit 钉着)。
+    return `此方已得,熟练 ${Math.round(m * 100)}% —— 开炉、藏经阁钻研与炸炉都会长记性`
   }
 
 </script>
