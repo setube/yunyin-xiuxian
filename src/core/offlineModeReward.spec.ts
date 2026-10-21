@@ -26,6 +26,9 @@ import { ARTIFACT_DROP_CHANCE, EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
 import { WIN_STREAK_REWARDS } from '@/data/earlyGame'
 import { toNum } from '@/utils/gnum'
 import { recordLoss, NEMESIS_THRESHOLD } from '@/core/worldMemory'
+import { beginLife, vowResult } from '@/core/samsaraService'
+import { ARTIFACTS } from '@/data/artifacts'
+import { meet } from '@/core/daoluService'
 
 // rng 全响应固定:概率判定处处 0.5、pick 恒取首项 —— 序列确定
 vi.mock('@/utils/random', async importOriginal => {
@@ -298,5 +301,32 @@ describe('离线雪耻(与在线同源)', () => {
     expect(summary.wins, '这一趟该净胜').toBeGreaterThan(0)
     expect(player.nemeses.find(n => n.enemyId === 'e_wolf')?.avengedAt, '离线打赢就该雪耻').toBeDefined()
     expect(summary.notes.some(n => n.includes('雪耻')), '雪耻要在卷轴里说一声').toBe(true)
+  })
+})
+
+/**
+ * 离线破题:在线每交一次手,身怀法宝就 `noteTaboo('artifact')` ——
+ * 「独行」之誓看的是有没有真的祭出法宝,不是有没有法宝在身。
+ *
+ * 离线整段用同一份 `buildPlayerSnap()`(其中含法宝被动)打了一夜,
+ * 却从不记这一笔:挂机刷够 400 杀,回来题还立着,与在线同一件事两套账。
+ */
+describe('离线历练也照在线记法宝破题', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 1
+  })
+
+  it('身怀法宝挂机历练,「独行」之誓同样落空', () => {
+    seedSession('normal')
+    beginLife('lt_zejian')
+    const art = ARTIFACTS.find(a => a.fromTier <= 1)!
+    useInventoryStore().addArtifact(art.id, true)
+    expect(useInventoryStore().equippedArtifacts, '先得真的祭上一件法宝').not.toHaveLength(0)
+
+    const summary = settleOffline(Date.now())!
+    expect(summary.battles, '这一趟得真的交过手').toBeGreaterThan(0)
+    expect(vowResult(), '离线带着法宝打了一夜,题不该还立着').toBe('broken')
+    expect(summary.notes.some(n => n.includes('破题')), '破题要在归来卷轴里说一声').toBe(true)
   })
 })
