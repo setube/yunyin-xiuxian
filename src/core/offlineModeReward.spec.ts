@@ -28,7 +28,10 @@ import { toNum } from '@/utils/gnum'
 import { recordLoss, NEMESIS_THRESHOLD } from '@/core/worldMemory'
 import { beginLife, vowResult } from '@/core/samsaraService'
 import { ARTIFACTS } from '@/data/artifacts'
+import { enemyDef } from '@/data/enemies'
+import { placeContent } from '@/core/mortalWorldService'
 import { meet } from '@/core/daoluService'
+import { rng } from '@/utils/random'
 
 // rng 全响应固定:概率判定处处 0.5、pick 恒取首项 —— 序列确定
 vi.mock('@/utils/random', async importOriginal => {
@@ -357,5 +360,56 @@ describe('离线只攒道侣机会点,不替玩家推进关系', () => {
     expect(after.trust, '信任不该在缺席期间自己长').toBe(before.trust)
     expect(after.accord, '契合不该在缺席期间自己长').toBe(before.accord)
     expect(after.pendingEventId, '不能替玩家决定遇上哪件事').toBe(before.pendingEventId)
+  })
+})
+
+/**
+ * 首领战雪耻:在线首领也在同一个 `result.win` 分支里走 `markAvenged`,
+ * 离线既然真的打这一场,打赢同样该清账 —— 否则整趟只赢在首领头上,
+ * 征战录仍写「尚为宿敌」。
+ */
+describe('离线首领战同样雪耻', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    // 普通战一场不赢:这一趟的唯一胜场就是末尾那场首领战,
+    // 才真的验到「只赢在首领头上」时雪耻有没有落账
+    winRate.value = 0
+  })
+
+  it('整趟只赢在首领头上时,账上的宿敌也被清掉', () => {
+    seedSession('normal')
+    const player = usePlayerStore()
+    // 整趟【已经】攒够首领门槛(在线判的是从出发起累计的胜场),这一段才真的轮到首领;
+    // 境界拉到元婴,这一场是真 resolveCombat,得真的打得过
+    useAdventureStore().setSession({ ...useAdventureStore().session!, wins: 10 })
+    player.major = 12
+    const boss = enemyDef(placeContent('qingyun').boss)!
+    let list = player.nemeses
+    for (let i = 0; i < NEMESIS_THRESHOLD; i += 1) {
+      list = recordLoss(list, boss.id, boss.name, 'qingyun', Date.now()).list
+    }
+    player.setNemeses(list)
+
+    /**
+     * 本文件把 rng.chance 固定为 true —— 到了真打的首领战,那意味着**每一击都被闪避**
+     * (combat 的 dodge 判定走同一枚 chance),五十回合下来谁也没打中谁。
+     * 这一条要验的是「首领打赢之后记不记雪耻」,故只在这一场结算期间把 chance 放开、
+     * 伤害倍率拨到上界,让 resolveCombat 真的打出胜负 —— 不是绕开战斗另判一个赢。
+     */
+    const realChance = rng.chance
+    const realFloat = rng.float
+    ;(rng as { chance: (p: number) => boolean }).chance = () => false
+    ;(rng as { float: (a: number, b: number) => number }).float = (_a, b) => b
+    let summary
+    try {
+      summary = settleOffline(Date.now())!
+    } finally {
+      ;(rng as { chance: (p: number) => boolean }).chance = realChance
+      ;(rng as { float: (a: number, b: number) => number }).float = realFloat
+    }
+    expect(summary.battles, '这一趟得真的交过手').toBeGreaterThan(0)
+    expect(summary.notes.some(n => n.includes('斩于剑下') || n.includes('区域之主')), '首领这一场该真的打了').toBe(true)
+    expect(player.nemeses.find(n => n.enemyId === boss.id)?.avengedAt, '首领打赢也该雪耻').toBeDefined()
+    expect(summary.notes.some(n => n.includes('雪耻')), '雪耻要在卷轴里说一声').toBe(true)
   })
 })

@@ -519,6 +519,15 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             }
             clearRegionAndUnlockNext(region.id)
             notes.push(offlineBossNoteText(bossDef.name))
+            /**
+             * 首领战也是「打赢一场」:在线 runBattle 的取胜分支里,不论对手是不是首领,
+             * 只要账上仍记着这个宿敌就当场 markAvenged。离线普通战已补(见上),
+             * 首领这一场却漏着 —— 整趟只赢在首领头上时,征战录仍写「尚为宿敌」。
+             */
+            if (isNemesis(player.nemeses, bossDef.id)) {
+              player.setNemeses(markAvenged(player.nemeses, bossDef.id, nowMs))
+              notes.push(`【雪耻】宿敌${bossDef.name}已被斩于剑下!`)
+            }
           } else {
             sessionLosses += 1
             // 首领败也是败:连胜归零,与在线「非胜即清」同一条
