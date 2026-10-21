@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 293,
+  "round": 294,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T12:56:07+00:00",
+  "updated_at": "2026-10-21T13:33:29+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -13398,11 +13398,11 @@
     "HYP-100": {
       "id": "HYP-100",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-19T06:58:53+00:00",
-      "updated_at": "2026-09-19T06:58:53+00:00",
-      "touched_round": 225,
+      "updated_at": "2026-10-21T13:10:49+00:00",
+      "touched_round": 294,
       "confidence": 0.95,
       "summary": "dropRate 只乘装备出现率,灵石草矿丹药书页都不吃"
     },
@@ -13447,10 +13447,10 @@
     "HYP-101": {
       "id": "HYP-101",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-19T08:11:23+00:00",
-      "updated_at": "2026-09-19T08:11:23+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 226,
       "confidence": 0.95,
       "summary": "breakRefund 只缩小失败掉修为,灵气在掷点前已扣"
@@ -13496,10 +13496,10 @@
     "HYP-102": {
       "id": "HYP-102",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-19T08:15:43+00:00",
-      "updated_at": "2026-09-19T08:15:43+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 227,
       "confidence": 0.95,
       "summary": "alchemyYield 加在 bonusChance 上掷第二枚,合计封顶 0.8"
@@ -13545,10 +13545,10 @@
     "HYP-103": {
       "id": "HYP-103",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-19T08:20:11+00:00",
-      "updated_at": "2026-09-19T08:20:11+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 228,
       "confidence": 0.95,
       "summary": "explorationSpeed 只除遭遇间隔,行程时长走 mode 与灵兽性格"
@@ -13618,10 +13618,10 @@
     "HYP-104": {
       "id": "HYP-104",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-09-28T04:58:47+00:00",
-      "updated_at": "2026-09-28T04:58:47+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 229,
       "confidence": 0.9,
       "summary": "ui-smoke 崩溃根因:home 的 orbSize 用了 <script setup> 顶层裸 {} 花括号块做 matchMedia 副作用初始化 —— 被编译器提升重排后在某归档状态下把组件初始化打崩(44c9826 引入、平铺修复)"
@@ -17355,10 +17355,10 @@
     "HYP-105": {
       "id": "HYP-105",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-10-16T06:15:44+00:00",
-      "updated_at": "2026-10-16T06:15:44+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 259,
       "confidence": 0.9,
       "summary": "把 0.6 封顶与低血阈值收进 tribulationDecision 的单一 helper,并把 hpLeft<0.3 改用 LOW_HP_THRESHOLD,可消除 UI 台账与结算分叉,且行为不变"
@@ -17437,10 +17437,10 @@
     "HYP-106": {
       "id": "HYP-106",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-10-16T06:36:55+00:00",
-      "updated_at": "2026-10-16T06:36:55+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 260,
       "confidence": 0.85,
       "summary": "把 0.8 抽成 constants 的 PILL_SECOND_CAP,craftability 用它算 bonusChanceWithYield,pillService 直接读 able.bonusChanceWithYield —— 结算与展示同源,行为不变"
@@ -17531,10 +17531,10 @@
     "HYP-107": {
       "id": "HYP-107",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-10-16T06:49:15+00:00",
-      "updated_at": "2026-10-16T06:49:15+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 261,
       "confidence": 0.9,
       "summary": "把上限抽 AUTO_REFORGE_MAX_BUDGET(与 AUTfor_REFORGE_MAX_TARGETS 同处),由 autoReforgeBudget(raw) 统一夹取;预览与执行、input 的 min/max 都读它,预览不再虚报"
@@ -17625,10 +17625,10 @@
     "HYP-108": {
       "id": "HYP-108",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-10-16T07:00:00+00:00",
-      "updated_at": "2026-10-16T07:00:00+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 262,
       "confidence": 0.9,
       "summary": "给 saveRoundTrip.spec 加一条:PERSISTED_STORES 每一项都必须在 STORE_NAMES 里有非空中文名,且 STORE_NAMES 不得有清单外的多余键 —— 与既有'从源码倒推清单'同规,把手工同步变成测试约束"
@@ -17710,10 +17710,10 @@
     "HYP-109": {
       "id": "HYP-109",
       "type": "hypothesis",
-      "status": "active",
-      "version": 1,
+      "status": "stale",
+      "version": 2,
       "created_at": "2026-10-16T07:09:15+00:00",
-      "updated_at": "2026-10-16T07:09:15+00:00",
+      "updated_at": "2026-10-21T13:10:49+00:00",
       "touched_round": 263,
       "confidence": 0.85,
       "summary": "把每场装备掉落概率的封顶抽成具名常量 EQUIP_DROP_CHANCE_CAP=0.9(与 PILL_SECOND_CAP/TRIB_REDUCTION_CAP 同族的「单一封顶」),afterWin 与 settleOffline 的 equipCount 期望式都改读它;附一条 singleSourceAudit 断言钉死「0.9 只许出现在 constants,别处不许再内联」"
@@ -20708,12 +20708,12 @@
       "id": "CHG-494",
       "type": "change",
       "status": "resolved",
-      "version": 2,
+      "version": 3,
       "created_at": "2026-10-21T12:55:35+00:00",
-      "updated_at": "2026-10-21T12:55:43+00:00",
-      "touched_round": 292,
+      "updated_at": "2026-10-21T13:31:39+00:00",
+      "touched_round": 294,
       "title": "开炉药力状态与道童等级来源",
-      "commit": "d3acc87"
+      "commit": "f0f3d6c"
     },
     "EV-262": {
       "id": "EV-262",
@@ -20725,6 +20725,96 @@
       "touched_round": 292,
       "source": "bun run test:report + bun run build + ui-smoke",
       "summary": "3263 过 / 0 败;构建通过;17 页 100 次点击无运行时异常。",
+      "confidence": 1
+    },
+    "TASK-385": {
+      "id": "TASK-385",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T13:16:48+00:00",
+      "updated_at": "2026-10-21T13:33:25+00:00",
+      "touched_round": 294,
+      "category": "correctness",
+      "severity": 0.52,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "丹方读通通知缺失",
+      "description": "藏经阁 studyTick 把丹方熟练度喂到 1 时静默;翻新方/灵材通晓/敌人洞悉均有 rare 通知,完成里程碑缺一声。补 studyTick 读通通知与回归用例。"
+    },
+    "TASK-386": {
+      "id": "TASK-386",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T13:26:52+00:00",
+      "updated_at": "2026-10-21T13:33:29+00:00",
+      "touched_round": 294,
+      "title": "问卦与点化缺料可点",
+      "category": "usability",
+      "severity": 0.42,
+      "confidence": 0.95,
+      "effort": 1,
+      "description": "界域志问卦只在卦在身时置灰、点化主星不看灵石余额;付不起仍可点,拒绝只报总价或笼统不足。改为按判据置灰并就地写实际差额。",
+      "priority_score": 4.6
+    },
+    "ISS-943": {
+      "id": "ISS-943",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T13:31:44+00:00",
+      "updated_at": "2026-10-21T13:31:44+00:00",
+      "touched_round": 294,
+      "title": "丹方读通与界域志缺料反馈静默",
+      "severity": 0.52,
+      "description": "丹方熟练度喂满时无通知;问卦与点化主星付不起时仍可点击且只报总价或笼统不足。两项已由 ac01611 与 56dc480 修复。"
+    },
+    "EV-263": {
+      "id": "EV-263",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T13:31:50+00:00",
+      "updated_at": "2026-10-21T13:31:50+00:00",
+      "touched_round": 294,
+      "source": "bun run test:report; bun run build; ui-smoke; targeted vitest",
+      "summary": "3265 过 / 0 败;构建通过;17 页 92 次点击无运行时异常;丹方定向 17/17、界域志定向 64/64。",
+      "confidence": 1
+    },
+    "CHG-495": {
+      "id": "CHG-495",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T13:32:32+00:00",
+      "updated_at": "2026-10-21T13:32:32+00:00",
+      "touched_round": 294,
+      "title": "丹方读通通知与界域志缺料置灰",
+      "commit": "56dc480"
+    },
+    "HYP-116": {
+      "id": "HYP-116",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T13:32:58+00:00",
+      "updated_at": "2026-10-21T13:32:58+00:00",
+      "touched_round": 294,
+      "title": "丹方读通与界域志缺料反馈",
+      "confidence": 1,
+      "summary": "读通丹方应有 rare 里程碑回执;问卦与点化主星付不起应置灰并写实际差额。"
+    },
+    "EV-264": {
+      "id": "EV-264",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T13:33:06+00:00",
+      "updated_at": "2026-10-21T13:33:06+00:00",
+      "touched_round": 294,
+      "source": "fault injection: lore notification removed; askDisabled/focus disabled reverted",
+      "summary": "删掉读通通知后新用例转红;问卦恢复只看卦在身、点化禁用写死 false 后 uiLayering 守卫转红;均已恢复。",
       "confidence": 1
     }
   },
@@ -30737,6 +30827,36 @@
       "to": "TASK-384",
       "type": "implements",
       "created_at": "2026-10-21T12:55:43+00:00"
+    },
+    {
+      "from": "CHG-495",
+      "to": "TASK-385",
+      "type": "implements",
+      "created_at": "2026-10-21T13:32:36+00:00"
+    },
+    {
+      "from": "CHG-495",
+      "to": "TASK-386",
+      "type": "implements",
+      "created_at": "2026-10-21T13:32:39+00:00"
+    },
+    {
+      "from": "CHG-495",
+      "to": "ISS-943",
+      "type": "resolves",
+      "created_at": "2026-10-21T13:32:44+00:00"
+    },
+    {
+      "from": "EV-263",
+      "to": "HYP-116",
+      "type": "validates",
+      "created_at": "2026-10-21T13:33:02+00:00"
+    },
+    {
+      "from": "EV-264",
+      "to": "HYP-116",
+      "type": "validates",
+      "created_at": "2026-10-21T13:33:10+00:00"
     }
   ]
 }
