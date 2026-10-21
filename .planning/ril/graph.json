@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 314,
+  "round": 315,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T20:55:54+00:00",
+  "updated_at": "2026-10-21T21:26:39+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -22880,6 +22880,77 @@
       "confidence": 1,
       "title": "开炉炼满确认态随弹窗关闭失效",
       "description": "BrewingDialog 常驻只切 open,确认态必须在关闭时复位"
+    },
+    "TASK-429": {
+      "id": "TASK-429",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T21:16:35+00:00",
+      "updated_at": "2026-10-21T21:26:20+00:00",
+      "touched_round": 315,
+      "category": "correctness",
+      "severity": 0.82,
+      "confidence": 0.96,
+      "effort": 2,
+      "title": "忆战与虚界技能值域收口",
+      "description": "忆战快照与虚界敌形共用技能修形:rate 夹 [0,1],mult 非负且有具名上限,effect 只留已知枚举,foe mods 只留属性目录键;战斗选择技能再走 capChance 二道防线;补故障注入"
+    },
+    "ISS-984": {
+      "id": "ISS-984",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T21:25:40+00:00",
+      "updated_at": "2026-10-21T21:26:20+00:00",
+      "touched_round": 315,
+      "title": "忆战与虚界技能值域未收口",
+      "severity": 0.82,
+      "detail": "忆战快照与虚界敌形共用技能时未夹 rate/mult，effect 可越界，战斗选择也未统一走 capChance"
+    },
+    "EV-982": {
+      "id": "EV-982",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T21:25:45+00:00",
+      "updated_at": "2026-10-21T21:25:45+00:00",
+      "touched_round": 315,
+      "source": "bun run test:report: 3354 pass / 0 fail; fault injection removes asCombatSkills -> endgame assertions red",
+      "confidence": 1.0
+    },
+    "EV-983": {
+      "id": "EV-983",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T21:25:48+00:00",
+      "updated_at": "2026-10-21T21:25:48+00:00",
+      "touched_round": 315,
+      "source": "bun run test:report 3354 pass / 0 fail; fault injection removes asCombatSkills makes endgame assertions red",
+      "confidence": 1.0
+    },
+    "COMP-048": {
+      "id": "COMP-048",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T21:26:00+00:00",
+      "updated_at": "2026-10-21T21:26:00+00:00",
+      "touched_round": 315,
+      "title": "忆战与虚界技能修形",
+      "path": "src/stores/endgame.ts, src/utils/saveShape.ts, src/core/combat.ts"
+    },
+    "CHG-529": {
+      "id": "CHG-529",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T21:26:03+00:00",
+      "updated_at": "2026-10-21T21:26:03+00:00",
+      "touched_round": 315,
+      "commit": "2279687",
+      "description": "以 asCombatSkills/asCombatSkill 单源修形忆战与虚界技能，夹 rate/mult 与 effect 枚举；战斗技能选择补 capChance；测试覆盖坏存档与故障注入"
     }
   },
   "edges": [
@@ -33815,6 +33886,30 @@
       "to": "HYP-160",
       "type": "validates",
       "created_at": "2026-10-21T20:55:53+00:00"
+    },
+    {
+      "from": "TASK-429",
+      "to": "ISS-984",
+      "type": "addresses",
+      "created_at": "2026-10-21T21:25:54+00:00"
+    },
+    {
+      "from": "ISS-984",
+      "to": "COMP-048",
+      "type": "located_in",
+      "created_at": "2026-10-21T21:26:08+00:00"
+    },
+    {
+      "from": "CHG-529",
+      "to": "TASK-429",
+      "type": "implements",
+      "created_at": "2026-10-21T21:26:15+00:00"
+    },
+    {
+      "from": "CHG-529",
+      "to": "ISS-984",
+      "type": "resolves",
+      "created_at": "2026-10-21T21:26:39+00:00"
     }
   ]
 }
