@@ -136,7 +136,7 @@
           </p>
         </div>
       </template>
-      <p v-else class="text-[12px] leading-relaxed text-ink-faint">
+      <p v-else class="empty-note text-center text-[11px] leading-relaxed text-ink-faint">
         道途尚未成路。凑齐同一路数的词条、功法与法宝,自成一派——
         <br />
         <span class="text-ink-faint">背水 / 罡盾 / 反震 / 连击 / 沐泽 / 锋芒,各有克制,亦各有天敌。</span>
@@ -186,7 +186,9 @@
           </template>
         </div>
       </div>
-      <p v-else class="text-[10px] text-ink-faint">尚无快照,存一套后可在此与各区域间从容切换。</p>
+      <p v-else class="empty-note mt-1 text-center text-[11px] text-ink-faint">
+        尚无快照,存一套后可在此与各区域间从容切换。
+      </p>
     </div>
 
     <!-- 双构筑对照:让实验成为研究(真仙可用) -->

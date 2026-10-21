@@ -983,6 +983,30 @@ html[data-theme='dark'] .btn-seal:disabled {
   transform: rotate(-2deg);
 }
 
+/* 空态的一句(.empty-note)—— 卡片/列表里「尚无 / 尚未」那种整块留白。
+
+   一行孤字浮在卡中央,读着像出错留下的空白;顶上一道淡墨短横,整块就有了形状 ——
+   与题头那道竖笔同族,只是横过来、更淡。与 .empty-seal 分工:
+   哑印用于「这一册还没有东西」(章的分量),短横用于「这里本该有话」(句子的分量)。
+
+   装饰性线条按规范走墨的透明度,不写裸 hex;21% 落在设计系统的淡墨档。 */
+.empty-note::before {
+  content: '';
+  display: block;
+  width: 34px;
+  height: 1px;
+  margin: 0 auto 10px;
+  border-radius: 999px;
+  /* 两端收笔:齐口的线读作分隔符,压两头的线才像手写的 */
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--color-ink-rgb) / 0.2) 18%,
+    rgb(var(--color-ink-rgb) / 0.2) 82%,
+    transparent
+  );
+}
+
 /* 卷首私印(修仙录扉页):墨色实印 —— 与空态哑印相对,是「已落款」的分量。
    地界卷首那枚是朱泥(世界印),这枚走墨:墨书配墨印,两卷各得其章 */
 .seal-solid {

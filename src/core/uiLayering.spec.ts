@@ -111,3 +111,57 @@ describe('界面分层 · 浮层只有一个出处', () => {
     expect(src, '再点同枚才派出').toContain('dispatcher(uid, spec)')
   })
 })
+
+/**
+ * 空态只有一个出处。
+ *
+ * 本仓早就有 `.empty-seal`(单字哑印),用于「这一册还没有东西」—— 章的分量;
+ * 但卡片里「尚无快照 / 尚无秘境 / 此世气象尚未凝成」这类**整块留白**一直是裸写
+ * 淡字,一行孤字浮在卡中央,读着像出错留下的空白。`.empty-note` 补的是这一档:
+ * 顶上一道两端收笔的淡墨短横,块就有了形状,不用加字号也不用加重颜色。
+ *
+ * 判据分两段:样式本身要真存在且是「两端透明、中线 20% 墨」的收笔横线
+ * (被改成一条实心 border 就失了这个出处);已知的四处漏网要真的挂上类,
+ * 免得下次改版又退回裸写。故障注入:摘掉任一处的 empty-note,或把渐变改成实心 —— 红。
+ */
+describe('界面分层 · 块级空态只有一个出处', () => {
+  const STYLE = readFileSync(resolve(SRC, 'style.css'), 'utf8')
+  /** 空态短横的样式块(到下一个顶层规则为止) */
+  const NOTE_BLOCK = /\.empty-note::before\s*\{([\s\S]*?)\n\}/.exec(STYLE)?.[1] ?? ''
+
+  it('.empty-note 的短横是两端收笔的淡墨线,不是一条实心分隔', () => {
+    expect(NOTE_BLOCK, 'style.css 里找不到 .empty-note::before').not.toBe('')
+    expect(NOTE_BLOCK, '短横要走墨的透明度,不写裸 hex').toContain('rgb(var(--color-ink-rgb) /')
+    expect(NOTE_BLOCK, '两端须透明收笔,齐口的线读作分隔符').toContain('linear-gradient')
+    expect(NOTE_BLOCK, '两头透明才叫收笔').toContain('transparent')
+    // 视觉尺度:1px 高、34px 宽 —— 空态多在列表里,不能为了好看长个头
+    expect(NOTE_BLOCK).toMatch(/height:\s*1px/)
+    expect(NOTE_BLOCK).toMatch(/width:\s*34px/)
+  })
+
+  it('已知的块级空态都挂上了 empty-note', () => {
+    const SITES: [string, string][] = [
+      ['views/BuildView.vue', '道途尚未成路'],
+      ['views/BuildView.vue', '尚无快照'],
+      ['views/MortalWorldView.vue', '此世气象尚未凝成'],
+      ['components/adventure/SecretRealmCard.vue', '尚无秘境可探']
+    ]
+    const missing: string[] = []
+    for (const [path, phrase] of SITES) {
+      const f = FILES.find(x => x.path === path)
+      if (!f) {
+        missing.push(`${path} → 文件不见了`)
+        continue
+      }
+      // 找带这句话的那个空态段落(v-else / v-if 两种写法都算 —— 列表空态常写
+      // v-if="list.length === 0"),看它的 class 里有没有 empty-note
+      const tag = [...f.src.matchAll(/<p\b[^>]*>/g)].find(m => {
+        const after = f.src.slice(m.index! + m[0].length, m.index! + m[0].length + 120)
+        return /\bv-(?:else|if)\b/.test(m[0]) && after.includes(phrase)
+      })
+      if (!tag) missing.push(`${path} → 找不到「${phrase}」那个空态段落`)
+      else if (!/class="[^"]*\bempty-note\b/.test(tag[0])) missing.push(`${path} → 「${phrase}」还裸写着淡字`)
+    }
+    expect(missing, '这些块级空态没收进 .empty-note —— 短横是块级空态的唯一出处').toEqual([])
+  })
+})

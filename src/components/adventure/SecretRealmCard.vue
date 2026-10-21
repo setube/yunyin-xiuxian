@@ -49,7 +49,9 @@
           </span>
           <span class="mt-0.5 block text-[10px] leading-relaxed text-ink-faint">{{ r.desc }}</span>
         </button>
-        <p v-if="list.length === 0" class="text-[11px] text-ink-faint">尚无秘境可探 —— 境界再高些,自有去处。</p>
+        <p v-if="list.length === 0" class="empty-note text-center text-[11px] text-ink-faint">
+          尚无秘境可探 —— 境界再高些,自有去处。
+        </p>
       </div>
     </template>
   </section>
