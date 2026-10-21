@@ -81,7 +81,9 @@
             }}{{ currentReading.lower.symbol }}
           </span>
           <span v-if="currentReading.changed" class="chip-ink !text-[9px]">之{{ currentReading.changed.name }}</span>
-          <span class="ml-auto text-[10px] tabular text-ink-faint">{{ remainText }}</span>
+          <span class="ml-auto text-[10px] tabular text-ink-faint">
+            尚余 <span class="countdown-slot">{{ remainCountdown }}</span>
+          </span>
         </p>
         <div class="mt-1.5 space-y-0.5 font-kai text-[12px] tracking-[0.2em] text-ink-soft">
           <p v-for="(bar, i) in drawnLines" :key="i">{{ bar }}</p>
@@ -266,21 +268,26 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
-  import { useGameStore } from '@/stores/game'
   import { useUiStore } from '@/stores/ui'
   import { useResourcesStore } from '@/stores/resources'
   import { REALMS, WORLDS, realmDef } from '@/data/realms'
   import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm } from '@/data/classics'
   import { HEXAGRAMS, TRIGRAMS, trigramDef } from '@/data/yijing'
-  import { DIVINATION_COST, drawLines, readingCounsel, readingFromState } from '@/core/divination'
-  import { gameNow } from '@/core/enginePause'
+  import {
+    DIVINATION_COST,
+    divinationActiveAt,
+    drawLines,
+    readingCounsel,
+    readingFromState,
+    readingMods
+  } from '@/core/divination'
   import { askDivination } from '@/core/divinationService'
   import { PALACES, STARS } from '@/data/ziwei'
   import { fateLordLine } from '@/core/fate'
   import { IMAGES, MANSIONS, type ImageId } from '@/data/xiangxiu'
   import { GATES } from '@/data/qimen'
   import { gateRuleSummary } from '@/core/gateRuleText'
-  import { cnNumber, formatGN } from '@/utils/format'
+  import { cnNumber, formatCountdown, formatGN } from '@/utils/format'
   import { gn, gnZero, subClamp } from '@/utils/gnum'
   import { STAR_FOCUS_COST_BASE } from '@/data/constants'
   import { mansionLuckPercent, effectiveFavoredWorld, todayMansionLine } from '@/core/astronomy'
@@ -289,11 +296,12 @@
   import { modsText } from '@/data/statNames'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
+  import { useNow } from '@/composables/useNow'
 
   const player = usePlayerStore()
-  const game = useGameStore()
   const ui = useUiStore()
   const resources = useResourcesStore()
+  const now = useNow()
 
   /** 分册:六门各占一册 —— 页越长越该分,免得一路拉到底找不着北 */
   type CodexTab = 'realm' | 'classics' | 'yi' | 'ziwei' | 'xiang' | 'qimen' | 'todo'
@@ -309,31 +317,25 @@
 
   const showAllHex = ref(false)
 
-  /** 在身之卦:读一次心跳,过期的卦才会自己消失(与 player 的判定同一个办法) */
+  /** 在身之卦:按 1 秒游戏钟判断,与服务端共用 divinationActiveAt 这一条判据 */
+  const currentState = computed(() => divinationActiveAt(player.divination, now.value))
   const currentReading = computed(() => {
-    void game.totalPlaySec
-    const state = player.activeDivination
+    const state = currentState.value
     return state ? readingFromState(state) : null
   })
   const drawnLines = computed(() => (currentReading.value ? drawLines(currentReading.value) : []))
   const counsel = computed(() => (currentReading.value ? readingCounsel(currentReading.value) : []))
-  const powerText = computed(() => (currentReading.value ? modsText(player.divinationMods) : ''))
-  const remainText = computed(() => {
-    void game.totalPlaySec
-    const state = player.activeDivination
-    if (!state) return ''
-    // 与 activeDivination 同一条暂停冻结口径:确认窗背后不能把卦耗掉
-    const ms = Math.max(0, state.expiresAt - gameNow())
-    const m = Math.floor(ms / 60_000)
-    const sec = Math.floor((ms % 60_000) / 1000)
-    return m > 0 ? `尚余 ${m} 分 ${sec} 秒` : `尚余 ${sec} 秒`
+  const powerText = computed(() => (currentReading.value ? modsText(readingMods(currentReading.value)) : ''))
+  const remainCountdown = computed(() => {
+    const state = currentState.value
+    return state ? formatCountdown(Math.max(0, Math.ceil((state.expiresAt - now.value) / 1000))) : ''
   })
 
   /** 问卦付不起就置灰并列差:判据与 askDivination 的 hasSmall 同一本账 */
   const askShort = computed(() => Math.max(0, DIVINATION_COST - resources.wudao))
-  const askDisabled = computed(() => !!player.activeDivination || askShort.value > 0)
+  const askDisabled = computed(() => !!currentState.value || askShort.value > 0)
   const askLabel = computed(() => {
-    if (player.activeDivination) return '卦在身,待其自过'
+    if (currentState.value) return '卦在身,待其自过'
     if (askShort.value > 0) return `问卦 · 尚差 ${askShort.value} 悟道点`
     return `问 卦(悟道点 ${DIVINATION_COST})`
   })

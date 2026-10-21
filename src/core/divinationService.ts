@@ -6,9 +6,16 @@
  */
 import type { RandomService } from '@/utils/random'
 import { rng } from '@/utils/random'
-import { DIVINATION_COST, drawHexagram, readingMinutes, type HexagramReading } from './divination'
+import {
+  DIVINATION_COST,
+  divinationActiveAt,
+  drawHexagram,
+  readingMinutes,
+  type HexagramReading
+} from './divination'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
+import { gameNow } from './enginePause'
 
 export interface DivinationOutcome {
   ok: boolean
@@ -24,13 +31,17 @@ export interface DivinationOutcome {
 export function askDivination(rand: RandomService = rng): DivinationOutcome {
   const player = usePlayerStore()
   const resources = useResourcesStore()
-  if (player.activeDivination) return { ok: false, reason: '卦在身,一事不二卜 —— 待此卦自过。' }
+  const now = gameNow()
+  // 以此刻直接判断,不读 activeDivination 的缓存:后者挂在 5 秒修行心跳上,
+  // 卦刚过期的那几秒会把「可以再问」误判成「卦仍在身」。
+  if (divinationActiveAt(player.divination, now)) {
+    return { ok: false, reason: '卦在身,一事不二卜 —— 待此卦自过。' }
+  }
   if (!resources.hasSmall('wudao', DIVINATION_COST)) {
     return { ok: false, reason: `悟道点不足(需 ${DIVINATION_COST} 点)。` }
   }
   resources.spendSmall('wudao', DIVINATION_COST)
   const reading = drawHexagram(rand)
-  const now = Date.now()
   player.setDivination({
     hexagram: reading.hexagram.name,
     upper: reading.upper.id,

@@ -26,7 +26,7 @@ import { rng } from '@/utils/random'
 import { baseCultPerSec, baseQiRegen, expRequirement, gameDay, qiCap } from '@/core/formulas'
 import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
-import { readingFromState, readingMods } from '@/core/divination'
+import { divinationActiveAt, readingFromState, readingMods } from '@/core/divination'
 import { gameNow } from '@/core/enginePause'
 import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
@@ -211,8 +211,7 @@ export const usePlayerStore = defineStore(
     const activeDivination = computed(() => {
       // 读一次心跳:过期判定要随引擎推进被重新计算(见 engine 的 addPlayTime)
       void useGameStore().totalPlaySec
-      const state = divination.value
-      return state && state.expiresAt > gameNow() ? state : null
+      return divinationActiveAt(divination.value, gameNow())
     })
     const divinationMods = computed<StatMods>(() => {
       const state = activeDivination.value

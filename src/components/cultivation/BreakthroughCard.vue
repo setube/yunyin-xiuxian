@@ -85,6 +85,7 @@
   import { signedPercent } from '@/data/statNames'
   import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
   import { prepPillDisabledLabel, prepPillShortToast } from '@/ui/cultivationText'
+  import { useNow } from '@/composables/useNow'
   import TribulationCard from './TribulationCard.vue'
   import TribulationDetail from './TribulationDetail.vue'
 
@@ -97,9 +98,11 @@
    */
   const resources = useResourcesStore()
   const ui = useUiStore()
+  const now = useNow()
 
   const rateOpen = ref(false)
-  const btInfo = computed(() => breakthroughInfo())
+  // 倒计时与「坐满转就绪」走 1 秒游戏钟,不再借 5 秒才刷新的修行时长。
+  const btInfo = computed(() => breakthroughInfo(now.value))
 
   const prepMeditate = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === 'meditate')!
   const prepPill = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === 'pill')!

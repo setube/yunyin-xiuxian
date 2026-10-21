@@ -234,6 +234,21 @@ describe('突破准备(Phase 28 · TASK-023 接线后)', () => {
     }
   })
 
+  it('调息状态按传入的游戏时刻结算,不依赖 5 秒修行心跳', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_000_000)
+      expect(prepareBreakthrough('meditate')).toBe(true)
+      const state = usePlayerStore().breakthroughPrep!
+
+      expect(breakthroughPrepState(state.readyAt - 1).sitting).toBe(true)
+      expect(breakthroughPrepState(state.readyAt).ready).toBe(true)
+      expect(breakthroughPrepState(state.readyAt).remainingSec).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('服聚气丹:支付 80 灵石立即可取 +5%;灵石不足则拒绝', () => {
     const resources = useResourcesStore()
     resources.addStone(gn(100))

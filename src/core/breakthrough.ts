@@ -37,6 +37,7 @@ import { useUiStore } from '@/stores/ui'
 import type { BreakthroughView } from '@/stores/ui'
 import type { StatMods } from '@/types'
 import { playSfx } from './audio'
+import { gameNow } from './enginePause'
 // Phase 28 突破准备:静坐/服丹的一次性加成(见 earlyGameService;仅无劫突破受益)
 import { breakthroughPrepState, consumeBreakthroughPrep, type BreakthroughPrepView } from './earlyGameService'
 
@@ -104,7 +105,7 @@ export function tribulationSuccessRate(
   return survived / total
 }
 
-export function breakthroughInfo(): BreakthroughInfo {
+export function breakthroughInfo(at: number = gameNow()): BreakthroughInfo {
   const player = usePlayerStore()
   const resources = useResourcesStore()
   const isMajor = player.isMajorStep
@@ -122,7 +123,7 @@ export function breakthroughInfo(): BreakthroughInfo {
   const qiCost = Math.floor(player.qiCapValue * BT_QI_COST_RATIO)
   const mods = player.finalStats.mods
   // Phase 28 突破准备:就绪的静坐/丹药加成并入展示率(消费在 attemptBreakthrough,一次性)
-  const prep = breakthroughPrepState()
+  const prep = breakthroughPrepState(at)
   // 4 项操作数先各自成行,再合出 rate —— 界面要解释「凭什么是这个数」,这里就得给得出明细
   const baseRate = breakthroughBaseRate(player.major, player.sub)
   const rateMod = modOf(mods, 'breakthroughRate')

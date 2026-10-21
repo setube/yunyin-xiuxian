@@ -243,6 +243,26 @@ describe('问卦 · 真的进了属性汇总', () => {
     expect(player.divinationMods).toEqual({})
   })
 
+  it('卦已到期但修行心跳尚未推进,也能立刻再问一卦', () => {
+    vi.useFakeTimers()
+    const t0 = 1_700_000_000_000
+    vi.setSystemTime(t0)
+    withWudao(DIVINATION_COST * 2)
+    const first = askDivination(seeded(13))
+    expect(first.ok).toBe(true)
+    // 先读一次派生值,把「卦在身」这个 computed 结果缓存下来;
+    // 旧实现随后只让游戏时钟走过有效期、不推进 totalPlaySec,就会继续读到旧的 true。
+    expect(usePlayerStore().activeDivination).not.toBeNull()
+
+    // 只让游戏时钟走过有效期,不调用 addPlayTime:
+    // 旧实现读 activeDivination 的缓存,会在这段 5 秒心跳间隙继续拒绝问卦。
+    vi.setSystemTime(t0 + readingMinutes(first.reading!) * 60_000 + 1)
+    const second = askDivination(seeded(14))
+    expect(second.ok).toBe(true)
+    expect(useResourcesStore().wudao).toBe(0)
+    expect(usePlayerStore().divination?.hexagram).toBe(second.reading!.hexagram.name)
+  })
+
   it('转世不留卦:卦是此一时的时机,不是我是谁', () => {
     vi.useFakeTimers()
     vi.setSystemTime(1_700_000_000_000)

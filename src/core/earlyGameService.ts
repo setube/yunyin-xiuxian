@@ -3,7 +3,6 @@
  */
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
-import { useGameStore } from '@/stores/game'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useResourcesStore } from '@/stores/resources'
 import { useAdventureStore } from '@/stores/adventure'
@@ -206,12 +205,10 @@ export interface BreakthroughPrepView {
  * 状态存在 player store(随档持久化):聚气丹是要花 80 灵石的,
  * 刷新一次就没了等于吞资源;顿悟/巡游那种免费提示才适合模块态。
  */
-export function breakthroughPrepState(): BreakthroughPrepView {
-  // 读一次心跳:倒计时与"坐满转就绪"要随时间被重新计算(见 divination 同款处理)
-  void useGameStore().totalPlaySec
+export function breakthroughPrepState(at: number = gameNow()): BreakthroughPrepView {
   const state = usePlayerStore().breakthroughPrep
   if (!state) return { sitting: false, remainingSec: 0, ready: false, bonus: 0, kind: null }
-  const remainSec = Math.ceil((state.readyAt - gameNow()) / 1000)
+  const remainSec = Math.ceil((state.readyAt - at) / 1000)
   if (remainSec > 0) {
     return { sitting: true, remainingSec: remainSec, ready: false, bonus: 0, kind: state.kind }
   }
@@ -219,8 +216,8 @@ export function breakthroughPrepState(): BreakthroughPrepView {
 }
 
 /** 取走就绪的突破准备加成(一次性;未就绪返回 0 且不动状态) */
-export function consumeBreakthroughPrep(): number {
-  const s = breakthroughPrepState()
+export function consumeBreakthroughPrep(at: number = gameNow()): number {
+  const s = breakthroughPrepState(at)
   if (!s.ready) return 0
   usePlayerStore().setBreakthroughPrep(null)
   return s.bonus

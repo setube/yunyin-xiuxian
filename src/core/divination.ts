@@ -132,6 +132,16 @@ export interface DivinationState {
   expiresAt: number
 }
 
+/**
+ * 此刻仍在身的那一卦。
+ *
+ * 到期判据只认传入的游戏时刻:store、服务与界面共用这一条,
+ * 不再各自借 `totalPlaySec` 的 5 秒心跳来判断卦是否过期。
+ */
+export function divinationActiveAt(state: DivinationState | null, at: number): DivinationState | null {
+  return state && Number.isFinite(state.expiresAt) && state.expiresAt > at ? state : null
+}
+
 /** 由存档状态复原这次问卦(重开游戏/读档后仍要看得见卦) */
 export function readingFromState(state: {
   upper: TrigramId

@@ -158,6 +158,22 @@ describe('界面分层 · 浮层只有一个出处', () => {
     expect(codex!.src, '点化差额要走指数感知减法').toContain('subClamp(focusCost, resources.spiritStone)')
     expect(codex!.src, '点化按钮要直说差多少灵石').toContain('灵石尚差 ${formatGN(focusShortGN)}')
   })
+
+  it('到期倒计时按 1 秒游戏钟走,不借 5 秒修行心跳', () => {
+    // 故障注入:把 BreakthroughCard 的 breakthroughInfo(now.value) 改回无参调用,
+    // 或把 RealmCodexView 的 useNow/formatCountdown 拆回 totalPlaySec 手算 → 本条红。
+    const breakthrough = FILES.find(f => f.path === 'components/cultivation/BreakthroughCard.vue')
+    expect(breakthrough, 'BreakthroughCard 不见了').toBeDefined()
+    expect(breakthrough!.src, '突破准备要读每秒游戏钟').toContain('const now = useNow()')
+    expect(breakthrough!.src, '突破准备状态要接收当前时刻').toContain('breakthroughInfo(now.value)')
+
+    const codex = FILES.find(f => f.path === 'views/RealmCodexView.vue')
+    expect(codex, 'RealmCodexView 不见了').toBeDefined()
+    expect(codex!.src, '在身之卦要读每秒游戏钟').toContain('const now = useNow()')
+    expect(codex!.src, '卦象到期与服务端共用同一判据').toContain('divinationActiveAt(player.divination, now.value)')
+    expect(codex!.src, '卦象倒计时要走定宽格式').toContain('formatCountdown(')
+    expect(codex!.src, '卦象倒计时不得再借修行时长刷新').not.toContain('game.totalPlaySec')
+  })
 })
 
 /**
