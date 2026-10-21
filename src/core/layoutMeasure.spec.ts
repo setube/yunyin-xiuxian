@@ -20,8 +20,12 @@ describe('排版自检量法', () => {
     expect(SCRIPT, '动画禁令要与截图 animations:"disabled" 同口径').toContain(
       '*,*::before,*::after{animation:none!important;transition:none!important}'
     )
-    // 页面测量与弹窗控件审计都得注入:只看页面,弹窗按钮仍会量到入场中间帧
-    expect(SCRIPT.match(/animation:none!important/g)?.length, '页面与弹窗两处都要注入').toBeGreaterThan(1)
+    /**
+     * 三把尺子各管一段:整页测量、弹窗控件审计、开局前两页的子集量尺。
+     * 只给主尺注入时,/create 的灵根圆环仍会在子集量尺上假越界(xian 复现过)。
+     */
+    const injections = SCRIPT.match(/animation:none!important/g)?.length ?? 0
+    expect(injections, '整页 / 弹窗 / 开箱子集三处量尺都要注入').toBeGreaterThanOrEqual(3)
   })
 
   it('横向越界左右两侧都查,不只查右缘', () => {

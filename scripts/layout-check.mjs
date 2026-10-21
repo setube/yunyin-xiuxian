@@ -781,8 +781,17 @@ function zoomProblems(info, tag) {
  * 此前从没被量到过(欢迎页底部三枚链接就是 17px 缩过来的)。量尺与 measurePage.smallTargets 同一条。
  */
 async function measureSmallTargets(page) {
-  return page.evaluate(() =>
-    [...document.querySelectorAll('button, a, [role=button]')]
+  return page.evaluate(() => {
+    /**
+     * 与 measurePage 同一条口径:测量前禁动画。
+     *
+     * 欢迎页与建号页是独立子集量尺,不走 measurePage —— 开局页的灵根圆环曾在这里
+     * 被 stagger-in 的入场位移量出假越界,而三把尺子各管一段、只给主尺注入就会漏。
+     */
+    const st = document.createElement('style')
+    st.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}'
+    document.head.appendChild(st)
+    return [...document.querySelectorAll('button, a, [role=button]')]
       .map(el => {
         const r = el.getBoundingClientRect()
         const declared = parseFloat(getComputedStyle(el).minHeight) || 0
@@ -792,7 +801,7 @@ async function measureSmallTargets(page) {
       .filter(({ r, ok }) => r.width > 0 && r.height > 0 && !ok)
       .slice(0, 5)
       .map(({ el, r }) => `${r.height.toFixed(1)}px «${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 14)}»`)
-  )
+  })
 }
 
 for (const vp of VIEWPORTS) {
