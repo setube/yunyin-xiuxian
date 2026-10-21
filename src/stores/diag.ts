@@ -69,10 +69,18 @@ export const useDiagStore = defineStore(
     function record(input: { info: string; message: string; route?: string; at?: number }): void {
       // 诊断自身绝不许再抛:分片被写坏时先自修(记录异常的那一行,不该成为第二个异常)
       if (!Array.isArray(errors.value)) sanitize()
-      const at = input.at ?? Date.now()
-      const message = (input.message || '未知异常').slice(0, DIAG_MESSAGE_MAX)
-      const info = input.info || ''
-      const route = input.route ?? ''
+      /*
+       * 入参同样来自运行期(全局 errorHandler / unhandledrejection),
+       * 不能假设它一定是对象或字段类型正确:诊断自身抛错比不记录更糟。
+       */
+      const raw = input !== null && typeof input === 'object' ? input : null
+      const rawAt = raw?.at
+      const at = typeof rawAt === 'number' && Number.isFinite(rawAt) && rawAt >= 0 ? rawAt : Date.now()
+      const rawMessage = raw?.message
+      const message =
+        typeof rawMessage === 'string' && rawMessage ? rawMessage.slice(0, DIAG_MESSAGE_MAX) : '未知异常'
+      const info = typeof raw?.info === 'string' ? raw.info : ''
+      const route = typeof raw?.route === 'string' ? raw.route : ''
       const last = errors.value[errors.value.length - 1]
       if (last && last.message === message && last.info === info) {
         errors.value = [...errors.value.slice(0, -1), { ...last, at, route, count: last.count + 1 }]

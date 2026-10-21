@@ -7,12 +7,13 @@
  *  2. 分片被写坏时自修,且**诊断自身绝不再抛**;
  *  3. 摘要只留能定位问题的部分,长度可控(不许把整份堆栈或玩家数据塞进存档)。
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { DIAG_MAX, DIAG_MESSAGE_MAX, summarizeError, useDiagStore } from './diag'
 
 describe('异常留档', () => {
   beforeEach(() => setActivePinia(createPinia()))
+  afterEach(() => vi.useRealTimers())
 
   it('记录按时间先后追加,最近一条在末尾', () => {
     const diag = useDiagStore()
@@ -61,6 +62,37 @@ describe('异常留档', () => {
   })
 
   describe('坏档韧性(诊断自身绝不再抛)', () => {
+    it('record 收到坏入参也不抛:只收字符串字段,坏时刻回落当前时间', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(123456)
+      const diag = useDiagStore()
+
+      expect(() => diag.record(null as never)).not.toThrow()
+      expect(() => diag.record(42 as never)).not.toThrow()
+      expect(diag.errors.map(e => e.message)).toEqual(['未知异常'])
+      expect(diag.errors[0]!.count, '同一条坏入参仍按相邻去重计数').toBe(2)
+      expect(diag.errors.every(e => e.at === 123456 && e.info === '' && e.route === '')).toBe(true)
+
+      diag.clear()
+      expect(() => diag.record({ info: 7, message: 42, route: null, at: NaN } as never)).not.toThrow()
+      expect(diag.errors[0]).toMatchObject({ at: 123456, info: '', message: '未知异常', route: '' })
+
+      diag.clear()
+      for (const at of [Infinity, -Infinity, -1]) {
+        diag.record({ info: 'render', message: 'Error: 坏时刻', at })
+      }
+      expect(diag.errors.every(e => e.at === 123456), '坏时刻不能写进诊断分片').toBe(true)
+    })
+
+    it('record 收到非对象时同样自修坏分片,不让诊断抛第二下', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(654321)
+      const diag = useDiagStore()
+      diag.$patch({ errors: { 乱: '写' } as never })
+      expect(() => diag.record(null as never)).not.toThrow()
+      expect(diag.errors).toEqual([{ at: 654321, info: '', message: '未知异常', route: '', count: 1 }])
+    })
+
     it('分片不是数组 → 修回空表', () => {
       const diag = useDiagStore()
       diag.$patch({ errors: '坏掉的一坨' as never })
