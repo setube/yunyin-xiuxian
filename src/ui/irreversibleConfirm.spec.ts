@@ -72,6 +72,18 @@ describe('不可逆确认的两次点击各写什么', () => {
   })
 
   /**
+   * 依规则清理行囊是整包报废,第一下只该摆出名单与收益。
+   * 故障注入:把第一步的 cleanConfirm = true 改回直接 smartClean() → 红。
+   */
+  it('收纳的整包清理先列名单,第二步才化尘', () => {
+    const src = read('components/inventory/DismantleDialog.vue')
+    expect(src, '第一步只立起确认态').toContain('@click="cleanConfirm = true"')
+    expect(src, '第二步才真清理').toContain('@click="smartClean()"')
+    expect(src, '确认页须摆出名单与收益').toContain('batchYieldText(cleanYield)')
+    expect(src, '取消词与同族一致').toContain('再想想')
+  })
+
+  /**
    * 确认态必须钉在「那一条」上,不能钉在它的行号上。
    *
    * 道痕表新痕插头部,而重写一次就会补一条新痕:按行号记的话,重写第一行后

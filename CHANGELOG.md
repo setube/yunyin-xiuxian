@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 调整:**部位候选与分解/收纳两扇浮层迁出 `InventoryView`** —— 部位候选只在点开某个槽时存在,一键分解与智能收纳又各有一套总账与二步确认,却连 `pickerRows`/`decomposeRows`/`cleanPreview` 全堆在 798 行的页面里;现候选取 `components/inventory/SlotCandidatesDialog.vue`,分解与收纳合并为 `DismantleDialog.vue`(自取 store、确认态随本体走),宿主只留 `pickerSlot`/`decomposeOpen`/`smartOpen` 三个开关,`InventoryView` 收至 454 行。
 - 调整:**开炉炼丹迁 `BrewingDialog`** —— 丹方列表、把握与「炼满」二步确认、技艺一览、藏经阁翻检读数本就只服务这一扇浮层,却连 `recipes`/`skillRows`/`rateClass` 都堆在 989 行的行囊页里;现整块迁入 `components/inventory/BrewingDialog.vue`,丹方账收进 `composables/useBrewing.ts` 供入口卡与弹窗同源调用,`InventoryView` 收至 798 行。
 - 调整:**闭关卡迁 `RetreatCard`** —— 闭关时长、加成、约多得与「已多得」活数都读同一份 retreat 本体,却把倒计时与 `beginRetreat` 留在 872 行的修行页里;现整卡迁入 `components/cultivation/RetreatCard.vue`(自取 store、自持每秒时钟),宿主只留「是否闭关中」供法球点亮,`CultivationView` 收至 828 行。
 - 调整:**轮回弹窗迁 `RebirthDialog`** —— 道果边际、天赋芯片、传承与转世去留一览、逆旅契及其二次确认同出一域,却把 `talentTap`/`heritageOpen`/`trialOpen`/`pendingTrial` 与兵解 toast 留在页面里;现整块(含两个从属浮层)迁入 `components/character/RebirthDialog.vue`,关弹窗复位行为不变,`CharacterView` 收至 433 行。
