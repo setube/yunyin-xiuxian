@@ -45,6 +45,16 @@ export function canSignLifeTrial(id: string): boolean {
   return player.reincarnation.daoFruit >= def.cost
 }
 
+/** 签约还差多少道果 —— 卡面置灰、就地列差与服务拒因共用这一份判据 */
+export function lifeTrialShortfall(id: string): number | null {
+  const player = usePlayerStore()
+  if (player.reincarnation.trial) return null
+  const def = lifeTrialDef(id)
+  if (!def || !isPurelyAdverse(def.rules)) return null
+  const have = player.reincarnation.daoFruit
+  return have >= def.cost ? null : def.cost - have
+}
+
 /**
  * 签下这一世的逆旅契。
  *
@@ -63,7 +73,8 @@ export function signLifeTrial(id: string): boolean {
   // 规则不合法则拒签:契约只许加难,这是硬约束
   if (!isPurelyAdverse(def.rules)) return false
   if (!player.spendDaoFruit(def.cost)) {
-    ui.toast('道果不足', 'warn')
+    const short = lifeTrialShortfall(id)
+    ui.toast(short === null ? '道果不足' : `尚差 ${short} 道果`, 'warn')
     return false
   }
   player.setLifeTrial({ trialId: def.id, at: Date.now(), paid: def.cost })

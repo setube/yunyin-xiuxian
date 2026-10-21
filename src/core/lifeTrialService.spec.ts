@@ -24,9 +24,11 @@ import {
   archiveLifeTrial,
   canSignLifeTrial,
   lifeTrialRules,
+  lifeTrialShortfall,
   signLifeTrial
 } from './lifeTrialService'
 import { usePlayerStore } from '@/stores/player'
+import { useUiStore } from '@/stores/ui'
 import { reachesEfficiency } from './fruitOutlets'
 import type { AnyStatKey } from '@/types'
 
@@ -57,6 +59,35 @@ describe('逆旅契 · 判据一:余额真的下降', () => {
     expect(signLifeTrial('tr_ni')).toBe(false)
     expect(player.reincarnation.daoFruit).toBe(10)
     expect(player.reincarnation.trial).toBeNull()
+  })
+
+  it('余额不足:缺口只报尚差多少,卡面与服务拒因同源', () => {
+    const player = usePlayerStore()
+    const def = lifeTrialDef('tr_ni')!
+    player.addDaoFruit(10)
+    const short = lifeTrialShortfall('tr_ni')
+    expect(short).toBe(def.cost - 10)
+
+    expect(signLifeTrial('tr_ni')).toBe(false)
+    expect(useUiStore().toasts.at(-1)?.text).toBe(`尚差 ${def.cost - 10} 道果`)
+    expect(player.reincarnation.daoFruit).toBe(10)
+    expect(player.reincarnation.trial).toBeNull()
+  })
+
+  it('付得起后缺口归空;已立契时也不再报缺', () => {
+    const player = usePlayerStore()
+    player.addDaoFruit(lifeTrialDef('tr_ni')!.cost)
+    expect(lifeTrialShortfall('tr_ni')).toBeNull()
+    expect(signLifeTrial('tr_ni')).toBe(true)
+    expect(lifeTrialShortfall('tr_gu')).toBeNull()
+  })
+
+  it('逆旅契卡付不起即禁用并就地列差,不再只降透明度', () => {
+    const card = readFileSync(resolve(__dirname, '../components/character/RebirthDialog.vue'), 'utf8')
+    expect(card, '付不起的契必须真的禁用').toContain(':disabled="!canSignLifeTrial(t.id)"')
+    expect(card, '卡面缺口读同一份服务判据').toContain('lifeTrialShortfall(t.id)')
+    expect(card, '付不起时就地列差').toContain('尚差 {{ lifeTrialShortfall(t.id) }} 道果')
+    expect(card, '不许退回笼统道果不足').not.toContain("ui.toast('道果不足'")
   })
 
   it('一世只能签一份,签下不可解除', () => {

@@ -138,7 +138,9 @@
       <button
         v-for="t in LIFE_TRIALS"
         :key="t.id"
-        :class="['card-ink w-full px-3 py-2 text-left', canSignLifeTrial(t.id) ? '' : 'opacity-40']"
+        :class="['card-ink w-full px-3 py-2 text-left', canSignLifeTrial(t.id) ? '' : 'opacity-40', lifeTrialShortfall(t.id) !== null ? 'cursor-not-allowed' : '']"
+        :disabled="!canSignLifeTrial(t.id)"
+        :title="lifeTrialShortfall(t.id) !== null ? `尚差 ${lifeTrialShortfall(t.id)} 道果` : undefined"
         @click="requestTrial(t.id)"
       >
         <span class="flex items-baseline justify-between">
@@ -149,6 +151,9 @@
         </span>
         <span class="mt-0.5 block text-[11px] leading-relaxed text-ink-soft">{{ t.desc }}</span>
         <span class="mt-0.5 block text-[10px] text-ink-faint">{{ t.ruleText }}</span>
+        <span v-if="lifeTrialShortfall(t.id) !== null" class="mt-0.5 block text-[10px] tabular text-cinnabar">
+          尚差 {{ lifeTrialShortfall(t.id) }} 道果
+        </span>
       </button>
     </div>
     <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">一世只可立一契,立下不可解。转世时契随皮囊散去,履历长存。</p>
@@ -175,7 +180,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
   import { LIFE_TRIALS, type LifeTrialDef } from '@/data/lifeTrials'
-  import { activeLifeTrial, canSignLifeTrial, signLifeTrial } from '@/core/lifeTrialService'
+  import { activeLifeTrial, canSignLifeTrial, lifeTrialShortfall, signLifeTrial } from '@/core/lifeTrialService'
   import { talentDef, TALENT_GRADE_COLORS } from '@/data/talents'
   import { heritageDef } from '@/data/heritage'
   import { REALMS } from '@/data/realms'
@@ -241,8 +246,9 @@
       ui.toast('此生已有契在身', 'warn')
       return
     }
-    if (player.reincarnation.daoFruit < def.cost) {
-      ui.toast('道果不足', 'warn')
+    const short = lifeTrialShortfall(id)
+    if (short !== null) {
+      ui.toast(`尚差 ${short} 道果`, 'warn')
       return
     }
     pendingTrial.value = def
