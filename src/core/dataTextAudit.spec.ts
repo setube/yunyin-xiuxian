@@ -790,6 +790,11 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(expedition, '虚界重摇付不起要置灰').toContain('endgame.daoSource < VOID_REROLL_COST')
     expect(marks, '道痕重写付不起要置灰').toContain(':disabled="endgame.daoSource < REWRITE_ENTRY_COST"')
     expect(furnace, '道果付不起要置灰').toContain(':disabled="fruitShort.short.m > 0"')
+    expect(furnace, '灵石熔铸付不起也要置灰').toContain(':disabled="stoneShort.m > 0"')
+    expect(furnace, '灵石熔铸按钮就地写实际差额').toContain('灵石尚差 ${formatGN(stoneShort)}')
+    expect(furnace, '灵石熔铸差额走指数感知减法').toContain('subClamp(cost, resources.spiritStone)')
+    expect(furnace, '灵石熔铸价与扣费同源').toContain('const cost = furnaceStoneCost()')
+    expect(furnace, '灵石熔铸未付时直接写尚差').toContain('熔铸(灵石尚差 ${formatGN(stoneShort)})')
   })
 
   it('器魂与道童付不起时置灰并写出实际差额', () => {

@@ -49,8 +49,17 @@
       </div>
       <div class="flex items-center justify-between py-2.5">
         <span class="text-[12px] text-ink-soft">灵石(存 {{ formatGN(resources.spiritStone) }})</span>
-        <button class="btn-ghost !px-3 !py-2 !text-[11px] tabular" @click="furnaceConvertStone()">
-          {{ formatGN(furnaceStoneCost()) }} → {{ FURNACE_STONE_DAO_SOURCE }} 道源
+        <button
+          class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
+          :disabled="stoneShort.m > 0"
+          :title="stoneShort.m > 0 ? `灵石尚差 ${formatGN(stoneShort)}` : undefined"
+          @click="furnaceConvertStone()"
+        >
+          {{
+            stoneShort.m > 0
+              ? `熔铸(灵石尚差 ${formatGN(stoneShort)})`
+              : `${formatGN(furnaceStoneCost())} → ${FURNACE_STONE_DAO_SOURCE} 道源`
+          }}
         </button>
       </div>
       <div class="py-2.5">
@@ -132,6 +141,7 @@ import {
   shouldShowFruitTutorial
 } from '@/core/resourceGuidance'
 import { formatGN, formatNum } from '@/utils/format'
+import { gnZero, subClamp } from '@/utils/gnum'
 import { daoSourceShortfall, daoSourceShortText } from '@/core/daoSource'
 
 const props = defineProps<{ open: boolean }>()
@@ -167,6 +177,11 @@ function doFurnace(rate: FurnaceRate): void {
 
 const fruitInfo = computed(() => fruitMarginalInfo())
 const fruitShort = computed(() => daoSourceShortfall(DAO_SOURCE_PER_FRUIT, endgame.daoSource))
+/** 灵石熔铸缺石 —— 与 furnaceConvertStone 的 spendStone 同读一份价签 */
+const stoneShort = computed(() => {
+  const cost = furnaceStoneCost()
+  return resources.hasStone(cost) ? gnZero() : subClamp(cost, resources.spiritStone)
+})
 
 /**
  * 凝道果 —— 首次成功时把「道果是什么」讲一次。
