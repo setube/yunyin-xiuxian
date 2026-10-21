@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 291,
+  "round": 293,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T12:14:28+00:00",
+  "updated_at": "2026-10-21T12:56:07+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20673,6 +20673,59 @@
       "title": "暂缓跨界飞升界膜仪式",
       "rationale": "突破结算已有跨世叙事;独立界膜组件需同时补动画、音效与多层判据,收益低于先把已有首页与门禁收口",
       "alternatives_rejected": "[\"与主线进度同批落地\",\"直接删除界膜设想\"]"
+    },
+    "TASK-383": {
+      "id": "TASK-383",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T12:25:25+00:00",
+      "updated_at": "2026-10-21T12:56:04+00:00",
+      "touched_round": 293,
+      "title": "炉前存货账",
+      "category": "core-feature",
+      "severity": 0.55,
+      "confidence": 0.9,
+      "effort": 2,
+      "description": "开炉弹窗只摊把握与代价,不摊行囊里已存几枚与增益丹药力是否顶满;炼出即白占一格。读 inventory.pills 与 buffOverflowOf + 响应式钟。"
+    },
+    "TASK-384": {
+      "id": "TASK-384",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T12:55:21+00:00",
+      "updated_at": "2026-10-21T12:56:07+00:00",
+      "touched_round": 293,
+      "title": "道童等级来源可见",
+      "category": "core-feature",
+      "severity": 0.42,
+      "confidence": 0.95,
+      "effort": 1,
+      "description": "道童页只报当前层数,不解释每完工一趟升一层与封顶 APPRENTICE_MAX_LEVEL;补机制说明并加分层守卫。"
+    },
+    "CHG-494": {
+      "id": "CHG-494",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T12:55:35+00:00",
+      "updated_at": "2026-10-21T12:55:43+00:00",
+      "touched_round": 292,
+      "title": "开炉药力状态与道童等级来源",
+      "commit": "d3acc87"
+    },
+    "EV-262": {
+      "id": "EV-262",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:55:39+00:00",
+      "updated_at": "2026-10-21T12:55:39+00:00",
+      "touched_round": 292,
+      "source": "bun run test:report + bun run build + ui-smoke",
+      "summary": "3263 过 / 0 败;构建通过;17 页 100 次点击无运行时异常。",
+      "confidence": 1
     }
   },
   "edges": [
@@ -30672,6 +30725,18 @@
       "to": "TASK-381",
       "type": "governs",
       "created_at": "2026-10-21T12:14:28+00:00"
+    },
+    {
+      "from": "CHG-494",
+      "to": "TASK-383",
+      "type": "implements",
+      "created_at": "2026-10-21T12:55:43+00:00"
+    },
+    {
+      "from": "CHG-494",
+      "to": "TASK-384",
+      "type": "implements",
+      "created_at": "2026-10-21T12:55:43+00:00"
     }
   ]
 }
