@@ -202,6 +202,19 @@ describe('界面分层 · 浮层只有一个出处', () => {
       /onUnmounted\(\(\) => orbMq\.removeEventListener\('change', onOrbMqChange\)\)/
     )
   })
+
+  it('事件叙事掷骰归属「这一件事」—— 不许组件级锁死,也不许在 computed 里重掷', () => {
+    const f = FILES.find(x => x.path === 'components/adventure/EventDialog.vue')
+    expect(f, 'EventDialog 不见了').toBeDefined()
+    const src = f!.src
+    expect(src, '叙事要由事件 id 变化时重掷').toContain(
+      'rollEventNarrative(id, def.title, adventure.eventMemories, () => rng.float(0, 1))'
+    )
+    expect(src, '重渲染只读快照').toContain('narrative.echo')
+    expect(src, '组件级 echoRolled 会跨事件锁死').not.toContain('echoRolled')
+    expect(src, '余波不许在组件里另算').not.toContain('shouldTriggerAftermath')
+    expect(src, '叙事不许在组件里另算').not.toContain('aftermathText')
+  })
 })
 
 /**

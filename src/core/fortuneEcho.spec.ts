@@ -7,10 +7,11 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { echoFor, echoEligible, ECHO_CHANCE } from './fortuneEcho'
+import { echoFor, echoEligible, ECHO_CHANCE, rollEventNarrative } from './fortuneEcho'
 import { usePlayerStore } from '@/stores/player'
 import { resolveEventChoice } from './eventEngine'
 import { eventDef, FORTUNE_EVENTS } from '@/data/events'
+import { recordEvent } from './worldMemory'
 
 describe('遗产回声(fortuneEcho)', () => {
   beforeEach(() => {
@@ -71,5 +72,56 @@ describe('遗产回声(fortuneEcho)', () => {
       expect(echo, `${id} 应有回声文本`).not.toBeNull()
       expect(echo!.line.length).toBeGreaterThan(5)
     }
+  })
+
+  describe('一次事件的叙事快照', () => {
+    it('重渲染不重掷:同一份快照读两次,回声与余波都不变', () => {
+      const player = usePlayerStore()
+      player.setFortuneChoices({ ft_sword_remnant: 'leave' })
+      const memory = recordEvent({}, 'ft_sword_remnant', 0, 1000)
+      const snapshot = rollEventNarrative('ft_sword_remnant', '剑冢残痕', memory, () => {
+        return 0
+      })
+      // 第一次掷定回声,不再继续掷余波
+      expect(snapshot.echo?.line).toContain('三道剑痕')
+      expect(snapshot.aftermath).toBeNull()
+      // 快照是普通数据:重复读取不会经过随机源
+      const read = (): unknown => snapshot
+      expect(read()).toBe(snapshot)
+      expect(read()).toEqual(snapshot)
+    })
+
+    it('换一件事就重掷:前一件的回声不会继承给下一件', () => {
+      const player = usePlayerStore()
+      player.setFortuneChoices({ ft_sword_remnant: 'leave' })
+      const first = rollEventNarrative('ft_sword_remnant', '剑冢残痕', {}, () => 0)
+      expect(first.echo).not.toBeNull()
+      // 下一件不是机缘:即便仍掷出 0,也不能拿上一件的回声
+      const second = rollEventNarrative('ev_merchant', '行脚商人', {}, () => 0)
+      expect(second.echo).toBeNull()
+      expect(second.eventId).toBe('ev_merchant')
+    })
+
+    it('回声与余波互斥:回声命中时不再掷余波', () => {
+      const player = usePlayerStore()
+      player.setFortuneChoices({ ft_sword_remnant: 'leave' })
+      const memory = recordEvent({}, 'ft_sword_remnant', 0, 1000)
+      const snapshot = rollEventNarrative('ft_sword_remnant', '剑冢残痕', memory, () => {
+        return 0
+      })
+      expect(snapshot.echo).not.toBeNull()
+      expect(snapshot.aftermath).toBeNull()
+      expect(snapshot).toEqual({ eventId: 'ft_sword_remnant', echo: snapshot.echo, aftermath: null })
+    })
+
+    it('余波只在事件完成过且掷中时出现', () => {
+      const fresh = rollEventNarrative('ev_merchant', '行脚商人', {}, () => 0)
+      expect(fresh.aftermath).toBeNull()
+      const memory = recordEvent(recordEvent({}, 'ev_merchant', 0, 1000), 'ev_merchant', 1, 2000)
+      const hit = rollEventNarrative('ev_merchant', '行脚商人', memory, () => 0)
+      expect(hit.aftermath).toContain('余韵')
+      const miss = rollEventNarrative('ev_merchant', '行脚商人', memory, () => 1)
+      expect(miss.aftermath).toBeNull()
+    })
   })
 })

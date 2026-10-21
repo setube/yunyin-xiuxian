@@ -15,7 +15,8 @@
  *   - 多次 leave: 效果不叠加(布尔判断)
  */
 import { usePlayerStore } from '@/stores/player'
-import { rng } from '@/utils/random'
+import { aftermathText, shouldTriggerAftermath } from './worldMemory'
+import type { EventMemory } from '@/types'
 
 /** 回声触发概率(稀有,5%) */
 export const ECHO_CHANCE = 0.05
@@ -33,6 +34,20 @@ export interface FortuneEcho {
   form: EchoForm
   /** 回声前的导语(显示在抉择文案上方) */
   line: string
+}
+
+/**
+ * 一次事件打开的叙事快照。
+ *
+ * 回声与余波都各掷一次骰子,而 EventDialog 是常驻全局的组件:若把掷骰放在
+ * computed 里,任何父级重渲染都会重掷,同一扇窗会自己变脸;若把「已掷过」
+ * 放在组件级布尔量里,下一件事又会继承上一件的答案。故把「这一件事」的
+ * 掷骰结果收成一份快照,由事件 id 变化时重建。
+ */
+export interface EventNarrative {
+  eventId: string
+  echo: FortuneEcho | null
+  aftermath: string | null
 }
 
 const FORTUNE_ECHO_TEXTS: Record<string, { form: EchoForm; line: string }> = {
@@ -87,15 +102,34 @@ export function echoEligible(eventId: string): boolean {
   return usePlayerStore().fortuneChoices[eventId] === 'leave'
 }
 
-/** 判定本次是否触发回声(纯概率一把 roll,与特定事件无关) */
-export function rollEcho(): number {
-  return rng.next()
-}
-
 /** 组装回声(事件 id 有回声文本时;否则 null) */
 export function echoFor(eventId: string): FortuneEcho | null {
   if (!echoEligible(eventId)) return null
   const data = FORTUNE_ECHO_TEXTS[eventId]
   if (!data) return null
   return { eventId, form: data.form, line: data.line }
+}
+
+/**
+ * 掷定一次事件打开期间的叙事快照。
+ *
+ * `roll` 可注入,测试无需碰全局随机源。回声与余波互斥:回声是「世界认得你」
+ * 的更强叙事,余波只是同一件事留下的痕迹;两者同时出现会把一屏小字叠成两段。
+ * 掷骰顺序固定为「先回声、再余波」,且每个事件只调用一次。
+ */
+export function rollEventNarrative(
+  eventId: string,
+  eventTitle: string,
+  eventMemories: Record<string, EventMemory>,
+  roll: () => number
+): EventNarrative {
+  const echo = eventId.startsWith('ft_') && roll() < ECHO_CHANCE ? echoFor(eventId) : null
+  if (echo) return { eventId, echo, aftermath: null }
+
+  const memory = eventMemories[eventId]
+  const aftermath =
+    memory && shouldTriggerAftermath(eventMemories, eventId, roll())
+      ? aftermathText(eventTitle, memory.times >= 3 ? 'good' : memory.times >= 2 ? 'echo' : 'silence')
+      : null
+  return { eventId, echo: null, aftermath }
 }

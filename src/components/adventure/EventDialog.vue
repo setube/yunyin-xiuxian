@@ -20,12 +20,12 @@
         <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">{{ tierDef.brief }}</p>
       </div>
       <!-- Phase 31.3 遗产回声:曾弃之缘,世界记得(叙事,无数值) -->
-      <p v-if="echo" class="mb-2 rounded-md border border-azure/30 bg-azure/5 px-3 py-2 text-[12px] leading-relaxed text-azure">
-        {{ echo.line }}
+      <p v-if="narrative.echo" class="mb-2 rounded-md border border-azure/30 bg-azure/5 px-3 py-2 text-[12px] leading-relaxed text-azure">
+        {{ narrative.echo.line }}
       </p>
       <!-- 世界记忆:余波文本(曾经完成过的事件,再次遭遇时概率出现) -->
-      <p v-else-if="aftermath" class="mb-2 border-l-2 border-gold-ink/60 pl-2 text-[11px] text-gold-ink">
-        {{ aftermath }}
+      <p v-else-if="narrative.aftermath" class="mb-2 border-l-2 border-gold-ink/60 pl-2 text-[11px] text-gold-ink">
+        {{ narrative.aftermath }}
       </p>
       <p class="text-[13px] leading-relaxed text-ink-soft">{{ def.text }}</p>
       <div class="mt-4 space-y-2">
@@ -68,8 +68,7 @@
   import { pendingChainStages } from '@/core/eventEngine'
   import { usePlayerStore } from '@/stores/player'
   import { afterEventResolved, exploreEventChance } from '@/core/exploration'
-  import { aftermathText, shouldTriggerAftermath } from '@/core/worldMemory'
-  import { echoFor, rollEcho, ECHO_CHANCE } from '@/core/fortuneEcho'
+  import { rollEventNarrative, type EventNarrative } from '@/core/fortuneEcho'
   import { rng } from '@/utils/random'
   import { eventTierDef, eventTierOf, tierOddsText, type EventTier } from '@/core/eventTier'
   import { choiceHintText } from '@/ui/eventText'
@@ -78,9 +77,14 @@
   const adventure = useAdventureStore()
 
   const result = ref<EventResolution | null>(null)
-  /** 本次弹窗的回声 roll(打开时一次,会话内稳定) */
-  let echoRolled = false
-  let echoActive = false
+  /**
+   * 本次事件的叙事快照 —— 事件 id 一变就重掷一次,之后重渲染只读它。
+   *
+   * 从前回声用组件级 `echoRolled` 锁死:组件全局常驻,第一件事之后再也不掷,
+   * 后来的机缘永远没有回声;余波则在 computed 里读随机数,父级每次重渲染都可能
+   * 让同一扇窗换一句。两处同根 —— 叙事掷骰没有归属到「这一件事」。
+   */
+  const narrative = ref<EventNarrative>({ eventId: '', echo: null, aftermath: null })
 
   const def = computed(() => (adventure.pendingEventId ? eventDef(adventure.pendingEventId) : undefined))
   /**
@@ -96,7 +100,11 @@
     id => {
       if (!id) return
       tierId.value = eventTierOf(id)
-      lastTitle.value = eventDef(id)?.title ?? lastTitle.value
+      const def = eventDef(id)
+      lastTitle.value = def?.title ?? lastTitle.value
+      narrative.value = def
+        ? rollEventNarrative(id, def.title, adventure.eventMemories, () => rng.float(0, 1))
+        : { eventId: id, echo: null, aftermath: null }
     },
     { immediate: true }
   )
@@ -114,29 +122,6 @@
   const chainPending = computed(() => pendingChainStages(usePlayerStore().major).length > 0)
   const tier = computed(() => adventure.currentRegion?.tier ?? 1)
   const open = computed(() => def.value !== undefined || result.value !== null)
-
-  /** Phase 31.3 遗产回声:曾弃机缘,极低概率(5%)触发"世界认出你"(打开时一次) */
-  const echo = computed(() => {
-    if (!def.value || result.value) return null
-    const evId = def.value.id
-    if (!evId.startsWith('ft_')) return null
-    if (!echoRolled) {
-      echoRolled = true
-      echoActive = rollEcho() < ECHO_CHANCE
-    }
-    return echoActive ? echoFor(evId) : null
-  })
-
-  /** 世界记忆:此事件是否已完过,若是则按概率决定余波文案 */
-  const aftermath = computed<string | null>(() => {
-    if (!def.value || result.value) return null
-    const mem = adventure.eventMemories[def.value.id]
-    if (!mem) return null
-    // 每次重遇都按 20% 掷一次:余波是「再次经历时的回声」,本该有反复;
-    // 用事件 id 的确定性 hash 锁死成恒真/恒假,同事件重遇 10 次也都是同一句、干脆不出现
-    if (!shouldTriggerAftermath(adventure.eventMemories, def.value.id, rng.float(0, 1))) return null
-    return aftermathText(def.value.title, mem.times >= 3 ? 'good' : mem.times >= 2 ? 'echo' : 'silence')
-  })
 
   function choose(idx: number): void {
     if (!def.value) return
