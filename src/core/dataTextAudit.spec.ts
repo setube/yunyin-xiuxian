@@ -198,7 +198,8 @@ describe('文案数值对账 · 视图不手抄数字', () => {
   })
 
   it('修行页的闭关文案取自 buffs.ts 的 retreat 本体', () => {
-    const view = src('../views/CultivationView.vue')
+    // 闭关卡拆出后判据随本体走
+    const view = src('../components/cultivation/RetreatCard.vue')
     expect(view, '闭关时长与加成应读 buff 定义').toContain("buffDef('retreat')")
     expect(view).not.toContain('5 分钟,修炼速度 +150%')
     expect(view).not.toContain('5分钟 修炼 +150%')
