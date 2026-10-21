@@ -14,7 +14,8 @@ describe('equipNextLevelText', () => {
   })
 
   it('装备详情在强化前写出这一行,不手写 12%', () => {
-    const src = readFileSync(resolve(__dirname, '../components/equipment/EquipmentDetailDialog.vue'), 'utf8')
+    // 强化行随面板迁入 components/equipment/UpgradePanel.vue,判据随本体走
+    const src = readFileSync(resolve(__dirname, '../components/equipment/UpgradePanel.vue'), 'utf8')
     expect(src).toContain('equipNextLevelText(inst.level)')
     expect(src).not.toContain('基础属性 +12%')
   })

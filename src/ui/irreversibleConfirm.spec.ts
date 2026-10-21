@@ -84,6 +84,17 @@ describe('不可逆确认的两次点击各写什么', () => {
   })
 
   /**
+   * 连升一级级扣到底,第一下只该摆出总账。故障注入:把第一步改回直接 runBatchUpgrade
+   * → 红。判据随面板走(components/equipment/UpgradePanel.vue)。
+   */
+  it('装备连升先摆总账,第二步才动手', () => {
+    const src = read('components/equipment/UpgradePanel.vue')
+    expect(src, '第一步只立起确认态').toContain('@click="batchConfirm = inst.uid"')
+    expect(src, '第二步才真连升').toContain('@click="runBatchUpgrade"')
+    expect(src, '取消词与同族一致').toContain('再想想')
+  })
+
+  /**
    * 确认态必须钉在「那一条」上,不能钉在它的行号上。
    *
    * 道痕表新痕插头部,而重写一次就会补一条新痕:按行号记的话,重写第一行后
