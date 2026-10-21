@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 306,
+  "round": 308,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T17:32:06+00:00",
+  "updated_at": "2026-10-21T17:58:06+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -21919,6 +21919,141 @@
       "title": "功法参悟与进修写出实际差额",
       "description": "新增 gongfaUpgradeShortfall；参悟、进修与详情文案同源写尚差。",
       "commit": "93bcd90"
+    },
+    "ISS-965": {
+      "id": "ISS-965",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:49:03+00:00",
+      "updated_at": "2026-10-21T17:51:16+00:00",
+      "touched_round": 307,
+      "title": "欢迎页导入存档读取失败没有任何回执",
+      "description": "FileReader.onload 有处理，但未挂 onerror；文件权限或磁盘读取失败时点击选择文件后界面完全无反应。",
+      "severity": 0.55
+    },
+    "ISS-966": {
+      "id": "ISS-966",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:49:03+00:00",
+      "updated_at": "2026-10-21T17:52:47+00:00",
+      "touched_round": 307,
+      "title": "穿梭传送门粒子样式在每次渲染时重掷",
+      "description": "starStyle/lineStyle 在模板渲染期间调用 Math.random，任何父级重渲染都会让粒子距离、大小和延迟跳变。",
+      "severity": 0.42
+    },
+    "ISS-967": {
+      "id": "ISS-967",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:49:03+00:00",
+      "updated_at": "2026-10-21T17:53:58+00:00",
+      "touched_round": 307,
+      "title": "Service Worker 更新监听 stop 后仍挂在 registration 上",
+      "description": "stop() 只翻转 stopped 标志，updatefound 与 statechange 监听仍持续存在；长期路由/组件重建会累积闭包。",
+      "severity": 0.38
+    },
+    "TASK-408": {
+      "id": "TASK-408",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T17:49:07+00:00",
+      "updated_at": "2026-10-21T17:51:16+00:00",
+      "touched_round": 307,
+      "category": "correctness",
+      "title": "欢迎页导入失败写出读取回执",
+      "description": "WelcomeView 补 reader.onerror，与设置页同一句回执，并用源码判据防止再次漏挂。",
+      "severity": 0.55,
+      "confidence": 0.98,
+      "effort": 1
+    },
+    "TASK-409": {
+      "id": "TASK-409",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T17:49:07+00:00",
+      "updated_at": "2026-10-21T17:52:47+00:00",
+      "touched_round": 307,
+      "category": "stability",
+      "title": "传送门粒子样式在展示时只生成一次",
+      "description": "show() 预生成星辰与速度线样式，模板只读快照；补静态判据禁止模板路径再调 Math.random。",
+      "severity": 0.42,
+      "confidence": 0.96,
+      "effort": 1.2
+    },
+    "TASK-410": {
+      "id": "TASK-410",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T17:49:07+00:00",
+      "updated_at": "2026-10-21T17:53:58+00:00",
+      "touched_round": 307,
+      "category": "stability",
+      "title": "Service Worker 更新监听 stop 时真正解绑",
+      "description": "保存 updatefound 与 statechange 监听引用，stop() 时 removeEventListener，并扩展状态机用例。",
+      "severity": 0.38,
+      "confidence": 0.97,
+      "effort": 1.1
+    },
+    "ISS-968": {
+      "id": "ISS-968",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:55:24+00:00",
+      "updated_at": "2026-10-21T17:56:16+00:00",
+      "touched_round": 308,
+      "title": "首页法球断点监听离页后仍挂在 matchMedia 上",
+      "description": "HomeView 在 setup 中 addEventListener change 却未保存或移除回调；每次重进首页都会累积闭包并继续写已卸载组件状态。",
+      "severity": 0.36
+    },
+    "TASK-411": {
+      "id": "TASK-411",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T17:55:24+00:00",
+      "updated_at": "2026-10-21T17:56:16+00:00",
+      "touched_round": 308,
+      "category": "stability",
+      "title": "首页法球断点监听随组件卸载",
+      "description": "保存 matchMedia change 回调并在 onUnmounted 移除；补可测试的订阅生命周期与源码判据。",
+      "severity": 0.36,
+      "confidence": 0.98,
+      "effort": 1
+    },
+    "ISS-969": {
+      "id": "ISS-969",
+      "type": "issue",
+      "status": "abandoned",
+      "version": 2,
+      "created_at": "2026-10-21T17:57:28+00:00",
+      "updated_at": "2026-10-21T17:58:06+00:00",
+      "touched_round": 308,
+      "title": "建号随机道号按钮一次点击消耗两次随机",
+      "description": "CreateView.randomName 连续调用两次 randomDaoName，第二次结果覆盖第一次；点击一次实际推进随机序列两次，且无可见收益。",
+      "severity": 0.32
+    },
+    "TASK-412": {
+      "id": "TASK-412",
+      "type": "task",
+      "status": "abandoned",
+      "version": 4,
+      "created_at": "2026-10-21T17:57:28+00:00",
+      "updated_at": "2026-10-21T17:58:06+00:00",
+      "touched_round": 308,
+      "category": "correctness",
+      "title": "建号随机道号一次点击只掷一次",
+      "description": "删除覆盖式第二次 randomDaoName，并补源码判据固定单次调用。",
+      "severity": 0.32,
+      "confidence": 0.99,
+      "effort": 0.6
     }
   },
   "edges": [
@@ -32476,6 +32611,36 @@
       "to": "ISS-964",
       "type": "resolves",
       "created_at": "2026-10-21T17:32:06+00:00"
+    },
+    {
+      "from": "TASK-408",
+      "to": "ISS-965",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:49:10+00:00"
+    },
+    {
+      "from": "TASK-409",
+      "to": "ISS-966",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:49:10+00:00"
+    },
+    {
+      "from": "TASK-410",
+      "to": "ISS-967",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:49:10+00:00"
+    },
+    {
+      "from": "TASK-411",
+      "to": "ISS-968",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:55:27+00:00"
+    },
+    {
+      "from": "TASK-412",
+      "to": "ISS-969",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:57:32+00:00"
     }
   ]
 }
