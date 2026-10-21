@@ -208,6 +208,19 @@ describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压
     expect(seen, '离线交手必须推进敌人图鉴').toBeGreaterThan(0)
   })
 
+  /**
+   * 镇压达成的回执两处(普通战 / 首领战)要与在线同源 —— 在线报的是
+   * suppressRateLine 的产出账(灵石/时 × 物产 × 兴衰),离线若只喊一句
+   * 「此地将自动产出资源」,同一件大事两套口径,玩家算不出挂机一夜这一区值多少。
+   * 故障注入:把任一处改回旧文案 → 本条红。
+   */
+  it('离线镇压达成的回执报产出账,与在线 suppressRateLine 同源', () => {
+    const offline = readFileSync(src('./offline.ts'), 'utf8')
+    expect(offline, '两处回执都该调唯一那份产出行').toContain('suppressRateLine(region.id, regionRecallFor(region.id).prosperity)')
+    expect(offline.match(/suppressRateLine\(region\.id/g)?.length, '普通战与首领战两处都要报').toBe(2)
+    expect(offline, '空话口径不许再出现').not.toContain('此地将自动产出资源')
+  })
+
   it('批量净胜的 EMA 与逐场调用一致(单源口径)', () => {
     const player = usePlayerStore()
     player.updateRegionStats('luoxia', true, 9, 0.5)

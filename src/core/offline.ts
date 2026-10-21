@@ -48,10 +48,10 @@ import { currentRegionEvent, regionEventDef } from './regionEvent'
 import { placeContent } from './mortalWorldService'
 import { expFromSecs, stoneByTier } from './formulas'
 import { breakthroughInfo } from './breakthrough'
-import { checkSuppression, settleSuppressedRegions } from './suppress'
+import { checkSuppression, settleSuppressedRegions, suppressRateLine } from './suppress'
 import { gainBondOpportunities } from './daoluService'
 import { harvestMaterials, noteEnemy, noteEnemyMany, studyTick } from './loreService'
-import { recordLossBatch, isNemesis, markAvenged, NEMESIS_THRESHOLD } from './worldMemory'
+import { recordLossBatch, isNemesis, markAvenged, regionRecallFor, NEMESIS_THRESHOLD } from './worldMemory'
 import { noteTaboo, vowResult } from './samsaraService'
 import { modOf, capChance } from './statsCalc'
 import { personalityEffects } from './petPersonality'
@@ -437,7 +437,10 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
           if (checkSuppression(player, region.id) && !player.suppressQualified.includes(region.id)) {
             player.markSuppressQualified(region.id)
             player.suppressRegion(region.id)
-            notes.push(`你已彻底镇压${region.name},此地将自动产出资源`)
+            // 与在线达成回执同一份产出账(suppressRateLine 单源),普通战/首领战两处同口径
+            notes.push(
+              `你已彻底镇压${region.name},此后将自动产出:${suppressRateLine(region.id, regionRecallFor(region.id).prosperity)}`
+            )
           }
         }
       }
@@ -515,7 +518,10 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             if (checkSuppression(player, region.id) && !player.suppressQualified.includes(region.id)) {
               player.markSuppressQualified(region.id)
               player.suppressRegion(region.id)
-              notes.push(`你已彻底镇压${region.name},此地将自动产出资源`)
+              // 与在线达成回执同一份产出账(suppressRateLine 单源),普通战/首领战两处同口径
+              notes.push(
+                `你已彻底镇压${region.name},此后将自动产出:${suppressRateLine(region.id, regionRecallFor(region.id).prosperity)}`
+              )
             }
             clearRegionAndUnlockNext(region.id)
             notes.push(offlineBossNoteText(bossDef.name))
