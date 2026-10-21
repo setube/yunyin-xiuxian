@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 316,
+  "round": 318,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T21:36:36+00:00",
+  "updated_at": "2026-10-21T21:51:12+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23011,6 +23011,65 @@
       "touched_round": 316,
       "commit": "9395ab8",
       "description": "所知写入统一只接受有限正增量；补 lore store 行为测试与故障注入"
+    },
+    "ISS-986": {
+      "id": "ISS-986",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T21:50:56+00:00",
+      "updated_at": "2026-10-21T21:51:12+00:00",
+      "touched_round": 318,
+      "title": "资源与丹匣公共写入未挡住非有限值和负数",
+      "severity": 0.9
+    },
+    "COMP-051": {
+      "id": "COMP-051",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T21:51:00+00:00",
+      "updated_at": "2026-10-21T21:51:00+00:00",
+      "touched_round": 318,
+      "name": "资源与丹匣公共写入边界",
+      "path": "src/stores/resources.ts,src/stores/inventory.ts"
+    },
+    "TASK-431": {
+      "id": "TASK-431",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T21:51:00+00:00",
+      "updated_at": "2026-10-21T21:51:12+00:00",
+      "touched_round": 318,
+      "category": "correctness",
+      "severity": 0.9,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "收口资源与丹匣公共加减接口的非有限值和反向扣款"
+    },
+    "EV-984": {
+      "id": "EV-984",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T21:51:04+00:00",
+      "updated_at": "2026-10-21T21:51:04+00:00",
+      "touched_round": 318,
+      "source": "src/stores/resources.spec.ts; src/stores/inventory.spec.ts; bun run test:report 3370 pass / 0 fail",
+      "confidence": 0.99,
+      "summary": "回退守卫后新增 5 条断言转红,恢复后 22/22 定向通过,全量 3370/0"
+    },
+    "CHG-531": {
+      "id": "CHG-531",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T21:51:04+00:00",
+      "updated_at": "2026-10-21T21:51:12+00:00",
+      "touched_round": 318,
+      "commit": "585c15e",
+      "summary": "资源与丹匣公共写入只认有限正数,扣款拒绝负数与非有限值,灵石与熔炉同边界"
     }
   },
   "edges": [
@@ -33994,6 +34053,30 @@
       "to": "ISS-985",
       "type": "resolves",
       "created_at": "2026-10-21T21:36:35+00:00"
+    },
+    {
+      "from": "TASK-431",
+      "to": "ISS-986",
+      "type": "addresses",
+      "created_at": "2026-10-21T21:51:08+00:00"
+    },
+    {
+      "from": "ISS-986",
+      "to": "COMP-051",
+      "type": "located_in",
+      "created_at": "2026-10-21T21:51:08+00:00"
+    },
+    {
+      "from": "CHG-531",
+      "to": "TASK-431",
+      "type": "implements",
+      "created_at": "2026-10-21T21:51:08+00:00"
+    },
+    {
+      "from": "CHG-531",
+      "to": "ISS-986",
+      "type": "resolves",
+      "created_at": "2026-10-21T21:51:08+00:00"
     }
   ]
 }
