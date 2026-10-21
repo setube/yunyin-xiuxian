@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 299,
+  "round": 300,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T15:14:02+00:00",
+  "updated_at": "2026-10-21T15:36:05+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -9625,7 +9625,7 @@
       "version": 1,
       "created_at": "2026-09-14T12:30:11+00:00",
       "updated_at": "2026-09-14T12:30:11+00:00",
-      "touched_round": 200,
+      "touched_round": 299,
       "summary": "天道终局系统(endgameService + endgame store + CelestialView):道源/道痕/熔炉/远征试炼/转世保留物"
     },
     "CHG-193": {
@@ -20075,7 +20075,7 @@
       "version": 1,
       "created_at": "2026-10-21T10:12:52+00:00",
       "updated_at": "2026-10-21T10:12:52+00:00",
-      "touched_round": 285,
+      "touched_round": 299,
       "name": "装备重铸页脚",
       "path": "src/components/equipment/EquipReforgeFooter.vue"
     },
@@ -20086,7 +20086,7 @@
       "version": 1,
       "created_at": "2026-10-21T10:12:52+00:00",
       "updated_at": "2026-10-21T10:12:52+00:00",
-      "touched_round": 285,
+      "touched_round": 299,
       "name": "法宝祭炼面板",
       "path": "src/components/inventory/ArtifactPanel.vue"
     },
@@ -20345,7 +20345,7 @@
       "version": 1,
       "created_at": "2026-10-21T11:04:58+00:00",
       "updated_at": "2026-10-21T11:04:58+00:00",
-      "touched_round": 288,
+      "touched_round": 300,
       "title": "熔炉扣料失败静默与秘境入口泛称同属可观测性缺口",
       "description": "两处均在资源判据通过后扣款失败时缺少可读回执，玩家无法区分余额变化与界面失效。",
       "confidence": 0.9
@@ -21092,6 +21092,149 @@
       "title": "天界与炼器收徒差额门禁全绿",
       "source": "bun run check; bun run test:report 3283/0; bun run build; bun scripts/ui-smoke.mjs 17 页 103 次点击; 故障注入三处均转红后恢复",
       "confidence": 1.0
+    },
+    "ISS-949": {
+      "id": "ISS-949",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T15:22:56+00:00",
+      "updated_at": "2026-10-21T15:36:00+00:00",
+      "touched_round": 300,
+      "title": "法宝祭炼付不起时 toast 仍只写笼统未足",
+      "description": "ArtifactPanel 行内已列悟道与灵石实际差额,upgradeArtifact 与 upgradeArtifactBatch 的服务回执仍走 artifactShortToast(short) 的「悟道点未足 / 灵石未足」,点下按钮拿不到尚差数。",
+      "severity": 0.55
+    },
+    "TASK-392": {
+      "id": "TASK-392",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T15:22:56+00:00",
+      "updated_at": "2026-10-21T15:36:05+00:00",
+      "touched_round": 300,
+      "title": "法宝祭炼单炼与连炼回执写出实际差额",
+      "description": "让 artifactShortToast 接收与 artifactShortfall 同源的差额,单炼、连炼零重与批量中途失败都报尚差数;补行为与静态守卫并做故障注入。",
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 0.97,
+      "effort": 1.5,
+      "unlock_factor": 1
+    },
+    "ISS-950": {
+      "id": "ISS-950",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T15:23:02+00:00",
+      "updated_at": "2026-10-21T15:36:00+00:00",
+      "touched_round": 300,
+      "title": "自动重铸首炉缺料与封存回执不报实际差额",
+      "description": "useAutoReforge 首炉 broke 只写「器灵尘未足 / 灵石未足」,reforge.ts 的封存失败只写「灵石未足」;两处界面已能算出精确缺口。",
+      "severity": 0.58
+    },
+    "TASK-393": {
+      "id": "TASK-393",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T15:23:02+00:00",
+      "updated_at": "2026-10-21T15:36:05+00:00",
+      "touched_round": 300,
+      "title": "自动重铸与封存回执写出实际差额",
+      "description": "首炉缺料按 reforgeShortfall 报尚差;封存按 sealCost 与余额报石差;手动重铸回执同源;补行为、静态守卫与故障注入。",
+      "category": "correctness",
+      "severity": 0.58,
+      "confidence": 0.97,
+      "effort": 2,
+      "unlock_factor": 1
+    },
+    "ISS-951": {
+      "id": "ISS-951",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T15:23:08+00:00",
+      "updated_at": "2026-10-21T15:36:00+00:00",
+      "touched_round": 300,
+      "title": "天道熔炉灵石熔铸付不起仍可点",
+      "description": "FurnaceDialog 的灵石熔铸钮未按 furnaceStoneCost 与余额前置置灰,点下才由 furnaceConvertStone 报尚差;同册道果钮已置灰,灵石行仍是死按钮。",
+      "severity": 0.48
+    },
+    "TASK-394": {
+      "id": "TASK-394",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T15:23:08+00:00",
+      "updated_at": "2026-10-21T15:36:05+00:00",
+      "touched_round": 300,
+      "title": "天道熔炉灵石熔铸按石差前置置灰",
+      "description": "在 FurnaceDialog 按 furnaceStoneCost 算石差,付不起即禁用并就地写尚差;服务拒因保持同源,补静态与行为守卫。",
+      "category": "correctness",
+      "severity": 0.48,
+      "confidence": 0.98,
+      "effort": 1,
+      "unlock_factor": 1
+    },
+    "EV-961": {
+      "id": "EV-961",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T15:35:30+00:00",
+      "updated_at": "2026-10-21T15:35:30+00:00",
+      "touched_round": 300,
+      "title": "祭炼与重铸差额回执故障注入转红",
+      "source": "src/core/forgeArtifactBatch.spec.ts; src/core/reforge.spec.ts; src/ui/forgeText.spec.ts; src/ui/reforgeText.spec.ts",
+      "summary": "删掉 toast 差额参数或自动重铸 gap 后对应断言均转红,恢复后转绿。",
+      "confidence": 1.0
+    },
+    "EV-962": {
+      "id": "EV-962",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T15:35:34+00:00",
+      "updated_at": "2026-10-21T15:35:34+00:00",
+      "touched_round": 300,
+      "title": "熔炉灵石熔铸静态守卫故障注入转红",
+      "source": "src/core/dataTextAudit.spec.ts",
+      "summary": "移除 stoneShort 的 :disabled 或把按钮文案改回灵石不足,dataTextAudit 均转红;恢复后转绿。",
+      "confidence": 1.0
+    },
+    "CHG-505": {
+      "id": "CHG-505",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T15:35:39+00:00",
+      "updated_at": "2026-10-21T15:35:39+00:00",
+      "touched_round": 300,
+      "title": "祭炼差额回执与连炼实账",
+      "commit": "90768b6"
+    },
+    "CHG-506": {
+      "id": "CHG-506",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T15:35:39+00:00",
+      "updated_at": "2026-10-21T15:35:39+00:00",
+      "touched_round": 300,
+      "title": "重铸与封存差额回执",
+      "commit": "016bf2b"
+    },
+    "CHG-507": {
+      "id": "CHG-507",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T15:35:39+00:00",
+      "updated_at": "2026-10-21T15:35:39+00:00",
+      "touched_round": 300,
+      "title": "熔炉灵石熔铸前置石差",
+      "commit": "8e17f7f"
     }
   },
   "edges": [
@@ -31247,6 +31390,90 @@
       "to": "TASK-391",
       "type": "implements",
       "created_at": "2026-10-21T15:13:57+00:00"
+    },
+    {
+      "from": "TASK-392",
+      "to": "ISS-949",
+      "type": "addresses",
+      "created_at": "2026-10-21T15:23:32+00:00"
+    },
+    {
+      "from": "ISS-949",
+      "to": "COMP-031",
+      "type": "located_in",
+      "created_at": "2026-10-21T15:23:32+00:00"
+    },
+    {
+      "from": "TASK-393",
+      "to": "ISS-950",
+      "type": "addresses",
+      "created_at": "2026-10-21T15:23:32+00:00"
+    },
+    {
+      "from": "ISS-950",
+      "to": "COMP-030",
+      "type": "located_in",
+      "created_at": "2026-10-21T15:23:32+00:00"
+    },
+    {
+      "from": "TASK-394",
+      "to": "ISS-951",
+      "type": "addresses",
+      "created_at": "2026-10-21T15:23:32+00:00"
+    },
+    {
+      "from": "ISS-951",
+      "to": "COMP-017",
+      "type": "located_in",
+      "created_at": "2026-10-21T15:23:32+00:00"
+    },
+    {
+      "from": "CHG-505",
+      "to": "TASK-392",
+      "type": "implements",
+      "created_at": "2026-10-21T15:35:44+00:00"
+    },
+    {
+      "from": "CHG-505",
+      "to": "ISS-949",
+      "type": "resolves",
+      "created_at": "2026-10-21T15:35:44+00:00"
+    },
+    {
+      "from": "CHG-506",
+      "to": "TASK-393",
+      "type": "implements",
+      "created_at": "2026-10-21T15:35:44+00:00"
+    },
+    {
+      "from": "CHG-506",
+      "to": "ISS-950",
+      "type": "resolves",
+      "created_at": "2026-10-21T15:35:44+00:00"
+    },
+    {
+      "from": "CHG-507",
+      "to": "TASK-394",
+      "type": "implements",
+      "created_at": "2026-10-21T15:35:44+00:00"
+    },
+    {
+      "from": "CHG-507",
+      "to": "ISS-951",
+      "type": "resolves",
+      "created_at": "2026-10-21T15:35:44+00:00"
+    },
+    {
+      "from": "EV-961",
+      "to": "HYP-111",
+      "type": "validates",
+      "created_at": "2026-10-21T15:35:49+00:00"
+    },
+    {
+      "from": "EV-962",
+      "to": "HYP-111",
+      "type": "validates",
+      "created_at": "2026-10-21T15:35:49+00:00"
     }
   ]
 }
