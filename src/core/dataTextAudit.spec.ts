@@ -215,6 +215,19 @@ describe('文案数值对账 · 视图不手抄数字', () => {
     const host = src('../views/MarketView.vue')
     expect(host, '宿主只切签,不再自己拼售出价').not.toMatch(/consignPrice\(|herbSellBatch\(|materialSellPrice\(|pillSellPrice\(/)
   })
+
+  it('坊市悬赏板的可交判据与页签圆点读同一份订单投影', () => {
+    // 悬赏板随本体迁入 BountyBoardSection,投影收进 useBountyRows
+    const board = src('../components/market/BountyBoardSection.vue')
+    const rows = src('../composables/useBountyRows.ts')
+    const host = src('../views/MarketView.vue')
+    expect(rows, '订单投影该由 composable 统一给出').toContain('function renderBounty(')
+    expect(rows, '可交判据按四类存货分别算').toContain('inventory.bagItems.some(e => e.tier >= s.tier)')
+    expect(board, '悬赏板读同一份投影').toContain('useBountyRows()')
+    expect(host, '页签圆点也读同一份投影').toContain('useBountyRows()')
+    expect(host, '宿主不再自己摊订单').not.toContain('renderBounty(')
+    expect(host, '圆点不得另起一套可交判据').not.toMatch(/bounty\.orders\.some\(/)
+  })
 })
 
 /**
