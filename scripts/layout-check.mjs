@@ -167,6 +167,13 @@ let zoomSeen = 0
  */
 async function auditModalControls(page) {
   return page.evaluate(() => {
+    // 测量标准化与 measurePage 同一口径:弹窗的入场过渡(page-fade / modal 过渡)进行中
+    // 量几何,量到的是动画中间帧 —— 「进入前请确认」弹窗里的《隐私政策》按钮
+    // 曾在桌面档被量出 26.3px(声明 min-h 28px),390 档却全绿。注入动画禁令后
+    // 量的是稳态布局,与截图口径一致。
+    const st = document.createElement('style')
+    st.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}'
+    document.head.appendChild(st)
     const panel = document.querySelector('.modal-panel')
     if (!panel) return null
     const rows = [...panel.querySelectorAll('button, a, [role=button]')]
@@ -267,16 +274,52 @@ async function readFormatted(page, title) {
  */
 async function measurePage(page) {
   return page.evaluate(() => {
+    // 测量标准化:入场动画(stagger-in 的位移、breathe 的缩放)进行中量几何,
+    // 量到的是动画中间帧 —— /create 的灵根圆环曾在 stagger 中段被量出左右各越 5px。
+    // 截图有 animations:'disabled',测量也必须同一口径:测的是稳态布局,不是中间帧。
+    // (减动效自检按 duration/iteration 另量,不受这条注入影响。)
+    const st = document.createElement('style')
+    st.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}'
+    document.head.appendChild(st)
     const vw = window.innerWidth
     const overflows = [...document.querySelectorAll('body *')]
       .filter(el => {
         const r = el.getBoundingClientRect()
-        if (r.width <= 0 || r.right <= vw + 2) return false
-        // 纯装饰层(墨爆/传送门)故意超出视口,且不吃事件,不算排版事故
-        return !el.classList.contains('pointer-events-none') && !el.closest('.pointer-events-none')
+        /**
+         * 越界 = 右缘冲出右界 或 左缘冲出左界。此前只查右缘:一个被推离**左**缘的块
+         * (负 left / -mx-*)只要右缘仍落在视口内,scrollWidth 不涨、r.right 也不超,
+         * 横向溢出判据整条失灵。
+         */
+        const rightOver = r.right > vw + 2
+        const leftOver = r.left < -1
+        if (r.width <= 0 || (!rightOver && !leftOver)) return false
+        /**
+         * 纯装饰层(墨爆 / 传送门 / 法球的三层旋转环)故意越过视口边缘,且不吃事件,不算排版事故。
+         *
+         * 判据看的是**计算后的 pointer-events**,不是类名 —— 组件里关掉事件用的是自定义类
+         * (如 .ring-layer),按类名找 .pointer-events-none 会漏掉它们;而旋转中的方形盒子
+         * 其 getBoundingClientRect() 会随动画相位涨到 √2 倍,于是同一处装饰一会儿过、一会儿不过
+         * —— 那是量法在抖,不是排版在坏。
+         */
+        for (let node = el; node; node = node.parentElement) {
+          if (getComputedStyle(node).pointerEvents === 'none') return false
+        }
+        /**
+         * 横向滚动轨里的内容**本来就该**超出取景 —— 容器自己负责滚,玩家滚得到。
+         * 只豁免 auto/scroll,不豁免 overflow-hidden(外壳那层 hidden 恰恰是「玩家滚不动」的事故层)。
+         */
+        for (let node = el.parentElement; node; node = node.parentElement) {
+          const s = getComputedStyle(node)
+          if (s.overflowX === 'auto' || s.overflowX === 'scroll') return false
+        }
+        return true
       })
       .slice(0, 4)
-      .map(el => `${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]}@${Math.round(el.getBoundingClientRect().right)}`)
+      .map(el => {
+        const r = el.getBoundingClientRect()
+        const side = r.left < -1 ? 'L' : r.right > vw + 2 ? 'R' : '?'
+        return `${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]}@${side}${Math.round(r.left)}..${Math.round(r.right)}`
+      })
     return {
       hash: location.hash,
       horizontalOverflow: document.documentElement.scrollWidth > vw + 1,

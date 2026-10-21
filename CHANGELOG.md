@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 修复:**排版自检的量法补三处口径** —— 量几何前冻结动画与过渡(与截图 `animations:"disabled"` 同口径),否则入场动画进行中量到的是中间帧;横向越界左右两侧都查,负边距推到左缘外的块不再漏检;纯装饰层按**计算后的** `pointer-events` 豁免而非按类名,滚动轨内的内容算设计。另立 `layoutMeasure.spec.ts` 钉住这三条口径(脚本不在 CI 里跑,此前零信号),README 的 spec 计数随之对账。
 - 调整:**功法区迁 `GongfaSection`** —— 悟道兑换、主修卡、门类切换、已习列表与参悟按钮共读同一份门类投影与同一池条件,却把分类、参悟余量与可升层判据全留在修行页里;现整区迁入 `components/cultivation/GongfaSection.vue`,并吸收 xian 的三处收益:门类栏报**本门**参悟余量、残页不足时参悟按钮置灰并写出还差几页、tabs 与面板补上 `aria-controls`/`aria-labelledby` 关联,`CultivationView` 收至 325 行。
 - 调整:**破境卡迁出修行页** —— 「下一步」、进阶成功率与四点来路、突破准备(调息/备药)与引劫按钮本来只服务破境这一件事,却与修为/灵气读数挤在同一张卡里;现整块迁入 `components/cultivation/BreakthroughCard.vue`(自取 store,成功率与备药判据仍读 `core/breakthrough` 与 `BREAKTHROUGH_PREP_OPTIONS`),`CultivationView` 收至 565 行。
 - 调整:**劫势摘要与详情迁出修行页** —— 决意前的劫型、四维准备、此劫账单、界膜加难、天威区间与灵根相应原与进阶成功率同挤在 828 行的页面里;现账收进 `composables/useTribulation.ts`,摘要卡与详情分别迁入 `components/cultivation/TribulationCard.vue` / `TribulationDetail.vue`(两处同读一份账),`CultivationView` 收至 663 行。
