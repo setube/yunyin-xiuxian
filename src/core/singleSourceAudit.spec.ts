@@ -13,6 +13,7 @@ const SOURCES = import.meta.glob(
   [
     '../views/AdventureView.vue',
     '../components/adventure/CombatPanel.vue',
+    '../components/adventure/BattleIntelPanel.vue',
     '../components/adventure/RegionCard.vue',
     '../components/adventure/ExploreModeDialog.vue',
     '../composables/useRegionRows.ts',
@@ -70,6 +71,25 @@ describe('同源审计 · 区域之主的门槛', () => {
     const src = readSrc('CombatPanel.vue')
     expect(src).toContain('winsUntilRegionBoss')
     expect(src, '提示自己比一遍门槛,改常数时提示就开始撒谎').not.toContain('EXPLORE_BOSS_AFTER_WINS')
+  })
+
+  it('战斗情报四块只在 BattleIntelPanel,宿主不再自持一份', () => {
+    const host = readSrc('CombatPanel.vue')
+    const intel = readSrc('BattleIntelPanel.vue')
+    // 判「谁在算」而不是「谁提到」:宿主只剩挂载
+    // `enemyLoreView` 不在此列:宿主仍要它判「眼熟门」与特性星级,那是纯读函数的第二处调用
+    for (const token of ['battleSummary', 'battleLoot', 'analysisSections', 'showAnalysis', 'showLore']) {
+      expect(host, `宿主不该再自己算 ${token}`).not.toContain(token)
+    }
+    for (const token of ['battleSummary', 'battleLoot', 'analysisSections', 'showAnalysis', 'showLore']) {
+      expect(intel, `情报面板该由自己算 ${token}`).toContain(token)
+    }
+    expect(intel, '此物所知仍在情报面板里读').toContain('enemyLoreView(')
+    expect(host, '宿主该挂载情报面板').toContain('<BattleIntelPanel')
+    // 战报那一行必须仍是四段实账:只留「几回合 · 胜负」的话,抢先与战后气血就没人报了
+    expect(intel, '战报行要点名回合数').toContain('此战 ${r.rounds} 回合')
+    expect(intel, '战报行要报战后气血').toContain('战后气血')
+    expect(intel, '战报行要报先手').toContain('抢先')
   })
 })
 

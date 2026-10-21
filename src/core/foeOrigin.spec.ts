@@ -297,8 +297,11 @@ describe('来源到屏幕的接线', () => {
   const src = (p: string): string => readFileSync(resolve(__dirname, p), 'utf8')
 
   it('历练战报读同一份归因(逐项摊开的那一份)', () => {
+    // 战斗情报四块随本体迁入 BattleIntelPanel:判据跟着走
+    const intel = src('../components/adventure/BattleIntelPanel.vue')
+    expect(intel, '战斗分析面板该照 analyzeBattle 讲').toContain('analyzeBattle(')
     const panel = src('../components/adventure/CombatPanel.vue')
-    expect(panel, '战斗分析面板该照 analyzeBattle 讲').toContain('analyzeBattle(')
+    expect(panel, '宿主只挂载情报面板,不许再自己算分析').not.toContain('analyzeBattle(')
     // 地界卡与出行弹窗各成一域:判据随本体走
     const card = src('../components/adventure/RegionCard.vue')
     expect(card, '卡片该摊开已算好的来源').toContain('foeOrigin')
