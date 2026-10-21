@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 304,
+  "round": 305,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T17:01:13+00:00",
+  "updated_at": "2026-10-21T17:21:40+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -21751,6 +21751,135 @@
       "confidence": 0.98,
       "effort": 1,
       "unlock_factor": 1
+    },
+    "CHG-512": {
+      "id": "CHG-512",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T17:13:44+00:00",
+      "updated_at": "2026-10-21T17:13:44+00:00",
+      "touched_round": 304,
+      "title": "修行页付不起时前置置灰并写实际差额",
+      "description": "悟道兑换、突破备药、灵气疗伤与器魂入炉统一同源拒因；提交 249f80e。",
+      "commit": "249f80e"
+    },
+    "ISS-961": {
+      "id": "ISS-961",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:15:26+00:00",
+      "updated_at": "2026-10-21T17:15:32+00:00",
+      "touched_round": 305,
+      "title": "灵脉投点拒因不报实际石差",
+      "description": "VeinInvestCard 投点钮只写缺灵石；单点与连投拒因只写灵石未足，玩家须自行减余额。",
+      "severity": 0.55
+    },
+    "TASK-404": {
+      "id": "TASK-404",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T17:15:27+00:00",
+      "updated_at": "2026-10-21T17:15:32+00:00",
+      "touched_round": 305,
+      "title": "灵脉单点与连投写出实际石差",
+      "description": "新增 veinPointShortfall；投点钮、单点与批量拒因同读，写出尚差数。",
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 0.98,
+      "effort": 1
+    },
+    "ISS-962": {
+      "id": "ISS-962",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:20:05+00:00",
+      "updated_at": "2026-10-21T17:20:14+00:00",
+      "touched_round": 305,
+      "title": "炼丹只缺灵石时计划不报实际石差",
+      "description": "craftBatchPlan 只缺石时写灵石未足且无 shortStone；单炉与连炼零炉回执只写笼统未足。",
+      "severity": 0.55
+    },
+    "TASK-405": {
+      "id": "TASK-405",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:20:05+00:00",
+      "updated_at": "2026-10-21T17:20:13+00:00",
+      "touched_round": 305,
+      "title": "炼丹计划与回执写出实际草石差额",
+      "description": "新增 craftShortfall 与 shortStone；计划、单炉、连炼零炉与文案同源写实际差额。",
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 0.98,
+      "effort": 1.2
+    },
+    "ISS-963": {
+      "id": "ISS-963",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:20:09+00:00",
+      "updated_at": "2026-10-21T17:20:14+00:00",
+      "touched_round": 305,
+      "title": "天道熔炉材料不足只报总门槛",
+      "description": "灵草/玄铁/残页/器灵尘不够一缕时回执写总需求而非实际差量，玩家须自行减库存。",
+      "severity": 0.5
+    },
+    "TASK-406": {
+      "id": "TASK-406",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:20:09+00:00",
+      "updated_at": "2026-10-21T17:20:13+00:00",
+      "touched_round": 305,
+      "title": "天道熔炉材料不足写出实际差量",
+      "description": "新增 furnaceMaterialShortfall；预览与扣料失败两条回执同读。",
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.98,
+      "effort": 0.8
+    },
+    "CHG-513": {
+      "id": "CHG-513",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T17:21:35+00:00",
+      "updated_at": "2026-10-21T17:21:35+00:00",
+      "touched_round": 305,
+      "title": "灵脉投点写出实际石差",
+      "description": "新增 veinPointShortfall；投点钮、单点与批量拒因同读并报尚差。",
+      "commit": "4e0c2f5"
+    },
+    "CHG-514": {
+      "id": "CHG-514",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T17:21:35+00:00",
+      "updated_at": "2026-10-21T17:21:35+00:00",
+      "touched_round": 305,
+      "title": "炼丹计划与回执写出实际草石差额",
+      "description": "新增 craftShortfall 与 shortStone；计划、单炉、连炼零炉同源。",
+      "commit": "494ac7d"
+    },
+    "CHG-515": {
+      "id": "CHG-515",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T17:21:35+00:00",
+      "updated_at": "2026-10-21T17:21:35+00:00",
+      "touched_round": 305,
+      "title": "天道熔炉材料不足写出实际差量",
+      "description": "新增 furnaceMaterialShortfall；预览与扣料失败同源。",
+      "commit": "e877d82"
     }
   },
   "edges": [
@@ -32188,6 +32317,108 @@
       "to": "ISS-960",
       "type": "addresses",
       "created_at": "2026-10-21T17:01:07+00:00"
+    },
+    {
+      "from": "CHG-512",
+      "to": "TASK-400",
+      "type": "implements",
+      "created_at": "2026-10-21T17:13:47+00:00"
+    },
+    {
+      "from": "CHG-512",
+      "to": "TASK-401",
+      "type": "implements",
+      "created_at": "2026-10-21T17:13:47+00:00"
+    },
+    {
+      "from": "CHG-512",
+      "to": "TASK-402",
+      "type": "implements",
+      "created_at": "2026-10-21T17:13:48+00:00"
+    },
+    {
+      "from": "CHG-512",
+      "to": "TASK-403",
+      "type": "implements",
+      "created_at": "2026-10-21T17:13:48+00:00"
+    },
+    {
+      "from": "CHG-512",
+      "to": "ISS-957",
+      "type": "resolves",
+      "created_at": "2026-10-21T17:13:48+00:00"
+    },
+    {
+      "from": "CHG-512",
+      "to": "ISS-958",
+      "type": "resolves",
+      "created_at": "2026-10-21T17:13:48+00:00"
+    },
+    {
+      "from": "CHG-512",
+      "to": "ISS-959",
+      "type": "resolves",
+      "created_at": "2026-10-21T17:13:48+00:00"
+    },
+    {
+      "from": "CHG-512",
+      "to": "ISS-960",
+      "type": "resolves",
+      "created_at": "2026-10-21T17:13:48+00:00"
+    },
+    {
+      "from": "TASK-404",
+      "to": "ISS-961",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:15:29+00:00"
+    },
+    {
+      "from": "TASK-405",
+      "to": "ISS-962",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:20:13+00:00"
+    },
+    {
+      "from": "TASK-406",
+      "to": "ISS-963",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:20:13+00:00"
+    },
+    {
+      "from": "CHG-513",
+      "to": "TASK-404",
+      "type": "implements",
+      "created_at": "2026-10-21T17:21:39+00:00"
+    },
+    {
+      "from": "CHG-513",
+      "to": "ISS-961",
+      "type": "resolves",
+      "created_at": "2026-10-21T17:21:39+00:00"
+    },
+    {
+      "from": "CHG-514",
+      "to": "TASK-405",
+      "type": "implements",
+      "created_at": "2026-10-21T17:21:39+00:00"
+    },
+    {
+      "from": "CHG-514",
+      "to": "ISS-962",
+      "type": "resolves",
+      "created_at": "2026-10-21T17:21:40+00:00"
+    },
+    {
+      "from": "CHG-515",
+      "to": "TASK-406",
+      "type": "implements",
+      "created_at": "2026-10-21T17:21:40+00:00"
+    },
+    {
+      "from": "CHG-515",
+      "to": "ISS-963",
+      "type": "resolves",
+      "created_at": "2026-10-21T17:21:40+00:00"
     }
   ]
 }
