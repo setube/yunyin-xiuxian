@@ -299,11 +299,15 @@ describe('来源到屏幕的接线', () => {
   it('历练战报读同一份归因(逐项摊开的那一份)', () => {
     const panel = src('../components/adventure/CombatPanel.vue')
     expect(panel, '战斗分析面板该照 analyzeBattle 讲').toContain('analyzeBattle(')
-    const view = src('../views/AdventureView.vue')
-    expect(view, '选地卡片该摊开层级补偿与地界凶险').toContain('regionFoeOrigin(')
-    expect(view, '卡片与战报共用同一个格式化').toContain('foeOriginPartsText(')
-    expect(view, '出行弹窗的遇险必须用与开战同一份 explorationFoeDanger').toContain('explorationFoeDanger')
-    expect(view, '遇险数字要出现在出发按钮上').toContain('departButtonText')
+    // 地界卡与出行弹窗各成一域:判据随本体走
+    const card = src('../components/adventure/RegionCard.vue')
+    expect(card, '卡片该摊开已算好的来源').toContain('foeOrigin')
+    expect(card, '卡片与战报共用同一个格式化').toContain('foeOriginPartsText(')
+    const rows = src('../composables/useRegionRows.ts')
+    expect(rows, '区域投影该读同一份归因').toContain('regionFoeOrigin(')
+    const dialog = src('../components/adventure/ExploreModeDialog.vue')
+    expect(dialog, '出行弹窗的遇险必须用与开战同一份 explorationFoeDanger').toContain('explorationFoeDanger')
+    expect(dialog, '遇险数字要出现在出发按钮上').toContain('departButtonText')
   })
 
   it('天界战报(试炼/变数/忆战/重写/挑战)也读它,不再只有远征能说清判定', () => {

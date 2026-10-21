@@ -13,6 +13,9 @@ const SOURCES = import.meta.glob(
   [
     '../views/AdventureView.vue',
     '../components/adventure/CombatPanel.vue',
+    '../components/adventure/RegionCard.vue',
+    '../components/adventure/ExploreModeDialog.vue',
+    '../composables/useRegionRows.ts',
     '../core/exploration.ts',
     '../core/offline.ts'
   ],
@@ -31,8 +34,8 @@ function readSrc(fileName: string): string {
 }
 
 describe('同源审计 · 镇压速率', () => {
-  it('历练页的镇压速率走 suppressRateLine,自己不许再算一遍 stoneByTier', () => {
-    const src = readSrc('AdventureView.vue')
+  it('地界卡的镇压速率走 suppressRateLine,自己不许再算一遍 stoneByTier', () => {
+    const src = readSrc('RegionCard.vue')
     expect(src, '界面必须用唯一那份速率实现').toContain('suppressRateLine')
     // 判「有没有再算一遍」而不是「有没有提到这个词」:注释里解释这件事本身是好事
     expect(src, '界面自己算一遍就等于第二份真相源(调常数时界面开始撒谎)').not.toMatch(/stoneByTier\s*\(/)

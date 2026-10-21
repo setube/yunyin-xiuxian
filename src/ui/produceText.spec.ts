@@ -10,7 +10,8 @@ describe('地界物产文案', () => {
   })
 
   it('页面模板只调函数、不手打文案(同源防线)', () => {
-    const view = readFileSync(new URL('../views/AdventureView.vue', import.meta.url), 'utf8')
+    // 地界卡已迁出宿主:判据随本体走,读卡片而不是页面
+    const view = readFileSync(new URL('../components/adventure/RegionCard.vue', import.meta.url), 'utf8')
     expect(view).toContain('produceTierText(')
     expect(view).not.toMatch(/产\s+\d+\s*阶之物/)
   })

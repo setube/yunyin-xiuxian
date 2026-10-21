@@ -36,12 +36,16 @@ describe('出发按钮与结算同一套数', () => {
     expect(line).toContain('遇敌约 12秒')
   })
 
-  it('历练页出发按钮不再手抄档位原时长', () => {
-    const view = readFileSync(new URL('../views/AdventureView.vue', import.meta.url), 'utf8')
-    expect(view).toContain('departButtonText')
-    expect(view).toContain('exploreDurationSec')
-    expect(view).toContain('explorationFoeDanger')
-    expect(view).not.toContain('EXPLORE_MODES[m.id].durationSec')
+  it('出行弹窗的出发按钮不再手抄档位原时长', () => {
+    const dialog = readFileSync(new URL('../components/adventure/ExploreModeDialog.vue', import.meta.url), 'utf8')
+    // 钉住「真的拿它算并返回」:只查导入/提及的话,函数体改成写死文案照样绿
+    expect(dialog, '出发按钮文案要真从 departButtonText 来').toContain('return departButtonText({')
+    expect(dialog, '时长要真从 exploreDurationSec 取').toContain('durationSec: exploreDurationSec(')
+    expect(dialog, '遇险要真从 explorationFoeDanger 取').toContain('explorationFoeDanger({')
+    expect(dialog).not.toContain('EXPLORE_MODES[m.id].durationSec')
+    // 判据随本体走:宿主只出开关,不许再把三档账搬回去
+    const host = readFileSync(new URL('../views/AdventureView.vue', import.meta.url), 'utf8')
+    expect(host, '宿主不该再自己算三档账').not.toContain('departButtonText')
   })
 
   it('灵兽之性那行:有数的给数(遇险/行程),没数的只定性(掉宝/护持),无伴则空', () => {
@@ -58,8 +62,8 @@ describe('出发按钮与结算同一套数', () => {
   })
 
   it('出行弹窗摊开灵兽之性,不手抄「遇险 ×0.95」这类数', () => {
-    const view = readFileSync(new URL('../views/AdventureView.vue', import.meta.url), 'utf8')
-    expect(view).toContain('petTraitTripLine(')
+    const view = readFileSync(new URL('../components/adventure/ExploreModeDialog.vue', import.meta.url), 'utf8')
+    expect(view, '灵兽那行要真调用同一份格式化').toContain('petTraitTripLine(')
     expect(view).not.toMatch(/遇险\s*×\s*0\.9\d/)
     expect(view).not.toMatch(/遇险\s*×\s*1\.1\d/)
   })

@@ -369,13 +369,15 @@ describe('文案数值对账 · 手写的门槛与容量', () => {
    * 可它读的是一个会变的门槛。界面必须从 SUPPRESS_THRESHOLDS 现取。
    */
   it('镇压门槛的「20」与「胜」都取自 SUPPRESS_THRESHOLDS,界面不手抄', () => {
+    // 判据分两处:门槛总纲仍在宿主,逐行进度随地界卡迁走
     const view = src('../views/AdventureView.vue')
+    const card = src('../components/adventure/RegionCard.vue')
     expect(view, '总纲应读 minWins').toContain('SUPPRESS_THRESHOLDS.minWins')
-    expect(view, '进度应读 needWins').toContain('row.progress.needWins')
+    expect(card, '进度应读 needWins').toContain('row.progress.needWins')
     // 这一项数的是胜场:写成「战」会让人以为败场也算(曾因此误导过一次修复)
     expect(view, '门槛说成「胜」而不是「战」').toContain('胜 {{ SUPPRESS_THRESHOLDS.minWins }} 场')
-    expect(view, '进度也说成「胜」').toContain('}} 胜')
-    expect(view, '手写的「20 战」应改读常数').not.toContain('20 战')
+    expect(card, '进度也说成「胜」').toContain('}} 胜')
+    expect(view + card, '手写的「20 战」应改读常数').not.toContain('20 战')
   })
 
   /**

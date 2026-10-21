@@ -83,294 +83,51 @@
             <span class="h-px grow bg-ink/10" />
             <span class="text-[10px] text-ink-faint">{{ group.rows.length }} 处</span>
           </div>
-        <div
+        <RegionCard
           v-for="row in group.rows"
           :key="row.def.id"
-          data-region-card
-          class="card-ink px-4 py-3"
-          :class="{ 'opacity-70': !row.canEnter, '!border-gold-ink/30 bg-gold-ink/5': row.suppressed }"
-        >
-          <!--
-            第一行只放「图标 + 名字 + 标签 + 一个短动作」。
-
-            产出速率、守土时长、复聚倒计时这些**长信息一律下移成整行** —— 从前它们和名字挤在同一行,
-            右侧那一列 `shrink-0` 把左边的名字压到只剩一个字宽,「青云山麓」当场变成竖排,
-            标签还会盖到产出字上(无头浏览器量的「横向溢出」抓不到这种挤压:它不溢出,只是挤)。
-          -->
-          <div class="flex items-start gap-3">
-            <span
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-md"
-              :class="row.suppressed ? 'bg-gold-ink/15 text-gold-ink' : row.canEnter ? 'bg-indigo-ink/10 text-indigo-ink' : 'bg-ink/6 text-ink-faint'"
-            >
-              <GameIcon :name="row.suppressed ? 'shield-check' : row.canEnter ? row.def.icon : 'lock'" :size="18" />
-            </span>
-            <div data-region-head class="min-w-0 grow">
-              <!-- 标签与名字同排但**可换行**:窄屏上宁可标签绕到下一行,也不许把名字挤成竖排 -->
-              <p class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span data-region-name class="font-kai text-[15px] tracking-wider text-ink">{{ row.def.name }}</span>
-                <span v-if="row.suppressed && !row.revived" class="chip-ink border-gold-ink/60 text-[9px] text-gold-ink">已镇压</span>
-                <span v-else-if="row.revived" class="chip-ink border-cinnabar/60 text-[9px] text-cinnabar">妖气复聚</span>
-                <span v-else-if="row.cleared" class="chip-ink border-jade/60 text-[9px] text-jade">已靖</span>
-                <!-- 世界记忆(Phase 30.9):区域兴衰状态 -->
-                <span
-                  v-if="row.recall.prosperity !== 'chaos'"
-                  class="chip-ink text-[9px]"
-                  :class="row.recall.prosperity === 'flourish' ? 'border-azure/60 text-azure' : 'border-jade/60 text-jade'"
-                >
-                  {{ prosperityName(row.recall.prosperity) }}
-                </span>
-              </p>
-              <p class="mt-0.5 text-[11px] text-ink-faint">
-                {{ REALMS[row.def.minRealm]?.name }}境相宜 ·
-                <span :class="row.def.danger >= 4 ? 'text-cinnabar' : ''">{{ DANGER_NAMES[row.def.danger] }}</span>
-                <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界尚浅,恐有性命之忧</span>
-                <!-- 复聚要说出「该怎么办」:旧主归来了,再历一程即可复靖 -->
-                <span v-if="row.revived" class="ml-1 text-cinnabar">· 旧主归来,再历一程即可复靖</span>
-                <!-- 掉落阶位与 generateEquipment 用的同一档(region.tier):「此界掉几阶」出发前就亮着。
-                     nowrap:320px 上这句曾被从空格处断行,数字与量词拆成两行(layout-check 抓的) -->
-                <span class="ml-1 whitespace-nowrap text-ink-soft">· {{ produceTierText(row.def.tier) }}</span>
-              </p>
-              <!--
-                敌人的「层级补偿」此前只落在数值里:玩家看到的只是一只小怪,打起来却像换了一身装备。
-                此处与战后归因同源(regionFoeOrigin)—— 出行方式与灵兽之性那一半在出行弹窗里摊开。
-              -->
-              <p v-if="row.foeOrigin.parts.length" data-region-foe-origin class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
-                此地之敌:{{ foeOriginPartsText(row.foeOrigin) }}
-              </p>
-            </div>
-            <!--
-              已通关的地界仍可再历 —— 「已靖」只是标记,不是封路。
-              首领已清之后进去仍能刷杂兵、拾遗、碰机缘
-            -->
-            <button
-              v-if="row.canEnter && !row.suppressed"
-              data-region-action
-              class="btn-seal shrink-0 !px-4 !py-2 !text-[13px]"
-              @click="chooseMode(row.def)"
-            >
-              出发
-            </button>
-          </div>
-
-          <!--
-            镇压中的产出条:整行铺开、可换行。
-            速率放在这里而不是右上角,长数字(1.2 亿灵石每小时 · 玄铁 12/时)才有地方舒展
-          -->
-          <div
-            v-if="row.suppressed"
-            data-region-action
-            data-suppress-info
-            class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-gold-ink/10 px-2.5 py-1.5"
-          >
-            <span class="text-[11px] text-gold-ink tabular">自动产出 · {{ rateText(row.def, row.recall) }}</span>
-            <!-- 镇压也在掉装备,阶位照旧取 region.tier(与 generateEquipment 同源);
-                 nowrap 同上:320 窄屏不许「4 阶」被拆成两行 -->
-            <span class="whitespace-nowrap text-[10px] text-ink-faint tabular">{{ produceTierText(row.def.tier) }}</span>
-            <!-- 守土之年:守得越久,兴衰越盛,产出随之上浮 -->
-            <span class="text-[10px] text-ink-faint tabular">已守 {{ heldText(row.def.id) }}</span>
-            <!-- 复聚有确定期限,就该有倒计时:否则玩家只会看到镇压某天突然消失 -->
-            <span class="text-[10px] tabular" :class="reviveNow(row) <= 12 ? 'text-cinnabar' : 'text-ink-faint'">
-              妖气 {{ reviveText(reviveNow(row)) }}后复聚
-            </span>
-            <!-- 停取收益是次级动作:放在产出条里,不跟名字抢那一行 -->
-            <button
-              class="ml-auto inline-flex min-h-[28px] items-center px-1 text-[10px] text-ink-faint underline underline-offset-2 active:scale-90 active:text-ink"
-              @click.stop="unsuppress(row.def.id)"
-            >
-              停取收益,改去历练
-            </button>
-          </div>
-
-          <!--
-            已取得镇压资格、眼前正在历练的地界:转收益的入口与产出同样整行铺开,
-            不去挤右上角那枚「出发」
-          -->
-          <div
-            v-else-if="row.canEnter && row.qualified"
-            data-region-action
-            class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-ink/4 px-2.5 py-1.5"
-          >
-            <span class="text-[10px] text-ink-faint">已取得镇压资格</span>
-            <span class="text-[10px] text-gold-ink tabular">{{ rateText(row.def, row.recall) }}</span>
-            <button
-              class="ml-auto chip-ink min-h-[28px] !text-[10px] active:scale-90"
-              @click.stop="suppress(row.def.id)"
-            >
-              转为镇压收益
-            </button>
-          </div>
-          <p class="mt-2 text-[11px] leading-relaxed text-ink-faint">
-            <!-- 进得去:给全景;进不去且没被本世路线拦:给旧链的「先击败某主」。
-                 被本世路线拦时(下头 blockReason)只讲那一条 —— 两条理由并存会指向,
-                 玩家不知道该往哪走 -->
-            <template v-if="row.canEnter">{{ row.def.desc }}</template>
-            <template v-else-if="!row.blockReason">需先击败{{ prevRegionName(row.def) }}之主,方可踏足此地。</template>
-          </p>
-          <!--
-            镇压资格进度:只显示「能不能镇压」时,玩家打够了场数却压不住,
-            只能猜自己差在哪 —— 这里把三条判据的当前值与阈值并排摆出来,未达标项标红
-          -->
-          <p
-            v-if="row.canEnter && !row.suppressed && !row.qualified"
-            class="mt-1 text-[10px] leading-relaxed tabular"
-          >
-            <span class="text-ink-soft">镇压资格</span>
-            <span class="ml-1" :class="row.progress.winsOk ? 'text-jade' : 'text-ink-soft'">
-              {{ row.progress.wins }}/{{ row.progress.needWins }} 胜
-            </span>
-            <template v-if="row.progress.hasStats">
-              <span class="ml-1.5" :class="row.progress.roundsOk ? 'text-ink-faint' : 'text-cinnabar'">
-                均 {{ row.progress.avgRounds.toFixed(1) }} 回合(需≤{{ row.progress.maxAvgRounds }})
-              </span>
-              <span class="ml-1.5" :class="row.progress.damageOk ? 'text-ink-faint' : 'text-cinnabar'">
-                均受伤 {{ Math.round(row.progress.avgDamagePct * 100) }}%(需≤{{ Math.round(row.progress.maxAvgDamagePct * 100) }}%)
-              </span>
-            </template>
-            <span v-else class="ml-1.5 text-ink-faint">尚无战绩</span>
-          </p>
-          <!-- 进不去时,理由指向眼下就能去的那一段,不让玩家自己排先后 -->
-          <p v-if="row.blockReason" class="mt-1 text-[11px] text-cinnabar">{{ row.blockReason }}</p>
-          <div v-if="row.canEnter && (row.chips.length || row.adaptation)" class="mt-2 flex flex-wrap items-center gap-1.5">
-            <span
-              v-for="chip in row.chips"
-              :key="chip.trait"
-              class="chip-ink !text-[10px]"
-              :class="chip.level >= 3 ? 'border-cinnabar/50 text-cinnabar' : 'border-ink/25 text-ink-faint'"
-            >
-              {{ chip.name }}·{{ ECO_LEVEL_NAMES[chip.level] }}
-            </span>
-            <!-- 适配原因点按展开:手机没有 hover,得知道自己为什么被看好/看衰 -->
-            <!-- min-h-[28px] 是排版自检的尺子:展开按钮此前只有 15px 高,拇指点不着 -->
-            <button
-              v-if="row.adaptation"
-              class="ml-auto inline-flex min-h-[28px] items-center text-[10px] text-ink-soft tabular active:scale-90"
-              :title="row.adaptation.reasons.join(';')"
-              :aria-expanded="adaptExpand === row.def.id"
-              @click="adaptExpand = adaptExpand === row.def.id ? null : row.def.id"
-            >
-              适配
-              <span class="text-gold-ink">{{ starsText(row.adaptation.stars) }}</span>
-            </button>
-          </div>
-          <div v-if="adaptExpand === row.def.id && row.adaptation" class="mt-1">
-            <p v-for="(r, i) in row.adaptation.reasons" :key="i" class="text-[10px] leading-relaxed text-ink-faint">· {{ r }}</p>
-          </div>
-        </div>
+          :row="row"
+          @depart="chooseMode"
+          @toggle-suppress="toggleSuppress"
+        />
         </template>
       </div>
     </template>
 
-    <!-- 模式选择 + 战斗前预览 -->
-    <BaseModal :open="modeTarget !== null" :title="modeTarget?.name ?? ''" @close="modeTarget = null">
-      <!-- 适配预览 -->
-      <div v-if="preview" class="mb-3 rounded-md bg-ink/4 px-3 py-2.5">
-        <template v-if="preview.mine && currentBuild">
-          <p class="flex items-center justify-between text-[12px]">
-            <span class="text-ink-soft">
-              当前构筑:
-              <span class="font-kai text-ink">{{ currentBuild.displayName }}</span>
-            </span>
-            <span class="tabular text-gold-ink">{{ starsText(preview.mine.stars) }}</span>
-          </p>
-          <p v-for="(r, i) in preview.mine.reasons" :key="i" class="mt-0.5 text-[10px] text-ink-faint">{{ r }}</p>
-        </template>
-        <p v-else class="text-[11px] text-ink-faint">尚未成流派,此地对各路数一视同仁。</p>
-        <div class="ink-divider my-2" />
-        <p class="text-[10px] text-ink-faint">此地与你的路数合不合(未必等于胜算):</p>
-        <p class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-          <span v-for="rec in preview.recs" :key="rec.style.id" class="text-[11px] text-ink-soft tabular">
-            {{ rec.style.name }}
-            <span class="text-gold-ink">{{ starsText(rec.adaptation.stars) }}</span>
-          </span>
-        </p>
-        <p class="mt-1.5 text-[10px] text-ink-faint tabular">
-          战力 {{ formatGN(player.finalStats.power) }} · 装备成色、词条与临场随机仍定成败
-        </p>
-      </div>
-      <!--
-        灵兽之性折进了下面三档的「遇险 ×N / 行程」里,却不说是它干的 ——
-        换伙伴的决定点在这里,把它的跟脚照实摊开(departButtonText 同表)
-      -->
-      <p v-if="petTripLine" class="mb-2 text-[10px] leading-relaxed text-violet-ink tabular">{{ petTripLine }}</p>
-      <p class="mb-2 text-[10px] leading-relaxed text-ink-faint tabular">
-        途中三档:奇缘 {{ tierOddsText('qiyuan', chainPending, departEventChance) }} · 机缘 {{ tierOddsText('jiyuan', chainPending, departEventChance) }} · 际遇 {{ tierOddsText('jingyu', chainPending, departEventChance) }}
-      </p>
-      <p class="text-[12px] text-ink-faint">此行欲作何打算?</p>
-      <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">行程论这一程走多久;「历练遇敌」只令同程妖踪更密,不能缩地成寸。</p>
-      <div class="mt-3 space-y-2">
-        <button
-          v-for="m in MODE_LIST"
-          :key="m.id"
-          class="flex w-full items-center justify-between rounded-lg border border-ink/20 px-4 py-3 text-left active:scale-98 active:bg-ink/5"
-          @click="begin(m.id)"
-        >
-          <span>
-            <span class="font-kai text-[14px] tracking-widest text-ink">{{ EXPLORE_MODES[m.id].name }}</span>
-            <span class="ml-2 text-[11px]" :class="m.id === 'risky' || m.id === 'prolonged' ? 'text-cinnabar' : 'text-ink-faint'">{{ m.risk }}</span>
-          </span>
-          <!--
-            收益一直是亮着的,危险却是暗的:三档里敌人差了 2.1 倍,玩家却只看得到钱。
-            两个数并排摆出来,「要不要涉险」才是个可算的账。
-          -->
-          <span class="text-right text-[11px] text-ink-faint tabular">
-            {{ departText(m.id) }}
-            <span class="block text-[10px] text-gold-ink">{{ departReward(m.id) }}</span>
-          </span>
-        </button>
-      </div>
-    </BaseModal>
+    <!-- 模式选择 + 战斗前预览:开关留宿主,预览与三档账随弹窗本体 -->
+    <ExploreModeDialog :region="modeTarget" @close="modeTarget = null" @choose="begin" />
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed, onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import type { ExploreMode, RegionDef, RegionRecall } from '@/types'
+  import type { ExploreMode, RegionDef, WorldId } from '@/types'
   import { useAdventureStore } from '@/stores/adventure'
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
   import { useResourcesStore } from '@/stores/resources'
-  import { REGIONS, regionDef, DANGER_NAMES } from '@/data/regions'
-  import { worldOf, WORLDS, type WorldDef } from '@/data/realms'
+  import { regionDef } from '@/data/regions'
+  import { WORLDS } from '@/data/realms'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
+  import RegionCard from '@/components/adventure/RegionCard.vue'
+  import ExploreModeDialog from '@/components/adventure/ExploreModeDialog.vue'
+  import CombatPanel from '@/components/adventure/CombatPanel.vue'
   import { effectiveFavoredWorld, todayMansionLine, mansionLuckPercent, currentGameDay } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
-  import { canEnterRegion, entryBlockReason, worldView } from '@/core/mortalWorldService'
+  import { worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
-  import { REALMS } from '@/data/realms'
-  import { EXPLORE_MODES, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
-  import {
-    exploreBattleGapSec,
-    exploreDurationSec,
-    exploreEventChance,
-    exploreRewardMult,
-    explorationFoeDanger,
-    regionFoeOrigin,
-    regionBossCleared,
-    startExploration
-  } from '@/core/exploration'
-  import { currentRegionEvent } from '@/core/regionEvent'
-  import { expectedWinReward } from '@/core/loot'
-  import { modOf } from '@/core/statsCalc'
-  import { departButtonText, petTraitTripLine } from '@/ui/adventureText'
-  import { produceTierText } from '@/ui/produceText'
-  import { petDef } from '@/data/pets'
-  import { personalityEffects } from '@/core/petPersonality'
+  import { MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
+  import { exploreEventChance, startExploration } from '@/core/exploration'
   import { EVENT_TIERS, tierOddsText } from '@/core/eventTier'
   import { pendingChainStages } from '@/core/eventEngine'
-  import { foeOriginPartsText } from '@/core/battleAnalysis'
-  import { SUPPRESS_THRESHOLDS, suppressRateLine, suppressionProgress } from '@/core/suppress'
-  import { REVIVE_AFTER_HOURS, hoursUntilRevive, regionRecallFor, prosperityName } from '@/core/worldMemory'
+  import { SUPPRESS_THRESHOLDS } from '@/core/suppress'
+  import { REVIVE_AFTER_HOURS } from '@/core/worldMemory'
   import { gn } from '@/utils/gnum'
-  import type { WorldId } from '@/types'
-  import { detectBuild } from '@/core/buildDetect'
-  import { detectionAdaptation, ecologyChips, ECO_LEVEL_NAMES, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { formatGN } from '@/utils/format'
-  import { useNow } from '@/composables/useNow'
   import GameIcon from '@/components/common/GameIcon.vue'
-  import BaseModal from '@/components/common/BaseModal.vue'
-  import CombatPanel from '@/components/adventure/CombatPanel.vue'
+  import { useRegionRows } from '@/composables/useRegionRows'
 
   const adventure = useAdventureStore()
   const route = useRoute()
@@ -378,15 +135,14 @@
   const player = usePlayerStore()
   const ui = useUiStore()
   const resources = useResourcesStore()
-  /**
-   * 镇压倒计时与「已守多久」都按墙钟走,得有一枚每秒推进的读数。
-   *
-   * 此前这两处直接调 `Date.now()`,而所在 computed 只依赖 player 的那几个字段 ——
-   * 玩家停在历练页不动时,exp 之类的变化不会让它们重算,倒计时便冻在进页那一刻:
-   * 「妖气 71 时后复聚」可以挂一整天不动,「已守 3 时」也不会长大。
-   */
-  const now = useNow()
 
+  /**
+   * 地界投影与分组 —— 本页只负责把它们摆出来,事实取自 `useRegionRows`
+   * (区域卡与「出发前预览」各自消费同一份投影)。
+   */
+  const { groupedRows } = useRegionRows()
+
+  /** 出行方式弹窗的开关留宿主:卡片只交出「哪一处」,预览与三档账随弹窗本体 */
   const modeTarget = ref<RegionDef | null>(null)
 
   /**
@@ -397,9 +153,6 @@
    * 那三成去了奇缘)。档位胶囊按当前状态显示,而不是报一组永远同时成立的数。
    */
   const chainPending = computed(() => pendingChainStages(player.major).length > 0)
-  // 出发前的当境三档实算率:与途中的「途中三档」同一条乘链(星象/福缘/区域事件 eventMult),
-  // 但按选中地域算 —— 决策点就该看见它,不必等上路才见
-  const departEventChance = computed(() => exploreEventChance(modeTarget.value?.id ?? '', player.finalStats.mods))
 
   /** 顶部链接的一句话:说清这一世是什么世界 */
   const worldBrief = computed(() => {
@@ -414,7 +167,7 @@
   /** 今日所利界域(有效口径):有生效定向走定向,否则随值日之宿 */
   const effectiveWorldId = computed(() => effectiveFavoredWorld())
   const favoredWorldName = computed(() => worldDef(effectiveWorldId.value).name)
-  /** 值日之宿所利的百分数:一处来源(astronomy),历练页与界域志界域志共此一枚 */
+  /** 值日之宿所利的百分数:一处来源(astronomy),历练页与界域志共此一枚 */
   const mansionLuckPct = computed(() => mansionLuckPercent())
 
   /** 星象值日定向的展示与动作(Phase A-2) */
@@ -443,8 +196,6 @@
     if (!resources.hasStone(gn(MANSION_REDIRECT_COST))) return '灵石不足'
     return null
   }
-  /** 区域适配原因点按展开(移动端无 hover) */
-  const adaptExpand = ref<string | null>(null)
 
   /**
    * 从本世之界页带回来的地界 —— 直接打开出行方式弹窗。
@@ -459,132 +210,6 @@
     if (r) modeTarget.value = r
     router.replace({ path: '/adventure' })
   })
-
-  const MODE_LIST: { id: ExploreMode; risk: string }[] = [
-    { id: 'normal', risk: '安稳' },
-    { id: 'deep', risk: '小险' },
-    { id: 'risky', risk: '大凶' },
-    { id: 'prolonged', risk: '极险' }
-  ]
-
-  const currentBuild = computed(() => detectBuild(player.finalStats.mods))
-
-  const regionRows = computed(() =>
-    REGIONS.map(r => {
-      const eco = regionEcology(r)
-      const suppressed = player.suppressedRegions.includes(r.id)
-      const recall = regionRecallFor(r.id)
-      /**
-       * 妖气复聚是**落盘的世界状态**(core/regionRevival 写 adventure.revived),
-       * 不是「镇压到点的临时读数」:两者含义不同 —— 复聚只发生在已靖地界,
-       * 而镇压满 72 小时只是松开镇压。此前这里拿 `isReviving` 现算,
-       * 于是 `adventure.revived` 只写不读,复聚只在结算那一瞬的 toast 里出现过,
-       * 之后再进历练页,地界既没有「妖气复聚」章、也不说「再历一程即可复靖」。
-       */
-      const revived = adventure.revived.includes(r.id)
-      return {
-        def: r,
-        // 旧链:这处地界是否**已被发现** —— 决定列表可见性、锁图标与简介
-        unlocked: adventure.unlocked.includes(r.id),
-        // 统一准入谓词:此刻**能否进去** —— 决定出发按钮。
-        // 两者必须分开:visibleRows 按「已发现」截断列表,
-        // 若拿准入当可见性,路线上未轮到的地界会把后面能进的一并藏掉
-        canEnter: canEnterRegion(r.id),
-        blockReason: entryBlockReason(r.id),
-        cleared: regionBossCleared(r.id),
-        suppressed,
-        revived,
-        /** 是否取得过镇压资格(取得即永久,此后可自由在历练/收益之间切换) */
-        qualified: player.suppressQualified.includes(r.id),
-        recall,
-        /** 镇压资格进度(三条判据的当前值/阈值) */
-        progress: suppressionProgress(player.regionStats[r.id]),
-        tooHard: r.minRealm > player.major,
-        /** 此地之敌的加成来源(层级补偿 × 地界凶险;出行方式那一档另算) */
-        foeOrigin: regionFoeOrigin(r),
-        // 第一层信息:只保留最强的两个生态标签
-        chips: ecologyChips(eco).slice(0, 2),
-        adaptation: currentBuild.value ? detectionAdaptation(currentBuild.value, eco) : null
-      }
-    })
-  )
-
-  /** 出发预览:当前构筑适配 + 推荐方向 */
-  const preview = computed(() => {
-    if (!modeTarget.value) return null
-    const eco = regionEcology(modeTarget.value)
-    const mine = currentBuild.value ? detectionAdaptation(currentBuild.value, eco) : null
-    const recs = recommendForRegion(modeTarget.value).slice(0, 2)
-    return { mine, recs }
-  })
-
-  /** 灵兽之性折进这一行的账(遇险/行程/掉宝/护持,与结算同表) —— 有伴才有一行 */
-  const petTripLine = computed(() => {
-    if (!player.petId) return ''
-    const def = petDef(player.petId)
-    if (!def) return ''
-    return petTraitTripLine(def.name, personalityEffects(player.petId))
-  })
-
-  /**
-   * 只展示到「第一个既未发现、也进不去」为止再多一个,保持神秘感。
-   *
-   * 截断条件必须带上 canEnter:本世路线的首段可能排在地界表靠后的位置,
-   * 若只按旧链截断,它会被挡在可见范围外 —— 实测新号因此整页 0 个出发按钮
-   */
-  const visibleRows = computed(() => {
-    const rows = regionRows.value
-    const firstLocked = rows.findIndex(r => !r.unlocked && !r.canEnter)
-    return firstLocked < 0 ? rows : rows.slice(0, firstLocked + 1)
-  })
-
-  /**
-   * 按界域分组展示:人间界/仙界/神界/混沌海的历练地界各自成段,便于在高界导航。
-   *
-   * 展示序 = 倒序(玩家反馈:「历练列表应该倒序排列,每次都要往下活动很久」)。
-   * 进阶路线上每次新解锁的地界排在最上 —— 高界玩家常年只在列表底部那两格的苦,
-   * 就是「新地界追着玩家跑」而不是要玩家去捞它。判定截断(visibleRows)仍在
-   * **数据序**(由低到高)上算:谜一样的「下一个地界」谁也不提前剧透,
-   * 只是摆出来的时候反着排罢了。
-   */
-  const groupedRows = computed(() => {
-    const groups: { world: WorldDef; rows: typeof regionRows.value }[] = []
-    for (const row of [...visibleRows.value].reverse()) {
-      const world = worldOf(row.def.minRealm)
-      const hit = groups.find(g => g.world.id === world.id)
-      if (hit) hit.rows.push(row)
-      else groups.push({ world, rows: [row] })
-    }
-    return groups
-  })
-
-  function departText(mode: ExploreMode): string {
-    const region = modeTarget.value
-    if (!region) return ''
-    const eventId = currentRegionEvent(region.id)?.eventId ?? null
-    const danger = explorationFoeDanger({
-      tier: region.tier,
-      mode,
-      regionDanger: region.danger,
-      petId: player.petId,
-      eventId
-    }).total
-    return departButtonText({
-      durationSec: exploreDurationSec(mode, player.petId),
-      rewardMult: exploreRewardMult(mode, eventId),
-      dangerMult: danger,
-      battleGapSec: exploreBattleGapSec(modOf(player.finalStats.mods, 'explorationSpeed'))
-    })
-  }
-
-  /** 一胜的期望所得(与 afterWin 同公式的均值):给「收益 ×Y」补一把尺子 */
-  function departReward(mode: ExploreMode): string {
-    const region = modeTarget.value
-    if (!region) return ''
-    const eventId = currentRegionEvent(region.id)?.eventId ?? null
-    const r = expectedWinReward(region, exploreRewardMult(mode, eventId))
-    return `一胜约 ${formatGN(r.stone)} 石 · ${formatGN(r.exp)} 修为`
-  }
 
   function chooseMode(region: RegionDef): void {
     /*
@@ -607,58 +232,16 @@
     }
   }
 
-  function prevRegionName(r: RegionDef): string {
-    return r.requireCleared ? (regionDef(r.requireCleared)?.name ?? '') : ''
-  }
-
-  /** 停取收益,恢复主动历练(资格保留,随时可一键切回) */
-  function unsuppress(regionId: string): void {
-    player.unsuppressRegion(regionId)
+  /** 停取收益 / 转为镇压收益:资格保留,随时可一键切回 */
+  function toggleSuppress(regionId: string): void {
     const r = regionDef(regionId)
-    ui.toast(`${r?.name ?? '此地'}已停取镇压收益,重新成为历练之地`, 'info')
-  }
-
-  /** 已取得镇压资格者:一键切回收益态 —— 镇压过就是镇压过,不必再打满二十场 */
-  function suppress(regionId: string): void {
-    player.suppressRegion(regionId)
-    const r = regionDef(regionId)
-    ui.toast(`你重掌${r?.name ?? '此地'}——镇压依旧,收益自取`, 'success')
-  }
-
-  /**
-   * 镇压区域每小时产出(灵石 + 该地界物产)。
-   *
-   * 速率取自 suppress.ts 的唯一实现(从前这里手抄 150 并注释「= stoneMultiplier」,
-   * 常量一改界面就开始撒谎),并乘上当前兴衰系数 —— 显示的数与真正入账的数同源。
-   */
-  function rateText(r: RegionDef, recall: RegionRecall): string {
-    return suppressRateLine(r.id, recall.prosperity)
-  }
-
-  /** 复聚倒计时文案:一天以上说日,一天以内说时 */
-  function reviveText(hours: number): string {
-    if (hours >= 24) return `${Math.floor(hours / 24)} 日`
-    return `${Math.max(0, Math.floor(hours))} 时`
-  }
-
-  /**
-   * 复聚剩余小时:整个区域表里唯一随时间变的一列。
-   *
-   * 刻意从 `regionRows` 这个大 computed 里拆出来 —— 它内部要为每处地界跑
-   * `regionEcology` / `detectionAdaptation` / `suppressionProgress`,这些只依赖
-   * 「构筑 × 区域」,不该被每秒一跳的 `now` 拖着整表重算。这里就地读 `now`
-   * (与 `heldText` 同依赖),只让复聚这一格跟秒走。
-   */
-  function reviveNow(row: { suppressed: boolean; def: { id: string } }): number {
-    if (!row.suppressed) return 0
-    return hoursUntilRevive(player.suppressedSince[row.def.id], now.value)
-  }
-
-  /** 已守时长(自镇压起算)—— 守得越久,兴衰越盛 */
-  function heldText(regionId: string): string {
-    const since = player.suppressedSince[regionId]
-    if (since === undefined) return '—'
-    const hours = Math.max(0, Math.floor((now.value - since) / 3_600_000))
-    return hours < 24 ? `${hours} 时` : `${Math.floor(hours / 24)} 日`
+    const name = r?.name ?? '此地'
+    if (player.suppressedRegions.includes(regionId)) {
+      player.unsuppressRegion(regionId)
+      ui.toast(`${name}已停取镇压收益,重新成为历练之地`, 'info')
+    } else {
+      player.suppressRegion(regionId)
+      ui.toast(`你重掌${name}——镇压依旧,收益自取`, 'success')
+    }
   }
 </script>
