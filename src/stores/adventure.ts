@@ -258,16 +258,24 @@ export const useAdventureStore = defineStore(
     const currentRegion = computed(() => (session.value ? regionDef(session.value.regionId) : undefined))
 
     function setSession(s: AdventureSession | null): void {
+      if (s === null) {
+        session.value = null
+        return
+      }
+      if (!regionDef(s.regionId)) return
+      if (!Number.isFinite(s.endsAt) || !Number.isFinite(s.nextBattleAt)) return
       session.value = s
     }
 
     function unlock(regionId: string): boolean {
+      if (!regionDef(regionId)) return false
       if (unlocked.value.includes(regionId)) return false
       unlocked.value = [...unlocked.value, regionId]
       return true
     }
 
     function markCleared(regionId: string): boolean {
+      if (!regionDef(regionId)) return false
       if (cleared.value.includes(regionId)) return false
       cleared.value = [...cleared.value, regionId]
       // 已靖即起钟:妖气从这一刻重新聚(离线斩首也走这里,故离线也认得这个起点)
@@ -284,6 +292,7 @@ export const useAdventureStore = defineStore(
      * 复聚不构成对挂机的惩罚。
      */
     function markRevived(regionId: string): boolean {
+      if (!regionDef(regionId)) return false
       if (revived.value.includes(regionId)) return false
       cleared.value = cleared.value.filter(id => id !== regionId)
       const nextAt = { ...clearedAt.value }
@@ -294,6 +303,8 @@ export const useAdventureStore = defineStore(
     }
 
     function setPendingEvent(id: string | null, now: number): void {
+      if (id !== null && !eventDef(id)) return
+      if (id !== null && (!Number.isFinite(now) || now < 0)) return
       pendingEventId.value = id
       pendingEventSince.value = id ? now : 0
     }
@@ -306,7 +317,7 @@ export const useAdventureStore = defineStore(
      * 已靖起钟与待处理事件的超时同样顺延,免得暂停吃掉复聚与自动处置的宽限。
      */
     function shiftTimedState(pausedMs: number): void {
-      if (pausedMs <= 0) return
+      if (!Number.isFinite(pausedMs) || pausedMs <= 0) return
       if (session.value) {
         session.value = {
           ...session.value,
@@ -323,6 +334,7 @@ export const useAdventureStore = defineStore(
     }
 
     function markEventSeen(id: string): void {
+      if (!eventDef(id)) return
       if (!seenOnceEvents.value.includes(id)) {
         seenOnceEvents.value = [...seenOnceEvents.value, id]
       }
@@ -340,6 +352,7 @@ export const useAdventureStore = defineStore(
 
     /** 标记本世某节点已通;已通过则返回 false */
     function markNodeCleared(nodeId: string): boolean {
+      if (typeof nodeId !== 'string' || nodeId === '') return false
       if (mortalCleared.value.includes(nodeId)) return false
       mortalCleared.value = [...mortalCleared.value, nodeId]
       return true
