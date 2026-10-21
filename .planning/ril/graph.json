@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 284,
+  "round": 285,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T09:39:50+00:00",
+  "updated_at": "2026-10-21T09:53:50+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20015,6 +20015,47 @@
       "source": "src/core/uiLayering.spec.ts:126",
       "note": "静态守卫钉住 InventoryView 顶满判据读 useNow 且不得再引 useWallNow",
       "confidence": 1.0
+    },
+    "TASK-372": {
+      "id": "TASK-372",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T09:51:09+00:00",
+      "updated_at": "2026-10-21T09:53:40+00:00",
+      "touched_round": 284,
+      "category": "correctness",
+      "severity": 0.75,
+      "confidence": 0.95,
+      "effort": 1,
+      "unlock_factor": 1.0,
+      "title": "修行速服丹药顶满仍可白吃",
+      "description": "CultivationView quickPills 无条件 usePill,未按 buffOverflowOf 置灰;与丹药详情相反",
+      "priority_score": 7.1
+    },
+    "ISS-934": {
+      "id": "ISS-934",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T09:51:16+00:00",
+      "updated_at": "2026-10-21T09:53:40+00:00",
+      "touched_round": 284,
+      "title": "修行快捷丹药顶满不置灰",
+      "description": "quickPills 按钮无条件调用 usePill,顶满时扣库存并只报白费;丹药详情已置灰,两处相反",
+      "severity": 0.75
+    },
+    "EV-253": {
+      "id": "EV-253",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T09:53:40+00:00",
+      "updated_at": "2026-10-21T09:53:40+00:00",
+      "touched_round": 284,
+      "source": "src/core/uiLayering.spec.ts:130",
+      "note": "静态守卫钉住 CultivationView 速服按 buffOverflowOf 置灰且读 now.value",
+      "confidence": 1.0
     }
   },
   "edges": [
@@ -29750,6 +29791,12 @@
       "to": "ISS-933",
       "type": "addresses",
       "created_at": "2026-10-21T09:39:45+00:00"
+    },
+    {
+      "from": "TASK-372",
+      "to": "ISS-934",
+      "type": "addresses",
+      "created_at": "2026-10-21T09:51:21+00:00"
     }
   ]
 }
