@@ -60,7 +60,12 @@ describe('自然介入 · 一:不打开道侣页也会发生', () => {
   })
 
   it('界面不再自行抽取事件', () => {
-    const view = readFileSync(resolve(__dirname, '../views/CharacterView.vue'), 'utf-8')
+    // 道侣弹窗拆出后,「只读待决事件」的接线在 components/character/BondDialog.vue
+    const view =
+      readFileSync(resolve(__dirname, '../views/CharacterView.vue'), 'utf-8') +
+      readFileSync(resolve(__dirname, '../components/character/BondDialog.vue'), 'utf-8') +
+      // 关系投影(只读待决事件)收在 composable,一并合扫
+      readFileSync(resolve(__dirname, '../composables/useBondOverview.ts'), 'utf-8')
     // 旧写法:打开弹窗 → rollBondEvent()
     expect(view).not.toMatch(/rollBondEvent/)
     expect(view).toMatch(/pendingBondEvent/)

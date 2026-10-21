@@ -12,7 +12,8 @@ describe('师承说明不承诺词条里没有的机制', () => {
   })
 
   it('拜师按钮与已拜师弹窗都印 modsText,不再拼裸数字', () => {
-    const view = readFileSync(new URL('../views/CharacterView.vue', import.meta.url), 'utf8')
+    // 师承弹窗拆出后判据随本体走
+    const view = readFileSync(new URL('../components/character/MentorDialog.vue', import.meta.url), 'utf8')
     expect(view).toContain('modsText(m!.mods)')
     expect(view).toContain('modsText(mentorVer.mentor.mods)')
     expect(view).not.toContain('Object.values(mentorVer.mentor')

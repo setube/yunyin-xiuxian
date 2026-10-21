@@ -28,7 +28,10 @@ import { SPARK_NAMES, SPARK_WEIGHT } from '@/data/bondIntent'
 import { BOND_EVENTS, TRIGGER_NAMES } from '@/data/bondEvents'
 import { DAOLU } from '@/data/daolu'
 
-const VIEW = readFileSync(resolve(__dirname, '../views/CharacterView.vue'), 'utf-8')
+// 道侣弹窗拆出后判据随本体走。宿主与子面板合扫:拆分只搬了位置,因果展示仍只有一处
+const VIEW =
+  readFileSync(resolve(__dirname, '../views/CharacterView.vue'), 'utf-8') +
+  readFileSync(resolve(__dirname, '../components/character/BondDialog.vue'), 'utf-8')
 
 /** 玩家能否回溯到事件的原因 */
 type Traceability = 'traceable' | 'inferable' | 'abrupt'

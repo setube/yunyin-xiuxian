@@ -390,7 +390,8 @@ describe('主动意图 · 回应有记录', () => {
   })
 
   it('人物页把历次回应摆出来,不是只在注释里承诺', () => {
-    const src = readFileSync(resolve(__dirname, '../views/CharacterView.vue'), 'utf8')
+    // 道侣弹窗拆出后判据随本体走
+    const src = readFileSync(resolve(__dirname, '../components/character/BondDialog.vue'), 'utf8')
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/.*$/gm, '')
