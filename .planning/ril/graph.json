@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 285,
+  "round": 286,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T09:53:50+00:00",
+  "updated_at": "2026-10-21T10:30:41+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20056,6 +20056,121 @@
       "source": "src/core/uiLayering.spec.ts:130",
       "note": "静态守卫钉住 CultivationView 速服按 buffOverflowOf 置灰且读 now.value",
       "confidence": 1.0
+    },
+    "COMP-029": {
+      "id": "COMP-029",
+      "type": "component",
+      "status": "abandoned",
+      "version": 2,
+      "created_at": "2026-10-21T10:12:38+00:00",
+      "updated_at": "2026-10-21T10:12:47+00:00",
+      "touched_round": 285,
+      "name": "弃用占位",
+      "path": "test"
+    },
+    "COMP-030": {
+      "id": "COMP-030",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:12:52+00:00",
+      "updated_at": "2026-10-21T10:12:52+00:00",
+      "touched_round": 285,
+      "name": "装备重铸页脚",
+      "path": "src/components/equipment/EquipReforgeFooter.vue"
+    },
+    "COMP-031": {
+      "id": "COMP-031",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:12:52+00:00",
+      "updated_at": "2026-10-21T10:12:52+00:00",
+      "touched_round": 285,
+      "name": "法宝祭炼面板",
+      "path": "src/components/inventory/ArtifactPanel.vue"
+    },
+    "COMP-032": {
+      "id": "COMP-032",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:12:52+00:00",
+      "updated_at": "2026-10-21T10:12:52+00:00",
+      "touched_round": 285,
+      "name": "功法详情弹窗",
+      "path": "src/components/cultivation/GongfaDialog.vue"
+    },
+    "ISS-935": {
+      "id": "ISS-935",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T10:12:58+00:00",
+      "updated_at": "2026-10-21T10:30:35+00:00",
+      "touched_round": 286,
+      "title": "重铸/祭炼/进修缺料只说「或」且按钮仍可点",
+      "severity": 0.72
+    },
+    "TASK-373": {
+      "id": "TASK-373",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T10:12:58+00:00",
+      "updated_at": "2026-10-21T10:30:41+00:00",
+      "touched_round": 286,
+      "category": "correctness",
+      "title": "缺料精确置灰并点名缺口",
+      "severity": 0.72,
+      "confidence": 0.9,
+      "effort": 3
+    },
+    "HYP-110": {
+      "id": "HYP-110",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T10:12:58+00:00",
+      "updated_at": "2026-10-21T10:30:35+00:00",
+      "touched_round": 286,
+      "title": "缺料提示与界面禁用态未共用同一 helper",
+      "confidence": 0.9
+    },
+    "EV-254": {
+      "id": "EV-254",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:13:08+00:00",
+      "updated_at": "2026-10-21T10:13:08+00:00",
+      "touched_round": 285,
+      "source": "src/core/reforge.ts:52 reforgeShort; src/core/forge.ts:259 upgradeArtifact; src/core/gongfaService.ts:86 upgradeGongfa",
+      "title": "服务层已有缺料判定,但法宝/功法仅泛称「或」且界面未按缺口置灰",
+      "confidence": 1.0
+    },
+    "CHG-487": {
+      "id": "CHG-487",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:29:57+00:00",
+      "updated_at": "2026-10-21T10:29:57+00:00",
+      "touched_round": 285,
+      "commit": "f1a3e7a",
+      "title": "重铸/祭炼/进修缺料精确置灰"
+    },
+    "EV-255": {
+      "id": "EV-255",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T10:30:19+00:00",
+      "updated_at": "2026-10-21T10:30:19+00:00",
+      "touched_round": 285,
+      "source": "f1a3e7a src/core/reforge.spec.ts src/core/forgeArtifactBatch.spec.ts src/core/gongfaService.spec.ts src/core/dataTextAudit.spec.ts",
+      "title": "缺料置灰与精确缺口已落地,全量 3232 过/0 败、check 与 build 绿",
+      "confidence": 1.0
     }
   },
   "edges": [
@@ -29797,6 +29912,54 @@
       "to": "ISS-934",
       "type": "addresses",
       "created_at": "2026-10-21T09:51:21+00:00"
+    },
+    {
+      "from": "TASK-373",
+      "to": "ISS-935",
+      "type": "addresses",
+      "created_at": "2026-10-21T10:13:03+00:00"
+    },
+    {
+      "from": "ISS-935",
+      "to": "COMP-030",
+      "type": "located_in",
+      "created_at": "2026-10-21T10:13:03+00:00"
+    },
+    {
+      "from": "ISS-935",
+      "to": "COMP-031",
+      "type": "located_in",
+      "created_at": "2026-10-21T10:13:03+00:00"
+    },
+    {
+      "from": "ISS-935",
+      "to": "COMP-032",
+      "type": "located_in",
+      "created_at": "2026-10-21T10:13:03+00:00"
+    },
+    {
+      "from": "EV-254",
+      "to": "HYP-110",
+      "type": "validates",
+      "created_at": "2026-10-21T10:13:13+00:00"
+    },
+    {
+      "from": "CHG-487",
+      "to": "ISS-935",
+      "type": "resolves",
+      "created_at": "2026-10-21T10:30:03+00:00"
+    },
+    {
+      "from": "CHG-487",
+      "to": "TASK-373",
+      "type": "implements",
+      "created_at": "2026-10-21T10:30:03+00:00"
+    },
+    {
+      "from": "EV-255",
+      "to": "HYP-110",
+      "type": "validates",
+      "created_at": "2026-10-21T10:30:29+00:00"
     }
   ]
 }
