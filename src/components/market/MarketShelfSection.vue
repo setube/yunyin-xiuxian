@@ -39,10 +39,10 @@
           <button
             class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
             :disabled="c.sold || !c.afford || (c.kind === 'equipment' && inventory.bagFull)"
-            :title="c.kind === 'equipment' && inventory.bagFull ? '行囊满' : undefined"
+            :title="c.kind === 'equipment' && inventory.bagFull ? '行囊满' : !c.sold && !c.afford ? `灵石尚差 ${formatGN(c.stoneShort)}` : undefined"
             @click="buyOne(c.idx)"
           >
-            {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊满' : c.afford ? '买下' : '灵石不足' }}
+            {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊满' : c.afford ? '买下' : `尚差 ${formatGN(c.stoneShort)}` }}
           </button>
         </div>
       </div>
@@ -68,7 +68,7 @@
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef } from '@/data/qualities'
   import { focusHerbSlot, marketEquipInstance } from '@/core/marketService'
-  import { cmp } from '@/utils/gnum'
+  import { cmp, gnZero, subClamp } from '@/utils/gnum'
   import { formatGN } from '@/utils/format'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -87,6 +87,8 @@
     sold: boolean
     /** 当前灵石是否买得起 —— 买不起的货不再与买得起的长得一样 */
     afford: boolean
+    /** 灵石尚差；买得起时为 0 */
+    stoneShort: GNum
   }
 
   const MAT_META: Record<'herb' | 'ore', { name: string; icon: string }> = {
@@ -128,13 +130,15 @@
 
   /** 把一格货摊成卡片视图;装备实例按货架时刻确定性生成,预览即购得同一件 */
   function renderSlot(slot: MarketSlot): CardView {
+    const afford = !slot.sold && cmp(resources.spiritStone, slot.price) >= 0
     const base = {
       idx: slot.idx,
       tag: slot.kind === 'pill' ? '丹' : slot.kind === 'material' ? '材' : '器',
       tagCls: TAG_CLS[slot.kind] ?? '',
       kind: slot.kind,
       sold: slot.sold,
-      afford: !slot.sold && cmp(resources.spiritStone, slot.price) >= 0
+      afford,
+      stoneShort: afford ? gnZero() : subClamp(slot.price, resources.spiritStone)
     }
     if (slot.kind === 'pill') {
       const def = pillDef(slot.pillId)!
@@ -176,7 +180,7 @@
     const slot = market.stock.find(s => s.idx === idx)
     const name = slot ? renderSlot(slot).name : ''
     if (result === 'ok') ui.toast(`于坊市购得「${name}」`, 'success')
-    else if (result === 'poor') ui.toast('灵石不足', 'warn')
+    else if (result === 'poor') ui.toast(slot ? `灵石尚差 ${formatGN(renderSlot(slot).stoneShort)}` : '灵石不足', 'warn')
     else if (result === 'bagfull') ui.toast('行囊已满,腾一席再来', 'warn')
     else if (result === 'expired') ui.toast('货架刚换新,请按新货再买', 'warn')
   }

@@ -18,12 +18,15 @@ import { REGIONS, regionDef } from '@/data/regions'
 import { worldOf } from '@/data/realms'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
-import { MANSION_EVENT_LUCK, MANSION_REDIRECT_MAX } from '@/data/constants'
+import { MANSION_EVENT_LUCK, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
 import type { WorldId } from '@/types'
+import { gn, subClamp } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
 import {
   activeRedirectWorld, effectiveFavoredWorld, favoredWorld, isFavoredRegion,
   mansionEventLuck, mansionLuckPercent, mansionOfDay, todayMansion, todayMansionLine
 } from './astronomy'
+import { mansionRedirectCheck } from './mansionRedirect'
 import { exploreEventChance } from './exploration'
 
 beforeEach(() => {
@@ -246,5 +249,43 @@ describe('星象 · 值日定向(A-2)', () => {
     player.sanitize()
     // 界域认不出 → 整块清空(回落到天数派生,不残留坏覆盖)
     expect(player.mansionRedirect).toBeNull()
+  })
+
+  it('灵石不足:定向按钮报实际差额,不是笼统的「灵石不足」', () => {
+    const day = setTodayAutoMortal()
+    const stone = gn(MANSION_REDIRECT_COST - 17)
+    const check = mansionRedirectCheck(day, null, 'immortal', stone)
+    expect(check.blocked).toBe('stone')
+    expect(check.stoneShort).toEqual(subClamp(gn(MANSION_REDIRECT_COST), stone))
+    expect(check.reason).toBe(`灵石尚差 ${formatGN(check.stoneShort)}`)
+    expect(check.reason).not.toContain('灵石不足')
+  })
+
+  it('已定向此界 / 次数已尽优先于灵石不足;付得起则判据归空', () => {
+    const day = setTodayAutoMortal()
+    const same = mansionRedirectCheck(day, { gameDay: day, worldId: 'immortal', count: 1 }, 'immortal', gn(0))
+    expect(same).toMatchObject({ blocked: 'already', reason: '已定向此界' })
+    expect(same.stoneShort.m).toBe(0)
+
+    const full = mansionRedirectCheck(day, { gameDay: day, worldId: 'mortal', count: MANSION_REDIRECT_MAX }, 'immortal', gn(0))
+    expect(full).toMatchObject({ blocked: 'limit', reason: '今日次数已尽' })
+    expect(full.stoneShort.m).toBe(0)
+
+    const ready = mansionRedirectCheck(day, null, 'immortal', gn(MANSION_REDIRECT_COST))
+    expect(ready).toMatchObject({ blocked: null, reason: null })
+    expect(ready.stoneShort.m).toBe(0)
+  })
+
+  it('历练页与 store 共用同一份定向判据,不各自重写余额比较', () => {
+    const view = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+    const store = readFileSync(resolve(__dirname, '../stores/player.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+    expect(view, '定向按钮必须复用纯判据').toContain('mansionRedirectCheck(')
+    expect(view, '界面不许再自己比较 300 灵石余额').not.toContain('resources.hasStone(gn(MANSION_REDIRECT_COST))')
+    expect(store, 'store 定向动作必须复用同一判据').toContain('mansionRedirectCheck(')
+    expect(store, 'store 不许再手写次数/同界二重判断').not.toContain('cur.count >= MANSION_REDIRECT_MAX || cur.worldId === worldId')
   })
 })

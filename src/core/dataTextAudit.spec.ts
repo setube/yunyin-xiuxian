@@ -754,6 +754,15 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(host, '宿主只切签,不再自己算落点').not.toContain('focusHerbSlot(')
   })
 
+  it('坊市买不起时按钮写出实际差额,不把总价或笼统「灵石不足」当答案', () => {
+    const market = src('../components/market/MarketShelfSection.vue')
+    expect(market, '卡面要有实际缺口字段').toContain('stoneShort:')
+    expect(market, '卡面缺口用指数感知减法').toContain('subClamp(slot.price, resources.spiritStone)')
+    expect(market, '按钮直接写出尚差多少').toContain('`尚差 ${formatGN(c.stoneShort)}`')
+    expect(market, '扣款瞬时失败也报实际差额').toContain('灵石尚差 ${formatGN(renderSlot(slot).stoneShort)}')
+    expect(market, '不再用笼统的灵石不足作按钮文案').not.toContain("? '灵石不足'")
+  })
+
   /**
    * 只缺灵石时同理:灵石只能从历练/悬赏挣,坊市是花灵石的地方。
    * 若给「去坊市」就是把玩家指反了方向 —— 那里只会再缺一次。

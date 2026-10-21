@@ -18,16 +18,9 @@ import { regionDef } from '@/data/regions'
 import { WORLDS, worldOf } from '@/data/realms'
 import { MANSION_EVENT_LUCK } from '@/data/constants'
 import type { WorldId } from '@/types'
+import type { MansionRedirect } from './mansionRedirect'
 
-/** 玩家把今日值日定向到某界的覆盖记录(存于 player store,见 stores/player) */
-export interface MansionRedirect {
-  /** 生效的游戏日 —— 不是今天就不算数(次日自动回落) */
-  gameDay: number
-  /** 玩家选中要利的界域 */
-  worldId: WorldId
-  /** 当日已定向了几次(限 MANSION_REDIRECT_MAX,达上限即回落天数派生) */
-  count: number
-}
+export type { MansionRedirect } from './mansionRedirect'
 
 /** 游戏日 → 值日之宿(28 日一轮) */
 export function mansionOfDay(day: number): MansionDef {

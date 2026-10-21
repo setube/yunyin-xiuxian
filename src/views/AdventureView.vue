@@ -115,6 +115,7 @@
   import ExploreModeDialog from '@/components/adventure/ExploreModeDialog.vue'
   import CombatPanel from '@/components/adventure/CombatPanel.vue'
   import { effectiveFavoredWorld, todayMansionLine, mansionLuckPercent, currentGameDay } from '@/core/astronomy'
+  import { mansionRedirectCheck } from '@/core/mansionRedirect'
   import { worldDef } from '@/data/realms'
   import { worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
@@ -182,19 +183,12 @@
   function redirectTo(id: WorldId): void {
     const ok = player.redirectFavoredWorld(id)
     const name = worldDef(id).name
-    ui.toast(ok ? `今日定向到「${name}」` : '今日次数已尽 / 已定向此界 / 灵石不足', ok ? 'info' : 'warn')
+    ui.toast(ok ? `今日定向到「${name}」` : redirectReason(id) ?? '今日定向未成', ok ? 'info' : 'warn')
   }
   /** 该界此刻能否定向:不能则给出一句原因。判据与 redirectFavoredWorld 同一套(见 player.ts),
    *  但改在点击前置灰标出 —— 灵石不足/次数已尽/已定向此界不该缩成一个点了没反应的死按钮。 */
   function redirectReason(w: WorldId): string | null {
-    const day = currentGameDay()
-    const cur = player.mansionRedirect
-    if (cur && cur.gameDay === day) {
-      if (cur.worldId === w) return '已定向此界'
-      if (cur.count >= mansionRedirectMax) return '今日次数已尽'
-    }
-    if (!resources.hasStone(gn(MANSION_REDIRECT_COST))) return '灵石不足'
-    return null
+    return mansionRedirectCheck(currentGameDay(), player.mansionRedirect, w, resources.spiritStone).reason
   }
 
   /**

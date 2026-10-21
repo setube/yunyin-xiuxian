@@ -41,6 +41,7 @@ import { lifeTrialDef, type LifeTrialState } from '@/data/lifeTrials'
 import { STARS } from '@/data/ziwei'
 import { fateChart, fateFocusMods, fateSeed } from '@/core/fate'
 import type { MansionRedirect } from '@/core/astronomy'
+import { mansionRedirectCheck } from '@/core/mansionRedirect'
 import type { FortuneChoice } from '@/core/fortuneChain'
 import { useInventoryStore } from './inventory'
 import { useCultivationStore } from './cultivation'
@@ -1266,9 +1267,7 @@ export const usePlayerStore = defineStore(
       if (!WORLDS.some(w => w.id === worldId)) return false
       const day = gameDay(useGameStore().totalPlaySec)
       const cur = mansionRedirect.value
-      if (cur && cur.gameDay === day && (cur.count >= MANSION_REDIRECT_MAX || cur.worldId === worldId)) {
-        return false
-      }
+      if (mansionRedirectCheck(day, cur, worldId, resources.spiritStone).blocked) return false
       const cost = gn(MANSION_REDIRECT_COST)
       if (!resources.spendStone(cost)) return false
       mansionRedirect.value = cur && cur.gameDay === day ? { gameDay: day, worldId, count: cur.count + 1 } : { gameDay: day, worldId, count: 1 }
