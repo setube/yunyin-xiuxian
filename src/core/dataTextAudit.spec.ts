@@ -630,14 +630,17 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(inv, '入口只该在草是短板时出现(不该给掌握不足指路)').toMatch(
       /r\.plan\.reason === 'herb' \|\| r\.plan\.reason === 'both'/,
     )
-    const market = src('../views/MarketView.vue')
-    expect(market, '坊市要读 focus 参数').toContain("route.query.focus === 'herb'")
+    // 货架段随本体迁入 MarketShelfSection:判据跟着走
+    const market = src('../components/market/MarketShelfSection.vue')
+    expect(market, '货架段要读 focus 参数').toContain("route.query.focus === 'herb'")
     expect(market, '按方子要的品阶挑草格(缺灵品却亮凡品,买回来照样开不了炉)').toContain(
       'focusHerbSlot(market.stock, want,'
     )
     expect(market, '认到灵草格后要滚进视口').toContain('scrollIntoView(')
     // 货架六格随机,碰上没有草的那一架:不许静默停住,得说清「这一架没有」
     expect(market, '这一架没有灵草时要明说').toContain('data-focus-herb-missing')
+    const host = src('../views/MarketView.vue')
+    expect(host, '宿主只切签,不再自己算落点').not.toContain('focusHerbSlot(')
   })
 
   /**

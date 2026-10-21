@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 调整:**坊市货架段迁 `MarketShelfSection`** —— 六格货的卡片投影、买下回执与「深链续草」的高亮/滚动本来都挂在 664 行的坊市页里,连「换货后高亮序号会指错格」都得靠一条 watch 兜着;现整段迁入 `components/market/MarketShelfSection.vue`(自取 store,落点重算与换货重定位随本体),宿主只把签切到「购」,`MarketView` 收至 469 行。
 - 修复:**离线镇压达成的回执也报产出账** —— 在线达成时已改报 `suppressRateLine` 的「灵石 X/时 · 灵草 Y/时」,离线普通战与首领战两处却仍只喊一句「此地将自动产出资源」:同一件大事两套口径,玩家算不出挂机一夜在这一区值多少。现两处改走同一份产出行(含兴衰系数),`offlineParity` 增补一条判据钉住两处都报数且空话不许回潮。
 - 调整:**战斗情报迁 `BattleIntelPanel`** —— 战后统计行、本战所得、此物所知与战斗分析四块只在这一处消费,却与逐行回放(血条/浮伤/因果环)和敌我半卡挤在同一个 581 行文件里;现整块迁入 `components/adventure/BattleIntelPanel.vue`(自取 store,战败自动展开与战果音随本体),`CombatPanel` 收至 401 行,只留回放引擎与敌我半卡。
 - 调整:**地界卡与出行弹窗迁出历练页** —— 地界列表的准入、镇压进度、生态标签与复聚倒计时,和出行方式弹窗的构筑适配、三档账、灵兽之性,本来全挤在 670 行的页面里,连「每秒推进的读数该只喂哪一格」都得靠注释约束;现区域投影收进 `composables/useRegionRows.ts`,卡片迁入 `components/adventure/RegionCard.vue`(自取 store,复聚倒计时与已守时长各自就地读秒,适配展开态随本体),弹窗迁入 `ExploreModeDialog.vue`(开关留宿主),`AdventureView` 收至 247 行。判据随本体改指子文件,并收紧两处:`hoursUntilRevive` 钉住 `now.value` 实参(改回 `Date.now()` 即红)、大表禁直接读墙钟。
