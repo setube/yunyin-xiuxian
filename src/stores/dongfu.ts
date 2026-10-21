@@ -98,7 +98,10 @@ export const useDongfuStore = defineStore(
     const beastMult = computed(() => 1 + levels.value.beast * BEAST_EFFECT_PER_LEVEL)
 
     function setLevel(id: BuildingId, lv: number): void {
-      levels.value = { ...levels.value, [id]: lv }
+      const def = buildingDef(id)
+      if (!def || !Number.isFinite(lv)) return
+      const next = Math.min(def.maxLevel, Math.max(0, Math.floor(lv)))
+      levels.value = { ...levels.value, [id]: next }
     }
 
     /**
@@ -145,11 +148,12 @@ export const useDongfuStore = defineStore(
       if (!VEINS.some(v => v.id === id) || !Number.isFinite(n)) return
       const amount = Math.floor(n)
       if (amount <= 0) return
-      veinPoints.value = { ...veinPoints.value, [id]: (veinPoints.value[id] ?? 0) + amount }
+      const next = Math.min(VEIN_MAIN_CAPACITY, (veinPoints.value[id] ?? 0) + amount)
+      veinPoints.value = { ...veinPoints.value, [id]: next }
     }
 
     function setVeinMain(id: VeinId): void {
-      veinMain.value = id
+      if (VEINS.some(v => v.id === id)) veinMain.value = id
     }
 
     /**
@@ -167,6 +171,7 @@ export const useDongfuStore = defineStore(
 
     /** 建筑产出(灵田/藏经阁),按秒推进 */
     function produce(dtSec: number): void {
+      if (!Number.isFinite(dtSec) || dtSec <= 0) return
       const resources = useResourcesStore()
       const player = usePlayerStore()
       const fieldLv = levels.value.field

@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useDongfuStore, fieldHerbGrade } from './dongfu'
 import { BUILDINGS, ARRAY_QI_CAP_PER_LEVEL, BEAST_EFFECT_PER_LEVEL } from '@/data/buildings'
-import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, FORGE_LEVEL_PER_CAP, LIBRARY_WUDAO_PER_HOUR } from '@/data/constants'
+import {
+  FIELD_HERB_PER_HOUR,
+  FIELD_ORE_PER_HOUR,
+  FORGE_LEVEL_PER_CAP,
+  LIBRARY_WUDAO_PER_HOUR,
+  VEIN_MAIN_CAPACITY
+} from '@/data/constants'
 import { MAX_MAJOR } from '@/data/realms'
 import type { HerbGrade } from '@/data/herbGrades'
 import { usePlayerStore } from '@/stores/player'
@@ -85,6 +91,39 @@ describe('dongfu store · sanitize', () => {
     dongfu.addVeinPoint('ghost' as never, 5)
     expect(dongfu.veinPoints.gather).toBe(3)
     expect(dongfu.veinPoints).not.toHaveProperty('ghost')
+  })
+
+  it('灵脉公共写入:单脉不超过主脉容量,主脉只认目录', () => {
+    const dongfu = useDongfuStore()
+    dongfu.addVeinPoint('gather', VEIN_MAIN_CAPACITY + 20)
+    expect(dongfu.veinPoints.gather, '单脉封顶到主脉容量').toBe(VEIN_MAIN_CAPACITY)
+    dongfu.setVeinMain('ghost' as never)
+    expect(dongfu.veinMain, '野脉不立为主脉').toBeNull()
+  })
+
+  it('建筑公共写入:只认目录,等级夹到 0..品类上限', () => {
+    const dongfu = useDongfuStore()
+    const field = BUILDINGS.find(b => b.id === 'field')!
+    dongfu.setLevel('ghost' as never, 3)
+    expect(dongfu.levels).not.toHaveProperty('ghost')
+    dongfu.setLevel('field', NaN)
+    expect(dongfu.levels.field).toBe(0)
+    dongfu.setLevel('field', -4)
+    expect(dongfu.levels.field).toBe(0)
+    dongfu.setLevel('field', field.maxLevel + 99)
+    expect(dongfu.levels.field).toBe(field.maxLevel)
+    dongfu.setLevel('field', 3.9)
+    expect(dongfu.levels.field).toBe(3)
+  })
+
+  it('坏产出时长:NaN/Infinity/负数都不推进余数,也不反向扣资源', () => {
+    const dongfu = useDongfuStore()
+    dongfu.setLevel('field', 1)
+    dongfu.frac = { herb: 0.25, ore: 0.25, wudao: 0.25 }
+    for (const dt of [NaN, Infinity, -10]) {
+      dongfu.produce(dt)
+      expect(dongfu.frac, `坏时长 ${dt} 不动余数`).toEqual({ herb: 0.25, ore: 0.25, wudao: 0.25 })
+    }
   })
 })
 
