@@ -39,6 +39,9 @@ import { useResourcesStore } from '@/stores/resources'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useAdventureStore } from '@/stores/adventure'
 import { useInventoryStore } from '@/stores/inventory'
+import { useApprenticeStore } from '@/stores/apprentice'
+import { apprenticeSpoils } from './apprenticeService'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { gn } from '@/utils/gnum'
 import { EXPLORE_MODES, BAG_CAPACITY } from '@/data/constants'
 
@@ -85,6 +88,46 @@ function setupBusySave(): void {
 describe('离线总结 · 变动了多少就报多少', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  /**
+   * 道童按墙钟走工,但发奖只在 `collectFinished` 里。这个入口此前只挂在
+   * ApprenticeView 的 onMounted/每秒轮询上:离线期间已完工、归来先转世,
+   * `resetForRebirth()` 会把道童与未领取资材一起清掉,归来卷轴只字未提。
+   *
+   * 故障注入:删掉 settleOffline 里的 collectFinished 调用 → 任务仍挂着、
+   * 灵草差额为 0、notes 无道童回执,本条红。
+   */
+  it('离线期间完工的道童在归来结算时收割并入卷轴,不留到转世被清空', () => {
+    const now = Date.now()
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const apprentice = useApprenticeStore()
+    game.markStarted()
+    game.lastActiveAt = now - 10 * 60 * 1000
+    player.major = 0
+    const grade = herbGradeOfMajor(player.major)
+    const before = resources.herbOf(grade)
+    const expected = apprenticeSpoils('ap_luanniao', 'herb', player.major, 1).herb!
+    apprentice.$patch({
+      apprentices: [
+        {
+          uid: 'offline-reap',
+          archId: 'ap_luanniao',
+          level: 1,
+          bond: 0,
+          task: { spec: 'herb', startAt: now - 60 * 60 * 1000, finishAt: now - 1000 }
+        }
+      ]
+    })
+
+    const summary = settleOffline(now)!
+
+    expect(apprentice.apprentices[0]!.task, '归来结算后任务应已收割').toBeNull()
+    expect(resources.herbOf(grade) - before, '道童带回的灵草应已入账').toBe(expected)
+    expect(summary.notes.some(n => n.includes('道童归来')), '归来卷轴应报出道童回执').toBe(true)
+    expect(apprentice.collectFinished(now, player.major), '同一趟不该被二次收割').toEqual([])
   })
 
   it('装备清单如实标注可看性:入包件带真实 uid,已化尘的不带', () => {

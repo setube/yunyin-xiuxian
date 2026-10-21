@@ -68,7 +68,9 @@ import { useAdventureStore } from '@/stores/adventure'
 import { useGameStore } from '@/stores/game'
 import { useUiStore } from '@/stores/ui'
 import { useEndgameStore } from '@/stores/endgame'
+import { useApprenticeStore } from '@/stores/apprentice'
 import { sanitizeAllStores } from '@/stores/sanitizeAll'
+import { apprenticeReturnText } from '@/ui/apprenticeText'
 
 /**
  * 离线事件兜底池:世界标签不命中公共事件池时的默认通用际遇。
@@ -158,6 +160,15 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
     .filter((n): n is string => n !== undefined)
   cultivation.pruneBuffs(nowMs)
   if (goneBuffNames.length > 0) notes.push(`「${goneBuffNames.join('、')}」已到期`)
+
+  /**
+   * 道童按墙钟走工,完工后由 `collectFinished` 入账。这个入口此前只在
+   * ApprenticeView 挂载时调用:玩家离线归来若先转世,`resetForRebirth()` 会把
+   * 道童连同未领取的资材一起清空 —— 归来卷轴却对此只字未提。离线结算先收一趟,
+   * 与进道童页收割走同一个 store 方法,不另算产出。
+   */
+  const reapedApprentices = useApprenticeStore().collectFinished(nowMs, player.major)
+  if (reapedApprentices.length > 0) notes.push(apprenticeReturnText(reapedApprentices, player.major))
 
   // ---- 修炼 ----
   const expBefore = { ...player.exp }

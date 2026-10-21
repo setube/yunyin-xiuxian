@@ -96,7 +96,6 @@
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { formatCountdown, formatGN } from '@/utils/format'
-  import { pillDef } from '@/data/pills'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
   import { useApprenticeStore } from '@/stores/apprentice'
@@ -109,9 +108,8 @@
     bondTitle,
     type ApprenticeSpec
   } from '@/data/apprentices'
-  import type { TaskSpoils } from '@/core/apprenticeService'
   import { apprenticeRecruitCost, apprenticeRecruitShortfall } from '@/core/apprenticeService'
-  import { HERB_GRADE_NAMES, herbGradeOfMajor } from '@/data/herbGrades'
+  import { apprenticeReturnText } from '@/ui/apprenticeText'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 
@@ -192,28 +190,13 @@
     else ui.toast('门中已满', 'info')
   }
 
-  function spoilsText(s: TaskSpoils): string {
-    const parts: string[] = []
-    if (s.herb) parts.push(`${HERB_GRADE_NAMES[herbGradeOfMajor(player.major)]}×${s.herb}`)
-    if (s.ore) parts.push(`玄铁×${s.ore}`)
-    if (s.dust) parts.push(`器尘×${s.dust}`)
-    if (s.wudao) parts.push(`悟道×${s.wudao}`)
-    if (s.stone) parts.push(`灵石 ${formatGN(s.stone)}`)
-    if (s.pillId) parts.push(`${pillDef(s.pillId)?.name ?? '丹药'}×${s.pillCount ?? 1}`)
-    return parts.join(' · ')
-  }
-
   /** 收割所有已完工道童;回来的就报一声带回什么 */
   function reap(): void {
     const reaped = appr.collectFinished(now.value, player.major)
     if (reaped.length === 0) return
     // ui.toast 会按「同文 + 同级」去重刷新同一条:两名道童带回一模一样的「悟道×2」时,
     // 逐条 toast 会被第二条顶掉 —— 明明回了两位却只报一位。批量就合成一条汇总
-    if (reaped.length === 1) {
-      ui.toast(`道童归来,带回 ${spoilsText(reaped[0]!)}`, 'success')
-      return
-    }
-    ui.toast(`道童归来 ${reaped.length} 名:${reaped.map(s => spoilsText(s)).join(';')}`, 'success')
+    ui.toast(apprenticeReturnText(reaped, player.major), 'success')
   }
 
   onMounted(() => {
