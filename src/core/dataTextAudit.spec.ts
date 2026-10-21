@@ -676,7 +676,8 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   })
 
   it('凝道果先采样首次教学标志,再执行凝果 —— 否则教学弹窗永不弹出', () => {
-    const view = src('../views/CelestialView.vue')
+    // doCondense 随熔炉/道果弹窗搬进了 components/celestial/FurnaceDialog.vue
+    const view = src('../components/celestial/FurnaceDialog.vue')
     const body = /function doCondense\(\)[^{]*\{([\s\S]*?)\n  \}/.exec(view)?.[1] ?? ''
     expect(body, '没读到 doCondense —— 判据会假绿').toContain('shouldShowFruitTutorial')
     // condenseDaoFruit 首次成功时会自己置 seen=true,后读判定恒为假

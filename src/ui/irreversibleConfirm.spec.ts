@@ -36,7 +36,9 @@ describe('不可逆确认的两次点击各写什么', () => {
     ['views/BuildView.vue', ['确认删除']],
     ['components/equipment/EquipmentDetailDialog.vue', ['确认分解']],
     ['views/SoulsView.vue', ['确认散去', '确认凝炼']],
-    ['views/CelestialView.vue', ['确认重写', '确认熔尽', '确认返还']]
+    ['views/CelestialView.vue', ['确认重写', '确认返还']],
+    // 熔炉弹窗拆出后判据随本体走:确认态与「确认熔尽」都在 FurnaceDialog
+    ['components/celestial/FurnaceDialog.vue', ['确认熔尽']]
   ]
   const CANCEL_BANNED = ['确 散', '凝 炼', '分解?', '确信删除', '>算了<', '>取 消<', '>取消<']
 
