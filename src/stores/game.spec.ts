@@ -94,4 +94,33 @@ describe('建号「逆天改命」不限次', () => {
     game.resetCreateDraft()
     expect(game.createName).toBe('')
   })
+
+  it('建号草稿写入只收合法形状:坏灵根拒绝、坏字段修形、坏道号不抛', () => {
+    const rng = new RandomService(mulberry32(20261022))
+    const game = useGameStore()
+    const drafted = rollLinggen(rng)
+    game.setCreateProfile(drafted)
+
+    game.setCreateProfile({ roots: [{ element: 'nope', aptitude: 80 }], gradeName: '坏根', growthMult: 1 } as never)
+    expect(game.createProfile, '认不出的灵根不该覆盖现有草稿').toEqual(drafted)
+
+    game.setCreateProfile({ roots: [{ element: 'wood', aptitude: 80 }], gradeName: '木灵根', growthMult: null } as never)
+    expect(game.createProfile).toMatchObject({ gradeName: '木灵根', growthMult: 1 })
+    expect(game.createProfile?.roots[0]?.element).toBe('wood')
+
+    game.setCreateName('清溪')
+    expect(() => game.setCreateName(42 as never)).not.toThrow()
+    expect(game.createName, '坏道号不该覆盖玩家已输入的字').toBe('清溪')
+  })
+
+  it('最后活跃时刻只认有限非负值,坏时钟不写进离线结算依据', () => {
+    const game = useGameStore()
+    game.stampActive(1000)
+    for (const bad of [NaN, Infinity, -Infinity, -1]) game.stampActive(bad)
+    expect(game.lastActiveAt).toBe(1000)
+    game.stampActive(0)
+    expect(game.lastActiveAt, '0 是合法时刻(纪元起点),不该被当成坏值').toBe(0)
+    game.stampActive(2000)
+    expect(game.lastActiveAt).toBe(2000)
+  })
 })

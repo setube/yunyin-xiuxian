@@ -48,7 +48,9 @@ export const useGameStore = defineStore(
 
     /** 记下当前掷出的灵根(不扣次数,扣次数由 spendCreateReroll 负责) */
     function setCreateProfile(profile: LinggenProfile): void {
-      createProfile.value = profile
+      // 建号页会裸下标读取元素与倍率:写入口和读档修形必须是同一把尺
+      const fixed = sanitizeLinggen(profile)
+      if (fixed) createProfile.value = fixed
     }
 
     /** 花掉一次重掷额度;不限次(null)或还有余量时返回 true,额度耗尽返回 false */
@@ -68,6 +70,7 @@ export const useGameStore = defineStore(
 
     /** 记下当前手打的道号(随草稿持久化,刷新不丢) */
     function setCreateName(name: string): void {
+      if (typeof name !== 'string') return
       createName.value = name.slice(0, 8)
     }
 
@@ -78,6 +81,8 @@ export const useGameStore = defineStore(
     }
 
     function stampActive(now: number): void {
+      // 最后活跃时刻参与离线结算:坏时钟会让收益算成 NaN,坏调用直接丢弃
+      if (!Number.isFinite(now) || now < 0) return
       lastActiveAt.value = now
     }
 
