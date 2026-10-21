@@ -271,7 +271,8 @@ describe('文案数值对账 · 视图不手抄数量', () => {
   })
 
   it('远征行程与变数连战数取自 EXPEDITION_* / MUTATION_FIGHTS', () => {
-    const view = src('../views/CelestialView.vue')
+    // 远征册拆出后判据随本体走。宿主与子面板合扫:拆分只搬了位置,数仍只有一份
+    const view = src('../views/CelestialView.vue') + src('../components/celestial/ExpeditionPanel.vue')
     expect(view).toContain('cnNumber(EXPEDITION_ROUTE_LAYERS)')
     expect(view).toContain('cnNumber(MUTATION_FIGHTS)')
     expect(view, '界主层判定读常数,不写 3').toContain('EXPEDITION_GUARDIAN_LAYER')
@@ -377,7 +378,8 @@ describe('文案数值对账 · 手写的门槛与容量', () => {
    */
   it('八门的行军数值由 gateRuleSummary 派生,图鉴与选门都不手写', () => {
     const view = src('../views/RealmCodexView.vue')
-    const celestial = src('../views/CelestialView.vue')
+    // 择门在远征准备弹窗里,随远征册迁入 components/celestial/ExpeditionPanel.vue
+    const celestial = src('../views/CelestialView.vue') + src('../components/celestial/ExpeditionPanel.vue')
     expect(view, '奇门册应读 gateRuleSummary').toContain('gateRuleSummary(g.rules)')
     expect(celestial, '选门详情应读 gateRuleSummary').toContain('gateRuleSummary(selectedGate.rules)')
   })

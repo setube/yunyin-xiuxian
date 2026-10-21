@@ -36,7 +36,8 @@ describe('不可逆确认的两次点击各写什么', () => {
     ['views/BuildView.vue', ['确认删除']],
     ['components/equipment/EquipmentDetailDialog.vue', ['确认分解']],
     ['views/SoulsView.vue', ['确认散去', '确认凝炼']],
-    ['views/CelestialView.vue', ['确认返还']],
+    // 远征册拆出后判据随本体走:中道而返的确认态在 ExpeditionPanel
+    ['components/celestial/ExpeditionPanel.vue', ['确认返还']],
     // 道痕册拆出后判据随本体走:重写确认态在 MarksPanel
     ['components/celestial/MarksPanel.vue', ['确认重写']],
     // 熔炉弹窗拆出后判据随本体走:确认态与「确认熔尽」都在 FurnaceDialog
