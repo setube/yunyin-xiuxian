@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 调整:**开炉炼丹迁 `BrewingDialog`** —— 丹方列表、把握与「炼满」二步确认、技艺一览、藏经阁翻检读数本就只服务这一扇浮层,却连 `recipes`/`skillRows`/`rateClass` 都堆在 989 行的行囊页里;现整块迁入 `components/inventory/BrewingDialog.vue`,丹方账收进 `composables/useBrewing.ts` 供入口卡与弹窗同源调用,`InventoryView` 收至 798 行。
 - 调整:**闭关卡迁 `RetreatCard`** —— 闭关时长、加成、约多得与「已多得」活数都读同一份 retreat 本体,却把倒计时与 `beginRetreat` 留在 872 行的修行页里;现整卡迁入 `components/cultivation/RetreatCard.vue`(自取 store、自持每秒时钟),宿主只留「是否闭关中」供法球点亮,`CultivationView` 收至 828 行。
 - 调整:**轮回弹窗迁 `RebirthDialog`** —— 道果边际、天赋芯片、传承与转世去留一览、逆旅契及其二次确认同出一域,却把 `talentTap`/`heritageOpen`/`trialOpen`/`pendingTrial` 与兵解 toast 留在页面里;现整块(含两个从属浮层)迁入 `components/character/RebirthDialog.vue`,关弹窗复位行为不变,`CharacterView` 收至 433 行。
 - 调整:**人物页三浮层迁 `IdentityDialog` / `BondDialog` / `MentorDialog`** —— 修行画像、道侣与师承三个弹窗各自只读一份投影,却连 `lastEventText`/`heritageOpen`/拜师契合预读都挂在 894 行的页面里;现整块迁入 `components/character/`,道侣的关系投影另收 `composables/useBondOverview.ts` 由入口卡与弹窗共用,`CharacterView` 收至 648 行。

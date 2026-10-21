@@ -605,11 +605,13 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   })
 
   it('丹药详情与丹方清单说得出「服下去会怎样」', () => {
-    const view = src('../views/InventoryView.vue')
+    // 丹方清单随开炉弹窗迁入 BrewingDialog;丹药详情仍在宿主 —— 两处合扫,防只查宿主假绿
+    const view = src('../views/InventoryView.vue') + src('../components/inventory/BrewingDialog.vue')
     // 两处都要读同一份:丹药详情弹窗 + 开炉炼丹的方子清单
     const uses = view.match(/pillFuncText\(/g)?.length ?? 0
     expect(uses, '丹药详情与方子清单都该写清效果(同一份 pillFuncText)').toBeGreaterThanOrEqual(2)
-    expect(view, '丹方读到几分熟取自 lore.recipeMastery').toContain('recipeMastery(')
+    // 熟练度读 lore.recipeMastery 留在宿主(丹药详情),丹方清单本身不重复一份
+    expect(src('../views/InventoryView.vue'), '丹方读到几分熟取自 lore.recipeMastery').toContain('recipeMastery(')
   })
 
   /**
@@ -618,7 +620,8 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
    * 且只在渲染出灵草格时才高亮 —— 货架六格随机,没有草还硬指一格就是指错路。
    */
   it('炼丹缺草给去坊市的去路,坊市接住 focus=herb 并只高亮灵草格', () => {
-    const inv = src('../views/InventoryView.vue')
+    // 方子行随开炉弹窗迁入 BrewingDialog,判据随本体走
+    const inv = src('../components/inventory/BrewingDialog.vue')
     expect(inv, '缺草/草石都缺时该给「去坊市续草」').toMatch(
       /name: 'market', query: \{ focus: 'herb', grade: String\(r\.cost\.grade\) \}/,
     )
@@ -640,7 +643,7 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
    * 若给「去坊市」就是把玩家指反了方向 —— 那里只会再缺一次。
    */
   it('炼丹只缺灵石时指去历练,不给坊市(那儿只有花灵石)', () => {
-    const inv = src('../views/InventoryView.vue')
+    const inv = src('../components/inventory/BrewingDialog.vue')
     expect(inv, '只缺灵石给历练去路').toMatch(/r\.plan\.reason === 'stone'/)
     expect(inv, '两条去路互斥,同屏只摆一条').toMatch(/v-else-if="r\.plan\.reason === 'stone'"/)
     // 目标路由也要锁:只断言标签的话,把 link 改回 market 这条测试照样绿

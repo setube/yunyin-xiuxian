@@ -26,7 +26,10 @@ describe('herbText · 逐品灵草存量口径', () => {
 describe('开炉炼丹面不再报跨品之和', () => {
   // 用户反馈的正是「炼丹页顶部显示一个跨品总和的灵草数,对不上逐品库存」。
   // 这两处从此只逐品陈列(herbStash / 当前品),一旦被拉回 resources.herb(五品之和)立即红。
-  const view = readFileSync(resolve(__dirname, '../views/InventoryView.vue'), 'utf8')
+  // 开炉弹窗已迁 components/inventory/BrewingDialog.vue;入口卡仍在宿主 —— 两处合扫,防拆分后只查一边假绿
+  const view =
+    readFileSync(resolve(__dirname, '../views/InventoryView.vue'), 'utf8') +
+    readFileSync(resolve(__dirname, '../components/inventory/BrewingDialog.vue'), 'utf8')
   const pillCraftingSurfaces = () => {
     // 入口卡与弹窗头两处 —— 只取「灵草 xx」字眼所在的那几行,别把方子成本行(本就带品名)算进来
     return view

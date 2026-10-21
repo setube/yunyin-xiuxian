@@ -60,6 +60,18 @@ describe('不可逆确认的两次点击各写什么', () => {
   })
 
   /**
+   * 「炼满」开的是按当前料算出的整本总账 —— 一次点掉几十炉,与「分解/散去」同族,
+   * 得先摆清总耗再让玩家按第二下。故障注入:把第一步直接接回 runCraftFull → 红。
+   */
+  it('开炉的「炼满」先摆总账,第二步才真开炉', () => {
+    // 开炉弹窗拆出后判据随本体走(components/inventory/BrewingDialog.vue)
+    const src = read('components/inventory/BrewingDialog.vue')
+    expect(src, '第一步只立起确认态').toContain('@click="pillFullId = r.def.id"')
+    expect(src, '第二步才走 runCraftFull').toContain('runCraftFull(r.def.id, r.plan.rounds)')
+    expect(src, '取消词与同族一致').toContain('再想想')
+  })
+
+  /**
    * 确认态必须钉在「那一条」上,不能钉在它的行号上。
    *
    * 道痕表新痕插头部,而重写一次就会补一条新痕:按行号记的话,重写第一行后
