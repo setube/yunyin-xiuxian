@@ -3,10 +3,13 @@ import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useLoreStore } from '@/stores/lore'
+import { useCultivationStore } from '@/stores/cultivation'
+import { useNow } from '@/composables/useNow'
 import { pillDef } from '@/data/pills'
 import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
 import { DAO_NAMES, SKILLS, skillStageName } from '@/data/crafting'
 import { craftGuaranteeRemaining } from '@/core/heritageEffects'
+import { buffOverflowOf } from '@/core/buffCap'
 import { availableRecipes, craftBatchPlan, craftPillBatch, pillCraftCost } from '@/core/pillService'
 import { craftability, type Craftability } from '@/core/craftability'
 import { studyEta } from '@/core/loreService'
@@ -25,6 +28,9 @@ export function useBrewing() {
   const player = usePlayerStore()
   const inventory = useInventoryStore()
   const lore = useLoreStore()
+  const cultivation = useCultivationStore()
+  // 药力状态随游戏钟走:药效到期后「已顶」要自己亮回来,暂停时又与结算一起冻住。
+  const now = useNow()
 
   const herbGrade = computed<HerbGrade>(() => herbGradeOfMajor(player.major))
 
@@ -36,13 +42,19 @@ export function useBrewing() {
         const able = craftability(id)
         const plan = craftBatchPlan(id)
         if (!def || !cost || !able) return null
+        // 增益丹顶满时再炼只会白占一格;判据与丹匣、修行速服同一把尺和同一把钟。
+        const overflow =
+          def.kind === 'buff' && def.buffId
+            ? buffOverflowOf(cultivation.buffs, def.buffId, now.value)
+            : null
         return {
           def,
           cost,
           able,
           plan,
           /** 行囊里已存几枚 —— 与丹匣同一份账(inventory.pills),不另数一遍 */
-          stock: inventory.pills[id] ?? 0
+          stock: inventory.pills[id] ?? 0,
+          overflow
         }
       })
       .filter(
@@ -54,6 +66,7 @@ export function useBrewing() {
           able: Craftability
           plan: ReturnType<typeof craftBatchPlan>
           stock: number
+          overflow: ReturnType<typeof buffOverflowOf> | null
         } =>
           x !== null
       )

@@ -109,6 +109,8 @@ describe('界面分层 · 浮层只有一个出处', () => {
     expect(src, '说明要能点开').toContain('@click="tapTask(a.uid, t.spec)"')
     expect(src, '读屏要报展开态').toContain(':aria-expanded="taskTap === `${a.uid}:${t.spec}`"')
     expect(src, '再点同枚才派出').toContain('dispatcher(uid, spec)')
+    expect(src, '等级来源要摊明:每完工一趟升一层').toContain('每完工一趟升一层')
+    expect(src, '封顶要读真实常量,不许另写死数字').toContain('{{ APPRENTICE_MAX_LEVEL }}')
   })
 
   it('白费/未达门槛要置灰 —— 丹药顶满、兵解未达境,不许点了才 toast', () => {

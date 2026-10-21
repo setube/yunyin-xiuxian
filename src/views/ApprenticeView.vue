@@ -82,6 +82,13 @@
       <p class="mt-2 text-[10px] leading-relaxed text-ink-faint">
         道童按时辰走工,离线亦照此工期;归来之时自会带回资材。天赋门类产出更丰。
       </p>
+      <!--
+        等级从哪来:升级由完工趟数驱动(每收割一趟 +1,封顶 APPRENTICE_MAX_LEVEL),
+        机制里没有「半格进度」—— 不编假进度,只把来源与上限说清楚。
+      -->
+      <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
+        道童每完工一趟升一层(封顶 {{ APPRENTICE_MAX_LEVEL }} 层),层数越高,一趟带回的越多。
+      </p>
     </section>
   </div>
 </template>
@@ -98,6 +105,7 @@
   import { useUiStore } from '@/stores/ui'
   import {
     APPRENTICE_TASKS,
+    APPRENTICE_MAX_LEVEL,
     RECRUIT_COST_TIER_AMOUNT,
     apprenticeDef,
     apprenticeSlots,

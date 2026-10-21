@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { recipeCraft } from '@/data/crafting'
 import { pillDef } from '@/data/pills'
 import { useInventoryStore } from '@/stores/inventory'
+import { useCultivationStore } from '@/stores/cultivation'
 import { useLoreStore } from '@/stores/lore'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -54,5 +55,43 @@ describe('炉前存货账(存 N · 药力状态)', () => {
     expect(rowOf('p_ningshen').stock).toBe(8)
     const dialog = readFileSync(join(__dirname, '../components/inventory/BrewingDialog.vue'), 'utf8')
     expect(dialog, '方子行要写出行囊存量').toContain('存 {{ r.stock }}')
+  })
+})
+
+describe('炉前药力账(已顶 · 将顶)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    setActivePinia(createPinia())
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('增益丹按 buffOverflowOf 报状态:顶满已顶、再服只续到顶则将顶,即时丹不误报', () => {
+    const t0 = 2_000_000
+    vi.setSystemTime(t0)
+    knowRecipe('p_juling')
+    knowRecipe('p_jvqisan')
+    const cultivation = useCultivationStore()
+    cultivation.addBuff('buff_juling', t0)
+    cultivation.addBuff('buff_juling', t0)
+
+    expect(rowOf('p_juling').overflow, '已到两倍上限').toBe('full')
+    expect(rowOf('p_jvqisan').overflow, '即时丹没有药力状态').toBeNull()
+
+    vi.setSystemTime(t0 + 1_200_000)
+    expect(rowOf('p_juling').overflow, '余 40 分钟时再服一颗会越过上限').toBe('partial')
+  })
+
+  it('方子行真的写出两档状态,措辞与丹匣同族', () => {
+    const dialog = readFileSync(join(__dirname, '../components/inventory/BrewingDialog.vue'), 'utf8')
+    expect(dialog).toContain("r.overflow === 'full'")
+    expect(dialog).toContain('已顶')
+    expect(dialog).toContain("r.overflow === 'partial'")
+    expect(dialog).toContain('将顶')
+    const composable = readFileSync(join(__dirname, 'useBrewing.ts'), 'utf8')
+    expect(composable, '药力判据读游戏钟,药效到期后状态自己复位').toContain(
+      'buffOverflowOf(cultivation.buffs, def.buffId, now.value)'
+    )
   })
 })

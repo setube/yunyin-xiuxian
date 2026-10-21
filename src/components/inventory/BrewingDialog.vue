@@ -34,8 +34,10 @@
               炉前存货账:只摊代价与把握时,玩家不知道行囊里已存几枚,容易重复炼制。
               存货读 inventory.pills(与丹匣同一份账),不另数一遍。
             -->
-            <p class="mt-0.5 text-[10px] tabular" :class="r.stock > 0 ? 'text-ink-soft' : 'text-ink-faint'">
-              存 {{ r.stock }}
+            <p class="mt-0.5 text-[10px] tabular">
+              <span :class="r.stock > 0 ? 'text-ink-soft' : 'text-ink-faint'">存 {{ r.stock }}</span>
+              <span v-if="r.overflow === 'full'" class="ml-1 text-cinnabar">已顶</span>
+              <span v-else-if="r.overflow === 'partial'" class="ml-1 text-gold-ink">将顶</span>
             </p>
           </div>
         </div>
