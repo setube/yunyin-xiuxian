@@ -36,7 +36,9 @@ describe('不可逆确认的两次点击各写什么', () => {
     ['views/BuildView.vue', ['确认删除']],
     ['components/equipment/EquipmentDetailDialog.vue', ['确认分解']],
     ['views/SoulsView.vue', ['确认散去', '确认凝炼']],
-    ['views/CelestialView.vue', ['确认重写', '确认返还']],
+    ['views/CelestialView.vue', ['确认返还']],
+    // 道痕册拆出后判据随本体走:重写确认态在 MarksPanel
+    ['components/celestial/MarksPanel.vue', ['确认重写']],
     // 熔炉弹窗拆出后判据随本体走:确认态与「确认熔尽」都在 FurnaceDialog
     ['components/celestial/FurnaceDialog.vue', ['确认熔尽']]
   ]
@@ -64,7 +66,8 @@ describe('不可逆确认的两次点击各写什么', () => {
    * 故障注入:把 rewriteConfirm === mark 改回 === i → 红。
    */
   it('忆战重写的确认态按道痕身份记,不按行号', () => {
-    const src = read('views/CelestialView.vue')
+    // 道痕册拆出后判据随本体走(components/celestial/MarksPanel.vue)
+    const src = read('components/celestial/MarksPanel.vue')
     expect(src, '确认态须按那条痕本身比对').toContain('rewriteConfirm === mark')
     expect(src, '武装须写入那条痕本身').toContain('rewriteConfirm = mark')
     expect(src, '列表键也不该拿行号当身份').not.toContain('v-for="(mark, i) in endgame.marks"')

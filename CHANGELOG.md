@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 调整:**道痕册迁 `MarksPanel`** —— 历世履历、今昔之比、忆战与重写、规则纪元变迁本就只读 `endgame.marks`,却把确认态与纪元弹窗状态留在页面里;现整册(含「天道已变」浮层)迁入 `components/celestial/MarksPanel.vue`,战报仍由宿主 `openReport` 统一判定归因,`CelestialView` 收至 967 行。
 - 调整:**登临真仙导览弹窗迁 `TutorialDialog`** —— 这段「凡间所得终有尽时」的首次终局说明自成一块只读浮层,却与道途/远征/试炼各册挤在同一文件尾部;现整块迁入 `components/celestial/`,宿主只留 `tutorialOpen` 与首次进入天界的自动弹出,`CelestialView` 收至 1128 行。
 - 调整:**天道熔炉弹窗迁 `FurnaceDialog`** —— 熔炉与首次凝道果弹窗同属一域(凝果入口就在熔炉行内,道果教学由 `doCondense` 触发),却与道途/远征/试炼各册挤在一个文件里;现整块(熔尽二次确认、灵石换道源、道源凝果与 S3 边际读数)连同 `doCondense` 的「先采样首见标志、再凝果」次序迁入 `components/celestial/`,宿主只留 `furnaceOpen` 与入口钮,`CelestialView` 收至 1163 行。
 - 调整:**天界战报弹窗迁 `BattleReportDialog`** —— 远征终局 / 天道试炼 / 天道变数 / 忆战 / 重写 / 挑战六处共用同一形状,却与页面其余部分挤在 1300 余行的一个文件里;现整块(逐场摘要、逐回合回放、此战之判、道源所得)连同 `ReportView` 类型迁入 `components/celestial/`,宿主只留 `openReport` 这一处判定归因,`CelestialView` 收至 1285 行。

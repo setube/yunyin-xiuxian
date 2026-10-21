@@ -25,7 +25,14 @@ function stripComments(src: string): string {
     .replace(/\/\/[^\n]*/g, '')
 }
 
-const MARKS_VIEW_SRC = stripComments(readFileSync(resolve(__dirname, '../views/CelestialView.vue'), 'utf8'))
+/**
+ * 道痕册拆出 components/celestial/MarksPanel.vue 后,判据随本体走。
+ * 读宿主与子组件合扫:只查其中一个,拆分后的下一次改动就会假绿。
+ */
+const MARKS_VIEW_SRC = stripComments(
+  readFileSync(resolve(__dirname, '../views/CelestialView.vue'), 'utf8') +
+    readFileSync(resolve(__dirname, '../components/celestial/MarksPanel.vue'), 'utf8')
+)
 
 describe('规则纪元:纪元先后', () => {
   it('点号分段比较,19.0 < 19.5 < 20.0', () => {
