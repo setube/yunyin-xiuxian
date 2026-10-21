@@ -542,12 +542,18 @@ export const useEndgameStore = defineStore(
     }
 
     function addDaoSource(n: number): void {
-      daoSource.value = Math.max(0, Math.floor(daoSource.value + n))
+      if (!Number.isFinite(n) || n <= 0) return
+      const amount = Math.floor(n)
+      if (amount <= 0) return
+      daoSource.value = Math.max(0, daoSource.value + amount)
     }
 
     function spendDaoSource(n: number): boolean {
-      if (daoSource.value < n) return false
-      daoSource.value -= n
+      if (!Number.isFinite(n) || n < 0) return false
+      const amount = Math.floor(n)
+      if (amount === 0) return true
+      if (daoSource.value < amount) return false
+      daoSource.value -= amount
       return true
     }
 

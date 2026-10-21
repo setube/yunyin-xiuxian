@@ -61,6 +61,26 @@ describe('player.rebirth 转世状态重置', () => {
     expect(p.suppressQualified).toHaveLength(0)
   })
 
+  it('跨世累加接口挡住 NaN / Infinity / 负数:寿元、道果与宿慧不被污染', () => {
+    const p = usePlayerStore()
+    p.initCharacter('测试道友', { roots: [] } as never)
+    p.age = 100
+    p.lifespanBonusYears = 10
+    p.reincarnation = { ...p.reincarnation, daoFruit: 5, insight: 7 }
+
+    for (const bad of [NaN, Infinity, -Infinity, -3]) {
+      p.addAge(bad)
+      p.addLifespan(bad)
+      p.addDaoFruit(bad)
+      p.addInsight(bad)
+    }
+
+    expect(p.age, '寿元不能被坏时长写成 NaN 或倒流').toBe(100)
+    expect(p.lifespanBonusYears).toBe(10)
+    expect(p.reincarnation.daoFruit).toBe(5)
+    expect(p.reincarnation.insight).toBe(7)
+  })
+
   it('保留跨世记忆:机缘选择/奇遇连锁(「世界记得你的选择」)', () => {
     const p = usePlayerStore()
     p.initCharacter('测试道友', { roots: [] } as never)

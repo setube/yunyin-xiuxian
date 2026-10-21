@@ -142,7 +142,10 @@ export const useDongfuStore = defineStore(
 
     /** 灵脉投点(校验由 veinService 负责) */
     function addVeinPoint(id: VeinId, n: number): void {
-      veinPoints.value = { ...veinPoints.value, [id]: (veinPoints.value[id] ?? 0) + n }
+      if (!VEINS.some(v => v.id === id) || !Number.isFinite(n)) return
+      const amount = Math.floor(n)
+      if (amount <= 0) return
+      veinPoints.value = { ...veinPoints.value, [id]: (veinPoints.value[id] ?? 0) + amount }
     }
 
     function setVeinMain(id: VeinId): void {

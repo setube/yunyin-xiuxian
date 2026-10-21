@@ -82,6 +82,7 @@ export const useGameStore = defineStore(
     }
 
     function addPlayTime(sec: number): void {
+      if (!Number.isFinite(sec) || sec < 0) return
       totalPlaySec.value += sec
     }
 

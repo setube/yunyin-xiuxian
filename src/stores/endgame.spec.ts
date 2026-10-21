@@ -310,6 +310,32 @@ describe('道源原始操作 · spend/addDaoSource 原子·单调·取整', () =
     endgame.addDaoSource(1) // +1 → 3
     expect(endgame.daoSource).toBe(3)
   })
+
+  it('addDaoSource 挡住 NaN / Infinity:余额不被写成坏数', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ daoSource: 7 })
+    endgame.addDaoSource(NaN)
+    endgame.addDaoSource(Infinity)
+    expect(endgame.daoSource).toBe(7)
+  })
+
+  it('addDaoSource 拒绝负数:余额不会被倒扣', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ daoSource: 7 })
+    endgame.addDaoSource(-5)
+    expect(endgame.daoSource).toBe(7)
+  })
+
+  it('spendDaoSource 拒绝负数与非有限值,0 保持成功且不动账', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ daoSource: 7 })
+    expect(endgame.spendDaoSource(-5), '负扣款不得反向加道源').toBe(false)
+    expect(endgame.spendDaoSource(NaN)).toBe(false)
+    expect(endgame.spendDaoSource(Infinity)).toBe(false)
+    expect(endgame.daoSource).toBe(7)
+    expect(endgame.spendDaoSource(0)).toBe(true)
+    expect(endgame.daoSource).toBe(7)
+  })
 })
 
 describe('天道试炼 · recordTrial best-min 守谱', () => {

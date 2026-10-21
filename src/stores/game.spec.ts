@@ -38,6 +38,13 @@ describe('建号「逆天改命」不限次', () => {
     expect(game.createRerolls, '刷多了额度被扣成数字').toBeNull()
   })
 
+  it('游玩时长累加挡住 NaN / Infinity / 负数', () => {
+    const game = useGameStore()
+    game.totalPlaySec = 60
+    for (const bad of [NaN, Infinity, -Infinity, -5]) game.addPlayTime(bad)
+    expect(game.totalPlaySec).toBe(60)
+  })
+
   it('刷新不会背着玩家换牌:已有草稿时不重新开牌', () => {
     const rng = new RandomService(mulberry32(7))
     const game = useGameStore()

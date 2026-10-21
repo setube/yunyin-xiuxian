@@ -74,6 +74,18 @@ describe('dongfu store · sanitize', () => {
     dongfu.sanitize()
     expect(dongfu.veinMain).toBeNull()
   })
+
+  it('灵脉投点只认认得的脉与有限正数,坏调用不污染点数', () => {
+    const dongfu = useDongfuStore()
+    dongfu.addVeinPoint('gather', 3)
+    dongfu.addVeinPoint('gather', NaN)
+    dongfu.addVeinPoint('gather', Infinity)
+    dongfu.addVeinPoint('gather', -5)
+    dongfu.addVeinPoint('gather', 0)
+    dongfu.addVeinPoint('ghost' as never, 5)
+    expect(dongfu.veinPoints.gather).toBe(3)
+    expect(dongfu.veinPoints).not.toHaveProperty('ghost')
+  })
 })
 
 describe('dongfu store · buildingCap', () => {

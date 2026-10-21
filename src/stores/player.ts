@@ -459,10 +459,12 @@ export const usePlayerStore = defineStore(
     }
 
     function addAge(years: number): void {
+      if (!Number.isFinite(years) || years < 0) return
       age.value += years
     }
 
     function addLifespan(years: number): void {
+      if (!Number.isFinite(years) || years <= 0) return
       lifespanBonusYears.value += years
     }
 
@@ -484,7 +486,10 @@ export const usePlayerStore = defineStore(
     }
 
     function addDaoFruit(n: number): void {
-      reincarnation.value = { ...reincarnation.value, daoFruit: reincarnation.value.daoFruit + n }
+      if (!Number.isFinite(n) || n <= 0) return
+      const amount = Math.floor(n)
+      if (amount <= 0) return
+      reincarnation.value = { ...reincarnation.value, daoFruit: reincarnation.value.daoFruit + amount }
     }
 
     /**
@@ -665,8 +670,10 @@ export const usePlayerStore = defineStore(
 
     /** 记入宿慧(历世阅历与达成的命题都走这里) */
     function addInsight(n: number): void {
-      if (!(n > 0)) return
-      reincarnation.value = { ...reincarnation.value, insight: reincarnation.value.insight + n }
+      if (!Number.isFinite(n) || n <= 0) return
+      const amount = Math.floor(n)
+      if (amount <= 0) return
+      reincarnation.value = { ...reincarnation.value, insight: reincarnation.value.insight + amount }
     }
 
     /** 立下这一世的题(null 为不立题) */
