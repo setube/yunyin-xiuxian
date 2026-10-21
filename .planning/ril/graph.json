@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 289,
+  "round": 291,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T11:25:28+00:00",
+  "updated_at": "2026-10-21T12:14:28+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20424,6 +20424,255 @@
       "title": "逆旅契缺口收口到 lifeTrialShortfall",
       "commit": "a2e4f74",
       "description": "卡面禁用与就地列差，入口和服务同报实际差额。"
+    },
+    "TASK-378": {
+      "id": "TASK-378",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T11:39:19+00:00",
+      "updated_at": "2026-10-21T12:13:45+00:00",
+      "touched_round": 291,
+      "category": "core-feature",
+      "severity": 0.5,
+      "confidence": 0.85,
+      "effort": 2,
+      "title": "开局第一步卡统一指路",
+      "description": "开局目标/主线/每日三块各指一页,首页缺一张只在开局出现的下一步入口;补 firstStep 纯函数并复用 homeStatusText"
+    },
+    "TASK-379": {
+      "id": "TASK-379",
+      "type": "task",
+      "status": "abandoned",
+      "version": 2,
+      "created_at": "2026-10-21T11:39:19+00:00",
+      "updated_at": "2026-10-21T12:14:17+00:00",
+      "touched_round": 291,
+      "category": "core-feature",
+      "severity": 0.35,
+      "confidence": 0.8,
+      "effort": 2,
+      "title": "跨界飞升界膜仪式",
+      "description": "突破结算已有跨世叙事,但缺独立的界膜宣告组件与判据;确认是否值得与主线进度同批落地"
+    },
+    "TASK-380": {
+      "id": "TASK-380",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T11:39:25+00:00",
+      "updated_at": "2026-10-21T12:13:46+00:00",
+      "touched_round": 291,
+      "category": "core-feature",
+      "severity": 0.5,
+      "confidence": 0.85,
+      "effort": 2,
+      "title": "开局第一步卡统一指路",
+      "description": "开局目标/主线/每日三块各指一页,首页缺一张只在开局出现的下一步入口;补 firstStep 纯函数并复用 homeStatusText"
+    },
+    "TASK-381": {
+      "id": "TASK-381",
+      "type": "task",
+      "status": "abandoned",
+      "version": 2,
+      "created_at": "2026-10-21T11:39:39+00:00",
+      "updated_at": "2026-10-21T12:14:17+00:00",
+      "touched_round": 291,
+      "category": "core-feature",
+      "severity": 0.35,
+      "confidence": 0.8,
+      "effort": 2,
+      "title": "跨界飞升界膜仪式",
+      "description": "突破结算已有跨世叙事,但缺独立的界膜宣告组件与判据;确认是否值得与主线进度同批落地"
+    },
+    "COMP-036": {
+      "id": "COMP-036",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:11:43+00:00",
+      "updated_at": "2026-10-21T12:11:43+00:00",
+      "touched_round": 291,
+      "title": "首页主线进度投影",
+      "description": "core/questProgress 与 HomeView 接线"
+    },
+    "ISS-940": {
+      "id": "ISS-940",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T12:11:43+00:00",
+      "updated_at": "2026-10-21T12:13:46+00:00",
+      "touched_round": 291,
+      "title": "首页主线进度只报计数型",
+      "description": "境界与 realm_major_sub 里程碑没有进度读数"
+    },
+    "COMP-037": {
+      "id": "COMP-037",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:11:43+00:00",
+      "updated_at": "2026-10-21T12:11:43+00:00",
+      "touched_round": 291,
+      "title": "新手第一步指路",
+      "description": "core/firstStep 与 HomeView 第一步卡"
+    },
+    "ISS-941": {
+      "id": "ISS-941",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T12:11:43+00:00",
+      "updated_at": "2026-10-21T12:13:46+00:00",
+      "touched_round": 291,
+      "title": "开局三块各指一页无统一入口",
+      "description": "新手首页缺一张只在开局出现的下一步卡"
+    },
+    "COMP-038": {
+      "id": "COMP-038",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:11:43+00:00",
+      "updated_at": "2026-10-21T12:11:43+00:00",
+      "touched_round": 291,
+      "title": "界面冒烟弹窗巡逻",
+      "description": "scripts/ui-smoke.mjs 与 scripts/smoke-classify.ts"
+    },
+    "ISS-942": {
+      "id": "ISS-942",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T12:11:43+00:00",
+      "updated_at": "2026-10-21T12:13:46+00:00",
+      "touched_round": 291,
+      "title": "冒烟只点首扇弹窗把底层控件误判为死按钮",
+      "description": "候选列表点名称开详情后,底层卸下被上层背板挡住"
+    },
+    "EV-259": {
+      "id": "EV-259",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:11:50+00:00",
+      "updated_at": "2026-10-21T12:11:50+00:00",
+      "touched_round": 291,
+      "source": "src/core/questProgress.spec.ts + bun run test:report",
+      "confidence": 0.98,
+      "description": "境界/层数读数与 evalCond 逐条对账;3259 过 0 败"
+    },
+    "EV-260": {
+      "id": "EV-260",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:11:50+00:00",
+      "updated_at": "2026-10-21T12:11:50+00:00",
+      "touched_round": 291,
+      "source": "src/core/firstStep.spec.ts",
+      "confidence": 0.97,
+      "description": "开局指历练、圆满指突破、历练/主线/筑基/陨落/闭关收卡八例"
+    },
+    "EV-261": {
+      "id": "EV-261",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:11:50+00:00",
+      "updated_at": "2026-10-21T12:11:50+00:00",
+      "touched_round": 291,
+      "source": "scripts/ui-smoke.mjs + bun scripts/ui-smoke.mjs",
+      "confidence": 0.99,
+      "description": "修正后 17 页 100 次点击,卸下不再误报,退出码 0"
+    },
+    "TASK-382": {
+      "id": "TASK-382",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T12:12:01+00:00",
+      "updated_at": "2026-10-21T12:13:46+00:00",
+      "touched_round": 291,
+      "category": "test-quality",
+      "severity": 0.55,
+      "confidence": 0.99,
+      "effort": 1,
+      "title": "冒烟弹窗巡逻只走最上层",
+      "description": "修复只点首扇弹窗导致底层控件被误判为死按钮;补幂等选中项白名单"
+    },
+    "HYP-113": {
+      "id": "HYP-113",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:12:16+00:00",
+      "updated_at": "2026-10-21T12:12:16+00:00",
+      "touched_round": 291,
+      "confidence": 0.98,
+      "title": "主线进度口径可共用 evalCond",
+      "description": "界面另写条件比较会与发赏判定分叉"
+    },
+    "HYP-114": {
+      "id": "HYP-114",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:12:16+00:00",
+      "updated_at": "2026-10-21T12:12:16+00:00",
+      "touched_round": 291,
+      "confidence": 0.97,
+      "title": "第一步卡可由现有存档推出",
+      "description": "无需新增已看过持久化字段"
+    },
+    "HYP-115": {
+      "id": "HYP-115",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:12:16+00:00",
+      "updated_at": "2026-10-21T12:12:16+00:00",
+      "touched_round": 291,
+      "confidence": 0.99,
+      "title": "冒烟误判源于底层弹窗句柄被上层遮挡",
+      "description": "固定点首扇弹窗,详情打开后底层按钮不可达"
+    },
+    "CHG-492": {
+      "id": "CHG-492",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:13:51+00:00",
+      "updated_at": "2026-10-21T12:13:51+00:00",
+      "touched_round": 291,
+      "commit": "987a970",
+      "title": "首页主线进度投影与第一步卡",
+      "description": "questProgress 与 firstStep 接入 HomeView"
+    },
+    "CHG-493": {
+      "id": "CHG-493",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:13:51+00:00",
+      "updated_at": "2026-10-21T12:13:51+00:00",
+      "touched_round": 291,
+      "commit": "99fbec2",
+      "title": "冒烟弹窗巡逻只点最上层",
+      "description": "消除底层控件被上层背板遮挡造成的死按钮误报"
+    },
+    "DEC-066": {
+      "id": "DEC-066",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T12:14:23+00:00",
+      "updated_at": "2026-10-21T12:14:23+00:00",
+      "touched_round": 291,
+      "title": "暂缓跨界飞升界膜仪式",
+      "rationale": "突破结算已有跨世叙事;独立界膜组件需同时补动画、音效与多层判据,收益低于先把已有首页与门禁收口",
+      "alternatives_rejected": "[\"与主线进度同批落地\",\"直接删除界膜设想\"]"
     }
   },
   "edges": [
@@ -30321,6 +30570,108 @@
       "to": "TASK-377",
       "type": "implements",
       "created_at": "2026-10-21T11:25:19+00:00"
+    },
+    {
+      "from": "TASK-378",
+      "to": "ISS-940",
+      "type": "addresses",
+      "created_at": "2026-10-21T12:11:56+00:00"
+    },
+    {
+      "from": "TASK-380",
+      "to": "ISS-941",
+      "type": "addresses",
+      "created_at": "2026-10-21T12:11:56+00:00"
+    },
+    {
+      "from": "ISS-940",
+      "to": "COMP-036",
+      "type": "located_in",
+      "created_at": "2026-10-21T12:11:56+00:00"
+    },
+    {
+      "from": "ISS-941",
+      "to": "COMP-037",
+      "type": "located_in",
+      "created_at": "2026-10-21T12:11:56+00:00"
+    },
+    {
+      "from": "ISS-942",
+      "to": "COMP-038",
+      "type": "located_in",
+      "created_at": "2026-10-21T12:11:56+00:00"
+    },
+    {
+      "from": "TASK-382",
+      "to": "ISS-942",
+      "type": "addresses",
+      "created_at": "2026-10-21T12:12:07+00:00"
+    },
+    {
+      "from": "EV-259",
+      "to": "HYP-113",
+      "type": "validates",
+      "created_at": "2026-10-21T12:12:22+00:00"
+    },
+    {
+      "from": "EV-260",
+      "to": "HYP-114",
+      "type": "validates",
+      "created_at": "2026-10-21T12:12:22+00:00"
+    },
+    {
+      "from": "EV-261",
+      "to": "HYP-115",
+      "type": "validates",
+      "created_at": "2026-10-21T12:12:22+00:00"
+    },
+    {
+      "from": "CHG-492",
+      "to": "TASK-378",
+      "type": "implements",
+      "created_at": "2026-10-21T12:14:11+00:00"
+    },
+    {
+      "from": "CHG-492",
+      "to": "TASK-380",
+      "type": "implements",
+      "created_at": "2026-10-21T12:14:12+00:00"
+    },
+    {
+      "from": "CHG-492",
+      "to": "ISS-940",
+      "type": "resolves",
+      "created_at": "2026-10-21T12:14:12+00:00"
+    },
+    {
+      "from": "CHG-492",
+      "to": "ISS-941",
+      "type": "resolves",
+      "created_at": "2026-10-21T12:14:12+00:00"
+    },
+    {
+      "from": "CHG-493",
+      "to": "TASK-382",
+      "type": "implements",
+      "created_at": "2026-10-21T12:14:12+00:00"
+    },
+    {
+      "from": "CHG-493",
+      "to": "ISS-942",
+      "type": "resolves",
+      "created_at": "2026-10-21T12:14:12+00:00"
+    },
+    {
+      "from": "DEC-066",
+      "to": "TASK-379",
+      "type": "governs",
+      "created_at": "2026-10-21T12:14:28+00:00"
+    },
+    {
+      "from": "DEC-066",
+      "to": "TASK-381",
+      "type": "governs",
+      "created_at": "2026-10-21T12:14:28+00:00"
     }
   ]
 }
