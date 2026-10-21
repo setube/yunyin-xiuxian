@@ -10,6 +10,7 @@
 import type { CombatantSnap, CombatRules, GNum } from '@/types'
 import type { WorldFoeShape } from '@/types'
 import { cnNumber, formatGN } from '@/utils/format'
+import { gnZero, subClamp } from '@/utils/gnum'
 import { rng } from '@/utils/random'
 import { ENEMIES, enemyDef } from '@/data/enemies'
 import { beastIcon } from '@/data/beastFamilies'
@@ -71,6 +72,36 @@ export function entryCostText(def: SecretRealmDef, major: number): string {
   return c.kind === 'stone' ? `灵石 ${formatGN(c.stone)}` : `道源 ${c.daoSource}`
 }
 
+export interface SecretEntryShortfall {
+  kind: 'stone' | 'daoSource'
+  /** 灵石尚差(足够时为 0) */
+  stone: GNum
+  /** 道源尚差(足够时为 0) */
+  daoSource: number
+  /** 卡面与拒因共用的精确缺口句 */
+  reason: string
+}
+
+/**
+ * 入口代价的实际缺口 —— 卡面置灰、服务拒因与 toast 共用这一份判据。
+ *
+ * 「灵石不足 40」只报了总价,玩家仍要自己减一遍余额才知道差多少;
+ * 与洞府 buildingShortfall 同规:付不起就点名缺哪一种货币、差多少。
+ */
+export function entryShortfallOf(def: SecretRealmDef, major: number): SecretEntryShortfall | null {
+  const cost = entryCostOf(def, major)
+  if (cost.kind === 'stone') {
+    const resources = useResourcesStore()
+    if (resources.hasStone(cost.stone)) return null
+    const stone = subClamp(cost.stone, resources.spiritStone)
+    return { kind: 'stone', stone, daoSource: 0, reason: `尚差 ${formatGN(stone)} 石` }
+  }
+  const endgame = useEndgameStore()
+  if (endgame.daoSource >= cost.daoSource) return null
+  const daoSource = Math.max(0, cost.daoSource - endgame.daoSource)
+  return { kind: 'daoSource', stone: gnZero(), daoSource, reason: `尚差 ${daoSource} 道源` }
+}
+
 /** 该册是否已开:至少有一处够格可入(凡境册元婴起,天界册真仙起) */
 export function realmUnlock(gate: SecretRealmDef['gate'] = 'mortal'): boolean {
   const player = usePlayerStore()
@@ -115,17 +146,17 @@ export function enterSecretRealm(defId: string): EnterResult {
     return { ok: false, reason: '远征在途' }
   }
   const cost = entryCostOf(def, player.major)
-  if (cost.kind === 'stone') {
-    if (!resources.hasStone(cost.stone)) {
-      ui.toast(`灵石不足 ${formatGN(cost.stone)}`, 'warn')
-      return { ok: false, reason: '灵石不足' }
-    }
-    resources.spendStone(cost.stone)
-  } else {
-    if (!endgame.spendDaoSource(cost.daoSource)) {
-      ui.toast(`道源不足 ${cost.daoSource}`, 'warn')
-      return { ok: false, reason: '道源不足' }
-    }
+  const short = entryShortfallOf(def, player.major)
+  if (short) {
+    ui.toast(short.reason, 'warn')
+    return { ok: false, reason: short.reason }
+  }
+  // 扣款仍是最终权威:即便判据与扣款之间余额被别处改动,也绝不落状态。
+  if (cost.kind === 'stone' ? !resources.spendStone(cost.stone) : !endgame.spendDaoSource(cost.daoSource)) {
+    const latest = entryShortfallOf(def, player.major)
+    const reason = latest?.reason ?? '灵石或道源未足'
+    ui.toast(reason, 'warn')
+    return { ok: false, reason }
   }
   // 随机规则 1~2 条,不重复
   const n = rng.int(1, 2)

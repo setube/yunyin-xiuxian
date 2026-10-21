@@ -11,16 +11,18 @@
  *   三 推得动:三层递进,层间按本境规则回血/损血;败两次被逐出;
  *   四 出得来:通关给宝藏并清空状态;放弃也清空,但已得战利不退。
  */
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { gn, toNum } from '@/utils/gnum'
+import { gn, subClamp, toNum } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
 import { SECRET_REALMS, SECRET_RULES } from '@/data/secretRealms'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
 import { useAdventureStore } from '@/stores/adventure'
+import { useUiStore } from '@/stores/ui'
 import { startExploration } from './exploration'
 import {
   SECRET_LAYERS,
@@ -31,6 +33,7 @@ import {
   enterSecretRealm,
   entryCostOf,
   entryCostText,
+  entryShortfallOf,
   fightSecretLayer,
   realmUnlock,
   secretFightRules,
@@ -72,6 +75,36 @@ describe('秘境 · 进得去', () => {
     expect(enterSecretRealm(def.id).ok).toBe(true)
     expect(currentRealm()?.realmId).toBe(def.id)
     expect(resources.spiritStone.m).toBeLessThan(before)
+  })
+
+  it('灵石付不出:缺口只报尚差多少,卡面与服务拒因同源', () => {
+    const resources = useResourcesStore()
+    usePlayerStore().major = 3
+    const def = SECRET_REALMS[0]!
+    const cost = entryCostOf(def, 3) as { kind: 'stone'; stone: ReturnType<typeof gn> }
+    resources.spiritStone = gn(0)
+    const short = entryShortfallOf(def, 3)
+    expect(short?.kind).toBe('stone')
+    expect(short?.stone).toEqual(cost.stone)
+    expect(short?.reason).toContain('尚差')
+    expect(short?.reason).toContain('石')
+    expect(short?.reason).not.toContain('灵石不足')
+
+    expect(enterSecretRealm(def.id).ok).toBe(false)
+    expect(useUiStore().toasts.at(-1)?.text).toBe(short?.reason)
+    expect(currentRealm()).toBeNull()
+  })
+
+  it('灵石只差一部分:报实际差额,不是总价', () => {
+    const resources = useResourcesStore()
+    usePlayerStore().major = 3
+    const def = SECRET_REALMS[0]!
+    const cost = entryCostOf(def, 3) as { kind: 'stone'; stone: ReturnType<typeof gn> }
+    resources.spiritStone = gn(10)
+    const short = entryShortfallOf(def, 3)
+    expect(short?.kind).toBe('stone')
+    expect(short?.stone).toEqual(subClamp(cost.stone, resources.spiritStone))
+    expect(short?.stone).not.toEqual(cost.stone)
   })
 
   it('秘境是一次性的:已在其中不许再进;门槛不够的进不去', () => {
@@ -321,6 +354,49 @@ describe('秘境 · 两阶(凡境灵石 / 天界道源)', () => {
     expect(enterSecretRealm(def.id).ok).toBe(true)
     const cost = entryCostOf(def, 9) as { kind: 'daoSource'; daoSource: number }
     expect(endgame.daoSource).toBe(before - cost.daoSource)
+  })
+
+  it('道源付不出:缺口只报尚差多少,付得起后判据归空', () => {
+    const player = usePlayerStore()
+    const endgame = useEndgameStore()
+    player.major = 9
+    const def = availableRealms('celestial')[0]!
+    const cost = entryCostOf(def, 9) as { kind: 'daoSource'; daoSource: number }
+    endgame.daoSource = 10
+    const short = entryShortfallOf(def, 9)
+    expect(short?.kind).toBe('daoSource')
+    expect(short?.daoSource).toBe(cost.daoSource - 10)
+    expect(short?.reason).toBe(`尚差 ${cost.daoSource - 10} 道源`)
+
+    endgame.addDaoSource(cost.daoSource - 10)
+    expect(entryShortfallOf(def, 9)).toBeNull()
+  })
+
+  it('付得起时缺口判据为空,入口按钮按它启用', () => {
+    const player = usePlayerStore()
+    player.major = 3
+    useResourcesStore().spiritStone = gn(1_000_000_000)
+    expect(entryShortfallOf(SECRET_REALMS[0]!, 3)).toBeNull()
+    const card = readFileSync(resolve(__dirname, '../components/adventure/SecretRealmCard.vue'), 'utf8')
+    expect(card, '付不起的入口必须真的禁用,不能只降透明度').toContain(':disabled="!canPay(r)"')
+    expect(card, '卡面缺口读同一份 core 判据').toContain('entryShortfallOf(r, player.major)')
+    expect(card, '付不起时就地列差').toContain('entryShort(r)?.reason')
+  })
+
+  it('判据通过后扣款瞬间失败:仍点名实际缺口,不退回「灵石或道源」', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.major = 3
+    resources.spiritStone = gn(1_000_000_000)
+    const def = SECRET_REALMS[0]!
+    const cost = entryCostOf(def, 3) as { kind: 'stone'; stone: ReturnType<typeof gn> }
+    vi.spyOn(resources, 'spendStone').mockImplementation(() => {
+      resources.spiritStone = gn(0)
+      return false
+    })
+    expect(enterSecretRealm(def.id).ok).toBe(false)
+    expect(useUiStore().toasts.at(-1)?.text).toBe(`尚差 ${formatGN(cost.stone)} 石`)
+    expect(currentRealm()).toBeNull()
   })
 
   it('代价文案与货币一致(界面上不手写)', () => {

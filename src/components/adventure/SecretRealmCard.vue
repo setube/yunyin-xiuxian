@@ -36,8 +36,9 @@
         <button
           v-for="r in list"
           :key="r.id"
-          class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98"
+          class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98 disabled:cursor-not-allowed"
           :class="{ 'opacity-60': !canPay(r) }"
+          :disabled="!canPay(r)"
           @click="enter(r.id)"
         >
           <span class="flex items-baseline gap-2">
@@ -46,6 +47,9 @@
               {{ entryCostText(r, player.major) }}
             </span>
             <span class="ml-auto text-[10px] text-azure">入 境 →</span>
+          </span>
+          <span v-if="entryShort(r)" class="mt-0.5 block text-[10px] tabular text-cinnabar">
+            {{ entryShort(r)?.reason }}
           </span>
           <span class="mt-0.5 block text-[10px] leading-relaxed text-ink-faint">{{ r.desc }}</span>
         </button>
@@ -60,9 +64,7 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { usePlayerStore } from '@/stores/player'
-  import { useResourcesStore } from '@/stores/resources'
   import { useUiStore } from '@/stores/ui'
-  import { useEndgameStore } from '@/stores/endgame'
   import { secretRealmDef, type SecretRealmDef } from '@/data/secretRealms'
   import { cnNumber } from '@/utils/format'
   import {
@@ -72,18 +74,16 @@
     availableRealms,
     currentRealm,
     enterSecretRealm,
-    entryCostOf,
     entryCostText,
+    entryShortfallOf,
     fightSecretLayer,
     realmUnlock
   } from '@/core/secretRealm'
 
   const player = usePlayerStore()
-  const resources = useResourcesStore()
   const ui = useUiStore()
 
   const props = withDefaults(defineProps<{ gate?: 'mortal' | 'celestial' }>(), { gate: 'mortal' })
-  const endgame = useEndgameStore()
 
   const unlocked = computed(() => realmUnlock(props.gate))
   /**
@@ -107,8 +107,11 @@
   const def = computed<SecretRealmDef | undefined>(() => (state.value ? secretRealmDef(state.value.realmId) : undefined))
 
   function canPay(r: SecretRealmDef): boolean {
-    const c = entryCostOf(r, player.major)
-    return c.kind === 'stone' ? resources.hasStone(c.stone) : endgame.daoSource >= c.daoSource
+    return entryShortfallOf(r, player.major) === null
+  }
+
+  function entryShort(r: SecretRealmDef): ReturnType<typeof entryShortfallOf> {
+    return entryShortfallOf(r, player.major)
   }
 
   function enter(id: string): void {
