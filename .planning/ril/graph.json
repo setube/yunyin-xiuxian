@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 308,
+  "round": 309,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T17:58:06+00:00",
+  "updated_at": "2026-10-21T18:17:14+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -3289,7 +3289,7 @@
       "version": 1,
       "created_at": "2026-09-11T17:02:06+00:00",
       "updated_at": "2026-09-11T17:02:06+00:00",
-      "touched_round": 191,
+      "touched_round": 309,
       "summary": "远征(expedition.ts):道途规则 × 天道契约 × 天道变数 × 三重择路 × 奇门择门 → 入界/三层/界主,预估与实战共用 expeditionRules"
     },
     "DEC-024": {
@@ -22054,6 +22054,58 @@
       "severity": 0.32,
       "confidence": 0.99,
       "effort": 0.6
+    },
+    "ISS-970": {
+      "id": "ISS-970",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T18:08:04+00:00",
+      "updated_at": "2026-10-21T18:17:12+00:00",
+      "touched_round": 309,
+      "title": "事件弹窗的回声掷骰跨事件泄漏",
+      "description": "EventDialog 常驻全局,echoRolled/echoActive 只在组件首次渲染时掷一次,此后换事件不再重置;余波又在 computed 内按任意重渲染重掷,同一扇窗会在一次打开中反复变脸。",
+      "severity": 0.5
+    },
+    "TASK-413": {
+      "id": "TASK-413",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T18:08:08+00:00",
+      "updated_at": "2026-10-21T18:17:14+00:00",
+      "touched_round": 309,
+      "title": "事件叙事掷骰按事件会话稳定",
+      "description": "抽出事件叙事快照:每次新事件只掷一次回声与余波,重渲染读同一快照;补纯函数测试与源码判据。",
+      "severity": 0.5,
+      "confidence": 0.95,
+      "effort": 1.2,
+      "category": "correctness"
+    },
+    "CHG-517": {
+      "id": "CHG-517",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T18:17:04+00:00",
+      "updated_at": "2026-10-21T18:17:04+00:00",
+      "touched_round": 309,
+      "title": "事件叙事快照按事件会话稳定",
+      "description": "EventDialog 在事件 id 变化时掷定回声与余波一次，重渲染只读快照；删除遗留 rollEcho。",
+      "commit": "3a15f96"
+    },
+    "EV-971": {
+      "id": "EV-971",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T18:17:07+00:00",
+      "updated_at": "2026-10-21T18:17:07+00:00",
+      "touched_round": 309,
+      "title": "事件叙事快照完整门禁通过",
+      "source": "3a15f96; bun run test:report 3321/0; bun run build; ui-smoke 17 pages",
+      "description": "新增快照行为与源码判据；全量测试、构建、UI 冒烟通过。",
+      "confidence": 1.0
     }
   },
   "edges": [
@@ -32641,6 +32693,30 @@
       "to": "ISS-969",
       "type": "addresses",
       "created_at": "2026-10-21T17:57:32+00:00"
+    },
+    {
+      "from": "TASK-413",
+      "to": "ISS-970",
+      "type": "addresses",
+      "created_at": "2026-10-21T18:08:12+00:00"
+    },
+    {
+      "from": "ISS-970",
+      "to": "COMP-014",
+      "type": "located_in",
+      "created_at": "2026-10-21T18:08:12+00:00"
+    },
+    {
+      "from": "CHG-517",
+      "to": "TASK-413",
+      "type": "implements",
+      "created_at": "2026-10-21T18:17:09+00:00"
+    },
+    {
+      "from": "CHG-517",
+      "to": "ISS-970",
+      "type": "resolves",
+      "created_at": "2026-10-21T18:17:09+00:00"
     }
   ]
 }
