@@ -22,6 +22,55 @@ import {
   buildingShortToast
 } from '@/ui/buildingText'
 
+export interface BuildingUpgradePreview {
+  /** 预览指向的目标级(单步即下一级;连升即 level+steps) */
+  nextLevel: number
+  /**
+   * 升级到 nextLevel 会变的那些效果行 —— 与卡面同读 effectText,只报会变的那部分,
+   * 不抄第二份文案:字面不变的行走(如「炉子只管出丹多寡」)、尚未触发的档
+   * (如每 3 级才涨的强化上限)都不该当成「增益」搬上来。
+   */
+  lines: string[]
+  /** 首建(0→1):还没有当前效果,预览=整张下一级效果 */
+  built: boolean
+}
+
+/**
+ * 升级/建造的「升上去会怎样」预览。卡面已显当前效果与代价,这里只补赢得什么:
+ * 取 effectText(toLevel) 与 effectText(level) 逐行比对,留下字面变掉的行 ——
+ * 与 effectText 同一事实源,门槛、档位一致,不会出现「卡面印的出不去」。
+ *
+ * steps 缺省 1(单步);连升整段传实际步数 —— 连升买的是整段,玩家不该拿
+ * 看不到的逐级增量自己加总(与 batch 的花费总账同摆:钱多少、得多少,一眼对上)。
+ */
+export function buildingUpgradePreview(
+  id: BuildingId,
+  level: number,
+  /** 有效上限(洞府档闸门 < 品类上限时已到顶的卡不该再印「下一级」);缺省回退 def.maxLevel */
+  cap?: number,
+  /** 连升步数:从 level 直接 diff 到 level+steps(1 即单步) */
+  steps = 1
+): BuildingUpgradePreview {
+  const def = buildingDef(id)!
+  const toLevel = level + Math.max(1, steps)
+  if (toLevel > (cap ?? def.maxLevel)) return { nextLevel: toLevel, lines: [], built: level === 0 }
+  // 本仓 effectText 是整段散文,不是逐行数组:按句读切成行再 diff,
+  // 与卡面展示口径一致,也避免把「离线收益上限 48 小时;洞府每升一级…」
+  // 这样的两句当成一行而整句重复。
+  const cur = level > 0 ? splitEffectLines(def.effectText(level)) : []
+  const nxt = splitEffectLines(def.effectText(toLevel))
+  const lines = nxt.filter((line, i) => line !== cur[i])
+  return { nextLevel: toLevel, lines, built: level === 0 }
+}
+
+/** 建筑效果散文按分号拆行 —— 只拆给预览比对,不改数据层文案 */
+function splitEffectLines(text: string): string[] {
+  return text
+    .split(/[;；]/)
+    .map(line => line.trim())
+    .filter(Boolean)
+}
+
 export interface BuildingUpgradeInfo {
   canUpgrade: boolean
   reason: string

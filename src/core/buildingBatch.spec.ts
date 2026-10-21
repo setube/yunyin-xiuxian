@@ -9,7 +9,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { add, gn, sub, toNum } from '@/utils/gnum'
 import { buildingCost } from './formulas'
 import { track } from './progress'
-import { buildingBatchPlan, upgradeBuildingBatch } from './buildingService'
+import { buildingBatchPlan, buildingUpgradePreview, upgradeBuildingBatch } from './buildingService'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useResourcesStore } from '@/stores/resources'
@@ -131,5 +131,32 @@ describe('建筑连升 · 批量账', () => {
     expect(n).toBe(0)
     expect(useDongfuStore().levels.forge).toBe(0)
     expect(useResourcesStore().ore).toBe(1e9)
+  })
+
+  /**
+   * 连升 N 级买的是整段:单步预告只讲「再升一层又添 X」,玩家得拿看不到的
+   * 逐级增量自己加总。批量预览从当前级直接 diff 到目标级(effectText 是
+   * 累计值,两张表相减即整段净得),与单步共用同一套「只报会变的行」。
+   */
+  it('连升整段预览:从当前级直接 diff 到目标级,报累积净得', () => {
+    const def = buildingDef('mansion')!
+    const linesOf = (level: number): string[] =>
+      def.effectText(level).split(/[;；]/).map(line => line.trim()).filter(Boolean)
+    // 0→2(两步,不越 maxLevel):与首建同义(当前效果为空表),整张 2 级效果
+    const two = buildingUpgradePreview('mansion', 0, undefined, 2)
+    expect(two.nextLevel).toBe(2)
+    expect(two.lines).toEqual(linesOf(2))
+    // 从 1 级升到 3 级:预览指向 3,行 = effectText(3) 相对 effectText(1) 变化的行
+    const prev = buildingUpgradePreview('mansion', 1, undefined, 2)
+    expect(prev.nextLevel).toBe(3)
+    const cur = linesOf(1)
+    const to = linesOf(3)
+    expect(prev.lines).toEqual(to.filter((line, i) => line !== cur[i]))
+    // 步数 1 退化为单步(与不传一致)
+    expect(buildingUpgradePreview('mansion', 1, undefined, 1).lines).toEqual(
+      buildingUpgradePreview('mansion', 1).lines
+    )
+    // 越过上限:整段预览为空(卡面已有到顶理由,不画画不了的饼)
+    expect(buildingUpgradePreview('mansion', 3, undefined, 5).lines).toEqual([])
   })
 })

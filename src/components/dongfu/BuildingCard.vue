@@ -116,6 +116,13 @@
             > · 玄铁 {{ plan.ore }} 块</span>
           </span>
           <span v-if="batchGain" class="mt-0.5 block text-[9px] text-jade tabular">累积净得:{{ batchGain }}</span>
+          <span
+            v-if="batchPreview.lines.length"
+            class="mt-0.5 block text-[9px] leading-snug text-ink-faint"
+          >
+            升至 {{ batchPreview.nextLevel }} 级会变:
+            <span v-for="line in batchPreview.lines" :key="line" class="block text-ink-soft">{{ line }}</span>
+          </span>
         </p>
         <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = true">连 升</button>
       </template>
@@ -138,7 +145,13 @@
   import { petDef } from '@/data/pets'
   import { pillDef } from '@/data/pills'
   import GameIcon from '@/components/common/GameIcon.vue'
-  import { buildingUpgradeInfo, buildingBatchPlan, upgradeBuilding, upgradeBuildingBatch } from '@/core/buildingService'
+  import {
+    buildingUpgradeInfo,
+    buildingUpgradePreview,
+    buildingBatchPlan,
+    upgradeBuilding,
+    upgradeBuildingBatch
+  } from '@/core/buildingService'
   import { studyEta } from '@/core/loreService'
   import { modsText } from '@/data/statNames'
   import { buildingActLabel, buildingGateRealmName } from '@/ui/buildingText'
@@ -154,6 +167,10 @@
   const info = computed(() => buildingUpgradeInfo(props.def.id))
   /** 连升计划:一口气能升几级、花多少 —— 行只用量,预览与执行同源 */
   const plan = computed(() => buildingBatchPlan(props.def.id))
+  /** 连升整段的累积净得:与 plan 同一步数,从当前级直接 diff 到目标级(effectText 同源) */
+  const batchPreview = computed(() =>
+    buildingUpgradePreview(props.def.id, level.value, cap.value, Math.max(1, plan.value.levels))
+  )
   /** 连升的二步确认态;升级落成自动复位(见下方 watch) */
   const batchArm = ref(false)
   function runBatch(): void {
