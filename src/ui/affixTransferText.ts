@@ -63,9 +63,14 @@ export function transferBlockText(block: TransferBlock, affixId: string): string
   return q ? `需${q.name}` : '品质不够'
 }
 
-/** 缺哪一样就报哪一样 */
-export function transferShortText(short: Exclude<TransferShort, null>): string {
-  return short === 'stone' ? '灵石未足' : '器灵尘未足'
+/** 缺哪一样就报哪一样;给了实际差额就写「尚差 N」 */
+export function transferShortText(
+  short: Exclude<TransferShort, null>,
+  gap?: { stone: string; dust: number }
+): string {
+  const amount = short === 'stone' ? gap?.stone : gap?.dust
+  const missing = amount === undefined ? '未足' : `尚差 ${amount}`
+  return short === 'stone' ? `灵石${missing}` : `器灵尘${missing}`
 }
 
 export function transferDoneToast(name: string): string {

@@ -12,7 +12,15 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { planTransfer, targetBlock, transferAffix, transferCandidates, transferLandings, transferShort } from './affixTransfer'
+import {
+  planTransfer,
+  targetBlock,
+  transferAffix,
+  transferCandidates,
+  transferLandings,
+  transferShort,
+  transferShortfall
+} from './affixTransfer'
 import { generateEquipment } from './equipGen'
 import { reforgeCost, sealCost } from './reforge'
 import { stoneByTier } from './formulas'
@@ -21,7 +29,7 @@ import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import { DIMINISH_KEYS, REFORGE_DUST_BASE, REFORGE_STONE_BASE } from '@/data/constants'
 import { RandomService, mulberry32 } from '@/utils/random'
-import { gn, isZero, mulN } from '@/utils/gnum'
+import { gn, gnZero, isZero, mulN } from '@/utils/gnum'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
@@ -391,21 +399,25 @@ describe('词条转移 · 服务记账', () => {
     expect(useUiStore().toasts.at(-1)?.text).toContain('「灭世」已转入')
   })
 
-  it('缺哪样报哪样,一笔不扣、一处不改;被挡也一样', () => {
+  it('缺哪样报哪样并写出实际差额,一笔不扣、一处不改;被挡也一样', () => {
     const src = mk('s', W, 'heaven', [['atk3', 0.9]])
     const tgt = mk('t', W, 'heaven', [['hp1', 0.5]])
     const inventory = useInventoryStore()
     const resources = useResourcesStore()
     const ui = useUiStore()
     inventory.items = [src, tgt]
+    const quote = planTransfer(src, tgt, 'atk3', null, false)
+    expect(quote.ok).toBe(true)
+    if (!quote.ok) return
     resources.spiritStone = gn(1e30)
     resources.dust = 0
     expect(transferAffix({ sourceUid: 's', targetUid: 't', affixId: 'atk3', replaceId: null, seal: false })).toBe(false)
-    expect(ui.toasts.at(-1)?.text).toBe('器灵尘未足')
+    const dustGap = transferShortfall(quote.plan.cost)
+    expect(ui.toasts.at(-1)?.text).toBe(`器灵尘尚差 ${dustGap.dust}`)
     resources.spiritStone = gn(0)
     resources.dust = 1e6
     expect(transferAffix({ sourceUid: 's', targetUid: 't', affixId: 'atk3', replaceId: null, seal: false })).toBe(false)
-    expect(ui.toasts.at(-1)?.text).toBe('灵石未足')
+    expect(ui.toasts.at(-1)?.text).toContain('灵石尚差 ')
     expect(isZero(resources.spiritStone)).toBe(true)
     expect(resources.dust).toBe(1e6)
     expect(transferAffix({ sourceUid: 's', targetUid: 's', affixId: 'atk3', replaceId: null, seal: false })).toBe(false)
@@ -415,6 +427,24 @@ describe('词条转移 · 服务记账', () => {
     expect(resources.dust).toBe(1e6)
     expect(inventory.findItem('s')).toEqual(src)
     expect(inventory.findItem('t')).toEqual(tgt)
+  })
+
+  it('转移缺口与扣款同源:两样各差多少都算得出,够时归零', () => {
+    const src = mk('s', W, 'heaven', [['atk3', 0.9]])
+    const tgt = mk('t', W, 'heaven', [['hp1', 0.5]])
+    const quote = planTransfer(src, tgt, 'atk3', null, false)
+    expect(quote.ok).toBe(true)
+    if (!quote.ok) return
+    const resources = useResourcesStore()
+    resources.spiritStone = gn(1)
+    resources.dust = quote.plan.cost.dust - 3
+    const gap = transferShortfall(quote.plan.cost)
+    expect(gap.short, '两样都缺时先报灵石').toBe('stone')
+    expect(gap.stone.m).toBeGreaterThan(0)
+    expect(gap.dust).toBe(3)
+    resources.spiritStone = mulN(quote.plan.cost.stone, 2)
+    resources.dust = quote.plan.cost.dust
+    expect(transferShortfall(quote.plan.cost)).toEqual({ short: null, stone: gnZero(), dust: 0 })
   })
 
   it('候选与落位都由同一份判据给出:部位不合的不列;已有且不更低的、同部位品质不够的置灰', () => {

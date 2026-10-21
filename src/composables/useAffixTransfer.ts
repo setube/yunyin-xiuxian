@@ -19,6 +19,7 @@ import {
   transferCandidates,
   transferLandings,
   transferShort,
+  transferShortfall,
   type TransferCheck,
   type TransferLanding
 } from '@/core/affixTransfer'
@@ -30,6 +31,7 @@ import {
   transferDeltaText,
   transferShortText
 } from '@/ui/affixTransferText'
+import { formatGN } from '@/utils/format'
 
 /** 候选目标默认先列几件;多出来的由「全部 N 件」展开 */
 const PREVIEW_LIMIT = 8
@@ -101,6 +103,8 @@ export function useAffixTransfer(sourceUid: MaybeRefOrGetter<string | null>) {
   /** 同时封存的费用(勾不勾都给出,便于决定) */
   const sealFee = computed(() => (sealedPlan.value?.ok ? sealedPlan.value.plan.cost.sealStone : null))
   const short = computed(() => (plan.value ? transferShort(plan.value.cost) : null))
+  /** 两样各差多少 —— 主按钮的「尚差 N」与服务拒因同读这一处 */
+  const shortfall = computed(() => (plan.value ? transferShortfall(plan.value.cost) : null))
 
   /** 主按钮上的字:还差哪一步 / 被什么挡住 / 缺哪样资源;null = 可转 */
   const blockLabel = computed<string | null>(() => {
@@ -112,7 +116,12 @@ export function useAffixTransfer(sourceUid: MaybeRefOrGetter<string | null>) {
     const c = check.value
     if (!c) return TRANSFER_LABELS.gone
     if (!c.ok) return transferBlockText(c.block, state.affixId)
-    if (short.value) return transferShortText(short.value)
+    if (short.value && shortfall.value) {
+      return transferShortText(short.value, {
+        stone: formatGN(shortfall.value.stone),
+        dust: shortfall.value.dust
+      })
+    }
     return null
   })
 
@@ -229,6 +238,7 @@ export function useAffixTransfer(sourceUid: MaybeRefOrGetter<string | null>) {
     check,
     plan,
     sealFee,
+    shortfall,
     blockLabel,
     armed,
     resultLines,

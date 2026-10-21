@@ -21,7 +21,8 @@ import { affixDef, affixFitBlock, affixValue } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import { DIMINISH_KEYS, REFORGE_DUST_BASE, REFORGE_SEAL_LOAD, REFORGE_STONE_BASE, TRANSFER_PRICE_RATE } from '@/data/constants'
-import { add } from '@/utils/gnum'
+import { add, gnZero, subClamp } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
 import { stoneByTier } from './formulas'
 import { playSfx } from './audio'
 import { expectedRollsToHit, sealCost } from './reforge'
@@ -205,6 +206,30 @@ export function transferShort(cost: TransferCost): TransferShort {
   return null
 }
 
+export interface TransferShortfall {
+  /** 服务提示优先报的那一样(与 transferShort 同序) */
+  short: TransferShort
+  /** 灵石还差多少(够则为 0) */
+  stone: GNum
+  /** 器灵尘还差多少(够则为 0) */
+  dust: number
+}
+
+/**
+ * 这一笔转移两样各差多少 —— 主按钮、页脚与服务拒因同读这一处。
+ * 与 transferShort 共用余额判据;差别只在这份把「差多少」也一并算出。
+ */
+export function transferShortfall(cost: TransferCost): TransferShortfall {
+  const resources = useResourcesStore()
+  const stone = resources.hasStone(cost.stone) ? gnZero() : subClamp(cost.stone, resources.spiritStone)
+  const dust = resources.hasSmall('dust', cost.dust) ? 0 : Math.max(0, cost.dust - resources.dust)
+  return {
+    short: stone.m > 0 ? 'stone' : dust > 0 ? 'dust' : null,
+    stone,
+    dust
+  }
+}
+
 /**
  * 能接这一条的目标件:可选在前 → 已装备在前 → 与源件同部位在前 → 品质高、阶高在前。
  * 部位不合的件不列出;已有这条且不更低的、同部位但品质不够的,列出置灰(写明原因)。
@@ -257,7 +282,8 @@ export function transferAffix(req: TransferRequest): boolean {
   const short = transferShort(check.plan.cost)
   if (short) {
     playSfx('warn')
-    ui.toast(transferShortText(short), 'warn')
+    const gap = transferShortfall(check.plan.cost)
+    ui.toast(transferShortText(short, { stone: formatGN(gap.stone), dust: gap.dust }), 'warn')
     return false
   }
   resources.spendStone(check.plan.cost.stone)

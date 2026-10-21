@@ -823,6 +823,23 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   })
 
   /**
+   * 词条转移与封存同族:付不起时主按钮只写「灵石未足 / 器灵尘未足」,
+   * 价签却已有总额、core 也已有 transferShortfall。故障注入:把 blockLabel 改回
+   * 只传 short、或把服务拒因改回 transferShortText(short) → 本条红。
+   */
+  it('词条转移缺料写出灵石与器灵尘实际差额', () => {
+    const flow = src('../composables/useAffixTransfer.ts')
+    const service = src('../core/affixTransfer.ts')
+    expect(flow, '主按钮缺口读同一份 transferShortfall').toContain('transferShortfall(plan.value.cost)')
+    expect(flow, '按钮写实际石差').toContain('stone: formatGN(shortfall.value.stone)')
+    expect(flow, '按钮写实际尘差').toContain('dust: shortfall.value.dust')
+    expect(service, '服务拒因读 transferShortfall').toContain('const gap = transferShortfall(check.plan.cost)')
+    expect(service, '服务 toast 带实际石差').toContain('stone: formatGN(gap.stone)')
+    expect(service, '服务 toast 带实际尘差').toContain('dust: gap.dust')
+    expect(service, '不许退回只传缺料类型').not.toContain('ui.toast(transferShortText(short)')
+  })
+
+  /**
    * 只缺灵石时同理:灵石只能从历练/悬赏挣,坊市是花灵石的地方。
    * 若给「去坊市」就是把玩家指反了方向 —— 那里只会再缺一次。
    */

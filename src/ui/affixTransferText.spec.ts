@@ -53,6 +53,8 @@ describe('词条转移文案 · 长度与措辞', () => {
     expect(len(transferDoneToast(longest.name)), transferDoneToast(longest.name)).toBeLessThanOrEqual(12)
     expect(transferShortText('stone')).toBe('灵石未足')
     expect(transferShortText('dust')).toBe('器灵尘未足')
+    expect(transferShortText('stone', { stone: '7', dust: 0 })).toBe('灵石尚差 7')
+    expect(transferShortText('dust', { stone: '0', dust: 2 })).toBe('器灵尘尚差 2')
   })
 
   it('不解释、不劝导:所有文案不含禁用措辞', () => {

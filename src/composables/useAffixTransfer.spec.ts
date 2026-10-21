@@ -74,7 +74,7 @@ describe('词条转移面板 · 流程', () => {
     expect(flow.replaceId, '目标未满,默认新增').toBeNull()
     expect(flow.blockLabel).toBeNull()
     useResourcesStore().dust = 0
-    expect(flow.blockLabel).toBe('器灵尘未足')
+    expect(flow.blockLabel).toMatch(/^器灵尘尚差 \d+$/)
   })
 
   it('默认落位:未满 → 新增;有更低的同一条 → 覆盖它;已满且多条可顶 → 不替玩家选', () => {
@@ -153,7 +153,7 @@ describe('词条转移面板 · 流程', () => {
     expect(flow.armed).toBe(true)
     useResourcesStore().dust = 0
     expect(flow.armed).toBe(false)
-    expect(flow.blockLabel).toBe('器灵尘未足')
+    expect(flow.blockLabel).toMatch(/^器灵尘尚差 \d+$/)
   })
 
   it('「同时封存」默认勾着,但这一落位封不了时照样能转,目标封存不变', () => {
