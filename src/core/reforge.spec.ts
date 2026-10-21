@@ -302,7 +302,12 @@ describe('封存 ↔ 解封 · 循环可逆', () => {
 })
 
 describe('界面与判定同源 · 条数上限不写死', () => {
-  const dialog = readFileSync(resolve(__dirname, '../components/equipment/EquipmentDetailDialog.vue'), 'utf8')
+  // 自动重铸整体拆出后判据随本体走:预算与结账在 composable,输入框与「至多花销」按钮在面板。
+  // 宿主 + 两处合扫,防拆分后只查宿主假绿。
+  const dialog =
+    readFileSync(resolve(__dirname, '../components/equipment/EquipmentDetailDialog.vue'), 'utf8') +
+    readFileSync(resolve(__dirname, '../components/equipment/AutoReforgePanel.vue'), 'utf8') +
+    readFileSync(resolve(__dirname, '../composables/useAutoReforge.ts'), 'utf8')
 
   it('词条条数上限取自品质表,不在模板里写死数字', () => {
     expect(dialog, '上限应读 qualityDef(...).affixes[1]').toContain('qualityDef(inst.value.quality).affixes[1]')
@@ -322,7 +327,8 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     expect(dialog, '执行路径走归一 helper').toContain('autoReforgeBudget(autoBudget.value)')
     // 预览 computed(autoMaxCost)必须也用归一后的预算 —— 独立抓这一段,
     // 别让「执行那行还在」把预览侧的漂移掩盖过去
-    const preview = dialog.slice(dialog.indexOf('const autoMaxCost'), dialog.indexOf('watch([autoTargets, autoBudget]'))
+    const flow = readFileSync(resolve(__dirname, '../composables/useAutoReforge.ts'), 'utf8')
+    const preview = flow.slice(flow.indexOf('const autoMaxCost'), flow.indexOf('watch([autoTargets, autoBudget]'))
     expect(preview, '预览须走 autoReforgeBudget,不拿 autoBudget 原值虚报花销').toContain(
       'autoReforgeBudget(autoBudget.value)'
     )

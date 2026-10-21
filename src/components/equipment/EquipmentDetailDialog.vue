@@ -228,88 +228,7 @@
         </template>
       </template>
 
-      <!--
-        自动重铸:洗到指定词条即停(玩家反馈,可多选、可给最低值)。
-        注意它**不属于**上方的天机推演(修士实验室) —— 那是真仙+未装备才有的
-        v-if="canWhatIf" 段;重铸是凡人也在用的功能,若嵌在里面,普通玩家点开
-        开关只会变字、词条格子与「开洗」永远不渲染(实测即玩家反馈的「没生效」)。
-      -->
-      <div v-if="autoOpen && reforgeCostVal" class="mt-3 rounded-md border border-ink/15 bg-paper-deep/50 px-3 py-2">
-        <p class="mb-1 text-[11px] text-ink-soft">点词条看效果与区间,在弹框里设为目标(任一命中即停 · 已选 {{ autoTargets.length }}/{{ AUTO_REFORGE_MAX_TARGETS }})</p>
-        <!-- 四档品质成组:传世在前、空组不占位 —— 一眼分出「撞大运的目标」与「随手可得」;
-             组色用词条自身的品质色(与装备卡片同源),选中的下一颗整颗亮成「你的目标章」 -->
-        <div class="max-h-40 space-y-1.5 overflow-y-auto pr-0.5">
-          <div v-for="group in rarityGroups" :key="group.rarity">
-            <p class="flex items-center gap-1.5 text-[9px] tracking-widest" :style="{ color: AFFIX_RARITY_META[group.rarity].color }">
-              <span class="h-px w-3 shrink-0" :style="{ background: AFFIX_RARITY_META[group.rarity].color }"></span>
-              {{ AFFIX_RARITY_META[group.rarity].name }} · {{ group.items.length }} 条
-            </p>
-            <div class="mt-1 grid grid-cols-3 gap-1">
-              <!-- 点词条名即弹框看它的效果与区间;设为目标改在弹框里做(玩家反馈:不要词条表,点哪条看哪条) -->
-              <button
-                v-for="af in group.items"
-                :key="af.id"
-                class="min-h-[28px] rounded px-1 py-1 text-[10px] leading-tight"
-                :class="isAutoTarget(af.id) ? 'border' : 'bg-ink/4'"
-                :style="isAutoTarget(af.id)
-                  ? { borderColor: AFFIX_RARITY_META[af.rarity].color, color: AFFIX_RARITY_META[af.rarity].color }
-                  : { color: 'var(--color-ink-faint)' }"
-                :title="`查看「${af.name}」效果与区间`"
-                @click="openCodex(af.id)"
-              >
-                <span v-if="isAutoTarget(af.id)" class="mr-0.5">选</span>{{ af.name }}
-              </button>
-            </div>
-          </div>
-        </div>
-        <div v-if="autoTargets.length" class="mt-1.5 space-y-0.5">
-          <!-- 已选目标回声品质色:它从哪一档领出来,这里就还它本来的颜色 -->
-          <p v-for="t in autoTargets" :key="t.affixId" class="flex items-center gap-2 text-[10px]">
-            <!-- 点已选词条名:钉开那张词条图,回来看清效果与区间再决定要不要留着这条目标 -->
-            <button
-              type="button"
-              class="flex min-h-[28px] w-10 shrink-0 items-center truncate text-left font-kai"
-              :style="{ color: targetColor(t.affixId) }"
-              :title="`查看词条:${affixDef(t.affixId)?.name ?? t.affixId}`"
-              @click="openCodex(t.affixId)"
-            >
-              {{ affixDef(t.affixId)?.name ?? t.affixId }}
-            </button>
-            <input v-model.number="t.minRoll" type="range" min="0" max="1" step="0.05" class="grow accent-cinnabar" />
-            <span class="w-12 shrink-0 text-right tabular text-ink-faint">≥{{ Math.round((t.minRoll ?? 0) * 100) }}%</span>
-          </p>
-        </div>
-        <div class="mt-1.5 flex items-center gap-2">
-          <span class="text-[10px] text-ink-faint tabular">至多洗</span>
-          <input
-            v-model.number="autoBudget"
-            type="number"
-            :min="1"
-            :max="AUTO_REFORGE_MAX_BUDGET"
-            class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
-          />
-          <span class="text-[10px] text-ink-faint tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
-          <template v-if="!autoArm">
-            <button
-              class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
-              :disabled="!autoTargets.length"
-              :title="autoTargets.length ? undefined : '先点一条要洗到的词条'"
-              @click="autoArm = true"
-            >
-              开 洗
-            </button>
-          </template>
-          <template v-else>
-            <button
-              class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
-              @click="runAutoReforge"
-            >
-              洗?至多 灵石{{ autoMaxCost ? formatGN(autoMaxCost.stone) : '0' }}·尘×{{ autoMaxCost?.dust ?? 0 }}
-            </button>
-            <button class="btn-ghost !px-2.5 !py-1.5 !text-[11px] text-ink-faint" @click="autoArm = false">再想想</button>
-          </template>
-        </div>
-      </div>
+      <AutoReforgePanel v-if="autoOpen" :flow="reforgeFlow" />
     </div>
     <template #footer>
       <AffixTransferFooter v-if="transferOpen && inst" :flow="transfer" @back="transferOpen = false" />
@@ -398,16 +317,6 @@
     </template>
   </BaseModal>
 
-  <!-- 词条信息:点哪条弹哪条 —— 名/效果/数值区间/部位/门槛;设目标也在这扇框(顶层弹框盖在详情之上) -->
-  <AffixInfoSheet
-    :open="codexOpen"
-    :affix-id="codexAffixId ?? ''"
-    :targetable="true"
-    :selected="codexSelected"
-    :can-select="codexCanSelect"
-    @toggle-target="onCodexToggleTarget"
-    @close="codexOpen = false"
-  />
 </template>
 
 <script setup lang="ts">
@@ -433,21 +342,20 @@
   import { detectBuild } from '@/core/buildDetect'
   import { endgameUnlocked } from '@/core/endgameService'
   import { whatIfEquip, type WhatIfReport } from '@/core/lab'
-  import { autoReforge, autoReforgeBudget, reforgeEquipment, reforgeCost, sealAffix, sealCapacity, sealCost, unsealAffix, AUTO_REFORGE_MAX_BUDGET, AUTO_REFORGE_MAX_TARGETS, type ReforgeTarget } from '@/core/reforge'
-  import { AFFIXES, affixDef, affixFitBlock, affixesByRarity } from '@/data/affixes'
+  import { reforgeEquipment, sealAffix, sealCapacity, sealCost, unsealAffix } from '@/core/reforge'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
   import { formatGN, formatNum } from '@/utils/format'
-  import { gnZero, isZero, mulN, sub } from '@/utils/gnum'
-  import { playSfx } from '@/core/audio'
+  import { gnZero, isZero, sub } from '@/utils/gnum'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/data/statNames'
   import { affixRollHint, affixRollText, equipNextLevelText, powerCompareLabel } from '@/ui/equipText'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
   import { useAffixTransfer } from '@/composables/useAffixTransfer'
+  import { useAutoReforge } from '@/composables/useAutoReforge'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
-  import AffixInfoSheet from './AffixInfoSheet.vue'
+  import AutoReforgePanel from './AutoReforgePanel.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import AffixTransferPanel from './AffixTransferPanel.vue'
   import AffixTransferFooter from './AffixTransferFooter.vue'
@@ -455,6 +363,10 @@
   const ui = useUiStore()
   const inventory = useInventoryStore()
   const player = usePlayerStore()
+  // 自动重铸整本账收在 useAutoReforge;页脚只留「开/收」这一个开关
+  const reforgeFlow = useAutoReforge()
+  const { reforgeCostVal, closeAuto } = reforgeFlow
+  const autoOpen = ref(false)
 
   const inst = computed(() => (ui.equipDetailUid ? inventory.findItem(ui.equipDetailUid) : undefined))
 
@@ -513,7 +425,6 @@
   })
 
   // ---- 重铸与封存 (Phase 30.1) ----
-  const reforgeCostVal = computed(() => (inst.value ? reforgeCost(inst.value) : null))
   const sealCostVal = computed(() => (inst.value ? sealCost(inst.value) : null))
   /** 这一件按品质能有多少条词条:上限来自品质表,不在界面里另写一份 */
   const affixCap = computed(() => (inst.value ? qualityDef(inst.value.quality).affixes[1] : 0))
@@ -527,21 +438,6 @@
     return inst.value !== undefined && sealCostVal.value !== null && !isAffixSealed(affixId)
   }
 
-  /** 词条信息弹框:点哪条就钉哪条(词条表已按反馈移除,这是看词条信息的唯一入口) */
-  const codexOpen = ref(false)
-  const codexAffixId = ref<string | null>(null)
-  function openCodex(affixId: string): void {
-    codexAffixId.value = affixId
-    codexOpen.value = true
-  }
-
-  /** 弹框里这条当前是不是自动重铸目标;目标未满三才有「再设」(满的位子只留给取消) */
-  const codexSelected = computed(() => codexAffixId.value !== null && isAutoTarget(codexAffixId.value))
-  const codexCanSelect = computed(() => autoTargets.value.length < AUTO_REFORGE_MAX_TARGETS)
-  function onCodexToggleTarget(id: string): void {
-    toggleAutoTarget(id)
-  }
-
   function doSealAffix(affixId: string): void {
     if (inst.value) sealAffix(inst.value.uid, affixId)
   }
@@ -552,86 +448,6 @@
 
   function doReforge(): void {
     if (inst.value) reforgeEquipment(inst.value.uid)
-  }
-
-  // ---- 自动重铸(玩家反馈:一键重铸多次,洗到指定词条就停) ----
-  const autoOpen = ref(false)
-  const autoBudget = ref(50)
-  /** 停止条件:任一命中即停;minRoll 给「数值范围」那一嘴 */
-  const autoTargets = ref<ReforgeTarget[]>([])
-
-  /**
-   * 可选的停止词条:当前装备**真能洗到**的那些 —— 与重铸抽取池同规则
-   * (槽位匹配 + 品质门槛不高于当前),而不是全 113 条里按权重取前 24。
-   * 否则连「想洗的词条在 24 名开外」都选不进去,自动重铸就等于承诺了
-   * 一份它兑现不了的面板。
-   */
-  const affixOptions = computed(() => {
-    if (!inst.value) return []
-    const tpl = equipmentTemplate(inst.value.templateId)
-    const q = inst.value && qualityDef(inst.value.quality)
-    if (!tpl || !q) return []
-    return [...AFFIXES].filter(a => affixFitBlock(a, tpl.slot, q.rank) === null).sort((a, b) => b.weight - a.weight)
-  })
-
-  function isAutoTarget(id: string): boolean {
-    return autoTargets.value.some(t => t.affixId === id)
-  }
-
-  /** 候选按四档品质成组(传世→常见,空组不占位);组内延续 affixOptions 的权重序 */
-  const rarityGroups = computed(() => affixesByRarity(affixOptions.value))
-
-  /** 已选目标的名字颜色:它从哪一档领出,就用哪一档的品质色 */
-  function targetColor(id: string): string {
-    return AFFIX_RARITY_META[affixDef(id)?.rarity ?? 'common'].color
-  }
-
-  function toggleAutoTarget(id: string): void {
-    if (isAutoTarget(id)) autoTargets.value = autoTargets.value.filter(t => t.affixId !== id)
-    // 默认先求「高值」(≥50%);拉到底 0% 即回到「出现就行」
-    else if (autoTargets.value.length < AUTO_REFORGE_MAX_TARGETS) autoTargets.value = [...autoTargets.value, { affixId: id, minRoll: 0.5 }]
-  }
-
-  function closeAuto(): void {
-    autoOpen.value = false
-    autoTargets.value = []
-  }
-
-  function runAutoReforge(): void {
-    if (!inst.value) return
-    autoArm.value = false
-    const targets = autoTargets.value
-    const budget = autoReforgeBudget(autoBudget.value)
-    const out = autoReforge(inst.value.uid, targets, budget)
-    const cost = `花 ${formatGN(out.stone)} · 尘×${out.dust}`
-    // 「没洗到目标」不等于「没洗动」:每次重铸词条都尽数重掷,结账要报清现在这一身落在哪
-    const wanted = autoTargets.value.map(t => affixDef(t.affixId)?.name ?? t.affixId).join('、')
-    const now = out.affixIds.map(id => affixDef(id)?.name ?? id).join('、') || '空'
-    if (out.stop === 'target' && out.hit) {
-      playSfx('success') // 结账一声:洗到了
-      ui.toast(
-        `洗出「${affixDef(out.hit.id)?.name ?? out.hit.id}」值 ${Math.round(out.hit.roll * 100)}% —— 共洗 ${out.rolls} 次,${cost}`,
-        'success'
-      )
-    } else if (out.stop === 'budget') {
-      playSfx('warn')
-      ui.toast(`定好的次数用完了:连洗 ${out.rolls} 次,未能撞上「${wanted}」。如今这一身是:${now},${cost}`, 'warn')
-    } else if (out.stop === 'broke') {
-      playSfx('warn')
-      if (out.rolls === 0) {
-        // 缺哪一样说哪一样:灵石去历练/悬赏挣,器灵尘靠分解闲置装备 —— 两条去路相反
-        const short = out.short === 'dust' ? '器灵尘未足(分解闲置装备可得)' : '灵石未足(历练与悬赏可得)'
-        ui.toast(`${short},难开这一炉,${cost}`, 'warn')
-      } else {
-        ui.toast(`灵石/器灵尘见底,洗了 ${out.rolls} 次即止;今一身为 ${now},${cost}`, 'warn')
-      }
-    } else {
-      // frozen 是「没得洗」不是「没洗成」,不响;这一档兼两种收法:无位可洗(全封存/无词条),或装备已不在行囊
-      const gone = inst.value !== undefined && !inventory.findItem(inst.value.uid)
-      ui.toast(gone ? '此物已不在行囊,重铸无从谈起' : '此物已无未封存词条,无从重铸', 'info')
-    }
-    // 结账即收板:结果已写在 toast 与装备词条上,想再调条件重开一次即可
-    closeAuto()
   }
 
   // ---- 修士实验室:反事实换装推演 ----
@@ -787,21 +603,6 @@
   const decomposeArm = ref<string | null>(null)
   // 重铸一次就重掷所有未封存词条(条数+数值),成本不低、可能盖掉好roll —— 与分解同款二步确认
   const reforgeArm = ref<string | null>(null)
-  // 自动重铸一键烧到 autoBudget(默认 50,可 500)次 —— 比连炼/炼满还大的批量,同款二步确认 + 先亮至多总花销
-  const autoArm = ref(false)
-  const autoMaxCost = computed(() => {
-    const r = reforgeCostVal.value
-    if (!r) return null
-    // 预览用**归一后的**预算 —— 与执行同一处(autoReforgeBudget),
-    // 手输 800 时预览与实洗都是 500,不再按 800 虚报花销
-    const n = autoReforgeBudget(autoBudget.value)
-    return { stone: mulN(r.stone, n), dust: r.dust * n }
-  })
-  // 改目标/预算后动作不再是同一笔,确认态一并复位
-  watch([autoTargets, autoBudget], () => {
-    autoArm.value = false
-  })
-
   function doDecompose(): void {
     if (!inst.value) return
     if (decomposeEquipment(inst.value.uid)) {
