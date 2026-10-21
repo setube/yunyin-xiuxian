@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 283,
+  "round": 284,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T06:04:54+00:00",
+  "updated_at": "2026-10-21T09:39:50+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -19974,6 +19974,47 @@
       "title": "开箱子集量尺补动画禁令",
       "commit": "98ff8f8",
       "summary": "measureSmallTargets 同口径"
+    },
+    "TASK-371": {
+      "id": "TASK-371",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T09:39:22+00:00",
+      "updated_at": "2026-10-21T09:39:50+00:00",
+      "touched_round": 284,
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 0.95,
+      "effort": 1.5,
+      "unlock_factor": 1.0,
+      "title": "丹药顶满判据改回游戏时钟",
+      "description": "InventoryView 顶满判据误接 useWallNow,暂停恢复与 endsAt 顺延分叉;改回 useNow 并补故障注入",
+      "priority_score": 6.2
+    },
+    "ISS-933": {
+      "id": "ISS-933",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T09:39:40+00:00",
+      "updated_at": "2026-10-21T09:39:50+00:00",
+      "touched_round": 284,
+      "title": "丹药顶满判据与暂停结算时钟分叉",
+      "description": "顶满判据读 useWallNow,暂停时按钮先恢复,恢复后 endsAt 顺延又变灰;与 usePill 结算语义不一致",
+      "severity": 0.8
+    },
+    "EV-252": {
+      "id": "EV-252",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T09:39:45+00:00",
+      "updated_at": "2026-10-21T09:39:45+00:00",
+      "touched_round": 284,
+      "source": "src/core/uiLayering.spec.ts:126",
+      "note": "静态守卫钉住 InventoryView 顶满判据读 useNow 且不得再引 useWallNow",
+      "confidence": 1.0
     }
   },
   "edges": [
@@ -29703,6 +29744,12 @@
       "to": "ISS-932",
       "type": "resolves",
       "created_at": "2026-10-21T06:04:54+00:00"
+    },
+    {
+      "from": "TASK-371",
+      "to": "ISS-933",
+      "type": "addresses",
+      "created_at": "2026-10-21T09:39:45+00:00"
     }
   ]
 }
