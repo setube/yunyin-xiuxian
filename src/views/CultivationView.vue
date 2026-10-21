@@ -187,6 +187,8 @@
           :key="p.def!.id"
           class="card-ink flex items-center gap-2 px-3 py-2 text-left active:scale-98"
           :style="{ borderLeft: `2px solid ${pillQualityColor(p.def!)}` }"
+          :disabled="p.overflow === 'full'"
+          :aria-label="p.overflow === 'full' ? `${p.def!.name},药力已顶满,再服白费` : undefined"
           @click="usePill(p.def!.id)"
         >
           <GameIcon :name="p.def!.icon" :size="16" :style="{ color: pillQualityColor(p.def!) }" />
@@ -194,7 +196,9 @@
             <span class="block truncate font-kai text-[12px] text-ink">{{ p.def!.name }}</span>
             <span class="block text-[10px] text-ink-faint">存 {{ p.count }}</span>
           </span>
-          <span class="text-[11px] text-jade">服用</span>
+          <span class="text-[11px]" :class="p.overflow === 'full' ? 'text-cinnabar' : 'text-jade'">
+            {{ p.overflow === 'full' ? '已顶' : '服用' }}
+          </span>
         </button>
       </div>
     </section>
@@ -221,6 +225,7 @@
   import { modOf } from '@/core/statsCalc'
   import { expEtaSec, qiBankEtaSec, qiEtaSec, qiRichEtaSec } from '@/core/progress'
   import { usePill } from '@/core/pillService'
+  import { buffOverflowOf, type BuffOverflow } from '@/core/buffCap'
   import { qiRepairView, repairWithQi } from '@/core/qiRepair'
   import { useNow } from '@/composables/useNow'
   import { buffDef } from '@/data/buffs'
@@ -312,10 +317,21 @@
       .filter(x => x.def !== undefined)
   )
 
-  /** 修行相关丹药快捷栏:按品质降序,越珍稀的越靠前(原为插入序,先拿到什么显什么) */
+  /**
+   * 修行相关丹药快捷栏:按品质降序,越珍稀的越靠前(原为插入序,先拿到什么显什么)。
+   * 增益丹顶满时置灰并写「已顶」—— 与丹药详情、usePill 的 buffOverflowOf 同源,
+   * 别让快捷栏成了唯一一个「点了才白吃」的入口。判据读 useNow,与结算同钟。
+   */
   const quickPills = computed(() =>
     Object.entries(inventory.pills)
-      .map(([id, count]) => ({ def: pillDef(id), count }))
+      .map(([id, count]) => {
+        const def = pillDef(id)
+        const overflow: BuffOverflow | null =
+          def?.kind === 'buff' && def.buffId
+            ? buffOverflowOf(cultivation.buffs, def.buffId, now.value)
+            : null
+        return { def, count, overflow }
+      })
       .filter(x => x.def !== undefined && x.count > 0)
       .filter(x => x.def!.kind === 'buff' || x.def!.instant?.expSecs || x.def!.instant?.expFixed || x.def!.instant?.qiPct)
       .sort((a, b) => pillRank(b.def!) - pillRank(a.def!))

@@ -128,6 +128,14 @@ describe('界面分层 · 浮层只有一个出处', () => {
     expect(inv!.src, '顶满判据读 now.value,不读一次性 Date.now()').toContain(
       'buffOverflowOf(cultivation.buffs, def.buffId, now.value)'
     )
+    // 修行页的速服快捷栏也必须按同一判据置灰:此前注释说它「已置灰」,实际仍无条件 usePill。
+    const cultivation = FILES.find(f => f.path === 'views/CultivationView.vue')
+    expect(cultivation, 'CultivationView 不见了').toBeDefined()
+    expect(cultivation!.src, '修行速服顶满要置灰').toContain(':disabled="p.overflow === \'full\'"')
+    expect(cultivation!.src, '修行速服要报出「已顶」').toContain("p.overflow === 'full' ? '已顶' : '服用'")
+    expect(cultivation!.src, '修行速服判据读同一把游戏时钟').toContain(
+      'buffOverflowOf(cultivation.buffs, def.buffId, now.value)'
+    )
     const rebirth = FILES.find(f => f.path === 'components/character/RebirthDialog.vue')
     expect(rebirth, 'RebirthDialog 不见了').toBeDefined()
     expect(rebirth!.src, '兵解未达境要置灰(canRebirth)').toContain(':disabled="!canRebirth"')
