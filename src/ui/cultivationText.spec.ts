@@ -47,16 +47,18 @@ describe('修行页提示 · 文言仍报清缕数与药资', () => {
 describe('修行页与提示同源', () => {
   it('疗伤按钮与备药 toast 走 cultivationText', () => {
     const view = readFileSync(new URL('../views/CultivationView.vue', import.meta.url), 'utf8')
+    // 劫势读数拆出后判据随本体走(composables/useTribulation.ts),宿主只留「进阶成功率」与备药
+    const trib = readFileSync(new URL('../composables/useTribulation.ts', import.meta.url), 'utf8')
     expect(view).toContain('repairActLabel(')
     expect(view).toContain('prepPillShortToast()')
     expect(view).not.toContain('灵气不足')
     expect(view).not.toContain('灵石不足')
-    expect(view, '天威区间须乘入今日 tribulationMult,与劫势/引劫同源').toContain(
+    expect(trib, '天威区间须乘入今日 tribulationMult,与劫势/引劫同源').toContain(
       'tribulationWaveSpan(tribPlan.value.def, tribTargetMajor.value, tribWeather.value.tribulationMult)'
     )
-    expect(view).toContain('weatherTribulationLine')
-    expect(view, '开劫护持与每波恢复须走 guardScore / sustainScore').toContain('guardScore(')
-    expect(view).toContain('sustainScore(')
+    expect(trib).toContain('weatherTribulationLine')
+    expect(trib, '开劫护持与每波恢复须走 guardScore / sustainScore').toContain('guardScore(')
+    expect(trib).toContain('sustainScore(')
     const offline = readFileSync(new URL('../core/offline.ts', import.meta.url), 'utf8')
     expect(offline).toContain('breakthroughReadyNote(')
     expect(offline).toContain('atMaxRealm')

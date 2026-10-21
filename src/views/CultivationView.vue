@@ -163,95 +163,10 @@
             <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">各项相加,再按上下限敛口,方成此数。</p>
           </template>
         </div>
-        <div class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
-          <p class="text-[10px] text-ink-faint">{{ btInfo.needTribulation ? '此劫' : '渡劫' }}</p>
-          <template v-if="tribPlan">
-            <p class="tabular text-[16px] font-kai leading-tight" :class="PLAN_COLOR[tribPlan.verdict]">
-              {{ tribPlan.title }}
-            </p>
-            <p class="text-[10px] text-ink-faint">
-              劫势:{{ verdictLabel(tribPlan.verdict) }}
-              <template v-if="tribPlan.risks.length"> · {{ tribPlan.risks[0] }}</template>
-            </p>
-          </template>
-          <p v-else class="text-[16px] font-kai leading-tight text-ink-faint">非大关</p>
-        </div>
+        <TribulationCard :need-tribulation="btInfo.needTribulation" />
       </div>
 
-      <!-- Phase 32.0 劫势详情(决意前评估:风险维度 + 建议,信息给足,决定留给玩家) -->
-      <div v-if="tribPlan" class="mt-2 rounded-md border border-violet-ink/25 bg-violet-ink/5 px-3 py-2">
-        <!-- 总评:劫名一眼可读,形态(逐道加重/起手最重)挪到行尾 —— 不再以十行小字开场 -->
-        <div class="flex items-baseline gap-2">
-          <p class="grow text-[12px] font-kai leading-snug text-violet-ink">{{ tribPlan.desc }}</p>
-          <span class="shrink-0 text-[10px] text-ink-faint">{{ tribPlan.def.waveShape === 'frontLoaded' ? '起手两道最重' : '逐道加重' }}</span>
-        </div>
-
-        <!-- 准备四维:一行四格星级槽,缺口一眼可见(0 星置灰,不熟也不糊弄) -->
-        <div class="mt-2 grid grid-cols-4 gap-1.5">
-          <div v-for="(name, key) in PREP_NAMES" :key="key" class="rounded bg-paper-deep/60 px-0.5 py-1 text-center">
-            <p class="text-[9px] text-ink-faint">{{ name }}</p>
-            <p class="tabular text-[12px] font-kai" :class="tribPlan.prep[key] === 0 ? 'text-ink-faint' : 'text-ink-soft'">{{ PREP_STARS[tribPlan.prep[key]] }}</p>
-          </div>
-        </div>
-
-        <div class="ink-divider my-2" />
-        <!-- 此劫账单:四项百分比指标两两并排,别有十逗号长句了 -->
-        <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
-          <p class="flex flex-col gap-0.5 text-[10px] tabular">
-            <span class="text-ink-faint">天劫抗性</span>
-            <span class="text-ink-soft leading-tight">
-              {{ formatPercent(tribLedger.resist, 0) }}
-              <span class="text-ink-faint">(防御折 {{ formatPercent(tribLedger.statResist, 0) }})</span>
-            </span>
-          </p>
-          <p class="flex items-baseline justify-between gap-2 text-[10px] tabular">
-            <span class="text-ink-faint">每波恢复</span>
-            <span class="text-ink-soft">{{ formatPercent(tribLedger.sustain, 1) }}</span>
-          </p>
-          <p class="flex flex-col gap-0.5 text-[10px] tabular">
-            <span class="flex items-baseline justify-between gap-2">
-              <span class="text-ink-faint">减伤</span>
-              <span class="text-ink-soft">{{ formatPercent(tribLedger.reduction, 0) }}</span>
-            </span>
-            <span v-if="tribLedger.lowHpReduction > 0" class="text-ink-faint">濒危垂危再 {{ formatPercent(tribLedger.lowHpReduction, 0) }}</span>
-          </p>
-          <p class="flex flex-col gap-0.5 text-[10px] tabular">
-            <span class="text-ink-faint">开劫护持</span>
-            <span class="text-ink-soft leading-tight">
-              {{ formatPercent(tribLedger.guard, 0) }}
-              <span class="text-ink-faint">(气血折 {{ formatPercent(tribLedger.statGuard, 0) }})</span>
-            </span>
-          </p>
-        </div>
-        <p class="mt-2 text-[10px] leading-relaxed text-ink-faint">
-          攻伐之力不助渡劫;防御与气血按当下境界另算,再厚也只能硬抗一隅,余者靠抗性、减伤与恢复;晋升与准备只能帮小进阶,渡劫大关不认。
-        </p>
-
-        <!-- 界膜之劫:跨界规则加难(见 TRIB_WORLD_STEP_STAT_FOLD),决意之前必须说清 -->
-        <div v-if="worldStep" class="mt-2 rounded-md border border-cinnabar/30 bg-cinnabar/5 px-2.5 py-2">
-          <p class="text-[10px] leading-relaxed text-cinnabar">界膜之劫:跨界这一关血肉之厚一概不算 —— 防御与气血折算出的抗性、开劫护持在此作废,只认词条与准备。</p>
-        </div>
-        <!-- 天威长相:道数随境界涨、单波逐道加重,摊出来才知道护持该留到哪一段 -->
-        <p v-if="tribWeatherLine" class="mt-1.5 text-[10px] leading-relaxed text-cinnabar">{{ tribWeatherLine }}</p>
-        <p v-if="tribWave" class="mt-1 text-[10px] text-ink-faint tabular">
-          共 {{ tribWave.waves }} 道,单波 {{ formatPercent(tribWave.min, 0) }}–{{ formatPercent(tribWave.max, 0) }} 最大生命(合计约 {{ formatPercent(tribWave.total, 0) }})
-        </p>
-
-        <div class="ink-divider my-1.5" />
-        <p class="text-[10px] leading-relaxed text-ink-faint"><span class="text-ink-soft">主要风险:</span>{{ tribPlan.risks.join('; ') }}</p>
-        <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">{{ tribPlan.advice }}</p>
-        <!-- Phase 32.2:灵根解开的那条路——说明这道劫为何对你不太一样(留一线,不是免死) -->
-        <p v-if="reliefRoots.length" class="mt-1.5 text-[10px] leading-relaxed text-jade">
-          灵根相应:{{ reliefRoots.map(e => ELEMENTS[e].name).join('、') }} —— 此劫为你留了一线,能走到哪一步仍看自身准备。
-        </p>
-      </div>
-      <p class="mt-1 flex items-center gap-1.5 text-[11px] text-ink-faint tabular">
-        耗灵气 {{ formatNum(btInfo.qiCost) }}
-        <!-- 大关/大槛落在小印章上,与全页「静/备/主/秘」一套印章语言呼应,不再是一行朱砂裸字 -->
-        <span v-if="btInfo.needTribulation" class="rounded bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-violet-ink">
-          大关 · 渡劫
-        </span>
-      </p>
+      <TribulationDetail :need-tribulation="btInfo.needTribulation" :qi-cost="btInfo.qiCost" />
 
       <!-- Phase 28 突破准备:静坐调息 / 服聚气丹(无劫突破时,一次性加成) -->
       <div v-if="!btInfo.needTribulation" class="mt-2 flex items-start gap-2.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
@@ -483,6 +398,8 @@
   import { useResourcesStore } from '@/stores/resources'
   import { useDongfuStore } from '@/stores/dongfu'
   import CultivationOrb from '@/components/common/CultivationOrb.vue'
+  import TribulationCard from '@/components/cultivation/TribulationCard.vue'
+  import TribulationDetail from '@/components/cultivation/TribulationDetail.vue'
   import { useCultivationStore } from '@/stores/cultivation'
   import { useInventoryStore } from '@/stores/inventory'
   import { useUiStore } from '@/stores/ui'
@@ -491,21 +408,6 @@
   import { toNum, gn } from '@/utils/gnum'
   import { baseCultPerSec, baseQiRegen, qiCap } from '@/core/formulas'
   import { modOf } from '@/core/statsCalc'
-  import {
-    currentStatGuard,
-    currentTribulationPlan,
-    currentTribulationRelief,
-    currentTribResist,
-    guardScore,
-    statFoldAt,
-    sustainScore,
-    tribReduction,
-    tribLowHpReduction,
-    tribulationWaveSpan,
-    verdictLabel,
-    type TribulationPlan
-  } from '@/core/tribulationDecision'
-  import { reliefElements, rootElements } from '@/core/linggenAffinity'
   import { comprehendGongfa, gongfaUpgradeCost } from '@/core/gongfaService'
   import { expEtaSec, qiBankEtaSec, qiEtaSec, qiRichEtaSec } from '@/core/progress'
   import { usePill } from '@/core/pillService'
@@ -514,7 +416,6 @@
   import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
   import { GONGFA, gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import type { GongfaDef, GongfaType } from '@/types'
-  import { ELEMENTS } from '@/data/linggen'
   import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import { buffDef } from '@/data/buffs'
   import { pillDef, pillQualityColor, pillRank } from '@/data/pills'
@@ -522,8 +423,6 @@
     COMPREHEND_PAGE_COST, QI_RICH_BONUS,
     WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PRICE_BASE
   } from '@/data/constants'
-  import { todayWeather } from '@/core/weather'
-  import { weatherTribulationLine } from '@/ui/weatherText'
   import { formatCountdown, formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
   import { signedPercent } from '@/data/statNames'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
@@ -630,72 +529,8 @@
   // Phase 28 闭关:只留「是否闭关中」给法球点亮;闭关卡本体在 components/cultivation/RetreatCard.vue
   const retreating = computed(() => isRetreating())
 
-  // Phase 32.0 天劫决策:劫型 + 准备度(仅大关天劫时)
-  const PLAN_COLOR: Record<TribulationPlan['verdict'], string> = {
-    danger: 'text-cinnabar',
-    hard: 'text-amber-ink',
-    ok: 'text-azure',
-    easy: 'text-jade'
-  }
-  const PREP_NAMES = { guard: '护持', sustain: '恢复', resist: '抗性', burst: '爆发' } as const
-  const PREP_STARS = ['·', '✧', '✧✧', '✧✧✧'] as const
-  const tribPlan = computed(() => (btInfo.value.needTribulation ? currentTribulationPlan() : null))
-
-  /**
-   * 这一劫是不是「界膜」那一关(人间→仙界 / 仙界→神界 / 神界→混沌海)。
-   *
-   * 判据取自 tribulationDecision.statFoldAt(三维折算的折扣):
-   * 界面与结算读的必须是同一个数,否则又会出现"显示有护持、结算没有"。
-   */
-  const tribTargetMajor = computed(() => (player.isMajorStep ? player.major + 1 : player.major))
-  const worldStep = computed(() => statFoldAt(tribTargetMajor.value) < 1)
-
-  /**
-   * 渡劫账上的四项实际读数。
-   * 恢复与开劫护持走 sustainScore / guardScore:铁躯、逆流会把护盾与回血打折,
-   * 不能把词条原值当成开劫水位。
-   */
-  const tribLedger = computed(() => {
-    const mods = player.finalStats.mods
-    const stat = currentStatGuard()
-    const def = tribPlan.value?.def
-    const relief = def ? currentTribulationRelief(def.id) : undefined
-    // Same cap and same fold as waveDamage: reduction 0.6, resist 0.8, linggen reductionToResist.
-    const reduction = tribReduction(mods)
-    // 濒危减伤(背水/涅槃词条):结算在气血垂危(<LOW_HP_THRESHOLD)时按同款封顶再削一波,账上得看得见
-    // 封顶与结算同源(tribLowHpReduction),不在界面里再抄一遍 0.6
-    const lowHpReduction = tribLowHpReduction(mods)
-    return {
-      resist: currentTribResist(mods, relief, stat),
-      statResist: stat.resist,
-      reduction,
-      lowHpReduction,
-      sustain: def ? sustainScore(mods, def, relief) : 0,
-      guard: (def ? guardScore(mods, def, relief) : 0) + stat.guard,
-      statGuard: stat.guard
-    }
-  })
-
-  /**
-   * 天威本身的长相(道数 + 单波区间):与结算同一批函数。
-   * 必须乘入今日 tribulationMult —— 劫势 verdict 已经吃了天时,
-   * 百分比若不乘,雷鸣日会看起来比真劫轻一截。
-   */
-  const tribWeather = computed(() => todayWeather())
-  const tribWeatherLine = computed(() => weatherTribulationLine(tribWeather.value))
-  const tribWave = computed(() =>
-    tribPlan.value
-      ? tribulationWaveSpan(tribPlan.value.def, tribTargetMajor.value, tribWeather.value.tribulationMult)
-      : null
-  )
-
   /** 灵气疗伤(修复)状态:负伤时才出现入口,代价随灵气容量指数增长 */
   const repair = computed(() => qiRepairView())
-
-  /** Phase 32.2 与此劫气机相应的灵根:判据取自 tribulationRelief,界面说的与结算做的同源 */
-  const reliefRoots = computed(() =>
-    tribPlan.value ? reliefElements(rootElements(player.linggen?.roots), tribPlan.value.kind) : []
-  )
 
   const activeBuffs = computed(() =>
     cultivation.buffs

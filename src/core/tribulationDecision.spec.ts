@@ -323,8 +323,21 @@ describe('濒危减伤/低血阈值 · 单一事实源(结算与台账不许各�
     )
     expect(core, '低血判定线须引 LOW_HP_THRESHOLD,不得写死 hpLeft < 0.3').not.toContain('hpLeft < 0.3')
     expect(core).toContain('LOW_HP_THRESHOLD')
-    const view = readFileSync(resolve(__dirname, '../views/CultivationView.vue'), 'utf8')
+    // 劫势台账拆出后判据随本体走(composables/useTribulation.ts)
+    const view = readFileSync(resolve(__dirname, '../composables/useTribulation.ts'), 'utf8')
     expect(view, '台账不得再抄一遍 0.6 封顶').not.toContain("Math.min(0.6, modOf(mods, 'lowHpReduction'))")
     expect(view, '台账须调结算同源的 tribLowHpReduction').toContain('tribLowHpReduction(mods)')
+  })
+
+  /**
+   * 摘要卡与详情面板只许共用一本账:两处各算一遍,迟早出现「卡上写有护持、
+   * 点开又说没有」。故障注入:把详情面板改成自己调 currentTribulationPlan → 红。
+   */
+  it('劫势摘要卡与详情同读 useTribulation,不各算一份', () => {
+    for (const rel of ['../components/cultivation/TribulationCard.vue', '../components/cultivation/TribulationDetail.vue']) {
+      const src = readFileSync(resolve(__dirname, rel), 'utf8')
+      expect(src, `${rel} 该读 useTribulation`).toContain('useTribulation(')
+      expect(src, `${rel} 不该自己再算劫势`).not.toContain('currentTribulationPlan(')
+    }
   })
 })
