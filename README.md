@@ -65,7 +65,7 @@ bun run build
 # 预览构建结果
 bun preview
 
-# 全量测试（数值/战斗/流派/曲线/经济/回归/终局/决策，全量 302 个 spec）
+# 全量测试（数值/战斗/流派/曲线/经济/回归/终局/决策，全量 303 个 spec）
 # 注意用 bun run test,不能用 bun test —— 后者会调 Bun 自带的测试器而非 Vitest
 bun run test
 
@@ -168,7 +168,7 @@ docker run -d -p 8080:80 yunyin-xiuxian
 | Tone.js         | 15    | FluidR3 乐器采样播放（BGM + SFX）           |
 | CryptoJS        | 4     | 存档 AES 加密                               |
 | lucide-vue-next | 0.577 | 图标库                                      |
-| Vitest          | 5     | 单元测试与平衡审计（全量 302 个 spec）        |
+| Vitest          | 5     | 单元测试与平衡审计（全量 303 个 spec）        |
 | Electron        | 39    | Windows 桌面客户端打包                      |
 | Capacitor       | 8     | Android 客户端打包                          |
 

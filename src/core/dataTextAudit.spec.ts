@@ -241,6 +241,18 @@ describe('文案数值对账 · 视图不手抄数字', () => {
     }
   })
 
+  it('可冻结倒计时读游戏时钟,不读真实墙钟', () => {
+    const now = src('../composables/useNow.ts')
+    expect(now, 'useNow 要与到期结算同一把尺').toContain('gameNow()')
+    expect(now, '暂停时读数不该继续按真实墙钟往下跑').not.toContain('Date.now()')
+    const cultivation = src('../views/CultivationView.vue')
+    expect(cultivation, '修行页状态胶囊读 now.value').toContain('(b.endsAt - now.value) / 1000')
+    const buff = src('../components/cultivation/BuffDialog.vue')
+    expect(buff, 'Buff 详情倒计时读 now.value').toContain('(inst.value.endsAt - now.value) / 1000')
+    const combat = src('../components/adventure/CombatPanel.vue')
+    expect(combat, '历练倒计时读 now.value').toContain('(session.value.endsAt - now.value) / 1000')
+  })
+
   it('设置页各段随本体迁出,宿主不再自带实现', () => {
     const host = src('../views/SettingsView.vue')
     const pref = src('../components/settings/SettingsPreferenceSection.vue')
