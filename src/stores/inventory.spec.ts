@@ -198,3 +198,30 @@ describe('装备槽属性汇总(equipMods)守卫', () => {
     expect(inv.pills, '野 id 画不出来，零条也没有可服的').toEqual({ p_jvqisan: 3 })
   })
 })
+
+describe('丹匣公共写入边界 · 非有限值与反向扣丹', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('丹药入账只认有限正数,小数向下取整', () => {
+    const inv = useInventoryStore()
+    for (const bad of [NaN, Infinity, -Infinity, -5, 0]) inv.addPill('p_jvqisan', bad)
+    expect(inv.pills.p_jvqisan, '坏增量不能把丹匣写成 NaN 或负数').toBeUndefined()
+    inv.addPill('p_ghost', 3)
+    expect(inv.pills.p_ghost, '认不出的丹药不该进丹匣').toBeUndefined()
+    inv.addPill('p_jvqisan', 2.9)
+    expect(inv.pills.p_jvqisan).toBe(2)
+  })
+
+  it('丹药扣款拒绝负数与非有限值,0 保持成功且不动账', () => {
+    const inv = useInventoryStore()
+    inv.addPill('p_jvqisan', 5)
+    expect(inv.spendPill('p_jvqisan', -5), '负扣款不得反向加丹').toBe(false)
+    expect(inv.spendPill('p_jvqisan', NaN)).toBe(false)
+    expect(inv.spendPill('p_jvqisan', Infinity)).toBe(false)
+    expect(inv.pills.p_jvqisan).toBe(5)
+    expect(inv.spendPill('p_jvqisan', 0), '零扣款仍按成功且不动账').toBe(true)
+    expect(inv.pills.p_jvqisan).toBe(5)
+  })
+})

@@ -9,6 +9,19 @@ import { HERB_GRADES, herbGradeOfMajor, isHerbGrade, type HerbGrade } from '@/da
 import { persistConfig } from '@/utils/storage'
 import { usePlayerStore } from '@/stores/player'
 
+/** 入账只认有限正数:0、负数、NaN 与 Infinity 一律原样不动 */
+function positiveAmount(n: number): number | null {
+  if (!Number.isFinite(n) || n <= 0) return null
+  const amount = Math.floor(n)
+  return amount > 0 ? amount : null
+}
+
+/** 扣款只认有限非负数;非整数按整数份额扣,0 保持「成功且不动账」 */
+function spendAmount(n: number): number | null {
+  if (!Number.isFinite(n) || n < 0) return null
+  return Math.floor(n)
+}
+
 /** 全新空灵草账:五品各 0 */
 export function emptyHerbMap(): Record<HerbGrade, number> {
   return { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
@@ -42,12 +55,18 @@ export const useResourcesStore = defineStore(
     }
 
     function addStone(v: GNum): void {
-      spiritStone.value = add(spiritStone.value, v)
+      const amount = gn(v)
+      if (amount.m <= 0) return
+      spiritStone.value = add(spiritStone.value, amount)
     }
 
     function spendStone(v: GNum): boolean {
-      if (!gte(spiritStone.value, v)) return false
-      spiritStone.value = subClamp(spiritStone.value, v)
+      // 坏调用传负大数时,subClamp 会把它当成加法,余额反而上涨
+      if (!v || !Number.isFinite(v.m) || !Number.isFinite(v.e) || v.m < 0) return false
+      const amount = gn(v)
+      if (amount.m === 0) return true
+      if (!gte(spiritStone.value, amount)) return false
+      spiritStone.value = subClamp(spiritStone.value, amount)
       return true
     }
 
@@ -64,8 +83,10 @@ export const useResourcesStore = defineStore(
 
     /** 指定品阶入账(来源界域明确的采集走它) */
     function addHerb(grade: HerbGrade, n: number): void {
+      const amount = positiveAmount(n)
+      if (amount === null) return
       const g = isHerbGrade(grade) ? grade : currentHerbGrade()
-      herbByGrade.value[g] = Math.max(0, Math.floor(herbByGrade.value[g] + n))
+      herbByGrade.value[g] = Math.max(0, Math.floor(herbByGrade.value[g] + amount))
     }
 
     /** 指定品阶是否够 n 株 */
@@ -75,8 +96,11 @@ export const useResourcesStore = defineStore(
 
     /** 指定品阶扣 n 株;不够则不动、返回 false */
     function spendHerb(grade: HerbGrade, n: number): boolean {
-      if (herbByGrade.value[grade] < n) return false
-      herbByGrade.value[grade] -= n
+      if (!isHerbGrade(grade)) return false
+      const amount = spendAmount(n)
+      if (amount === null) return false
+      if (herbByGrade.value[grade] < amount) return false
+      herbByGrade.value[grade] -= amount
       return true
     }
 
@@ -93,7 +117,7 @@ export const useResourcesStore = defineStore(
      * 与 herbMeltable 同判据 —— 熔炉「按总和算、按这些品扣」,杜绝白拿道源。
      */
     function spendHerbMeltable(n: number): boolean {
-      if (n < 1) return false
+      if (!Number.isFinite(n) || n < 1) return false
       const need = Math.floor(n)
       // 原子:不足则一枚不动 —— 与其余 spend(spendSmall/spendStone/spendHerb)同契约,
       // 失败不得白扣材料。此前先逐品扣再返回 false,失败路径会把可熔草啃成 0。
@@ -116,20 +140,24 @@ export const useResourcesStore = defineStore(
     }
 
     function addSmall(id: SmallResourceId, n: number): void {
+      const amount = positiveAmount(n)
+      if (amount === null) return
       if (id === 'herb') {
-        addHerb(currentHerbGrade(), n)
+        addHerb(currentHerbGrade(), amount)
         return
       }
       const r = smallRef(id)
       if (!r) return
-      r.value = Math.max(0, Math.floor(r.value + n))
+      r.value = Math.max(0, Math.floor(r.value + amount))
     }
 
     function spendSmall(id: SmallResourceId, n: number): boolean {
-      if (id === 'herb') return spendHerb(currentHerbGrade(), n)
+      const amount = spendAmount(n)
+      if (amount === null) return false
+      if (id === 'herb') return spendHerb(currentHerbGrade(), amount)
       const r = smallRef(id)
-      if (!r || r.value < n) return false
-      r.value -= n
+      if (!r || r.value < amount) return false
+      r.value -= amount
       return true
     }
 

@@ -230,15 +230,21 @@ export const useInventoryStore = defineStore(
     }
 
     function addPill(id: string, n: number): void {
-      pills.value = { ...pills.value, [id]: (pills.value[id] ?? 0) + n }
+      if (!pillDef(id)) return
+      if (!Number.isFinite(n) || n <= 0) return
+      const amount = Math.floor(n)
+      if (amount <= 0) return
+      pills.value = { ...pills.value, [id]: (pills.value[id] ?? 0) + amount }
     }
 
     function spendPill(id: string, n = 1): boolean {
+      if (!Number.isFinite(n) || n < 0) return false
+      const amount = Math.floor(n)
       const have = pills.value[id] ?? 0
-      if (have < n) return false
+      if (have < amount) return false
       const next = { ...pills.value }
-      if (have - n <= 0) delete next[id]
-      else next[id] = have - n
+      if (have - amount <= 0) delete next[id]
+      else next[id] = have - amount
       pills.value = next
       return true
     }
