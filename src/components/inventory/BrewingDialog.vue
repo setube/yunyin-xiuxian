@@ -137,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, watch } from 'vue'
   import { useResourcesStore } from '@/stores/resources'
   import { HERB_GRADE_SHORT } from '@/data/herbGrades'
   import { pillQualityColor } from '@/data/pills'
@@ -156,10 +156,21 @@
    * 同源(入口卡要报「已知丹方 N 种」);这里只留弹窗自己的「炼满」确认态,
    * 也就是 useBrewing 里的 pillFullId —— 它本就只服务这一扇浮层。
    */
-  defineProps<{ open: boolean }>()
+  const props = defineProps<{ open: boolean }>()
   const emit = defineEmits<{ close: [] }>()
 
   const resources = useResourcesStore()
   const { recipes, craftGuarantee, skillRows, studyLine, rateClass, pillFullId, runCraftFull } = useBrewing()
   const herbStash = computed(() => herbStashText(g => resources.herbOf(g), formatNum))
+
+  /**
+   * 「炼满」确认态只服务本次开炉。弹窗在行囊页常驻,只切 open:
+   * 关闭时若不撤销,下次开炉会直接停在上次的「开炉 ×N」上,一步误触就炼掉整包料。
+   */
+  watch(
+    () => props.open,
+    open => {
+      if (!open) pillFullId.value = null
+    }
+  )
 </script>

@@ -72,6 +72,16 @@ describe('不可逆确认的两次点击各写什么', () => {
   })
 
   /**
+   * 弹窗在行囊页常驻,只切 open;确认态若跨关闭残留,下次开炉会直接停在上次的
+   * 「开炉 ×N」上。故障注入:删掉 watch 里的复位 → 红。
+   */
+  it('开炉弹窗关闭即撤销「炼满」确认态', () => {
+    const src = read('components/inventory/BrewingDialog.vue')
+    expect(src, '须监听弹窗开关').toContain('() => props.open')
+    expect(src, '关闭时撤销确认态').toContain('if (!open) pillFullId.value = null')
+  })
+
+  /**
    * 依规则清理行囊是整包报废,第一下只该摆出名单与收益。
    * 故障注入:把第一步的 cleanConfirm = true 改回直接 smartClean() → 红。
    */
