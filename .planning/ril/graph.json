@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 296,
+  "round": 297,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T14:23:40+00:00",
+  "updated_at": "2026-10-21T14:48:29+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -20968,6 +20968,58 @@
       "commit": "fbb89b5",
       "title": "到期倒计时改读每秒游戏钟",
       "description": "突破准备与卦象状态接收显式游戏时刻;BreakthroughCard 与 RealmCodexView 改用 useNow,卦象剩余时间走 formatCountdown;补可达回归与界面静态守卫。"
+    },
+    "TASK-390": {
+      "id": "TASK-390",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T14:47:20+00:00",
+      "updated_at": "2026-10-21T14:48:29+00:00",
+      "touched_round": 297,
+      "title": "星象定向与坊市购货写出实际差额",
+      "priority": 8,
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 0.98,
+      "effort": 1,
+      "description": "星象定向只写笼统灵石不足,坊市按钮也只写灵石不足;两者均未摊开 subClamp 实际缺口。需统一判据并置灰列差。"
+    },
+    "ISS-947": {
+      "id": "ISS-947",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T14:47:50+00:00",
+      "updated_at": "2026-10-21T14:47:50+00:00",
+      "touched_round": 297,
+      "title": "星象定向与坊市购货未写实际差额",
+      "description": "玩家只能看到灵石不足,还需自己用总价减余额;定向与购货均缺少同一份缺口判据。"
+    },
+    "EV-959": {
+      "id": "EV-959",
+      "type": "evidence",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T14:47:59+00:00",
+      "updated_at": "2026-10-21T14:47:59+00:00",
+      "touched_round": 297,
+      "title": "差额与同源判据验收通过",
+      "confidence": 0.98,
+      "source": "test:src/core/astronomy.spec.ts",
+      "description": "定向差额、已定向/次数/余额优先级、付得起归空;坊市按钮与扣款回执静态守卫通过。全量 3273 过/0 败。"
+    },
+    "CHG-501": {
+      "id": "CHG-501",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T14:48:08+00:00",
+      "updated_at": "2026-10-21T14:48:08+00:00",
+      "touched_round": 297,
+      "title": "星象定向与坊市购货列实际差额",
+      "commit": "d5fda86",
+      "description": "新增 mansionRedirectCheck;定向按钮、store 与坊市货架共用 subClamp 缺口;新增行为与静态守卫。"
     }
   },
   "edges": [
@@ -31075,6 +31127,24 @@
       "to": "ISS-946",
       "type": "resolves",
       "created_at": "2026-10-21T14:23:40+00:00"
+    },
+    {
+      "from": "TASK-390",
+      "to": "ISS-947",
+      "type": "addresses",
+      "created_at": "2026-10-21T14:48:20+00:00"
+    },
+    {
+      "from": "CHG-501",
+      "to": "ISS-947",
+      "type": "resolves",
+      "created_at": "2026-10-21T14:48:20+00:00"
+    },
+    {
+      "from": "CHG-501",
+      "to": "TASK-390",
+      "type": "implements",
+      "created_at": "2026-10-21T14:48:20+00:00"
     }
   ]
 }
