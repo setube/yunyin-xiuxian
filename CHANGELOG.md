@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- 调整:**封存操作与重铸页脚迁出装备详情** —— 词条行上的封存/解封、页脚的重铸价签、二次确认与「已重铸/已封存」计数原与详情正文挤在一处;现分别迁入 `components/equipment/EquipSealPanel.vue` 与 `EquipReforgeFooter.vue`,价签仍只读 `core/reforge`,重铸确认态按件 uid 记,`EquipmentDetailDialog` 收至 404 行。
 - 调整:**装备备注与天机推演迁出详情弹窗** —— 同名装备的流派标记、反事实换装的四天局面原本各只读一份投影,却把草稿 watch 与推演报表都挂在详情里;现分别迁入 `components/equipment/EquipNotePanel.vue` 与 `EquipWhatIfPanel.vue`(自读 `ui.equipDetailUid`,换件即清空推演),`EquipmentDetailDialog` 收至 496 行。
 - 调整:**强化与连升迁 `UpgradePanel`** —— 强化价签、每级加成、连升总账与二步确认原与天机推演/分解页脚挤在同一个文件里;现整块迁入 `components/equipment/UpgradePanel.vue`(自读 `ui.equipDetailUid`,成本与预览仍只读 `core/forge`),连升确认态按件 uid 记、换件自然失效,`EquipmentDetailDialog` 收至 567 行。
 - 调整:**自动重铸迁 `AutoReforgePanel` + `useAutoReforge`** —— 「洗到指定词条即停」的候选池、预算归一、至多花销、开洗结账与词条图弹框原本整块躺在 817 行的装备详情里;现账收进 `composables/useAutoReforge.ts`,界面收进 `components/equipment/AutoReforgePanel.vue`(词条图必须盖在详情之上,故随面板一起渲染),`EquipmentDetailDialog` 收至 618 行。

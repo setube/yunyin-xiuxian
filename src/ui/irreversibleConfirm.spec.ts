@@ -95,6 +95,18 @@ describe('不可逆确认的两次点击各写什么', () => {
   })
 
   /**
+   * 重铸一次重掷全部未封存词条、成本不低,同样两步。判据随页脚块走
+   * (components/equipment/EquipReforgeFooter.vue)。
+   * 故障注入:把第一步改回直接 doReforge → 红。
+   */
+  it('重铸先摆价签,第二步才重掷', () => {
+    const src = read('components/equipment/EquipReforgeFooter.vue')
+    expect(src, '第一步只立起确认态').toContain('@click="reforgeArm = inst?.uid ?? null"')
+    expect(src, '第二步才真重铸').toContain('@click="doReforge"')
+    expect(src, '取消词与同族一致').toContain('再想想')
+  })
+
+  /**
    * 确认态必须钉在「那一条」上,不能钉在它的行号上。
    *
    * 道痕表新痕插头部,而重写一次就会补一条新痕:按行号记的话,重写第一行后

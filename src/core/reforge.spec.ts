@@ -307,7 +307,8 @@ describe('界面与判定同源 · 条数上限不写死', () => {
   const dialog =
     readFileSync(resolve(__dirname, '../components/equipment/EquipmentDetailDialog.vue'), 'utf8') +
     readFileSync(resolve(__dirname, '../components/equipment/AutoReforgePanel.vue'), 'utf8') +
-    readFileSync(resolve(__dirname, '../composables/useAutoReforge.ts'), 'utf8')
+    readFileSync(resolve(__dirname, '../composables/useAutoReforge.ts'), 'utf8') +
+    readFileSync(resolve(__dirname, '../components/equipment/EquipReforgeFooter.vue'), 'utf8')
 
   it('词条条数上限取自品质表,不在模板里写死数字', () => {
     expect(dialog, '上限应读 qualityDef(...).affixes[1]').toContain('qualityDef(inst.value.quality).affixes[1]')
