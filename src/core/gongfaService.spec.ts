@@ -13,7 +13,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
-import { comprehendGongfa, gongfaUpgradeCost, gongfaUpgradeShort, upgradeGongfa } from '@/core/gongfaService'
+import { comprehendGongfa, gongfaUpgradeCost, gongfaUpgradeShort, gongfaUpgradeShortfall, upgradeGongfa } from '@/core/gongfaService'
 import { COMPREHEND_PAGE_COST } from '@/data/constants'
 import { GONGFA, gongfaDef } from '@/data/gongfa'
 
@@ -91,10 +91,26 @@ describe('功法到顶守卫(upgradeGongfa / gongfaUpgradeCost)', () => {
     cul.learned = { [G]: 1 }
     res.wudao = 1_000_000
     res.page = 0
+    const cost = gongfaUpgradeCost(G)!
     expect(upgradeGongfa(G)).toBe(false)
     const text = useUiStore().toasts.at(-1)?.text ?? ''
     expect(text).toContain('残页')
     expect(text).not.toContain('悟道点')
+    expect(text, '拒因要报实际残页差').toContain(`残页尚差 ${cost.page} 页`)
+  })
+
+  it('两样都缺时回执同报悟道点与残页的实际差额', () => {
+    const cul = useCultivationStore()
+    const res = useResourcesStore()
+    cul.learned = { [G]: 1 }
+    const cost = gongfaUpgradeCost(G)!
+    res.wudao = 0
+    res.page = 0
+    expect(gongfaUpgradeShortfall(cost)).toEqual({ wudao: cost.wudao, page: cost.page })
+    expect(upgradeGongfa(G)).toBe(false)
+    const text = useUiStore().toasts.at(-1)?.text ?? ''
+    expect(text).toContain(`悟道点尚差 ${cost.wudao}`)
+    expect(text).toContain(`残页尚差 ${cost.page} 页`)
   })
 
   it('成功:返回 true、等级 +1、精确扣 gongfaUpgradeCost 的悟道点+残页', () => {
@@ -134,6 +150,9 @@ describe('功法参悟边界(comprehendGongfa)', () => {
     expect(comprehendGongfa()).toBe(false)
     expect(res.page).toBe(0) // 不扣(本来就没有)
     expect(Object.keys(cul.learned).length).toBe(before) // 不学
+    expect(useUiStore().toasts.at(-1)?.text, '参悟拒因要报实际残页差').toContain(
+      `残页尚差 ${COMPREHEND_PAGE_COST} 页`,
+    )
   })
 
   it('残页足够:成功习得一部,精确扣 COMPREHEND_PAGE_COST 残页,新增份在池内且此前未学', () => {

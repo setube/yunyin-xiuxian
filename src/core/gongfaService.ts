@@ -52,7 +52,7 @@ export function comprehendGongfa(): boolean {
   const resources = useResourcesStore()
   const ui = useUiStore()
   if (!resources.hasSmall('page', COMPREHEND_PAGE_COST)) {
-    ui.toast(gongfaPageShortToast(), 'warn')
+    ui.toast(gongfaPageShortToast(Math.max(0, COMPREHEND_PAGE_COST - resources.page)), 'warn')
     return false
   }
   const player = usePlayerStore()
@@ -94,6 +94,15 @@ export function gongfaUpgradeShort(cost: { wudao: number; page: number }): 'wuda
   return null
 }
 
+/** 这一层还差多少悟道点与残页;够用时各为 0 */
+export function gongfaUpgradeShortfall(cost: { wudao: number; page: number }): { wudao: number; page: number } {
+  const resources = useResourcesStore()
+  return {
+    wudao: Math.max(0, cost.wudao - resources.wudao),
+    page: Math.max(0, cost.page - resources.page)
+  }
+}
+
 export function upgradeGongfa(id: string): boolean {
   const resources = useResourcesStore()
   const cultivation = useCultivationStore()
@@ -102,7 +111,7 @@ export function upgradeGongfa(id: string): boolean {
   if (!cost) return false
   const short = gongfaUpgradeShort(cost)
   if (short) {
-    ui.toast(gongfaUpShortToast(short), 'warn')
+    ui.toast(gongfaUpShortToast(short, gongfaUpgradeShortfall(cost)), 'warn')
     return false
   }
   resources.spendSmall('wudao', cost.wudao)

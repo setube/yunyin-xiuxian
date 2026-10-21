@@ -132,11 +132,10 @@
   import { REALMS } from '@/data/realms'
   import { useDongfuStore } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
-  import { useResourcesStore } from '@/stores/resources'
   import { gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import { ELEMENTS } from '@/data/linggen'
   import { branchesFor, gongfaBranchDef } from '@/data/gongfaBranches'
-  import { gongfaUpgradeCost, gongfaUpgradeShort, upgradeGongfa } from '@/core/gongfaService'
+  import { gongfaUpgradeCost, gongfaUpgradeShort, gongfaUpgradeShortfall, upgradeGongfa } from '@/core/gongfaService'
   import { gongfaAffinity, rootElements } from '@/core/linggenAffinity'
   import { mergeMods } from '@/core/statsCalc'
   import { gongfaModsAt } from '@/stores/cultivation'
@@ -151,7 +150,6 @@
   const cultivation = useCultivationStore()
   const dongfu = useDongfuStore()
   const player = usePlayerStore()
-  const resources = useResourcesStore()
 
   const def = computed(() => (ui.gongfaDetailId ? gongfaDef(ui.gongfaDetailId) : undefined))
   const level = computed(() => (def.value ? (cultivation.learned[def.value.id] ?? 0) : 0))
@@ -163,10 +161,7 @@
     const c = upCost.value
     const s = upShort.value
     if (!c || !s) return ''
-    const parts: string[] = []
-    if (s === 'wudao' || s === 'both') parts.push(`悟道点尚差 ${Math.max(0, c.wudao - resources.wudao)}`)
-    if (s === 'page' || s === 'both') parts.push(`残页尚差 ${Math.max(0, c.page - resources.page)}`)
-    return `${parts.join(' · ')} —— ${gongfaUpShortToast(s)}`
+    return gongfaUpShortToast(s, gongfaUpgradeShortfall(c))
   })
 
   /** 与灵根同源?判据直接取自参悟权重函数,标签与实际权重不可能分叉 */

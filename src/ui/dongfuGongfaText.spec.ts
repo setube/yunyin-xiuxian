@@ -40,6 +40,7 @@ describe('洞府与功法提示 · 文言仍报清层数与材料', () => {
   it('参悟与精进仍报残页、悟道点与层数', () => {
     expect(gongfaPageShortToast()).toContain('残页')
     expect(gongfaPageShortToast()).not.toContain('不足')
+    expect(gongfaPageShortToast(7)).toContain('残页尚差 7 页')
     expect(gongfaAllLearnedToast()).toContain('尽数参透')
     expect(gongfaComprehendToast('太玄引气诀')).toContain('《太玄引气诀》')
     expect(gongfaUpShortToast('wudao')).toContain('悟道点')
@@ -48,6 +49,9 @@ describe('洞府与功法提示 · 文言仍报清层数与材料', () => {
     expect(gongfaUpShortToast('page')).not.toContain('悟道点')
     expect(gongfaUpShortToast('both')).toContain('悟道点')
     expect(gongfaUpShortToast('both')).toContain('残页')
+    expect(gongfaUpShortToast('wudao', { wudao: 4 })).toContain('悟道点尚差 4')
+    expect(gongfaUpShortToast('page', { page: 6 })).toContain('残页尚差 6 页')
+    expect(gongfaUpShortToast('both', { wudao: 4, page: 6 })).toContain('悟道点尚差 4 · 残页尚差 6 页')
     expect(gongfaUpDoneToast('太玄引气诀', 3)).toBe('《太玄引气诀》又进一重,已至第 3 层')
     expect(gongfaSubFullToast(2)).toContain('2 席')
     expect(gongfaSubFullToast(2)).toContain('藏经阁')

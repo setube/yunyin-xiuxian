@@ -684,8 +684,8 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     const view = src('../components/cultivation/GongfaDialog.vue')
     expect(view, '禁用态读同一份缺口判定').toContain('gongfaUpgradeShort(upCost.value)')
     expect(view, '付得起才不置灰').toContain(':disabled="upShort !== null"')
-    expect(view, '行内写悟道缺口').toContain('悟道点尚差 ${Math.max(0, c.wudao - resources.wudao)}')
-    expect(view, '行内写残页缺口').toContain('残页尚差 ${Math.max(0, c.page - resources.page)}')
+    expect(view, '行内复用 core 的短差').toContain('gongfaUpgradeShortfall(c)')
+    expect(view, '短差交给同一份拒因文案').toContain('gongfaUpShortToast(s, gongfaUpgradeShortfall(c))')
     expect(view, '不许再用笼统的「悟道点或残页不足」').not.toContain('悟道点或残页不足')
   })
 
@@ -924,6 +924,26 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(service, '计划回执不再写死灵石未足').not.toContain("blocked('灵石未足,难开此炉'")
     expect(text, '缺料文案分开报草石').toContain('灵草尚差 ${gap.herb} 株')
     expect(text, '缺料文案报石差').toContain('灵石尚差 ${gap.stone}')
+  })
+
+  /**
+   * 功法参悟与进修同族:服务拒因只报「未足」,详情弹窗却已列实际差额。
+   * 现参悟与进修都读 core 的短差,详情文案不再就地减余额。
+   */
+  it('功法参悟与进修回执写出实际差额', () => {
+    const service = src('./gongfaService.ts')
+    const dialog = src('../components/cultivation/GongfaDialog.vue')
+    const text = src('../ui/gongfaText.ts')
+    expect(service, '参悟拒因写实际残页差').toContain(
+      'gongfaPageShortToast(Math.max(0, COMPREHEND_PAGE_COST - resources.page))',
+    )
+    expect(service, '进修短差单源').toContain('export function gongfaUpgradeShortfall(')
+    expect(service, '进修回执传实际短差').toContain('gongfaUpShortToast(short, gongfaUpgradeShortfall(cost))')
+    expect(dialog, '详情复用同一份短差').toContain('gongfaUpgradeShortfall(c)')
+    expect(dialog, '详情不再自己减余额').not.toContain('c.wudao - resources.wudao')
+    expect(text, '残页拒因带页数').toContain('残页尚差 ${pageShort} 页')
+    expect(text, '进修拒因带悟道差').toContain('悟道点尚差 ${gap.wudao}')
+    expect(text, '进修拒因带残页差').toContain('残页尚差 ${gap.page} 页')
   })
 
   it('灵兽的性子带数,出处与结算同源', () => {
