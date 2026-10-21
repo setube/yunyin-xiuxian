@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 297,
+  "round": 299,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T14:48:29+00:00",
+  "updated_at": "2026-10-21T15:14:02+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -21020,6 +21020,78 @@
       "title": "星象定向与坊市购货列实际差额",
       "commit": "d5fda86",
       "description": "新增 mansionRedirectCheck;定向按钮、store 与坊市货架共用 subClamp 缺口;新增行为与静态守卫。"
+    },
+    "ISS-948": {
+      "id": "ISS-948",
+      "type": "issue",
+      "status": "resolved",
+      "version": 3,
+      "created_at": "2026-10-21T15:12:54+00:00",
+      "updated_at": "2026-10-21T15:13:57+00:00",
+      "touched_round": 298,
+      "title": "天界与炼器收徒入口只报笼统资源不足",
+      "description": "道源凝果、器魂凝炼、天界远征等入口付不起时仍可点且只报总价或道源不足;强化与道童虽置灰却未写实际差额。"
+    },
+    "TASK-391": {
+      "id": "TASK-391",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T15:13:00+00:00",
+      "updated_at": "2026-10-21T15:13:57+00:00",
+      "touched_round": 298,
+      "title": "天界炼器收徒入口写出实际差额并前置置灰",
+      "description": "统一道源与强化缺口判据,让卡面、按钮、服务拒因同源;补静态与行为守卫。",
+      "category": "correctness",
+      "severity": 0.62,
+      "confidence": 0.98,
+      "effort": 2,
+      "priority": 8
+    },
+    "CHG-502": {
+      "id": "CHG-502",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T15:13:50+00:00",
+      "updated_at": "2026-10-21T15:13:50+00:00",
+      "touched_round": 298,
+      "title": "天界与器魂道源差额同源",
+      "commit": "31e99a9"
+    },
+    "CHG-503": {
+      "id": "CHG-503",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T15:13:50+00:00",
+      "updated_at": "2026-10-21T15:13:50+00:00",
+      "touched_round": 298,
+      "title": "强化缺料写出石差尘差",
+      "commit": "49233f6"
+    },
+    "CHG-504": {
+      "id": "CHG-504",
+      "type": "change",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T15:13:50+00:00",
+      "updated_at": "2026-10-21T15:13:50+00:00",
+      "touched_round": 298,
+      "title": "收道童写出灵石实际差额",
+      "commit": "6b2ecaf"
+    },
+    "EV-960": {
+      "id": "EV-960",
+      "type": "evidence",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T15:13:57+00:00",
+      "updated_at": "2026-10-21T15:13:57+00:00",
+      "touched_round": 298,
+      "title": "天界与炼器收徒差额门禁全绿",
+      "source": "bun run check; bun run test:report 3283/0; bun run build; bun scripts/ui-smoke.mjs 17 页 103 次点击; 故障注入三处均转红后恢复",
+      "confidence": 1.0
     }
   },
   "edges": [
@@ -31145,6 +31217,36 @@
       "to": "TASK-390",
       "type": "implements",
       "created_at": "2026-10-21T14:48:20+00:00"
+    },
+    {
+      "from": "TASK-391",
+      "to": "ISS-948",
+      "type": "addresses",
+      "created_at": "2026-10-21T15:13:00+00:00"
+    },
+    {
+      "from": "CHG-502",
+      "to": "TASK-391",
+      "type": "implements",
+      "created_at": "2026-10-21T15:13:57+00:00"
+    },
+    {
+      "from": "CHG-502",
+      "to": "ISS-948",
+      "type": "resolves",
+      "created_at": "2026-10-21T15:13:57+00:00"
+    },
+    {
+      "from": "CHG-503",
+      "to": "TASK-391",
+      "type": "implements",
+      "created_at": "2026-10-21T15:13:57+00:00"
+    },
+    {
+      "from": "CHG-504",
+      "to": "TASK-391",
+      "type": "implements",
+      "created_at": "2026-10-21T15:13:57+00:00"
     }
   ]
 }
