@@ -86,6 +86,15 @@ describe('建筑连升 · 批量账', () => {
     expect(buildingBatchPlan('array').levels).toBe(2)
   })
 
+  it('一级都升不起时:拒因点名缺哪一样并给出实际差额', () => {
+    const first = costOf(0)
+    fund(0, first.ore)
+    expect(buildingBatchPlan('array').blocked).toMatch(/^尚差 .+ 石,难营此工$/)
+
+    fund(toNum(first.stone) * 2, Math.max(0, first.ore - 2))
+    expect(buildingBatchPlan('array').blocked).toBe('玄铁 2 块,难营此工')
+  })
+
   it('境界闸:未至对应境(0 级连升)带拒因,一升不动', () => {
     seat(0, 0) // 锻器需要筑基
     const plan = buildingBatchPlan('forge')

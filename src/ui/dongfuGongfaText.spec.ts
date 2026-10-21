@@ -6,6 +6,7 @@ import {
   buildingMansionGateToast,
   buildingPeakToast,
   buildingRealmGate,
+  buildingShortReason,
   buildingShortToast
 } from './buildingText'
 import {
@@ -24,6 +25,12 @@ describe('洞府与功法提示 · 文言仍报清层数与材料', () => {
     expect(buildingMansionGateToast()).toContain('洞府未广')
     expect(buildingShortToast()).toContain('灵石')
     expect(buildingShortToast()).toContain('玄铁')
+    expect(buildingShortReason('stone', '12', 0)).toBe('尚差 12 石')
+    expect(buildingShortReason('ore', '0', 3)).toBe('玄铁 3 块')
+    expect(buildingShortReason('both', '12', 3)).toBe('尚差 12 石 · 玄铁 3 块')
+    expect(buildingShortToast('stone', '12', 0)).toBe('尚差 12 石,难营此工')
+    expect(buildingShortToast('ore', '0', 3)).not.toContain('灵石')
+    expect(buildingShortToast('both', '12', 3)).toContain('玄铁 3 块')
     expect(buildingDoneToast('丹房', 4)).toBe('「丹房」营造再进,已至 4 级')
     expect(buildingDoneToast('丹房', 4)).not.toContain('升至')
     expect(buildingActLabel(0)).toBe('起造')

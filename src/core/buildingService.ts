@@ -19,8 +19,10 @@ import {
   buildingGateRealmName,
   buildingPeakToast,
   buildingRealmGate,
+  buildingShortReason,
   buildingShortToast
 } from '@/ui/buildingText'
+import type { BuildingShortSide } from '@/ui/buildingText'
 
 export interface BuildingUpgradePreview {
   /** 预览指向的目标级(单步即下一级;连升即 level+steps) */
@@ -79,6 +81,37 @@ export interface BuildingUpgradeInfo {
   nextLevel: number
 }
 
+export interface BuildingShortfall {
+  /** 缺哪一样;两样都够时为 null */
+  side: BuildingShortSide | null
+  /** 灵石尚差(足够时为 0) */
+  stone: GNum
+  /** 玄铁尚差(足够时为 0) */
+  ore: number
+  /** 卡面直接展示的精确缺口;两样都够时为空串 */
+  reason: string
+}
+
+/**
+ * 建筑升级的资源缺口 —— 卡片、单升二次校验与连升 0 级拒因共用这一份判据。
+ * 石头是 GNum、玄铁是 number,分别算差;只缺一样就只报那一样。
+ */
+export function buildingShortfall(stone: GNum, ore: number): BuildingShortfall {
+  const resources = useResourcesStore()
+  const stoneShort = gte(resources.spiritStone, stone) ? gnZero() : subClamp(stone, resources.spiritStone)
+  const oreShort = Math.max(0, ore - resources.ore)
+  const stoneMissing = stoneShort.m > 0
+  const oreMissing = oreShort > 0
+  const side: BuildingShortSide | null =
+    stoneMissing && oreMissing ? 'both' : stoneMissing ? 'stone' : oreMissing ? 'ore' : null
+  return {
+    side,
+    stone: stoneShort,
+    ore: oreShort,
+    reason: side ? buildingShortReason(side, formatGN(stoneShort), oreShort) : ''
+  }
+}
+
 export function buildingUpgradeInfo(id: BuildingId): BuildingUpgradeInfo {
   const dongfu = useDongfuStore()
   const player = usePlayerStore()
@@ -99,16 +132,10 @@ export function buildingUpgradeInfo(id: BuildingId): BuildingUpgradeInfo {
     reason = buildingMansionGateToast()
   } else {
     // 资源检查(xian 仓纪律:付不起要先置灰、把差多少列出来,别让玩家点了才被弹教训)。
-    // 石头是 GNum 大数、玄铁是 number,分别算差;双缺合并成一句,每个「数+量词」粘着写。
-    const resources = useResourcesStore()
-    const stoneShort = gte(resources.spiritStone, stone) ? gnZero() : subClamp(stone, resources.spiritStone)
-    const oreShort = Math.max(0, ore - resources.ore)
-    if (stoneShort.m > 0 || oreShort > 0) {
+    const shortfall = buildingShortfall(stone, ore)
+    if (shortfall.side) {
       canUpgrade = false
-      const parts: string[] = []
-      if (stoneShort.m > 0) parts.push(`尚差 ${formatGN(stoneShort)} 石`)
-      if (oreShort > 0) parts.push(`玄铁 ${oreShort} 块`)
-      reason = parts.join(' · ')
+      reason = shortfall.reason
     }
   }
   return { canUpgrade, reason, stone, ore, nextLevel: lv + 1 }
@@ -125,7 +152,11 @@ export function upgradeBuilding(id: BuildingId): boolean {
     return false
   }
   if (!resources.hasStone(info.stone) || !resources.hasSmall('ore', info.ore)) {
-    ui.toast(buildingShortToast(), 'warn')
+    const shortfall = buildingShortfall(info.stone, info.ore)
+    const text = shortfall.side
+      ? buildingShortToast(shortfall.side, formatGN(shortfall.stone), shortfall.ore)
+      : buildingShortToast()
+    ui.toast(text, 'warn')
     return false
   }
   resources.spendStone(info.stone)
@@ -184,7 +215,14 @@ export function buildingBatchPlan(id: BuildingId): BuildingBatchPlan {
     lv += 1
   }
   const levels = lv - from
-  if (levels === 0) return zero(buildingShortToast())
+  if (levels === 0) {
+    const shortfall = buildingShortfall(buildingCost(def.costBase, from), def.costOre * (from + 1))
+    return zero(
+      shortfall.side
+        ? buildingShortToast(shortfall.side, formatGN(shortfall.stone), shortfall.ore)
+        : buildingShortToast()
+    )
+  }
   return { levels, stone, ore, atMax: lv >= def.maxLevel, blocked: null }
 }
 

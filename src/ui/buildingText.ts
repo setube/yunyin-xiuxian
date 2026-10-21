@@ -27,7 +27,22 @@ export function buildingMansionGateToast(): string {
   return '洞府未广,此筑难再升'
 }
 
-export function buildingShortToast(): string {
+/** 缺料侧别:单缺灵石 / 单缺玄铁 / 双缺。 */
+export type BuildingShortSide = 'stone' | 'ore' | 'both'
+
+/** 卡面与 toast 共用的精确缺口句;调用方传 formatGN 后的石数。 */
+export function buildingShortReason(side: BuildingShortSide, stoneText: string, ore: number): string {
+  if (side === 'stone') return `尚差 ${stoneText} 石`
+  if (side === 'ore') return `玄铁 ${ore} 块`
+  return `尚差 ${stoneText} 石 · 玄铁 ${ore} 块`
+}
+
+/**
+ * 无侧别时保留旧泛称作兜底;有精确缺口时必须点名缺哪一样,
+ * 不再让「灵石或玄铁」把两条相反的来路糊成一句。
+ */
+export function buildingShortToast(side?: BuildingShortSide, stoneText = '', ore = 0): string {
+  if (side) return `${buildingShortReason(side, stoneText, ore)},难营此工`
   return '灵石或玄铁未足,难营此工'
 }
 
