@@ -5,7 +5,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
 import { FURNACE_RATES, DAO_SOURCE_PER_FRUIT, FURNACE_STONE_TIER_AMOUNT, FURNACE_STONE_DAO_SOURCE } from '@/data/endgame'
-import { chooseDaoPath, condenseDaoFruit, currentDaoRules, endgameUnlocked, furnaceConvert, furnaceStoneCost, furnaceConvertStone } from './endgameService'
+import { chooseDaoPath, condenseDaoFruit, currentDaoRules, endgameUnlocked, furnaceConvert, furnaceMaterialShortfall, furnaceStoneCost, furnaceConvertStone } from './endgameService'
 import { stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
 import { resolveWorld, startWorldExpedition } from './expedition'
@@ -79,8 +79,19 @@ describe('真仙终局服务', () => {
     expect(furnaceConvert(rate)).toBe(0)
     expect(endgame.daoSource).toBe(before)
     expect(useUiStore().toasts.at(-1)).toEqual(
-      expect.objectContaining({ text: `${rate.name}不足 ${rate.per},不够熔铸一缕道源`, kind: 'warn' })
+      expect.objectContaining({ text: `${rate.name}尚差 ${rate.per},不够熔铸一缕道源`, kind: 'warn' })
     )
+  })
+
+  it('熔炉材料不够一缕时写出实际差量,且与预览同源', () => {
+    ascend()
+    const resources = useResourcesStore()
+    const rate = FURNACE_RATES.find(r => r.resource === 'ore')!
+    resources.ore = rate.per - 7
+    expect(furnaceMaterialShortfall(rate), '差 7 块才够一缕').toBe(7)
+    expect(furnaceConvert(rate)).toBe(0)
+    expect(useUiStore().toasts.at(-1)?.text).toContain(`${rate.name}尚差 7`)
+    expect(useUiStore().toasts.at(-1)?.text).not.toContain(`尚差 ${rate.per}`)
   })
 
   it('熔炉的草唯仙品起可熔:凡/灵不入炉、按品实扣,不白拿道源(over-credit 修)', () => {

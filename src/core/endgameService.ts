@@ -69,6 +69,13 @@ export function chooseDaoPath(id: DaoPathId): boolean {
 
 // ---------- 天道熔炉 ----------
 
+/** 熔铸一缕道源还差多少材料:够一炉为 0 */
+export function furnaceMaterialShortfall(rate: FurnaceRate): number {
+  const resources = useResourcesStore()
+  const have = rate.resource === 'herb' ? resources.herbMeltable : resources[rate.resource]
+  return Math.max(0, rate.per - have)
+}
+
 export function furnaceConvert(rate: FurnaceRate): number {
   const resources = useResourcesStore()
   const endgame = useEndgameStore()
@@ -79,13 +86,13 @@ export function furnaceConvert(rate: FurnaceRate): number {
   const have = rate.resource === 'herb' ? resources.herbMeltable : resources[rate.resource]
   const daoSource = Math.floor(have / rate.per)
   if (daoSource <= 0) {
-    ui.toast(`${rate.name}不足 ${rate.per},不够熔铸一缕道源`, 'warn')
+    ui.toast(`${rate.name}尚差 ${furnaceMaterialShortfall(rate)},不够熔铸一缕道源`, 'warn')
     return 0
   }
   const spent = daoSource * rate.per
   const ok = rate.resource === 'herb' ? resources.spendHerbMeltable(spent) : resources.spendSmall(rate.resource, spent)
   if (!ok) {
-    ui.toast(`${rate.name}不足 ${rate.per},不够熔铸一缕道源`, 'warn')
+    ui.toast(`${rate.name}尚差 ${furnaceMaterialShortfall(rate)},不够熔铸一缕道源`, 'warn')
     return 0
   }
   endgame.addDaoSource(daoSource)
