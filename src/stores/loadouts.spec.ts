@@ -120,6 +120,21 @@ describe('构筑 · 上限与增删改', () => {
     l.remove('a')
     expect(l.list.map(x => x.id)).toEqual(['b'])
   })
+
+  it('公共写入挡住坏 id 与重复 id,不出现删一套误删另一套', () => {
+    const l = useLoadoutsStore()
+    expect(l.add(mk('dup'))).toBe(true)
+    expect(l.add(mk('dup', { name: '第二套' })), '同号第二套不收').toBe(false)
+    expect(l.list).toHaveLength(1)
+    expect(l.add({ ...mk('bad'), id: '' }), '空 id 不收').toBe(false)
+    l.rename('missing', '无关')
+    expect(l.list[0]!.name).toBe('dup')
+    l.remove('missing')
+    expect(l.list, '删不存在的 id 不动现有快照').toHaveLength(1)
+    l.$patch({ list: [mk(''), mk('keep')] } as never)
+    l.remove('')
+    expect(l.list.map(x => x.id), '空 id 不能当成「删全部空号」').toEqual(['', 'keep'])
+  })
 })
 
 describe('构筑 · 换装接线(applyLoadout)', () => {

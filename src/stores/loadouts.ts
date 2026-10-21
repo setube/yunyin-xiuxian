@@ -72,16 +72,20 @@ export const useLoadoutsStore = defineStore(
     }
 
     function add(loadout: Loadout): boolean {
+      if (!loadout || typeof loadout !== 'object' || typeof loadout.id !== 'string' || !loadout.id) return false
       if (list.value.length >= MAX_LOADOUTS) return false
+      if (list.value.some(l => l.id === loadout.id)) return false
       list.value = [...list.value, loadout]
       return true
     }
 
     function remove(id: string): void {
+      if (typeof id !== 'string' || !id) return
       list.value = list.value.filter(l => l.id !== id)
     }
 
     function rename(id: string, name: string): void {
+      if (typeof id !== 'string' || !id || typeof name !== 'string') return
       list.value = list.value.map(l => (l.id === id ? { ...l, name } : l))
     }
 
