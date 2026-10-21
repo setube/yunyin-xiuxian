@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 275,
+  "round": 277,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-20T23:35:46+00:00",
+  "updated_at": "2026-10-21T00:16:44+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 275,
+      "touched_round": 276,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -19246,6 +19246,117 @@
       "round": 275,
       "commit": "\"444a21c\"",
       "summary": "\"dataTextAudit 新增两例:minWins/needWins 与「胜」措辞;gateRuleSummary 派生;均经故障注入验证\""
+    },
+    "ISS-920": {
+      "id": "ISS-920",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T00:08:00+00:00",
+      "updated_at": "2026-10-21T00:08:00+00:00",
+      "touched_round": 275,
+      "title": "离线打赢宿敌不雪耻,征战录永远写尚为宿敌",
+      "severity": "medium",
+      "summary": "\"在线取胜时 markAvenged 清账;离线整段只补败北不补雪耻,挂机把宿敌打回去几十次账上仍挂着\""
+    },
+    "TASK-358": {
+      "id": "TASK-358",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T00:08:00+00:00",
+      "updated_at": "2026-10-21T00:08:00+00:00",
+      "touched_round": 275,
+      "title": "离线净胜且敌手仍是宿敌时,按在线同一 markAvenged 清账",
+      "priority": "P1",
+      "category": "correctness",
+      "summary": "\"offline 在宿敌批记之后加雪耻分支;offlineModeReward 补行为用例(预置三败、固定胜率 1)\""
+    },
+    "CHG-461": {
+      "id": "CHG-461",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-21T00:08:00+00:00",
+      "updated_at": "2026-10-21T00:16:41+00:00",
+      "touched_round": 276,
+      "title": "离线雪耻与在线同源",
+      "commit": "\"b55be9d\"",
+      "summary": "\"offline.ts 补 markAvenged 分支;归来卷轴播报;offlineModeReward 新用例,去掉分支即红\""
+    },
+    "ISS-918": {
+      "id": "ISS-918",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T00:09:33+00:00",
+      "updated_at": "2026-10-21T00:09:33+00:00",
+      "touched_round": 276,
+      "title": "离线普通战不算法宝掉落,挂一夜期望法宝恒为 0",
+      "severity": "medium",
+      "summary": "\"在线 afterWin 每胜掷 ARTIFACT_DROP_CHANCE×(1+luck),离线普通战只补了丹药/装备/材料,法宝通道整段缺席\""
+    },
+    "TASK-356": {
+      "id": "TASK-356",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T00:09:33+00:00",
+      "updated_at": "2026-10-21T00:09:33+00:00",
+      "touched_round": 276,
+      "title": "离线按在线同一概率与幸运尺折算法宝,且不替玩家祭炼",
+      "priority": "P1",
+      "category": "correctness",
+      "summary": "\"capChance(ARTIFACT_DROP_CHANCE×(1+luck+pet dropLuck)) × wins;acquireArtifact 增 autoEquip 参数,离线传 false;件数并入 itemGain\""
+    },
+    "CHG-459": {
+      "id": "CHG-459",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T00:09:33+00:00",
+      "updated_at": "2026-10-21T00:09:33+00:00",
+      "touched_round": 276,
+      "title": "离线法宝掉落补线",
+      "commit": "\"fe70b99\"",
+      "summary": "\"offline.ts 补法宝通道;loot.acquireArtifact 增 autoEquip;offlineModeReward 补期望件数/入囊/不祭炼三判据\""
+    },
+    "ISS-919": {
+      "id": "ISS-919",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T00:09:34+00:00",
+      "updated_at": "2026-10-21T00:09:34+00:00",
+      "touched_round": 276,
+      "title": "离线整段结算不推进连胜,跨档赏格从不发放",
+      "severity": "medium",
+      "summary": "\"在线逐场 recordWin/recordLoss 推进 winStreak 并发 3/5/10 档赏格;离线从不触碰该字段,挂一夜连胜不动、战斗页的档位承诺成空话\""
+    },
+    "TASK-357": {
+      "id": "TASK-357",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-21T00:09:34+00:00",
+      "updated_at": "2026-10-21T00:09:34+00:00",
+      "touched_round": 276,
+      "title": "新增 recordWinStreakBatch,离线按胜场接上、败场收尾整批结算",
+      "priority": "P1",
+      "category": "correctness",
+      "summary": "\"只发本批跨过去的档,复用 WIN_STREAK_REWARDS 与 streakRewardText;offline 普通战整批、首领胜败各一场;offlineScope 允许 winStreak\""
+    },
+    "CHG-460": {
+      "id": "CHG-460",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-21T00:09:34+00:00",
+      "updated_at": "2026-10-21T00:16:41+00:00",
+      "touched_round": 276,
+      "title": "离线连胜与跨档赏格同源结算",
+      "commit": "\"866dfeb\"",
+      "summary": "\"earlyGameService 增 recordWinStreakBatch;offline 普通战与首领战接上;earlyGameService.spec/offlineModeReward/offlineScope 补判据\""
     }
   },
   "edges": [
@@ -28519,6 +28630,78 @@
       "to": "ISS-915",
       "type": "resolves",
       "created_at": "2026-10-20T23:23:25+00:00"
+    },
+    {
+      "from": "TASK-358",
+      "to": "ISS-920",
+      "type": "addresses",
+      "created_at": "2026-10-21T00:08:00+00:00"
+    },
+    {
+      "from": "ISS-920",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-21T00:08:00+00:00"
+    },
+    {
+      "from": "CHG-461",
+      "to": "TASK-358",
+      "type": "implements",
+      "created_at": "2026-10-21T00:08:00+00:00"
+    },
+    {
+      "from": "CHG-461",
+      "to": "ISS-920",
+      "type": "resolves",
+      "created_at": "2026-10-21T00:08:01+00:00"
+    },
+    {
+      "from": "TASK-356",
+      "to": "ISS-918",
+      "type": "addresses",
+      "created_at": "2026-10-21T00:09:37+00:00"
+    },
+    {
+      "from": "ISS-918",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-21T00:09:37+00:00"
+    },
+    {
+      "from": "CHG-459",
+      "to": "TASK-356",
+      "type": "implements",
+      "created_at": "2026-10-21T00:09:37+00:00"
+    },
+    {
+      "from": "CHG-459",
+      "to": "ISS-918",
+      "type": "resolves",
+      "created_at": "2026-10-21T00:09:37+00:00"
+    },
+    {
+      "from": "TASK-357",
+      "to": "ISS-919",
+      "type": "addresses",
+      "created_at": "2026-10-21T00:09:37+00:00"
+    },
+    {
+      "from": "ISS-919",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-21T00:09:37+00:00"
+    },
+    {
+      "from": "CHG-460",
+      "to": "TASK-357",
+      "type": "implements",
+      "created_at": "2026-10-21T00:09:37+00:00"
+    },
+    {
+      "from": "CHG-460",
+      "to": "ISS-919",
+      "type": "resolves",
+      "created_at": "2026-10-21T00:09:37+00:00"
     }
   ]
 }
