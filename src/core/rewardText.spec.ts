@@ -32,4 +32,12 @@ describe('rewardPreview', () => {
     expect(home).toContain('rewardPreview(')
     expect(home).not.toContain('达成后自动领赏')
   })
+
+  it('主页主线进度只读 questProgress 投影,不再自己只处理计数型', () => {
+    const home = readFileSync(resolve(__dirname, '../views/HomeView.vue'), 'utf8')
+    expect(home, '境界与层数里程碑也要有进度读数').toContain('currentMainQuestProgress(')
+    expect(home, '自己再判一次 cond.type 就等于第二份进度口径').not.toContain(
+      "c?.type !== 'counter'",
+    )
+  })
 })

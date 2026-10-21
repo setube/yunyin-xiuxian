@@ -36,6 +36,23 @@
       </div>
     </div>
 
+    <!--
+      第一步(只在开局这一段出现,见 core/firstStep):目标 / 主线 / 每日三块各指一个页签,
+      却没人告诉新玩家先点哪儿 —— 这张卡把「历练 → 修为 → 突破」这条线说出来,并把入口递到手上。
+    -->
+    <RouterLink
+      v-if="firstStep"
+      :to="firstStep.to"
+      class="card-ink flex items-center gap-3 border-cinnabar/40 px-4 py-3 active:scale-98"
+    >
+      <GameIcon name="footprints" :size="14" class="shrink-0 text-cinnabar" />
+      <span class="min-w-0 flex-1">
+        <span class="block font-kai text-[14px] tracking-wider text-ink">{{ firstStep.text }}</span>
+        <span class="mt-0.5 block text-[10px] leading-relaxed text-ink-faint">{{ firstStep.hint }}</span>
+      </span>
+      <span class="shrink-0 text-[11px] text-cinnabar">{{ firstStep.label }} →</span>
+    </RouterLink>
+
     <!-- Phase 29 修行目标:只给方向,不替玩家做决定(goal.ts 此前零展示,接线摆上主页) -->
     <div v-if="currentGoal" class="card-ink flex items-center gap-3 px-4 py-3">
       <GameIcon name="scroll" :size="14" class="shrink-0 text-jade" />
@@ -113,7 +130,12 @@
           <p class="flex items-center justify-between">
             <span class="font-kai text-[13px] tracking-wider text-ink">{{ mainQuest.name }}</span>
             <span class="flex shrink-0 items-center gap-1.5">
-              <span v-if="mainProgress" class="tabular text-[10px] text-azure">{{ mainProgress }}</span>
+              <span
+                v-if="mainProgress"
+                class="tabular text-[10px]"
+                :class="mainProgress.done ? 'text-jade' : 'text-azure'"
+                >{{ mainProgress.text }}</span
+              >
               <span class="text-[10px] text-ink-faint">主线 {{ quests.mainIdx + 1 }}/{{ MAIN_QUESTS.length }}</span>
               <!-- 拿得准去哪办,就给一枚走往的箭头;拿不准的不摆,免得摆着指错路 -->
               <RouterLink
@@ -195,6 +217,8 @@
   import { formatCountdown } from '@/utils/format'
   import { weatherEffectText } from '@/ui/weatherText'
   import { generateCurrentGoal, type Goal } from '@/core/goal'
+  import { currentMainQuestProgress } from '@/core/questProgress'
+  import { currentFirstStep } from '@/core/firstStep'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import CultivationOrb from '@/components/common/CultivationOrb.vue'
@@ -232,6 +256,8 @@
 
   // Phase 29 修行目标:只给方向,不替玩家做决定(goal.ts 此前零展示,接线摆上主页)
   const currentGoal = computed<Goal | null>(() => generateCurrentGoal(player))
+  /** 新手第一步(开局这一段才有;给不给完全由存档推出来,没有「已看过」字段) */
+  const firstStep = computed(() => currentFirstStep())
 
   const statusText = computed(() =>
     homeStatusText({
@@ -253,13 +279,8 @@
   const mainQuest = computed(() => MAIN_QUESTS[quests.mainIdx])
   /** 主线的「去办」落点:拿得准才给箭头(判据见 questNav) */
   const mainNav = computed(() => (mainQuest.value ? mainQuestNav(mainQuest.value.cond) : null))
-  /** 计数型主线的当刻进度:里程碑(境界/custom)不给数字,别拿它当计数器 */
-  const mainProgress = computed(() => {
-    const c = mainQuest.value?.cond
-    if (c?.type !== 'counter') return null
-    const cur = Math.min(c.value, quests.counter(c.key))
-    return `${cur}/${c.value}`
-  })
+  /** 主线进度读数(与发赏判定同源):计数型报 X/Y,境界与层数里程碑点名目标 */
+  const mainProgress = computed(() => currentMainQuestProgress())
 
   const dailyRows = computed(() =>
     DAILY_TASKS.map(t => ({

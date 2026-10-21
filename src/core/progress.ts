@@ -73,7 +73,14 @@ export function grantReward(bundle: RewardBundle, quiet = false): string[] {
   return lines
 }
 
-function evalCond(cond: AchvCond): boolean {
+/**
+ * 任务 / 成就条件的唯一判定。
+ *
+ * 导出的理由只有一个:界面上的进度读数必须与发赏判定同源。此前首页只给
+ * counter 型主线报进度,境界与 `realm_<major>_<sub>` 型里程碑只有一句说明;
+ * 若界面另写一套比较,就会出现「卡面说已至、领赏时却不算」的两本账。
+ */
+export function evalCond(cond: AchvCond): boolean {
   const quests = useQuestsStore()
   const player = usePlayerStore()
   switch (cond.type) {
