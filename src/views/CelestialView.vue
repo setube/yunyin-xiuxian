@@ -630,49 +630,7 @@
     </BaseModal>
 
     <!-- 战报(远征终局 / 试炼 / 变数) -->
-    <BaseModal :open="expedition !== null" :title="expedition?.title ?? ''" @close="expedition = null">
-      <template v-if="expedition">
-        <p class="font-kai text-[13px] tracking-wider" :class="expedition.cleared ? 'text-jade' : 'text-cinnabar'">
-          {{ expedition.markText }}
-        </p>
-
-        <!-- 战斗过程:与历练同样逐回合播放 -->
-        <div class="mt-2">
-          <GauntletPanel :rows="expedition.rows" :player-name="player.name" />
-        </div>
-
-        <!-- 逐场摘要:场次多时限高滚动,不把弹窗撑到 82vh 上限 -->
-        <div class="mt-2 max-h-40 space-y-1 overflow-y-auto">
-          <p
-            v-for="(row, i) in expedition.rows"
-            :key="i"
-            class="flex items-center justify-between rounded bg-paper-deep/70 px-3 py-1.5 text-[12px]"
-          >
-            <span :class="row.win ? 'text-ink-soft' : 'text-cinnabar'">
-              第{{ i + 1 }}战 · {{ row.foeName }} · {{ row.win ? '胜' : '负' }}
-            </span>
-            <span class="tabular text-[11px] text-ink-faint">{{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%</span>
-          </p>
-        </div>
-        <!--
-          输也要输得明白:敌人一侧的判定(道之理解 / 境界压制)与战前预估同源,
-          连同"怎么办"一并写在这里 —— 战报不是判决书,是下一次出发的依据。
-        -->
-        <div v-if="expedition.judgementLines?.length" class="mt-2 rounded-md bg-cinnabar/5 px-3 py-2">
-          <p class="font-kai text-[11px] tracking-widest text-cinnabar">此战之判</p>
-          <p v-for="(line, i) in expedition.judgementLines" :key="i" class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
-            {{ line }}
-          </p>
-        </div>
-        <p v-if="expedition.reward > 0" class="mt-2 text-[12px] text-gold-ink tabular">
-          <GameIcon name="sparkles" :size="12" class="inline" />
-          道源 +{{ expedition.reward }}
-        </p>
-      </template>
-      <template #footer>
-        <button class="btn-seal w-full" @click="expedition = null">收 卷</button>
-      </template>
-    </BaseModal>
+    <BattleReportDialog :report="expedition" :player-name="player.name" @close="expedition = null" />
 
     <!-- 天道熔炉 -->
     <BaseModal :open="furnaceOpen" title="天道熔炉" @close="furnaceOpen = false">
@@ -907,7 +865,6 @@
   } from '@/core/expedition'
   import { detectBuild } from '@/core/buildDetect'
   import { foeOriginLines } from '@/core/battleAnalysis'
-  import type { CombatantSnap } from '@/types'
   import { BUILD_PROFILES } from '@/core/buildSim'
   import { swordPurity, SWORD_PURITY_MAX_LAYERS } from '@/core/daoDepth'
   import {
@@ -922,9 +879,8 @@
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
-  import GauntletPanel from '@/components/celestial/GauntletPanel.vue'
+  import BattleReportDialog, { type ReportView } from '@/components/celestial/BattleReportDialog.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
-  import GameIcon from '@/components/common/GameIcon.vue'
   import {
     daoSourceDialog,
     daoFruitDialog,
@@ -1098,16 +1054,7 @@
   const nodePreviews = computed(() => (currentNodes.value ? currentNodes.value.map(n => previewFight(n.foe, n)) : []))
   const guardianPreview = computed(() => (run.value?.layer === EXPEDITION_GUARDIAN_LAYER && runWorld.value ? previewFight(runWorld.value.guardian) : null))
 
-  // ---- 战报弹窗(统一形状) ----
-  interface ReportView {
-    title: string
-    cleared: boolean
-    markText: string
-    /** 逐场摘要;`foe` 带着那一场敌人的加成来源(旧记录可能没有) */
-    rows: { foeName: string; win: boolean; rounds: number; hpLeftPct: number; foe?: CombatantSnap }[]
-    reward: number
-    judgementLines?: string[]
-  }
+  // ---- 战报弹窗(形状见 BattleReportDialog 导出的 ReportView) ----
   const expedition = ref<ReportView | null>(null)
 
   /**
