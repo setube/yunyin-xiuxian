@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 302,
+  "round": 304,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T16:41:51+00:00",
+  "updated_at": "2026-10-21T17:01:13+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -21548,6 +21548,209 @@
       "title": "悬赏交不齐写出实际差量",
       "commit": "2363db2",
       "description": "订单投影新增 shortText,四类订单按钮与不足回执同读。"
+    },
+    "COMP-039": {
+      "id": "COMP-039",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T17:00:25+00:00",
+      "updated_at": "2026-10-21T17:00:25+00:00",
+      "touched_round": 304,
+      "name": "悟道兑换判据",
+      "path": "src/core/wudaoExchange.ts"
+    },
+    "ISS-957": {
+      "id": "ISS-957",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:00:31+00:00",
+      "updated_at": "2026-10-21T17:01:13+00:00",
+      "touched_round": 304,
+      "title": "悟道兑换按钮不判灵石余额",
+      "description": "GongfaSection 兑换钮只读境界与当日限额，付不起灵石仍亮；失败回执把灵石不足与今日兑满糊成一句。",
+      "severity": 0.6
+    },
+    "HYP-154": {
+      "id": "HYP-154",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T17:00:31+00:00",
+      "updated_at": "2026-10-21T17:00:31+00:00",
+      "touched_round": 304,
+      "title": "兑换判据未覆盖灵石余额",
+      "confidence": 0.98
+    },
+    "EV-968": {
+      "id": "EV-968",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T17:00:31+00:00",
+      "updated_at": "2026-10-21T17:00:31+00:00",
+      "touched_round": 304,
+      "source": "src/stores/player.ts:1306",
+      "description": "canExchangeWudao 仅判 major 与 wudaoExchangeToday，不判 resources.spiritStone。",
+      "confidence": 1
+    },
+    "TASK-400": {
+      "id": "TASK-400",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:00:31+00:00",
+      "updated_at": "2026-10-21T17:01:13+00:00",
+      "touched_round": 304,
+      "title": "悟道兑换前置置灰并分因写出石差",
+      "description": "新增纯判据 wudaoExchangeState，按钮、服务与回执同读；境界、当日兑满、灵石差分开报。",
+      "category": "correctness",
+      "severity": 0.6,
+      "confidence": 0.98,
+      "effort": 1.5,
+      "unlock_factor": 1
+    },
+    "ISS-958": {
+      "id": "ISS-958",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:00:45+00:00",
+      "updated_at": "2026-10-21T17:01:13+00:00",
+      "touched_round": 304,
+      "title": "突破备药付不起只写笼统灵石未足",
+      "description": "BreakthroughCard 已能判余额但按钮与 toast 都只写未足；玩家仍需拿药价减余额。",
+      "severity": 0.52
+    },
+    "HYP-155": {
+      "id": "HYP-155",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T17:00:45+00:00",
+      "updated_at": "2026-10-21T17:00:45+00:00",
+      "touched_round": 304,
+      "title": "突破准备没有共享石差判据",
+      "confidence": 0.98
+    },
+    "EV-969": {
+      "id": "EV-969",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T17:00:45+00:00",
+      "updated_at": "2026-10-21T17:00:45+00:00",
+      "touched_round": 304,
+      "source": "src/core/earlyGameService.ts:162",
+      "description": "prepareBreakthrough 灵石不足直接 false，界面只能另算余额且没有差额。",
+      "confidence": 1
+    },
+    "TASK-401": {
+      "id": "TASK-401",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:00:49+00:00",
+      "updated_at": "2026-10-21T17:01:13+00:00",
+      "touched_round": 304,
+      "title": "突破备药按钮与回执写出实际石差",
+      "description": "新增 breakthroughPrepShortfall，按钮禁用、标签与 toast 同读；支付改单次 spendStone 原子扣款。",
+      "category": "correctness",
+      "severity": 0.52,
+      "confidence": 0.98,
+      "effort": 1.5,
+      "unlock_factor": 1
+    },
+    "COMP-040": {
+      "id": "COMP-040",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T17:00:55+00:00",
+      "updated_at": "2026-10-21T17:00:55+00:00",
+      "touched_round": 304,
+      "name": "灵气疗伤视图",
+      "path": "src/core/qiRepair.ts"
+    },
+    "ISS-959": {
+      "id": "ISS-959",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:00:55+00:00",
+      "updated_at": "2026-10-21T17:01:13+00:00",
+      "touched_round": 304,
+      "title": "疗伤缺气只报总需求不报尚差",
+      "description": "qiRepairView 只有 cost 与 affordable，repairWithQi 缺气时只报总需求，玩家仍要自己减余额。",
+      "severity": 0.45
+    },
+    "HYP-156": {
+      "id": "HYP-156",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T17:00:55+00:00",
+      "updated_at": "2026-10-21T17:00:55+00:00",
+      "touched_round": 304,
+      "title": "疗伤视图缺少差额字段",
+      "confidence": 0.98
+    },
+    "EV-970": {
+      "id": "EV-970",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T17:00:55+00:00",
+      "updated_at": "2026-10-21T17:00:55+00:00",
+      "touched_round": 304,
+      "source": "src/core/qiRepair.ts:42",
+      "description": "qiRepairView 返回 injured/cost/affordable，无 shortfall；失败 toast 传 formatNum(cost)。",
+      "confidence": 1
+    },
+    "TASK-402": {
+      "id": "TASK-402",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:00:55+00:00",
+      "updated_at": "2026-10-21T17:01:13+00:00",
+      "touched_round": 304,
+      "title": "疗伤按钮与回执写出实际气差",
+      "description": "QiRepairView 增加 shortfall，按钮文案与 toast 同读；补行为与静态守卫。",
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 0.98,
+      "effort": 1.2,
+      "unlock_factor": 1
+    },
+    "ISS-960": {
+      "id": "ISS-960",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:01:01+00:00",
+      "updated_at": "2026-10-21T17:01:13+00:00",
+      "touched_round": 304,
+      "title": "器魂入炉文案重复计算道源缺口",
+      "description": "SoulsView 已算出 refineShort，按钮却再调 daoSourceShortText 重算同一份缺口。",
+      "severity": 0.32
+    },
+    "TASK-403": {
+      "id": "TASK-403",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T17:01:07+00:00",
+      "updated_at": "2026-10-21T17:01:13+00:00",
+      "touched_round": 304,
+      "title": "器魂入炉复用已算好的拒因",
+      "description": "SoulsView 按钮直接用 refineShort.reason，删掉第二次 daoSourceShortText 调用。",
+      "category": "maintainability",
+      "severity": 0.32,
+      "confidence": 0.98,
+      "effort": 1,
+      "unlock_factor": 1
     }
   },
   "edges": [
@@ -31931,6 +32134,60 @@
       "to": "ISS-956",
       "type": "resolves",
       "created_at": "2026-10-21T16:41:28+00:00"
+    },
+    {
+      "from": "EV-968",
+      "to": "HYP-154",
+      "type": "validates",
+      "created_at": "2026-10-21T17:00:35+00:00"
+    },
+    {
+      "from": "TASK-400",
+      "to": "ISS-957",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:00:39+00:00"
+    },
+    {
+      "from": "ISS-957",
+      "to": "COMP-039",
+      "type": "located_in",
+      "created_at": "2026-10-21T17:00:39+00:00"
+    },
+    {
+      "from": "EV-969",
+      "to": "HYP-155",
+      "type": "validates",
+      "created_at": "2026-10-21T17:00:49+00:00"
+    },
+    {
+      "from": "TASK-401",
+      "to": "ISS-958",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:00:49+00:00"
+    },
+    {
+      "from": "EV-970",
+      "to": "HYP-156",
+      "type": "validates",
+      "created_at": "2026-10-21T17:01:01+00:00"
+    },
+    {
+      "from": "TASK-402",
+      "to": "ISS-959",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:01:01+00:00"
+    },
+    {
+      "from": "ISS-959",
+      "to": "COMP-040",
+      "type": "located_in",
+      "created_at": "2026-10-21T17:01:01+00:00"
+    },
+    {
+      "from": "TASK-403",
+      "to": "ISS-960",
+      "type": "addresses",
+      "created_at": "2026-10-21T17:01:07+00:00"
     }
   ]
 }
