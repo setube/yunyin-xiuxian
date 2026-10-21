@@ -36,8 +36,8 @@ export function veinShortToast(): string {
   return '灵石未足,难注此脉'
 }
 
-export function veinSwitchShortToast(): string {
-  return '灵石未足,迁脉非小事'
+export function veinSwitchShortToast(stoneText?: string): string {
+  return stoneText === undefined ? '灵石未足,迁脉非小事' : `灵石尚差 ${stoneText},迁脉非小事`
 }
 
 export function veinSwitchDoneToast(name: string): string {

@@ -10,7 +10,7 @@ import { VEIN_MAIN_CAPACITY, VEIN_POINT_STONE, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACIT
 import { stoneByTier } from './formulas'
 import { playerTier } from './progress'
 import { formatGN } from '@/utils/format'
-import { gnZero, mulN, ratio } from '@/utils/gnum'
+import { gnZero, mulN, ratio, subClamp } from '@/utils/gnum'
 import { playSfx } from './audio'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
@@ -46,6 +46,16 @@ export function veinPointCost(): GNum {
 /** 主脉迁移费 */
 export function veinSwitchCost(): GNum {
   return stoneByTier(playerTier(), VEIN_POINT_STONE * 20)
+}
+
+/**
+ * 改立主脉还差多少灵石:付得起为 0。
+ * 入口、确认钮与服务拒因同读这一处,余额不足时不再只写笼统「未足」。
+ */
+export function veinSwitchShortfall(): GNum {
+  const cost = veinSwitchCost()
+  const resources = useResourcesStore()
+  return resources.hasStone(cost) ? gnZero() : subClamp(cost, resources.spiritStone)
 }
 
 /**
@@ -146,9 +156,10 @@ export function switchMainVein(id: VeinId): boolean {
   const ui = useUiStore()
   if (!veinsUnlocked() || dongfu.veinMain === id) return false
   const cost = veinSwitchCost()
-  if (!resources.hasStone(cost)) {
+  const gap = veinSwitchShortfall()
+  if (gap.m > 0) {
     playSfx('warn')
-    ui.toast(veinSwitchShortToast(), 'warn')
+    ui.toast(veinSwitchShortToast(formatGN(gap)), 'warn')
     return false
   }
   resources.spendStone(cost)

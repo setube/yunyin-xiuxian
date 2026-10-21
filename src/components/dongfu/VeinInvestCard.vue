@@ -71,9 +71,17 @@
             <button
               v-if="canSwitchTo(v.id)"
               class="btn-ghost mt-0.5 !px-2.5 !py-2 !text-[10px]"
+              :disabled="switchShort"
+              :aria-label="switchLabel(v.id)"
+              :title="switchShort ? `灵石尚差 ${formatGN(switchGap)}` : undefined"
               @click="switchArm = v.id"
             >
-              改立主脉 · <span class="whitespace-nowrap">{{ formatGN(switchCost) }} 石</span>
+              <template v-if="switchShort">
+                改立主脉 · <span class="whitespace-nowrap">尚差 {{ formatGN(switchGap) }}</span>
+              </template>
+              <template v-else>
+                改立主脉 · <span class="whitespace-nowrap">{{ formatGN(switchCost) }} 石</span>
+              </template>
             </button>
           </div>
         </div>
@@ -103,13 +111,23 @@
           <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
             改立「<span class="font-kai text-[11px] text-cinnabar">{{ v.name }}</span>」为主脉,耗灵石
             <span class="tabular text-ink">{{ formatGN(switchCost) }}</span>
+            <span v-if="switchShort" class="mt-0.5 block text-[9px] leading-relaxed text-cinnabar tabular">
+              灵石尚差 {{ formatGN(switchGap) }}
+            </span>
             <span v-if="switchLoss" class="mt-0.5 block text-[9px] leading-relaxed text-gold-ink">
               「{{ switchLoss.oldName }}」现有 {{ switchLoss.points }} 点,化为副脉后超出 {{ VEIN_SIDE_CAP }} 点的 {{ switchLoss.lost }} 点不再可添(已有效果不减)
             </span>
           </p>
           <div class="flex shrink-0 gap-1">
             <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="switchArm = null">再想想</button>
-            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="confirmSwitch(v.id)">改 立</button>
+            <button
+              class="btn-seal !px-2.5 !py-2 !text-[11px]"
+              :disabled="switchShort"
+              :title="switchShort ? `灵石尚差 ${formatGN(switchGap)}` : undefined"
+              @click="confirmSwitch(v.id)"
+            >
+              改 立
+            </button>
           </div>
         </div>
       </div>
@@ -138,7 +156,7 @@
   import { useResourcesStore } from '@/stores/resources'
   import { VEINS, veinDef, type VeinId } from '@/data/veins'
   import { veinEffectText } from '@/ui/veinText'
-  import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinSwitchCost, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
+  import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinSwitchCost, veinSwitchShortfall, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
   import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { formatGN } from '@/utils/format'
 
@@ -160,6 +178,9 @@
 
   const investCost = computed(() => veinPointCost())
   const switchCost = computed(() => veinSwitchCost())
+  /** 改立还差多少灵石:付得起为 0,与入口、确认钮和服务拒因同源 */
+  const switchGap = computed(() => veinSwitchShortfall())
+  const switchShort = computed(() => switchGap.value.m > 0)
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
   const veinTotal = computed(() => dongfu.veinTotal)
 
@@ -225,6 +246,11 @@
     if (!veinsUnlocked.value || isMain(veinId)) return false
     // 尚无主脉时首投即成主脉,不必单独给"立主脉"入口
     return dongfu.veinMain !== null
+  }
+
+  function switchLabel(veinId: VeinId): string {
+    const base = `改立${veinDef(veinId).name}为主脉`
+    return switchShort.value ? `${base},灵石尚差 ${formatGN(switchGap.value)}` : base
   }
 
   /** 四条脉的连投计划:一口气能注几点、花多少,行只用量,不算价 */

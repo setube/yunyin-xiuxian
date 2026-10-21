@@ -6,10 +6,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { gn, toNum } from '@/utils/gnum'
-import { investVein, switchMainVein, veinCap, veinInvestPlan, investVeinBatch, veinPointCost, veinSwitchCost } from './veinService'
+import { investVein, switchMainVein, veinCap, veinInvestPlan, investVeinBatch, veinPointCost, veinSwitchCost, veinSwitchShortfall } from './veinService'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useResourcesStore } from '@/stores/resources'
+import { useUiStore } from '@/stores/ui'
 
 describe('灵脉投资(Phase 30.3)', () => {
   beforeEach(() => {
@@ -129,6 +130,8 @@ describe('灵脉投资(Phase 30.3)', () => {
     expect(switchMainVein('craft')).toBe(false)
     expect(d.veinMain).toBe('gather')
     expect(toNum(useResourcesStore().spiritStone)).toBe(cost - 1)
+    expect(toNum(veinSwitchShortfall())).toBeCloseTo(1, 9)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('灵石尚差 1')
   })
 
 })

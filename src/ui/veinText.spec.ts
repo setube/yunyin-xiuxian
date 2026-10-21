@@ -50,6 +50,7 @@ describe('灵脉投点提示 · 文言仍报清主副与灵石', () => {
     expect(veinShortToast()).toContain('灵石')
     expect(veinShortToast()).not.toContain('不足')
     expect(veinSwitchShortToast()).toContain('迁脉')
+    expect(veinSwitchShortToast('12')).toContain('灵石尚差 12')
     expect(veinSwitchDoneToast('聚灵')).toBe('主脉改立「聚灵」')
   })
 })

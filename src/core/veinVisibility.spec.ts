@@ -121,4 +121,14 @@ describe('灵脉可见性 · 展示层覆盖全部通道', () => {
       expect(ids.has(key as VeinId), `专用通道表里的 ${key} 已不在 VEINS 中`).toBe(true)
     }
   })
+
+  it('改立主脉的入口、确认钮与服务拒因同读一份石差', () => {
+    expect(CARD_SRC, '改立入口没有读 veinSwitchShortfall').toContain('veinSwitchShortfall(')
+    expect(
+      (CARD_SRC.match(/:disabled="switchShort"/g) ?? []).length,
+      '改立入口与确认钮付不起时都应置灰'
+    ).toBe(2)
+    expect(CARD_SRC, '确认钮付不起时也应置灰').toMatch(/:disabled="switchShort"[\s\S]*?改 立/)
+    expect(CARD_SRC, '付不起时应就地写出石差').toContain('灵石尚差 {{ formatGN(switchGap) }}')
+  })
 })
