@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 326,
+  "round": 327,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T00:06:09+00:00",
+  "updated_at": "2026-10-22T00:32:26+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -24090,7 +24090,7 @@
       "version": 1,
       "created_at": "2026-10-22T00:05:41+00:00",
       "updated_at": "2026-10-22T00:05:41+00:00",
-      "touched_round": 326,
+      "touched_round": 327,
       "confidence": 0.95,
       "title": "遥测与终局公共写入仍默认调用方可信",
       "detail": "高频遥测与终局日号/纪录的公共入口此前只挡非有限数,未挡负值、空串与坏形状,坏调用可直接污染持久化状态。"
@@ -24116,6 +24116,192 @@
       "touched_round": 326,
       "summary": "终局日号只认有限非负整数,极限纪录只保留正值",
       "commit": "d044cb3"
+    },
+    "ISS-1004": {
+      "id": "ISS-1004",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T00:20:49+00:00",
+      "updated_at": "2026-10-22T00:28:21+00:00",
+      "touched_round": 327,
+      "summary": "悟道与洞府选项下标只挡上界,负数/NaN 会解引用 undefined 并中断结算",
+      "severity": 0.65,
+      "confidence": 0.95,
+      "effort": 1
+    },
+    "COMP-068": {
+      "id": "COMP-068",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:20:49+00:00",
+      "updated_at": "2026-10-22T00:20:49+00:00",
+      "touched_round": 327,
+      "summary": "悟道顿悟/洞府巡游事件系统(earlyGameService + 两个弹窗组件)",
+      "path": "src/core/earlyGameService.ts"
+    },
+    "TASK-449": {
+      "id": "TASK-449",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T00:20:54+00:00",
+      "updated_at": "2026-10-22T00:28:26+00:00",
+      "touched_round": 327,
+      "category": "correctness",
+      "severity": 0.65,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "机缘与巡游选项下标挡坏值",
+      "detail": "chooseEnlightenment/chooseCaveOption 只挡上界;负数、NaN 等非整数下标会取到 undefined,新增行为测试并以旧守卫注入证明会红。"
+    },
+    "ISS-1005": {
+      "id": "ISS-1005",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T00:22:01+00:00",
+      "updated_at": "2026-10-22T00:28:21+00:00",
+      "touched_round": 327,
+      "summary": "lore.sanitize 只挡非有限 studyFrac 与 truthy seeded:负数钻研量可卡住被动进度,字符串 true 会跳过播种",
+      "severity": 0.5,
+      "confidence": 0.95,
+      "effort": 1
+    },
+    "COMP-069": {
+      "id": "COMP-069",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:22:01+00:00",
+      "updated_at": "2026-10-22T00:22:01+00:00",
+      "touched_round": 327,
+      "summary": "藏经阁钻研/认知系统(loreService.ts + lore store)",
+      "path": "src/stores/lore.ts"
+    },
+    "TASK-450": {
+      "id": "TASK-450",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T00:22:08+00:00",
+      "updated_at": "2026-10-22T00:28:26+00:00",
+      "touched_round": 327,
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "藏经阁钻研量与播种标记读档收口",
+      "detail": "sanitize 把 studyFrac 夹到非负有限值,seeded 归一为布尔;行为测试锁住负钻研量可恢复进度与字符串 true 仍会播种。"
+    },
+    "ISS-1006": {
+      "id": "ISS-1006",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T00:26:10+00:00",
+      "updated_at": "2026-10-22T00:28:21+00:00",
+      "touched_round": 327,
+      "summary": "test:report 的 game.spec 子串同时截住 stores/data endgame.spec,分类表还藏着 8 组重复命中与未登记文件",
+      "severity": 0.45,
+      "confidence": 1,
+      "effort": 1
+    },
+    "COMP-070": {
+      "id": "COMP-070",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:26:10+00:00",
+      "updated_at": "2026-10-22T00:26:10+00:00",
+      "touched_round": 327,
+      "summary": "分类测试报告映射与门禁接线",
+      "path": "scripts/test-report.mjs"
+    },
+    "TASK-451": {
+      "id": "TASK-451",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T00:26:15+00:00",
+      "updated_at": "2026-10-22T00:28:26+00:00",
+      "touched_round": 327,
+      "category": "test-quality",
+      "severity": 0.45,
+      "confidence": 1,
+      "effort": 1,
+      "title": "测试分类唯一映射并归入终局",
+      "detail": "分类表抽成可导入模块,game.spec 收窄到 stores/game.spec,endgame.spec 归入 Celestial;gateWiring 逐个真实 spec 验证恰好命中一类。"
+    },
+    "EV-998": {
+      "id": "EV-998",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:28:16+00:00",
+      "updated_at": "2026-10-22T00:28:16+00:00",
+      "touched_round": 327,
+      "summary": "选项下标行为证据",
+      "source": "src/core/earlyGameService.spec.ts 2 条坏下标测试;回旧守卫 2/2 转红,恢复后 28/28 定向通过",
+      "confidence": 1.0
+    },
+    "EV-999": {
+      "id": "EV-999",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:28:16+00:00",
+      "updated_at": "2026-10-22T00:28:16+00:00",
+      "touched_round": 327,
+      "summary": "藏经阁读档值域行为证据",
+      "source": "src/stores/lore.spec.ts 1 条 sanitize 测试;回旧写法转红,恢复后 lore 与 loreService 26/26 定向通过",
+      "confidence": 1.0
+    },
+    "EV-1000": {
+      "id": "EV-1000",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:28:16+00:00",
+      "updated_at": "2026-10-22T00:28:16+00:00",
+      "touched_round": 327,
+      "summary": "测试分类唯一映射证据",
+      "source": "src/core/gateWiring.spec.ts 2 条分类测试;宽 game.spec 注入后唯一性转红,恢复后 313 spec 恰好一类、test:report 3507 过 / 0 败",
+      "confidence": 1.0
+    },
+    "CHG-549": {
+      "id": "CHG-549",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-22T00:28:31+00:00",
+      "updated_at": "2026-10-22T00:31:59+00:00",
+      "touched_round": 327,
+      "summary": "悟道与洞府选项下标只认整数且落在选项范围内,坏下标不结算也不清事件",
+      "commit": "6752afb"
+    },
+    "CHG-550": {
+      "id": "CHG-550",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-22T00:28:31+00:00",
+      "updated_at": "2026-10-22T00:32:13+00:00",
+      "touched_round": 327,
+      "summary": "lore.sanitize 把负钻研量归零并把 seeded 归一为布尔 true",
+      "commit": "ed1e1f5"
+    },
+    "CHG-551": {
+      "id": "CHG-551",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-22T00:28:31+00:00",
+      "updated_at": "2026-10-22T00:32:26+00:00",
+      "touched_round": 327,
+      "summary": "测试分类抽成唯一映射模块,gateWiring 校验每个 spec 恰好命中一类",
+      "commit": "6a3b8c4"
     }
   },
   "edges": [
@@ -35591,6 +35777,96 @@
       "to": "TASK-448",
       "type": "implements",
       "created_at": "2026-10-22T00:05:57+00:00"
+    },
+    {
+      "from": "TASK-449",
+      "to": "ISS-1004",
+      "type": "addresses",
+      "created_at": "2026-10-22T00:20:54+00:00"
+    },
+    {
+      "from": "ISS-1004",
+      "to": "COMP-068",
+      "type": "located_in",
+      "created_at": "2026-10-22T00:20:54+00:00"
+    },
+    {
+      "from": "TASK-450",
+      "to": "ISS-1005",
+      "type": "addresses",
+      "created_at": "2026-10-22T00:22:08+00:00"
+    },
+    {
+      "from": "ISS-1005",
+      "to": "COMP-069",
+      "type": "located_in",
+      "created_at": "2026-10-22T00:22:08+00:00"
+    },
+    {
+      "from": "TASK-451",
+      "to": "ISS-1006",
+      "type": "addresses",
+      "created_at": "2026-10-22T00:26:15+00:00"
+    },
+    {
+      "from": "ISS-1006",
+      "to": "COMP-070",
+      "type": "located_in",
+      "created_at": "2026-10-22T00:26:15+00:00"
+    },
+    {
+      "from": "EV-998",
+      "to": "HYP-165",
+      "type": "validates",
+      "created_at": "2026-10-22T00:28:26+00:00"
+    },
+    {
+      "from": "EV-999",
+      "to": "HYP-165",
+      "type": "validates",
+      "created_at": "2026-10-22T00:28:26+00:00"
+    },
+    {
+      "from": "EV-1000",
+      "to": "HYP-165",
+      "type": "validates",
+      "created_at": "2026-10-22T00:28:26+00:00"
+    },
+    {
+      "from": "CHG-549",
+      "to": "TASK-449",
+      "type": "implements",
+      "created_at": "2026-10-22T00:28:38+00:00"
+    },
+    {
+      "from": "CHG-549",
+      "to": "ISS-1004",
+      "type": "resolves",
+      "created_at": "2026-10-22T00:28:38+00:00"
+    },
+    {
+      "from": "CHG-550",
+      "to": "TASK-450",
+      "type": "implements",
+      "created_at": "2026-10-22T00:28:38+00:00"
+    },
+    {
+      "from": "CHG-550",
+      "to": "ISS-1005",
+      "type": "resolves",
+      "created_at": "2026-10-22T00:28:38+00:00"
+    },
+    {
+      "from": "CHG-551",
+      "to": "TASK-451",
+      "type": "implements",
+      "created_at": "2026-10-22T00:28:38+00:00"
+    },
+    {
+      "from": "CHG-551",
+      "to": "ISS-1006",
+      "type": "resolves",
+      "created_at": "2026-10-22T00:28:38+00:00"
     }
   ]
 }
