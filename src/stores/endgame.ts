@@ -401,7 +401,9 @@ export const useEndgameStore = defineStore(
       }
       voidWorld.value = sanitizeVoidWorld(voidWorld.value)
       dailyDoneDay.value =
-        typeof dailyDoneDay.value === 'number' && Number.isFinite(dailyDoneDay.value) ? dailyDoneDay.value : null
+        typeof dailyDoneDay.value === 'number' && Number.isFinite(dailyDoneDay.value) && dailyDoneDay.value >= 0
+          ? Math.floor(dailyDoneDay.value)
+          : null
       /**
        * 修行节点的 life/at 是直接报给玩家的读数,坏数会写出「第 NaN 世」;
        * 按非负整数修平。认不出的 id 则清掉:节点页只按 MILESTONE_DEFS 取名,
@@ -435,8 +437,11 @@ export const useEndgameStore = defineStore(
       )) {
         if (!recordDef(id)) continue
         const r = raw as Partial<{ value: number; life: number; note: string }>
+        const value = asFiniteNumber(r.value, 0)
+        // 极限纪录的四种「最好成绩」都以正数为语义:0 回合的破界、0 道源的赏格不是一场真成绩。
+        if (value <= 0) continue
         fixedRecords[id] = {
-          value: asFiniteNumber(r.value, 0),
+          value,
           life: Math.floor(asFiniteNumber(r.life, 0, 0)),
           note: typeof r.note === 'string' ? r.note : ''
         }
@@ -602,7 +607,7 @@ export const useEndgameStore = defineStore(
     }
 
     function markDailyDone(day: number): void {
-      if (!Number.isFinite(day)) return
+      if (!Number.isFinite(day) || day < 0) return
       dailyDoneDay.value = Math.floor(day)
     }
 
@@ -619,6 +624,7 @@ export const useEndgameStore = defineStore(
       const def = recordDef(id)
       if (!def || def.better !== better) return false
       if (!Number.isFinite(value) || !Number.isFinite(life) || life < 1 || typeof note !== 'string') return false
+      if (value <= 0) return false
       const prev = records.value[id]
       if (prev && (better === 'min' ? value >= prev.value : value <= prev.value)) return false
       records.value = { ...records.value, [id]: { value, life: Math.floor(life), note } }

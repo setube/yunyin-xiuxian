@@ -449,8 +449,34 @@ describe('终局公共写入 · 只认目录 id 与合法值', () => {
     e.markDailyDone(Number.NaN)
     e.markDailyDone(Number.POSITIVE_INFINITY)
     expect(e.dailyDoneDay).toBeNull()
+    e.markDailyDone(-1)
+    expect(e.dailyDoneDay, '负数日号不是任何一天,不得关闸').toBeNull()
     e.markDailyDone(20261022.8)
     expect(e.dailyDoneDay).toBe(20261022)
+  })
+
+  it('读档时坏日号与坏纪录按同一语义收口,不留下永不匹配的日号或 0 回合纪录', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      dailyDoneDay: 20261022.8,
+      records: {
+        fastest_world: { value: 0, life: 2, note: '赤炎天' },
+        highest_pact: { value: 2.5, life: 2, note: '赤炎天·血契' }
+      } as never
+    })
+    e.sanitize()
+    expect(e.dailyDoneDay, '日号按写入侧同一把尺取整').toBe(20261022)
+    expect(e.records.fastest_world, '零回合不是一场破界').toBeUndefined()
+    expect(e.records.highest_pact).toEqual({ value: 2.5, life: 2, note: '赤炎天·血契' })
+  })
+
+  it('最快破界只收正回合,0 与负数不得占住纪录', () => {
+    const e = useEndgameStore()
+    expect(e.updateRecord('fastest_world', 0, 1, '赤炎天', 'min')).toBe(false)
+    expect(e.updateRecord('fastest_world', -3, 1, '赤炎天', 'min')).toBe(false)
+    expect(e.records.fastest_world).toBeUndefined()
+    expect(e.updateRecord('fastest_world', 12, 1, '赤炎天', 'min')).toBe(true)
+    expect(e.records.fastest_world).toEqual({ value: 12, life: 1, note: '赤炎天' })
   })
 })
 
@@ -622,12 +648,13 @@ describe('天界终局坏档 · 按 id 认道/认界/认试炼', () => {
     e.$patch({
       records: {
         fastest_world: { value: Number.NaN, life: 2, note: '赤炎天' },
+        highest_pact: { value: 3.5, life: 2, note: '赤炎天·血契' },
         bogus_record: { value: 9, life: 1, note: '无名' }
       } as never
     })
     e.sanitize()
-    expect(e.records, '野键没有卡会读它，留着只会污染存档').toEqual({
-      fastest_world: { value: 0, life: 2, note: '赤炎天' }
+    expect(e.records, '野键与零值纪录不留;有效纪录照旧保留').toEqual({
+      highest_pact: { value: 3.5, life: 2, note: '赤炎天·血契' }
     })
   })
 })
