@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 337,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T14:23:15+00:00",
+  "updated_at": "2026-10-22T14:36:15+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -26521,45 +26521,45 @@
       "id": "CHG-581",
       "type": "change",
       "status": "resolved",
-      "version": 2,
+      "version": 3,
       "created_at": "2026-10-22T14:18:34+00:00",
-      "updated_at": "2026-10-22T14:23:15+00:00",
+      "updated_at": "2026-10-22T14:36:15+00:00",
       "touched_round": 337,
       "title": "法宝数值出口补上总盾上限,战斗与三处文案同源",
-      "commit": "f1b26c8"
+      "commit": "cafb80b"
     },
     "CHG-582": {
       "id": "CHG-582",
       "type": "change",
       "status": "resolved",
-      "version": 2,
+      "version": 3,
       "created_at": "2026-10-22T14:18:34+00:00",
-      "updated_at": "2026-10-22T14:23:15+00:00",
+      "updated_at": "2026-10-22T14:36:15+00:00",
       "touched_round": 337,
       "title": "削弱减益改为取强不取新,与破甲同一条纪律",
-      "commit": "f1b26c8"
+      "commit": "cafb80b"
     },
     "CHG-583": {
       "id": "CHG-583",
       "type": "change",
       "status": "resolved",
-      "version": 2,
+      "version": 3,
       "created_at": "2026-10-22T14:18:34+00:00",
-      "updated_at": "2026-10-22T14:23:15+00:00",
+      "updated_at": "2026-10-22T14:36:15+00:00",
       "touched_round": 337,
       "title": "法宝槽位顺序成为单一事实源,替换分支与忆战快照同受槽位上限约束",
-      "commit": "1684adc"
+      "commit": "464c2b3"
     },
     "CHG-584": {
       "id": "CHG-584",
       "type": "change",
       "status": "resolved",
-      "version": 2,
+      "version": 3,
       "created_at": "2026-10-22T14:18:34+00:00",
-      "updated_at": "2026-10-22T14:23:15+00:00",
+      "updated_at": "2026-10-22T14:36:15+00:00",
       "touched_round": 337,
       "title": "法宝谱提示与图标审计口径收口",
-      "commit": "b5fb1a4"
+      "commit": "a3debe9"
     },
     "HYP-190": {
       "id": "HYP-190",
