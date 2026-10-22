@@ -691,10 +691,16 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
    * 会话不结束、`nextBattleAt` 照旧排在未来 —— 玩家回来看到历练还在跑,
    * 却不知道为什么只结算了一半。秘境与远征都有「仍在途」那句,历练被 cap
    * 截断时偏偏没有,于是这半程成了一个要自己去翻会话面板才明白的哑谜。
+   *
+   * 判据看**会话自己**还剩多久,不拿 `dtSec > capSec` 当代理:离线时长正好等于
+   * 上限(离线 8h、洞府 0 级 cap 8h、行程 16h)时那个代理判假,而这正是「结了一半」
+   * 最不该沉默的一格 —— 实测归来卷轴 13 行,没有一句提到这程还在走。
    */
-  if (adventure.session && dtSec > capSec + 1) {
+  if (adventure.session) {
     const left = Math.max(0, (adventure.session.endsAt - nowMs) / 1000)
-    notes.push(`这一程还没走完 —— 离线只结到 ${formatDuration(capSec)}(洞府上限),尚余 ${formatDuration(left)}`)
+    if (left > 0) {
+      notes.push(`这一程还没走完 —— 离线只结到 ${formatDuration(capSec)}(洞府上限),尚余 ${formatDuration(left)}`)
+    }
   }
 
   if (dtSec >= OFFLINE_MODAL_MIN_SECONDS) {

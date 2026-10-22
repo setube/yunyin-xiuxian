@@ -287,6 +287,48 @@ describe('离线长档(8h / 16h)吃同一把倍率,且不越过洞府封顶', ()
     // 句子里必须给出可核对的剩余数,不能只说一句「还没走完」
     expect(summary.notes.find(n => n.includes('这一程还没走完'))).toMatch(/尚余\s*[1-9]/)
   })
+
+  /**
+   * 离线时长**正好等于**洞府上限时,「还没走完」也得说。
+   *
+   * 判据从前拿 `dtSec > capSec + 1` 当代理,而缺席正好 8h、cap 正好 8h(0 级洞府)
+   * 时它判假 —— 可这一格恰恰是「结了一半」最不该沉默的:16h 满程只走了 8h,
+   * 实测归来卷轴 13 行(法宝、丹药、宿敌、雪耻、镇压……)没有一句提到这程还在走。
+   * 现在判据改看会话自己还剩多久,与离线超没超上限无关。
+   *
+   * 故障注入:把判据改回 `dtSec > capSec + 1` → 本条红。
+   */
+  it('离线正好等于洞府上限(8h):截断的半程仍要在卷轴上说一句', () => {
+    setActivePinia(createPinia())
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    game.markStarted()
+    const awayHours = 8 // 正好等于 0 级洞府的离线上限
+    const started = Date.now() - awayHours * 3600 * 1000
+    game.lastActiveAt = started
+    game.totalPlaySec = 60 * 60
+    player.major = 2
+    player.exp = { m: 0, e: 0 }
+    adventure.setSession({
+      regionId: 'qingyun',
+      mode: 'deepExpedition',
+      startedAt: started,
+      endsAt: started + 16 * 3600 * 1000, // 满程 16h,只走了 8h
+      nextBattleAt: started + EXPLORE_BATTLE_INTERVAL * 1000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: { m: 0, e: 0 },
+      expGain: { m: 0, e: 0 },
+      itemGain: 0
+    })
+    const summary = settleOffline(Date.now())!
+    const note = summary.notes.find(n => n.includes('这一程还没走完'))
+    expect(note, `离线正好等于上限时卷轴只字未提:${summary.notes.join(' | ')}`).toBeTruthy()
+    expect(note).toMatch(/尚余\s*8小时/)
+    expect(useAdventureStore().session, '被 cap 截断的会话不该被清掉').not.toBeNull()
+  })
 })
 
 /**
