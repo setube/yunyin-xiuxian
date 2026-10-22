@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 331,
+  "round": 332,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T02:55:27+00:00",
+  "updated_at": "2026-10-22T03:49:15+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -25169,6 +25169,225 @@
       "commit": "639d3b8",
       "title": "秘境入口与挑战书按钮亮出真实拒因",
       "detail": "秘境入口按在途与代价合判据置灰；挑战书按未验约/远征在途/身在秘境/道源不足逐因投影文案与 title。"
+    },
+    "TASK-464": {
+      "id": "TASK-464",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T03:26:45+00:00",
+      "updated_at": "2026-10-22T03:49:15+00:00",
+      "touched_round": 332,
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 1,
+      "effort": 2,
+      "unlock_factor": 1,
+      "title": "终局在途判据纳入历练",
+      "detail": "endgameBusy 只认远征与秘境，历练挂机时仍可启程远征或开付费终局战斗；扩展共享判据并让入口与核心同源拒绝。"
+    },
+    "TASK-465": {
+      "id": "TASK-465",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T03:26:50+00:00",
+      "updated_at": "2026-10-22T03:49:15+00:00",
+      "touched_round": 332,
+      "category": "correctness",
+      "severity": 0.7,
+      "confidence": 1,
+      "effort": 1,
+      "unlock_factor": 1,
+      "title": "虚界缺世界时清空幽灵远征",
+      "detail": "虚界 worldRun 在 voidWorld 校验前被保留；voidWorld 缺失或坏掉时 resolveWorld 返回 undefined，界面无退路且新远征被拒。"
+    },
+    "TASK-466": {
+      "id": "TASK-466",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T03:26:54+00:00",
+      "updated_at": "2026-10-22T03:49:15+00:00",
+      "touched_round": 332,
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 1,
+      "unlock_factor": 1,
+      "title": "坊市重复丹料格保货重排",
+      "detail": "market.sanitize 遇重复 idx 直接丢后一格；丹/料可安全改号保货，装备品质依赖 (stockedAt, idx) 仍只留首格。"
+    },
+    "ISS-1019": {
+      "id": "ISS-1019",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:26:58+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "severity": 0.8,
+      "title": "历练在途未纳入终局统一判据",
+      "detail": "endgameBusy 只识别 worldRun/secretRealm；历练 session 在途时可启程远征或发起付费终局战斗，形成双在途。"
+    },
+    "ISS-1020": {
+      "id": "ISS-1020",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:27:06+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "severity": 0.7,
+      "title": "虚界缺世界时遗留幽灵远征",
+      "detail": "worldRun.worldId=void 在 voidWorld 校验前被保留；voidWorld 缺失或坏掉后界面没有在途面板与退出按钮，新远征也因已有 worldRun 被拒。"
+    },
+    "ISS-1021": {
+      "id": "ISS-1021",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:27:11+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "severity": 0.55,
+      "title": "坊市坏档重复丹料格被静默丢弃",
+      "detail": "market.sanitize 对任意重复 idx 直接 continue；丹/料不依赖确定性再生，可重排保货，当前却整格丢失。"
+    },
+    "HYP-174": {
+      "id": "HYP-174",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:27:15+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "confidence": 1,
+      "title": "终局单在途判据漏掉历练",
+      "detail": "共享判据没有 adventure.session 入参，所有调用点因而无法拒绝历练在途。"
+    },
+    "HYP-175": {
+      "id": "HYP-175",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:27:20+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "confidence": 1,
+      "title": "虚界在途与虚界世界缺少跨字段一致性守卫",
+      "detail": "worldRun 的 void 合法性只按 id 认，没有要求 voidWorld 同时存在，故坏档可留下无法解析的在途远征。"
+    },
+    "HYP-176": {
+      "id": "HYP-176",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:27:25+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "confidence": 1,
+      "title": "坊市重复格一律丢弃过度惩罚丹料",
+      "detail": "丹/料货格无确定性再生物，重复号只需重排即可保留玩家已见货物；只有装备必须守原号。"
+    },
+    "EV-1015": {
+      "id": "EV-1015",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T03:27:47+00:00",
+      "updated_at": "2026-10-22T03:27:47+00:00",
+      "touched_round": 332,
+      "source": "src/core/endgameActivity.ts:17; src/core/expedition.ts:238; src/core/challenge.ts:108",
+      "title": "终局判据调用点均未传历练会话",
+      "detail": "endgameBusy 只有 worldRun/secretRealm 两个形参；startWorldExpedition 仅分别检查 worldRun 与 secretRealm。",
+      "confidence": 1.0
+    },
+    "EV-1016": {
+      "id": "EV-1016",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T03:27:52+00:00",
+      "updated_at": "2026-10-22T03:27:52+00:00",
+      "touched_round": 332,
+      "source": "src/stores/endgame.ts:353-397; src/stores/endgame.spec.ts:68-73",
+      "title": "虚界在途在虚界世界校验前被保留",
+      "detail": "worldOk 只按 worldId 认 void；sanitizeVoidWorld 在 worldRun 修形之后才执行，现有测试也没有有效 voidWorld。",
+      "confidence": 1.0
+    },
+    "EV-1017": {
+      "id": "EV-1017",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T03:27:56+00:00",
+      "updated_at": "2026-10-22T03:27:56+00:00",
+      "touched_round": 332,
+      "source": "src/stores/market.ts:52-62; src/stores/market.spec.ts:265-280",
+      "title": "坊市重复号格直接 continue",
+      "detail": "当前 sanitize 对丹/料/装备一视同仁地丢弃重复号后项，测试也钉死只留首格。",
+      "confidence": 1.0
+    },
+    "ISS-1022": {
+      "id": "ISS-1022",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:28:21+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "severity": 0.8,
+      "title": "终局单在途判据漏掉历练会话",
+      "detail": "HYP-174 根因：共享判据没有 adventure.session 入参，所有调用点无法拒绝历练在途。"
+    },
+    "ISS-1023": {
+      "id": "ISS-1023",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:28:29+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "severity": 0.7,
+      "title": "虚界在途与虚界世界缺少跨字段守卫",
+      "detail": "HYP-175 根因：worldRun 的 void 合法性只按 id 认，未要求 voidWorld 同时有效。"
+    },
+    "ISS-1024": {
+      "id": "ISS-1024",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T03:28:43+00:00",
+      "updated_at": "2026-10-22T03:49:05+00:00",
+      "touched_round": 332,
+      "severity": 0.55,
+      "title": "坊市重复格一律丢弃过度惩罚丹料",
+      "detail": "HYP-176 根因：sanitize 未区分可重排的丹料与必须守原号的装备。"
+    },
+    "CHG-564": {
+      "id": "CHG-564",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T03:48:16+00:00",
+      "updated_at": "2026-10-22T03:48:16+00:00",
+      "touched_round": 332,
+      "title": "登记 332 轮在途判据与幽灵远征",
+      "detail": "历练在途纳入终局统一判据；虚界缺世界清空幽灵远征。",
+      "commit": "befbc5c"
+    },
+    "CHG-565": {
+      "id": "CHG-565",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T03:48:20+00:00",
+      "updated_at": "2026-10-22T03:48:20+00:00",
+      "touched_round": 332,
+      "title": "登记 332 轮坊市坏档重复货格保货重排",
+      "detail": "market.sanitize 两阶段收集装备占号后再输出，丹/料重复顺延最小空闲号。",
+      "commit": "4549f28"
     }
   },
   "edges": [
@@ -37124,6 +37343,117 @@
       "to": "TASK-461",
       "type": "implements",
       "created_at": "2026-10-22T02:54:02+00:00"
+    },
+    {
+      "from": "TASK-464",
+      "to": "ISS-1019",
+      "type": "addresses",
+      "created_at": "2026-10-22T03:27:29+00:00"
+    },
+    {
+      "from": "TASK-465",
+      "to": "ISS-1020",
+      "type": "addresses",
+      "created_at": "2026-10-22T03:27:34+00:00"
+    },
+    {
+      "from": "TASK-466",
+      "to": "ISS-1021",
+      "type": "addresses",
+      "created_at": "2026-10-22T03:27:37+00:00"
+    },
+    {
+      "from": "EV-1015",
+      "to": "HYP-174",
+      "type": "validates",
+      "created_at": "2026-10-22T03:28:00+00:00"
+    },
+    {
+      "from": "EV-1016",
+      "to": "HYP-175",
+      "type": "validates",
+      "created_at": "2026-10-22T03:28:04+00:00"
+    },
+    {
+      "from": "EV-1017",
+      "to": "HYP-176",
+      "type": "validates",
+      "created_at": "2026-10-22T03:28:08+00:00"
+    },
+    {
+      "from": "ISS-1022",
+      "to": "ISS-1019",
+      "type": "causes",
+      "created_at": "2026-10-22T03:28:25+00:00",
+      "meta.root_cause": true
+    },
+    {
+      "from": "ISS-1023",
+      "to": "ISS-1020",
+      "type": "causes",
+      "created_at": "2026-10-22T03:28:33+00:00",
+      "meta.root_cause": true
+    },
+    {
+      "from": "ISS-1024",
+      "to": "ISS-1021",
+      "type": "causes",
+      "created_at": "2026-10-22T03:28:49+00:00",
+      "meta.root_cause": true
+    },
+    {
+      "from": "CHG-564",
+      "to": "TASK-464",
+      "type": "implements",
+      "created_at": "2026-10-22T03:48:42+00:00"
+    },
+    {
+      "from": "CHG-564",
+      "to": "TASK-465",
+      "type": "implements",
+      "created_at": "2026-10-22T03:48:42+00:00"
+    },
+    {
+      "from": "CHG-565",
+      "to": "TASK-466",
+      "type": "implements",
+      "created_at": "2026-10-22T03:48:42+00:00"
+    },
+    {
+      "from": "CHG-564",
+      "to": "ISS-1019",
+      "type": "resolves",
+      "created_at": "2026-10-22T03:48:51+00:00"
+    },
+    {
+      "from": "CHG-564",
+      "to": "ISS-1020",
+      "type": "resolves",
+      "created_at": "2026-10-22T03:48:51+00:00"
+    },
+    {
+      "from": "CHG-564",
+      "to": "ISS-1022",
+      "type": "resolves",
+      "created_at": "2026-10-22T03:48:51+00:00"
+    },
+    {
+      "from": "CHG-564",
+      "to": "ISS-1023",
+      "type": "resolves",
+      "created_at": "2026-10-22T03:48:51+00:00"
+    },
+    {
+      "from": "CHG-565",
+      "to": "ISS-1021",
+      "type": "resolves",
+      "created_at": "2026-10-22T03:48:51+00:00"
+    },
+    {
+      "from": "CHG-565",
+      "to": "ISS-1024",
+      "type": "resolves",
+      "created_at": "2026-10-22T03:48:51+00:00"
     }
   ]
 }
