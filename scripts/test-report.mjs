@@ -5,45 +5,7 @@
 import { execSync } from 'node:child_process'
 import { readFileSync, readdirSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-
-/**
- * 分类映射。匹配是路径子串,按数组顺序取第一个命中的分类,故有两条约束:
- * ① 串要够长以免误伤(用 'game.spec' 而非 'game',否则 endgameService 会被截胡);
- * ② 同一文件只应命中一类。新增 spec 后务必在此登记 —— 未登记的用例不进任何
- *    分类,报告就少算了它,等于这份报告在撒谎。
- */
-const CATEGORIES = [
-  {
-    name: 'Unit        数值纯函数',
-    match: ['gnum', 'format', 'setMath', 'saveShape', 'savePlaintext', 'useNativeInsets', 'formulas', 'forgeUpgrade', 'forgeArtifactBatch', 'linggenGen', 'linggenShape', 'inventoryShape', 'equipGen', 'equipmentIcon', 'crypto', 'quests', 'codex', 'craftability', 'reforge', 'theme', 'savePersistence', 'dongfu.spec', 'inventory.spec', 'ui.spec', 'inventoryNote', 'affixTransfer.spec', 'affixes', 'questNav', 'appVersion', 'timeUnits']
-  },
-  {
-    name: 'Combat      战斗规则',
-    match: ['combat.spec', 'battleFactor', 'highTierSmoke', 'ironwall', 'bossAudit', 'bossPhaseAudit', 'bossArchetypes', 'gauntlet', 'exploration.spec', 'exploreModes', 'playerMatchup']
-  },
-  {
-    name: 'Balance     流派与生态',
-    match: ['buildSim', 'buildSearch', 'buildDetect', 'buildAdvisor', 'powerRating', 'statBreakdown', 'equipSet', 'equipBest', 'astral', 'artifactLadder', 'talentLadder', 'gongfaBranch', 'gongfaService', 'softCapAudit', 'softCapVisibility', 'speedGranularity', 'linggenAffinity', 'linggenRole', 'enlightenBalance']
-  },
-  { name: 'Progression 成长曲线', match: ['realms.spec', 'realmBanking', 'realmNaming', 'realmLadder', 'classics', 'progressionDoc', 'progressionSim', 'realPacing', 'breakthrough', 'inflationAudit', 'samsaraAudit', 'suppressRebirth', 'daoFruitCurve', 'saveCalibration', 'rebirthRoi', 'deepCultivationRoi', 'contentGateAudit', 'shallowRebirthGains', 'narrowingImpact', 'impactSurface', 'compoundingAudit', 'daoFruitRoles', 'fruitOutlets', 'lifeTrialService', 'trialMotivation', 'motivationType', 'mortalWorldGen', 'mortalIdentity', 'mortalGate', 'mortalRouteAccess', 'overviewNecessity', 'contentTakeover', 'bossUnique', 'worldNaming', 'worldSemantics', 'player.rebirth', 'playerHistoryShape', 'eta.spec', 'progress.spec', 'questProgress', 'firstStep', 'reincarnation', 'heritage'] },
-  { name: 'Economy     资源经济', match: ['economySim', 'economyModuleBalance', 'expIncome', 'lootSim', 'loot.spec', 'salvage', 'smartKeep', 'petLuck', 'eventPetLuck', 'pillValue', 'pillService', 'pillBatch', 'useBrewing', 'veinEconomyAudit', 'veinVisibility', 'resourceGuidance', 'offlineCap', 'offlineEquipCap', 'offlineLedger', 'offlineModeReward', 'offlineParity', 'offlineScope', 'offlineFactorParity', 'veinService', 'veinBatch', 'qiRepair', 'buildingService', 'buildingBatch', 'affixTransferEconomy', 'dropQualityWindow', 'herbGrade', 'resources.spec', 'buffCap', 'economyAudit', 'wudaoExchange'] },
-  {
-    name: 'Regression  服务与归因',
-    match: ['/ui/', 'rewardText', 'gateWiring', 'gateRuleText', 'unlockChainSelfHeal', 'loadoutService', 'loadouts.spec', 'adventure.spec', 'battleAnalysis', 'foeOrigin', 'loreService', 'lore.spec', 'smithingLore', 'contentReachability', 'contentDensity', 'mentorService', 'daoluService', 'bondEvents', 'bondTiming', 'bondIntent', 'bondCausality', 'worldMemory', 'phase31LinkAudit', 'suppress', 'regionRevival', 'game.spec', 'playerBoundary.spec', 'enginePause', 'engine.spec', 'audio', 'earlyGameService', 'cavePatrolDay', 'earlyGameBuffs', 'savePlatform', 'saveRoundTrip', 'saveBackup', 'importCorruption', 'saveMigration', 'sanitizeAll', 'codexSource', 'achievementHint', 'titleLadder', 'titleReunlock', 'artifactEffects', 'dataHeaderAudit', 'deadExportAudit', 'chainProgression', 'vocabularyCoverage', 'singleSourceAudit', 'effectWiring', 'uiLayering', 'layeringAudit', 'itemText', 'kaiFontCoverage', 'fatePreview', 'goBack', 'storeResilience', 'smokeClassify', 'cultivation.spec', 'diag.spec', 'platform.spec', 'pacingTelemetry.spec', 'rewardReachability', 'dataIntegrity', 'dataTextAudit', 'useAffixTransfer', 'useGameClock', 'useNow', 'useWallClock', 'useServiceWorkerUpdate', 'useModalStack', 'time.spec', 'soulText', 'produceText', 'settings.spec', 'scriptDepsAudit', 'layoutMeasure']
-  },
-  { name: 'Celestial   真仙终局', match: ['celestialSim', 'celestialCaliber', 'endgameService', 'phase21', 'expedition', 'trialChallenge', 'dailyChallenge', 'challenge', 'soulForge', 'souls.spec', 'soulService', 'daoSource', 'rulesetEra', 'qimen', 'celestialJudgementInvariant'] },
-  {
-    name: 'Decision    决策质量',
-    match: [
-      'decisionAudit', 'synergyScan', 'worldGen', 'ruleUniverse', 'playerLab', 'legacy', 'identity', 'samsara',
-      'fortune', 'worldEcho', 'regionEvent', 'eventTier', 'eventEngine', 'explorationDnd', 'weather', 'boundaryTribulation', 'tribulation', 'secretRealm', 'petPersonality', 'goal.spec', 'divination', 'fate.spec', 'astronomy', 'artShu'
-    ]
-  },
-  {
-    name: 'Features    玩法·坊市/收徒/悬赏',
-    match: ['market.spec', 'apprentice.spec', 'apprenticeService.spec', 'apprentices.spec', 'bounty.spec', 'bountyService.spec', 'useBountyRows.spec']
-  }
-]
+import { TEST_CATEGORIES, classifySpecPath } from './testCategories.ts'
 
 const OUT = '.vitest-report.json'
 const ROOT = resolve(import.meta.dirname, '..')
@@ -108,7 +70,7 @@ try {
 }
 rmSync(OUT, { force: true })
 
-const rows = CATEGORIES.map(c => ({ ...c, passed: 0, failed: 0 }))
+const rows = TEST_CATEGORIES.map(c => ({ ...c, passed: 0, failed: 0 }))
 let uncategorized = 0
 /** 未登记的文件与失败的用例都要点名 —— 这份报告现在是 CI 的门,只给个数字没法修 */
 const uncategorizedFiles = []
@@ -130,7 +92,8 @@ for (const { rel, file } of DOC_FILES) {
 for (const file of report.testResults ?? []) {
   // 统一成正斜杠:Windows 上 vitest 报的是反斜杠,目录级条目('/ui/')否则只在 CI 命中
   const path = String(file.name ?? '').split('\\').join('/')
-  const row = rows.find(c => c.match.some(m => path.includes(m)))
+  const category = classifySpecPath(path)
+  const row = category ? rows.find(c => c.name === category.name) : undefined
   const passed = (file.assertionResults ?? []).filter(a => a.status === 'passed').length
   const failed = (file.assertionResults ?? []).filter(a => a.status === 'failed').length
   const short = path.replace(/^.*\/src\//, 'src/')

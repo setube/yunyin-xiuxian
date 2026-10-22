@@ -17,6 +17,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { matchingCategories } from "../../scripts/testCategories";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 const WORKFLOWS = join(ROOT, ".github/workflows");
@@ -43,6 +44,17 @@ const citedScriptNames = [...new Set([...ciText.matchAll(RUN_NAME)].map((m) => m
 const citedScriptPaths = [...new Set([...ciText.matchAll(CI_SCRIPT)].map((m) => m[1] as string))];
 /** 仓库里真实的 `scripts/*.mjs` 入口文件(smoke-classify.ts 是被 import 的模块,不算入口) */
 const repoScripts = readdirSync(join(ROOT, "scripts")).filter((f) => f.endsWith(".mjs")).sort();
+
+/** 递归收集 src 下的 spec:分类必须覆盖每一个真实测试文件 */
+function specFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return specFiles(path);
+    return entry.name.endsWith(".spec.ts") ? [path] : [];
+  });
+}
+
+const SPECS = specFiles(join(ROOT, "src")).map((path) => path.slice(ROOT.length + 1).split("\\").join("/"));
 
 describe("门禁接线 —— CI 里跑的命令,本地得有对等入口", () => {
   it("workflow 里每个 `bun run X` 都得是 package.json 里真有的脚本", () => {
@@ -76,5 +88,21 @@ describe("门禁接线 —— CI 里跑的命令,本地得有对等入口", () =
     expect(citedScriptNames.length + citedScriptPaths.length > 0, "没从 workflow 里读出任何命令 —— 目录/写法变了?").toBe(
       true,
     );
+  });
+
+  it("每个 spec 恰好命中一个测试分类,没有漏登记也没有被两个分类截胡", () => {
+    const bad = SPECS.map((path) => ({ path, hits: matchingCategories(path).map((c) => c.name) })).filter(
+      ({ hits }) => hits.length !== 1,
+    );
+    expect(
+      bad,
+      `分类映射必须是一对一;未命中或重复命中都会让 test:report 少算/重算: ${JSON.stringify(bad, null, 2)}`,
+    ).toEqual([]);
+  });
+
+  it("stores/endgame.spec 与 data/endgame.spec 都归入真仙终局,不再被 game.spec 截胡", () => {
+    for (const path of ["src/stores/endgame.spec.ts", "src/data/endgame.spec.ts"]) {
+      expect(matchingCategories(path).map((c) => c.name)).toEqual(["Celestial   真仙终局"]);
+    }
   });
 });
