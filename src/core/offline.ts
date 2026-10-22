@@ -4,7 +4,7 @@
  */
 import type { EventDef, OfflineSummary } from '@/types'
 import { add, gn, gnZero, isZero, mulN, sub } from '@/utils/gnum'
-import { formatGN } from '@/utils/format'
+import { formatDuration, formatGN } from '@/utils/format'
 import { offlineAgeNote, offlineBossNoteText } from '@/ui/offlineText'
 import { breakthroughReadyNote } from '@/ui/cultivationText'
 import { rng } from '@/utils/random'
@@ -647,6 +647,18 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   const inFlight = player as unknown as { secretRealm?: unknown }
   if (inFlight.secretRealm) notes.push('秘境之行原样留着 —— 层数、气血与规则都未变,回来接着走')
   if (endgameStore.worldRun) notes.push('那趟远征仍在途 —— 层数与战绩原样留着,回来接着走')
+  /**
+   * 被离线上限截断的历练会话也要说一句。
+   *
+   * 8h / 16h 两档长线行程配低阶洞府时,离线只结到洞府上限(0 级 8h),
+   * 会话不结束、`nextBattleAt` 照旧排在未来 —— 玩家回来看到历练还在跑,
+   * 却不知道为什么只结算了一半。秘境与远征都有「仍在途」那句,历练被 cap
+   * 截断时偏偏没有,于是这半程成了一个要自己去翻会话面板才明白的哑谜。
+   */
+  if (adventure.session && dtSec > capSec + 1) {
+    const left = Math.max(0, (adventure.session.endsAt - nowMs) / 1000)
+    notes.push(`这一程还没走完 —— 离线只结到 ${formatDuration(capSec)}(洞府上限),尚余 ${formatDuration(left)}`)
+  }
 
   if (dtSec >= OFFLINE_MODAL_MIN_SECONDS) {
     track('offlineClaims')

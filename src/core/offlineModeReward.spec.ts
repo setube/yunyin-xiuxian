@@ -201,6 +201,49 @@ describe('离线长档(8h / 16h)吃同一把倍率,且不越过洞府封顶', ()
     const summary = settleOffline(Date.now())
     expect(summary).not.toBeNull()
   })
+
+  /**
+   * 被 cap 截断的历练会话要在归来卷轴上说一句「还没走完」。
+   *
+   * 16h 档配 8h 洞府时离线只结一半,会话留着、`nextBattleAt` 排在未来 ——
+   * 玩家回来看到历练还在跑,却不知道为何只结算了一半。秘境与远征都有
+   * 「仍在途」那句,唯独被截断的历练没有,这半程就成了哑谜。
+   */
+  it('16h 档配 8h 洞府:归来卷轴写明这一程还没走完,并给出剩余时长', () => {
+    setActivePinia(createPinia())
+    // 缺席 12h(超过 8h 上限),会话满程 16h:离线只结 8h,还剩 8h 在途
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    game.markStarted()
+    const awayHours = 12
+    const started = Date.now() - awayHours * 3600 * 1000
+    game.lastActiveAt = started
+    game.totalPlaySec = 60 * 60
+    player.major = 2
+    player.exp = { m: 0, e: 0 }
+    adventure.setSession({
+      regionId: 'qingyun',
+      mode: 'deepExpedition',
+      startedAt: started,
+      // 满程 16h:现在走到一半,还剩 8h
+      endsAt: started + 16 * 3600 * 1000,
+      nextBattleAt: started + EXPLORE_BATTLE_INTERVAL * 1000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: { m: 0, e: 0 },
+      expGain: { m: 0, e: 0 },
+      itemGain: 0
+    })
+    const summary = settleOffline(Date.now())!
+    const note = summary.notes.find(n => n.includes('这一程还没走完'))
+    expect(note, `归来卷轴未提被截断的历练:${summary.notes.join(' | ')}`).toBeTruthy()
+    expect(note).toContain('洞府上限')
+    expect(note).toMatch(/尚余\s*4小时/)
+    // 会话必须仍在途(没被误判成圆满结束)
+    expect(useAdventureStore().session, '被 cap 截断的会话不该被清掉').not.toBeNull()
+  })
 })
 
 /**
