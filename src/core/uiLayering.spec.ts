@@ -300,3 +300,77 @@ describe('界面分层 · 块级空态只有一个出处', () => {
     expect(missing, '这些块级空态没收进 .empty-note —— 短横是块级空态的唯一出处').toEqual([])
   })
 })
+
+/**
+ * 组件到底有没有被导进来 —— 模板里写了 `<GameIcon>`,script 里却没 import。
+ *
+ * 病灶(玩家实报「法宝的各个 icon 不显示了」):`refactor(inventory): 法宝册迁
+ * ArtifactPanel` 把法宝那两处 `<GameIcon>` / `<QualityTag>` 整段搬进新组件,却把
+ * import 留在了宿主 `InventoryView.vue` —— 新组件里那是两个**未注册**的标签。
+ *
+ * 为什么三道现成的闸门都没拦住:
+ *   一 `vue-tsc` 默认不把模板里的未知大写标签当错误(它当成自定义元素/原生标签),
+ *      类型检查照过;
+ *   二 `eslint src` 走的是 `.ts` / `.vue` 脚本块的规则,不解析 template;
+ *   三 `GameIcon` 与 `QualityTag` 都**不会抛错** —— 未注册标签被 Vue 原样渲染成一个
+ *      空的 `<gameicon>` 元素,页面上就是「图标那格空着」,没有任何红字。
+ * 单看截图只会以为「这个法宝没有图标」,查起来要一路翻到 import 那几行。
+ *
+ * 判据:模板里用到的**大写开头的标签**,其名字必须在同一文件的 script 块里出现过
+ * (import / `components:` 注册 / `defineAsyncComponent` 任一写法都算)。内置组件
+ * 与 `RouterLink` 这类由 vue-router 提供的全局组件登记在 BUILTIN 里。
+ *
+ * 故障注入:删掉 ArtifactPanel 的 `import GameIcon` → 本条红并点名 GameIcon。
+ */
+describe('界面分层 · 模板用到的组件必须在本文件里有来路', () => {
+  /**
+   * 框架自带 / 全局注册的组件:它们本来就不需要 local import。
+   *
+   * 这份名单要**保守** —— 往里塞一个本该 import 的自有组件,判据就漏了那一个。
+   * 目前项目里全局可用的只有 Vue 内置与 vue-router 的 RouterLink / RouterView
+   * (router 在 main.ts 里 `app.use(router)` 注册),其余自有组件一个都不在其中。
+   */
+  const BUILTIN = new Set([
+    'Transition',
+    'TransitionGroup',
+    'Teleport',
+    'KeepAlive',
+    'Suspense',
+    'Component',
+    'RouterLink',
+    'RouterView'
+  ])
+
+  it('模板里的每个大写标签都能在本文件的 script 里找到', () => {
+    const missing: string[] = []
+    for (const f of FILES) {
+      // 只看模板:script 之后的部分是脚本本身,拿它当证据会自证自洽
+      const scriptAt = f.src.indexOf('<script')
+      if (scriptAt < 0) continue
+      const template = f.src.slice(0, scriptAt)
+      const script = f.src.slice(scriptAt)
+      const used = new Set([...template.matchAll(/<([A-Z][A-Za-z0-9]*)\b/g)].map(m => m[1]!))
+      for (const name of used) {
+        if (BUILTIN.has(name)) continue
+        if (new RegExp(`\\b${name}\\b`).test(script)) continue
+        missing.push(`${f.path} → <${name}>`)
+      }
+    }
+    expect(
+      missing,
+      '这些模板标签在本文件里没有来路 —— 未注册组件会被原样渲染成一个空标签(图标/标签整块消失),且不抛错'
+    ).toEqual([])
+  })
+
+  it('判据自家不是空转:名单里的全局组件确实不许写进 import,是自有组件就必须写', () => {
+    // 阳性对照:若把 BUILTIN 名单当成「随便加」,判据会被一件件稀释。
+    // 这里钉住两件事:内置组件确实不在任何文件的 import 里;而 GameIcon 这种
+    //自有组件在用到它的文件里必须有 import 语句(不是碰巧名字撞上别的标识符)。
+    const iconUsers = FILES.filter(f => /<GameIcon\b/.test(f.src))
+    expect(iconUsers.length, '全仓一处 <GameIcon> 都没有,说明 glob 或解析坏了').toBeGreaterThan(5)
+    const rawImportMissing = iconUsers
+      .filter(f => !/import\s+GameIcon\s+from/.test(f.src))
+      .map(f => f.path)
+    expect(rawImportMissing, '这些文件用了 GameIcon 却没有 import 语句').toEqual([])
+  })
+})

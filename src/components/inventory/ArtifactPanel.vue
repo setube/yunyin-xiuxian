@@ -139,6 +139,8 @@ import { STAT_NAMES, statCaveat, statModPhrase } from '@/data/statNames'
 import { artifactSlotReplacedToast } from '@/ui/inventoryText'
 import { artifactShortToast } from '@/ui/forgeText'
 import { cnNumber, formatGN, formatPercent } from '@/utils/format'
+import GameIcon from '@/components/common/GameIcon.vue'
+import QualityTag from '@/components/common/QualityTag.vue'
 
 /**
  * 法宝面板 —— 随身槽、祭炼读数与炼化动作。

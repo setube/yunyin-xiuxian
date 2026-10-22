@@ -178,6 +178,7 @@
   import MarksPanel from '@/components/celestial/MarksPanel.vue'
   import ExpeditionPanel from '@/components/celestial/ExpeditionPanel.vue'
   import TrialPanel from '@/components/celestial/TrialPanel.vue'
+  import SectionTitle from '@/components/common/SectionTitle.vue'
   import {
     daoSourceDialog,
     shouldShowEndgameTutorial,
