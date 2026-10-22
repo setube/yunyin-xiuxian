@@ -264,6 +264,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     reincarnation: ['reincarnationCount', 'daoFruit', 'talents', 'heritage', 'insight', 'lives', 'vow', 'trial', 'bonds'],
     secretRealm: ['secretRealm'],
     sub: ['realm'],
+    suppressFrac: ['suppress'],
     suppressQualified: ['suppress'],
     suppressLife: ['suppress'],
     suppressedRegions: ['suppress'],

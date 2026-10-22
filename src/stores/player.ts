@@ -138,6 +138,16 @@ export const usePlayerStore = defineStore(
     /** 镇压时间戳:区域 → 镇压开始的时刻(供复苏判定) */
     const suppressedSince = ref<Record<string, number>>({})
     /**
+     * 镇压物产的**小数累积器**:区域 → 还没凑够一件的零头(<1)。
+     *
+     * 物产产出是 `perHour × 时长` 的小数(如林区 6/时,每秒约 0.00167),库存按整数记。
+     * 从前结算每 tick 直接 `Math.floor(perHour × hours)`:在线一秒一 tick,
+     * `6 × 1/3600` 恒小于 1,floor 之后**永远是 0** —— 在线压着林区挂一整天一件草也收不到,
+     * 而离线一次结算同样时长却能拿满,「在线收租」这条玩法在物产上等于不存在。
+     * 零头按区域攒起来,攒够一件即入账,在线长挂与离线一次折算等价。
+     */
+    const suppressFrac = ref<Record<string, number>>({})
+    /**
      * 这一套镇压权益属于**第几世**(reincarnation.count)。
      *
      * 镇压是「我这一世打下来的地盘」,不是「我是谁」:转世该连地盘一起放下。
@@ -755,6 +765,7 @@ export const usePlayerStore = defineStore(
       suppressedRegions.value = []
       suppressedSince.value = {}
       suppressQualified.value = []
+      suppressFrac.value = {}
       // 世号同步盖上:新世的地盘账从此刻起算(不等下一次 sanitize)
       suppressLife.value = reincarnation.value.count
       // 外物随皮囊散去:灵兽、洞府建筑、灵脉投资都是「我拥有多少」,不是「我是谁」
@@ -1010,6 +1021,18 @@ export const usePlayerStore = defineStore(
         fixedSince[id] = at !== undefined && at > 0 ? at : Date.now()
       }
       suppressedSince.value = fixedSince
+      /**
+       * 物产零头同样是「这一世的地盘账」:只认镇压表里的地界、只认 [0,1) 的内数。
+       * 坏档写进 5 会让下一拍凭空吐出一堆物产;写进 NaN 则永远凑不满一件(收益静默归零)。
+       * 不在镇压表里的残项一并丢掉 —— 松开镇压时已清,这里兜住坏档。
+       */
+      const rawFrac = asNumberRecord(suppressFrac.value)
+      const fixedFrac: Record<string, number> = {}
+      for (const id of suppressedRegions.value) {
+        const v = rawFrac[id]
+        if (v !== undefined && Number.isFinite(v) && v >= 0 && v < 1) fixedFrac[id] = v
+      }
+      suppressFrac.value = fixedFrac
       for (const id of suppressedRegions.value) {
         if (!suppressQualified.value.includes(id)) suppressQualified.value.push(id)
       }
@@ -1237,12 +1260,34 @@ export const usePlayerStore = defineStore(
       }
     }
 
+    /**
+     * 把这一拍的物产零头并进累积器,返回「够整件的」那一部分(供结算入账)。
+     *
+     * 只有整数库存能入账,所以零头必须攒在**同一个地方**(按区域),否则每 tick
+     * 重新 floor 一次,零头每拍都被丢掉 —— 在线一秒一 tick 时永远收不到物产。
+     * 返回后余数留在累积器里,攒够下一件时再给。
+     */
+    function takeSuppressResource(regionId: string, amount: number): number {
+      if (!regionDef(regionId) || !Number.isFinite(amount) || amount <= 0) return 0
+      const acc = (suppressFrac.value[regionId] ?? 0) + amount
+      const whole = Math.floor(acc)
+      const rest = acc - whole
+      suppressFrac.value = { ...suppressFrac.value, [regionId]: rest }
+      return whole
+    }
+
     function unsuppressRegion(regionId: string): void {
       if (!regionDef(regionId)) return
       suppressedRegions.value = suppressedRegions.value.filter(id => id !== regionId)
       const next = { ...suppressedSince.value }
       delete next[regionId]
       suppressedSince.value = next
+      // 松开镇压即放下这一份零头:留着它,下一次再镇压会凭空多出半件
+      if (regionId in suppressFrac.value) {
+        const rest = { ...suppressFrac.value }
+        delete rest[regionId]
+        suppressFrac.value = rest
+      }
       // 重置连胜计数
       if (regionStats.value[regionId]) {
         regionStats.value = {
@@ -1431,6 +1476,7 @@ export const usePlayerStore = defineStore(
       suppressedRegions,
       suppressQualified,
       suppressedSince,
+      suppressFrac,
       suppressLife,
       nemeses,
       regionWins,
@@ -1506,6 +1552,7 @@ export const usePlayerStore = defineStore(
       applyRegionWinBatch,
       suppressRegion,
       unsuppressRegion,
+      takeSuppressResource,
       markSuppressQualified,
       recordRegionWin,
       setNemeses,

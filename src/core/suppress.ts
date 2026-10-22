@@ -270,7 +270,15 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
     // 物产:按地界气质给一份次级产出(灵材是小标量,随层级线性增长)
     const yieldDef = suppressYield(regionId)
     if (yieldDef) {
-      const amount = Math.floor(yieldDef.perHour * hours * yieldMult)
+      /**
+       * 零头留给玩家,不要每 tick 丢掉。
+       *
+       * 这里从前是 `Math.floor(perHour × hours)`:在线一秒一 tick,`6 × 1/3600`
+       * 恒小于 1,floor 之后**永远是 0** —— 在线压着林区挂一整天收不到一件草,
+       * 而离线一次结算同样时长却能拿满。零头按区域攒进 suppressFrac,攒够一件即入账,
+       * 在线长挂与离线一次折算由此等价(离线一次给足整件,余数也一并记下)。
+       */
+      const amount = player.takeSuppressResource(regionId, yieldDef.perHour * hours * yieldMult)
       if (amount > 0) {
         if (yieldDef.id === 'herb') {
           // 灵草按品分账:同一品聚一行、跨品分开,展示才不至于「只有灵草,不知何品」

@@ -231,6 +231,64 @@ describe('区域镇压系统', () => {
   })
 
   describe('settleSuppressedRegions', () => {
+    /**
+     * 在线一秒一 tick 时,物产零头必须攒起来,不能每拍被取整吞掉。
+     *
+     * 病灶是纯算术:`perHour × (1/3600)` 恒小于 1,`Math.floor` 之后永远是 0 ——
+     * 在线压着林区挂一整天收不到一件草,离线一次结算同样时长却拿满,「在线收租」
+     * 这条玩法在物产上等于不存在。断言读的是**结算返回的物产**(不读库存),
+     * 免得响应的存档水合把读数抬起来、把旧病灶盖过去。故障注入:结算改回
+     * `Math.floor(yieldDef.perHour * hours * yieldMult)` → 本条红。
+     */
+    it('在线每 tick 一秒:物产零头攒够就入账(不会被取整吞掉)', () => {
+      const player = usePlayerStore()
+      player.major = 5
+      player.suppressedRegions = ['wanyao'] // 万妖林:灵草 11/h
+      player.suppressedSince = { wanyao: Date.now() }
+
+      // 逐 tick 一秒,把每次结算返回的灵草加总;零头攒在 store 里跨 tick 结转
+      let online = 0
+      for (let i = 0; i < 3600; i++) {
+        const tick = settleSuppressedRegions(1)
+        online += tick?.resources.find(r => r.id === 'herb')?.amount ?? 0
+      }
+
+      expect(online, '在线长挂拿不到物产即是旧病灶').toBeGreaterThanOrEqual(10)
+      // 零头留在累积器里(0 ≤ 零头 < 1),不会凭空多算
+      expect(player.suppressFrac['wanyao'] ?? 0).toBeGreaterThanOrEqual(0)
+      expect(player.suppressFrac['wanyao'] ?? 0).toBeLessThan(1)
+    })
+
+    /**
+     * 在线逐 tick 与离线一次折算必须落在**同一本账**上。
+     *
+     * 结算读的是同一份「每小时产出 × 时长 × 兴衰」,若在线逐 tick 每次都取整,
+     * 两者就会差出一整段的零头 —— 挂一小时在线与离线一次结算是同一件事,
+     * 分叉即说明有一边在丢零头。两条路各起一个干净的 pinia,只比结算产出。
+     */
+    it('在线分段与离线一次折算等价:同样是 1 小时,入账株数一致', () => {
+      const player = usePlayerStore()
+      player.major = 5
+      player.suppressedRegions = ['wanyao']
+      player.suppressedSince = { wanyao: Date.now() }
+      let online = 0
+      for (let i = 0; i < 3600; i++) {
+        const tick = settleSuppressedRegions(1)
+        online += tick?.resources.find(r => r.id === 'herb')?.amount ?? 0
+      }
+
+      setActivePinia(createPinia())
+      const p2 = usePlayerStore()
+      p2.major = 5
+      p2.suppressedRegions = ['wanyao']
+      p2.suppressedSince = { wanyao: Date.now() }
+      const once = settleSuppressedRegions(3600)
+      const offline = once?.resources.find(r => r.id === 'herb')?.amount ?? 0
+
+      expect(offline, '离线一次折算应给足整件').toBeGreaterThan(0)
+      expect(online, `在线 ${online} vs 离线 ${offline}`).toBe(offline)
+    })
+
     it('无镇压区域时不产出', () => {
       const resources = useResourcesStore()
       const initialStone = { ...resources.spiritStone }
