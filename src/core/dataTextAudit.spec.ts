@@ -366,6 +366,11 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     const card = src('../components/adventure/SecretRealmCard.vue')
     expect(card).toContain('cnNumber(SECRET_LAYERS)')
     expect(card).not.toContain('三层 · 出则散')
+    // 远征在途时入口必须与核心同判据置灰并写出原因,不能等点下去才被拒
+    expect(card, '秘境入口该读统一在途判据').toContain('endgameBusy(endgame.worldRun, player.secretRealm)')
+    expect(card, '在途原因要显示到卡面').toContain('entryBlockText(')
+    expect(card, '入口 disabled 必须走合判据').toContain(':disabled="!canPay(r)"')
+    expect(card, 'canPay 必须同时拒绝在途活动').toContain('return !busy.value && entryShortfallOf(r, player.major) === null')
   })
 
   it('远征行程与变数连战数取自 EXPEDITION_* / MUTATION_FIGHTS', () => {
@@ -806,6 +811,11 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(trial, '今日天道付不起要置灰').toContain('endgame.daoSource < CHALLENGE_ENTRY_COST')
     expect(trial, '天道变数付不起要置灰').toContain(':disabled="endgame.daoSource < MUTATION_ENTRY_COST"')
     expect(trial, '天道试炼付不起要置灰').toContain(':disabled="endgame.daoSource < trial.entryCost"')
+    // 挑战书有三条禁用原因:未验约、远征在途、道源不足 —— 文案必须逐因说明
+    expect(trial, '挑战书按钮文案统一走分因投影').toContain('challengeButtonText')
+    expect(trial, '挑战书 title 统一走分因投影').toContain(':title="challengeBlockText"')
+    expect(trial, '挑战书在途拒因来自统一判据').toContain('endgameBusy(endgame.worldRun, usePlayerStore().secretRealm)')
+    expect(trial, '挑战书按钮 disabled 必须同时拒绝在途活动').toContain('|| busy !== null')
     expect(expedition, '特殊世界付不起要置灰').toContain('endgame.daoSource < world.entryCost')
     expect(expedition, '虚界重摇付不起要置灰').toContain('endgame.daoSource < VOID_REROLL_COST')
     expect(marks, '道痕重写付不起要置灰').toContain(':disabled="endgame.daoSource < REWRITE_ENTRY_COST"')

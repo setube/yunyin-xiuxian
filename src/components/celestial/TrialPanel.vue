@@ -174,15 +174,11 @@
         <button class="btn-ghost flex-1 !py-2 !text-[12px]" @click="doVerify">验 约</button>
         <button
           class="btn-seal flex-1 !py-2 !text-[12px]"
-          :disabled="!challengeVerdict?.ok || run !== null || endgame.daoSource < CHALLENGE_ENTRY_COST"
-          :title="endgame.daoSource < CHALLENGE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)}` : undefined"
+          :disabled="!challengeVerdict?.ok || busy !== null || endgame.daoSource < CHALLENGE_ENTRY_COST"
+          :title="challengeBlockText"
           @click="doUndertake"
         >
-          {{
-            endgame.daoSource < CHALLENGE_ENTRY_COST
-              ? `立 约(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
-              : `立 约(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
-          }}
+          {{ challengeButtonText }}
         </button>
       </div>
     </div>
@@ -192,6 +188,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { useEndgameStore } from '@/stores/endgame'
+  import { usePlayerStore } from '@/stores/player'
   import { CELESTIAL_WORLDS, TRIALS } from '@/data/endgame'
   import { PACTS, pactDef } from '@/data/pacts'
   import { MUTATORS, mutatorDef } from '@/data/mutators'
@@ -217,6 +214,7 @@
   import { BUILD_PROFILES } from '@/core/buildSim'
   import { cnNumber, formatNum } from '@/utils/format'
   import { daoSourceShortText } from '@/core/daoSource'
+  import { endgameBusy } from '@/core/endgameActivity'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
   import type { ReportView } from '@/components/celestial/BattleReportDialog.vue'
@@ -230,8 +228,6 @@
    */
   const emit = defineEmits<{ report: [ReportView] }>()
   const endgame = useEndgameStore()
-  /** 挑战书立约要避开在途远征(与远征册同一份 worldRun) */
-  const run = computed(() => endgame.worldRun)
 
   // ---- 今日天道 ----
   // 题面要随本地午夜更替:useWallNow 只每秒推进读数,日号 computed 只在
@@ -303,6 +299,23 @@
   /** 已选变数(把效果正文亮到行内,移动端不靠 hover) */
   const selectedMutators = computed(() => MUTATORS.filter(m => draft.value.mutatorIds.includes(m.id)))
   const challengePact = computed(() => (draft.value.pactId ? pactDef(draft.value.pactId) ?? null : null))
+  const busy = computed(() => endgameBusy(endgame.worldRun, usePlayerStore().secretRealm))
+  const challengeBlockText = computed(() => {
+    if (busy.value) return busy.value.reason
+    if (!challengeVerdict.value?.ok) return '先验约,天道受约后方可立约'
+    if (endgame.daoSource < CHALLENGE_ENTRY_COST) {
+      return `道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)}`
+    }
+    return undefined
+  })
+  const challengeButtonText = computed(() => {
+    if (busy.value) return busy.value.kind === 'expedition' ? '立 约(远征在途)' : '立 约(身在秘境)'
+    if (!challengeVerdict.value?.ok) return '立 约(先验约)'
+    if (endgame.daoSource < CHALLENGE_ENTRY_COST) {
+      return `立 约(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+    }
+    return `立 约(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+  })
 
   function setDraftWorld(id: string): void {
     draft.value = { ...draft.value, worldId: id }

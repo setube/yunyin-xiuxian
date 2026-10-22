@@ -48,8 +48,8 @@
             </span>
             <span class="ml-auto text-[10px] text-azure">入 境 →</span>
           </span>
-          <span v-if="entryShort(r)" class="mt-0.5 block text-[10px] tabular text-cinnabar">
-            {{ entryShort(r)?.reason }}
+          <span v-if="entryBlockText(r)" class="mt-0.5 block text-[10px] tabular text-cinnabar">
+            {{ entryBlockText(r) }}
           </span>
           <span class="mt-0.5 block text-[10px] leading-relaxed text-ink-faint">{{ r.desc }}</span>
         </button>
@@ -64,6 +64,7 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { usePlayerStore } from '@/stores/player'
+  import { useEndgameStore } from '@/stores/endgame'
   import { useUiStore } from '@/stores/ui'
   import { secretRealmDef, type SecretRealmDef } from '@/data/secretRealms'
   import { cnNumber } from '@/utils/format'
@@ -79,8 +80,10 @@
     fightSecretLayer,
     realmUnlock
   } from '@/core/secretRealm'
+  import { endgameBusy } from '@/core/endgameActivity'
 
   const player = usePlayerStore()
+  const endgame = useEndgameStore()
   const ui = useUiStore()
 
   const props = withDefaults(defineProps<{ gate?: 'mortal' | 'celestial' }>(), { gate: 'mortal' })
@@ -105,13 +108,19 @@
   })
   const list = computed(() => availableRealms(props.gate))
   const def = computed<SecretRealmDef | undefined>(() => (state.value ? secretRealmDef(state.value.realmId) : undefined))
+  const busy = computed(() => endgameBusy(endgame.worldRun, player.secretRealm))
 
   function canPay(r: SecretRealmDef): boolean {
-    return entryShortfallOf(r, player.major) === null
+    return !busy.value && entryShortfallOf(r, player.major) === null
   }
 
   function entryShort(r: SecretRealmDef): ReturnType<typeof entryShortfallOf> {
     return entryShortfallOf(r, player.major)
+  }
+
+  function entryBlockText(r: SecretRealmDef): string | null {
+    if (busy.value) return busy.value.reason
+    return entryShort(r)?.reason ?? null
   }
 
   function enter(id: string): void {
