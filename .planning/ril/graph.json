@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 334,
+  "round": 335,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T09:02:51+00:00",
+  "updated_at": "2026-10-22T10:33:51+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -484,7 +484,7 @@
       "version": 1,
       "created_at": "2026-09-09T15:01:47+00:00",
       "updated_at": "2026-09-09T15:01:47+00:00",
-      "touched_round": 334,
+      "touched_round": 335,
       "summary": "区域镇压系统(suppress.ts)"
     },
     "EV-001": {
@@ -12482,7 +12482,7 @@
       "version": 1,
       "created_at": "2026-09-18T05:20:11+00:00",
       "updated_at": "2026-09-18T05:20:11+00:00",
-      "touched_round": 283,
+      "touched_round": 335,
       "summary": "区域解锁链(data/regions 的 requireCleared 链与 unlockClosure 闭包 + adventure store 的 unlocked/cleared 与读档补票 + exploration 的开放与推进)"
     },
     "ISS-217": {
@@ -22297,7 +22297,7 @@
       "version": 1,
       "created_at": "2026-10-21T18:47:11+00:00",
       "updated_at": "2026-10-21T18:47:11+00:00",
-      "touched_round": 311,
+      "touched_round": 335,
       "title": "地界卡",
       "summary": "RegionCard 展示地界准入、镇压进度、生态标签、复聚倒计时与已守时长。"
     },
@@ -25921,6 +25921,149 @@
       "commit": "831e9a7",
       "title": "镇压物产零头按地界结转",
       "detail": "suppressFrac + takeSuppressResource;在线与离线折算对齐,sanitize 挡越界与 NaN。"
+    },
+    "ISS-1032": {
+      "id": "ISS-1032",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T09:33:30+00:00",
+      "updated_at": "2026-10-22T09:33:30+00:00",
+      "touched_round": 335,
+      "title": "复聚倒计时与结算读两把钟:守着的玩家卡片倒数到 0 就停住",
+      "severity": 0.5,
+      "detail": "RegionCard 倒计时只读 player.suppressedSince,结算读 regionTouchedAt(最后一次战斗/镇压/靖平取最晚)。startExploration 不拦已镇压地界,玩家守着刷战时倒计时按更早的镇压时刻走到「妖气 0 时后复聚」并停住,而结算按最后一战判还早 71 小时。"
+    },
+    "HYP-185": {
+      "id": "HYP-185",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T09:33:34+00:00",
+      "updated_at": "2026-10-22T09:33:34+00:00",
+      "touched_round": 335,
+      "title": "倒计时与判定必须吃同一份钟",
+      "confidence": 1,
+      "detail": "判定读「最后一次活动」、读数读「镇压时刻」这种一处各取一份的写法必然分叉:同一片地界会同时被显示成到点与未到点。"
+    },
+    "TASK-475": {
+      "id": "TASK-475",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T09:33:34+00:00",
+      "updated_at": "2026-10-22T09:33:34+00:00",
+      "touched_round": 335,
+      "title": "抽出 regionReviveClock,结算与卡片倒计时共用一份钟",
+      "category": "correctness",
+      "severity": 0.5,
+      "confidence": 1,
+      "effort": 1.1,
+      "unlock_factor": 1,
+      "detail": "worldMemory 新增 regionReviveClock(regionId);regionRevival 与 RegionCard 都读它;hoursUntilRevive 入参由 suppressedSince 改为 touchedAt,无起点一律 0。"
+    },
+    "EV-1027": {
+      "id": "EV-1027",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T09:33:39+00:00",
+      "updated_at": "2026-10-22T09:33:39+00:00",
+      "touched_round": 335,
+      "source": "src/core/worldMemory.spec.ts:镇压 73 小时、一小时前还在打的地界,倒计时应剩约 71 时",
+      "confidence": 1,
+      "title": "故障注入:hoursUntilRevive 改回单看镇压时刻则该用例转红",
+      "detail": "旧写法下这里读到 0(卡片停住);改回单看 suppressedSince 后该判据红,恢复后通过。"
+    },
+    "EV-1028": {
+      "id": "EV-1028",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T09:33:39+00:00",
+      "updated_at": "2026-10-22T09:33:39+00:00",
+      "touched_round": 335,
+      "source": "src/core/suppress.spec.ts:卡片判据钉住喂的是哪一份钟",
+      "confidence": 1,
+      "title": "故障注入:RegionCard 倒计时改回只读 suppressedSince 则两条用例转红",
+      "detail": "断言同时要求卡片读 regionReviveClock 且不读 player.suppressedSince;改回旧写法立刻红。"
+    },
+    "CHG-574": {
+      "id": "CHG-574",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-22T09:33:40+00:00",
+      "updated_at": "2026-10-22T10:33:51+00:00",
+      "touched_round": 335,
+      "commit": "3918699",
+      "title": "复聚倒计时与结算共用 regionReviveClock",
+      "detail": "worldMemory 抽出 regionReviveClock;regionRevival / RegionCard 共用;hoursUntilRevive 改吃 touchedAt。"
+    },
+    "ISS-1033": {
+      "id": "ISS-1033",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T10:21:00+00:00",
+      "updated_at": "2026-10-22T10:21:00+00:00",
+      "touched_round": 335,
+      "title": "凡界路线层级上限写了两遍:扰动内联裸 20,候选池读常量",
+      "severity": 0.35,
+      "detail": "mortalWorldGen 的 BOSSES/MOBS 候选池按 MORTAL_TIER_MAX 过滤,同一文件的 jitterTiers 却把 20 写死在 Math.min 里。常量一改(扩凡界层数),候选池跟着放,扰动出来的层级仍被旧数封住。"
+    },
+    "HYP-186": {
+      "id": "HYP-186",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T10:21:00+00:00",
+      "updated_at": "2026-10-22T10:21:00+00:00",
+      "touched_round": 335,
+      "title": "同一文件里的「上限」也只能有一处真相源",
+      "confidence": 1,
+      "detail": "候选池读常量、扰动写裸数,两处都在说「凡界最高几层」;界内一致时看不出,改常量那一刻才分叉。"
+    },
+    "TASK-476": {
+      "id": "TASK-476",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T10:21:00+00:00",
+      "updated_at": "2026-10-22T10:21:00+00:00",
+      "touched_round": 335,
+      "title": "jitterTiers 的层级封顶改读 MORTAL_TIER_MAX,并立源码判据",
+      "category": "maintainability",
+      "severity": 0.35,
+      "confidence": 1,
+      "effort": 0.6,
+      "unlock_factor": 1,
+      "detail": "singleSourceAudit 增一条:扰动式必须含 Math.min(MORTAL_TIER_MAX, 且不得出现 Math.min(20,。"
+    },
+    "EV-1029": {
+      "id": "EV-1029",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T10:21:07+00:00",
+      "updated_at": "2026-10-22T10:21:07+00:00",
+      "touched_round": 335,
+      "source": "src/core/singleSourceAudit.spec.ts:骨架扰动的层级封顶读 MORTAL_TIER_MAX,不再内联裸 20",
+      "confidence": 1,
+      "title": "故障注入:改回 Math.min(20, 则本条转红",
+      "detail": "宿主写死回裸 20 后该判据当场红(找不到具名常量),恢复后转绿。"
+    },
+    "CHG-575": {
+      "id": "CHG-575",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-22T10:21:07+00:00",
+      "updated_at": "2026-10-22T10:33:51+00:00",
+      "touched_round": 335,
+      "commit": "34366de",
+      "title": "骨架扰动的层级封顶改读 MORTAL_TIER_MAX",
+      "detail": "jitterTiers 的 Math.min(20, …) 改读 regions 的 MORTAL_TIER_MAX(与同文件候选池同源),singleSourceAudit 立判据。"
     }
   },
   "edges": [
@@ -38191,6 +38334,72 @@
       "to": "ISS-471",
       "type": "resolves",
       "created_at": "2026-10-22T09:02:37+00:00"
+    },
+    {
+      "from": "TASK-475",
+      "to": "ISS-1032",
+      "type": "addresses",
+      "created_at": "2026-10-22T09:33:43+00:00"
+    },
+    {
+      "from": "CHG-574",
+      "to": "TASK-475",
+      "type": "implements",
+      "created_at": "2026-10-22T09:33:43+00:00"
+    },
+    {
+      "from": "CHG-574",
+      "to": "ISS-1032",
+      "type": "resolves",
+      "created_at": "2026-10-22T09:33:43+00:00"
+    },
+    {
+      "from": "EV-1027",
+      "to": "HYP-185",
+      "type": "validates",
+      "created_at": "2026-10-22T09:33:43+00:00"
+    },
+    {
+      "from": "EV-1028",
+      "to": "HYP-185",
+      "type": "validates",
+      "created_at": "2026-10-22T09:33:43+00:00"
+    },
+    {
+      "from": "ISS-1032",
+      "to": "COMP-005",
+      "type": "located_in",
+      "created_at": "2026-10-22T09:33:44+00:00"
+    },
+    {
+      "from": "TASK-476",
+      "to": "ISS-1033",
+      "type": "addresses",
+      "created_at": "2026-10-22T10:21:11+00:00"
+    },
+    {
+      "from": "CHG-575",
+      "to": "TASK-476",
+      "type": "implements",
+      "created_at": "2026-10-22T10:21:11+00:00"
+    },
+    {
+      "from": "CHG-575",
+      "to": "ISS-1033",
+      "type": "resolves",
+      "created_at": "2026-10-22T10:21:11+00:00"
+    },
+    {
+      "from": "EV-1029",
+      "to": "HYP-186",
+      "type": "validates",
+      "created_at": "2026-10-22T10:21:11+00:00"
+    },
+    {
+      "from": "ISS-1033",
+      "to": "COMP-027",
+      "type": "located_in",
+      "created_at": "2026-10-22T10:21:25+00:00"
     }
   ]
 }
