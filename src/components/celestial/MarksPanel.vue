@@ -48,7 +48,9 @@
         <button
           v-if="mark.replay"
           class="shrink-0 min-h-[28px] rounded border border-gold-ink/40 px-1.5 py-0.5 font-kai text-[10px] text-gold-ink active:scale-90"
-          title="以当年的构筑重打此战"
+          :disabled="busy !== null"
+          :class="{ 'cursor-not-allowed border-ink/15 text-ink-faint': busy !== null }"
+          :title="busy ? busy.reason : '以当年的构筑重打此战'"
           @click="goReplay(mark)"
         >
           忆
@@ -71,11 +73,11 @@
         <button
           v-else-if="mark.cleared && mark.replay"
           class="shrink-0 min-h-[28px] rounded border border-cinnabar/40 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90 disabled:border-ink/15 disabled:text-ink-faint"
-          :disabled="endgame.daoSource < REWRITE_ENTRY_COST"
-          :title="endgame.daoSource < REWRITE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)}` : '以今日之你重打此战,快过旧我之回合即【胜于旧我】'"
+          :disabled="busy !== null || endgame.daoSource < REWRITE_ENTRY_COST"
+          :title="busy ? busy.reason : endgame.daoSource < REWRITE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)}` : '以今日之你重打此战,快过旧我之回合即【胜于旧我】'"
           @click="rewriteConfirm = mark"
         >
-          {{ endgame.daoSource < REWRITE_ENTRY_COST ? `写(尚差${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${mark.rounds}回合)` }}
+          {{ busy ? `写($busy.kind === 'expedition' ? '远征在途' : busy.kind === 'exploration' ? '历练在途' : '身在秘境'})` : endgame.daoSource < REWRITE_ENTRY_COST ? `写(尚差${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${mark.rounds}回合)` }}
         </button>
       </div>
     </div>
@@ -115,7 +117,10 @@ import { RULESET_CHANGELOG, RULESET_VERSION, isStaleRuleset, rulesetChangesSince
 import { daoPathDef } from '@/data/endgame'
 import { legacyComparisons } from '@/core/compare'
 import { replayMark, rewriteMark, REWRITE_ENTRY_COST } from '@/core/endgameService'
+import { endgameBusy } from '@/core/endgameActivity'
 import { daoSourceShortText } from '@/core/daoSource'
+import { usePlayerStore } from '@/stores/player'
+import { useAdventureStore } from '@/stores/adventure'
 import SectionTitle from '@/components/common/SectionTitle.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import type { ReportView } from '@/components/celestial/BattleReportDialog.vue'
@@ -129,6 +134,14 @@ import type { ReportView } from '@/components/celestial/BattleReportDialog.vue'
  */
 const emit = defineEmits<{ report: [ReportView] }>()
 const endgame = useEndgameStore()
+/**
+ * 在途判据(远征/秘境/历练):忆战与重写都要独占一项在途终局活动,
+ * 核心(replayMark / rewriteMark)本就会拒 —— 但按钮若一直亮着,玩家只能靠
+ * 一次点击换来一句「远征在途」。这里把同一份判据(含同一句拒因)前置到按钮上。
+ */
+const busy = computed(() =>
+  endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, useAdventureStore().session)
+)
 
 // ---- 忆战:与过去的自己重临此界 ----
 function goReplay(mark: (typeof endgame.marks)[number]): void {
