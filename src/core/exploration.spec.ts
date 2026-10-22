@@ -23,7 +23,9 @@ import {
   exploreEventChance
 } from './exploration'
 import { useUiStore } from '@/stores/ui'
+import { useEndgameStore } from '@/stores/endgame'
 import { startRetreat } from './earlyGameService'
+import { endgameBusy } from './endgameActivity'
 
 /**
  * 与 petPersonality.EFFECTS 里的 cautious 值保持一致(见 petPersonality.spec)。
@@ -344,6 +346,49 @@ describe('闭关禁令:闭关期间不得进入历练(Phase 28 接线后)', () =
     expect(startExploration('qingyun', 'normal')).toBe(false)
     expect(useAdventureStore().session).toBeNull()
     expect(useCultivationStore().hasBuff('retreat')).toBe(true)
+  })
+})
+
+/**
+ * 在途互斥的**反方向** —— 远征途中不许再开一程历练。
+ *
+ * 330~332 轮把「同一时刻只走一条路」收进 endgameBusy,但只查了「别的活动在途时
+ * 不许开远征/入秘境/立挑战书」。历练这一侧一直漏着:远征挂机时点「出发」照旧放行,
+ * 于是历练心跳(tickExploration)与远征的 runSnap 携带气血/道途规则同时推进,
+ * 两段在途互相串线 —— 正是那几轮要消灭的毛病。
+ */
+describe('在途互斥 · 远征途中不得再开一程历练', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    protect.value = false
+    combatWin.value = false
+  })
+
+  it('远征在途:起程被拒、不落会话,并指名统一判据的拒因', () => {
+    const endgame = useEndgameStore()
+    const adventure = useAdventureStore()
+    endgame.worldRun = {
+      worldId: 'chiyan',
+      pactId: null,
+      gateId: null,
+      layer: 1,
+      bonus: 0,
+      rows: [],
+      carriedHpPct: 1,
+      totalRounds: 0,
+      winStacks: 0
+    }
+    expect(startExploration('qingyun', 'normal'), '远征途中不该还能开历练').toBe(false)
+    expect(adventure.session, '被拒就不该落会话').toBeNull()
+    // 拒因与 endgameBusy 单源:界面与核心说的是同一句话,不再各抄一份
+    expect(useUiStore().toasts.at(-1)?.text).toContain(endgameBusy(endgame.worldRun, null, null)!.reason)
+  })
+
+  it('清空在途后同一入口放行(守卫只认在途,不是把人永久锁死)', () => {
+    const endgame = useEndgameStore()
+    endgame.worldRun = null
+    expect(startExploration('qingyun', 'normal')).toBe(true)
+    expect(useAdventureStore().session).not.toBeNull()
   })
 })
 

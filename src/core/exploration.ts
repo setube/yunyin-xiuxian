@@ -31,11 +31,11 @@ import { eventTierDef, eventTierOf } from './eventTier'
 import { modOf } from './statsCalc'
 import { track } from './progress'
 import { usePlayerStore } from '@/stores/player'
-import { useAdventureStore } from '@/stores/adventure'
-import type { LastBattleView } from '@/stores/adventure'
+import { useAdventureStore, type LastBattleView } from '@/stores/adventure'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
+import { useEndgameStore } from '@/stores/endgame'
 import { checkSuppression, memorialLine, suppressRateLine, MEMORIAL_CHANCE } from './suppress'
 import { recordLoss, isNemesis, markAvenged, ghostOf, ghostTitle, ghostLeadIn, ECHO_GHOST_CHANCE, NEMESIS_THRESHOLD, regionRecallFor } from './worldMemory'
 import { personalityEffects } from './petPersonality'
@@ -44,6 +44,7 @@ import { personalityEffects } from './petPersonality'
 // 这里都走别名,免得互相遮蔽
 import { recordWin as recordStreakWin, recordLoss as recordStreakLoss, isRetreating } from './earlyGameService'
 import { currentRegionEvent, regionEventDef, rollRegionEvent } from './regionEvent'
+import { endgameBusy } from './endgameActivity'
 import { noteEnemy } from './loreService'
 import { noteTaboo } from './samsaraService'
 import { useInventoryStore } from '@/stores/inventory'
@@ -90,6 +91,20 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
   // 秘境与历练互斥:身处秘境者不许再开一程历练,免得两段「在途」同跑
   if (player.secretRealm) {
     ui.toast('你正身处秘境之中,先出了秘境再行历练', 'warn')
+    return false
+  }
+  /**
+   * 远征在途时同样不许再开一程历练。
+   *
+   * 反方向的守卫早已就位(远征启程、秘境入门、挑战书/试炼/变数/重写都查
+   * `endgameBusy`),唯独这里一直漏着:远征途中点「出发」照旧放行,于是
+   * 历练心跳与远征 `runSnap` 的携带气血/道途规则同跑,两段「在途」互相串线
+   * (正是 332 轮修的那一类)。判据与拒绝文案取同一份 endgameBusy,不再手抄。
+   * 实参只传 worldRun:历练会话本函数开头已单独拒绝,这里只补远征这一支。
+   */
+  const busy = endgameBusy(useEndgameStore().worldRun, null, null)
+  if (busy) {
+    ui.toast(busy.reason, 'warn')
     return false
   }
   if (!routeAllows(regionId)) {
@@ -246,6 +261,12 @@ export function winsUntilRegionBoss(wins: number, cleared: boolean): number | nu
  * 某区域之主是否已靖 —— 界面提示与 runBattle 的首领判定共用这一个判据。
  * 按**本世路线**判:路线内的区域看本世节点是否已通(不按旧 REGIONS cleared 链,
  * 否则旧档清空旧链后,牌子的 boss 永不出、路线永不前进);路线外(老档兼容)才看旧链。
+ *
+ * **旧主归来即不再已靖**:妖气复聚(core/regionRevival → adventure.markRevived)只收掉
+ * 旧链 `cleared` 与起钟,本世路线节点 `mortalCleared` **刻意不动** —— 那个节点同时扛着
+ * 后续路段的可达性(`canEnterNode` 要前一段已通),撤掉它会把整条路线重新锁死。
+ * 故「首领是否已靖」在这里补问一次 `revived`:归来的地界一律判未靖,首领照常复出,
+ * 玩家「再历一程即可复靖」的承诺才兑现(此前路线内区域复聚后首领永不再现)。
  */
 export function regionBossCleared(regionId: string): boolean {
   const adventure = useAdventureStore()

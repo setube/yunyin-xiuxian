@@ -119,6 +119,8 @@
   import { worldDef } from '@/data/realms'
   import { worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
+  import { endgameBusy } from '@/core/endgameActivity'
+  import { useEndgameStore } from '@/stores/endgame'
   import { MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
   import { exploreEventChance, startExploration } from '@/core/exploration'
   import { EVENT_TIERS, tierOddsText } from '@/core/eventTier'
@@ -136,6 +138,7 @@
   const player = usePlayerStore()
   const ui = useUiStore()
   const resources = useResourcesStore()
+  const endgame = useEndgameStore()
 
   /**
    * 地界投影与分组 —— 本页只负责把它们摆出来,事实取自 `useRegionRows`
@@ -214,6 +217,17 @@
      */
     if (isRetreating()) {
       ui.toast('你正在闭关静修,心无旁骛,暂勿外出历练', 'warn')
+      return
+    }
+    /*
+     * 已有在途活动(远征/秘境)时同样早说 —— 与 core 的 endgameBusy 同一判据。
+     *
+     * 判据只此一份:核心拒绝与界面前置用的是同一句文案,不在这里另抄一遍。
+     * 历练会话不在此列(进得来本页就说明没在历练),故只问终局那一支。
+     */
+    const busy = endgameBusy(endgame.worldRun, player.secretRealm, null)
+    if (busy) {
+      ui.toast(busy.reason, 'warn')
       return
     }
     modeTarget.value = region

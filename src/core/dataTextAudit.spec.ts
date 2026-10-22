@@ -373,6 +373,23 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     expect(card, 'canPay 必须同时拒绝在途活动').toContain('return !busy.value && entryShortfallOf(r, player.major) === null')
   })
 
+  /**
+   * 在途互斥是**双向**的:别的活动在途时不许开历练,历练在途时也不许开别的。
+   * 330~332 轮只补了后一半,历练这一侧一直漏着 —— 远征挂机时点「出发」照旧放行,
+   * 历练心跳与 runSnap 携带气血同时推进。故两处都钉住:
+   *   ① core 的 startExploration 必须问统一判据 endgameBusy,不再手抄一句拒因;
+   *   ② 历练页「出发」前置同判据 —— 玩家不该点了才被告知「远征在途」。
+   * 故障注入:删掉 core 里那一支 → 本条的 core 断言红;把界面前置改回只问闭关 → 界面断言红。
+   */
+  it('历练与终局的在途互斥是双向的,核心与界面共用 endgameBusy', () => {
+    const core = src('./exploration.ts')
+    expect(core, 'startExploration 该问统一在途判据').toContain('endgameBusy(useEndgameStore().worldRun, null, null)')
+    expect(core, '拒因取判据本体,不再手抄一句').toContain('ui.toast(busy.reason, \'warn\')')
+    const view = src('../views/AdventureView.vue')
+    expect(view, '出发前置也要认出远征/秘境在途').toContain('endgameBusy(endgame.worldRun, player.secretRealm, null)')
+    expect(view, '前置拒因同样取判据本体').toContain('ui.toast(busy.reason, \'warn\')')
+  })
+
   it('远征行程与变数连战数取自 EXPEDITION_* / MUTATION_FIGHTS', () => {
     // 远征册拆出后判据随本体走。宿主与子面板合扫:拆分只搬了位置,数仍只有一份
     const view =
