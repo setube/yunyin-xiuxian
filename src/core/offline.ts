@@ -535,7 +535,10 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
           battles += 1
           if (bossResult.win) {
             // 首领战奖励同样并入事件加丰倍率(在线 boss 也是 mode×regReward,离线再叠收益折损)
-            const drops = afterWin(region, modeDef.rewardMult * OFFLINE_BOSS_REWARD_MULT * regionEventReward, true)
+          // 第四个参数 false:玩家不在场,首领战走的是同一个 afterWin
+          // —— 不传 false 时它会照默认把掉落的法宝祭上空祭炼位,挂一夜回来随身那一格已经被人换过
+          // (与 autoResolveEvent 同一处教训)
+            const drops = afterWin(region, modeDef.rewardMult * OFFLINE_BOSS_REWARD_MULT * regionEventReward, true, false)
             trip.stone = add(trip.stone, drops.stone)
             trip.exp = add(trip.exp, drops.exp)
             trip.items += drops.items

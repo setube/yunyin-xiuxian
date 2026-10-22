@@ -274,8 +274,13 @@ export function randomDropArtifact(tier: number): string | null {
  * (capChance 取 statsCalc 唯一一份,掉落侧与 combat 各机关共用)。
  */
 
-/** 战斗胜利掉落 */
-export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean): DropSummary {
+/** 战斗胜利掉落。
+ *
+ * `autoEquipArtifact` 空祭炼位时自动祭上法宝。默认 true(玩家亲手走的战斗)。
+ * 离线整段结算传 false:玩家不在场,挂一夜回来随身那一格已经被人换过
+ * —— 他从没点过那个按钮(与 `autoResolveEvent` 同一处教训)。
+ */
+export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean, autoEquipArtifact = true): DropSummary {
   const player = usePlayerStore()
   const resources = useResourcesStore()
   const inventory = useInventoryStore()
@@ -355,7 +360,7 @@ export function afterWin(region: RegionDef, rewardMult: number, isBoss: boolean)
   if (rng.chance(capChance(ARTIFACT_DROP_CHANCE * (isBoss ? 6 : 1) * (1 + luck)))) {
     const artId = randomDropArtifact(tier)
     if (artId) {
-      lines.push(acquireArtifact(artId))
+      lines.push(acquireArtifact(artId, false, autoEquipArtifact))
       items += 1
     }
   }

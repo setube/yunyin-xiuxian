@@ -15,6 +15,7 @@
  * 本测试只专注「倍率进产出」这一件事。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { setActivePinia, createPinia } from 'pinia'
 import { settleOffline } from './offline'
 import { useGameStore } from '@/stores/game'
@@ -556,7 +557,7 @@ describe('离线首领战同样雪耻', () => {
   it('整趟只赢在首领头上时,账上的宿敌也被清掉', () => {
     seedSession('normal')
     const player = usePlayerStore()
-    // 整趟【已经】攒够首领门槛(在线判的是从出发起累计的胜场),这一段才真的轮到首领;
+    // 整趜已经擦足首领门機，这一段才真的轮到首领;境界拉到硤纷，这一场是真 resolveCombat
     // 境界拉到元婴,这一场是真 resolveCombat,得真的打得过
     useAdventureStore().setSession({ ...useAdventureStore().session!, wins: 10 })
     player.major = 12
@@ -588,5 +589,41 @@ describe('离线首领战同样雪耻', () => {
     expect(summary.notes.some(n => n.includes('斩于剑下') || n.includes('区域之主')), '首领这一场该真的打了').toBe(true)
     expect(player.nemeses.find(n => n.enemyId === boss.id)?.avengedAt, '首领打赢也该雪耻').toBeDefined()
     expect(summary.notes.some(n => n.includes('雪耻')), '雪耻要在卷轴里说一声').toBe(true)
+  })
+})
+
+/**
+ * 离线首领战也不替玩家祭法宝。
+ *
+ * 首领战走的是同一个 `afterWin`，而它的法宝分支默认自动祭上空祭炼位。
+ * 普通战的法宝通道早就改成了 `acquireArtifactGain(artId, true, false)`，首领战这条却漏着
+ * —— 挂一夜回来随身那一格已经被人换过，而玩家从没点过那个按钮。
+ * 与 `autoResolveEvent` 的教训同源：他不在场的那些路，一律不准改他的构筑。
+ *
+ * 故障注入: 把 offline.ts 首领战那行的第四个参数 false 摘掉,本条必红。
+ */
+describe('离线首领战不替玩家祭法宝', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 0
+  })
+
+  /**
+   * 判据落在**调用点**:首领那一场是不是真的把「不自动祭炼」传了进去。
+   *
+   * 行为判据(run 一整趟 offline,看随身槽空不空)依赖首领战恰好掉出一件法宝,
+   * 而首领掉法宝的概率只有 1.5%×6 = 9%,绝大多数 run 里这条判据是空转的 ——
+   * 故障注入时它照样绿,等于没守。调用点是确定的:afterWin 的第四参漏了就是漏了。
+   */
+  it('首领战的 afterWin 调用把「不自动祭炼」传到底', () => {
+    const offline = readFileSync(new URL('./offline.ts', import.meta.url), 'utf8')
+    expect(offline, '首领战那行必须带第四参 false(玩家不在场)').toMatch(
+      /afterWin\([^)]*OFFLINE_BOSS_REWARD_MULT[^)]*,\s*true,\s*false\)/
+    )
+  })
+
+  it('普通战那条通道本来就不自动祭炼(一并钉住,防回归)', () => {
+    const offline = readFileSync(new URL('./offline.ts', import.meta.url), 'utf8')
+    expect(offline, '普通战法宝通道显式传 autoEquip=false').toContain('acquireArtifactGain(artId, true, false)')
   })
 })
