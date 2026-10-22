@@ -297,8 +297,15 @@ export function resolveEventChoice(def: EventDef, choiceIdx: number, tier: numbe
     usePlayerStore().setEventChain(chain.chain.id, ended ? chain.chain.stages.length : chain.stage + 1)
   }
 
-  // Phase 30.9 S3:记录事件记忆(完成的余波后,未来再遇时有机会触发余波文本)
-  adventure.eventMemories = recordEvent(adventure.eventMemories, def.id, choiceIdx, Date.now())
+  /**
+   * Phase 30.9 S3:记录事件记忆(完成的余波后,未来再遇时有机会发余波文本)。
+   *
+   * `lastAt` 读游戏时钟 —— `enginePause` 的纪律是「可冻结的到期判定读 gameNow(),
+   * 不要直接读 Date.now()」。事件记忆跟 Buff 同属一类:
+   * 墙钟与其余到期判定同源，否则暂停墙钟就会超过未来到期判定。
+   * 本文件的 `case 'buff'` 早就改成 gameNow() 了,这一行是最后一处遗忘。
+   */
+  adventure.eventMemories = recordEvent(adventure.eventMemories, def.id, choiceIdx, gameNow())
   // Phase 31.1 机缘链:机缘选择记入世界记忆(取/弃,影响未来)
   if (def.id.startsWith('ft_')) {
     const isDefault = def.choices[choiceIdx]?.isDefault ?? false

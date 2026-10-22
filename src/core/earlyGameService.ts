@@ -58,10 +58,14 @@ export function getCurrentEnlightenment(): EnlightenmentEvent | null {
  *
  * 冷却存在 player store(随档):顿悟给悟道点,闸门若挂模块,
  * 刷新一次页面就等于把 5 分钟冷却清掉 —— 那是「重开页面刷顿悟」。
+ *
+ * 冷却起点与窗口到期都读游戏时钟:`enlightenmentAt` 在
+ * `player.shiftTimedState` 里被顺延(即视为可冻结时钟)。暂停中写墙钟,
+ * 恢复后这一条顿悟冷却会凭空多出暂停那几分钟 —— 与其余冷却不一致。
  */
 export function mayTriggerEnlightenment(): void {
   const player = usePlayerStore()
-  const now = Date.now()
+  const now = gameNow()
   if (now - player.enlightenmentAt < 300000) return // 5分钟冷却
   // EARLY_EVENT_DECAY:顿悟是"前期玩法",境界越高存在感越低,真仙后完全退出
   const presence = earlyEventDecay('enlightenment', player.major)
@@ -174,10 +178,16 @@ export function prepareBreakthrough(optionId: string): boolean {
 
   const resources = useResourcesStore()
   if (opt.cost?.stone && !resources.spendStone(gn(opt.cost.stone))) return false
-  // duration 单位为秒(meditate=180);=0 表示支付即了就绪(聚气丹)
+  /**
+   * duration 单位为秒(meditate=180);=0 表示支付即就绪(聚气丹)。
+   *
+   * `readyAt` 读游戏时钟:`breakthroughPrep.readyAt` 在 `player.shiftTimedState`
+   * 里被顺延(视为可冻结时钟)。暂停中写墙钟,恢复后这一份准备会平白多出
+   * 暂停那几分钟 —— 与其余冷却不一致。
+   */
   usePlayerStore().setBreakthroughPrep({
     bonus: opt.bonusRate,
-    readyAt: Date.now() + Math.max(0, opt.duration) * 1000,
+    readyAt: gameNow() + Math.max(0, opt.duration) * 1000,
     kind: opt.id === 'pill' ? 'pill' : 'meditate'
   })
   telemetry().record('breakthrough_prep', 'modal', `突破准备:${opt.label}`)
@@ -332,7 +342,12 @@ export function mayTriggerCaveEvent(): CaveEvent | null {
   if (!pool || pool.length === 0) return null
 
   const event = pool[Math.floor(Math.random() * pool.length)]!
-  const now = Date.now()
+  /**
+   * 窗口到期读游戏时钟(见 getCurrentCaveEvent):写墙钟让
+   * `expiresAt` 超过未来到期判定,恢复后窗口平白少了一段。
+   * 与本文件其余冷却同一把尺。
+   */
+  const now = gameNow()
 
   caveEvent = {
     ...event,

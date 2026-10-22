@@ -315,6 +315,33 @@ describe('文案数值对账 · 视图不手抄数字', () => {
     expect(combat, '历练倒计时读 now.value').toContain('(session.value.endsAt - now.value) / 1000')
   })
 
+  /**
+   * 游戏时钟纪律 —— 可冻结的到期判定读 gameNow(),不读 Date.now()。
+   *
+   * `enginePause` 的头部注释写着这条纪律,而落到代码里靠的是人记:
+   * 每一处写到期时间的地方都得想一遍「这个可以冻吗」。忘记的后果是暂停期间的墙钟就会超过未来到期判定。
+   *
+   * 这五份文件写的到期时间全部进了 `shiftTimedState` 的顺延名单
+   * (player.ts / adventure.ts / earlyGameService.ts),即官方认定的「可冻结域」。
+   *
+   * 故障注入: 把其中任何一处 gameNow() 改回 Date.now(),本条必红。
+   */
+  it('可冻结域的到期判定不读墙钟', () => {
+    const strip = (from: string): string =>
+      readFileSync(resolve(__dirname, from), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/.*$/gm, '')
+    for (const rel of [
+      './eventEngine.ts',
+      './earlyGameService.ts',
+      './regionEvent.ts',
+      './divinationService.ts',
+      './pillService.ts'
+    ] as const) {
+      expect(strip(rel), `${rel} 不得直接读 Date.now()(可冻结域)`).not.toMatch(/Date\.now\(\)/)
+    }
+  })
+
   it('设置页各段随本体迁出,宿主不再自带实现', () => {
     const host = src('../views/SettingsView.vue')
     const pref = src('../components/settings/SettingsPreferenceSection.vue')

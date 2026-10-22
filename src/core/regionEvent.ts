@@ -48,7 +48,13 @@ export function currentRegionEvent(regionId: string): RegionEventState | null {
 /** 尝试为某区域生成一次事件(低频:引擎周期性调用,按概率) */
 export function rollRegionEvent(region: RegionDef): RegionEventState | null {
   const player = usePlayerStore()
-  const now = Date.now()
+  /**
+   * 区域事件属于可冻结域:`regionEvent.endsAt` 在
+   * `player.shiftTimedState` 里被顺延。这里读游戏时钟,与同文件的
+   * `currentRegionEvent` 同一把尺 —— 否则一处读冻结的「还没过期」、
+   * 另一处读墙钟判定「早过期了」,同一件事当场分异。
+   */
+  const now = gameNow()
   // 已有未过期事件则不重复
   const cur = player.regionEvent
   if (cur && cur.endsAt > now) return null
