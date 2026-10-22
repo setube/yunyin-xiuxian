@@ -127,9 +127,16 @@
           <span class="countdown-slot text-[10px] text-amber-ink tabular">{{ tilRollover }}</span>
         </div>
         <template v-if="mainQuest">
-          <p class="flex items-center justify-between">
+          <p class="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
             <span class="font-kai text-[13px] tracking-wider text-ink">{{ mainQuest.name }}</span>
-            <span class="flex shrink-0 items-center gap-1.5">
+            <!--
+              右侧这一簇(进度 · 主线 n/N · 去办箭头)在 200% 缩放下会顶出右缘:
+              字号放大一倍后布局视口只剩 195px,`shrink-0` 让它既不缩也不换行,
+              三个读数连着箭头一路冲出屏幕(layout-check 的越界元素点名了这一段)。
+              允许换行后,窄视口下这一簇落到第二行,宽视口下仍是同一行 —— 排布不变,
+              只是不再硬顶边界。箭头那枚 min-h/min-w 保底 28px,换行后照样点得着。
+            -->
+            <span class="flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5">
               <span
                 v-if="mainProgress"
                 class="tabular text-[10px]"

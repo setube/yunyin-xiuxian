@@ -1470,46 +1470,73 @@ for (const vp of VIEWPORTS) {
   /*
    * (四续)天道试炼:第三条终局产线,同样只在单元用例里跑过。
    * 切到「试炼」册,真按一次应试,要求开出战报、且写清止步/功成与赏格、不漏占位符。
+   *
+   * 这一步**另起一份不带在途活动的夹具**:上面那份后期档身上同时压着在途秘境与
+   * 在途远征,而 94e08bc 起终局共用 endgameBusy —— 应试按钮会被正确地置灰成
+   * 「应 试(远征在途)」。沿用同一份夹具,这条判据量到的永远是「置灰的按钮点了没反应」,
+   * 而真相是闸门在按设计工作:它再也不是在量试炼本身了。
+   * 故这里把 worldRun / secretRealm / session 摘掉,与天界页那步各用各的档。
    */
-  await page.goto(INDEX + '#' + '/celestial', { waitUntil: 'load' })
-  await page.waitForTimeout(900)
-  // 上一步的远征战报还开着(它是一层遮罩),先收掉再切册 —— 否则点不动、还查不出原因
-  const leftover = await clearOverlays(page)
-  if (leftover.length) failures.push(`[390-late] 天界页:切试炼册前还开着浮层 —— ${leftover.join('、')}`)
-  const trialTab = page.getByRole('tab', { name: /试\s*炼/ }).first()
-  if ((await trialTab.count()) === 0) failures.push('[390-late] 天界页:找不到「试炼」册')
-  else {
-    await trialTab.click({ timeout: 3000 }).catch(() => {})
-    await page.waitForTimeout(500)
-    checked += 1
-    const trialBtn = page.locator('main button', { hasText: /应\s*试/ }).first()
-    if ((await trialBtn.count()) === 0) failures.push('[390-late] 试炼册里没有「应试」入口(判据没跑到东西)')
+  {
+    // 「没在途」那一份:只把三处在途状态摘掉,其余(道源 1200、境界、解锁表)照旧
+    const idleSlices = {
+      ...slices,
+      player: { ...slices.player, secretRealm: null },
+      endgame: { ...slices.endgame, worldRun: null }
+    }
+    const idlePayload = Object.fromEntries(Object.entries(idleSlices).map(([k, v]) => [`yunyin.${k}`, enc(v)]))
+    const trialCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
+    await trialCtx.addInitScript(decisivePayload => {
+      if (localStorage.getItem('__layoutSeeded')) return
+      for (const [k, v] of Object.entries(decisivePayload)) localStorage.setItem(k, v)
+      localStorage.setItem('__layoutSeeded', '1')
+    }, idlePayload)
+    const trialPage = await trialCtx.newPage()
+    const trialErrors = []
+    watchPageErrors(trialPage, trialErrors)
+    await trialPage.goto(INDEX + '#' + '/celestial', { waitUntil: 'load' })
+    await trialPage.waitForTimeout(1600)
+    await clearOverlays(trialPage)
+    const trialTab = trialPage.getByRole('tab', { name: /试\s*炼/ }).first()
+    if ((await trialTab.count()) === 0) failures.push('[390-late] 天界页:找不到「试炼」册')
     else {
-      const trialName = ((await trialBtn.textContent()) || '').replace(/\s+/g, ' ').trim().slice(0, 20)
-      await trialBtn.click({ timeout: 4000 }).catch(() => {})
-      await page.waitForTimeout(2200)
-      const after = await page.evaluate(() => {
-        const panel = document.querySelector('.modal-panel')
-        const text = panel?.innerText || ''
-        return {
-          title: (panel?.querySelector('h3')?.textContent || '').trim(),
-          text: text.replace(/\n+/g, ' ').slice(0, 90),
-          rows: panel ? panel.querySelectorAll('p, li').length : 0,
-          leaks: /NaN|undefined|Infinity/.test(text)
-        }
-      })
-      if (!after.title) failures.push(`[390-late] 试炼:点了「${trialName}」没有开出战报`)
+      await trialTab.click({ timeout: 3000 }).catch(() => {})
+      await trialPage.waitForTimeout(500)
+      checked += 1
+      const trialBtn = trialPage.locator('main button', { hasText: /应\s*试/ }).first()
+      if ((await trialBtn.count()) === 0) failures.push('[390-late] 试炼册里没有「应试」入口(判据没跑到东西)')
       else {
-        // 战报的两种口径:全捷(打通)或止步第 N 战
-        if (!/全捷|止步第/.test(after.text)) failures.push(`[390-late] 试炼:战报没写清结果 —— ${after.text}`)
-        if (after.leaks) failures.push('[390-late] 试炼:战报漏出占位符')
-        console.log(`  天道试炼(点了「${trialName}」):战报「${after.title}」· ${after.text.slice(0, 34)}…`)
-        await page.keyboard.press('Escape')
-        await page.waitForTimeout(400)
+        const trialName = ((await trialBtn.textContent()) || '').replace(/\s+/g, ' ').trim().slice(0, 20)
+        // 在途闸门先自证清白:这份夹具没有在途活动,按钮就不该挂着「在途」二字
+        if (/在途|身在秘境/.test(trialName)) {
+          failures.push(`[390-late] 试炼:夹具已摘掉在途活动,应试仍写着「${trialName}」—— 闸门误判`)
+        }
+        await trialBtn.click({ timeout: 4000 }).catch(() => {})
+        await trialPage.waitForTimeout(2200)
+        const after = await trialPage.evaluate(() => {
+          const panel = document.querySelector('.modal-panel')
+          const text = panel?.innerText || ''
+          return {
+            title: (panel?.querySelector('h3')?.textContent || '').trim(),
+            text: text.replace(/\n+/g, ' ').slice(0, 90),
+            rows: panel ? panel.querySelectorAll('p, li').length : 0,
+            leaks: /NaN|undefined|Infinity/.test(text)
+          }
+        })
+        if (!after.title) failures.push(`[390-late] 试炼:点了「${trialName}」没有开出战报`)
+        else {
+          // 战报的两种口径:全捷(打通)或止步第 N 战
+          if (!/全捷|止步第/.test(after.text)) failures.push(`[390-late] 试炼:战报没写清结果 —— ${after.text}`)
+          if (after.leaks) failures.push('[390-late] 试炼:战报漏出占位符')
+          console.log(`  天道试炼(点了「${trialName}」):战报「${after.title}」· ${after.text.slice(0, 34)}…`)
+          await trialPage.keyboard.press('Escape')
+          await trialPage.waitForTimeout(400)
+        }
       }
     }
+    if (trialErrors.length) failures.push(`[390] 后期档页面异常(试炼):${[...new Set(trialErrors)].join(' | ')}`)
+    await trialCtx.close()
   }
-  if (pageErrors.length) failures.push(`[390] 后期档页面异常(试炼):${[...new Set(pageErrors)].join(' | ')}`)
   await ctx.close()
 
   /*
