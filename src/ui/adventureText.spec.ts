@@ -48,6 +48,21 @@ describe('出发按钮与结算同一套数', () => {
     expect(host, '宿主不该再自己算三档账').not.toContain('departButtonText')
   })
 
+  /**
+   * 超过洞府离线上限的档位要**连解法一起给**。
+   *
+   * 16h 档配 0 级洞府(上限 8h)时,关掉游戏回来只按 8h 结算。只说「离线只结到 8小时」
+   * 玩家仍不知道该升级洞府还是换档 —— 标注必须指出「洞府几级可结满」,而那一个数
+   * 要从 OFFLINE_CAP_HOURS 现算,不许手写(表一改文案就撒谎)。
+   * 故障注入:把 needLv 改成写死 2 → 本条红。
+   */
+  it('超上限标注连「洞府几级可结满」一起给,且等级从上限表现算', () => {
+    const dialog = readFileSync(new URL('../components/adventure/ExploreModeDialog.vue', import.meta.url), 'utf8')
+    expect(dialog, '超上限标注要指出解法').toContain('洞府 ${needLv} 级可结满')
+    expect(dialog, '可结满等级要从 OFFLINE_CAP_HOURS 现算').toContain('OFFLINE_CAP_HOURS.findIndex(')
+    expect(dialog, '上限秒数不许另写一套 3600 口径').not.toMatch(/OFFLINE_CAP_HOURS\[\w+\]\s*\*\s*60\b/)
+  })
+
   it('灵兽之性那行:有数的给数(遇险/行程),没数的只定性(掉宝/护持),无伴则空', () => {
     for (const pet of PETS) {
       const eff = personalityEffects(pet.id)

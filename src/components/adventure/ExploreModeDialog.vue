@@ -70,7 +70,7 @@
   import type { ExploreMode, RegionDef } from '@/types'
   import { usePlayerStore } from '@/stores/player'
   import { useDongfuStore } from '@/stores/dongfu'
-  import { EXPLORE_MODES } from '@/data/constants'
+  import { EXPLORE_MODES, OFFLINE_CAP_HOURS } from '@/data/constants'
   import {
     exploreBattleGapSec,
     exploreDurationSec,
@@ -128,7 +128,10 @@
     const capSec = useDongfuStore().offlineCapHours * 3600
     const durationSec = exploreDurationSec(mode, player.petId)
     if (durationSec <= capSec) return ''
-    return `离线只结到 ${formatDuration(capSec)}(洞府上限)`
+    // 差多少与「怎么解」一起给:只说「只结到 X」,玩家仍不知道该升级洞府还是换档
+    const needLv = OFFLINE_CAP_HOURS.findIndex(h => h * 3600 >= durationSec)
+    const hint = needLv >= 0 ? ` · 洞府 ${needLv} 级可结满` : ''
+    return `离线只结到 ${formatDuration(capSec)}(洞府上限)${hint}`
   }
 
   const currentBuild = computed(() => detectBuild(player.finalStats.mods))
