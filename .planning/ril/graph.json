@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 329,
+  "round": 330,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T01:24:46+00:00",
+  "updated_at": "2026-10-22T02:29:34+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -24704,6 +24704,250 @@
       "commit": "d2f3d87",
       "title": "Toast 闪光计时器随宿主撤销",
       "summary": "重弹撤旧计时器,卸载即清;同帧多条 toast 逐条发声"
+    },
+    "COMP-076": {
+      "id": "COMP-076",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:22:09+00:00",
+      "touched_round": 330,
+      "title": "大数与资源坏档边界",
+      "path": "src/utils/gnum.ts + src/stores/resources.ts",
+      "summary": "gn 反序列化只校验字段类型，未拒绝非有限指数；resources.sanitize 未夹掉负尾数灵石。"
+    },
+    "COMP-077": {
+      "id": "COMP-077",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:22:09+00:00",
+      "touched_round": 330,
+      "title": "玩家境界整数与上界修形",
+      "path": "src/stores/player.ts",
+      "summary": "major/sub sanitize 只拒绝非有限与负数，未取整、未夹到境界表/层数上界。"
+    },
+    "COMP-078": {
+      "id": "COMP-078",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:22:09+00:00",
+      "touched_round": 330,
+      "title": "游戏开局标记布尔修形",
+      "path": "src/stores/game.ts",
+      "summary": "started 未在 sanitize 中归一为严格布尔，字符串 false 会被当作已开局。"
+    },
+    "ISS-1013": {
+      "id": "ISS-1013",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:29:34+00:00",
+      "touched_round": 330,
+      "title": "坏大数指数可伪造无限灵石且负尾数可留在资源账",
+      "severity": 0.85,
+      "detail": "gn({m:1,e:Infinity}) 经 normalize 生成 m=0 之前先算出 Infinity 指数，资源读档可形成无限财富；resources.sanitize 直接 gn(spiritStone) 未把负尾数夹零。"
+    },
+    "ISS-1014": {
+      "id": "ISS-1014",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:29:34+00:00",
+      "touched_round": 330,
+      "title": "坏档境界大阶与层数未取整上界可致渲染/数值异常",
+      "severity": 0.75,
+      "detail": "player.sanitize 只拒绝非有限和负数，3.5 会让 realmDef 索引 undefined，999 会让境界相关公式越界或溢出。"
+    },
+    "ISS-1015": {
+      "id": "ISS-1015",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:29:34+00:00",
+      "touched_round": 330,
+      "title": "字符串 started 绕过开局守卫并触发错误离线结算",
+      "severity": 0.8,
+      "detail": "game.sanitize 不归一 started；坏档写 started:\"false\" 或 \"yes\" 都是 truthy，路由守卫会按已开局放行。"
+    },
+    "TASK-458": {
+      "id": "TASK-458",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:29:34+00:00",
+      "touched_round": 330,
+      "category": "correctness",
+      "severity": 0.85,
+      "confidence": 1,
+      "effort": 2,
+      "unlock_factor": 1,
+      "title": "坏大数指数归零并夹掉负灵石",
+      "detail": "gn 反序列化要求指数有限；resources.sanitize 将负尾数灵石归零；补 gnum/resources 行为测试并做故障注入。"
+    },
+    "TASK-459": {
+      "id": "TASK-459",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:29:34+00:00",
+      "touched_round": 330,
+      "category": "correctness",
+      "severity": 0.75,
+      "confidence": 1,
+      "effort": 1.5,
+      "unlock_factor": 1,
+      "title": "玩家境界大阶与层数取整夹界",
+      "detail": "sanitize 将 major 夹到 [0,MAX_MAJOR] 整数、sub 夹到 [0,SUB_LEVELS-1] 整数；验证派生境界与数值有限。"
+    },
+    "TASK-460": {
+      "id": "TASK-460",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T02:22:09+00:00",
+      "updated_at": "2026-10-22T02:29:34+00:00",
+      "touched_round": 330,
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 1,
+      "effort": 1,
+      "unlock_factor": 1,
+      "title": "开局标记只认布尔真",
+      "detail": "game.sanitize 将 started 归一为严格 true；覆盖字符串/数字/对象/true 四类，并强化导入坏档断言。"
+    },
+    "HYP-169": {
+      "id": "HYP-169",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:24+00:00",
+      "updated_at": "2026-10-22T02:22:24+00:00",
+      "touched_round": 330,
+      "confidence": 1,
+      "title": "gn 只校验 e 为 number 时未拒绝 Infinity/NaN",
+      "detail": "坏指数进入 normalize 后可得到非有限指数，资源账将其视为无限财富。"
+    },
+    "HYP-170": {
+      "id": "HYP-170",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:24+00:00",
+      "updated_at": "2026-10-22T02:22:24+00:00",
+      "touched_round": 330,
+      "confidence": 1,
+      "title": "玩家 sanitize 缺少整数化与境界上界夹取",
+      "detail": "realmDef 以小数作数组下标会得 undefined；超大 major 进入派生公式可溢出。"
+    },
+    "HYP-171": {
+      "id": "HYP-171",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:25+00:00",
+      "updated_at": "2026-10-22T02:22:25+00:00",
+      "touched_round": 330,
+      "confidence": 1,
+      "title": "game.started 未做严格布尔归一",
+      "detail": "坏档字符串会被 Vue ref 保留为 truthy，路由与离线结算按已开局处理。"
+    },
+    "EV-1008": {
+      "id": "EV-1008",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:25+00:00",
+      "updated_at": "2026-10-22T02:22:25+00:00",
+      "touched_round": 330,
+      "source": "src/utils/gnum.ts:24-34",
+      "title": "gn 反序列化仅检查 typeof e === number",
+      "detail": "未检查 Number.isFinite(v.e)，随后 normalize(v.m,v.e) 可返回非有限指数。",
+      "confidence": 1.0
+    },
+    "EV-1009": {
+      "id": "EV-1009",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:25+00:00",
+      "updated_at": "2026-10-22T02:22:25+00:00",
+      "touched_round": 330,
+      "source": "src/stores/resources.ts:177-178",
+      "title": "resources.sanitize 只做 gn 形状归一",
+      "detail": "负尾数灵石不会被夹零，可绕过资源非负不变式。",
+      "confidence": 1.0
+    },
+    "EV-1010": {
+      "id": "EV-1010",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:25+00:00",
+      "updated_at": "2026-10-22T02:22:25+00:00",
+      "touched_round": 330,
+      "source": "src/stores/player.ts:759-772",
+      "title": "major/sub sanitize 只判非有限与负数",
+      "detail": "未 Math.floor、未夹 MAX_MAJOR/SUB_LEVELS，坏档可留下小数与越界值。",
+      "confidence": 1.0
+    },
+    "EV-1011": {
+      "id": "EV-1011",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:22:25+00:00",
+      "updated_at": "2026-10-22T02:22:25+00:00",
+      "touched_round": 330,
+      "source": "src/stores/game.ts:30-47",
+      "title": "game.sanitize 未触碰 started",
+      "detail": "坏档 started 字符串保持 truthy，路由与离线结算可被绕过。",
+      "confidence": 1.0
+    },
+    "CHG-558": {
+      "id": "CHG-558",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:29:19+00:00",
+      "updated_at": "2026-10-22T02:29:19+00:00",
+      "touched_round": 330,
+      "commit": "7882c2c",
+      "title": "坏大数指数与负灵石归零",
+      "detail": "gn 拒绝非有限指数；resources.sanitize 负尾数灵石归零；定向测试与全量门禁绿。"
+    },
+    "CHG-559": {
+      "id": "CHG-559",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:29:19+00:00",
+      "updated_at": "2026-10-22T02:29:19+00:00",
+      "touched_round": 330,
+      "commit": "d186652",
+      "title": "玩家境界大阶与层数取整夹界",
+      "detail": "major 夹到 [0,MAX_MAJOR]、sub 夹到 [0,SUB_LEVELS-1] 并向下取整；派生境界与数值有限。"
+    },
+    "CHG-560": {
+      "id": "CHG-560",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:29:19+00:00",
+      "updated_at": "2026-10-22T02:29:19+00:00",
+      "touched_round": 330,
+      "commit": "60d5783",
+      "title": "开局标记只认严格布尔真",
+      "detail": "game.sanitize 将 started 归一为严格 true；导入坏档端到端断言。"
     }
   },
   "edges": [
@@ -36455,6 +36699,114 @@
       "to": "ISS-1012",
       "type": "resolves",
       "created_at": "2026-10-22T01:24:46+00:00"
+    },
+    {
+      "from": "ISS-1013",
+      "to": "COMP-076",
+      "type": "located_in",
+      "created_at": "2026-10-22T02:22:32+00:00"
+    },
+    {
+      "from": "ISS-1014",
+      "to": "COMP-077",
+      "type": "located_in",
+      "created_at": "2026-10-22T02:22:32+00:00"
+    },
+    {
+      "from": "ISS-1015",
+      "to": "COMP-078",
+      "type": "located_in",
+      "created_at": "2026-10-22T02:22:32+00:00"
+    },
+    {
+      "from": "TASK-458",
+      "to": "ISS-1013",
+      "type": "addresses",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "TASK-459",
+      "to": "ISS-1014",
+      "type": "addresses",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "TASK-460",
+      "to": "ISS-1015",
+      "type": "addresses",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "EV-1008",
+      "to": "HYP-169",
+      "type": "validates",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "EV-1009",
+      "to": "HYP-169",
+      "type": "validates",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "EV-1010",
+      "to": "HYP-170",
+      "type": "validates",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "EV-1011",
+      "to": "HYP-171",
+      "type": "validates",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "ISS-1013",
+      "to": "ISS-1014",
+      "type": "causes",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "ISS-1015",
+      "to": "ISS-1014",
+      "type": "causes",
+      "created_at": "2026-10-22T02:22:33+00:00"
+    },
+    {
+      "from": "CHG-558",
+      "to": "TASK-458",
+      "type": "implements",
+      "created_at": "2026-10-22T02:29:19+00:00"
+    },
+    {
+      "from": "CHG-558",
+      "to": "ISS-1013",
+      "type": "resolves",
+      "created_at": "2026-10-22T02:29:19+00:00"
+    },
+    {
+      "from": "CHG-559",
+      "to": "TASK-459",
+      "type": "implements",
+      "created_at": "2026-10-22T02:29:19+00:00"
+    },
+    {
+      "from": "CHG-559",
+      "to": "ISS-1014",
+      "type": "resolves",
+      "created_at": "2026-10-22T02:29:19+00:00"
+    },
+    {
+      "from": "CHG-560",
+      "to": "TASK-460",
+      "type": "implements",
+      "created_at": "2026-10-22T02:29:19+00:00"
+    },
+    {
+      "from": "CHG-560",
+      "to": "ISS-1015",
+      "type": "resolves",
+      "created_at": "2026-10-22T02:29:19+00:00"
     }
   ]
 }
