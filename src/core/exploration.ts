@@ -270,6 +270,7 @@ export function winsUntilRegionBoss(wins: number, cleared: boolean): number | nu
  */
 export function regionBossCleared(regionId: string): boolean {
   const adventure = useAdventureStore()
+  if (adventure.revived.includes(regionId)) return false
   const routeNode = adventure.mortalWorld?.chain.find(p => p.fromId === regionId)
   return routeNode ? adventure.mortalCleared.includes(routeNode.nodeId) : adventure.cleared.includes(regionId)
 }

@@ -4,6 +4,7 @@ import { useAdventureStore } from '@/stores/adventure'
 import { usePlayerStore } from '@/stores/player'
 import { settleRegionRevivals } from './regionRevival'
 import { settleSuppressedRegions } from './suppress'
+import { regionBossCleared, winsUntilRegionBoss } from './exploration'
 import { REGIONS } from '@/data/regions'
 import { REVIVE_AFTER_HOURS } from './worldMemory'
 
@@ -102,5 +103,39 @@ describe('妖气复聚(regionRevival)', () => {
 
     expect(adventure.revived.includes(id)).toBe(true) // 旧主归来
     expect(adventure.cleared.includes(id)).toBe(false)
+  })
+
+  /**
+   * 旧主归来 = 首领该复出 —— 哪怕这处地界在本世路线上。
+   *
+   * markRevived 只收掉旧链 cleared 与起钟,本世路线节点 mortalCleared **不动**
+   * (那个节点还扛着后续路段的可达性,撤掉会把整条路线重新锁死)。于是
+   * regionBossCleared 必须自己补问一次 revived:路线内的区域复聚后,首领判定
+   * 要回到「未靖」,runBattle 才会再召出旧主,玩家读到的「再历一程即可复靖」
+   * 才兑现。此前它只看 mortalCleared,复聚后那条路线节点仍算已通 ——
+   * 旧主永不再现,界面上却挂着「妖气复聚 · 再历一程即可复靖」。
+   */
+  it('复聚后首领判定转回未靖:路线内区域的本世节点仍通,也不再算「已靖」(首领复出)', () => {
+    vi.setSystemTime(T0)
+    const adventure = useAdventureStore()
+    const regionId = 'qingyun'
+    adventure.$patch({
+      mortalWorld: {
+        seed: 1, shapeId: 's', shapeName: 's', rhythmId: 'r', rhythmName: 'r', ruleId: 'r', ruleName: 'r', bias: 'b',
+        chain: [{ nodeId: 'n1_qingyun', fromId: regionId, name: '青云山麓', tier: 1, enemies: [], boss: 'b', archetype: 'a', eventTags: [] }]
+      } as never,
+      cleared: [] as string[]
+    } as never)
+    adventure.markCleared(regionId) // 首领被靖:旧链 cleared 与起钟都在这一刻
+    adventure.markNodeCleared('n1_qingyun') // 本世路线推进
+    expect(regionBossCleared(regionId), '构型前提:首领已靖').toBe(true)
+    expect(winsUntilRegionBoss(0, regionBossCleared(regionId))).toBeNull()
+
+    vi.setSystemTime(T0 + (REVIVE_AFTER_HOURS + 1) * H)
+    expect(settleRegionRevivals(Date.now())).toContain(regionId) // 旧主归来
+
+    expect(adventure.mortalCleared, '路线节点照旧留着 —— 撤掉会把整条路线重新锁死').toContain('n1_qingyun')
+    expect(regionBossCleared(regionId), '归来即不再已靖,首领该复出').toBe(false)
+    expect(winsUntilRegionBoss(0, regionBossCleared(regionId)), '首领重新排队,不再是 null').not.toBeNull()
   })
 })
