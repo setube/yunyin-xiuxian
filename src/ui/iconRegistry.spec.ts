@@ -5,8 +5,16 @@
  * 灵兽/建筑/区域/敌人/增益/丹药/法宝。它们与装备走同一个渲染口
  * (GameIcon → iconOf → ICONS),而 iconOf 有 Sparkles 兜底、永不抛错 ——
  * 哪个键写错/被删,UI 上只会静默掉成四角星,必须在这层直接钉死。
+ *
+ * 下面第二段把同一把尺子伸到**源码里的字面量**:上面那份名单是手工维护的,
+ * 新写一处界面自己现拼的图标名它就看不见 —— `RegionCard` 那句
+ * `row.suppressed ? 'shield-check' : …` 正是这样漏了三年(注册表里从来没这一键,
+ * 镇压中的地界一直画着四角星)。故第二段直接扫 `icon: 'x'`、`:name="… 'x' …"`
+ * 与 `<GameIcon name="x">` 三种写法。
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { ICONS } from './icons'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
 import { BUILDINGS } from '@/data/buildings'
@@ -40,5 +48,60 @@ describe('图标注册表 · 全数据源无死键', () => {
       .filter(item => item.icon !== undefined && !(item.icon! in ICONS))
       .map(item => `${item.name ?? '?'}:${item.icon}`)
     expect(dead, `${label} 以下图标键未注册(会静默掉成 Sparkles)`).toEqual([])
+  })
+})
+
+const SRC = resolve(__dirname, '..')
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry)
+    if (statSync(full).isDirectory()) walk(full, out)
+    else if (/\.(ts|vue)$/.test(entry) && !entry.endsWith('.spec.ts')) out.push(full)
+  }
+  return out
+}
+
+/**
+ * 源码里写死的图标名 —— **每一种写法都要认**。
+ *
+ * 上面那份 SOURCES 是按对象上的 `icon` 字段查的,只覆盖「数据表里带 icon 的数据源」;
+ * 界面自己现拼的名字(三元表达式、局部映射表、`<GameIcon name="trash">` 这种静态属性)
+ * 一条都查不到。故这里直接按文本扫三种写法:
+ *   一 `icon: 'x'` —— 数据表与局部映射的写法;
+ *   二 `<GameIcon … :name="… 'x' …"` —— 绑定表达式里嵌的字面量(RegionCard 那处);
+ *   三 `<GameIcon name="x"` —— 静态属性写法。
+ */
+function literalIconNames(text: string): string[] {
+  const names: string[] = []
+  for (const m of text.matchAll(/\bicon:\s*'([a-z0-9-]+)'/g)) names.push(m[1]!)
+  for (const m of text.matchAll(/<GameIcon\b[^>]*?:name="([^"]*)"/gs))
+    for (const lit of m[1]!.matchAll(/'([a-z0-9-]+)'/g)) names.push(lit[1]!)
+  for (const m of text.matchAll(/<GameIcon\b[^>]*?\bname="([a-z0-9-]+)"/g)) names.push(m[1]!)
+  return names
+}
+
+describe('图标注册表 · 源码里写死的名字也必须登记', () => {
+  it('三种写法扫出来的每个键都在 ICONS 里(漏登记就静默掉成四角星)', () => {
+    const dead: string[] = []
+    let scanned = 0
+    for (const file of walk(SRC)) {
+      const text = readFileSync(file, 'utf8')
+      const names = literalIconNames(text)
+      // 阳性对照:真扫到了大量图标名才敢相信「没死键」这个结论
+      scanned += names.length
+      for (const name of names) if (!(name in ICONS)) dead.push(`${file.slice(SRC.length + 1)}:${name}`)
+    }
+    expect(scanned, '一处图标字面量都没扫到 —— 正则坏了,这条会在空集上假绿').toBeGreaterThan(100)
+    expect([...new Set(dead)], '这些名字写在了源码里却没进 ICONS 注册表').toEqual([])
+  })
+
+  /**
+   * 故障注入:把 RegionCard 的 `'shield-check'` 改回一个没登记的键(如 `'shield-ok'`)
+   * → 本条红并点名那一处;把 names 换回按对象字段查(旧法)→ 本条同样红空转。
+   */
+  it('判据自家不空转:RegionCard 那处三元里的字面量真被读到了', () => {
+    const src = readFileSync(resolve(SRC, 'components/adventure/RegionCard.vue'), 'utf8')
+    expect(literalIconNames(src), '表达式里嵌的图标名没被读出来').toContain('shield-check')
   })
 })

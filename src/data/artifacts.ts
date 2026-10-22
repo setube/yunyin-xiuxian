@@ -71,7 +71,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合回复 12% 生命',
     4,
     { type: 'heal', pctMaxHp: 0.12 },
-    'flask'
+    'amphora'
   ),
   f(
     'af_lihuo',
@@ -84,7 +84,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合喷吐真火,造成 220% 攻击伤害',
     3,
     { type: 'damage', mult: 2.2 },
-    'flame'
+    'flame-kindling'
   ),
   f(
     'af_xuantian',
@@ -97,7 +97,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合获得 18% 生命护盾',
     4,
     { type: 'shield', pctMaxHp: 0.18 },
-    'shield'
+    'mirror-round'
   ),
   f(
     'af_fuyao',
@@ -110,7 +110,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合束缚敌人,其攻击降低 20%',
     4,
     { type: 'weaken', pct: 0.2 },
-    'link'
+    'lasso'
   ),
   f(
     'af_leiyin',
@@ -123,7 +123,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合降下雷霆,造成 260% 攻击伤害',
     3,
     { type: 'damage', mult: 2.6 },
-    'zap'
+    'hammer'
   ),
   f(
     'af_yujing',
@@ -136,7 +136,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合回复 20% 生命',
     4,
     { type: 'heal', pctMaxHp: 0.2 },
-    'flask'
+    'flask-round'
   ),
   f(
     'af_bagua',
@@ -149,7 +149,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合喷出三昧真火,造成 300% 攻击伤害',
     3,
     { type: 'damage', mult: 3.0 },
-    'flame'
+    'cooking-pot'
   ),
   f(
     'af_dinghai',
@@ -162,7 +162,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合获得 22% 生命护盾',
     4,
     { type: 'shield', pctMaxHp: 0.22 },
-    'droplets'
+    'waves'
   ),
   f(
     'af_youming',
@@ -201,7 +201,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合大印镇压,造成 340% 攻击伤害',
     3,
     { type: 'damage', mult: 3.4 },
-    'mountain'
+    'stamp'
   ),
   f(
     'af_shehun',
@@ -214,7 +214,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合铃音慑敌,其攻击降低 30%',
     4,
     { type: 'weaken', pct: 0.3 },
-    'bell'
+    'bell-ring'
   ),
   f(
     'af_xingpan',
@@ -228,7 +228,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合引星辉入体,回复 24% 生命',
     4,
     { type: 'heal', pctMaxHp: 0.24 },
-    'star'
+    'compass'
   ),
   f(
     'af_chixiao',
@@ -241,7 +241,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合鼎压四方,造成 380% 攻击伤害',
     3,
     { type: 'damage', mult: 3.8 },
-    'flame'
+    'soup'
   ),
   f(
     'af_bishui',
@@ -267,7 +267,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合幡卷灵力,造成 400% 攻击伤害',
     3,
     { type: 'damage', mult: 4.0 },
-    'ghost'
+    'skull'
   ),
   f(
     'af_taixu',
@@ -280,7 +280,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合获得 32% 生命护盾',
     4,
     { type: 'shield', pctMaxHp: 0.32 },
-    'shield'
+    'mirror-rectangular'
   ),
   f(
     'af_zhanxian',
@@ -293,7 +293,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合飞刀取首,造成 460% 攻击伤害',
     3,
     { type: 'damage', mult: 4.6 },
-    'sword'
+    'slice'
   ),
   f(
     'af_hundun',
@@ -319,7 +319,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合造化加身,回复 40% 生命',
     4,
     { type: 'heal', pctMaxHp: 0.4 },
-    'star'
+    'disc'
   ),
 
   // ============ 仙界及以上法宝(tier 21+)============
@@ -334,7 +334,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合仙火护主,回复 40% 生命',
     4,
     { type: 'heal', pctMaxHp: 0.4 },
-    'flask'
+    'beaker'
   ),
   f(
     'af_xianqin',
@@ -347,7 +347,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合琴音摄神,打断敌人这一手',
     4,
     { type: 'stun' },
-    'scroll'
+    'music'
   ),
   f(
     'af_shenzhong',
@@ -360,7 +360,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合神钟自成壁垒,获得 23% 生命护盾',
     4,
     { type: 'shield', pctMaxHp: 0.23 },
-    'bell'
+    'bell-dot'
   ),
   f(
     'af_shenbian',
@@ -439,7 +439,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合镇压四方,定住敌人这一手',
     4,
     { type: 'stun' },
-    'gem'
+    'badge'
   ),
   f(
     'af_shenlei',
@@ -465,7 +465,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合青莲护身,获得 21% 生命护盾',
     4,
     { type: 'shield', pctMaxHp: 0.21 },
-    'leaf'
+    'flower'
   ),
   f(
     'af_xujiesuo',
@@ -478,7 +478,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合挪移虚界,敌人伤害降低 20%',
     4,
     { type: 'weaken', pct: 0.2 },
-    'sparkles'
+    'move-3d'
   ),
 
   // ============ 仙界初段(21-25 阶)============
@@ -508,7 +508,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合引星陨落,造成 500% 攻击伤害',
     3,
     { type: 'damage', mult: 5 },
-    'star'
+    'orbit'
   ),
   f(
     'af_xuanxu',
@@ -521,7 +521,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合扫落敌人气机,造成 230% 攻击伤害并回复其中 60%',
     3,
     { type: 'drain', mult: 2.3, healPct: 0.6 },
-    'wind'
+    'brush'
   ),
   f(
     'af_yujingyin',
@@ -534,7 +534,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合玉京垂护,敌人伤害降低 21%',
     4,
     { type: 'weaken', pct: 0.21 },
-    'gem'
+    'landmark'
   ),
 
   // ============ 神界初段(26-29 阶)============
@@ -549,7 +549,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合神域压落,造成 440% 攻击伤害',
     3,
     { type: 'damage', mult: 4.4 },
-    'shield'
+    'flag-triangle-right'
   ),
   f(
     'af_yunshengu',
@@ -562,7 +562,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合鼓声催战,造成 250% 攻击伤害并回复其中 50%',
     3,
     { type: 'drain', mult: 2.5, healPct: 0.5 },
-    'bell'
+    'drum'
   ),
   f(
     'af_wanshendeng',
@@ -575,7 +575,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合香火回照,回复 31% 生命',
     4,
     { type: 'heal', pctMaxHp: 0.31 },
-    'flame'
+    'lamp'
   ),
   f(
     'af_diquefu',
@@ -603,7 +603,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合真灵回照,回复 27% 生命',
     4,
     { type: 'heal', pctMaxHp: 0.27 },
-    'ghost'
+    'flag'
   ),
   f(
     'af_hongmengchi',
@@ -616,7 +616,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合开天一击,造成 290% 攻击伤害',
     3,
     { type: 'damage', mult: 2.9 },
-    'wand'
+    'ruler'
   ),
   f(
     'af_benyuanlian',
@@ -629,7 +629,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 4 回合本源护持,获得 17% 生命护盾',
     4,
     { type: 'shield', pctMaxHp: 0.17 },
-    'leaf'
+    'flower-2'
   ),
   f(
     'af_shenmojing',
@@ -642,7 +642,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '每 3 回合神魔噬影,造成 260% 攻击伤害并回复其中 60%',
     3,
     { type: 'drain', mult: 2.6, healPct: 0.6 },
-    'circle-dot'
+    'scan-eye'
   ),
 
   /*
@@ -664,7 +664,7 @@ export const ARTIFACTS: ArtifactDef[] = [
     '受慑时以七成概率当场挣脱,那一手照出',
     1,
     { type: 'purge', pct: 0.7 },
-    'circle-dot'
+    'circle-dot-dashed'
   )
 ]
 
