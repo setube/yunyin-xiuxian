@@ -24,10 +24,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue'
+  import { onUnmounted, ref, watch } from 'vue'
   import { useUiStore } from '@/stores/ui'
   import type { Toast } from '@/stores/ui'
   import { playSfx, type SfxName } from '@/core/audio'
+  import { createToastAnnouncer, createToastFlashTimer } from '@/ui/toastFlash'
 
   const ui = useUiStore()
 
@@ -42,6 +43,7 @@
   const TOAST_ANIM_MS = 250
 
   const flashId = ref<number | null>(null)
+  const flashTimer = createToastFlashTimer(flashId)
 
   const KIND_CLASS: Record<Toast['kind'], string> = {
     info: 'border-ink/25 text-ink-soft bg-paper',
@@ -52,20 +54,16 @@
 
   const KIND_SFX: Record<Toast['kind'], SfxName> = { info: 'info', success: 'success', warn: 'warn', rare: 'rare' }
 
+  const announcer = createToastAnnouncer(
+    kind => playSfx(KIND_SFX[kind as Toast['kind']] ?? 'info'),
+    id => flashTimer.flash(id)
+  )
+
   // 新 toast 落地时按类型配一声提示音;稀有品级另加全屏金光
   watch(
-    () => ui.toasts[ui.toasts.length - 1]?.id,
-    (id, prev) => {
-      if (id === undefined || id === prev) return
-      const last = ui.toasts[ui.toasts.length - 1]
-      if (!last) return
-      playSfx(KIND_SFX[last.kind])
-      if (last.kind === 'rare') {
-        flashId.value = last.id
-        setTimeout(() => {
-          if (flashId.value === last.id) flashId.value = null
-        }, 1200)
-      }
-    }
+    () => ui.toasts.map(t => t.id),
+    () => announcer.announce(ui.toasts)
   )
+
+  onUnmounted(flashTimer.dispose)
 </script>
