@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 340,
+  "round": 342,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T15:56:47+00:00",
+  "updated_at": "2026-10-22T17:09:05+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 339,
+      "touched_round": 341,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -11956,7 +11956,7 @@
       "version": 1,
       "created_at": "2026-09-16T01:33:21+00:00",
       "updated_at": "2026-09-16T01:33:21+00:00",
-      "touched_round": 338,
+      "touched_round": 341,
       "summary": "src/core/pillService.ts + src/core/breakthrough.ts + src/core/save.ts(炼丹/突破/存档三条主干)"
     },
     "CHG-239": {
@@ -26769,6 +26769,54 @@
       "title": "「险」的烫线留 5% 余量",
       "commit": "31192ad",
       "summary": "RISKY_DANGER_MARGIN,小险档不再烫成朱砂"
+    },
+    "ISS-1052": {
+      "id": "ISS-1052",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T16:35:44+00:00",
+      "updated_at": "2026-10-22T16:35:44+00:00",
+      "touched_round": 341,
+      "title": "离线重复法宝逐件播报,淹没归来卷轴",
+      "severity": 0.8,
+      "detail": "16 小时长档一次掉出几十件法宝,囊中已拥有者每件吐一行「(已拥有,化作悟道点×10)」,归来卷轴被同一行占满(实测 31 行),玩家读不到别的产出"
+    },
+    "CHG-591": {
+      "id": "CHG-591",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T16:35:49+00:00",
+      "updated_at": "2026-10-22T16:35:49+00:00",
+      "touched_round": 341,
+      "commit": "827583d",
+      "title": "离线重复法宝聚成一行",
+      "detail": "offline.ts 按 defId 聚合法宝拾得,同一件只报一行;loot.ts 拆出 acquireArtifactGain 回报结构;ARTIFACT_DUPLICATE_WUDAO 收拢重复折算的 10 点悟道点"
+    },
+    "ISS-1053": {
+      "id": "ISS-1053",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T17:08:33+00:00",
+      "updated_at": "2026-10-22T17:08:33+00:00",
+      "touched_round": 341,
+      "title": "离线自动结算的际遇法宝自动祭上",
+      "severity": 0.75,
+      "detail": "离线整段/事件超时/遇事勿扰都走 autoResolveEvent,它照默认 autoEquip=true 收法宝:玩家回来发现随身那一格被祭上,而从没点过那个按钮。离线法宝掉落通道早就守住了这条,际遇这条漏着"
+    },
+    "CHG-592": {
+      "id": "CHG-592",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T17:08:49+00:00",
+      "updated_at": "2026-10-22T17:08:49+00:00",
+      "touched_round": 341,
+      "commit": "750a340",
+      "title": "autoResolveEvent 不替玩家祭法宝",
+      "detail": "applyEffect/resolveEventChoice 收进 opts.autoEquipArtifact;autoResolveEvent 传 false;亲手路径照旧"
     }
   },
   "edges": [
@@ -39495,6 +39543,30 @@
       "to": "COMP-006",
       "type": "located_in",
       "created_at": "2026-10-22T15:56:35+00:00"
+    },
+    {
+      "from": "CHG-591",
+      "to": "ISS-1052",
+      "type": "resolves",
+      "created_at": "2026-10-22T16:36:00+00:00"
+    },
+    {
+      "from": "ISS-1052",
+      "to": "COMP-024",
+      "type": "located_in",
+      "created_at": "2026-10-22T16:36:00+00:00"
+    },
+    {
+      "from": "CHG-592",
+      "to": "ISS-1053",
+      "type": "resolves",
+      "created_at": "2026-10-22T17:08:49+00:00"
+    },
+    {
+      "from": "ISS-1053",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-22T17:09:05+00:00"
     }
   ]
 }
