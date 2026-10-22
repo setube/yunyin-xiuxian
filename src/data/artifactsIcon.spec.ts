@@ -92,13 +92,34 @@ describe('法宝位 · 画出来的第一格就是要让位的那一件', () => 
 
   it('替下判据与第一格同源:槽满时让位的就是画在第一格的那件', () => {
     const views = artifactSlotViews(equipped, owned, ARTIFACT_MAX_SLOTS)
-    expect(artifactEvictedBy(equipped, ARTIFACT_MAX_SLOTS)).toBe(views[0]!.def.id)
+    expect(artifactEvictedBy(equipped, ARTIFACT_MAX_SLOTS)).toEqual([views[0]!.def.id])
   })
 
-  it('槽未满、槽数非法、或本来就带着这一件时,没有「被替下」这回事', () => {
-    expect(artifactEvictedBy(['af_muyu'], 2)).toBeNull()
-    expect(artifactEvictedBy(equipped, 0)).toBeNull()
-    expect(artifactEvictedBy(equipped, Number.NaN)).toBeNull()
+  it('槽未满、槽数非法时,没有「被替下」这回事', () => {
+    expect(artifactEvictedBy(['af_muyu'], 2)).toEqual([])
+    expect(artifactEvictedBy(equipped, 0)).toEqual([])
+    expect(artifactEvictedBy(equipped, Number.NaN)).toEqual([])
+  })
+
+  /**
+   * 超编的列表让位的是**前端几件**, 按钮得照实全念出来。
+   *
+   * 境界跌落(元婴位没了), 未经 sanitize 的内存直塞, 都能让佩带列表**本来就超编**。
+   * 替换分支会一路裁到 `slots`, 前端几件一起让位。
+   *
+   * 故障注入: 把 `artifactEvictedBy` 改回只返回 `equipped[0]`
+   * (单件), 本条必红 —— 那样按钮只点名了一件,
+   * 而真正被替下的是两件。
+   */
+  it('列表超编时,让位的前端几件要全部报出来', () => {
+    expect(artifactEvictedBy(['af_muyu', 'af_lihuo'], 1)).toEqual(['af_muyu', 'af_lihuo'])
+    expect(artifactEvictedBy(['af_muyu', 'af_lihuo', 'af_xuantian'], 2)).toEqual(['af_muyu', 'af_lihuo'])
+    // 未超编(正好满格)时让位的只是最早那一件
+    expect(artifactEvictedBy(['af_muyu', 'af_xuantian'], 2)).toEqual(['af_muyu'])
+  })
+
+  it('认不出的 id 不进替下名单(它画不出卡,玩家无从核对是谁)', () => {
+    expect(artifactEvictedBy(['af_ghost', 'af_muyu'], 1)).toEqual(['af_muyu'])
   })
 
   it('认不出的 id 不画幽灵位,空位补 undefined', () => {

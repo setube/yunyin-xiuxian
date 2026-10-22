@@ -12,7 +12,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
 import { mergeMods } from '@/core/statsCalc'
 import { resolveEquipStats } from '@/core/equipGen'
-import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
+import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactEvictedBy, artifactValue } from '@/data/artifacts'
 import { artifactUpCost, upgradeArtifact } from '@/core/forge'
 import { useResourcesStore } from '@/stores/resources'
 import type { EquipmentInstance } from '@/types'
@@ -313,5 +313,34 @@ describe('法宝公共写入边界 · 目录、拥有、满重与祭炼槽', () 
     })
     expect(inv.toggleArtifact('af_xuantian', 1)).toBe('replaced')
     expect(inv.equippedArtifacts, '替换后仍超编 —— 槽位上限在这条路上失效').toEqual(['af_xuantian'])
+  })
+
+  /**
+   * 按钮点名的那件，得真的让位。
+   *
+   * 替换分支的剩余规则是 `留最近的 slots-1 件`，而提示上只点名了第一件。
+   * 两条规则分开写时就分异了:按钮上读到的与真正被替下的对不上号 ——
+   * 玩家照着提示去行囊找那件,发现它还在,而另一件正好不见了。
+   *
+   * 故障注入: 把 `artifactEvictedBy` 改回只返回 `equipped[0]`
+   * (单件), 本条必红。
+   */
+  it('提示名单与真正让位的那件对得上（含超编列表）', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: [
+        { defId: 'af_muyu', level: 0 },
+        { defId: 'af_lihuo', level: 0 },
+        { defId: 'af_xuantian', level: 0 }
+      ],
+      equippedArtifacts: ['af_muyu', 'af_lihuo']
+    })
+    const before = [...inv.equippedArtifacts]
+    expect(inv.toggleArtifact('af_xuantian', 1)).toBe('replaced')
+    // 显示的让位名单必须等于真正被替下的那些
+    const named = artifactEvictedBy(before, 1)
+    expect(named.length, '超编时不只有一件让位').toBeGreaterThan(1)
+    const kept = before.filter(id => !named.includes(id))
+    expect(inv.equippedArtifacts).toEqual([...kept, 'af_xuantian'])
   })
 })

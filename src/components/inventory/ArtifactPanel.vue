@@ -65,10 +65,11 @@
           @click="toggleArtifact(row.def.id)"
         >
           <!--
-            槽满时把「会让位的那一件」直接写在按钮上 —— 替下谁是有规则的(最早祭炼的,
-            即第一格),不是随机;看不见这一条,换件就成了掷骰子。
+            槽满时把「会让位的那几件」直接写在按钮上 —— 替下谁是有规则的(最早祭炼的,
+            排在前头),不是随机;看不见这一条,换件就成了掷骰子。列表本来就超编时
+            让位的是不止一件,按钮也照实全念出来(见 artifactEvictedBy)。
           -->
-          {{ row.equipped ? '收回法宝' : row.evicts ? `替下「${row.evicts}」` : '祭炼随身' }}
+          {{ row.equipped ? '收回法宝' : row.evicts.length ? `替下${row.evicts}` : '祭炼随身' }}
         </button>
         <button
           v-if="row.upCost"
@@ -186,15 +187,13 @@ const artifactRows = computed(() =>
         artPlan: artifactBatchPlan(a.defId),
         equipped: inventory.equippedArtifacts.includes(a.defId),
         /**
-         * 这一件按下去会替下谁(槽未满、或本来就带着它时为 null)。
-         * 替下判据与槽位画法同源 —— 玩家在按钮上读到的那一件,就是真的让位的那一件。
+         * 这一件按下去会替下哪几件(槽未满、或本来就带着它时为空)。
+         * 替下判据与槽位画法同源 —— 玩家在按钮上读到的那些,就是真的让位的那些。
          */
-        evicts: inventory.equippedArtifacts.includes(a.defId)
-          ? null
-          : (() => {
-              const id = artifactEvictedBy(inventory.equippedArtifacts, artifactSlots.value)
-              return id ? (artifactDef(id)?.name ?? id) : null
-            })()
+        evicts: (() => {
+          const ids = artifactEvictedBy(inventory.equippedArtifacts, artifactSlots.value)
+          return ids.map(id => artifactDef(id)?.name ?? id)
+        })()
       }
     })
     // 与行囊同一套排法:品质降序 → 祭炼高的在前(此前按入手先后排,越捡越乱)
@@ -208,7 +207,12 @@ const artifactRows = computed(() =>
 
 function toggleArtifact(defId: string): void {
   const result = inventory.toggleArtifact(defId, artifactSlots.value)
-  if (result === 'replaced') ui.toast(artifactSlotReplacedToast(), 'info')
+  // 让位的哪几件照实全念出来:按钮上点名了哪些,归来卸下的就得是哪些
+  // (列表本来就超编时让位的不止一件,只报一件就对不上账。见 artifactEvictedBy)
+  if (result === 'replaced') {
+    const row = artifactRows.value.find(r => r.def.id === defId)
+    ui.toast(artifactSlotReplacedToast(row?.evicts ?? []), 'info')
+  }
 }
 
 /** 祭炼连炼的二步确认态;换件/换重自动重算,行与确认自会随之进退 */

@@ -38,7 +38,7 @@ describe('行囊页与提示同源', () => {
       readFileSync(new URL('../views/InventoryView.vue', import.meta.url), 'utf8') +
       readFileSync(new URL('../components/inventory/ArtifactPanel.vue', import.meta.url), 'utf8') +
       readFileSync(new URL('../components/inventory/DismantleDialog.vue', import.meta.url), 'utf8')
-    expect(view).toContain('artifactSlotReplacedToast()')
+    expect(view).toContain('artifactSlotReplacedToast(')
     expect(view).toContain('decomposeEmptyToast()')
     expect(view).toContain('smartCleanToast(')
     // 化尘有得按正结果播报;一件没化时才落回中性 info

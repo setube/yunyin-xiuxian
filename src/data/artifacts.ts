@@ -924,14 +924,19 @@ export function artifactSlotsFor(major: number): number {
  * 那一件 —— 提示条写「替下最早祭炼的一件」,被替下的却画在第二格,换件像掷骰子。
  * 现在替下判据与槽位排法都读这一份。
  *
- * 返回 `null` 表示这一件放得下(槽未满、或它本来就在列表里)。
+ * 报的是**全部**会让位的,不是只报第一件:列表可能本来就超编(境界跌落、
+ * 未经 sanitize 的内存直塞),此时替换分支会一路裁到 `slots`,前端几件一起让位。
+ * 只报一件的话,按钮上点名的那件确实让位了,它身后那件**也**悄悄不见了 ——
+ * 玩家对着按钮核对行囊,永远对不上账。
+ *
+ * 认不出的 id 不报(它画不出卡,玩家无从核对是谁),空数组表示这一件放得下。
  */
-export function artifactEvictedBy(equipped: readonly string[], maxSlots: number): string | null {
-  if (!Number.isFinite(maxSlots)) return null
+export function artifactEvictedBy(equipped: readonly string[], maxSlots: number): string[] {
+  if (!Number.isFinite(maxSlots)) return []
   const slots = Math.min(ARTIFACT_MAX_SLOTS, Math.floor(maxSlots))
-  if (slots < 1) return null
-  if (equipped.length < slots) return null
-  return equipped[0] ?? null
+  if (slots < 1) return []
+  if (equipped.length < slots) return []
+  return equipped.slice(0, equipped.length - slots + 1).filter(id => !!artifactDef(id))
 }
 
 /** 一格随身法宝的展示形状 */

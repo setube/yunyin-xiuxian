@@ -3,8 +3,10 @@
  *
  * 件数、尘石、阙件仍报清。写成「分解」「替换」「切换」太硬。
  */
-export function artifactSlotReplacedToast(): string {
-  return '法宝之位已满,替下最早祭炼的一件'
+export function artifactSlotReplacedToast(evicted: readonly string[] = []): string {
+  if (evicted.length === 0) return '法宝之位已满,替下最早祭炼的一件'
+  if (evicted.length === 1) return `法宝之位已满,替下「${evicted[0]}」`
+  return `法宝之位已满,替下${evicted.join('、')}`
 }
 
 export function decomposeEmptyToast(): string {
