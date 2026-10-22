@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 335,
+  "round": 336,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T10:33:51+00:00",
+  "updated_at": "2026-10-22T12:30:15+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -26064,6 +26064,315 @@
       "commit": "34366de",
       "title": "骨架扰动的层级封顶改读 MORTAL_TIER_MAX",
       "detail": "jitterTiers 的 Math.min(20, …) 改读 regions 的 MORTAL_TIER_MAX(与同文件候选池同源),singleSourceAudit 立判据。"
+    },
+    "ISS-1034": {
+      "id": "ISS-1034",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:35+00:00",
+      "updated_at": "2026-10-22T12:30:14+00:00",
+      "touched_round": 336,
+      "title": "法宝册与天界页有未注册组件标签:图标与品质词整段静默消失",
+      "severity": 0.5,
+      "detail": "InventoryView 拆分时 <GameIcon>×2 与 <QualityTag> 随段落搬进 ArtifactPanel,import 留在宿主;CelestialView 的 SectionTitle 在试炼册迁出时一并被删。Vue 对未注册标签只原样渲染成空元素,不抛错不报警,vue-tsc 当自定义元素、eslint 不解析 template,三道闸门全拦不住。"
+    },
+    "ISS-1035": {
+      "id": "ISS-1035",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:40+00:00",
+      "updated_at": "2026-10-22T12:30:15+00:00",
+      "touched_round": 336,
+      "title": "45 件法宝只用 21 个图标键,卡片上认不出是哪一件",
+      "severity": 0.3,
+      "detail": "flame/bell/flask/shield/ghost/star/gem 各有三到四件共用;iconOf 有 Sparkles 兜底,写错键只会静默掉成四角星,玩家侧只能看到「又一张火焰图」。"
+    },
+    "ISS-1036": {
+      "id": "ISS-1036",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:40+00:00",
+      "updated_at": "2026-10-22T12:30:15+00:00",
+      "touched_round": 336,
+      "title": "地界卡「镇压中」用的 shield-check 从未登记,三年一直画成四角星",
+      "severity": 0.4,
+      "detail": "RegionCard 的三元表达式里写死 'shield-check',而 ui/icons 注册表里从来没有这一键 —— 守着的与进不去的画同一枚星芒。iconRegistry 的手工名单只覆盖数据表对象上的 icon 字段,界面现拼的名字一条都查不到。"
+    },
+    "TASK-477": {
+      "id": "TASK-477",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:46+00:00",
+      "updated_at": "2026-10-22T12:28:54+00:00",
+      "touched_round": 335,
+      "title": "补回缺失 import,并立「模板大写标签必须在本文件有来路」的源码判据",
+      "category": "maintainability",
+      "severity": 0.5,
+      "confidence": 1,
+      "effort": 0.35,
+      "detail": "uiLayering.spec 新增两条:模板里每个大写标签要在同文件 script 出现过(白名单只有 Vue 内置与 RouterLink/RouterView);阳性对照要求全仓 <GameIcon> 者必有 import。"
+    },
+    "TASK-478": {
+      "id": "TASK-478",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:46+00:00",
+      "updated_at": "2026-10-22T12:28:54+00:00",
+      "touched_round": 335,
+      "title": "45 件法宝按名物各配一枚图标,并立不撞图判据",
+      "category": "maintainability",
+      "severity": 0.3,
+      "confidence": 1,
+      "effort": 0.5,
+      "detail": "data/artifactsIcon.spec 三组:图标键注册、45 件不许撞图、名与图对得上;新键同步登记进 ui/icons。"
+    },
+    "TASK-479": {
+      "id": "TASK-479",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:46+00:00",
+      "updated_at": "2026-10-22T12:28:54+00:00",
+      "touched_round": 335,
+      "title": "iconRegistry 判据伸到源码里的图标字面量,补登记 shield-check",
+      "category": "maintainability",
+      "severity": 0.4,
+      "confidence": 1,
+      "effort": 0.4,
+      "detail": "按 icon: 'x'、:name=\"… 'x' …\"、<GameIcon name=\"x\"> 三种写法扫源码,扫到的名字必须在 ICONS 里;另立阳性对照要求 RegionCard 那处三元真被读到。"
+    },
+    "CHG-576": {
+      "id": "CHG-576",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T12:27:52+00:00",
+      "updated_at": "2026-10-22T12:27:52+00:00",
+      "touched_round": 335,
+      "title": "法宝册/天界页补回缺失 import",
+      "commit": "63337df",
+      "detail": "ArtifactPanel 补 GameIcon 与 QualityTag,CelestialView 补 SectionTitle;uiLayering 立模板标签来源判据。"
+    },
+    "CHG-577": {
+      "id": "CHG-577",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T12:27:52+00:00",
+      "updated_at": "2026-10-22T12:27:52+00:00",
+      "touched_round": 335,
+      "title": "45 件法宝各配一枚图标,注册表判据伸到源码字面量",
+      "commit": "dcd9739",
+      "detail": "artifacts.ts 末参逐个改新图标(45/45 不重样),icons.ts 补登记 31 键(含 shield-check);artifactsIcon.spec 新增,iconRegistry.spec 增源码字面量段。"
+    },
+    "EV-1030": {
+      "id": "EV-1030",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T12:27:52+00:00",
+      "updated_at": "2026-10-22T12:27:52+00:00",
+      "touched_round": 335,
+      "title": "故障注入:删 ArtifactPanel 的 GameIcon import / RegionCard 改回未登记 shield-ok 各自转红",
+      "confidence": 1,
+      "source": "src/core/uiLayering.spec.ts:模板大写标签来源;src/ui/iconRegistry.spec.ts:源码图标字面量登记;src/data/artifactsIcon.spec.ts:45 件不撞图",
+      "detail": "删 import 后 uiLayering 两条同时点名报红;shield-check→shield-ok 后 iconRegistry 两条报红(含阳性对照);法宝改回重复键后 artifactsIcon 撞图条红。恢复后全绿。"
+    },
+    "ISS-1037": {
+      "id": "ISS-1037",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:59+00:00",
+      "updated_at": "2026-10-22T12:30:15+00:00",
+      "touched_round": 336,
+      "title": "镇守了几处与拿到多少修为无关:守一处与守五处一样",
+      "severity": 0.5,
+      "detail": "镇压只回灵石/物产/装备,「多压几片」就只是多几个收益开关;镇压产出的装备一律 luck 0,守了三天的地与刚压下的地掉出的一模一样,兴衰微调只动灵石与物产。"
+    },
+    "ISS-1038": {
+      "id": "ISS-1038",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:59+00:00",
+      "updated_at": "2026-10-22T12:30:15+00:00",
+      "touched_round": 336,
+      "title": "妖气复聚只弹一条 toast,归来卷轴上一个字都没有",
+      "severity": 0.4,
+      "detail": "settleSuppressedRegions 回传的复聚地界此前只用来弹 toast;归来时卷轴是弹窗正盖着提示条,玩家最容易把「我靖过的地界怎么旧主又回来了」当成丢档。"
+    },
+    "TASK-480": {
+      "id": "TASK-480",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:27:59+00:00",
+      "updated_at": "2026-10-22T12:28:54+00:00",
+      "touched_round": 335,
+      "title": "镇守道韵与老区装备气运入账,地界卡与卷轴读同一份纯函数",
+      "category": "balance",
+      "severity": 0.5,
+      "confidence": 1,
+      "effort": 0.6,
+      "detail": "suppressionExpRate(每区 +8%、封顶 40%)、suppressionEquipmentLuck(每日 +0.1、封顶 0.8)由 core/suppress 导出,结算与地界卡同源;归来卷轴补记复聚与道韵两条账。"
+    },
+    "CHG-578": {
+      "id": "CHG-578",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T12:28:05+00:00",
+      "updated_at": "2026-10-22T12:28:05+00:00",
+      "touched_round": 335,
+      "title": "镇守道韵与老区装备气运,归来卷轴补记镇压账目",
+      "commit": "cee33ad",
+      "detail": "suppress.ts 增四枚常量与两枚纯函数,结算加修为红利与 tenureLuck;offline.ts 卷轴补两条账;RegionCard 亮道韵与气运;AdventureView 总纲报每区与封顶;economySim 自报口径。"
+    },
+    "EV-1031": {
+      "id": "EV-1031",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T12:28:05+00:00",
+      "updated_at": "2026-10-22T12:28:05+00:00",
+      "touched_round": 335,
+      "title": "故障注入:卡片只读 suppressedSince / 内联 0.8 封顶 / 生成器回裸 luck 0 各自转红",
+      "confidence": 1,
+      "source": "src/core/suppress.spec.ts:6 例;src/core/offlineCap.spec.ts:卷轴 2 例;src/core/singleSourceAudit.spec.ts:3 条同源判据",
+      "detail": "卡片改成自己乘、结算改回裸 luck 0、内联 0.8 封顶三处恢复旧写法后对应判据当场红,恢复即绿。"
+    },
+    "ISS-1039": {
+      "id": "ISS-1039",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:28:05+00:00",
+      "updated_at": "2026-10-22T12:30:15+00:00",
+      "touched_round": 336,
+      "title": "200% 缩放下首页主线读数顶出右缘",
+      "severity": 0.3,
+      "detail": "字号放大一倍后布局视口只剩 195px,右侧那一簇(进度·主线 n/N·去办箭头)全是 shrink-0,既不缩也不换行,一路冲出屏幕(layout-check 点名 span.flex / span.text-[10px] / a.-my-1)。"
+    },
+    "TASK-481": {
+      "id": "TASK-481",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:28:11+00:00",
+      "updated_at": "2026-10-22T12:28:54+00:00",
+      "touched_round": 335,
+      "title": "首页主线行与外层各加 flex-wrap,窄视口改换行",
+      "category": "ux",
+      "severity": 0.3,
+      "confidence": 1,
+      "effort": 0.2,
+      "detail": "外行 p 与右侧读数簇各加 flex-wrap 与 gap-x/y;箭头保底 28px 不动。"
+    },
+    "CHG-579": {
+      "id": "CHG-579",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T12:28:11+00:00",
+      "updated_at": "2026-10-22T12:28:11+00:00",
+      "touched_round": 335,
+      "title": "首页主线读数允许换行,试炼步改用不带在途的夹具",
+      "commit": "cacf043",
+      "detail": "HomeView 主线外行与右侧簇加 flex-wrap;layout-check 试炼步另起摘掉 worldRun/secretRealm 的夹具,并断言按钮上不出现「在途」。"
+    },
+    "ISS-1040": {
+      "id": "ISS-1040",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:28:11+00:00",
+      "updated_at": "2026-10-22T12:30:15+00:00",
+      "touched_round": 336,
+      "title": "排版自检的试炼步被在途闸门与提示条同时困住:量的不是试炼",
+      "severity": 0.35,
+      "detail": "试炼步沿用带在途秘境+在途远征的后期档,94e08bc 起终局共用 endgameBusy,应试按钮被正确置灰成「应 试(远征在途)」;即便另起夹具,页签轨道仍被 top-12 的 toast 截走点击,报「试炼册里没有应试入口」。判据报的是环境,不是被测对象。"
+    },
+    "TASK-482": {
+      "id": "TASK-482",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T12:28:17+00:00",
+      "updated_at": "2026-10-22T12:28:54+00:00",
+      "touched_round": 335,
+      "title": "试炼步另起夹具并收掉 toast,页签与应试各留 JS 直点兜底",
+      "category": "maintainability",
+      "severity": 0.35,
+      "confidence": 1,
+      "effort": 0.3,
+      "detail": "切册前先关掉 .pointer-events-none.fixed button;trialTab.click 与 trialBtn.click 失败时回落到 el.click()。"
+    },
+    "CHG-580": {
+      "id": "CHG-580",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T12:28:17+00:00",
+      "updated_at": "2026-10-22T12:28:17+00:00",
+      "touched_round": 335,
+      "title": "试炼步收掉提示条并对页签与应试按钮留 JS 直点兜底",
+      "commit": "ef5c6c4",
+      "detail": "实测改前 playwright 报 button intercepts pointer events 导致试炼册切不过去;改后试炼册正常渲染出三条应试入口。"
+    },
+    "EV-1032": {
+      "id": "EV-1032",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T12:28:17+00:00",
+      "updated_at": "2026-10-22T12:28:17+00:00",
+      "touched_round": 335,
+      "title": "layout-check 复跑:200% 首页越界与试炼两条均不再报错",
+      "confidence": 1,
+      "source": "scripts/layout-check.mjs:190 个页面 × 视口组合",
+      "detail": "修前日志有「[200%] / 越界元素 span.flex@R47..264…」与「[390-late] 试炼:点了应 试(远征在途)没有开出战报」两条;修后 200% 条消失,试炼步渲染出三条应试入口并按新夹具开战报。"
+    },
+    "HYP-187": {
+      "id": "HYP-187",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T12:28:35+00:00",
+      "updated_at": "2026-10-22T12:28:35+00:00",
+      "touched_round": 335,
+      "title": "未注册的模板标签不会抛错,只会静默渲染成空元素",
+      "confidence": 0.9,
+      "detail": "因此缺 import、写错图标键这类缺陷必须用源码级判据拦,行为测试与类型检查都看不见。"
+    },
+    "HYP-188": {
+      "id": "HYP-188",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T12:28:35+00:00",
+      "updated_at": "2026-10-22T12:28:35+00:00",
+      "touched_round": 335,
+      "title": "展示层与结算层各自现算同一份规则时,改一处必漏一处",
+      "confidence": 0.9,
+      "detail": "镇守道韵/装备气运若在卡片里自己乘区数或写封顶,调常数时界面立刻改口供。"
+    },
+    "HYP-189": {
+      "id": "HYP-189",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T12:28:35+00:00",
+      "updated_at": "2026-10-22T12:28:35+00:00",
+      "touched_round": 335,
+      "title": "判据沿用会被闸门正确拦下的夹具时,量到的永远是闸门而不是被测对象",
+      "confidence": 0.85,
+      "detail": "试炼步沿用带在途活动的后期档,应试按钮被 endgameBusy 正确置灰,判据报「点了没反应」。"
     }
   },
   "edges": [
@@ -38400,6 +38709,144 @@
       "to": "COMP-027",
       "type": "located_in",
       "created_at": "2026-10-22T10:21:25+00:00"
+    },
+    {
+      "from": "CHG-576",
+      "to": "TASK-477",
+      "type": "implements",
+      "created_at": "2026-10-22T12:28:21+00:00"
+    },
+    {
+      "from": "CHG-576",
+      "to": "ISS-1034",
+      "type": "resolves",
+      "created_at": "2026-10-22T12:28:21+00:00"
+    },
+    {
+      "from": "CHG-577",
+      "to": "TASK-478",
+      "type": "implements",
+      "created_at": "2026-10-22T12:28:22+00:00"
+    },
+    {
+      "from": "CHG-577",
+      "to": "ISS-1035",
+      "type": "resolves",
+      "created_at": "2026-10-22T12:28:22+00:00"
+    },
+    {
+      "from": "CHG-577",
+      "to": "TASK-479",
+      "type": "implements",
+      "created_at": "2026-10-22T12:28:22+00:00"
+    },
+    {
+      "from": "CHG-577",
+      "to": "ISS-1036",
+      "type": "resolves",
+      "created_at": "2026-10-22T12:28:22+00:00"
+    },
+    {
+      "from": "CHG-578",
+      "to": "TASK-480",
+      "type": "implements",
+      "created_at": "2026-10-22T12:28:26+00:00"
+    },
+    {
+      "from": "CHG-578",
+      "to": "ISS-1037",
+      "type": "resolves",
+      "created_at": "2026-10-22T12:28:26+00:00"
+    },
+    {
+      "from": "CHG-578",
+      "to": "ISS-1038",
+      "type": "resolves",
+      "created_at": "2026-10-22T12:28:26+00:00"
+    },
+    {
+      "from": "CHG-579",
+      "to": "TASK-481",
+      "type": "implements",
+      "created_at": "2026-10-22T12:28:26+00:00"
+    },
+    {
+      "from": "CHG-579",
+      "to": "ISS-1039",
+      "type": "resolves",
+      "created_at": "2026-10-22T12:28:26+00:00"
+    },
+    {
+      "from": "CHG-580",
+      "to": "TASK-482",
+      "type": "implements",
+      "created_at": "2026-10-22T12:28:26+00:00"
+    },
+    {
+      "from": "CHG-580",
+      "to": "ISS-1040",
+      "type": "resolves",
+      "created_at": "2026-10-22T12:28:26+00:00"
+    },
+    {
+      "from": "EV-1030",
+      "to": "HYP-187",
+      "type": "validates",
+      "created_at": "2026-10-22T12:28:40+00:00"
+    },
+    {
+      "from": "EV-1031",
+      "to": "HYP-188",
+      "type": "validates",
+      "created_at": "2026-10-22T12:28:40+00:00"
+    },
+    {
+      "from": "EV-1032",
+      "to": "HYP-189",
+      "type": "validates",
+      "created_at": "2026-10-22T12:28:40+00:00"
+    },
+    {
+      "from": "TASK-477",
+      "to": "ISS-1034",
+      "type": "addresses",
+      "created_at": "2026-10-22T12:28:49+00:00"
+    },
+    {
+      "from": "TASK-478",
+      "to": "ISS-1035",
+      "type": "addresses",
+      "created_at": "2026-10-22T12:28:49+00:00"
+    },
+    {
+      "from": "TASK-479",
+      "to": "ISS-1036",
+      "type": "addresses",
+      "created_at": "2026-10-22T12:28:49+00:00"
+    },
+    {
+      "from": "TASK-480",
+      "to": "ISS-1037",
+      "type": "addresses",
+      "created_at": "2026-10-22T12:28:49+00:00"
+    },
+    {
+      "from": "TASK-480",
+      "to": "ISS-1038",
+      "type": "addresses",
+      "created_at": "2026-10-22T12:28:49+00:00"
+    },
+    {
+      "from": "TASK-481",
+      "to": "ISS-1039",
+      "type": "addresses",
+      "created_at": "2026-10-22T12:28:49+00:00"
+    },
+    {
+      "from": "TASK-482",
+      "to": "ISS-1040",
+      "type": "addresses",
+      "created_at": "2026-10-22T12:28:49+00:00"
     }
   ]
 }
