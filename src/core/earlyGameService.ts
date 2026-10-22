@@ -167,6 +167,8 @@ export function getRetreatRemainingSec(at: number = gameNow()): number {
 export function prepareBreakthrough(optionId: string): boolean {
   const opt = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === optionId)
   if (!opt || opt.bonusRate <= 0) return false // direct/未知项 = 不是准备动作,不产生加成
+  // 准备是一次性的:静坐未完或加成已就绪时再点另一项,只会白扣灵石并覆盖现有加成
+  if (usePlayerStore().breakthroughPrep !== null) return false
 
   const resources = useResourcesStore()
   if (opt.cost?.stone && !resources.spendStone(gn(opt.cost.stone))) return false

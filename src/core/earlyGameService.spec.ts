@@ -304,6 +304,28 @@ describe('突破准备(Phase 28 · TASK-023 接线后)', () => {
     expect(breakthroughPrepState().ready).toBe(false)
   })
 
+  it('已有准备在身时不重复扣费,坐定与就绪都保留原状态', () => {
+    const resources = useResourcesStore()
+    resources.addStone(gn(500))
+    const player = usePlayerStore()
+
+    expect(prepareBreakthrough('meditate')).toBe(true)
+    const sitting = player.breakthroughPrep
+    const afterMeditate = toNum(resources.spiritStone)
+
+    expect(prepareBreakthrough('pill'), '坐定中再服丹不该扣第二笔').toBe(false)
+    expect(toNum(resources.spiritStone)).toBe(afterMeditate)
+    expect(player.breakthroughPrep, '坐定态不被更弱的丹药覆盖').toEqual(sitting)
+
+    player.setBreakthroughPrep(null)
+    expect(prepareBreakthrough('pill')).toBe(true)
+    const ready = player.breakthroughPrep
+    const afterPill = toNum(resources.spiritStone)
+    expect(prepareBreakthrough('meditate'), '就绪加成同样是一次有效').toBe(false)
+    expect(toNum(resources.spiritStone)).toBe(afterPill)
+    expect(player.breakthroughPrep).toEqual(ready)
+  })
+
   it('付费的一次性加成存进档:刷新页面不吞玩家的 80 灵石(Phase 34.6)', () => {
     const resources = useResourcesStore()
     resources.addStone(gn(100))
