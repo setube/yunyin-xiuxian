@@ -98,6 +98,7 @@
   import { useUiStore } from '@/stores/ui'
   import { engine } from '@/core/engine'
   import { importSaveText, inspectImportText, resetGame, reloadGame, sealStorageWrites } from '@/core/save'
+  import { readSaveFile, type SaveFileReadHandle } from '@/core/saveFileRead'
   import { exportSaveToDevice } from '@/core/savePlatform'
   import { formatLastExport, shouldPromptBackup } from '@/core/saveBackup'
   import { formatClock, formatDuration } from '@/utils/format'
@@ -130,6 +131,9 @@
   /** 这份待导入备份的身份与版本(确认前摊开):是谁的档、什么版本、何时导出、是否高于当前 */
   const importInspect = ref<ReturnType<typeof inspectImportText> | null>(null)
   const fileInput = ref<HTMLInputElement | null>(null)
+  let saveRead: SaveFileReadHandle | null = null
+  /** 离页后文件读取可能才完成;不能再暂停引擎,也不能写已销毁组件的状态 */
+  let unmounted = false
 
   const unsubscribeSaveFailure = subscribeSaveWriteFailure(failure => {
     saveFailed.value = failure !== null
@@ -137,7 +141,10 @@
 
   // 弹窗开着就离开页面时兜底恢复
   onUnmounted(() => {
+    unmounted = true
     unsubscribeSaveFailure()
+    saveRead?.abort()
+    saveRead = null
     if (resetConfirm.value || importConfirm.value) engine.resume()
   })
 
@@ -175,9 +182,10 @@
   function onFilePicked(e: Event): void {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const text = String(reader.result ?? '')
+    saveRead?.abort()
+    saveRead = readSaveFile(file, text => {
+      if (unmounted) return
+      saveRead = null
       if (!text.trim()) {
         ui.toast('这个文件是空的,换一个再试', 'warn')
         return
@@ -189,10 +197,11 @@
       importInspect.value = inspectImportText(text)
       importConfirm.value = true
       engine.pause()
-    }
-    // 读文件本身也可能失败(权限/磁盘)—— 静默就等于「点了没反应」
-    reader.onerror = () => ui.toast('这个文件读不出来,换一个再试', 'warn')
-    reader.readAsText(file)
+    }, () => {
+      if (unmounted) return
+      saveRead = null
+      ui.toast('这个文件读不出来,换一个再试', 'warn')
+    })
     // 清空 input,允许重复选择同一文件
     if (fileInput.value) fileInput.value.value = ''
   }

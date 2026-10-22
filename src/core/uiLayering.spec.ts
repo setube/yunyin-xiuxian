@@ -176,15 +176,18 @@ describe('界面分层 · 浮层只有一个出处', () => {
   })
 
   it('存档导入读取失败要当场回执 —— 两处入口同一条退路', () => {
-    const RECEIPT = "reader.onerror = () => ui.toast('这个文件读不出来,换一个再试', 'warn')"
+    const RECEIPT = "ui.toast('这个文件读不出来,换一个再试', 'warn')"
     for (const path of ['views/WelcomeView.vue', 'components/settings/SettingsSaveSection.vue']) {
       const f = FILES.find(x => x.path === path)
       expect(f, `${path} 不见了`).toBeDefined()
       const src = f!.src
-      const receiptAt = src.indexOf(RECEIPT)
-      const readAt = src.indexOf('reader.readAsText(file)')
+      const readAt = src.indexOf('readSaveFile(file')
+      const receiptAt = src.indexOf(RECEIPT, readAt)
       expect(receiptAt, `${path} 读文件失败会静默`).toBeGreaterThan(-1)
-      expect(receiptAt, `${path} 要在开始读取前挂好失败回执`).toBeLessThan(readAt)
+      expect(readAt, `${path} 导入读取要走可撤销句柄`).toBeGreaterThan(-1)
+      expect(receiptAt, `${path} 失败回执要挂在读取句柄的 error 回调里`).toBeGreaterThan(readAt)
+      expect(src, `${path} 离页要撤销读取句柄`).toContain('saveRead?.abort()')
+      expect(src, `${path} 离页后回调不许再暂停引擎`).toContain('if (unmounted) return')
     }
   })
 

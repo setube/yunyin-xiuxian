@@ -71,6 +71,7 @@
   import { useSettingsStore } from '@/stores/settings'
   import { useUiStore } from '@/stores/ui'
   import { importSaveText, reloadGame, sealStorageWrites } from '@/core/save'
+  import { readSaveFile, type SaveFileReadHandle } from '@/core/saveFileRead'
   import { engine } from '@/core/engine'
   import BaseModal from '@/components/common/BaseModal.vue'
   import PrivacyDialog from '@/components/common/PrivacyDialog.vue'
@@ -89,6 +90,9 @@
   const fileInput = ref<HTMLInputElement | null>(null)
   const warpRef = ref<InstanceType<typeof WarpPortal> | null>(null)
   let enterTimer: ReturnType<typeof setTimeout> | undefined
+  let saveRead: SaveFileReadHandle | null = null
+  /** 离页后文件读取可能才完成;不能再暂停引擎,也不能写已销毁组件的状态 */
+  let unmounted = false
 
   function onStart(): void {
     if (settings.privacyAccepted) {
@@ -116,9 +120,10 @@
   function onFilePicked(e: Event): void {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const text = String(reader.result ?? '')
+    saveRead?.abort()
+    saveRead = readSaveFile(file, text => {
+      if (unmounted) return
+      saveRead = null
       engine.pause()
       const err = importSaveText(text)
       if (err) {
@@ -130,14 +135,18 @@
       // 导入已写盘,立即封存:阻止 persist 插件把欢迎页旧内存(started=false)回写覆盖
       sealStorageWrites()
       setTimeout(reloadGame, 800)
-    }
-    // 读文件本身也可能失败(权限/磁盘)—— 静默就等于「点了没反应」
-    reader.onerror = () => ui.toast('这个文件读不出来,换一个再试', 'warn')
-    reader.readAsText(file)
+    }, () => {
+      if (unmounted) return
+      saveRead = null
+      ui.toast('这个文件读不出来,换一个再试', 'warn')
+    })
     if (fileInput.value) fileInput.value.value = ''
   }
 
   onUnmounted(() => {
+    unmounted = true
     if (enterTimer !== undefined) clearTimeout(enterTimer)
+    saveRead?.abort()
+    saveRead = null
   })
 </script>
