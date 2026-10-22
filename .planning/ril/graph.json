@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 333,
+  "round": 334,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T06:45:31+00:00",
+  "updated_at": "2026-10-22T09:02:51+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -484,7 +484,7 @@
       "version": 1,
       "created_at": "2026-09-09T15:01:47+00:00",
       "updated_at": "2026-09-09T15:01:47+00:00",
-      "touched_round": 186,
+      "touched_round": 334,
       "summary": "区域镇压系统(suppress.ts)"
     },
     "EV-001": {
@@ -25778,6 +25778,149 @@
       "commit": "ffd9e49",
       "title": "丹药增益上限改为四个时辰",
       "detail": "CONSUMABLE_BUFF_CAP_SEC = 4 × SHICHEN_SEC。"
+    },
+    "ISS-471": {
+      "id": "ISS-471",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T08:58:41+00:00",
+      "updated_at": "2026-10-22T09:01:58+00:00",
+      "touched_round": 334,
+      "title": "镇压物产在线每 tick 被取整吞掉,只离线才拿得到",
+      "severity": 0.5,
+      "detail": "perHour × (1/3600) 恒小于 1,floor 后永远是 0;在线压着林区挂一整天收不到草,离线一次结算同样时长却拿满。"
+    },
+    "ISS-1031": {
+      "id": "ISS-1031",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T09:02:22+00:00",
+      "updated_at": "2026-10-22T09:02:51+00:00",
+      "touched_round": 334,
+      "title": "镇压松开自起一把钟:一个 tick 弹两条复聚,今天还在打的也被按旧时刻收闸",
+      "severity": 0.55,
+      "detail": "suppress.settleSuppressedRegions 另按 isReviving(suppressedSince) 判「满 72 小时」解镇压,与「旧主归来」读的 regionTouchedAt 各判各的:既已靖又镇压的地界同一次复聚弹两条;镇压满 72h 但今天仍在当地战斗的地界被按更早的镇压时刻提前松开。"
+    },
+    "HYP-183": {
+      "id": "HYP-183",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T09:02:22+00:00",
+      "updated_at": "2026-10-22T09:02:51+00:00",
+      "touched_round": 334,
+      "confidence": 1,
+      "title": "复聚的「够不够钟」只该有一份判据",
+      "detail": "两处各判各的钟必然分叉:一处看见 suppressedSince,一处看见最后一次打交道,同一片地界会同时被判松与不松。"
+    },
+    "TASK-473": {
+      "id": "TASK-473",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T09:02:22+00:00",
+      "updated_at": "2026-10-22T09:02:51+00:00",
+      "touched_round": 334,
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 1.2,
+      "unlock_factor": 1,
+      "title": "复聚判定与播报收进 settleRegionRevivals 一处,删除 isReviving",
+      "detail": "逐区判「已靖」「镇压中」,该松的松、该归来的归来,两样都占的合并成一句;worldMemory 删掉只看得见一条钟的 isReviving。"
+    },
+    "EV-1024": {
+      "id": "EV-1024",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T09:02:30+00:00",
+      "updated_at": "2026-10-22T09:02:30+00:00",
+      "touched_round": 334,
+      "confidence": 1,
+      "source": "src/core/regionRevival.spec.ts:已靖且镇压同时够钟:只报一条,旧主归来与镇压松动一并说清",
+      "title": "故障注入:去掉合并播报则该用例转红",
+      "detail": "旧实现同一个 tick 弹两条;去掉「两样都占」的合并播报后该用例立刻红,恢复后 10/10 通过。"
+    },
+    "EV-1025": {
+      "id": "EV-1025",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T09:02:30+00:00",
+      "updated_at": "2026-10-22T09:02:30+00:00",
+      "touched_round": 334,
+      "confidence": 1,
+      "source": "src/core/regionRevival.spec.ts:镇压满 72h 但今天仍在那片战斗:不松闸",
+      "title": "故障注入:松闸改回只读 suppressedSince 则该用例转红",
+      "detail": "今天仍在战斗的地界按旧时刻被判松闸,收益被判「久无人烟」;改回 isReviving(suppressedSince) 后用例红。"
+    },
+    "CHG-572": {
+      "id": "CHG-572",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T09:02:30+00:00",
+      "updated_at": "2026-10-22T09:02:30+00:00",
+      "touched_round": 334,
+      "commit": "2c4f31b",
+      "title": "复聚判定与播报收进 settleRegionRevivals 一处",
+      "detail": "逐区判已靖/镇压中,合并播报;worldMemory 删掉 isReviving,钟只剩 regionTouchedAt。"
+    },
+    "HYP-184": {
+      "id": "HYP-184",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T09:02:36+00:00",
+      "updated_at": "2026-10-22T09:02:51+00:00",
+      "touched_round": 334,
+      "confidence": 1,
+      "title": "物产按小时折算、库存按整数记,零头必须跨 tick 结转",
+      "detail": "既不出现在「每拍重新 floor」的写法里,也不该被坏档的越界值放大。"
+    },
+    "TASK-474": {
+      "id": "TASK-474",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T09:02:37+00:00",
+      "updated_at": "2026-10-22T09:02:51+00:00",
+      "touched_round": 334,
+      "category": "correctness",
+      "severity": 0.6,
+      "confidence": 1,
+      "effort": 1.3,
+      "unlock_factor": 1,
+      "title": "镇压物产零头按地界结转,在线与离线折算等价",
+      "detail": "新增 suppressFrac 累积器与 takeSuppressResource;松开镇压/转世清零,读档只认镇压表里 [0,1) 的有限数。"
+    },
+    "EV-1026": {
+      "id": "EV-1026",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T09:02:37+00:00",
+      "updated_at": "2026-10-22T09:02:37+00:00",
+      "touched_round": 334,
+      "confidence": 1,
+      "source": "src/core/suppress.spec.ts:在线每 tick 一秒:物产零头攒够就入账",
+      "title": "故障注入:结算改回 Math.floor 则两条用例转红",
+      "detail": "逐 tick 挂满一小时拿不到物产、在线与离线折算不一致,两个现象由同一处 floor 造成。"
+    },
+    "CHG-573": {
+      "id": "CHG-573",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T09:02:37+00:00",
+      "updated_at": "2026-10-22T09:02:37+00:00",
+      "touched_round": 334,
+      "commit": "831e9a7",
+      "title": "镇压物产零头按地界结转",
+      "detail": "suppressFrac + takeSuppressResource;在线与离线折算对齐,sanitize 挡越界与 NaN。"
     }
   },
   "edges": [
@@ -37988,6 +38131,66 @@
       "to": "ISS-1030",
       "type": "resolves",
       "created_at": "2026-10-22T06:45:24+00:00"
+    },
+    {
+      "from": "ISS-1031",
+      "to": "COMP-005",
+      "type": "located_in",
+      "created_at": "2026-10-22T09:02:22+00:00"
+    },
+    {
+      "from": "TASK-473",
+      "to": "ISS-1031",
+      "type": "addresses",
+      "created_at": "2026-10-22T09:02:22+00:00"
+    },
+    {
+      "from": "EV-1024",
+      "to": "HYP-183",
+      "type": "validates",
+      "created_at": "2026-10-22T09:02:30+00:00"
+    },
+    {
+      "from": "EV-1025",
+      "to": "HYP-183",
+      "type": "validates",
+      "created_at": "2026-10-22T09:02:30+00:00"
+    },
+    {
+      "from": "CHG-572",
+      "to": "TASK-473",
+      "type": "implements",
+      "created_at": "2026-10-22T09:02:30+00:00"
+    },
+    {
+      "from": "CHG-572",
+      "to": "ISS-1031",
+      "type": "resolves",
+      "created_at": "2026-10-22T09:02:30+00:00"
+    },
+    {
+      "from": "TASK-474",
+      "to": "ISS-471",
+      "type": "addresses",
+      "created_at": "2026-10-22T09:02:37+00:00"
+    },
+    {
+      "from": "EV-1026",
+      "to": "HYP-184",
+      "type": "validates",
+      "created_at": "2026-10-22T09:02:37+00:00"
+    },
+    {
+      "from": "CHG-573",
+      "to": "TASK-474",
+      "type": "implements",
+      "created_at": "2026-10-22T09:02:37+00:00"
+    },
+    {
+      "from": "CHG-573",
+      "to": "ISS-471",
+      "type": "resolves",
+      "created_at": "2026-10-22T09:02:37+00:00"
     }
   ]
 }
