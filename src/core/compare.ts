@@ -159,6 +159,13 @@ export interface LegacyComparison {
 /**
  * 自动配对:同一目标、皆有忆战快照的最早与最新道痕,用各自当年的构筑重打当年之界。
  * 返回至多 limit 组——不是排行榜,是与过去的自己对话
+ *
+ * **只跨世配对**:早者与晚者必须分属两世。这一栏叫「今昔之比」、注释写的是
+ * 「与过去的自己对话」,而同一世里的两道痕是**同一个自己**在同一个世里留下的
+ * 两笔(一世内打两次天道变数、或重写道痕补的那条 `重写·` 前缀痕)—— 把它们说成
+ * 「过去的自己」当场名不副实,界面上于是印出「第 3 世(剑)X → 第 3 世(刀)Y」
+ * 这种自己比自己。守卫只看 `life`:`at` 相同是它的一条子集(同世同刻写进两条痕),
+ * 无需再并列一个字段。
  */
 export function legacyComparisons(marks: DaoMark[], limit = 2): LegacyComparison[] {
   const byTarget = new Map<string, DaoMark[]>()
@@ -174,7 +181,8 @@ export function legacyComparisons(marks: DaoMark[], limit = 2): LegacyComparison
     const sorted = [...list].sort((a, b) => a.at - b.at)
     const early = sorted[0]!
     const late = sorted[sorted.length - 1]!
-    if (early.life === late.life && early.at === late.at) continue
+    // 同世不配对:这一栏比的是「这一世的我与上一世的我」,不是一世之内的两次出手
+    if (early.life === late.life) continue
     const world = celestialWorldDef(targetId)!
     const snapEarly = snapFromReplay('往世之你', early.replay!)
     const snapLate = snapFromReplay('今世之你', late.replay!)
