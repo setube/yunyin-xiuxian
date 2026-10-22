@@ -768,8 +768,9 @@ export const usePlayerStore = defineStore(
        */
       linggen.value = sanitizeLinggen(linggen.value)
       if (!Number.isFinite(age.value)) age.value = START_AGE
-      if (!Number.isFinite(major.value) || major.value < 0) major.value = 0
-      if (!Number.isFinite(sub.value) || sub.value < 0) sub.value = 0
+      // 大阶是境界表下标、层数会直接进公式:坏档的小数/越界值必须取整并夹回可玩域
+      major.value = Math.min(MAX_MAJOR, Math.max(0, Math.floor(asFiniteNumber(major.value, 0))))
+      sub.value = Math.min(SUB_LEVELS - 1, Math.max(0, Math.floor(asFiniteNumber(sub.value, 0))))
       /**
        * 佩戴物按 id 认物:认不出的称号/灵兽既不产出词条,也不该继续占着位置。
        * 灵兽尤其致命 —— 角色页取它的族类画图标,`petDef(...)!` 对野 id 当场抛错。

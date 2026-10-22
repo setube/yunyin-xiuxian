@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import type { RegionStats } from '@/core/suppress'
+import { MAX_MAJOR } from '@/data/realms'
+import { SUB_LEVELS } from '@/data/constants'
 
 function stats(over: Partial<RegionStats> = {}): RegionStats {
   return {
@@ -125,5 +127,28 @@ describe('玩家区域统计与奇缘公共写入边界', () => {
     expect(player.enlightenmentAt).toBe(8500)
     expect(player.suppressedSince.qingyun).toBe(9500)
     expect(player.regionStats.qingyun?.lastUpdateAt).toBe(10500)
+  })
+
+  it('读档境界大阶与层数取整夹界,派生境界/名称/数值都可用', () => {
+    const player = usePlayerStore()
+
+    player.$patch({ major: Number.NaN, sub: Number.NaN })
+    player.sanitize()
+    expect(player.major).toBe(0)
+    expect(player.sub).toBe(0)
+
+    player.$patch({ major: 3.5, sub: 4.8 })
+    player.sanitize()
+    expect(player.major, '小数大阶不能当境界表下标').toBe(3)
+    expect(player.sub, '小数层数不能带进公式').toBe(4)
+    expect(player.realm, '境界定义必须存在').toBeDefined()
+    expect(typeof player.subName, '层数名称必须是字符串').toBe('string')
+
+    player.$patch({ major: 999, sub: 999 })
+    player.sanitize()
+    expect(player.major).toBe(MAX_MAJOR)
+    expect(player.sub).toBe(SUB_LEVELS - 1)
+    expect(Number.isFinite(player.cultPerSec), '越界大阶不得把增速算成 Infinity').toBe(true)
+    expect(Number.isFinite(player.qiCapValue), '越界层数不得把灵气容量算成 Infinity').toBe(true)
   })
 })
