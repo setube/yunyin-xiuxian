@@ -136,4 +136,17 @@ describe('图鉴见闻收录守卫(useLoreStore)', () => {
 
     expect(JSON.parse(JSON.stringify(lore.$state))).toEqual(before)
   })
+
+  it('sanitize:负钻研量归零,字符串 true 不冒充已播种', () => {
+    const lore = useLoreStore()
+    lore.$patch({
+      studyFrac: -3,
+      seeded: 'true'
+    } as never)
+
+    lore.sanitize()
+
+    expect(lore.studyFrac, '负钻研量会让 studyFrac < 0.001 长期短路').toBe(0)
+    expect(lore.seeded, '只认真正的布尔 true,否则跳过入门播种').toBe(false)
+  })
 })

@@ -254,7 +254,8 @@ export const useLoreStore = defineStore(
         }
       }
       equipLore.value = seenFixed
-      if (!Number.isFinite(studyFrac.value)) studyFrac.value = 0
+      studyFrac.value = Number.isFinite(studyFrac.value) ? Math.max(0, studyFrac.value) : 0
+      seeded.value = seeded.value === true
     }
 
     return {
