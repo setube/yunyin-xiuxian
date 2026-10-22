@@ -88,6 +88,18 @@ describe('资源公共写入边界 · 非有限值与反向扣款', () => {
     expect(res.spiritStone).toEqual(gn(10))
   })
 
+  it('读档修形把负尾数灵石与无限指数归零,修后既不能白拿也不能继续透支', () => {
+    const res = useResourcesStore()
+    res.$patch({ spiritStone: { m: -1, e: 4 } })
+    res.sanitize()
+    expect(res.spiritStone, '负尾数灵石必须归零,不能留成负数余额').toEqual(gn(0))
+
+    res.$patch({ spiritStone: { m: 1, e: Number.POSITIVE_INFINITY } })
+    res.sanitize()
+    expect(res.spiritStone, '无限指数不得成为无限财富').toEqual(gn(0))
+    expect(res.spendStone(gn(1)), '修形后的空账不能凭空支付').toBe(false)
+  })
+
   it('熔炉跨品扣款遇到 NaN 不进入逐品扣料循环', () => {
     const res = useResourcesStore()
     res.$patch({ herbByGrade: { 1: 0, 2: 0, 3: 5, 4: 0, 5: 0 } })

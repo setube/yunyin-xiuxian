@@ -27,7 +27,13 @@ export function gn(v: number | GNum): GNum {
     return normalize(v, 0)
   }
   // 反序列化容错:损坏数据回退为 0
-  if (typeof v !== 'object' || v === null || typeof v.m !== 'number' || typeof v.e !== 'number') {
+  if (
+    typeof v !== 'object' ||
+    v === null ||
+    typeof v.m !== 'number' ||
+    typeof v.e !== 'number' ||
+    !Number.isFinite(v.e)
+  ) {
     return { m: 0, e: 0 }
   }
   return normalize(v.m, v.e)

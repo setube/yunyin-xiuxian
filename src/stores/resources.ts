@@ -175,7 +175,9 @@ export const useResourcesStore = defineStore(
 
     /** 存档修复:重建大数字段,并把负数/非有限值一并夹回 0(与 settings.sanitize 同判据) */
     function sanitize(): void {
-      spiritStone.value = gn(spiritStone.value)
+      const stone = gn(spiritStone.value)
+      // 灵石是资源账:尾数为负(坏档/坏调用)必须归零,不能留下负数余额
+      spiritStone.value = stone.m < 0 ? gnZero() : stone
       // 灵草分账:逐品阶夹回非负有限整数,烂品清 0
       const raw = herbByGrade.value as unknown
       const clean: Record<HerbGrade, number> = emptyHerbMap()

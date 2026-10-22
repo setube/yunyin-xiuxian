@@ -11,6 +11,9 @@ describe('GameNumber 大数运算', () => {
 
   it('损坏数据回退为零', () => {
     expect(gn({ m: Number.NaN, e: 2 })).toEqual({ m: 0, e: 0 })
+    // 指数也必须是有限数:{m:1,e:Infinity} 曾能穿过反序列化,变成无限财富
+    expect(gn({ m: 1, e: Number.POSITIVE_INFINITY })).toEqual({ m: 0, e: 0 })
+    expect(gn({ m: 1, e: Number.NaN })).toEqual({ m: 0, e: 0 })
     expect(gn(null as unknown as number)).toEqual({ m: 0, e: 0 })
   })
 
