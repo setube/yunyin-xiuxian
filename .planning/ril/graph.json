@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 339,
+  "round": 340,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T15:16:24+00:00",
+  "updated_at": "2026-10-22T15:56:47+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 338,
+      "touched_round": 339,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -26683,6 +26683,92 @@
       "title": "历练新增 8h/16h 两档长线行程",
       "commit": "adb1c38",
       "summary": "档位扩到六档,超上限行程就地标注,档位认读收单源"
+    },
+    "ISS-1050": {
+      "id": "ISS-1050",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T15:56:34+00:00",
+      "updated_at": "2026-10-22T15:56:34+00:00",
+      "touched_round": 339,
+      "title": "被离线上限截断的历练会话,归来卷轴不交代",
+      "detail": "8h/16h 长档配低阶洞府时,离线只结到洞府上限,会话留着不结束、nextBattleAt 排在未来。秘境与远征都有「仍在途」那句,唯独被 cap 截断的历练没有,玩家回来看到历练还在跑却不知为何只结算了一半。",
+      "severity": 0.5
+    },
+    "ISS-1051": {
+      "id": "ISS-1051",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T15:56:34+00:00",
+      "updated_at": "2026-10-22T15:56:34+00:00",
+      "touched_round": 339,
+      "title": "「险」的判据不留余量,小险档被烫成朱砂",
+      "detail": "出行弹窗朱砂判据原按档位 id 硬编码(risky/prolonged),扩到六档时改成读数值却用「凶险>奖励」:深入探寻 1.45 对 1.4 也满足,从淡墨跳成朱砂 —— 是回归不是改进。",
+      "severity": 0.35
+    },
+    "TASK-491": {
+      "id": "TASK-491",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T15:56:34+00:00",
+      "updated_at": "2026-10-22T15:56:34+00:00",
+      "touched_round": 339,
+      "title": "长档与洞府离线上限的衔接要说清(截断播报 + 解法)",
+      "category": "correctness",
+      "severity": 0.5,
+      "detail": "归来卷轴补「离线只结到 X,尚余 Y」;出行弹窗标注连「洞府 N 级可结满」一起给,等级从 OFFLINE_CAP_HOURS 现算。判据经故障注入(删提示/写死等级)验证转红。"
+    },
+    "TASK-492": {
+      "id": "TASK-492",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T15:56:34+00:00",
+      "updated_at": "2026-10-22T15:56:34+00:00",
+      "touched_round": 339,
+      "title": "「险」的烫线收进具名常量并留 5% 余量",
+      "category": "correctness",
+      "severity": 0.35,
+      "detail": "RISKY_DANGER_MARGIN = 1.05;深入探寻必须落在余量内(不烫),2h 以上长挂档必须越线。故障注入:余量调成 1 即转红。"
+    },
+    "CHG-588": {
+      "id": "CHG-588",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T15:56:34+00:00",
+      "updated_at": "2026-10-22T15:56:34+00:00",
+      "touched_round": 339,
+      "title": "超上限行程标注连洞府等级解法一起给",
+      "commit": "8c5fb32",
+      "summary": "可结满等级从 OFFLINE_CAP_HOURS 现算"
+    },
+    "CHG-589": {
+      "id": "CHG-589",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T15:56:34+00:00",
+      "updated_at": "2026-10-22T15:56:34+00:00",
+      "touched_round": 339,
+      "title": "被离线上限截断的历练在归来卷轴上交代",
+      "commit": "def4987",
+      "summary": "补「离线只结到 X,尚余 Y」一句"
+    },
+    "CHG-590": {
+      "id": "CHG-590",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T15:56:34+00:00",
+      "updated_at": "2026-10-22T15:56:34+00:00",
+      "touched_round": 339,
+      "title": "「险」的烫线留 5% 余量",
+      "commit": "31192ad",
+      "summary": "RISKY_DANGER_MARGIN,小险档不再烫成朱砂"
     }
   },
   "edges": [
@@ -39355,6 +39441,60 @@
       "to": "COMP-006",
       "type": "located_in",
       "created_at": "2026-10-22T15:16:13+00:00"
+    },
+    {
+      "from": "TASK-491",
+      "to": "ISS-1050",
+      "type": "addresses",
+      "created_at": "2026-10-22T15:56:34+00:00"
+    },
+    {
+      "from": "CHG-589",
+      "to": "TASK-491",
+      "type": "implements",
+      "created_at": "2026-10-22T15:56:34+00:00"
+    },
+    {
+      "from": "CHG-588",
+      "to": "TASK-491",
+      "type": "implements",
+      "created_at": "2026-10-22T15:56:34+00:00"
+    },
+    {
+      "from": "CHG-589",
+      "to": "ISS-1050",
+      "type": "resolves",
+      "created_at": "2026-10-22T15:56:34+00:00"
+    },
+    {
+      "from": "TASK-492",
+      "to": "ISS-1051",
+      "type": "addresses",
+      "created_at": "2026-10-22T15:56:35+00:00"
+    },
+    {
+      "from": "CHG-590",
+      "to": "TASK-492",
+      "type": "implements",
+      "created_at": "2026-10-22T15:56:35+00:00"
+    },
+    {
+      "from": "CHG-590",
+      "to": "ISS-1051",
+      "type": "resolves",
+      "created_at": "2026-10-22T15:56:35+00:00"
+    },
+    {
+      "from": "ISS-1050",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-22T15:56:35+00:00"
+    },
+    {
+      "from": "ISS-1051",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-22T15:56:35+00:00"
     }
   ]
 }
