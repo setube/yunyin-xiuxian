@@ -14,6 +14,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useEndgameStore, type WorldRunState } from './endgame'
 import { EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS, celestialWorldDef } from '@/data/endgame'
+import { ARTIFACT_MAX_SLOTS } from '@/data/artifacts'
 import { SOUL_SLOTS, soulGradeDef } from '@/data/souls'
 import { rerollVoidWorld, VOID_REROLL_COST } from '@/core/expedition'
 import { usePlayerStore } from '@/stores/player'
@@ -797,7 +798,10 @@ describe('道痕坏档 · 逐条逐字段修形', () => {
               { defId: 'ghost_artifact', level: 3 },
               { defId: 'af_muyu', level: Number.NaN },
               { defId: 'af_muyu', level: 9 },
-              { defId: 'af_lihuo', level: 999 }
+              { defId: 'af_lihuo', level: 999 },
+              // 第三、四件合法却超出法宝位上限 —— 忆战里不该多出两件被动与神通
+              { defId: 'af_xuantian', level: 0 },
+              { defId: 'af_fuyao', level: 0 }
             ],
             pactId: 'xue'
           }
@@ -816,6 +820,7 @@ describe('道痕坏档 · 逐条逐字段修形', () => {
       { defId: 'af_muyu', level: 0 },
       { defId: 'af_lihuo', level: 9 }
     ])
+    expect(replay.artifacts, '忆战快照也受法宝位上限约束,超编件不许一起生效').toHaveLength(ARTIFACT_MAX_SLOTS)
     expect(replay.mods, '野词条键会让构筑厚度与当年对不上').toEqual({ attackPct: 0.2 })
     expect(replay.pactId).toBe('xue')
     expect(() => snapFromReplay('当年', replay), '忆战入口').not.toThrow()

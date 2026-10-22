@@ -64,7 +64,11 @@
           :class="{ '!bg-ink-faint': row.equipped }"
           @click="toggleArtifact(row.def.id)"
         >
-          {{ row.equipped ? '收回法宝' : '祭炼随身' }}
+          <!--
+            槽满时把「会让位的那一件」直接写在按钮上 —— 替下谁是有规则的(最早祭炼的,
+            即第一格),不是随机;看不见这一条,换件就成了掷骰子。
+          -->
+          {{ row.equipped ? '收回法宝' : row.evicts ? `替下「${row.evicts}」` : '祭炼随身' }}
         </button>
         <button
           v-if="row.upCost"
@@ -125,8 +129,10 @@ import { REALMS } from '@/data/realms'
 import {
   artifactActiveText,
   artifactDef,
+  artifactEvictedBy,
   artifactLevelLabel,
   artifactNextLevelGain,
+  artifactSlotViews,
   artifactValue,
   ARTIFACT_LEVEL_BONUS,
   ARTIFACT_MAX_LEVEL,
@@ -153,11 +159,16 @@ const player = usePlayerStore()
 const ui = useUiStore()
 
 const artifactSlots = computed(() => artifactSlotsFor(player.major))
-/** 已祭炼随身的法宝行(槽位按此顺序填充) */
-const equippedRows = computed(() => artifactRows.value.filter(r => r.equipped))
-/** 逐槽映射:第 k 格对应的随身法宝;不足 slots 的补 undefined,画空位 */
+/**
+ * 逐槽视图:**按佩带顺序**,不是按品质排序。
+ *
+ * 顺序本身就是信息 —— 第一格是最早祭炼的那件,槽满时正是它先让位。
+ * 从前这里拿「品质降序的法宝行」再过滤出已佩带者:高品阶的件永远画在第一格,
+ * 而实际先被替下的可能是另一件 —— 玩家照着槽位做决定,做的却是另一件事。
+ * 替下判据(store 的 slice(1))与这份画法现在读同一个顺序。
+ */
 const artifactSlotRows = computed(() =>
-  Array.from({ length: artifactSlots.value }, (_, k) => equippedRows.value[k])
+  artifactSlotViews(inventory.equippedArtifacts, inventory.artifacts, artifactSlots.value)
 )
 /** 开第二法宝位的那一境的名字 —— 门槛挪动时文案跟着走,不手写「元婴」 */
 const artifactUnlockRealm = computed(() => REALMS[ARTIFACT_SLOT_UNLOCK_MAJOR]?.name ?? '')
@@ -173,7 +184,17 @@ const artifactRows = computed(() =>
         upCost,
         short,
         artPlan: artifactBatchPlan(a.defId),
-        equipped: inventory.equippedArtifacts.includes(a.defId)
+        equipped: inventory.equippedArtifacts.includes(a.defId),
+        /**
+         * 这一件按下去会替下谁(槽未满、或本来就带着它时为 null)。
+         * 替下判据与槽位画法同源 —— 玩家在按钮上读到的那一件,就是真的让位的那一件。
+         */
+        evicts: inventory.equippedArtifacts.includes(a.defId)
+          ? null
+          : (() => {
+              const id = artifactEvictedBy(inventory.equippedArtifacts, artifactSlots.value)
+              return id ? (artifactDef(id)?.name ?? id) : null
+            })()
       }
     })
     // 与行囊同一套排法:品质降序 → 祭炼高的在前(此前按入手先后排,越捡越乱)

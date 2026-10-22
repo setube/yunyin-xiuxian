@@ -13,7 +13,7 @@
  *   三 名字与图要对得上,挑几个手挑过的钉死,防后来者把图标改回同槽清一色。
  */
 import { describe, expect, it } from 'vitest'
-import { ARTIFACTS, artifactDef } from './artifacts'
+import { ARTIFACTS, artifactDef, artifactEvictedBy, artifactSlotViews, ARTIFACT_MAX_SLOTS } from './artifacts'
 import { ICONS } from '@/ui/icons'
 
 describe('法宝图标', () => {
@@ -64,5 +64,45 @@ describe('法宝图标', () => {
     expect(new Set(mirrors).size, '两面镜不该同图').toBe(2)
     expect(new Set(banners).size, '两面幡不该同图').toBe(2)
     expect(new Set(bells).size, '两口钟不该同图').toBe(2)
+  })
+})
+
+/**
+ * 法宝位的**顺序**也是信息 —— 玩家照着槽位做决定,做的必须是那件事。
+ *
+ * 槽满时替下「最早祭炼的一件」(列表第一件)。界面从前拿「品质降序的法宝行」
+ * 过滤出已佩带者来画槽位:高品阶的件永远画在第一格,而实际先让位的可能是另一件。
+ * 提示条写「替下最早祭炼的一件」,被替下的却画在第二格 —— 换件像掷骰子。
+ *
+ * 故障注入:把 `artifactSlotViews` 改回按品质排序(或让 `artifactEvictedBy`
+ * 返回末件),下面两条各自转红。
+ */
+describe('法宝位 · 画出来的第一格就是要让位的那一件', () => {
+  /** 故意让「后佩带的」品质更高:旧画法会把它排到第一格,而替下的仍是先佩带的那件 */
+  const owned = [
+    { defId: 'af_muyu', level: 0 }, // 凡品
+    { defId: 'af_xuantian', level: 0 } // 更高品阶
+  ]
+  const equipped = ['af_muyu', 'af_xuantian']
+
+  it('逐槽视图按佩带顺序,不按品质重排', () => {
+    const views = artifactSlotViews(equipped, owned, ARTIFACT_MAX_SLOTS)
+    expect(views.map(v => v?.def.id), '第一格必须是最早佩带的那件').toEqual(['af_muyu', 'af_xuantian'])
+  })
+
+  it('替下判据与第一格同源:槽满时让位的就是画在第一格的那件', () => {
+    const views = artifactSlotViews(equipped, owned, ARTIFACT_MAX_SLOTS)
+    expect(artifactEvictedBy(equipped, ARTIFACT_MAX_SLOTS)).toBe(views[0]!.def.id)
+  })
+
+  it('槽未满、槽数非法、或本来就带着这一件时,没有「被替下」这回事', () => {
+    expect(artifactEvictedBy(['af_muyu'], 2)).toBeNull()
+    expect(artifactEvictedBy(equipped, 0)).toBeNull()
+    expect(artifactEvictedBy(equipped, Number.NaN)).toBeNull()
+  })
+
+  it('认不出的 id 不画幽灵位,空位补 undefined', () => {
+    const views = artifactSlotViews(['af_ghost', 'af_muyu'], owned, ARTIFACT_MAX_SLOTS)
+    expect(views.map(v => v?.def.id), '认不出的法宝不该占一格').toEqual(['af_muyu', undefined])
   })
 })

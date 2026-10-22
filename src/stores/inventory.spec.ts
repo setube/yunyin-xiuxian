@@ -290,4 +290,28 @@ describe('法宝公共写入边界 · 目录、拥有、满重与祭炼槽', () 
     expect(inv.equippedArtifacts).toHaveLength(ARTIFACT_MAX_SLOTS)
     expect(inv.equippedArtifacts).toEqual(['af_lihuo', 'af_xuantian'])
   })
+
+  /**
+   * 替换分支不能替「已经超编」的列表打圆场。
+   *
+   * 境界跌落(元婴位没了)、未经 sanitize 的内存直塞,都能让佩带列表**本来就超编**。
+   * 旧的 `slice(1)` 只摘掉一件、余下的照旧生效 —— 于是从这条路进去,
+   * 「法宝位上限」形同虚设,超编的每一件被动都还在身上。
+   *
+   * 故障注入:把 `kept` 改回 `equippedArtifacts.value.slice(1)`,本条必红(长度 2)。
+   */
+  it('槽位降到 1 位后替换法宝,结果必须只剩 1 件', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: [
+        { defId: 'af_muyu', level: 0 },
+        { defId: 'af_lihuo', level: 0 },
+        { defId: 'af_xuantian', level: 0 }
+      ],
+      // 超编:两件在身,而当前境界只开一位
+      equippedArtifacts: ['af_muyu', 'af_lihuo']
+    })
+    expect(inv.toggleArtifact('af_xuantian', 1)).toBe('replaced')
+    expect(inv.equippedArtifacts, '替换后仍超编 —— 槽位上限在这条路上失效').toEqual(['af_xuantian'])
+  })
 })

@@ -915,3 +915,56 @@ export const ARTIFACT_MAX_SLOTS = 2
 export function artifactSlotsFor(major: number): number {
   return major >= ARTIFACT_SLOT_UNLOCK_MAJOR ? ARTIFACT_MAX_SLOTS : 1
 }
+
+/**
+ * 槽满时会被替下的那一件 —— **最早祭炼的**,也就是列表里的第一件。
+ *
+ * 这条规则从前只活在 `inventory.toggleArtifact` 的 `slice(1)` 里,界面另有一份
+ * 「按品质降序」的槽位排法:两处各说各的,于是玩家看到的第一格未必是要被替下的
+ * 那一件 —— 提示条写「替下最早祭炼的一件」,被替下的却画在第二格,换件像掷骰子。
+ * 现在替下判据与槽位排法都读这一份。
+ *
+ * 返回 `null` 表示这一件放得下(槽未满、或它本来就在列表里)。
+ */
+export function artifactEvictedBy(equipped: readonly string[], maxSlots: number): string | null {
+  if (!Number.isFinite(maxSlots)) return null
+  const slots = Math.min(ARTIFACT_MAX_SLOTS, Math.floor(maxSlots))
+  if (slots < 1) return null
+  if (equipped.length < slots) return null
+  return equipped[0] ?? null
+}
+
+/** 一格随身法宝的展示形状 */
+export interface ArtifactSlotView {
+  def: ArtifactDef
+  level: number
+}
+
+/**
+ * 把「祭炼位列表」摊成界面上的逐格视图 —— **按佩带顺序**,不是按品质排序。
+ *
+ * 顺序本身就是信息:第一格是最早祭炼的那件,槽满时正是它先让位。
+ * 从前界面拿「品质降序的法宝行」再过滤出已佩带者,顺序与祭炼位列表脱钩:
+ * 高品阶的件永远画在第一格,而实际先被替下的可能是第二格那件 ——
+ * 玩家看着槽位做决定,做的却是另一件事。
+ *
+ * 认不出的 id 与已不在库里的 id 跳过(不画一格幽灵位),空位补 `undefined`。
+ */
+export function artifactSlotViews(
+  equipped: readonly string[],
+  owned: readonly { defId: string; level: number }[],
+  slots: number
+): (ArtifactSlotView | undefined)[] {
+  const count = Math.max(0, Math.min(ARTIFACT_MAX_SLOTS, Math.floor(slots) || 0))
+  const byId = new Map(owned.map(a => [a.defId, a]))
+  const views: (ArtifactSlotView | undefined)[] = []
+  for (const id of equipped) {
+    if (views.length >= count) break
+    const def = artifactDef(id)
+    const entry = byId.get(id)
+    if (!def || !entry) continue
+    views.push({ def, level: entry.level })
+  }
+  while (views.length < count) views.push(undefined)
+  return views
+}

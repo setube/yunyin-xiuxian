@@ -16,7 +16,7 @@ import { milestoneDef, recordDef } from '@/data/identity'
 import { mutatorDef } from '@/data/mutators'
 import { gateDef } from '@/data/qimen'
 import { pactDef } from '@/data/pacts'
-import { ARTIFACT_MAX_LEVEL, artifactDef } from '@/data/artifacts'
+import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef } from '@/data/artifacts'
 import { STAT_KEYS } from '@/data/statNames'
 import { MAX_MAJOR } from '@/data/realms'
 import { gn } from '@/utils/gnum'
@@ -191,7 +191,10 @@ function sanitizeMarkReplay(raw: unknown): DaoMark['replay'] | undefined {
    *   - 重数坏成 999 时,artifactValue 会在读档后给出远超上限的神通数值;
    *   - 同一 defId 写两遍,战斗循环会每回合替它触发两次 —— 实际一局里
    *     inventory.sanitize 早就不允许同件法宝并存。
-   * 故认不出的 defId 剔掉、同 id 只留首件,重数夹回 0..ARTIFACT_MAX_LEVEL。
+   *   - 条数超过法宝位上限(坏档写 5 件)时,五件的被动与神通会一起生效 ——
+   *     而 toggleArtifact / applyLoadout / player.sanitize 都按同一把尺裁。
+   * 故认不出的 defId 剔掉、同 id 只留首件、条数裁到 ARTIFACT_MAX_SLOTS,
+   * 重数夹回 0..ARTIFACT_MAX_LEVEL。
    */
   const seenArtifact = new Set<string>()
   const artifacts = r.artifacts
@@ -206,6 +209,8 @@ function sanitizeMarkReplay(raw: unknown): DaoMark['replay'] | undefined {
       defId: a.defId,
       level: Math.min(ARTIFACT_MAX_LEVEL, Math.max(0, Math.floor(asFiniteNumber(a.level, 0, 0))))
     }))
+    // 忆战也是「当年那一身」:超过法宝位的件不该凭空多出被动与神通
+    .slice(0, ARTIFACT_MAX_SLOTS)
   return {
     mods,
     attack,

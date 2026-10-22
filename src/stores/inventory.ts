@@ -286,7 +286,20 @@ export const useInventoryStore = defineStore(
         equippedArtifacts.value = [...equippedArtifacts.value, defId]
         return 'equipped'
       }
-      equippedArtifacts.value = [...equippedArtifacts.value.slice(1), defId]
+      /**
+       * 替下第一件 —— 与界面槽位的画法同一份顺序(见 data/artifacts.artifactEvictedBy):
+       * 玩家看到的第一格,就是按下之后真的让位的那一件。
+       *
+       * 结果一律裁到 `slots` 条:进入这里时列表可能**本来就超编**(境界跌落、
+       * 或未经 sanitize 的内存直塞),旧的 `slice(1)` 只去掉一件、余下的照旧生效,
+       * 于是「槽位上限」在这条路上形同虚设。裁到 `slots - 1` 再补上新的这一件。
+       *
+       * 留下的是**最近祭炼的**那几件(`slice(-(slots-1))`,尾部),被挤掉的是列表
+       * 前端的旧件 —— 与「替下最早祭炼的一件」同一条语义。`slots === 1` 时
+       * `slice(-0)` 会返回整条,故单独取空数组。
+       */
+      const kept = slots > 1 ? equippedArtifacts.value.slice(-(slots - 1)) : []
+      equippedArtifacts.value = [...kept, defId]
       return 'replaced'
     }
 
