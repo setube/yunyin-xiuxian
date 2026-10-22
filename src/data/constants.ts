@@ -580,6 +580,13 @@ export const EXPLORE_MODES = {
   marathon: { name: '彻夜问道', durationSec: 28800, rewardMult: 3, dangerMult: 3.2 },
   deepExpedition: { name: '远涉星野', durationSec: 57600, rewardMult: 3.6, dangerMult: 3.9 }
 } as const
+/**
+ * 一档历练算不算「险」—— 凶险要高出奖励这么多才烫。
+ *
+ * 用 `凶险 > 奖励` 会连 `deep`(1.45 对 1.4)一起烫成朱砂,而它明明是「小险」;
+ * 留 5% 的余量,「真的可能赔命」才烫(见 explorationFoeDanger 与出行弹窗的同名判据)。
+ */
+export const RISKY_DANGER_MARGIN = 1.05
 /** 战败重伤 Buff 持续秒数 */
 export const INJURY_DURATION = 150
 

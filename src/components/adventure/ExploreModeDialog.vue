@@ -70,7 +70,7 @@
   import type { ExploreMode, RegionDef } from '@/types'
   import { usePlayerStore } from '@/stores/player'
   import { useDongfuStore } from '@/stores/dongfu'
-  import { EXPLORE_MODES, OFFLINE_CAP_HOURS } from '@/data/constants'
+  import { EXPLORE_MODES, OFFLINE_CAP_HOURS, RISKY_DANGER_MARGIN } from '@/data/constants'
   import {
     exploreBattleGapSec,
     exploreDurationSec,
@@ -110,11 +110,15 @@
 
   /**
    * 哪几档算「险」—— 朱砂只给真的可能赔命的出行方式。
-   * 判据按档位表现读:凶险比奖励高的就是险(见 exploreModes.spec 的同名判据),
-   * 新增档位不必回来改这里。
+   *
+   * 判据取「凶险高出奖励一截」而不是「凶险>奖励」:`deep` 的 1.45 对 1.4
+   * 也满足后者,而它明明是「小险」;原先按 id 硬编码恰好把它排除在外,改成读数值
+   * 时若直接用 `>`,这一档会从淡墨跳成朱砂 —— 那是回归,不是改进。
+   * 现按超出幅度判:高出 5% 以上才烫(见 exploreModes.spec 的同名判据)。
    */
   function risky(mode: ExploreMode): boolean {
-    return EXPLORE_MODES[mode].dangerMult > EXPLORE_MODES[mode].rewardMult
+    const def = EXPLORE_MODES[mode]
+    return def.dangerMult > def.rewardMult * RISKY_DANGER_MARGIN
   }
 
   /**

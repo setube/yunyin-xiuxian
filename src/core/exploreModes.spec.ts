@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { EXPLORE_MODES } from '@/data/constants'
+import { EXPLORE_MODES, RISKY_DANGER_MARGIN } from '@/data/constants'
 import type { ExploreMode } from '@/types'
 import { useAdventureStore } from '@/stores/adventure'
 import { exploreModeOf } from './exploreModes'
@@ -47,6 +47,25 @@ describe('历练时长档', () => {
       expect(EXPLORE_MODES[mode].dangerMult, `${mode} 的凶险应高于奖励`).toBeGreaterThan(
         EXPLORE_MODES[mode].rewardMult
       )
+    }
+  })
+
+  /**
+   * 「险」的烫线要留余量 —— `deep` 的 1.45 对 1.4 也满足「凶险>奖励」,
+   * 而它明明是「小险」。出行弹窗的朱砂判据读这一枚常量,故这里钉住:
+   * `deep` 必须落在余量之内(不烫),2h 以上的长挂档必须越线(烫)。
+   *
+   * 故障注入:把 RISKY_DANGER_MARGIN 调成 1 → `deep` 一条红。
+   */
+  it('「险」的烫线留 5% 余量:小险不烫,长挂档才烫', () => {
+    const risky = (mode: ExploreMode): boolean => {
+      const def = EXPLORE_MODES[mode]
+      return def.dangerMult > def.rewardMult * RISKY_DANGER_MARGIN
+    }
+    expect(risky('deep'), '深入探寻是「小险」,不该烫成朱砂').toBe(false)
+    expect(risky('normal')).toBe(false)
+    for (const mode of ['risky', 'prolonged', 'marathon', 'deepExpedition'] as const) {
+      expect(risky(mode), `${mode} 该烫`).toBe(true)
     }
   })
 
