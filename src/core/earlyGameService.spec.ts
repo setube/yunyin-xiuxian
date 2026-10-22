@@ -13,6 +13,7 @@ import {
   getCurrentEnlightenment,
   mayTriggerCaveEvent,
   mayTriggerEnlightenment,
+  chooseEnlightenment,
   chooseCaveOption,
   recordWin,
   recordLoss,
@@ -32,6 +33,23 @@ import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
 describe('洞府巡游(Phase 28)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // 清掉上一条用例留下的模块级巡游窗:它按真实时钟过期,不该跨用例借道
+    dismissCaveEvent()
+  })
+
+  it('坏下标不结算也不清掉巡游事件', () => {
+    const player = usePlayerStore()
+    vi.spyOn(Math, 'random').mockReturnValue(0.01)
+    expect(mayTriggerCaveEvent(), '清场应能掷出事件').not.toBeNull()
+
+    expect(() => chooseCaveOption(-1)).not.toThrow()
+    expect(() => chooseCaveOption(Number.NaN)).not.toThrow()
+    expect(getCurrentCaveEvent(), '坏下标不该消耗事件').not.toBeNull()
+    expect(player.lastCaveEventDay, '坏下标不该占用今日').toBe(0)
+
+    chooseCaveOption(0)
+    expect(getCurrentCaveEvent()).toBeNull()
+    vi.restoreAllMocks()
   })
 
   it('当日已巡游后不再触发', () => {
@@ -94,6 +112,24 @@ describe('洞府巡游(Phase 28)', () => {
 describe('悟道顿悟(Phase 28)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // 清掉上一条用例留下的模块级顿悟窗,避免冷却/过期时刻跨用例借道
+    dismissEnlightenment()
+  })
+
+  it('坏下标不结算也不清掉顿悟事件', () => {
+    const resources = useResourcesStore()
+    vi.spyOn(Math, 'random').mockReturnValue(0.01)
+    mayTriggerEnlightenment()
+    expect(getCurrentEnlightenment(), '清场应能掷出事件').not.toBeNull()
+
+    expect(() => chooseEnlightenment(-1)).not.toThrow()
+    expect(() => chooseEnlightenment(Number.NaN)).not.toThrow()
+    expect(getCurrentEnlightenment(), '坏下标不该消耗事件').not.toBeNull()
+    expect(resources.wudao, '坏下标不该发奖').toBe(0)
+
+    chooseEnlightenment(0)
+    expect(getCurrentEnlightenment()).toBeNull()
+    vi.restoreAllMocks()
   })
 
   it('忽略后模块态清空,getCurrentEnlightenment 取不到', () => {

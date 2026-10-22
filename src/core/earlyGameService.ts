@@ -95,7 +95,12 @@ export function mayTriggerEnlightenment(): void {
 
 /** 选择悟道顿悟选项 */
 export function chooseEnlightenment(optionIndex: number): void {
-  if (!enlightenmentEvent || optionIndex >= enlightenmentEvent.options.length) return
+  if (
+    !enlightenmentEvent ||
+    !Number.isInteger(optionIndex) ||
+    optionIndex < 0 ||
+    optionIndex >= enlightenmentEvent.options.length
+  ) return
   const opt = enlightenmentEvent.options[optionIndex]!
   const cult = useCultivationStore()
   const ui = useUiStore()
@@ -368,7 +373,12 @@ export function shiftEarlyGameWindows(pausedMs: number): void {
 
 /** 选择洞府巡游选项 */
 export function chooseCaveOption(optionIndex: number): void {
-  if (!caveEvent || optionIndex >= caveEvent.options.length) return
+  if (
+    !caveEvent ||
+    !Number.isInteger(optionIndex) ||
+    optionIndex < 0 ||
+    optionIndex >= caveEvent.options.length
+  ) return
   const opt = caveEvent.options[optionIndex]!
   const player = usePlayerStore()
   const resources = useResourcesStore()
