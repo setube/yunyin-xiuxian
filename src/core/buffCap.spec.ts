@@ -29,6 +29,7 @@ import { useUiStore } from '@/stores/ui'
 import { usePill, usePillBatch } from './pillService'
 import type { BuffInstance } from '@/types'
 import { SHICHEN_SEC } from '@/data/timeUnits'
+import { gameNow, setEnginePaused } from './enginePause'
 
 /** 丹药能给的增益 id(防空转:内容表被挪走、buffId 全丢,判据就变成空跑) */
 const pillBuffs = PILLS.filter(p => p.buffId).map(p => p.buffId!)
@@ -265,5 +266,69 @@ describe('读档复钳上限(sanitize 不放过超限 buff)', () => {
     cultivation.buffs = [{ defId: 'injury', endsAt: now + 5000, added: 5000 } as never]
     cultivation.sanitize()
     expect(cultivation.buffs[0]!.endsAt).toBe(now + 5000) // 未过期、未过期:不受钳制原样保留
+  })
+})
+
+/**
+ * 服丹判「顶没顶」与写 `endsAt` 用的是**同一把钟**,且那把钟是游戏时钟。
+ *
+ * `enginePause` 头注释写着纪律:「可冻结的到期判定读 gameNow(),不要直接读 Date.now()」。
+ * 界面(`useNow` → `gameNow()`)一直守着这条,而 `usePill` 从前两次直接读 `Date.now()`:
+ * 暂停(重置 / 导入确认窗)期间心跳停了,墙钟照走 —— 界面按冻结时刻读「药力已至上限」,
+ * 服务按走远的墙钟判 overflow 并写 endsAt,两处当场分叉;恢复后引擎再按暂停时长顺延一次,
+ * 药力凭空多出一段。
+ *
+ * 故障注入:把 `usePill` 里的 `gameNow()` 改回 `Date.now()`,第一条判据必红
+ * (暂停中服下的那一颗会被写成墙钟时刻,而不是冻结时刻)。
+ */
+describe('服丹与界面读同一把游戏时钟', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    setActivePinia(createPinia())
+    freshCharacter()
+    setEnginePaused(false)
+  })
+  afterEach(() => {
+    setEnginePaused(false)
+    vi.useRealTimers()
+  })
+
+  it('暂停中服丹:endsAt 落在冻结时刻上,不按墙钟往前走', () => {
+    const cultivation = useCultivationStore()
+    const inv = useInventoryStore()
+    const def = buffDef('buff_juling')!
+    vi.setSystemTime(1_000_000)
+    setEnginePaused(true)
+    const frozen = gameNow()
+    // 暂停期间墙钟走了 10 分钟,游戏时钟纹丝不动
+    vi.setSystemTime(1_000_000 + 600_000)
+    expect(gameNow(), '暂停中游戏时钟就该冻住').toBe(frozen)
+
+    inv.addPill('p_juling', 1)
+    expect(usePill('p_juling')).toBe(true)
+    const endsAt = cultivation.buffs.find(b => b.defId === 'buff_juling')!.endsAt
+    expect(
+      endsAt,
+      `暂停中服下的丹药写成了墙钟时刻(${endsAt - frozen}ms 偏移)—— 恢复后会再顺延一次,药力凭空多出一段`
+    ).toBe(frozen + def.durationSec * 1000)
+  })
+
+  it('判「顶没顶」与写 endsAt 用同一个时刻:暂停中连服不会各算各的', () => {
+    const cultivation = useCultivationStore()
+    const inv = useInventoryStore()
+    const def = buffDef('buff_juling')!
+    const capMs = buffCapSec('buff_juling')! * 1000
+    vi.setSystemTime(2_000_000)
+    setEnginePaused(true)
+    const frozen = gameNow()
+    vi.setSystemTime(2_000_000 + 3_600_000)
+
+    // 先吃到接近上限,再在暂停中补一颗:判与写同一时刻,结果不该越过上限
+    inv.addPill('p_juling', 60)
+    for (let i = 0; i < 40; i += 1) usePill('p_juling', true)
+    const buff = cultivation.buffs.find(b => b.defId === 'buff_juling')!
+    expect(buff.endsAt, '暂停中写出的到期时刻越过了上限').toBeLessThanOrEqual(frozen + capMs)
+    expect(buff.added).toBeLessThanOrEqual(capMs)
+    expect(def.durationSec).toBeGreaterThan(0)
   })
 })

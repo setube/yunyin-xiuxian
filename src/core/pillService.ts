@@ -15,6 +15,7 @@ import { recipeCraft, type SkillId } from '@/data/crafting'
 import { expFromSecs, pillStoneCost } from './formulas'
 import { collect, track } from './progress'
 import { buffOverflowOf } from './buffCap'
+import { gameNow } from './enginePause'
 import { craftability, knownRecipes } from './craftability'
 import { noteMaterialUsed } from './loreService'
 import { craftGuaranteeRemaining } from './heritageEffects'
@@ -83,9 +84,20 @@ export function usePill(id: string, quiet = false): boolean {
       lines.push(`悟道点 +${def.instant.wudao}`)
     }
   } else if (def.buffId) {
-    // 贴着上限再服,药力会被削(甚至一点不加)—— 说出来,别让玩家自己猜"为什么没变"
-    const overflow = buffOverflowOf(cultivation.buffs, def.buffId, Date.now())
-    cultivation.addBuff(def.buffId, Date.now())
+    /**
+     * 读**游戏时钟**而不是墙钟 —— 与界面(`useNow` → `gameNow()`)同一把尺。
+     *
+     * 暂停(重置 / 导入确认窗)时心跳停了,但 `Date.now()` 照走:界面按冻结的
+     * `gameNow()` 读「药力已至上限」,服务却按墙钟判,两处当场分叉 —— 暂停期间
+     * 服下的那一颗,判 overflow 用的是走远的墙钟、写 endsAt 用的也是它,
+     * 恢复后引擎再按暂停时长顺延一次,药力凭空多出一段。这正是 enginePause 头注释
+     * 写明的那条纪律:「可冻结的到期判定读 gameNow(),不要直接读 Date.now()」。
+     *
+     * 取一次 `now` 供判与写共用:两次读墙钟若跨过一毫秒,判与写也会各算各的。
+     */
+    const now = gameNow()
+    const overflow = buffOverflowOf(cultivation.buffs, def.buffId, now)
+    cultivation.addBuff(def.buffId, now)
     lines.push(
       overflow === 'full'
         ? '药力已至上限,这一颗白费了'
