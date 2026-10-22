@@ -217,3 +217,24 @@ describe('同源审计 · 装备掉落概率的封顶', () => {
     }
   })
 })
+
+describe('同源审计 · 凡界路线的层级上限', () => {
+  /**
+   * 凡界路线只含人间界层级,上限是 `data/regions` 的 MORTAL_TIER_MAX。
+   * 同一个文件里,敌人候选池(BOSSES / MOBS)已经引了那枚常量,骨架扰动
+   * `jitterTiers` 却把 20 写死在 `Math.min(...)` 里 —— 「层级上限」这件事
+   * 当场有了两处真相源:常量一改(扩凡界层数),候选池跟着放,扰动出来的层级
+   * 仍被旧数封住,又成一处调一处漏一处(HYP-015 家族)。
+   *
+   * 判据按**这一条式子的字面**判,不扫一切 20:mortalWorldGen 里仍有别的
+   * 数字(段数、权重),只钉「层级封顶有没有内联裸数」。
+   * 故障注入:把 Math.min(MORTAL_TIER_MAX, …) 改回 Math.min(20, …) → 本条红。
+   */
+  it('骨架扰动的层级封顶读 MORTAL_TIER_MAX,不再内联裸 20', () => {
+    const hit = Object.entries(ALL_SOURCES).find(([path]) => path.split('/').pop() === 'mortalWorldGen.ts')
+    if (!hit) throw new Error('审计读不到 mortalWorldGen.ts —— glob 没匹配上,断言会假绿')
+    const src = stripComments(hit[1])
+    expect(src, '扰动该引用具名层级上限常量').toContain('Math.min(MORTAL_TIER_MAX,')
+    expect(src, '又内联了裸 20 层级封顶 —— 改常量时两处会分叉').not.toMatch(/Math\.min\(\s*20\s*,/)
+  })
+})

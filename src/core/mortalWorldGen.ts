@@ -145,11 +145,18 @@ function resampleRhythm(curve: readonly number[], n: number): number[] {
   return out
 }
 
-/** 骨架扰动:每点 ±1,保持首尾与相邻关系的大势 */
+/**
+ * 骨架扰动:每点 ±1,保持首尾与相邻关系的大势。
+ *
+ * 上界取 `MORTAL_TIER_MAX`(凡界路线只含人间界层级),不写裸 20 ——
+ * 同一个文件里 BOSSES / MOBS 的候选池上限已经引了那枚常量,扰动再写一份数字
+ * 就等于「上限」这件事有两处真相源:常量一改(扩凡界层数),候选池跟着放,
+ * 扰动出来的层级却仍被旧数封在上面,又成一处调一处漏一处。
+ */
 function jitterTiers(tiers: readonly number[], rng: RandomService): number[] {
   return tiers.map((t, i) => {
     if (i === 0) return t
-    return Math.max(1, Math.min(20, t + rng.int(-1, 1)))
+    return Math.max(1, Math.min(MORTAL_TIER_MAX, t + rng.int(-1, 1)))
   })
 }
 
