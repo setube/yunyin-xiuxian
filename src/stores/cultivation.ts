@@ -223,7 +223,7 @@ export const useCultivationStore = defineStore(
       const def = buffDef(defId)
       if (!def) return
       const add = def.durationSec * 1000
-      // 丹药增益有上限(单颗 × 倍数,见 core/buffCap):超过上限的部分被削掉
+      // 丹药增益有绝对上限(四个时辰,见 core/buffCap):超过上限的部分被削掉
       const capSec = buffCapSec(defId)
       const capMs = capSec === undefined ? undefined : capSec * 1000
       const existing = buffs.value.find(b => b.defId === defId)
