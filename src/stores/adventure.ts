@@ -7,6 +7,7 @@ import { regionDef, unlockClosure } from '@/data/regions'
 import { gn } from '@/utils/gnum'
 import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
 import { eventDef } from '@/data/events'
+import { exploreModeOf } from '@/core/exploreModes'
 
 /**
  * 本世之界只收「结构完整、认得出」的那一份。
@@ -193,7 +194,7 @@ export const useAdventureStore = defineStore(
         } else {
           session.value = {
             ...s,
-            mode: s.mode === 'deep' || s.mode === 'risky' || s.mode === 'prolonged' ? s.mode : 'normal',
+            mode: exploreModeOf(s.mode),
             startedAt: asFiniteNumber(s.startedAt, 0, 0),
             endsAt,
             nextBattleAt: asFiniteNumber(s.nextBattleAt, 0, 0),

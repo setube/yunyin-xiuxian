@@ -22,7 +22,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
-import { ARTIFACT_DROP_CHANCE, EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
+import { ARTIFACT_DROP_CHANCE, EXPLORE_BATTLE_INTERVAL, EXPLORE_MODES } from '@/data/constants'
 import { WIN_STREAK_REWARDS } from '@/data/earlyGame'
 import { toNum } from '@/utils/gnum'
 import { recordLoss, NEMESIS_THRESHOLD } from '@/core/worldMemory'
@@ -62,12 +62,16 @@ vi.mock('./combat', async importOriginal => {
 
 const SESSION_HOURS = 2
 
-function seedSession(mode: 'normal' | 'deep'): void {
+function seedSession(mode: 'normal' | 'deep' | 'prolonged' | 'marathon' | 'deepExpedition'): void {
   const game = useGameStore()
   const player = usePlayerStore()
   const adventure = useAdventureStore()
   game.markStarted()
-  const started = Date.now() - SESSION_HOURS * 3600 * 1000
+  // 长档的缺席时长跟着档位走:8h / 16h 档按自己的时长离线,才验得到封顶。
+  // endsAt 必须与缺席时长配对 —— 否则 remainSec 短于缺席,会话早被判「圆满结束」,
+  // 离线只结那一小截,长档与封顶这条判据一起失效(故障注入时正是这样假绿过)
+  const awayHours = mode === 'normal' || mode === 'deep' ? SESSION_HOURS : EXPLORE_MODES[mode].durationSec / 3600
+  const started = Date.now() - awayHours * 3600 * 1000
   game.lastActiveAt = started
   game.totalPlaySec = 60 * 60 // 本日第 1 小时,避开跨天时序
   player.major = 2 // 筑基境,打得动一阶区域
@@ -76,7 +80,7 @@ function seedSession(mode: 'normal' | 'deep'): void {
     regionId: 'qingyun',
     mode,
     startedAt: started,
-    endsAt: started + SESSION_HOURS * 3600 * 1000,
+    endsAt: started + awayHours * 3600 * 1000,
     nextBattleAt: started + EXPLORE_BATTLE_INTERVAL * 1000,
     wins: 0,
     losses: 0,
@@ -104,7 +108,7 @@ function overflowOf(notes: string[]): number {
 }
 
 /** mock 后全链路确定:同输入必得同产出 */
-function runOnce(mode: 'normal' | 'deep'): Yields {
+function runOnce(mode: 'normal' | 'deep' | 'prolonged' | 'marathon' | 'deepExpedition'): Yields {
   setActivePinia(createPinia())
   seedSession(mode)
   const beforePage = useResourcesStore().page
@@ -155,6 +159,47 @@ describe('离线普通战产出吃模式倍率(确定性)', () => {
     // 丹药与材料/装备同一把 rewardMult 尺子:deep(×1.4) 约 normal(×1) 的 1.4 倍(±取整噪声)
     expect(deep.pills).toBeGreaterThanOrEqual(Math.round(normal.pills * 1.3))
     expect(deep.pills).toBeLessThanOrEqual(Math.round(normal.pills * 1.5))
+  })
+})
+
+/**
+ * 新增的 8h / 16h 两档 —— 倍率真的进离线产出,且离线结算不许越过洞府封顶。
+ *
+ * 长档的意义全在「关掉游戏的那一夜」:8h ×3 / 16h ×3.6 若只写在档位表里而
+ * 结算不读,玩家选长档与选 4h 拿到的是一样的东西,档位就成了摆设。
+ * 这里沿用同一套确定性装配(固定 rng + 固定胜率),只换档位与洞府等级。
+ *
+ * 第二条判据钉封顶:16h 的行程配 8h 的洞府,离线只结 8h ——
+ * 若哪天平掉 capSec,这条会按 16h 计,产出跳到两倍,必红。
+ */
+describe('离线长档(8h / 16h)吃同一把倍率,且不越过洞府封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 0.5
+  })
+
+  it('「彻夜问道」(8h,×3)的产出高于「长线云游」(4h,×2.4)', () => {
+    const marathon = runOnce('marathon')
+    const prolonged = runOnce('prolonged')
+    expect(prolonged.page, '4h 档应有产出').toBeGreaterThan(0)
+    // 8h 是 4h 的两倍时长、倍率也更高:产出必须显著更高,而不是持平
+    expect(marathon.page).toBeGreaterThan(prolonged.page)
+    expect(marathon.pills).toBeGreaterThan(prolonged.pills)
+  })
+
+  it('16h 行程配 8h 洞府:离线只结 8h,不按整程 16h 给', () => {
+    // 洞府 0 级 = 8h 封顶。锚点取「同一档位、只缺席 8h」的那一程:
+    // 若 capSec 失效,16h 档会按整程结算,产出约为锚点的两倍。
+    const capped = runOnce('deepExpedition')
+    const anchor = runOnce('marathon') // 8h 档:时长恰为封顶,产出即为 8h 的满额
+    expect(capped.page, '16h 档应有产出').toBeGreaterThan(0)
+    expect(anchor.page).toBeGreaterThan(0)
+    // 同为 8h 结算,只差档位倍率(3.6 vs 3.0):产出应在同一量级,不得翻倍
+    expect(capped.page).toBeLessThan(anchor.page * 1.5)
+    expect(capped.pills).toBeLessThan(anchor.pills * 1.5)
+    // 再钉一层:会话剩余时长是 16h,离线只推进到 8h —— 会话不该被判「圆满结束」
+    const summary = settleOffline(Date.now())
+    expect(summary).not.toBeNull()
   })
 })
 

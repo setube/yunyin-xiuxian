@@ -45,7 +45,7 @@
       >
         <span>
           <span class="font-kai text-[14px] tracking-widest text-ink">{{ EXPLORE_MODES[m.id].name }}</span>
-          <span class="ml-2 text-[11px]" :class="m.id === 'risky' || m.id === 'prolonged' ? 'text-cinnabar' : 'text-ink-faint'">{{ m.risk }}</span>
+          <span class="ml-2 text-[11px]" :class="risky(m.id) ? 'text-cinnabar' : 'text-ink-faint'">{{ m.risk }}</span>
         </span>
         <!--
           收益一直是亮着的,危险却是暗的:三档里敌人差了 2.1 倍,玩家却只看得到钱。
@@ -54,6 +54,11 @@
         <span class="text-right text-[11px] text-ink-faint tabular">
           {{ departText(m.id) }}
           <span class="block text-[10px] text-gold-ink">{{ departReward(m.id) }}</span>
+          <!--
+            超过离线上限的档位要说清「离线只结到上限」:16h 的行程配 8h 的洞府,
+            关掉游戏回来只按 8h 结算,不说的话玩家会以为整程都跑完了。
+          -->
+          <span v-if="cappedOf(m.id)" class="block text-[10px] text-cinnabar">{{ cappedOf(m.id) }}</span>
         </span>
       </button>
     </div>
@@ -64,6 +69,7 @@
   import { computed } from 'vue'
   import type { ExploreMode, RegionDef } from '@/types'
   import { usePlayerStore } from '@/stores/player'
+  import { useDongfuStore } from '@/stores/dongfu'
   import { EXPLORE_MODES } from '@/data/constants'
   import {
     exploreBattleGapSec,
@@ -82,7 +88,7 @@
   import { petDef } from '@/data/pets'
   import { personalityEffects } from '@/core/petPersonality'
   import { departButtonText, petTraitTripLine } from '@/ui/adventureText'
-  import { formatGN } from '@/utils/format'
+  import { formatDuration, formatGN } from '@/utils/format'
   import BaseModal from '@/components/common/BaseModal.vue'
 
   const props = defineProps<{ region: RegionDef | null }>()
@@ -97,8 +103,33 @@
     { id: 'normal', risk: '安稳' },
     { id: 'deep', risk: '小险' },
     { id: 'risky', risk: '大凶' },
-    { id: 'prolonged', risk: '极险' }
+    { id: 'prolonged', risk: '极险' },
+    { id: 'marathon', risk: '凶险' },
+    { id: 'deepExpedition', risk: '九死一生' }
   ]
+
+  /**
+   * 哪几档算「险」—— 朱砂只给真的可能赔命的出行方式。
+   * 判据按档位表现读:凶险比奖励高的就是险(见 exploreModes.spec 的同名判据),
+   * 新增档位不必回来改这里。
+   */
+  function risky(mode: ExploreMode): boolean {
+    return EXPLORE_MODES[mode].dangerMult > EXPLORE_MODES[mode].rewardMult
+  }
+
+  /**
+   * 这一程若中途关掉游戏,离线只结到洞府上限 —— 超出的部分是白挂的。
+   *
+   * 16h 档配 0 级洞府(8h)时,回来只拿到一半行程的收益,而界面看不出这件事;
+   * 于是「选最长的一档」在最常见的新档里反而是亏的。就地写明差多少,
+   * 让玩家自己决定是升级洞府还是换一档。
+   */
+  function cappedOf(mode: ExploreMode): string {
+    const capSec = useDongfuStore().offlineCapHours * 3600
+    const durationSec = exploreDurationSec(mode, player.petId)
+    if (durationSec <= capSec) return ''
+    return `离线只结到 ${formatDuration(capSec)}(洞府上限)`
+  }
 
   const currentBuild = computed(() => detectBuild(player.finalStats.mods))
 
