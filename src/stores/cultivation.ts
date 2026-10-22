@@ -95,9 +95,10 @@ export const useCultivationStore = defineStore(
           // 不受丹药上限约束的状态(闭关/重伤/祝福):仅保证时限是有限数字,不另加局部上限
           return { defId: b.defId, endsAt: b.endsAt, ...(added === undefined ? {} : { added }) }
         }
-        // 受上限的丹药 buff:读档复钳到 2× 单颗上限(与 addBuff 同口径)。
+        // 受上限的丹药 buff:读档复钳到「四个时辰」的绝对上限(与 addBuff 同口径)。
         // 此前只钳写入口、没钳读档——坏档/老档若带超限时长(如 5× 的「无限囤」残留),
-        // 会横跨整段会话有效,尤以修速类(+50% 聚灵)为甚。
+        // 会横跨整段会话有效,尤以修速类(+50% 聚灵)为甚。旧档按「单颗 × 2」钳过的
+        // 短时长不必补长:那是当时的合法值,补长等于替玩家白送药力。
         return {
           defId: b.defId,
           endsAt: Math.min(b.endsAt, now + capMs),

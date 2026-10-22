@@ -73,14 +73,14 @@ describe('炉前药力账(已顶 · 将顶)', () => {
     knowRecipe('p_juling')
     knowRecipe('p_jvqisan')
     const cultivation = useCultivationStore()
-    cultivation.addBuff('buff_juling', t0)
-    cultivation.addBuff('buff_juling', t0)
+    // 单颗一炷香(30 分):连服 16 颗正好顶到四个时辰
+    for (let i = 0; i < 16; i++) cultivation.addBuff('buff_juling', t0)
 
-    expect(rowOf('p_juling').overflow, '已到两倍上限').toBe('full')
+    expect(rowOf('p_juling').overflow, '已到四个时辰上限').toBe('full')
     expect(rowOf('p_jvqisan').overflow, '即时丹没有药力状态').toBeNull()
 
-    vi.setSystemTime(t0 + 1_200_000)
-    expect(rowOf('p_juling').overflow, '余 40 分钟时再服一颗会越过上限').toBe('partial')
+    vi.setSystemTime(t0 + 900_000)
+    expect(rowOf('p_juling').overflow, '余 15 分钟时再服一颗会越过上限').toBe('partial')
   })
 
   it('方子行真的写出两档状态,措辞与丹匣同族', () => {

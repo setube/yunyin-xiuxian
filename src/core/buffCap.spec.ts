@@ -3,11 +3,11 @@
  *
  * 起因(承接 xian ISS-232 的思路,适配云隐自己的 addBuff 叠法):云隐丹药的叠加是"加上",
  * 吃得比时长勤就能无限攒(20 分钟一颗、连吃一天还剩半天),"什么时候吃"的决策随之消失。
- * 决定:给**凡丹药能给的增益**加上限,取"单颗时长的 2 倍"(见 core/buffCap 的
- * CONSUMABLE_BUFF_CAP_MULT)。
+ * 决定:给**凡丹药能给的增益**加上限,统一取**四个时辰**(= 8 小时,见 core/buffCap 的
+ * CONSUMABLE_BUFF_CAP_SEC)。
  *
  * 这份用例钉四件事(它查的是**真实内容** data/pills × data/buffs,不是造出来的样本):
- *   ① 每条丹药增益都有上限,且等于"单颗时段 × 2";
+ *   ① 每条丹药增益都有上限,且等于"四个时辰"(不随单颗时长缩放);
  *   ② 反复服用也攒不过上限(贴顶再服一点不加);三档文案语义 full/partial/none 各自成立;
  *   ③ 不归它管的状态(闭关 / 重伤 / 事件祝福)一律没有上限,免得上限被无意扩大;
  *   ④ 刻意注入一份越界坏档,证明确实被钳回上限 —— 谁删了钳制,这条就红。
@@ -17,7 +17,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { PILLS } from '@/data/pills'
 import { buffDef } from '@/data/buffs'
 import {
-  CONSUMABLE_BUFF_CAP_MULT,
+  CONSUMABLE_BUFF_CAP_SEC,
   buffCapSec,
   buffOverflowOf,
   isConsumableBuff
@@ -28,6 +28,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useUiStore } from '@/stores/ui'
 import { usePill, usePillBatch } from './pillService'
 import type { BuffInstance } from '@/types'
+import { SHICHEN_SEC } from '@/data/timeUnits'
 
 /** 丹药能给的增益 id(防空转:内容表被挪走、buffId 全丢,判据就变成空跑) */
 const pillBuffs = PILLS.filter(p => p.buffId).map(p => p.buffId!)
@@ -47,18 +48,21 @@ describe('前置:服用增益的弹药是真实存在的', () => {
 })
 
 describe('封顶口径(buffCapSec / isConsumableBuff)', () => {
-  it('丹药增益的上限 = 单颗时长 × 2(口径写在装配层)', () => {
-    const dur = buffDef('buff_juling')!.durationSec
-    expect(buffCapSec('buff_juling')).toBe(dur * CONSUMABLE_BUFF_CAP_MULT)
-    expect(buffCapSec('buff_juling')).toBe(dur * 2)
+  it('丹药增益的上限 = 四个时辰,不随单颗时长缩放(口径写在装配层)', () => {
+    expect(CONSUMABLE_BUFF_CAP_SEC).toBe(4 * SHICHEN_SEC)
+    expect(buffCapSec('buff_juling')).toBe(CONSUMABLE_BUFF_CAP_SEC)
+    // 单颗时长不同的丹药,上限是同一个数 —— 玩家读到的「至多四个时辰」是同一句话
+    const shortIds = PILLS.filter(p => p.buffId && buffDef(p.buffId)!.durationSec < 1800).map(p => p.buffId!)
+    expect(shortIds.length, '内容里没有短时长丹药,这条判据形同虚设').toBeGreaterThan(0)
+    for (const defId of shortIds) expect(buffCapSec(defId)).toBe(CONSUMABLE_BUFF_CAP_SEC)
   })
 
-  it('造化丹给的 blessing 样 buff 也算消耗增益:同口径封顶(与 xian 一致)', () => {
+  it('造化丹给的 blessing 样 buff 也算消耗增益:同口径封顶', () => {
     // p_zaohua → bless_daoyun 的 kind 是 blessing,不是 pill —— 若按 kind 一刀切就漏了它
     const zaohua = PILLS.find(x => x.id === 'p_zaohua')
     expect(zaohua?.buffId).toBe('bless_daoyun')
     expect(isConsumableBuff('bless_daoyun')).toBe(true)
-    expect(buffCapSec('bless_daoyun')).toBe(buffDef('bless_daoyun')!.durationSec * 2)
+    expect(buffCapSec('bless_daoyun')).toBe(CONSUMABLE_BUFF_CAP_SEC)
   })
 
   it('不归它管的状态没有上限:闭关 / 重伤 / 事件祝福', () => {
@@ -71,10 +75,10 @@ describe('封顶口径(buffCapSec / isConsumableBuff)', () => {
 
 describe('三档文案的依据(buffOverflowOf 纯函数)', () => {
   const durSec = buffDef('buff_juling')!.durationSec // 1800
-  const capSec = buffCapSec('buff_juling')! // 3600
-  // 一次性实例:endsAt = 施放时刻 + 单颗时长(×1 / ×2)
+  const capSec = buffCapSec('buff_juling')! // 28800
+  // 一次性实例:endsAt = 施放时刻 + 单颗时长;nearCap = 距上限只剩 600 秒
   const once = (at: number) => [{ defId: 'buff_juling', endsAt: at + 1 * durSec * 1000 }]
-  const twice = (at: number) => [{ defId: 'buff_juling', endsAt: at + 2 * durSec * 1000 }]
+  const nearCap = (at: number) => [{ defId: 'buff_juling', endsAt: at + (capSec - 600) * 1000 }]
 
   it('空列表不误报(否则提示就成了狼来了)', () => {
     expect(buffOverflowOf([], 'buff_juling', 0)).toBe('none')
@@ -82,18 +86,19 @@ describe('三档文案的依据(buffOverflowOf 纯函数)', () => {
 
   it('刚服一颗 / 离上限还远:足额兑现 → none', () => {
     expect(buffOverflowOf(once(0), 'buff_juling', 0)).toBe('none')
-    // 剩 600 秒(已过 1200),再服一颗余 2400,仍未越限 —— 不报
+    // 剩 600 秒(已过 1200),再服一颗余 2400,远未越限 —— 不报
     expect(buffOverflowOf(once(0), 'buff_juling', (durSec - 600) * 1000)).toBe('none')
   })
 
   it('贴着上限、加上去会越过:只延续到顶 → partial', () => {
-    // 已攒 2× 天余 2400,再服一颗(1800)会越过 3600 —— 被削到上限
-    expect(buffOverflowOf(twice(0), 'buff_juling', (durSec - 600) * 1000)).toBe('partial')
+    // 余量距上限只差 600,再服一颗(1800)会越过 —— 被削到上限
+    expect(buffOverflowOf(nearCap(0), 'buff_juling', 0)).toBe('partial')
   })
 
   it('已经顶死:一点也加不上去 → full(界面报"这一颗白费了")', () => {
-    expect(buffOverflowOf(twice(0), 'buff_juling', 0)).toBe('full')
-    expect(capSec).toBe(2 * durSec)
+    const atCap = (at: number) => [{ defId: 'buff_juling', endsAt: at + capSec * 1000 }]
+    expect(buffOverflowOf(atCap(0), 'buff_juling', 0)).toBe('full')
+    expect(capSec).toBe(4 * SHICHEN_SEC)
   })
 })
 
@@ -106,10 +111,11 @@ describe('addBuff 封顶边界(store 集成)', () => {
     return Math.max(0, (buffs.find(b => b.defId === defId)?.endsAt ?? now) - now) / 1000
   }
 
-  it('连服再多也攒不过上限:endsAt 与 added 都钳在单颗两倍', () => {
+  it('连服再多也攒不过上限:endsAt 与 added 都钳在四个时辰', () => {
     const cultivation = useCultivationStore()
     const t0 = 5_000_000
-    for (let i = 0; i < 5; i++) cultivation.addBuff('buff_juling', t0)
+    // 单颗一炷香(30 分),连服 20 颗 = 10 小时 > 四个时辰,必然触顶
+    for (let i = 0; i < 20; i++) cultivation.addBuff('buff_juling', t0)
 
     const capSec = buffCapSec('buff_juling')!
     expect(remainOf(cultivation.buffs, 'buff_juling', t0)).toBe(capSec)
@@ -130,8 +136,8 @@ describe('addBuff 封顶边界(store 集成)', () => {
     const cultivation = useCultivationStore()
     const t0 = 5_000_000
     const capSec = buffCapSec('buff_juling')!
-    const full = 5 * buffDef('buff_juling')!.durationSec * 1000 // 5 倍,远超 2 倍上限
-    // 恶意/老坏档:endsAt 与 added 都被撸到 5 倍 —— 模拟"无限囤"时代的残留
+    const full = 20 * buffDef('buff_juling')!.durationSec * 1000 // 10 小时,远超四个时辰
+    // 恶意/老坏档:endsAt 与 added 都被撸到 10 小时 —— 模拟"无限囤"时代的残留
     cultivation.$patch({ buffs: [{ defId: 'buff_juling', endsAt: t0 + full, added: full }] })
     cultivation.addBuff('buff_juling', t0)
 
@@ -160,22 +166,21 @@ describe('服用丹药的三档文案(usePill 端到端)', () => {
     const ui = useUiStore()
     const lastToast = () => ui.toasts[ui.toasts.length - 1]?.text ?? ''
 
-    inv.addPill('p_juling', 4)
+    inv.addPill('p_juling', 3)
 
-    // 第一颗:足额 —— 正常反馈
+    // 第一颗:足额 —— 正常反馈(此刻身上没有聚灵)
     expect(usePill('p_juling')).toBe(true)
     expect(lastToast()).toContain('药力化开')
 
-    // 过 20 分钟(剩 10 分钟)再服:这颗足额加,还不越限 —— 仍正常
-    vi.advanceTimersByTime(1200 * 1000)
-    expect(usePill('p_juling')).toBe(true)
-    expect(lastToast()).toContain('药力化开')
-
-    // 第三颗仍在这一刻(已攒 40 分钟=上限):加上去会越过 —— 只延续到顶
+    // 把聚灵顶到四个时辰(单颗 30 分 × 16 颗),再走过 15 分钟:
+    // 余量距上限只差一刻钟,这一颗加上去会越过 —— 只延续到顶
+    const cultivation = useCultivationStore()
+    for (let i = 0; i < 16; i++) cultivation.addBuff('buff_juling', t0)
+    vi.advanceTimersByTime(900 * 1000)
     expect(usePill('p_juling')).toBe(true)
     expect(lastToast()).toContain('只延续到顶')
 
-    // 第四颗:彻底顶死 —— 白费
+    // 顶回四个时辰后当场再服:一点也加不上去 —— 白费
     expect(usePill('p_juling')).toBe(true)
     expect(lastToast()).toContain('这一颗白费了')
   })
@@ -185,16 +190,25 @@ describe('服用丹药的三档文案(usePill 端到端)', () => {
     vi.setSystemTime(t0)
     const inv = useInventoryStore()
     const ui = useUiStore()
-    inv.addPill('p_juling', 4)
+    const cultivation = useCultivationStore()
+    // toast 有 2.6 秒退出计时,而下面要跨 15 分钟推进游戏钟 —— 逐次收下文本,别指望最后还能翻到
+    const seen: string[] = []
+    const collectTitles = () => seen.push(ui.toasts[ui.toasts.length - 1]?.text ?? '')
+    inv.addPill('p_juling', 3)
+    // 足额:身上无聚灵时服一颗
     usePill('p_juling')
-    vi.advanceTimersByTime(1200 * 1000)
+    collectTitles()
+    // 只延续到顶:先把余量顶到距上限不足一颗,再服
+    for (let i = 0; i < 16; i++) cultivation.addBuff('buff_juling', t0)
+    vi.advanceTimersByTime(900 * 1000)
     usePill('p_juling')
+    collectTitles()
+    // 白费:此刻已经顶死
     usePill('p_juling')
-    usePill('p_juling')
-    const texts = ui.toasts.map(t => t.text)
-    expect(texts.some(t => t.includes('药力化开'))).toBe(true)
-    expect(texts.some(t => t.includes('只延续到顶'))).toBe(true)
-    expect(texts.some(t => t.includes('这一颗白费了'))).toBe(true)
+    collectTitles()
+    expect(seen.some(t => t.includes('药力化开'))).toBe(true)
+    expect(seen.some(t => t.includes('只延续到顶'))).toBe(true)
+    expect(seen.some(t => t.includes('这一颗白费了'))).toBe(true)
   })
 
   it('增益丹批量连服退化为单服:贴顶不静默,一句"白费了"说得明白', () => {
@@ -204,13 +218,12 @@ describe('服用丹药的三档文案(usePill 端到端)', () => {
     const ui = useUiStore()
     const lastToast = () => ui.toasts[ui.toasts.length - 1]?.text ?? ''
 
-    // 已有两枚聚灵顶到上限,手里还有 5 枚,想"连服 ×5"——
+    // 聚灵已经顶到四个时辰,手里还有 5 枚,想"连服 ×5"——
     // 批量路径必须退化成单服,而不是报一个误导性的「连服 5 枚」
     const cultivation = useCultivationStore()
     inv.addPill('p_juling', 5)
-    // 手动把 buff 顶满(占 40 分钟),再造 5 枚库存
-    cultivation.addBuff('buff_juling', t0)
-    cultivation.addBuff('buff_juling', t0)
+    // 手动把 buff 顶满(四个时辰),再造 5 枚库存
+    for (let i = 0; i < 16; i++) cultivation.addBuff('buff_juling', t0)
     const eaten = usePillBatch('p_juling', 5)
 
     expect(eaten).toBe(1) // 只会吃 1 枚,不白白连吃 5 枚
@@ -228,7 +241,7 @@ describe('读档复钳上限(sanitize 不放过超限 buff)', () => {
     const cultivation = useCultivationStore()
     const now = Date.now()
     const capMs = buffCapSec('buff_juling')! * 1000
-    const full = 5 * buffDef('buff_juling')!.durationSec * 1000 // 5 倍远超 2 倍上限
+    const full = 20 * buffDef('buff_juling')!.durationSec * 1000 // 10 小时,远超四个时辰
     cultivation.$patch({ buffs: [{ defId: 'buff_juling', endsAt: now + full, added: full }] })
     cultivation.sanitize()
     expect(cultivation.buffs[0]!.added).toBe(capMs)
@@ -239,7 +252,7 @@ describe('读档复钳上限(sanitize 不放过超限 buff)', () => {
   it('合法(≤上限)的 buff 读档后原样保留(修形非空转)', () => {
     const cultivation = useCultivationStore()
     const now = Date.now()
-    const dur = buffDef('buff_juling')!.durationSec * 1000 // 单颗时长 ≤ 2× 上限
+    const dur = buffDef('buff_juling')!.durationSec * 1000 // 单颗时长 ≤ 四个时辰
     cultivation.$patch({ buffs: [{ defId: 'buff_juling', endsAt: now + dur, added: dur }] })
     cultivation.sanitize()
     expect(cultivation.buffs[0]!.endsAt).toBe(now + dur)
