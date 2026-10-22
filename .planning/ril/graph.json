@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 328,
+  "round": 329,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T00:44:45+00:00",
+  "updated_at": "2026-10-22T01:24:46+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -6476,7 +6476,7 @@
       "version": 2,
       "created_at": "2026-09-12T04:35:19+00:00",
       "updated_at": "2026-09-12T05:26:30+00:00",
-      "touched_round": 267,
+      "touched_round": 329,
       "summary": "界面外壳与底部导航(App.vue 外壳 + TopStatusBar + BottomNavigation + 全局浮层 ToastHost + scripts/layout-check.mjs):承载所有页面的固定骨架,也是「真机排版」的观测面"
     },
     "ISS-099": {
@@ -24488,6 +24488,222 @@
       "touched_round": 328,
       "summary": "prepareBreakthrough 在扣款前拒绝已有准备态,避免重复消费与覆盖",
       "commit": "7872729"
+    },
+    "COMP-074": {
+      "id": "COMP-074",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:03:37+00:00",
+      "updated_at": "2026-10-22T01:03:37+00:00",
+      "touched_round": 329,
+      "title": "音频引擎生命周期",
+      "description": "src/core/audio.ts 的 Tone 初始化、可见性监听与背景乐启停,以及 App.vue 的挂载/卸载接线。"
+    },
+    "COMP-075": {
+      "id": "COMP-075",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:03:37+00:00",
+      "updated_at": "2026-10-22T01:03:37+00:00",
+      "touched_round": 329,
+      "title": "存档文件读取入口",
+      "description": "src/core/save.ts 与设置页/欢迎页的 FileReader 导入链路,覆盖异步完成、失败回执与组件卸载。"
+    },
+    "ISS-1010": {
+      "id": "ISS-1010",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T01:03:37+00:00",
+      "updated_at": "2026-10-22T01:14:04+00:00",
+      "touched_round": 329,
+      "title": "音频后台启动与可见性监听不可撤销",
+      "description": "audio.ts 在 init 后匿名注册 visibilitychange,App 卸载只 stopBgm;加载期间切后台后仍会 startBgm,且监听无移除出口。",
+      "severity": 0.55
+    },
+    "ISS-1011": {
+      "id": "ISS-1011",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T01:03:37+00:00",
+      "updated_at": "2026-10-22T01:14:04+00:00",
+      "touched_round": 329,
+      "title": "存档读取回调可在组件卸载后暂停引擎",
+      "description": "SettingsSaveSection/WelcomeView 的 FileReader.onload 不检查卸载,读文件期间离页后回调仍会 engine.pause 并写已销毁组件状态,可能把游戏永久停住。",
+      "severity": 0.8
+    },
+    "ISS-1012": {
+      "id": "ISS-1012",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T01:03:37+00:00",
+      "updated_at": "2026-10-22T01:14:04+00:00",
+      "touched_round": 329,
+      "title": "稀有提示闪光计时器归组件私有且卸载不清理",
+      "description": "ToastHost 内裸 setTimeout 写 flashId,无 onUnmounted 撤销;组件卸载后仍回调,重复挂载会留下不可撤销计时器。",
+      "severity": 0.3
+    },
+    "TASK-455": {
+      "id": "TASK-455",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T01:03:44+00:00",
+      "updated_at": "2026-10-22T01:14:04+00:00",
+      "touched_round": 329,
+      "category": "stability",
+      "severity": 0.55,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "音频后台启动与监听生命周期收口",
+      "detail": "startBgm 只在前台启动;初始化完成时按当前可见性决定;匿名 visibilitychange 改为命名回调并可撤销;App 卸载调用 disposeAudio。"
+    },
+    "TASK-456": {
+      "id": "TASK-456",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T01:03:44+00:00",
+      "updated_at": "2026-10-22T01:14:04+00:00",
+      "touched_round": 329,
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "存档读取回调随组件卸载失效",
+      "detail": "两处 FileReader.onload 先判卸载;离页时中止读取,不暂停引擎也不弹回执;补行为测试与故障注入。"
+    },
+    "TASK-457": {
+      "id": "TASK-457",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T01:03:44+00:00",
+      "updated_at": "2026-10-22T01:14:04+00:00",
+      "touched_round": 329,
+      "category": "stability",
+      "severity": 0.3,
+      "confidence": 1,
+      "effort": 1,
+      "title": "稀有提示闪光计时器随宿主卸载撤销",
+      "detail": "保存 flash timer,重弹前先清旧计时器,onUnmounted 清理;以假时钟验证卸载后不再回调。"
+    },
+    "EV-1004": {
+      "id": "EV-1004",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:13:26+00:00",
+      "updated_at": "2026-10-22T01:13:26+00:00",
+      "touched_round": 329,
+      "source": "src/core/audio.spec.ts 加载期间切后台;故障注入移除 hidden 守卫 → 1 次起乐,恢复后 0",
+      "confidence": 1
+    },
+    "EV-1005": {
+      "id": "EV-1005",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:13:26+00:00",
+      "updated_at": "2026-10-22T01:13:26+00:00",
+      "touched_round": 329,
+      "source": "src/core/saveFileRead.spec.ts abort 后迟到 load/error;故障注入删 settled 守卫 → 2 条用例转红",
+      "confidence": 1
+    },
+    "EV-1006": {
+      "id": "EV-1006",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:13:26+00:00",
+      "updated_at": "2026-10-22T01:13:26+00:00",
+      "touched_round": 329,
+      "source": "src/ui/toastFlash.spec.ts dispose 后 5 秒推进;故障注入删 clearTimeout → flashId 变 null,用例转红",
+      "confidence": 1
+    },
+    "HYP-166": {
+      "id": "HYP-166",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T01:13:31+00:00",
+      "updated_at": "2026-10-22T01:14:03+00:00",
+      "touched_round": 329,
+      "title": "音频初始化完成时未按当前可见性决定起乐",
+      "confidence": 0.95
+    },
+    "HYP-167": {
+      "id": "HYP-167",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T01:13:31+00:00",
+      "updated_at": "2026-10-22T01:14:03+00:00",
+      "touched_round": 329,
+      "title": "存档读取回调缺少卸载闸门会让引擎停在暂停态",
+      "confidence": 0.95
+    },
+    "HYP-168": {
+      "id": "HYP-168",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T01:13:31+00:00",
+      "updated_at": "2026-10-22T01:14:03+00:00",
+      "touched_round": 329,
+      "title": "组件私有闪光计时器未随宿主撤销",
+      "confidence": 1
+    },
+    "EV-1007": {
+      "id": "EV-1007",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:18:32+00:00",
+      "updated_at": "2026-10-22T01:18:32+00:00",
+      "touched_round": 329,
+      "source": "src/core/audio.spec.ts 加载途中 dispose;故障注入删 init 的 generation 守卫 → 旧初始化仍装监听,用例转红;恢复后 7/7 绿",
+      "confidence": 1
+    },
+    "CHG-555": {
+      "id": "CHG-555",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:24:31+00:00",
+      "updated_at": "2026-10-22T01:24:31+00:00",
+      "touched_round": 329,
+      "commit": "8f5d33c",
+      "title": "音频后台启动与初始化代次收口",
+      "summary": "后台不起乐、可见性监听可撤销、dispose 后旧初始化失效"
+    },
+    "CHG-556": {
+      "id": "CHG-556",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:24:36+00:00",
+      "updated_at": "2026-10-22T01:24:36+00:00",
+      "touched_round": 329,
+      "commit": "d2f3d87",
+      "title": "Toast 闪光计时器随宿主撤销",
+      "summary": "重弹撤旧计时器,卸载即清;同帧多条 toast 逐条发声"
+    },
+    "CHG-557": {
+      "id": "CHG-557",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T01:24:41+00:00",
+      "updated_at": "2026-10-22T01:24:41+00:00",
+      "touched_round": 329,
+      "commit": "d2f3d87",
+      "title": "Toast 闪光计时器随宿主撤销",
+      "summary": "重弹撤旧计时器,卸载即清;同帧多条 toast 逐条发声"
     }
   },
   "edges": [
@@ -36143,6 +36359,102 @@
       "to": "ISS-1009",
       "type": "resolves",
       "created_at": "2026-10-22T00:43:27+00:00"
+    },
+    {
+      "from": "TASK-455",
+      "to": "ISS-1010",
+      "type": "addresses",
+      "created_at": "2026-10-22T01:03:52+00:00"
+    },
+    {
+      "from": "TASK-456",
+      "to": "ISS-1011",
+      "type": "addresses",
+      "created_at": "2026-10-22T01:03:52+00:00"
+    },
+    {
+      "from": "TASK-457",
+      "to": "ISS-1012",
+      "type": "addresses",
+      "created_at": "2026-10-22T01:03:53+00:00"
+    },
+    {
+      "from": "ISS-1010",
+      "to": "COMP-074",
+      "type": "located_in",
+      "created_at": "2026-10-22T01:03:53+00:00"
+    },
+    {
+      "from": "ISS-1011",
+      "to": "COMP-075",
+      "type": "located_in",
+      "created_at": "2026-10-22T01:03:53+00:00"
+    },
+    {
+      "from": "ISS-1012",
+      "to": "COMP-015",
+      "type": "located_in",
+      "created_at": "2026-10-22T01:03:53+00:00"
+    },
+    {
+      "from": "EV-1004",
+      "to": "HYP-166",
+      "type": "validates",
+      "created_at": "2026-10-22T01:13:37+00:00"
+    },
+    {
+      "from": "EV-1005",
+      "to": "HYP-167",
+      "type": "validates",
+      "created_at": "2026-10-22T01:13:37+00:00"
+    },
+    {
+      "from": "EV-1006",
+      "to": "HYP-168",
+      "type": "validates",
+      "created_at": "2026-10-22T01:13:37+00:00"
+    },
+    {
+      "from": "EV-1007",
+      "to": "HYP-166",
+      "type": "validates",
+      "created_at": "2026-10-22T01:18:37+00:00"
+    },
+    {
+      "from": "CHG-555",
+      "to": "TASK-455",
+      "type": "implements",
+      "created_at": "2026-10-22T01:24:45+00:00"
+    },
+    {
+      "from": "CHG-555",
+      "to": "ISS-1010",
+      "type": "resolves",
+      "created_at": "2026-10-22T01:24:45+00:00"
+    },
+    {
+      "from": "CHG-556",
+      "to": "TASK-456",
+      "type": "implements",
+      "created_at": "2026-10-22T01:24:46+00:00"
+    },
+    {
+      "from": "CHG-556",
+      "to": "ISS-1011",
+      "type": "resolves",
+      "created_at": "2026-10-22T01:24:46+00:00"
+    },
+    {
+      "from": "CHG-557",
+      "to": "TASK-457",
+      "type": "implements",
+      "created_at": "2026-10-22T01:24:46+00:00"
+    },
+    {
+      "from": "CHG-557",
+      "to": "ISS-1012",
+      "type": "resolves",
+      "created_at": "2026-10-22T01:24:46+00:00"
     }
   ]
 }
