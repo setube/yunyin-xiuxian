@@ -27,6 +27,7 @@ import {
   asFiniteNumber,
   asNumberRecord,
   asObjectOrNull,
+  asRecord,
   asRecordOf,
   asStringArray
 } from '@/utils/saveShape'
@@ -554,13 +555,17 @@ export const useEndgameStore = defineStore(
       equippedSouls.value = (Array.isArray(equippedSouls.value) ? equippedSouls.value : []).filter(id => id !== uid)
     }
 
-    const totalClears = computed(
-      () =>
-        Object.values(worldClears.value).reduce((s, n) => s + n, 0) + Object.values(trialRecords.value).reduce((s, r) => s + r.clears, 0)
-    )
+    const totalClears = computed(() => {
+      const worlds = asRecord<number>(worldClears.value)
+      const trials = asRecordOf<TrialRecord>(trialRecords.value, r => !!r && typeof r === 'object')
+      return (
+        Object.values(worlds).reduce((s, n) => s + asFiniteNumber(n, 0, 0), 0) +
+        Object.values(trials).reduce((s, r) => s + Math.floor(asFiniteNumber(r.clears, 0, 0)), 0)
+      )
+    })
 
     function chooseDao(id: DaoPathId): boolean {
-      if (daoPath.value !== null) return false
+      if (daoPath.value !== null && daoPathDef(daoPath.value)) return false
       if (!daoPathDef(id)) return false
       daoPath.value = id
       return true
@@ -584,18 +589,20 @@ export const useEndgameStore = defineStore(
 
     function recordWorldClear(worldId: string): void {
       if (worldId !== 'void' && !celestialWorldDef(worldId)) return
-      worldClears.value = { ...worldClears.value, [worldId]: (worldClears.value[worldId] ?? 0) + 1 }
+      const clears = asNumberRecord(worldClears.value, 0)
+      worldClears.value = { ...clears, [worldId]: Math.floor(clears[worldId] ?? 0) + 1 }
     }
 
     function recordTrial(trialId: string, rounds: number): void {
       if (!trialDef(trialId) || !Number.isFinite(rounds) || rounds <= 0) return
       const fixedRounds = Math.max(1, Math.floor(rounds))
-      const prev = trialRecords.value[trialId]
+      const records = asRecordOf<TrialRecord>(trialRecords.value, r => !!r && typeof r === 'object')
+      const prev = records[trialId]
       trialRecords.value = {
-        ...trialRecords.value,
+        ...records,
         [trialId]: {
-          clears: (prev?.clears ?? 0) + 1,
-          bestRounds: prev ? Math.min(prev.bestRounds, fixedRounds) : fixedRounds
+          clears: Math.floor(asFiniteNumber(prev?.clears, 0, 0)) + 1,
+          bestRounds: prev ? Math.min(Math.max(1, Math.floor(asFiniteNumber(prev.bestRounds, fixedRounds, 1))), fixedRounds) : fixedRounds
         }
       }
     }

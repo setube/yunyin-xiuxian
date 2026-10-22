@@ -478,6 +478,21 @@ describe('终局公共写入 · 只认目录 id 与合法值', () => {
     expect(e.updateRecord('fastest_world', 12, 1, '赤炎天', 'min')).toBe(true)
     expect(e.records.fastest_world).toEqual({ value: 12, life: 1, note: '赤炎天' })
   })
+
+  it('破界与试炼计数在运行时被写成非对象时,总计与写入都不抛错', () => {
+    const e = useEndgameStore()
+    e.$patch({
+      worldClears: null as never,
+      trialRecords: ['bad'] as never
+    })
+
+    expect(() => e.totalClears, '总计应把坏容器当作空表').not.toThrow()
+    expect(e.totalClears).toBe(0)
+    expect(() => e.recordWorldClear('chiyan')).not.toThrow()
+    expect(e.worldClears).toEqual({ chiyan: 1 })
+    expect(() => e.recordTrial('qisha', 12)).not.toThrow()
+    expect(e.trialRecords).toEqual({ qisha: { clears: 1, bestRounds: 12 } })
+  })
 })
 
 describe('终局一次性引导标记 sanitize', () => {
@@ -596,6 +611,16 @@ describe('天界终局坏档 · 按 id 认道/认界/认试炼', () => {
     expect(e.daoPath).toBeNull()
     // 回落之后这一世重新选得动 —— 这正是坏 id 最要命的后果
     expect(e.chooseDao('sword')).toBe(true)
+  })
+
+  it('运行时写入的野道途不再挡住本世重选,合法道途仍不可改', () => {
+    const e = useEndgameStore()
+    e.$patch({ daoPath: 'ghost_dao' as never })
+
+    expect(e.chooseDao('sword'), '野 id 不是一条已立之道').toBe(true)
+    expect(e.daoPath).toBe('sword')
+    expect(e.chooseDao('slaughter'), '真道途一旦立下不可另择').toBe(false)
+    expect(e.daoPath).toBe('sword')
   })
 
   it('认得 four 道途原样保留', () => {
