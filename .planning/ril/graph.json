@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 327,
+  "round": 328,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T00:32:26+00:00",
+  "updated_at": "2026-10-22T00:44:45+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -24090,7 +24090,7 @@
       "version": 1,
       "created_at": "2026-10-22T00:05:41+00:00",
       "updated_at": "2026-10-22T00:05:41+00:00",
-      "touched_round": 327,
+      "touched_round": 328,
       "confidence": 0.95,
       "title": "遥测与终局公共写入仍默认调用方可信",
       "detail": "高频遥测与终局日号/纪录的公共入口此前只挡非有限数,未挡负值、空串与坏形状,坏调用可直接污染持久化状态。"
@@ -24302,6 +24302,192 @@
       "touched_round": 327,
       "summary": "测试分类抽成唯一映射模块,gateWiring 校验每个 spec 恰好命中一类",
       "commit": "6a3b8c4"
+    },
+    "ISS-1007": {
+      "id": "ISS-1007",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T00:38:05+00:00",
+      "updated_at": "2026-10-22T00:43:10+00:00",
+      "touched_round": 328,
+      "summary": "终局 worldClears/trialRecords 运行时写成非对象会让 totalClears 抛错,记破界/记试炼也直接下标访问",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 1
+    },
+    "COMP-071": {
+      "id": "COMP-071",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:38:05+00:00",
+      "updated_at": "2026-10-22T00:38:05+00:00",
+      "touched_round": 328,
+      "summary": "终局破界/试炼计数与总计的运行时容器边界",
+      "path": "src/stores/endgame.ts"
+    },
+    "TASK-452": {
+      "id": "TASK-452",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T00:38:16+00:00",
+      "updated_at": "2026-10-22T00:43:16+00:00",
+      "touched_round": 328,
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 1,
+      "title": "终局计数容器与总计挡住运行时坏形状",
+      "detail": "worldClears/trialRecords 在计算总计与增量写入前统一按对象取值,非对象回落空表;补 totalClears 与两个写入入口的坏容器测试。"
+    },
+    "ISS-1008": {
+      "id": "ISS-1008",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T00:39:41+00:00",
+      "updated_at": "2026-10-22T00:43:11+00:00",
+      "touched_round": 328,
+      "summary": "chooseDao 只看 daoPath 是否非 null:运行时写入的野 id 会永久挡住本世选道,直到下一次读档 sanitize",
+      "severity": 0.45,
+      "confidence": 1,
+      "effort": 1
+    },
+    "COMP-072": {
+      "id": "COMP-072",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:39:41+00:00",
+      "updated_at": "2026-10-22T00:39:41+00:00",
+      "touched_round": 328,
+      "summary": "终局道途选择的旧值有效性判据",
+      "path": "src/stores/endgame.ts"
+    },
+    "TASK-453": {
+      "id": "TASK-453",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T00:39:46+00:00",
+      "updated_at": "2026-10-22T00:43:16+00:00",
+      "touched_round": 328,
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 1,
+      "effort": 1,
+      "title": "道途选择把非法旧值视作未定",
+      "detail": "chooseDao 在判断此生是否已定前先校验现有 daoPath;野 id 不再挡住本世重选,合法道途仍不可改。"
+    },
+    "ISS-1009": {
+      "id": "ISS-1009",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T00:40:12+00:00",
+      "updated_at": "2026-10-22T00:43:11+00:00",
+      "touched_round": 328,
+      "summary": "prepareBreakthrough 不检查已有准备态:静坐中再服聚气丹会重复扣 80 石并覆盖更高加成,就绪加成也可被更弱项覆盖",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 1
+    },
+    "COMP-073": {
+      "id": "COMP-073",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:40:12+00:00",
+      "updated_at": "2026-10-22T00:40:12+00:00",
+      "touched_round": 328,
+      "summary": "突破准备的重复施加与一次性加成边界",
+      "path": "src/core/earlyGameService.ts"
+    },
+    "TASK-454": {
+      "id": "TASK-454",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T00:40:17+00:00",
+      "updated_at": "2026-10-22T00:43:16+00:00",
+      "touched_round": 328,
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 1,
+      "title": "突破准备已在身时不再重复扣费",
+      "detail": "prepareBreakthrough 在任何扣款前检查已有准备态;坐定或就绪都拒绝重复施加,保留原状态与原加成。"
+    },
+    "EV-1001": {
+      "id": "EV-1001",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:43:05+00:00",
+      "updated_at": "2026-10-22T00:43:05+00:00",
+      "touched_round": 328,
+      "summary": "终局计数容器行为证据",
+      "source": "src/stores/endgame.spec.ts 1 条坏容器测试;回旧总计/写入 1/1 转红,恢复后 55/55 定向通过",
+      "confidence": 1.0
+    },
+    "EV-1002": {
+      "id": "EV-1002",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:43:05+00:00",
+      "updated_at": "2026-10-22T00:43:05+00:00",
+      "touched_round": 328,
+      "summary": "道途旧值行为证据",
+      "source": "src/stores/endgame.spec.ts 1 条运行时野道途测试;回旧 chooseDao 转红,恢复后终局相关 79/79 定向通过",
+      "confidence": 1.0
+    },
+    "EV-1003": {
+      "id": "EV-1003",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:43:05+00:00",
+      "updated_at": "2026-10-22T00:43:05+00:00",
+      "touched_round": 328,
+      "summary": "突破准备重复施加证据",
+      "source": "src/core/earlyGameService.spec.ts 1 条准备在身测试;回旧 prepareBreakthrough 转红,恢复后 52/52 定向通过",
+      "confidence": 1.0
+    },
+    "CHG-552": {
+      "id": "CHG-552",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-22T00:43:21+00:00",
+      "updated_at": "2026-10-22T00:44:34+00:00",
+      "touched_round": 328,
+      "summary": "终局总计与破界/试炼写入统一按对象容器与有限整数收口",
+      "commit": "60d3681"
+    },
+    "CHG-553": {
+      "id": "CHG-553",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-22T00:43:22+00:00",
+      "updated_at": "2026-10-22T00:44:34+00:00",
+      "touched_round": 328,
+      "summary": "chooseDao 先校验旧 daoPath 是否在目录内,野 id 等同未择道",
+      "commit": "60d3681"
+    },
+    "CHG-554": {
+      "id": "CHG-554",
+      "type": "change",
+      "status": "active",
+      "version": 2,
+      "created_at": "2026-10-22T00:43:22+00:00",
+      "updated_at": "2026-10-22T00:44:45+00:00",
+      "touched_round": 328,
+      "summary": "prepareBreakthrough 在扣款前拒绝已有准备态,避免重复消费与覆盖",
+      "commit": "7872729"
     }
   },
   "edges": [
@@ -35867,6 +36053,96 @@
       "to": "ISS-1006",
       "type": "resolves",
       "created_at": "2026-10-22T00:28:38+00:00"
+    },
+    {
+      "from": "TASK-452",
+      "to": "ISS-1007",
+      "type": "addresses",
+      "created_at": "2026-10-22T00:38:16+00:00"
+    },
+    {
+      "from": "ISS-1007",
+      "to": "COMP-071",
+      "type": "located_in",
+      "created_at": "2026-10-22T00:38:16+00:00"
+    },
+    {
+      "from": "TASK-453",
+      "to": "ISS-1008",
+      "type": "addresses",
+      "created_at": "2026-10-22T00:39:46+00:00"
+    },
+    {
+      "from": "ISS-1008",
+      "to": "COMP-072",
+      "type": "located_in",
+      "created_at": "2026-10-22T00:39:46+00:00"
+    },
+    {
+      "from": "TASK-454",
+      "to": "ISS-1009",
+      "type": "addresses",
+      "created_at": "2026-10-22T00:40:17+00:00"
+    },
+    {
+      "from": "ISS-1009",
+      "to": "COMP-073",
+      "type": "located_in",
+      "created_at": "2026-10-22T00:40:17+00:00"
+    },
+    {
+      "from": "EV-1001",
+      "to": "HYP-165",
+      "type": "validates",
+      "created_at": "2026-10-22T00:43:16+00:00"
+    },
+    {
+      "from": "EV-1002",
+      "to": "HYP-165",
+      "type": "validates",
+      "created_at": "2026-10-22T00:43:16+00:00"
+    },
+    {
+      "from": "EV-1003",
+      "to": "HYP-165",
+      "type": "validates",
+      "created_at": "2026-10-22T00:43:16+00:00"
+    },
+    {
+      "from": "CHG-552",
+      "to": "TASK-452",
+      "type": "implements",
+      "created_at": "2026-10-22T00:43:27+00:00"
+    },
+    {
+      "from": "CHG-552",
+      "to": "ISS-1007",
+      "type": "resolves",
+      "created_at": "2026-10-22T00:43:27+00:00"
+    },
+    {
+      "from": "CHG-553",
+      "to": "TASK-453",
+      "type": "implements",
+      "created_at": "2026-10-22T00:43:27+00:00"
+    },
+    {
+      "from": "CHG-553",
+      "to": "ISS-1008",
+      "type": "resolves",
+      "created_at": "2026-10-22T00:43:27+00:00"
+    },
+    {
+      "from": "CHG-554",
+      "to": "TASK-454",
+      "type": "implements",
+      "created_at": "2026-10-22T00:43:27+00:00"
+    },
+    {
+      "from": "CHG-554",
+      "to": "ISS-1009",
+      "type": "resolves",
+      "created_at": "2026-10-22T00:43:27+00:00"
     }
   ]
 }
