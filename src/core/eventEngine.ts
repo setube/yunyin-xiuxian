@@ -152,7 +152,19 @@ function foldSession(stone?: GNum, exp?: GNum, items = 0): void {
   adventure.setSession(next)
 }
 
-function applyEffect(effect: EventEffect, tier: number): string | null {
+/**
+ * 事件结算时的在场性 —— 只有「玩家在场」才允许替他改这一身构筑。
+ *
+ * 离线整段结算与「遇事勿扰」都是玩家不在场(或明确说过别弹窗)的路径:
+ * 那里掉出一件法宝时若照默认自动祭上,回来第一眼看到的是**被换过的构筑**,
+ * 而他从没点过那个按钮(离线结算的法宝通道早就守住了这条,见 offline.ts 的 autoEquip=false)。
+ */
+export interface EventApplyOpts {
+  /** 空祭炼位时自动祭上法宝。默认 true(玩家亲手选的那一选项) */
+  autoEquipArtifact?: boolean
+}
+
+function applyEffect(effect: EventEffect, tier: number, opts: EventApplyOpts = {}): string | null {
   const player = usePlayerStore()
   const resources = useResourcesStore()
   const inventory = useInventoryStore()
@@ -210,7 +222,7 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
     case 'artifact': {
       const id = effect.id ?? randomDropArtifact(tier)
       if (!id) return null
-      const line = `获得 ${acquireArtifact(id)}`
+      const line = `获得 ${acquireArtifact(id, false, opts.autoEquipArtifact ?? true)}`
       foldSession(undefined, undefined, 1) // 法宝所得并入会话账目
       return line
     }
@@ -259,14 +271,19 @@ export interface EventResolution {
   lines: string[]
 }
 
-/** 结算某个选项 */
-export function resolveEventChoice(def: EventDef, choiceIdx: number, tier: number): EventResolution {
+/**
+ * 结算某个选项。
+ *
+ * `opts.autoEquipArtifact` 只在**自动结算**(离线整段 / 遇事勿扰 / 超时)传 false:
+ * 玩家亲手点的选项照旧自动祭上,替他决定的那几条路不许改他的构筑。
+ */
+export function resolveEventChoice(def: EventDef, choiceIdx: number, tier: number, opts: EventApplyOpts = {}): EventResolution {
   const adventure = useAdventureStore()
   const choice = def.choices[choiceIdx] ?? def.choices[0]!
   const outcome = rng.weighted(choice.outcomes, o => o.weight)
   const lines: string[] = []
   for (const effect of outcome.effects) {
-    const line = applyEffect(effect, tier)
+    const line = applyEffect(effect, tier, opts)
     if (line) lines.push(line)
   }
   if (def.once) adventure.markEventSeen(def.id)
@@ -290,12 +307,18 @@ export function resolveEventChoice(def: EventDef, choiceIdx: number, tier: numbe
   return { outcomeText: outcome.text, lines }
 }
 
-/** 离线/超时自动按默认选项结算 */
+/**
+ * 离线/超时/勿扰自动按默认选项结算 —— 玩家**不在场**,不许替他祭法宝。
+ *
+ * 这条路径是离线整段结算(offline.ts)、事件超时与「遇事勿扰」的共用出口。
+ * 从前它照默认 `autoEquip=true` 收法宝:挂一夜回来,囊里多了一件法宝,
+ * 而随身那一格已经被人换过 —— 玩家从没点过那个按钮,也看不出是谁换的。
+ */
 export function autoResolveEvent(eventId: string, tier: number): EventResolution | null {
   const def = eventDef(eventId)
   if (!def) return null
   let idx = def.choices.findIndex(c => c.isDefault && choiceAvailable(c, tier))
   if (idx < 0) idx = def.choices.findIndex(c => choiceAvailable(c, tier))
   if (idx < 0) idx = 0
-  return resolveEventChoice(def, idx, tier)
+  return resolveEventChoice(def, idx, tier, { autoEquipArtifact: false })
 }

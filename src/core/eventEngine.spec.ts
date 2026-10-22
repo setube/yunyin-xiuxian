@@ -18,7 +18,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { eventDef } from '@/data/events'
 import { rng } from '@/utils/random'
-import { resolveEventChoice } from './eventEngine'
+import { autoResolveEvent, resolveEventChoice } from './eventEngine'
 import { stoneByTier } from './formulas'
 
 describe('事件结算 · 灵石代价守恒', () => {
@@ -96,7 +96,7 @@ describe('际遇 haul(事件所得并入会话账目)', () => {
     // 避免 75%/25% 掷点让断言在 CI 里偶发翻车(取到 injury 时 expGain 不动)
     const spring = eventDef('ev_spring')!
     const expOutcome = spring.choices[0]!.outcomes[0]!
-    const spy = vi.spyOn(rng, 'weighted').mockReturnValue(expOutcome)
+    const spy = vi.spyOn(rng, 'weighted').mockImplementationOnce(() => expOutcome)
     try {
       resolveEventChoice(spring, 0, 1)
     } finally {
@@ -104,5 +104,84 @@ describe('际遇 haul(事件所得并入会话账目)', () => {
     }
     expect(toNum(player.exp)).toBeGreaterThan(expBefore)
     expect(toNum(adventure.session!.expGain), '际遇给的修为要写进会话账目').toBeGreaterThan(0)
+  })
+})
+
+/**
+ * 自动结算不许替玩家祭法宝。
+ *
+ * 离线整段、事件超时与「遇事勿扰」都走 `autoResolveEvent` —— 玩家**不在场**。
+ * 从前它照默认 `autoEquip=true` 收法宝:挂一夜回来囊里多了一件,而随身那一格
+ * 已经被换过,他从没点过那个按钮,也看不出是谁换的。
+ * 离线结算的法宝通道早就守住了这条(offline.ts 传 autoEquip=false),
+ * 际遇这条却漏着 —— 两条都是「趁玩家不在」,纪律该一样。
+ */
+describe('自动结算不替玩家祭法宝', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('autoResolveEvent 掉出法宝时只入囊,不占空着的随身位', () => {
+    const inventory = useInventoryStore()
+    const player = usePlayerStore()
+    player.major = 5 // 法宝位已开,而随身那一格还空着 —— 自动祭上就是在这条缝里发生的
+    expect(inventory.equippedArtifacts, '前置:随身那一格得是空的').toEqual([])
+
+    const wine = eventDef('ev_wine_immortal')!
+    const artifactOutcome = wine.choices[0]!.outcomes.find(o => o.effects.some(e => e.type === 'artifact'))!
+    const spy = vi.spyOn(rng, 'weighted').mockImplementationOnce(() => artifactOutcome)
+    try {
+      autoResolveEvent('ev_wine_immortal', 5)
+    } finally {
+      spy.mockRestore()
+    }
+
+    expect(inventory.artifacts.length, '法宝该真的入囊').toBeGreaterThan(0)
+    expect(inventory.equippedArtifacts, '玩家不在场,空着的随身位也不许被他祭上').toEqual([])
+  })
+
+  it('玩家亲手点的选项照旧自动祭上(不因修这条而好心办坏事)', () => {
+    const inventory = useInventoryStore()
+    const wine = eventDef('ev_wine_immortal')!
+    const artifactOutcome = wine.choices[0]!.outcomes.find(o => o.effects.some(e => e.type === 'artifact'))!
+    const spy = vi.spyOn(rng, 'weighted').mockImplementationOnce(() => artifactOutcome)
+    try {
+      resolveEventChoice(wine, 0, 5)
+    } finally {
+      spy.mockRestore()
+    }
+    expect(inventory.artifacts.length, '亲手选的选项照旧收法宝').toBeGreaterThan(0)
+    expect(inventory.equippedArtifacts, '亲手在场:首个法宝照旧自动祭上').toHaveLength(1)
+  })
+
+  /**
+   * 故障注入:把 autoResolveEvent 的 `{ autoEquipArtifact: false }` 去掉
+   * → 本条红;手动那条仍绿(证明红的是这条纪律,不是整个法宝通道)。
+   *
+   * 差别只在「随身那一格还空着」时看得见:`addArtifact` 的自动祭上本来就是
+   * 「空祭炼位才祭」(不抢占已有构筑),所以判据要在**空手**状态下比。
+   */
+  it('判据自家不空转:同一掷点下,自动路径不祭、手动路径祭', () => {
+    const wine = eventDef('ev_wine_immortal')!
+    const artifactOutcome = wine.choices[0]!.outcomes.find(o => o.effects.some(e => e.type === 'artifact'))!
+    expect(artifactOutcome, '该事件里得有法宝结局,否则两条断言都失去对象').toBeDefined()
+
+    const run = (auto: boolean): string[] => {
+      setActivePinia(createPinia())
+      const inventory = useInventoryStore()
+      usePlayerStore().major = 5 // 法宝位已开
+      expect(inventory.equippedArtifacts, '前置:随身那一格得是空的').toEqual([])
+      const spy = vi.spyOn(rng, 'weighted').mockImplementationOnce(() => artifactOutcome)
+      try {
+        if (auto) autoResolveEvent('ev_wine_immortal', 5)
+        else resolveEventChoice(wine, 0, 5)
+      } finally {
+        spy.mockRestore()
+      }
+      expect(inventory.artifacts.length, '法宝都得真的入囊').toBe(1)
+      return [...inventory.equippedArtifacts]
+    }
+    expect(run(true), '玩家不在场:空手也不该被他手祭上').toEqual([])
+    expect(run(false), '亲手在场:空手照旧自动祭上').toHaveLength(1)
   })
 })
