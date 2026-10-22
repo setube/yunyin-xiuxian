@@ -38,27 +38,27 @@
     <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">行程论这一程走多久;「历练遇敌」只令同程妖踪更密,不能缩地成寸。</p>
     <div class="mt-3 space-y-2">
       <button
-        v-for="m in MODE_LIST"
-        :key="m.id"
+        v-for="modeId in exploreModeIds"
+        :key="modeId"
         class="flex w-full items-center justify-between rounded-lg border border-ink/20 px-4 py-3 text-left active:scale-98 active:bg-ink/5"
-        @click="emit('choose', m.id)"
+        @click="emit('choose', modeId)"
       >
         <span>
-          <span class="font-kai text-[14px] tracking-widest text-ink">{{ EXPLORE_MODES[m.id].name }}</span>
-          <span class="ml-2 text-[11px]" :class="risky(m.id) ? 'text-cinnabar' : 'text-ink-faint'">{{ m.risk }}</span>
+          <span class="font-kai text-[14px] tracking-widest text-ink">{{ EXPLORE_MODES[modeId].name }}</span>
+          <span class="ml-2 text-[11px]" :class="risky(modeId) ? 'text-cinnabar' : 'text-ink-faint'">{{ exploreModeRiskLabel(modeId) }}</span>
         </span>
         <!--
           收益一直是亮着的,危险却是暗的:三档里敌人差了 2.1 倍,玩家却只看得到钱。
           两个数并排摆出来,「要不要涉险」才是个可算的账。
         -->
         <span class="text-right text-[11px] text-ink-faint tabular">
-          {{ departText(m.id) }}
-          <span class="block text-[10px] text-gold-ink">{{ departReward(m.id) }}</span>
+          {{ departText(modeId) }}
+          <span class="block text-[10px] text-gold-ink">{{ departReward(modeId) }}</span>
           <!--
             超过离线上限的档位要说清「离线只结到上限」:16h 的行程配 8h 的洞府,
             关掉游戏回来只按 8h 结算,不说的话玩家会以为整程都跑完了。
           -->
-          <span v-if="cappedOf(m.id)" class="block text-[10px] text-cinnabar">{{ cappedOf(m.id) }}</span>
+          <span v-if="cappedOf(modeId)" class="block text-[10px] text-cinnabar">{{ cappedOf(modeId) }}</span>
         </span>
       </button>
     </div>
@@ -87,7 +87,7 @@
   import { detectionAdaptation, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { petDef } from '@/data/pets'
   import { personalityEffects } from '@/core/petPersonality'
-  import { departButtonText, petTraitTripLine } from '@/ui/adventureText'
+  import { departButtonText, exploreModeIds, exploreModeRiskLabel, petTraitTripLine } from '@/ui/adventureText'
   import { formatDuration, formatGN } from '@/utils/format'
   import BaseModal from '@/components/common/BaseModal.vue'
 
@@ -98,15 +98,6 @@
   }>()
 
   const player = usePlayerStore()
-
-  const MODE_LIST: { id: ExploreMode; risk: string }[] = [
-    { id: 'normal', risk: '安稳' },
-    { id: 'deep', risk: '小险' },
-    { id: 'risky', risk: '大凶' },
-    { id: 'prolonged', risk: '极险' },
-    { id: 'marathon', risk: '凶险' },
-    { id: 'deepExpedition', risk: '九死一生' }
-  ]
 
   /**
    * 哪几档算「险」—— 朱砂只给真的可能赔命的出行方式。

@@ -3,7 +3,41 @@
  * 行程、遇险、收益、遇敌间隔必须是结算即将用的那几个数。
  */
 import { formatDuration } from '@/utils/format'
+import { EXPLORE_MODES } from '@/data/constants'
+import type { ExploreMode } from '@/types'
 import type { PetPersonalityEffects } from '@/core/petPersonality'
+
+/**
+ * 每一档行程的凶险形容词 —— 纯展示层,与 `EXPLORE_MODES` 的数值无关。
+ *
+ * 单独一份映射而不是散在出行弹窗里:档位清单(`exploreModeIds`)从 `EXPLORE_MODES`
+ * 的键派生,新增一档时按钮自动出现,这里缺的只是那一句形容词(回落「涉险」)。
+ * 从前弹窗里手写一整张 `{ id, risk }` 清单 —— 加一档要改三处(表、类型、清单),
+ * 漏改清单的那一档在界面上**根本不存在**,而结算认得它。
+ */
+export const EXPLORE_MODE_RISK_LABEL: Record<ExploreMode, string> = {
+  normal: '安稳',
+  deep: '小险',
+  risky: '大凶',
+  prolonged: '极险',
+  marathon: '凶险',
+  deepExpedition: '九死一生'
+}
+
+/** 未知档位(未来加档而这里还没写形容词)的回落 —— 不猜,只说它涉险 */
+export const EXPLORE_MODE_RISK_FALLBACK = '涉险'
+
+/** 某一档的凶险形容词;没登记的档位不静默留空 */
+export function exploreModeRiskLabel(mode: ExploreMode): string {
+  return EXPLORE_MODE_RISK_LABEL[mode] ?? EXPLORE_MODE_RISK_FALLBACK
+}
+
+/**
+ * 全部行程档位,按 `EXPLORE_MODES` 的键序(即时长递进的顺序)。
+ *
+ * 界面不许再手写一份档位清单:表是唯一事实源,新增一档按钮自己长出来。
+ */
+export const exploreModeIds = Object.keys(EXPLORE_MODES) as ExploreMode[]
 
 function timesLabel(n: number): string {
   const rounded = Math.round(n * 100) / 100

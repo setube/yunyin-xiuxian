@@ -4,7 +4,13 @@ import { EXPLORE_BATTLE_INTERVAL, EXPLORE_MODES } from '@/data/constants'
 import { PETS } from '@/data/pets'
 import { exploreBattleGapSec, exploreDurationSec, exploreRewardMult } from '@/core/exploration'
 import { personalityEffects } from '@/core/petPersonality'
-import { departButtonText, petTraitTripLine, sessionRecordText } from './adventureText'
+import {
+  departButtonText,
+  exploreModeIds,
+  exploreModeRiskLabel,
+  petTraitTripLine,
+  sessionRecordText
+} from './adventureText'
 
 describe('出发按钮与结算同一套数', () => {
   it('行程按灵兽之性折算,与 startExploration 同一公式', () => {
@@ -118,5 +124,36 @@ describe('一趟历练的战绩 · 胜负两本账', () => {
     expect(core).toContain('sessionRecordText(')
     // 手写「胜 {{ session?.wins }} 场」那一版正是会把败场吞掉的形状
     expect(panel).not.toMatch(/胜\s*\{\{\s*session\?\.wins/)
+  })
+})
+
+describe('行程档位清单 · 表是唯一事实源', () => {
+  it('档位清单从 EXPLORE_MODES 的键派生,不长第二份手写表', () => {
+    expect(exploreModeIds).toEqual(Object.keys(EXPLORE_MODES))
+    expect(exploreModeIds.length, '六档:0.5h → 16h').toBe(6)
+  })
+
+  it('每一档都有一句凶险形容词,没有静默留空的', () => {
+    for (const id of exploreModeIds) {
+      expect(exploreModeRiskLabel(id), `${id} 没有凶险形容词`).not.toBe('')
+    }
+    expect(exploreModeRiskLabel('normal')).toBe('安稳')
+    expect(exploreModeRiskLabel('deepExpedition')).toBe('九死一生')
+  })
+
+  /**
+   * 出行弹窗从前手写一整张 `{ id, risk }` 清单 —— 加一档要改三处
+   * (constants 的表、types 的联合、弹窗的清单),漏改清单的那一档在界面上
+   * **根本不存在**,而结算认得它。判据钉住弹窗读的是派生清单。
+   *
+   * 故障注入:把弹窗里那行 v-for 改回一张手写 MODE_LIST → 本条红。
+   */
+  it('出行弹窗的档位读派生清单,不再手写一份', () => {
+    const dialog = readFileSync(new URL('../components/adventure/ExploreModeDialog.vue', import.meta.url), 'utf8')
+    expect(dialog, '档位要由 exploreModeIds 派生').toContain('exploreModeIds')
+    expect(dialog, '凶险形容词也要走单源').toContain('exploreModeRiskLabel')
+    // 手写清单的形状:`{ id: 'normal', risk: '安稳' }` 一类字面量
+    expect(dialog, '又手写了一份档位清单 —— 加档时界面会漏一档').not.toMatch(/id:\s*'normal'/)
+    expect(dialog, '又手写了 risk 字面量表').not.toMatch(/risk:\s*'安稳'/)
   })
 })
