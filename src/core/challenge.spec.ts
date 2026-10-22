@@ -18,6 +18,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
+import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import type { EquipSlot, EquipmentInstance } from '@/types'
 import { gn } from '@/utils/gnum'
@@ -123,6 +124,29 @@ describe('相元挑战 · undertakeChallenge 清/败原子', () => {
     expect(out).toBeNull()
     expect(e.daoSource).toBe(before)
     expect(useUiStore().toasts.at(-1)?.text).toContain('远征在途')
+  })
+
+  it('历练在途:扣费前拒绝挑战书,道源分文不动', () => {
+    seed(true)
+    const e = useEndgameStore()
+    useAdventureStore().setSession({
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: 0,
+      endsAt: Date.now() + 60_000,
+      nextBattleAt: Date.now() + 10_000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: gn(0),
+      expGain: gn(0),
+      itemGain: 0
+    })
+    const verdict = verifyChallenge(DRAFT)!
+    const before = e.daoSource
+    expect(undertakeChallenge(DRAFT, verdict), '历练在途仍可立约').toBeNull()
+    expect(e.daoSource, '在途拒绝不得扣道源').toBe(before)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('历练在途')
   })
 
   it('道源不足:拒因报实际差额,不把总价当缺口', () => {

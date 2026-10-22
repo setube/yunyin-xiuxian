@@ -15,6 +15,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
+import { useAdventureStore } from '@/stores/adventure'
+import { useUiStore } from '@/stores/ui'
 import { TRIALS, trialDef, celestialWorldDef } from '@/data/endgame'
 import { challengeTrial, replayMark, rewriteMark, REWRITE_ENTRY_COST } from './endgameService'
 import { gn } from '@/utils/gnum'
@@ -165,5 +167,40 @@ describe('天道试炼 · challengeTrial 清/败原子', () => {
     expect(challengeTrial('qisha')).toBeNull()
     expect(rewriteMark(e.marks[0]!)).toBeNull()
     expect(e.daoSource, '在途拒绝不得扣道源').toBe(before)
+  })
+
+  it('历练在途:试炼与重写都在扣费前拒绝', () => {
+    seedTrialPlayer(true)
+    const e = useEndgameStore()
+    useAdventureStore().setSession({
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: 0,
+      endsAt: Date.now() + 60_000,
+      nextBattleAt: Date.now() + 10_000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: gn(0),
+      expGain: gn(0),
+      itemGain: 0
+    })
+    e.addMark({
+      life: 1,
+      daoPathId: 'sword',
+      targetId: 'chiyan',
+      targetName: celestialWorldDef('chiyan')!.name,
+      cleared: true,
+      rounds: 99,
+      buildName: '天道自检',
+      powerText: '1e100',
+      at: Date.now(),
+      replay: { mods: {}, attack: gn(1), defense: gn(1), maxHp: gn(10), speed: 1, skills: [], artifacts: [], pactId: null }
+    })
+    const before = e.daoSource
+    expect(challengeTrial('qisha'), '历练在途仍可应试').toBeNull()
+    expect(rewriteMark(e.marks[0]!), '历练在途仍可重写').toBeNull()
+    expect(e.daoSource, '在途拒绝不得扣道源').toBe(before)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('历练在途')
   })
 })

@@ -289,7 +289,7 @@ export function replayMark(mark: DaoMark): ExpeditionResult | null {
     ui.toast('此界早已散于天道,无从重临', 'warn')
     return null
   }
-  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm)
+  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm, useEndgameStore().adventureSession)
   if (busy) {
     ui.toast(busy.reason, 'warn')
     return null
@@ -340,7 +340,7 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
     ui.toast('此界早已散于天道,无从重写', 'warn')
     return null
   }
-  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm)
+  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm, useEndgameStore().adventureSession)
   if (busy) {
     ui.toast(busy.reason, 'warn')
     return null
@@ -407,7 +407,7 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
     ui.toast('先择道途,方可赴试炼', 'warn')
     return null
   }
-  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm)
+  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm, useEndgameStore().adventureSession)
   if (busy) {
     ui.toast(busy.reason, 'warn')
     return null

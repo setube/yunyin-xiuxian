@@ -15,16 +15,18 @@
       </p>
       <button
         class="btn-seal mt-2 w-full !py-2 !text-[12px]"
-        :disabled="endgame.dailyDoneDay === daily.day || (endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST)"
-        :title="endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)}` : undefined"
+        :disabled="endgame.dailyDoneDay === daily.day || busy !== null || endgame.daoSource < CHALLENGE_ENTRY_COST"
+        :title="busy?.reason ?? (endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)}` : undefined)"
         @click="goDaily"
       >
         {{
           endgame.dailyDoneDay === daily.day
             ? '今日已成,明日再会'
-            : endgame.daoSource < CHALLENGE_ENTRY_COST
-              ? `应 战(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
-              : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+            : busy
+              ? busy.kind === 'expedition' ? '应 战(远征在途)' : busy.kind === 'exploration' ? '应 战(历练在途)' : '应 战(身在秘境)'
+              : endgame.daoSource < CHALLENGE_ENTRY_COST
+                ? `应 战(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+                : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
         }}
       </button>
     </div>
@@ -39,14 +41,16 @@
         <div class="mt-2 flex gap-2">
           <button
             class="btn-seal flex-1 !py-2 !text-[12px]"
-            :disabled="endgame.daoSource < MUTATION_ENTRY_COST"
-            :title="endgame.daoSource < MUTATION_ENTRY_COST ? `道源尚差 ${daoSourceShortText(MUTATION_ENTRY_COST, endgame.daoSource)}` : undefined"
+            :disabled="busy !== null || endgame.daoSource < MUTATION_ENTRY_COST"
+            :title="busy?.reason ?? (endgame.daoSource < MUTATION_ENTRY_COST ? `道源尚差 ${daoSourceShortText(MUTATION_ENTRY_COST, endgame.daoSource)}` : undefined)"
             @click="goMutation"
           >
             {{
-              endgame.daoSource < MUTATION_ENTRY_COST
-                ? `应 战(道源尚差 ${daoSourceShortText(MUTATION_ENTRY_COST, endgame.daoSource)} · 需 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
-                : `应 战(道源 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)} · 破解得 ${MUTATION_BASE_REWARD})`
+              busy
+                ? busy.kind === 'expedition' ? '应 战(远征在途)' : busy.kind === 'exploration' ? '应 战(历练在途)' : '应 战(身在秘境)'
+                : endgame.daoSource < MUTATION_ENTRY_COST
+                  ? `应 战(道源尚差 ${daoSourceShortText(MUTATION_ENTRY_COST, endgame.daoSource)} · 需 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+                  : `应 战(道源 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)} · 破解得 ${MUTATION_BASE_REWARD})`
             }}
           </button>
           <button class="btn-ghost !px-3 !text-[12px]" @click="mutationDraw = rollMutators()">再探</button>
@@ -79,14 +83,16 @@
         </p>
         <button
           class="btn-ghost mt-2.5 w-full !py-2 !text-[13px]"
-          :disabled="endgame.daoSource < trial.entryCost"
-          :title="endgame.daoSource < trial.entryCost ? `道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)}` : undefined"
+          :disabled="busy !== null || endgame.daoSource < trial.entryCost"
+          :title="busy?.reason ?? (endgame.daoSource < trial.entryCost ? `道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)}` : undefined)"
           @click="goTrial(trial.id)"
         >
           {{
-            endgame.daoSource < trial.entryCost
-              ? `应 试(道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)} · 需 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)})`
-              : `应 试(道源 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)} · 功成得 ${trial.rewardDaoSource})`
+            busy
+              ? busy.kind === 'expedition' ? '应 试(远征在途)' : busy.kind === 'exploration' ? '应 试(历练在途)' : '应 试(身在秘境)'
+              : endgame.daoSource < trial.entryCost
+                ? `应 试(道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)} · 需 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)})`
+                : `应 试(道源 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)} · 功成得 ${trial.rewardDaoSource})`
           }}
         </button>
       </div>
@@ -214,6 +220,7 @@
   import { BUILD_PROFILES } from '@/core/buildSim'
   import { cnNumber, formatNum } from '@/utils/format'
   import { daoSourceShortText } from '@/core/daoSource'
+  import { useAdventureStore } from '@/stores/adventure'
   import { endgameBusy } from '@/core/endgameActivity'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import SecretRealmCard from '@/components/adventure/SecretRealmCard.vue'
@@ -299,7 +306,7 @@
   /** 已选变数(把效果正文亮到行内,移动端不靠 hover) */
   const selectedMutators = computed(() => MUTATORS.filter(m => draft.value.mutatorIds.includes(m.id)))
   const challengePact = computed(() => (draft.value.pactId ? pactDef(draft.value.pactId) ?? null : null))
-  const busy = computed(() => endgameBusy(endgame.worldRun, usePlayerStore().secretRealm))
+  const busy = computed(() => endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, useAdventureStore().session))
   const challengeBlockText = computed(() => {
     if (busy.value) return busy.value.reason
     if (!challengeVerdict.value?.ok) return '先验约,天道受约后方可立约'
@@ -309,7 +316,13 @@
     return undefined
   })
   const challengeButtonText = computed(() => {
-    if (busy.value) return busy.value.kind === 'expedition' ? '立 约(远征在途)' : '立 约(身在秘境)'
+    if (busy.value) {
+      return busy.value.kind === 'expedition'
+        ? '立 约(远征在途)'
+        : busy.value.kind === 'exploration'
+          ? '立 约(历练在途)'
+          : '立 约(身在秘境)'
+    }
     if (!challengeVerdict.value?.ok) return '立 约(先验约)'
     if (endgame.daoSource < CHALLENGE_ENTRY_COST) {
       return `立 约(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`

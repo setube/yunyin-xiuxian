@@ -105,7 +105,7 @@ export function undertakeChallenge(draft: ChallengeDraft, verdict: ChallengeVerd
   const endgame = useEndgameStore()
   const ui = useUiStore()
   if (!endgameUnlocked() || !endgame.daoPath || !verdict.ok) return null
-  const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm)
+  const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, endgame.adventureSession)
   if (busy) {
     ui.toast(busy.reason, 'warn')
     return null

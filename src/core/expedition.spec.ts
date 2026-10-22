@@ -14,6 +14,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
+import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { CELESTIAL_WORLDS, EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
 import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes, challengeMutation } from './expedition'
@@ -186,6 +187,29 @@ describe('远征 · 败战即结(不留残局续打)', () => {
 })
 
 describe('终局付费战斗 · 在途互斥', () => {
+  it('历练在途:启程与变数连战都在扣费前拒绝', () => {
+    seated(9, MORTAL_TOP, 'heaven', 20)
+    const eg = useEndgameStore()
+    useAdventureStore().setSession({
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: 0,
+      endsAt: Date.now() + 60_000,
+      nextBattleAt: Date.now() + 10_000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: gn(0),
+      expGain: gn(0),
+      itemGain: 0
+    })
+    const before = eg.daoSource
+    expect(startWorldExpedition('chiyan', null), '历练在途仍可启程').toBeNull()
+    expect(challengeMutation([]), '历练在途仍可开变数').toBeNull()
+    expect(eg.daoSource, '在途拒绝不得扣道源').toBe(before)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('历练在途')
+  })
+
   it('远征在途:变数连战在扣费前拒绝', () => {
     seated(9, MORTAL_TOP, 'heaven', 20)
     const eg = useEndgameStore()

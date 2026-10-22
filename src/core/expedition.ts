@@ -235,13 +235,9 @@ export function startWorldExpedition(worldId: string, pactId: string | null, gat
     ui.toast('先择道途,方可踏天', 'warn')
     return null
   }
-  if (endgame.worldRun) {
-    ui.toast('已有远征在途,先了结眼前的路', 'warn')
-    return null
-  }
-  // 秘境与远征互斥:身处秘境者不得再踏天门
-  if (usePlayerStore().secretRealm) {
-    ui.toast('你正身处秘境之中,先出了秘境再踏天门', 'warn')
+  const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, endgame.adventureSession)
+  if (busy) {
+    ui.toast(busy.reason, 'warn')
     return null
   }
   const pact = pactId ? pactDef(pactId) : undefined
@@ -420,7 +416,7 @@ export function challengeMutation(mutatorIds: string[]): MutationResult | null {
     ui.toast('先择道途,方可应变数', 'warn')
     return null
   }
-  const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm)
+  const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, endgame.adventureSession)
   if (busy) {
     ui.toast(busy.reason, 'warn')
     return null

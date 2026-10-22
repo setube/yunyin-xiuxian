@@ -65,11 +65,29 @@ describe('远征读档恢复 · worldRun sanitize', () => {
     expect(endgame.worldRun).toBeNull()
   })
 
-  it('虚界(void)远征在途保护:worldId=void 不被作废', () => {
+  it('虚界(void)远征在途保护:worldId=void 且虚界有效时不被作废', () => {
     const endgame = useEndgameStore()
-    endgame.$patch({ worldRun: hostileRun({ worldId: 'void' }) })
+    endgame.$patch({
+      worldRun: hostileRun({ worldId: 'void' }),
+      voidWorld: { ...celestialWorldDef('chiyan')!, id: 'void', name: '虚界·在途' }
+    })
     endgame.sanitize()
     expect(endgame.worldRun?.worldId).toBe('void')
+    expect(endgame.voidWorld?.id).toBe('void')
+  })
+
+  it('虚界远征缺少有效虚界时清空:不留下看不见也退不出的幽灵远征', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({ worldRun: hostileRun({ worldId: 'void' }), voidWorld: null })
+    endgame.sanitize()
+    expect(endgame.worldRun, '没有世界就没有这一程').toBeNull()
+
+    endgame.$patch({
+      worldRun: hostileRun({ worldId: 'void' }),
+      voidWorld: { ...celestialWorldDef('chiyan')!, id: 'void', routes: [] }
+    })
+    endgame.sanitize()
+    expect(endgame.worldRun, '虚界形状坏掉时同样清空在途').toBeNull()
   })
 
   it('layer 越界/非数被夹回 [0, GUARDIAN_LAYER],NaN 兜底 0', () => {

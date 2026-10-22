@@ -81,6 +81,7 @@
     realmUnlock
   } from '@/core/secretRealm'
   import { endgameBusy } from '@/core/endgameActivity'
+  import { useAdventureStore } from '@/stores/adventure'
 
   const player = usePlayerStore()
   const endgame = useEndgameStore()
@@ -108,7 +109,7 @@
   })
   const list = computed(() => availableRealms(props.gate))
   const def = computed<SecretRealmDef | undefined>(() => (state.value ? secretRealmDef(state.value.realmId) : undefined))
-  const busy = computed(() => endgameBusy(endgame.worldRun, player.secretRealm))
+  const busy = computed(() => endgameBusy(endgame.worldRun, player.secretRealm, useAdventureStore().session))
 
   function canPay(r: SecretRealmDef): boolean {
     return !busy.value && entryShortfallOf(r, player.major) === null

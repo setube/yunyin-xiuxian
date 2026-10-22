@@ -20,6 +20,7 @@ import { ARTIFACT_MAX_LEVEL, artifactDef } from '@/data/artifacts'
 import { STAT_KEYS } from '@/data/statNames'
 import { MAX_MAJOR } from '@/data/realms'
 import { gn } from '@/utils/gnum'
+import { useAdventureStore } from '@/stores/adventure'
 import {
   asArray,
   asCarriedHpPct,
@@ -284,6 +285,8 @@ export const useEndgameStore = defineStore(
     const marks = ref<DaoMark[]>([])
     /** 进行中的路线远征(null = 无) */
     const worldRun = ref<WorldRunState | null>(null)
+    /** 历练在途的只读投影:终局核心与入口共用同一份在途判据 */
+    const adventureSession = computed(() => useAdventureStore().session)
     /** 当前虚界(程序化生成、裁判过审的世界;id 恒为 'void') */
     const voidWorld = ref<CelestialWorldDef | null>(null)
     /** 今日天道完成日(day number;跨世保留) */
@@ -401,6 +404,17 @@ export const useEndgameStore = defineStore(
         }
       }
       voidWorld.value = sanitizeVoidWorld(voidWorld.value)
+      /**
+       * 跨字段一致性:虚界远征必须有同一座可解析的虚界。
+       *
+       * 前面按 worldId 先保留了 void 在途,但 voidWorld 可能在下一行才被判坏。
+       * 若此时仍留着 worldRun,resolveWorld('void') 会返回 undefined,界面把
+       * 在途面板与「中道而返」一起藏掉,而新远征又因已有 worldRun 被拒 ——
+       * 玩家只剩一个看不见、也退不出的幽灵远征。没有世界就没有这一程。
+       */
+      if (worldRun.value?.worldId === 'void' && !voidWorld.value) {
+        worldRun.value = null
+      }
       dailyDoneDay.value =
         typeof dailyDoneDay.value === 'number' && Number.isFinite(dailyDoneDay.value) && dailyDoneDay.value >= 0
           ? Math.floor(dailyDoneDay.value)
@@ -651,6 +665,7 @@ export const useEndgameStore = defineStore(
       trialRecords,
       marks,
       worldRun,
+      adventureSession,
       voidWorld,
       dailyDoneDay,
       milestones,

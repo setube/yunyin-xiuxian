@@ -147,7 +147,7 @@ describe('秘境 · 进得去', () => {
       totalRounds: 0,
       winStacks: 0
     }
-    expect(endgameBusy(endgame.worldRun, usePlayerStore().secretRealm)?.kind).toBe('expedition')
+    expect(endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, useAdventureStore().session)?.kind).toBe('expedition')
     expect(enterSecretRealm('sr_kurong').ok).toBe(false)
     expect(useUiStore().toasts.at(-1)?.text).toContain('远征在途')
   })
