@@ -143,6 +143,8 @@ const CHIME_POINT_TIMES = ['1:1:0', '5:2:0', '9:1:0', '13:2:0', '17:1:0', '21:0:
 // ---- 运行时状态(全部在动态加载后建立) ----
 let T: typeof ToneNS | null = null
 let initPromise: Promise<void> | null = null
+/** 初始化代次:dispose 后,在途 init 与 safeStart 的旧回调都不许再碰运行时 */
+let audioGeneration = 0
 let unlocked = false
 let bgmPlaying = false
 let lastClickAt = 0
@@ -155,6 +157,9 @@ let lastClickAt = 0
  * 玩家每点一下(全局 onPointerDown 都调 unlockAudio)就多一条,×4 就是这么来的
  */
 let audioDead = false
+
+/** 古筝余音的延迟自动化;音频销毁时要一并撤销,免得回调摸到已清空的节点 */
+const tailTimers = new Set<ReturnType<typeof setTimeout>>()
 
 let musicBus: ToneNS.Gain | null = null
 let sfxBus: ToneNS.Gain | null = null
@@ -180,9 +185,10 @@ function applyPrefs(): void {
   if (!prefs.musicOn) stopBgm()
 }
 
-/** 构建乐器、效果与整首曲子(仅一次) */
-async function init(): Promise<void> {
+/** 构建乐器、效果与整首曲子(仅一次);返回 false 表示初始化已被销毁撤销 */
+async function init(generation: number): Promise<boolean> {
   const tone = await import('tone')
+  if (generation !== audioGeneration) return false
   const audioBase = `${import.meta.env.BASE_URL}audio/`
   const sampler = (dir: string, urls: Record<string, string>, volume: number, release = 1.5): ToneNS.Sampler =>
     new tone.Sampler({ urls, baseUrl: `${audioBase}${dir}/`, volume, release })
@@ -240,6 +246,8 @@ async function init(): Promise<void> {
 
   // 等混响与全部采样就绪
   await Promise.all([hallVerb.ready, roomVerb.ready, tone.loaded()])
+  // 采样加载期间宿主可能已卸载;此时旧初始化不能再装监听、改 Transport 或占住 T
+  if (generation !== audioGeneration) return false
 
   // 各声部装入 Transport,整曲循环
   const transport = tone.getTransport()
@@ -289,12 +297,14 @@ async function init(): Promise<void> {
         const durSec = beats * beatSec
         const ms = (time - T.now()) * 1000 + durSec * 1000 + 150
         if (ms > 0 && ms < 12000) {
-          setTimeout(() => {
+          const timer = setTimeout(() => {
+            tailTimers.delete(timer)
             if (zhengTail) {
               zhengTail.gain.rampTo(0.93, 0.25)
               zhengTail.gain.rampTo(1, 0.6)
             }
           }, ms)
+          tailTimers.add(timer)
         }
       }
     },
@@ -359,16 +369,23 @@ async function init(): Promise<void> {
   chimePart.start(0)
 
   // 切后台暂停乐曲,回前台续播
-  document.addEventListener('visibilitychange', () => {
-    if (!T) return
-    if (document.visibilityState === 'hidden') {
-      if (bgmPlaying) T.getTransport().pause()
-    } else if (bgmPlaying && prefs.musicOn) {
-      T.getTransport().start()
-    }
-  })
+  document.addEventListener('visibilitychange', onVisibilityChange)
 
   T = tone
+  return true
+}
+
+function onVisibilityChange(): void {
+  if (!T) return
+  if (document.visibilityState === 'hidden') {
+    if (bgmPlaying) T.getTransport().pause()
+    return
+  }
+  if (!prefs.musicOn || !unlocked) return
+  // 加载期间切到后台时,初始化完成后的 startBgm 会被可见性守卫挡下;
+  // 回到前台这一刻补上,不必等下一次交互。
+  if (bgmPlaying) T.getTransport().start()
+  else startBgm()
 }
 
 /** 同步偏好(设置页开关/音量变化时调用) */
@@ -391,20 +408,25 @@ let startPromise: Promise<void> | null = null
  */
 function safeStart(): void {
   if (!T || audioDead || startPromise) return
-  startPromise = T.start()
+  const generation = audioGeneration
+  const task = T.start()
     .then(() => {
+      if (generation !== audioGeneration) return
       // 恢复成功才让循环起声;失败走 catch 直接置死
       if (prefs.musicOn) startBgm()
     })
     .catch(() => {
+      if (generation !== audioGeneration) return
       audioDead = true
       bgmPlaying = false
       // 降级为静音续行:一句警告入日志,不再进 diag 留档
       console.warn('[音频] 音频设备未就绪,静音续行(配乐与音效停用)')
     })
     .finally(() => {
-      startPromise = null
+      // dispose 后可能已有新一代启动;只清自己那一份在途标记
+      if (startPromise === task) startPromise = null
     })
+  startPromise = task
 }
 
 /** 首次用户交互时调用,加载引擎并解锁声音;每次交互重入无副作用 */
@@ -416,18 +438,30 @@ export function unlockAudio(): void {
     safeStart()
     return
   }
-  initPromise ??= init()
-    .then(() => {
+  if (initPromise) return
+  const generation = audioGeneration
+  const task = init(generation)
+    .then(started => {
+      if (!started || generation !== audioGeneration) return
       safeStart()
       applyPrefs()
     })
     .catch(err => {
+      if (generation !== audioGeneration) return
+      // 失败不该把模块永久钉在「正在加载」:下一次交互应能重新尝试
       console.error('[音频] 引擎加载失败', err)
     })
+    .finally(() => {
+      // dispose 后可能已有新一代加载;旧任务收尾不许清掉新任务
+      if (initPromise === task) initPromise = null
+    })
+  initPromise = task
 }
 
 export function startBgm(): void {
   if (!T || bgmPlaying || !prefs.musicOn || audioDead) return
+  // 加载期间切后台时初始化完成仍会走到这里;后台不该突然起乐
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
   bgmPlaying = true
   T.getTransport().start('+0.1')
 }
@@ -436,6 +470,36 @@ export function stopBgm(): void {
   if (!T || !bgmPlaying) return
   bgmPlaying = false
   T.getTransport().stop()
+}
+
+/**
+ * 释放 App 级音频接线:撤销可见性监听与余音计时器,停曲并清空运行时引用。
+ * 采样器与 Part 随模块引用一起释放;下一次挂载可重新初始化。
+ */
+export function disposeAudio(): void {
+  audioGeneration += 1
+  if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibilityChange)
+  for (const timer of tailTimers) clearTimeout(timer)
+  tailTimers.clear()
+  stopBgm()
+  T = null
+  initPromise = null
+  startPromise = null
+  unlocked = false
+  audioDead = false
+  musicBus = null
+  sfxBus = null
+  zheng = null
+  zhengTail = null
+  zhengHarmonics = null
+  zhengSfx = null
+  pipa = null
+  wood = null
+  taiko = null
+  taikoBgm = null
+  bellSampler = null
+  chimeSampler = null
+  bassSynth = null
 }
 
 /** 古筝刮奏(真采样):速度放缓,余音相叠 */
