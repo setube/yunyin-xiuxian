@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 333,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T06:03:21+00:00",
+  "updated_at": "2026-10-22T06:45:31+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -25648,6 +25648,136 @@
       "commit": "da019e3",
       "title": "秘境入口拒因收进 endgameBusy",
       "detail": "toast 与返回的 reason 都取判据本体;守卫扩到秘境入口，不许再手抄。"
+    },
+    "TASK-471": {
+      "id": "TASK-471",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T06:44:49+00:00",
+      "updated_at": "2026-10-22T06:45:31+00:00",
+      "touched_round": 333,
+      "category": "correctness",
+      "severity": 0.4,
+      "confidence": 1,
+      "effort": 1,
+      "unlock_factor": 1,
+      "title": "镇压跨世判据拿境界当代理,本世高境副本读档被没收",
+      "detail": "镇压权益是这一世的地盘,读档兜底却以 minRealm > 当前境界 判旧世残留;进入某地只受解锁链与本世路线管,故本世真打下来的高境副本会在下一次读档被清。"
+    },
+    "ISS-1029": {
+      "id": "ISS-1029",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T06:44:58+00:00",
+      "updated_at": "2026-10-22T06:45:31+00:00",
+      "touched_round": 333,
+      "severity": 0.4,
+      "title": "镇压跨世判据拿境界当代理",
+      "detail": "本世真打下来的高境副本,会在下一次读档被当成旧世残留清掉 —— 本世的地盘账在境界这一代理上失真。"
+    },
+    "HYP-181": {
+      "id": "HYP-181",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T06:44:58+00:00",
+      "updated_at": "2026-10-22T06:45:31+00:00",
+      "touched_round": 333,
+      "confidence": 1,
+      "title": "判据该用世号本体,而不是境界代理",
+      "detail": "进入某地只受解锁链与本世路线管、不受 minRealm 管,故 minRealm>当前境界 推不出「非本世」。"
+    },
+    "EV-1022": {
+      "id": "EV-1022",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T06:44:58+00:00",
+      "updated_at": "2026-10-22T06:44:58+00:00",
+      "touched_round": 333,
+      "confidence": 1,
+      "source": "src/core/suppressRebirth.spec.ts:本世镇压的高境副本读档不被境界判据没收",
+      "title": "故障注入:换回境界代理则该用例转红",
+      "detail": "sanitize 按 suppressLife 判残留后本世副本保留;改回 minRealm<=major 过滤则被清空,用例转红。"
+    },
+    "ISS-1030": {
+      "id": "ISS-1030",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T06:45:10+00:00",
+      "updated_at": "2026-10-22T06:45:31+00:00",
+      "touched_round": 333,
+      "severity": 0.2,
+      "title": "丹药增益上限取单颗两倍,短到刚进一趟长途历练就到期",
+      "detail": "单颗普遍一炷香(30 分钟),×2 只剩半个时辰;吃药从决策退化成点一下。"
+    },
+    "TASK-472": {
+      "id": "TASK-472",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T06:45:10+00:00",
+      "updated_at": "2026-10-22T06:45:31+00:00",
+      "touched_round": 333,
+      "category": "core-feature",
+      "severity": 0.2,
+      "confidence": 1,
+      "effort": 1,
+      "unlock_factor": 1,
+      "title": "丹药增益上限改为四个时辰的绝对上限",
+      "detail": "CONSUMABLE_BUFF_CAP_SEC = 4 × SHICHEN_SEC,不随单颗时长缩放;连服仍可顶满,药力终究有界。"
+    },
+    "HYP-182": {
+      "id": "HYP-182",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T06:45:17+00:00",
+      "updated_at": "2026-10-22T06:45:31+00:00",
+      "touched_round": 333,
+      "confidence": 1,
+      "title": "上限该是一个绝对时长,而不是单颗的倍数",
+      "detail": "玩家认得的尺度是时辰;倍数会让「至多多久」随吃哪一味丹变。"
+    },
+    "EV-1023": {
+      "id": "EV-1023",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T06:45:17+00:00",
+      "updated_at": "2026-10-22T06:45:17+00:00",
+      "touched_round": 333,
+      "confidence": 1,
+      "source": "src/core/buffCap.spec.ts:丹药增益的上限 = 四个时辰,不随单颗时长缩放",
+      "title": "故障注入:换回单颗×2 则三处用例转红",
+      "detail": "buffCap/cultivation/useBrewing 三处同时红。"
+    },
+    "CHG-570": {
+      "id": "CHG-570",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T06:45:24+00:00",
+      "updated_at": "2026-10-22T06:45:24+00:00",
+      "touched_round": 333,
+      "commit": "0a39fbe",
+      "title": "镇压跨世判据改用世号 suppressLife",
+      "detail": "sanitize 按世号判残留;老档哨兵 −1 仍按境界保守清一次再补盖世号。"
+    },
+    "CHG-571": {
+      "id": "CHG-571",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T06:45:24+00:00",
+      "updated_at": "2026-10-22T06:45:24+00:00",
+      "touched_round": 333,
+      "commit": "ffd9e49",
+      "title": "丹药增益上限改为四个时辰",
+      "detail": "CONSUMABLE_BUFF_CAP_SEC = 4 × SHICHEN_SEC。"
     }
   },
   "edges": [
@@ -37810,6 +37940,54 @@
       "to": "ISS-1028",
       "type": "resolves",
       "created_at": "2026-10-22T05:00:52+00:00"
+    },
+    {
+      "from": "TASK-471",
+      "to": "ISS-1029",
+      "type": "addresses",
+      "created_at": "2026-10-22T06:45:04+00:00"
+    },
+    {
+      "from": "EV-1022",
+      "to": "HYP-181",
+      "type": "validates",
+      "created_at": "2026-10-22T06:45:04+00:00"
+    },
+    {
+      "from": "TASK-472",
+      "to": "ISS-1030",
+      "type": "addresses",
+      "created_at": "2026-10-22T06:45:17+00:00"
+    },
+    {
+      "from": "EV-1023",
+      "to": "HYP-182",
+      "type": "validates",
+      "created_at": "2026-10-22T06:45:24+00:00"
+    },
+    {
+      "from": "CHG-570",
+      "to": "TASK-471",
+      "type": "implements",
+      "created_at": "2026-10-22T06:45:24+00:00"
+    },
+    {
+      "from": "CHG-570",
+      "to": "ISS-1029",
+      "type": "resolves",
+      "created_at": "2026-10-22T06:45:24+00:00"
+    },
+    {
+      "from": "CHG-571",
+      "to": "TASK-472",
+      "type": "implements",
+      "created_at": "2026-10-22T06:45:24+00:00"
+    },
+    {
+      "from": "CHG-571",
+      "to": "ISS-1030",
+      "type": "resolves",
+      "created_at": "2026-10-22T06:45:24+00:00"
     }
   ]
 }
