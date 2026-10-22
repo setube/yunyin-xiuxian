@@ -25,7 +25,13 @@ import { LORE_MAX, LORE_STAGE_NAMES, MATERIALS, type MaterialDef } from '@/data/
 import { GONGFA_BRANCHES, canEnlighten, type GongfaBranchDef } from '@/data/gongfaBranches'
 import { GONGFA_TYPE_NAMES, gongfaDef } from '@/data/gongfa'
 import { QUALITIES, qualityDef } from '@/data/qualities'
-import { ARTIFACTS, ARTIFACT_MAX_LEVEL } from '@/data/artifacts'
+import {
+  ARTIFACTS,
+  ARTIFACT_LEVEL_BONUS,
+  ARTIFACT_MAX_LEVEL,
+  artifactNextLevelGain
+} from '@/data/artifacts'
+import { cnNumber, formatPercent } from '@/utils/format'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
 import { PILLS, pillQualityColor } from '@/data/pills'
 import type { ArtifactDef, EquipmentTemplate, PillDef } from '@/types'
@@ -348,12 +354,25 @@ function qualityOfRank(rank: number) {
 export const ARTIFACT_STAGE_NAMES = ['未录', '已录', '曾祭炼', '祭炼圆满'] as const
 export const ARTIFACT_STAGE_MAX = 3
 
-const ARTIFACT_HINTS = [
-  '尚未见过此宝 —— 高阶地界才出得上品。',
-  '录在册上了,还没拿它炼过一重 —— 祭炼过后,被动与神通各强八分。',
-  '炼过几重了 —— 炼到九重,才算把它用透。',
-  ''
-] as const
+/**
+ * 收录深度的提示语。
+ *
+ * 「祭炼过后,被动与神通各强八分」这句在**零重就封顶**的那几件上是假话 ——
+ * 神鞭(破甲)、无相念珠(净念)、神魔镜(回补)、以及全部护盾法宝,祭炼只涨被动。
+ * 故按件给话:`artifactNextLevelGain` 说神通已至上限时,提示改成「只涨被动」;
+ * 重数上限也从 ARTIFACT_MAX_LEVEL 现算,不再把「九」写死在句子里。
+ */
+function artifactHints(def: ArtifactDef): readonly string[] {
+  const cappedAtZero = artifactNextLevelGain(def, 0)?.active?.capped === true
+  return [
+    '尚未见过此宝 —— 高阶地界才出得上品。',
+    cappedAtZero
+      ? `录在册上了,还没拿它炼过一重 —— 此宝神通零重已至上限,祭炼只涨被动(每重 ${formatPercent(ARTIFACT_LEVEL_BONUS)})。`
+      : `录在册上了,还没拿它炼过一重 —— 祭炼过后,被动与神通各强 ${formatPercent(ARTIFACT_LEVEL_BONUS)}。`,
+    `炼过几重了 —— 炼到${cnNumber(ARTIFACT_MAX_LEVEL)}重,才算把它用透。`,
+    ''
+  ]
+}
 
 /** 某件法宝走到哪一层(等级取自玩家自己的那一件) */
 export function artifactStage(level: number, collected: boolean): number {
@@ -375,7 +394,7 @@ export function describeArtifact(def: ArtifactDef, level: number, collected: boo
     stage,
     stageName: ARTIFACT_STAGE_NAMES[stage]!,
     badge: stage >= ARTIFACT_STAGE_MAX ? '满' : '',
-    hint: ARTIFACT_HINTS[stage]!,
+    hint: artifactHints(def)[stage]!,
     foot: { label: '祭炼', value: `${Math.max(0, Math.min(ARTIFACT_MAX_LEVEL, Math.floor(level || 0)))}/${ARTIFACT_MAX_LEVEL} 重` }
   }
 }

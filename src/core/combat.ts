@@ -490,8 +490,16 @@ export function resolveCombat(
       } else if (eff.type === 'sunder') {
         foe.defSunder = Math.max(foe.defSunder, values.amount)
         push('proc', side, `【${art.name}】${art.active.name},${foe.snap.isPlayer ? '你的' : `【${foe.snap.name}】的`}护体被撕开一道口子。`)
-      } else {
-        foe.weaken = values.amount
+      } else if (eff.type === 'weaken') {
+        /**
+         * 取强不取新:削弱与破甲是同一类「本场余下回合持续」的减益,
+         * 都存在 fighter 上、从不回落。从前这里是**直接赋值** ——
+         * 两个法宝位各带一件削弱时,出手顺序决定谁说了算:先摄魂铃(30%)
+         * 后缚妖索(20%),末了一赋值,强的那份被弱的那份当场顶掉,
+         * 玩家把更强的法宝换上第二个位,反而削得更少(实测:缚妖索在前时
+         * 敌方攻势只降 20% 而非 30%)。与同行 sunder 的 Math.max 对齐。
+         */
+        foe.weaken = Math.max(foe.weaken, values.amount)
         push('proc', side, `【${art.name}】发威,${foe.snap.isPlayer ? '你' : `【${foe.snap.name}】`}的攻势被削弱了。`)
       }
     }

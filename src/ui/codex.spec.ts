@@ -46,7 +46,7 @@ import { EQUIPMENT_TEMPLATES, equipmentTemplate } from '@/data/equipment'
 import { PILLS } from '@/data/pills'
 import { qualityDef } from '@/data/qualities'
 import type { QualityId } from '@/types'
-import { formatPercent } from '@/utils/format'
+import { cnNumber, formatPercent } from '@/utils/format'
 
 const qingzhi = materialDef('mat_qingzhi')!
 const chiyan = materialDef('mat_chiyan')!
@@ -241,6 +241,28 @@ describe('图鉴 · 用具三类的收录深度', () => {
     expect(mid.desc, '图鉴里的数得按玩家自己的品阶与祭炼重数算').toContain(formatPercent(scaled))
     expect(describeArtifact(fuchen, ARTIFACT_MAX_LEVEL, true).badge).toBe('满')
     expect(describeArtifact(fuchen, ARTIFACT_MAX_LEVEL, true).hint).toBe('')
+  })
+
+  /**
+   * 「祭炼过后,被动与神通各强八分」对零重就在顶的那几件是假话 ——
+   * 神鞭(破甲)、无相念珠(净念)、神魔镜(回补)、以及全部护盾法宝,祭炼只涨被动。
+   * 图鉴对所有已录法宝都印同一句,等于劝人花钱买不存在的收益。
+   *
+   * 故障注入:把提示语改回固定那一句,本条必红。
+   */
+  it('法宝谱的提示按件给话:零重封顶的只说涨被动,不承诺神通也涨', () => {
+    const capped = describeArtifact(artifactDef('af_shenbian')!, 0, true) // 破甲零重就在 50% 的顶
+    expect(capped.hint, '零重已封顶的法宝不该承诺「神通各强」').not.toContain('神通各强')
+    expect(capped.hint, '要说清楚祭炼在这件上买到的是什么').toContain('只涨被动')
+
+    const normal = describeArtifact(artifactDef('af_xuanxu')!, 0, true) // 吸命的伤害侧还能涨
+    expect(normal.hint, '还能涨的那件照旧说清被动与神通都涨').toContain('神通各强')
+  })
+
+  it('提示语里的重数上限从 ARTIFACT_MAX_LEVEL 现算,不是写死的「九」', () => {
+    const hint = describeArtifact(artifactDef('af_xuanxu')!, 1, true).hint
+    // 句子里写的是中文数词(「九重」),故比对现算出来的那一个,而不是阿拉伯数字
+    expect(hint, `重数上限改了,提示语还在说旧数字:${hint}`).toContain(`${cnNumber(ARTIFACT_MAX_LEVEL)}重`)
   })
 
   it('丹方:已录 → 已得方 → 通晓;无方之丹到「已录」即顶并说明缘由', () => {

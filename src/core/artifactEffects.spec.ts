@@ -38,7 +38,7 @@ import {
 import { RandomService, mulberry32 } from '@/utils/random'
 import { formatPercent } from '@/utils/format'
 import { gn, toNum } from '@/utils/gnum'
-import { MITIGATION_K } from '@/data/constants'
+import { MITIGATION_K, SHIELD_CAP_RATIO } from '@/data/constants'
 import { mulN } from '@/utils/gnum'
 import { resolveCombat, makeEnemySnap } from './combat'
 import { buildPlayerSnap } from './playerSnap'
@@ -204,8 +204,10 @@ describe('法宝说明 · 数字随品阶与祭炼等级走', () => {
       case 'drain':
         return { main: eff.mult * mult, heal: Math.min(ARTIFACT_DRAIN_HEAL_CAP, eff.healPct * mult) }
       case 'heal':
-      case 'shield':
         return { main: eff.pctMaxHp * mult }
+      case 'shield':
+        // 护盾单次给的那一份也受总盾上限约束(战斗侧 gainShield 钳在 SHIELD_CAP_RATIO)
+        return { main: Math.min(SHIELD_CAP_RATIO, eff.pctMaxHp * mult) }
       case 'weaken':
         return { main: Math.min(ARTIFACT_WEAKEN_CAP, eff.pct * mult) }
       case 'sunder':
@@ -273,6 +275,37 @@ describe('法宝说明 · 数字随品阶与祭炼等级走', () => {
     expect(artifactActiveText(shehun, 9), '削弱上限 50%,说明不能再报 51.6%').toContain('50%')
   })
 
+  /**
+   * 护盾也有一条**总盾上限** —— 战斗侧 `gainShield` 把盾钳在 50% 气血。
+   *
+   * 这一条从前漏在封顶名单外:`effectValuesAt` 的 shield 分支只乘倍率,
+   * 于是本源莲台(仙品)九重报 76.2%、混沌青莲 69.5%、帝阙神符 69.1%、
+   * 太虚镜 61.5% —— 真打出去最多 50%,卡片、图鉴、法宝谱三处一起撒谎。
+   *
+   * 故障注入:把 shield 分支改回 `eff.pctMaxHp * mult`(不套 SHIELD_CAP_RATIO),
+   * 下面四条各自转红。
+   */
+  it('护盾法宝的说明不越过总盾上限 —— 高祭炼的几件一律报 50%', () => {
+    const capped = ['af_benyuanlian', 'af_qinglian', 'af_diquefu', 'af_taixu'].map(id => artifactDef(id)!)
+    for (const def of capped) {
+      const raw = (def.active.effect as { pctMaxHp: number }).pctMaxHp * artifactQualityMult(def.quality) * (1 + 9 * ARTIFACT_LEVEL_BONUS)
+      expect(raw, `${def.name} 九重的原始值就该越过上限,否则这条判据失去对象`).toBeGreaterThan(SHIELD_CAP_RATIO)
+      const text = artifactActiveText(def, 9)
+      expect(pcts(text)[0], `${def.name} 九重报了 ${pcts(text)[0]}%,战斗里最多只有 ${formatPercent(SHIELD_CAP_RATIO)}`).toBeCloseTo(
+        SHIELD_CAP_RATIO * 100,
+        1
+      )
+    }
+  })
+
+  it('护盾封顶后「下一重」如实说只涨被动', () => {
+    const lian = artifactDef('af_benyuanlian')!
+    const gain = artifactNextLevelGain(lian, 8)!
+    expect(gain.active!.to).toBeCloseTo(SHIELD_CAP_RATIO, 10)
+    expect(gain.active!.capped, '护盾已吃到总盾上限,再炼不会更多').toBe(true)
+    expect(gain.passive.length, '但它仍有被动可涨 —— 不能因此说「炼了等于没炼」').toBeGreaterThan(0)
+  })
+
   it('品阶顶到封顶的那几件,零重就写封顶值(祭炼只涨被动)', () => {
     // 神鞭的破甲基线是 30%,乘上它的品阶(玄品 ≈1.67)已经越过 50% 的顶
     const shenbian = artifactDef('af_shenbian')!
@@ -287,6 +320,7 @@ describe('法宝说明 · 数字随品阶与祭炼等级走', () => {
 
   it('封顶是绝对的:任何品阶 × 任何重数都不越过它 —— 品阶只改变到顶的早晚', () => {
     const capOf: Partial<Record<string, number>> = {
+      shield: SHIELD_CAP_RATIO,
       weaken: ARTIFACT_WEAKEN_CAP,
       sunder: ARTIFACT_SUNDER_CAP,
       purge: ARTIFACT_PURGE_CAP,
@@ -575,5 +609,81 @@ describe('法宝效果 · 吸命真把伤害补回自己身上', () => {
       withDrain,
       `12 场累计回血:带拂尘 ${withDrain.toExponential(2)},不带 ${bare.toExponential(2)} —— 吸命没有把伤害补回来`
     ).toBeGreaterThan(bare)
+  })
+})
+
+/**
+ * 削弱(weaken)—— 与破甲并列的第二种「本场余下回合持续」的减益。
+ *
+ * 持续减益一旦落在对手身上就**从不回落**,故同类叠加只能取强不取新。
+ * 破甲一直是这么做的(`Math.max`),削弱却长期是**直接赋值** ——
+ * 于是两个法宝位各带一件削弱时,出手顺序决定谁说了算:缚妖索(20%)排在
+ * 摄魂铃(30%)之后,末了一赋值就把 30% 顶回 20%,玩家把更强的法宝换上第二个位,
+ * 反而削得更少。这里量的正是那条**与顺序无关**的不变式:
+ * 同一对法宝、同一批种子,只把佩带顺序对调,玩家承伤必须一模一样。
+ *
+ * 故障注入:把 weaken 改回 `foe.weaken = values.amount`,`弱在前`那一组的承伤
+ * 会立刻高于`强在前` —— 判据必红。
+ */
+describe('法宝效果 · 削弱取强不取新,与佩带顺序无关', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  /** 一只「打得疼你但打不死你」的靶子:好让削弱带来的减伤有量可量 */
+  function heavyFoe(): ReturnType<typeof makeEnemySnap> {
+    const foe = tankyWolf()
+    foe.attack = gn(4e5)
+    return foe
+  }
+
+  /** 按给定佩带顺序打一场,返回玩家这一场承伤 */
+  function takenWith(order: [string, string], seed: number): number {
+    const p = buildPlayerSnap()
+    p.mods = {}
+    p.attack = gn(1)
+    p.defense = gn(1e9)
+    p.maxHp = gn(1e12)
+    p.artifacts = order.map(id => ({ def: artifactDef(id)!, level: 0 }))
+    return toNum(resolveCombat(p, heavyFoe(), seeded(seed)).stats!.player.taken)
+  }
+
+  it('缚妖索(20%)与摄魂铃(30%)对调佩带顺序,承伤分毫不差', () => {
+    const strongFirst = ['af_shehun', 'af_fuyao'] as [string, string] // 30% 在前
+    const weakFirst = ['af_fuyao', 'af_shehun'] as [string, string] // 20% 在前
+    let strongSum = 0
+    let weakSum = 0
+    for (let seed = 1; seed <= 20; seed += 1) {
+      strongSum += takenWith(strongFirst, seed)
+      weakSum += takenWith(weakFirst, seed)
+    }
+    expect(strongSum, '20 场一次伤害都没吃到,这条判据失去对象').toBeGreaterThan(0)
+    expect(
+      weakSum,
+      `20 场累计承伤:强在前 ${strongSum.toExponential(3)},弱在前 ${weakSum.toExponential(3)} —— ` +
+        `顺序把削弱强度改写了,末位那件说了算`
+    ).toBeCloseTo(strongSum, 6)
+  })
+
+  it('两件削弱同佩,拿到的就是更强的那一份 —— 不比只带强件更差(弱件在后)', () => {
+    let onlyStrong = 0
+    let both = 0
+    for (let seed = 1; seed <= 20; seed += 1) {
+      const withOnlyStrong = (() => {
+        const p = buildPlayerSnap()
+        p.mods = {}
+        p.attack = gn(1)
+        p.defense = gn(1e9)
+        p.maxHp = gn(1e12)
+        p.artifacts = [{ def: artifactDef('af_shehun')!, level: 0 }]
+        return toNum(resolveCombat(p, heavyFoe(), seeded(seed)).stats!.player.taken)
+      })()
+      onlyStrong += withOnlyStrong
+      // 弱件排在后面:若削弱是赋值,末位就把 30% 顶回 20%,这一组立刻变差
+      both += takenWith(['af_shehun', 'af_fuyao'], seed)
+    }
+    expect(onlyStrong, '只带摄魂铃的对照组一场都没吃到伤害,判据失去对象').toBeGreaterThan(0)
+    expect(
+      both,
+      `补上更弱的缚妖索之后承伤反而变了(单带 ${onlyStrong.toExponential(3)} → 双带 ${both.toExponential(3)}) —— 弱件顶掉了强件`
+    ).toBeCloseTo(onlyStrong, 6)
   })
 })

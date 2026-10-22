@@ -41,6 +41,7 @@
  */
 import type { AnyStatKey, ArtifactDef, ArtifactEffect, QualityId, StatMods } from '@/types'
 import { formatPercent } from '@/utils/format'
+import { SHIELD_CAP_RATIO } from './constants'
 import { qualityDef } from './qualities'
 
 function f(
@@ -775,8 +776,23 @@ function effectValuesAt(eff: ArtifactEffect, mult: number): ArtifactEffectValues
     case 'drain':
       return { amount: eff.mult * mult, heal: Math.min(ARTIFACT_DRAIN_HEAL_CAP, eff.healPct * mult) }
     case 'heal':
-    case 'shield':
       return { amount: eff.pctMaxHp * mult }
+    /**
+     * 护盾:单次给的那一份同样受**总盾上限**约束。
+     *
+     * 战斗侧 `gainShield` 把护盾总量钳在 `SHIELD_CAP_RATIO`(默认 50% 气血),
+     * 而这里从前只乘倍率、不套顶:本源莲台(仙品 17%)九重报 76.2%、
+     * 混沌青莲 69.5%、帝阙神符 69.1%、太虚镜 61.5% —— 真打出去最多 50%。
+     * 卡片、图鉴、法宝谱三处都读这一份,于是三处一起报了个打不出来的数,
+     * 「下一重」还会写「护盾 44% → 76%」且不标已至上限,劝人花钱买不存在的收益。
+     *
+     * 取**默认上限**而不是各界的 `shieldCapRatio`:那张表是战斗时的世界规则
+     * (长生道抬到 65%、无生天压到 25%、秘境直接封 0),法宝卡不知道玩家下一步
+     * 会进哪个世界;而 `SHIELD_CAP_RATIO` 是「一件护盾法宝自己能兑现多少」的
+     * 常规口径 —— 世界规则只会在此之上再收紧或放宽,不会让卡片撒谎。
+     */
+    case 'shield':
+      return { amount: Math.min(SHIELD_CAP_RATIO, eff.pctMaxHp * mult) }
     case 'weaken':
       return { amount: Math.min(ARTIFACT_WEAKEN_CAP, eff.pct * mult) }
     case 'sunder':
@@ -826,6 +842,8 @@ export function artifactLevelLabel(level: number): string {
 /** 某类效果的封顶(没有封顶的返回 undefined)—— 与 effectValuesAt 用的是同一批常数 */
 function effectCap(eff: ArtifactEffect): number | undefined {
   switch (eff.type) {
+    case 'shield':
+      return SHIELD_CAP_RATIO
     case 'weaken':
       return ARTIFACT_WEAKEN_CAP
     case 'sunder':
