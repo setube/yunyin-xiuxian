@@ -29,6 +29,8 @@ export const useGameStore = defineStore(
 
     /** 存档修复:时间戳/时长被写坏会让离线结算与展示算出 NaN */
     function sanitize(): void {
+      // 只认严格布尔真:坏档里的字符串 "false"/"yes" 会绕过开局守卫并触发离线结算
+      started.value = started.value === true
       createdAt.value = asFiniteNumber(createdAt.value, 0, 0)
       lastActiveAt.value = asFiniteNumber(lastActiveAt.value, 0, 0)
       totalPlaySec.value = asFiniteNumber(totalPlaySec.value, 0, 0)

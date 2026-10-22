@@ -123,4 +123,16 @@ describe('建号「逆天改命」不限次', () => {
     game.stampActive(2000)
     expect(game.lastActiveAt).toBe(2000)
   })
+
+  it('开局标记只认严格布尔真:坏档字符串/数字/对象都回落到未开局', () => {
+    const game = useGameStore()
+    for (const bad of ['false', 'yes', 1, {}]) {
+      game.$patch({ started: bad as never })
+      game.sanitize()
+      expect(game.started, `坏 started=${JSON.stringify(bad)} 不得绕过开局守卫`).toBe(false)
+    }
+    game.markStarted()
+    game.sanitize()
+    expect(game.started, '合法 true 修形后保持开局').toBe(true)
+  })
 })

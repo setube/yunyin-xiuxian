@@ -90,13 +90,18 @@ describe('半损坏档 · 进得了游戏,或者被明确拒绝', () => {
       let playerMajor: number | null = null
       expect(() => {
         bootStores()
+        const game = useGameStore()
         const player = usePlayerStore()
         const inventory = useInventoryStore()
         const cultivation = useCultivationStore()
+        game.sanitize()
         player.sanitize()
         inventory.sanitize()
         cultivation.sanitize()
         playerMajor = player.major
+        if (variant.name === '字段全是垃圾') {
+          expect(game.started, '字符串 started 不得被当成已开局').toBe(false)
+        }
         // 读一遍计算属性:白屏往往发生在渲染期,而不是 setState 那一刻
         void player.finalStats
         void player.expReq
