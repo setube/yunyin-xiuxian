@@ -54,6 +54,8 @@
       </div>
       <p v-if="player.suppressedRegions.length > 0" class="text-[10px] text-gold-ink">
         镇压收益中 {{ player.suppressedRegions.length }} 处 —— 与历练互不冲突,可同时收取;一次只能历练一处。
+        <!-- 镇守道韵与灵石/物产同一条产出账:只说「几处」不说「这几处换来什么」,等于让玩家自己去猜 -->
+        <span class="text-ink-faint">另有 {{ suppressDaoText(player.suppressedRegions.length) }}(与挂机同源,封顶 +{{ Math.round(SUPPRESS_EXP_MAX * 100) }}%)。</span>
       </p>
       <!--
         途中三档:际遇 / 奇缘 / 机缘。
@@ -74,7 +76,8 @@
       <p class="text-[10px] leading-relaxed text-ink-faint">
         镇压门槛:胜 {{ SUPPRESS_THRESHOLDS.minWins }} 场 · 均
         {{ SUPPRESS_THRESHOLDS.maxAvgRounds }} 回合 · 受伤 ≤{{ Math.round(SUPPRESS_THRESHOLDS.maxAvgDamageTaken * 100) }}%;
-        资格永久,守满 {{ REVIVE_AFTER_HOURS }} 小时妖气复聚。
+        资格永久,守满 {{ REVIVE_AFTER_HOURS }} 小时妖气复聚;镇守另给道韵修为(每区 +{{ Math.round(SUPPRESS_EXP_PER_REGION * 100) }}%,
+        封顶 +{{ Math.round(SUPPRESS_EXP_MAX * 100) }}%),守得越久掉出的装备越易出稀品。
       </p>
       <div class="space-y-2.5">
         <template v-for="group in groupedRows" :key="group.world.id">
@@ -125,7 +128,7 @@
   import { exploreEventChance, startExploration } from '@/core/exploration'
   import { EVENT_TIERS, tierOddsText } from '@/core/eventTier'
   import { pendingChainStages } from '@/core/eventEngine'
-  import { SUPPRESS_THRESHOLDS } from '@/core/suppress'
+  import { SUPPRESS_EXP_MAX, SUPPRESS_EXP_PER_REGION, SUPPRESS_THRESHOLDS, suppressDaoText } from '@/core/suppress'
   import { REVIVE_AFTER_HOURS } from '@/core/worldMemory'
   import { gn } from '@/utils/gnum'
   import { formatGN } from '@/utils/format'

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -12,7 +12,18 @@ import { qualityDef } from '@/data/qualities'
 import { mulN, sub, toNum } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import { RandomService } from '@/utils/random'
-import { checkSuppression, settleSuppressedRegions, suppressRateFor, suppressRateLine, suppressionProgress, suppressYield, type RegionStats } from './suppress'
+import {
+  checkSuppression,
+  settleSuppressedRegions,
+  suppressionEquipmentLuck,
+  suppressionExpRate,
+  suppressRateFor,
+  suppressRateLine,
+  suppressionProgress,
+  suppressYield,
+  type RegionStats
+} from './suppress'
+import * as equipGen from './equipGen'
 import { prosperityYieldMult, regionRecallFor } from './worldMemory'
 
 describe('区域镇压系统', () => {
@@ -391,6 +402,67 @@ describe('区域镇压系统', () => {
 
       // 同一小时、同一地界:重复条目不该多出一份
       expect(dup.stone, '重复地界不该结算两份灵石').toEqual(singleStone)
+    })
+
+    /**
+     * 镇守道韵:镇压不再只回灵石/物产/装备 —— 每镇压一区,一小时按挂机修速 +8%
+     * 折算修为(封顶 +40%,5 区满)。同源挂机曲线,故红利在任何境界都是挂机的固定加成。
+     */
+    describe('镇守道韵(修为红利)与老区装备成长', () => {
+      it('红利速率:每镇压一区 +8%,封顶 +40%', () => {
+        expect(suppressionExpRate(0)).toBe(0)
+        expect(suppressionExpRate(1)).toBeCloseTo(0.08, 9)
+        expect(suppressionExpRate(3)).toBeCloseTo(0.24, 9)
+        expect(suppressionExpRate(7), '第七区起已顶到 40%').toBeCloseTo(0.4, 9)
+      })
+
+      it('坏档挡在门口:负区数 / NaN / Infinity 一律 0,不让倍率变负或变 NaN', () => {
+        expect(suppressionExpRate(-3)).toBe(0)
+        expect(suppressionExpRate(Number.NaN)).toBe(0)
+        expect(suppressionExpRate(Number.POSITIVE_INFINITY)).toBe(0)
+      })
+
+      it('老区装备气运:镇满一天 +0.1,封顶 +0.8', () => {
+        const now = Date.now()
+        expect(suppressionEquipmentLuck(now, now)).toBe(0)
+        expect(suppressionEquipmentLuck(now - 86_400_000 * 2, now)).toBeCloseTo(0.2, 9)
+        expect(suppressionEquipmentLuck(now - 86_400_000 * 12, now)).toBeCloseTo(0.8, 9)
+      })
+
+      it('坏档时钟:未来时刻与 NaN 一律 0,不给负气运也不给 NaN', () => {
+        const now = Date.now()
+        expect(suppressionEquipmentLuck(now + 86_400_000 * 5, now)).toBe(0)
+        expect(suppressionEquipmentLuck(Number.NaN, now)).toBe(0)
+      })
+
+      it('结算:镇压两区一小时,修为红利 = 修速 × 16%', () => {
+        const player = usePlayerStore()
+        player.suppressedRegions = ['qingyun', 'wanyao']
+        player.suppressedSince = { qingyun: Date.now(), wanyao: Date.now() }
+        const cult = player.cultPerSec
+        const before = toNum(player.exp)
+        const total = settleSuppressedRegions(3600)
+        expect(total).not.toBeNull()
+        const gained = toNum(player.exp) - before
+        expect(gained).toBeCloseTo(cult * 0.16, 6)
+        expect(toNum(total!.expGain)).toBeCloseTo(cult * 0.16, 6)
+      })
+
+      /**
+       * 故障注入:把结算里的 `suppressionEquipmentLuck(since, now)` 改回裸 ` luck: 0 }`,
+       * 长守区掉出的装备气运就不再随守时抬升 —— 本条按「生成器真的收到非零 luck」判。
+       */
+      it('守满两天的镇压区,掉落装备带非零气运(与裸运气 0 分叉)', () => {
+        vi.spyOn(equipGen, 'generateEquipment')
+        const player = usePlayerStore()
+        player.suppressedRegions = ['qingyun']
+        player.suppressedSince = { qingyun: Date.now() - 86_400_000 * 2 }
+        settleSuppressedRegions(24 * 3600, new RandomService(() => 0))
+        expect(equipGen.generateEquipment).toHaveBeenCalled()
+        const opts = vi.mocked(equipGen.generateEquipment).mock.calls[0]![2]!
+        expect(opts.luck, '守满两天该带 0.2 气运').toBeCloseTo(0.2, 9)
+        expect(opts.minQualityRank, '镇压产出仍走品质窗口').toBeUndefined()
+      })
     })
   })
 })

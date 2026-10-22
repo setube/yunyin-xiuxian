@@ -82,6 +82,13 @@
       <span class="whitespace-nowrap text-[10px] text-ink-faint tabular">{{ produceTierText(row.def.tier) }}</span>
       <!-- 守土之年:守得越久,兴衰越盛,产出随之上浮 -->
       <span class="text-[10px] text-ink-faint tabular">已守 {{ heldText }}</span>
+      <!--
+        镇守道韵与装备成长同属「守久了有什么好处」:从前卡面只讲灵石与物产,
+        玩家看不到「压着这几处」在修为与装备上换来了什么。判据与结算同源
+        (suppressionExpRate),不让卡片自己乘一遍区数 × 8%。
+      -->
+      <span v-if="daoText" class="text-[10px] text-azure tabular">道韵 {{ daoText }}</span>
+      <span v-if="tenureLuck > 0" class="text-[10px] text-jade tabular">装备气运 +{{ tenureLuck.toFixed(1) }}</span>
       <!-- 复聚有确定期限,就该有倒计时:否则玩家只会看到镇压某天突然消失 -->
       <span class="text-[10px] tabular" :class="reviveNow <= 12 ? 'text-cinnabar' : 'text-ink-faint'">
         妖气 {{ reviveText(reviveNow) }}后复聚
@@ -179,7 +186,7 @@
   import { REALMS } from '@/data/realms'
   import { ECO_LEVEL_NAMES, starsText } from '@/core/buildAdvisor'
   import { foeOriginPartsText } from '@/core/battleAnalysis'
-  import { suppressRateLine } from '@/core/suppress'
+  import { suppressDaoText, suppressionEquipmentLuck, suppressRateLine } from '@/core/suppress'
   import { hoursUntilRevive, prosperityName, regionRecallFor, regionReviveClock } from '@/core/worldMemory'
   import { usePlayerStore } from '@/stores/player'
   import { useNow } from '@/composables/useNow'
@@ -239,6 +246,26 @@
     if (since === undefined) return '—'
     const hours = Math.max(0, Math.floor((now.value - since) / 3_600_000))
     return hours < 24 ? `${hours} 时` : `${Math.floor(hours / 24)} 日`
+  })
+
+  /**
+   * 镇守道韵:手上有几处镇压,这里就写那句 —— 判据来自 core/suppress 的
+   * `suppressionExpRate`(与结算同一份),卡片自己不乘 8%。
+   */
+  const daoText = computed(() => {
+    if (!props.row.suppressed) return ''
+    const line = suppressDaoText(player.suppressedRegions.length)
+    return line === '—' ? '' : line
+  })
+
+  /**
+   * 老区装备气运:守满一天 +0.1(封顶 +0.8)—— 镇不足一天时不必印一个 +0.0。
+   * 与结算读同一个 `suppressionEquipmentLuck`。
+   */
+  const tenureLuck = computed(() => {
+    if (!props.row.suppressed) return 0
+    const since = player.suppressedSince[props.row.def.id]
+    return since === undefined ? 0 : suppressionEquipmentLuck(since, now.value)
   })
 
   const prevRegionName = computed(() =>

@@ -21,6 +21,7 @@ import { useDongfuStore } from '@/stores/dongfu'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
+import { useAdventureStore } from '@/stores/adventure'
 import { todayWeather } from './weather'
 import { gn, mulN, toNum } from '@/utils/gnum'
 import { OFFLINE_EFFICIENCY } from '@/data/constants'
@@ -402,5 +403,58 @@ describe('离线结算 · 已过期 buff 不补贴(结算前先清算)', () => {
     const active = offlineCultExp('active')
     const none = offlineCultExp('none')
     expect(active).toBeGreaterThan(none)
+  })
+})
+
+/**
+ * 归来卷轴上的两条镇压账:
+ *   一 镇守道韵(修为红利)要报出来 —— 不然「怎么回事,修为多了一截」没人解释;
+ *   二 妖气复聚要写进卷轴 —— 归来时卷轴是弹窗,提示条抢不到注意力,而「我靖过的
+ *      地界怎么旧主又回来了」正是这一屏最该被解释的事。
+ */
+describe('离线归来卷轴 · 镇压账目', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('镇压产出的那一行带上道韵修为,不只报灵石与物产', () => {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    game.markStarted()
+    game.lastActiveAt = Date.now() - 2 * 3600 * 1000
+    player.major = 3
+    player.suppressRegion('qingyun')
+
+    settleOffline(Date.now())
+    const line = useUiStore().offlineSummary?.notes.find(n => n.startsWith('镇压诸域仍有余韵'))
+    expect(line, '镇压一区离线应有镇压提示').toBeDefined()
+    expect(line, '守着一片地界多拿了修为,卷轴得说清是哪来的').toContain('道韵修为 +')
+  })
+
+  it('妖气复聚的旧主要写进归来卷轴,不能只在提示条里闪过', () => {
+    vi.useFakeTimers()
+    try {
+      // 起点取真实量级的时刻:起钟时刻 ≤0 会被读档守卫丢掉,那样测的就不是复聚
+      vi.setSystemTime(1_760_000_000_000)
+      setActivePinia(createPinia())
+      const game = useGameStore()
+      const player = usePlayerStore()
+      const adventure = useAdventureStore()
+      const id = 'qingyun'
+      const started = Date.now() - 100 * 3600 * 1000
+      game.markStarted()
+      game.lastActiveAt = started
+      player.major = 3
+      // 100 小时前靖平的地界:离线归来时已远超 72 小时复聚钟
+      adventure.markCleared(id)
+      adventure.clearedAt[id] = started
+
+      settleOffline(Date.now())
+      const notes = useUiStore().offlineSummary?.notes.join('\n') ?? ''
+      expect(notes, '旧主归来得写进卷轴').toContain('妖气复聚')
+      expect(notes, '顺手给出「该怎么办」').toContain('再历一程即可复靖')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

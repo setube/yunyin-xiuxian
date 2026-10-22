@@ -43,6 +43,30 @@ describe('同源审计 · 镇压速率', () => {
     expect(src, '产出行文案连拼接都不许自己写').not.toMatch(/灵石\/时/)
   })
 
+  /**
+   * 镇守道韵与老区装备气运都改成了「结算怎么算、界面就怎么念」。
+   *
+   * 两处各自现算一次「区数 × 8%」或「守了几天 × 0.1」,调上限/日增速时界面就
+   * 立刻改口供:卡片写着「修为 +40%/时」而结算只给 24%,或气运写着 +0.8 而掉落
+   * 仍按 0 算。判据钉住界面读的是 core/suppress 导出的那两枚纯函数。
+   * 故障注入:把卡片里的 suppressionEquipmentLuck 换成内联 `Math.min(0.8, days*0.1)`
+   * → 本条红。
+   */
+  it('地界卡的镇守道韵与装备气运走 core/suppress 的纯函数,自己不重算', () => {
+    const src = readSrc('RegionCard.vue')
+    expect(src, '道韵文案该走 suppressDaoText').toContain('suppressDaoText')
+    expect(src, '装备气运该走 suppressionEquipmentLuck').toContain('suppressionEquipmentLuck')
+    expect(src, '界面又内联了 0.8 气运封顶 —— 调上限时两处会分叉').not.toMatch(/Math\.min\(\s*0\.8\b/)
+    expect(src, '界面又内联了每日 0.1 气运 —— 改日增速时两处会分叉').not.toMatch(/0\.1\s*\*/)
+  })
+
+  it('历练页的镇压总纲只说「每区多少」,上限与增速取自 core/suppress 的具名常量', () => {
+    const src = readSrc('AdventureView.vue')
+    expect(src, '总纲该报每区加成,取自常量').toContain('SUPPRESS_EXP_PER_REGION')
+    expect(src, '总纲该报封顶,取自常量').toContain('SUPPRESS_EXP_MAX')
+    expect(src, '总纲又手打了 8% / 40% —— 调常数时文案开始撒谎').not.toMatch(/\+8%|40%/)
+  })
+
   it('镇压达成回执报的是同一份产出数字,不是一句「自动产出资源」', () => {
     const src = readSrc('exploration.ts')
     expect(src, '回执该调唯一那份产出行').toContain('suppressRateLine(')

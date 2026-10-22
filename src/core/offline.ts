@@ -192,9 +192,23 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   // 之前误传完整 dtSec:镇压收益绕过 mansion 离线封顶,洞府离线等级对"镇压力"玩家几乎失效。
   // 折扣豁免只豁免 0.9 效率,不平白豁免洞府离线上限本身
   const suppressYield = settleSuppressedRegions(capSec)
+  if (suppressYield && suppressYield.revived.length > 0) {
+    /**
+     * 妖气复聚要写进**归来卷轴**的账目,不能只靠一条提示条。
+     *
+     * 刚回来的玩家眼前是这扇卷轴(弹窗),提示条正在跟它抢注意力;而「我靖过的
+     * 地界怎么旧主又回来了」是这一屏最需要被解释的事 —— 写在这里,顺手把
+     * 「该怎么办」一起给(再历一程即可复靖),免得玩家把它当成丢档或 bug。
+     */
+    const names = suppressYield.revived.map(id => regionDef(id)?.name ?? id)
+    const head = names.slice(0, 3).join('、')
+    const tail = names.length > 3 ? ` 等 ${names.length} 处` : ''
+    notes.push(`妖气复聚:${head}${tail}的旧主归来 —— 再历一程即可复靖`)
+  }
   if (suppressYield && !isZero(suppressYield.stone)) {
     const extra = suppressYield.resources.map(r => `${r.name} +${r.amount}`).join(' · ')
-    notes.push(`镇压诸域仍有余韵:灵石 +${formatGN(suppressYield.stone)}${extra ? ` · ${extra}` : ''}`)
+    const dao = isZero(suppressYield.expGain) ? '' : ` · 道韵修为 +${formatGN(suppressYield.expGain)}`
+    notes.push(`镇压诸域仍有余韵:灵石 +${formatGN(suppressYield.stone)}${extra ? ` · ${extra}` : ''}${dao}`)
   }
 
   // ---- 历练挂机 ----

@@ -14,7 +14,7 @@ import { stoneByTier } from '@/core/formulas'
 import { generateEquipment } from '@/core/equipGen'
 import { acquireEquipment } from '@/core/loot'
 import { rng, type RandomService } from '@/utils/random'
-import { gnZero, add, mulN } from '@/utils/gnum'
+import { gnZero, add, isZero, mulN, gn } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import type { GNum, QualityId, RegionRecall } from '@/types'
 import { equipmentTemplate } from '@/data/equipment'
@@ -47,6 +47,40 @@ export const SUPPRESS_THRESHOLDS = {
 const SUPPRESS_YIELD_PER_HOUR = {
   stoneMultiplier: 150,       // 灵石倍率
   equipmentChance: 0.4,       // 装备掉落概率
+}
+
+/** 镇守道韵:每镇压一区,每小时按挂机修速 +8% 给修为;总封顶 +40%(5 区满) */
+export const SUPPRESS_EXP_PER_REGION = 0.08
+export const SUPPRESS_EXP_MAX = 0.4
+
+/** 老镇压区的装备成长:镇满一天,该区掉落的装备运气 +0.1,封顶 +0.8 */
+export const SUPPRESS_EQUIP_LUCK_CAP = 0.8
+export const SUPPRESS_EQUIP_LUCK_PER_DAY = 0.1
+
+/**
+ * 镇守道韵的挂机加成:每镇压一区 +8%,封顶 +40% —— 纯函数,便于断言。
+ *
+ * 语义是「我压着的地界在替我自己修行」:同一份挂机曲线(cultPerSec × 时长)乘以
+ * 一个由镇压区数决定的倍率,故任何境界下都是挂机的固定加成,不随层级另开一套数值。
+ * 封顶在 5 区(5 × 8% = 40%),是「多守几处还有意义、但别让收益无界」的那条线。
+ */
+export function suppressionExpRate(count: number): number {
+  if (!Number.isFinite(count) || count <= 0) return 0
+  return Math.min(count * SUPPRESS_EXP_PER_REGION, SUPPRESS_EXP_MAX)
+}
+
+/**
+ * 老镇压区的装备运气:镇满一天 +0.1,封顶 +0.8(8 天封顶)—— 纯函数,便于断言。
+ *
+ * 起因与 suppressFrac 同一类:镇压是长期挂机玩法,而镇压产出的装备一直是「裸运气 0」——
+ * 守了三天的地和刚压下的地掉率、品相完全一样,「守土之久」在装备上没有任何体现
+ * (兴衰微调只动灵石与物产)。给装备加一条随守时渐长的运气,长守才有长守的回报。
+ * 坏档(非有限、未来时刻)一律夹到 0,免得负运气或 NaN 传染进品质权重。
+ */
+export function suppressionEquipmentLuck(sinceMs: number, nowMs: number): number {
+  const days = Math.floor(Math.max(0, nowMs - sinceMs) / 86_400_000)
+  if (!Number.isFinite(days)) return 0
+  return Math.min(SUPPRESS_EQUIP_LUCK_CAP, days * SUPPRESS_EQUIP_LUCK_PER_DAY)
 }
 
 /**
@@ -176,6 +210,20 @@ export interface SuppressRate {
 }
 
 /**
+ * 镇守道韵的一句话:**手上有几处镇压,就多拿多少修为**,与结算走同一个
+ * `suppressionExpRate`,不让界面自己乘一遍「区数 × 8%」。
+ *
+ * 单位取「修速 × 倍率」而不是绝对点数:修为产出与挂机同源(`cultPerSec × 时长 × 倍率`),
+ * 界面上说「修为 +7.2%/时」比堆一串会随境界漂移的绝对数更经得住读 —— 玩家看到的是
+ * 「守一片就等于多挂一截」这个不变的关系。
+ */
+export function suppressDaoText(count: number): string {
+  const rate = suppressionExpRate(count)
+  if (rate <= 0) return '—'
+  return `修为 +${Math.round(rate * 100)}%/时`
+}
+
+/**
  * 某地界**基础**镇压速率(未乘兴衰系数;繁荣度加成由界面另行叠加展示)。
  *
  * 从前历练页自己写了一份 stoneByTier(tier, 150) 并注释「= SUPPRESS_YIELD_PER_HOUR.stoneMultiplier」,
@@ -214,26 +262,42 @@ export function suppressRateLine(regionId: string, prosperity: RegionRecall['pro
  */
 export interface SuppressedYield {
   stone: GNum
+  /** 镇守道韵:这一段镇压折算的修为点数(与挂机同源,见 SUPPRESS_EXP_PER_REGION) */
+  expGain: GNum
   equipment: { name: string; quality: QualityId; recycled?: boolean; uid?: string }[]
   /** 化尘所得的器灵尘(自动回收/满包化尘/腾位化掉的旧件;由 acquireEquipment 记账) */
   recycledDust: number
   /** 各地界的物产累计(灵草/玄铁/残页/器灵尘);灵草按品分账,grade 标明品阶 */
   resources: { id: SuppressResource; name: string; amount: number; grade?: HerbGrade }[]
+  /**
+   * 这一段时间里妖气复聚的地界(见 core/regionRevival)。
+   *
+   * 跟着收益一起回给调用方,是为了让**归来卷轴**能把这件事写进账目 ——
+   * 刚回来的玩家看的是那一屏,而提示条正在跟它抢注意力(归来时它是弹窗)。
+   */
+  revived: string[]
 }
 
 export function settleSuppressedRegions(dt: number, service: RandomService = rng): SuppressedYield | null {
   const player = usePlayerStore()
   const resources = useResourcesStore()
 
-  // 妖气复聚(已靖旧主归来)先结算 —— 已靖却从不镇压的地界一份镇压都没有,
-  // 必须排在「没有镇压直接返回」之前,否则那条路永远走不到。
-  settleRegionRevivals()
-
-  if (player.suppressedRegions.length === 0) return null
-
   const hours = dt / 3600
-  const total: SuppressedYield = { stone: gnZero(), equipment: [], recycledDust: 0, resources: [] }
+  const total: SuppressedYield = {
+    stone: gnZero(),
+    expGain: gnZero(),
+    equipment: [],
+    recycledDust: 0,
+    resources: [],
+    revived: []
+  }
   const now = Date.now()
+
+  /**
+   * 妖气复聚(已靖旧主归来)先结算 —— 已靖却从不镇压的地界一份镇压都没有,
+   * 必须排在「没有镇压直接返回」之前,否则那条路永远走不到。
+   */
+  total.revived = settleRegionRevivals(now)
 
   /**
    * 够钟的镇压在上面 settleRegionRevivals 里已经松开(复聚判定与播报的单源),
@@ -241,7 +305,15 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
    * (读档 sanitize 已去重,此处兜住内存里的重复)。
    */
   const active = [...new Set(player.suppressedRegions)]
-  if (active.length === 0) return null
+  // 既没有镇压收益、也没有复聚可说,才是「这一段时间什么也没发生」
+  if (active.length === 0) return total.revived.length > 0 ? total : null
+
+  // ---- 镇守道韵:同源挂机曲线(cultPerSec × dt),每镇压一区 +8%,封顶 +40% ----
+  const expGain = mulN(gn(player.cultPerSec), suppressionExpRate(active.length) * hours)
+  if (!isZero(expGain)) {
+    player.gainExp(expGain)
+    total.expGain = add(total.expGain, expGain)
+  }
 
   for (const regionId of active) {
     const region = regionDef(regionId)
@@ -303,9 +375,17 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
     // 零头与装备生成走同一个可注入随机源:从前这里裸调 Math.random(生成装备却用 rng),
     // 测试只能去 mock 全局 Math.random,而 rng 在构造时就把原函数抓走了 —— 注入才是可测的那条路
     const equipCount = Math.floor(equipChance) + (service.chance(equipChance - Math.floor(equipChance)) ? 1 : 0)
+    /**
+     * 老镇压区的装备成长:镇满一天,该区掉落的装备运气 +0.1(封顶 +0.8)。
+     * 镇压是长期玩法,兴衰微调此前只动灵石与物产 —— 守了三天的地和刚压下的地
+     * 掉出来的装备一模一样,「守土之久」在装备账上完全没有体现。这里按
+     * `suppressedSince` 折算一份随守时渐长的运气,并入生成器的品质权重。
+     */
+    const since = player.suppressedSince[regionId]
+    const tenureLuck = since === undefined ? 0 : suppressionEquipmentLuck(since, now)
     for (let i = 0; i < equipCount; i += 1) {
       // 不传品质下限:传了(哪怕是 0)品质窗口就失效,镇压产出会比历练掉落更容易出低阶高品
-      const equip = generateEquipment(region.tier, service, { luck: 0 })
+      const equip = generateEquipment(region.tier, service, { luck: tenureLuck })
       const res = acquireEquipment(equip, { quiet: true }) // quiet=true 避免镇压收益刷屏
       // 所得清单如实记下每一件产出:入包与否都列,未入包(自动回收/满包化尘)标注回收
       total.equipment.push({
