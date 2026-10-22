@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 330,
+  "round": 331,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T02:29:34+00:00",
+  "updated_at": "2026-10-22T02:55:27+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -24948,6 +24948,227 @@
       "commit": "60d5783",
       "title": "开局标记只认严格布尔真",
       "detail": "game.sanitize 将 started 归一为严格 true；导入坏档端到端断言。"
+    },
+    "COMP-079": {
+      "id": "COMP-079",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:39:42+00:00",
+      "touched_round": 331,
+      "title": "秘境入口与终局互斥投影",
+      "path": "src/components/adventure/SecretRealmCard.vue + src/core/secretRealm.ts",
+      "summary": "秘境卡只按代价置灰，未镜像远征/历练互斥；核心拒绝远征在途但界面仍可点。"
+    },
+    "COMP-080": {
+      "id": "COMP-080",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:39:42+00:00",
+      "touched_round": 331,
+      "title": "天道挑战书禁用原因投影",
+      "path": "src/components/celestial/TrialPanel.vue",
+      "summary": "挑战书按钮 disabled 含 verdict/在途/道源三项，但文案与 title 只解释道源。"
+    },
+    "COMP-081": {
+      "id": "COMP-081",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:39:42+00:00",
+      "touched_round": 331,
+      "title": "终局付费战斗在途互斥守卫",
+      "path": "src/core/challenge.ts + src/core/endgameService.ts + src/core/expedition.ts",
+      "summary": "挑战书/试炼/变数/重写等付费战斗未统一拒绝在途远征或秘境。"
+    },
+    "ISS-1016": {
+      "id": "ISS-1016",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:54:22+00:00",
+      "touched_round": 331,
+      "title": "秘境入口在远征途中仍可点",
+      "severity": 0.65,
+      "detail": "SecretRealmCard.canPay 只查 entryShortfallOf；核心 enterSecretRealm 会因 endgame.worldRun 拒绝，按钮却仍亮。"
+    },
+    "ISS-1017": {
+      "id": "ISS-1017",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:54:29+00:00",
+      "touched_round": 331,
+      "title": "挑战书按钮只解释道源，未解释未验约与在途远征",
+      "severity": 0.55,
+      "detail": "按钮 disabled 同时取决于 verdict.ok、worldRun、daoSource，但 title/文案只覆盖 daoSource。"
+    },
+    "ISS-1018": {
+      "id": "ISS-1018",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:54:33+00:00",
+      "touched_round": 331,
+      "title": "付费终局战斗可绕过在途远征互斥并留下双在途",
+      "severity": 0.8,
+      "detail": "undertakeChallenge、challengeTrial、challengeMutation、rewriteMark 等在 worldRun 或 secretRealm 在途时仍可扣费开打，破坏单在途不变式。"
+    },
+    "TASK-461": {
+      "id": "TASK-461",
+      "type": "task",
+      "status": "resolved",
+      "version": 3,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:54:14+00:00",
+      "touched_round": 331,
+      "category": "correctness",
+      "severity": 0.65,
+      "confidence": 1,
+      "effort": 1,
+      "unlock_factor": 1,
+      "title": "秘境卡置灰并说明远征在途",
+      "detail": "卡面与核心同判据：远征在途时入口禁用并写出原因。",
+      "lock_owner": "codex-round331",
+      "lock_until": "2026-10-22T03:40:04+00:00"
+    },
+    "TASK-462": {
+      "id": "TASK-462",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:55:27+00:00",
+      "touched_round": 331,
+      "category": "correctness",
+      "severity": 0.55,
+      "confidence": 1,
+      "effort": 1,
+      "unlock_factor": 1,
+      "title": "挑战书按钮解释全部禁用原因",
+      "detail": "按未验约/远征在途/道源不足分因置灰与文案，不再只讲道源。"
+    },
+    "TASK-463": {
+      "id": "TASK-463",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-22T02:39:42+00:00",
+      "updated_at": "2026-10-22T02:54:54+00:00",
+      "touched_round": 331,
+      "category": "correctness",
+      "severity": 0.8,
+      "confidence": 1,
+      "effort": 2,
+      "unlock_factor": 1,
+      "title": "终局付费战斗统一在途守卫",
+      "detail": "提取共享判据，挑战书/试炼/变数/重写等在扣费前拒绝在途远征与秘境；补行为测试。"
+    },
+    "HYP-172": {
+      "id": "HYP-172",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T02:39:56+00:00",
+      "updated_at": "2026-10-22T02:54:37+00:00",
+      "touched_round": 331,
+      "confidence": 1,
+      "title": "界面只镜像了代价判据，未镜像核心互斥",
+      "detail": "SecretRealmCard canPay 仅调用 entryShortfallOf，而 enterSecretRealm 另查 worldRun。"
+    },
+    "HYP-173": {
+      "id": "HYP-173",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T02:39:56+00:00",
+      "updated_at": "2026-10-22T02:54:41+00:00",
+      "touched_round": 331,
+      "confidence": 1,
+      "title": "终局付费战斗缺少单在途守卫",
+      "detail": "各服务只校验自身前置条件，没有共享 worldRun/secretRealm 拒绝判据。"
+    },
+    "EV-1012": {
+      "id": "EV-1012",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:39:56+00:00",
+      "updated_at": "2026-10-22T02:39:56+00:00",
+      "touched_round": 331,
+      "source": "src/components/adventure/SecretRealmCard.vue:109-115",
+      "title": "canPay 只读 entryShortfallOf",
+      "detail": "未读 endgame.worldRun；核心 enterSecretRealm:144 会拒绝。",
+      "confidence": 1.0
+    },
+    "EV-1013": {
+      "id": "EV-1013",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:39:56+00:00",
+      "updated_at": "2026-10-22T02:39:56+00:00",
+      "touched_round": 331,
+      "source": "src/components/celestial/TrialPanel.vue:174-190",
+      "title": "挑战书 disabled 三因，title/文案只覆盖道源",
+      "detail": "!challengeVerdict.ok 与 run !== null 没有对应说明。",
+      "confidence": 1.0
+    },
+    "EV-1014": {
+      "id": "EV-1014",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:39:56+00:00",
+      "updated_at": "2026-10-22T02:39:56+00:00",
+      "touched_round": 331,
+      "source": "src/core/challenge.ts:103-112",
+      "title": "undertakeChallenge 未拒绝 worldRun/secretRealm",
+      "detail": "通过世界校验后直接扣道源开打。",
+      "confidence": 1.0
+    },
+    "CHG-563": {
+      "id": "CHG-563",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:52:22+00:00",
+      "updated_at": "2026-10-22T02:52:22+00:00",
+      "touched_round": 331,
+      "commit": "b1d0f79",
+      "title": "登记 331 轮终局入口互斥与拒因",
+      "detail": "CHANGELOG 记录统一在途守卫与秘境/挑战书逐因置灰。"
+    },
+    "CHG-561": {
+      "id": "CHG-561",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:53:15+00:00",
+      "updated_at": "2026-10-22T02:53:15+00:00",
+      "touched_round": 331,
+      "commit": "a62a85b",
+      "title": "终局付费战斗统一拒绝在途活动",
+      "detail": "endgameBusy 纯判据由调用方传入 worldRun/secretRealm；挑战书、试炼、变数与重写在扣费前拒绝；四路行为测试断言道源不动。"
+    },
+    "CHG-562": {
+      "id": "CHG-562",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T02:53:19+00:00",
+      "updated_at": "2026-10-22T02:53:19+00:00",
+      "touched_round": 331,
+      "commit": "639d3b8",
+      "title": "秘境入口与挑战书按钮亮出真实拒因",
+      "detail": "秘境入口按在途与代价合判据置灰；挑战书按未验约/远征在途/身在秘境/道源不足逐因投影文案与 title。"
     }
   },
   "edges": [
@@ -36807,6 +37028,102 @@
       "to": "ISS-1015",
       "type": "resolves",
       "created_at": "2026-10-22T02:29:19+00:00"
+    },
+    {
+      "from": "ISS-1016",
+      "to": "COMP-079",
+      "type": "located_in",
+      "created_at": "2026-10-22T02:39:56+00:00"
+    },
+    {
+      "from": "ISS-1017",
+      "to": "COMP-080",
+      "type": "located_in",
+      "created_at": "2026-10-22T02:39:56+00:00"
+    },
+    {
+      "from": "ISS-1018",
+      "to": "COMP-081",
+      "type": "located_in",
+      "created_at": "2026-10-22T02:39:56+00:00"
+    },
+    {
+      "from": "TASK-461",
+      "to": "ISS-1016",
+      "type": "addresses",
+      "created_at": "2026-10-22T02:39:56+00:00"
+    },
+    {
+      "from": "TASK-462",
+      "to": "ISS-1017",
+      "type": "addresses",
+      "created_at": "2026-10-22T02:39:56+00:00"
+    },
+    {
+      "from": "TASK-463",
+      "to": "ISS-1018",
+      "type": "addresses",
+      "created_at": "2026-10-22T02:39:56+00:00"
+    },
+    {
+      "from": "EV-1012",
+      "to": "HYP-172",
+      "type": "validates",
+      "created_at": "2026-10-22T02:39:56+00:00"
+    },
+    {
+      "from": "EV-1013",
+      "to": "HYP-172",
+      "type": "validates",
+      "created_at": "2026-10-22T02:39:57+00:00"
+    },
+    {
+      "from": "EV-1014",
+      "to": "HYP-173",
+      "type": "validates",
+      "created_at": "2026-10-22T02:39:57+00:00"
+    },
+    {
+      "from": "CHG-561",
+      "to": "TASK-463",
+      "type": "implements",
+      "created_at": "2026-10-22T02:53:32+00:00"
+    },
+    {
+      "from": "CHG-562",
+      "to": "TASK-461",
+      "type": "implements",
+      "created_at": "2026-10-22T02:53:32+00:00"
+    },
+    {
+      "from": "CHG-561",
+      "to": "ISS-1018",
+      "type": "resolves",
+      "created_at": "2026-10-22T02:53:44+00:00"
+    },
+    {
+      "from": "CHG-562",
+      "to": "TASK-462",
+      "type": "implements",
+      "created_at": "2026-10-22T02:53:50+00:00"
+    },
+    {
+      "from": "CHG-562",
+      "to": "ISS-1016",
+      "type": "resolves",
+      "created_at": "2026-10-22T02:53:53+00:00"
+    },
+    {
+      "from": "CHG-562",
+      "to": "ISS-1017",
+      "type": "resolves",
+      "created_at": "2026-10-22T02:53:59+00:00"
+    },
+    {
+      "from": "CHG-563",
+      "to": "TASK-461",
+      "type": "implements",
+      "created_at": "2026-10-22T02:54:02+00:00"
     }
   ]
 }
