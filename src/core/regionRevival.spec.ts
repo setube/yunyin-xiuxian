@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdventureStore } from '@/stores/adventure'
 import { usePlayerStore } from '@/stores/player'
+import { useUiStore } from '@/stores/ui'
 import { settleRegionRevivals } from './regionRevival'
 import { settleSuppressedRegions } from './suppress'
 import { regionBossCleared, winsUntilRegionBoss } from './exploration'
@@ -103,6 +104,63 @@ describe('妖气复聚(regionRevival)', () => {
 
     expect(adventure.revived.includes(id)).toBe(true) // 旧主归来
     expect(adventure.cleared.includes(id)).toBe(false)
+  })
+
+  /**
+   * 既已靖又镇压的地界够钟时只是**一桩事**:旧主归来,镇压随之松开。
+   *
+   * 镇压那一半从前由 suppress.settleSuppressedRegions 自己按 suppressedSince
+   * 单独判「满 72 小时」并弹一条「镇压松动」,已靖那一半由这里按 regionTouchedAt
+   * 判、弹一条「旧主归来」—— 两把钟各判各的,同一个 tick 弹两条,把一次复聚
+   * 说成两桩事。故障注入:把松闸那段搬回 suppress.ts 各弹一条 → 本条红。
+   */
+  it('已靖且镇压同时够钟:只报一条,旧主归来与镇压松动一并说清', () => {
+    vi.setSystemTime(T0)
+    const adventure = useAdventureStore()
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    const id = REGIONS[0]!.id
+    adventure.markCleared(id)
+    player.suppressedRegions = [id]
+    player.suppressedSince = { [id]: T0 }
+
+    vi.setSystemTime(T0 + (REVIVE_AFTER_HOURS + 1) * H)
+    settleRegionRevivals(Date.now())
+
+    expect(ui.toasts, '同一次复聚只该弹一条').toHaveLength(1)
+    expect(ui.toasts[0]!.text).toContain('旧主归来')
+    expect(player.suppressedRegions, '妖气都聚起来了,镇压该松').not.toContain(id)
+    expect(adventure.revived).toContain(id)
+    expect(adventure.cleared).not.toContain(id)
+  })
+
+  /**
+   * 松闸看的也是**那一片地方**的钟,不是镇压表另起的一把。
+   *
+   * 从前 suppress.settleSuppressedRegions 按 suppressedSince 判满 72h 就解镇压:
+   * 玩家今天还在那片打怪(regionStats.lastUpdateAt 是刚才),镇压却按更早的镇压
+   * 时刻被收了回去 —— 明明一直在守,收益却被判「久无人烟」。故障注入:松闸改回
+   * isReviving(player.suppressedSince[...]) → 本条红。
+   */
+  it('镇压满 72h 但今天仍在那片战斗:不松闸(钟取最后一次打交道)', () => {
+    const adventure = useAdventureStore()
+    const player = usePlayerStore()
+    const id = REGIONS[0]!.id
+    const now = T0 + (REVIVE_AFTER_HOURS + 1) * H
+    vi.setSystemTime(now)
+    player.suppressedRegions = [id]
+    player.suppressedSince = { [id]: T0 }
+    player.regionStats[id] = {
+      totalFights: 20,
+      avgRounds: 2,
+      avgDamageTakenPct: 0.05,
+      consecutiveWins: 20,
+      lastUpdateAt: now - 1 * H // 一小时前还在这片打过
+    }
+
+    expect(settleRegionRevivals(now)).toEqual([])
+    expect(player.suppressedRegions, '还在守的地界不该被按旧时刻收掉').toContain(id)
+    expect(adventure.revived).not.toContain(id)
   })
 
   /**

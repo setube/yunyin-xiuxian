@@ -30,17 +30,11 @@ export const DECAY_HOURS = 48
 /** 镇压后无活动超过多少小时,区域开始复苏(自动解除镇压) */
 export const REVIVE_AFTER_HOURS = 72
 
-/** 镇压区域是否已进入复苏期(纯函数) */
-export function isReviving(suppressedAt: number | undefined, now: number): boolean {
-  if (suppressedAt === undefined) return false
-  return (now - suppressedAt) / 3600_000 > REVIVE_AFTER_HOURS
-}
-
 /**
  * 距妖气复聚(镇压自动解除)还剩多少小时;未镇压或已过期返回 0。
  *
  * 复聚是确定的期限,却从不预告:玩家只会看到某天镇压「突然没了」。
- * 界面据此把期限写成倒计时(与 isReviving 同一个阈值,不另立一份)。
+ * 界面据此把期限写成倒计时(与 isRegionRevived 同一个阈值,不另立一份)。
  */
 export function hoursUntilRevive(suppressedAt: number | undefined, now: number = Date.now()): number {
   if (suppressedAt === undefined) return 0
@@ -50,6 +44,11 @@ export function hoursUntilRevive(suppressedAt: number | undefined, now: number =
 /**
  * 妖气复聚的钟:最后一次在当地战斗、或把它镇压下来、或把它靖平。
  * 三个时刻取最晚 —— 任一活动都会推迟旧主归来。
+ *
+ * 从前还另有一个 `isReviving(suppressedSince)`「镇压是否满 72 小时」的判据,
+ * 它只看得见镇压一条钟,于是同一片地界在一处按 `suppressedSince` 判「镇压该松了」、
+ * 另一处按这里的 `regionTouchedAt` 判「旧主该归来了」,一个 tick 弹两条复聚提示。
+ * 现在四处共用这一份钟:够不够钟由 `isRegionRevived(regionTouchedAt(...), now)` 回答。
  */
 export function regionTouchedAt(
   lastUpdateAt: number | undefined,

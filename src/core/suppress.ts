@@ -7,7 +7,6 @@
 
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
-import { useUiStore } from '@/stores/ui'
 import { regionDef } from '@/data/regions'
 import { herbGradeOfMajor, HERB_GRADE_SHORT } from '@/data/herbGrades'
 import type { HerbGrade } from '@/data/herbGrades'
@@ -19,7 +18,7 @@ import { gnZero, add, mulN } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import type { GNum, QualityId, RegionRecall } from '@/types'
 import { equipmentTemplate } from '@/data/equipment'
-import { deriveProsperity, isReviving, prosperityYieldMult } from './worldMemory'
+import { deriveProsperity, prosperityYieldMult } from './worldMemory'
 import { settleRegionRevivals } from './regionRevival'
 import { AGE_YEARS_PER_HOUR } from '@/data/constants'
 
@@ -236,19 +235,12 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
   const total: SuppressedYield = { stone: gnZero(), equipment: [], recycledDust: 0, resources: [] }
   const now = Date.now()
 
-  // Phase 30.9:复苏判定 —— 镇压超过 72h 无活动,区域妖气再聚,自动解除镇压
-  const revived: string[] = []
-  for (const regionId of player.suppressedRegions) {
-    if (isReviving(player.suppressedSince[regionId], now)) revived.push(regionId)
-  }
-  if (revived.length > 0) {
-    for (const regionId of revived) player.unsuppressRegion(regionId)
-    const names = revived.map(id => regionDef(id)?.name ?? id).join('、')
-    useUiStore().toast(`${names}妖气复聚,镇压松动——此地重新成为历练之地`, 'info')
-    // 复苏后本 tick 不再为这些区域结算
-  }
-  // 同一位写两遍时逐条结算会产出两份收益(读档 sanitize 已去重,此处兜住内存里的重复)
-  const active = [...new Set(player.suppressedRegions)].filter(id => !revived.includes(id))
+  /**
+   * 够钟的镇压在上面 settleRegionRevivals 里已经松开(复聚判定与播报的单源),
+   * 这里只剩「本 tick 还在收租的地界」。同一位写两遍时逐条结算会产出两份收益
+   * (读档 sanitize 已去重,此处兜住内存里的重复)。
+   */
+  const active = [...new Set(player.suppressedRegions)]
   if (active.length === 0) return null
 
   for (const regionId of active) {

@@ -17,7 +17,8 @@ import {
   recordEvent,
   shouldTriggerAftermath,
   aftermathText,
-  isReviving,
+  isRegionRevived,
+  regionTouchedAt,
   prosperityYieldMult,
   regionRecallFor,
   NEMESIS_THRESHOLD,
@@ -210,15 +211,27 @@ describe('S1 区域兴衰', () => {
     expect(prosperityYieldMult('chaos')).toBeCloseTo(1.0, 6)
   })
 
-  it('复苏判定:超过 72 小时无活动则复苏', () => {
+  /**
+   * 复苏判定只有**一份钟**:`regionTouchedAt`(最后一次与它打交道)配
+   * `isRegionRevived`。从前镇压那一路另有一个只看 `suppressedSince` 的
+   * `isReviving`,同一片地界因此会在一个 tick 里被两处各报一次复聚。
+   */
+  it('复苏判定:从最后一次打交道起算,超过 72 小时则复苏', () => {
     const t = Date.now()
-    expect(isReviving(t, t + REVIVE_AFTER_HOURS * 3600_000 + 1)).toBe(true)
-    expect(isReviving(t, t + REVIVE_AFTER_HOURS * 3600_000 - 1)).toBe(false)
-    expect(isReviving(undefined, t)).toBe(false)
+    expect(isRegionRevived(t, t + REVIVE_AFTER_HOURS * 3600_000 + 1)).toBe(true)
+    expect(isRegionRevived(t, t + REVIVE_AFTER_HOURS * 3600_000 - 1)).toBe(false)
+    // 从没打过交道(touchedAt 为 0)不算够钟:没有起点的钟不该自己走
+    expect(isRegionRevived(0, t + REVIVE_AFTER_HOURS * 3600_000 + 1)).toBe(false)
+  })
+
+  it('复聚的钟取「最后一次打交道」:战斗 / 镇压 / 靖平三者最晚', () => {
+    expect(regionTouchedAt(100, 200, 300)).toBe(300)
+    expect(regionTouchedAt(undefined, undefined, undefined)).toBe(0)
+    expect(regionTouchedAt(500, undefined, undefined)).toBe(500)
   })
 
   /**
-   * 复聚倒计时 —— 界面把「还能守多久」写出来,与 isReviving 共用同一个阈值。
+   * 复聚倒计时 —— 界面把「还能守多久」写出来,与复苏判定共用同一个阈值。
    * 从前 72 小时的期限完全没有预告,玩家的体感是「镇压某天突然没了」。
    */
   it('复聚倒计时:与复苏判定同一条线,未镇压为 0', () => {
@@ -229,8 +242,8 @@ describe('S1 区域兴衰', () => {
     // 倒计时归零的那一刻,正是复苏判定翻真的位置(两条口径不许分叉)
     const atRevive = t + REVIVE_AFTER_HOURS * 3600_000
     expect(hoursUntilRevive(t, atRevive)).toBe(0)
-    expect(isReviving(t, atRevive - 1)).toBe(false)
-    expect(isReviving(t, atRevive + 1)).toBe(true)
+    expect(isRegionRevived(t, atRevive - 1)).toBe(false)
+    expect(isRegionRevived(t, atRevive + 1)).toBe(true)
     expect(hoursUntilRevive(t, atRevive + 999 * 3600_000), '过期不出现负数').toBe(0)
   })
 })
