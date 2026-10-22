@@ -37,9 +37,13 @@ const LITANY_LIMIT = 3
  * 那片打怪,镇压却被按更早的镇压时刻收了回去;既已靖又镇压的地界则在同一个 tick
  * 弹两条,把**同一次复聚**说成两桩事。判定与播报都收在这一处,一片地界每 tick 至多被点名一次。
  *
- * @returns 这一次刚复聚(旧主归来)的地界 id
+ * @returns 这一次复聚的两类地界:`returned` 旧主归来(已靖被收回),
+ *   `loosened` 镇压被妖气松开(收益随之停下)。调用方(归来卷轴)要分别记账 ——
+ *   前者说的是「首领复出」,后者说的是「收益停了」,混作一句会让玩家以为丢档。
  */
-export function settleRegionRevivals(now: number = Date.now()): string[] {
+export function settleRegionRevivals(
+  now: number = Date.now()
+): { returned: string[]; loosened: string[] } {
   const adventure = useAdventureStore()
   const player = usePlayerStore()
   const returned: string[] = []
@@ -78,7 +82,7 @@ export function settleRegionRevivals(now: number = Date.now()): string[] {
   if (loosenedOnly.length > 0) {
     useUiStore().toast(`${litany(loosenedOnly)}妖气复聚,镇压松动——此地重新成为历练之地`, 'info')
   }
-  return returned
+  return { returned, loosened }
 }
 
 /** 点名几处,多了就报个数 —— 回来一次撞上二十处复聚时别糊一屏名字 */

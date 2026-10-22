@@ -212,6 +212,21 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
     const tail = names.length > 3 ? ` 等 ${names.length} 处` : ''
     notes.push(`妖气复聚:${head}${tail}的旧主归来 —— 再历一程即可复靖`)
   }
+  /**
+   * 镇压被妖气松开也要写进卷轴,而且它比「旧主归来」更常发生。
+   *
+   * 只镇压、从不靖平的地界(最常见的形态:靠胜场压制,不去打首领)满 72 小时后
+   * 同样复聚 —— 而 `settleRegionRevivals` 从前只回报 `returned`,这一类于是
+   * 只走一条 toast,离线归来时它早飘过去了。玩家回来只看见产出条不见了、
+   * 按钮从「停取收益」变成「转为镇压收益」:收益为什么停了、还能不能接回来,
+   * 卷轴上一个字都没有。这里补上,并顺手给出解法(资格仍在,一键接回)。
+   */
+  if (suppressYield && suppressYield.loosened.length > 0) {
+    const names = suppressYield.loosened.map(id => regionDef(id)?.name ?? id)
+    const head = names.slice(0, 3).join('、')
+    const tail = names.length > 3 ? ` 等 ${names.length} 处` : ''
+    notes.push(`妖气复聚:${head}${tail}的镇压松开,此地重新成为历练之地 —— 镇压资格仍在,一键即可接回收益`)
+  }
   if (suppressYield && !isZero(suppressYield.stone)) {
     const extra = suppressYield.resources.map(r => `${r.name} +${r.amount}`).join(' · ')
     const dao = isZero(suppressYield.expGain) ? '' : ` · 道韵修为 +${formatGN(suppressYield.expGain)}`

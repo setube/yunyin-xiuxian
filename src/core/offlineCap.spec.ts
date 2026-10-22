@@ -407,10 +407,13 @@ describe('离线结算 · 已过期 buff 不补贴(结算前先清算)', () => {
 })
 
 /**
- * 归来卷轴上的两条镇压账:
+ * 归来卷轴上的镇压账:
  *   一 镇守道韵(修为红利)要报出来 —— 不然「怎么回事,修为多了一截」没人解释;
  *   二 妖气复聚要写进卷轴 —— 归来时卷轴是弹窗,提示条抢不到注意力,而「我靖过的
- *      地界怎么旧主又回来了」正是这一屏最该被解释的事。
+ *      地界怎么旧主又回来了」正是这一屏最该被解释的事;
+ *   三 **镇压被松开**也要写 —— 只镇压、从不靖平的地界(最常见的形态)满 72 小时
+ *      同样复聚,收益就此停下。卷轴不提,玩家回来只看见产出条不见了、按钮变成
+ *      「转为镇压收益」,既不知道为什么,也看不出资格仍在、一键就能接回。
  */
 describe('离线归来卷轴 · 镇压账目', () => {
   beforeEach(() => {
@@ -453,6 +456,43 @@ describe('离线归来卷轴 · 镇压账目', () => {
       const notes = useUiStore().offlineSummary?.notes.join('\n') ?? ''
       expect(notes, '旧主归来得写进卷轴').toContain('妖气复聚')
       expect(notes, '顺手给出「该怎么办」').toContain('再历一程即可复靖')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  /**
+   * 只镇压、没靖平的地界跨过复聚钟:镇压被松开,卷轴必须说清。
+   *
+   * 这条从前整段归零:结算侧 `settleRegionRevivals` 只回报「旧主归来」那一类
+   * (returned),被妖气压不住的这一类(loosened)只走一条 toast —— 离线归来时它
+   * 早飘过去了。实测归来卷轴只有「修为已至圆满」「此去寿元流逝 100 载」两行,
+   * 而 `suppressedRegions` 已经空了:收益停了,卷轴上一个字都没有。
+   *
+   * 故障注入:把 offline.ts 的 loosened 分支删掉 → 本条红。
+   */
+  it('镇压被妖气复聚松开也写进卷轴,并说出「资格仍在、一键接回」', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_760_000_000_000)
+      setActivePinia(createPinia())
+      const game = useGameStore()
+      const player = usePlayerStore()
+      const id = 'qingyun'
+      const started = Date.now() - 100 * 3600 * 1000
+      game.markStarted()
+      game.lastActiveAt = started
+      player.major = 3
+      // 只镇压、从不靖平:复聚钟走的仍是 regionTouchedAt(镇压时刻)
+      player.suppressedRegions = [id]
+      player.suppressedSince = { [id]: started }
+
+      settleOffline(Date.now())
+
+      expect(player.suppressedRegions, '够钟了镇压该松').toEqual([])
+      const notes = useUiStore().offlineSummary?.notes.join('\n') ?? ''
+      expect(notes, '镇压松开要写进卷轴').toContain('镇压松开')
+      expect(notes, '顺手说出资格还在、能接回').toContain('资格仍在')
     } finally {
       vi.useRealTimers()
     }

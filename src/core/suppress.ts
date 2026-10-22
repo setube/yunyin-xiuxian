@@ -276,6 +276,16 @@ export interface SuppressedYield {
    * 刚回来的玩家看的是那一屏,而提示条正在跟它抢注意力(归来时它是弹窗)。
    */
   revived: string[]
+  /**
+   * 这一段时间里被妖气复聚**松开**的镇压(资格仍在,收益停下)。
+   *
+   * 与 `revived` 分开记,是因为它说的是另一件事:「收益停了」而不是「首领复出」。
+   * 从前 `settleRegionRevivals` 只回报 `returned`,只镇压而未靖平的地界(最常见
+   * 的一种:玩家从不靖平、直接靠胜场压制)跨过 72 小时后,镇压被松开而卷轴
+   * 一个字都不提 —— 回来只看见产出条不见了、按钮变成「转为镇压收益」,
+   * 既不知道为什么,也看不出「再镇压回去」就能接上。
+   */
+  loosened: string[]
 }
 
 /**
@@ -309,7 +319,8 @@ export function settleSuppressedRegions(
     equipment: [],
     recycledDust: 0,
     resources: [],
-    revived: []
+    revived: [],
+    loosened: []
   }
  const now = Date.now()
 
@@ -322,8 +333,10 @@ export function settleSuppressedRegions(
   // 一份镇压都没有时仍要跑复聚:已靖却从不镇压的地界也够钟(regionRevival 的接线)。
   // 两样都没有,才是「这一段时间什么也没发生」—— 返回 null,让调用方不必入账。
   if (active.length === 0) {
-    total.revived = settleRegionRevivals(worldAt)
-    return total.revived.length > 0 ? total : null
+    const revival = settleRegionRevivals(worldAt)
+    total.revived = revival.returned
+    total.loosened = revival.loosened
+    return total.revived.length + total.loosened.length > 0 ? total : null
   }
 
   /**
@@ -447,7 +460,9 @@ export function settleSuppressedRegions(
    * 松开,后面整段收益跟着归零。现在先按 `dt` 把这一段的租收完,再按
    * `worldAt` 让该复聚的复聚:前 72 小时照收,72 小时起回到历练地。
    */
-  total.revived = settleRegionRevivals(worldAt)
+  const revival = settleRegionRevivals(worldAt)
+  total.revived = revival.returned
+  total.loosened = revival.loosened
 
   return total
 }
