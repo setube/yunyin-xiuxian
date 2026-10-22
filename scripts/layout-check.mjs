@@ -2837,9 +2837,19 @@ for (const vp of VIEWPORTS) {
    * 于是这条判据报的是「夹具没读出来」,而真相只是「还没画到」。判据本身不变:
    * 卡必须出现,名字必须单行,标签必须够四枚。只是把「读一次」改成「等到出现为止」。
    */
-  await page
-    .waitForSelector('[data-foe-name]', { timeout: 8000 })
-    .catch(() => undefined)
+  /*
+   * 等到出现为止,且**允许重载一次**。
+   *
+   * 这一档排在第 36 件事,前面已经开过三十多个 context;整轮跑下来机器被占满时,
+   * 冷启动到首帧会慢过 8 秒(实测单独跑 3/3 全过、整轮偶发读空)。
+   * 读空时判据报「战斗面板没渲染出来(夹具没被读出来?)」—— 与敌人卡无关。
+   * 故等到 15 秒,还没出来就重载一次再等。
+   */
+  const foeReady = () => page.waitForSelector('[data-foe-name]', { timeout: 15000 }).then(() => true).catch(() => false)
+  if (!(await foeReady())) {
+    await page.reload({ waitUntil: 'load' }).catch(() => undefined)
+    await foeReady()
+  }
   await page.evaluate(() => {
     Math.random = () => 1
   })
