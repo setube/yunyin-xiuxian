@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 325,
+  "round": 326,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-21T23:44:14+00:00",
+  "updated_at": "2026-10-22T00:06:09+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -23980,6 +23980,142 @@
       "touched_round": 325,
       "summary": "玩家区域统计/批量净胜/镇压/奇缘/暂停顺延统一目录与有限值边界",
       "commit": "fb6cac6"
+    },
+    "COMP-066": {
+      "id": "COMP-066",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:58:49+00:00",
+      "updated_at": "2026-10-21T23:58:49+00:00",
+      "touched_round": 326,
+      "summary": "节奏遥测 store 的公共写入与密度报告边界"
+    },
+    "COMP-067": {
+      "id": "COMP-067",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-21T23:58:52+00:00",
+      "updated_at": "2026-10-21T23:58:52+00:00",
+      "touched_round": 326,
+      "summary": "终局日课落闸与极限纪录的公共写入边界"
+    },
+    "ISS-1002": {
+      "id": "ISS-1002",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:58:56+00:00",
+      "updated_at": "2026-10-22T00:06:05+00:00",
+      "touched_round": 326,
+      "summary": "pacingTelemetry.record 信任运行时入参,buildReport 直接读坏 events:坏 kind/label 会落盘,坏条目会让报告抛错",
+      "severity": 0.6,
+      "confidence": 0.95,
+      "effort": 1
+    },
+    "ISS-1003": {
+      "id": "ISS-1003",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-21T23:59:00+00:00",
+      "updated_at": "2026-10-22T00:06:05+00:00",
+      "touched_round": 326,
+      "summary": "endgame.markDailyDone 可收负数日号;updateRecord 对 fastest_world 可收 0/负数,bestRounds 语义要求正回合",
+      "severity": 0.45,
+      "confidence": 0.9,
+      "effort": 1
+    },
+    "TASK-447": {
+      "id": "TASK-447",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:59:04+00:00",
+      "updated_at": "2026-10-22T00:06:09+00:00",
+      "touched_round": 326,
+      "category": "correctness",
+      "severity": 0.6,
+      "confidence": 0.95,
+      "effort": 1,
+      "title": "节奏遥测写入与报告边界收口",
+      "detail": "record 只收非空字符串 type/label 与已知 kind;buildReport 先按同一 sanitize 规则过滤,坏表不抛且不报假数。"
+    },
+    "TASK-448": {
+      "id": "TASK-448",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-21T23:59:08+00:00",
+      "updated_at": "2026-10-22T00:06:09+00:00",
+      "touched_round": 326,
+      "category": "correctness",
+      "severity": 0.45,
+      "confidence": 0.9,
+      "effort": 1,
+      "title": "终局日号与最快纪录值域收口",
+      "detail": "markDailyDone 只认非负整数日号;fastest_world 只收正回合,best_custom 等仍按各自语义。"
+    },
+    "EV-996": {
+      "id": "EV-996",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:05:32+00:00",
+      "updated_at": "2026-10-22T00:05:32+00:00",
+      "touched_round": 326,
+      "source": "src/stores/pacingTelemetry.spec.ts 5 条行为测试;故障注入回旧写法 5/5 转红,恢复后 58/58 定向通过",
+      "title": "节奏遥测写入与报告边界行为证据",
+      "detail": "新增坏入参/坏表/连弹簇/坏 kind 断言;全量 3501 过 0 败,check/build 均通过。",
+      "confidence": 1.0
+    },
+    "EV-997": {
+      "id": "EV-997",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:05:36+00:00",
+      "updated_at": "2026-10-22T00:05:36+00:00",
+      "touched_round": 326,
+      "source": "src/stores/endgame.spec.ts 4 条日号/纪录测试;故障注入回旧写法 4/4 转红,恢复后 53/53 定向通过",
+      "title": "终局日号与纪录值域行为证据",
+      "detail": "覆盖负日号、小数日号、0/负回合纪录;全量 3501 过 0 败。",
+      "confidence": 1.0
+    },
+    "HYP-165": {
+      "id": "HYP-165",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:05:41+00:00",
+      "updated_at": "2026-10-22T00:05:41+00:00",
+      "touched_round": 326,
+      "confidence": 0.95,
+      "title": "遥测与终局公共写入仍默认调用方可信",
+      "detail": "高频遥测与终局日号/纪录的公共入口此前只挡非有限数,未挡负值、空串与坏形状,坏调用可直接污染持久化状态。"
+    },
+    "CHG-547": {
+      "id": "CHG-547",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:05:48+00:00",
+      "updated_at": "2026-10-22T00:05:48+00:00",
+      "touched_round": 326,
+      "summary": "节奏遥测写入与报告统一合法事件边界,连弹簇数改按 modal 统计",
+      "commit": "22404d0"
+    },
+    "CHG-548": {
+      "id": "CHG-548",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T00:05:52+00:00",
+      "updated_at": "2026-10-22T00:05:52+00:00",
+      "touched_round": 326,
+      "summary": "终局日号只认有限非负整数,极限纪录只保留正值",
+      "commit": "d044cb3"
     }
   },
   "edges": [
@@ -35395,6 +35531,66 @@
       "to": "TASK-445",
       "type": "implements",
       "created_at": "2026-10-21T23:44:02+00:00"
+    },
+    {
+      "from": "ISS-1002",
+      "to": "COMP-066",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:59:12+00:00"
+    },
+    {
+      "from": "TASK-447",
+      "to": "ISS-1002",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:59:12+00:00"
+    },
+    {
+      "from": "ISS-1003",
+      "to": "COMP-067",
+      "type": "located_in",
+      "created_at": "2026-10-21T23:59:16+00:00"
+    },
+    {
+      "from": "TASK-448",
+      "to": "ISS-1003",
+      "type": "addresses",
+      "created_at": "2026-10-21T23:59:16+00:00"
+    },
+    {
+      "from": "EV-996",
+      "to": "HYP-165",
+      "type": "validates",
+      "created_at": "2026-10-22T00:05:45+00:00"
+    },
+    {
+      "from": "EV-997",
+      "to": "HYP-165",
+      "type": "validates",
+      "created_at": "2026-10-22T00:05:45+00:00"
+    },
+    {
+      "from": "CHG-547",
+      "to": "ISS-1002",
+      "type": "resolves",
+      "created_at": "2026-10-22T00:05:57+00:00"
+    },
+    {
+      "from": "CHG-547",
+      "to": "TASK-447",
+      "type": "implements",
+      "created_at": "2026-10-22T00:05:57+00:00"
+    },
+    {
+      "from": "CHG-548",
+      "to": "ISS-1003",
+      "type": "resolves",
+      "created_at": "2026-10-22T00:05:57+00:00"
+    },
+    {
+      "from": "CHG-548",
+      "to": "TASK-448",
+      "type": "implements",
+      "created_at": "2026-10-22T00:05:57+00:00"
     }
   ]
 }
