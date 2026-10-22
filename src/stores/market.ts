@@ -48,16 +48,18 @@ export const useMarketStore = defineStore(
     /**
      * 存档修复:货架逐格修形,烂格整格丢弃(少一件货好过白屏);时刻夹回非负。
      *
-     * 格号(idx)缺失或重复的格子整格丢弃。两件事都得这么做:
-     * - 重复:购买按 idx 认格,两格同号时 `buy(idx)` 只命中先出现的那一格,
-     *   后一格永远买不到(点了没反应),玩家还以为买到的是它;
-     * - 缺失/重编号:装备品质由 (stockedAt, idx) 确定性再生,**改号会让标价与
-     *   实得品质分叉**,而缺号时又无法确认原号 —— 丢一格好过卖出一件对不上账的货。
+     * 格号(idx)缺失的格子整格丢弃:无从确认原号,补号会让装备标价与实得品质分叉。
+     *
+     * 重复号则分两类收口:
+     * - 装备:品质由 (stockedAt, idx) 确定性再生,**改号会让标价与实得品质分叉**,
+     *   故仍只留先出现的那格;
+     * - 丹/料:货与价都直接存着,不依赖格号再生,重排到最小空闲号即可保货。
+     *   旧实现一律丢弃,坏档里两格同号就静默少一件货 —— 这不是玩家该付的代价。
      * 先完整校验、再按序认号:坏格不会抢走后面好货的号。
      */
     function sanitize(): void {
       stockedAt.value = Math.max(0, asFiniteNumber(stockedAt.value, 0))
-      const clean: MarketSlot[] = []
+      const validated: MarketSlot[] = []
       const usedIdx = new Set<number>()
       for (const raw of asArray<unknown>(stock.value)) {
         if (!raw || typeof raw !== 'object' || !('kind' in raw)) continue
@@ -67,14 +69,12 @@ export const useMarketStore = defineStore(
         const rawIdx = 'idx' in raw ? raw.idx : undefined
         if (typeof rawIdx !== 'number' || !Number.isFinite(rawIdx)) continue
         const idx = Math.max(0, Math.floor(rawIdx))
-        // 已在校验 kind 之后才认号:坏格不会占掉后面好货的号
-        if (usedIdx.has(idx)) continue
 
         if (kind === 'pill') {
           if (!('pillId' in raw) || typeof raw.pillId !== 'string' || !pillDef(raw.pillId)) continue
           const price = asPrice('price' in raw ? raw.price : undefined)
           if (price.m <= 0) continue
-          clean.push({
+          validated.push({
             kind,
             idx,
             pillId: raw.pillId,
@@ -90,7 +90,7 @@ export const useMarketStore = defineStore(
           // 上货时钉死的灵草品阶要跨读档保留 —— 否则每次读档都掉回无级,
           // 「标价/入账/显示同源」约定失效,还可靠出入档白赚品阶差
           const g = 'grade' in raw ? raw.grade : undefined
-          clean.push({
+          validated.push({
             kind,
             idx,
             matId,
@@ -102,7 +102,7 @@ export const useMarketStore = defineStore(
         } else {
           const price = asPrice('price' in raw ? raw.price : undefined)
           if (price.m <= 0) continue
-          clean.push({
+          validated.push({
             kind,
             idx,
             tier: Math.min(MAX_EQUIP_TIER, Math.max(1, Math.floor(Number('tier' in raw ? raw.tier : 1) || 1))),
@@ -114,7 +114,33 @@ export const useMarketStore = defineStore(
             sold
           })
         }
+      }
+      /*
+       * 两阶段认号:先让装备占住原号,再给丹/料补空位。
+       * 若按原顺序边扫边补,前面一个重复丹格可能先改号,反而把后面某件
+       * 装备的原号占掉 —— 装备一旦改号就卖出另一件品相,代价比丹料大得多。
+       */
+      const equipmentIdx = new Set<number>()
+      for (const slot of validated) {
+        if (slot.kind !== 'equipment') continue
+        if (equipmentIdx.has(slot.idx)) continue
+        equipmentIdx.add(slot.idx)
+      }
+      // 装备先占号:后出现的丹/料不能把已上架装备的原号挤走
+      for (const idx of equipmentIdx) usedIdx.add(idx)
+      const clean: MarketSlot[] = []
+      const placedEquipment = new Set<number>()
+      for (const slot of validated) {
+        if (slot.kind === 'equipment') {
+          if (placedEquipment.has(slot.idx)) continue
+          placedEquipment.add(slot.idx)
+          clean.push(slot)
+          continue
+        }
+        let idx = slot.idx
+        while (usedIdx.has(idx)) idx += 1
         usedIdx.add(idx)
+        clean.push(idx === slot.idx ? slot : { ...slot, idx })
       }
       stock.value = clean
 

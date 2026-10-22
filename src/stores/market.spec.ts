@@ -258,23 +258,65 @@ describe('坊市 · 买卖', () => {
   })
 
   /**
-   * 购买按 idx 认格:两格同号时 `buy(idx)` 只会命中先出现的那一格,后一格永远
-   * 买不到 —— 玩家点它没有任何反应,还会以为买到的是它。故重复号只留先出现的
-   * 那格(能买到的那个),丢掉注定点不动的幽灵格。
+   * 丹/料货格不靠格号再生:重复号只需重排到最小空闲号,货与价原样保留。
+   * 旧实现一律丢后项,坏档里两格同号就静默少一件货。
    */
-  it('sanitize:重复 idx 只留先出现的那格(后一格原本永远买不到)', () => {
+  it('sanitize:重复 idx 的丹料格重排保货,两格都可买', () => {
     const market = useMarketStore()
+    const resources = useResourcesStore()
+    const inventory = useInventoryStore()
     market.$patch({
       stock: [
         { kind: 'material', idx: 3, matId: 'herb', grade: 1, count: 12, price: { m: 5, e: 0 }, sold: false },
         { kind: 'material', idx: 3, matId: 'ore', count: 12, price: { m: 6, e: 0 }, sold: false }
+      ] as MarketSlot[],
+      stockedAt: Date.now()
+    })
+    resources.spiritStone = gn(1000)
+    market.sanitize()
+    expect(market.stock, '两格丹料货都要留下').toHaveLength(2)
+    expect(market.stock.map(s => s.idx), '重排成互异格号').toEqual([3, 4])
+    expect(market.stock[0]!.kind === 'material' && market.stock[0]!.matId).toBe('herb')
+    expect(market.stock[1]!.kind === 'material' && market.stock[1]!.matId).toBe('ore')
+
+    expect(market.buy(3)).toBe('ok')
+    expect(market.buy(4)).toBe('ok')
+    expect(resources.herbOf(1)).toBe(12)
+    expect(resources.ore).toBe(12)
+    expect(inventory.pills).toEqual({})
+  })
+
+  /**
+   * 装备品质由 (stockedAt, idx) 确定性再生:重复号不能改号,仍只留先出现那格。
+   */
+  it('sanitize:重复 idx 的装备仍只留首格,绝不改号再生另一件', () => {
+    const market = useMarketStore()
+    market.$patch({
+      stock: [
+        { kind: 'equipment', idx: 2, tier: 3, minQualityRank: 0, price: { m: 5, e: 0 }, sold: false },
+        { kind: 'equipment', idx: 2, tier: 9, minQualityRank: 3, price: { m: 6, e: 0 }, sold: false }
       ] as MarketSlot[]
     })
     market.sanitize()
-    expect(market.stock, '两格同号只能留一格').toHaveLength(1)
+    expect(market.stock, '重复装备只留首格').toHaveLength(1)
     const kept = market.stock[0]!
-    expect(kept.idx).toBe(3)
-    expect(kept.kind === 'material' && kept.matId, '留下的是先出现、买得到的那格').toBe('herb')
+    expect(kept.idx).toBe(2)
+    expect(kept.kind === 'equipment' && kept.tier).toBe(3)
+  })
+
+  it('sanitize:丹料与装备同号时先保装备原号,丹料顺延', () => {
+    const market = useMarketStore()
+    market.$patch({
+      stock: [
+        { kind: 'material', idx: 2, matId: 'herb', grade: 1, count: 12, price: { m: 5, e: 0 }, sold: false },
+        { kind: 'equipment', idx: 2, tier: 3, minQualityRank: 0, price: { m: 6, e: 0 }, sold: false }
+      ] as MarketSlot[]
+    })
+    market.sanitize()
+    const equipment = market.stock.find(s => s.kind === 'equipment')
+    const material = market.stock.find(s => s.kind === 'material')
+    expect(equipment?.idx, '装备必须守 (stockedAt, idx) 原号').toBe(2)
+    expect(material?.idx, '丹料顺延到下一个空号').toBe(3)
   })
 
   /**
