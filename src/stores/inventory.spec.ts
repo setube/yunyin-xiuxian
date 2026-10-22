@@ -343,4 +343,40 @@ describe('法宝公共写入边界 · 目录、拥有、满重与祭炼槽', () 
     const kept = before.filter(id => !named.includes(id))
     expect(inv.equippedArtifacts).toEqual([...kept, 'af_xuantian'])
   })
+
+  /**
+   * 超编的祭炼位列表不许把第三件的被动一起算进属性。
+   *
+   * 槽位上限从前有四道裁剪(读档 sanitize / toggleArtifact 替换 / applyLoadout
+   * 切换 / 忆战快照),而 `currentArtifacts` —— equipMods、buildPlayerSnap、
+   * buildDetect 共同的读入口 —— 偏偏没裁:坏档或内存直塞写进三件时,第三件的
+   * 被动与神通一起进面板、一起进战斗。实测三件 maxHp 法宝(5% + 21.6% + 18%)
+   * 在两位之下给出 51.9% 而非 44.6%,玩家却从未点过那个按钮。
+   *
+   * 故障注入:把 `currentArtifacts` 的 `.slice(0, ARTIFACT_MAX_SLOTS)` 删掉,
+   * 这一条与下面那条同时红。
+   */
+  it('currentArtifacts 不超法宝位上限:超编件不进属性汇总', () => {
+    const inv = useInventoryStore()
+    inv.$patch({
+      artifacts: [
+        { defId: 'af_muyu', level: 0 }, // maxHpPct 0.05
+        { defId: 'af_bishui', level: 0 }, // maxHpPct 0.216
+        { defId: 'af_xianding', level: 0 } // maxHpPct 0.18
+      ],
+      equippedArtifacts: ['af_muyu', 'af_bishui', 'af_xianding']
+    })
+    expect(inv.currentArtifacts, '生效的只该是前 ARTIFACT_MAX_SLOTS 件').toHaveLength(ARTIFACT_MAX_SLOTS)
+    // 真值独立复算:前两件的 maxHp 被动合并(凡品零重,倍率 1)
+    const expected = mergeMods([
+      artifactValue(artifactDef('af_muyu')!, 0).passive,
+      artifactValue(artifactDef('af_bishui')!, 0).passive
+    ])
+    expect(inv.equipMods, '超编那件的被动不该混进汇总').toEqual(expected)
+    // 品阶倍率照常生效(af_bishui 是良品),这里只钉「第三件没进来」这件事
+    const withoutThird = expected.maxHpPct ?? 0
+    const withThird = withoutThird + artifactValue(artifactDef('af_xianding')!, 0).passive.maxHpPct!
+    expect(inv.equipMods.maxHpPct, '第三件的 maxHp 不该进来').toBeCloseTo(withoutThird, 9)
+    expect(inv.equipMods.maxHpPct, '判据得真能分辨:带上第三件会是另一个数').not.toBeCloseTo(withThird, 3)
+  })
 })

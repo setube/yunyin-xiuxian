@@ -186,8 +186,25 @@ export const useInventoryStore = defineStore(
       return mergeMods(sources)
     })
 
+    /**
+     * 随身法宝里**真正生效**的那几件 —— 认得出的、在库的,且不超法宝位上限。
+     *
+     * 上限这道裁是从前的漏网处:`sanitize`(读档)、`toggleArtifact`(替换)、
+     * `applyLoadout`(切换构筑)、忆战快照都按槽位裁过了,而这里是**属性汇总与
+     * 战斗快照的读入口** —— 偏偏没裁。坏档或内存直塞写进三件时,第三件的被动
+     * 与神通会一起进 `equipMods`、一起进 `buildPlayerSnap`、一起进流派检测:
+     * 实测三件 maxHp 法宝(5% + 21.6% + 18%)在两位之下给出 51.9% 而非 44.6%,
+     * 面板、战斗与忆战对不上账,而玩家从未点过那个按钮。
+     *
+     * 裁到 `ARTIFACT_MAX_SLOTS` 而非境界槽位:这一层与 `sanitize` 的读档裁剪同尺
+     * (硬上限),境界那一道(1 位 / 2 位)由 `player.sanitize` 按 `artifactSlotsFor`
+     * 收紧 —— store 之间不互相 import,免得 inventory 与 player 结成环。
+     */
     const currentArtifacts = computed<ArtifactOwned[]>(() =>
-      equippedArtifacts.value.map(id => artifacts.value.find(a => a.defId === id)).filter((a): a is ArtifactOwned => a !== undefined)
+      equippedArtifacts.value
+        .map(id => artifacts.value.find(a => a.defId === id))
+        .filter((a): a is ArtifactOwned => a !== undefined)
+        .slice(0, ARTIFACT_MAX_SLOTS)
     )
 
     function findItem(uid: string): EquipmentInstance | undefined {
