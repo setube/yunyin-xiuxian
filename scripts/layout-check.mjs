@@ -1506,6 +1506,14 @@ for (const vp of VIEWPORTS) {
     await trialPage.evaluate(() => {
       for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
     })
+    // 归来卷轴/引擎弹窗也可能正盖在页签轨道上:再收一轮,别让它们抢走切册那一下
+    for (let i = 0; i < 3; i += 1) {
+      if ((await trialPage.locator('.modal-panel').count()) > 0) await trialPage.keyboard.press('Escape')
+      await trialPage.waitForTimeout(250)
+    }
+    await trialPage.evaluate(() => {
+      for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+    })
     const trialTab = trialPage.getByRole('tab', { name: /试\s*炼/ }).first()
     if ((await trialTab.count()) === 0) failures.push('[390-late] 天界页:找不到「试炼」册')
     else {
@@ -1521,11 +1529,23 @@ for (const vp of VIEWPORTS) {
         if (/在途|身在秘境/.test(trialName)) {
           failures.push(`[390-late] 试炼:夹具已摘掉在途活动,应试仍写着「${trialName}」—— 闸门误判`)
         }
-        // 同一处理由:应试按钮也在 toast 层底下,点不到时用 JS 直点兜底
-        await trialBtn.click({ timeout: 4000 }).catch(() => trialBtn.evaluate(el => el.click()).catch(() => {}))
-        await trialPage.waitForTimeout(2200)
-        const after = await trialPage.evaluate(() => {
-          const panel = document.querySelector('.modal-panel')
+        /*
+         * 应试按钮也在 toast 层底下:点不到时用 JS 直点兜底,并**轮询等战报**。
+         *
+         * 从前这里点一次、等 2.2 秒、立刻读面板 —— 而这一格上面既有提示条、又可能有
+         * 上一秒引擎自己弹的窗,真实点击被截走时那一次就白等了,判据于是报「没有开出战报」,
+         * 与试炼本身无关。改成「最多试两轮、每轮等到真浮出面板为止」,量的还是同一件事。
+         */
+        /*
+         * 取证要认**试炼那一扇**面板,不能随手取第一扇。
+         *
+         * 这一屏上常有几扇窗叠着(离线归来卷轴、引擎自己在弹的窗),第一扇
+         * 未必是刚开出来的战报 —— 拿它的标题判「有没有开出战报」会得到假的战报
+         * (标题对不上,还会连带把别扇窗的正文当成战报正文去核)。故按标题找。
+         */
+        const trialAfter = async () => await trialPage.evaluate(() => {
+          const panels = [...document.querySelectorAll('.modal-panel')]
+          const panel = panels.find(p => /试炼/.test(p.querySelector('h3')?.textContent || ''))
           const text = panel?.innerText || ''
           return {
             title: (panel?.querySelector('h3')?.textContent || '').trim(),
@@ -1534,6 +1554,19 @@ for (const vp of VIEWPORTS) {
             leaks: /NaN|undefined|Infinity/.test(text)
           }
         })
+        const clickTrial = async () => {
+          await trialBtn.click({ timeout: 4000 }).catch(() => trialBtn.evaluate(el => el.click()).catch(() => {}))
+        }
+        // 只认**试炼**那一扇:残留的别种弹窗(上一秒引擎自己弹的)带着自己的标题,
+        // 拿它当「战报已开出」会假绿
+        let after = await trialAfter()
+        const opened = () => after.title.includes('试炼')
+        for (let attempt = 0; attempt < 2 && !opened(); attempt += 1) {
+          await clickTrial()
+          await trialPage.waitForSelector('.modal-panel', { timeout: 6000 }).catch(() => {})
+          await trialPage.waitForTimeout(400)
+          after = await trialAfter()
+        }
         if (!after.title) failures.push(`[390-late] 试炼:点了「${trialName}」没有开出战报`)
         else {
           // 战报的两种口径:全捷(打通)或止步第 N 战
