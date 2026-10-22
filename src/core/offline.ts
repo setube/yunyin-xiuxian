@@ -19,7 +19,6 @@ import {
   EQUIP_DROP_CHANCE_CAP,
   HERB_DROP_CHANCE,
   ORE_DROP_CHANCE,
-  EXPLORE_BATTLE_INTERVAL,
   ARTIFACT_DROP_CHANCE,
   PAGE_DROP_CHANCE,
   PILL_DROP_CHANCE,
@@ -39,6 +38,7 @@ import { autoResolveEvent, regionEventPoolFor } from './eventEngine'
 import {
   clearRegionAndUnlockNext,
   exploreEventChance,
+  exploreBattleGapSec,
   regionBossCleared,
   dangerFactorFor,
   explorationRules,
@@ -248,8 +248,11 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
       const remainSec = Math.max(0, (session.endsAt - (nowMs - dtSec * 1000)) / 1000)
       const simSec = Math.min(capSec, remainSec)
       const mods = player.finalStats.mods
-      const speed = 1 + Math.max(0, modOf(mods, 'explorationSpeed'))
-      const encounters = Math.floor((simSec / EXPLORE_BATTLE_INTERVAL) * speed)
+      // 遇敌间隔与在线同一把尺(exploreBattleGapSec):这里从前把
+      // `EXPLORE_BATTLE_INTERVAL * 1000 / speed` 又内联了一遍 —— 数学上等价,
+      // 但调速公式一改,离线会按旧尺子数遭遇数,而界面仍报新尺子的「遇敌约…」。
+      const battleGapSec = exploreBattleGapSec(modOf(mods, 'explorationSpeed'))
+      const encounters = Math.floor(simSec / battleGapSec)
       // 与在线同源:同一个 exploreEventChance(含今日星象之利)——
       // 从前离线漏了星象,同一天同一地会比在线少算一成际遇
       events = Math.round(encounters * exploreEventChance(region.id, mods))
@@ -608,7 +611,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
           expGain: add(session.expGain, trip.exp),
           itemGain: session.itemGain + trip.items,
           // 与在线 nextBattleTime 同源:速度加成要除以 speed,否则恢复后首战被拖慢一拍
-          nextBattleAt: nowMs + (EXPLORE_BATTLE_INTERVAL * 1000) / speed
+          nextBattleAt: nowMs + battleGapSec * 1000
         })
       }
     }

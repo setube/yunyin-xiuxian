@@ -156,4 +156,22 @@ describe('行程档位清单 · 表是唯一事实源', () => {
     expect(dialog, '又手写了一份档位清单 —— 加档时界面会漏一档').not.toMatch(/id:\s*'normal'/)
     expect(dialog, '又手写了 risk 字面量表').not.toMatch(/risk:\s*'安稳'/)
   })
+
+  /**
+   * 遇敌间隔也只有一个口径(`exploreBattleGapSec`)。
+   *
+   * 离线结算从前把 `EXPLORE_BATTLE_INTERVAL * 1000 / speed` 又内联了两遍
+   * (数遭遇数与排恢复后的首战):数学上与在线等价,但调速公式一改,离线会按
+   * 旧尺子数遭遇数,而界面仍报新尺子的「遇敌约…」—— 同一个词条在离线与
+   * 界面之间分叉。判据钉住 offline.ts 读那一枚纯函数,不再碰底层常量。
+   *
+   * 故障注入:把 offline.ts 里那两处改回内联算式 → 本条红。
+   */
+  it('离线遭遇数与恢复后首战也读 exploreBattleGapSec,不再内联间隔公式', () => {
+    const offline = readFileSync(new URL('../core/offline.ts', import.meta.url), 'utf8')
+    expect(offline, '离线要读同一份遇敌间隔').toContain('exploreBattleGapSec')
+    // 判「有没有再算一遍」而不是「有没有提到这个词」:注释里解释这件事本身是好事
+    const code = offline.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    expect(code, '离线又内联了遇敌间隔 —— 调速公式一改,两边分叉').not.toMatch(/EXPLORE_BATTLE_INTERVAL/)
+  })
 })
