@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 342,
+  "round": 344,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T17:09:05+00:00",
+  "updated_at": "2026-10-22T19:37:07+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 341,
+      "touched_round": 343,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -10529,7 +10529,7 @@
       "version": 1,
       "created_at": "2026-09-15T10:28:25+00:00",
       "updated_at": "2026-09-15T10:28:25+00:00",
-      "touched_round": 338,
+      "touched_round": 343,
       "summary": "状态(buff/负面状态)系统:data/buffs 定义 + cultivation store buffs 生命周期(施加/叠加/过期修剪) + BuffDialog/状态条展示",
       "path": "src/stores/cultivation.ts"
     },
@@ -11956,7 +11956,7 @@
       "version": 1,
       "created_at": "2026-09-16T01:33:21+00:00",
       "updated_at": "2026-09-16T01:33:21+00:00",
-      "touched_round": 341,
+      "touched_round": 343,
       "summary": "src/core/pillService.ts + src/core/breakthrough.ts + src/core/save.ts(炼丹/突破/存档三条主干)"
     },
     "CHG-239": {
@@ -26817,6 +26817,123 @@
       "commit": "750a340",
       "title": "autoResolveEvent 不替玩家祭法宝",
       "detail": "applyEffect/resolveEventChoice 收进 opts.autoEquipArtifact;autoResolveEvent 传 false;亲手路径照旧"
+    },
+    "ISS-1054": {
+      "id": "ISS-1054",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:14+00:00",
+      "updated_at": "2026-10-22T19:36:14+00:00",
+      "touched_round": 343,
+      "title": "替下判据与提示名单分彰",
+      "severity": 0.55,
+      "detail": "artifactEvictedBy 报一件而替换分支留最近的 slots-1 件,超编列表时按钮只点名一件却两件一起让位"
+    },
+    "ISS-1055": {
+      "id": "ISS-1055",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:14+00:00",
+      "updated_at": "2026-10-22T19:36:14+00:00",
+      "touched_round": 343,
+      "title": "事件余波与前期窗口写墙钟",
+      "severity": 0.5,
+      "detail": "eventMemories.lastAt、enlightenmentAt、breakthroughPrep.readyAt、caveEvent 均进了 shiftTimedState 顺延名单却写 Date.now()"
+    },
+    "ISS-1056": {
+      "id": "ISS-1056",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:14+00:00",
+      "updated_at": "2026-10-22T19:36:14+00:00",
+      "touched_round": 343,
+      "title": "rollRegionEvent 与 currentRegionEvent 读两把钟",
+      "severity": 0.45,
+      "detail": "写 endsAt 读墙钟、读到期读 gameNow(),一处判未过期一处判已过期"
+    },
+    "ISS-1057": {
+      "id": "ISS-1057",
+      "type": "issue",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:14+00:00",
+      "updated_at": "2026-10-22T19:36:14+00:00",
+      "touched_round": 343,
+      "title": "离线首领战照默认替玩家祭法宝",
+      "severity": 0.6,
+      "detail": "首领战走 afterWin,法宝分支默认 autoEquip=true;普通战早已改 false"
+    },
+    "CHG-593": {
+      "id": "CHG-593",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:14+00:00",
+      "updated_at": "2026-10-22T19:36:14+00:00",
+      "touched_round": 343,
+      "title": "artifactEvictedBy 报全部让位的",
+      "commit": "eae5187",
+      "detail": "返回 string[]，按钮与归来提示照实全念;认不出的 id 不进名单"
+    },
+    "CHG-594": {
+      "id": "CHG-594",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:14+00:00",
+      "updated_at": "2026-10-22T19:36:14+00:00",
+      "touched_round": 343,
+      "title": "事件余波与前期窗口统一读游戏时钟",
+      "commit": "afd81e3",
+      "detail": "五处 Date.now() 改 gameNow();dataTextAudit 增源码级判据"
+    },
+    "CHG-595": {
+      "id": "CHG-595",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:14+00:00",
+      "updated_at": "2026-10-22T19:36:14+00:00",
+      "touched_round": 343,
+      "title": "离线首领战显式传不自动祭炼",
+      "commit": "83d2624",
+      "detail": "afterWin 接受 autoEquipArtifact，首领战传 false;判据落调用点"
+    },
+    "TASK-493": {
+      "id": "TASK-493",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:14+00:00",
+      "updated_at": "2026-10-22T19:36:14+00:00",
+      "touched_round": 343,
+      "title": "法宝位让位名单与提示对齐",
+      "category": "ui-consistency"
+    },
+    "TASK-494": {
+      "id": "TASK-494",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:15+00:00",
+      "updated_at": "2026-10-22T19:36:15+00:00",
+      "touched_round": 343,
+      "title": "游戏时钟纪律源码级判据",
+      "category": "correctness"
+    },
+    "TASK-495": {
+      "id": "TASK-495",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T19:36:15+00:00",
+      "updated_at": "2026-10-22T19:36:15+00:00",
+      "touched_round": 343,
+      "title": "离线首领战不替玩家祭法宝",
+      "category": "correctness"
     }
   },
   "edges": [
@@ -39567,6 +39684,102 @@
       "to": "COMP-006",
       "type": "located_in",
       "created_at": "2026-10-22T17:09:05+00:00"
+    },
+    {
+      "from": "TASK-493",
+      "to": "ISS-1054",
+      "type": "addresses",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "TASK-494",
+      "to": "ISS-1055",
+      "type": "addresses",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "TASK-494",
+      "to": "ISS-1056",
+      "type": "addresses",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "TASK-495",
+      "to": "ISS-1057",
+      "type": "addresses",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "CHG-593",
+      "to": "ISS-1054",
+      "type": "resolves",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "CHG-594",
+      "to": "ISS-1055",
+      "type": "resolves",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "CHG-594",
+      "to": "ISS-1056",
+      "type": "resolves",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "CHG-595",
+      "to": "ISS-1057",
+      "type": "resolves",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "CHG-593",
+      "to": "TASK-493",
+      "type": "implements",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "CHG-594",
+      "to": "TASK-494",
+      "type": "implements",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "CHG-595",
+      "to": "TASK-495",
+      "type": "implements",
+      "created_at": "2026-10-22T19:36:28+00:00"
+    },
+    {
+      "from": "ISS-1054",
+      "to": "COMP-018",
+      "type": "located_in",
+      "created_at": "2026-10-22T19:36:47+00:00"
+    },
+    {
+      "from": "ISS-1055",
+      "to": "COMP-018",
+      "type": "located_in",
+      "created_at": "2026-10-22T19:36:47+00:00"
+    },
+    {
+      "from": "ISS-1055",
+      "to": "COMP-024",
+      "type": "located_in",
+      "created_at": "2026-10-22T19:36:47+00:00"
+    },
+    {
+      "from": "ISS-1056",
+      "to": "COMP-018",
+      "type": "located_in",
+      "created_at": "2026-10-22T19:36:47+00:00"
+    },
+    {
+      "from": "ISS-1057",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-22T19:36:47+00:00"
     }
   ]
 }
