@@ -18,6 +18,7 @@ import { personalityEffects } from './petPersonality'
 import { expFromSecs, stoneByTier } from './formulas'
 import { generateEquipment } from './equipGen'
 import { acquireArtifact, acquireEquipment, randomDropArtifact } from './loot'
+import { gameNow } from './enginePause'
 import { learnRandomGongfa } from './gongfaService'
 import { fortuneAffinity, rootElements } from './linggenAffinity'
 import { collect, track } from './progress'
@@ -216,7 +217,12 @@ function applyEffect(effect: EventEffect, tier: number): string | null {
     case 'buff': {
       const def = buffDef(effect.id)
       if (!def) return null
-      cultivation.addBuff(effect.id, Date.now())
+      /**
+       * 读游戏时钟 —— `enginePause` 的纪律是「可冻结的到期判定读 gameNow(),
+       * 不要直接读 Date.now()」。事件祝福同样按 endsAt 判到期,暂停中写墙钟
+       * 会让它在恢复后凭空多出一段(与 usePill 同一处修正)。
+       */
+      cultivation.addBuff(effect.id, gameNow())
       return def.kind === 'injury' ? `陷入「${def.name}」状态` : `获得「${def.name}」加持`
     }
     case 'lifespan':

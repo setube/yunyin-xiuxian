@@ -104,7 +104,8 @@ export function chooseEnlightenment(optionIndex: number): void {
   const opt = enlightenmentEvent.options[optionIndex]!
   const cult = useCultivationStore()
   const ui = useUiStore()
-  const now = Date.now()
+  // 悟道给的 buff 也按游戏时钟写:暂停中选下的加持不该在恢复后凭空多出一段
+  const now = gameNow()
 
   // 即时奖励(如灵机一动直接给悟道点)或挂 buff;buff 未注册时 addBuff 会静默……
   // 但那不再是"选项该有的样子"——守卫在这里兜住,让漏注册显式为错误而不是静默空转
@@ -146,7 +147,8 @@ export function startRetreat(): boolean {
   }
 
   const cult = useCultivationStore()
-  cult.addBuff('retreat', Date.now())
+  // 闭关是按时长判到期的状态:读游戏时钟,暂停中不会写进墙钟
+  cult.addBuff('retreat', gameNow())
   telemetry().record('retreat', 'modal', '开始闭关')
   return true
 }
@@ -386,8 +388,8 @@ export function chooseCaveOption(optionIndex: number): void {
   const resources = useResourcesStore()
   const cult = useCultivationStore()
 
-  // 应用奖励
-  const now = Date.now()
+  // 应用奖励 —— 巡游给的 buff 也按游戏时钟写,暂停中选下的加持不会恢复后凭空延长
+  const now = gameNow()
   if (opt.reward) {
     switch (opt.reward.type) {
       case 'exp':

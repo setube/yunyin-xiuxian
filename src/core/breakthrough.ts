@@ -260,7 +260,8 @@ export function attemptBreakthrough(): BreakthroughView | null {
       const refund = Math.min(0.8, modOf(mods, 'breakRefund'))
       player.loseExpPct(BT_FAIL_EXP_LOSS * (1 - refund))
     }
-    cultivation.addBuff('injury', Date.now())
+    // 可冻结的到期判定读游戏时钟(见 enginePause 头注释):暂停中写墙钟,恢复后会多出一段
+    cultivation.addBuff('injury', gameNow())
     track('breakthroughFails')
     playSfx('fail')
     view = {
