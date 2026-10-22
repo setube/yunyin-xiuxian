@@ -18,7 +18,9 @@
  * 第 7 段会因为层级低于前一段而被判为早该开放,直接与路线顺序矛盾。
  * 层级是路线的特征,不是解锁顺序。
  */
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { skeletonOf } from './mortalIdentity'
 import { createPinia, setActivePinia } from 'pinia'
 import { advanceRoute, canEnterNode, canEnterRegion, ensureMortalWorld, entryBlockReason, isNodeCleared, rerollMortalWorld } from './mortalWorldService'
 import { generateMortalWorld } from './mortalWorldGen'
@@ -32,6 +34,10 @@ function regionName(id: string): string {
 
 beforeEach(() => {
   setActivePinia(createPinia())
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 /** 从头走完整条路线,返回每一步的可达性读数 */
@@ -438,5 +444,101 @@ describe('路线可达性 · 锚点已可删除', () => {
         '\n这是骨架模板的既有局限(七种模板起点都在低位、首点不参与扰动),' +
         '\n不是锚点残留;要变需扩模板库,属生成器范畴'
     )
+  })
+})
+
+/**
+ * 本世之界的种子与跨世去重 —— 两条判据都由实测逼出来。
+ *
+ * 一 **同一秒内转世两次,拿到的是同一个世界**。种子从前直接取
+ *    `Date.now() % 1_000_003`,而墙钟秒位一天只有 86400 种取值:连按两次转世
+ *    (或转世后读档再转)时两次种子一模一样,生成器从同一颗种子出发,交出来的是
+ *    **同一方天地**。实测三次 reroll 的种子为 743775 → 949669 → 743775,首末两个
+ *    世界逐字段相同 —— 转世这个动作最该给的东西,偏偏在最容易连按的那条路径上没给。
+ *
+ * 二 **跨世历史没有接上**。四门验收(结构新颖/可行构筑/路线骨架/事件节奏)全都要
+ *    一个 history 去比,而 historyOf 只把**当前**世界喂进去 —— 转世后上一世那一方
+ *    立刻从判据里消失。只与自己去重等于没有去重:连转两次可能拿到只差一次
+ *    shuffle 的两世。
+ *
+ * 故障注入:种子退回 `return second` → 前两条红;
+ * historyOf 退回 `cur ? [cur.seed] : []` → 第三条红。
+ */
+describe('本世之界 · 同一秒内的两次生成不能是同一方天地', () => {
+  it('同一秒内连转两世,种子与骨架都不同', () => {
+    // 冻住墙钟:真实的 Date.now() 几乎不会让两次 reroll 落在同一秒,
+    // 而那条路径正是缺陷所在 —— 不冻就测不到
+    vi.useFakeTimers()
+    vi.setSystemTime(1_760_000_000_000)
+
+    const w1 = rerollMortalWorld()!
+    const w2 = rerollMortalWorld()!
+    expect(w1, '第一世应生成成功').not.toBeNull()
+    expect(w2, '第二世应生成成功').not.toBeNull()
+    expect(w2.seed, '同一秒内的两次转世不能拿同一个种子').not.toBe(w1.seed)
+    expect(skeletonOf(w2), '同一秒内的两次转世不能是同一方天地').not.toBe(skeletonOf(w1))
+  })
+
+  it('同秒三次生成,三颗种子两两不同', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_760_000_000_000)
+    const seeds = [rerollMortalWorld()!, rerollMortalWorld()!, rerollMortalWorld()!].map(w => w.seed)
+    expect(new Set(seeds).size, '三次生成三颗种子,不许撞').toBe(3)
+  })
+
+  it('同秒步进与验收门的候选链错开:步进取的不是 7919', () => {
+    // generateGatedMortal 的候选序列是 baseSeed + t * 7919,拿 7919 当同秒步进
+    // 只是把起点平移一格,仍落进同一条链 —— 实测同秒四回的受理种子全是 743775。
+    // 故这里钉住步进与候选链步长互质,平移后才真的落在链外。
+    const src = readFileSync(new URL('./mortalWorldService.ts', import.meta.url), 'utf8')
+    expect(src, '同秒步进必须与验收门的候选步长(7919)错开').toMatch(/SEED_STEP = 104729/)
+  })
+})
+
+describe('本世之界 · 跨世去重真的接上了历史', () => {
+  it('转世后换的一方天地,不能与上一世同一骨架', () => {
+    const w1 = ensureMortalWorld()!
+    const w2 = rerollMortalWorld()!
+    expect(w1, '第一世应生成成功').not.toBeNull()
+    expect(w2, '第二世应生成成功').not.toBeNull()
+    expect(skeletonOf(w2), '转世后换的一方天地,不能与上一世同一骨架').not.toBe(skeletonOf(w1))
+  })
+
+  it('连续三世,种子两两不同且第三世不回到第一世的骨架', () => {
+    const w1 = ensureMortalWorld()!
+    const w2 = rerollMortalWorld()!
+    const w3 = rerollMortalWorld()!
+    expect(new Set([w1.seed, w2.seed, w3.seed]).size, '三世三颗种子,前世的种子不会原样重现').toBe(3)
+    // 种子不同不等于世界不同(不同种子可能交出同一份结构),故再钉一层骨架
+    expect(skeletonOf(w3), '第三世不该回到第一世的骨架').not.toBe(skeletonOf(w1))
+  })
+
+  /**
+   * 跨世历史这条判据**必须读源码**。
+   *
+   * 行为判据抓不住它:history 多一份少一份,生成器照旧交一方过四门的天地出来
+   * (实测把 history 整个清空,本条与上面两条全绿)。它的作用是让四门验收拿得到
+   * 「上一世是什么」,而这只能从「history 的原料是哪来的」上看出来 ——
+   * 退回 `cur ? [cur] : []` 的那一刻,判据就得红。
+   */
+  it('history 的原料是历世账本,不是当前世界', () => {
+    const src = readFileSync(new URL('./mortalWorldService.ts', import.meta.url), 'utf8')
+    expect(src, '历史必须由历世账本喂给验收门,不能只与当前世界去重').toMatch(
+      /for \(const seed of ledger\.seeds\)/
+    )
+    expect(src, '不许退回 historyOf 只收当前世界的旧写法').not.toMatch(
+      /for \(const seed of (cur \? \[cur\.seed\] : \[\]|\[cur\])\)/
+    )
+  })
+
+  it('历史里的种子仍能原样重建那一世(账目对得上)', () => {
+    const w1 = ensureMortalWorld()!
+    rerollMortalWorld()
+    // 种子是重建一方天地的唯一凭据:证明账上记的种子真的能取回那一世,
+    // 而不是记了一个再也对不上的号
+    const rebuilt = generateMortalWorld(w1.seed)
+    expect(rebuilt.seed).toBe(w1.seed)
+    expect(rebuilt.chain.length).toBe(w1.chain.length)
+    expect(skeletonOf(rebuilt)).toBe(skeletonOf(w1))
   })
 })

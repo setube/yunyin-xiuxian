@@ -18,14 +18,78 @@
  *   都是内部概念,UI 只呈现视觉差异。
  */
 import type { MortalWorld } from './mortalWorldGen'
+import { generateMortalWorld } from './mortalWorldGen'
 import { generateGatedMortal } from './mortalGate'
 import { terrainOf, worldIdentity } from './mortalIdentity'
 import { REGIONS } from '@/data/regions'
 import { useAdventureStore } from '@/stores/adventure'
 
-/** 生成本世世界所用的历史(暂只与自身去重,跨世历史留待接入轮回时补) */
+/**
+ * 种子池的模数(质数)与同秒内的步进。
+ *
+ * 从前这里拿 `Date.now() % 1_000_003` 直接当种子:墙钟秒位一天只有 86400 种
+ * 取值,于是**同一秒内转世两次拿到的是同一个世界** —— 实测三次 reroll 的种子
+ * 为 743775 → 949669 → 743775,首末两方天地逐字段相同。转世最该给的东西
+ * (「这一世不一样」)偏偏在最容易连按的那条路径上没给。
+ *
+ * 种子现在由「墙钟秒位 + 同秒内第几回 × 步进」合成,连按几次都落在池内
+ * 不同的位置上。
+ *
+ * 步进取 104729 而不是验收门自己的 7919:`generateGatedMortal` 的候选序列是
+ * `baseSeed + t * 7919`,拿 7919 当步进只是把起点平移一格,**仍旧落进同一条
+ * 候选链**—— 实测同秒四回的受理种子全是 743775(平移后第 0、1、2、3 个候选
+ * 逐次错开一位,而受理的一直是同一个)。104729 与 7919 互质,起点平移之后
+ * 落在链外,同秒几回才真的各得一方天地。
+ */
+const SEED_POOL = 1_000_003
+const SEED_STEP = 104729
+
+/**
+ * 历世之界的历史 —— 跨世去重只留最近几世。
+ *
+ * 为什么跨世:凡界的四门验收(结构新颖 / 可行构筑 / 路线骨架 / 事件节奏)
+ * 全都要拿一个 history 去比,而从前 `historyOf` 只把**当前**世界喂进去 ——
+ * 转世后上一世的那一方天地立刻从判据里消失。转世的意义正是「换一方天地」,
+ * 只与自己去重等于没有去重:同一具皮囊连转两次,可能拿到只差一个 shuffle
+ * 的两世。
+ *
+ * 只留 `HISTORY_DEPTH` 世:history 越长,每一代的验收越难通过(候选被拒的
+ * 概率随最近邻距离单调上升),留满全部会把后面的转世逼向「无世界可交」。
+ * 最近几世正是玩家说得出的「又来了」的那几世,再往前他自己也记不清。
+ */
+const HISTORY_DEPTH = 3
+
+/** 已转过几世之界的种子记录 —— 只留种子,不把整份世界存进存档 */
+interface WorldLedger {
+  /** 历世用过的种子,末位是最近一世 */
+  seeds: number[]
+  /** 本世已生成过几回(同秒内连转的区分靠它) */
+  draws: number
+  /** 上一回的墙钟秒位 —— 跨秒即重置 draws */
+  lastSecond: number
+}
+
+const ledger: WorldLedger = { seeds: [], draws: 0, lastSecond: -1 }
+
+/** 取一个本进程内不重复的种子;同一秒内的连续调用各得一个 */
+function nextSeed(): number {
+  const second = Date.now() % SEED_POOL
+  ledger.draws = ledger.lastSecond === second ? ledger.draws + 1 : 0
+  ledger.lastSecond = second
+  return (second + ledger.draws * SEED_STEP) % SEED_POOL
+}
+
+/** 历世之界的历史(与最近几世去重) */
 function historyOf(cur: MortalWorld | null): MortalWorld[] {
-  return cur ? [cur] : []
+  const out: MortalWorld[] = []
+  // 最近一世排在末位(即玩家正在经历的那一方),判据读的是「与历史最近邻的距离」,
+  // 顺序不影响结果,只影响可读性
+  for (const seed of ledger.seeds) {
+    if (seed === cur?.seed) continue
+    out.push(generateMortalWorld(seed))
+    if (out.length >= HISTORY_DEPTH) break
+  }
+  return out
 }
 
 /**
@@ -37,8 +101,9 @@ function historyOf(cur: MortalWorld | null): MortalWorld[] {
 export function ensureMortalWorld(): MortalWorld | null {
   const adventure = useAdventureStore()
   if (adventure.mortalWorld) return adventure.mortalWorld
-  const got = generateGatedMortal(Date.now() % 1_000_003, [], 200, 8)
+  const got = generateGatedMortal(nextSeed(), historyOf(adventure.mortalWorld), 200, 8)
   if (!got) return null
+  ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
   adventure.setMortalWorld(got.report.world)
   return got.report.world
 }
@@ -47,7 +112,8 @@ export function ensureMortalWorld(): MortalWorld | null {
 export function rerollMortalWorld(): MortalWorld | null {
   const adventure = useAdventureStore()
   const prev = adventure.mortalWorld
-  const got = generateGatedMortal(Date.now() % 1_000_003, historyOf(prev), 200, 8)
+  const got = generateGatedMortal(nextSeed(), historyOf(prev), 200, 8)
+  if (got) ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
   adventure.setMortalWorld(got?.report.world ?? null)
   return got?.report.world ?? null
 }
