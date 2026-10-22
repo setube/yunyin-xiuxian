@@ -9,7 +9,7 @@ import { DECOMPOSE_DUST } from '@/data/constants'
 import { regionDef } from '@/data/regions'
 import { herbGradeOfMajor, HERB_GRADE_SHORT } from '@/data/herbGrades'
 import { qualityDef } from '@/data/qualities'
-import { mulN, sub, toNum } from '@/utils/gnum'
+import { gnZero, mulN, sub, toNum } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import { RandomService } from '@/utils/random'
 import {
@@ -696,9 +696,12 @@ describe('镇压复苏 · settle 级(72h 复生当拍不产石)', () => {
     // 复生:移出镇压表、since 清掉
     expect(player.suppressedRegions).not.toContain('qingyun')
     expect(player.suppressedSince['qingyun'], '复生后 since 应被删').toBeUndefined()
-    // 复生当拍不产石(active 已空 → 返回 null、一石不动)
+    // 复生当拍不产一石:镇压早在 72 小时前就到期,这一小时的租一分不该收
     expect(resources.spiritStone).toEqual(before)
-    expect(total).toBeNull()
+    expect(toNum(total?.stone ?? gnZero()), '越界那一拍没收着租').toBe(0)
+    expect(toNum(total?.expGain ?? gnZero()), '道韵也不该为已复聚的地界结算').toBe(0)
+    expect(total?.equipment ?? []).toHaveLength(0)
+    expect(total?.resources ?? []).toHaveLength(0)
   })
 
   it('未满 72h:仍镇压、且产出灵石(正对照:测试不是空转)', () => {
@@ -721,5 +724,66 @@ describe('镇压复苏 · settle 级(72h 复生当拍不产石)', () => {
     settleSuppressedRegions(3600, new RandomService(() => 0.1))
     expect(player.suppressedRegions).not.toContain('qingyun')
     expect(player.suppressedRegions).toContain('cangwu')
+  })
+
+  /**
+   * 离线整段跨越复聚线:前 72 小时照收,72 小时起回到历练地。
+   *
+   * 回归点:复聚从前排在收益之前、且与收益共用一个墙钟。离线 80 小时、洞府
+   * 满级(cap 72h)时,复聚在**开头**就被判真,镇压当场松开,本该拿到的 72 小时
+   * 镇压收益一分不剩 —— 归来卷轴上连「镇压诸域仍有余韵」那一行都不出现。
+   *
+   * 现在收益按 dt 结、复聚按 worldAt 判,且收益逐区只结到复聚那一刻为止。
+   */
+  it('离线 80 小时跨过复聚线:仍结满 72 小时的租,镇压随之松开', () => {
+    const T0 = Date.now() - 80 * HOUR
+    const player = usePlayerStore()
+    player.major = 5
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: T0 }
+
+    // dt = 72h(洞府满级的离线上限),worldAt = 真实的此刻(80 小时后)
+    const total = settleSuppressedRegions(72 * 3600, new RandomService(() => 0.1), T0 + 80 * HOUR)
+    expect(toNum(total?.stone ?? gnZero()), '72 小时的租要一分不少').toBeGreaterThan(0)
+    expect(player.suppressedRegions, '跨过复聚线就该松开').not.toContain('qingyun')
+  })
+
+  it('离线整段未跨复聚线:照旧全收,镇压不动', () => {
+    const T0 = Date.now() - 40 * HOUR
+    const player = usePlayerStore()
+    player.major = 5
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: T0 }
+    const total = settleSuppressedRegions(40 * 3600, new RandomService(() => 0.1), T0 + 40 * HOUR)
+    expect(toNum(total?.stone ?? gnZero())).toBeGreaterThan(0)
+    expect(player.suppressedRegions).toContain('qingyun')
+  })
+
+  it('一段正好跨在复聚线上:只结到复聚那一刻,不收越界的那一截', () => {
+    // 镇压起于 T0,第 72 小时复聚。本段从第 71 小时跑到第 74 小时(3 小时),
+    // 于是只该收 1 小时(71→72),后 2 小时已回到历练地。
+    const T0 = Date.now() - 74 * HOUR
+    const player = usePlayerStore()
+    player.major = 5
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: T0 }
+    const full = settleSuppressedRegions(3 * 3600, new RandomService(() => 0.1), T0 + 74 * HOUR)
+    const fullStone = toNum(full?.stone ?? gnZero())
+
+    // 正对照:同样 3 小时但整段都在镇压期内(起于第 10 小时)
+    setActivePinia(createPinia())
+    const T1 = Date.now() - 13 * HOUR
+    const player2 = usePlayerStore()
+    player2.major = 5
+    player2.suppressedRegions = ['qingyun']
+    player2.suppressedSince = { qingyun: T1 }
+    const whole = settleSuppressedRegions(3 * 3600, new RandomService(() => 0.1), T1 + 13 * HOUR)
+    const wholeStone = toNum(whole?.stone ?? gnZero())
+
+    // 1 小时的租约为 3 小时的三分之一;越界的那两小时一分不多收
+    expect(fullStone, '跨线那一段只结到复聚时刻').toBeGreaterThan(0)
+    expect(fullStone, '不收越界的那一截').toBeLessThan(wholeStone)
+    expect(fullStone).toBeCloseTo(wholeStone / 3, -3)
+    expect(player.suppressedRegions, '跨线就该松开').not.toContain('qingyun')
   })
 })

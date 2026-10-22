@@ -18,7 +18,7 @@ import { gnZero, add, isZero, mulN, gn } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import type { GNum, QualityId, RegionRecall } from '@/types'
 import { equipmentTemplate } from '@/data/equipment'
-import { deriveProsperity, prosperityYieldMult } from './worldMemory'
+import { deriveProsperity, prosperityYieldMult, regionReviveClock, REVIVE_AFTER_HOURS } from './worldMemory'
 import { settleRegionRevivals } from './regionRevival'
 import { AGE_YEARS_PER_HOUR } from '@/data/constants'
 
@@ -278,11 +278,31 @@ export interface SuppressedYield {
   revived: string[]
 }
 
-export function settleSuppressedRegions(dt: number, service: RandomService = rng): SuppressedYield | null {
+/**
+ * @param dt 本段时长(秒)
+ * @param service 可注入随机源
+ * @param worldAt 本段结束时**世界**推进到的时刻(毫秒);默认此刻。
+ *
+ * 两个时刻必须分开,因为它们答的是两个问题:
+ *   - **收益**收多长:由 `dt` 决定(离线受洞府离线上限约束,见 offline.ts);
+ *   - **妖气复聚**判在哪儿:由 `worldAt` 决定 —— 世界不会因为洞府等级低就
+ *     停在半路,玩家离开了 80 小时,第 72 小时该复聚的照旧复聚。
+ *
+ * 从前这里只有一个墙钟 `now`,而它在离线路径上既当收益终点又当复聚终点:
+ * 离线 75 小时、洞府满级(cap 72h)时,复聚在**开头**就被判真,镇压当场松开,
+ * 于是本该拿到的 72 小时镇压收益一分不剩 —— 归来卷轴上连「镇压诸域仍有
+ * 余韵」那一行都不出现。现在收益先按 `dt` 结清,复聚再按 `worldAt` 收尾。
+ *
+ * 在线路径两个时刻相同(`gameNow()`),行为与从前完全一致。
+ */
+export function settleSuppressedRegions(
+  dt: number,
+  service: RandomService = rng,
+  worldAt: number = Date.now()
+): SuppressedYield | null {
   const player = usePlayerStore()
   const resources = useResourcesStore()
 
-  const hours = dt / 3600
   const total: SuppressedYield = {
     stone: gnZero(),
     expGain: gnZero(),
@@ -291,26 +311,43 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
     resources: [],
     revived: []
   }
-  const now = Date.now()
+ const now = Date.now()
 
   /**
-   * 妖气复聚(已靖旧主归来)先结算 —— 已靖却从不镇压的地界一份镇压都没有,
-   * 必须排在「没有镇压直接返回」之前,否则那条路永远走不到。
+   * 本段的起点 —— 复聚边界要拿它算「这一段里镇压还生效多久」。
+   * 离线路径显式传的是终点,起点由终点倒推(见 offline.ts 的注释)。
    */
-  total.revived = settleRegionRevivals(now)
-
-  /**
-   * 够钟的镇压在上面 settleRegionRevivals 里已经松开(复聚判定与播报的单源),
-   * 这里只剩「本 tick 还在收租的地界」。同一位写两遍时逐条结算会产出两份收益
-   * (读档 sanitize 已去重,此处兜住内存里的重复)。
-   */
+  const from = worldAt - dt * 1000
   const active = [...new Set(player.suppressedRegions)]
-  // 既没有镇压收益、也没有复聚可说,才是「这一段时间什么也没发生」
-  if (active.length === 0) return total.revived.length > 0 ? total : null
+  // 一份镇压都没有时仍要跑复聚:已靖却从不镇压的地界也够钟(regionRevival 的接线)。
+  // 两样都没有,才是「这一段时间什么也没发生」—— 返回 null,让调用方不必入账。
+  if (active.length === 0) {
+    total.revived = settleRegionRevivals(worldAt)
+    return total.revived.length > 0 ? total : null
+  }
+
+  /**
+   * 收益只结到**复聚那一刻**为止。
+   *
+   * 在线每秒一 tick,镇压很少正好在这一秒里到期;但离线整段动辄几十小时,
+   * 而镇压 72 小时就复聚 —— 若按整段 `dt` 结,离线 80 小时会连最后 8 小时
+   * (早已回到历练地的那段)一起收租。这里逐片算它在本段里还剩多久,
+   * 越界的那一截不计。
+   */
+  const heldSecOf = (regionId: string): number => {
+    const clock = regionReviveClock(regionId)
+    if (!(clock > 0)) return dt
+    const remain = (clock + REVIVE_AFTER_HOURS * 3600_000 - from) / 1000
+    return Math.max(0, Math.min(dt, remain))
+  }
 
   // ---- 镇守道韵:同源挂机曲线(cultPerSec × dt),每镇压一区 +8%,封顶 +40% ----
-  const expGain = mulN(gn(player.cultPerSec), suppressionExpRate(active.length) * hours)
-  if (!isZero(expGain)) {
+  // 逐区按「本段里它还生效多久」结:一处先复聚,就少一处的道韵,不按整段 dt 一律结满
+  for (const regionId of active) {
+    const heldSec = heldSecOf(regionId)
+    if (heldSec <= 0) continue
+    const expGain = mulN(gn(player.cultPerSec), suppressionExpRate(1) * (heldSec / 3600))
+    if (isZero(expGain)) continue
     player.gainExp(expGain)
     total.expGain = add(total.expGain, expGain)
   }
@@ -318,6 +355,10 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
   for (const regionId of active) {
     const region = regionDef(regionId)
     if (!region) continue
+    // 这一片在本段里还生效多久(越界的那一截不收租,见 heldSecOf)
+    const heldSec = heldSecOf(regionId)
+    if (heldSec <= 0) continue
+    const hours = heldSec / 3600
 
     // Phase 30.9:长期安稳 → 灵脉渐复(收益 99%);繁盛 → 商旅(100%)
     const recall = deriveProsperity({
@@ -398,6 +439,15 @@ export function settleSuppressedRegions(dt: number, service: RandomService = rng
       total.recycledDust += res.dust
     }
   }
+
+  /**
+   * 收益结清之后才收尾妖气复聚 —— 顺序就是这条修复本身。
+   *
+   * 复聚排在收益之前(从前的形状)时,离线越界的那一 tick 会在**开头**把镇压
+   * 松开,后面整段收益跟着归零。现在先按 `dt` 把这一段的租收完,再按
+   * `worldAt` 让该复聚的复聚:前 72 小时照收,72 小时起回到历练地。
+   */
+  total.revived = settleRegionRevivals(worldAt)
 
   return total
 }

@@ -191,7 +191,14 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   // ---- 镇压区域被动收益(豁免离线效率折扣,是统治该区域的补偿;但仍受洞府离线上限约束) ----
   // 之前误传完整 dtSec:镇压收益绕过 mansion 离线封顶,洞府离线等级对"镇压力"玩家几乎失效。
   // 折扣豁免只豁免 0.9 效率,不平白豁免洞府离线上限本身
-  const suppressYield = settleSuppressedRegions(capSec)
+  /**
+   * 收益按 capSec 结(洞府离线上限),妖气复聚按**真实的此刻**判 —— 两个时刻
+   * 分开传。离线 75 小时、洞府满级(cap 72h)时,镇压在第 72 小时复聚:复聚若排在
+   * 收益之前并读真实墙钟,它会在**开头**就松开,72 小时的租一分不剩
+   * (归来卷轴上连「镇压诸域仍有余韵」那一行都不出现)。现在收益先结清,
+   * 复聚再收尾 —— 前 72 小时照收,之后回到历练地。
+   */
+  const suppressYield = settleSuppressedRegions(capSec, rng, nowMs)
   if (suppressYield && suppressYield.revived.length > 0) {
     /**
      * 妖气复聚要写进**归来卷轴**的账目,不能只靠一条提示条。
