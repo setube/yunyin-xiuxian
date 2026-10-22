@@ -74,7 +74,12 @@ function walk(dir: string, out: string[] = []): string[] {
  */
 function literalIconNames(text: string): string[] {
   const names: string[] = []
-  for (const m of text.matchAll(/\bicon:\s*'([a-z0-9-]+)'/g)) names.push(m[1]!)
+  /**
+   * 引号三种都要认:单引号、双引号、反引号。
+   * 只写单引号时,`icon: "shield-ok"` 与 `icon: \`shield-ok\`` 两种写法整段漏扫 ——
+   * 判据嘴上说「每一种写法都要认」,实际只认一种,那种写法上的死键照样静默掉成四角星。
+   */
+  for (const m of text.matchAll(/\bicon:\s*['"`]([a-z0-9-]+)['"`]/g)) names.push(m[1]!)
   for (const m of text.matchAll(/<GameIcon\b[^>]*?:name="([^"]*)"/gs))
     for (const lit of m[1]!.matchAll(/'([a-z0-9-]+)'/g)) names.push(lit[1]!)
   for (const m of text.matchAll(/<GameIcon\b[^>]*?\bname="([a-z0-9-]+)"/g)) names.push(m[1]!)
