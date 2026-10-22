@@ -236,7 +236,7 @@ export const HERITAGE: HeritageRow[] = [
     name: '区域镇压与宿敌',
     mode: 'partial',
     detail:
-      '镇压收益与资格是「我拥有多少」:旧世压下的远境若跨世,新世炼气仍按旧阶位派发高阶装备/灵石,数值当场爆炸(玩家实报)。故 rebirth() 清空 suppressedRegions/suppressedSince/suppressQualified —— 妖气复聚、回到历练地;sanitize 还兜「修复前已转世的老档」同款(清掉 minRealm>当前境界的残留)。regionStats 战绩与 nemeses 宿敌仍随神魂不灭(「世界记得你」的叙事与石碑不丢)',
+      '镇压收益与资格是「我拥有多少」:旧世压下的远境若跨世,新世炼气仍按旧阶位派发高阶装备/灵石,数值当场爆炸(玩家实报)。故 rebirth() 清空 suppressedRegions/suppressedSince/suppressQualified —— 妖气复聚、回到历练地;sanitize 按 suppressLife(世号)兜「上一世留下的」同款。世号是本体判据,不再拿境界当代理:进入某地只受解锁链与本世路线管,不受 minRealm 管,按境界清会把「本世真打下来的高境副本」一并误收。regionStats 战绩与 nemeses 宿敌仍随神魂不灭(「世界记得你」的叙事与石碑不丢)',
     kind: 'state',
     power: 'none',
     compressesGrowth: false

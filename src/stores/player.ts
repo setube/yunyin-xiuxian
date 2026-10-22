@@ -137,6 +137,20 @@ export const usePlayerStore = defineStore(
     const suppressQualified = ref<string[]>([])
     /** 镇压时间戳:区域 → 镇压开始的时刻(供复苏判定) */
     const suppressedSince = ref<Record<string, number>>({})
+    /**
+     * 这一套镇压权益属于**第几世**(reincarnation.count)。
+     *
+     * 镇压是「我这一世打下来的地盘」,不是「我是谁」:转世该连地盘一起放下。
+     * 从前判「是不是这一世的」用的是境界代理 —— `minRealm > 当前境界` 就当成
+     * 旧世残留清掉,于是**本世真打下来的高境副本也会在下次读档时被没收**
+     * (进入只受解锁链管,不受 minRealm 管,所以「境界比副本低却已镇压」是能真的
+     * 玩出来的)。改记世号后判据是本体:世号与当前世不符才是残留。
+     *
+     * 老档没有这一栏,读档时按旧境界兜底清一次并把世号补盖成当前世(见 sanitize)。
+     *
+     * 默认 −1 是「老档哨兵」:真的第 0 世写的是 0,与「没有这一栏」分得开。
+     */
+    const suppressLife = ref(-1)
 
     // Phase 31 师承:凡界修行者的额外成长思想(跨世保留)
     const mentor = ref<import('@/data/mentors').MentorId | null>(null)
@@ -741,6 +755,8 @@ export const usePlayerStore = defineStore(
       suppressedRegions.value = []
       suppressedSince.value = {}
       suppressQualified.value = []
+      // 世号同步盖上:新世的地盘账从此刻起算(不等下一次 sanitize)
+      suppressLife.value = reincarnation.value.count
       // 外物随皮囊散去:灵兽、洞府建筑、灵脉投资都是「我拥有多少」,不是「我是谁」
       petId.value = null
       dongfu.resetForRebirth()
@@ -948,18 +964,37 @@ export const usePlayerStore = defineStore(
        */
       if (!Array.isArray(suppressedRegions.value)) suppressedRegions.value = []
       if (!Array.isArray(suppressQualified.value)) suppressQualified.value = []
-      // 镇压权益是「这一世」的东西:凡这一世根本打不进那一界(minRealm>当前境界)的
-      // 远境,要么是修复上线前已转世的老档残留、要么是被改档写进来的 —— 一律妖气复聚、
-      // 回到它本来该在的地方。判据保守:只清「境界之下不可能征服」的,本世真实的镇压
-      // (minRealm≤境界,转世前也这么压过)原样保留。suppressedSince 同步清,免得一旧一新。
       if (typeof suppressedSince.value !== 'object' || suppressedSince.value === null) suppressedSince.value = {}
-      const suppressReachable = (id: string): boolean => (regionDef(id)?.minRealm ?? Infinity) <= major.value
       /**
        * 镇压表按地界去重:结算逐条遍历它,同一位写两遍会让同一片地界
        * 每拍产出两份灵石/物产/装备(离线一并放大);资格表同理会把「已镇压」判重。
        */
-      suppressedRegions.value = [...new Set(asStringArray(suppressedRegions.value))].filter(suppressReachable)
-      suppressQualified.value = [...new Set(asStringArray(suppressQualified.value))].filter(suppressReachable)
+      suppressedRegions.value = [...new Set(asStringArray(suppressedRegions.value))]
+      suppressQualified.value = [...new Set(asStringArray(suppressQualified.value))]
+      /**
+       * 镇压权益是「这一世」的东西 —— 判据是**世号本体**(suppressLife),不是境界。
+       *
+       * 从前这里拿境界当代理(`minRealm > 当前境界` 即当成旧世残留清掉),它有个
+       * 真实可达的反例:进入某地只受解锁链与本世路线管,**不受 minRealm 管** ——
+       * 于是在本世境界还低于副本标称时把那里打下来并镇压(解锁链允许),下一次
+       * 读档就会被当成残留**当场没收**。世号记下来后判据变成本体:与当前世不符的
+       * 才是残留。
+       *
+       * 老档(上线前没有这一栏,值是哨兵 −1)仍按旧境界代理保守清一次 —— 那批档里
+       * 分不出「旧世残留」与「本世真打下来的」,而高境副本的镇压收益正是数值爆炸的
+       * 源头,宁可少留。清完立刻补盖世号,此后一律走本体判据。suppressedSince 同步清,
+       * 免得一旧一新。
+       */
+      if (!Number.isFinite(suppressLife.value) || suppressLife.value < 0) {
+        const suppressReachable = (id: string): boolean => (regionDef(id)?.minRealm ?? Infinity) <= major.value
+        suppressedRegions.value = suppressedRegions.value.filter(suppressReachable)
+        suppressQualified.value = suppressQualified.value.filter(suppressReachable)
+      } else if (suppressLife.value !== count) {
+        // 上一世(或更早)留下的镇压:妖气复聚,回到它本来该在的地方
+        suppressedRegions.value = []
+        suppressQualified.value = []
+      }
+      suppressLife.value = count
       /**
        * 镇压起钟只认「认得的地界 + 正数时刻」:坏档里的 NaN 会被
        * `now - NaN > 72h` 判成假,那片地界从此**永不复苏**(且界面写着
@@ -1185,6 +1220,8 @@ export const usePlayerStore = defineStore(
 
     function suppressRegion(regionId: string): void {
       if (!regionDef(regionId)) return
+      // 落笔即盖世号:此后「这份镇压属于第几世」是本体的记号,不再靠境界反推
+      suppressLife.value = reincarnation.value.count
       if (!suppressedRegions.value.includes(regionId)) {
         suppressedRegions.value = [...suppressedRegions.value, regionId]
         suppressedSince.value = { ...suppressedSince.value, [regionId]: Date.now() }
@@ -1194,6 +1231,7 @@ export const usePlayerStore = defineStore(
     /** 记下镇压资格(幂等) —— 资格一旦取得便不再失,故与收益开关分开存 */
     function markSuppressQualified(regionId: string): void {
       if (!regionDef(regionId)) return
+      suppressLife.value = reincarnation.value.count
       if (!suppressQualified.value.includes(regionId)) {
         suppressQualified.value = [...suppressQualified.value, regionId]
       }
@@ -1393,6 +1431,7 @@ export const usePlayerStore = defineStore(
       suppressedRegions,
       suppressQualified,
       suppressedSince,
+      suppressLife,
       nemeses,
       regionWins,
       mentor,

@@ -265,6 +265,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     secretRealm: ['secretRealm'],
     sub: ['realm'],
     suppressQualified: ['suppress'],
+    suppressLife: ['suppress'],
     suppressedRegions: ['suppress'],
     suppressedSince: ['suppress'],
     titleId: ['title'],
