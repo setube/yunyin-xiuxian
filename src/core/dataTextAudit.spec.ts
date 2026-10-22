@@ -18,7 +18,7 @@
 import { describe, expect, it } from 'vitest'
 import { MUTATORS } from '@/data/mutators'
 import { SECRET_RULES } from '@/data/secretRealms'
-import { BUFFS } from '@/data/buffs'
+import { BUFFS, buffDef } from '@/data/buffs'
 import { PACTS } from '@/data/pacts'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -38,6 +38,8 @@ import { MUTATION_FIGHTS } from '@/core/expedition'
 import { PROFILE_MIN_MARKS } from '@/core/identity'
 import { AFFIXES } from '@/data/affixes'
 import { STAT_NAMES } from '@/data/statNames'
+import { classicalDuration } from '@/data/timeUnits'
+import { MARKET_CONSIGN_SECONDS, MARKET_REFRESH_SECONDS } from '@/data/market'
 
 /** 文案里的百分比是否能在同一条目的数值里找到对应 */
 function percentBacked(percent: number, nums: number[]): boolean {
@@ -214,6 +216,47 @@ describe('文案数值对账 · 视图不手抄数字', () => {
     expect(sell, '批量售出的门槛与按钮文案同源').toContain('MARKET_MAT_COUNT')
     const host = src('../views/MarketView.vue')
     expect(host, '宿主只切签,不再自己拼售出价').not.toMatch(/consignPrice\(|herbSellBatch\(|materialSellPrice\(|pillSellPrice\(/)
+  })
+
+  /**
+   * 工期文案与秒数常量对账 —— 这一类此前没人守,实测撞上两处失真:
+   * 坊市货架周期 7200s(一个时辰)而文案写「两时辰」(4 小时);寄卖 2400s
+   * (两刻有余 / 40 分钟)而文案写「一炷香」(30 分钟);闭关 buff 300s(5 分钟)
+   * 也写「一炷香」。「改工期忘改文案」在其余地方早有判据(timeUnits 表 + 丹方),
+   * 唯独这三处手打的古语漏在外面。
+   *
+   * 判据 = 现算(读常量) + 旧字面量不许回来。故障注入:把任一处的 `classicalDuration(...)`
+   * 换回手打古语,或把常量改掉而文案不动,本条立刻红。
+   */
+  it('工期文案从秒数常量现算,不手打古语时辰', () => {
+    // 判据用**具体错字面量**而非宽泛的古语正则:模板里「这一刻没有…」这类正常中文
+    // 含「刻」,泛正则会误伤;这里钉的是实测写错过的那几个词。
+    const shelf = src('../components/market/MarketShelfSection.vue')
+    expect(shelf, '货架换新工期应读 MARKET_REFRESH_SECONDS').toContain('MARKET_REFRESH_SECONDS')
+    expect(shelf, '货架工期应现算古语对照').toContain('classicalDuration(MARKET_REFRESH_SECONDS)')
+    expect(shelf, '货架换新周期是 7200s(一个时辰),不许再写「两时辰」').not.toContain('两时辰')
+
+    const sell = src('../components/market/MarketSellSection.vue')
+    expect(sell, '寄卖工期应读 MARKET_CONSIGN_SECONDS').toContain('MARKET_CONSIGN_SECONDS')
+    expect(sell, '寄卖工期应现算古语对照').toContain('classicalDuration(MARKET_CONSIGN_SECONDS)')
+    expect(sell, '寄卖是 2400s(40 分钟),不许再写「一炷香」(30 分钟)').not.toContain('一炷香')
+
+    const retreat = src('../components/cultivation/RetreatCard.vue')
+    expect(retreat, '闭关时长应现算古语对照').toContain('classicalDuration(')
+    expect(retreat, '闭关是 300s(5 分钟),不许再写「一炷香」(30 分钟)').not.toContain('一炷香')
+
+    // 现算的落点必须真是那几个常量:「一个时辰(2 小时)」/「两刻有余(40 分钟)」/「将近一刻(5 分钟)」
+    expect(classicalDuration(MARKET_REFRESH_SECONDS)).toBe('一个时辰(2 小时)')
+    expect(classicalDuration(MARKET_CONSIGN_SECONDS)).toBe('两刻有余(40 分钟)')
+    expect(classicalDuration(buffDef('retreat')!.durationSec)).toBe('将近一刻(5 分钟)')
+  })
+
+  it('发布说明里的寄卖工期与 MARKET_CONSIGN_SECONDS 同向', () => {
+    // 历史发布说明曾经写「约一炷香售出」,而实到 40 分钟 —— 玩家读到的与等到的对不上。
+    // 这条只断言措辞已改对:古语短语可被 timeUnits 的同一把尺折回 2400s 附近。
+    const notes = src('../ui/releaseNotes.ts')
+    expect(notes, '寄卖工期不许再写「一炷香」').not.toMatch(/寄卖[\s\S]{0,40}一炷香/)
+    expect(notes, '寄卖工期该写「两刻有余(40 分钟)」').toContain('两刻有余')
   })
 
   it('坊市悬赏板的可交判据与页签圆点读同一份订单投影', () => {

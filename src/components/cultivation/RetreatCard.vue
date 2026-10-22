@@ -14,7 +14,7 @@
         </span>
       </div>
       <p class="mt-0.5 text-[10px] text-ink-faint">
-        静坐一炷香({{ retreatMinutes }} 分钟),修炼速度 +{{ retreatPct }}%;闭关期间无法外出历练。
+        静坐{{ retreatSpan }},修炼速度 +{{ retreatPct }}%;闭关期间无法外出历练。
       </p>
       <!-- 闭关中:倒计时旁边补一枚「已多得」的活数 —— 与预览行同一份每多得速率,一眼看见时间没有白熬 -->
       <p v-if="retreating && retreatSoFarGain" class="mt-1 text-[10px] text-jade">{{ retreatSoFarGain }}</p>
@@ -32,6 +32,7 @@
   import { startRetreat, isRetreating, getRetreatRemainingSec } from '@/core/earlyGameService'
   import { retreatGainText, retreatGainedText } from '@/core/progress'
   import { buffDef } from '@/data/buffs'
+  import { classicalDuration } from '@/data/timeUnits'
   import { formatCountdown } from '@/utils/format'
   import { useNow } from '@/composables/useNow'
 
@@ -49,6 +50,12 @@
   const retreatDef = buffDef('retreat')
   const retreatMinutes = Math.round((retreatDef?.durationSec ?? 0) / 60)
   const retreatPct = Math.round((retreatDef?.mods.cultivationSpeed ?? 0) * 100)
+  /**
+   * 静坐时长的古今对照 —— 从 buff 本体现算,不再手打「一炷香」。
+   * 闭关实测 300s(5 分钟),而「一炷香」是 30 分钟:`classicalDuration(300)` 给
+   * 「将近一刻(5 分钟)」,既守数据又仍给玩家一个现代读数。
+   */
+  const retreatSpan = classicalDuration(retreatDef?.durationSec ?? 0)
   /** 闭关「约多得」修为预览 —— 由 progress.retreatGainText 与 buff 本体同源算出;境界涨了跟着重算 */
   const retreatGain = computed(() => retreatGainText())
   /** 闭关中的「已多得」活数 —— 已走时长由 retreatRemaining 反推,速率与预览同一份 */

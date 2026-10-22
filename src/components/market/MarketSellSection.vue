@@ -4,8 +4,10 @@
     <!-- 寄卖装备 -->
     <div>
       <SectionTitle title="装备寄卖" :hint="consignHint" />
+      <!-- 工期从 MARKET_CONSIGN_SECONDS 现算(2400s → 「两刻有余(40 分钟)」),
+           不手打「一炷香」—— 那个说法把 40 分钟说成了 30 分钟 -->
       <p class="mb-2 text-[10px] text-ink-faint">
-        离包即定,约一炷香售出,灵石入账;离线照走,不可撤回。价比坊市购入同档更廉,唯图个落袋为安。
+        离包即定,约{{ consignSpan }}售出,灵石入账;离线照走,不可撤回。价比坊市购入同档更廉,唯图个落袋为安。
       </p>
       <div class="mb-2 grid grid-cols-2 gap-2">
         <div v-for="s in consignSlotsArr" :key="s" class="card-ink flex items-center justify-between p-2.5">
@@ -80,7 +82,12 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import type { GNum } from '@/types'
-  import { MARKET_CONSIGN_RENDER_MAX, MARKET_CONSIGN_SLOTS, MARKET_MAT_COUNT } from '@/data/market'
+  import {
+    MARKET_CONSIGN_RENDER_MAX,
+    MARKET_CONSIGN_SECONDS,
+    MARKET_CONSIGN_SLOTS,
+    MARKET_MAT_COUNT
+  } from '@/data/market'
   import { useMarketStore } from '@/stores/market'
   import { useResourcesStore } from '@/stores/resources'
   import { useInventoryStore } from '@/stores/inventory'
@@ -93,6 +100,7 @@
   import { qualityDef } from '@/data/qualities'
   import { consignPrice, herbSellBatch, materialSellPrice, pillSellPrice } from '@/core/marketService'
   import { formatCountdown, formatGN } from '@/utils/format'
+  import { classicalDuration } from '@/data/timeUnits'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 
@@ -105,6 +113,8 @@
   const now = useWallNow()
 
   const consignSlots = MARKET_CONSIGN_SLOTS
+  /** 寄卖工期短语 —— 从 `MARKET_CONSIGN_SECONDS` 现算,不手打古语(2400s → 两刻有余(40 分钟)) */
+  const consignSpan = classicalDuration(MARKET_CONSIGN_SECONDS)
   /**
    * 铺格子按「上限与实际条数取大」,但**封顶**在 MARKET_CONSIGN_RENDER_MAX:
    * 坏档可能塞进成千上万条寄卖,全铺出来会把这一页卡死。多出来的并成一行

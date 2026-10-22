@@ -4,12 +4,14 @@
   <section ref="buySection">
     <SectionTitle title="货架" :hint="`${cards.length} 格`" />
     <!-- 深链进来却碰不上可买的草:先说实话,别让「续草」落成一架看不懂的货 -->
+    <!-- 换新工期从 MARKET_REFRESH_SECONDS 现算,不手打「两时辰」——
+         那个说法实测与 7200s(一个时辰)对不上(见 core/dataTextAudit 的工期判据) -->
     <p
       v-if="focusHerbState"
       class="mt-2 rounded-md border border-gold-ink/30 bg-gold-ink/10 px-3 py-2 text-[10px] leading-relaxed text-gold-ink"
       data-focus-herb-missing
     >
-      {{ focusHerbState === 'soldOut' ? '这一品灵草已售罄,货郎两时辰后换新 —— 也可先去历练采些。' : '架上这一刻没有这一品灵草,货郎两时辰后换新 —— 也可先去历练采些。' }}
+      {{ focusHerbState === 'soldOut' ? `这一品灵草已售罄,货郎${refreshSpan}后换新 —— 也可先去历练采些。` : `架上这一刻没有这一品灵草,货郎${refreshSpan}后换新 —— 也可先去历练采些。` }}
     </p>
     <div class="mt-2 grid grid-cols-2 gap-2">
       <div
@@ -48,7 +50,7 @@
       </div>
     </div>
     <p class="mt-2 text-[10px] leading-relaxed text-ink-faint">
-      满架售罄、或隔一段时辰,货郎自会换上别的东西;离线亦照此工期走。
+      满架售罄、或{{ refreshSpan }}一换,货郎自会换上别的东西;离线亦照此工期走。
     </p>
   </section>
 </template>
@@ -57,7 +59,7 @@
   import { computed, nextTick, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import type { GNum } from '@/types'
-  import type { MarketSlot } from '@/data/market'
+  import { MARKET_REFRESH_SECONDS, type MarketSlot } from '@/data/market'
   import { useMarketStore } from '@/stores/market'
   import { useResourcesStore } from '@/stores/resources'
   import { useInventoryStore } from '@/stores/inventory'
@@ -70,6 +72,7 @@
   import { focusHerbSlot, marketEquipInstance } from '@/core/marketService'
   import { cmp, gnZero, subClamp } from '@/utils/gnum'
   import { formatGN } from '@/utils/format'
+  import { classicalDuration } from '@/data/timeUnits'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 
@@ -117,6 +120,11 @@
   const focusCard = ref<number | null>(null)
   /** 深链要续草却买不到:null=不必说;none=这架没进这品草;soldOut=有但卖光了 */
   const focusHerbState = ref<'none' | 'soldOut' | null>(null)
+  /**
+   * 换新工期短语 —— 从 `MARKET_REFRESH_SECONDS` 现算(如 7200s → 「一个时辰(2 小时)」),
+   * 不再在模板里手打「两时辰」。周期一改,这句话跟着变。
+   */
+  const refreshSpan = classicalDuration(MARKET_REFRESH_SECONDS)
   /** 上一次把落点算给哪一架货(stockedAt);换货后才需要重新滚动 */
   let focusedStockAt: number | null = null
   const buySection = ref<HTMLElement | null>(null)
