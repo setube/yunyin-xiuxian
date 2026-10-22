@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 337,
+  "round": 339,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T14:36:15+00:00",
+  "updated_at": "2026-10-22T15:16:24+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 276,
+      "touched_round": 338,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -10529,7 +10529,7 @@
       "version": 1,
       "created_at": "2026-09-15T10:28:25+00:00",
       "updated_at": "2026-09-15T10:28:25+00:00",
-      "touched_round": 185,
+      "touched_round": 338,
       "summary": "状态(buff/负面状态)系统:data/buffs 定义 + cultivation store buffs 生命周期(施加/叠加/过期修剪) + BuffDialog/状态条展示",
       "path": "src/stores/cultivation.ts"
     },
@@ -11956,7 +11956,7 @@
       "version": 1,
       "created_at": "2026-09-16T01:33:21+00:00",
       "updated_at": "2026-09-16T01:33:21+00:00",
-      "touched_round": 260,
+      "touched_round": 338,
       "summary": "src/core/pillService.ts + src/core/breakthrough.ts + src/core/save.ts(炼丹/突破/存档三条主干)"
     },
     "CHG-239": {
@@ -26595,6 +26595,94 @@
       "title": "全量 bun run test:report 3585 过 0 败,9 桶全 PASS;bun run check 与 bun run build 均通过",
       "confidence": 0.99,
       "source": "test:test-report"
+    },
+    "ISS-1048": {
+      "id": "ISS-1048",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T15:14:52+00:00",
+      "updated_at": "2026-10-22T15:14:52+00:00",
+      "touched_round": 338,
+      "title": "可冻结状态的到期判定六处直读墙钟,暂停期间与界面分叉",
+      "detail": "enginePause 头注释写明纪律「可冻结的到期判定读 gameNow(),不要直接读 Date.now()」,而 usePill(判 overflow 与写 endsAt 两处)、eventEngine buff 分支、breakthrough 重伤、earlyGameService 闭关与巡游共六处直读墙钟。暂停(重置/导入确认窗)期间心跳停了、墙钟照走:界面按冻结时刻读「药力已至上限」,服务按走远的墙钟判并写 endsAt;恢复后引擎再按暂停时长顺延一次,药力凭空多出一段。",
+      "severity": 0.55
+    },
+    "ISS-1049": {
+      "id": "ISS-1049",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T15:14:52+00:00",
+      "updated_at": "2026-10-22T15:14:52+00:00",
+      "touched_round": 338,
+      "title": "长档行程超过洞府离线上限时,界面不提示离线只结一半",
+      "detail": "16h 行程配 0 级洞府(离线上限 8h)时,关掉游戏回来只按 8h 结算,界面看不出这件事 —— 「选最长的一档」在最常见的新档里反而是亏的。另:档位认读写在 store 三元表达式里,加档要记得改,坏档野 id 会让 EXPLORE_MODES[mode] 取到 undefined、离线结算 NaN。",
+      "severity": 0.5
+    },
+    "TASK-489": {
+      "id": "TASK-489",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T15:14:52+00:00",
+      "updated_at": "2026-10-22T15:14:52+00:00",
+      "touched_round": 338,
+      "title": "可冻结状态的到期判定收进游戏时钟单源",
+      "category": "correctness",
+      "severity": 0.55,
+      "detail": "六处 Date.now() 改读 gameNow(),判与写共用一次取值。判据:暂停中服丹 endsAt 落在冻结点;连服判顶与写入不越过四个时辰。故障注入:改回 Date.now() 时两条判据分别报出墙钟偏移与越顶。",
+      "confidence": 1
+    },
+    "TASK-490": {
+      "id": "TASK-490",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T15:14:52+00:00",
+      "updated_at": "2026-10-22T15:14:52+00:00",
+      "touched_round": 338,
+      "title": "历练新增 8h/16h 长档并与离线上限对齐",
+      "category": "core-feature",
+      "severity": 0.5,
+      "detail": "档位扩到六档,时长逐档翻倍,凶险涨幅高于收益;离线吃同一把 rewardMult;出行弹窗就地标注超过洞府上限的档位;档位认读收进 core/exploreModes 单源。",
+      "confidence": 1
+    },
+    "CHG-585": {
+      "id": "CHG-585",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T15:14:52+00:00",
+      "updated_at": "2026-10-22T15:14:52+00:00",
+      "touched_round": 338,
+      "title": "可冻结状态统一读游戏时钟",
+      "commit": "f7a3d26",
+      "summary": "服丹判顶与写到期共用一次 gameNow()"
+    },
+    "CHG-586": {
+      "id": "CHG-586",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T15:14:52+00:00",
+      "updated_at": "2026-10-22T15:14:52+00:00",
+      "touched_round": 338,
+      "title": "事件/突破/闭关/巡游的增益也按游戏时钟写入",
+      "commit": "b5ba329",
+      "summary": "四处 endsAt 写入改读 gameNow()"
+    },
+    "CHG-587": {
+      "id": "CHG-587",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T15:14:52+00:00",
+      "updated_at": "2026-10-22T15:14:52+00:00",
+      "touched_round": 338,
+      "title": "历练新增 8h/16h 两档长线行程",
+      "commit": "adb1c38",
+      "summary": "档位扩到六档,超上限行程就地标注,档位认读收单源"
     }
   },
   "edges": [
@@ -39201,6 +39289,72 @@
       "to": "HYP-190",
       "type": "validates",
       "created_at": "2026-10-22T14:18:57+00:00"
+    },
+    {
+      "from": "TASK-489",
+      "to": "ISS-1048",
+      "type": "addresses",
+      "created_at": "2026-10-22T15:15:29+00:00"
+    },
+    {
+      "from": "CHG-585",
+      "to": "TASK-489",
+      "type": "implements",
+      "created_at": "2026-10-22T15:15:29+00:00"
+    },
+    {
+      "from": "CHG-586",
+      "to": "TASK-489",
+      "type": "implements",
+      "created_at": "2026-10-22T15:15:29+00:00"
+    },
+    {
+      "from": "CHG-585",
+      "to": "ISS-1048",
+      "type": "resolves",
+      "created_at": "2026-10-22T15:15:29+00:00"
+    },
+    {
+      "from": "CHG-586",
+      "to": "ISS-1048",
+      "type": "resolves",
+      "created_at": "2026-10-22T15:15:29+00:00"
+    },
+    {
+      "from": "TASK-490",
+      "to": "ISS-1049",
+      "type": "addresses",
+      "created_at": "2026-10-22T15:15:29+00:00"
+    },
+    {
+      "from": "CHG-587",
+      "to": "TASK-490",
+      "type": "implements",
+      "created_at": "2026-10-22T15:15:29+00:00"
+    },
+    {
+      "from": "CHG-587",
+      "to": "ISS-1049",
+      "type": "resolves",
+      "created_at": "2026-10-22T15:15:29+00:00"
+    },
+    {
+      "from": "ISS-1048",
+      "to": "COMP-024",
+      "type": "located_in",
+      "created_at": "2026-10-22T15:16:13+00:00"
+    },
+    {
+      "from": "ISS-1048",
+      "to": "COMP-018",
+      "type": "located_in",
+      "created_at": "2026-10-22T15:16:13+00:00"
+    },
+    {
+      "from": "ISS-1049",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-22T15:16:13+00:00"
     }
   ]
 }
