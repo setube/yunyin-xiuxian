@@ -1497,10 +1497,20 @@ for (const vp of VIEWPORTS) {
     await trialPage.goto(INDEX + '#' + '/celestial', { waitUntil: 'load' })
     await trialPage.waitForTimeout(1600)
     await clearOverlays(trialPage)
+    /*
+     * 收掉还在飘的提示条再切册:它们挂在 top-12 的 fixed 层上,而页签轨道就在它下面 ——
+     * toast 正好盖住「试炼」那一格时,真实点击会被它截走(实测:playwright 报
+     * 「button ... intercepts pointer events」,这一格永远切不过去),判据于是报
+     * 「试炼册里没有应试入口」。真实玩家等两秒就点得到,这里等不了,故主动收掉。
+     */
+    await trialPage.evaluate(() => {
+      for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+    })
     const trialTab = trialPage.getByRole('tab', { name: /试\s*炼/ }).first()
     if ((await trialTab.count()) === 0) failures.push('[390-late] 天界页:找不到「试炼」册')
     else {
-      await trialTab.click({ timeout: 3000 }).catch(() => {})
+      // 页签切不过去时用 JS 直点兜底:toast 是浮层,挡不住 el.click()
+      await trialTab.click({ timeout: 3000 }).catch(() => trialTab.evaluate(el => el.click()).catch(() => {}))
       await trialPage.waitForTimeout(500)
       checked += 1
       const trialBtn = trialPage.locator('main button', { hasText: /应\s*试/ }).first()
@@ -1511,7 +1521,8 @@ for (const vp of VIEWPORTS) {
         if (/在途|身在秘境/.test(trialName)) {
           failures.push(`[390-late] 试炼:夹具已摘掉在途活动,应试仍写着「${trialName}」—— 闸门误判`)
         }
-        await trialBtn.click({ timeout: 4000 }).catch(() => {})
+        // 同一处理由:应试按钮也在 toast 层底下,点不到时用 JS 直点兜底
+        await trialBtn.click({ timeout: 4000 }).catch(() => trialBtn.evaluate(el => el.click()).catch(() => {}))
         await trialPage.waitForTimeout(2200)
         const after = await trialPage.evaluate(() => {
           const panel = document.querySelector('.modal-panel')
