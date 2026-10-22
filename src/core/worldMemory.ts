@@ -10,6 +10,7 @@
  */
 import type { RegionProsperity, RegionRecall, NemesisRecord, EventMemory } from '@/types'
 import { usePlayerStore } from '@/stores/player'
+import { useAdventureStore } from '@/stores/adventure'
 
 // ============ S1: 区域兴衰 ============
 
@@ -31,17 +32,6 @@ export const DECAY_HOURS = 48
 export const REVIVE_AFTER_HOURS = 72
 
 /**
- * 距妖气复聚(镇压自动解除)还剩多少小时;未镇压或已过期返回 0。
- *
- * 复聚是确定的期限,却从不预告:玩家只会看到某天镇压「突然没了」。
- * 界面据此把期限写成倒计时(与 isRegionRevived 同一个阈值,不另立一份)。
- */
-export function hoursUntilRevive(suppressedAt: number | undefined, now: number = Date.now()): number {
-  if (suppressedAt === undefined) return 0
-  return Math.max(0, REVIVE_AFTER_HOURS - (now - suppressedAt) / 3600_000)
-}
-
-/**
  * 妖气复聚的钟:最后一次在当地战斗、或把它镇压下来、或把它靖平。
  * 三个时刻取最晚 —— 任一活动都会推迟旧主归来。
  *
@@ -58,9 +48,39 @@ export function regionTouchedAt(
   return Math.max(lastUpdateAt ?? 0, suppressedSince ?? 0, clearedAt ?? 0)
 }
 
+/**
+ * 某片地界此刻的复聚钟(现取三个来源的最晚者)。
+ *
+ * 结算(regionRevival)与界面倒计时(RegionCard)都读它 —— 钟只此一份。
+ * 分两处各取各的,就会出现「界面写着 0 时后复聚、结算却还早」这一类分叉。
+ */
+export function regionReviveClock(regionId: string): number {
+  const player = usePlayerStore()
+  const adventure = useAdventureStore()
+  return regionTouchedAt(
+    player.regionStats[regionId]?.lastUpdateAt,
+    player.suppressedSince[regionId],
+    adventure.clearedAt[regionId]
+  )
+}
+
 /** 够钟(超过 REVIVE_AFTER_HOURS 小时)地界妖气复聚,旧主归来(纯函数) */
 export function isRegionRevived(touchedAt: number, now: number): boolean {
   return touchedAt > 0 && (now - touchedAt) / 3600_000 > REVIVE_AFTER_HOURS
+}
+
+/**
+ * 距妖气复聚还剩多少小时(吃**那一份钟**,不是镇压表自己另起的一把)。
+ *
+ * 倒计时必须与判定读同一份钟:曾经这里只收 `suppressedSince` 一个时刻,
+ * 而「够不够钟」读的是 `regionTouchedAt`(最后一次在当地战斗 / 镇压 / 靖平取最晚)。
+ * 于是玩家守着地界还在打时,倒计时按更早的镇压时刻一路走到「0 时后复聚」并**停在那里**,
+ * 而结算按最后一次战斗判「还早得很」—— 同一格读数与真实期限当场分叉。
+ * 现在两边都吃 `touchedAt`:倒计时归零的那一刻,正是判定翻真的位置。
+ */
+export function hoursUntilRevive(touchedAt: number, now: number = Date.now()): number {
+  if (!(touchedAt > 0)) return 0
+  return Math.max(0, REVIVE_AFTER_HOURS - (now - touchedAt) / 3600_000)
 }
 
 interface RegionStateInput {

@@ -19,7 +19,7 @@ import { REGIONS, regionDef } from '@/data/regions'
 import { useAdventureStore } from '@/stores/adventure'
 import { usePlayerStore } from '@/stores/player'
 import { useUiStore } from '@/stores/ui'
-import { isRegionRevived, regionTouchedAt } from './worldMemory'
+import { isRegionRevived, regionReviveClock } from './worldMemory'
 
 /** 提示里最多点名几处 —— 回来一次撞上二十处复聚时,别糊一屏名字 */
 const LITANY_LIMIT = 3
@@ -51,11 +51,7 @@ export function settleRegionRevivals(now: number = Date.now()): string[] {
     const suppressedNow = player.suppressedRegions.includes(region.id)
     // 既没靖平也不镇压的地界没有「妖气」可聚(首领本来就在)
     if (!clearedNow && !suppressedNow) continue
-    const touchedAt = regionTouchedAt(
-      player.regionStats[region.id]?.lastUpdateAt,
-      player.suppressedSince[region.id],
-      adventure.clearedAt[region.id]
-    )
+    const touchedAt = regionReviveClock(region.id)
     if (!isRegionRevived(touchedAt, now)) continue
     // 妖气都聚起来了,压不住 —— 镇压松开(资格仍在,随时可一键接回)
     if (suppressedNow) {

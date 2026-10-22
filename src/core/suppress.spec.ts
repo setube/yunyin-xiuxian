@@ -537,8 +537,12 @@ describe('镇压速率:显示与结算同源', () => {
     const card = readFileSync(resolve(__dirname, '../components/adventure/RegionCard.vue'), 'utf8')
     expect(card, '要有一枚每秒推进的读数').toContain('const now = useNow()')
     expect(card, '复聚倒计时读 now.value').toContain('now.value')
-    // 钉住实参:只查「调了 hoursUntilRevive」的话,把读秒换回 Date.now() 也照样绿
+    // 钉住实参:查「调了 hoursUntilRevive」的话,把读秒换回 Date.now() 也照样绿;
+    // 只查 now.value 又看不出喂进去的是哪一份钟 —— 两份都要钉
     expect(card, '复聚倒计时读同一份剩余小时').toContain(
+      'hoursUntilRevive(regionReviveClock(props.row.def.id), now.value)'
+    )
+    expect(card, '复聚倒计时喂的是结算用的那一份钟,不是单看镇压时刻').not.toContain(
       'hoursUntilRevive(player.suppressedSince[props.row.def.id], now.value)'
     )
     expect(card, '已守时长也读同一读数').toContain('(now.value - since) / 3_600_000')

@@ -180,7 +180,7 @@
   import { ECO_LEVEL_NAMES, starsText } from '@/core/buildAdvisor'
   import { foeOriginPartsText } from '@/core/battleAnalysis'
   import { suppressRateLine } from '@/core/suppress'
-  import { hoursUntilRevive, prosperityName, regionRecallFor } from '@/core/worldMemory'
+  import { hoursUntilRevive, prosperityName, regionRecallFor, regionReviveClock } from '@/core/worldMemory'
   import { usePlayerStore } from '@/stores/player'
   import { useNow } from '@/composables/useNow'
   import { produceTierText } from '@/ui/produceText'
@@ -223,9 +223,14 @@
   /**
    * 复聚剩余小时:整卡里唯一随时间变的一列。
    * 就地读 now(与 heldText 同依赖),不让每秒一跳的读数拖着地界表整表重算。
+   *
+   * 喂给 hoursUntilRevive 的是**结算用的那一份钟**(regionReviveClock:最后一次
+   * 在当地战斗 / 镇压 / 靖平取最晚),不是单看 suppressedSince。从前这里只给镇压
+   * 时刻,玩家还在守着打的地界会一路倒数到「0 时后复聚」并停在那儿,而结算按
+   * 最后一次战斗判「还早」—— 倒计时与真实期限当场分叉。
    */
   const reviveNow = computed(() =>
-    props.row.suppressed ? hoursUntilRevive(player.suppressedSince[props.row.def.id], now.value) : 0
+    props.row.suppressed ? hoursUntilRevive(regionReviveClock(props.row.def.id), now.value) : 0
   )
 
   /** 已守时长(自镇压起算)—— 守得越久,兴衰越盛 */

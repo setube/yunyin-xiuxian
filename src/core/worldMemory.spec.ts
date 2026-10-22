@@ -2,10 +2,12 @@
  * Phase 30.9:世界活性与服务层审计
  * S1 区域兴衰 / S2 宿敌记忆 / S3 事件余波
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
+import { usePlayerStore } from '@/stores/player'
+import { useAdventureStore } from '@/stores/adventure'
 import {
   deriveProsperity,
   hoursUntilRevive,
@@ -18,6 +20,7 @@ import {
   shouldTriggerAftermath,
   aftermathText,
   isRegionRevived,
+  regionReviveClock,
   regionTouchedAt,
   prosperityYieldMult,
   regionRecallFor,
@@ -27,7 +30,6 @@ import {
   AFTERMATH_CHANCE,
   REVIVE_AFTER_HOURS
 } from './worldMemory'
-import { usePlayerStore } from '@/stores/player'
 import type { NemesisRecord } from '@/types'
 
 describe('S1 区域兴衰', () => {
@@ -234,9 +236,9 @@ describe('S1 区域兴衰', () => {
    * 复聚倒计时 —— 界面把「还能守多久」写出来,与复苏判定共用同一个阈值。
    * 从前 72 小时的期限完全没有预告,玩家的体感是「镇压某天突然没了」。
    */
-  it('复聚倒计时:与复苏判定同一条线,未镇压为 0', () => {
+  it('复聚倒计时:与复苏判定同一条线,没有钟为 0', () => {
     const t = Date.now()
-    expect(hoursUntilRevive(undefined, t)).toBe(0)
+    expect(hoursUntilRevive(0, t), '没有起点的钟不该自己走').toBe(0)
     expect(hoursUntilRevive(t, t)).toBeCloseTo(REVIVE_AFTER_HOURS, 6)
     expect(hoursUntilRevive(t, t + 12 * 3600_000)).toBeCloseTo(REVIVE_AFTER_HOURS - 12, 6)
     // 倒计时归零的那一刻,正是复苏判定翻真的位置(两条口径不许分叉)
@@ -245,6 +247,39 @@ describe('S1 区域兴衰', () => {
     expect(isRegionRevived(t, atRevive - 1)).toBe(false)
     expect(isRegionRevived(t, atRevive + 1)).toBe(true)
     expect(hoursUntilRevive(t, atRevive + 999 * 3600_000), '过期不出现负数').toBe(0)
+  })
+
+  /**
+   * 倒计时必须吃**结算用的那一份钟** —— 三处各取各的必然分叉。
+   *
+   * 从前的反例:镇压 73 小时、但一小时前还在那片战斗。卡片只把 suppressedSince
+   * 喂给 hoursUntilRevive,于是显示「妖气 0 时后复聚」**并停在那里**,而结算按
+   * regionTouchedAt(最后一次战斗)判「还早 71 小时」—— 玩家守着一片永远「即将复聚」
+   * 却从不复聚的地界。故障注入:卡片改回只读 suppressedSince → 本条红。
+   */
+  it('复聚倒计时与结算读同一份钟:还在最后战斗的那片地界不显示「即将复聚」', () => {
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    const t = Date.now()
+    vi.setSystemTime(t + 73 * 3600_000)
+    player.suppressedRegions = ['qingyun']
+    player.suppressedSince = { qingyun: t } // 73 小时前镇压下来
+    player.regionStats.qingyun = {
+      totalFights: 20,
+      avgRounds: 2,
+      avgDamageTakenPct: 0.05,
+      consecutiveWins: 20,
+      lastUpdateAt: t + 72 * 3600_000 // 但一小时前还在打
+    }
+    // 结算读整份钟 ⇒ 只看镇压时刻会误判成「已够钟」
+    expect(isRegionRevived(regionReviveClock('qingyun'), Date.now()), '最后一战把钟推后了').toBe(false)
+    // 倒计时同样读整份钟 ⇒ 应还剩约 71 小时,而不是 0
+    expect(hoursUntilRevive(regionReviveClock('qingyun'), Date.now())).toBeCloseTo(REVIVE_AFTER_HOURS - 1, 6)
+    // 只有镇压一条钟的地界(never fought since)才真的快到点
+    delete player.regionStats.qingyun
+    expect(hoursUntilRevive(regionReviveClock('qingyun'), Date.now())).toBe(0)
+    expect(adventure.clearedAt.qingyun).toBeUndefined()
   })
 })
 
