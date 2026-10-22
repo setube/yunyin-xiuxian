@@ -152,6 +152,22 @@ describe('秘境 · 进得去', () => {
     expect(useUiStore().toasts.at(-1)?.text).toContain('远征在途')
   })
 
+  /**
+   * 核心与界面必须是**同一句话**:此前 enterSecretRealm 手抄了两支拒因
+   * (「须先结束远征方能入秘境」「先了结这一程,再入秘境」),而秘境卡按钮读的是
+   * endgameBusy 的 reason —— 同一件事两句话,改一处必漏一处。
+   * 故障注入:把 busy.reason 换回手抄字面量 → 本条红。
+   */
+  it('秘境入口拒因取自 endgameBusy 本体,核心与界面说同一句话', () => {
+    ready(3)
+    const endgame = useEndgameStore()
+    endgame.worldRun = { worldId: 'chiyan', pactId: null, gateId: null, layer: 0, bonus: 0, rows: [], carriedHpPct: 1, totalRounds: 0, winStacks: 0 }
+    const out = enterSecretRealm('sr_kurong')
+    const expected = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, useAdventureStore().session)!
+    expect(out.reason, '核心返回的拒因就是判据本体那一句').toBe(expected.reason)
+    expect(useUiStore().toasts.at(-1)?.text, 'toast 也是同一句,不再各写一份').toBe(expected.reason)
+  })
+
   it('入口代价按地界层级折算 —— 高境界不是只贵一点', () => {
     const def = SECRET_REALMS[0]!
     expect(tierOfMajor(3)).toBeGreaterThan(0)

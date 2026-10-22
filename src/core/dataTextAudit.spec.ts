@@ -388,6 +388,11 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     const view = src('../views/AdventureView.vue')
     expect(view, '出发前置也要认出远征/秘境在途').toContain('endgameBusy(endgame.worldRun, player.secretRealm, null)')
     expect(view, '前置拒因同样取判据本体').toContain('ui.toast(busy.reason, \'warn\')')
+    // 秘境入口也归入同一份判据:此前它手抄了两支拒因,与秘境卡的 reason 分叉
+    const secret = src('./secretRealm.ts')
+    expect(secret, '秘境入口该读统一在途判据').toContain('endgameBusy(endgame.worldRun, player.secretRealm, useAdventureStore().session)')
+    expect(secret, '秘境入口拒因取判据本体').toContain('return { ok: false, reason: busy.reason }')
+    expect(secret, '秘境入口不许再手抄一份拒因').not.toContain('须先结束远征方能入秘境')
   })
 
   it('远征行程与变数连战数取自 EXPEDITION_* / MUTATION_FIGHTS', () => {
