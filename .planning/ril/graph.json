@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 344,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T19:37:07+00:00",
+  "updated_at": "2026-10-22T20:53:16+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -583,7 +583,7 @@
       "version": 1,
       "created_at": "2026-09-09T16:07:51+00:00",
       "updated_at": "2026-09-09T16:07:51+00:00",
-      "touched_round": 343,
+      "touched_round": 344,
       "summary": "历练系统(exploration.ts + offline.ts 会话结算)"
     },
     "CHG-010": {
@@ -26934,6 +26934,97 @@
       "touched_round": 343,
       "title": "离线首领战不替玩家祭法宝",
       "category": "correctness"
+    },
+    "ISS-1059": {
+      "id": "ISS-1059",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T20:50:06+00:00",
+      "updated_at": "2026-10-22T20:50:06+00:00",
+      "touched_round": 344,
+      "summary": "凡界种子同秒撞车:同一秒内两次转世拿到同一个世界",
+      "severity": 0.7
+    },
+    "TASK-496": {
+      "id": "TASK-496",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T20:50:06+00:00",
+      "updated_at": "2026-10-22T20:50:06+00:00",
+      "touched_round": 344,
+      "summary": "凡界种子与跨世去重收口",
+      "category": "correctness"
+    },
+    "HYP-191": {
+      "id": "HYP-191",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T20:50:25+00:00",
+      "updated_at": "2026-10-22T20:50:25+00:00",
+      "touched_round": 344,
+      "summary": "historyOf 只收当前世界,四门验收在转世后拿不到上一世的数据",
+      "confidence": 0.95
+    },
+    "EV-1035": {
+      "id": "EV-1035",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T20:50:35+00:00",
+      "updated_at": "2026-10-22T20:50:35+00:00",
+      "touched_round": 344,
+      "summary": "冻住墙钟后三次 reroll 的种子为 743775 → 949669 → 743775,首末两个世界逐字段相同",
+      "confidence": 1,
+      "source": "src/core/mortalRouteAccess.spec.ts"
+    },
+    "EV-1036": {
+      "id": "EV-1036",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T20:50:35+00:00",
+      "updated_at": "2026-10-22T20:50:35+00:00",
+      "touched_round": 344,
+      "summary": "把 history 整个清空后七条行为判据全绿,跨世去重只能读源码钉住",
+      "confidence": 1,
+      "source": "src/core/mortalRouteAccess.spec.ts"
+    },
+    "HYP-192": {
+      "id": "HYP-192",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T20:50:56+00:00",
+      "updated_at": "2026-10-22T20:50:56+00:00",
+      "touched_round": 344,
+      "summary": "凡界种子取墙钟秒位,同秒内两次生成必然撞同一颗种子",
+      "confidence": 1
+    },
+    "TASK-497": {
+      "id": "TASK-497",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T20:51:21+00:00",
+      "updated_at": "2026-10-22T20:51:21+00:00",
+      "touched_round": 344,
+      "summary": "凡界种子同秒撞车(与 TASK-496 同一修复的两条根因)",
+      "category": "correctness"
+    },
+    "DEC-067": {
+      "id": "DEC-067",
+      "type": "decision",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T20:53:15+00:00",
+      "updated_at": "2026-10-22T20:53:15+00:00",
+      "touched_round": 344,
+      "summary": "凡界种子=墙钟秒位+同秒偏移,跨世历史按历世账本重建最近三方",
+      "rationale": "种子取墙钟秒位时同秒内两次转世必然撞同一颗种子;验收门的候选链是 base+7919t,故同秒偏移必须与 7919 互质;history 留全部会把后续转世逼向无世界可交",
+      "alternatives_rejected": "直接拿 Date.now()%池 当种子(同秒撞车);同秒偏移取 7919(只平移起点,仍落同一条候选链);history 留历世全部(越往后越难过门)"
     }
   },
   "edges": [
@@ -39780,6 +39871,42 @@
       "to": "COMP-006",
       "type": "located_in",
       "created_at": "2026-10-22T19:36:47+00:00"
+    },
+    {
+      "from": "TASK-496",
+      "to": "ISS-1059",
+      "type": "addresses",
+      "created_at": "2026-10-22T20:50:15+00:00"
+    },
+    {
+      "from": "ISS-1059",
+      "to": "COMP-006",
+      "type": "located_in",
+      "created_at": "2026-10-22T20:50:15+00:00"
+    },
+    {
+      "from": "EV-1036",
+      "to": "HYP-191",
+      "type": "validates",
+      "created_at": "2026-10-22T20:50:45+00:00"
+    },
+    {
+      "from": "EV-1035",
+      "to": "HYP-192",
+      "type": "validates",
+      "created_at": "2026-10-22T20:50:56+00:00"
+    },
+    {
+      "from": "TASK-497",
+      "to": "ISS-1059",
+      "type": "addresses",
+      "created_at": "2026-10-22T20:51:21+00:00"
+    },
+    {
+      "from": "DEC-067",
+      "to": "COMP-006",
+      "type": "governs",
+      "created_at": "2026-10-22T20:53:16+00:00"
     }
   ]
 }
