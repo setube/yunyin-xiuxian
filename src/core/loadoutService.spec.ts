@@ -147,4 +147,55 @@ describe('构筑快照(保存/一键切换)', () => {
     expect(renameLoadout('nope', '新名')).toBe(false)
     expect(loadouts.list.length).toBe(1)
   })
+
+  /**
+   * 「学过但槽位不够」也得点名 —— 从前它只进计数,不进名单。
+   *
+   * 藏经阁 0 级只有 1 个辅修槽,而快照里存着两件都学过的辅修:切换时第二件被砍,
+   * 界面却只印「阙 1 件」而不说阙的是谁。玩家既不知道该补什么,也看不出
+   * 「去升级藏经阁」才是解法 —— 照着名单回行囊白找一圈。
+   */
+  it('辅修槽不够时,被砍的那件也要带名报出来,并说清该升级藏经阁', () => {
+    const cultivation = useCultivationStore()
+    const ui = useUiStore()
+    seed()
+    cultivation.learn('s_lianti') // 第二件辅修,也学过
+    const loadout = captureLoadout('双辅修')!
+    loadout.subGongfa = ['s_tuna', 's_lianti']
+    applyLoadout(loadout.id)
+
+    // 槽位只有 1,第二件装不上
+    expect(cultivation.subGongfa).toEqual(['s_tuna'])
+    const last = ui.toasts[ui.toasts.length - 1]!.text
+    expect(last, '被砍的那件要带名').toContain('百炼锻体术')
+    expect(last, '说清这不是靠历练能补的').toContain('槽位不足')
+  })
+
+  it('法宝位不够时,被砍的那件也点名;没有槽位问题时不说「槽位不足」', () => {
+    const inventory = useInventoryStore()
+    const ui = useUiStore()
+    seed()
+    // 收藏两件法宝,而炼气期只有 1 个法宝位
+    inventory.addArtifact('af_lihuo')
+    inventory.addArtifact('af_muyu')
+    const loadout = captureLoadout('双法宝')!
+    loadout.artifactIds = ['af_lihuo', 'af_muyu']
+    applyLoadout(loadout.id)
+
+    expect(inventory.equippedArtifacts).toHaveLength(1)
+    const last = ui.toasts[ui.toasts.length - 1]!.text
+    expect(last, '被砍的法宝要带名').toContain('墨玉葫芦')
+    expect(last, '说清这不是靠历练能补的').toContain('槽位不足')
+  })
+
+  it('部件齐备时不说「槽位不足」(正对照:不是每条都挂这句)', () => {
+    const inventory = useInventoryStore()
+    const ui = useUiStore()
+    const { weaponUid } = seed()
+    const loadout = captureLoadout('齐套')!
+    applyLoadout(loadout.id)
+    expect(inventory.equipped.weapon).toBe(weaponUid)
+    const last = ui.toasts[ui.toasts.length - 1]!.text
+    expect(last).not.toContain('槽位不足')
+  })
 })

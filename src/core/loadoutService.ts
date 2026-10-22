@@ -103,9 +103,13 @@ export function applyLoadout(id: string): boolean {
     return !!cultivation.learned[g] && !!def && def.type !== 'main' && g !== cultivation.mainGongfa
   })
   const validSubs = eligibleSubs.slice(0, subCap)
-  const missingSubs = snapshotSubs.filter(g => !eligibleSubs.includes(g))
-  missing += snapshotSubs.length - validSubs.length
-  for (const g of missingSubs) missingNames.push(gongfaDef(g)?.name ?? g)
+  // 缺件分两种,都得点名:没学过(或根本不是辅修)的,与**学过但槽位不够**被砍的。
+  // 从前只把前者写进名单,后者只进了计数 —— 界面于是印出「阙 1 件」却不说阙的是谁,
+  // 玩家既不知道该补什么,也看不出「去升级藏经阁」才是解法。
+  const unownedSubs = snapshotSubs.filter(g => !eligibleSubs.includes(g))
+  const overflowSubs = eligibleSubs.slice(subCap)
+  missing += unownedSubs.length + overflowSubs.length
+  for (const g of [...unownedSubs, ...overflowSubs]) missingNames.push(gongfaDef(g)?.name ?? g)
   cultivation.subGongfa = validSubs
   // 法宝
   const artifactCap = artifactSlotsFor(player.major)
@@ -113,11 +117,16 @@ export function applyLoadout(id: string): boolean {
   const snapshotArts = [...new Set(loadout.artifactIds)]
   const validArts = snapshotArts.filter(a => owned.has(a)).slice(0, artifactCap)
   const unownedArts = snapshotArts.filter(a => !owned.has(a))
-  missing += snapshotArts.length - validArts.length
-  for (const a of unownedArts) missingNames.push(artifactDef(a)?.name ?? a)
+  // 同一道坎在法宝位:学会了、收着了,但槽位不够 —— 也要点名,不能只进计数
+  const overflowArts = snapshotArts.filter(a => owned.has(a)).slice(artifactCap)
+  missing += unownedArts.length + overflowArts.length
+  for (const a of [...unownedArts, ...overflowArts]) missingNames.push(artifactDef(a)?.name ?? a)
   inventory.equippedArtifacts = validArts
 
-  ui.toast(loadoutApplyToast(loadout.name, missing, missingNames), 'success')
+  // 槽位不够与「没学过/没收藏」是两件事,解法也不同:前者要升级藏经阁(辅修槽)
+  // 或提高境界(法宝位),后者要去历练/坊市。故把原因一并交给文案层。
+  const slotLimited = overflowSubs.length + overflowArts.length > 0
+  ui.toast(loadoutApplyToast(loadout.name, missing, missingNames, slotLimited), 'success')
   return true
 }
 
