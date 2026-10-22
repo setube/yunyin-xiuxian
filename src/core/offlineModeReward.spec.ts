@@ -244,6 +244,48 @@ describe('离线长档(8h / 16h)吃同一把倍率,且不越过洞府封顶', ()
     // 会话必须仍在途(没被误判成圆满结束)
     expect(useAdventureStore().session, '被 cap 截断的会话不该被清掉').not.toBeNull()
   })
+
+  /**
+   * 「圆满结束」与「还没走完」两句互斥 —— 不能同屏出现。
+   *
+   * 16 小时档配 8h 洞府时,离线只推进到洞府上限,会话留在途上:这时该印
+   * 「还没走完」;一旦这一程真的走完了(remainSec 已被这段缺席走满),
+   * 该印的是「圆满结束」。两句同时出现,玩家读到的就是自相矛盾的旅程。
+   */
+  it('圆满结束与还没走完不共屏', () => {
+    setActivePinia(createPinia())
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    game.markStarted()
+    const awayHours = 12
+    const started = Date.now() - awayHours * 3600 * 1000
+    game.lastActiveAt = started
+    game.totalPlaySec = 60 * 60
+    player.major = 2
+    player.exp = { m: 0, e: 0 }
+    adventure.setSession({
+      regionId: 'qingyun',
+      mode: 'deepExpedition',
+      startedAt: started,
+      endsAt: started + 16 * 3600 * 1000,
+      nextBattleAt: started + EXPLORE_BATTLE_INTERVAL * 1000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: { m: 0, e: 0 },
+      expGain: { m: 0, e: 0 },
+      itemGain: 0
+    })
+    const summary = settleOffline(Date.now())!
+    const done = summary.notes.some(n => n.endsWith('之行圆满结束'))
+    const unfinished = summary.notes.some(n => n.includes('这一程还没走完'))
+    // 这一程还剩 8h(16h 满程 − 12h 缺席),离线只结 8h → 未走完
+    expect(unfinished, '还剩半程该说还没走完').toBe(true)
+    expect(done, '未走完的行程不许又说圆满结束').toBe(false)
+    // 句子里必须给出可核对的剩余数,不能只说一句「还没走完」
+    expect(summary.notes.find(n => n.includes('这一程还没走完'))).toMatch(/尚余\s*[1-9]/)
+  })
 })
 
 /**
@@ -332,6 +374,53 @@ describe('离线普通战法宝掉落(与在线同源)', () => {
     expect(inventory.artifacts.length, '离线也要走法宝掉落通道').toBeGreaterThan(0)
     expect(inventory.equippedArtifacts, '玩家不在场,不该替他祭炼').toHaveLength(0)
     expect(summary.notes.some(n => n.includes('法宝')), '拾得法宝要在归来卷轴里说一声').toBe(true)
+  })
+})
+
+/**
+ * 离线法宝掉落**不刷屏**。
+ *
+ * 离线按期望件数入账,长线行程一次能掉出几十件,而囊中早就有的那几件每件都吐
+ * 一行「(已拥有,化作悟道点×10)」—— 实测 16 小时档 30 件重复把归来卷轴淹掉,
+ * 玩家想读的「这一趟还出了什么」被同一行挤出视野。故同一件只报一行,
+ * 重复的折算悟道点并进那一行。
+ *
+ * 聚合的是**播报**,不是入账:件数与折算都不能因此缩水。
+ */
+describe('离线法宝掉落不刷屏(同一件只报一行)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    winRate.value = 1
+  })
+
+  it('16 小时档的重复拾得并成一行,不淹没归来卷轴', () => {
+    seedSession('deepExpedition')
+    const inventory = useInventoryStore()
+
+    const summary = settleOffline(Date.now())!
+
+    const artLines = summary.notes.filter(n => n.includes('法宝'))
+    expect(artLines, '法宝这一路只该报一行').toHaveLength(1)
+    // 同一件重复拾得时,行里要写清件数与折算的悟道点 —— 不报数等于把账藏了
+    if (artLines[0]!.includes('悟道点')) {
+      expect(artLines[0], '件数要报').toMatch(/×\d+/)
+      expect(artLines[0], '折算的悟道点要报').toMatch(/\d+ 悟道点/)
+    }
+    // 聚合只改播报,不改入账:囊中件数仍按真实拾得记
+    expect(inventory.artifacts.length, '入囊的法宝一件都不能少').toBeGreaterThan(0)
+    expect(summary.notes.length, '卷轴其余内容没被挤掉').toBeGreaterThan(3)
+  })
+
+  /**
+   * 故障注入:把 offline.ts 那段聚合改回「每件 push 一行」→ 本条红并点名。
+   * 只断言「不是每件一行」:本文件的 rng.weighted 恒取首项,掉出来的必是同一件,
+   * 行数一多就是这个坏行为的直接读数(修前实测 31 行)。
+   */
+  it('判据自家不空转:每件一行的写法会把行数顶上去', () => {
+    seedSession('deepExpedition')
+    const summary = settleOffline(Date.now())!
+    const dupLines = summary.notes.filter(n => n.includes('已拥有'))
+    expect(dupLines.length, '同一件重复拾得不许每件一行').toBeLessThanOrEqual(1)
   })
 })
 

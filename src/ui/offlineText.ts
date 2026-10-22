@@ -28,3 +28,17 @@ export function offlineBossNoteText(bossName: string): string {
 export function offlineAgeNote(ageYears: number): string {
   return `此去寿元流逝 ${ageYears} 载`
 }
+
+/**
+ * 一趟途中拾得的法宝 —— **同一件只报一行**。
+ *
+ * 离线按期望件数入账,16 小时长档一次能掉出几十件;而囊中早就有的那几件
+ * 每件都吐一行「(已拥有,化作悟道点×10)」,归来卷轴被同一行淹掉,别的什么都读不出。
+ *
+ * 于是按 defId 聚合:首件照念本名,后续重复折算的悟道点并进同一行。
+ * 排序按首次拾得的顺序(前端的 Map 保序),不是按字母 —— 玩家认的是「先拿到的那件」。
+ */
+export function offlineArtifactNote(entries: { name: string; count: number; wudao: number }[]): string {
+  const list = entries.map(e => (e.count > 1 ? `${e.name}×${e.count}(${e.wudao} 悟道点)` : e.name))
+  return `途中拾得法宝 ${list.join('、')}`
+}

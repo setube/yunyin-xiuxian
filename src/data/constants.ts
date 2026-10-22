@@ -493,6 +493,13 @@ export const PILL_DROP_CHANCE = 0.08
 export const PILL_SECOND_CAP = 0.8
 export const PAGE_DROP_CHANCE = 0.12
 export const ARTIFACT_DROP_CHANCE = 0.015
+/**
+ * 重复到手法宝折算的悟道点。
+ *
+ * 一件已经入囊的法宝再掉一次,不叠件数,换成这一份悟道点(loot.acquireArtifact)。
+ * 离线按期望件数入账(offline.ts),长线行程能一次重复几十回,聚合播报要拿它算总账。
+ */
+export const ARTIFACT_DUPLICATE_WUDAO = 10
 // 材料掉落概率:历练 everyBattle 里 afterWin 的 herb/ore 掷点就走这两枚,
 // 经济审计的预期产量也读它们 —— 别在 loot.ts 和 economySim 各抄一份
 export const HERB_DROP_CHANCE = 0.5

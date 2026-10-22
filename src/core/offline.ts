@@ -5,7 +5,7 @@
 import type { EventDef, OfflineSummary } from '@/types'
 import { add, gn, gnZero, isZero, mulN, sub } from '@/utils/gnum'
 import { formatDuration, formatGN } from '@/utils/format'
-import { offlineAgeNote, offlineBossNoteText } from '@/ui/offlineText'
+import { offlineAgeNote, offlineArtifactNote, offlineBossNoteText } from '@/ui/offlineText'
 import { breakthroughReadyNote } from '@/ui/cultivationText'
 import { rng } from '@/utils/random'
 import { regionDef } from '@/data/regions'
@@ -33,7 +33,7 @@ import {
 import { makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
 import { buildPlayerSnap } from './playerSnap'
 import { generateEquipment } from './equipGen'
-import { onAcquire, acquireEquipment, acquireArtifact, afterWin, randomDropArtifact, randomDropPill } from './loot'
+import { onAcquire, acquireArtifactGain, acquireEquipment, afterWin, randomDropArtifact, randomDropPill } from './loot'
 import { avgDustPerDrop } from './economySim'
 import { autoResolveEvent, regionEventPoolFor } from './eventEngine'
 import {
@@ -377,14 +377,23 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
          */
         const artifactChance = capChance(ARTIFACT_DROP_CHANCE * (1 + modOf(mods, 'luck') + personalityEffects(player.petId).dropLuck))
         const artifactCount = Math.round(wins * artifactChance)
+        /** 按 defId 聚合:同一件只报一行,重复的折算悟道点并进那一行(见 offlineArtifactNote) */
+        const artifactTally = new Map<string, { name: string; count: number; wudao: number }>()
         for (let i = 0; i < artifactCount; i += 1) {
           const artId = randomDropArtifact(region.tier)
           if (!artId) break
-          const line = acquireArtifact(artId, true, false)
-          if (!line) break
+          const gain = acquireArtifactGain(artId, true, false)
+          if (!gain) break
+          const tallied = artifactTally.get(gain.defId)
+          if (tallied) {
+            tallied.count += 1
+            tallied.wudao += gain.wudao
+          } else {
+            artifactTally.set(gain.defId, { name: gain.name, count: 1, wudao: gain.wudao })
+          }
           trip.items += 1
-          notes.push(`途中拾得${line}`)
         }
+        if (artifactTally.size > 0) notes.push(offlineArtifactNote([...artifactTally.values()]))
         if (wins < battles) {
           notes.push(`有 ${battles - wins} 战失利,幸而全身而退`)
         }

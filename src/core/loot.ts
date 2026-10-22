@@ -16,6 +16,7 @@ import { lifeThemeDef } from '@/data/lifeThemes'
 import {
   ARTIFACT_DROP_CHANCE,
   BATTLE_EXP_SECS,
+  ARTIFACT_DUPLICATE_WUDAO,
   EQUIP_DROP_CHANCE,
   EQUIP_DROP_CHANCE_CAP,
   HERB_DROP_CHANCE,
@@ -171,21 +172,54 @@ function acquireInto(inst: EquipmentInstance, opts: { quiet?: boolean; forceKeep
  * @param autoEquip 空祭炼位时自动祭上。离线传 false:玩家不在场,不该替他改这一身构筑
  */
 export function acquireArtifact(defId: string, quiet = false, autoEquip = true): string {
+  const gain = acquireArtifactGain(defId, quiet, autoEquip)
+  return gain?.line ?? ''
+}
+
+/** 一次法宝到手的结构 —— 批量结算要按件聚合播报,只给一行字看不出重复了几回 */
+export interface ArtifactGain {
+  defId: string
+  name: string
+  /** 给人看的那一行(单件口径) */
+  line: string
+  /** 囊中已有、并未入囊 */
+  duplicate: boolean
+  /** 重复折算的悟道点(非重复为 0) */
+  wudao: number
+}
+
+/**
+ * 收入一件法宝,回报结构而非只给一句文案。
+ *
+ * 离线按期望件数入账(offline.ts):16 小时长档能掉出几十件,而囊中早已有它的那些
+ * 每件都吐一行「(已拥有,化作悟道点×10)」—— 归来卷轴被同一行淹没,读不出别的。
+ * 调用方需要按 defId 聚合时读这个返回值,不必自己去 inventory 里翻一遍「是不是已经有了」
+ * (那正是 addArtifact 内部的判据,抄一份出来早晚分叉)。
+ *
+ * @return null 表示野 id(无此法宝),调用方应当停止后续抽取
+ */
+export function acquireArtifactGain(defId: string, quiet = false, autoEquip = true): ArtifactGain | null {
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
   const ui = useUiStore()
   const def = artifactDef(defId)
-  if (!def) return ''
+  if (!def) return null
   collect('artifact', defId)
   const player = usePlayerStore()
   const vow = player.reincarnation.vow
   const forbidArtifact = Boolean(vow && !vow.broken && lifeThemeDef(vow.themeId)?.taboo === 'artifact')
   if (!inventory.addArtifact(defId, autoEquip && !forbidArtifact)) {
-    resources.addSmall('wudao', 10)
-    return `法宝「${def.name}」(已拥有,化作悟道点×10)`
+    resources.addSmall('wudao', ARTIFACT_DUPLICATE_WUDAO)
+    return {
+      defId,
+      name: def.name,
+      line: `法宝「${def.name}」(已拥有,化作悟道点×${ARTIFACT_DUPLICATE_WUDAO})`,
+      duplicate: true,
+      wudao: ARTIFACT_DUPLICATE_WUDAO
+    }
   }
   if (!quiet) ui.toast(`天降机缘!获得法宝「${def.name}」`, 'rare')
-  return `法宝「${def.name}」`
+  return { defId, name: def.name, line: `法宝「${def.name}」`, duplicate: false, wudao: 0 }
 }
 
 /** 随机一件当前境界可用的掉落丹药 */
