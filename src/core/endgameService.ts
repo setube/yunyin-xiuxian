@@ -33,6 +33,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
 import { daoSourceShortfall } from './daoSource'
+import { endgameBusy } from './endgameActivity'
 
 /**
  * 真仙(仙界门槛)方可踏足天界。
@@ -288,6 +289,11 @@ export function replayMark(mark: DaoMark): ExpeditionResult | null {
     ui.toast('此界早已散于天道,无从重临', 'warn')
     return null
   }
+  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm)
+  if (busy) {
+    ui.toast(busy.reason, 'warn')
+    return null
+  }
   const r = mark.replay
   const snap = snapFromReplay('当年的你', r)
   const stats = { attack: r.attack, defense: r.defense, maxHp: r.maxHp }
@@ -332,6 +338,11 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
   const { world, trial } = markTarget(mark)
   if (!world && !trial) {
     ui.toast('此界早已散于天道,无从重写', 'warn')
+    return null
+  }
+  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm)
+  if (busy) {
+    ui.toast(busy.reason, 'warn')
     return null
   }
   const short = daoSourceShortfall(REWRITE_ENTRY_COST, endgame.daoSource)
@@ -394,6 +405,11 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
   if (!trial || !endgameUnlocked()) return null
   if (!endgame.daoPath) {
     ui.toast('先择道途,方可赴试炼', 'warn')
+    return null
+  }
+  const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm)
+  if (busy) {
+    ui.toast(busy.reason, 'warn')
     return null
   }
   const short = daoSourceShortfall(trial.entryCost, endgame.daoSource)

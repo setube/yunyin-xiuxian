@@ -20,6 +20,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
 import { daoSourceShortfall } from './daoSource'
+import { endgameBusy } from './endgameActivity'
 
 export const CHALLENGE_ENTRY_COST = 15
 export const CHALLENGE_MAX_MUTATORS = 3
@@ -104,6 +105,11 @@ export function undertakeChallenge(draft: ChallengeDraft, verdict: ChallengeVerd
   const endgame = useEndgameStore()
   const ui = useUiStore()
   if (!endgameUnlocked() || !endgame.daoPath || !verdict.ok) return null
+  const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm)
+  if (busy) {
+    ui.toast(busy.reason, 'warn')
+    return null
+  }
   // 先认界再扣费:草案可能来自过期 UI 状态或外部调用,非法世界不应白烧入场道源
   const world = celestialWorldDef(draft.worldId)
   if (!world) return null

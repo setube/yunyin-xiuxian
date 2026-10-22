@@ -141,4 +141,29 @@ describe('天道试炼 · challengeTrial 清/败原子', () => {
     const b = challengeTrial('qisha')!
     expect(JSON.stringify(b.report.rows), '同一试炼该逐回合同变数').toBe(JSON.stringify(a.report.rows))
   })
+
+  it('秘境在途:试炼与重写都在扣费前拒绝', () => {
+    seedTrialPlayer(true)
+    const player = usePlayerStore()
+    const e = useEndgameStore()
+    player.secretRealm = {
+      realmId: 'sr_kurong', enteredAt: 1, layer: 1, wins: 0, losses: 0, spoils: [], rules: [], carriedHpPct: 1, finished: false
+    }
+    e.addMark({
+      life: 1,
+      daoPathId: 'sword',
+      targetId: 'chiyan',
+      targetName: celestialWorldDef('chiyan')!.name,
+      cleared: true,
+      rounds: 99,
+      buildName: '天道自检',
+      powerText: '1e100',
+      at: Date.now(),
+      replay: { mods: {}, attack: gn(1), defense: gn(1), maxHp: gn(10), speed: 1, skills: [], artifacts: [], pactId: null }
+    })
+    const before = e.daoSource
+    expect(challengeTrial('qisha')).toBeNull()
+    expect(rewriteMark(e.marks[0]!)).toBeNull()
+    expect(e.daoSource, '在途拒绝不得扣道源').toBe(before)
+  })
 })

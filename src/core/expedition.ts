@@ -35,6 +35,7 @@ import { useEndgameStore, type WorldRunState } from '@/stores/endgame'
 import { gateDef } from '@/data/qimen'
 import { useUiStore } from '@/stores/ui'
 import { daoSourceShortfall } from './daoSource'
+import { endgameBusy } from './endgameActivity'
 
 /** 单场战果 */
 export interface StepOutcome {
@@ -417,6 +418,11 @@ export function challengeMutation(mutatorIds: string[]): MutationResult | null {
   const ui = useUiStore()
   if (!endgameUnlocked() || !endgame.daoPath) {
     ui.toast('先择道途,方可应变数', 'warn')
+    return null
+  }
+  const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm)
+  if (busy) {
+    ui.toast(busy.reason, 'warn')
     return null
   }
   const short = daoSourceShortfall(MUTATION_ENTRY_COST, endgame.daoSource)

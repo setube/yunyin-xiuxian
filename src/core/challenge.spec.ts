@@ -113,6 +113,18 @@ describe('相元挑战 · undertakeChallenge 清/败原子', () => {
     expect(e.marks, '没有开打就不该留道痕').toEqual([])
   })
 
+  it('远征在途:扣费前拒绝挑战书,道源分文不动', () => {
+    seed(true)
+    const e = useEndgameStore()
+    e.worldRun = { worldId: 'chiyan', pactId: null, gateId: null, layer: 1, bonus: 0, rows: [], carriedHpPct: 1, totalRounds: 0, winStacks: 0 }
+    const verdict = verifyChallenge(DRAFT)!
+    const before = e.daoSource
+    const out = undertakeChallenge(DRAFT, verdict)
+    expect(out).toBeNull()
+    expect(e.daoSource).toBe(before)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('远征在途')
+  })
+
   it('道源不足:拒因报实际差额,不把总价当缺口', () => {
     const endgame = useEndgameStore()
     endgame.daoSource = 10

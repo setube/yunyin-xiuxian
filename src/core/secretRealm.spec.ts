@@ -24,6 +24,7 @@ import { useEndgameStore } from '@/stores/endgame'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { startExploration } from './exploration'
+import { endgameBusy } from './endgameActivity'
 import {
   SECRET_LAYERS,
   SECRET_MAX_LOSSES,
@@ -130,6 +131,25 @@ describe('秘境 · 进得去', () => {
     abandonRealm()
     expect(startExploration('qingyun', 'normal')).toBe(true)
     expect(enterSecretRealm('sr_kurong').ok, '历练途中不许入秘境').toBe(false)
+  })
+
+  it('远征在途:秘境入口与核心拒绝同源,界面判据也认出同一原因', () => {
+    ready(3)
+    const endgame = useEndgameStore()
+    endgame.worldRun = {
+      worldId: 'chiyan',
+      pactId: null,
+      gateId: null,
+      layer: 1,
+      bonus: 0,
+      rows: [],
+      carriedHpPct: 1,
+      totalRounds: 0,
+      winStacks: 0
+    }
+    expect(endgameBusy(endgame.worldRun, usePlayerStore().secretRealm)?.kind).toBe('expedition')
+    expect(enterSecretRealm('sr_kurong').ok).toBe(false)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('远征在途')
   })
 
   it('入口代价按地界层级折算 —— 高境界不是只贵一点', () => {

@@ -16,7 +16,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
 import { CELESTIAL_WORLDS, EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
-import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes } from './expedition'
+import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes, challengeMutation } from './expedition'
 import { celestialJudgementLines } from './gauntlet'
 import { daoSourceShortfall } from './daoSource'
 import { gn } from '@/utils/gnum'
@@ -182,6 +182,18 @@ describe('远征 · 败战即结(不留残局续打)', () => {
     const outcome = startWorldExpedition('chiyan', null)
     expect(outcome!.type).toBe('lost')
     expect(useEndgameStore().worldRun).toBeNull()
+  })
+})
+
+describe('终局付费战斗 · 在途互斥', () => {
+  it('远征在途:变数连战在扣费前拒绝', () => {
+    seated(9, MORTAL_TOP, 'heaven', 20)
+    const eg = useEndgameStore()
+    eg.worldRun = { worldId: 'chiyan', pactId: null, gateId: null, layer: 1, bonus: 0, rows: [], carriedHpPct: 1, totalRounds: 0, winStacks: 0 }
+    const before = eg.daoSource
+    expect(challengeMutation([])).toBeNull()
+    expect(eg.daoSource).toBe(before)
+    expect(useUiStore().toasts.at(-1)?.text).toContain('远征在途')
   })
 })
 
