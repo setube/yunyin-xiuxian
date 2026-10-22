@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 336,
+  "round": 337,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-22T12:30:15+00:00",
+  "updated_at": "2026-10-22T14:23:15+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -26373,6 +26373,228 @@
       "title": "判据沿用会被闸门正确拦下的夹具时,量到的永远是闸门而不是被测对象",
       "confidence": 0.85,
       "detail": "试炼步沿用带在途活动的后期档,应试按钮被 endgameBusy 正确置灰,判据报「点了没反应」。"
+    },
+    "ISS-1041": {
+      "id": "ISS-1041",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:02+00:00",
+      "updated_at": "2026-10-22T14:18:02+00:00",
+      "touched_round": 336,
+      "title": "护盾法宝的说明报数越过总盾上限:effectValuesAt 的 shield 分支只乘倍率,战斗侧 gainShield 钳在 SHIELD_CAP_RATIO 50%,本源莲台九重报 76.2%、混沌青莲 69.5%、帝阙神符 69.1%、太虚镜 61.5%",
+      "severity": "high"
+    },
+    "ISS-1042": {
+      "id": "ISS-1042",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:02+00:00",
+      "updated_at": "2026-10-22T14:18:02+00:00",
+      "touched_round": 336,
+      "title": "削弱取新不取强:combat 的 weaken 分支是直接赋值,两个削弱法宝的生效值由出手顺序决定,弱件在后会把强件顶掉",
+      "severity": "high"
+    },
+    "ISS-1043": {
+      "id": "ISS-1043",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:02+00:00",
+      "updated_at": "2026-10-22T14:18:02+00:00",
+      "touched_round": 336,
+      "title": "法宝位顺序与替下判据分叉:界面按品质降序画槽位,store 却替下列表第一件,玩家看到的第一格未必是让位的那件",
+      "severity": "medium"
+    },
+    "ISS-1044": {
+      "id": "ISS-1044",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:02+00:00",
+      "updated_at": "2026-10-22T14:18:02+00:00",
+      "touched_round": 336,
+      "title": "toggleArtifact 替换分支不裁超编:列表本来就超编时 slice(1) 只摘一件,槽位上限在这条路上失效",
+      "severity": "medium"
+    },
+    "ISS-1045": {
+      "id": "ISS-1045",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:02+00:00",
+      "updated_at": "2026-10-22T14:18:02+00:00",
+      "touched_round": 336,
+      "title": "忆战快照不裁法宝条数:sanitizeMarkReplay 去重钳重数却不按 ARTIFACT_MAX_SLOTS 截断,坏档 5 件会一起触发",
+      "severity": "medium"
+    },
+    "ISS-1046": {
+      "id": "ISS-1046",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:02+00:00",
+      "updated_at": "2026-10-22T14:18:02+00:00",
+      "touched_round": 336,
+      "title": "法宝谱提示对零重封顶的几件是假话:「被动与神通各强八分」,而神鞭/无相念珠/神魔镜/护盾件祭炼只涨被动",
+      "severity": "low"
+    },
+    "ISS-1047": {
+      "id": "ISS-1047",
+      "type": "issue",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:02+00:00",
+      "updated_at": "2026-10-22T14:18:02+00:00",
+      "touched_round": 336,
+      "title": "图标审计只认单引号写法:icon: \"x\" 与 icon: `x` 整段漏扫,与注释「每一种写法都要认」不符",
+      "severity": "low"
+    },
+    "TASK-483": {
+      "id": "TASK-483",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:20+00:00",
+      "updated_at": "2026-10-22T14:18:20+00:00",
+      "touched_round": 336,
+      "title": "护盾法宝单次给盾也套 SHIELD_CAP_RATIO,并把 shield 加进 effectCap 与下一重封顶提示",
+      "category": "correctness"
+    },
+    "TASK-484": {
+      "id": "TASK-484",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:20+00:00",
+      "updated_at": "2026-10-22T14:18:20+00:00",
+      "touched_round": 336,
+      "title": "削弱改为 Math.max 取强,补顺序无关与弱件不顶强件两条判据",
+      "category": "correctness"
+    },
+    "TASK-485": {
+      "id": "TASK-485",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:20+00:00",
+      "updated_at": "2026-10-22T14:18:20+00:00",
+      "touched_round": 336,
+      "title": "法宝槽位视图与替下判据同源,按钮预告让位的那一件",
+      "category": "correctness"
+    },
+    "TASK-486": {
+      "id": "TASK-486",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:20+00:00",
+      "updated_at": "2026-10-22T14:18:20+00:00",
+      "touched_round": 336,
+      "title": "toggleArtifact 替换分支裁到 slots 条,忆战快照按 ARTIFACT_MAX_SLOTS 截断",
+      "category": "stability"
+    },
+    "TASK-487": {
+      "id": "TASK-487",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:20+00:00",
+      "updated_at": "2026-10-22T14:18:20+00:00",
+      "touched_round": 336,
+      "title": "法宝谱提示按件给话,重数上限从 ARTIFACT_MAX_LEVEL 现算",
+      "category": "correctness"
+    },
+    "TASK-488": {
+      "id": "TASK-488",
+      "type": "task",
+      "status": "resolved",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:21+00:00",
+      "updated_at": "2026-10-22T14:18:21+00:00",
+      "touched_round": 336,
+      "title": "图标字面量审计认单/双/反引号三种写法",
+      "category": "test-quality"
+    },
+    "CHG-581": {
+      "id": "CHG-581",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T14:18:34+00:00",
+      "updated_at": "2026-10-22T14:23:15+00:00",
+      "touched_round": 337,
+      "title": "法宝数值出口补上总盾上限,战斗与三处文案同源",
+      "commit": "f1b26c8"
+    },
+    "CHG-582": {
+      "id": "CHG-582",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T14:18:34+00:00",
+      "updated_at": "2026-10-22T14:23:15+00:00",
+      "touched_round": 337,
+      "title": "削弱减益改为取强不取新,与破甲同一条纪律",
+      "commit": "f1b26c8"
+    },
+    "CHG-583": {
+      "id": "CHG-583",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T14:18:34+00:00",
+      "updated_at": "2026-10-22T14:23:15+00:00",
+      "touched_round": 337,
+      "title": "法宝槽位顺序成为单一事实源,替换分支与忆战快照同受槽位上限约束",
+      "commit": "1684adc"
+    },
+    "CHG-584": {
+      "id": "CHG-584",
+      "type": "change",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-22T14:18:34+00:00",
+      "updated_at": "2026-10-22T14:23:15+00:00",
+      "touched_round": 337,
+      "title": "法宝谱提示与图标审计口径收口",
+      "commit": "b5fb1a4"
+    },
+    "HYP-190": {
+      "id": "HYP-190",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:34+00:00",
+      "updated_at": "2026-10-22T14:18:34+00:00",
+      "touched_round": 336,
+      "title": "法宝系统的同一件事写两遍都集中在数值出口与槽位规则两处,收成单一事实源即可同时消掉显示撒谎与超编",
+      "confidence": 0.8
+    },
+    "EV-1033": {
+      "id": "EV-1033",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:45+00:00",
+      "updated_at": "2026-10-22T14:18:45+00:00",
+      "touched_round": 336,
+      "title": "故障注入四组均先红后绿:shield 回裸乘 4 条红、weaken 回赋值 2 条红、slotViews 按品质排 2 条红、toggle slice(1) 与忆战不截断各自红",
+      "confidence": 0.95,
+      "source": "test:artifactEffects+inventory+endgame+artifactsIcon"
+    },
+    "EV-1034": {
+      "id": "EV-1034",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-22T14:18:45+00:00",
+      "updated_at": "2026-10-22T14:18:45+00:00",
+      "touched_round": 336,
+      "title": "全量 bun run test:report 3585 过 0 败,9 桶全 PASS;bun run check 与 bun run build 均通过",
+      "confidence": 0.99,
+      "source": "test:test-report"
     }
   },
   "edges": [
@@ -38847,6 +39069,138 @@
       "to": "ISS-1040",
       "type": "addresses",
       "created_at": "2026-10-22T12:28:49+00:00"
+    },
+    {
+      "from": "TASK-483",
+      "to": "ISS-1041",
+      "type": "addresses",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "TASK-484",
+      "to": "ISS-1042",
+      "type": "addresses",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "TASK-485",
+      "to": "ISS-1043",
+      "type": "addresses",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "TASK-486",
+      "to": "ISS-1044",
+      "type": "addresses",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "TASK-486",
+      "to": "ISS-1045",
+      "type": "addresses",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "TASK-487",
+      "to": "ISS-1046",
+      "type": "addresses",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "TASK-488",
+      "to": "ISS-1047",
+      "type": "addresses",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "CHG-581",
+      "to": "TASK-483",
+      "type": "implements",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "CHG-582",
+      "to": "TASK-484",
+      "type": "implements",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "CHG-583",
+      "to": "TASK-485",
+      "type": "implements",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "CHG-583",
+      "to": "TASK-486",
+      "type": "implements",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "CHG-584",
+      "to": "TASK-487",
+      "type": "implements",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "CHG-584",
+      "to": "TASK-488",
+      "type": "implements",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "CHG-581",
+      "to": "ISS-1041",
+      "type": "resolves",
+      "created_at": "2026-10-22T14:18:56+00:00"
+    },
+    {
+      "from": "CHG-582",
+      "to": "ISS-1042",
+      "type": "resolves",
+      "created_at": "2026-10-22T14:18:57+00:00"
+    },
+    {
+      "from": "CHG-583",
+      "to": "ISS-1043",
+      "type": "resolves",
+      "created_at": "2026-10-22T14:18:57+00:00"
+    },
+    {
+      "from": "CHG-583",
+      "to": "ISS-1044",
+      "type": "resolves",
+      "created_at": "2026-10-22T14:18:57+00:00"
+    },
+    {
+      "from": "CHG-583",
+      "to": "ISS-1045",
+      "type": "resolves",
+      "created_at": "2026-10-22T14:18:57+00:00"
+    },
+    {
+      "from": "CHG-584",
+      "to": "ISS-1046",
+      "type": "resolves",
+      "created_at": "2026-10-22T14:18:57+00:00"
+    },
+    {
+      "from": "CHG-584",
+      "to": "ISS-1047",
+      "type": "resolves",
+      "created_at": "2026-10-22T14:18:57+00:00"
+    },
+    {
+      "from": "EV-1033",
+      "to": "HYP-190",
+      "type": "validates",
+      "created_at": "2026-10-22T14:18:57+00:00"
+    },
+    {
+      "from": "EV-1034",
+      "to": "HYP-190",
+      "type": "validates",
+      "created_at": "2026-10-22T14:18:57+00:00"
     }
   ]
 }
