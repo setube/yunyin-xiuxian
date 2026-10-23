@@ -772,6 +772,15 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     // 祭炼给多少、至多重:取自 artifacts 的常数,不在界面里另写一份
     expect(view, '祭炼每重的增幅应读 ARTIFACT_LEVEL_BONUS').toContain('ARTIFACT_LEVEL_BONUS')
     expect(view, '祭炼上限应读 ARTIFACT_MAX_LEVEL').toContain('ARTIFACT_MAX_LEVEL')
+    /**
+     * 总纲不许替「零重封顶」的那几件打包票:神鞭/无相念珠的神通主体、神魔镜的回补
+     * 祭炼都不会再涨。图鉴那边已按件给话,这里若仍写死「被动与神通各强」,
+     * 同一件事在两张页面上各说一套。
+     *
+     * 故障注入:把「通常」删回「被动与神通各强」→ 本条红。
+     */
+    expect(view, '总纲要留出「并非每件都涨神通」的余地').toContain('通常各强')
+    expect(view, '不许再无条件承诺神通也涨').not.toContain('被动与神通各强')
   })
 
   /**

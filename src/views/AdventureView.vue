@@ -76,8 +76,9 @@
       <p class="text-[10px] leading-relaxed text-ink-faint">
         镇压门槛:胜 {{ SUPPRESS_THRESHOLDS.minWins }} 场 · 均
         {{ SUPPRESS_THRESHOLDS.maxAvgRounds }} 回合 · 受伤 ≤{{ Math.round(SUPPRESS_THRESHOLDS.maxAvgDamageTaken * 100) }}%;
-        资格永久,守满 {{ REVIVE_AFTER_HOURS }} 小时妖气复聚;镇守另给道韵修为(每区 +{{ Math.round(SUPPRESS_EXP_PER_REGION * 100) }}%,
-        封顶 +{{ Math.round(SUPPRESS_EXP_MAX * 100) }}%),守得越久掉出的装备越易出稀品。
+        资格本世永久、转世随皮囊散去,守满 {{ REVIVE_AFTER_HOURS }} 小时妖气复聚;镇守另给道韵修为(每区
+        +{{ Math.round(SUPPRESS_EXP_PER_REGION * 100) }}%,封顶 +{{ Math.round(SUPPRESS_EXP_MAX * 100) }}%),
+        守得越久掉出的装备越易出稀品。
       </p>
       <div class="space-y-2.5">
         <template v-for="group in groupedRows" :key="group.world.id">

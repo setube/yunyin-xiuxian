@@ -297,13 +297,24 @@ describe('图鉴 · 用具三类的收录深度', () => {
    */
   it('封顶判据也看吸命的回补:神魔镜的回补零重就到顶,不许承诺它也会涨', () => {
     const mirror = describeArtifact(artifactDef('af_shenmojing')!, 0, true)
+    /**
+     * 回补满了,但**主体还在涨**(实测 0/1/9 重:8.01 / 8.65 / 13.78)。
+     * 故这里不许承诺「神通各强」,也不许反过来说「只涨被动」—— 那是另一半谎话。
+     */
     expect(mirror.hint, '神魔镜的回补零重即十成,不该承诺「神通各强」').not.toContain('神通各强')
-    expect(mirror.hint).toContain('只涨被动')
+    expect(mirror.hint, '主体仍在涨,不能说成只涨被动').not.toContain('只涨被动')
+    expect(mirror.hint, '要说清哪一侧满了、哪一侧还涨').toContain('回补零重已满')
+    expect(mirror.hint).toContain('神通主体')
 
     // 阳性对照:回补还没到顶的那一件(玄虚拂尘零重 86.9%)照旧承诺都涨
     const fuchen = describeArtifact(artifactDef('af_xuanxu')!, 0, true)
     expect(fuchen.hint).toContain('神通各强')
     expect(artifactValue(artifactDef('af_xuanxu')!, 0).active.heal).toBeLessThan(1)
+
+    // 阳性对照:主体真的冻住的那几件(神鞭/无相念珠)照旧说「只涨被动」
+    for (const id of ['af_shenbian', 'af_wuxiangzhu']) {
+      expect(describeArtifact(artifactDef(id)!, 0, true).hint, `${id} 主体零重封顶`).toContain('只涨被动')
+    }
   })
 
   /**
@@ -319,11 +330,16 @@ describe('图鉴 · 用具三类的收录深度', () => {
     const mid = describeArtifact(artifactDef('af_shenmojing')!, 1, true)
     expect(mid.stage, '祭炼过一重即深度 2').toBe(2)
     expect(mid.hint, '神通早就到顶了,不该再拿「用透」催人').not.toContain('才算把它用透')
-    expect(mid.hint, '要说清楚往后买的是什么').toContain('只买被动')
+    // 神魔镜只有回补满了、主体还在涨:既不能说「用透」,也不能说成只买被动
+    expect(mid.hint, '要说清楚往后买的是什么').toContain('仍让被动与神通主体各强')
 
     // 阳性对照:还能涨的那一件照旧用「用透」那一句
     const fuchenMid = describeArtifact(artifactDef('af_xuanxu')!, 1, true)
     expect(fuchenMid.hint).toContain('才算把它用透')
+
+    // 阳性对照:主体真的冻住的那件照旧说「只买被动」
+    const whipMid = describeArtifact(artifactDef('af_shenbian')!, 1, true)
+    expect(whipMid.hint).toContain('只买被动')
   })
 
   it('提示语里的重数上限从 ARTIFACT_MAX_LEVEL 现算,不是写死的「九」', () => {

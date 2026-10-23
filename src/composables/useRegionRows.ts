@@ -78,7 +78,7 @@ export function useRegionRows() {
         cleared: regionBossCleared(r.id),
         suppressed,
         revived,
-        /** 是否取得过镇压资格(取得即永久,此后可自由在历练/收益之间切换) */
+        /** 是否取得过镇压资格(本世取得即永久,转世随皮囊散去) */
         qualified: player.suppressQualified.includes(r.id),
         /** 镇压资格进度(三条判据的当前值/阈值) */
         progress: suppressionProgress(player.regionStats[r.id]),

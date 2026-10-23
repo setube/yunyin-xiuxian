@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { usePlayerStore } from '@/stores/player'
 import { REGIONS, maxTierForMajor } from '@/data/regions'
 import { rollLinggen } from '@/core/linggenGen'
@@ -129,5 +131,27 @@ describe('转世不残留产出型镇压', () => {
     expect(player.suppressLife, '世号随转世前进').toBe(player.reincarnation.count)
     player.sanitize()
     expect(player.suppressedRegions).toEqual([])
+  })
+
+  /**
+   * 历练页的总纲从前写着「资格永久」,而 rebirth() 连 `suppressQualified` 一并清空:
+   * 文案承诺的是跨世的那枚令,实际给的是本世内不再失效 —— 转世一次就当场分叉。
+   * 这不只是措辞问题:玩家照这句话会以为新世炼气也能一键把旧世远境切回收益,
+   * 而那正是数值爆炸的入口,代码刻意堵死了。
+   *
+   * 故障注入:把文案改回「资格永久,守满…」→ 本条红。
+   */
+  it('历练页不再承诺「资格永久」,并写明转世会散去', () => {
+    const view = readFileSync(resolve(__dirname, '../views/AdventureView.vue'), 'utf8')
+    expect(view, '资格只在本世内永久,必须点明转世').toContain('资格本世永久、转世随皮囊散去')
+    expect(view, '不许再对玩家承诺跨世的「资格永久」').not.toContain('资格永久,守满')
+
+    // 正对照:行为确实是「本世保留、转世清空」,文案不是凭空的
+    const player = usePlayerStore()
+    player.markSuppressQualified('qingyun')
+    player.suppressRegion('qingyun')
+    expect(player.suppressQualified, '本世内资格照旧保留').toContain('qingyun')
+    player.rebirth(rollLinggen(rng))
+    expect(player.suppressQualified, '转世后资格随皮囊散去').toEqual([])
   })
 })

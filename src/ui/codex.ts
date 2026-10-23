@@ -379,22 +379,33 @@ export const ARTIFACT_STAGE_MAX = 3
  * 同一条谎话在**深度 2**那一行还有一份:「炼到九重,才算把它用透」对零重就封顶的
  * 那几件同样是假话 —— 神魔镜炼到九重,神通与炼第一重时逐字相同,「用透」的是被动,
  * 不是这一句让人以为的那件法宝的全部。故那一行也按件给话。
+ *
+ * 但「冻结」要分侧说,不能一律说成「只涨被动」。神魔镜的回补零重就满十成,而神通
+ * **主体**仍在涨(8.01 → 8.65 → …):把它也说成「只涨被动」,玩家会以为祭炼对这件
+ * 的伤害毫无用处,白白跳过。故按「哪一侧冻住了」分别给话:主体冻结才说只涨被动,
+ * 只有回补冻结则说「主体照涨、回补已满」。
  */
 function artifactHints(def: ArtifactDef): readonly string[] {
   const gain0 = artifactNextLevelGain(def, 0)
-  // 零重与一重给出同一个数 = 祭炼买不到任何东西
-  // (stun 那几件的 active 是 null —— 它没有数值,本就不该被这句承诺)
   const frozen = (x: { from: number; to: number } | null | undefined): boolean =>
     !!x && Math.abs(x.to - x.from) < 1e-9
-  const cappedAtZero = frozen(gain0?.active) || frozen(gain0?.heal)
+  // stun 那几件的 active 是 null —— 它没有数值,本就不该被这句承诺
+  const activeFrozen = frozen(gain0?.active)
+  const healFrozen = frozen(gain0?.heal)
+  const gainLine = activeFrozen
+    ? `此宝神通零重已至上限,祭炼只涨被动(每重 ${formatPercent(ARTIFACT_LEVEL_BONUS)})。`
+    : healFrozen
+      ? `此宝回补零重已满,祭炼仍让被动与神通主体各强 ${formatPercent(ARTIFACT_LEVEL_BONUS)}。`
+      : `祭炼过后,被动与神通各强 ${formatPercent(ARTIFACT_LEVEL_BONUS)}。`
+  const midLine = activeFrozen
+    ? `此宝神通零重已至上限,往后每一重只买被动(每重 ${formatPercent(ARTIFACT_LEVEL_BONUS)})。`
+    : healFrozen
+      ? `此宝回补零重已满,往后每一重仍让被动与神通主体各强 ${formatPercent(ARTIFACT_LEVEL_BONUS)}。`
+      : `炼到${cnNumber(ARTIFACT_MAX_LEVEL)}重,才算把它用透。`
   return [
     '尚未见过此宝 —— 高阶地界才出得上品。',
-    cappedAtZero
-      ? `录在册上了,还没拿它炼过一重 —— 此宝神通零重已至上限,祭炼只涨被动(每重 ${formatPercent(ARTIFACT_LEVEL_BONUS)})。`
-      : `录在册上了,还没拿它炼过一重 —— 祭炼过后,被动与神通各强 ${formatPercent(ARTIFACT_LEVEL_BONUS)}。`,
-    cappedAtZero
-      ? `炼过几重了 —— 此宝神通零重已至上限,往后每一重只买被动(每重 ${formatPercent(ARTIFACT_LEVEL_BONUS)})。`
-      : `炼过几重了 —— 炼到${cnNumber(ARTIFACT_MAX_LEVEL)}重,才算把它用透。`,
+    `录在册上了,还没拿它炼过一重 —— ${gainLine}`,
+    `炼过几重了 —— ${midLine}`,
     ''
   ]
 }

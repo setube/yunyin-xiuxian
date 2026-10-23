@@ -129,10 +129,14 @@ export const usePlayerStore = defineStore(
     const regionStats = ref<Record<string, import('@/core/suppress').RegionStats>>({})
     const suppressedRegions = ref<string[]>([])
     /**
-     * 镇压资格(取得即永久,随世界记忆跨世保留)。
+     * 镇压资格(**本世**取得即永久,转世随皮囊散去)。
      *
-     * 「镇压过就镇压过」:一旦对某地区域取得过绝对优势,此后随时可把它切回收益态,
+     * 「镇压过就镇压过」:一旦对某地区域取得过绝对优势,本世内随时可把它切回收益态,
      * 不必再打满二十场重新证明一遍。收益是否正在收取是另一件事(见 suppressedRegions)。
+     *
+     * 为什么不是跨世永久:旧世压下的远境多为高阶,新世炼气若凭那枚令一键切回收益,
+     * 就会按旧阶位派发高阶装备与灵石 —— 数值当场爆炸(玩家实报)。故 rebirth() 连
+     * 资格一并清空;这里的「永久」只指「本世内不再失效」。
      */
     const suppressQualified = ref<string[]>([])
     /** 镇压时间戳:区域 → 镇压开始的时刻(供复苏判定) */

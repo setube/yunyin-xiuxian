@@ -13,10 +13,15 @@
       · {{ artifactUnlockRealm }}境开第{{ cnNumber(ARTIFACT_MAX_SLOTS) }}位
     </span>
   </div>
-  <!-- 祭炼到底给什么:数值都从上界常数来,不在界面里再写一份 -->
+  <!--
+    祭炼到底给什么:数值都从上界常数来,不在界面里再写一份。
+    但「被动与神通通常各强」不是每件都成立 —— 神鞭/无相念珠的主体零重就封顶,
+    神魔镜的回补零重就满十成(见 ui/codex 的按件提示)。总纲只承诺「多数」,
+    并指到每张卡上的「下一重」,免得全局句替那几件撒谎。
+  -->
   <p class="mt-1 px-1 text-[10px] text-ink-faint">
-    祭炼一重,被动与神通各强 {{ formatPercent(ARTIFACT_LEVEL_BONUS) }},至多 {{ cnNumber(ARTIFACT_MAX_LEVEL) }} 重 ——
-    顶到封顶的不再涨,卡片上标着
+    祭炼一重,被动与神通通常各强 {{ formatPercent(ARTIFACT_LEVEL_BONUS) }},至多 {{ cnNumber(ARTIFACT_MAX_LEVEL) }} 重 ——
+    已到顶的那一侧不再涨,每张卡的「下一重」会照实写清
   </p>
   <div v-if="artifactRows.length" class="mt-2 space-y-2.5">
     <div v-for="row in artifactRows" :key="row.def.id" class="card-ink px-4 py-3">
