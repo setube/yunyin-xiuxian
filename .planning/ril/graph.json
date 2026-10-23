@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 346,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-23T07:12:25+00:00",
+  "updated_at": "2026-10-23T07:24:46+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -27219,6 +27219,80 @@
       "title": "法宝稀有角章与祭炼重数错开",
       "commit": "85255fc",
       "detail": "ArtifactPanel 在行投影中计算 rare,稀有行标题栏增加 pr-3;回归用例锁定投影、角章条件与间距,390px 天/神两档重叠归零。"
+    },
+    "TASK-501": {
+      "id": "TASK-501",
+      "type": "task",
+      "status": "resolved",
+      "version": 4,
+      "created_at": "2026-10-23T07:19:47+00:00",
+      "updated_at": "2026-10-23T07:24:46+00:00",
+      "touched_round": 346,
+      "category": "ux",
+      "severity": 0.6,
+      "confidence": 0.98,
+      "effort": 1,
+      "title": "稀有品阶角章的字形对比度不足",
+      "detail": "QualitySeal 用品质色本身绘制 9-11px 字形,印底又叠同色 12% 淡染;明色主题天/仙/神仅 1.85/2.79/4.14:1,暗色仙/神仅 3.45/3.19:1。丹药格另抄一份同款角章,同样中招。"
+    },
+    "ISS-1063": {
+      "id": "ISS-1063",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T07:19:47+00:00",
+      "updated_at": "2026-10-23T07:24:46+00:00",
+      "touched_round": 346,
+      "severity": 0.6,
+      "title": "稀有品阶角章的字形对比度不足",
+      "detail": "9-11px 的品阶字用低对比品质色写在同色淡底上,明暗主题多档低于正文 AA;色弱与低视力玩家读不出天/仙/神/道角章。"
+    },
+    "COMP-083": {
+      "id": "COMP-083",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T07:19:47+00:00",
+      "updated_at": "2026-10-23T07:19:47+00:00",
+      "touched_round": 346,
+      "summary": "通用品阶角章 QualitySeal.vue 与丹药丹匣角章"
+    },
+    "HYP-196": {
+      "id": "HYP-196",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T07:19:47+00:00",
+      "updated_at": "2026-10-23T07:24:46+00:00",
+      "touched_round": 346,
+      "title": "角章字形改用主题墨色可在两套主题过 AA",
+      "detail": "品质色继续留在边框与淡底上承担色相线索,字形改用随主题翻转的 --color-ink;预计明暗两套均已远超 4.5:1,且不改变角章的品阶识别。",
+      "confidence": 0.95
+    },
+    "EV-1040": {
+      "id": "EV-1040",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T07:24:42+00:00",
+      "updated_at": "2026-10-23T07:24:42+00:00",
+      "touched_round": 346,
+      "title": "角章改用主题墨色后明暗最低 7.47:1",
+      "source": "headless Chromium + src/ui/palette.spec.ts + src/ui/qualityTier.spec.ts",
+      "confidence": 1.0,
+      "detail": "修复前浏览器实测品阶色字形:明色天/仙/神 1.85/2.79/4.14:1,暗色仙/神 3.45/3.19:1。改用 text-ink 后通用角章明色 11.44/10.80/10.10、暗色 9.27/10.28/10.58;丹匣道品明色 11.64、暗色 7.47。通用角章与丹匣旧写法分别故障注入,均点名转红;全量 317 files / 3663 tests 通过。"
+    },
+    "CHG-599": {
+      "id": "CHG-599",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T07:24:42+00:00",
+      "updated_at": "2026-10-23T07:24:42+00:00",
+      "touched_round": 346,
+      "title": "稀有品阶角章字形改用主题墨色",
+      "commit": "8641619",
+      "detail": "QualitySeal 与丹匣角章保留品阶色边框/淡底,字形统一使用 text-ink;palette.spec 增加叠色对比度判据,qualityTier.spec 锁定两处接线。"
     }
   },
   "edges": [
@@ -40179,6 +40253,36 @@
       "to": "TASK-500",
       "type": "implements",
       "created_at": "2026-10-23T07:12:14+00:00"
+    },
+    {
+      "from": "TASK-501",
+      "to": "ISS-1063",
+      "type": "addresses",
+      "created_at": "2026-10-23T07:19:48+00:00"
+    },
+    {
+      "from": "ISS-1063",
+      "to": "COMP-083",
+      "type": "located_in",
+      "created_at": "2026-10-23T07:19:48+00:00"
+    },
+    {
+      "from": "EV-1040",
+      "to": "HYP-196",
+      "type": "validates",
+      "created_at": "2026-10-23T07:24:42+00:00"
+    },
+    {
+      "from": "CHG-599",
+      "to": "ISS-1063",
+      "type": "resolves",
+      "created_at": "2026-10-23T07:24:42+00:00"
+    },
+    {
+      "from": "CHG-599",
+      "to": "TASK-501",
+      "type": "implements",
+      "created_at": "2026-10-23T07:24:42+00:00"
     }
   ]
 }
