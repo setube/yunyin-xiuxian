@@ -241,6 +241,16 @@ export const HERITAGE: HeritageRow[] = [
     power: 'none',
     compressesGrowth: false
   },
+  {
+    id: 'regionWinsLife',
+    name: '区域胜场世号',
+    mode: 'reset',
+    detail:
+      '与 regionStats 同一本账的世号:胜场本身跨世留作叙事,但兴衰判据(30 胜稳定 / 80 胜繁盛)只认本世 —— 否则新世重新镇压一次,旧世刷出的 80 胜立刻让地界繁盛,凭空多拿 10% 产出。rebirth() 当场把旧账逐条盖成旧世号',
+    kind: 'state',
+    power: 'none',
+    compressesGrowth: false
+  },
   // ---- 补全:此前未被清单收录、却同样有跨世去留的功能 ----
   {
     id: 'secretRealm',

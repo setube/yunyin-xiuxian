@@ -6,6 +6,7 @@ import { usePlayerStore } from '@/stores/player'
 import { REGIONS, maxTierForMajor } from '@/data/regions'
 import { rollLinggen } from '@/core/linggenGen'
 import { checkSuppression, settleSuppressedRegions, suppressionProgress } from './suppress'
+import { FLOURISH_WINS, STABLE_WINS, regionRecallFor, regionWinsOfThisLife } from './worldMemory'
 import { rng } from '@/utils/random'
 
 /**
@@ -262,5 +263,37 @@ describe('转世不残留产出型镇压', () => {
     player.suppressQualified = []
     player.sanitize()
     expect(player.suppressedSince.qingyun, '资格与镇压都没有了,起点才是真残项').toBeUndefined()
+  })
+
+  /**
+   * 兴衰也认世:旧世刷出的 80 胜,不该让新世的地界一镇压就「繁盛」。
+   *
+   * `regionWins` 与 `regionStats` 一样跨世保留(「世界记得你」),而兴衰判据是
+   * 「30 胜稳定 / 80 胜繁盛」。新世若直接读旧账,只要重新镇压一次就立刻吃
+   * 繁盛的 +10% 产出,而新世一场都还没在这里打过。
+   *
+   * 故障注入:让 regionWinsOfThisLife 忽略世号 → 本条红。
+   */
+  it('新世镇压地界不再继承旧世胜场:兴衰从混乱重新走', () => {
+    const player = usePlayerStore()
+    player.major = 12
+    // 上一世在这里刷到繁盛
+    player.regionWins = { hongmeng: FLOURISH_WINS }
+    player.regionWinsLife = { hongmeng: 0 }
+    player.markSuppressQualified('hongmeng')
+    player.suppressRegion('hongmeng')
+    expect(regionRecallFor('hongmeng').prosperity, '上一世确实繁盛').toBe('flourish')
+
+    player.rebirth(rollLinggen(rng))
+    expect(regionWinsOfThisLife(player, 'hongmeng'), '新世本世胜场从 0 起').toBe(0)
+    // 新世重新取得资格并镇压(资格与收益都要重新打出来)
+    player.markSuppressQualified('hongmeng')
+    player.suppressRegion('hongmeng')
+    expect(regionRecallFor('hongmeng').prosperity, '新世一场未打,不该直接繁盛').toBe('chaos')
+
+    // 阳性对照:本世真的赢够场数,兴衰照旧翻档
+    player.regionWins = { ...player.regionWins, hongmeng: STABLE_WINS }
+    player.regionWinsLife = { ...player.regionWinsLife, hongmeng: player.suppressLife }
+    expect(regionRecallFor('hongmeng').prosperity).toBe('stable')
   })
 })

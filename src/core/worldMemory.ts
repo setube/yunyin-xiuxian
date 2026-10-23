@@ -285,7 +285,8 @@ export function regionRecallFor(regionId: string, now = Date.now()): RegionRecal
      * 后者连败仗一起数:同一地界连输五十场也会被判成「繁盛」,而兴衰的原意是
      * 「你在这里赢过多少」。`recordRegionWin` 一直只写不读,正是这条接错了线。
      */
-    totalWins: player.regionWins[regionId] ?? 0,
+    // 只认本世胜场:旧世刷出的 80 胜不该把新世的地界判成繁盛(见 player.regionWinsLife)
+    totalWins: regionWinsOfThisLife(player, regionId),
     hasSuppressed: player.suppressedRegions.includes(regionId),
     // 「镇压后稳定多久」的起点是镇压时刻,suppressedSince;不能拿最近战斗时间 lastUpdateAt 充数
     // —— 否则镇压后继续刷战,`since` 会随战斗一路前移,「此地已稳定 N 小时」越算越短
@@ -293,6 +294,25 @@ export function regionRecallFor(regionId: string, now = Date.now()): RegionRecal
     lastActivityAt: stats?.lastUpdateAt ?? now,
     now
   })
+}
+
+/**
+ * 本世的区域胜场 —— 兴衰判据的唯一读法。
+ *
+ * `regionWins` 跨世保留(「世界记得你」),但胜场是兴衰的**判据**(30 胜稳定 /
+ * 80 胜繁盛)。新世若直接读旧世那本,只要重新镇压一次就立刻「繁盛」,
+ * 凭空多拿 10% 产出,而新世一场都还没在这里打过。故按 `regionWinsLife` 认世:
+ * 世号不符即视为本世 0 胜。
+ */
+export function regionWinsOfThisLife(
+  player: ReturnType<typeof usePlayerStore>,
+  regionId: string
+): number {
+  const life = player.suppressLife >= 0 ? player.suppressLife : player.reincarnation.count
+  const tagged = player.regionWinsLife[regionId]
+  // 没有世号(老档 / 新档刚写)按本世认;只有明确盖了别的世号才算旧账
+  if (tagged === undefined || tagged < 0 || tagged === life) return player.regionWins[regionId] ?? 0
+  return 0
 }
 
 // ============ 宿敌残魂(Phase 31.4)============

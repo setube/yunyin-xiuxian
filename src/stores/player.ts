@@ -201,8 +201,16 @@ export const usePlayerStore = defineStore(
     // Phase 30.9 世界记忆
     /** 宿敌列表(同一敌人败我 ≥3 次) */
     const nemeses = ref<import('@/types').NemesisRecord[]>([])
-    /** 区域总胜场(供兴衰状态派生;regionStats 已有近似数据,但保持独立统计纯胜场) */
+    /**
+     * 区域总胜场(供兴衰状态派生;regionStats 已有近似数据,但保持独立统计纯胜场)。
+     *
+     * 与 regionStats 同一条纪律:胜场可以跨世留作叙事,但**兴衰判据只认本世**。
+     * 否则新世只要重新镇压一次,旧世刷出的 80 胜立刻把这片地判成「繁盛」,
+     * 凭空多拿 10% 产出 —— 而新世一场都还没在这里打过。
+     */
     const regionWins = ref<Record<string, number>>({})
+    /** 区域胜场的世号:与 regionWins 同键同命,判据读它 */
+    const regionWinsLife = ref<Record<string, number>>({})
 
     // ---------- 境界 ----------
     const realm = computed(() => realmDef(major.value))
@@ -784,6 +792,10 @@ export const usePlayerStore = defineStore(
       regionStats.value = Object.fromEntries(
         Object.entries(regionStats.value).map(([id, st]) => [id, { ...st, life: previousLife }])
       )
+      // 胜场同理:旧世那本原样留着(叙事),但兴衰判据只认本世,故逐条盖旧世号
+      regionWinsLife.value = Object.fromEntries(
+        Object.keys(regionWins.value).map(id => [id, previousLife])
+      )
       // 世号同步盖上:新世的地盘账从此刻起算(不等下一次 sanitize)
       suppressLife.value = reincarnation.value.count
       // 外物随皮囊散去:灵兽、洞府建筑、灵脉投资都是「我拥有多少」,不是「我是谁」
@@ -1095,6 +1107,18 @@ export const usePlayerStore = defineStore(
         Object.entries(asNumberRecord(regionWins.value, 0)).map(([id, n]) => [id, Math.floor(n)])
       )
       /**
+       * 胜场世号与胜场同键同命:只认真实地界与正整数世号;没有世号的老档
+       * 按当前世认(与 regionStats.life 同一口径,不追溯没收)。
+       */
+      const rawWinsLife = asNumberRecord(regionWinsLife.value, Number.NaN)
+      const fixedWinsLife: Record<string, number> = {}
+      for (const id of Object.keys(regionWins.value)) {
+        if (!regionDef(id)) continue
+        const at = rawWinsLife[id]
+        fixedWinsLife[id] = at !== undefined && Number.isFinite(at) && at >= 0 ? Math.floor(at) : count
+      }
+      regionWinsLife.value = fixedWinsLife
+      /**
        * 机缘选择记忆是「取 / 弃」的二元账:`identityService` 对它调 `Object.entries`、
        * 师承推荐与遗产回声按下标读 —— 坏档写成 `null` 时三处一起抛错(人物页的
        * 「修行身份」正是渲染期算的)。只留 `take`/`leave` 两个字面值:别的写法
@@ -1287,7 +1311,20 @@ export const usePlayerStore = defineStore(
           life,
         },
       }
-      regionWins.value = { ...regionWins.value, [regionId]: (regionWins.value[regionId] ?? 0) + count }
+      /**
+       * 胜场同样按世起算:跨世的旧账不再往本世加,新世第一场从 1 起。
+       * (与 recordRegionWin 同一口径)
+       */
+      /**
+       * 没有世号(新档/直塞数据)按本世认;只有明确盖了别的世号才从 0 起。
+       * 与 regionWinsOfThisLife 的读法同一口径。
+       */
+      const taggedLife = regionWinsLife.value[regionId]
+      const winsBase = taggedLife === undefined || taggedLife < 0 || taggedLife === life
+        ? (regionWins.value[regionId] ?? 0)
+        : 0
+      regionWins.value = { ...regionWins.value, [regionId]: winsBase + count }
+      regionWinsLife.value = { ...regionWinsLife.value, [regionId]: life }
     }
 
     function suppressRegion(regionId: string): void {
@@ -1380,7 +1417,15 @@ export const usePlayerStore = defineStore(
     /** 记录一次净胜(用于区域兴衰的累计胜场) */
     function recordRegionWin(regionId: string): void {
       if (!regionDef(regionId)) return
-      regionWins.value = { ...regionWins.value, [regionId]: (regionWins.value[regionId] ?? 0) + 1 }
+      const life = suppressLife.value >= 0 ? suppressLife.value : reincarnation.value.count
+      /**
+       * 换世后的第一场胜利:胜场从 1 重新起算,旧世的 80 胜留作叙事但不参与兴衰。
+       * (与 updateRegionStats 的判据账同一口径,见 regionWinsLife 的注释)
+       */
+      const tagged = regionWinsLife.value[regionId]
+      const sameLife = tagged === undefined || tagged < 0 || tagged === life
+      regionWins.value = { ...regionWins.value, [regionId]: sameLife ? (regionWins.value[regionId] ?? 0) + 1 : 1 }
+      regionWinsLife.value = { ...regionWinsLife.value, [regionId]: life }
     }
 
     /** 记录一条宿敌(由 worldMemory.recordLoss 提供) */
@@ -1559,6 +1604,7 @@ export const usePlayerStore = defineStore(
       suppressLife,
       nemeses,
       regionWins,
+      regionWinsLife,
       mentor,
       regionEvent,
       secretRealm,

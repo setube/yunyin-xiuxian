@@ -18,7 +18,7 @@ import { gnZero, add, isZero, mulN, gn } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import type { GNum, QualityId, RegionRecall } from '@/types'
 import { equipmentTemplate } from '@/data/equipment'
-import { deriveProsperity, prosperityYieldMult, regionReviveClock, REVIVE_AFTER_HOURS } from './worldMemory'
+import { deriveProsperity, prosperityYieldMult, regionReviveClock, regionWinsOfThisLife, REVIVE_AFTER_HOURS } from './worldMemory'
 import { settleRegionRevivals } from './regionRevival'
 import { AGE_YEARS_PER_HOUR } from '@/data/constants'
 
@@ -412,7 +412,8 @@ export function settleSuppressedRegions(
        * 一起数的 `totalFights` —— 否则界面按净胜场显示混乱、结算却按总场次
        * 给繁盛的 110%,玩家看到的速率与实际入账当场分叉。
        */
-      totalWins: player.regionWins[regionId] ?? 0,
+      // 与界面同一把尺:只认本世胜场(旧世的 80 胜不该让新世地界立刻繁盛)
+      totalWins: regionWinsOfThisLife(player, regionId),
       hasSuppressed: true,
       suppressedAt: player.suppressedSince[regionId],
       lastActivityAt: player.regionStats[regionId]?.lastUpdateAt ?? now,

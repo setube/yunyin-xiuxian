@@ -198,6 +198,7 @@ describe('离线的作用域 · 在途的东西一律不动', () => {
     const optional = [
       'regionStats',
       'regionWins',
+      'regionWinsLife',
       'suppressQualified',
       'suppressedRegions',
       'suppressedSince',
