@@ -1,7 +1,7 @@
 /** 瞬态 UI 状态 —— Toast / 各类 Modal(不持久化) */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { OfflineSummary } from '@/types'
+import type { LinggenProfile, OfflineSummary } from '@/types'
 
 export interface Toast {
   id: number
@@ -35,6 +35,10 @@ export interface LifeReview {
 }
 
 export interface ReincarnationView {
+  /** 来世灵根草稿:重刷仅替换此项,确认后原样采用 */
+  nextLinggen: LinggenProfile
+  /** 本次结算后的资质加成,重刷沿用同一口径 */
+  linggenAptitudeFloor: number
   daoFruitGained: number
   talentChoices: string[]
   extraTalents: string[]

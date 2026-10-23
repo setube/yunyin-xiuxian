@@ -119,6 +119,28 @@
         <span class="text-cinnabar tabular">{{ view.daoFruitGained }}</span>
         枚,来世修行更进一步。
       </p>
+      <div class="mt-3 rounded-lg border border-ink/15 px-3 py-3" aria-label="来世灵根">
+        <p class="flex items-center justify-between font-kai text-[13px] text-ink">
+          <span>来世灵根</span>
+          <span class="text-cinnabar">{{ view.nextLinggen.gradeName }}</span>
+        </p>
+        <div class="mt-3 flex flex-wrap justify-center gap-3" aria-live="polite">
+          <div v-for="root in view.nextLinggen.roots" :key="root.element" class="flex flex-col items-center gap-1.5">
+            <span
+              class="grid h-10 w-10 place-items-center rounded-full border-2 font-kai text-lg"
+              :style="{ borderColor: ELEMENTS[root.element].color, color: ELEMENTS[root.element].color }"
+            >
+              {{ ELEMENTS[root.element].char }}
+            </span>
+            <span class="tabular text-[11px] text-ink-soft">资质 {{ root.aptitude }}</span>
+          </div>
+        </div>
+        <p class="mt-3 text-center text-[12px] text-ink-faint">
+          修行倍率 <span class="tabular text-ink">×{{ view.nextLinggen.growthMult.toFixed(2) }}</span>
+        </p>
+        <button class="btn-ghost mt-3 w-full" @click="rerollReincarnationLinggen">逆天改命</button>
+        <p class="mt-2 text-center text-[11px] text-ink-faint">不限次数,满意后踏入轮回,灵根便以此定下。</p>
+      </div>
       <p class="mt-3 font-kai text-[13px] tracking-widest text-ink">择一先天之姿</p>
       <p v-if="view.talentChoices.length === 0" class="mt-2 text-[11px] leading-relaxed text-ink-faint">
         先天之姿已尽数为你所有,此番再无可择——直取轮回便是。
@@ -193,7 +215,8 @@
   import { useRouter } from 'vue-router'
   import { useUiStore } from '@/stores/ui'
   import { usePlayerStore } from '@/stores/player'
-  import { prepareReincarnation, confirmReincarnation } from '@/core/reincarnation'
+  import { prepareReincarnation, confirmReincarnation, rerollReincarnationLinggen } from '@/core/reincarnation'
+  import { ELEMENTS } from '@/data/linggen'
   import { talentDef, TALENT_GRADE_COLORS, TALENT_GRADE_NAMES } from '@/data/talents'
   import { modsText } from '@/data/statNames'
   import { lifeThemeDef, TABOO_NAMES } from '@/data/lifeThemes'

@@ -121,11 +121,17 @@ export function currentStage(): SamsaraStageDef {
  * 两条口径取较大者:旧的「转世次数 × 5」是保底,新的「宿慧折算」才是主路。
  * 认真攒所知的人第二三世即可反超次数口径;只反复冲境界的人也不会掉档 ——
  * 资质本就硬封顶 100,这条维度短线就顶满,不值得为凸显宿慧而砍老玩家。
+ * 预览转世时可传结算后的宿慧与认得灵材数,只算补齐认知的增量,不提前落账。
  */
-export function aptitudeFloorNow(): number {
+export function aptitudeFloorNow(insight = totalInsight(), knownMaterials?: number): number {
   const player = usePlayerStore()
+  if (knownMaterials !== undefined) {
+    const lore = useLoreStore()
+    const knownBefore = MATERIALS.filter(m => lore.loreOf(m.id) >= 1).length
+    insight += (knownMaterials - knownBefore) * INSIGHT_PER_MATERIAL
+  }
   const byCount = REINCARNATE_APTITUDE_FLOOR * (player.reincarnation.count + 1)
-  const byInsight = Math.floor(totalInsight() / INSIGHT_PER_APTITUDE)
+  const byInsight = Math.floor(insight / INSIGHT_PER_APTITUDE)
   return Math.max(byCount, byInsight)
 }
 
