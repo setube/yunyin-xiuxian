@@ -174,6 +174,25 @@ describe('三档触发 · 接线', () => {
     expect(view, '该把三档摆在出发之前').toContain('EVENT_TIERS')
     expect(view, '档位胶囊的文字该取自同一份概率口径').toContain('tierOddsText(')
     expect(view, '稀度要按当前缘分状态算').toContain('pendingChainStages(')
+    /**
+     * 档数也是数据,不是修辞:从前这里与出行弹窗各写一句「途中三档」,而档位名
+     * 也一个个点名叫齐。加一档 EVENT_TIERS 时,两处文案都不报错,玩家看到的
+     * 却仍是「三档」—— 与「六档行程」那次同一类病。
+     *
+     * 故障注入:把 `EVENT_TIERS.length` 改回字面量 3 → 本条红。
+     */
+    expect(view, '档数应由 EVENT_TIERS 现算').toContain('途中{{ cnNumber(EVENT_TIERS.length) }}档')
+    expect(view, '不许再把档数写死成三档').not.toContain('途中三档')
+
+    // 注释里留着「从前写死三档」的历史说明,判据只看真正渲染的正文
+    const dialog = src('../components/adventure/ExploreModeDialog.vue')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(dialog, '出行弹窗的档数也应现算').toContain('途中{{ cnNumber(EVENT_TIERS.length) }}档')
+    expect(dialog, '弹窗也不许写死三档').not.toContain('途中三档')
+    expect(dialog, '弹窗的档位名应由 EVENT_TIERS 渲染,不再手写三个名字').toContain(
+      'v-for="(t, i) in EVENT_TIERS"'
+    )
   })
 
   it('概率常量只有一份 —— 引擎与界面不许各写一个', () => {

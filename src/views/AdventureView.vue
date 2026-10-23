@@ -58,13 +58,13 @@
         <span class="text-ink-faint">另有 {{ suppressDaoText(player.suppressedRegions.length) }}(与挂机同源,封顶 +{{ Math.round(SUPPRESS_EXP_MAX * 100) }}%)。</span>
       </p>
       <!--
-        途中三档:际遇 / 奇缘 / 机缘。
+        途中档位:际遇 / 奇缘 / 机缘。
         从前它们在弹窗里长得一模一样(标题都叫「际遇」),低概率的机缘等于白设了稀有度。
-        这三枚胶囊把档位、稀有度与一句话摆在**出发之前**,名字与概率全部取自 core/eventTier,
+        这几枚胶囊把档位、稀有度与一句话摆在**出发之前**,名字、档数与概率全部取自 core/eventTier,
         与事件引擎真正掷的那条乘法链同源(见 data/constants 那段)。
       -->
       <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px]">
-        <span class="text-ink-faint">途中三档:</span>
+        <span class="text-ink-faint">途中{{ cnNumber(EVENT_TIERS.length) }}档:</span>
         <span v-for="t in EVENT_TIERS" :key="t.id" class="chip-ink text-[10px]" :style="{ color: t.color }">
           {{ t.name }} · {{ tierOddsText(t.id, chainPending, exploreEventChance(adventure.session?.regionId ?? '', player.finalStats.mods)) }}
         </span>
@@ -132,7 +132,7 @@
   import { SUPPRESS_EXP_MAX, SUPPRESS_EXP_PER_REGION, SUPPRESS_THRESHOLDS, suppressDaoText } from '@/core/suppress'
   import { REVIVE_AFTER_HOURS } from '@/core/worldMemory'
   import { gn } from '@/utils/gnum'
-  import { formatGN } from '@/utils/format'
+  import { cnNumber, formatGN } from '@/utils/format'
   import GameIcon from '@/components/common/GameIcon.vue'
   import { useRegionRows } from '@/composables/useRegionRows'
 

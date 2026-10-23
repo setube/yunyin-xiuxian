@@ -80,13 +80,13 @@
       </button>
       <!--
         空一身:与一键换装成对的反向出口 —— 已佩戴的件不参加分解/收纳,
-        想清一口袋破烂,得先把身上这九格脱干净。只脱不毁,件全回行囊
+        想清一口袋破烂,得先把身上的部位格脱干净。只脱不毁,件全回行囊
       -->
       <button
         v-if="equippedCount > 0"
         class="btn-ghost mt-2 w-full !py-1.5 !text-[11px] !text-ink-faint"
         @click="onUnequipAll"
-      >空一身 · 卸下全部({{ equippedCount }})</button>
+      >空一身 · 卸下全部 {{ equippedCount }}/{{ SLOTS.length }} 格</button>
 
       <!-- 全部藏品(含佩戴中):部位槽之下的完整清单 -->
       <div v-if="allItems.length" class="mt-4">

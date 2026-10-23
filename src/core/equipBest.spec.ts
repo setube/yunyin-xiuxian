@@ -9,6 +9,8 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { useInventoryStore } from '@/stores/inventory'
 import {
   equipAllBest,
@@ -252,6 +254,19 @@ describe('一键穿齐套装', () => {
 describe('空一身(unequipAllEquipped)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  /**
+   * 按钮上的分母必须现算:部位表加一格、删一格,「卸下全部 3/9 格」这句
+   * 若写死「九」就当场与真实槽位分叉。它虽只在按钮上,却是玩家判断
+   * 「我是不是还漏穿了一格」的唯一读数。
+   *
+   * 故障注入:把 `SLOTS.length` 改回字面量 9 → 本条红。
+   */
+  it('「卸下全部 N/M 格」的分母读 EQUIP_SLOTS,不写死九格', () => {
+    const view = readFileSync(resolve(__dirname, '../views/InventoryView.vue'), 'utf8')
+    expect(view, '分母应由部位表现算').toContain('卸下全部 {{ equippedCount }}/{{ SLOTS.length }} 格')
+    expect(view, '不许再把槽位数写死成九格').not.toContain('这九格')
   })
 
   it('卸下全部已佩戴的槽位,件数对得上,装备回行囊不消失', () => {

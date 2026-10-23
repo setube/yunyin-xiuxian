@@ -31,8 +31,12 @@
       换伙伴的决定点在这里,把它的跟脚照实摊开(departButtonText 同表)
     -->
     <p v-if="petTripLine" class="mb-2 text-[10px] leading-relaxed text-violet-ink tabular">{{ petTripLine }}</p>
+    <!-- 档位名与档数都取自 EVENT_TIERS:加一档、改一档名,这一行自己跟上 -->
     <p class="mb-2 text-[10px] leading-relaxed text-ink-faint tabular">
-      途中三档:奇缘 {{ tierOddsText('qiyuan', chainPending, departEventChance) }} · 机缘 {{ tierOddsText('jiyuan', chainPending, departEventChance) }} · 际遇 {{ tierOddsText('jingyu', chainPending, departEventChance) }}
+      途中{{ cnNumber(EVENT_TIERS.length) }}档:
+      <template v-for="(t, i) in EVENT_TIERS" :key="t.id">
+        <span v-if="i > 0"> · </span>{{ t.name }} {{ tierOddsText(t.id, chainPending, departEventChance) }}
+      </template>
     </p>
     <p class="text-[12px] text-ink-faint">此行欲作何打算?</p>
     <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">行程论这一程走多久;「历练遇敌」只令同程妖踪更密,不能缩地成寸。</p>
@@ -92,13 +96,13 @@
   import { expectedWinReward } from '@/core/loot'
   import { modOf } from '@/core/statsCalc'
   import { pendingChainStages } from '@/core/eventEngine'
-  import { tierOddsText } from '@/core/eventTier'
+  import { EVENT_TIERS, tierOddsText } from '@/core/eventTier'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { petDef } from '@/data/pets'
   import { personalityEffects } from '@/core/petPersonality'
   import { departButtonText, exploreModeIds, exploreModeRiskLabel, exploreModeSummaryLine, petTraitTripLine } from '@/ui/adventureText'
-  import { formatDuration, formatGN } from '@/utils/format'
+  import { cnNumber, formatDuration, formatGN } from '@/utils/format'
   import BaseModal from '@/components/common/BaseModal.vue'
 
   const props = defineProps<{ region: RegionDef | null }>()
