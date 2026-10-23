@@ -50,7 +50,10 @@ describe('品阶视觉 · 三档强度与稀有角章', () => {
 
   it('法宝卡读同一套三档强度,天/仙/神盖角章;密卡底色固定弱晕染', () => {
     expect(ARTIFACT_PANEL, '边框强度应走 qualityTierStyle').toContain('qualityTierStyle(row.def.quality)')
-    expect(ARTIFACT_PANEL, '稀有档应盖 QualitySeal').toContain('isRareQuality(row.def.quality)')
+    expect(ARTIFACT_PANEL, '稀有判定应在行投影里只算一次').toContain('rare: isRareQuality(def.quality)')
+    expect(ARTIFACT_PANEL, '稀有档应盖 QualitySeal').toContain('v-if="row.rare"')
+    // 角章的绝对定位落在右上;标题行不留内边距时,重数会被 16px 的章压住
+    expect(ARTIFACT_PANEL, '稀有角章要与标题行的重数错开').toContain(':class="{ \'pr-3\': row.rare }"')
     expect(ARTIFACT_PANEL, '密卡底色固定 6%,不随档加深').toContain('tint(qualityDef(row.def.quality).color, 0.06)')
     expect(ARTIFACT_PANEL, '法宝卡不应再把边框写死 0.33').not.toContain('tint(qualityDef(row.def.quality).color, 0.33)')
   })

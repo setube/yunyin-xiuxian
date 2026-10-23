@@ -38,10 +38,11 @@
         background: tint(qualityDef(row.def.quality).color, 0.06)
       }"
     >
-      <span v-if="isRareQuality(row.def.quality)" class="absolute right-2 top-2 leading-none">
+      <span v-if="row.rare" class="absolute right-2 top-2 leading-none">
         <QualitySeal :quality="row.def.quality" :size="16" />
       </span>
-      <div class="flex items-center gap-2">
+      <!-- 角章占住右上 16px + 右边距,重数往左让 12px,避免两枚字叠在一起 -->
+      <div class="flex items-center gap-2" :class="{ 'pr-3': row.rare }">
         <GameIcon :name="row.def.icon" :size="18" :style="{ color: qualityDef(row.def.quality).color }" />
         <span class="font-kai text-[14px]" :style="{ color: qualityDef(row.def.quality).color }">{{ row.def.name }}</span>
         <QualityTag :quality="row.def.quality" />
@@ -203,13 +204,15 @@ const artifactRows = computed(() =>
     .map(a => {
       const upCost = artifactUpCost(a.defId)
       const short = upCost ? artifactShortfall(upCost) : null
+      const def = artifactDef(a.defId)!
       return {
         owned: a,
-        def: artifactDef(a.defId)!,
+        def,
         upCost,
         short,
         artPlan: artifactBatchPlan(a.defId),
         equipped: inventory.equippedArtifacts.includes(a.defId),
+        rare: isRareQuality(def.quality),
         /**
          * 这一件按下去会替下哪几件(槽未满、或本来就带着它时为空)。
          * 替下判据与槽位画法同源 —— 玩家在按钮上读到的那些,就是真的让位的那些。
