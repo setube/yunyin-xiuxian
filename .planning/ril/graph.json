@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 344,
+  "round": 346,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-23T05:30:24+00:00",
+  "updated_at": "2026-10-23T05:57:34+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -27082,6 +27082,69 @@
       "touched_round": 344,
       "title": "镇压与转世接缝四修",
       "commit": "895ab8d"
+    },
+    "TASK-499": {
+      "id": "TASK-499",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T05:53:44+00:00",
+      "updated_at": "2026-10-23T05:56:57+00:00",
+      "touched_round": 346,
+      "category": "maintainability",
+      "severity": 0.72,
+      "confidence": 0.94,
+      "effort": 3,
+      "title": "品阶视觉只有色相,九档难辨且色弱不可读",
+      "detail": "法宝/装备/丹药/坊市货格均按单一 0.33 边框与 0.06 底色渲染,没有档位强度与稀有形状线索;45 件法宝虽各有图标,高档仍只能靠颜色区分。"
+    },
+    "ISS-1061": {
+      "id": "ISS-1061",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T05:53:49+00:00",
+      "updated_at": "2026-10-23T05:56:57+00:00",
+      "touched_round": 346,
+      "title": "品阶视觉只有色相,九档难辨且色弱不可读",
+      "detail": "法宝/装备/丹药/坊市货格均按单一 0.33 边框与 0.06 底色渲染,没有档位强度与稀有形状线索;45 件法宝虽各有图标,高档仍只能靠颜色区分。",
+      "severity": 0.72
+    },
+    "EV-1038": {
+      "id": "EV-1038",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T05:53:55+00:00",
+      "updated_at": "2026-10-23T05:53:55+00:00",
+      "touched_round": 346,
+      "source": "src/ui/qualityTier.spec.ts + full suite",
+      "confidence": 0.98,
+      "title": "品阶三档视觉与稀有角章回归全绿",
+      "detail": "新增 7 条判据:三档单调/边界、天仙神角章、道品按 rank 9、法宝密卡固定 6% 底、装备格、丹药格、坊市货格同源。两次故障注入(法宝边框回 0.33、坊市边框回 0.33)均转红并点名。全量 bun run test: 317 files / 3660 tests 全绿;bun run check 与 bun run build 通过。"
+    },
+    "CHG-597": {
+      "id": "CHG-597",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T05:56:14+00:00",
+      "updated_at": "2026-10-23T05:56:14+00:00",
+      "touched_round": 346,
+      "commit": "0c6ed66",
+      "title": "品阶视觉分三档强度并给稀有档盖角章"
+    },
+    "HYP-194": {
+      "id": "HYP-194",
+      "type": "hypothesis",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T05:57:04+00:00",
+      "updated_at": "2026-10-23T05:57:04+00:00",
+      "touched_round": 346,
+      "confidence": 0.95,
+      "title": "三档强度加稀有角章能补足九档色相不可辨",
+      "detail": "把 rank 折成三档边框并给天/仙/神/道盖形状章,可在不改变品阶数值与掉率的前提下提升可读性。"
     }
   },
   "edges": [
@@ -39988,6 +40051,30 @@
       "to": "ISS-1060",
       "type": "resolves",
       "created_at": "2026-10-23T05:30:24+00:00"
+    },
+    {
+      "from": "TASK-499",
+      "to": "ISS-1061",
+      "type": "addresses",
+      "created_at": "2026-10-23T05:54:02+00:00"
+    },
+    {
+      "from": "CHG-597",
+      "to": "TASK-499",
+      "type": "implements",
+      "created_at": "2026-10-23T05:56:22+00:00"
+    },
+    {
+      "from": "CHG-597",
+      "to": "ISS-1061",
+      "type": "resolves",
+      "created_at": "2026-10-23T05:56:22+00:00"
+    },
+    {
+      "from": "EV-1038",
+      "to": "HYP-194",
+      "type": "validates",
+      "created_at": "2026-10-23T05:57:34+00:00"
     }
   ]
 }
