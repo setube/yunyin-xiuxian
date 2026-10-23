@@ -34,6 +34,18 @@ export interface RegionStats {
   avgDamageTakenPct: number  // 指数移动平均受伤百分比
   consecutiveWins: number
   lastUpdateAt: number
+  /**
+   * 这本战绩属于第几世 —— 与 `player.suppressLife` 同一把世号。
+   *
+   * 镇压资格读的是这本战绩(20 胜 / 均≤3 回合 / 均受伤≤10%),而战绩刻意
+   * 跨世保留(「世界记得你」)。两件事撞在一起就是个漏洞:新世炼气回到旧世
+   * 那处高阶地界打赢**一场**,指数移动平均几乎不动,三判据照样全绿 ——
+   * 于是自动重新镇压,按旧阶位派发高阶装备与灵石,数值当场爆炸。
+   *
+   * 故战绩可以跨世留作叙事与兴衰底账,但**判据只认本世的战绩**。老档没有这一栏,
+   * 按当前世认(不追溯没收),此后每次写战绩都盖新章。
+   */
+  life?: number
 }
 
 /** 镇压判定阈值(界面也用它写规则说明,避免两处各写一套数字) */
@@ -146,8 +158,17 @@ export function suppressYield(regionId: string): { id: SuppressResource; name: s
 export function checkSuppression(player: ReturnType<typeof usePlayerStore>, regionId: string): boolean {
   if (player.suppressedRegions.includes(regionId)) return false
 
-  const p = suppressionProgress(player.regionStats[regionId])
+  const p = suppressionProgress(player.regionStats[regionId], currentLifeOf(player))
   return p.winsOk && p.roundsOk && p.damageOk
+}
+
+/**
+ * 此刻的世号 —— `suppressLife` 是**镇压表的**世号(落笔镇压时才盖章),
+ * 新档/尚未镇压过时是哨兵 −1。读战绩时不能把哨兵当世号,否则刚开的新档
+ * 会把本世刚写下的战绩认成「上一世」。
+ */
+export function currentLifeOf(player: ReturnType<typeof usePlayerStore>): number {
+  return player.suppressLife >= 0 ? player.suppressLife : player.reincarnation.count
 }
 
 /**
@@ -180,11 +201,22 @@ export interface SuppressionProgress {
   qualified: boolean
 }
 
-export function suppressionProgress(stats: RegionStats | undefined): SuppressionProgress {
-  const wins = Math.max(0, stats?.totalFights ?? 0)
+export function suppressionProgress(
+  stats: RegionStats | undefined,
+  life?: number
+): SuppressionProgress {
+  /**
+   * 旧世战绩不算数 —— 见 RegionStats.life 的说明。
+   * 没有世号(老档)或没传 life 时按「本世」认,不追溯没收已有战绩。
+   */
+  // life < 0 是「还没有世号」的哨兵,按未知处理(不追溯没收)
+  const knownLife = life !== undefined && life >= 0 ? life : undefined
+  const fromThisLife = knownLife === undefined || stats?.life === undefined || stats.life < 0 || stats.life === knownLife
+  const src = fromThisLife ? stats : undefined
+  const wins = Math.max(0, src?.totalFights ?? 0)
   const hasStats = wins > 0
-  const avgRounds = stats ? stats.avgRounds : Number.POSITIVE_INFINITY
-  const avgDamagePct = stats ? stats.avgDamageTakenPct : 1
+  const avgRounds = src ? src.avgRounds : Number.POSITIVE_INFINITY
+  const avgDamagePct = src ? src.avgDamageTakenPct : 1
   const winsOk = wins >= SUPPRESS_THRESHOLDS.minWins
   const roundsOk = avgRounds <= SUPPRESS_THRESHOLDS.maxAvgRounds
   const damageOk = avgDamagePct <= SUPPRESS_THRESHOLDS.maxAvgDamageTaken

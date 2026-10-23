@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 import { usePlayerStore } from '@/stores/player'
 import { REGIONS, maxTierForMajor } from '@/data/regions'
 import { rollLinggen } from '@/core/linggenGen'
-import { settleSuppressedRegions } from './suppress'
+import { checkSuppression, settleSuppressedRegions, suppressionProgress } from './suppress'
 import { rng } from '@/utils/random'
 
 /**
@@ -153,5 +153,63 @@ describe('转世不残留产出型镇压', () => {
     expect(player.suppressQualified, '本世内资格照旧保留').toContain('qingyun')
     player.rebirth(rollLinggen(rng))
     expect(player.suppressQualified, '转世后资格随皮囊散去').toEqual([])
+  })
+
+  /**
+   * 转世后**只赢一场**就能把旧世的高阶地界重新镇压 —— 这条漏洞比文案更贵。
+   *
+   * `regionStats` 刻意跨世保留(「世界记得你」),而镇压判据读的正是这本 EMA:
+   * 上一世在高阶地界打出 30 胜 / 均 2 回合 / 均伤 3%,新世炼气回去赢一场,
+   * EMA 几乎不动(0.7×2 + 0.3×2),三判据照样全绿 —— 于是自动重新镇压,
+   * 按旧阶位派发高阶装备与灵石。`rebirth()` 清空 `suppressQualified` 只堵住了
+   * 「一键切回」这一条入口,判据本身仍拿着旧世的账。
+   *
+   * 现给战绩盖世号,判据只认本世那本;战绩本身照旧留着(兴衰/复聚钟/叙事)。
+   *
+   * 故障注入:把 `suppressionProgress` 的 life 判据删掉 → 本条红。
+   */
+  it('转世后旧世战绩不再替新世作证:赢一场不会重新镇压高阶地界', () => {
+    const player = usePlayerStore()
+    player.major = 12
+    player.regionStats.hongmeng = {
+      totalFights: 30,
+      avgRounds: 2,
+      avgDamageTakenPct: 0.03,
+      consecutiveWins: 30,
+      lastUpdateAt: Date.now()
+    }
+    player.markSuppressQualified('hongmeng')
+    player.suppressRegion('hongmeng')
+    expect(player.suppressedRegions).toEqual(['hongmeng'])
+
+    player.rebirth(rollLinggen(rng))
+    // 新世:只赢一场。EMA 若仍读旧账,这一场就足以让三判据全绿
+    player.updateRegionStats('hongmeng', true, 2, 0.03)
+    expect(player.regionStats.hongmeng!.totalFights, '本世战绩从 1 起算').toBe(1)
+    expect(checkSuppression(player, 'hongmeng'), '旧世战绩不该替新世作证').toBe(false)
+
+    // 阳性对照:本世真的打满二十场,判据照旧成立
+    for (let i = 0; i < 19; i += 1) player.updateRegionStats('hongmeng', true, 2, 0.03)
+    expect(player.regionStats.hongmeng!.totalFights).toBe(20)
+    expect(checkSuppression(player, 'hongmeng'), '本世攒够就该能镇压').toBe(true)
+  })
+
+  it('跨世战绩保留原世号,不被读档改写成当前世', () => {
+    const player = usePlayerStore()
+    player.major = 12
+    player.regionStats.hongmeng = {
+      totalFights: 30,
+      avgRounds: 2,
+      avgDamageTakenPct: 0.03,
+      consecutiveWins: 30,
+      lastUpdateAt: Date.now(),
+      life: player.reincarnation.count
+    }
+    player.rebirth(rollLinggen(rng))
+    player.sanitize()
+    // 旧世那本原样留着(叙事与兴衰照旧),世号不被「修补」成本世
+    expect(player.regionStats.hongmeng!.life, '旧世战绩不该被读档洗成本世').toBe(0)
+    expect(player.regionStats.hongmeng!.totalFights).toBe(30)
+    expect(suppressionProgress(player.regionStats.hongmeng, player.suppressLife).qualified, '旧账不参与本世判据').toBe(false)
   })
 })

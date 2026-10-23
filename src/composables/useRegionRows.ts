@@ -7,7 +7,7 @@ import { useAdventureStore } from '@/stores/adventure'
 import { usePlayerStore } from '@/stores/player'
 import { canEnterRegion, entryBlockReason } from '@/core/mortalWorldService'
 import { regionBossCleared, regionFoeOrigin } from '@/core/exploration'
-import { suppressionProgress, type SuppressionProgress } from '@/core/suppress'
+import { currentLifeOf, suppressionProgress, type SuppressionProgress } from '@/core/suppress'
 import { detectBuild } from '@/core/buildDetect'
 import {
   detectionAdaptation,
@@ -81,7 +81,8 @@ export function useRegionRows() {
         /** 是否取得过镇压资格(本世取得即永久,转世随皮囊散去) */
         qualified: player.suppressQualified.includes(r.id),
         /** 镇压资格进度(三条判据的当前值/阈值) */
-        progress: suppressionProgress(player.regionStats[r.id]),
+        // 传世号:界面进度条与 checkSuppression 同判,旧世战绩不再显示成「三项全绿」
+        progress: suppressionProgress(player.regionStats[r.id], currentLifeOf(player)),
         tooHard: r.minRealm > player.major,
         /** 此地之敌的加成来源(层级补偿 × 地界凶险;出行方式那一档另算) */
         foeOrigin: regionFoeOrigin(r),

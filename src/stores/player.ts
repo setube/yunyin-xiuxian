@@ -727,6 +727,8 @@ export const usePlayerStore = defineStore(
 
     /** 转世重置(保留天赋/道果/转世次数/宿命传承) */
     function rebirth(newLinggen: LinggenProfile): void {
+      // 转世这一刻,账上所有战绩都成了「上一世」的 —— 逐条盖旧世号,不等下次战斗
+      const previousLife = reincarnation.value.count
       reincarnation.value = {
         ...reincarnation.value,
         count: reincarnation.value.count + 1,
@@ -770,6 +772,18 @@ export const usePlayerStore = defineStore(
       suppressedSince.value = {}
       suppressQualified.value = []
       suppressFrac.value = {}
+      /**
+       * 战绩本身跨世保留(兴衰/复聚钟/叙事),但必须**当场盖上旧世号**。
+       *
+       * 不盖的话,它们在下一次读档/下一次战斗前仍是「没有世号」的账,判据按
+       * 「未知即本世」放行 —— 新世炼气回去赢一场,三判据立刻全绿,自动重新镇压
+       * 旧世的高阶地界,数值爆炸原样回来。这一句是那条漏洞的正面堵法:
+       * 转世之后,旧账一律带着旧世号,判据只认新世写下的那一本。
+       */
+
+      regionStats.value = Object.fromEntries(
+        Object.entries(regionStats.value).map(([id, st]) => [id, { ...st, life: previousLife }])
+      )
       // 世号同步盖上:新世的地盘账从此刻起算(不等下一次 sanitize)
       suppressLife.value = reincarnation.value.count
       // 外物随皮囊散去:灵兽、洞府建筑、灵脉投资都是「我拥有多少」,不是「我是谁」
@@ -1048,16 +1062,25 @@ export const usePlayerStore = defineStore(
        * 逐项修平,认不出的区域整条丢掉(战绩只对真实地界有意义)。
        */
       const fixedRegionStats: Record<string, import('@/core/suppress').RegionStats> = {}
+      // 世号必须在清洗**之前**定下来:下面要拿它给老档战绩盖章
+      const statsLife = count
       for (const [id, raw] of Object.entries(asRecord<unknown>(regionStats.value))) {
         if (!regionDef(id) || !raw || typeof raw !== 'object' || Array.isArray(raw)) continue
         const st = raw as Partial<import('@/core/suppress').RegionStats>
+        /**
+         * 老档(没有 life)按当前世认,不追溯没收 —— 那时还没有跨世判据,
+         * 战绩就是本世打出来的。此后每次写战绩都盖新章。
+         */
+        const rawLife = asFiniteNumber(st.life, Number.NaN, 0)
         fixedRegionStats[id] = {
           totalFights: Math.floor(asFiniteNumber(st.totalFights, 0, 0)),
           avgRounds: asFiniteNumber(st.avgRounds, 0, 0),
           // 受伤占比是 0~1 的比率(界面乘 100),越界只可能来自坏档
           avgDamageTakenPct: Math.min(1, asFiniteNumber(st.avgDamageTakenPct, 0, 0)),
           consecutiveWins: Math.floor(asFiniteNumber(st.consecutiveWins, 0, 0)),
-          lastUpdateAt: asFiniteNumber(st.lastUpdateAt, 0, 0)
+          lastUpdateAt: asFiniteNumber(st.lastUpdateAt, 0, 0),
+          // 有世号就原样留着(旧世那本不参与判据);没有(老档)才盖当前世
+          life: Number.isFinite(rawLife) ? Math.floor(rawLife) : statsLife
         }
       }
       regionStats.value = fixedRegionStats
@@ -1194,13 +1217,26 @@ export const usePlayerStore = defineStore(
         avgDamageTakenPct: 0,
         lastUpdateAt: Date.now(),
       }
+      /**
+       * 换世即重起一本判据账:旧世的 EMA 与胜场不再替新世作证。
+       * 战绩本身留着(叙事/兴衰/复聚钟照旧),只是判据只读本世这一本。
+       *
+       * 世号取**真实世号**,不是 suppressLife 的哨兵:新档尚未镇压过时
+       * suppressLife 是 −1,拿它盖章会让下一场战斗把本世刚写的账当成旧世重起。
+       * 没有世号的老账(新档/直塞数据)按本世认;只有明确盖了别的世号才重起。
+       */
+      const life = suppressLife.value >= 0 ? suppressLife.value : reincarnation.value.count
+      const base = current.life === undefined || current.life < 0 || current.life === life
+        ? current
+        : { consecutiveWins: 0, totalFights: 0, avgRounds: 0, avgDamageTakenPct: 0, lastUpdateAt: Date.now() }
 
       const newStats = {
-        consecutiveWins: win ? current.consecutiveWins + 1 : 0,
-        totalFights: current.totalFights + 1,
-        avgRounds: current.avgRounds * 0.7 + rounds * 0.3,
-        avgDamageTakenPct: current.avgDamageTakenPct * 0.7 + damage * 0.3,
+        consecutiveWins: win ? base.consecutiveWins + 1 : 0,
+        totalFights: base.totalFights + 1,
+        avgRounds: base.avgRounds * 0.7 + rounds * 0.3,
+        avgDamageTakenPct: base.avgDamageTakenPct * 0.7 + damage * 0.3,
         lastUpdateAt: Date.now(),
+        life,
       }
 
       regionStats.value = { ...regionStats.value, [regionId]: newStats }
@@ -1231,15 +1267,21 @@ export const usePlayerStore = defineStore(
         avgDamageTakenPct: 0,
         lastUpdateAt: Date.now(),
       }
+      // 同上:跨世的旧账不参与本世判据,重起一本
+      const life = suppressLife.value >= 0 ? suppressLife.value : reincarnation.value.count
+      const base = current.life === undefined || current.life < 0 || current.life === life
+        ? current
+        : { consecutiveWins: 0, totalFights: 0, avgRounds: 0, avgDamageTakenPct: 0, lastUpdateAt: Date.now() }
       const decay = 0.7 ** count
       regionStats.value = {
         ...regionStats.value,
         [regionId]: {
-          consecutiveWins: current.consecutiveWins + count,
-          totalFights: current.totalFights + count,
-          avgRounds: current.avgRounds * decay + rounds * (1 - decay),
-          avgDamageTakenPct: current.avgDamageTakenPct * decay + damage * (1 - decay),
+          consecutiveWins: base.consecutiveWins + count,
+          totalFights: base.totalFights + count,
+          avgRounds: base.avgRounds * decay + rounds * (1 - decay),
+          avgDamageTakenPct: base.avgDamageTakenPct * decay + damage * (1 - decay),
           lastUpdateAt: Date.now(),
+          life,
         },
       }
       regionWins.value = { ...regionWins.value, [regionId]: (regionWins.value[regionId] ?? 0) + count }
