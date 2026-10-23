@@ -236,4 +236,31 @@ describe('转世不残留产出型镇压', () => {
     player.suppressRegion('qingyun')
     expect(player.suppressedSince.qingyun, '切回来不该把守了两天重置成 0').toBe(t)
   })
+
+  /**
+   * 停取之后读档,起点也不能丢 —— 否则「点一下开关白赚两天」只是从
+   * 「当场清零」推迟到「下次读档清零」。
+   *
+   * sanitize 从前只遍历 `suppressedRegions`,停取的地界不在表里,起点被当残项丢掉。
+   * 现改为保留「仍在镇压**或仍持有资格**」的起点。
+   *
+   * 故障注入:把遍历改回只走 suppressedRegions → 本条红。
+   */
+  it('停取收益后读档,守土起点仍保留;资格与起点都没了才算残项', () => {
+    const player = usePlayerStore()
+    const t = Date.now() - 48 * 3600_000
+    player.markSuppressQualified('qingyun')
+    player.suppressRegion('qingyun')
+    player.suppressedSince = { qingyun: t }
+    player.unsuppressRegion('qingyun')
+
+    player.sanitize()
+    expect(player.suppressedSince.qingyun, '有资格就留着起点').toBe(t)
+    expect(player.suppressQualified).toContain('qingyun')
+
+    // 反向:资格也没了(如坏档写了个无资格残项),起点就该丢掉
+    player.suppressQualified = []
+    player.sanitize()
+    expect(player.suppressedSince.qingyun, '资格与镇压都没有了,起点才是真残项').toBeUndefined()
+  })
 })

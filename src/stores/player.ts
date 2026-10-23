@@ -1030,11 +1030,14 @@ export const usePlayerStore = defineStore(
        * 「妖气 NaN 后复聚」);负值/0 则当场绕过守时直接复聚。两种都是坏档,
        * 不是「刚镇压」——按此刻重新起钟:收益照拿,72 小时后照常回到历练,
        * 既不会永久白拿,也不会因为一个坏数把已镇压的地界一并没收。
-       * 不在镇压表里的起钟一并丢掉,免得旧档残项在「转为历练」后还留着。
+       * 不在镇压表里的起钟**不一律丢**:玩家主动停取收益时镇压表摘掉这一格,
+       * 起点照旧留着(见 unsuppressRegion),再切回时兴衰与复聚钟接着走。
+       * 故只保留「仍在镇压」或「仍持有资格」的地界 —— 两者都失了才是真残项。
        */
       const rawSince = asNumberRecord(suppressedSince.value)
       const fixedSince: Record<string, number> = {}
-      for (const id of suppressedRegions.value) {
+      const keepsTenure = new Set([...suppressedRegions.value, ...suppressQualified.value])
+      for (const id of keepsTenure) {
         const at = rawSince[id]
         fixedSince[id] = at !== undefined && at > 0 ? at : Date.now()
       }
