@@ -122,9 +122,15 @@
           v-for="row in pillRows"
           :key="row.def!.id"
           class="relative aspect-square rounded-md border transition-transform active:scale-98"
-          :style="{ borderColor: tint(pillQualityColor(row.def!), 0.33), background: tint(pillQualityColor(row.def!), 0.06) }"
+          :style="{ borderColor: tint(pillQualityColor(row.def!), qualityTierByRank(pillRank(row.def!)).border), background: tint(pillQualityColor(row.def!), qualityTierByRank(pillRank(row.def!)).bg) }"
           @click="pillDetail = row.def!.id"
         >
+          <span
+            v-if="isRareRank(pillRank(row.def!))"
+            class="absolute right-0.5 top-0.5 rounded-[3px] border px-[3px] py-px font-kai text-[9px] leading-none"
+            :style="{ borderColor: tint(pillQualityColor(row.def!), 0.45), background: tint(pillQualityColor(row.def!), 0.12), color: pillQualityColor(row.def!) }"
+            :aria-label="`${pillQualityName(row.def!)}档`"
+          >{{ pillQualityName(row.def!).charAt(0) }}</span>
           <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
             <GameIcon :name="row.def!.icon" :size="20" :style="{ color: pillQualityColor(row.def!) }" />
             <span class="w-full truncate text-center text-[9px] leading-tight" :style="{ color: pillQualityColor(row.def!) }">
@@ -280,6 +286,7 @@
 
   import { formatGN, formatNum } from '@/utils/format'
   import { tint } from '@/utils/colorToken'
+  import { isRareRank, qualityTierByRank } from '@/ui/qualityTier'
   import type { EquipSlot } from '@/types'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'

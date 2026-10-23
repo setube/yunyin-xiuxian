@@ -19,9 +19,13 @@
         :key="`${c.idx}-${i}`"
         :data-idx="c.idx"
         :data-card="i"
-        class="card-ink flex flex-col p-2.5"
+        class="card-ink relative flex flex-col p-2.5"
         :class="[c.sold ? 'opacity-50' : '', i === focusCard ? 'ring-2 ring-jade/70' : '']"
+        :style="c.tierStyle"
       >
+        <span v-if="c.rare" class="absolute right-1.5 top-1.5 leading-none">
+          <QualitySeal :quality="c.quality!" :size="14" />
+        </span>
         <div class="flex items-center gap-2">
           <span
             class="grid h-8 w-8 shrink-0 place-items-center rounded-md font-kai text-[13px]"
@@ -69,12 +73,15 @@
   import { HERB_GRADE_NAMES, herbGradeBandLabel, herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef } from '@/data/qualities'
+  import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
+  import { tint } from '@/utils/colorToken'
   import { focusHerbSlot, marketEquipInstance } from '@/core/marketService'
   import { cmp, gnZero, subClamp } from '@/utils/gnum'
   import { formatGN } from '@/utils/format'
   import { classicalDuration } from '@/data/timeUnits'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
+  import QualitySeal from '@/components/common/QualitySeal.vue'
 
   interface CardView {
     idx: number
@@ -86,6 +93,10 @@
     name: string
     nameCls: Record<string, string>
     sub: string
+    /** 装备货格才有的品阶视觉;丹药/材料保持原样,不硬套品质色 */
+    quality?: import('@/types').QualityId
+    rare: boolean
+    tierStyle?: { borderColor: string; background: string }
     price: GNum
     sold: boolean
     /** 当前灵石是否买得起 —— 买不起的货不再与买得起的长得一样 */
@@ -146,6 +157,7 @@
       kind: slot.kind,
       sold: slot.sold,
       afford,
+      rare: false,
       stoneShort: afford ? gnZero() : subClamp(slot.price, resources.spiritStone)
     }
     if (slot.kind === 'pill') {
@@ -174,11 +186,16 @@
     const inst = marketEquipInstance(slot, market.stockedAt)
     const tmpl = equipmentTemplate(inst.templateId)
     const quality = qualityDef(inst.quality)
+    const tier = qualityTierStyle(inst.quality)
     return {
       ...base,
       name: tmpl?.name ?? inst.templateId,
       nameCls: { color: quality.color },
       sub: `${quality.name} · ${slot.tier} 阶`,
+      quality: inst.quality,
+      rare: isRareQuality(inst.quality),
+      // 货格是多行小字的密卡,底色固定在弱晕染;品阶浓淡由边框与角章承担
+      tierStyle: { borderColor: tint(quality.color, tier.border), background: tint(quality.color, 0.06) },
       price: slot.price
     }
   }

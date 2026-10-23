@@ -1,7 +1,7 @@
 <template>
   <button
     class="relative aspect-square rounded-md border transition-transform active:scale-98"
-    :style="{ borderColor: tint(quality.color, 0.33), background: tint(quality.color, 0.06) }"
+    :style="{ borderColor: tint(quality.color, tier.border), background: tint(quality.color, tier.bg) }"
     :data-uid="props.item.uid"
     @click="emit('open', props.item.uid)"
   >
@@ -9,6 +9,10 @@
     <span v-if="props.equipped" class="absolute left-0.5 top-0.5 font-kai text-[8px] leading-none text-jade">佩</span>
     <span v-if="props.item.locked" class="absolute right-0.5 top-0.5 leading-none text-ink-faint">
       <GameIcon name="lock" :size="8" />
+    </span>
+    <!-- 天/仙/神盖品阶阴文章:色弱玩家也能靠形状认出高档 -->
+    <span v-if="rare" class="absolute right-0.5 top-3 leading-none">
+      <QualitySeal :quality="props.item.quality" :size="14" />
     </span>
     <!-- 共鸣件:方格背包里也得看得出这一件拴着一条机制(两件才亮,见 core/equipSet) -->
     <span
@@ -53,12 +57,16 @@
   import { qualityDef } from '@/data/qualities'
   import { tint } from '@/utils/colorToken'
   import { equipSetDef } from '@/core/equipSet'
+  import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
   import GameIcon from '@/components/common/GameIcon.vue'
+  import QualitySeal from '@/components/common/QualitySeal.vue'
 
   const props = defineProps<{ item: EquipmentInstance; equipped?: boolean }>()
   const emit = defineEmits<{ open: [uid: string] }>()
 
   const template = computed(() => equipmentTemplate(props.item.templateId))
   const quality = computed(() => qualityDef(props.item.quality))
+  const tier = computed(() => qualityTierStyle(props.item.quality))
+  const rare = computed(() => isRareQuality(props.item.quality))
   const setName = computed(() => (template.value?.set ? equipSetDef(template.value.set)?.name ?? '' : ''))
 </script>

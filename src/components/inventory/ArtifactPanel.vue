@@ -24,7 +24,23 @@
     已到顶的那一侧不再涨,每张卡的「下一重」会照实写清
   </p>
   <div v-if="artifactRows.length" class="mt-2 space-y-2.5">
-    <div v-for="row in artifactRows" :key="row.def.id" class="card-ink px-4 py-3">
+    <!--
+      品阶晕染:边框随三档加深,天/仙/神另盖角章。
+      底色固定 6%,不随档位加到 10%/13% —— 法宝行是多行文字的密卡,
+      深底色会压低正文对比度;档位线索交给边框与角章承担。
+    -->
+    <div
+      v-for="row in artifactRows"
+      :key="row.def.id"
+      class="card-ink relative px-4 py-3"
+      :style="{
+        borderColor: tint(qualityDef(row.def.quality).color, qualityTierStyle(row.def.quality).border),
+        background: tint(qualityDef(row.def.quality).color, 0.06)
+      }"
+    >
+      <span v-if="isRareQuality(row.def.quality)" class="absolute right-2 top-2 leading-none">
+        <QualitySeal :quality="row.def.quality" :size="16" />
+      </span>
       <div class="flex items-center gap-2">
         <GameIcon :name="row.def.icon" :size="18" :style="{ color: qualityDef(row.def.quality).color }" />
         <span class="font-kai text-[14px]" :style="{ color: qualityDef(row.def.quality).color }">{{ row.def.name }}</span>
@@ -151,8 +167,11 @@ import { STAT_NAMES, statCaveat, statModPhrase } from '@/data/statNames'
 import { artifactSlotReplacedToast } from '@/ui/inventoryText'
 import { artifactShortToast } from '@/ui/forgeText'
 import { cnNumber, formatGN, formatPercent } from '@/utils/format'
+import { tint } from '@/utils/colorToken'
+import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
 import GameIcon from '@/components/common/GameIcon.vue'
 import QualityTag from '@/components/common/QualityTag.vue'
+import QualitySeal from '@/components/common/QualitySeal.vue'
 
 /**
  * 法宝面板 —— 随身槽、祭炼读数与炼化动作。
