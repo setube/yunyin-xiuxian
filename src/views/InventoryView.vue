@@ -127,8 +127,8 @@
         >
           <span
             v-if="isRareRank(pillRank(row.def!))"
-            class="absolute right-0.5 top-0.5 rounded-[3px] border px-[3px] py-px font-kai text-[9px] leading-none"
-            :style="{ borderColor: tint(pillQualityColor(row.def!), 0.45), background: tint(pillQualityColor(row.def!), 0.12), color: pillQualityColor(row.def!) }"
+            class="absolute right-0.5 top-0.5 rounded-[3px] border px-[3px] py-px font-kai text-[9px] leading-none text-ink"
+            :style="{ borderColor: tint(pillQualityColor(row.def!), 0.45), background: tint(pillQualityColor(row.def!), 0.12) }"
             :aria-label="`${pillQualityName(row.def!)}档`"
           >{{ pillQualityName(row.def!).charAt(0) }}</span>
           <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">

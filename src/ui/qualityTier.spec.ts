@@ -74,6 +74,18 @@ describe('品阶视觉 · 三档强度与稀有角章', () => {
 
   it('角章是形状线索,读屏也能报出品阶', () => {
     expect(QUALITY_SEAL, '角章要有品阶名的可访问标签').toContain(':aria-label="`${qualityName}档`"')
-    expect(QUALITY_SEAL, '角章颜色取品质表,不另抄色值').toContain('qualityDef(props.quality).color')
+    expect(QUALITY_SEAL, '角章色相取品质表,不另抄色值').toContain('qualityDef(props.quality).color')
+  })
+
+  it('角章字形随主题用墨色,品阶色只留在边框与淡底', () => {
+    expect(QUALITY_SEAL, '角章字形应随主题用墨色').toContain('leading-none text-ink')
+    expect(QUALITY_SEAL, '品阶色不得直接写进 9-11px 字形').not.toContain('color: tone')
+  })
+
+  it('丹匣专属角章也随主题用墨色', () => {
+    expect(INVENTORY_VIEW, '丹药角章字形也应随主题用墨色').toContain('font-kai text-[9px] leading-none text-ink')
+    expect(INVENTORY_VIEW, '丹药角章不得把品阶色直接写进字形').not.toContain(
+      'background: tint(pillQualityColor(row.def!), 0.12), color: pillQualityColor(row.def!)'
+    )
   })
 })

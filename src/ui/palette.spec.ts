@@ -29,6 +29,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { QUALITIES } from '@/data/qualities'
+import { DAO_QUALITY_COLOR, DAO_QUALITY_NAME } from '@/data/pills'
 import { ELEMENTS } from '@/data/linggen'
 
 const ROOT = resolve(__dirname, '../..')
@@ -96,6 +97,11 @@ function luminance([r, g, b]: Rgb): number {
 function contrast(a: Rgb, b: Rgb): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
   return (hi! + 0.05) / (lo! + 0.05)
+}
+
+/** 把半透明前景混到不透明底上 —— 与浏览器绘制品阶淡底的口径一致 */
+function mix(fg: Rgb, bg: Rgb, alpha: number): Rgb {
+  return fg.map((v, i) => Math.round(v * alpha + bg[i]! * (1 - alpha))) as unknown as Rgb
 }
 
 /** 一档颜色在它那套主题上最难看的那一面(三底取最小) */
@@ -394,6 +400,31 @@ describe('调色板 · 两处手抄关系', () => {
 })
 
 describe('调色板 · 数据层颜色', () => {
+  it('稀有品阶角章的主题墨字在品阶淡底上 ≥4.5:1', () => {
+    const seals = [
+      ...QUALITIES.filter(q => q.rank >= 6).map(q => ({ name: q.name, color: q.color })),
+      { name: DAO_QUALITY_NAME, color: DAO_QUALITY_COLOR }
+    ]
+    const bad: string[] = []
+    for (const theme of ['light', 'dark'] as const) {
+      const palette = theme === 'light' ? LIGHT : DARK
+      const paper = palette.get('paper')!
+      const ink = palette.get('ink')!
+      for (const seal of seals) {
+        const tokenVar = /var\(--color-([a-z0-9-]+)\)/.exec(seal.color)
+        const hex = /^#([0-9a-fA-F]{6})$/.exec(seal.color)
+        const tone = tokenVar
+          ? palette.get(tokenVar[1]!)!
+          : ([parseInt(hex![1]!.slice(0, 2), 16), parseInt(hex![1]!.slice(2, 4), 16), parseInt(hex![1]!.slice(4, 6), 16)] as const)
+        // 图中最深的品阶底是装备格的 13%,角章再在其上叠 12% 同色
+        const mark = mix(tone, mix(tone, paper, 0.13), 0.12)
+        const ratio = contrast(ink, mark)
+        if (ratio < 4.5) bad.push(`${seal.name}@${theme} ${ratio.toFixed(2)}:1`)
+      }
+    }
+    expect(bad, '角章是 9-11px 小字,字形与印底必须过正文 AA').toEqual([])
+  })
+
   it('src/data 与内联色表只许出现白名单 hex —— 不再允许手抄 token 旧值', () => {
     // 品阶/五行色已改引 var(--color-*),留存的裸 hex 只能是「没有对应 token 的
     // 象征色」:凡品灰/玄/仙/天(光)/土/风/冰/暗。出现白名单外的新 hex,说明
