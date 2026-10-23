@@ -1,8 +1,8 @@
 {
   "ril_version": 1,
-  "round": 346,
+  "round": 347,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-23T07:24:46+00:00",
+  "updated_at": "2026-10-23T09:48:11+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -22272,12 +22272,12 @@
       "id": "COMP-041",
       "type": "component",
       "status": "active",
-      "version": 1,
+      "version": 2,
       "created_at": "2026-10-21T18:47:05+00:00",
-      "updated_at": "2026-10-21T18:47:05+00:00",
-      "touched_round": 311,
+      "updated_at": "2026-10-23T09:44:35+00:00",
+      "touched_round": 347,
       "title": "原生存档导出",
-      "summary": "savePlatform 按平台分叉导出:Capacitor 原生写 Documents,Web 下载并以剪贴板兜底。"
+      "summary": "savePlatform 按平台分叉导出：Android 走 SAF 保存面板，其他原生端写 Documents，Web 下载并以剪贴板兜底。"
     },
     "COMP-042": {
       "id": "COMP-042",
@@ -27293,6 +27293,155 @@
       "title": "稀有品阶角章字形改用主题墨色",
       "commit": "8641619",
       "detail": "QualitySeal 与丹匣角章保留品阶色边框/淡底,字形统一使用 text-ink;palette.spec 增加叠色对比度判据,qualityTier.spec 锁定两处接线。"
+    },
+    "TASK-502": {
+      "id": "TASK-502",
+      "type": "task",
+      "status": "resolved",
+      "version": 6,
+      "created_at": "2026-10-23T08:10:46+00:00",
+      "updated_at": "2026-10-23T08:45:55+00:00",
+      "touched_round": 347,
+      "category": "correctness",
+      "title": "安卓存档导出与导入闭环(SAF 导出 + accept 放宽)",
+      "description": "Android SAF 导出、原生回执、导入 accept 放宽与回归测试",
+      "severity": 0.9,
+      "confidence": 0.95,
+      "effort": 4,
+      "unlock_factor": 1.2
+    },
+    "COMP-084": {
+      "id": "COMP-084",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T08:10:48+00:00",
+      "updated_at": "2026-10-23T08:10:48+00:00",
+      "touched_round": 346,
+      "name": "Android 存档传输",
+      "path": "src/core/savePlatform.ts;android/app/src/main/java/com/games/wenzi/yunyin/MainActivity.java",
+      "description": "存档导出平台抽象与 Android Capacitor 桥"
+    },
+    "ISS-1064": {
+      "id": "ISS-1064",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T08:10:50+00:00",
+      "updated_at": "2026-10-23T08:45:44+00:00",
+      "touched_round": 347,
+      "title": "安卓首次导出几乎必然失败，导入可能选不到 .save",
+      "description": "原生写公共 Documents/Export 未递归建目录，且 Android 10+ scoped storage 与权限配置不匹配；两个 file input 的 accept 只含 application/json/.save，Capacitor 扩展名映射可能过滤掉 .save。",
+      "severity": 0.9
+    },
+    "HYP-197": {
+      "id": "HYP-197",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T08:22:18+00:00",
+      "updated_at": "2026-10-23T08:45:39+00:00",
+      "touched_round": 347,
+      "title": "公共 Documents 写入是安卓导出失败根因",
+      "description": "未递归创建 Export 父目录、公共 Documents 在 Android 10+ 受限、manifest 缺 READ_EXTERNAL_STORAGE/legacy 配置，三者共同使原生导出不可靠。",
+      "confidence": 0.93,
+      "severity": 0.9,
+      "category": "correctness"
+    },
+    "HYP-198": {
+      "id": "HYP-198",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T08:22:20+00:00",
+      "updated_at": "2026-10-23T08:45:39+00:00",
+      "touched_round": 347,
+      "title": "安卓导入 accept 过滤掉 .save",
+      "description": "Capacitor 将 file input accept 转为 MIME；.save 无标准 MIME 时可能只保留 application/json，导致系统选择器隐藏导出的存档。",
+      "confidence": 0.88,
+      "severity": 0.8,
+      "category": "correctness"
+    },
+    "EV-1041": {
+      "id": "EV-1041",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T08:44:38+00:00",
+      "updated_at": "2026-10-23T08:44:38+00:00",
+      "touched_round": 346,
+      "title": "Capacitor 文件选择器会过滤 .save 扩展名",
+      "source": "node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/BridgeWebChromeClient.java:380; src/core/saveAndroidTransfer.spec.ts",
+      "summary": "BridgeWebChromeClient 仅在 EXTRA_MIME_TYPES 中保留可映射的 MIME；application/json 会隐藏无标准 MIME 的 .save 文件，改为 application/octet-stream,.save 后静态接线审计通过。",
+      "confidence": 0.95
+    },
+    "EV-1042": {
+      "id": "EV-1042",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T08:45:03+00:00",
+      "updated_at": "2026-10-23T08:45:03+00:00",
+      "touched_round": 346,
+      "title": "Android 导出已改走 SAF 且只有 saved=true 才记成功",
+      "source": "src/core/savePlatform.ts:59-83; src/core/savePlatform.spec.ts:96-154; android/app/src/main/java/com/games/wenzi/yunyin/SaveTransferPlugin.java:31-70",
+      "summary": "定向测试验证 Android 不请求公共存储权限、不写 Documents，取消返回 saved=false 不记导出，原生异常透出原因；SAF 插件用 ACTION_CREATE_DOCUMENT 与 ContentResolver 写入。",
+      "confidence": 0.98
+    },
+    "EV-1043": {
+      "id": "EV-1043",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T09:44:43+00:00",
+      "updated_at": "2026-10-23T09:44:43+00:00",
+      "touched_round": 347,
+      "title": "SAF 写入已移出主线程且未知回包单独报错",
+      "source": "android/app/src/main/java/com/games/wenzi/yunyin/SaveTransferPlugin.java:71-99; src/core/savePlatform.ts:35-53; src/core/saveAndroidTransfer.spec.ts:32-41; src/core/savePlatform.spec.ts:137-153",
+      "summary": "复查发现 ActivityResult 主线程直接写盘与未知回包误报取消；现经 Capacitor 插件线程写入、结果回主线程，未知回包报协议失败。",
+      "confidence": 0.98
+    },
+    "HYP-199": {
+      "id": "HYP-199",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T09:44:52+00:00",
+      "updated_at": "2026-10-23T09:44:59+00:00",
+      "touched_round": 347,
+      "title": "SAF 回调主线程写盘会在大存档时卡住界面",
+      "description": "ActivityResult 回到主线程后直接 openOutputStream/write/flush；存档较大或目标提供者较慢时会阻塞 UI。",
+      "confidence": 0.95,
+      "severity": 0.65,
+      "category": "stability"
+    },
+    "TASK-503": {
+      "id": "TASK-503",
+      "type": "task",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T09:46:03+00:00",
+      "updated_at": "2026-10-23T09:46:09+00:00",
+      "touched_round": 347,
+      "category": "stability",
+      "title": "安卓 SAF 导出改为后台写盘并区分取消与协议失败",
+      "description": "复核发现 ActivityResult 回调主线程直接写盘，且未知回包被误报为取消。",
+      "severity": 0.65,
+      "confidence": 0.95,
+      "effort": 2,
+      "unlock_factor": 1.1
+    },
+    "CHG-600": {
+      "id": "CHG-600",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T09:48:04+00:00",
+      "updated_at": "2026-10-23T09:48:04+00:00",
+      "touched_round": 347,
+      "title": "安卓存档改走 SAF 并放行 .save 导入",
+      "commit": "2fe8ab7",
+      "detail": "SaveTransfer 插件经 ACTION_CREATE_DOCUMENT 写用户选定位置，后台写盘、仅 saved=true 成功；Manifest 去除公共存储权限，两个导入入口放行 .save。"
     }
   },
   "edges": [
@@ -40283,6 +40432,60 @@
       "to": "TASK-501",
       "type": "implements",
       "created_at": "2026-10-23T07:24:42+00:00"
+    },
+    {
+      "from": "TASK-502",
+      "to": "ISS-1064",
+      "type": "addresses",
+      "created_at": "2026-10-23T08:22:14+00:00"
+    },
+    {
+      "from": "ISS-1064",
+      "to": "COMP-041",
+      "type": "located_in",
+      "created_at": "2026-10-23T08:22:16+00:00"
+    },
+    {
+      "from": "EV-1041",
+      "to": "HYP-198",
+      "type": "validates",
+      "created_at": "2026-10-23T08:45:09+00:00"
+    },
+    {
+      "from": "EV-1042",
+      "to": "HYP-197",
+      "type": "validates",
+      "created_at": "2026-10-23T08:45:09+00:00"
+    },
+    {
+      "from": "EV-1043",
+      "to": "HYP-199",
+      "type": "validates",
+      "created_at": "2026-10-23T09:44:59+00:00"
+    },
+    {
+      "from": "TASK-503",
+      "to": "ISS-1064",
+      "type": "addresses",
+      "created_at": "2026-10-23T09:46:09+00:00"
+    },
+    {
+      "from": "CHG-600",
+      "to": "TASK-502",
+      "type": "implements",
+      "created_at": "2026-10-23T09:48:11+00:00"
+    },
+    {
+      "from": "CHG-600",
+      "to": "TASK-503",
+      "type": "implements",
+      "created_at": "2026-10-23T09:48:11+00:00"
+    },
+    {
+      "from": "CHG-600",
+      "to": "ISS-1064",
+      "type": "resolves",
+      "created_at": "2026-10-23T09:48:11+00:00"
     }
   ]
 }
