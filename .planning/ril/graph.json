@@ -2,7 +2,7 @@
   "ril_version": 1,
   "round": 346,
   "created_at": "2026-09-09T11:22:32+00:00",
-  "updated_at": "2026-10-23T05:57:34+00:00",
+  "updated_at": "2026-10-23T07:12:25+00:00",
   "nodes": {
     "ISS-001": {
       "id": "ISS-001",
@@ -324,7 +324,7 @@
       "version": 1,
       "created_at": "2026-09-09T14:05:15+00:00",
       "updated_at": "2026-09-09T14:05:15+00:00",
-      "touched_round": 158,
+      "touched_round": 346,
       "summary": "悟道顿悟/洞府巡游事件系统(earlyGameService + 两个弹窗组件)"
     },
     "CHG-007": {
@@ -27145,6 +27145,80 @@
       "confidence": 0.95,
       "title": "三档强度加稀有角章能补足九档色相不可辨",
       "detail": "把 rank 折成三档边框并给天/仙/神/道盖形状章,可在不改变品阶数值与掉率的前提下提升可读性。"
+    },
+    "TASK-500": {
+      "id": "TASK-500",
+      "type": "task",
+      "status": "resolved",
+      "version": 5,
+      "created_at": "2026-10-23T06:46:25+00:00",
+      "updated_at": "2026-10-23T07:12:25+00:00",
+      "touched_round": 346,
+      "category": "correctness",
+      "severity": 0.62,
+      "confidence": 0.95,
+      "effort": 2,
+      "title": "稀有品阶角章压住法宝行的祭炼重数",
+      "detail": "ArtifactPanel 的 16px 品阶角章绝对定位在 right-2 top-2,同一行右侧的 ml-auto 祭炼重数没有为它留出内边距;390px 真浏览器实测角章与「祭炼 0/9 重」重叠 84px²。此前的静态判据只查了角章存在,没有量密卡右上角的挤占。"
+    },
+    "ISS-1062": {
+      "id": "ISS-1062",
+      "type": "issue",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T06:49:19+00:00",
+      "updated_at": "2026-10-23T07:12:25+00:00",
+      "touched_round": 346,
+      "severity": 0.62,
+      "title": "稀有品阶角章压住法宝行的祭炼重数",
+      "detail": "ArtifactPanel 的 16px 品阶角章绝对定位在 right-2 top-2,同一行右侧的 ml-auto 祭炼重数没有为它留出内边距;390px 真浏览器实测角章与「祭炼 0/9 重」重叠 84px²。"
+    },
+    "COMP-082": {
+      "id": "COMP-082",
+      "type": "component",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T06:49:45+00:00",
+      "updated_at": "2026-10-23T06:49:45+00:00",
+      "touched_round": 346,
+      "summary": "法宝面板 ArtifactPanel.vue —— 随身槽、品阶晕染/角章、祭炼与连炼动作"
+    },
+    "HYP-195": {
+      "id": "HYP-195",
+      "type": "hypothesis",
+      "status": "resolved",
+      "version": 2,
+      "created_at": "2026-10-23T07:11:58+00:00",
+      "updated_at": "2026-10-23T07:12:25+00:00",
+      "touched_round": 346,
+      "title": "稀有法宝行给右上角章留白即可消除与祭炼重数的重叠",
+      "detail": "角章绝对定位占据右上 16px,重数由 flex 的 ml-auto 推至右缘;只在稀有行标题栏增加右侧内边距,应能把重数整体左移且不影响普通行。",
+      "confidence": 0.9
+    },
+    "EV-1039": {
+      "id": "EV-1039",
+      "type": "evidence",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T07:12:03+00:00",
+      "updated_at": "2026-10-23T07:12:03+00:00",
+      "touched_round": 346,
+      "title": "390px 下天/神稀有法宝的重数避让后与角章零重叠",
+      "source": "headless Chromium 390px + src/ui/qualityTier.spec.ts",
+      "confidence": 1.0,
+      "detail": "修复前 16x16 角章与「祭炼 0/9 重」重叠 84px²;修复后重数左移 12px(x 299.3→287.3),af_hundunfu 天品与 af_shenmojing 神品两组重叠均为 0px²。移除 pr-3 后回归用例点名转红,恢复后 7/7 通过;全量 317 files / 3660 tests 通过。"
+    },
+    "CHG-598": {
+      "id": "CHG-598",
+      "type": "change",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-23T07:12:11+00:00",
+      "updated_at": "2026-10-23T07:12:11+00:00",
+      "touched_round": 346,
+      "title": "法宝稀有角章与祭炼重数错开",
+      "commit": "85255fc",
+      "detail": "ArtifactPanel 在行投影中计算 rare,稀有行标题栏增加 pr-3;回归用例锁定投影、角章条件与间距,390px 天/神两档重叠归零。"
     }
   },
   "edges": [
@@ -40075,6 +40149,36 @@
       "to": "HYP-194",
       "type": "validates",
       "created_at": "2026-10-23T05:57:34+00:00"
+    },
+    {
+      "from": "TASK-500",
+      "to": "ISS-1062",
+      "type": "addresses",
+      "created_at": "2026-10-23T06:49:25+00:00"
+    },
+    {
+      "from": "EV-1039",
+      "to": "HYP-195",
+      "type": "validates",
+      "created_at": "2026-10-23T07:12:06+00:00"
+    },
+    {
+      "from": "ISS-1062",
+      "to": "COMP-082",
+      "type": "located_in",
+      "created_at": "2026-10-23T07:12:06+00:00"
+    },
+    {
+      "from": "CHG-598",
+      "to": "ISS-1062",
+      "type": "resolves",
+      "created_at": "2026-10-23T07:12:14+00:00"
+    },
+    {
+      "from": "CHG-598",
+      "to": "TASK-500",
+      "type": "implements",
+      "created_at": "2026-10-23T07:12:14+00:00"
     }
   ]
 }
