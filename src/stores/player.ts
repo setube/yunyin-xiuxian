@@ -1293,7 +1293,18 @@ export const usePlayerStore = defineStore(
       suppressLife.value = reincarnation.value.count
       if (!suppressedRegions.value.includes(regionId)) {
         suppressedRegions.value = [...suppressedRegions.value, regionId]
-        suppressedSince.value = { ...suppressedSince.value, [regionId]: Date.now() }
+        /**
+         * 起点只在**第一次**镇压时落笔。
+         *
+         * 停取收益只摘掉 `suppressedRegions` 那一格,`suppressedSince` 照旧留着
+         * (见 unsuppressRegion 的注释);再切回收益态时若在这里重写此刻,玩家
+         * 守了两天的地会当场回到「已守 0 时」:兴衰从繁盛掉回混乱、装备气运清零,
+         * 72 小时的复聚钟也从头再走一遍 —— 点一下开关就白赚两天免复聚。
+         * 没有起点(首次镇压,或坏档被清掉)时才补一个。
+         */
+        if (!(suppressedSince.value[regionId]! > 0)) {
+          suppressedSince.value = { ...suppressedSince.value, [regionId]: Date.now() }
+        }
       }
     }
 
@@ -1325,9 +1336,14 @@ export const usePlayerStore = defineStore(
     function unsuppressRegion(regionId: string): void {
       if (!regionDef(regionId)) return
       suppressedRegions.value = suppressedRegions.value.filter(id => id !== regionId)
-      const next = { ...suppressedSince.value }
-      delete next[regionId]
-      suppressedSince.value = next
+      /**
+       * **不删 `suppressedSince`**:停取收益只是关掉产出,不是「没守过」。
+       *
+       * 从前这里把起点一并删掉,再切回收益态时 `suppressRegion` 重写此刻 ——
+       * 玩家守了两天的地会当场回到「已守 0 时」:兴衰从繁盛掉回混乱、装备气运
+       * 清零,72 小时的复聚钟也从头再走一遍。点一下开关就白赚两天免复聚。
+       * 起点随「资格」一起活着;真失去资格时(转世 / 坏档清洗)另有清除路径。
+       */
       // 松开镇压即放下这一份零头:留着它,下一次再镇压会凭空多出半件
       if (regionId in suppressFrac.value) {
         const rest = { ...suppressFrac.value }
@@ -1341,6 +1357,20 @@ export const usePlayerStore = defineStore(
           [regionId]: { ...regionStats.value[regionId]!, consecutiveWins: 0 },
         }
       }
+    }
+
+    /**
+     * 妖气复聚:镇压被世界收回 —— 与「玩家主动停取」是两件事。
+     *
+     * 主动停取保留守土起点(再切回时兴衰与复聚钟接着走);复聚则连同起点一起清掉,
+     * 因为那一片地已经回到旧主手里,下一次镇压是重新开始,不该继承上一轮的守时。
+     */
+    function loosenSuppression(regionId: string): void {
+      unsuppressRegion(regionId)
+      if (!(regionId in suppressedSince.value)) return
+      const next = { ...suppressedSince.value }
+      delete next[regionId]
+      suppressedSince.value = next
     }
 
     // ---------- Phase 30.9 世界记忆 ----------
@@ -1598,6 +1628,7 @@ export const usePlayerStore = defineStore(
       applyRegionWinBatch,
       suppressRegion,
       unsuppressRegion,
+      loosenSuppression,
       takeSuppressResource,
       markSuppressQualified,
       recordRegionWin,

@@ -212,4 +212,28 @@ describe('转世不残留产出型镇压', () => {
     expect(player.regionStats.hongmeng!.totalFights).toBe(30)
     expect(suppressionProgress(player.regionStats.hongmeng, player.suppressLife).qualified, '旧账不参与本世判据').toBe(false)
   })
+
+  /**
+   * 停取收益 → 再切回,不该把「守了多久」清零。
+   *
+   * `suppressedSince` 是兴衰(守满 6 / 24 小时翻档)、装备气运(守满一天 +0.1)
+   * 与 72 小时复聚钟三件事共同的起点。从前 `unsuppressRegion` 把它删掉,
+   * `suppressRegion` 再写此刻 —— 玩家守了两天,点一下「停取」再点「转为收益」,
+   * 三件事一起归零,顺带白赚两天免复聚。
+   *
+   * 故障注入:把 `unsuppressRegion` 里的 delete 放回 → 本条红。
+   */
+  it('停取收益再切回,守土起点不重置(兴衰、气运、复聚钟都不白拿)', () => {
+    const player = usePlayerStore()
+    const t = Date.now() - 48 * 3600_000
+    player.markSuppressQualified('qingyun')
+    player.suppressRegion('qingyun')
+    player.suppressedSince = { qingyun: t }
+
+    player.unsuppressRegion('qingyun')
+    expect(player.suppressedSince.qingyun, '停取只是关产出,不是「没守过」').toBe(t)
+
+    player.suppressRegion('qingyun')
+    expect(player.suppressedSince.qingyun, '切回来不该把守了两天重置成 0').toBe(t)
+  })
 })

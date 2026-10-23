@@ -59,7 +59,7 @@ export function settleRegionRevivals(
     if (!isRegionRevived(touchedAt, now)) continue
     // 妖气都聚起来了,压不住 —— 镇压松开(资格仍在,随时可一键接回)
     if (suppressedNow) {
-      player.unsuppressRegion(region.id)
+      player.loosenSuppression(region.id)
       loosened.push(region.id)
     }
     // 已靖的地界:旧主归来,此处不再「已靖」(再靖一次即复位)
