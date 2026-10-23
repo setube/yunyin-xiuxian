@@ -43,6 +43,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 必须在 super.onCreate 前登记:BridgeActivity 会在 super 里创建 Bridge,
+        // 晚一步注册的插件不会出现在 JS 的 PluginHeaders 中。
+        registerPlugin(SaveTransferPlugin.class);
         super.onCreate(savedInstanceState);
 
         // 沉浸式状态栏

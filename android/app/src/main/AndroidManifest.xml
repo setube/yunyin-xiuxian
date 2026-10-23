@@ -5,11 +5,6 @@
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-  <!-- 存档导出:写「文档」目录(Android 8~9 需此权限;10+ 走 MediaStore 无需) -->
-  <uses-permission
-    android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-    android:maxSdkVersion="28" />
-
   <application
     android:allowBackup="true"
     android:dataExtractionRules="@xml/data_extraction_rules"

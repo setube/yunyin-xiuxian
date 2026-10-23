@@ -1,17 +1,54 @@
 /**
- * 存档导出平台抽象 —— Web/Electron 走浏览器下载,Capacitor 原生端写 Documents。
+ * 存档导出平台抽象 —— Web/Electron 走浏览器下载,Android 走 SAF 保存面板,
+ * 其他 Capacitor 原生端写 Documents。
  *
  * 背景:SettingsView 原把导出/导入整体用 `!Capacitor.isNativePlatform()` 藏起,
  * 因为 Capacitor WebView 没有 DownloadListener,`saveAs` 触发的下载在安卓上
  * 根本没着落。但存档只存本地、无法备份,卸载/清数据即永久丢失 —— 导出能力
- * 恰恰是移动端最需要的一环。原生端改用 @capacitor/filesystem 写 Documents:
- * 卸载前把 .save 文件导出,重装后经设置页导入恢复。
+ * 恰恰是移动端最需要的一环。
+ *
+ * Android 不能继续写公共 Documents:新安装时 Export 父目录不存在,而
+ * @capacitor/filesystem 的 writeFile 默认不建父目录;Android 10 的 legacy
+ * storage 与 Android 11+ 的分区存储又让公共目录权限变得不可靠。故改由
+ * SaveTransfer 原生插件打开 ACTION_CREATE_DOCUMENT,让系统保存面板选择位置,
+ * 再用 ContentResolver 写入,既不需要存储权限,也能确认文件真的落盘。
  */
 import { Capacitor } from '@capacitor/core'
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
 import { saveAs } from 'file-saver'
 import { exportSaveText } from './save'
 import { useUiStore } from '@/stores/ui'
+
+interface SaveTransferPlugin {
+  save(options: { text: string; fileName: string }): Promise<{ saved?: boolean }>
+}
+
+/** Android 的 SAF 导出桥;只在 Android 分支取用,避免 Web 端注册一个不存在的原生插件 */
+function saveTransferPlugin(): SaveTransferPlugin {
+  return Capacitor.registerPlugin<SaveTransferPlugin>('SaveTransfer')
+}
+
+function exportFileName(): string {
+  return `yunyin-xiuxian-${new Date().toISOString().slice(0, 10)}.save`
+}
+
+async function exportSaveOnAndroid(text: string, file: string): Promise<string | null> {
+  try {
+    const result = await saveTransferPlugin().save({ text, fileName: file })
+    if (result?.saved === true) {
+      useUiStore().toast(`已导出「${file}」`, 'success')
+      return null
+    }
+    const reason = result?.saved === false ? '已取消导出' : '存档导出失败:原生桥返回了无法识别的结果'
+    useUiStore().toast(reason, 'warn')
+    return reason
+  } catch (error) {
+    const detail = error instanceof Error && error.message ? `:${error.message}` : ''
+    const reason = `存档导出失败${detail}`
+    useUiStore().toast(reason, 'warn')
+    return reason
+  }
+}
 
 /**
  * 本机存档导出:按平台落到可被用户取走的地方。
@@ -21,6 +58,9 @@ import { useUiStore } from '@/stores/ui'
  */
 export async function exportSaveToDevice(): Promise<string | null> {
   const text = exportSaveText()
+  if (Capacitor.getPlatform() === 'android') {
+    return exportSaveOnAndroid(text, exportFileName())
+  }
   if (Capacitor.isNativePlatform()) {
     try {
       // Documents 在部分 Android 上需运行时授权,先问一句,被拒就如实告知
@@ -30,13 +70,14 @@ export async function exportSaveToDevice(): Promise<string | null> {
         useUiStore().toast(reason, 'warn')
         return reason
       }
-      const stamp = new Date().toISOString().slice(0, 10)
-      const file = `yunyin-xiuxian-${stamp}.save`
+      const file = exportFileName()
       await Filesystem.writeFile({
         path: `Export/${file}`,
         data: text,
         directory: Directory.Documents,
-        encoding: Encoding.UTF8
+        encoding: Encoding.UTF8,
+        // 首次导出时 Documents/Export 还不存在;不递归建目录会报 missing parent
+        recursive: true
       })
       useUiStore().toast(`已导出到「文档/Export/${file}」`, 'success')
       return null
@@ -57,7 +98,7 @@ export async function exportSaveToDevice(): Promise<string | null> {
    * 成功语义:真落盘的下载才算数(返回 null → 记账「上次导出」);
    * 只有剪贴板时返回提示(不记账 —— 文本躺在剪贴板里不算持久备份)。
    */
-  const file = `yunyin-xiuxian-${new Date().toISOString().slice(0, 10)}.save`
+  const file = exportFileName()
 
   // 剪贴板先行:写它要有用户手势 + secure context,导出按钮的单击正好给足。
   // 剪贴板不可用(非安全上下文/被禁)不影响下载那条路。

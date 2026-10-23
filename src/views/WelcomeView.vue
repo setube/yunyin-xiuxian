@@ -20,7 +20,8 @@
       <span class="text-ink-faint">·</span>
       <button class="inline-flex min-h-[28px] items-center active:text-ink-soft" @click="aboutOpen = true">关于我们</button>
     </div>
-    <input ref="fileInput" type="file" accept="application/json,.save" class="hidden" @change="onFilePicked" />
+    <!-- 安卓 MIME 表通常不认 .save;放行通用文件类型与扩展名,安全边界仍由 importSaveText 校验 -->
+    <input ref="fileInput" type="file" accept="application/octet-stream,.save" class="hidden" @change="onFilePicked" />
 
     <!-- 导入存档:确认文案 -->
     <BaseModal :open="importOpen" title="导入存档" @close="importOpen = false">

@@ -35,7 +35,8 @@
     <div class="grid grid-cols-2 gap-2">
       <button class="btn-ghost !text-[12px]" @click="onExport">导出存档</button>
       <button class="btn-ghost !text-[12px]" @click="triggerImport">导入存档</button>
-      <input ref="fileInput" type="file" accept="application/json,.save" class="hidden" @change="onFilePicked" />
+      <!-- 安卓 MIME 表通常不认 .save;放行通用文件类型与扩展名,安全边界仍由 importSaveText 校验 -->
+      <input ref="fileInput" type="file" accept="application/octet-stream,.save" class="hidden" @change="onFilePicked" />
     </div>
     <button class="btn-ghost w-full !border-cinnabar/40 !text-[12px] !text-cinnabar" @click="openReset">
       散尽修为,重入轮回(清空存档)
@@ -148,7 +149,7 @@
     if (resetConfirm.value || importConfirm.value) engine.resume()
   })
 
-  /** 导出存档:Web/Electron 走浏览器下载,原生端写 Documents(见 savePlatform) */
+  /** 导出存档:Web/Electron 走浏览器下载,Android 走系统保存面板(见 savePlatform) */
   function onExport(): void {
     // 两个平台各自会 toast 结果;这里再兜一层,免得异常冒成未捕获的 Promise。
     // 只有真的落盘了才记账(返回 null 即成功)—— 没导出成功却把时间戳往前推,
