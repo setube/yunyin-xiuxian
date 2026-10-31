@@ -481,6 +481,22 @@ describe('文案数值对账 · 视图不手抄数量', () => {
   })
 
   /**
+   * 词条名是玩家在行囊卡、转移面板、战报里认词条的唯一凭据:
+   * 曾有两个都叫「破妄」(增伤 dmg1 与 命中 ac2),同屏两个「破妄」加不同效果,分不清谁是谁。
+   * 故障注入:把任一词条名改成与另一条相同,本条红。
+   */
+  it('词条名唯一', () => {
+    const byName = new Map<string, string[]>()
+    for (const a of AFFIXES) {
+      const ids = byName.get(a.name) ?? []
+      ids.push(`${a.id}(${a.key})`)
+      byName.set(a.name, ids)
+    }
+    const dup = [...byName.entries()].filter(([, ids]) => ids.length > 1)
+    expect(dup.map(([n, ids]) => `${n}: ${ids.join('/')}`), '词条重名会让同屏两件装备的说明分不清').toEqual([])
+  })
+
+  /**
    * 建筑的 mods 走卡片另一行 modsText(见 BuildingCard.modLine),不进 effectText:
    * effectText 只写主职能,词条行把 mods 逐项译成中文名(修炼速度 / 灵气恢复 / 战斗修为…)。
    * 判据:mods 的每个键都要能被 modsText 译出中文名,不许漏出原始键名。
