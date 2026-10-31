@@ -153,14 +153,13 @@ watch(
 )
 
 /** 全熔预览与 furnaceConvert 同口径 floor(have/per);灵草按仙品+计 */
-const furnaceRows = computed(() =>
-  FURNACE_RATES.map(rate => ({
-    rate,
-    have: rate.resource === 'herb' ? resources.herbMeltable : (resources[rate.resource] as number)
-  }))
-)
+function haveOf(rate: FurnaceRate): number {
+  return rate.resource === 'herb' ? resources.herbMeltable : (resources[rate.resource] as number)
+}
+const furnaceRows = computed(() => FURNACE_RATES.map(rate => ({ rate, have: haveOf(rate) })))
 function furnacePreview(rate: FurnaceRate): number {
-  return Math.floor(furnaceRows.value.find(r => r.rate.resource === rate.resource)!.have / rate.per)
+  // 直接按 rate 算,不经 find:同口径且不会因表对不上号而落到非空断言上
+  return Math.floor(haveOf(rate) / rate.per)
 }
 function doFurnace(rate: FurnaceRate): void {
   furnaceConfirm.value = null
