@@ -6,15 +6,17 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { DECOMPOSE_DUST } from '@/data/constants'
-import { regionDef } from '@/data/regions'
+import { REGIONS, regionDef } from '@/data/regions'
 import { herbGradeOfMajor, HERB_GRADE_SHORT } from '@/data/herbGrades'
 import { qualityDef } from '@/data/qualities'
-import { gnZero, mulN, sub, toNum } from '@/utils/gnum'
+import { gn, gnZero, mulN, sub, toNum } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import { RandomService } from '@/utils/random'
 import {
+  SUPPRESS_EXP_MAX,
   checkSuppression,
   settleSuppressedRegions,
+  suppressDaoText,
   suppressionEquipmentLuck,
   suppressionExpRate,
   suppressRateFor,
@@ -391,6 +393,48 @@ describe('区域镇压系统', () => {
         const now = Date.now()
         expect(suppressionEquipmentLuck(now + 86_400_000 * 5, now)).toBe(0)
         expect(suppressionEquipmentLuck(Number.NaN, now)).toBe(0)
+      })
+
+      /**
+       * 封顶必须在结算里兑现:界面与 suppressDaoText 报的是 min(区数×8%, 40%),
+       * 逐区各发 8% 时第 6 区起就越过封顶(7 区实得 56%),文案与结算分叉。
+       * 故障注入:把 perRegionRate 换回 suppressionExpRate(1) → 本条红。
+       */
+      it('结算:越过五区后总量停在 40% 封顶,与道韵文案同一把尺', () => {
+        for (const n of [6, 7, 10]) {
+          setActivePinia(createPinia())
+          const player = usePlayerStore()
+          player.major = 5
+          useResourcesStore().spiritStone = gn(1)
+          const ids = REGIONS.slice(0, n).map(r => r.id)
+          player.suppressedRegions = [...ids]
+          player.suppressQualified = [...ids]
+          const cult = player.cultPerSec
+          const before = toNum(player.exp)
+          settleSuppressedRegions(3600)
+          const ratio = (toNum(player.exp) - before) / cult
+          expect(ratio, `${n} 区超发:实得 ${(ratio * 100).toFixed(1)}%,封顶 ${SUPPRESS_EXP_MAX * 100}%`).toBeLessThanOrEqual(
+            SUPPRESS_EXP_MAX + 1e-6
+          )
+          expect(ratio, `${n} 区该顶到封顶`).toBeCloseTo(SUPPRESS_EXP_MAX, 6)
+          expect(suppressDaoText(n), '文案报的封顶与结算同一份').toContain(`${Math.round(SUPPRESS_EXP_MAX * 100)}%`)
+        }
+      })
+
+      it('结算:未到封顶时仍按每区 8% 如实叠加,五区之内口径不变', () => {
+        for (const [n, want] of [[1, 0.08], [3, 0.24], [5, 0.4]] as const) {
+          setActivePinia(createPinia())
+          const player = usePlayerStore()
+          player.major = 5
+          useResourcesStore().spiritStone = gn(1)
+          const ids = REGIONS.slice(0, n).map(r => r.id)
+          player.suppressedRegions = [...ids]
+          player.suppressQualified = [...ids]
+          const cult = player.cultPerSec
+          const before = toNum(player.exp)
+          settleSuppressedRegions(3600)
+          expect((toNum(player.exp) - before) / cult, `${n} 区应为 ${want}`).toBeCloseTo(want, 6)
+        }
       })
 
       it('结算:镇压两区一小时,修为红利 = 修速 × 16%', () => {
