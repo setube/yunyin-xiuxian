@@ -101,7 +101,8 @@ export const usePlayerStore = defineStore(
     /** 这一世的关系(历史在 reincarnation.bonds);转世时清空 */
     const bond = ref<import('@/core/daoluService').BondState | null>(null)
 
-    const eventChains = ref<import('@/types').EventChainState>({}) // 奇遇连锁进度(链路尚未实装)
+    /** 奇缘进度:链 id → 已走完的段数(见 core/eventEngine 的 pendingChainStages) */
+    const eventChains = ref<import('@/types').EventChainState>({})
     const winStreak = ref(0)
     const lastCaveEventDay = ref(0) // 上次洞府巡游日期
 
