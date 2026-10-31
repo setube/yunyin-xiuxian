@@ -59,7 +59,29 @@ try {
     console.log(`  ${n > 0 ? '✓' : '✗'} ${r.padEnd(14)} 标题 ${n} 个`)
   }
 
-  // 5) 每个弹窗都有可辨识名字(隐私政策在设置页)
+  // 5) 触控目标不小于 28px:能点的盒子要够手指按
+  //    复选框之类被 <label> 包住时,可点区域是 label 整体,量它而不是 input 本体
+  const TOUCH_ROUTES = ['/', '/cultivation', '/inventory', '/settings', '/dongfu', '/market']
+  for (const r of TOUCH_ROUTES) {
+    await page.evaluate(h => { location.hash = '#' + h }, r)
+    await page.waitForTimeout(600)
+    const small = await page.evaluate(() => {
+      const out = []
+      for (const e of document.querySelectorAll('button, a[href], input, select, textarea')) {
+        const host = e.closest('label') ?? e
+        const rc = host.getBoundingClientRect()
+        if (rc.width === 0 || rc.height === 0) continue
+        if (rc.width < 28 || rc.height < 28) {
+          out.push(`${e.tagName} ${Math.round(rc.width)}x${Math.round(rc.height)} «${(e.textContent ?? e.getAttribute('aria-label') ?? '').trim().slice(0, 8)}»`)
+        }
+      }
+      return out
+    })
+    if (small.length > 0) failures.push(`${r} 触控目标过小:${small.slice(0, 3).join(' | ')}`)
+    console.log(`  ${small.length === 0 ? '✓' : '✗'} ${r.padEnd(14)} 触控目标 ${small.length === 0 ? '全部 >=28px' : small.length + ' 处过小'}`)
+  }
+
+  // 6) 每个弹窗都有可辨识名字(隐私政策在设置页)
   await page.evaluate(() => { location.hash = '#/settings' })
   await page.waitForTimeout(900)
   await page.getByRole('button', { name: /隐私政策/ }).first().click()

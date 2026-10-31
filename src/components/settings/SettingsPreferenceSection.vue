@@ -1,7 +1,7 @@
 <template>
   <div class="card-ink divide-y divide-ink/6 px-4">
     <div class="py-3">
-      <label class="flex items-center justify-between">
+      <label class="flex min-h-[28px] items-center justify-between">
         <span class="text-[13px] text-ink-soft">背景音乐</span>
         <input v-model="settings.musicOn" type="checkbox" class="h-4 w-4 accent-cinnabar" />
       </label>
@@ -19,7 +19,7 @@
       </div>
     </div>
     <div class="py-3">
-      <label class="flex items-center justify-between">
+      <label class="flex min-h-[28px] items-center justify-between">
         <span class="text-[13px] text-ink-soft">音效</span>
         <input v-model="settings.sfxOn" type="checkbox" class="h-4 w-4 accent-cinnabar" />
       </label>
@@ -41,7 +41,7 @@
       <input v-model="settings.reduceMotion" type="checkbox" class="h-4 w-4 accent-cinnabar" />
     </label>
     <div class="py-3">
-      <label class="flex items-center justify-between">
+      <label class="flex min-h-[28px] items-center justify-between">
         <span class="text-[13px] text-ink-soft">遇事勿扰</span>
         <input v-model="settings.dndEvents" type="checkbox" class="h-4 w-4 accent-cinnabar" />
       </label>
