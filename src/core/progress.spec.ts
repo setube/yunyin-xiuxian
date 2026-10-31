@@ -7,6 +7,9 @@ import { CULT_BASE_SPEED, CULT_SPEED_SOFT_CAP_T } from '@/data/constants'
 import { baseCultPerSec } from './formulas'
 import { retreatGainText, retreatGainedText, checkStateAchievements, retreatMarginalSpeed } from './progress'
 import { useQuestsStore } from '@/stores/quests'
+import { ACHIEVEMENTS } from '@/data/achievements'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 /** 闭关预览「约多得修为 X」:与修炼行同读 baseCultPerSec,时长与加成取自 buffs.ts 的 retreat 本体 */
 describe('retreatGainText 闭关约多得预览', () => {
@@ -102,4 +105,54 @@ describe('retreatMarginalSpeed 闭关边际(修炼速度软上限)', () => {
     // 恰在阈上:1.5 全按半价
     expect(retreatMarginalSpeed(CULT_SPEED_SOFT_CAP_T, 1.5)).toBeCloseTo(0.75, 6)
   })
+
+/**
+ * 成就条件的分工契约。
+ *
+ * 三条判定路径各管一类,任何一类没人管,那条成就就**永远不会解锁**,而且不报错:
+ *   checkAchievements      :counter / realm,以及 custom 里的 realm_<major>_<sub>
+ *   checkQualityAchievement:quality(获得装备时显式调用)
+ *   checkStateAchievements :custom 里的状态型键,按 key 逐个触发
+ *
+ * 上面第三条是硬编码的键名清单。新增一条 custom 成就却忘了在 checkStateAchievements
+ * 里加触发,它就沉默失效 —— 这条把「每个 custom key 都有归处」钉住。
+ */
+describe('成就条件 · 每条都有判定路径', () => {
+  const SRC = readFileSync(resolve(__dirname, 'progress.ts'), 'utf-8')
+
+  it('custom 型的 key 只有 realm_x_y 与状态型两种,realm 型走正则,其余须在 checkStateAchievements 里出现', () => {
+    const customKeys = [
+      ...new Set(
+        ACHIEVEMENTS.filter(a => a.cond.type === 'custom').map(a => (a.cond as { key: string }).key)
+      )
+    ]
+    expect(customKeys.length, '没有 custom 成就,说明结构变了').toBeGreaterThan(0)
+    for (const key of customKeys) {
+      if (/^realm_\d+_\d+$/.test(key)) continue
+      // 状态型:progress.ts 里必须有 checkCustomAchievement('key') 这样的触发点
+      expect(SRC, `custom key「${key}」在 checkStateAchievements 里没有触发点,该成就永远不会解锁`).toContain(
+        `checkCustomAchievement('${key}')`
+      )
+    }
+  })
+
+  it('quality 型由 checkQualityAchievement 负责,不进 checkAchievements 的循环', () => {
+    const quality = ACHIEVEMENTS.filter(a => a.cond.type === 'quality')
+    expect(quality.length).toBeGreaterThan(0)
+    // checkAchievements 里明确跳过 quality
+    expect(SRC).toContain("if (def.cond.type === 'quality') continue")
+  })
+
+  it('counter / realm 型不依赖任何额外触发点(evalCond 直接判)', () => {
+    const direct = ACHIEVEMENTS.filter(a => a.cond.type === 'counter' || a.cond.type === 'realm')
+    expect(direct.length, '没有直接判定的成就,说明结构变了').toBeGreaterThan(0)
+  })
+
+  it('三类路径合起来覆盖全部成就,没有无主条目', () => {
+    const kinds = new Set(ACHIEVEMENTS.map(a => a.cond.type))
+    for (const k of kinds) {
+      expect(['counter', 'realm', 'custom', 'quality'], `出现了未登记的条件类型 ${k},需在 progress.ts 里接上判定路径`).toContain(k)
+    }
+  })
+})
 })
