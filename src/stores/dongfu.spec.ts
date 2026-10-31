@@ -7,7 +7,8 @@ import {
   FIELD_ORE_PER_HOUR,
   FORGE_LEVEL_PER_CAP,
   LIBRARY_WUDAO_PER_HOUR,
-  VEIN_MAIN_CAPACITY
+  VEIN_MAIN_CAPACITY,
+  VEIN_TOTAL_CAPACITY
 } from '@/data/constants'
 import { MAX_MAJOR } from '@/data/realms'
 import type { HerbGrade } from '@/data/herbGrades'
@@ -68,8 +69,11 @@ describe('dongfu store · sanitize', () => {
     dongfu.veinPoints = { gather: 60, craft: 999, alchemy: 2, insight: 0, ghost: 400 } as never
     dongfu.sanitize()
     expect(Object.keys(dongfu.veinPoints).sort()).toEqual(['alchemy', 'craft', 'gather', 'insight'])
-    expect(dongfu.veinPoints.craft).toBe(70)
-    expect(dongfu.veinTotal).toBe(132)
+    // 单脉先各自裁到主脉容量(70),总量再压回 VEIN_TOTAL_CAPACITY。
+    // 原断言写 132 —— 那是「单脉裁完就不管总量」的旧结果,会让「132/100」与 132% 进度条露在界面上,
+    // 也会让 investVein 的 `veinTotal >= VEIN_TOTAL_CAPACITY` 闸门恒为真、从此一点也投不进去。
+    expect(dongfu.veinTotal).toBe(VEIN_TOTAL_CAPACITY)
+    expect(dongfu.veinPoints.craft).toBeGreaterThan(0)
   })
 
   it('主脉认不出时回落到「未定主脉」,四条脉重新按主脉档可投', () => {
@@ -450,4 +454,79 @@ describe('灵田产草品阶 · 等级表唯一事实源', () => {
     expect(text).toContain('道品')
     expect(text).toContain('灵草')
   })
+
+/**
+ * 灵脉总量上限。
+ *
+ * sanitize 原本只把单脉各自裁到主脉容量(70),不管总量:
+ * 四条一起到 70 时 veinTotal 就成了 280,而闸门是 `veinTotal >= VEIN_TOTAL_CAPACITY`。
+ * 后果有三处:界面显示「280/100」、进度条算出 280%、investVein 从此一点也投不进去。
+ * 与「行囊已满恒真」是同一类坏档后果,本条把容量压回上限。
+ */
+describe('灵脉总量 · 坏档压回容量', () => {
+  function fullVeins(n: number) {
+    return { gather: n, craft: n, alchemy: n, insight: n }
+  }
+
+  it('四条脉各撑到主脉容量时,总量仍被压回 VEIN_TOTAL_CAPACITY', () => {
+    const dongfu = useDongfuStore()
+    dongfu.veinPoints = fullVeins(VEIN_MAIN_CAPACITY) as never
+    dongfu.sanitize()
+    expect(dongfu.veinTotal).toBe(VEIN_TOTAL_CAPACITY)
+    expect(dongfu.veinTotal, '总量不得越过上限 —— 否则界面会出现「280/100」').toBeLessThanOrEqual(VEIN_TOTAL_CAPACITY)
+  })
+
+  it('远超上限的坏档也压回(不只压一档)', () => {
+    const dongfu = useDongfuStore()
+    dongfu.veinPoints = { gather: 5000, craft: 5000, alchemy: 5000, insight: 5000 } as never
+    dongfu.sanitize()
+    expect(dongfu.veinTotal).toBe(VEIN_TOTAL_CAPACITY)
+  })
+
+  it('正常范围内的存档原样保留(修形非空转)', () => {
+    const dongfu = useDongfuStore()
+    dongfu.veinPoints = { gather: 70, craft: 10, alchemy: 10, insight: 10 }
+    dongfu.sanitize()
+    expect(dongfu.veinPoints).toEqual({ gather: 70, craft: 10, alchemy: 10, insight: 10 })
+    expect(dongfu.veinTotal).toBe(VEIN_TOTAL_CAPACITY)
+  })
+
+  it('压回后仍有可投空间之外的情况:恰满 100 时总量就是 100,不是 99 也不是 101', () => {
+    const dongfu = useDongfuStore()
+    dongfu.veinPoints = { gather: 40, craft: 30, alchemy: 20, insight: 10 }
+    dongfu.sanitize()
+    expect(dongfu.veinTotal).toBe(100)
+  })
+
+  it('按比例压回:四条同投入的脉保住了相对份额,不是削掉两条', () => {
+    const dongfu = useDongfuStore()
+    dongfu.veinPoints = fullVeins(VEIN_MAIN_CAPACITY) as never
+    dongfu.sanitize()
+    const values = Object.values(dongfu.veinPoints)
+    // 逐条削的实现会给出 0/0/30/70 —— 四脉等额投入却白丢两条
+    expect(values.filter(v => v > 0).length, '压回容量不该把任一条脉清成 0').toBe(4)
+    expect(Math.max(...values) - Math.min(...values), '等额投入应等额压回').toBeLessThanOrEqual(1)
+  })
+
+  it('按比例压回:投入悬殊时保住悬殊关系(多投的仍多)', () => {
+    const dongfu = useDongfuStore()
+    dongfu.veinPoints = { gather: 70, craft: 40, alchemy: 20, insight: 10 }
+    dongfu.sanitize()
+    expect(dongfu.veinTotal).toBe(VEIN_TOTAL_CAPACITY)
+    expect(dongfu.veinPoints.gather).toBeGreaterThan(dongfu.veinPoints.craft)
+    expect(dongfu.veinPoints.craft).toBeGreaterThan(dongfu.veinPoints.alchemy)
+    expect(dongfu.veinPoints.alchemy).toBeGreaterThan(dongfu.veinPoints.insight)
+  })
+
+  it('点数都非负整数(压回不会产生小数或负数)', () => {
+    const dongfu = useDongfuStore()
+    dongfu.veinPoints = { gather: 33.7, craft: 99.9, alchemy: 0.4, insight: -5 } as never
+    dongfu.sanitize()
+    for (const v of Object.values(dongfu.veinPoints)) {
+      expect(Number.isInteger(v), `${v} 不是整数`).toBe(true)
+      expect(v).toBeGreaterThanOrEqual(0)
+    }
+    expect(dongfu.veinTotal).toBeLessThanOrEqual(VEIN_TOTAL_CAPACITY)
+  })
+})
 })
