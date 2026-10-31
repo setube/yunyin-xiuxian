@@ -30,6 +30,7 @@ import { makeEnemySnap, resolveCombat, sampleWinRate } from './combat'
 import { buildPlayerSnap } from './playerSnap'
 import { generateEquipment } from './equipGen'
 import { onAcquire, acquireArtifactGain, acquireEquipment, afterWin, randomDropArtifact, randomDropPill } from './loot'
+import { STONE_AMT_PER_BATTLE } from './pillValue'
 import { avgDustPerDrop } from './economySim'
 import { autoResolveEvent, regionEventPoolFor } from './eventEngine'
 import {
@@ -242,11 +243,12 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         sessionWins += wins
         sessionLosses += battles - wins
 
-        // 与在线 afterWin 同源:乘区域加丰;福缘在线每战掷翻倍,离线按期望 ×(1+p) 计入
-        const doubleMult = 1 + Math.min(1, Math.max(0, modOf(mods, 'doubleDropRate')))
+        // 与在线 afterWin 同源:乘区域加丰;福缘在线每战掷翻倍,离线按期望 ×(1+p) 计入。
+        // 每战灵石基准取 loot 同用的 STONE_AMT_PER_BATTLE,不写死数字 —— 改基准时离线会跟着走。
+        const doubleMult = 1 + capChance(modOf(mods, 'doubleDropRate'))
         const stoneGain = stoneByTier(
           region.tier,
-          10 * wins * modeDef.rewardMult * regionEventReward * (1 + modOf(mods, 'spiritStoneGain')) * doubleMult
+          STONE_AMT_PER_BATTLE * wins * modeDef.rewardMult * regionEventReward * (1 + modOf(mods, 'spiritStoneGain')) * doubleMult
         )
         resources.addStone(stoneGain)
         // 修为与在线 afterWin 同走 expFromSecs:秒数与层上限都随场数线性放大,N 场 = N 次单场
