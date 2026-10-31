@@ -56,7 +56,7 @@ export const AFFIXES: AffixDef[] = [
   a('cdmg3', '裂空', 'critDamage', 30, 50, 20, { slots: WJ, minRank: 5, decimals: 0 }),
   a('cdmg4', '诛天', 'critDamage', 50, 80, 6, { slots: W, minRank: 7, decimals: 0 }),
   // ---- 增伤 ----
-  a('dmg1', '破妄', 'damageBonus', 3, 6, 90, { slots: WJ }),
+  a('dmg1', '试锋', 'damageBonus', 3, 6, 90, { slots: WJ }),
   a('dmg2', '诛邪', 'damageBonus', 6, 12, 45, { slots: WJ, minRank: 3 }),
   a('dmg3', '屠灭', 'damageBonus', 12, 20, 15, { slots: W, minRank: 6 }),
   // ---- 减伤 ----
