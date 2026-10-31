@@ -50,4 +50,59 @@ describe('虚界生成器', () => {
     const selfNovelty = noveltyScore(chiyan, audit, [{ world: chiyan, topStyles }])
     expect(selfNovelty).toBeLessThan(NOVELTY_MIN)
   })
+
+/**
+ * 奖励定价的可达值域。
+ *
+ * generateApprovedWorld 里 `Math.min(100, Math.max(55, 60*(1.85-best)))` 的两层钳制
+ * 在实际值域内都不生效:过审要求 best∈[0.5,0.97],而 best 是 clears/runs 的离散值
+ * (runs=7 时只能取 0.571/0.714/0.857),于是 raw 落在 [57, 81]。
+ *
+ * 不删这两层钳制 —— 它们是防御性的,一旦 passes 的阈值放宽就会真正生效。
+ * 本条把值域钉住,免得有人把阈值改宽后发现奖励悄悄被压平却无从察觉。
+ */
+describe('虚界奖励定价', () => {
+  /** 与 generateApprovedWorld 内的算式同形;这里复述是为了单独验值域 */
+  function rewardOf(best: number): number {
+    return Math.round(Math.min(100, Math.max(55, 60 * (1.85 - best))))
+  }
+
+  it('过审区间端点的奖励:best=0.5 → 81,best=0.97 → 55', () => {
+    expect(rewardOf(0.5)).toBe(81)
+    // 0.97 是 passes 的上界,此处 raw=52.8 会被 Math.max(55) 托住 —— 钳制在此确实生效
+    expect(rewardOf(0.97)).toBe(55)
+  })
+
+  it('runs=7 的三个可能取值对应 77 / 68 / 60(两层钳制都不触发)', () => {
+    expect(rewardOf(4 / 7)).toBe(77)
+    expect(rewardOf(5 / 7)).toBe(68)
+    expect(rewardOf(6 / 7)).toBe(60)
+  })
+
+  it('难度越高奖励越高(单调不增还原为 best 越小 reward 越大)', () => {
+    let prev = rewardOf(0.5)
+    for (const best of [0.571, 0.714, 0.857, 0.9, 0.97]) {
+      const cur = rewardOf(best)
+      expect(cur, `best=${best} 时奖励未随难度上升`).toBeLessThanOrEqual(prev)
+      prev = cur
+    }
+  })
+
+  it('奖励恒在 [55, 100] 内 —— 不会给出负道源,也不会超出上限', () => {
+    for (const best of [0, 0.3, 0.5, 0.714, 0.97, 1, 2]) {
+      const r = rewardOf(best)
+      expect(r).toBeGreaterThanOrEqual(55)
+      expect(r).toBeLessThanOrEqual(100)
+    }
+  })
+
+  it('生成器产出的世界:奖励落在 55~81 且与自身 best 对得上', { timeout: 30000 }, () => {
+    const generated = generateApprovedWorld(11)
+    expect(generated, '种子 11 未产出过审世界,无法验证定价').not.toBeNull()
+    const { world, audit } = generated!
+    expect(world.rewardDaoSource).toBe(rewardOf(audit.best))
+    expect(world.rewardDaoSource).toBeGreaterThanOrEqual(55)
+    expect(world.rewardDaoSource, '合法区间内的奖励不会触到 100 上限').toBeLessThanOrEqual(81)
+  })
+})
 })
