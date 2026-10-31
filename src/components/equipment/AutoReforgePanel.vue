@@ -39,7 +39,15 @@
         >
           {{ affixDef(t.affixId)?.name ?? t.affixId }}
         </button>
-        <input v-model.number="t.minRoll" type="range" min="0" max="1" step="0.05" class="grow accent-cinnabar" />
+        <input
+          v-model.number="t.minRoll"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          class="grow accent-cinnabar"
+          :aria-label="`「${affixDef(t.affixId)?.name ?? t.affixId}」数值下限`"
+        />
         <span class="w-12 shrink-0 text-right tabular text-ink-faint">≥{{ Math.round((t.minRoll ?? 0) * 100) }}%</span>
       </p>
     </div>
@@ -51,6 +59,7 @@
         :min="1"
         :max="AUTO_REFORGE_MAX_BUDGET"
         class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
+        aria-label="至多洗炼次数"
       />
       <span class="text-[10px] text-ink-faint tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
       <template v-if="!autoArm">

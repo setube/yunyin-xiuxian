@@ -390,3 +390,31 @@ describe('可访问性 · 状态播报', () => {
     }
   })
 })
+
+/**
+ * 表单控件须有可访问名:要么被 <label> 包着,要么自己带 aria-label / placeholder。
+ * 实测漏过 AutoReforgePanel 的 range 与 number 两个输入 —— 读屏只念「滑块」「数字输入框」,
+ * 玩家不知道在调哪个词条的下限、也不知道那是洗炼次数。
+ * 隐藏的 input[type=file] 不算:它由同名按钮触发,本身不进焦点序。
+ * 故障注入:删掉任一 aria-label,本条红。
+ */
+describe('可访问性 · 表单控件有名字', () => {
+  it('每个非隐藏表单控件都能被读屏叫出名字', () => {
+    const nameless: string[] = []
+    for (const f of FILES) {
+      // 被 <label> 包住的控件已有名字
+      const labeled = new Set<string>()
+      for (const m of f.src.matchAll(/<label\b[\s\S]*?<\/label>/g)) {
+        for (const im of m[0].matchAll(/<input\b[^>]*>/g)) labeled.add(im[0])
+      }
+      for (const m of f.src.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)) {
+        const tag = m[0]
+        if (tag.includes('type="file"')) continue
+        if (/aria-label|aria-labelledby|placeholder|\bhidden\b/.test(tag)) continue
+        if (labeled.has(tag)) continue
+        nameless.push(`${f.path} → ${tag.replace(/\s+/g, ' ').slice(0, 70)}`)
+      }
+    }
+    expect(nameless, '这些表单控件没有可访问名:读屏只念得出控件类型').toEqual([])
+  })
+})
