@@ -6,7 +6,8 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { gn, subClamp, toNum } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
-import { intrinsicRuleTexts, SECRET_REALMS, SECRET_RULES, secretRuleByText } from '@/data/secretRealms'
+import { SECRET_REALMS, SECRET_RULES, secretRuleByText } from '@/data/secretRealms'
+import { gateRuleSummary } from './gateRuleText'
 import { MATERIALS, type MaterialBucket, type MaterialDef } from '@/data/materials'
 import { rng } from '@/utils/random'
 import { usePlayerStore } from '@/stores/player'
@@ -644,21 +645,25 @@ describe('秘境 · 自带规则也要报给玩家', () => {
       finished: false
     }
     const texts = secretRuleTexts(st)
-    expect(texts, '自带回合上限没报出来 —— 玩家不知道这场只有 25 回合').toContain('回合上限 25')
-    expect(texts.some(t => t.includes('敌方气血')), '敌方气血加成没报出来').toBe(true)
-    expect(texts.some(t => t.includes('我方攻击')), '我方攻击加成没报出来').toBe(true)
+    const joined = texts.join(' ')
+    expect(joined, '自带回合上限没报出来 —— 玩家不知道这场只有 25 回合').toContain('回合上限 25')
+    expect(joined, '敌方气血加成没报出来').toContain('敌方气血')
+    expect(joined, '我方攻击加成没报出来').toContain('攻势 +25%')
     // 随机规则跟在自带规则之后,一条不丢
     for (const rolled of st.rules) expect(texts, `随机规则「${rolled}」被吞了`).toContain(rolled)
   })
 
-  it('自带规则文案随 rules 走:改数值即改文案,不靠手抄', () => {
+  it('自带规则文案随 rules 走:与八门/远征求同一把尺(gateRuleSummary),不另写措辞', () => {
     for (const def of SECRET_REALMS) {
-      const texts = intrinsicRuleTexts(def)
-      // 每一项 rules 都至少产出一条文案(空 rules 的秘境除外)
+      const text = gateRuleSummary(def.rules)
       if (Object.keys(def.rules).length > 0) {
-        expect(texts.length, `${def.name} 有自带规则却一条文案都没有`).toBeGreaterThan(0)
+        expect(text, `${def.name} 有自带规则却一条文案都没有`).not.toBe('')
+        expect(text, `${def.name} 文案里出现 undefined`).not.toContain('undefined')
+        // 词条键须译成中文名,不许漏出 defensePct 这类原始键
+        expect(text, `${def.name} 文案漏出原始 StatMods 键`).not.toMatch(/[a-z][A-Z]|Pct\b/)
+      } else {
+        expect(text, `${def.name} 无自带规则却产出了文案`).toBe('')
       }
-      for (const line of texts) expect(line, `${def.name} 文案里出现 undefined`).not.toContain('undefined')
     }
   })
 })
