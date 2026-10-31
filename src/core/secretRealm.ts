@@ -11,7 +11,7 @@ import { ENEMIES, enemyDef } from '@/data/enemies'
 import { beastIcon } from '@/data/beastFamilies'
 import { maxTierForMajor } from '@/data/regions'
 import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
-import { intrinsicRuleTexts, SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES, secretRealmDef, secretRuleByText, type SecretRealmDef } from '@/data/secretRealms'
+import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, SECRET_RULES, secretRealmDef, secretRuleByText, type SecretRealmDef } from '@/data/secretRealms'
 import { resolveCombat } from './combat'
 import { mergeRules, worldFoeSnap } from './gauntlet'
 import { buildPlayerSnap } from './playerSnap'
@@ -26,6 +26,7 @@ import { useUiStore } from '@/stores/ui'
 import { useEndgameStore } from '@/stores/endgame'
 import { useAdventureStore } from '@/stores/adventure'
 import { endgameBusy } from './endgameActivity'
+import { gateRuleSummary } from './gateRuleText'
 
 export interface SecretRealmState {
   /** 秘境定义 id */
@@ -170,11 +171,14 @@ export function enterSecretRealm(defId: string): EnterResult {
 /**
  * 本趟生效的规则文案,供「此地规则」行直接渲染。
  * 自带规则(如归墟之眼的回合上限 25)一直作用于战斗,却从不进 state.rules ——
- * 只报 state.rules 等于把一部分战斗条件藏起来。顺序:秘境自带在前,随机规则在后。
+ * 只报 state.rules 等于把一部分战斗条件藏起来。
+ * 数值串走 gateRuleText.gateRuleSummary(与八门/远征求同一把尺),不在这里另写一套措辞。
+ * 顺序:秘境自带在前,随机规则在后。
  */
 export function secretRuleTexts(state: SecretRealmState): string[] {
   const def = secretRealmDef(state.realmId)
-  return [...(def ? intrinsicRuleTexts(def) : []), ...state.rules]
+  const intrinsic = def ? gateRuleSummary(def.rules) : ''
+  return [...(intrinsic ? [intrinsic] : []), ...state.rules]
 }
 
 /** 本趟战斗规则:道途 + 秘境自带 + 随机规则 + 层级递进的凶险 */
