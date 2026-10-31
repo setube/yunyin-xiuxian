@@ -32,6 +32,28 @@ async function watchToasts(page) {
 
 try {
   browser = await chromium.launch()
+
+  // 心跳只在开局后跑:欢迎页每 4 秒写一次 localStorage 是白耗(本项目刻意把写盘攒到 5 秒一次就是为了不发烫)
+  {
+    const welcomeCtx = await browser.newContext({ viewport: { width: 390, height: 844 } })
+    await welcomeCtx.route('**/*', r => (/^https?:\/\/localhost:/.test(r.request().url()) ? r.continue() : r.abort()))
+    const wp = await welcomeCtx.newPage()
+    await wp.goto(BASE + '#/welcome', { waitUntil: 'domcontentloaded' })
+    await wp.evaluate(() => {
+      window.__liveWrites = 0
+      const orig = Storage.prototype.setItem
+      Storage.prototype.setItem = function (k, v) {
+        if (String(k).includes('__live')) window.__liveWrites += 1
+        return orig.call(this, k, v)
+      }
+    })
+    await wp.waitForTimeout(10000)
+    const liveWrites = await wp.evaluate(() => window.__liveWrites)
+    if (liveWrites > 0) failures.push(`欢迎页也在发跨标签心跳(${liveWrites} 次/10 秒),没开局不该写 localStorage`)
+    console.log(`  ${liveWrites === 0 ? '✓' : '✗'} 欢迎页不发心跳(实测 ${liveWrites} 次/10 秒)`)
+    await welcomeCtx.close()
+  }
+
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } })
   await ctx.route('**/*', r => (/^https?:\/\/localhost:/.test(r.request().url()) ? r.continue() : r.abort()))
   await seedSave(ctx, lateSlices())

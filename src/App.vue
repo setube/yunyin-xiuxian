@@ -36,7 +36,7 @@
   import { useGameStore } from '@/stores/game'
   import { useUiStore } from '@/stores/ui'
   import { useSettingsStore } from '@/stores/settings'
-  import { subscribeOtherTabSave, subscribeSaveWriteFailure } from '@/utils/storage'
+  import { subscribeOtherTabSave, subscribeSaveWriteFailure, watchOtherTabSave } from '@/utils/storage'
   import { engine } from '@/core/engine'
   import { applyTheme, initTheme } from '@/core/theme'
   import { resetModalStack } from '@/composables/useModalStack'
@@ -108,6 +108,13 @@
     { immediate: true }
   )
 
+  // 只在开局后发跨标签心跳:没开局就没有可被覆盖的进度,不必每 4 秒写一次 localStorage
+  watch(
+    () => game.started,
+    started => watchOtherTabSave(started),
+    { immediate: true }
+  )
+
   // 减少动效类挂 body 而非 .app-shell:Teleport 到 body 的弹层在 .app-shell 之外,吃不到后代选择器
   watch(
     () => settings.reduceMotion,
@@ -134,6 +141,7 @@
     unsubscribeTheme()
     unsubscribeSaveFailure()
     unsubscribeOtherTab()
+    watchOtherTabSave(false)
     engine.stop()
     resetModalStack()
     disposeAudio()

@@ -197,9 +197,10 @@ export function subscribeOtherTabSave(handler: OtherTabHandler): () => void {
   }
 }
 
-/** 本页刚刚写过盘时广播,让别的标签页知道这里活着 */
+/** 本页活着的心跳键;别的标签页靠它知道对面还开着 */
 const LIVE_KEY = SAVE_PREFIX + '__live'
 const LIVE_PING_MS = 4000
+const LIVE_STALE_MS = LIVE_PING_MS * 3
 
 function markAlive(): void {
   try {
@@ -224,17 +225,50 @@ if (typeof window !== 'undefined') {
     if (e.key === null) return
     if (e.key === LIVE_KEY) {
       const at = Number(e.newValue)
-      setOtherTab(Number.isFinite(at) && Date.now() - at < LIVE_PING_MS * 3)
+      setOtherTab(Number.isFinite(at) && Date.now() - at < LIVE_STALE_MS)
       return
     }
     if (e.key.startsWith(SAVE_PREFIX) && !e.key.startsWith(SAVE_PREFIX + 'corrupt.')) setOtherTab(true)
   })
-  // 心跳:让别的标签页知道本页还开着;切回前台时立刻补一次,避免判定滞后
+}
+
+let pingTimer: ReturnType<typeof setInterval> | undefined
+let pingOnVisible: (() => void) | undefined
+
+/**
+ * 开始/停止发心跳。
+ *
+ * 由调用方按「是否在玩」开关,不在模块加载时就跑:欢迎页、设置页也要每 4 秒写一次 localStorage
+ * 太浪费 —— 本项目刻意把存档写入攒到 5 秒一次就是为了手机不发烫。
+ * 没开局就没有可被覆盖的进度,不必参与判重。
+ */
+export function watchOtherTabSave(enabled: boolean): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+  if (!enabled) {
+    if (pingTimer !== undefined) {
+      clearInterval(pingTimer)
+      pingTimer = undefined
+    }
+    if (pingOnVisible !== undefined) {
+      document.removeEventListener('visibilitychange', pingOnVisible)
+      pingOnVisible = undefined
+    }
+    try {
+      localStorage.removeItem(LIVE_KEY)
+    } catch {
+      // 存储不可用时忽略
+    }
+    setOtherTab(false)
+    return
+  }
+  if (pingTimer !== undefined) return
   const ping = (): void => {
     if (document.visibilityState === 'visible') markAlive()
   }
-  setInterval(ping, LIVE_PING_MS)
+  pingOnVisible = ping
+  // 切回前台立刻补一次,避免判定滞后
   document.addEventListener('visibilitychange', ping)
+  pingTimer = setInterval(ping, LIVE_PING_MS)
   markAlive()
 }
 
