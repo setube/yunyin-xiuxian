@@ -181,8 +181,15 @@ export function ratePower(stats: FinalStats): PowerRating {
   return { ...stars, labels, thresholds: THRESHOLDS }
 }
 
-/** ★★★☆☆ 形式 */
+/**
+ * ★★★☆☆ 形式。
+ *
+ * 入参须先取整:原实现只钳不取整,传 2.4 时 '☆'.repeat(5 - 2.4) 会按 repeat(2.6) 截断为 2,
+ * 产出 ★★☆☆ 四个字符 —— 五星文案长度不固定,tabular 列会错位。
+ * 生产路径的 toStars 恒返回整数 1~5,故这是健壮性修补而非行为变更;
+ * 与 buildAdvisor.starsText 的钳制取法保持一致。
+ */
 export function ratingStars(stars: number): string {
-  const n = Math.max(1, Math.min(5, stars))
+  const n = Math.max(1, Math.min(5, Math.round(stars)))
   return '★'.repeat(n) + '☆'.repeat(5 - n)
 }
