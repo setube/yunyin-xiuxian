@@ -151,4 +151,26 @@ describe('玩家区域统计与奇缘公共写入边界', () => {
     expect(Number.isFinite(player.cultPerSec), '越界大阶不得把增速算成 Infinity').toBe(true)
     expect(Number.isFinite(player.qiCapValue), '越界层数不得把灵气容量算成 Infinity').toBe(true)
   })
+
+  it('道号为空串时兜底成「无名散修」—— 顶栏是裸渲染,空串会显示成一片空白', () => {
+    const player = usePlayerStore()
+
+    // 建号与导入检视都有兜底,唯独 store 的 sanitize 原先只挡非字符串,
+    // 于是手改档/旧档里的空道号会一路留到顶栏(`{{ player.name }}`)渲染
+    player.$patch({ name: '' })
+    player.sanitize()
+    expect(player.name, '空道号须兜底').toBe('无名散修')
+
+    player.$patch({ name: '   ' })
+    player.sanitize()
+    expect(player.name, '纯空白也算空').toBe('无名散修')
+
+    player.$patch({ name: 42 as unknown as string })
+    player.sanitize()
+    expect(player.name, '非字符串照旧兜底').toBe('无名散修')
+
+    player.$patch({ name: '青玄' })
+    player.sanitize()
+    expect(player.name, '正常道号不许被改').toBe('青玄')
+  })
 })
