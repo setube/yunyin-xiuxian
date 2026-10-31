@@ -12,10 +12,12 @@ import {
   dropPendingWrites,
   flushSaveWrites,
   persistConfig,
+  buildExportPayload,
   saveWriteFailure,
   storageKey,
   subscribeSaveWriteFailure
 } from './storage'
+import { readSaveText } from './crypto'
 
 interface Probe {
   disk: Map<string, string>
@@ -212,6 +214,27 @@ describe('存档写盘 · 失败不许静默', () => {
     vi.advanceTimersByTime(SAVE_FLUSH_MS)
     expect(calls, '反复失败只该通知一次').toBe(1)
     unsubscribe()
+  })
+
+  /**
+   * 导出须取内存最新态:写盘失败时磁盘停在旧值,只读 localStorage 的备份会静默丢掉这一段进度
+   * (玩家收到「已导出」,拿回来的却是失败前的档)。故障注入:去掉 pending 分支即红。
+   */
+  it('写盘失败期间的导出带的是内存最新态,不是磁盘旧值', () => {
+    const jam = installJammedStorage(probe)
+    const { storage, serializer, key } = persistConfig('player')
+    jam.allow(true)
+    storage.setItem(key, serializer.serialize({ major: 3 }))
+    flushSaveWrites()
+    expect(JSON.parse(readSaveText(probe.disk.get(key)!))).toEqual({ major: 3 })
+
+    jam.allow(false)
+    storage.setItem(key, serializer.serialize({ major: 9 }))
+    flushSaveWrites()
+    expect(saveWriteFailure(), '这一档必须先进入写盘失败').not.toBeNull()
+
+    const payload = buildExportPayload()
+    expect(payload.data.player, '导出拿的是磁盘旧值 —— 失败期间的进度会被备份静默丢掉').toEqual({ major: 9 })
   })
 
   it('清档会清掉旧的失败警告(那批待写内容已经不打算写了)', () => {
