@@ -232,3 +232,22 @@ describe('判据自证 · 解码与主色都靠得住', () => {
     expect(gap).toBeGreaterThan(6)
   })
 })
+
+/**
+ * 视口不许禁掉用户缩放。
+ * 此前是 `user-scalable=no, maximum-scale=1.0`:手机上双指放不大,
+ * 而 layout-check 的「200% 缩放」档是用减半视口模拟的,并不是玩家真能做的操作。
+ * 布局既然能撑住 200%,就该让玩家真的能放大(WCAG 1.4.4)。
+ * 故障注入:把 user-scalable=no 加回 viewport,本条红。
+ */
+describe('视口 · 允许用户缩放', () => {
+  const viewport = /<meta\s+name="viewport"[^>]*content="([^"]*)"[^>]*>/i.exec(INDEX_HTML)?.[1] ?? ''
+
+  it('viewport 里没有 user-scalable=no / maximum-scale=1', () => {
+    expect(viewport, '取不到 viewport,断言形同虚设').not.toBe('')
+    expect(viewport, `viewport 禁掉了缩放:${viewport}`).not.toMatch(/user-scalable\s*=\s*(no|0)/i)
+    expect(viewport, `viewport 把最大缩放钉在 1:${viewport}`).not.toMatch(/maximum-scale\s*=\s*1(\.0+)?(?!\d)/i)
+    // 缩放开着的同时,viewport-fit=cover 仍要在(刘海屏安全区)
+    expect(viewport, 'viewport-fit=cover 丢了,刘海屏安全区会失效').toContain('viewport-fit=cover')
+  })
+})
