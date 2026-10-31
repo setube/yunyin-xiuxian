@@ -89,7 +89,8 @@ function buildSlot(
         : mulN(stoneByTier(marketTier(major), MARKET_MAT_STONE_UNITS), MARKET_MAT_COUNT)
     return { kind: 'material', idx, matId, grade, count: MARKET_MAT_COUNT, price, sold: false }
   }
-  const minQualityRank = rollQuality(major, rng).rank
+  // 品质下限同样骑市场层级:major 是 0~20 的境界下标,当 tier 喂给 rollQuality 会让高价货架兑现低品质
+  const minQualityRank = rollQuality(marketTier(major), rng).rank
   // 按预览即购得那件的真实品质档标价;按下限标价会被「坊市买入 → 悬赏贡器」套利(见 data/bounty 的单位档比对)
   const rank = qualityDef(generateEquipment(marketTier(major), new RandomService(mulberry32(equipSeed(now, idx))), { minQualityRank }).quality).rank
   return {
