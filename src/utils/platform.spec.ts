@@ -37,6 +37,17 @@ describe('平台探测 · 要不要劝「添加到主屏幕」', () => {
     expect(shouldSuggestInstall(env(UA.macSafari))).toBe(false)
   })
 
+  it('iOS 原生壳(电容 App)里不劝 —— 玩家已经在应用里了', () => {
+    // 壳里的 WKWebView 既没有 navigator.standalone,display-mode 也不是 standalone,
+    // 光看 UA 与那两项会判成「iOS 未安装」,于是劝人去装一个他正在用的东西
+    const inShell = env(UA.iosSafari, { nativeApp: true })
+    expect(isIos(inShell), '原生壳仍算 iOS').toBe(true)
+    expect(isInstalledApp(inShell), '壳里这两项都是 false,所以下面的排除不能靠它').toBe(false)
+    expect(shouldSuggestInstall(inShell), '原生壳里不该劝装到主屏幕').toBe(false)
+    // 安卓壳同样不劝
+    expect(shouldSuggestInstall(env(UA.android, { nativeApp: true }))).toBe(false)
+  })
+
   it('已经装好了就不再劝:主屏幕 Web App 不受清存储规则管', () => {
     expect(shouldSuggestInstall(env(UA.iosSafari, { standalone: true }))).toBe(false)
     expect(shouldSuggestInstall(env(UA.iosSafari, { displayModeStandalone: true }))).toBe(false)
