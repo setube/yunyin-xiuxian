@@ -109,6 +109,12 @@ export const TRIB_HP_GUARD_CAP = 0.35
 /** 天劫减伤与濒危减伤的同一封顶;结算(waveDamage)与渡劫台账(CultivationView,经 tribulationDecision)同源 */
 export const TRIB_REDUCTION_CAP = 0.6
 /**
+ * 天劫抗性总值封顶(词条抗性 + 灵根折算 + 三维折算的加法项之和)。
+ * 高于减伤封顶:TRIB_REDUCTION_CAP 管「单条减伤词条」,本条管「抗性合起来最多能到多少」。
+ * 原为 tribulationDecision 里的裸 0.8,与同函数上两行的 TRIB_REDUCTION_CAP 用法不一致,故提到此处。
+ */
+export const TRIB_RESIST_CAP = 0.8
+/**
  * 天劫难度(伤害与波次)的境界封顶点:高于此境沿用此境难度。
  * 不封顶则减伤类词条撞绝对上限,神帝以上参考构筑(tribulationSpace.spec 的 maxed)0/5 可渡。
  * 伤害曲线已到上限:再加 4% 参考构筑在雷鸣/逆流劫下不渡。

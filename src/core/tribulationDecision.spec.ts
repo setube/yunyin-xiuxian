@@ -15,13 +15,14 @@ import {
   statGuardOf,
   tribulationWaveSpan,
   tribLowHpReduction,
+  currentTribResist,
   NO_STAT_GUARD,
   traceTribulation,
   waveDamage,
   effectiveBurstTier
 } from './tribulationDecision'
 import { baseCombatStats, tribulationWaveDamage } from './formulas'
-import { LOW_HP_THRESHOLD, TRIB_REDUCTION_CAP } from '@/data/constants'
+import { LOW_HP_THRESHOLD, TRIB_REDUCTION_CAP, TRIB_RESIST_CAP } from '@/data/constants'
 import { toNum } from '@/utils/gnum'
 import { RandomService, mulberry32 } from '@/utils/random'
 import { NO_RELIEF } from '@/data/linggenAffinity'
@@ -314,4 +315,32 @@ describe('濒危减伤/低血阈值 · 单一事实源(结算与台账不许各�
       expect(src, `${rel} 不该自己再算劫势`).not.toContain('currentTribulationPlan(')
     }
   })
+
+describe('抗性封顶 · TRIB_RESIST_CAP', () => {
+  /**
+   * 这个封顶原来是 currentTribResist 里的裸 0.8,而同函数上两行用的都是 TRIB_REDUCTION_CAP。
+   * 提到 constants 后,数值改动只在 data/ 一处;本条钉住「它确实在生效」与「它与减伤封顶是两个数」。
+   */
+  it('抗性总值被钳到 TRIB_RESIST_CAP(不是死分支)', () => {
+    // 三部分之和:词条抗性 + 灵根折入 + 三维折算
+    expect(currentTribResist({ tribulationResist: 2 } as StatMods)).toBe(TRIB_RESIST_CAP)
+    expect(currentTribResist({ tribulationResist: TRIB_RESIST_CAP } as StatMods)).toBe(TRIB_RESIST_CAP)
+    expect(currentTribResist({ tribulationResist: TRIB_RESIST_CAP - 0.01 } as StatMods)).toBeCloseTo(TRIB_RESIST_CAP - 0.01, 6)
+  })
+
+  it('抗性封顶高于减伤封顶 —— 两者不是同一个数,不可互相替换', () => {
+    expect(TRIB_RESIST_CAP, '抗性封顶与减伤封顶相同,说明其中一处写错了').not.toBe(TRIB_REDUCTION_CAP)
+    expect(TRIB_RESIST_CAP).toBeGreaterThan(TRIB_REDUCTION_CAP)
+  })
+
+  it('减伤经灵根折入抗性时也受抗性封顶约束', () => {
+    const relief = { reductionToResist: 1 } as never
+    const huge: StatMods = { damageReduction: 5 } as StatMods
+    expect(currentTribResist(huge, relief)).toBeLessThanOrEqual(TRIB_RESIST_CAP)
+  })
+
+  it('零词条时抗性为 0,不会因封顶写法而给出正的底数', () => {
+    expect(currentTribResist({} as StatMods)).toBe(0)
+  })
+})
 })

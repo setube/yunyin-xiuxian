@@ -22,6 +22,7 @@ import {
   TRIB_HP_GUARD_CAP,
   TRIB_HP_GUARD_PER_SURPLUS,
   TRIB_REDUCTION_CAP,
+  TRIB_RESIST_CAP,
   LOW_HP_THRESHOLD
 } from '@/data/constants'
 import { realmScale, tribulationWaveDamage } from './formulas'
@@ -242,7 +243,10 @@ export function currentTribResist(
   relief: TribulationRelief = NO_RELIEF,
   stat: TribStatGuard = NO_STAT_GUARD
 ): number {
-  return Math.min(0.8, modOf(mods, 'tribulationResist') + tribReduction(mods) * relief.reductionToResist + stat.resist)
+  return Math.min(
+    TRIB_RESIST_CAP,
+    modOf(mods, 'tribulationResist') + tribReduction(mods) * relief.reductionToResist + stat.resist
+  )
 }
 
 /** 单波实际伤害(占最大生命比例);UI 与结算共用 */
