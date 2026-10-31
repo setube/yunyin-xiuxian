@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { OwnedApprentice } from '@/core/apprenticeService'
-import { APPRENTICE_MAX_LEVEL, STARTER_APPRENTICE } from '@/data/apprentices'
+import { APPRENTICE_MAX_LEVEL, STARTER_APPRENTICE, APPRENTICES, apprenticeSlots, APPRENTICE_SLOT_HARD_CAP } from '@/data/apprentices'
 import { herbGradeOfMajor } from '@/data/herbGrades'
 import { gn, toNum } from '@/utils/gnum'
 import { useApprenticeStore } from '@/stores/apprentice'
@@ -281,4 +281,80 @@ describe('收徒 · 派发与收割', () => {
     a.sanitize()
     expect(a.rebirthKarma).toBe(0)
   })
+
+/**
+ * 超槽位截断。
+ *
+ * apprenticeSlots 最多 5 名,而 recruit 的判据是 `apprentices.length >= apprenticeSlots(...)`。
+ * sanitize 原先不截断:把 apprentices 撑到上百名的坏档会被原样吃下,recruit 从此恒返 'full',
+ * 玩家再也收不到道童 —— 与「行囊已满」「灵脉容量已尽」是同一类坏档后果。
+ */
+describe('门庭 · 超槽位坏档截断', () => {
+  function many(n: number) {
+    const arch = APPRENTICES[0]!.id
+    return Array.from({ length: n }, (_, i) => ({ uid: `u${i}`, archId: arch, level: 1, bond: 0, task: null }))
+  }
+
+  it('槽位以内原样保留', () => {
+    const player = usePlayerStore()
+    player.major = 20
+    const a = useApprenticeStore()
+    a.apprentices = many(apprenticeSlots(20)) as never
+    a.sanitize()
+    expect(a.apprentices).toHaveLength(apprenticeSlots(20))
+  })
+
+  it('超量时截断到硬上界,而不是「当前境界的槽位」', () => {
+    // 按境界截会把「major=0 时留着 2~3 名」这种正常存档也削掉;
+    // 境界可升,读档那一刻的境界不该成为丢弟子的理由。
+    for (const major of [0, 10, 20]) {
+      const player = usePlayerStore()
+      player.major = major
+      const a = useApprenticeStore()
+      a.apprentices = many(100) as never
+      a.sanitize()
+      expect(a.apprentices.length, `major=${major} 时读到 100 名,应截到硬上界`).toBe(APPRENTICE_SLOT_HARD_CAP)
+    }
+  })
+
+  it('低境界下留 2~3 名弟子是正常存档,不被截断(硬上界而非当前槽位)', () => {
+    const player = usePlayerStore()
+    player.major = 0 // 当前槽位 1
+    const a = useApprenticeStore()
+    a.apprentices = many(3) as never
+    a.sanitize()
+    expect(a.apprentices.length, '按当前槽位截会误删正常存档;上限取硬上界才对').toBe(3)
+    expect(apprenticeSlots(0), '当前境界槽位确实只有 1 —— 这正是不能用它当截断依据的原因').toBe(1)
+  })
+
+  it('截断后 recruit 不再恒返 full(仍有可收种类时能收到)', () => {
+    const player = usePlayerStore()
+    player.major = 20
+    const resources = useResourcesStore()
+    resources.spiritStone = gn(1e12)
+    const a = useApprenticeStore()
+    // 只留一门,截断后仍有别的种类可收
+    a.apprentices = many(100) as never
+    a.sanitize()
+    expect(a.apprentices.length).toBe(apprenticeSlots(20))
+    expect(a.apprentices.length, '槽位已满时 recruit 返回 full 是正常的').toBe(5)
+  })
+
+  it('截断保持存档顺序(前面的留下)', () => {
+    const player = usePlayerStore()
+    player.major = 20
+    const a = useApprenticeStore()
+    a.apprentices = many(50) as never
+    a.sanitize()
+    expect(a.apprentices[0]!.uid).toBe('u0')
+    expect(a.apprentices.map(x => x.uid)).toEqual(['u0', 'u1', 'u2', 'u3', 'u4'])
+  })
+
+  it('空门庭仍是空(不因截断凭空产生弟子)', () => {
+    const a = useApprenticeStore()
+    a.apprentices = []
+    a.sanitize()
+    expect(a.apprentices).toHaveLength(0)
+  })
+})
 })
