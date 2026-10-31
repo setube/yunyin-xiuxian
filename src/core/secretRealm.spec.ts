@@ -24,6 +24,7 @@ import {
   SECRET_MAX_LOSSES,
   abandonRealm,
   availableRealms,
+  carriedHpAfter,
   currentRealm,
   enterSecretRealm,
   entryCostOf,
@@ -665,5 +666,28 @@ describe('秘境 · 自带规则也要报给玩家', () => {
         expect(text, `${def.name} 无自带规则却产出了文案`).toBe('')
       }
     }
+  })
+})
+
+/**
+ * 层间携带气血须有上下限。
+ * 胜利用 Math.min(1, …) 封了顶,败利用 Math.max(0.05, …) 只封底 —— 而「回合耗尽判负」时玩家血量可以接近满
+ * (combat.ts 的 else 分支:双方都没死,按回合上限判负),那一趟 playerHpPct 接近 1,再加 healBetweenPct
+ * 就会超过 1,下一场以 >100% 气血开局。抽成 carriedHpAfter 后两分支共用同一条钳制。
+ */
+describe('秘境 · 携带气血上下限对称', () => {
+  it('满血 + 层间回血也不超过 1', () => {
+    expect(carriedHpAfter(1, 0.5), '满血再回血不能变成 150%').toBe(1)
+    expect(carriedHpAfter(0.8, 0.5)).toBe(1)
+  })
+
+  it('血量低时仍有下限,不会掉到 0', () => {
+    expect(carriedHpAfter(0, -0.1)).toBe(0.05)
+    expect(carriedHpAfter(0.01, 0)).toBe(0.05)
+  })
+
+  it('区间内原样返回', () => {
+    expect(carriedHpAfter(0.4, 0.3)).toBeCloseTo(0.7)
+    expect(carriedHpAfter(0.4, -0.1)).toBeCloseTo(0.3)
   })
 })
