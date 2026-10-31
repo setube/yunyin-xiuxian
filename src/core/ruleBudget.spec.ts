@@ -68,7 +68,8 @@ describe('规则预算', () => {
     expect(budgetOfRules({ maxRounds: 30 })).toBeCloseTo(3)
     expect(budgetOfRules({ maxRounds: 999 }), '回合上限改多少都是同一笔账').toBeCloseTo(3)
     expect(budgetOfRules({ shieldCapRatio: 0.5 })).toBeCloseTo(3)
-    expect(budgetOfRules({ perRounds: { shieldPerRound: 1 } } as CombatRules)).toBeCloseTo(4)
+    const perRounds: CombatRules = { perRounds: { interval: 3, playerHealPct: 0, playerShieldPct: 0.1, enemyAtkGrowth: 0.05 } }
+    expect(budgetOfRules(perRounds), '长生印那类周期性规则记 4 点').toBeCloseTo(4)
   })
 
   it('追加词条并入同一笔账', () => {
