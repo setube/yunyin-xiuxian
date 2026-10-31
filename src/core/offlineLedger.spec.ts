@@ -342,3 +342,31 @@ describe('离线总结 · 宿敌行报实际败北次数', () => {
     expect(nemesisNotes(summary), '已成宿敌不再报').toEqual([])
   })
 })
+
+/**
+ * 时钟往前跳过之后的自愈。
+ * 玩家把系统时间调快(stampActive 写下一个未来时间戳),此后再进游戏 now - lastActiveAt 为负,
+ * dtSec 被 Math.max 夹成 0,离线收益会一直为 0 —— 直到他把时钟调回去。
+ * 故障注入:删掉 settleOffline 里对未来时间戳的钳制,本条红。
+ */
+describe('离线结算 · 时间戳在未来时自愈', () => {
+  it('lastActiveAt 在未来:重锚到当下,下一次离线照常结算', () => {
+    const now = Date.now()
+    const game = useGameStore()
+    const player = usePlayerStore()
+    game.markStarted()
+    player.major = 0
+    // 系统时钟曾被调快一年,盖下的戳远在未来
+    game.lastActiveAt = now + 365 * 24 * 3600 * 1000
+
+    const first = settleOffline(now)
+    expect(first, '未来时间戳这一趟没有可结算的时长,应为 null').toBeNull()
+    expect(game.lastActiveAt, 'lastActiveAt 须被重锚到当下,否则之后每趟 dtSec 都是 0').toBe(now)
+
+    // 重锚之后,再过 2 小时就能正常结算
+    game.lastActiveAt = now - 2 * 3600 * 1000
+    const second = settleOffline(now)
+    expect(second, '重锚后离线结算应恢复正常').not.toBeNull()
+    expect(second!.qi, '应有灵气入账').toBeGreaterThan(0)
+  })
+})
