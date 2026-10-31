@@ -5,7 +5,7 @@
   >
     <TopStatusBar v-if="game.started && route.name !== 'create'" />
 
-    <main ref="scrollHost" class="relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+    <main ref="scrollHost" tabindex="-1" class="relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden outline-none">
       <RouterView v-slot="{ Component }">
         <Transition name="page-fade" mode="out-in" @before-enter="resetScroll">
           <component :is="Component" />
@@ -63,11 +63,17 @@
   const scrollHost = ref<HTMLElement | null>(null)
 
   /**
-   * 切页归零滚动:main 常驻,scrollTop 会被下一页继承;router 的 scrollBehavior 只管 window,不顶用。
+   * 切页归零滚动 + 焦点回到内容区。
+   * 滚动:main 常驻,scrollTop 会被下一页继承;router 的 scrollBehavior 只管 window,不顶用。
+   * 焦点:不挪的话键盘/读屏焦点还停在旧页那个已经不在 DOM 里的链接上,浏览器把它甩回 body,
+   * 下一次 Tab 从文档开头重新数起,读屏也不播报「换页了」。main 上 tabindex=-1 只让它可编程聚焦、不进 Tab 序。
    * 挂 before-enter 而非 watch(route):out-in 下此刻旧页已离场,不会跳回顶部。
    */
   function resetScroll(): void {
-    if (scrollHost.value) scrollHost.value.scrollTop = 0
+    const host = scrollHost.value
+    if (!host) return
+    host.scrollTop = 0
+    host.focus({ preventScroll: true })
   }
 
   let unsubscribeTheme: () => void = () => undefined
