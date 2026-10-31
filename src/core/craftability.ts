@@ -119,7 +119,17 @@ function weaknessLines(c: {
   return out
 }
 
-/** 双丹(一炉得二)的概率,封顶 0.5。单一事实源,实机与审计共用 */
+/**
+ * 双丹(一炉得二)的基础概率,由熟练与技艺决定。
+ *
+ * 这里的 `Math.min(0.5, ...)` 是**死分支**:mastery∈[0,1]、skill∈[0,100] 时
+ * 公式最大值只有 0.38,永远够不到 0.5。保留它只是防御越界入参。
+ *
+ * 真正生效的封顶在调用侧:`craftability().bonusChanceWithYield` 把本值加上
+ * alchemyYield(丹心/丹圣/称号)后再按 PILL_SECOND_CAP(0.8) 钳一次 —— 那层才有用,
+ * 因为 0.38 + 词条可以超过 0.8。写「封顶 0.5」会让人误以为双丹率到 0.5 就停,
+ * 实际停在 0.8。本条与那个 0.8 是两层不同的限制,不可互换。
+ */
 export function bonusChanceOf(mastery: number, skill: number): number {
   return Math.min(0.5, mastery * 0.18 + skill / 500)
 }
