@@ -13,6 +13,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { bonusChanceOf, composeSuccessRate, CRAFT_BASE_RATE } from './craftability'
+import { PILL_SECOND_CAP } from '@/data/constants'
 import { AUDIT_SKILL } from './pillValue'
 
 /** 审计基准(与 pillValue 内部保持一致;那边未导出,此处按值复述并校验) */
@@ -102,4 +103,37 @@ describe('审计基准 · 纯函数性质', () => {
   it('封顶分支只在越界入参下才可能触发(记录该行为,不代表玩法可达)', () => {
     expect(bonusChanceOf(99, 999), '越界入参被上限挡住').toBeCloseTo(0.5, 6)
   })
+
+describe('双丹概率 · 两层封顶的分工', () => {
+  /**
+   * 双丹率上有两个数,极易混淆:
+   *   bonusChanceOf 内部的 Math.min(0.5, ...) —— 实际是死分支,公式最大只有 0.38
+   *   craftability().bonusChanceWithYield 的 PILL_SECOND_CAP(0.8) —— 真正生效的那层
+   * 因为基础值可以加上丹心/丹圣等 alchemyYield 词条再越过 0.5,所以 0.5 那层挡不住任何真实输入。
+   * 本条钉住三者的数值关系,任一处被改动都会红。
+   */
+  it('bonusChanceOf 的合法区间最大值 0.38,低于内部封顶 0.5(故 0.5 是死分支)', () => {
+    const max = bonusChanceOf(1, 100)
+    expect(max).toBeCloseTo(0.38, 6)
+    expect(max, '基础概率够到了 0.5,死分支的说法不再成立,请重读注释').toBeLessThan(0.5)
+  })
+
+  it('真正生效的封顶 PILL_SECOND_CAP 高于基础概率上限(留出词条空间)', () => {
+    expect(PILL_SECOND_CAP).toBeGreaterThan(bonusChanceOf(1, 100))
+    expect(PILL_SECOND_CAP, 'PILL_SECOND_CAP 与内部 0.5 撞了,两层封顶失去区分').not.toBe(0.5)
+  })
+
+  it('三层数值严格递增:0.38 < 0.5 < 0.8', () => {
+    const base = bonusChanceOf(1, 100)
+    expect(base).toBeLessThan(0.5)
+    expect(0.5).toBeLessThan(PILL_SECOND_CAP)
+  })
+
+  it('要顶到 PILL_SECOND_CAP,词条需要补足约 0.42 —— 该量级在丹心/丹圣的堆叠范围内', () => {
+    const need = PILL_SECOND_CAP - bonusChanceOf(1, 100)
+    expect(need).toBeCloseTo(0.42, 6)
+    // 丹心最高 40%、丹圣最高 20%,两件叠起来能过 0.42;说明 0.8 那层挡得住真实输入
+    expect(need, '所需词条量大到玩法里凑不出来,0.8 就成了死分支').toBeLessThan(0.6)
+  })
+})
 })
