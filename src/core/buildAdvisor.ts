@@ -120,13 +120,22 @@ export function styleAdaptation(styleId: string, eco: RegionEcology, facingBoss 
   return { stars, reasons: reasons.slice(0, 3) }
 }
 
-/** 混合流派的适配:主体系为主,副体系按占比调和 */
+/**
+ * 混合流派的适配:主体系为主(权重 0.7),副体系调和(权重 0.3)。
+ *
+ * 理由的取法有讲究:styleAdaptation 每侧最多给 3 条,直接拼起来再 slice(0,3)
+ * 会让副体系的理由**永远进不来**(主体系已经占满 3 条),于是出现
+ * 「星级变了、理由没变」——玩家看到 3 星却读不到副体系的贡献。
+ * 故两侧都有理由时各留席位:主 2 条 + 副 1 条,总数仍是 3,不改 UI 容量。
+ */
 export function detectionAdaptation(detection: BuildDetection, eco: RegionEcology, facingBoss = false): Adaptation {
   const main = styleAdaptation(detection.style.id, eco, facingBoss)
   if (!detection.secondary) return main
   const sub = styleAdaptation(detection.secondary.style.id, eco, facingBoss)
   const stars = Math.max(1, Math.min(5, Math.round(main.stars * 0.7 + sub.stars * 0.3)))
-  return { stars, reasons: [...main.reasons, ...sub.reasons].slice(0, 3) }
+  // 副体系无理由时全给主体系,避免白占一格
+  if (sub.reasons.length === 0) return { stars, reasons: main.reasons.slice(0, 3) }
+  return { stars, reasons: [...main.reasons.slice(0, 2), sub.reasons[0]!].slice(0, 3) }
 }
 
 export interface StyleRecommendation {
@@ -150,6 +159,13 @@ export function ecologyChips(eco: RegionEcology): { trait: EcoTrait; name: strin
     .map(t => ({ trait: t, name: TRAIT_NAMES[t], level: eco[t] }))
 }
 
+/**
+ * 五星文案。入参先钳到 1~5:
+ * 原实现直接 `'☆'.repeat(5 - stars)`, stars>5 时 repeat 收到负数会抛 RangeError
+ * (全站是五行星, 越界只可能来自绕过 styleAdaptation 的调用), stars<1 则会给出五颗空星。
+ * 钳制是防御性的, 不改变正常路径的输出。
+ */
 export function starsText(stars: number): string {
-  return '★'.repeat(stars) + '☆'.repeat(5 - stars)
+  const n = Math.max(1, Math.min(5, Math.round(stars)))
+  return '★'.repeat(n) + '☆'.repeat(5 - n)
 }
