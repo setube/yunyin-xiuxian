@@ -74,7 +74,7 @@
           :title="busy ? busy.reason : endgame.daoSource < REWRITE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)}` : '重写'"
           @click="rewriteConfirm = mark"
         >
-          {{ busy ? `写(${busy.kind === 'expedition' ? '远征在途' : busy.kind === 'exploration' ? '历练在途' : '身在秘境'})` : endgame.daoSource < REWRITE_ENTRY_COST ? `写(尚差${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${mark.rounds}回合)` }}
+          {{ busy ? `写(${busy.reason})` : endgame.daoSource < REWRITE_ENTRY_COST ? `写(尚差${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${mark.rounds}回合)` }}
         </button>
       </div>
     </div>
