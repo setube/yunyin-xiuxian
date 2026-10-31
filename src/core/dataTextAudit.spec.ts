@@ -26,6 +26,8 @@ import { EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
 import { MUTATION_FIGHTS } from '@/core/expedition'
 import { PROFILE_MIN_MARKS } from '@/core/identity'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
+import { BUILDINGS } from '@/data/buildings'
+import { modsText } from '@/data/statNames'
 import { AFFIXES } from '@/data/affixes'
 import { STAT_NAMES } from '@/data/statNames'
 import { classicalDuration } from '@/data/timeUnits'
@@ -476,6 +478,26 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     expect(secret, '秘境入口该读统一在途判据').toContain('endgameBusy(endgame.worldRun, player.secretRealm, useAdventureStore().session)')
     expect(secret, '秘境入口拒因取判据本体').toContain('return { ok: false, reason: busy.reason }')
     expect(secret, '秘境入口不许再手抄一份拒因').not.toContain('须先结束远征方能入秘境')
+  })
+
+  /**
+   * 建筑的 mods 走卡片另一行 modsText(见 BuildingCard.modLine),不进 effectText:
+   * effectText 只写主职能,词条行把 mods 逐项译成中文名(修炼速度 / 灵气恢复 / 战斗修为…)。
+   * 判据:mods 的每个键都要能被 modsText 译出中文名,不许漏出原始键名。
+   * 故障注入:往任一建筑 mods 里塞一个 statNames 不认识的键,本条红。
+   */
+  it('建筑 mods 的每一项都由词条行译出中文名', () => {
+    let checked = 0
+    for (const b of BUILDINGS) {
+      if (!b.mods) continue
+      const text = modsText(b.mods(b.maxLevel))
+      for (const key of Object.keys(b.mods(b.maxLevel))) {
+        expect(text, `建筑「${b.name}」的 ${key} 没有中文名,词条行会漏出原始键`).toMatch(/[\u4e00-\u9fa5]/)
+        checked += 1
+      }
+      expect(text, `建筑「${b.name}」词条行漏出原始 StatMods 键`).not.toMatch(/[a-z][A-Z]|Pct\b/)
+    }
+    expect(checked, '一个键都没查到,审计形同虚设').toBeGreaterThan(0)
   })
 
   /**
