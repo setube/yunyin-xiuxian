@@ -478,6 +478,23 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     expect(secret, '秘境入口不许再手抄一份拒因').not.toContain('须先结束远征方能入秘境')
   })
 
+  /**
+   * 在途拒因不许在界面重抄一遍:endgameBusy 已经给出 reason,
+   * 手写 `busy.kind === 'expedition' ? '远征在途' : …` 抄了三处九份,改词就会漏改。
+   * 故障注入:把任一面板改回三元映射,本条红。
+   */
+  it('终局面板的在途拒因一律取 busy.reason,不再按 kind 手抄', () => {
+    const panels = ['ExpeditionPanel', 'TrialPanel', 'MarksPanel'].map(n => src(`../components/celestial/${n}.vue`))
+    let hits = 0
+    for (const [i, body] of panels.entries()) {
+      const name = ['远征', '天劫', '道痕'][i]!
+      expect(panels[i], `${name}面板该读 busy.reason`).toContain('busy.reason')
+      expect(panels[i], `${name}面板又手抄了在途拒因`).not.toMatch(/busy\.kind\s*===\s*'expedition'/)
+      hits += (body.match(/busy\.reason/g) ?? []).length
+    }
+    expect(hits, '一处 busy.reason 都没读到,断言形同虚设').toBeGreaterThanOrEqual(5)
+  })
+
   it('远征行程与变数连战数取自 EXPEDITION_* / MUTATION_FIGHTS', () => {
     // 宿主与子面板合扫
     const view =

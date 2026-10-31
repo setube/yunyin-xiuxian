@@ -22,7 +22,7 @@
           endgame.dailyDoneDay === daily.day
             ? '今日已完成'
             : busy
-              ? busy.kind === 'expedition' ? '应 战(远征在途)' : busy.kind === 'exploration' ? '应 战(历练在途)' : '应 战(身在秘境)'
+              ? `应 战(${busy.reason})`
               : endgame.daoSource < CHALLENGE_ENTRY_COST
                 ? `应 战(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
                 : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
@@ -45,7 +45,7 @@
           >
             {{
               busy
-                ? busy.kind === 'expedition' ? '应 战(远征在途)' : busy.kind === 'exploration' ? '应 战(历练在途)' : '应 战(身在秘境)'
+                ? `应 战(${busy.reason})`
                 : endgame.daoSource < MUTATION_ENTRY_COST
                   ? `应 战(道源尚差 ${daoSourceShortText(MUTATION_ENTRY_COST, endgame.daoSource)} · 需 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
                   : `应 战(道源 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)} · 破解得 ${MUTATION_BASE_REWARD})`
@@ -86,7 +86,7 @@
         >
           {{
             busy
-              ? busy.kind === 'expedition' ? '应 试(远征在途)' : busy.kind === 'exploration' ? '应 试(历练在途)' : '应 试(身在秘境)'
+              ? `应 试(${busy.reason})`
               : endgame.daoSource < trial.entryCost
                 ? `应 试(道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)} · 需 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)})`
                 : `应 试(道源 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)} · 功成得 ${trial.rewardDaoSource})`
