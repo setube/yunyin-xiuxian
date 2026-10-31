@@ -1,6 +1,7 @@
 /** 战力五维评级审计:星级须随词条形状分化。 */
 import { describe, expect, it } from 'vitest'
 import { ratePower, ratingStars } from './powerRating'
+import { starsText } from './buildAdvisor'
 import { STAT_NAMES } from '@/data/statNames'
 import type { FinalStats, StatMods } from '@/types'
 
@@ -148,4 +149,34 @@ describe('五维评级的来路', () => {
     expect(scoreOf(lianji, 'attack')).toBeGreaterThan(scoreOf(bare, 'attack'))
     expect(scoreOf(lianji, 'speed')).toBeGreaterThan(scoreOf(bare, 'speed'))
   })
+
+/**
+ * 小数入参。
+ *
+ * 原实现只钳不取整:`'☆'.repeat(5 - 2.4)` 会按 repeat(2.6) 截断为 2,
+ * 产出 ★★☆☆ 四个字符 —— tabular 列里五星文案长度不固定就会错位。
+ * 生产路径的 toStars 恒返回整数,故这条是健壮性补丁的守卫。
+ */
+describe('五星文案 · 小数与跨模块一致', () => {
+  it('小数入参也恒为五个字符', () => {
+    for (const n of [1.4, 2.4, 2.5, 2.6, 3.5, 4.9]) {
+      const s = ratingStars(n)
+      expect(s.length, `ratingStars(${n}) 长度`).toBe(5)
+      expect(s).toMatch(/^[★]+[☆]*$/)
+    }
+  })
+
+  it('小数按四舍五入定星,与钳制取法一致', () => {
+    expect(ratingStars(2.4)).toBe('★★☆☆☆')
+    expect(ratingStars(2.5)).toBe('★★★☆☆')
+    expect(ratingStars(2.6)).toBe('★★★☆☆')
+    expect(ratingStars(3.5)).toBe('★★★★☆')
+  })
+
+  it('与 buildAdvisor.starsText 结果完全一致(同一套五星口径,不许两个模块各写一套)', () => {
+    for (const n of [-3, 0, 1, 1.4, 2.5, 3, 5, 9, 2.5, 4.9]) {
+      expect(ratingStars(n), `入参 ${n} 时两个模块给出的星串不同`).toBe(starsText(n))
+    }
+  })
+})
 })
