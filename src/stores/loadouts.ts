@@ -58,6 +58,15 @@ export const useLoadoutsStore = defineStore(
         while (seen.has(l.id)) l.id = uid()
         seen.add(l.id)
       }
+      /*
+       * 超上限截断。
+       *
+       * add() 的判据是 `list.length >= MAX_LOADOUTS`,而 sanitize 原先不截断:
+       * 把 list 撑到几十套的坏档会被原样吃下,add 从此恒返 false ——
+       * 玩家再也存不了新构筑(与「行囊已满」「灵脉容量已尽」「收徒恒 full」同构)。
+       * 只留前 MAX_LOADOUTS 套,顺序即存档顺序。
+       */
+      if (list.value.length > MAX_LOADOUTS) list.value = list.value.slice(0, MAX_LOADOUTS)
     }
 
     function add(loadout: Loadout): boolean {

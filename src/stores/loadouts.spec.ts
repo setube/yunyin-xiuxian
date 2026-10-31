@@ -156,4 +156,61 @@ describe('构筑 · 换装接线(applyLoadout)', () => {
     expect(inv.equipped.artifact, '不会凭空多出一个装备槽').toBeUndefined()
     expect(inv.bagItems.map(i => i.uid), '件仍在行囊里,看得见也穿得回').toEqual(['sword1'])
   })
+
+/**
+ * 超上限截断。
+ *
+ * add() 的判据是 `list.length >= MAX_LOADOUTS`,而 sanitize 原先不截断:
+ * 把 list 撑到几十套的坏档会被原样吃下,add 从此恒返 false ——
+ * 玩家再也存不了新构筑。与「行囊已满」「灵脉容量已尽」「收徒恒 full」同构。
+ */
+describe('构筑 · 超上限坏档截断', () => {
+  function many(n: number) {
+    return Array.from({ length: n }, (_, i) => ({
+      id: `l${i}`,
+      name: `构筑${i}`,
+      equipment: {},
+      subGongfa: [],
+      artifactIds: []
+    }))
+  }
+
+  it('上限以内原样保留', () => {
+    const s = useLoadoutsStore()
+    s.list = many(MAX_LOADOUTS) as never
+    s.sanitize()
+    expect(s.list).toHaveLength(MAX_LOADOUTS)
+  })
+
+  it('超上限时截断到 MAX_LOADOUTS', () => {
+    const s = useLoadoutsStore()
+    s.list = many(MAX_LOADOUTS * 8) as never
+    s.sanitize()
+    expect(s.list.length, '坏档撑不破构筑上限').toBe(MAX_LOADOUTS)
+  })
+
+  it('截断后 add 不再恒返 false —— 还能存新构筑', () => {
+    const s = useLoadoutsStore()
+    s.list = many(MAX_LOADOUTS * 8) as never
+    s.sanitize()
+    // 截断后正好满,remove 一套就能再存
+    const firstId = s.list[0]!.id
+    s.remove(firstId)
+    expect(s.add(mk('brand-new'))).toBe(true)
+  })
+
+  it('截断保持存档顺序(前面的留下)', () => {
+    const s = useLoadoutsStore()
+    s.list = many(20) as never
+    s.sanitize()
+    expect(s.list.map(l => l.id)).toEqual(['l0', 'l1', 'l2', 'l3', 'l4', 'l5'])
+  })
+
+  it('空列表仍是空(不因截断凭空产生构筑)', () => {
+    const s = useLoadoutsStore()
+    s.list = []
+    s.sanitize()
+    expect(s.list).toHaveLength(0)
+  })
+})
 })
