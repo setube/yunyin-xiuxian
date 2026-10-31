@@ -180,6 +180,65 @@ if (typeof document !== 'undefined') {
 }
 
 /**
+ * 另一个标签页也在跑同一份存档。
+ *
+ * 两页各自持一份内存状态、各自每 5 秒落盘,后写的整片覆盖先写的 —— 两边都会掉进度,
+ * 且玩家毫无察觉。检测到就报一声,由 UI 提示「另开一页」。
+ */
+let otherTabActive = false
+type OtherTabHandler = (active: boolean) => void
+const otherTabHandlers = new Set<OtherTabHandler>()
+
+/** 订阅「别的标签页开始/停止写档」;返回退订函数 */
+export function subscribeOtherTabSave(handler: OtherTabHandler): () => void {
+  otherTabHandlers.add(handler)
+  return () => {
+    otherTabHandlers.delete(handler)
+  }
+}
+
+/** 本页刚刚写过盘时广播,让别的标签页知道这里活着 */
+const LIVE_KEY = SAVE_PREFIX + '__live'
+const LIVE_PING_MS = 4000
+
+function markAlive(): void {
+  try {
+    localStorage.setItem(LIVE_KEY, String(Date.now()))
+  } catch {
+    // 存储不可用时忽略
+  }
+}
+
+function setOtherTab(active: boolean): void {
+  if (otherTabActive === active) return
+  otherTabActive = active
+  for (const handler of otherTabHandlers) handler(active)
+}
+
+/**
+ * storage 事件只在「别的标签页」写入时触发,本页自己的写入不会回调 —— 正合用来判重。
+ * 只认分片键与实际存档键;LIVE_KEY 的心跳单独比时间戳,免得把心跳当成写档。
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', e => {
+    if (e.key === null) return
+    if (e.key === LIVE_KEY) {
+      const at = Number(e.newValue)
+      setOtherTab(Number.isFinite(at) && Date.now() - at < LIVE_PING_MS * 3)
+      return
+    }
+    if (e.key.startsWith(SAVE_PREFIX) && !e.key.startsWith(SAVE_PREFIX + 'corrupt.')) setOtherTab(true)
+  })
+  // 心跳:让别的标签页知道本页还开着;切回前台时立刻补一次,避免判定滞后
+  const ping = (): void => {
+    if (document.visibilityState === 'visible') markAlive()
+  }
+  setInterval(ping, LIVE_PING_MS)
+  document.addEventListener('visibilitychange', ping)
+  markAlive()
+}
+
+/**
  * pinia-plugin-persistedstate 序列化器。serialize 只做 JSON,不加密(加密在 flushSaveWrites);
  * deserialize 经 readSaveText,明文(待刷队列)与密文(磁盘)都能解析
  */
