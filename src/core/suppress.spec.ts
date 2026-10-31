@@ -410,10 +410,11 @@ describe('区域镇压系统', () => {
           player.suppressedRegions = [...ids]
           player.suppressQualified = [...ids]
           const cult = player.cultPerSec
+          const hourGain = cult * 3600
           const before = toNum(player.exp)
           settleSuppressedRegions(3600)
-          const ratio = (toNum(player.exp) - before) / cult
-          expect(ratio, `${n} 区超发:实得 ${(ratio * 100).toFixed(1)}%,封顶 ${SUPPRESS_EXP_MAX * 100}%`).toBeLessThanOrEqual(
+          const ratio = (toNum(player.exp) - before) / hourGain
+          expect(ratio, `${n} 区超发:实得挂机收益的 ${(ratio * 100).toFixed(1)}%`).toBeLessThanOrEqual(
             SUPPRESS_EXP_MAX + 1e-6
           )
           expect(ratio, `${n} 区该顶到封顶`).toBeCloseTo(SUPPRESS_EXP_MAX, 6)
@@ -433,11 +434,16 @@ describe('区域镇压系统', () => {
           const cult = player.cultPerSec
           const before = toNum(player.exp)
           settleSuppressedRegions(3600)
-          expect((toNum(player.exp) - before) / cult, `${n} 区应为 ${want}`).toBeCloseTo(want, 6)
+          expect((toNum(player.exp) - before) / (cult * 3600), `${n} 区应为挂机收益的 ${want}`).toBeCloseTo(want, 6)
         }
       })
 
-      it('结算:镇压两区一小时,修为红利 = 修速 × 16%', () => {
+      /**
+       * 量级:文案说「修为 +8%/时」,指这一小时另结挂机所得的 8%。
+       * 写成 `rate × (秒数 / 3600)` 会只剩「一秒的 8%」,一千倍以上地缩水(实测挂机一小时 2046 万,道韵 455)。
+       * 故障注入:把结算改回除以 3600 → 本条红。
+       */
+      it('结算:镇压两区一小时,修为红利 = 挂机收益 × 16%', () => {
         const player = usePlayerStore()
         player.suppressedRegions = ['qingyun', 'wanyao']
         player.suppressedSince = { qingyun: Date.now(), wanyao: Date.now() }
@@ -446,8 +452,10 @@ describe('区域镇压系统', () => {
         const total = settleSuppressedRegions(3600)
         expect(total).not.toBeNull()
         const gained = toNum(player.exp) - before
-        expect(gained).toBeCloseTo(cult * 0.16, 6)
-        expect(toNum(total!.expGain)).toBeCloseTo(cult * 0.16, 6)
+        expect(gained).toBeCloseTo(cult * 3600 * 0.16, 4)
+        expect(toNum(total!.expGain)).toBeCloseTo(cult * 3600 * 0.16, 4)
+        // 与挂机同量级:一天的道韵不该还不如挂机一分钟
+        expect(gained, '道韵缩水成「一秒的 8%」—— 与文案差三个数量级').toBeGreaterThan(cult * 60)
       })
 
       /** 故障注入:把结算里的 `suppressionEquipmentLuck(since, now)` 改成 `luck: 0`,本用例红 */
