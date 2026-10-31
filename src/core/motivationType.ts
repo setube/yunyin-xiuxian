@@ -3,7 +3,15 @@ import type { CombatRules } from '@/types'
 import { LIFE_TRIALS } from '@/data/lifeTrials'
 import { NOVELTY_MIN } from './worldGen'
 
-/** 把 CombatRules 摊成可比向量;与 worldGen 的 ruleVector 同构 */
+/**
+ * 把 CombatRules 摊成可比向量,供 ruleDistance 度量两条规则的差异。
+ *
+ * 与 worldGen 的 ruleVector **不同构**(原注释写「同构」,是错的):
+ *   本表含 playerStartHpPct(生命命题常改开局气血),不含 critDamage;
+ *   worldGen 那张表反之(终局变数常改暴击之伤,不管开局气血)。
+ * 两边服务不同场景,维度不同是有意的;要比较时必须先确认落在哪一套坐标里。
+ * spec 钉:bothVectors.spec.ts 记录两份维度清单,任一侧增删字段都会红。
+ */
 export function ruleVector(r: CombatRules): number[] {
   return [
     r.healMult ?? 1,
