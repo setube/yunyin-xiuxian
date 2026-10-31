@@ -8,7 +8,8 @@ import { resolveEquipStats } from '@/core/equipGen'
 import { mergeMods } from '@/core/statsCalc'
 import { useLoreStore } from '@/stores/lore'
 import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
-import { BAG_CAPACITY, EQUIP_MAX_LEVEL_BASE } from '@/data/constants'
+import { BAG_CAPACITY } from '@/data/constants'
+import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
 import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { pillDef } from '@/data/pills'
 import { QUALITIES } from '@/data/qualities'
@@ -59,8 +60,9 @@ export const useInventoryStore = defineStore(
           templateId: typeof it.templateId === 'string' ? it.templateId : '',
           quality: typeof rawQuality === 'string' && qualityIds.has(rawQuality as never) ? (rawQuality as EquipmentInstance['quality']) : 'mortal',
           tier: Math.min(MAX_EQUIP_TIER, Math.max(1, Math.floor(asFiniteNumber(it.tier, 1, 1)))),
-          // 只夹到「基础上限 + 满建筑加成」量级;实际上限由执行侧 equipLevelCap() 把关
-          level: Math.min(EQUIP_MAX_LEVEL_BASE + 10, Math.max(0, Math.floor(asFiniteNumber(it.level, 0, 0)))),
+          // 只夹到「基础上限 + 满建筑加成」量级;实际上限由执行侧 equipLevelCap() 把关。
+          // 上界取自建筑表推导,不写死数字:炼器台上限一改,这里跟着走。
+          level: Math.min(EQUIP_LEVEL_SANITIZE_CAP, Math.max(0, Math.floor(asFiniteNumber(it.level, 0, 0)))),
           affixes,
           locked: it.locked === true,
           reforgeCount: Math.floor(asFiniteNumber(it.reforgeCount, 0, 0)),
