@@ -115,6 +115,9 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   const ui = useUiStore()
 
   if (!game.started || player.dead) return null
+  // 时间戳在未来:系统时钟曾被调快,盖下的戳远在当下之后。
+  // 不重锚的话 dtSec 会被下面夹成 0,离线收益从此恒为 0,直到玩家把时钟调回去。
+  if (game.lastActiveAt > nowMs) game.lastActiveAt = nowMs
   const dtSec = Math.max(0, (nowMs - game.lastActiveAt) / 1000)
   if (dtSec < 1) return null
 
