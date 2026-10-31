@@ -13,6 +13,7 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { buildIdentity } from '@/core/identityService'
 import { mentorHint } from '@/core/fortuneChain'
 import { echoEligible } from '@/core/fortuneEcho'
+import { battleDataRows } from '@/core/battleAnalysis'
 
 describe('sanitizeAllStores 逐仓自愈', () => {
   beforeEach(() => {
@@ -159,6 +160,48 @@ describe('sanitizeAllStores 修「按 id 认对象」的坏账', () => {
     expect(b!.result.rounds).toBe(0)
     expect(b!.result.playerHpPct).toBe(0)
     expect(Number.isFinite(b!.at)).toBe(true)
+  })
+
+  /**
+   * 战报遥测也要修形:分析面板直接读 `stats.player.dealt.m`,
+   * 缺字段(null / 旧档没有后加字段)会在 computed 里抛「reading 'm'」,战报区反复报错。
+   * 故障注入:把 sanitizeSideStats 摘掉 → 本条红。
+   */
+  it('战报遥测缺字段或写成 null 时补齐,分析面板不再抛 reading m', () => {
+    const a = useAdventureStore()
+    a.$patch({
+      lastBattle: {
+        enemyName: '石傀',
+        enemyIcon: 'x',
+        isBoss: false,
+        result: {
+          win: true,
+          log: [{ t: 'hit', text: '一记' }],
+          rounds: 3,
+          playerHpPct: 0.4,
+          stats: {
+            player: { dealt: null, taken: { m: 2, e: 1 } },
+            enemy: { dealt: { m: 1, e: 1 } }
+          }
+        },
+        at: Date.now()
+      } as never
+    })
+    sanitizeAllStores()
+    const b = a.lastBattle
+    expect(b, '遥测可补,不该整份丢').not.toBeNull()
+    // 两侧都补得回来才留;缺到补不出就按「无遥测」处理
+    if (b!.result.stats) {
+      for (const side of [b!.result.stats.player, b!.result.stats.enemy]) {
+        for (const key of ['dealt', 'taken', 'pierceTaken', 'biggestHitTaken', 'healed', 'shieldAbsorbed'] as const) {
+          expect(side[key], `${key} 没补成 GNum —— 分析面板会抛 reading m`).toMatchObject({ m: expect.any(Number), e: expect.any(Number) })
+        }
+        for (const key of ['dodges', 'hitsLanded', 'crits', 'skillCasts'] as const) {
+          expect(Number.isFinite(side[key]), `${key} 应补成有限数`).toBe(true)
+        }
+      }
+      expect(() => battleDataRows({ ...b!.result })).not.toThrow()
+    }
   })
 
   it('待处理事件认不出时清掉,不让历练一直堵到超时', () => {

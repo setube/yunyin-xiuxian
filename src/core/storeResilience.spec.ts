@@ -251,6 +251,39 @@ describe('坏档韧性 · 复杂状态的值也要修回来(不只是"不炸")',
     expect(player.lifespanBonusYears).toBe(200)
   })
 
+  /**
+   * dead 只认严格 true:字符串 "false" 与数字 1 都是真值。
+   * 判死会让在线收益整拍跳过、离线结算整段返回 null、主页常驻「陨落」—— 一份写坏的布尔钉死整局。
+   */
+  it('身故标记只认严格 true:数字型布尔不再把整局判死', () => {
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    for (const hostile of ['false', 1, 'x', []] as unknown[]) {
+      setActivePinia(createPinia())
+      const p2 = usePlayerStore()
+      p2.$patch({ dead: hostile } as never)
+      p2.sanitize()
+      expect(p2.dead, `dead = ${JSON.stringify(hostile)} 被当成真值,整局会判死`).toBe(false)
+    }
+    // 真正的身故档不受这次收紧影响
+    setActivePinia(createPinia())
+    const dead = usePlayerStore()
+    dead.$patch({ dead: true } as never)
+    dead.sanitize()
+    expect(dead.dead, '真身故档被修成活着,死亡提示与转世入口会消失').toBe(true)
+    // 对照:player 已能正确读回
+    expect(player.dead).toBe(false)
+  })
+
+  it('道号:坏档写成数字时修回空串,拼接与 trim 不再抛', () => {
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    player.$patch({ name: 42 } as never)
+    player.sanitize()
+    expect(typeof player.name).toBe('string')
+    expect(() => player.name.trim()).not.toThrow()
+  })
+
   it('道童:坏羁绊夹回非负整数,老档缺 bond 补 0', () => {
     setActivePinia(createPinia())
     const a = useApprenticeStore()
