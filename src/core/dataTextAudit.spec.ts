@@ -25,6 +25,7 @@ import { ARTIFACT_MAX_SLOTS, ARTIFACT_SLOT_UNLOCK_MAJOR } from '@/data/artifacts
 import { EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
 import { MUTATION_FIGHTS } from '@/core/expedition'
 import { PROFILE_MIN_MARKS } from '@/core/identity'
+import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { AFFIXES } from '@/data/affixes'
 import { STAT_NAMES } from '@/data/statNames'
 import { classicalDuration } from '@/data/timeUnits'
@@ -110,6 +111,72 @@ describe('文案数值对账 · 增益(Buff)', () => {
       }
     }
     expect(checked, '增益说明里扫到的百分比太少,判据覆盖不足').toBeGreaterThanOrEqual(8)
+  })
+})
+
+describe('文案数值对账 · 天界世界', () => {
+  it('世界规则文案的每个百分比,都能在它自己的 rules 里找到', () => {
+    let checked = 0
+    for (const w of CELESTIAL_WORLDS) {
+      const nums = Object.values(w.rules ?? {}).flatMap(v =>
+        typeof v === 'number' ? [v] : typeof v === 'object' && v !== null ? Object.values(v) : []
+      ) as number[]
+      for (const pc of percentsOf(w.ruleText.join(' '))) {
+        checked += 1
+        expect(percentBacked(pc, nums), `世界「${w.name}」文案写 ${pc}%,rules 里对不上:${w.ruleText.join(' / ')}`).toBe(true)
+      }
+    }
+    expect(checked, '一个百分比都没查到,审计形同虚设').toBeGreaterThan(0)
+  })
+
+  /**
+   * 反向门:rules 里每个机制都须有一条文案提到它。
+   * 实测漏过 —— 四个世界的 enemyExtraMods.critRate(敌方暴击率 +10%~12%)全程生效却没人说过,
+   * 玩家只会觉得「这个世界的敌人怎么老暴击」。故障注入:删掉任一条「敌人暴击率」文案即红。
+   */
+  it('世界 rules 的每个机制都有文案提到,不藏条件', () => {
+    /** 数值键 → 文案里该出现的说法;ExtraMods 按「每条词条各给一个判据」查 */
+    const HINTS: Record<string, RegExp> = {
+      enemyAtkMult: /敌人攻击|敌方攻击/,
+      playerAtkMult: /自身攻击|我方攻击/,
+      enemyHpMult: /敌方生命|敌人生命|血/,
+      healMult: /治疗/,
+      shieldCapRatio: /护盾/,
+      maxRounds: /回合/,
+      perRounds: /每.*回合/
+    }
+    /** StatMods 键 → 文案说法;新增词条键时这里必须补一行,否则本用例直接红 */
+    const MOD_HINTS: Record<string, RegExp> = {
+      critRate: /暴击率/,
+      critDamage: /暴击伤害/,
+      dodgeRate: /闪避/,
+      armorPen: /防御|破甲/,
+      damageReduction: /受到伤害|减伤/,
+      speed: /出手/,
+      lifesteal: /吸血/,
+      damageBonus: /伤害/,
+      defensePct: /防御/
+    }
+    for (const w of CELESTIAL_WORLDS) {
+      const txt = w.ruleText.join(' ')
+      for (const [key, val] of Object.entries(w.rules ?? {})) {
+        if (key === 'playerExtraMods' || key === 'enemyExtraMods') {
+          const who = key === 'playerExtraMods' ? '我' : '敌'
+          for (const modKey of Object.keys(val as Record<string, number>)) {
+            const hint = MOD_HINTS[modKey]
+            expect(hint, `词条键 ${modKey} 没有登记文案判据`).toBeDefined()
+            expect(
+              hint!.test(txt) && new RegExp(who).test(txt),
+              `世界「${w.name}」的 ${key}.${modKey} 全程生效,文案里却没有:${w.ruleText.join(' / ')}`
+            ).toBe(true)
+          }
+          continue
+        }
+        const hint = HINTS[key]
+        expect(hint, `rules 键 ${key} 没有登记判据`).toBeDefined()
+        expect(hint!.test(txt), `世界「${w.name}」的 ${key} 全程生效,文案里却没有:${w.ruleText.join(' / ')}`).toBe(true)
+      }
+    }
   })
 })
 
