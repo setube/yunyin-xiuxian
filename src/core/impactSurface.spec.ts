@@ -213,15 +213,16 @@ describe('影响面 · 灵脉与先天之姿的存量处理', () => {
     )
   })
 
-  it('先天之姿与灵脉同构,可照抄同一套处理', () => {
+  it('先天之姿与灵脉在「不被轮回触碰」这一点上同构(但存量是否已满不同,不可照抄全套)', () => {
     const talents = LEGACY_ASSETS.find(a => a.id === 'talents')!
     expect(talents.touchedByRebirth).toBe(false)
     expect(verdictOf(talents)).toBe('heritage')
     const rates = PROBES.map(p => p.talents)
     expect(Math.max(...rates)).toBeGreaterThan(Math.min(...rates) * 2)
     console.log(
-      `\n两份存档 ${rates.join(' / ')} 项,分化明显 —— 与灵脉的「都已满」不同,` +
-        `\n先天之姿仍在推进中,改来源会被玩家立刻感知,须配套说明`
+      `\n两份存档 ${rates.join(' / ')} 项,分化明显 —— 与灵脉的「都已满」不同:` +
+        `\n轮回代码虽同样一概不动(这一点同构),但先天之姿仍在推进中,` +
+        `\n改来源会被玩家立刻感知,须配套说明,不可照抄灵脉那套「反正都满了」的处理`
     )
   })
 
