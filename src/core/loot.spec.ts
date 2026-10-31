@@ -47,8 +47,8 @@ describe('自动回收 · 装备入包前的第一道闸', () => {
     return useInventoryStore().items.map(it => it.uid)
   }
 
-  // ISS-030:rng.chance 不钳制,倍率堆叠出界即"必然掉落"或"永不掉落"。
-  it('ISS-030:afterWin 里每个概率输入都钳在 [0,1] 内', () => {
+  // rng.chance 不钳制,倍率堆叠出界即"必然掉落"或"永不掉落"。
+  it('afterWin 里每个概率输入都钳在 [0,1] 内', () => {
     const player = usePlayerStore()
     player.initCharacter('概率钳制', { roots: [] } as never)
     const spy = vi.spyOn(rng, 'chance').mockImplementation((p: number) => {

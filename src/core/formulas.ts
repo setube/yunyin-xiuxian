@@ -173,7 +173,7 @@ export function stoneByTier(tier: number, amount: number): GNum {
 /**
  * 丹药「炼制石耗」基准(按准入境界的最高层级折算)。
  * 唯一事实源:坊市买/售、悬赏募丹、balance 审计都读它。
- * 层级须取 maxTierForMajor,自算会超出上限 32(ISS-211)。须留在纯公式层:economySim 引它。
+ * 层级须取 maxTierForMajor,自算会超出上限 32。须留在纯公式层:economySim 引它。
  */
 export function pillStoneCost(def: PillDef): GNum {
   if (!def.recipe?.stoneBase) return gnZero()

@@ -1,5 +1,5 @@
 /**
- * 转世交割端到端契约(confirmReincarnation),对应 ReincarnationDialog「此生交割」与 DEC-003:
+ * 转世交割端到端契约(confirmReincarnation),对应 ReincarnationDialog「此生交割」:
  * 留下「我是谁」,放下「我拥有多少」,转世重掷道号。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

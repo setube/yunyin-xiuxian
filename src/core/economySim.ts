@@ -173,7 +173,7 @@ export function auditEra(major: number): EraAudit {
       if (income) potential += income / rate.per
     }
     // 灵石熔铸价按本境层级折算,须与 endgameService.furnaceStoneCost 同口径;
-    // 写死层级则价格跟不上按 1.9^层级 涨的灵石收入(ISS-214)
+    // 写死层级则价格跟不上按 1.9^层级 涨的灵石收入
     const stonePerDao = toNum(stoneByTier(tier, FURNACE_STONE_TIER_AMOUNT))
     if (stonePerDao > 0) potential += (stoneIncome / stonePerDao) * FURNACE_STONE_DAO_SOURCE
     return { potential, demand: DAO_SOURCE_PER_FRUIT / Math.max(eraHours, 1) }

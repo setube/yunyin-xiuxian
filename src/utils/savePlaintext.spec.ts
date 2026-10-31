@@ -44,7 +44,7 @@ describe('明文存档 · 不许被误当密文', () => {
     expect(readSaveText(cipher)).toBe(plain)
   })
 
-  /** 测 store 真正调用的 SAVE_SERIALIZER.deserialize(ISS-049);序列化器另写解码、绕过 readSaveText 会复发 */
+  /** 测 store 真正调用的 SAVE_SERIALIZER.deserialize;序列化器另写解码、绕过 readSaveText 会复发 */
   it('存档序列化器读明文也不许翻车(真正被 store 调用的那一段)', () => {
     const data = { game: { started: true }, player: { exp: 42 } }
     expect(SAVE_SERIALIZER.deserialize(plainEnvelope(BASE_AT))).toMatchObject({ version: 2 })

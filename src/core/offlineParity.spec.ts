@@ -1,7 +1,7 @@
 /**
  * 离线历练与在线历练的「规则同源」红线
  *
- * 逆旅契(lifeTrialRules)经 explorationRules 在线/离线共用一份实现(HYP-015),离线不得内联 currentDaoRules。
+ * 逆旅契(lifeTrialRules)经 explorationRules 在线/离线共用一份实现,离线不得内联 currentDaoRules。
  * 离线事件与敌群同走 placeContent,经 regionEventPoolFor 尊重本世 eventTags / minRealm / once。
  */
 import { describe, expect, it, beforeEach } from 'vitest'

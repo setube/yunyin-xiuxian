@@ -66,7 +66,7 @@ describe('离线结算封顶一致性', () => {
   })
 })
 
-describe('离线结算同源吃天时(ISS-027 续)', () => {
+describe('离线结算同源吃天时', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })

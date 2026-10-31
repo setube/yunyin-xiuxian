@@ -54,7 +54,7 @@ export interface SecretRealmDef {
 
 /**
  * 秘境目录:门槛与代价只写在这张表上。
- * 道源真仙之后才有:凡境秘境只能收灵石,天界秘境(minMajor=9)才收道源(见 RIL TASK-031/DEC-014)。
+ * 道源真仙之后才有:凡境秘境只能收灵石,天界秘境(minMajor=9)才收道源。
  */
 export const SECRET_REALMS: SecretRealmDef[] = [
   {

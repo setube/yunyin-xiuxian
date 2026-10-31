@@ -157,7 +157,7 @@ export function stopExploration(reason: 'manual' | 'defeat' | 'complete' | 'retr
 }
 
 /**
- * 战斗危险因子:在线/离线唯一实现,禁内联复刻(HYP-015)。
+ * 战斗危险因子:在线/离线唯一实现,禁内联复刻。
  * 历练模式倍率 × 地域差值 × 灵兽性格 × 区域事件(无事件为 1)。
  */
 export function dangerFactorFor(
@@ -203,7 +203,7 @@ export function regionFoeOrigin(region: RegionDef): FoeOrigin {
 }
 
 /**
- * 历练战斗规则:道途规则 × 本世逆旅契。在线/离线唯一实现(HYP-015);
+ * 历练战斗规则:道途规则 × 本世逆旅契。在线/离线唯一实现;
  * 离线只带 currentDaoRules 会漏掉逆旅契。
  */
 export function explorationRules(): CombatRules | undefined {

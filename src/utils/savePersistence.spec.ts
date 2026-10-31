@@ -20,7 +20,7 @@ import {
 interface Probe {
   disk: Map<string, string>
   writes: number
-  /** 每次写盘记一条调用栈;偶发红(ISS-049)时报文点名写入方 */
+  /** 每次写盘记一条调用栈;偶发红时报文点名写入方 */
   stacks: string[]
 }
 
