@@ -17,7 +17,8 @@
       <span class="orb-icon"><slot>◎</slot></span>
     </div>
 
-    <svg class="progress-svg" viewBox="0 0 120 120">
+    <!-- 纯视觉进度环:百分比与境界名旁边已有文字,读屏不必再念一次图形 -->
+    <svg class="progress-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id="orbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="var(--color-jade)" />
