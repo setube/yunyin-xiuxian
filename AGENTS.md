@@ -178,7 +178,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 
 ## Testing & QA
 
-- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 354 个 spec：core 237、ui 44、stores 24、utils 11、data 9、composables 9、router 1）。用例条数不写进文档(`bun run test:report` 每次自己打)。
+- **框架**：Vitest 5；测试与实现同目录共存 `*.spec.ts`（共 355 个 spec：core 237、ui 44、stores 24、utils 11、data 9、composables 9、router 1）。用例条数不写进文档(`bun run test:report` 每次自己打)。
 - **运行**：全量 `bun run test`；分桶报告 `bun run test:report`。
 - **红线测试（改了相关逻辑必须保住）**：
   - `storeResilience.spec.ts` — 持久化 store 必须带 `sanitize`，且经恶意损坏用例。
