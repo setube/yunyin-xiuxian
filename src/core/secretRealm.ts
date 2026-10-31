@@ -50,6 +50,18 @@ export interface SecretRealmState {
 }
 
 /** 玩家当前地界层级(入口代价按它折算);与装备来源上限同源于数据层,不另筛区域表 */
+/** 层间携带气血的下限;低于它下一场几乎必败 */
+export const SECRET_MIN_CARRIED_HP = 0.05
+
+/**
+ * 一场打完后的携带气血比例:夹在 [下限, 1] 之间。
+ * 上限必须有 —— 回合耗尽判负时玩家血量可以接近满(combat.ts:双方都没死,按回合上限判负),
+ * 再加 healBetweenPct 就会超过 1,下一场以 >100% 气血开局。
+ */
+export function carriedHpAfter(prevHpPct: number, healPct: number): number {
+  return Math.max(SECRET_MIN_CARRIED_HP, Math.min(1, prevHpPct + healPct))
+}
+
 export function tierOfMajor(major: number): number {
   return maxTierForMajor(major)
 }
@@ -267,13 +279,13 @@ export function fightSecretLayer(): SecretLayerResult | null {
       ui.toast(`${def.name}已探尽`, 'rare')
       return { win: true, finished: true, cleared: true, lines }
     }
-    const carried = Math.min(1, result.playerHpPct + def.healBetweenPct)
+    const carried = carriedHpAfter(result.playerHpPct, def.healBetweenPct)
     player.setSecretRealm({
       ...state,
       layer: nextLayer,
       wins: state.wins + 1,
       spoils: [...state.spoils, ...lines],
-      carriedHpPct: Math.max(0.05, carried)
+      carriedHpPct: carried
     })
     return { win: true, finished: false, cleared: false, lines }
   }
@@ -291,7 +303,7 @@ export function fightSecretLayer(): SecretLayerResult | null {
     ...state,
     losses,
     spoils: [...state.spoils, ...lines],
-    carriedHpPct: Math.max(0.05, result.playerHpPct + def.healBetweenPct)
+    carriedHpPct: carriedHpAfter(result.playerHpPct, def.healBetweenPct)
   })
   return { win: false, finished: false, cleared: false, lines }
 }
