@@ -250,7 +250,14 @@ export interface GeneratedWorld {
 
 /**
  * 生成过审虚界:候选 → 平衡裁判 → 新颖度门,不合格换种子重来。
- * 奖励按实测难度定价:最优流派通率越低,道源越高
+ * 奖励按实测难度定价:最优流派通率越低,道源越高。
+ *
+ * 奖励算式 `min(100, max(55, 60*(1.85-best)))` 的两层钳制只在极端取值才生效:
+ * best 是 clears/runs 的离散值(runs=7 时只有 0.571/0.714/0.857),
+ * 过审又要求 best∈[0.5,0.97],于是常见奖励落在 57~81。
+ *   Math.max(55) 要到 best≥0.9333 才咬住 —— 仅当 runs 提高或阈值放宽时才会出现。
+ *   Math.min(100) 在 best>0.1833 时恒不触发,合法区间内永远够不到。
+ * 两层都保留:它们是防御性的,阈值一改就会真的生效。spec 钉:worldGen.spec 的「虚界奖励定价」。
  */
 export function generateApprovedWorld(baseSeed: number, maxTries = 200, history?: HistoryEntry[]): GeneratedWorld | null {
   const hist = history ?? defaultHistory()
