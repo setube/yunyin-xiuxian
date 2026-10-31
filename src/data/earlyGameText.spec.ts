@@ -9,7 +9,7 @@
  * 这里把 desc 里的百分比抽出来,与 buff 的真实词条值逐项比对。
  */
 import { describe, expect, it } from 'vitest'
-import { ENLIGHTENMENT_OPTIONS } from '@/data/earlyGame'
+import { BREAKTHROUGH_PREP_OPTIONS, ENLIGHTENMENT_OPTIONS } from '@/data/earlyGame'
 import { buffDef } from '@/data/buffs'
 
 /** 把小数转成文案里的百分数整数(0.2 → 20) */
@@ -75,4 +75,62 @@ describe('顿悟选项 · 文案与实发一致', () => {
       expect(buffDef(opt.buffId)?.name, `「${opt.label}」与 buff 名不符`).toBe(opt.label)
     }
   })
+
+describe('突破准备 · 文案与实发一致', () => {
+  /** 从 desc 抽分钟数 → 秒 */
+  const minutesIn = (desc: string): number | null => {
+    const m = /(\d+)\s*分钟/.exec(desc)
+    return m ? Number(m[1]) * 60 : null
+  }
+
+  it('desc 里的「耗时 N 分钟」等于 duration 秒数', () => {
+    let checked = 0
+    for (const opt of BREAKTHROUGH_PREP_OPTIONS) {
+      const claimed = minutesIn(opt.desc)
+      if (claimed === null) continue
+      expect(opt.duration, `「${opt.label}」文案写 ${claimed / 60} 分钟,实际 ${opt.duration} 秒`).toBe(claimed)
+      checked += 1
+    }
+    expect(checked, '没有任何选项写了耗时,说明用例空转').toBeGreaterThan(0)
+  })
+
+  it('desc 里的百分比等于 bonusRate', () => {
+    let checked = 0
+    for (const opt of BREAKTHROUGH_PREP_OPTIONS) {
+      const claimed = percentsIn(opt.desc)
+      if (claimed.length === 0) continue
+      expect(claimed, `「${opt.label}」的文案里不止一个百分数,取不出对应关系`).toHaveLength(1)
+      expect(claimed[0], `「${opt.label}」文案 ${JSON.stringify(opt.desc)} 与 bonusRate 不符`).toBe(pct(opt.bonusRate))
+      checked += 1
+    }
+    expect(checked).toBeGreaterThan(0)
+  })
+
+  it('desc 里的「N 灵石」等于 cost.stone', () => {
+    let checked = 0
+    for (const opt of BREAKTHROUGH_PREP_OPTIONS) {
+      const m = /(\d+)\s*灵石/.exec(opt.desc)
+      if (!m) continue
+      expect(opt.cost?.stone, `「${opt.label}」文案写 ${m[1]} 灵石,实际没有灵石消耗`).toBe(Number(m[1]))
+      checked += 1
+    }
+    expect(checked).toBeGreaterThan(0)
+  })
+
+  it('文案说「无额外准备」的,确实不带任何加成、耗时与花销', () => {
+    for (const opt of BREAKTHROUGH_PREP_OPTIONS) {
+      if (!opt.desc.includes('无额外准备')) continue
+      expect(opt.bonusRate, `「${opt.label}」说无额外准备,却带加成`).toBe(0)
+      expect(opt.duration).toBe(0)
+      expect(opt.cost).toBeUndefined()
+    }
+  })
+
+  it('id 与 label 都不重复(选择面板靠它们区分)', () => {
+    const ids = BREAKTHROUGH_PREP_OPTIONS.map(o => o.id)
+    const labels = BREAKTHROUGH_PREP_OPTIONS.map(o => o.label)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(new Set(labels).size).toBe(labels.length)
+  })
+})
 })
