@@ -7,7 +7,7 @@
 
     <main ref="scrollHost" tabindex="-1" class="relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden outline-none">
       <RouterView v-slot="{ Component }">
-        <Transition name="page-fade" mode="out-in" @before-enter="resetScroll">
+        <Transition name="page-fade" mode="out-in" @before-enter="resetScroll" @after-enter="focusContent">
           <component :is="Component" />
         </Transition>
       </RouterView>
@@ -70,10 +70,16 @@
    * 挂 before-enter 而非 watch(route):out-in 下此刻旧页已离场,不会跳回顶部。
    */
   function resetScroll(): void {
-    const host = scrollHost.value
-    if (!host) return
-    host.scrollTop = 0
-    host.focus({ preventScroll: true })
+    if (scrollHost.value) scrollHost.value.scrollTop = 0
+  }
+
+  /**
+   * 焦点挪进内容区,须在 after-enter,不能在 before-enter:
+   * out-in 下 beforeEnter 时旧页还在离场,新页尚未插入,此刻 focus() 会被离场收尾抢回。
+   * main 的 tabindex=-1 只让它可编程聚焦、不进 Tab 序。
+   */
+  function focusContent(): void {
+    scrollHost.value?.focus({ preventScroll: true })
   }
 
   let unsubscribeTheme: () => void = () => undefined

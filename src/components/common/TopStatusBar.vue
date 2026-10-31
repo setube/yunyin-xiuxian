@@ -13,7 +13,12 @@
         <p class="flex items-center gap-1.5 whitespace-nowrap text-[10px] text-ink-faint">
           <!-- 局促时境界名先省略;寿元与「N 世」shrink-0 -->
           <span class="min-w-0 flex-1 truncate">{{ player.realmName }}</span>
-          <span class="tabular shrink-0" :class="player.lifespanRatio < LIFESPAN_WARN_RATIO ? 'text-cinnabar' : ''">
+          <!-- 「16/150」视觉上人人都懂,读屏只会念两个数字;补一句「寿元 16/150 载」 -->
+          <span
+            class="tabular shrink-0"
+            :class="player.lifespanRatio < LIFESPAN_WARN_RATIO ? 'text-cinnabar' : ''"
+            :aria-label="`寿元 ${Math.floor(player.age)}/${formatYears(player.lifespanMax)} 载`"
+          >
             {{ Math.floor(player.age) }}/{{ formatYears(player.lifespanMax) }}
           </span>
           <!-- 轮回次数:最闲的一格,340px 以下隐藏,不挤灵石 -->
@@ -24,7 +29,8 @@
       </div>
     </div>
     <div class="flex shrink-0 items-center gap-3 text-[11px] text-ink-soft tabular short:gap-2">
-      <span class="flex items-center gap-1 whitespace-nowrap" title="灵石">
+      <!-- title 只在悬停时补全,读屏不保证念;图标上一轮已 aria-hidden,这里须自带名字 -->
+      <span class="flex items-center gap-1 whitespace-nowrap" :aria-label="`灵石 ${formatGN(resources.spiritStone)}`" title="灵石">
         <GameIcon name="gem" :size="13" class="text-gold-ink" />
         {{ formatGN(resources.spiritStone) }}
       </span>

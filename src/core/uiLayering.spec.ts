@@ -455,7 +455,9 @@ describe('可访问性 · 切页后焦点回到内容区', () => {
   it('main 可编程聚焦,且切页时调用 focus', () => {
     const app = readFileSync(resolve(SRC, 'App.vue'), 'utf-8')
     expect(app, 'main 缺 tabindex=-1:无法用脚本把焦点移过去').toMatch(/<main\b[^>]*tabindex="-1"/)
-    expect(app, '切页时没有把焦点移到内容区:键盘/读屏焦点会掉回 body').toMatch(/scrollHost\.value[\s\S]{0,200}?focus\(/)
+    expect(app, '切页时没有把焦点移到内容区:键盘/读屏焦点会掉回 body').toMatch(/scrollHost\.value\?\.focus\(/)
+    // 须挂 after-enter:out-in 下 beforeEnter 时旧页仍在离场、新页未插入,此刻 focus() 会被离场收尾抢回
+    expect(app, '焦点须挂在 @after-enter:挂 before-enter 会被 out-in 的离场收尾抢回').toMatch(/@after-enter="focusContent"/)
     // preventScroll 必须给:否则浏览器会为「滚动到该元素」再算一次,和手动 scrollTop=0 打架
     expect(app, 'focus 缺 preventScroll,会和 scrollTop=0 打架').toMatch(/focus\(\{\s*preventScroll:\s*true\s*\}\)/)
   })
