@@ -16,6 +16,8 @@ import { EVENTS, FORTUNE_EVENTS } from '@/data/events'
 import { GATES } from '@/data/qimen'
 import { TALENTS } from '@/data/talents'
 import { MANSIONS } from '@/data/xiangxiu'
+import { HEXAGRAMS, TRIGRAMS } from '@/data/yijing'
+import { PALACES, STARS } from '@/data/ziwei'
 
 describe('数据规模 · 注释数字与真实条目数一致', () => {
   it('成就库 —— 62 个', () => {
@@ -92,4 +94,28 @@ describe('数据规模 · 结构自洽', () => {
       expect(ev.has(f.id), `机缘 ${f.id} 与随机事件撞 id`).toBe(false)
     }
   })
+
+describe('数据规模 · 术数模块', () => {
+  it('易 —— 8 个单卦(八卦) · 64 个重卦(六十四卦)', () => {
+    expect(TRIGRAMS.length, '单卦数与注释的 8 不符').toBe(8)
+    expect(HEXAGRAMS.length, '重卦数与注释的 64 不符').toBe(64)
+  })
+
+  it('重卦由单卦两两相叠:64 = 8 × 8(结构上的必然,不是巧合)', () => {
+    expect(HEXAGRAMS.length).toBe(TRIGRAMS.length * TRIGRAMS.length)
+  })
+
+  it('紫微斗数 —— 12 个宫位 · 14 主星', () => {
+    expect(PALACES.length, '宫位数与注释的 12 不符').toBe(12)
+    expect(STARS.length, '主星数与注释的 14 不符').toBe(14)
+  })
+
+  it('单卦与重卦的名称都非空且互不重复', () => {
+    for (const list of [TRIGRAMS, HEXAGRAMS, PALACES, STARS] as { name: string }[][]) {
+      const names = list.map(x => x.name)
+      for (const n of names) expect(n.length).toBeGreaterThan(0)
+      expect(new Set(names).size, '同一组内名称重复').toBe(names.length)
+    }
+  })
+})
 })
