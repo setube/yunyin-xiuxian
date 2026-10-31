@@ -18,6 +18,7 @@ import {
   STARTER_APPRENTICE,
   apprenticeDef,
   apprenticeSlots,
+  APPRENTICE_SLOT_HARD_CAP,
   type ApprenticeSpec
 } from '@/data/apprentices'
 import {
@@ -117,6 +118,18 @@ export const useApprenticeStore = defineStore(
         }
         clean.push({ uid, archId, level, bond, task })
       }
+      /*
+       * 超量截断。
+       *
+       * recruit 的判据是 `apprentices.length >= apprenticeSlots(major)`,而 sanitize 原先不截断:
+       * 把 apprentices 撑到上百名的坏档会被原样吃下,recruit 从此恒返 'full',
+       * 玩家再也收不到道童(与「行囊已满」「灵脉容量已尽」是同一类坏档后果)。
+       *
+       * 上界取 apprenticeSlots 的最大值(APPRENTICE_SLOT_HARD_CAP),**不按当前境界**:
+       * 按境界截会把「major=0 时留着 2~3 名」这种正常存档也削掉,
+       * 而境界是可升的,读档那一刻的境界不该成为丢弟子的理由。
+       */
+      if (clean.length > APPRENTICE_SLOT_HARD_CAP) clean.length = APPRENTICE_SLOT_HARD_CAP
       apprentices.value = clean
     }
 
