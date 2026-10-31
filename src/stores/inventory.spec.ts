@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
 import { mergeMods } from '@/core/statsCalc'
+import { BAG_CAPACITY } from '@/data/constants'
 import { resolveEquipStats } from '@/core/equipGen'
 import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactEvictedBy, artifactValue } from '@/data/artifacts'
 import { artifactUpCost, upgradeArtifact } from '@/core/forge'
@@ -355,4 +356,86 @@ describe('法宝公共写入边界 · 目录、拥有、满重与祭炼槽', () 
     expect(inv.equipMods.maxHpPct, '第三件的 maxHp 不该进来').toBeCloseTo(withoutThird, 9)
     expect(inv.equipMods.maxHpPct, '判据得真能分辨:带上第三件会是另一个数').not.toBeCloseTo(withThird, 3)
   })
+
+/**
+ * 超容量坏档的截断。
+ *
+ * BAG_CAPACITY 原本只用来判 bagFull(「行囊已满」),从不用来限容:
+ * 把 items 撑到几千件的坏档会被原样吃下,bagFull 恒为 true,
+ * addItem 从此一律 return false —— 玩家再也捡不到装备,界面还要渲染几千行。
+ * 这条把「读档后容量有上界、已装备的不会被截掉」钉住。
+ */
+describe('行囊容量 · 坏档截断', () => {
+  const WEAPON = 'w_zhuqing'
+
+  function makeItems(n: number) {
+    return Array.from({ length: n }, (_, i) => ({
+      uid: `u${i}`,
+      templateId: WEAPON,
+      tier: 1,
+      quality: 'mortal',
+      level: 1,
+      locked: false,
+      affixes: []
+    }))
+  }
+
+  it('容量以内的库存原样保留', () => {
+    const inv = useInventoryStore()
+    inv.items = makeItems(BAG_CAPACITY) as never
+    inv.sanitize()
+    expect(inv.items).toHaveLength(BAG_CAPACITY)
+  })
+
+  it('超容量时截断到 BAG_CAPACITY', () => {
+    const inv = useInventoryStore()
+    inv.items = makeItems(BAG_CAPACITY * 5) as never
+    inv.sanitize()
+    expect(inv.items.length, '坏档撑不破容量上限').toBe(BAG_CAPACITY)
+  })
+
+  it('截断后 bagFull 不再恒为 true —— 玩家还能捡到新装备', () => {
+    const inv = useInventoryStore()
+    inv.items = makeItems(BAG_CAPACITY * 3) as never
+    inv.sanitize()
+    // 全部在背包里(没有装备)→ 恰好满;但不会「超满」到永远加不进
+    expect(inv.bagItems.length).toBeLessThanOrEqual(BAG_CAPACITY)
+    expect(inv.items.some(it => !inv.bagItems.includes(it)) || inv.bagItems.length === BAG_CAPACITY).toBe(true)
+  })
+
+  it('已装备的件一定被保住(哪怕原下标在容量之外)', () => {
+    const inv = useInventoryStore()
+    inv.items = makeItems(BAG_CAPACITY * 2) as never
+    inv.equipped = { weapon: `u${BAG_CAPACITY * 2 - 1}` } as never
+    inv.sanitize()
+    const keptUids = inv.items.map(it => it.uid)
+    expect(keptUids, '最后一件被截掉了,但它是玩家身上的装备').toContain(`u${BAG_CAPACITY * 2 - 1}`)
+    expect(inv.equipped.weapon, '装备栏映射应保留').toBe(`u${BAG_CAPACITY * 2 - 1}`)
+  })
+
+  it('截断后背包仍有空位(装备占位不算进背包)', () => {
+    const inv = useInventoryStore()
+    inv.items = makeItems(BAG_CAPACITY * 2) as never
+    inv.equipped = { weapon: `u${BAG_CAPACITY * 2 - 1}` } as never
+    inv.sanitize()
+    expect(inv.bagItems.length, '截断后背包数应比容量少一件(那件在身上)').toBe(BAG_CAPACITY - 1)
+    expect(inv.bagFull).toBe(false)
+  })
+
+  it('截断保持读档顺序(前面的留下)', () => {
+    const inv = useInventoryStore()
+    inv.items = makeItems(BAG_CAPACITY * 2) as never
+    inv.sanitize()
+    const kept = inv.items.map(it => it.uid)
+    expect(kept[0]).toBe('u0')
+    expect(kept.length).toBe(BAG_CAPACITY)
+  })
+
+  it('满仓但一件未装备时 bagFull 为 true(这是正常状态,不是坏档)', () => {
+    const inv = useInventoryStore()
+    inv.items = makeItems(BAG_CAPACITY) as never
+    inv.sanitize()
+    expect(inv.bagFull).toBe(true)
+  })
+})
 })

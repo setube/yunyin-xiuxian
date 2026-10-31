@@ -79,7 +79,30 @@ export const useInventoryStore = defineStore(
             : {})
         })
       }
-      items.value = cleanItems
+      /*
+       * 超容量坏档截断。
+       *
+       * BAG_CAPACITY 原本只用来判 bagFull(「行囊已满」),从不用来限容;
+       * 于是把 items 撑到几千件的坏档会被原样吃下,bagFull 恒为 true,
+       * addItem 从此一律 return false —— 玩家再也捡不到装备,且界面要渲染几千行。
+       *
+       * 截断时优先保住已装备的件(equipped 的原始映射还没被校验,这里只按 uid 认),
+       * 其余按读档顺序保留。容量本身就是玩家正常能持有的上限,不构成惩罚。
+       */
+      if (cleanItems.length > BAG_CAPACITY) {
+        const rawEquippedForCap = asRecord<unknown>(equipped.value)
+        const keepUid = new Set(
+          Object.values(rawEquippedForCap).filter((u): u is string => typeof u === 'string' && u.length > 0)
+        )
+        const equippedKept = cleanItems.filter(it => keepUid.has(it.uid))
+        const restKept = cleanItems.filter(it => !keepUid.has(it.uid))
+        const room = Math.max(0, BAG_CAPACITY - equippedKept.length)
+        // 保持读档顺序:已装备的与其余的各自有序,合并时按原下标重排
+        const keepIds = new Set([...equippedKept, ...restKept.slice(0, room)].map(it => it.uid))
+        items.value = cleanItems.filter(it => keepIds.has(it.uid))
+      } else {
+        items.value = cleanItems
+      }
       // 装备栏只留「槽名合法 + 件存在 + 件属该槽 + 未被前面的槽占用」的映射
       const rawEquipped = asRecord<unknown>(equipped.value)
       const validUids = new Set(items.value.map(it => it.uid))
