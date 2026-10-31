@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { gn, subClamp, toNum } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
-import { SECRET_REALMS, SECRET_RULES, secretRuleByText } from '@/data/secretRealms'
+import { intrinsicRuleTexts, SECRET_REALMS, SECRET_RULES, secretRuleByText } from '@/data/secretRealms'
 import { MATERIALS, type MaterialBucket, type MaterialDef } from '@/data/materials'
 import { rng } from '@/utils/random'
 import { usePlayerStore } from '@/stores/player'
@@ -33,6 +33,7 @@ import {
   secretFightRules,
   secretLayerFoe,
   secretLayerReward,
+  secretRuleTexts,
   secretRealmDef,
   tierOfMajor
 } from './secretRealm'
@@ -621,5 +622,43 @@ describe('秘境 · 反击规则的文案与旧档', () => {
     const st = currentRealm()!
     expect(st.rules).toEqual([NEW])
     expect(secretFightRules(st).enemyExtraMods?.counterRate).toBeCloseTo(0.15)
+  })
+})
+
+/**
+ * 界面「此地规则」原只报 state.rules(进场随机抽的那一两条),
+ * 而秘境自带规则(归墟之眼:攻 ×1.25 / 敌血 ×1.2 / 回合上限 25)全程作用于战斗却从不显示。
+ * 故障注入:把 secretRuleTexts 改回只返回 state.rules,本条红。
+ */
+describe('秘境 · 自带规则也要报给玩家', () => {
+  it('归墟之眼:三条自带规则与随机规则一并出现在文案里', () => {
+    const st = {
+      realmId: 'sr_guixu',
+      enteredAt: 1,
+      layer: 1,
+      wins: 0,
+      losses: 0,
+      spoils: [],
+      rules: ['治疗减半'],
+      carriedHpPct: 1,
+      finished: false
+    }
+    const texts = secretRuleTexts(st)
+    expect(texts, '自带回合上限没报出来 —— 玩家不知道这场只有 25 回合').toContain('回合上限 25')
+    expect(texts.some(t => t.includes('敌方气血')), '敌方气血加成没报出来').toBe(true)
+    expect(texts.some(t => t.includes('我方攻击')), '我方攻击加成没报出来').toBe(true)
+    // 随机规则跟在自带规则之后,一条不丢
+    for (const rolled of st.rules) expect(texts, `随机规则「${rolled}」被吞了`).toContain(rolled)
+  })
+
+  it('自带规则文案随 rules 走:改数值即改文案,不靠手抄', () => {
+    for (const def of SECRET_REALMS) {
+      const texts = intrinsicRuleTexts(def)
+      // 每一项 rules 都至少产出一条文案(空 rules 的秘境除外)
+      if (Object.keys(def.rules).length > 0) {
+        expect(texts.length, `${def.name} 有自带规则却一条文案都没有`).toBeGreaterThan(0)
+      }
+      for (const line of texts) expect(line, `${def.name} 文案里出现 undefined`).not.toContain('undefined')
+    }
   })
 })

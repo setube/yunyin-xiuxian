@@ -29,6 +29,28 @@ export const SECRET_RULES: SecretRule[] = [
   { text: '此地凶险(敌方攻防各 +10%)', rules: { enemyAtkMult: 1.1, enemyExtraMods: { defensePct: 0.1 } } }
 ]
 
+/**
+ * 秘境自带规则 → 可读文案(界面「此地规则」行的前半段)。
+ * 自带规则与随机规则同为战斗条件,只报随机那条等于藏起一半;
+ * 文案随 rules 走,不另写一份手抄表(改数值即改文案)。
+ */
+export function intrinsicRuleTexts(def: SecretRealmDef): string[] {
+  const r = def.rules
+  const out: string[] = []
+  const pct = (v: number): string => `${Math.round(v * 100)}%`
+  if (r.healMult !== undefined && r.healMult !== 1) out.push(r.healMult > 1 ? `治疗 ×${r.healMult}` : `治疗 ×${r.healMult}`)
+  if (r.playerAtkMult !== undefined) out.push(`我方攻击 ×${r.playerAtkMult.toFixed(2).replace(/\.?0+$/, '')}`)
+  if (r.enemyAtkMult !== undefined) out.push(`敌方攻击 ×${r.enemyAtkMult.toFixed(2).replace(/\.?0+$/, '')}`)
+  if (r.enemyHpMult !== undefined) out.push(`敌方气血 ×${r.enemyHpMult.toFixed(2).replace(/\.?0+$/, '')}`)
+  if (r.maxRounds !== undefined) out.push(`回合上限 ${r.maxRounds}`)
+  if (r.shieldCapRatio !== undefined) out.push(r.shieldCapRatio <= 0 ? '禁用护盾' : `护盾上限 ${pct(r.shieldCapRatio)}`)
+  const extra = r.playerExtraMods
+  if (extra) for (const [k, v] of Object.entries(extra)) out.push(`我方${k} ${v > 0 ? '+' : ''}${pct(v)}`)
+  const foeExtra = r.enemyExtraMods
+  if (foeExtra) for (const [k, v] of Object.entries(foeExtra)) out.push(`敌方${k} ${v > 0 ? '+' : ''}${pct(v)}`)
+  return out
+}
+
 /** 按说法认规则,旧说法也认 */
 export function secretRuleByText(text: string): SecretRule | undefined {
   return SECRET_RULES.find(r => r.text === text || (r.legacyTexts?.includes(text) ?? false))
