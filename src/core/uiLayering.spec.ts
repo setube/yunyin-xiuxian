@@ -418,3 +418,29 @@ describe('可访问性 · 表单控件有名字', () => {
     expect(nameless, '这些表单控件没有可访问名:读屏只念得出控件类型').toEqual([])
   })
 })
+
+/**
+ * 图标是装饰,不该进读屏的事件流。
+ * GameIcon 被引 111 处,lucide 生成的 <svg> 默认无 aria-hidden —— 若在每处补,漏一处就多一段噪音;
+ * 收在 GameIcon 一处,新增用法自动继承。
+ * 故障注入:删掉 GameIcon 上的 aria-hidden,本条红。
+ */
+describe('可访问性 · 装饰图标不进读屏', () => {
+  it('GameIcon 统一 aria-hidden 且不进焦点序', () => {
+    const icon = readFileSync(resolve(SRC, 'components/common/GameIcon.vue'), 'utf-8')
+    expect(icon, 'GameIcon 没挂 aria-hidden:读屏会把每个图标念一遍').toMatch(/aria-hidden="true"/)
+    expect(icon, 'SVG 在旧 Edge/IE 下会进 Tab 序,须 focusable="false"').toMatch(/focusable="false"/)
+  })
+
+  it('装饰性内联 SVG/符号也不进读屏', () => {
+    // 抽查几处纯装饰元素:已有 aria-hidden 的不许回退
+    const decor: Array<[string, RegExp]> = [
+      ['src/components/common/BaseModal.vue', /class="modal-edge[^"]*" aria-hidden="true"/],
+      ['src/components/celestial/MarksPanel.vue', /class="empty-seal" aria-hidden="true"/]
+    ]
+    for (const [file, pat] of decor) {
+      const src = readFileSync(resolve(SRC, file.replace('src/', '')), 'utf-8')
+      expect(pat.test(src), `${file} 的装饰元素丢了 aria-hidden`).toBe(true)
+    }
+  })
+})
