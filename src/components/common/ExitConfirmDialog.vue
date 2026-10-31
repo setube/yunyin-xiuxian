@@ -21,6 +21,7 @@
   import { App as CapacitorApp } from '@capacitor/app'
   import { useGameStore } from '@/stores/game'
   import { handleEscape } from '@/composables/useModalStack'
+  import { flushSaveWrites } from '@/utils/storage'
   import BaseModal from './BaseModal.vue'
 
   const open = ref(false)
@@ -60,8 +61,11 @@
     open.value = false
     // 补活跃时间戳:心跳每 ACTIVE_STAMP_MS(5 秒)才落一次档,不补则最后几秒会被下次离线结算重算
     game.stampActive(Date.now())
-    // 等 persist 插件排在微任务里的写盘落完
+    // 等 Vue 把这次变更刷进 store,persist 插件才会把它排进待写队列
     await nextTick()
+    // 再显式刷盘:落盘有 SAVE_FLUSH_MS(5 秒)节流,光等微任务等不到它,
+    // exitApp() 一执行进程就没了,排队的整批进度会直接丢掉
+    flushSaveWrites()
     await CapacitorApp.exitApp()
   }
 

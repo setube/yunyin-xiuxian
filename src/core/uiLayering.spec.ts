@@ -464,3 +464,33 @@ describe('可访问性 · 切页后焦点回到内容区', () => {
     expect(app, 'focus 缺 preventScroll,会和 scrollTop=0 打架').toMatch(/focus\(\{\s*preventScroll:\s*true\s*\}\)/)
   })
 })
+
+/**
+ * 进程被终结前的最后一步必须是显式刷盘。
+ * 落盘有 SAVE_FLUSH_MS(5 秒)节流,排队中的整批进度要等定时器;exitApp()/进程退出一执行,
+ * 排队的就没了。等微任务(nextTick)等不到 setTimeout。
+ * 故障注入:去掉 ExitConfirmDialog 里的 flushSaveWrites(),本条红。
+ */
+describe('存档 · 退出前须刷盘', () => {
+  it('安卓返回键退出确认:exitApp 之前先 flushSaveWrites', () => {
+    const src = readFileSync(resolve(SRC, 'components/common/ExitConfirmDialog.vue'), 'utf-8')
+    // 取整个 confirm 函数体:从函数头到下一个顶层函数(onMounted)
+    const from = src.indexOf('async function confirm')
+    const confirmBody = src.slice(from, src.indexOf('onMounted', from))
+    // 只认真正的调用点:注释里也提到过这两个名字,须排除
+    const calls = (name: string): number => {
+      for (const m of confirmBody.matchAll(new RegExp(`^\\s*${name}`, 'gm'))) return m.index ?? -1
+      return -1
+    }
+    const flushAt = calls('flushSaveWrites\\(\\)')
+    const exitAt = calls('await CapacitorApp\\.exitApp')
+    expect(flushAt, 'confirm() 里没有 flushSaveWrites:排队的进度会随进程退出丢掉').toBeGreaterThan(-1)
+    expect(exitAt, 'confirm() 里找不到 exitApp()').toBeGreaterThan(-1)
+    expect(flushAt, 'flushSaveWrites 必须排在 exitApp 之前').toBeLessThan(exitAt)
+  })
+
+  it('引擎停止时同样先刷盘再停', () => {
+    const src = readFileSync(resolve(SRC, 'core/engine.ts'), 'utf-8')
+    expect(src, 'engine 停止路径没有刷盘').toMatch(/flushSaveWrites\(\)/)
+  })
+})
