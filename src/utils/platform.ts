@@ -5,6 +5,8 @@
  * 安卓 APK 与 Windows Electron 用应用自己的存储,一律返回 false。
  */
 
+import { Capacitor } from '@capacitor/core'
+
 /** 一次环境取样;做成参数供用例喂各种 UA */
 export interface EnvProbe {
   userAgent: string
@@ -14,6 +16,8 @@ export interface EnvProbe {
   displayModeStandalone?: boolean
   /** iPadOS 13+ 的 Safari 把 UA 伪装成 Mac,只能靠触点数认出来 */
   maxTouchPoints?: number
+  /** Capacitor 原生壳(安卓 APK / iOS 版)。壳里 standalone 恒为 false,不排除就会劝玩家去装已经在用的东西 */
+  nativeApp?: boolean
 }
 
 /** 从当前窗口取样 */
@@ -24,7 +28,8 @@ export function probeEnv(): EnvProbe {
     displayModeStandalone:
       typeof matchMedia === 'function' &&
       (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches),
-    maxTouchPoints: navigator.maxTouchPoints
+    maxTouchPoints: navigator.maxTouchPoints,
+    nativeApp: Capacitor.isNativePlatform()
   }
 }
 
@@ -40,6 +45,8 @@ export function isInstalledApp(env: EnvProbe): boolean {
 }
 
 /** 要不要劝安装:在 iOS 上且未安装 */
+/** 要不要劝安装:在 iOS 上、未安装,且不是原生壳里 */
 export function shouldSuggestInstall(env: EnvProbe): boolean {
+  if (env.nativeApp === true) return false
   return isIos(env) && !isInstalledApp(env)
 }
