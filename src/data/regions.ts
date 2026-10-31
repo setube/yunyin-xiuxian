@@ -217,7 +217,7 @@ export const REGIONS: RegionDef[] = [
     5,
     'star',
     '星辰坠落之地,遍地陨铁星髓',
-    ['e_starpuppet', 'e_meteorbeast'],
+    ['e_starpuppet', 'e_ironmeteor'],
     'e_starbeast',
     ['general', 'sky'],
     'moyuan'
