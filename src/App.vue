@@ -36,7 +36,7 @@
   import { useGameStore } from '@/stores/game'
   import { useUiStore } from '@/stores/ui'
   import { useSettingsStore } from '@/stores/settings'
-  import { subscribeSaveWriteFailure } from '@/utils/storage'
+  import { subscribeOtherTabSave, subscribeSaveWriteFailure } from '@/utils/storage'
   import { engine } from '@/core/engine'
   import { applyTheme, initTheme } from '@/core/theme'
   import { resetModalStack } from '@/composables/useModalStack'
@@ -84,6 +84,7 @@
 
   let unsubscribeTheme: () => void = () => undefined
   let unsubscribeSaveFailure: () => void = () => undefined
+  let unsubscribeOtherTab: () => void = () => undefined
 
   /** 首次交互后才能出声(浏览器策略);按钮附带点击音 */
   function onPointerDown(e: PointerEvent): void {
@@ -121,6 +122,10 @@
       if (failure) ui.toast('存档写入失败', 'warn')
       else ui.toast('存档已恢复写入', 'info')
     })
+    // 两页同开时两边各自落盘、后写的整片覆盖先前那份,进度会静默丢失;只在开始那一次报
+    unsubscribeOtherTab = subscribeOtherTabSave(active => {
+      if (active) ui.toast('存档已在另一页打开', 'warn')
+    })
     engine.start()
     window.addEventListener('pointerdown', onPointerDown)
   })
@@ -128,6 +133,7 @@
   onUnmounted(() => {
     unsubscribeTheme()
     unsubscribeSaveFailure()
+    unsubscribeOtherTab()
     engine.stop()
     resetModalStack()
     disposeAudio()
