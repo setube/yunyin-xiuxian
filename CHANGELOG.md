@@ -551,6 +551,7 @@
 - 修复:**跨标签心跳只在开局后跑** —— 上一轮的心跳挂在模块加载上,欢迎页 / 设置页也每 4 秒写一次 `localStorage`(实测 12 秒 3 次),与本项目「把存档写入攒到 5 秒一次以免手机发烫」的既定取舍冲突。改成由 `App.vue` 跟着 `game.started` 开关。
 - 修复:**原生壳里不再劝玩家「添加到主屏幕」** —— `shouldSuggestInstall` 只判「是 iOS 且未安装」,没排除 Capacitor 原生壳;壳里 `navigator.standalone` 恒为 false、`display-mode` 也不是 standalone,于是 iOS 版 App 内会弹出劝装提示。
 - 修复:**安卓返回键退出前显式刷盘** —— `confirm()` 原本只 `await nextTick()` 就 `exitApp()`,而落盘有 5 秒 `setTimeout` 节流,微任务等不到定时器;`exitApp()` 一执行进程就没了,排队的整批进度直接丢掉。
+- 修复:**时间戳落在未来时重锚,离线收益不再永久归零** —— `stampActive` 不挡未来时间,玩家把系统时钟调快后盖下的戳远在当下之后,`dtSec` 被夹成 0 且不会自愈。`settleOffline` 开头检测到未来戳就重锚到当下。
 ### 修复
 
 - 载入/导入后立即逐仓自愈:坏档字段在首帧前统一修平。
