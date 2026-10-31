@@ -64,8 +64,11 @@ export const APPRENTICE_TALENT_BONUS = 1.25
 export const RECRUIT_COST_TIER_AMOUNT = 30
 
 export function apprenticeSlots(major: number): number {
-  return Math.min(5, 1 + Math.floor(Math.max(0, major) / 4))
+  return Math.min(APPRENTICE_SLOT_HARD_CAP, 1 + Math.floor(Math.max(0, major) / 4))
 }
+
+/** 槽位数的硬上界:apprenticeSlots 的最大取值。读档截断用它,不用「当前境界的槽位」 */
+export const APPRENTICE_SLOT_HARD_CAP = 5
 
 /** 各尽其长 · 目标水位(存栏使 score=1 的参考) */
 export type DispatchNeedResource = 'herb' | 'ore' | 'wudao' | 'dust' | 'seek'
