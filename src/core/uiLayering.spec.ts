@@ -362,3 +362,31 @@ describe('界面分层 · 模板用到的组件必须在本文件里有来路', 
     expect(rawImportMissing, '这些文件用了 GameIcon 却没有 import 语句').toEqual([])
   })
 })
+
+/**
+ * 动态状态区须对读屏可播报。
+ * toast 是「存档写入失败」「导出失败」「行囊已满」这类关键状态的唯一通道,
+ * 原模板上没有任何 aria-live / role=status,读屏用户完全听不到 —— 而这些恰恰是必须知道的。
+ * 故障注入:把 ToastHost 上的 role/aria-live 删掉,本条红。
+ */
+describe('可访问性 · 状态播报', () => {
+  it('ToastHost 挂 role=status 且 aria-live,逐条播报', () => {
+    const host = readFileSync(resolve(SRC, 'components/common/ToastHost.vue'), 'utf-8')
+    expect(host, 'toast 容器没有 role=status:读屏不会播报').toMatch(/role="status"/)
+    expect(host, 'toast 容器没有 aria-live:读屏不会播报').toMatch(/aria-live="polite"/)
+    // 逐条播报:合并成一句会把同帧多条提示念成一坨
+    expect(host, 'aria-atomic 应为 false,否则整批提示被拼成一句重复念').toMatch(/aria-atomic="false"/)
+  })
+
+  it('其它动态区已有播报的不许回退', () => {
+    const anchors: Array<[string, RegExp]> = [
+      ['src/components/common/SpiritRootReveal.vue', /role="status"/],
+      ['src/components/common/UpdatePrompt.vue', /role="status"/],
+      ['src/components/cultivation/EnlightenmentModal.vue', /aria-live="polite"/]
+    ]
+    for (const [file, pat] of anchors) {
+      const src = readFileSync(resolve(SRC, file.replace('src/', '')), 'utf-8')
+      expect(pat.test(src), `${file} 的读屏播报被删了`).toBe(true)
+    }
+  })
+})
