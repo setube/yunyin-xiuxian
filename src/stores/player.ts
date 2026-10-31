@@ -661,6 +661,14 @@ export const usePlayerStore = defineStore(
     /** 存档修复 */
     function sanitize(): void {
       exp.value = gn(exp.value)
+      /*
+       * 只认严格 true:字符串 "false" 与数字 1 都是真值。
+       * dead 为真会让引擎跳过在线收益、离线结算整段返回 null、主页常驻「陨落」——
+       * 一份写坏的布尔就能把整局钉死。口径同 game.started / settings 各开关。
+       */
+      dead.value = dead.value === true
+      // 道号进字符串方法(.trim / 拼接);坏档写成数字会在渲染或建号处抛错
+      name.value = typeof name.value === 'string' ? name.value : ''
       // 角色页/建号页裸用 `ELEMENTS[root.element].color` 与 `linggen.growthMult.toFixed(2)`:坏档在渲染期抛错
       linggen.value = sanitizeLinggen(linggen.value)
       if (!Number.isFinite(age.value)) age.value = START_AGE
