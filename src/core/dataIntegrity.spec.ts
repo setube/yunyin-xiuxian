@@ -12,6 +12,16 @@ import { REGIONS } from '@/data/regions'
 import { QUALITIES } from '@/data/qualities'
 import { LIFE_THEMES } from '@/data/lifeThemes'
 import { SAMSARA_STAGES } from '@/data/samsara'
+import { ENEMIES, enemyDef } from '@/data/enemies'
+import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
+import { PILLS } from '@/data/pills'
+import { ARTIFACTS } from '@/data/artifacts'
+import { AFFIXES } from '@/data/affixes'
+import { MATERIALS } from '@/data/materials'
+import { GONGFA } from '@/data/gongfa'
+import { EVENTS } from '@/data/events'
+import { BUILDINGS } from '@/data/buildings'
+import { SECRET_REALMS } from '@/data/secretRealms'
 
 const DATA_DIR = resolve(__dirname, '../data')
 const TYPES_SRC = readFileSync(resolve(__dirname, '../types/index.ts'), 'utf8')
@@ -30,6 +40,44 @@ describe('数据完整性 · 属性键必须有人写、也有人读', () => {
     const corpus = dataFiles().map(f => readFileSync(f, 'utf8')).join('\n')
     const unused = [...DECLARED_STAT_KEYS].filter(k => !new RegExp(`\\b${k}\\s*:`).test(corpus))
     expect(unused, `这些属性键没有任何数据在用:${unused.join('、')}`).toEqual([])
+  })
+})
+
+/**
+ * 每张表的 id 是查表键(Map),重复时后写的覆盖前写的:
+ * 实测 enemies 里 e_meteorbeast 写过两次(17 阶陨铁兽 / 25 阶陨星仙兽),
+ * xingyun(17 阶)引它,实际取到的是 25 阶那条 —— 低层区域白挨高层怪。
+ * 故障注入:把任一表的两条改成同 id,本条红。
+ */
+describe('数据完整性 · id 必须唯一', () => {
+  it('各表的 id 无重复', () => {
+    const TABLES: Array<[string, ReadonlyArray<{ id: string }>]> = [
+      ['enemies', ENEMIES],
+      ['regions', REGIONS],
+      ['equipment', EQUIPMENT_TEMPLATES],
+      ['pills', PILLS],
+      ['artifacts', ARTIFACTS],
+      ['affixes', AFFIXES],
+      ['materials', MATERIALS],
+      ['gongfa', GONGFA],
+      ['events', EVENTS],
+      ['buildings', BUILDINGS],
+      ['secretRealms', SECRET_REALMS]
+    ]
+    for (const [name, list] of TABLES) {
+      const seen = new Set<string>()
+      const dup: string[] = []
+      for (const x of list) {
+        if (seen.has(x.id)) dup.push(x.id)
+        seen.add(x.id)
+      }
+      expect(dup, `表 ${name} 有重复 id:${dup.join('、')} —— 查表只会取到后写的那条`).toEqual([])
+    }
+  })
+
+  it('区域引用的敌人阶级与该区域阶级不相差太远', () => {
+    const far = REGIONS.filter(r => r.enemies.some(id => Math.abs((enemyDef(id)?.tier ?? 0) - r.tier) > 4))
+    expect(far.map(r => r.id), `这些区域挂着阶级差 >4 的怪:${far.map(r => r.id).join('、')}`).toEqual([])
   })
 })
 
