@@ -24,6 +24,12 @@ try {
   await page.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(1500)
 
+  // 端口上跑的可能不是本应用:那样测出来的通过毫无意义
+  {
+    const title = await page.title()
+    if (title !== '云隐修仙录') failures.push(`localhost:${PORT} 上不是本应用(title=${JSON.stringify(title)})`)
+  }
+
   // 1) toast 播报区须真实存在且属性齐全
   const live = await page.evaluate(() => {
     const els = [...document.querySelectorAll('[role="status"]')]

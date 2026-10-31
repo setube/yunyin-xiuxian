@@ -25,6 +25,12 @@ try {
   await page.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(1600)
 
+  // 端口上跑的可能不是本应用:那样测出来的通过毫无意义
+  {
+    const title = await page.title()
+    if (title !== '云隐修仙录') failures.push(`localhost:${PORT} 上不是本应用(title=${JSON.stringify(title)})`)
+  }
+
   // 底栏五项逐个点(第 1 项是当前页,跳过)
   for (const nth of [2, 3, 4, 5, 1]) {
     await page.click(`nav a:nth-child(${nth})`)
