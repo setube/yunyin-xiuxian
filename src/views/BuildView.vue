@@ -134,7 +134,7 @@
             {{ lo.seal }}
           </span>
           <span class="min-w-0 grow truncate font-kai text-[12px] text-ink">{{ lo.name }}</span>
-          <!-- !py-2:触面须 ≥28px(!py-1 仅 27px),与确认态按钮同高;卡片只在有构筑时出现,巡页夹具量不到(HYP-056) -->
+          <!-- !py-2:触面须 ≥28px(!py-1 仅 27px),与确认态按钮同高;卡片只在有构筑时出现,巡页夹具量不到 -->
           <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="applyLoadout(lo.id)">换装</button>
           <button class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint" @click="openRename(lo)">改名</button>
           <template v-if="confirmDelete !== lo.id">

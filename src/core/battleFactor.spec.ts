@@ -1,5 +1,5 @@
 /**
- * 战斗危险因子在线/离线同源(HYP-015):全局只认 dangerFactorFor,在线 runBattle 与离线 settleOffline 都调它;
+ * 战斗危险因子在线/离线同源:全局只认 dangerFactorFor,在线 runBattle 与离线 settleOffline 都调它;
  * 任何一处不得再内联 `(1 + (region.danger - 1) * 0.05)`。
  */
 import { describe, expect, it } from 'vitest'

@@ -201,7 +201,7 @@ export function randomDropPill(major: number): string | null {
 
 /**
  * 就近加成的窗口与幅度:层级差 5 阶以内吃加成,同层级最多 ×21。
- * ×6 压不住旧物凡品(权重 100)对本界域玄/地/天(14~10)的品质差,混沌海又会多半是墨玉葫芦(ISS-196);
+ * ×6 压不住旧物凡品(权重 100)对本界域玄/地/天(14~10)的品质差,混沌海又会多半是墨玉葫芦;
  * 实测 32 阶抽到仙界以上之物:×6 时 0.40,×21 时 0.61。
  */
 export const ARTIFACT_NEAR_WINDOW = 5
@@ -226,7 +226,7 @@ export function randomDropArtifact(tier: number): string | null {
 
 /**
  * 战斗胜利掉落。
- * 概率进 rng.chance 前先归一到 [0,1](rng.chance 不钳制,>1 必然掉落、<0 永不掉落;ISS-030);
+ * 概率进 rng.chance 前先归一到 [0,1](rng.chance 不钳制,>1 必然掉落、<0 永不掉落);
  * capChance 取 statsCalc 唯一一份,与 combat 共用。
  * @param autoEquipArtifact 空祭炼位时自动祭上法宝;离线整段结算传 false(玩家不在场,同 autoResolveEvent)
  */

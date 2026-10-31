@@ -259,7 +259,7 @@ export const GONGFA_BRANCHES: GongfaBranchDef[] = [
   b('s_shenjiang', 'b_shenjiang_fa', '天罚', '受符行刑,攻势更烈', { attackPct: 0.3, critRate: 0.08, damageBonus: 0.15 }),
   b('s_shenjiang', 'b_shenjiang_zhen', '军律', '结阵自守,受击愈稳', { defensePct: 0.3, damageReduction: 0.15, maxHpPct: 0.3 }),
 
-  // ======== 人间界后段 + 仙界/神界/混沌海逐境(ISS-198) ========
+  // ======== 人间界后段 + 仙界/神界/混沌海逐境 ========
   // 同品质档位不低于前批均值(gongfaBranch.spec「份量随品质递增」);同一部功法的两条路份量比值 ≤2
 
   // ---- 炼虚:太虚炼神篇 ----

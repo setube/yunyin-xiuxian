@@ -202,7 +202,7 @@ describe('真仙终局服务', () => {
 })
 
 /**
- * 现役 furnaceStoneCost 直测(ISS-214)。economySim 用自己那份 stoneByTier(tier, FURNACE_STONE_TIER_AMOUNT),不调用现役函数。
+ * 现役 furnaceStoneCost 直测。economySim 用自己那份 stoneByTier(tier, FURNACE_STONE_TIER_AMOUNT),不调用现役函数。
  * 熔铸价冻在真仙那层会让混沌海道果相对收入塌 1.9^12。
  */
 describe('天道熔炉 · 灵石熔铸价随层级(现役函数直测)', () => {
@@ -221,7 +221,7 @@ describe('天道熔炉 · 灵石熔铸价随层级(现役函数直测)', () => {
     }
   })
 
-  it('价相对一战灵石收入恒定(ISS-214 本质:花的是这一层的钱)', () => {
+  it('价相对一战灵石收入恒定(本质:花的是这一层的钱)', () => {
     const ratios = [9, 14, 20].map(major => {
       usePlayerStore().major = major
       const tier = maxTierForMajor(major)

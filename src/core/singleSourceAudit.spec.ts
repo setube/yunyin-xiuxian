@@ -1,5 +1,5 @@
 /**
- * 同源审计:同一件事只许有一处算法(读源码文本;见 HYP-015)。
+ * 同源审计:同一件事只许有一处算法(读源码文本)。
  * 界面重算时数值照样对,行为测试看不见。
  */
 import { describe, expect, it } from 'vitest'
@@ -193,7 +193,7 @@ describe('同源审计 · 词条能长在哪(议题 #22)', () => {
 describe('同源审计 · 装备掉落概率的封顶', () => {
   /**
    * 装备掉落概率封顶:在线 afterWin 与离线 settleOffline 只读 constants 的 EQUIP_DROP_CHANCE_CAP;
-   * 离线不夹取则两边装备期望分叉(HYP-015 家族)。
+   * 离线不夹取则两边装备期望分叉。
    * 只针对装备掉落这条式子,不判一切 0.9:loreService 另有 `Math.min(0.9, base + familiarity)`(认知上限,语义无关)。
    * 故障注入:把 offline.ts 的封顶改回内联 `Math.min(0.9, …)` → 本条红。
    */
@@ -214,7 +214,7 @@ describe('同源审计 · 装备掉落概率的封顶', () => {
 describe('同源审计 · 凡界路线的层级上限', () => {
   /**
    * 凡界路线层级上限只读 `data/regions` 的 MORTAL_TIER_MAX:候选池(BOSSES / MOBS)与骨架扰动
-   * `jitterTiers` 须同源(HYP-015 家族)。
+   * `jitterTiers` 须同源。
    * 只按这一条式子的字面判,不扫一切 20:mortalWorldGen 里另有段数、权重等数字。
    * 故障注入:把 Math.min(MORTAL_TIER_MAX, …) 改回 Math.min(20, …) → 本条红。
    */

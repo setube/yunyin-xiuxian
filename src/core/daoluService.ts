@@ -276,7 +276,7 @@ function weightFor(ev: BondEventDef, b: BondState): number {
 /**
  * 某个历练情境下是否发生一件共同事件。
  * 情境筛选而非随机抽取:未声明所属情境的事件永不提供(见 bondEvents.spec 的故障注入)。
- * 随机源可注入:自检须能确定性钉住哪条路够得着(见 RIL TASK-049)。
+ * 随机源可注入:自检须能确定性钉住哪条路够得着。
  */
 export function offerBondEvent(trigger: BondTrigger, rand: RandomService = rng): BondEventDef | null {
   const player = usePlayerStore()

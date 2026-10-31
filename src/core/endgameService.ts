@@ -91,7 +91,7 @@ export function furnaceConvert(rate: FurnaceRate): number {
   return daoSource
 }
 
-/** 灵石熔铸价:按玩家当前层级折算,与强化/重铸同口径(灵石收入按 1.9^层级 涨);写死层级会使道果价相对收入塌掉(ISS-214) */
+/** 灵石熔铸价:按玩家当前层级折算,与强化/重铸同口径(灵石收入按 1.9^层级 涨);写死层级会使道果价相对收入塌掉 */
 export function furnaceStoneCost(): ReturnType<typeof stoneByTier> {
   const player = usePlayerStore()
   return stoneByTier(maxTierForMajor(player.major), FURNACE_STONE_TIER_AMOUNT)

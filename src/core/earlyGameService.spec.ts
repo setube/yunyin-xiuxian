@@ -165,7 +165,7 @@ describe('悟道顿悟(Phase 28)', () => {
   })
 })
 
-describe('连胜(Phase 28 · 曾经无调用方,TASK-022 接线后)', () => {
+describe('连胜(Phase 28 · 曾经无调用方,接线后)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
@@ -229,7 +229,7 @@ describe('连胜(Phase 28 · 曾经无调用方,TASK-022 接线后)', () => {
   })
 })
 
-describe('突破准备(Phase 28 · TASK-023 接线后)', () => {
+describe('突破准备(Phase 28 · 接线后)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     consumeBreakthroughPrep() // 兜底清态;准备态随 pinia 隔离
@@ -348,7 +348,7 @@ describe('突破准备(Phase 28 · TASK-023 接线后)', () => {
   })
 })
 
-describe('突破准备数据源(BREAKTHROUGH_PREP_OPTIONS · TASK-029 接线后)', () => {
+describe('突破准备数据源(BREAKTHROUGH_PREP_OPTIONS · 接线后)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     consumeBreakthroughPrep()
@@ -384,7 +384,7 @@ describe('突破准备数据源(BREAKTHROUGH_PREP_OPTIONS · TASK-029 接线后)
   })
 })
 
-describe('前期事件衰减(EARLY_EVENT_DECAY · TASK-028 接线后)', () => {
+describe('前期事件衰减(EARLY_EVENT_DECAY · 接线后)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })

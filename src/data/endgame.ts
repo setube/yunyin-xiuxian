@@ -497,7 +497,7 @@ export const FURNACE_STONE_DAO_SOURCE = 5
 
 /**
  * 凝一枚道果所需道源(数值成长唯一出口,受道果软上限约束)。道果价恒定、熔炉平算,品位价值走灵石。
- * economySim 的 daoCostHours = 本值 ÷ 熔炉每小时道源潜力,须在整条界外长尾上不随层级漂移(ISS-214 红线);实测 ~1.8~3.4h。
+ * economySim 的 daoCostHours = 本值 ÷ 熔炉每小时道源潜力,须在整条界外长尾上不随层级漂移(红线);实测 ~1.8~3.4h。
  */
 export const DAO_SOURCE_PER_FRUIT = 200
 

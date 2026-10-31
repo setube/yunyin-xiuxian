@@ -41,7 +41,6 @@ src/ui/    展示层字符串/图标注册（非逻辑）
 | `src/composables/` | useNow / useWallClock 等 |
 | `scripts/` | test-report.mjs、ui-smoke.mjs、layout-check.mjs、offline-check.mjs、fonts/build-kai-font.py |
 | `.github/workflows/` | CI（PR 检查、发布 Pages/PWA/Docker/Electron/APK） |
-| `.planning/ril/` | RIL 图（工程记忆，勿手改 JSON） |
 
 tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` + `noUnusedLocals/Parameters`；`vue-tsc -b` 走 project references 做类型检查。
 
@@ -155,7 +154,6 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
   - Don't split for splitting's sake; prefer merging like small changes together.
 - Workflow: `commit_message.txt` → `git commit -F` → delete; **only commit when the user explicitly asks**.
 - **NEVER** `--no-verify`, force-push `main`, or append a `Co-Authored-By` AI attribution.
-- **Batch RIL graph bookkeeping**: accumulate graph.json bookkeeping to roughly 10–50 entries (flexible guidance, not a hard cap), then land one `chore(ril): <summary>` commit; do not fold it into code commits. See the `graph-engineering` skill §LEARN.
 
 ## Important Files
 
@@ -177,7 +175,6 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - 包管理：`package.json` 锁定，安装用 `bun install`。
 - Node/TS 栈：Vue 3.5、Pinia 3、TS 6.0 strict、Vite 8、Tailwind 3.4、Vitest 5、lucide-vue-next、Tone.js（音频）、CryptoJS（存档 AES）。Electron 39 / Capacitor 8 / PWA。
 - Browserslist：Chrome≥51 / Android≥7 / iOS≥12 / Safari≥12。
-- **RIL 图**：`.planning/ril/graph.json` 是知识图谱唯一事实源（typed 节点+边：decisions/hypotheses/evidence/tasks）。**只能经 `.agents/skills/graph-engineering/scripts/ril.py` 编辑，绝不手改 JSON**。常用：`ril.py tasks --top N`、`ril.py check`、`ril.py node add/set`、`ril.py edge add`、`ril.py lock/unlock`。graph.json 正常是不随代码提交的工作区文件（git status 常显示其为 modified）。agent 启动时加载活动任务；若无，进入 deep-dive 找新问题（每轮 ≤3 个新任务节点）。
 
 ## Testing & QA
 

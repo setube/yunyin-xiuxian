@@ -103,7 +103,7 @@ describe('S1 区域兴衰', () => {
     const recall = regionRecallFor('qingyun')
     expect(recall.suppressedAt).toBe(suppressedAt)
     expect(recall.since).toBe(suppressedAt)
-    // 回归点 TASK-026
+    // 回归点
     expect(recall.since).not.toBe(lastFight)
   })
 

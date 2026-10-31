@@ -183,7 +183,7 @@ Expected: PASS（Step 3b 的红由 Step 4/5 补齐字段后消除）
 
 ```bash
 git add src/core/reincarnation.ts src/stores/ui.ts src/core/reincarnation.spec.ts
-git commit -m "feat: 转世灵根 WYSIWYG——prepare 只 roll 一次,confirm 直接用,杜绝二次 roll(RIL 转世灵根可感知性)"
+git commit -m "feat: 转世灵根 WYSIWYG——prepare 只 roll 一次,confirm 直接用,杜绝二次 roll"
 ```
 
 ---
@@ -474,28 +474,7 @@ git commit -m "feat: 修仙录历世履历每行补灵根徽记(老记录无灵�
 Run: `npx vitest run && npx tsc --noEmit`
 Expected: 全部 PASS
 
-- [ ] **Step 2: 图谱记账（RIL）**
-
-所有改动落地后，为本次功能记账。先建 issue（用户反馈的现象）与 task（处理动作），再以 change 指向实际 commit（替换为真实 `git rev-parse --short HEAD`）：
-
-```bash
-RIL=.agents/skills/graph-engineering/scripts/ril.py
-# 1) issue:转世灵根不可感知(用户反馈,已由本功能解决)
-python3 $RIL node add --type issue --field title=转世灵根感知缺失 --field detail='转世时灵根虽重掷,但界面/播报均不见,玩家误以为未重置'
-# 2) task:实现转世灵根可感知性 + 历世记录(先读返回的 TASK-id)
-python3 $RIL node add --type task --field category=core-feature --field severity=0.5 --field confidence=0.9 --field effort=3 --field title=转世灵根可感知性与历世履历灵根
-# 3) change:指向本轮实际 commit(串接 1/2 的输出 id)
-python3 $RIL node add --type change --field commit=$(git rev-parse --short HEAD)
-# 4) 建边:task 处理 issue、change 交付 task、change 解决 issue
-#    (用上面输出的实际 id 替换 TASK-x / ISS-x / CHG-x)
-python3 $RIL edge add --type addresses  --from TASK-x --to ISS-x
-python3 $RIL edge add --type implements --from CHG-x  --to TASK-x
-python3 $RIL edge add --type resolves   --from CHG-x  --to ISS-x
-```
-
-> 说明:以上为一次记账的基准序列;若 `edge add` 要求先建 component(如 `located_in issue→component`),可省——schema 中 `addresses`/`implements`/`resolves` 均非必须,满足"issue→task→change 闭环"即可。记账后 `python3 $RIL check` 应仍报告 consistent。
-
-- [ ] **Step 3: 确认提交历史**
+- [ ] **Step 2: 确认提交历史**
 
 Run: `git log --oneline -6`
-Expected: 可见 T1→T6 各提交，消息引用 RIL 语义
+Expected: 可见 T1→T6 各提交

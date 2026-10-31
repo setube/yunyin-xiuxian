@@ -167,7 +167,7 @@ describe('灵兽性格 · 败北保护(lossReduction 接入 runBattle)', () => {
   })
 })
 
-describe('连胜(TASK-022 接线 · runBattle 胜负驱动 player.winStreak)', () => {
+describe('连胜(接线 · runBattle 胜负驱动 player.winStreak)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     protect.value = false
@@ -305,7 +305,7 @@ describe('回合耗尽·遁走 ≠ 身死·败北(处置分开)', () => {
   })
 })
 
-/** 镇压资格只在首次达成时自动接管(DEC-018) */
+/** 镇压资格只在首次达成时自动接管 */
 describe('镇压资格首次自动、此后自由', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

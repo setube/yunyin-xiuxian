@@ -101,7 +101,7 @@ export const usePlayerStore = defineStore(
     /** 这一世的关系(历史在 reincarnation.bonds);转世时清空 */
     const bond = ref<import('@/core/daoluService').BondState | null>(null)
 
-    const eventChains = ref<import('@/types').EventChainState>({}) // 奇遇连锁进度(链路实装见 RIL)
+    const eventChains = ref<import('@/types').EventChainState>({}) // 奇遇连锁进度(链路尚未实装)
     const winStreak = ref(0)
     const lastCaveEventDay = ref(0) // 上次洞府巡游日期
 
@@ -603,7 +603,7 @@ export const usePlayerStore = defineStore(
     }
 
     /**
-     * 转世重置。保留:天赋/道果/宿慧/称号/转世次数/宿命传承、区域战绩与宿敌(见 DEC-003)、
+     * 转世重置。保留:天赋/道果/宿慧/称号/转世次数/宿命传承、区域战绩与宿敌、
      * 机缘选择记忆(fortuneChoices)、奇缘(eventChains)
      */
     function rebirth(newLinggen: LinggenProfile): void {

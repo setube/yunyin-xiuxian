@@ -1,4 +1,0 @@
-interface:
-  display_name: "Graph Engineering"
-  short_description: "Autonomous engineering loop backed by the RIL knowledge graph"
-  default_prompt: "Use $skill-name to keep autonomously improving this repository, tracking issues and decisions in the RIL knowledge graph."

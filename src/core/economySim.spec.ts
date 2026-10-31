@@ -40,7 +40,7 @@ describe('经济闭环审计(Phase 19 · Phase 40 补界外与修为)', () => {
       expect(ratio, `第${i}境修为收支比`).toBeGreaterThan(1)
       expect(ratio, `第${i}境修为收支比`).toBeLessThan(10)
     }
-    // 比值漂移即有一侧按境界另算(ISS-208)
+    // 比值漂移即有一侧按境界另算
     expect(Math.max(...ratios) - Math.min(...ratios), '修为收支比随境界漂移了').toBeLessThan(0.01)
   })
 
@@ -139,7 +139,7 @@ describe('经济闭环审计(Phase 19 · Phase 40 补界外与修为)', () => {
   })
 
   /** 残余梯度来自器灵尘(分解尘随层级变多、熔炉尘价是绝对数),深处略便宜约 1.9 倍,不属价格冻死 */
-  it('界外:凝一枚道果的材料代价不随层级漂移(ISS-214 的旧病)', () => {
+  it('界外:凝一枚道果的材料代价不随层级漂移(旧病)', () => {
     const rows = outer.map(era => ({ major: era.major, hours: era.daoCostHours ?? 0 }))
     console.log('\n  [界外道果价] 凝一枚道果 ≈ 多少小时的材料产出:')
     for (const r of rows) console.log(`    第${r.major}境 ${r.hours.toFixed(2)}h`)

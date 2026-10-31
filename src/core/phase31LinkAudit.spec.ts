@@ -77,7 +77,7 @@ describe('联动审计 · ④共鸣非最优套装化', () => {
     expect(EQUIPMENT_TEMPLATES.filter(t => t.set).length).toBeGreaterThan(0)
   })
 
-  it('每种机制钩子都在 playerSnap 有物化点 —— 声明必须兑现(星斗/仙甲/混沌 RE: TASK-137)', () => {
+  it('每种机制钩子都在 playerSnap 有物化点 —— 声明必须兑现(星斗/仙甲/混沌 RE)', () => {
     // 对账 playerSnap 源码:每类共鸣钩子须有同名物化点
     const src = readFileSync(resolve(__dirname, './playerSnap.ts'), 'utf8')
     const hooks = [...new Set(EQUIPMENT_TEMPLATES.map(t => (t.set ? equipSetDef(t.set)?.hook : undefined)).filter(Boolean))] as EquipSetDef['hook'][]
