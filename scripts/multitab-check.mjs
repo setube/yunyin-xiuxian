@@ -47,6 +47,8 @@ try {
         return orig.call(this, k, v)
       }
     })
+    const wpTitle = await wp.title()
+    if (wpTitle !== '云隐修仙录') failures.push(`localhost:${PORT} 上不是本应用(title=${JSON.stringify(wpTitle)})`)
     await wp.waitForTimeout(10000)
     const liveWrites = await wp.evaluate(() => window.__liveWrites)
     if (liveWrites > 0) failures.push(`欢迎页也在发跨标签心跳(${liveWrites} 次/10 秒),没开局不该写 localStorage`)
