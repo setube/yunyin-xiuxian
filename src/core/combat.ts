@@ -132,19 +132,27 @@ function mitigation(defense: GNum, attack: GNum, armorPen: number): number {
   return Math.min(MITIGATION_CAP, ratio(def, denom))
 }
 
-/** 规则附加词条:同键相加 */
-function mergeAdd(base: StatMods, extra: StatMods): StatMods {
-  const out: StatMods = { ...base }
-  for (const k in extra) {
-    const key = k as keyof StatMods
-    out[key] = (out[key] ?? 0) + (extra[key] ?? 0)
-  }
-  return out
-}
-
 /** 快照战力:战斗卡片「敌 X · 我 Y」两侧同用 powerScore,界面不另算权重 */
 export function snapPower(snap: CombatantSnap): GNum {
   return powerScore(snap.attack, snap.defense, snap.maxHp)
+}
+
+/** 把 extraMods 折进快照:三维百分比折成数值,其余键并入 mods 供战斗读 */
+function foldExtraMods(snap: CombatantSnap, extra: StatMods | undefined): CombatantSnap {
+  if (!extra) return snap
+  let attack = snap.attack
+  let defense = snap.defense
+  let maxHp = snap.maxHp
+  const rest: StatMods = { ...snap.mods }
+  for (const k in extra) {
+    const key = k as keyof StatMods
+    const v = extra[key] ?? 0
+    if (key === 'attackPct') attack = mulN(attack, Math.max(0.1, 1 + v))
+    else if (key === 'defensePct') defense = mulN(defense, Math.max(0.1, 1 + v))
+    else if (key === 'maxHpPct') maxHp = mulN(maxHp, Math.max(0.1, 1 + v))
+    else rest[key] = (rest[key] ?? 0) + v
+  }
+  return { ...snap, attack, defense, maxHp, mods: rest }
 }
 
 /**
@@ -157,19 +165,20 @@ export function applyCombatRuleSnap(
   rules?: CombatRules
 ): { pEff: CombatantSnap; eEff: CombatantSnap } {
   const pEff: CombatantSnap = rules
-    ? {
-        ...pSnap,
-        attack: mulN(pSnap.attack, rules.playerAtkMult ?? 1),
-        mods: rules.playerExtraMods ? mergeAdd(pSnap.mods, rules.playerExtraMods) : pSnap.mods
-      }
+    ? foldExtraMods(
+        { ...pSnap, attack: mulN(pSnap.attack, rules.playerAtkMult ?? 1) },
+        rules.playerExtraMods
+      )
     : pSnap
   const eEff: CombatantSnap = rules
-    ? {
-        ...eSnap,
-        attack: mulN(eSnap.attack, rules.enemyAtkMult ?? 1),
-        maxHp: mulN(eSnap.maxHp, rules.enemyHpMult ?? 1),
-        mods: rules.enemyExtraMods ? mergeAdd(eSnap.mods, rules.enemyExtraMods) : eSnap.mods
-      }
+    ? foldExtraMods(
+        {
+          ...eSnap,
+          attack: mulN(eSnap.attack, rules.enemyAtkMult ?? 1),
+          maxHp: mulN(eSnap.maxHp, rules.enemyHpMult ?? 1)
+        },
+        rules.enemyExtraMods
+      )
     : eSnap
   return { pEff, eEff }
 }
