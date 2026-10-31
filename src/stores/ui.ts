@@ -69,7 +69,6 @@ export const useUiStore = defineStore('ui', () => {
   const offlineSummary = ref<OfflineSummary | null>(null)
   const breakthrough = ref<BreakthroughView | null>(null)
   const equipDetailUid = ref<string | null>(null)
-  const artifactDetailId = ref<string | null>(null)
   const gongfaDetailId = ref<string | null>(null)
   const buffDetailId = ref<string | null>(null)
   const deathDialog = ref(false)
@@ -148,7 +147,6 @@ export const useUiStore = defineStore('ui', () => {
     offlineSummary,
     breakthrough,
     equipDetailUid,
-    artifactDetailId,
     gongfaDetailId,
     buffDetailId,
     deathDialog,

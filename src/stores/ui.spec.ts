@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { useUiStore } from './ui'
 
 describe('ui store · Toast', () => {
@@ -88,5 +89,39 @@ describe('ui store · Toast', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+/**
+ * ui store 是界面态的汇聚处,加字段很便宜,于是容易留下写了没人读的死字段
+ * (实测漏过 artifactDetailId:声明 + 导出,全仓 0 处读写)。
+ * 判据:每个导出的 ref 字段在 ui.ts 之外至少被引用一次;故障注入造一个死字段即红。
+ */
+describe('ui store · 没有只声明不使用的字段', () => {
+  it('每个导出字段都至少有一处消费方', () => {
+    const root = new URL('..', import.meta.url).pathname
+    const files: string[] = []
+    const walk = (dir: string): void => {
+      for (const name of readdirSync(dir)) {
+        const p = `${dir}/${name}`
+        if (statSync(p).isDirectory()) walk(p)
+        else if ((p.endsWith('.ts') || p.endsWith('.vue')) && !p.endsWith('.spec.ts')) files.push(p)
+      }
+    }
+    walk(root)
+    const self = `${root}/stores/ui.ts`
+    const others = files.filter(f => f !== self).map(f => readFileSync(f, 'utf8'))
+    const src = readFileSync(self, 'utf8')
+
+    const fields = [...src.matchAll(/^  const (\w+) = ref</gm)].map(m => m[1]!)
+    expect(fields.length, '取不到字段,断言形同虚设').toBeGreaterThan(0)
+    const dead = fields.filter(name => {
+      // 本文件内除声明外的 .value 读写也算消费(如 toast 的自增序号)
+      const afterDecl = src.split(`const ${name} = ref<`)[1] ?? ''
+      const internal = new RegExp(`\\b${name}\\.value\\b`).test(afterDecl.slice(afterDecl.indexOf('\n')))
+      const external = others.some(t => new RegExp(`\\bui\\.${name}\\b|\\b${name}\\b`).test(t))
+      return !internal && !external
+    })
+    expect(dead, `ui store 这些字段声明了却无人读写:${dead.join('、')}`).toEqual([])
   })
 })
