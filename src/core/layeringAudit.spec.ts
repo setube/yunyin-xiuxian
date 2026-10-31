@@ -85,8 +85,9 @@ const CORE_STORE_SITES = 192;
 /**
  * core 用例里需要 Pinia 的文件数基线(只许减)。
  * 119 → 120:补 playerSnap.spec 时加的 —— 该模块本身就要读四个 store,测试绕不开 Pinia。
+ * 120 → 121:同理,compare.spec 的 measureOnWorld 经 currentDaoRules 读 endgame store。
  */
-const CORE_PINIA_SPECS = 120;
+const CORE_PINIA_SPECS = 121;
 
 function sources(dir: string): { name: string; text: string }[] {
   return readdirSync(dir)
