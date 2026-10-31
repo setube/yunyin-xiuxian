@@ -49,7 +49,17 @@ try {
   if (!mainFocusable) failures.push('main 缺 tabindex=-1,切页时无法把焦点移过去')
   console.log(`  ${mainFocusable ? '✓' : '✗'} main 可编程聚焦`)
 
-  // 4) 每个弹窗都有可辨识名字(隐私政策在设置页)
+  // 4) 每页都要有可定位的页面标题(读屏用户靠标题跳转)
+  const ROUTES = ['/', '/cultivation', '/adventure', '/inventory', '/character', '/dongfu', '/market', '/settings']
+  for (const r of ROUTES) {
+    await page.evaluate(h => { location.hash = '#' + h }, r)
+    await page.waitForTimeout(600)
+    const n = await page.evaluate(() => document.querySelectorAll('h1,h2,h3').length)
+    if (n === 0) failures.push(`${r} 没有任何标题元素(h1/h2/h3),读屏用户无法按标题定位`)
+    console.log(`  ${n > 0 ? '✓' : '✗'} ${r.padEnd(14)} 标题 ${n} 个`)
+  }
+
+  // 5) 每个弹窗都有可辨识名字(隐私政策在设置页)
   await page.evaluate(() => { location.hash = '#/settings' })
   await page.waitForTimeout(900)
   await page.getByRole('button', { name: /隐私政策/ }).first().click()
