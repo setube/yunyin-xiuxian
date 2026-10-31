@@ -11,7 +11,8 @@ import {
   FORGE_LEVEL_PER_CAP,
   LIBRARY_WUDAO_PER_HOUR,
   OFFLINE_CAP_HOURS,
-  VEIN_MAIN_CAPACITY
+  VEIN_MAIN_CAPACITY,
+  VEIN_TOTAL_CAPACITY
 } from '@/data/constants'
 import { mergeMods } from '@/core/statsCalc'
 import { usePlayerStore } from '@/stores/player'
@@ -118,6 +119,11 @@ export const useDongfuStore = defineStore(
       /**
        * 灵脉点数只按认得的脉重建:多余键会算进 veinTotal,却无卡可显示或迁出。
        * 单条上限取主脉容量:迁主脉后旧主脉点数保留(可超副脉 30),但堆不到 70 以上。
+       *
+       * 还须再压一次**总量**:单条各自钳到 70 之后,四条可以一起到 70,veinTotal 就成了 280。
+       * 而 veinService.investVein 的闸门是 `veinTotal >= VEIN_TOTAL_CAPACITY` ——
+       * 虚高的总量会让它恒为真,玩家从此一点也投不进去(与「行囊已满」恒真是同一类坏档后果)。
+       * 超出总容量的部分从点数最多的脉依次削掉,保住多数已投的点。
        */
       const nextVein = {} as Record<VeinId, number>
       const rawVein = typeof veinPoints.value === 'object' && veinPoints.value !== null ? veinPoints.value : ({} as Record<VeinId, number>)
@@ -125,6 +131,32 @@ export const useDongfuStore = defineStore(
         const cur = (rawVein as Record<string, number | undefined>)[def.id]
         nextVein[def.id] =
           typeof cur === 'number' && Number.isFinite(cur) && cur > 0 ? Math.min(Math.floor(cur), VEIN_MAIN_CAPACITY) : 0
+      }
+      const rawTotal = VEINS.reduce((sum, def) => sum + (nextVein[def.id] ?? 0), 0)
+      if (rawTotal > VEIN_TOTAL_CAPACITY) {
+        /*
+         * 按比例压回,而不是从某条脉一路削到底:
+         * 逐条削会砍掉整条脉的点数(实测 70/70/70/70 → 0/0/30/70),玩家等于白投两条。
+         * 等比压缩保住四条的相对份额,且削完总量恰为上限。
+         */
+        const scale = VEIN_TOTAL_CAPACITY / rawTotal
+        let assigned = 0
+        for (const def of VEINS) {
+          const cur = nextVein[def.id] ?? 0
+          const next = Math.floor(cur * scale)
+          nextVein[def.id] = next
+          assigned += next
+        }
+        // 取整会留下零头,补给点数最多的脉(削完后仍不超过单脉上限)
+        let rest = VEIN_TOTAL_CAPACITY - assigned
+        const order = [...VEINS].sort((a, b) => (nextVein[b.id] ?? 0) - (nextVein[a.id] ?? 0))
+        for (const def of order) {
+          if (rest <= 0) break
+          const cur = nextVein[def.id] ?? 0
+          if (cur >= VEIN_MAIN_CAPACITY) continue
+          nextVein[def.id] = cur + 1
+          rest -= 1
+        }
       }
       veinPoints.value = nextVein
       // 认不出的主脉回落未定:否则 `veinCap` 四脉全判副脉,灵脉卡死在 30 点档
