@@ -82,8 +82,11 @@ const STATEFUL_CORE = new Set<string>([
 
 /** core → store 的引用处数基线(只许减;名单没变时防止单个模块越挂越多) */
 const CORE_STORE_SITES = 192;
-/** core 用例里需要 Pinia 的文件数基线(只许减) */
-const CORE_PINIA_SPECS = 119;
+/**
+ * core 用例里需要 Pinia 的文件数基线(只许减)。
+ * 119 → 120:补 playerSnap.spec 时加的 —— 该模块本身就要读四个 store,测试绕不开 Pinia。
+ */
+const CORE_PINIA_SPECS = 120;
 
 function sources(dir: string): { name: string; text: string }[] {
   return readdirSync(dir)
