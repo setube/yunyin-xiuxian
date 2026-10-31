@@ -41,8 +41,13 @@ export class RandomService {
     return this.rand() < p
   }
 
+  /**
+   * 等概率取一项。随机源返回 1(注入的常量/浮点误差)时按最后一档取,
+   * 否则 `floor(1*len)` 越界,拼进字符串会变成「undefined」或 NaN,进档则整份损坏。
+   */
   pick<T>(arr: readonly T[]): T {
-    return arr[Math.floor(this.rand() * arr.length)]!
+    const i = Math.min(arr.length - 1, Math.floor(this.rand() * arr.length))
+    return arr[i]!
   }
 
   /** 权重随机:weightOf 返回每项权重 */
