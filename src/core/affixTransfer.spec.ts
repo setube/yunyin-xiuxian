@@ -19,7 +19,7 @@ import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import { DIMINISH_KEYS, REFORGE_DUST_BASE, REFORGE_STONE_BASE } from '@/data/constants'
 import { RandomService, mulberry32 } from '@/utils/random'
-import { gn, gnZero, isZero, mulN } from '@/utils/gnum'
+import { gn, gnZero, isZero, mulN, subClamp } from '@/utils/gnum'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
@@ -460,5 +460,54 @@ describe('词条转移 · 服务记账', () => {
     expect(targetBlock(s2, inventory.findItem('ring2')!, 'pen3')).toBe('slot')
     expect(targetBlock(s2, inventory.findItem('armor2')!, 'pen3')).toBe('slot')
     expect(transferCandidates(s2, 'pen3').map(x => x.item.uid)).toEqual(['w2'])
+  })
+
+  it('transferShort 与 transferShortfall.short 永远同答:文档声称「余额判据相同」,这里钉住它', () => {
+    // 两条独立实现:transferShort 用 hasStone/hasSmall 二段判,transferShortfall 用差额再折算 short。
+    // 任何一种组合下两边结论不同,界面(读 short)与服务(读 shortfall)就会对同一笔花销说法相左。
+    const src = mk('s', W, 'heaven', [['atk3', 0.9]])
+    const tgt = mk('t', W, 'heaven', [['hp1', 0.5]])
+    const quote = planTransfer(src, tgt, 'atk3', null, false)
+    expect(quote.ok).toBe(true)
+    if (!quote.ok) return
+    const cost = quote.plan.cost
+    const resources = useResourcesStore()
+
+    // 二维网格:灵石取 0 / 差1 / 刚好 / 富余,器灵尘取 0 / 差1 / 刚好 / 富余
+    const stoneCases: { label: string; v: () => void }[] = [
+      { label: '零', v: () => (resources.spiritStone = gn(0)) },
+      { label: '差1', v: () => (resources.spiritStone = subClamp(cost.stone, gn(1))) },
+      { label: '刚好', v: () => (resources.spiritStone = cost.stone) },
+      { label: '富余', v: () => (resources.spiritStone = mulN(cost.stone, 3)) }
+    ]
+    const dustCases: { label: string; v: () => void }[] = [
+      { label: '零', v: () => (resources.dust = 0) },
+      { label: '差1', v: () => (resources.dust = cost.dust - 1) },
+      { label: '刚好', v: () => (resources.dust = cost.dust) },
+      { label: '富余', v: () => (resources.dust = cost.dust * 3) }
+    ]
+
+    let checked = 0
+    for (const sc of stoneCases) {
+      for (const dc of dustCases) {
+        sc.v()
+        dc.v()
+        const a = transferShort(cost)
+        const b = transferShortfall(cost).short
+        expect(a, `灵石${sc.label}·器灵尘${dc.label}:两条判据必须同答`).toBe(b)
+        checked += 1
+      }
+    }
+    expect(checked, '网格没跑满就说明上面的用例被跳过了').toBe(stoneCases.length * dustCases.length)
+
+    // 缺哪样要报对:两样都缺时报灵石(顺序),只缺尘时报尘
+    resources.spiritStone = gn(0)
+    resources.dust = 0
+    expect(transferShort(cost), '两样都缺先报灵石').toBe('stone')
+    resources.spiritStone = mulN(cost.stone, 3)
+    resources.dust = 0
+    expect(transferShort(cost), '只缺尘时报尘').toBe('dust')
+    resources.dust = cost.dust * 3
+    expect(transferShort(cost), '两样都够时不报缺').toBeNull()
   })
 })
