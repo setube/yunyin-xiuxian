@@ -13,7 +13,7 @@
       <p class="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
         {{ def?.name }} · {{ def?.desc }}
       </p>
-      <p class="mt-1 text-[10px] leading-relaxed text-violet-ink">此地规则:{{ state.rules.join(' · ') }}</p>
+      <p class="mt-1 text-[10px] leading-relaxed text-violet-ink">此地规则:{{ secretRuleTexts(state).join(' · ') }}</p>
       <p v-if="state.losses > 0" class="mt-0.5 text-[10px] leading-relaxed tabular text-cinnabar">
         已败 {{ state.losses }} 场 · 再败 {{ SECRET_MAX_LOSSES - state.losses }} 场逐出
       </p>
@@ -77,7 +77,8 @@
     entryCostText,
     entryShortfallOf,
     fightSecretLayer,
-    realmUnlock
+    realmUnlock,
+    secretRuleTexts
   } from '@/core/secretRealm'
   import { endgameBusy } from '@/core/endgameActivity'
   import { useAdventureStore } from '@/stores/adventure'
