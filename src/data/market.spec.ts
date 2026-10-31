@@ -16,6 +16,7 @@ import { generateMarketStock, marketEquipInstance, marketTier, salePills } from 
 import { pillStoneCost } from '@/core/pillService'
 import { equipBountyReward } from '@/core/bountyService'
 import { qualityDef } from '@/data/qualities'
+import { rollQuality } from '@/core/equipGen'
 
 function rng(seed = 0x5eed): RandomService {
   return new RandomService(mulberry32(seed))
@@ -44,6 +45,43 @@ describe('坊市 · 货架生成', () => {
       for (const slot of generateMarketStock(6, rng(s + 1), 1).goods) kinds.add(slot.kind)
     }
     expect([...kinds].sort()).toEqual(['equipment', 'material', 'pill'])
+  })
+
+  /**
+   * 品质下限同样是层级尺:rollQuality 的 tier 语义是区域层级(品质窗口与 tierBoost 都按它算),
+   * 喂 major(0~20)会让高价货架兑现低品质 —— 混沌道祖处均价买到的比同层掉落差两档多。
+   * 统计口径:同一批货架的下限均值须贴近「按层级掷」,而非「按 major 掷」。
+   * 故障注入:改回 rollQuality(major, …) → 本条红。
+   */
+  it('装备货的品质下限也骑市场层级 —— 不拿 major 大阶当 tier 掷', () => {
+    const meanStockFloor = (major: number): number => {
+      let sum = 0
+      let n = 0
+      for (let s = 0; s < 120; s += 1) {
+        for (const slot of generateMarketStock(major, rng(major * 1000 + s), 1).goods) {
+          if (slot.kind !== 'equipment') continue
+          sum += (slot as MarketEquipSlot).minQualityRank
+          n += 1
+        }
+      }
+      return sum / n
+    }
+    const meanRollFloor = (tier: number): number => {
+      let sum = 0
+      for (let i = 0; i < 400; i += 1) sum += rollQuality(tier, rng(tier * 7919 + i)).rank
+      return sum / 400
+    }
+    for (const major of [8, 14, 20]) {
+      const tier = marketTier(major)
+      const byTier = meanRollFloor(tier)
+      const byMajor = meanRollFloor(major)
+      const stock = meanStockFloor(major)
+      // 两把尺在高境差得开(层级 32 vs 境界 20),货架须站到层级那一侧
+      expect(byTier - byMajor, `major ${major}:两把尺没拉开差距,这条判据失去意义`).toBeGreaterThan(1.5)
+      expect(stock, `major ${major}:货架品质下限贴着 major 尺(${byMajor.toFixed(2)}),应为层级尺(${byTier.toFixed(2)})`).toBeGreaterThan(
+        (byTier + byMajor) / 2
+      )
+    }
   })
 
   it('装备货按市场标尺(层级曲线)生成 —— 不拿 major 大阶按市场层级标价', () => {
