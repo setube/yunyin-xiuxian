@@ -514,8 +514,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   if (summary.ageYears > 0) notes.push(offlineAgeNote(summary.ageYears))
 
   // 秘境与远征离线原样冻结(见 offlineScope.spec),在途时卷轴写明
-  const inFlight = player as unknown as { secretRealm?: unknown }
-  if (inFlight.secretRealm) notes.push('身在秘境 · 原样保留')
+  if (player.secretRealm) notes.push('身在秘境 · 原样保留')
   if (endgameStore.worldRun) notes.push('远征在途 · 原样保留')
   // 历练会话仍在途时报剩余时长
   // 判据看会话自身剩余,不用 dtSec > capSec 代理:离线时长恰等于上限时它判假
