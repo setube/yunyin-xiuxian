@@ -3,7 +3,12 @@
   <div v-if="flashId !== null" :key="flashId" class="rare-flash" />
   <!-- 外框 pointer-events-none 不吃事件;提示条本身须吃事件(点击关闭),否则继承成 none -->
   <div class="pointer-events-none fixed inset-x-0 top-12 z-70 flex flex-col items-center gap-1.5 px-6">
-    <TransitionGroup name="toast-slide" :duration="TOAST_ANIM_MS">
+    <!--
+      role=status + aria-live=polite: toast 是状态播报的唯一通道,不挂 aria-live 时读屏完全听不到
+      ("存档写入失败""导出失败"这类关键状态会静默)。polite 让播报不打断当前朗读。
+      aria-atomic=false:逐条播报,不把整批提示拼成一句重复念。
+    -->
+    <TransitionGroup name="toast-slide" :duration="TOAST_ANIM_MS" role="status" aria-live="polite" aria-atomic="false">
       <button
         v-for="t in ui.toasts"
         :key="t.id"
