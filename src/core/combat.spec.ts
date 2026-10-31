@@ -45,6 +45,32 @@ describe('自动战斗', () => {
     expect(toNum(snapPower(eEff))).toBeGreaterThan(plain)
   })
 
+  /**
+   * 规则里的三维百分比必须真的落到数值上:战斗只读快照的 attack/defense/maxHp,
+   * 不经过 computeFinalStats。剑冢「防守极薄」曾因此完全不生效(秘境的负防成了纯增益)。
+   * 故障注入:把 foldExtraMods 换回「只并进 mods」→ 本条红。
+   */
+  it('规则附加的三维百分比折进快照:负防真的变薄,正防真的变厚', () => {
+    const enemy = makeEnemySnap(wolf, 1, 1)
+    const base = playerSnap(10)
+    const thin = applyCombatRuleSnap(base, enemy, { playerExtraMods: { defensePct: -0.2 } }).pEff
+    expect(toNum(thin.defense)).toBeCloseTo(toNum(base.defense) * 0.8, 6)
+    const thick = applyCombatRuleSnap(base, enemy, { playerExtraMods: { defensePct: 0.5 } }).pEff
+    expect(toNum(thick.defense)).toBeCloseTo(toNum(base.defense) * 1.5, 6)
+    // 折过之后不该再留在 mods 里:留着会在别处被算第二遍
+    expect(thin.mods.defensePct, '三维百分比折完还留在词条里,会被重复计算').toBeUndefined()
+  })
+
+  it('敌方三维百分比同样兑现:防御 +10% 让同一场更难过', () => {
+    const enemy = makeEnemySnap(wolf, 1, 1)
+    const plain = applyCombatRuleSnap(playerSnap(10), enemy, {}).eEff
+    const tough = applyCombatRuleSnap(playerSnap(10), enemy, { enemyExtraMods: { defensePct: 0.1 } }).eEff
+    expect(toNum(tough.defense)).toBeCloseTo(toNum(plain.defense) * 1.1, 6)
+    // 其余词条仍走 mods(如反击率)
+    const counter = applyCombatRuleSnap(playerSnap(10), enemy, { enemyExtraMods: { counterRate: 0.15 } }).eEff
+    expect(counter.mods.counterRate).toBe(0.15)
+  })
+
   it('碾压级战力必胜,战报以胜利收尾', () => {
     const enemy = makeEnemySnap(wolf, 1, 1)
     const result = resolveCombat(playerSnap(100), enemy, seeded(3))
