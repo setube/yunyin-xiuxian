@@ -39,7 +39,7 @@ src/ui/    展示层字符串/图标注册（非逻辑）
 | `src/types/` | 领域类型 |
 | `src/router/` | hash 路由 + 首启流程守卫 |
 | `src/composables/` | useNow / useWallClock 等 |
-| `scripts/` | test-report.mjs、ui-smoke.mjs、focus-check.mjs、layout-check.mjs、offline-check.mjs、fonts/build-kai-font.py |
+| `scripts/` | test-report.mjs、ui-smoke.mjs、focus-check.mjs、aria-check.mjs、layout-check.mjs、offline-check.mjs、fonts/build-kai-font.py |
 | `.github/workflows/` | CI（PR 检查、发布 Pages/PWA/Docker/Electron/APK） |
 
 tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` + `noUnusedLocals/Parameters`；`vue-tsc -b` 走 project references 做类型检查。
@@ -165,7 +165,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `src/utils/storage.ts` — 存档持久化/加密/迁移（SAVE_PREFIX、SAVE_VERSION、PERSISTED_STORES）
 - `src/utils/gnum.ts` — 大数
 - `src/router/` — 路由与首启守卫
-- `scripts/test-report.mjs`、`ui-smoke.mjs`、`focus-check.mjs`、`layout-check.mjs`、`offline-check.mjs`
+- `scripts/test-report.mjs`、`ui-smoke.mjs`、`focus-check.mjs`、`aria-check.mjs`、`layout-check.mjs`、`offline-check.mjs`
 - `.github/workflows/` — CI 定义
 - `vite.config.ts` / `vitest.config.ts` / `tsconfig*.json`
 
