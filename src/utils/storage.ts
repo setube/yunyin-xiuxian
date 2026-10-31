@@ -292,13 +292,18 @@ export function buildExportPayload(): ExportPayload {
   flushSaveWrites()
   const data: Record<string, unknown> = {}
   for (const id of PERSISTED_STORES) {
-    const raw = localStorage.getItem(storageKey(id))
-    if (raw !== null) {
-      try {
-        data[id] = JSON.parse(readSaveText(raw))
-      } catch {
-        // 跳过损坏分片
+    const key = storageKey(id)
+    try {
+      // 待落盘队列里的是内存最新态(写盘失败时磁盘还停在旧值),优先于 localStorage
+      const plain = pending.get(key)
+      if (plain !== undefined) {
+        data[id] = JSON.parse(plain)
+        continue
       }
+      const raw = localStorage.getItem(key)
+      if (raw !== null) data[id] = JSON.parse(readSaveText(raw))
+    } catch {
+      // 跳过损坏分片
     }
   }
   return { game: 'yunyin-xiuxian', version: SAVE_VERSION, exportedAt: Date.now(), data }
