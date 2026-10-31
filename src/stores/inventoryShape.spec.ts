@@ -10,6 +10,11 @@ import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { resolveEquipStats } from '@/core/equipGen'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
+import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
+import { equipLevelCap } from '@/core/forge'
+import { BUILDINGS } from '@/data/buildings'
+import { FORGE_LEVEL_PER_CAP, EQUIP_MAX_LEVEL_BASE } from '@/data/constants'
+import { useDongfuStore } from '@/stores/dongfu'
 import type { EquipmentInstance } from '@/types'
 
 /** 能出数值的底件(青竹剑 · 武器) */
@@ -136,5 +141,34 @@ describe('行囊坏件 · 读档逐字段修形', () => {
     inv.sanitize()
     expect(inv.items.map(i => i.uid), '同号只留先出现,空号不是一件东西').toEqual(['a', 'b'])
     expect(inv.items[0]!.tier, '留下的那件不被后一件覆盖').toBe(5)
+  })
+})
+
+/**
+ * 强化等级的修形上界不许写死数字:炼器台满级时合法值必须原样保留。
+ * 旧写法 `EQUIP_MAX_LEVEL_BASE + 10` 与「每 2 级 +1」是两份账,改建筑上限就会先截断合法装备。
+ * 故障注入:把上界改回写死的 +10 且把炼器台上限调到 >20 → 本条红。
+ */
+describe('行囊修形 · 强化上界跟着建筑表走', () => {
+  it('炼器台满级时,该级装备原样保留;超出实际上限的坏值仍被夹回', () => {
+    setActivePinia(createPinia())
+    const inv = useInventoryStore()
+    const dongfu = useDongfuStore()
+    const forgeMax = BUILDINGS.find(b => b.id === 'forge')!.maxLevel
+    dongfu.levels = { ...dongfu.levels, forge: forgeMax }
+    const legal = equipLevelCap()
+    expect(legal, '满级炼器台应高于基础上限').toBeGreaterThan(EQUIP_MAX_LEVEL_BASE)
+    expect(EQUIP_LEVEL_SANITIZE_CAP, '修形上界须覆盖满级建筑加成').toBeGreaterThanOrEqual(legal)
+    expect(EQUIP_LEVEL_SANITIZE_CAP, '推导口径:基础上限 + 满级加成').toBe(
+      EQUIP_MAX_LEVEL_BASE + Math.floor(forgeMax / FORGE_LEVEL_PER_CAP)
+    )
+
+    inv.items = [blade({ uid: 'keep', level: legal })]
+    inv.sanitize()
+    expect(inv.items[0]!.level, '合法强化等级被修形截断 —— 上界写死了').toBe(legal)
+
+    inv.items = [blade({ uid: 'bad', level: EQUIP_LEVEL_SANITIZE_CAP + 50 })]
+    inv.sanitize()
+    expect(inv.items[0]!.level, '坏值须夹回上界').toBe(EQUIP_LEVEL_SANITIZE_CAP)
   })
 })

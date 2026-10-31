@@ -1,6 +1,6 @@
 /** 洞府建筑 —— 7 座 */
 import type { BuildingDef, BuildingId, StatMods } from '@/types'
-import { FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, FORGE_LEVEL_PER_CAP, LIBRARY_WUDAO_PER_HOUR, OFFLINE_CAP_HOURS } from './constants'
+import { EQUIP_MAX_LEVEL_BASE, FIELD_HERB_PER_HOUR, FIELD_ORE_PER_HOUR, FORGE_LEVEL_PER_CAP, LIBRARY_WUDAO_PER_HOUR, OFFLINE_CAP_HOURS } from './constants'
 import { HERB_GRADE_SHORT, fieldGradeCap } from './herbGrades'
 
 /** 聚灵阵每级抬高的灵气上限(乘在境界容量上,不进 StatMods);文案与 dongfu.qiCapMult 都读它 */
@@ -102,3 +102,11 @@ const BY_ID = new Map(BUILDINGS.map(x => [x.id, x]))
 export function buildingDef(id: BuildingId): BuildingDef | undefined {
   return BY_ID.get(id)
 }
+
+/**
+ * 存档修形时装备等级的上界:基础上限 + 满级炼器台加成。
+ * 与 core/forge.equipLevelCap 同一算式,但刻意不 import 它(core 会反向 import store);
+ * 修形只求「比合法值宽、比坏值严」,实际执行侧仍以 equipLevelCap 为准。
+ */
+export const EQUIP_LEVEL_SANITIZE_CAP =
+  EQUIP_MAX_LEVEL_BASE + Math.floor((BY_ID.get('forge')?.maxLevel ?? 0) / FORGE_LEVEL_PER_CAP)
