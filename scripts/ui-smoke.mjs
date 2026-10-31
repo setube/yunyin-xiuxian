@@ -115,6 +115,8 @@ async function classifySilent(route, kind, label) {
 }
 /** 已成功导航的 href:全站只点一次;失败/被挡的不计入,留给后续路由重试 */
 const navClicked = new Set()
+/** 切页焦点丢过的落点(按 tag 去重,免得每页刷一条) */
+const focusMissed = new Set()
 /** 已报过「未达目标/被浮层挡住」读数的 href,同 href 只报一次 */
 const navBlockedOnce = new Set()
 async function fingerprint() {
@@ -346,6 +348,13 @@ for (const route of ROUTES) {
       navClicked.add(href)
       const landedLeak = await numericLeak()
       for (const l of landedLeak) errors.push({ where: `${href} 落地页泄漏`, msg: l })
+      // 切页后焦点须落到内容区:留在旧页那个已离场的链接上,浏览器会把它甩回 body,
+      // 键盘下一次 Tab 从文档头重数、读屏也不播报换页。判据同 App.vue 的 resetScroll。
+      const focusTag = await page.evaluate(() => document.activeElement?.tagName ?? 'null')
+      if (focusTag !== 'MAIN' && !focusMissed.has(focusTag)) {
+        focusMissed.add(focusTag)
+        errors.push({ where: `导航「${href}」`, msg: `切页后焦点在 ${focusTag},没回到内容区` })
+      }
     } else if (!navBlockedOnce.has(href)) {
       // 未到达也无报错:只报一次读数,不标覆盖,留给别的路由重试
       navBlockedOnce.add(href)
