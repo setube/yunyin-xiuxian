@@ -9,6 +9,11 @@ import { isHerbGrade } from '@/data/herbGrades'
 
 export const SAVE_PREFIX = 'yunyin.'
 export const SAVE_VERSION = 2
+/**
+ * 启动扫描隔离出来的损坏分片存在这个前缀下(原密文原样保留)。
+ * 前缀 + 分片键:键名仍带 SAVE_PREFIX,清档时一并清掉。
+ */
+export const CORRUPT_PREFIX = 'corrupt.'
 
 /**
  * 参与持久化的分片清单:导出/导入/清档/损坏扫描的唯一范围,漏一项即存档少一块且无提示。
@@ -205,7 +210,7 @@ export function preflightScan(): string[] {
       corrupted.push(id)
       try {
         const raw = localStorage.getItem(key)
-        if (raw !== null) localStorage.setItem(`corrupt.${key}`, raw)
+        if (raw !== null) localStorage.setItem(CORRUPT_PREFIX + key, raw)
         localStorage.removeItem(key)
       } catch {
         // 存储不可用时放弃备份,仅保证游戏可启动
@@ -285,6 +290,12 @@ export interface ExportPayload {
   version: number
   exportedAt: number
   data: Record<string, unknown>
+  /**
+   * 启动时被隔离的损坏分片(原密文)。
+   * 「原档留在本机」若只在 localStorage 里躺着,玩家没有任何办法把它交出来——
+   * 导出随包带走,报问题时才能把坏档一并给人看。导入时不回写(坏档不该回到存档位)。
+   */
+  corrupted?: Record<string, string>
 }
 
 export function buildExportPayload(): ExportPayload {
@@ -306,7 +317,32 @@ export function buildExportPayload(): ExportPayload {
       // 跳过损坏分片
     }
   }
-  return { game: 'yunyin-xiuxian', version: SAVE_VERSION, exportedAt: Date.now(), data }
+  return {
+    game: 'yunyin-xiuxian',
+    version: SAVE_VERSION,
+    exportedAt: Date.now(),
+    data,
+    ...(corruptedCount() > 0 ? { corrupted: collectCorrupted() } : {})
+  }
+}
+
+/** 收集本机隔离出来的损坏分片(键 → 原密文);没有则空对象 */
+export function collectCorrupted(): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const id of PERSISTED_STORES) {
+    try {
+      const raw = localStorage.getItem(CORRUPT_PREFIX + storageKey(id))
+      if (raw !== null) out[id] = raw
+    } catch {
+      // 存储不可用:拿不到就当没有
+    }
+  }
+  return out
+}
+
+/** 本机隔离出来的损坏分片数(导出决定是否带这一段) */
+export function corruptedCount(): number {
+  return Object.keys(collectCorrupted()).length
 }
 
 /** 校验导入数据结构,返回错误信息;null 表示通过 */
@@ -329,6 +365,7 @@ export function validateImportPayload(obj: unknown): string | null {
  * 先清空再逐片写入;中途失败(如配额不足)回滚到旧档,不留半清的存档(会造出主页空角色)。
  */
 export function applyImportPayload(payload: ExportPayload): void {
+  // payload.corrupted 是有意不消费的:那是导出方隔离出来的坏档,只供人看,不该回到存档位
   // 快照现有各片(原样密文,回滚时原样写回)
   const backup = new Map<string, string | null>()
   try {

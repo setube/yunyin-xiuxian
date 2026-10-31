@@ -6,13 +6,14 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { createApp } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import { PERSISTED_STORES, clearAllSave, dropPendingWrites, preflightScan, storageKey } from '@/utils/storage'
+import { PERSISTED_STORES, buildExportPayload, clearAllSave, collectCorrupted, dropPendingWrites, preflightScan, storageKey } from '@/utils/storage'
 import { importSaveText } from './save'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
 import { useInventoryStore } from '@/stores/inventory'
 import { useCultivationStore } from '@/stores/cultivation'
 import { MAX_MAJOR } from '@/data/realms'
+import { encryptSave } from '@/utils/crypto'
 
 function installStorage(): void {
   const disk = new Map<string, string>()
@@ -114,6 +115,30 @@ describe('半损坏档 · 进得了游戏,或者被明确拒绝', () => {
       expect(localStorage.getItem(storageKey('game')), '被拒绝的导入不该动现有存档').toBe(before)
     })
   }
+
+  /**
+   * 「原档留在本机」若只在 localStorage 里躺着,玩家没有任何办法把它交出来。
+   * 导出须随包带走隔离出来的坏档;导入则故意不消费它(坏档不该回到存档位)。
+   * 故障注入:把 buildExportPayload 里的 corrupted 段删掉 → 本条红。
+   */
+  it('隔离出来的坏档随导出带走,导入时不回写存档位', () => {
+    bootStores()
+    const key = storageKey('player')
+    localStorage.setItem(key, '这不是存档')
+    const corrupted = preflightScan()
+    expect(corrupted, '坏分片应被隔离').toContain('player')
+    expect(collectCorrupted().player, '隔离后应留一份原密文').toBe('这不是存档')
+
+    const payload = buildExportPayload()
+    expect(payload.corrupted?.player, '导出没带上被隔离的原档 —— 玩家拿不到它').toBe('这不是存档')
+
+    // 导入这份导出:坏档段不该被回写到存档位
+    const err = importSaveText(encryptSave(JSON.stringify({ ...payload, data: { ...payload.data, player: { major: 1, sub: 0, name: 'x' }, game: { started: true, saveVersion: 2, createdAt: 1, lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null } } })))
+    expect(err, '带坏档段的导出应能正常导入').toBeNull()
+    expect(localStorage.getItem(storageKey('player')), '坏档段被写回了存档位').not.toBe('这不是存档')
+    // 本机原有的隔离备份不受影响
+    expect(collectCorrupted().player).toBe('这不是存档')
+  })
 
   it('整段不是存档(纯文本/空串)也只报错不炸', () => {
     for (const text of ['这不是存档', '', '{}', '[]']) {
