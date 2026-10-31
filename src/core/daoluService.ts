@@ -1,6 +1,6 @@
 /**
  * 道侣服务。关系值只转化为事件概率与选项资格,不转化为任何数值;本文件不得出现:
- *   - StatMods / 任何属性键(45 个属性键全部可达 cultivationSpeed)
+ *   - StatMods / 任何属性键(任一属性键都能写成 cultivationSpeed;总数见 data/statNames)
  *   - addDaoFruit / addInsight
  *   - 资源发放(灵石/丹药/材料)
  *   - cultivationSpeed 相关

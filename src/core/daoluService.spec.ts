@@ -33,7 +33,7 @@ beforeEach(() => {
 
 describe('道侣 · 一:不进入效率链', () => {
   it('服务层不含任何属性、资源、道果、宿慧写入', () => {
-    // 45 个属性键全部可达 cultivationSpeed:一个都不给
+    // 任一属性键都能写成 cultivationSpeed:一个都不给
     expect(CODE).not.toMatch(/StatMods|attackPct|cultivationSpeed|maxHpPct|dropRate|luck/)
     expect(CODE).not.toMatch(/addDaoFruit|addInsight|spendDaoFruit/)
     expect(CODE).not.toMatch(/useResourcesStore|spiritStone|addHerb|addOre|wudao|pills/)
