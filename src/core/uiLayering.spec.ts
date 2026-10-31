@@ -376,6 +376,8 @@ describe('可访问性 · 状态播报', () => {
     expect(host, 'toast 容器没有 aria-live:读屏不会播报').toMatch(/aria-live="polite"/)
     // 逐条播报:合并成一句会把同帧多条提示念成一坨
     expect(host, 'aria-atomic 应为 false,否则整批提示被拼成一句重复念').toMatch(/aria-atomic="false"/)
+    // toast 会自己消失(2.6s),进 Tab 序会让键盘焦点落到一条随时没影的元素上
+    expect(host, 'toast 按钮不该进 Tab 序:键盘焦点会落到一条即将消失的元素上').toMatch(/tabindex="-1"/)
   })
 
   it('其它动态区已有播报的不许回退', () => {

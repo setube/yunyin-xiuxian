@@ -9,10 +9,16 @@
       aria-atomic=false:逐条播报,不把整批提示拼成一句重复念。
     -->
     <TransitionGroup name="toast-slide" :duration="TOAST_ANIM_MS" role="status" aria-live="polite" aria-atomic="false">
+      <!--
+        tabindex=-1:toast 是 2.6 秒自动消失的状态播报,内容已由外层 role=status 念出。
+        若进 Tab 序,键盘用户会跳到一条随时消失的元素上,焦点随之落空。
+        鼠标点击关闭照旧可用;键盘用户不必操作它。
+      -->
       <button
         v-for="t in ui.toasts"
         :key="t.id"
         type="button"
+        tabindex="-1"
         class="pointer-events-auto max-w-90 cursor-pointer rounded-lg border px-4 py-2 text-left text-[13px] shadow-md font-kai tracking-wide active:opacity-60 whitespace-pre-line"
         :class="KIND_CLASS[t.kind]"
         @click="ui.dismissToast(t.id)"
