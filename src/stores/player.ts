@@ -667,8 +667,9 @@ export const usePlayerStore = defineStore(
        * 一份写坏的布尔就能把整局钉死。口径同 game.started / settings 各开关。
        */
       dead.value = dead.value === true
-      // 道号进字符串方法(.trim / 拼接);坏档写成数字会在渲染或建号处抛错
-      name.value = typeof name.value === 'string' ? name.value : ''
+      // 道号进字符串方法(.trim / 拼接);坏档写成数字会在渲染或建号处抛错。
+      // 空串也算坏档:顶栏是 {{ player.name }} 裸渲染,空串会显示成一片空白(建号与导入检视都有「无名散修」兜底,唯独这里没有)
+      name.value = typeof name.value === 'string' && name.value.trim() !== '' ? name.value : '无名散修'
       // 角色页/建号页裸用 `ELEMENTS[root.element].color` 与 `linggen.growthMult.toFixed(2)`:坏档在渲染期抛错
       linggen.value = sanitizeLinggen(linggen.value)
       if (!Number.isFinite(age.value)) age.value = START_AGE
