@@ -51,8 +51,9 @@ const ROUTES = [
 ]
 
 /**
- * 不依赖公网:index.html 的 sdk.51.la 第三方统计会拖住 `load`(CDN 堵时 goto 卡满 30 秒),
- * host-resolver-rules 令它 DNS 解析失败;其运行时异常由 watchPageErrors 不计。
+ * 不依赖公网:index.html 的 sdk.51.la 第三方统计会拖住 `load`(CDN 堵时 goto 卡满 30 秒)。
+ * 每处新开的 context 都挂同一道拦截 —— 只靠 host-resolver-rules 时,DNS 失败也要等浏览器
+ * 自己放弃,慢网/容器里仍会撞 goto 超时(第 20 多件事那时的无头重启就因此整跑中断)。
  */
 const browser = await chromium.launch({
   // --no-sandbox / --disable-dev-shm-usage:容器里 headless 常崩(无用户命名空间、/dev/shm 只有 64M);同 ui-smoke
@@ -64,6 +65,20 @@ const browser = await chromium.launch({
     '--host-resolver-rules=MAP sdk.51.la ~NOTFOUND'
   ]
 })
+
+/** 外域只拦不记:统计脚本的运行时报错由 watchPageErrors 不计 */
+async function blockExternal(ctx) {
+  await ctx.route('**/*', route => {
+    const url = route.request().url()
+    if (/^(file|data|blob):/.test(url)) return route.continue()
+    return route.abort()
+  })
+  return ctx
+}
+
+// 全文二十多处各开各的 context:在此统一包一层,新加的场景不必再想起挂拦截
+const rawNewContext = browser.newContext.bind(browser)
+browser.newContext = async opts => blockExternal(await rawNewContext(opts))
 const failures = []
 let checked = 0
 let zoomSeen = 0
@@ -1464,8 +1479,9 @@ for (const vp of VIEWPORTS) {
 
   const next = await step('往生后(择姿立题)', /轮回/)
   if (next && !/道果/.test(next.text)) failures.push('[390] 转世场景:轮回那一程没有交代道果')
-  // 有先天之姿就先择一个(不择则「踏入轮回」是灰的)
-  const talent = page.locator('.modal-panel button').first()
+  // 有先天之姿就先择一个(不择则「踏入轮回」是灰的)。
+  // 按品阶名找,不取面板首个按钮:来世灵根那块的「逆天改命」排在天赋之前,点了只会重刷灵根。
+  const talent = page.locator('.modal-panel button', { hasText: /赋|姿/ }).first()
   if (next && next.buttons.some(b => /赋|姿/.test(b))) await talent.click({ timeout: 3000 }).catch(() => {})
   const confirm = page.locator('.modal-panel button', { hasText: /踏\s*入\s*轮\s*回/ }).first()
   if ((await confirm.count()) === 0) failures.push('[390] 转世场景:轮回那程没有「踏入轮回」')
