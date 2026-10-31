@@ -11,7 +11,8 @@ import {
   powerScore,
   stoneByTier,
   tribulationWaveDamage,
-  winChanceFromRatio
+  winChanceFromRatio,
+  gameDay
 } from './formulas'
 import { powerBreakdownRows, powerExplainText } from '@/ui/powerText'
 
@@ -104,4 +105,39 @@ describe('GameFormula 成长曲线', () => {
     expect(toNum(stoneByTier(5, 10))).toBeGreaterThan(toNum(stoneByTier(1, 10)))
     expect(toNum(buildingCost(100, 3))).toBeGreaterThan(toNum(buildingCost(100, 0)))
   })
+
+describe('游戏日换算 · gameDay', () => {
+  it('整日边界:第 N 天从 N×86400 秒开始', () => {
+    expect(gameDay(0)).toBe(0)
+    expect(gameDay(86399), '86400 秒前仍算第 0 天').toBe(0)
+    expect(gameDay(86400), '满 86400 秒进入第 1 天').toBe(1)
+    expect(gameDay(86400 * 2 - 1)).toBe(1)
+    expect(gameDay(86400 * 2)).toBe(2)
+  })
+
+  /**
+   * 契约:入参必须是非负有限数。
+   * 这不是 gameDay 自己能保证的 —— 上游 stores/game 的 sanitize 用
+   * asFiniteNumber(totalPlaySec, 0, 0) 兜住了。本条把契约写下来,
+   * 免得后来者以为 gameDay 会自己钳制而放心传入脏值。
+   */
+  it('契约:入参由 store 保证非负有限(负数/NaN 会原样传染,不做防御)', () => {
+    expect(Number.isNaN(gameDay(Number.NaN)), 'gameDay 不做 NaN 防御,靠上游 sanitize').toBe(true)
+    expect(gameDay(-1), 'gameDay 不做负数钳制,靠上游 sanitize').toBe(-1)
+    expect(gameDay(Number.POSITIVE_INFINITY)).toBe(Number.POSITIVE_INFINITY)
+  })
+
+  it('单调不减:时间前进,天数不会倒退', () => {
+    let prev = gameDay(0)
+    for (const s of [1, 3600, 86399, 86400, 100000, 864000]) {
+      const cur = gameDay(s)
+      expect(cur).toBeGreaterThanOrEqual(prev)
+      prev = cur
+    }
+  })
+
+  it('一天 = 86400 秒(与每日任务/每日奖励的重置口径同源)', () => {
+    expect(gameDay(86400) - gameDay(0)).toBe(1)
+  })
+})
 })
