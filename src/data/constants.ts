@@ -368,8 +368,12 @@ export const GONGFA_UP_GROWTH = 1.45
 // 后期「灵石 → 悟道点」兑换:限量,不重建效率回路,不动熔炉建模(审计敏感)
 /** 兑换开放境界(混沌海起) */
 export const WUDAO_EXCHANGE_MIN_MAJOR = 18
-/** 每次兑换所费灵石 */
-export const WUDAO_EXCHANGE_PRICE_BASE = 3000
+/**
+ * 每次兑换所费灵石,以「层级单位」计(服务层走 stoneByTier 折算)。
+ * 写死绝对值会与境界收入脱钩:3000 石在混沌海只值一战收益的百万分之一,整条兑换形同白送。
+ * 214 约为该境一小时的灵石收入(见 expIncome.winsPerHour)——十次即一日上限约合一小时。
+ */
+export const WUDAO_EXCHANGE_TIER_AMOUNT = 214
 /** 每次兑换所得悟道点 */
 export const WUDAO_EXCHANGE_GAIN = 1
 /** 每游戏日可兑换的次数上限 */

@@ -9,7 +9,7 @@ import { SUB_LEVELS, START_AGE } from '@/data/constants'
 import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
 import {
   STAR_FOCUS_COST_BASE, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX,
-  WUDAO_EXCHANGE_PRICE_BASE, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PER_DAY
+  WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PER_DAY
 } from '@/data/constants'
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
@@ -1192,11 +1192,13 @@ export const usePlayerStore = defineStore(
      * 审计敏感:只动这条限量出口,不重建效率回路、不动熔炉。
      */
     function exchangeStoneForWudao(): boolean {
-      if (!wudaoExchangeState.value.canExchange) return false
+      const state = wudaoExchangeState.value
+      if (!state.canExchange) return false
       const day = gameDay(useGameStore().totalPlaySec)
       const cur = wudaoExchange.value
       const today = cur && cur.gameDay === day ? cur : { gameDay: day, count: 0 }
-      if (!resources.spendStone(gn(WUDAO_EXCHANGE_PRICE_BASE))) return false
+      // 扣费取判据算出的那一份:界面报价与实扣同源,各算一次会分叉
+      if (!resources.spendStone(state.cost)) return false
       resources.addSmall('wudao', WUDAO_EXCHANGE_GAIN)
       wudaoExchange.value = { gameDay: day, count: today.count + 1 }
       return true

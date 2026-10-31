@@ -9,7 +9,7 @@
       <div class="min-w-0">
         <p class="text-[11px] text-ink">灵石 → 悟道</p>
         <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
-          每次 {{ formatGN(gn(WUDAO_EXCHANGE_PRICE_BASE)) }} 灵石得 {{ WUDAO_EXCHANGE_GAIN }} 点 · 今日
+          每次 {{ formatGN(player.wudaoExchangeState.cost) }} 灵石得 {{ WUDAO_EXCHANGE_GAIN }} 点 · 今日
           {{ player.wudaoExchangeToday }}/{{ WUDAO_EXCHANGE_PER_DAY }}
         </p>
       </div>
@@ -134,13 +134,12 @@
   import { useCultivationStore } from '@/stores/cultivation'
   import { useUiStore } from '@/stores/ui'
   import { comprehendGongfa, gongfaUpgradeCost } from '@/core/gongfaService'
-  import { gn } from '@/utils/gnum'
   import { GONGFA, gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import type { GongfaDef, GongfaType } from '@/types'
   import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import {
     COMPREHEND_PAGE_COST,
-    WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PRICE_BASE
+    WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN
   } from '@/data/constants'
   import { formatGN } from '@/utils/format'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
