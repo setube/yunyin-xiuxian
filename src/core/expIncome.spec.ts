@@ -12,7 +12,6 @@ import {
   battlesPerHour,
   encountersPerHour,
   eventsPerHour,
-  expIncomeAt,
   expIncomeAudit,
   retreatExpSecsPerHour,
   tripExpSecsPerHour,
@@ -111,7 +110,10 @@ describe('修为收入 · 设计不变量', () => {
     expect(battlesPerHour() + eventsPerHour()).toBeCloseTo(encountersPerHour(), 9)
     // 胜率是唯一的折扣
     expect(winsPerHour()).toBeCloseTo(battlesPerHour() * TYPICAL_WIN_RATE, 9)
-    expect(expIncomeAt(9).tripPerHour).toBeGreaterThan(0)
+    // 走公开入口 expIncomeAudit(它按 MAX_MAJOR 逐境界列出,含第 9 境)
+    const row9 = expIncomeAudit().find(r => r.major === 9)
+    expect(row9, '审计表应覆盖到第 9 境界').toBeDefined()
+    expect(row9!.tripPerHour).toBeGreaterThan(0)
   })
 })
 

@@ -47,7 +47,7 @@ export function asCarriedHpPct(v: unknown): number {
  * 战斗技能修形 —— 忆战快照与虚界敌形共用。
  * `rate`/`mult` 夹回可玩值域;名字与倍率/概率缺失或非有限整条丢弃;认不出的 effect 只去掉附加效果。
  */
-export function asCombatSkill(v: unknown): CombatSkill | null {
+function asCombatSkill(v: unknown): CombatSkill | null {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null
   const s = v as Partial<CombatSkill>
   if (typeof s.name !== 'string' || s.name.trim() === '') return null
