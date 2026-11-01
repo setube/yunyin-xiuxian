@@ -220,7 +220,13 @@ async function measurePage(page) {
         })
         .slice(0, 3)
         .map(el => el.outerHTML.slice(0, 80).replace(/\s+/g, ' ')),
-      // 可点元素高度下限 28px
+      /*
+       * 可点元素高度下限 28px。
+       *
+       * 只量高度不量宽度:本项目的钮都靠内边距撑宽(没有写死 w-[Npx] 又去掉 p 的),
+       * 实测全站窄钮为 0;真要窄到点不准,先会撞上页面的横向溢出与孤字自检。
+       * 宽度那一侧将来若要加,须一并给弹窗内那一组(auditModalControls)加,两处同尺。
+       */
       smallTargets: [...document.querySelectorAll('button, a, [role=button]')]
         .map(el => {
           const r = el.getBoundingClientRect()
