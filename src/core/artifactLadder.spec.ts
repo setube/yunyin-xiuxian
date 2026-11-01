@@ -150,6 +150,34 @@ describe('法宝品阶阶梯', () => {
     expect(dupes, `同族内原始值完全相同的法宝(深的那件等于白出):\n${dupes.join('\n')}`).toEqual([])
   })
 
+  /**
+   * 同一族内不许有两个同名神通 —— 数值差一点不算区分。
+   *
+   * 240 轮实测:混沌开天斧与鸿蒙尺(仅有的两件天品)都叫「开天」、都是 damage、
+   * 只差 410% / 430%。上一版守卫查的是「原始值完全相同」,这种「同形不同数」正好落在盲区。
+   * 玩家看到的是两个一模一样的名字,那正是「各个法宝之间区分度不够」。
+   *
+   * 修法是让顶阶两件各领一族:开天斧守 damage,鸿蒙尺改削弱族(量天)。
+   * 故障注入:把鸿蒙尺改回 damage + 「开天」,本条红。
+   */
+  it('同一效果族内没有同名神通', () => {
+    const byType = new Map<string, Map<string, string[]>>()
+    for (const def of ARTIFACTS) {
+      const type = def.active.effect.type
+      const name = def.active.name
+      const inner = byType.get(type) ?? new Map<string, string[]>()
+      inner.set(name, [...(inner.get(name) ?? []), `${def.name}(t${def.fromTier})`])
+      byType.set(type, inner)
+    }
+    const dupes: string[] = []
+    for (const [type, names] of byType) {
+      for (const [name, owners] of names) {
+        if (owners.length > 1) dupes.push(`${type} 族的「${name}」: ${owners.join(' / ')}`)
+      }
+    }
+    expect(dupes, `同族内同名神通(玩家看到的是两个一模一样的名字):\n${dupes.join('\n')}`).toEqual([])
+  })
+
   /** 上限 5,与 `ruleUniverse.spec` 的单件预算上限同源 */
   it('抬完阶梯仍在单件预算上限之内', () => {
     for (const def of ARTIFACTS) {

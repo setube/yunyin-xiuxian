@@ -580,10 +580,10 @@ export const ARTIFACTS: ArtifactDef[] = [
     31,
     '一尺量的是天地未判时的长短',
     { armorPen: 0.06, damageBonus: 0.06 },
-    '开天',
-    '每 3 回合开天一击,造成 430% 攻击伤害',
+    '量天',
+    '每 3 回合量其气机,余下回合敌人攻击降低 21%',
     3,
-    { type: 'damage', mult: 4.3 },
+    { type: 'weaken', pct: 0.21 },
     'ruler'
   ),
   f(
