@@ -19,7 +19,7 @@
       <div class="mt-1 flex items-center justify-between gap-2 px-1">
         <span class="text-[10px] text-ink-faint">按需派活 · 仅闲置</span>
         <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="!hasIdle" @click="doDispatchAll">
-          <GameIcon name="users" :size="12" />各尽其长
+          <GameIcon name="users" :size="12" />{{ hasIdle ? '各尽其长' : '各尽其长(无闲置)' }}
         </button>
       </div>
       <div class="mt-2 space-y-2">

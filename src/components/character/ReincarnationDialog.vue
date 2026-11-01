@@ -198,7 +198,9 @@
       </template>
     </div>
     <template #footer>
-      <button class="btn-seal w-full" :disabled="!canConfirm" @click="confirm">踏入轮回</button>
+      <button class="btn-seal w-full" :disabled="!canConfirm" @click="confirm">
+        {{ canConfirm ? '踏入轮回' : '踏入轮回(先择先天之姿)' }}
+      </button>
     </template>
   </BaseModal>
 </template>
