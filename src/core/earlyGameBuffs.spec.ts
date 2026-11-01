@@ -117,26 +117,35 @@ describe('qiCapPct / beastPct 接线(修复阵法 / 安抚灵兽语出必践)', 
     expect(player.qiCapValue).toBe(125)
   })
 
-  it('cave_garden_pet buff 放大灵兽效果(零级灵兽园:0.10 → 0.13)', () => {
+  /**
+   * 基数从数据表读,不硬写 —— 灵兽数值会随品阶阶梯调整(见 core/petLadder.spec)。
+   * 本条要钉的是「安抚增益真的乘进 finalStats」,不是青羽灵狐恰好等于 0.1。
+   */
+  const PET_SPEED = petDef('pet_qingyu')!.mods.explorationSpeed!
+  /** 安抚灵兽(cave_garden_pet)的放大系数,与 buffs 表同源 */
+  const GARDEN_BUFF = 1.3
+
+  it('cave_garden_pet buff 放大灵兽效果(零级灵兽园:基数 → ×1.3)', () => {
     const player = usePlayerStore()
     const cultivation = useCultivationStore()
-    player.setPet('pet_qingyu') // mods: explorationSpeed 0.1,此刻无其他来源
-    expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(0.1)
+    player.setPet('pet_qingyu')
+    expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(PET_SPEED)
     cultivation.addBuff('cave_garden_pet', Date.now())
-    expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(0.13)
+    expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(PET_SPEED * GARDEN_BUFF)
   })
 
   it('兽苑卡片的出战加成走「真到账」那份:petModsFor 随灵兽园等级与安抚增益同源放大(非 base)', () => {
     const player = usePlayerStore()
     const cultivation = useCultivationStore()
     const dongfu = useDongfuStore()
-    player.setPet('pet_qingyu') // explorationSpeed base 0.1
-    // 灵兽园 8 级(beastMult=1.8)+ 安抚增益(1.3):0.1×1.8×1.3 = 0.234
+    player.setPet('pet_qingyu')
+    // 灵兽园 8 级 + 安抚增益:基数 × 1.8 × 1.3
     dongfu.setLevel('beast', 8)
     cultivation.addBuff('cave_garden_pet', Date.now())
+    const expected = PET_SPEED * 1.8 * GARDEN_BUFF
     // 卡片渲染源与「真到账」finalStats 同一份
-    expect(player.petModsFor(petDef('pet_qingyu')!).explorationSpeed).toBeCloseTo(0.234)
-    expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(0.234)
+    expect(player.petModsFor(petDef('pet_qingyu')!).explorationSpeed).toBeCloseTo(expected)
+    expect(player.finalStats.mods.explorationSpeed).toBeCloseTo(expected)
   })
 })
 
