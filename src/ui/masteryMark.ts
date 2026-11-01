@@ -1,4 +1,5 @@
 import { ARTIFACT_MAX_LEVEL } from '@/data/artifacts'
+import { upgradeCapToast } from './forgeText'
 
 /**
  * 满级标记:装备强化到顶、法宝祭炼满重,都是玩家投入后才有的一次「到底了」。
@@ -18,17 +19,21 @@ import { ARTIFACT_MAX_LEVEL } from '@/data/artifacts'
 
 /** 满级状态;不是满级返回 null */
 export interface MasteryMark {
-  /** 读屏与 title 用的说法:「强化至顶」/「祭炼已满」 */
+  /**
+   * 读屏与 title 用的说法。
+   * 装备复用 AGENTS.md 明文规定的那条状态词(`强化已至上限`,见 ui/forgeText);
+   * 法宝沿用面板里既有的「已至上限」口径。
+   */
   label: string
 }
 
 /** 装备是否强化至顶。cap 取 `core/forge.equipLevelCap()`(随炼器台等级变) */
 export function equipMastery(level: number, cap: number): MasteryMark | null {
   if (!Number.isFinite(level) || !Number.isFinite(cap) || cap <= 0) return null
-  return level >= cap ? { label: '强化至顶' } : null
+  return level >= cap ? { label: upgradeCapToast() } : null
 }
 
 /** 法宝是否祭炼满重 */
 export function artifactMastery(level: number): MasteryMark | null {
-  return Number.isFinite(level) && level >= ARTIFACT_MAX_LEVEL ? { label: '祭炼已满' } : null
+  return Number.isFinite(level) && level >= ARTIFACT_MAX_LEVEL ? { label: '祭炼已至上限' } : null
 }
