@@ -18,6 +18,7 @@
         :class="[c.sold ? 'opacity-50' : '', i === focusCard ? 'ring-2 ring-jade/70' : '']"
         :style="c.tierStyle"
       >
+        <QualityAura v-if="c.quality" :quality="c.quality" />
         <span v-if="c.rare" class="absolute right-1.5 top-1.5 leading-none">
           <QualitySeal :quality="c.quality!" :size="14" />
         </span>
@@ -29,7 +30,7 @@
             {{ c.tag }}
           </span>
           <div class="min-w-0">
-            <p class="truncate font-kai text-[13px]" :style="c.nameCls">{{ c.name }}</p>
+            <p class="truncate font-kai text-[13px]" :class="{ 'q-plaque': c.plaque }" :style="c.nameCls">{{ c.name }}</p>
             <p class="truncate text-[10px] text-ink-faint">{{ c.sub }}</p>
           </div>
         </div>
@@ -67,6 +68,7 @@
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef } from '@/data/qualities'
   import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
+  import { qualityAura } from '@/ui/qualityAura'
   import { tint } from '@/utils/colorToken'
   import { focusHerbSlot, marketEquipInstance } from '@/core/marketService'
   import { cmp, gnZero, subClamp } from '@/utils/gnum'
@@ -75,6 +77,7 @@
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import QualitySeal from '@/components/common/QualitySeal.vue'
+  import QualityAura from '@/components/common/QualityAura.vue'
 
   interface CardView {
     idx: number
@@ -89,6 +92,8 @@
     /** 仅装备货格有;丹药/材料不套品质色 */
     quality?: import('@/types').QualityId
     rare: boolean
+    /** 名牌是否加描边与字距(稀有档),见 ui/qualityAura */
+    plaque: boolean
     tierStyle?: { borderColor: string; background: string }
     price: GNum
     sold: boolean
@@ -142,6 +147,7 @@
       sold: slot.sold,
       afford,
       rare: false,
+      plaque: false,
       stoneShort: afford ? gnZero() : subClamp(slot.price, resources.spiritStone)
     }
     if (slot.kind === 'pill') {
@@ -178,6 +184,7 @@
       sub: `${quality.name} · ${slot.tier} 阶`,
       quality: inst.quality,
       rare: isRareQuality(inst.quality),
+      plaque: qualityAura(inst.quality).plaque,
       // 密卡底色固定弱晕染,品阶浓淡交给边框与角章
       tierStyle: { borderColor: tint(quality.color, tier.border), background: tint(quality.color, 0.06) },
       price: slot.price

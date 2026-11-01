@@ -29,13 +29,19 @@
         background: tint(qualityDef(row.def.quality).color, 0.06)
       }"
     >
+      <QualityAura :quality="row.def.quality" />
       <span v-if="row.rare" class="absolute right-2 top-2 leading-none">
         <QualitySeal :quality="row.def.quality" :size="16" />
       </span>
       <!-- pr-3:给右上 16px 角章让位,否则与重数叠字 -->
       <div class="flex items-center gap-2" :class="{ 'pr-3': row.rare }">
         <GameIcon :name="row.def.icon" :size="18" :style="{ color: qualityDef(row.def.quality).color }" />
-        <span class="font-kai text-[14px]" :style="{ color: qualityDef(row.def.quality).color }">{{ row.def.name }}</span>
+        <span
+          class="font-kai text-[14px]"
+          :class="{ 'q-plaque': row.plaque }"
+          :style="{ color: qualityDef(row.def.quality).color }"
+          >{{ row.def.name }}</span
+        >
         <QualityTag :quality="row.def.quality" />
         <!-- 法宝等级称「重」不称「阶」:阶指地界与装备层级 -->
         <span class="ml-auto tabular text-[11px] text-gold-ink">{{ artifactLevelLabel(row.owned.level) }}</span>
@@ -137,9 +143,11 @@ import { artifactSlotReplacedToast } from '@/ui/inventoryText'
 import { cnNumber, formatGN, formatGap, formatPercent } from '@/utils/format'
 import { tint } from '@/utils/colorToken'
 import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
+import { qualityAura } from '@/ui/qualityAura'
 import GameIcon from '@/components/common/GameIcon.vue'
 import QualityTag from '@/components/common/QualityTag.vue'
 import QualitySeal from '@/components/common/QualitySeal.vue'
+import QualityAura from '@/components/common/QualityAura.vue'
 
 const inventory = useInventoryStore()
 const player = usePlayerStore()
@@ -167,6 +175,7 @@ const artifactRows = computed(() =>
         artPlan: artifactBatchPlan(a.defId),
         equipped: inventory.equippedArtifacts.includes(a.defId),
         rare: isRareQuality(def.quality),
+        plaque: qualityAura(def.quality).plaque,
         /** 按下会替下哪几件;判据与槽位画法同源 */
         evicts: (() => {
           const ids = artifactEvictedBy(inventory.equippedArtifacts, artifactSlots.value)
