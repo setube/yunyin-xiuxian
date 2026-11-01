@@ -100,6 +100,55 @@ try {
   if (!named) failures.push('点开隐私政策后没有出现 role=dialog')
   else if (!named.label && !named.titled) failures.push('弹窗没有可辨识名字')
   console.log(`  ${named && (named.label || named.titled) ? '✓' : '✗'} 弹窗有可辨识名字`)
+
+  /**
+   * 7) 禁用按钮要给得出拒因 —— 在真实 DOM 上验,与 ui/disabledReason.spec 的源码判据互补。
+   *
+   * 那一份用正则读源码,会放过「三元表达式算出来的拒因」与「拒因写在别处」的区别;
+   * 这一份看渲染结果:一个禁用的钮,玩家眼前要么有拒因、要么 hover/title 里有。
+   *
+   * 用「资源归零 + 空行囊」的夹具单独开一个 context —— 充足资源下禁用态几乎不出现,
+   * 这条检查就形同虚设。归零后各页的禁用钮才是玩家真会看到的那些。
+   */
+  const zero = lateSlices()
+  zero.resources = { spiritStone: { m: 0, e: 0 }, qi: 0, wudao: 0, herb: 0, ore: 0, page: 0, dust: 0 }
+  zero.inventory.items = []
+  zero.inventory.equipped = {}
+  zero.inventory.pills = {}
+  zero.inventory.artifacts = []
+
+  const zeroCtx = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  await zeroCtx.route('**/*', r => (/^https?:\/\/localhost:/.test(r.request().url()) ? r.continue() : r.abort()))
+  await seedSave(zeroCtx, zero, '__zeroFixture')
+  const zeroPage = await zeroCtx.newPage()
+  await zeroPage.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
+  await zeroPage.waitForTimeout(1500)
+
+  const DENY_ROUTES = ['/', '/cultivation', '/adventure', '/inventory', '/market', '/dongfu', '/souls', '/build', '/apprentice']
+  let denyChecked = 0
+  const denyBad = []
+  for (const r of DENY_ROUTES) {
+    await zeroPage.evaluate(h => { location.hash = '#' + h }, r)
+    await zeroPage.waitForTimeout(700)
+    const bad = await zeroPage.evaluate(() => {
+      const out = []
+      for (const b of document.querySelectorAll('button')) {
+        if (!b.disabled) continue
+        const t = (b.innerText || '').replace(/\s+/g, '')
+        if (!t) continue
+        // 可空:title / aria-label / 正文里有拒因词
+        if (b.title || b.getAttribute('aria-label')) continue
+        if (/尚差|不足|未至|未满|已满|上限|在途|不可|无处|暂无|无可|闭关中|身在/.test(t)) continue
+        out.push(t.slice(0, 16))
+      }
+      return out
+    })
+    denyChecked += 1
+    if (bad.length > 0) denyBad.push(`${r}: ${bad.slice(0, 4).join(' | ')}`)
+  }
+  await zeroCtx.close()
+  if (denyBad.length > 0) failures.push(`禁用钮没给拒因(资源归零档):${denyBad.join('; ')}`)
+  console.log(`  ${denyBad.length === 0 ? '✓' : '✗'} 禁用钮有拒因(资源归零 · ${denyChecked} 页)`)
 } finally {
   await browser?.close()
   await server.httpServer.close()
