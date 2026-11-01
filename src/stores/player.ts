@@ -28,7 +28,7 @@ import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
 import { divinationActiveAt, readingFromState, readingMods } from '@/core/divination'
 import { gameNow } from '@/core/enginePause'
-import { asArray, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
+import { asArray, asBoundedGNum, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, secretRuleByText } from '@/data/secretRealms'
 import { DAOLU, ENDING_NAMES, STAGE_NAMES, STAGE_ORDER, type BondEnding, type BondStage } from '@/data/daolu'
 import { lifeThemeDef } from '@/data/lifeThemes'
@@ -660,7 +660,8 @@ export const usePlayerStore = defineStore(
 
     /** 存档修复 */
     function sanitize(): void {
-      exp.value = gn(exp.value)
+      // 修为是存档里的 GNum:裸 gn() 不限指数,坏档会让修为条印出「1.00e1000000000」
+      exp.value = asBoundedGNum(exp.value)
       /*
        * 只认严格 true:字符串 "false" 与数字 1 都是真值。
        * dead 为真会让引擎跳过在线收益、离线结算整段返回 null、主页常驻「陨落」——

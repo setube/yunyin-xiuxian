@@ -137,11 +137,18 @@ describe('saveShape · asBoundedGNum', () => {
     expect(asBoundedGNum({ m: -5, e: 3 })).toEqual({ m: -5, e: 3 })
   })
 
+  it('裸数字按 gn() 归一(旧档常把 GNum 写成 123),字符串与 null 仍归零', () => {
+    expect(asBoundedGNum(123)).toEqual({ m: 1.23, e: 2 })
+    expect(asBoundedGNum(0)).toEqual({ m: 0, e: 0 })
+    for (const bad of ['12', null, undefined]) {
+      expect(asBoundedGNum(bad), `坏样本 ${JSON.stringify(bad)} 应归零`).toEqual({ m: 0, e: 0 })
+    }
+  })
+
   it('形状坏或指数越界一律归零', () => {
     for (const bad of [
       undefined,
       null,
-      42,
       '12',
       {},
       { m: 1 },
