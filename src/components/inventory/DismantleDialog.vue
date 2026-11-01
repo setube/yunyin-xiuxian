@@ -54,6 +54,7 @@
             :key="q.rank"
             class="chip-ink !py-2 text-[10px]"
             :class="settings.smartKeep.minQuality === q.rank ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
+            :aria-pressed="settings.smartKeep.minQuality === q.rank"
             @click="settings.smartKeep.minQuality = q.rank"
           >
             {{ q.name }}
@@ -70,6 +71,7 @@
             :key="t"
             class="chip-ink !py-2 text-[10px]"
             :class="settings.smartKeep.keepMinTier === t ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
+            :aria-pressed="settings.smartKeep.keepMinTier === t"
             @click="settings.smartKeep.keepMinTier = t"
           >
             {{ t === 0 ? '不设' : `${t} 阶` }}

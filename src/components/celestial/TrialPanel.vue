@@ -110,6 +110,7 @@
           :key="w.id"
           class="chip-ink !py-1.5"
           :class="draft.worldId === w.id ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
+          :aria-pressed="draft.worldId === w.id"
           @click="setDraftWorld(w.id)"
         >
           {{ w.name }}
