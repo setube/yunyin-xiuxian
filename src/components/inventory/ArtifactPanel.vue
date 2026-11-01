@@ -79,14 +79,19 @@
           <!-- 槽满时按钮列出全部让位件(超编时不止一件,见 artifactEvictedBy) -->
           {{ row.equipped ? '收回法宝' : row.evicts.length ? `替下${row.evicts.join('、')}` : '祭炼随身' }}
         </button>
+        <!--
+          满重不再让按钮消失:它与「祭炼随身」并排各占一半,一消失整行布局就变,
+          玩家还看不出是「满了」还是「坏了」。改成禁用并写原因(AGENTS.md「禁用即给原因」)。
+        -->
         <button
-          v-if="row.upCost"
           class="btn-ghost flex-1 !py-1.5 !text-[12px] tabular"
-          :disabled="row.short?.short != null"
+          :disabled="!row.upCost || row.short?.short != null"
+          :title="row.upCost ? undefined : '祭炼已至上限'"
           @click="upgradeArtifact(row.def.id)"
         >
           <!-- 两种代价都须写出:炼化扣悟道点与灵石(见 forge.artifactUpCost) -->
-          炼化(悟道 {{ row.upCost.wudao }} · 灵石 {{ formatGN(row.upCost.stone) }})
+          <template v-if="row.upCost">炼化(悟道 {{ row.upCost.wudao }} · 灵石 {{ formatGN(row.upCost.stone) }})</template>
+          <template v-else>已至上限</template>
         </button>
       </div>
       <!-- 缺料就地报缺口,不靠 hover -->
