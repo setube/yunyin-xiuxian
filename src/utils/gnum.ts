@@ -131,8 +131,17 @@ export function gnMin(a: GNum, b: GNum): GNum {
 /** 转普通数字(超出范围返回 Infinity,仅用于展示或小数值) */
 export function toNum(a: GNum): number {
   if (a.m === 0) return 0
-  if (a.e > 308) return Infinity
-  return a.m * Math.pow(10, a.e)
+  /**
+   * 直接算完再判结果,而不是只看指数。
+   *
+   * 只看指数会漏判:m × 10^308 在 m > 1.7976… 时已超过 Number.MAX_VALUE,
+   * 例如 { m: 1.9, e: 308 } 这类值指数没过线、乘出来却是 Infinity。
+   * 两种写法的**返回值此刻完全一致**(过线的照样得出 Infinity),
+   * 差别在于这里不再依赖「308 这个数字刚好安全」这个隐含前提 ——
+   * 将来若调整 GNum 的表示范围,溢出判据不需要跟着改。
+   */
+  const v = a.m * Math.pow(10, a.e)
+  return Number.isFinite(v) ? v : Infinity
 }
 
 /** 安全比值 a/b → number,指数差被钳制,用于血量百分比/胜率估算 */
