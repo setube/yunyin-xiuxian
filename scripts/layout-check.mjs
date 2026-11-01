@@ -410,7 +410,16 @@ async function measurePage(page) {
         }
         return out
       })(),
-      // 选择型控件(aria-pressed / aria-selected / role=tab)每组恰有一个选中
+      /*
+       * 选择型控件每组至多一个选中。
+       *
+       * `aria-pressed` 是 **toggle** 语义(WAI-ARIA):一组开关可以一个都不按,
+       * 也可以各自独立 —— 比如转世弹窗的天赋主题,再点一次就是取消选中(theme = null)。
+       * 早先这里对它和 aria-selected 用同一条「恰有一个」,于是那类可取消的组
+       * 一旦全不选就会被判成「选择组没选中态」,是脚本误报而非界面缺陷。
+       * 故 aria-pressed 只查「不超过一个」:多于一个是真错(两个互斥项同时选中),
+       * 一个都没有是合法的。
+       */
       badGroups: (() => {
         const out = []
         for (const attr of ['aria-pressed', 'aria-selected']) {
@@ -423,7 +432,8 @@ async function measurePage(page) {
           for (const [parent, els] of byParent) {
             if (els.length < 2) continue
             const on = els.filter(e => e.getAttribute(attr) === 'true').length
-            if (on !== 1) out.push(`${attr} 组(${els.length} 项)里有 ${on} 个选中`)
+            // aria-pressed 允许 0(可取消的开关组);aria-selected 仍要求恰有一个
+            if (attr === 'aria-pressed' ? on > 1 : on !== 1) out.push(`${attr} 组(${els.length} 项)里有 ${on} 个选中`)
           }
         }
         const tabsByParent = new Map()
