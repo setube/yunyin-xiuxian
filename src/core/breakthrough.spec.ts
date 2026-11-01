@@ -8,14 +8,14 @@ import { modOf } from './statsCalc'
 import { buildTribulationPlan, currentTribulationPlan } from './tribulationDecision'
 import { prepareBreakthrough, breakthroughPrepState, consumeBreakthroughPrep } from './earlyGameService'
 import { gn } from '@/utils/gnum'
-import { formatPercent } from '@/utils/format'
+import { formatNum, formatPercent } from '@/utils/format'
 import type { StatMods } from '@/types'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
 import { REALMS, WORLDS, MAX_MAJOR } from '@/data/realms'
 import { SUB_LEVELS } from '@/data/constants'
-import { breakthroughPeakReason } from '@/ui/cultivationText'
+import { breakthroughExpReason, breakthroughPeakReason, breakthroughQiReason } from '@/ui/cultivationText'
 
 describe('渡劫成功率推演', () => {
   beforeEach(() => {
@@ -270,4 +270,66 @@ describe('巅峰(大道尽头)', () => {
     expect(info.targetLabel).toBe(breakthroughPeakReason())
     expect(info.targetLabel, '不再出现自己境界的「一层」残影').not.toContain('一层')
   })
+
+
+/**
+ * 突破闸门的状态机。
+ *
+ * breakthroughInfo 有三道闸门,按固定顺序判:修为未满 → 灵气不足 → 就绪。
+ * 此前只测了「巅峰不可再突破」那一道,另两道没测 —— 而它们的拒因文案是玩家
+ * 唯一能看到的指引,顺序错了会给出让人白等的提示(比如灵气不够却先说修为未满)。
+ */
+describe('突破闸门 · 三道拒绝的顺序与拒因', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('新档:先说修为未至圆满,不先报缺灵气', () => {
+    const info = breakthroughInfo()
+    expect(info.ready, '新档不可能就绪').toBe(false)
+    expect(info.reason).toBe(breakthroughExpReason())
+    expect(info.reason, '修为未满时不该先报灵气').not.toContain('灵气')
+  })
+
+  it('修为圆满但灵气不足:改为报灵气差额,且差额与 qiCost 一致', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.exp = gn(1e18)
+    expect(player.expFull, '构造失败:修为应已圆满').toBe(true)
+    resources.qi = 0
+    const info = breakthroughInfo()
+    expect(info.ready).toBe(false)
+    expect(info.reason, '此时应报灵气不足').toBe(breakthroughQiReason(formatNum(info.qiCost)))
+    expect(info.reason, '差额数字要写进去,不能只写「灵气不足」').toContain(formatNum(info.qiCost))
+  })
+
+  it('补足灵气后就绪,且不再带拒因', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.exp = gn(1e18)
+    const need = breakthroughInfo().qiCost
+    resources.qi = need
+    const info = breakthroughInfo()
+    expect(info.ready, '修为与灵气都够,应就绪').toBe(true)
+    expect(info.reason, '就绪时不该再有拒因').toBe('')
+  })
+
+  it('灵气差一点也拒绝(边界取 >= 而非 >)', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    player.exp = gn(1e18)
+    const need = breakthroughInfo().qiCost
+    resources.qi = need - 1
+    expect(breakthroughInfo().ready, '差一缕灵气即不可突破').toBe(false)
+    resources.qi = need
+    expect(breakthroughInfo().ready).toBe(true)
+  })
+
+  it('三道闸门按顺序判:修为未满时即便灵气为零,也只报修为', () => {
+    const resources = useResourcesStore()
+    resources.qi = 0
+    const info = breakthroughInfo()
+    expect(info.reason, '灵气为零但修为也没满,应只报修为').toBe(breakthroughExpReason())
+  })
+})
 })
