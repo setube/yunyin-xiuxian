@@ -83,11 +83,18 @@ export function useAutoReforge() {
     autoArm.value = false
   })
   function runAutoReforge(): void {
-    if (!inst.value) return
+    /**
+     * 不在这里按 inst 提前返回:装备已被分解/转移时 inst 就是 undefined,
+     * 提前 return 会让下面「未找到装备」那条提示永远走不到,玩家点了没反应。
+     * core/reforge.autoReforge 对查不到的 uid 会安全返回 stop='frozen'(第 310 行),
+     * 交给它结账,再按 equipDetailUid 判是否已不在行囊。
+     */
+    const uid = ui.equipDetailUid
+    if (!uid) return
     autoArm.value = false
     const targets = autoTargets.value
     const budget = autoReforgeBudget(autoBudget.value)
-    const out = autoReforge(inst.value.uid, targets, budget)
+    const out = autoReforge(uid, targets, budget)
     const tally = `${out.rolls} 次 · 花 ${formatGN(out.stone)} · 尘×${out.dust}`
     if (out.stop === 'target' && out.hit) {
       playSfx('success')
@@ -106,8 +113,11 @@ export function useAutoReforge() {
         ui.toast(`${reforgeShortToast(short)} · ${tally}`, 'warn')
       }
     } else {
-      // frozen = 没得洗(全封存/无词条)或装备已不在行囊;不响
-      const gone = inst.value !== undefined && !inventory.findItem(inst.value.uid)
+      // frozen = 没得洗(全封存/无词条)或装备已不在行囊。
+      // 判据取 equipDetailUid 而非 inst:inst 本身就是「按 uid 查行囊」的结果,
+      // 装备不在行囊时它已经是 undefined,再拿它反查永远得不出「已不在」——
+      // 那个分支原先恒不成立,玩家只会看到「无可重铸」,看不到「未找到装备」。
+      const gone = !!ui.equipDetailUid && !inventory.findItem(ui.equipDetailUid)
       ui.toast(gone ? '未找到装备' : reforgeEmptyToast(), 'info')
     }
     // 结账即收板(由面板通知宿主收起)
