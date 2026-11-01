@@ -120,7 +120,11 @@
       </div>
     </div>
   </div>
-  <p v-else class="mt-16 text-center text-[12px] text-ink-faint">暂无法宝</p>
+  <!-- 空态与名号/灵兽册同一套:哑印 + 楷体标签 -->
+  <p v-else class="mt-12 text-center">
+    <span class="empty-seal" aria-hidden="true">宝</span>
+    <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">暂无法宝</span>
+  </p>
 </template>
 
 <script setup lang="ts">

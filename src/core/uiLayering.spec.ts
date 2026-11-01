@@ -271,6 +271,41 @@ describe('界面分层 · 块级空态只有一个出处', () => {
     }
     expect(missing, '这些块级空态没收进 .empty-note —— 短横是块级空态的唯一出处').toEqual([])
   })
+
+  /**
+   * 另一档:`.empty-seal` 单字哑印,用于「这一册还没有东西」。
+   *
+   * 背包四册的空态原先只有一行灰字,而且三处位置各不相同(mt-8 / mt-10 / mt-16);
+   * 同为零件的名号册、灵兽册早有哑印 + 楷体标签。这不是文案问题 ——
+   * 「暂无藏品」本身就是规范点名的状态词,缺的是那一档视觉。
+   * 故障注入:把任一处改回裸淡字,本条红。
+   */
+  it('册页级空态挂 empty-seal(哑印),与名号/灵兽册同一套', () => {
+    const SITES: [string, string][] = [
+      ['views/InventoryView.vue', '暂无藏品'],
+      ['views/InventoryView.vue', '暂无丹药'],
+      ['components/inventory/ArtifactPanel.vue', '暂无法宝'],
+      ['views/TitlesView.vue', '暂无灵兽']
+    ]
+    const missing: string[] = []
+    for (const [path, phrase] of SITES) {
+      const f = FILES.find(x => x.path === path)
+      if (!f) {
+        missing.push(`${path} → 文件不见了`)
+        continue
+      }
+      const tag = [...f.src.matchAll(/<p\b[^>]*>/g)].find(m => {
+        const after = f.src.slice(m.index! + m[0].length, m.index! + m[0].length + 260)
+        return /\bv-(?:else|if)\b/.test(m[0]) && after.includes(phrase)
+      })
+      if (!tag) missing.push(`${path} → 找不到「${phrase}」那个空态段落`)
+      else {
+        const block = f.src.slice(tag.index!, tag.index! + 320)
+        if (!block.includes('empty-seal')) missing.push(`${path} → 「${phrase}」还是裸淡字,没挂哑印`)
+      }
+    }
+    expect(missing, '这些册页级空态没有哑印 —— 这一册还没有东西,要给得出「空」的形状').toEqual([])
+  })
 })
 
 /**
