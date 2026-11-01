@@ -1,5 +1,5 @@
 /**
- * 法宝池 —— 49 件,拥有被动属性与自动触发的主动神通
+ * 法宝池 —— 50 件,拥有被动属性与自动触发的主动神通
  *
  * passive / active.effect 是凡品零重基线(算式第一个因子),品阶与祭炼两条放大由 artifactValue 施加;
  * desc 与 effect 描述的是基线,不是面板。
@@ -290,6 +290,19 @@ export const ARTIFACTS: ArtifactDef[] = [
     3,
     { type: 'damage', mult: 5.0 },
     'bell'
+  ),
+  f(
+    'af_yinshi',
+    '月蚀匕',
+    'excellent',
+    19,
+    '刃过无痕,只余一线月华',
+    { attackPct: 0.04, lifesteal: 0.03 },
+    '月蚀',
+    '每 3 回合月华蚀骨,造成 150% 攻击伤害并回复其中 60%',
+    3,
+    { type: 'drain', mult: 1.5, healPct: 0.6 },
+    'moon'
   ),
   f(
     'af_zaohua',
