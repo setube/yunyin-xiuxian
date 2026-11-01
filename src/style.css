@@ -776,6 +776,35 @@ html[data-theme='light'] .q-aura-halo {
   }
 }
 
+/* ================= 满级标记 =================
+ * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
+ *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
+ *   满级 = 玩家投入后挣来的状态 → 顶边一道实心横杠,与稀有度无关。
+ * 混用会让玩家以为「发光的都是强化过的」,所以形状不同、颜色也不同(金 vs 品阶色)。
+ * 只画一条 2px 的顶边:格子只有 40~44px,再加层就盖住图标了。
+ */
+.mastery-bar {
+  position: absolute;
+  left: 50%;
+  top: -1px;
+  height: 2px;
+  width: 62%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgb(var(--color-gold-ink-rgb));
+  pointer-events: none;
+}
+
+/* 夜主题:金色在近黑底上够亮,直接复用;日主题的 gold-ink 偏褐,
+   2px 细条在小格子上会糊,加深一档并补一点外扩 */
+html[data-theme='dark'] .mastery-bar {
+  box-shadow: 0 0 6px rgb(var(--color-gold-ink-rgb) / 0.55);
+}
+html[data-theme='light'] .mastery-bar {
+  background: rgb(var(--color-amber-ink-rgb));
+  box-shadow: 0 0 0 0.5px rgb(var(--color-gold-ink-rgb) / 0.45);
+}
+
 /* 稀有天降:全屏金光(叠在 toast 之下) */
 .rare-flash {
   position: fixed;

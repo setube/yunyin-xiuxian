@@ -45,7 +45,8 @@
       tone?: string
       compact?: boolean
     }>(),
-    { compact: false }
+    // quality / rank / tone 三者按需给其一,默认值用 undefined 表达「没给」
+    { compact: false, quality: undefined, rank: undefined, tone: undefined }
   )
 
   const aura = computed(() => (props.quality ? qualityAura(props.quality) : qualityAuraByRank(props.rank ?? 0)))
