@@ -32,12 +32,24 @@
       </template>
     </div>
   </template>
+  <!--
+    满级时原先整块消失:面板里既没有「已至上限」也没有下一级预览,
+    玩家只看到强化那一段凭空不见。保留一条状态行,直接说原因。
+  -->
+  <template v-else-if="inst && !upCost">
+    <div class="ink-divider my-3" />
+    <p class="flex items-center justify-between text-[12px] text-ink-faint">
+      <span>强化 +{{ inst.level }} / 上限 {{ equipLevelCap() }}</span>
+      <span class="text-gold-ink">{{ upgradeCapToast() }}</span>
+    </p>
+  </template>
 </template>
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { useUiStore } from '@/stores/ui'
   import { useInventoryStore } from '@/stores/inventory'
+  import { upgradeCapToast } from '@/ui/forgeText'
   import { equipLevelCap, equipUpgradeCost, upgradeBatchPlan, upgradeEquipmentBatch, upgradeShort, upgradeShortfall, type UpgradeBatchPlan } from '@/core/forge'
   import { formatGN, formatGap } from '@/utils/format'
   import { gnZero } from '@/utils/gnum'

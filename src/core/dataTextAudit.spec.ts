@@ -1007,11 +1007,18 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   it('强化缺料时置灰并写出实际差额', () => {
     const detail = src('../components/equipment/EquipmentDetailDialog.vue')
     const panel = src('../components/equipment/UpgradePanel.vue')
-    expect(detail, '强化按钮按缺口置灰').toContain(':disabled="upShort !== null"')
+    // 满级时按钮改为禁用并写原因(不再凭空消失),故判据取「缺料置灰」这一段
+    expect(detail, '强化按钮按缺口置灰').toContain('upCost ? upShort !== null : true')
     expect(detail, '强化按钮就地写石差/尘差').toContain('强 化(石差')
     expect(detail, '强化按钮就地写尘差').toContain('强 化(尘差')
     expect(panel, '强化面板列实际缺口').toContain('器灵尘尚差 {{ gap.dust }}')
     expect(panel, '强化面板列灵石缺口').toContain('灵石尚差 {{ formatGap(gap.stone) }}')
+    // 满级不再让整块消失:玩家要看得到「已至上限」而不是一片空白
+    expect(panel, '满级时保留一条状态行').toContain('v-else-if="inst && !upCost"')
+    expect(panel, '满级状态行写原因').toContain('{{ upgradeCapToast() }}')
+    expect(detail, '详情弹窗满级时按钮不消失,改为禁用并写原因').toContain(':disabled="upCost ? upShort !== null : true"')
+    // 按钮只写短状态:这一格原是与「卸 下」并排的两字钮,四个字会折行
+    expect(detail, '满级按钮只写短状态,完整说法放 title').toContain("!upCost ? '已至上限' : ")
   })
 
   /**

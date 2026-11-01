@@ -10,6 +10,8 @@
           {{ EQUIP_SLOT_NAMES[template.slot] }} · {{ worldNameOfTier(inst.tier) }} · {{ inst.tier }} 阶
         </span>
         <span v-if="inst.level > 0" class="text-[11px] text-gold-ink tabular">+{{ inst.level }}</span>
+        <!-- 满级时补一句,别让玩家自己去猜还能不能升 -->
+        <span v-if="mastery" class="rounded bg-gold-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-gold-ink">{{ mastery.label }}</span>
         <button
           class="-m-1.5 flex min-h-[28px] min-w-[28px] items-center justify-center p-1.5 text-ink-faint active:scale-90"
           :aria-label="inst.locked ? '解锁' : '锁定'"
@@ -125,13 +127,16 @@
         />
         <div class="flex gap-2">
           <button class="btn-seal flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
+          <!--
+            满级不再让按钮凭空消失:消失的按钮不解释任何事,玩家只看到「强 化」不见了。
+            保留同一位置、换成禁用态并直接写出原因(AGENTS.md「禁用即给原因」)。
+          -->
           <button
-            v-if="upCost"
             class="btn-ghost flex-1"
-            :disabled="upShort !== null"
-            :title="upShort === 'stone' ? `灵石尚差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `器灵尘尚差 ${upGap?.dust ?? 0}` : undefined"
+            :disabled="upCost ? upShort !== null : true"
+            :title="upCost ? (upShort === 'stone' ? `灵石尚差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `器灵尘尚差 ${upGap?.dust ?? 0}` : undefined) : upgradeCapToast()"
             @click="doUpgrade"
-          >{{ upShort === 'stone' ? `强 化(石差${formatGap(upGap?.stone ?? { m: 0, e: 0 })})` : upShort === 'dust' ? `强 化(尘差${upGap?.dust ?? 0})` : '强 化' }}</button>
+          >{{ !upCost ? '已至上限' : upShort === 'stone' ? `强 化(石差${formatGap(upGap?.stone ?? { m: 0, e: 0 })})` : upShort === 'dust' ? `强 化(尘差${upGap?.dust ?? 0})` : '强 化' }}</button>
           <!-- 分解须二步确认,防误触 -->
           <template v-if="decomposeArm !== inst?.uid">
             <button
@@ -165,7 +170,9 @@
   import { worldNameOfTier } from '@/core/formulas'
   import { resolveEquipStats } from '@/core/equipGen'
   import { equippablePower } from '@/core/equipBest'
-  import { decomposeEquipment, equipUpgradeCost, upgradeEquipment, upgradeShort, upgradeShortfall } from '@/core/forge'
+  import { decomposeEquipment, equipLevelCap, equipUpgradeCost, upgradeEquipment, upgradeShort, upgradeShortfall } from '@/core/forge'
+  import { upgradeCapToast } from '@/ui/forgeText'
+  import { equipMastery } from '@/ui/masteryMark'
   import { salvageOf, salvageRefundPhrase } from '@/core/salvage'
   import { detectBuild } from '@/core/buildDetect'
   import { qualityDef } from '@/data/qualities'
@@ -208,6 +215,7 @@
     if (inst.value?.locked) return '分解(已上锁)'
     return '分解'
   })
+  const mastery = computed(() => (inst.value ? equipMastery(inst.value.level, equipLevelCap()) : null))
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
   const upShort = computed(() => (upCost.value ? upgradeShort(upCost.value) : null))
   const upGap = computed(() => (upCost.value ? upgradeShortfall(upCost.value) : null))
