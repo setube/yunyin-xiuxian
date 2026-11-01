@@ -19,12 +19,12 @@ import { pactDef } from '@/data/pacts'
 import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef } from '@/data/artifacts'
 import { STAT_KEYS } from '@/data/statNames'
 import { MAX_MAJOR } from '@/data/realms'
-import { gn } from '@/utils/gnum'
 import { useAdventureStore } from '@/stores/adventure'
 import {
   asArray,
   asCarriedHpPct,
   asCombatSkills,
+  asBoundedGNum,
   asFiniteNumber,
   asNumberRecord,
   asObjectOrNull,
@@ -162,8 +162,9 @@ function sanitizeMarkReplay(raw: unknown): DaoMark['replay'] | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
   const r = raw as Partial<NonNullable<DaoMark['replay']>>
   if (!Array.isArray(r.skills) || !Array.isArray(r.artifacts)) return undefined
-  // 三维可能缺栏、是裸数字或半截对象:gn() 运行时都能归一
-  const gnumOf = (v: unknown): import('@/types').GNum => gn(v as number | import('@/types').GNum)
+  // 三维可能缺栏、是裸数字或半截对象:asBoundedGNum 既能归一也带指数上界。
+  // 裸 gn() 不设界,坏档能让道痕列表把战力印成「1.00e1000000000」。
+  const gnumOf = (v: unknown): import('@/types').GNum => asBoundedGNum(v)
   const attack = gnumOf(r.attack)
   const defense = gnumOf(r.defense)
   const maxHp = gnumOf(r.maxHp)
