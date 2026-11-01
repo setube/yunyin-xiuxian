@@ -107,6 +107,9 @@ export const SAVE_GNUM_MAX_EXP = 999
  * 读档的 GNum 都应经此函数。
  */
 export function asBoundedGNum(v: unknown): GNum {
+  // 裸数字也接受:旧档/手改档里常把 GNum 写成 123 这种。gn(123) 会规范成 { m: 1.23, e: 2 },
+  // 而数字的指数必然远在界内,不需再判。
+  if (typeof v === 'number') return gn(v)
   if (!v || typeof v !== 'object' || !('m' in v) || !('e' in v)) return gnZero()
   const { m, e } = v as { m: unknown; e: unknown }
   if (
@@ -121,8 +124,15 @@ export function asBoundedGNum(v: unknown): GNum {
   return gnZero()
 }
 
-/** 价格/奖励的 GNum:与 asBoundedGNum 同一条界,保留旧名以免调用点大改 */
+/**
+ * 价格/奖励的 GNum。
+ *
+ * 与 asBoundedGNum 同一条指数界,但**只收 { m, e } 结构**:
+ * 价格是导出契约的一部分,写成裸数字属于格式错误,该按「读不出」处理。
+ * (asBoundedGNum 收裸数字,是因为它服务的是会话/修为这类「旧档可能写成 123」的字段。)
+ */
 export function asPrice(v: unknown): GNum {
+  if (!v || typeof v !== 'object' || !('m' in v) || !('e' in v)) return gnZero()
   return asBoundedGNum(v)
 }
 

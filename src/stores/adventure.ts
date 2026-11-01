@@ -4,7 +4,6 @@ import { computed, ref } from 'vue'
 import type { AdventureSession, CombatResult, CombatSideStats, FoeOrigin, FoeOriginPart, GNum } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { regionDef, unlockClosure } from '@/data/regions'
-import { gn } from '@/utils/gnum'
 import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray, asBoundedGNum } from '@/utils/saveShape'
 import { eventDef } from '@/data/events'
 import { exploreModeOf } from '@/core/exploreModes'
@@ -185,7 +184,7 @@ export interface LastBattleView {
 
 /** 战力栏修形:gn() 归一,归零视为缺失(卡片 v-if 只渲染有值的 GNum) */
 function gnStrict(v: unknown): GNum | undefined {
-  const g = gn(v as GNum)
+  const g = asBoundedGNum(v)
   return g.m === 0 && g.e === 0 ? undefined : g
 }
 
@@ -244,9 +243,10 @@ export const useAdventureStore = defineStore(
             losses: Math.floor(asFiniteNumber(s.losses, 0, 0)),
             events: Math.floor(asFiniteNumber(s.events, 0, 0)),
             itemGain: Math.floor(asFiniteNumber(s.itemGain, 0, 0)),
-            // 须经 gn() 归一:坏 GNum 会让 exploration 的 add() 每场胜利都抛,历练永久卡死
-            stoneGain: gn(s.stoneGain),
-            expGain: gn(s.expGain)
+            // 须经 asBoundedGNum 归一:坏 GNum 会让 exploration 的 add() 每场胜利都抛,历练永久卡死;
+            // 它同时带指数上界,裸 gn() 不设界会让本世收益印出「1.00e1000000000」
+            stoneGain: asBoundedGNum(s.stoneGain),
+            expGain: asBoundedGNum(s.expGain)
           }
         }
       }

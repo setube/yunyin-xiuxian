@@ -293,4 +293,52 @@ describe('战报数值 · 坏档量级', () => {
     expect(formatGN(st.result.stats.player.taken)).not.toBe('0')
   })
 })
+
+/**
+ * 会话收益的量级守卫。
+ *
+ * sanitize 原先对 stoneGain / expGain 直接调 gn() —— 它只规范化 m、不限 e,
+ * 于是坏档写 { m: 1, e: 1e9 } 就能让本世收益显示成「1.00e1000000000」。
+ * 这两项是 exploration 每场胜利 add() 的入参,坏 GNum 还会让推进抛错。
+ * 现已改走 asBoundedGNum(与 asPrice 同一条界)。
+ */
+describe('历练会话 · 收益量级', () => {
+  function withGain(g: unknown) {
+    const a = useAdventureStore()
+    a.setSession({
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: 100,
+      endsAt: 2000,
+      nextBattleAt: 500,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: g,
+      expGain: g,
+      itemGain: 0
+    } as never)
+    a.sanitize()
+    return a.session
+  }
+
+  it('指数越界的收益归零(不再印出 1.00e1000000000)', () => {
+    const s = withGain({ m: 1, e: 1e9 })
+    expect(s, '坏收益不该让整个会话被丢掉').not.toBeNull()
+    expect(formatGN(s!.stoneGain)).toBe('0')
+    expect(formatGN(s!.expGain)).toBe('0')
+  })
+
+  it('正常收益原样保留(修形非空转)', () => {
+    const s = withGain({ m: 2, e: 4 })
+    expect(s).not.toBeNull()
+    expect(formatGN(s!.stoneGain)).toBe('2万')
+  })
+
+  it('收益归零后会话本身仍在(玩家还在历练,只是这一世的累计读数被修形)', () => {
+    const s = withGain({ m: 1, e: 1e9 })
+    expect(s!.regionId).toBe('qingyun')
+    expect(s!.endsAt).toBe(2000)
+  })
+})
 })
