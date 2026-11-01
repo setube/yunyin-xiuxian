@@ -107,11 +107,55 @@ async function auditModalControls(page) {
         }
       })
       .filter(r => r.h > 0)
+    // 弹窗里的禁用按钮对比度:页面根那条 dimDisabled 扫不到弹窗,而本项目 20 处禁用钮几乎全在这里
+    const luma = rgb => {
+      if (!rgb) return null
+      const f = v => {
+        const s = v / 255
+        return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+      }
+      return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2])
+    }
+    const rgbaOf = c => {
+      const m = /rgba?\(([^)]+)\)/.exec(c || '')
+      if (!m) return null
+      const q = m[1].split(/[,\s/]+/).filter(Boolean).map(Number)
+      if (q.length < 3) return null
+      return { rgb: q.slice(0, 3), a: q.length > 3 ? q[3] : 1 }
+    }
+    const backdropOf = start => {
+      const layers = []
+      for (let n = start; n; n = n.parentElement) {
+        const c = rgbaOf(getComputedStyle(n).backgroundColor)
+        if (c && c.a > 0) {
+          layers.push(c)
+          if (c.a >= 0.999) break
+        }
+      }
+      let base = [255, 255, 255]
+      for (let i = layers.length - 1; i >= 0; i -= 1) {
+        const { rgb, a } = layers[i]
+        base = [0, 1, 2].map(k => rgb[k] * a + base[k] * (1 - a))
+      }
+      return base
+    }
+    const dimDisabled = [...panel.querySelectorAll('.btn-seal:disabled, .btn-ghost:disabled')]
+      .map(el => {
+        const lf = luma(rgbaOf(getComputedStyle(el).color)?.rgb ?? null)
+        const lb = luma(backdropOf(el))
+        if (lf === null || lb === null) return null
+        const ratio = Math.round(((Math.max(lf, lb) + 0.05) / (Math.min(lf, lb) + 0.05)) * 100) / 100
+        return { ratio, text: (el.textContent || '').trim().slice(0, 12) }
+      })
+      .filter(x => x && x.ratio < 3)
+      .slice(0, 3)
+      .map(x => `${x.ratio}:1 «${x.text}»`)
     return {
       count: rows.length,
       label: (panel.getAttribute('aria-label') || panel.querySelector('h3')?.textContent || '').trim(),
       unnamed: rows.filter(r => !r.name).map(r => `${r.h.toFixed(1)}px`),
-      small: rows.filter(r => !r.ok).map(r => `${r.h.toFixed(1)}px «${r.name || '无名'}»`)
+      small: rows.filter(r => !r.ok).map(r => `${r.h.toFixed(1)}px «${r.name || '无名'}»`),
+      dimDisabled
     }
   })
 }
@@ -627,6 +671,7 @@ for (const vp of VIEWPORTS) {
     if (audit && !audit.label) failures.push(`[${vp.tag}] 隐私弹窗没有可访问名(读屏只会念「对话框」)`)
     if (audit?.unnamed.length) failures.push(`[${vp.tag}] 隐私弹窗里有 ${audit.unnamed.length} 个无名控件`)
     if (audit?.small.length) failures.push(`[${vp.tag}] 隐私弹窗里可点元素过小:${audit.small.join(' | ')}`)
+    if (audit?.dimDisabled.length) failures.push(`[${vp.tag}] 隐私弹窗里禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
   }
   await page.locator('input[type=checkbox]').first().check()
   await page.getByRole('button', { name: /同意并开始/ }).first().click()
@@ -763,6 +808,7 @@ for (const vp of VIEWPORTS) {
   if (inModal && !inModal.label) failures.push('[375] 弹窗场景:对话框没有可访问名(读屏只会念「对话框」)')
   if (inModal?.unnamed.length) failures.push(`[375] 弹窗场景:面板里有 ${inModal.unnamed.length} 个无名控件(读屏只会念「按钮」)`)
   if (inModal?.small.length) failures.push(`[375] 弹窗场景:面板里可点元素过小:${inModal.small.join(' | ')}`)
+  if (inModal?.dimDisabled.length) failures.push(`[375] 弹窗场景:禁用态的字读不出来:${inModal.dimDisabled.join(' | ')}`)
 
   let escaped = false
   for (let i = 0; i < 6; i++) {
@@ -2612,6 +2658,7 @@ for (const vp of [
     for (const p of problemsOf(info)) failures.push(`${tag} 开炉弹窗 → ${p}`)
     const audit = await auditModalControls(page)
     if (audit?.small.length) failures.push(`${tag} 开炉弹窗里可点元素过小:${audit.small.join(' | ')}`)
+    if (audit?.dimDisabled.length) failures.push(`${tag} 开炉弹窗里禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
     if (audit?.unnamed.length) failures.push(`${tag} 开炉弹窗里有 ${audit.unnamed.length} 个无名控件`)
 
     // 渐隐提示:正文超长时,在顶 → 只亮底边;滚到底 → 只亮顶边
@@ -2747,6 +2794,7 @@ for (const vp of [
     for (const p of problemsOf(info)) failures.push(`${tag} ${step} → ${p}`)
     const audit = await auditModalControls(page)
     if (audit?.small.length) failures.push(`${tag} ${step}:可点元素过小 ${audit.small.join(' | ')}`)
+    if (audit?.dimDisabled.length) failures.push(`${tag} ${step}:禁用态的字读不出来 ${audit.dimDisabled.join(' | ')}`)
     if (audit?.unnamed.length) failures.push(`${tag} ${step}:${audit.unnamed.length} 个无名控件`)
     const nested = await page.evaluate(() => {
       const panel = document.querySelector('.modal-panel')
@@ -3267,6 +3315,7 @@ for (const vp of [
     if (!audit.label) failures.push(`[弹窗巡逻] ${name} 弹窗没有可访问名(读屏只会念「对话框」)`)
     if (audit.unnamed.length) failures.push(`[弹窗巡逻] ${name} 里有 ${audit.unnamed.length} 个无名控件:${audit.unnamed.join(' | ')}`)
     if (audit.small.length) failures.push(`[弹窗巡逻] ${name} 里可点元素过小(<28px):${audit.small.join(' | ')}`)
+    if (audit.dimDisabled.length) failures.push(`[弹窗巡逻] ${name} 里禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
     console.log(`弹窗巡逻:${name} · ${audit.count} 控件${audit.small.length ? ' · 过小:' + audit.small.join(' | ') : ' · 触控达标'}`)
   }
 
