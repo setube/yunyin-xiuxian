@@ -6,11 +6,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   ARTIFACTS,
-  ARTIFACT_DRAIN_HEAL_CAP,
   ARTIFACT_LEVEL_BONUS,
-  ARTIFACT_PURGE_CAP,
-  ARTIFACT_SUNDER_CAP,
-  ARTIFACT_WEAKEN_CAP,
   artifactActiveText,
   artifactDef,
   artifactLevelLabel,
@@ -48,6 +44,18 @@ function effectTypesFromTypes(): string[] {
   const block = src.slice(start, src.indexOf('export interface ArtifactDef', start))
   return [...new Set([...block.matchAll(/type:\s*'([a-z]+)'/g)].map(m => m[1]!))]
 }
+
+/**
+ * 封顶值在此**硬写**,不 import 被测量的常量。
+ *
+ * 原先 spec 读 ARTIFACT_WEAKEN_CAP 等四个常量来算期望值 —— 那是自证:
+ * 常量若被改错,artifactValue 与 expected 会一起变,用例照样绿。
+ * 硬写之后常量一改就会红,届时须显式确认是「有意调平衡」再同步改这里。
+ */
+const CAP_WEAKEN = 0.5
+const CAP_SUNDER = 0.5
+const CAP_PURGE = 0.9
+const CAP_DRAIN_HEAL = 1
 
 describe('法宝效果 · 词汇表不虚设', () => {
   it('每一种声明过的效果,都至少有一件法宝在用', () => {
@@ -152,18 +160,18 @@ describe('法宝说明 · 数字随品阶与祭炼等级走', () => {
       case 'damage':
         return { main: eff.mult * mult }
       case 'drain':
-        return { main: eff.mult * mult, heal: Math.min(ARTIFACT_DRAIN_HEAL_CAP, eff.healPct * mult) }
+        return { main: eff.mult * mult, heal: Math.min(CAP_DRAIN_HEAL, eff.healPct * mult) }
       case 'heal':
         return { main: eff.pctMaxHp * mult }
       case 'shield':
         // 单次护盾也受总盾上限约束(战斗侧 gainShield 钳在 SHIELD_CAP_RATIO)
         return { main: Math.min(SHIELD_CAP_RATIO, eff.pctMaxHp * mult) }
       case 'weaken':
-        return { main: Math.min(ARTIFACT_WEAKEN_CAP, eff.pct * mult) }
+        return { main: Math.min(CAP_WEAKEN, eff.pct * mult) }
       case 'sunder':
-        return { main: Math.min(ARTIFACT_SUNDER_CAP, eff.pct * mult) }
+        return { main: Math.min(CAP_SUNDER, eff.pct * mult) }
       case 'purge':
-        return { main: Math.min(ARTIFACT_PURGE_CAP, eff.pct * mult) }
+        return { main: Math.min(CAP_PURGE, eff.pct * mult) }
       case 'stun':
         return { main: null }
     }
@@ -265,10 +273,10 @@ describe('法宝说明 · 数字随品阶与祭炼等级走', () => {
   it('封顶是绝对的:任何品阶 × 任何重数都不越过它 —— 品阶只改变到顶的早晚', () => {
     const capOf: Partial<Record<string, number>> = {
       shield: SHIELD_CAP_RATIO,
-      weaken: ARTIFACT_WEAKEN_CAP,
-      sunder: ARTIFACT_SUNDER_CAP,
-      purge: ARTIFACT_PURGE_CAP,
-      drain: ARTIFACT_DRAIN_HEAL_CAP
+      weaken: CAP_WEAKEN,
+      sunder: CAP_SUNDER,
+      purge: CAP_PURGE,
+      drain: CAP_DRAIN_HEAL
     }
     let saturatedAtZero = 0
     for (const a of ARTIFACTS) {
@@ -334,13 +342,13 @@ describe('法宝说明 · 下一重给多少', () => {
     const l0 = artifactNextLevelGain(ling, 0)!
     expect(l0.active!.capped, '零重离 50% 的顶还有余量,不该说已至上限').toBe(false)
     const l8 = artifactNextLevelGain(ling, 8)!
-    expect(l8.active!.to).toBeCloseTo(ARTIFACT_WEAKEN_CAP, 10)
+    expect(l8.active!.to).toBeCloseTo(CAP_WEAKEN, 10)
     expect(l8.active!.capped, '已经顶到 50% 了,得说清楚再炼也不会更多').toBe(true)
     const s0 = artifactNextLevelGain(sutra, 0)!
-    expect(s0.active!.to).toBeCloseTo(ARTIFACT_SUNDER_CAP, 10)
+    expect(s0.active!.to).toBeCloseTo(CAP_SUNDER, 10)
     expect(s0.active!.capped, '破甲零重就在 50% 的顶上了').toBe(true)
     const n8 = artifactNextLevelGain(nianzhu, 8)!
-    expect(n8.active!.to).toBeCloseTo(ARTIFACT_PURGE_CAP, 10)
+    expect(n8.active!.to).toBeCloseTo(CAP_PURGE, 10)
     expect(n8.active!.capped).toBe(true)
   })
 
@@ -357,7 +365,7 @@ describe('法宝说明 · 下一重给多少', () => {
     // 灵品 × 1.45 之后是 72%
     expect(low.heal!.capped, '零重还没吃到十成').toBe(false)
     const high = artifactNextLevelGain(drum, 8)!
-    expect(high.heal!.to).toBeCloseTo(ARTIFACT_DRAIN_HEAL_CAP, 10)
+    expect(high.heal!.to).toBeCloseTo(CAP_DRAIN_HEAL, 10)
     expect(high.heal!.capped, '回补已经吃到十成,再炼也只是伤害在涨').toBe(true)
     expect(high.active!.to, '回补封顶之后,伤害那一侧仍要继续涨').toBeGreaterThan(high.active!.from)
   })
