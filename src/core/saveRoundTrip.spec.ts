@@ -34,6 +34,7 @@ import { useAdventureStore } from '@/stores/adventure'
 import { makeEnemySnap, resolveCombat } from './combat'
 import { RandomService, mulberry32 } from '@/utils/random'
 import { gn } from '@/utils/gnum'
+import { MAX_MAJOR } from '@/data/realms'
 import { analyzeBattle } from './battleAnalysis'
 import type { EnemyDef } from '@/types'
 
@@ -292,4 +293,88 @@ describe('存档往返 · 导出再导入一模一样', () => {
     ).toBe('无名散修')
     expect(inspectImportText('完全不是存档')).toBeNull()
   })
+
+
+/**
+ * 极端数值的往返。
+ *
+ * 现有往返用例用的是普通量级(major=7、herb=42)。真正会把存档写坏的是
+ * 混沌道祖那一档的超大 GNum,以及坏档里可能混进来的非有限值。
+ * 这类值若在「序列化 → 反序列化 → shape 守卫」的链条上被悄悄改写,
+ * 玩家读档后境界或余额会跳变,而普通用例看不出来。
+ */
+describe('存档往返 · 极端数值', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+    installStorage()
+    dropPendingWrites()
+    clearAllSave()
+    bootStores()
+  })
+
+  it('超大 GNum(混沌道祖档)原样回来,指数不丢', async () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const game = useGameStore()
+    game.markStarted()
+    player.major = MAX_MAJOR
+    resources.spiritStone = { m: 9.99, e: 52 }
+    await nextTick()
+    flushSaveWrites()
+
+    const text = exportSaveText()
+    clearAllSave()
+    bootStores()
+    const err = await importSaveText(text)
+    expect(err, '导入不该报错').toBeNull()
+
+    const back = useResourcesStore()
+    expect(back.spiritStone.e, '指数丢了,余额量级会整体错位').toBe(52)
+    expect(back.spiritStone.m).toBeCloseTo(9.99, 6)
+  })
+
+  it('刚好跨过溢出线的值不会被静默夹掉', async () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const game = useGameStore()
+    game.markStarted()
+    // 触碰 player 才会产生 player 分片;导入校验要求 data.player 是对象
+    player.major = 3
+    // e=308 且 m>1.79 时 toNum 会溢出,但存档本身仍应保住这两个字段
+    resources.spiritStone = { m: 1.9, e: 308 }
+    await nextTick()
+    flushSaveWrites()
+
+    const text = exportSaveText()
+    clearAllSave()
+    bootStores()
+    const err = await importSaveText(text)
+    expect(err, '导入不该报错').toBeNull()
+
+    const back = useResourcesStore()
+    expect(back.spiritStone.e, 'e=308 不该被当成坏档丢掉').toBe(308)
+    expect(back.spiritStone.m).toBeCloseTo(1.9, 6)
+  })
+
+  it('零值不会被当成缺字段补默认', async () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const game = useGameStore()
+    game.markStarted()
+    player.major = 3
+    resources.spiritStone = gn(0)
+    resources.qi = 0
+    await nextTick()
+    flushSaveWrites()
+
+    const text = exportSaveText()
+    clearAllSave()
+    bootStores()
+    await importSaveText(text)
+
+    const back = useResourcesStore()
+    expect(back.spiritStone.m, '零应保持零').toBe(0)
+    expect(back.qi).toBe(0)
+  })
+})
 })
