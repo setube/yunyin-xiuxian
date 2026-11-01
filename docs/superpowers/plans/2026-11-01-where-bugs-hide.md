@@ -335,3 +335,24 @@ CryptoJS 进首屏是因为 `utils/storage.ts` 也要用 —— 而 Pinia persis
   逐页扫 12 个路由的 `body.innerText`,`NaN / Infinity / undefined / null` 零命中
 - **存档防线**:`storeResilience`(12 例)与 `importCorruption` 全绿;
   `deadExportAudit` 也绿,ALLOWLIST 仍只有 1 条
+
+## 十五、功法顶级五部同形：查了，判定为设计（242 轮）
+
+主修功法里 r6/r9/r14/r18/r20 五部都是 `cultivationSpeed+attackPct+defensePct+maxHpPct`。
+看着像「顶级偷懒」，查完**判定不是缺陷**：
+
+- 五部的 **element 各不相同或有意重复**(chaos / wind / thunder / chaos / chaos),
+  而 element 不是装饰:`gongfaService` 按它对参悟掉落加权,`linggenAffinity` 按它算灵根亲和
+- **神通名与倍率各不相同**(2.8 / 3.0 / 3.4 / 3.8 / 4.0)
+- 主修其余 22 部**方向分工很细**(攻击/防御/闪避/吸血/破境/寿元/暴击/斩杀/震慑),
+  只有顶级走「综合型」—— 最高阶给全面强化是合理设计
+
+试改过两次都撞墙,记下来免得重试:
+
+1. 道祖本源经改 `armorPen+executeDamage`:满级预算 8.60 → **10.00**,越过单件上限 9
+   (`executeDamage` 权重 0.3、`armorPen` 0.18,比 `defensePct`/`maxHpPct` 的 0.25 更贵,
+   等值替换必然超)
+2. 混元无极经改 `damageReduction`:8.30 → **9.70**,同样越界
+
+`gongfaLadder` 只管预算阶梯(中位数递增、下沿不低于上一档中位数),不管词条组合 ——
+所以真要改组合,**先要腾出预算**,那是数值重排不是措辞修复。
