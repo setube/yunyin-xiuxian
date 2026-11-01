@@ -7,6 +7,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useLoadoutsStore, MAX_LOADOUTS, type Loadout } from './loadouts'
 import { applyLoadout } from '@/core/loadoutService'
 import { useInventoryStore } from './inventory'
+import { SUB_GONGFA_SLOT_HARD_CAP } from '@/data/constants'
+import { ARTIFACT_MAX_SLOTS } from '@/data/artifacts'
 
 function mk(id: string, over: Partial<Loadout> = {}): Loadout {
   return { id, name: id, seal: '道', mainGongfa: null, subGongfa: [], artifactIds: [], equipment: {}, savedAt: 1, ...over }
@@ -211,6 +213,53 @@ describe('构筑 · 超上限坏档截断', () => {
     s.list = []
     s.sanitize()
     expect(s.list).toHaveLength(0)
+  })
+})
+
+/**
+ * 快照内子数组的条数上限。
+ *
+ * 应用侧 applyLoadout 会按动态槽位再截一次(subGongfaSlots / artifactSlotsFor),
+ * 所以功能本身是安全的;但存档里留下的冗余 id 会一直躺着 ——
+ * 手改快照能塞进几千个 id,存档量白白膨胀几倍。
+ */
+describe('构筑 · 子数组条数上限', () => {
+  function withArrays(subs: number, arts: number) {
+    const s = useLoadoutsStore()
+    s.list = [
+      {
+        id: 'a',
+        name: 'n',
+        seal: '道',
+        mainGongfa: null,
+        subGongfa: Array.from({ length: subs }, (_, i) => `g${i}`),
+        artifactIds: Array.from({ length: arts }, (_, i) => `a${i}`),
+        equipment: {},
+        savedAt: 1
+      }
+    ] as never
+    s.sanitize()
+    return s.list[0]!
+  }
+
+  it('辅修席超量的部分被截掉', () => {
+    expect(withArrays(5000, 0).subGongfa).toHaveLength(SUB_GONGFA_SLOT_HARD_CAP)
+  })
+
+  it('法宝位超量的部分被截掉', () => {
+    expect(withArrays(0, 5000).artifactIds).toHaveLength(ARTIFACT_MAX_SLOTS)
+  })
+
+  it('正常快照原样保留(修形非空转)', () => {
+    const l = withArrays(2, 1)
+    expect(l.subGongfa).toEqual(['g0', 'g1'])
+    expect(l.artifactIds).toEqual(['a0'])
+  })
+
+  it('截断保留前面的 id(读档顺序即优先序)', () => {
+    const l = withArrays(5000, 5000)
+    expect(l.subGongfa[0]).toBe('g0')
+    expect(l.artifactIds[0]).toBe('a0')
   })
 })
 })

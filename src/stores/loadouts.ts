@@ -6,7 +6,8 @@ import { persistConfig } from '@/utils/storage'
 import { asArray, asFiniteNumber, asRecord, asStringArray } from '@/utils/saveShape'
 import { uid } from '@/utils/id'
 import { EQUIP_SLOTS } from '@/data/equipment'
-import { NAME_MAX_LENGTH } from '@/data/constants'
+import { NAME_MAX_LENGTH, SUB_GONGFA_SLOT_HARD_CAP } from '@/data/constants'
+import { ARTIFACT_MAX_SLOTS } from '@/data/artifacts'
 
 export interface Loadout {
   id: string
@@ -48,8 +49,10 @@ export const useLoadoutsStore = defineStore(
             seal: typeof l.seal === 'string' ? l.seal : '',
             mainGongfa: typeof l.mainGongfa === 'string' ? l.mainGongfa : null,
             // 辅修/法宝是集合:重复项会被 applyLoadout 原样写回,算两次
-            subGongfa: [...new Set(asStringArray(l.subGongfa))],
-            artifactIds: [...new Set(asStringArray(l.artifactIds))],
+            // 条数设界:应用侧 artifactIds/subGongfa 都会按动态槽位再截一次,
+            // 但存档里留下的冗余数据会一直躺着 —— 手改快照能塞进几千个 id。
+            subGongfa: [...new Set(asStringArray(l.subGongfa))].slice(0, SUB_GONGFA_SLOT_HARD_CAP),
+            artifactIds: [...new Set(asStringArray(l.artifactIds))].slice(0, ARTIFACT_MAX_SLOTS),
             equipment,
             savedAt: asFiniteNumber(l.savedAt, 0, 0)
           }
