@@ -84,6 +84,26 @@ describe('品阶光环 · 形制随稀有度可数', () => {
 })
 
 describe('品阶光环 · 样式与可访问性', () => {
+  /**
+   * 两套主题的发光机理不同,不能共用一组参数。
+   *
+   * 夜主题 paper 近黑,彩色光晕加在暗底上越亮越明显;
+   * 日主题 paper 是暖白,同样的光晕叠上去对比很弱 —— 实测截图里
+   * 神品的呼吸光在日主题几乎看不出来,九档又退回「只有边框深浅」。
+   *
+   * 日主题改为「品阶色描边 + 近距小光晕」:描边吃的是品阶色与纸面的明暗差。
+   * 本条钉住这条分叉在,别再被合并回一套。
+   */
+  it('日主题单有一套光环参数 —— 亮纸上的发光留不住对比,改用描边', () => {
+    const lightBlock = /html\[data-theme='light'\] \.q-aura-halo \{([\s\S]*?)\n\}/.exec(CSS)?.[1] ?? ''
+    expect(lightBlock, '缺日主题的 .q-aura-halo 覆盖块').not.toBe('')
+    expect(lightBlock, '日主题应用品阶色描边(亮底上只有描边留得住对比)').toContain('0 0 0 1px var(--q-tone')
+    // 日主题的描边同样是「外发光」的一种,不该退化成内阴影(会盖住卡面内容)
+    expect(lightBlock, '光环是盒外装饰,不该用 inset').not.toContain('inset')
+    // 两套主题都必须只动 opacity/transform 之外的静态属性,不引入新动画
+    expect(lightBlock, '日主题不另起动画').not.toContain('animation')
+  })
+
   it('色相由使用点经 --q-tone 注入,CSS 里不写死任何一个品阶的颜色', () => {
     expect(CSS, '光晕应吃 --q-tone').toContain('var(--q-tone, transparent)')
     // 品阶九色里的裸 hex 一个都不许出现在光环样式里

@@ -647,8 +647,12 @@ html[data-theme='dark'] .btn-seal:disabled {
  * 稀有件与普通件的「形制」差异,不只靠颜色深浅(见 src/ui/qualityAura.ts)。
  * 三档浓淡隔着屏幕分不出天品与神品;外发光、角饰、名牌描边是可数的线索。
  * 色相一律取 --q-tone(使用点由品阶表注入),这里不写死任何一个品阶的颜色。
- * 光晕用非内阴影画在盒外:不遮内容,也不需要负 z-index。
- * 动效只有 opacity/transform —— box-shadow 逐帧动画会触发整块重绘。
+ *
+ * 两套主题的发光机理不同,不能共用一组参数:
+ *   · 夜主题:paper 近黑,彩色光晕加在暗底上**越亮越明显**,默认这一套即可;
+ *   · 日主题:paper 是暖白,彩色光晕叠上去仍比纸面亮一点,但对比有限 ——
+ *     实测神品在日主题下几乎看不出光(截图比对),所以日主题改为加深的实边 + 更强的近距光。
+ * 判据:两套主题下「有光环 / 无光环」都必须一眼可分(见 ui/qualityAura.spec)。
  */
 .q-aura-halo {
   position: absolute;
@@ -657,6 +661,15 @@ html[data-theme='dark'] .btn-seal:disabled {
   pointer-events: none;
   box-shadow: 0 0 var(--q-glow, 0px) calc(var(--q-glow, 0px) / 5) var(--q-tone, transparent);
   opacity: 0.5;
+}
+
+/* 日主题:发光在亮纸上不成立,换成「描边 + 近距小光晕」——
+   描边吃的是品阶色与纸面的明暗差,在亮底上才看得出来 */
+html[data-theme='light'] .q-aura-halo {
+  box-shadow:
+    0 0 0 1px var(--q-tone, transparent),
+    0 0 calc(var(--q-glow, 0px) * 0.5) calc(var(--q-glow, 0px) / 12) var(--q-tone, transparent);
+  opacity: 0.62;
 }
 
 /* 稀有档(天/仙/神):呼吸 —— 只有稀有件配动效 */
