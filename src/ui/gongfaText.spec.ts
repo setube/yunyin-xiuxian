@@ -9,6 +9,8 @@ import { describe, expect, it } from 'vitest'
 import {
   gongfaAllLearnedToast,
   gongfaComprehendToast,
+  gongfaMainToast,
+  gongfaSubToast,
   gongfaPageShortToast,
   gongfaSubFullToast,
   gongfaUpDoneToast,
@@ -54,6 +56,23 @@ describe('功法提示 · 缺资源只报缺的那样', () => {
     ]
     for (const s of all) {
       expect(s, `「${s}」出现解释性措辞`).not.toMatch(/请|建议|可以|记得|因为|所以|即可|以便/)
+    }
+  })
+})
+
+describe('功法开关的回执', () => {
+  it('主修与辅修各报一句,不写长句也不带解释', () => {
+    expect(gongfaMainToast('太玄引气诀')).toBe('主修《太玄引气诀》')
+    expect(gongfaSubToast('御风步', true)).toBe('辅修《御风步》')
+    expect(gongfaSubToast('御风步', false)).toBe('撤下《御风步》')
+  })
+
+  it('回执与按钮文案同一套书名号 —— 界面里看到的是「《x》」', () => {
+    for (const t of [gongfaMainToast('太玄引气诀'), gongfaSubToast('御风步', true), gongfaSubToast('御风步', false)]) {
+      expect(t).toContain('《')
+      expect(t).toContain('》')
+      // 状态词不超过 8 个汉字(书名号内的名字不计)
+      expect((t.replace(/《.*》/, '').match(/[\u4e00-\u9fa5]/g) ?? []).length).toBeLessThanOrEqual(4)
     }
   })
 })

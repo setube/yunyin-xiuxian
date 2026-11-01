@@ -130,7 +130,7 @@
   import { gongfaModsAt } from '@/stores/cultivation'
   import { STAT_NAMES, modsText, statValueText } from '@/data/statNames'
   import { gongfaSkillLine } from '@/ui/itemText'
-  import { gongfaSubFullToast, gongfaUpShortToast } from '@/ui/gongfaText'
+  import { gongfaMainToast, gongfaSubFullToast, gongfaSubToast, gongfaUpShortToast } from '@/ui/gongfaText'
   import type { AnyStatKey, StatMods } from '@/types'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
@@ -223,12 +223,18 @@
   }
 
   function setMain(): void {
-    if (def.value) cultivation.equipMain(def.value.id)
+    const d = def.value
+    if (!d) return
+    // 主修决定功法加成与神通,换与没换必须出声:面板上那片属性就靠这一句对上
+    if (cultivation.equipMain(d.id)) ui.toast(gongfaMainToast(d.name), 'info')
   }
 
   function toggleSub(): void {
-    if (!def.value) return
-    const ok = cultivation.toggleSub(def.value.id, dongfu.subGongfaSlots)
+    const d = def.value
+    if (!d) return
+    const wasOn = cultivation.subGongfa.includes(d.id)
+    const ok = cultivation.toggleSub(d.id, dongfu.subGongfaSlots)
     if (!ok) ui.toast(gongfaSubFullToast(dongfu.subGongfaSlots), 'warn')
+    else ui.toast(gongfaSubToast(d.name, !wasOn), 'info')
   }
 </script>
