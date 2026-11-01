@@ -108,7 +108,7 @@
     </section>
 
     <section class="card-ink px-4 py-3">
-      <button class="flex w-full items-center justify-between text-left" @click="showAllHex = !showAllHex">
+      <button class="flex w-full items-center justify-between text-left" :aria-expanded="showAllHex" @click="showAllHex = !showAllHex">
         <span class="font-kai text-[13px] tracking-wider text-ink">{{ cnNumber(HEXAGRAMS.length) }}卦</span>
         <span class="text-[10px] text-azure">{{ showAllHex ? '收起' : '展开' }}</span>
       </button>

@@ -24,7 +24,7 @@
         <span class="tabular">+{{ mansionLuckPct }}%</span>
       </p>
       <p class="mt-1 flex items-center gap-2 text-[10px]">
-        <button class="chip-ink min-h-[28px] text-azure" aria-label="星象定向" @click="mansionRedirectOpen = !mansionRedirectOpen">
+        <button class="chip-ink min-h-[28px] text-azure" aria-label="星象定向" :aria-expanded="mansionRedirectOpen" @click="mansionRedirectOpen = !mansionRedirectOpen">
           星象定向{{ redirectActiveText }} ▾
         </button>
       </p>
