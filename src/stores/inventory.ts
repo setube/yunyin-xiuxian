@@ -8,7 +8,7 @@ import { resolveEquipStats } from '@/core/equipGen'
 import { mergeMods } from '@/core/statsCalc'
 import { useLoreStore } from '@/stores/lore'
 import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
-import { BAG_CAPACITY } from '@/data/constants'
+import { BAG_CAPACITY, EQUIP_AFFIX_HARD_CAP } from '@/data/constants'
 import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
 import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { pillDef } from '@/data/pills'
@@ -53,6 +53,8 @@ export const useInventoryStore = defineStore(
             // 负 roll 会被 affixValue 当 0 却按满值显示,>1 则超上限
             roll: Math.min(1, asFiniteNumber(a.roll, 0, 0))
           }))
+          // 条数也要设界:品质表最高 8 条、洗练只换不增,坏档却能让一件带几千条
+          .slice(0, EQUIP_AFFIX_HARD_CAP)
         const rawQuality = it.quality as unknown
         cleanItems.push({
           ...it,
