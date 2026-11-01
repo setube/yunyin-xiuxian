@@ -4,7 +4,7 @@
  * 承诺见 data/artifacts 头部。
  */
 import { describe, expect, it } from 'vitest'
-import { ARTIFACTS, artifactValue } from '@/data/artifacts'
+import { ARTIFACTS, artifactQualityMult, artifactValue } from '@/data/artifacts'
 import { qualityDef } from '@/data/qualities'
 import { budgetOfMods } from './ruleBudget'
 import type { ArtifactDef } from '@/types'
@@ -84,6 +84,70 @@ describe('法宝品阶阶梯', () => {
         ).toBeGreaterThanOrEqual(prev.budget - BUDGET_EPS)
       }
     }
+  })
+
+  /**
+   * 阶梯「不回落」是不够的:t19 之后九件伤害法宝曾是 6.325 → 6.485(13 个层级只涨 2.5%),
+   * 玩家拿到 t31 天品与 t23 灵品的感受没有区别 —— 这正是「神品名不副实」的来源。
+   *
+   * 根因是基线在高阶被写低、靠品阶倍率补偿,两者相抵后净增长归零。
+   * 本条钉住「最深那件至少是最浅那件的 N 倍」,而不是只钉单调。
+   *
+   * 阈值取各族当前实测的保守下沿:调数值时若把高阶又压回去,这里先红。
+   */
+  const FLOOR: Record<string, number> = {
+    damage: 3.5,
+    heal: 4,
+    shield: 2.2,
+    weaken: 2,
+    drain: 1.6
+  }
+
+  it('越深越高阶的那件,显著强于最浅那件 —— 品阶要能被感知,不能只保证不回落', () => {
+    for (const [type, rows] of ladders()) {
+      const floor = FLOOR[type]
+      if (floor === undefined) continue
+      const first = rows[0]!
+      const last = rows[rows.length - 1]!
+      const ratio = last.amount / first.amount
+      expect(
+        ratio,
+        `${type} 族:最深的 ${last.def.name}(t${last.def.fromTier} ${qualityDef(last.def.quality).name}) ` +
+          `只有最浅的 ${first.def.name}(t${first.def.fromTier}) 的 ${ratio.toFixed(2)} 倍,低于 ${floor} 倍 —— 高阶不划算`
+      ).toBeGreaterThanOrEqual(floor)
+    }
+  })
+
+  /**
+   * 比的是**封顶前**的原始值。
+   *
+   * 护盾封在总盾上限 50%、削弱/破甲封在 50%、净念封在 90% —— 顶到上限的几件
+   * 读出来的数当然一样,那是规则替它们做的收束,不是数据没写开。
+   * 身份要看作者手里的那个数:原始值全同才是「深的那件等于白出」。
+   */
+  it('同一族内没有两件原始值相同 —— 数值全同即是身份全同', () => {
+    const raw = (def: ArtifactDef): number => {
+      const eff = def.active.effect
+      if (eff.type === 'damage' || eff.type === 'drain') return eff.mult * artifactQualityMult(def.quality)
+      if (eff.type === 'heal' || eff.type === 'shield') return eff.pctMaxHp * artifactQualityMult(def.quality)
+      if (eff.type === 'weaken' || eff.type === 'sunder' || eff.type === 'purge') return eff.pct * artifactQualityMult(def.quality)
+      return Number.NaN
+    }
+    const dupes: string[] = []
+    for (const [type, rows] of ladders()) {
+      if (type === 'stun') continue
+      const seen = new Map<string, string[]>()
+      for (const r of rows) {
+        const v = raw(r.def)
+        if (!Number.isFinite(v)) continue
+        const key = v.toFixed(4)
+        seen.set(key, [...(seen.get(key) ?? []), `${r.def.name}(t${r.def.fromTier})`])
+      }
+      for (const [v, names] of seen) {
+        if (names.length > 1) dupes.push(`${type} ${v}: ${names.join(' / ')}`)
+      }
+    }
+    expect(dupes, `同族内原始值完全相同的法宝(深的那件等于白出):\n${dupes.join('\n')}`).toEqual([])
   })
 
   /** 上限 5,与 `ruleUniverse.spec` 的单件预算上限同源 */
