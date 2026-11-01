@@ -23,7 +23,7 @@
           <span class="shrink-0 text-[10px] text-ink-faint">{{ eq.tier }} 阶</span>
           <span class="shrink-0 text-[10px] tabular text-gold-ink">{{ formatGN(eq.price) }}</span>
           <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="consignSlotsFull" @click="consignOne(eq.uid)">
-            寄卖
+            {{ consignSlotsFull ? '寄卖(席位已满)' : '寄卖' }}
           </button>
         </div>
         <p v-if="bagList.length === 0" class="px-2.5 py-3 text-center text-[10px] text-ink-faint">暂无可寄卖兵刃</p>
