@@ -1,0 +1,114 @@
+# 这个仓库的缺陷都藏在哪
+
+对 78~165 轮（约 88 轮打磨）里 **27 个 fix 提交**做的归类。
+不是理论，是实测分布——下次想在没测过的地方找 bug，先看这张表。
+
+## 分布
+
+| 形态 | 条数 | 一句话 |
+| --- | --- | --- |
+| 读档不设界 | **13** | 字段存在、类型也对，但值没有上限 |
+| 一致性缺口 | **5** | 规范写了、别处也做了，唯独这几处没跟 |
+| 逻辑边界 | **5** | 入参落在没考虑过的区间，返回 undefined / 越界值 |
+| 静默失败 | **2** | 操作没生效，玩家与开发者都收不到任何信号 |
+| 工具误报 | **2** | QA 脚本把正常行为判成缺陷 |
+| 注释过期 | **2** | 注释里的数字/结论与代码不符 |
+
+## 一、读档不设界（13 条，占一半）
+
+一条坏档能走完全程：字段存在、类型是对象、`sanitize()` 也在，
+唯独没人检查它的**值域**。这是本仓库最高发的缺陷形态。
+
+细分四种：
+
+1. **容量**：行囊 `BAG_CAPACITY`、灵脉总量、道童槽位、构筑列表 `MAX_LOADOUTS`
+   ——撑爆后永久卡死（`recruit` 恒返 full、`applyLoadout` 越界）
+2. **条数**：单件词条 `EQUIP_AFFIX_HARD_CAP`、辅修 `SUB_GONGFA_SLOT_HARD_CAP`
+3. **长度**：道号与构筑名 `NAME_MAX_LENGTH`
+4. **量级**：GNum 指数无上界 → 界面印出 `1.00e1000000000`
+   （`saveShape.asBoundedGNum` 就是为这个加的；`SAVE_GNUM_MAX_EXP = 999`）
+
+**最隐蔽的一档**是嵌套对象：`world.rules` 只判了「是不是对象」，
+内部 `playerStartHpPct: Infinity` 经 `mulN` 变 0，玩家一进战斗即判负。
+凡人界与虚界是同一个 `resolveCombat` 的两个入口，各漏一次。
+
+**守卫**：`src/utils/nestedShapeGuard.spec.ts`（只判类型不判字段会红）、
+`src/core/tierLandmine.spec.ts`（层级尺）、`src/stores/resources.spec.ts`（指数界）。
+
+## 二、一致性缺口（5 条）
+
+规范存在、同类代码也照做了，但新写的几处没跟。**不会让任何测试变红**，
+只能靠专门的一致性扫描发现。
+
+实例：九处互斥选择钮缺 `aria-pressed`、三处展开钮缺 `aria-expanded`、
+三处禁用钮缺拒因、`AGENTS.md` 十二个状态词在代码里却无测试引用。
+
+**找法**：拿文档当查询条件反查代码覆盖率。`AGENTS.md` 的
+「固定写法」「禁用即给原因」「层级地雷」几节，每条硬性规定都该有一个断言。
+
+注意 `aria-pressed` 是 **toggle** 语义（0~N 个可选中），
+`aria-selected` 才是 **selection**（恰一个）——两者混用会误报。
+
+## 三、逻辑边界（5 条）
+
+入参落在没想过的区间：`overReachFactor(1.5)` 令表查不到 → `undefined` 混进成功率；
+`exploreEventChance` 负加成 → 离线战斗数虚增；战力星串收到小数 → 产出四个字符。
+
+**共性**：函数对「正常输入」正确，对边界没定义。
+
+## 四、静默失败（2 条）
+
+最难查的一类：不报错、不崩、无日志，只是没生效。
+
+- `useAutoReforge.runAutoReforge` 开头按 `inst` 提前返回,而装备已不在行囊时 `inst` 恒为 undefined
+  → 下面「未找到装备」那条提示永远走不到,玩家点了没反应（第 85 行注释记着这段）
+- `useGameClock` 在组件外调用 → `onMounted` 被静默忽略，倒计时从此静止
+
+**注意**：`useGameClock` 这类**至今没有防御**，只靠
+`src/composables/useGameClock.spec.ts` 守住调用点边界。
+
+## 五、工具误报（2 条）
+
+验证工具自身的规则写错，把正常行为判成缺陷。**误报率高的检查等于给真缺陷发免检通行证。**
+
+- `ui-smoke` 把「有回执的拒绝」（弹 toast 后 return）判成死按钮
+- `layout-check` 把可取消的开关组（全不选）判成「没选中态」
+
+两条都是**我自己引入的误报**：前者是判据单一信号，后者是语义搞混。
+
+## 六、注释过期（2 条）
+
+`motivationType` 里「与 worldGen 同构」、道侣服务里的属性键总数。
+文档与代码不一致时**以代码为准**，并顺手改掉注释。
+
+## 已确认健康、不必重查
+
+以下都系统查过，**重复查是浪费轮次**：
+
+- `palette.spec`（颜色/对比度/印面色）、`dataTextAudit`（80 例）、`saveRoundTrip`（7 例）
+- `mortalRouteAccess`（28 例）、`statsCalc` 递减行为、`effectWiring`
+- 7 个 `offline*` 平价 spec、`smoke`、`offline-check`、`layout-check`、`focus-check`、
+  `aria-check`、`multitab-check`（165 轮全绿）
+- `src/composables/` 13 个模块（spec 一个不缺）
+- `src/ui/*Text.ts` 25 个模块（165 轮补齐最后两个）
+- 17 个 store 的 `sanitize()`（只有 `resources` 那处漏指数界，已修）
+- `stoneByTier` 全部 13 个调用点（都骑 `maxTierForMajor`）
+- 启动顺序（`main.ts` 三条断言）、版本三件套（package.json / CHANGELOG / releaseNotes）
+
+## 找 bug 的优先顺序
+
+1. **有明文规范但无断言的地方**（第二节的找法，命中率最高）
+2. **刚加过新字段/新入口、但只加了一处的地方**（`world.rules` 就是第二入口漏了）
+3. **`sanitize()` 里只判类型不判值的地方**
+4. **零 spec 的模块**（本项目里真 bug 多出自此：路由守卫、`CreateView.starting`、
+   `useAutoReforge`、`useBondOverview`/`useRegionRows`）
+5. 边界入参（小数、负数、0、Infinity、超大 GNum）
+
+## 别做的三件事
+
+- **别把等价重写当修复**：`toNum` 那次两种写法返回值完全一致，
+  改动只是去掉了一个隐含前提，commit 里如实写了「不改变行为」
+- **别把正常行为当缺陷**：突破失败不退还灵气是**有意设计**
+  （`src/data/statNames.ts` 第 65 行注释写明），炼丹后材料变多是主线奖励
+- **别留会误报的守卫**：宽松判据会逼后来人给正常代码打补丁。
+  判据宁宽勿严 —— 漏报只是少一条提示，误报会破坏工具的可信度
