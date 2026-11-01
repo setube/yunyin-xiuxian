@@ -144,4 +144,47 @@ describe('建号页 · 建号失败要能重试', () => {
     expect(src).toMatch(/:disabled="starting"[\s\S]{0,200}灵 根 鉴 定 中/)
   })
 })
+
+
+/**
+ * 启动顺序:坏档修形必须在首页守卫拿数据之前跑完。
+ *
+ * `app.use(router)` 会立即发起首次导航(vue-router 的 install 里 push 了当前 location),
+ * 而守卫读的是 `game.started` 与 `settings.privacyAccepted` —— 这两个字段若来自坏档,
+ * 守卫就会拿坏值决定「去欢迎页还是回洞府」。
+ *
+ * 现在之所以安全,靠的是一条**隐式时序**:守卫是异步的(navigate 被包在 Promise 里),
+ * 而 sanitizeAllStores() 是同步的,在 app.use(router) 之后紧接着就跑完了。
+ * 这个依赖没有任何地方写着,谁把 sanitize 挪到 app.use 之前或改成异步,都会悄悄破掉。
+ * 本条把顺序钉在源码层面,并说明它凭什么成立。
+ */
+describe('启动顺序 · 修形先于首次守卫', () => {
+  const main = readFileSync('src/main.ts', 'utf-8')
+
+  it('sanitizeAllStores 在 app.mount 之前调用(否则首帧就渲染坏值)', () => {
+    const sanitize = main.indexOf('sanitizeAllStores()')
+    const mount = main.indexOf("app.mount('#app')")
+    expect(sanitize, 'main.ts 里找不到 sanitizeAllStores()').toBeGreaterThan(-1)
+    expect(mount).toBeGreaterThan(-1)
+    expect(sanitize, 'sanitizeAllStores 必须在 mount 之前').toBeLessThan(mount)
+  })
+
+  it('损坏存档扫描与结构升级在 createApp 之前(白屏之前就要拦)', () => {
+    const scan = main.indexOf('preflightScan()')
+    const migrate = main.indexOf('migrateLocalSchema()')
+    const create = main.indexOf('createApp(App)')
+    expect(scan).toBeGreaterThan(-1)
+    expect(migrate).toBeGreaterThan(-1)
+    expect(scan, 'preflightScan 要在 createApp 之前').toBeLessThan(create)
+    expect(migrate, 'migrateLocalSchema 要在 createApp 之前').toBeLessThan(create)
+  })
+
+  it('pinia 持久化插件在 app.use(pinia) 之前装好(否则首读读不到存档)', () => {
+    const usePlugin = main.indexOf('pinia.use(piniaPluginPersistedstate)')
+    const usePinia = main.indexOf('app.use(pinia)')
+    expect(usePlugin, '找不到 pinia.use(piniaPluginPersistedstate)').toBeGreaterThan(-1)
+    expect(usePinia).toBeGreaterThan(-1)
+    expect(usePlugin, '插件须先于 app.use(pinia)').toBeLessThan(usePinia)
+  })
+})
 })
