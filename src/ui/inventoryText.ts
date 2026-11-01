@@ -1,6 +1,18 @@
 /** 行囊提示(法宝位、化尘、构筑):只报结果;件数、尘石、阙件照实报。 */
 import { batchDecomposeToast } from './forgeText'
 
+/**
+ * 祭炼/收回的回执。
+ *
+ * 原先只有「替下」那一支有回执:正常祭炼与收回都是静默生效 ——
+ * 点完看不出成没成,「收回法宝」与「祭炼随身」是同一颗钮,
+ * 没有回执时玩家只能靠卡片上那个「祭」字标记反推。
+ * 称号的佩/卸、灵兽的唤来/暂别、行囊的一键换装都有回执,这里补齐同一套。
+ */
+export function artifactToggleToast(name: string, equipped: boolean): string {
+  return equipped ? `已祭炼「${name}」` : `已收回「${name}」`
+}
+
 export function artifactSlotReplacedToast(evicted: readonly string[] = []): string {
   if (evicted.length === 0) return '已替下最早祭炼的一件'
   if (evicted.length === 1) return `已替下「${evicted[0]}」`

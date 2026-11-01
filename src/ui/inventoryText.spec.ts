@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   artifactSlotReplacedToast,
+  artifactToggleToast,
   decomposeEmptyToast,
   loadoutApplyToast,
   loadoutFullToast,
@@ -11,6 +12,9 @@ import {
 
 describe('行囊提示 · 只报结果,仍报清件数与尘石', () => {
   it('法宝位、化尘、收纳不说分解替换', () => {
+    // 祭炼/收回都要有回执:按钮是同一颗,不回执就分不出点成哪一种
+    expect(artifactToggleToast('神魔镜', true)).toBe('已祭炼「神魔镜」')
+    expect(artifactToggleToast('神魔镜', false)).toBe('已收回「神魔镜」')
     expect(artifactSlotReplacedToast()).toContain('祭炼')
     expect(artifactSlotReplacedToast()).not.toContain('替换')
     expect(artifactSlotReplacedToast(['墨玉葫芦'])).toBe('已替下「墨玉葫芦」')

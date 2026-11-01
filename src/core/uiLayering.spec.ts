@@ -311,6 +311,35 @@ describe('界面分层 · 换件提示的让位名单取在动手之前', () => 
       '让位名单取在了换件之后 —— toast 会念刚戴上来的那一件,而不是真正让位的那一件'
     ).toBeLessThan(toggleAt)
   })
+
+  /**
+   * 祭炼与收回是同一颗钮,没有回执就看不出点成哪一种 ——
+   * 原先只处理了 `replaced`,正常祭炼与收回都静默生效。
+   * 称号的佩/卸、灵兽的唤来/暂别、行囊的一键换装都有回执,此处补齐同一套。
+   * 故障注入:删掉 else-if 那一支,本条红。
+   */
+  it('祭炼与收回都报回执,不只报「替下」那一种', () => {
+    const src = readFileSync(PANEL, 'utf8')
+    const start = src.indexOf('function toggleArtifact(defId: string): void {')
+    expect(start).toBeGreaterThan(-1)
+    const open = src.indexOf('{', start)
+    let depth = 0
+    let end = -1
+    for (let i = open; i < src.length; i += 1) {
+      if (src[i] === '{') depth += 1
+      else if (src[i] === '}') {
+        depth -= 1
+        if (depth === 0) {
+          end = i
+          break
+        }
+      }
+    }
+    const body = src.slice(open, end)
+    expect(body, '正常祭炼没有回执').toContain("result === 'equipped'")
+    expect(body, '收回没有回执').toContain("result === 'unequipped'")
+    expect(body, '回执文案应走 ui/inventoryText(不在组件里手拼)').toContain('artifactToggleToast(')
+  })
 })
 
 /**
