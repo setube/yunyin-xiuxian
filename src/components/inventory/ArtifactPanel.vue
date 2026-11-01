@@ -77,10 +77,10 @@
           @click="toggleArtifact(row.def.id)"
         >
           <!-- 槽满时按钮列出全部让位件(超编时不止一件,见 artifactEvictedBy) -->
-          {{ row.equipped ? '收回法宝' : row.evicts.length ? `替下${row.evicts.join('、')}` : '祭炼随身' }}
+          {{ row.equipped ? '收回法宝' : row.evicts.length ? `替下${row.evicts.join('、')}` : '随身携带' }}
         </button>
         <!--
-          满重不再让按钮消失:它与「祭炼随身」并排各占一半,一消失整行布局就变,
+          满重不再让按钮消失:它与「随身携带」并排各占一半,一消失整行布局就变,
           玩家还看不出是「满了」还是「坏了」。改成禁用并写原因(AGENTS.md「禁用即给原因」)。
         -->
         <button
