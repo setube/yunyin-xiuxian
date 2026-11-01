@@ -1,5 +1,5 @@
 /**
- * 法宝池 —— 45 件,拥有被动属性与自动触发的主动神通
+ * 法宝池 —— 46 件,拥有被动属性与自动触发的主动神通
  *
  * passive / active.effect 是凡品零重基线(算式第一个因子),品阶与祭炼两条放大由 artifactValue 施加;
  * desc 与 effect 描述的是基线,不是面板。
@@ -598,6 +598,19 @@ export const ARTIFACTS: ArtifactDef[] = [
     4,
     { type: 'shield', pctMaxHp: 0.21 },
     'flower-2'
+  ),
+  f(
+    'af_jiuxiao',
+    '混沌垂云冠',
+    'heaven',
+    31,
+    '戴之如承九天,伤重亦有云气来护',
+    { maxHpPct: 0.06, damageReduction: 0.1 },
+    '垂云',
+    '每 4 回合垂云自护,回复 40% 生命',
+    4,
+    { type: 'heal', pctMaxHp: 0.4 },
+    'crown'
   ),
   f(
     'af_shenmojing',
