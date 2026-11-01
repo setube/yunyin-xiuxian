@@ -643,6 +643,126 @@ html[data-theme='dark'] .btn-seal:disabled {
   animation: hit-shake-hard 0.4s ease-out;
 }
 
+/* ================= 品阶光环 =================
+ * 稀有件与普通件的「形制」差异,不只靠颜色深浅(见 src/ui/qualityAura.ts)。
+ * 三档浓淡隔着屏幕分不出天品与神品;外发光、角饰、名牌描边是可数的线索。
+ * 色相一律取 --q-tone(使用点由品阶表注入),这里不写死任何一个品阶的颜色。
+ * 光晕用非内阴影画在盒外:不遮内容,也不需要负 z-index。
+ * 动效只有 opacity/transform —— box-shadow 逐帧动画会触发整块重绘。
+ */
+.q-aura-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 var(--q-glow, 0px) calc(var(--q-glow, 0px) / 5) var(--q-tone, transparent);
+  opacity: 0.5;
+}
+
+/* 稀有档(天/仙/神):呼吸 —— 只有稀有件配动效 */
+.q-aura-halo--radiant {
+  animation: q-aura-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes q-aura-breathe {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+/* 角饰:两枚/三枚直角,刻意的形制差异;不用颜色区分 */
+.q-aura-corner {
+  position: absolute;
+  pointer-events: none;
+  border-color: var(--q-tone, transparent);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0.75;
+}
+
+/* 双角:左上 + 右下(进阶档与天品) */
+.q-aura-corner--tl {
+  left: 3px;
+  top: 3px;
+  width: 9px;
+  height: 9px;
+  border-left-width: 1.5px;
+  border-top-width: 1.5px;
+}
+.q-aura-corner--br {
+  right: 3px;
+  bottom: 3px;
+  width: 9px;
+  height: 9px;
+  border-right-width: 1.5px;
+  border-bottom-width: 1.5px;
+}
+/* 三角:补右上那枚,描边更亮(仙/神) */
+.q-aura-corner--tr {
+  right: 3px;
+  top: 3px;
+  width: 11px;
+  height: 11px;
+  border-right-width: 2px;
+  border-top-width: 2px;
+  opacity: 0.95;
+}
+/* 稀有档:双角一并加粗加长,与普通件拉开 */
+.q-aura-corner--radiant {
+  width: 11px;
+  height: 11px;
+  border-left-width: 2px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+  opacity: 0.95;
+}
+
+/* 名牌:高级件的名字要自己显眼,不靠玩家比色卡 */
+.q-plaque {
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px var(--q-tone, transparent);
+}
+
+/* 神品专属流光:斜向掠过的一道亮线,只在最顶档 */
+.q-aura-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+.q-aura-sheen::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  bottom: -60%;
+  left: -40%;
+  width: 26%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.5), transparent);
+  transform: skewX(-18deg);
+  animation: q-aura-sheen 5.2s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+@keyframes q-aura-sheen {
+  0%,
+  62% {
+    transform: translateX(-40%) skewX(-18deg);
+    opacity: 0;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(420%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
 /* 稀有天降:全屏金光(叠在 toast 之下) */
 .rare-flash {
   position: fixed;
