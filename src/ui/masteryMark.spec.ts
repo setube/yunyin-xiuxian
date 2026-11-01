@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { artifactMastery, equipMastery } from './masteryMark'
 import { ARTIFACT_MAX_LEVEL } from '@/data/artifacts'
+import { upgradeCapToast } from './forgeText'
 
 const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
@@ -23,19 +24,31 @@ describe('满级标记 · 玩家挣来的状态要有形状', () => {
   it('法宝:满重才标,差一重不标', () => {
     expect(artifactMastery(0)).toBeNull()
     expect(artifactMastery(ARTIFACT_MAX_LEVEL - 1)).toBeNull()
-    expect(artifactMastery(ARTIFACT_MAX_LEVEL)?.label).toBe('祭炼已满')
+    expect(artifactMastery(ARTIFACT_MAX_LEVEL)?.label).toBe('祭炼已至上限')
     // 超上限(坏档)同样算满,不给「已满 +12」这种读法
-    expect(artifactMastery(ARTIFACT_MAX_LEVEL + 5)?.label).toBe('祭炼已满')
+    expect(artifactMastery(ARTIFACT_MAX_LEVEL + 5)?.label).toBe('祭炼已至上限')
   })
 
   it('装备:达到传入的上限才标 —— 上限随炼器台等级走,由调用方给', () => {
     // 零级炼器台(上限 10)
     expect(equipMastery(0, 10)).toBeNull()
     expect(equipMastery(9, 10)).toBeNull()
-    expect(equipMastery(10, 10)?.label).toBe('强化至顶')
+    // 复用 AGENTS.md 明文规定的状态词,不自创「强化至顶」
+    expect(equipMastery(10, 10)?.label).toBe('强化已至上限')
     // 炼器台升满(上限 15):+10 就不再是顶
     expect(equipMastery(10, 15)).toBeNull()
-    expect(equipMastery(15, 15)?.label).toBe('强化至顶')
+    expect(equipMastery(15, 15)?.label).toBe('强化已至上限')
+  })
+
+  /**
+   * 说法必须取既有状态词,不自创。
+   *
+   * AGENTS.md「固定写法」与反例表里明写着:「此器已至锤炼之极,再锻无益」→「强化已至上限」。
+   * 我第一版写了「强化至顶」——读着通顺,但那是第八个说法。
+   * 这条钉住它复用 `upgradeCapToast()`,改词只需改一处。
+   */
+  it('装备满级的说法复用 upgradeCapToast,不自创第二个词', () => {
+    expect(equipMastery(10, 10)?.label).toBe(upgradeCapToast())
   })
 
   it('认不出等级或上限时不标 —— 标记是加成,判不出来宁可不加', () => {
