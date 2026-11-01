@@ -1073,6 +1073,24 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(text, '进修拒因带残页差').toContain('残页尚差 ${gap.page} 页')
   })
 
+  /**
+   * 主修/辅修的开关回执。
+   *
+   * 原先主修切换完全没有回执、辅修只在槽位满时出声 ——
+   * 这两颗钮会改面板上一整片属性(主修决定功法加成与神通),
+   * 没有回执时玩家只能去角色页比对数值才知道换成了没有。
+   * 换装、佩称号、祭炼法宝都有回执,此处补齐同一套。
+   * 故障注入:删掉任一分支的 ui.toast,本条红。
+   */
+  it('功法主修/辅修的开关都报回执', () => {
+    const dialog = src('../components/cultivation/GongfaDialog.vue')
+    expect(dialog, '主修切换要报回执').toContain('gongfaMainToast(d.name)')
+    expect(dialog, '辅修开关要报回执').toContain('gongfaSubToast(d.name, !wasOn)')
+    expect(dialog, '成功与槽满分开报,不共用一个分支').toContain('else ui.toast(gongfaSubToast')
+    // 回执只在真的切成了才报(equipMain 失败时不出声)
+    expect(dialog, '主修回执应挂在 equipMain 的返回值上').toContain('if (cultivation.equipMain(d.id))')
+  })
+
   it('灵兽的性子带数,出处与结算同源', () => {
     const view = src('../views/TitlesView.vue')
     expect(view, '性子该读 petTraitText(与 core/petPersonality 同源)').toContain('petTraitText(')

@@ -30,3 +30,19 @@ export function gongfaUpDoneToast(name: string, level: number): string {
 export function gongfaSubFullToast(slots: number): string {
   return `辅修已满 ${slots} 席`
 }
+
+/**
+ * 主修/辅修的开关回执。
+ *
+ * 原先主修切换完全没有回执,辅修只在「槽位已满」时出声 ——
+ * 而这两颗钮点下去会改面板上的一整片属性(主修决定功法加成与神通),
+ * 没有回执时玩家只能去角色页比对数值才知道换成了没有。
+ * 换装、佩称号、祭炼法宝都有回执,此处补齐同一套。
+ */
+export function gongfaMainToast(name: string): string {
+  return `主修《${name}》`
+}
+
+export function gongfaSubToast(name: string, on: boolean): string {
+  return on ? `辅修《${name}》` : `撤下《${name}》`
+}
