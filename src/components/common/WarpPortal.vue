@@ -67,7 +67,14 @@
 </script>
 
 <style>
-  /* 全屏穿梭效果:Teleport 到 body,scoped 失效,故用全局作用域 */
+  /*
+   * 全屏穿梭效果:Teleport 到 body,scoped 失效,故用全局作用域。
+   *
+   * 本块刻意用裸 hex,不走语义色 token —— 它是「黑屏转场」特效:
+   * 遮罩必须是固定的近黑(#1a1812→#000),行星与标题必须是固定的金(#c9a959),
+   * 若跟着明暗主题走,夜间主题下就成了黑底黑字。
+   * 这是 palette.spec「语义色禁用裸 hex」的唯一例外,勿套用 token 改写。
+   */
   .warp-overlay {
     position: fixed;
     inset: 0;
