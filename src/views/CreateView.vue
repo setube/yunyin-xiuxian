@@ -134,6 +134,21 @@
   function begin(): void {
     if (starting.value) return
     starting.value = true
+    /**
+     * 整段包在 try 里:成功路径靠 router.push 离开本页,但中途任一步抛错时,
+     * starting 会永远留在 true —— 按钮此后恒显示「灵根鉴定中……」且永久禁用,
+     * 玩家只能刷新页面才能重来(而刷新会把已生成的角色丢掉)。故失败时复位并提示,让它还能再点一次。
+     */
+    try {
+      doBegin()
+    } catch (err) {
+      starting.value = false
+      console.error('[create] 建号失败', err)
+      ui.toast('建号失败', 'info')
+    }
+  }
+
+  function doBegin(): void {
     const finalName = name.value.trim().slice(0, 8) || '无名散修'
     player.initCharacter(finalName, profile.value)
     // 开局馈赠:入门功法 + 一柄竹剑 + 三枚聚气散
