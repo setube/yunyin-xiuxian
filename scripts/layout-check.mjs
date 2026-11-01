@@ -107,7 +107,14 @@ async function auditModalControls(page) {
         }
       })
       .filter(r => r.h > 0)
-    // 弹窗里的禁用按钮对比度:页面根那条 dimDisabled 扫不到弹窗,而本项目 20 处禁用钮几乎全在这里
+    /*
+     * 弹窗里的禁用按钮对比度。
+     *
+     * 页面那条 dimDisabled 查的是 document,弹窗打开时其实也能扫到 —— 这一点当初写错过,
+     * 以为「只在 measurePage 里就等于扫不到弹窗」,实际 measurePage 扫的是整个文档。
+     * 这里再做一遍不是为了补漏,是为了把范围收在 .modal-panel 内:
+     * 报错能指明是哪个弹窗,且不受面板外节点干扰。两边用同一把尺子(阈值 3、逐层合成底色)。
+     */
     const luma = rgb => {
       if (!rgb) return null
       const f = v => {
@@ -150,7 +157,13 @@ async function auditModalControls(page) {
       .filter(x => x && x.ratio < 3)
       .slice(0, 3)
       .map(x => `${x.ratio}:1 «${x.text}»`)
-    // 弹窗里的选择组:aria-pressed 是 toggle(允许一个都不选),aria-selected 必须恰有一个
+    /*
+     * 弹窗里的选择组。
+     *
+     * 与上面同一件事:页面那条 badGroups 查 document,弹窗打开时也会跑;
+     * 这里限在面板内,分组更准(同父元素即同组),报错也能指明弹窗。
+     * 语义:aria-pressed 是 toggle,允许一个都不选,多于一个才是真错;aria-selected 必须恰有一个。
+     */
     const badGroups = (() => {
       const out = []
       for (const attr of ['aria-pressed', 'aria-selected']) {
