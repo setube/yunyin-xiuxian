@@ -1,9 +1,9 @@
 /** 存档价格 / 非负整数守卫,坊市与悬赏共用 */
 import { describe, expect, it } from 'vitest'
 import { SKILL_MULT_CAP } from '@/data/constants'
+import type { CombatSkill } from '@/types'
 import {
   asBoundedGNum,
-  asCombatSkill,
   asCombatSkills,
   asNonNegInt,
   asPrice,
@@ -67,9 +67,18 @@ describe('saveShape · asNonNegInt', () => {
   })
 })
 
-describe('saveShape · asCombatSkill', () => {
+/**
+ * 单条技能的钳制语义：走公开入口 asCombatSkills(单元素) 观察。
+ *
+ * 早先这些用例直接调 asCombatSkill —— 它虽是 export，但生产代码只用 asCombatSkills，
+ * 于是这个导出成了「只为测试而导出」。改用单元素数组后语义完全等价：
+ * 合法则得到一条，非法则被 filter 掉成空表。
+ */
+const oneSkill = (v: unknown): CombatSkill | null => asCombatSkills([v])[0] ?? null
+
+describe('saveShape · 单条技能的修形', () => {
   it('合法技能原样保留(含已知附加效果)', () => {
-    expect(asCombatSkill({ name: '斩', mult: 2, rate: 0.25, effect: 'pierce' })).toEqual({
+    expect(oneSkill({ name: '斩', mult: 2, rate: 0.25, effect: 'pierce' })).toEqual({
       name: '斩',
       mult: 2,
       rate: 0.25,
@@ -78,13 +87,13 @@ describe('saveShape · asCombatSkill', () => {
   })
 
   it('rate 夹到 [0,1]:超过一成必触发、负数永不触发的坏档都回到概率语义', () => {
-    expect(asCombatSkill({ name: '必中', mult: 1.2, rate: 999 })!.rate).toBe(1)
-    expect(asCombatSkill({ name: '封印', mult: 1.2, rate: -3 })!.rate).toBe(0)
+    expect(oneSkill({ name: '必中', mult: 1.2, rate: 999 })!.rate).toBe(1)
+    expect(oneSkill({ name: '封印', mult: 1.2, rate: -3 })!.rate).toBe(0)
   })
 
   it('mult 非负且有具名上限:负倍率夹回 0,极大有限数不再一击碾平整场', () => {
-    expect(asCombatSkill({ name: '倒吸', mult: -5, rate: 0.5 })!.mult).toBe(0)
-    expect(asCombatSkill({ name: '灭世', mult: 1e300, rate: 0.5 })!.mult).toBe(SKILL_MULT_CAP)
+    expect(oneSkill({ name: '倒吸', mult: -5, rate: 0.5 })!.mult).toBe(0)
+    expect(oneSkill({ name: '灭世', mult: 1e300, rate: 0.5 })!.mult).toBe(SKILL_MULT_CAP)
   })
 
   it('缺名字 / 非有限倍率或概率 / 非对象一律剔除', () => {
@@ -97,12 +106,12 @@ describe('saveShape · asCombatSkill', () => {
       { name: '坏', mult: Number.NaN, rate: 0.2 },
       { name: '坏', mult: 1, rate: Infinity }
     ]) {
-      expect(asCombatSkill(bad), `坏样本 ${JSON.stringify(bad)} 应剔除`).toBeNull()
+      expect(oneSkill(bad), `坏样本 ${JSON.stringify(bad)} 应剔除`).toBeNull()
     }
   })
 
   it('认不出的 effect 只去掉附加效果,不影响这一击', () => {
-    expect(asCombatSkill({ name: '斩', mult: 2, rate: 0.25, effect: 'ghost_effect' })).toEqual({
+    expect(oneSkill({ name: '斩', mult: 2, rate: 0.25, effect: 'ghost_effect' })).toEqual({
       name: '斩',
       mult: 2,
       rate: 0.25

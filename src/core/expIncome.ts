@@ -69,7 +69,7 @@ export interface ExpIncomeRow {
   ratio: number
 }
 
-export function expIncomeAt(major: number): ExpIncomeRow {
+function expIncomeAt(major: number): ExpIncomeRow {
   const idle = idleExpSecsPerHour()
   const trip = tripExpSecsPerHour()
   return {

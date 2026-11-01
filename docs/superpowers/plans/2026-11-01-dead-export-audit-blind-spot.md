@@ -26,13 +26,25 @@ if (runtimeModules.has(declPath.get(name) ?? '') && !AUDIT_MODULES.has(declRel)
 
 `src/core/expIncome.ts` 的 `expIncomeAt`：
 
-- 只被 `expIncome.spec.ts` 使用（第 114 行）
-- 但同文件的 `expIncomeAudit`（第 87 行）调了它一次
+- 直接消费方只有 `expIncome.spec.ts`（第 114 行）
+- 同文件的 `expIncomeAudit`（第 87 行）也调它一次
 - 于是 `total = 3`（声明 1 + 内部 1 + spec 1），扣掉 spec 仍剩 2 > `count = 1`
 - 结果：本该报「只被 spec 用」，实际通过
 
-同类还有 `src/utils/saveShape.ts` 的 `asCombatSkill`（生产代码只用 `asCombatSkills`，
-但 `asCombatSkills` 内部调了 `asCombatSkill`）。
+同类还有 `src/utils/saveShape.ts` 的 `asCombatSkill`（`asCombatSkills` 内部调它）。
+
+### 后续核对：这两个都不是「真骨架」
+
+第二轮逐个核对后修正了此前的判断：
+
+- `asCombatSkill` 被同文件的 `asCombatSkills` 调用，而 `asCombatSkills` **确实是生产代码**
+  （`stores/endgame.ts` 第 98、174 行都在用）。这是**正常的模块内复用**，
+  审计判成「有人用」是对的。
+- `expIncomeAudit` 只在 spec 里用，但它**已经显式豁免**（本文件第 261 行，理由完整）。
+  `expIncomeAt` 是它的内部构建块，同理。
+
+所以这两例的真实问题只是「导出关键字可以去掉」（代码整洁度），**不是缺陷**。
+本轮据此没有改任何代码——「收紧审计」与「它们其实是骨架」两个判断都不成立。
 
 ## 尝试过的修法与结果
 
