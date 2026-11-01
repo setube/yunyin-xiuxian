@@ -11,7 +11,7 @@ import { STAT_NAMES } from '@/data/statNames'
 import { buildPlayerSnap } from './playerSnap'
 import { detectBuild, type BuildDetection } from './buildDetect'
 import { resolveEquipStats } from './equipGen'
-import { celestialFoeCaliber, mergeRules, runGauntlet, worldFoeSnap } from './gauntlet'
+import { celestialAnchor, celestialFoeCaliber, mergeRules, runGauntlet, worldFoeSnap, type CelestialJudgement } from './gauntlet'
 import { currentDaoRules } from './endgameService'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
@@ -41,9 +41,22 @@ function rateRank(rate: number): number {
 
 
 
-function worldRate(world: (typeof CELESTIAL_WORLDS)[number], snap: CombatantSnap, seed: number): number {
-  // 敌人若与推演者等比,三维变化自动抵消,换更厚的装备读数不动
-  const { ref, judgement } = celestialFoeCaliber(usePlayerStore().major, snap.mods, world.anchorTier)
+/**
+ * `judgement` 由调用方传入并**前后共用**,不在函数内按各自身快照重算。
+ *
+ * 原先两次调用各传 before / after 的 mods,而 `celestialJudgement` 的加厚与增伤
+ * 是按玩家词条厚度(`modDepth`)算的 —— 换上更厚的装备,敌人也跟着变厚。
+ * 实测终局档:before depth 2.80 → 加厚 1.077、after depth 3.20 → 1.231,
+ * 同一次「换了会怎样」的推演里,前后对比的根本不是同一个敌人。
+ * 那会让读数系统性偏向「换了没变好」,正是上面那句注释想避免的事。
+ */
+function worldRate(
+  world: (typeof CELESTIAL_WORLDS)[number],
+  snap: CombatantSnap,
+  judgement: CelestialJudgement,
+  seed: number
+): number {
+  const ref = celestialAnchor(world.anchorTier)
   const foes: CombatantSnap[] = []
   for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, ref, 1, judgement))
   foes.push(worldFoeSnap(world.guardian, ref, 1, judgement))
@@ -88,9 +101,14 @@ export function whatIfEquip(uid: string): WhatIfReport | null {
   }
   const after: CombatantSnap = { ...before, mods, attack, defense, maxHp }
 
+  // 敌人标定一次、前后共用:玩家问的是「现在这身换成它会怎样」,对手不该跟着换
+  const judgementOf = (w: (typeof CELESTIAL_WORLDS)[number]): CelestialJudgement =>
+    celestialFoeCaliber(usePlayerStore().major, before.mods, w.anchorTier).judgement
+
   const worlds: WhatIfWorldRow[] = CELESTIAL_WORLDS.map((w, i) => {
-    const rb = rateRank(worldRate(w, before, 660000 + i * 97))
-    const ra = rateRank(worldRate(w, after, 660000 + i * 97))
+    const j = judgementOf(w)
+    const rb = rateRank(worldRate(w, before, j, 660000 + i * 97))
+    const ra = rateRank(worldRate(w, after, j, 660000 + i * 97))
     return {
       name: w.name,
       seal: w.seal,
