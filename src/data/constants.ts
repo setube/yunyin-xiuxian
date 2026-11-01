@@ -293,6 +293,13 @@ export const DECOMPOSE_REFUND_RATE = 0.8
 export const SMART_KEEP_PERFECT_ROLL = 0.85
 export const BAG_CAPACITY = 120
 
+/**
+ * 玩家可输入文本的长度上限(道号、构筑名、试炼备注)。
+ * 建号页与构筑页都在输入侧截到这个数;读档侧也要同样截,
+ * 否则手改存档能塞几十万字符进去 —— 存档爆量,界面还要渲染那一整段。
+ */
+export const NAME_MAX_LENGTH = 8
+
 // ============ 掉落 ============
 /**
  * 品质基础权重(凡→神),与品质窗口(QUALITY_OUT_OF_BAND / data/qualities 的 fromTier/toTier)共同决定获取难度。
