@@ -97,8 +97,20 @@ async function cleanRetry(route, label) {
   if (!(await b.count())) return null
   if (!(await b.isVisible().catch(() => false))) return null
   const before = await fingerprint()
+  /**
+   * 拒因型按钮(如「出发」在闭关中/远征在途时)点下去只会弹一条 toast、页面别处不动。
+   * toast 的 TTL 是 2600ms,而 settle() 2s 封顶 —— 指纹在 toast 还在时能看出变化,
+   * 但若指纹恰好采在 toast 入队之前,就会把「有回执的拒绝」误判成死按钮。
+   * 故点完立刻轮询一次 toast 数量,出现过就当有反应。
+   */
   await b.click({ timeout: 800 }).catch(() => {})
+  let sawToast = false
+  for (let i = 0; i < 12 && !sawToast; i += 1) {
+    sawToast = await page.evaluate(() => document.querySelectorAll('[class*=toast]').length > 0)
+    if (!sawToast) await page.waitForTimeout(60)
+  }
   await settle()
+  if (sawToast) return true
   return (await fingerprint()) !== before
 }
 /** 归桶与报告行由共享分类器 classifySmoke 给出,不在此另写 */
