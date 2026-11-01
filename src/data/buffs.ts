@@ -8,7 +8,7 @@ function b(id: string, name: string, kind: BuffDef['kind'], durationSec: number,
 
 export const BUFFS: BuffDef[] = [
   b('buff_juling', '聚灵', 'pill', 1800, '灵气汇聚,修炼速度提升 50%', { cultivationSpeed: 0.5 }, 'wind'),
-  b('buff_xianyun', '仙韵', 'pill', 1800, '仙韵绕体,修炼速度提升 2/3', { cultivationSpeed: 2 / 3 }, 'wind'),
+  b('buff_xianyun', '仙韵', 'pill', 7200, '仙韵绕体,修炼速度提升 2/3', { cultivationSpeed: 2 / 3 }, 'wind'),
   b('buff_ningshen', '凝神', 'pill', 600, '心神凝定,小进阶成功率提升 8%(大关天劫,不与此益)', { breakthroughRate: 0.08 }, 'moon'),
   b('buff_zhanli', '战意沸腾', 'pill', 900, '攻击提升 20%,防御提升 10%', { attackPct: 0.2, defensePct: 0.1 }, 'sword'),
   b('buff_huxin', '护心', 'pill', 900, '受到伤害降低 15%', { damageReduction: 0.15 }, 'shield'),
@@ -64,18 +64,18 @@ export const BUFFS: BuffDef[] = [
   // ---- 仙界及以上丹药增益(每 buff 仅一味丹产出,见 pillValue 法则 C) ----
   b('buff_xianli', '仙力加身', 'pill', 1200, '仙力贯体,攻击提升 35%,暴击伤害提升 30%', { attackPct: 0.35, critDamage: 0.3 }, 'sword'),
   b('buff_shenwei', '神威临世', 'pill', 1200, '神威加身,造成伤害提升 25%,受伤降低 12%', { damageBonus: 0.25, damageReduction: 0.12 }, 'crown'),
-  b('buff_hundun', '本源归一', 'pill', 1800, '混沌本源入体,修炼速度提升 80%;小进阶成功率提升 10%(大关天劫,不食此源)', {
+  b('buff_hundun', '本源归一', 'pill', 10800, '混沌本源入体,修炼速度提升 80%;小进阶成功率提升 10%(大关天劫,不食此源)', {
     cultivationSpeed: 0.8,
     breakthroughRate: 0.1
   }, 'sparkles'),
   b('buff_daluo', '大罗金身', 'pill', 1200, '大罗金身不坏,攻击提升 40%,暴击率提升 5%', { attackPct: 0.4, critRate: 0.05 }, 'crown'),
-  b('buff_shenyuan', '神元淬体', 'pill', 1800, '神元淬炼肉身,修炼速度提升 70%;小进阶成功率提升 6%(大关天劫,不食此源)', {
+  b('buff_shenyuan', '神元淬体', 'pill', 10800, '神元淬炼肉身,修炼速度提升 70%;小进阶成功率提升 6%(大关天劫,不食此源)', {
     cultivationSpeed: 0.7,
     breakthroughRate: 0.06
   }, 'sparkles'),
   b('buff_zhenshan', '镇世神威', 'pill', 1500, '神威镇世,造成伤害提升 30%,生命上限提升 15%', { damageBonus: 0.3, maxHpPct: 0.15 }, 'crown'),
   b('buff_daotai', '道胎不灭', 'pill', 1800, '道胎不朽,受到伤害降低 20%,反击几率提升 20%', { damageReduction: 0.2, counterRate: 0.2 }, 'shield'),
-  b('buff_huntian', '混天一气', 'pill', 1800, '一气混元,修炼速度提升 120%,灵气回复提升 40%', { cultivationSpeed: 1.2, qiRegen: 0.4 }, 'wind')
+  b('buff_huntian', '混天一气', 'pill', 10800, '一气混元,修炼速度提升 120%,灵气回复提升 40%', { cultivationSpeed: 1.2, qiRegen: 0.4 }, 'wind')
 ]
 
 const BY_ID = new Map(BUFFS.map(x => [x.id, x]))

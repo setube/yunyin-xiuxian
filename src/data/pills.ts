@@ -288,7 +288,7 @@ export const PILLS: PillDef[] = [
   // ---- 仙品修速丹 ----
   // 增益 2/3×1800=1200 秒,介于聚灵丹 900 与神元丹 1260 之间(法则 B);
   // 定 1200 而非中位 1080:造化丹(720)对本品须不过六成(法则 A)。
-  p('p_xianyun', '仙韵丹', 'immortal', 11, '仙韵绕体,服之修炼加速三分之二(30 分钟)', {
+  p('p_xianyun', '仙韵丹', 'immortal', 11, '仙韵绕体,服之修炼加速三分之二(一个时辰)', {
     kind: 'buff',
     buffId: 'buff_xianyun',
     recipe: { herb: 200, stoneBase: 600 },
