@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
 import { mergeMods } from '@/core/statsCalc'
-import { BAG_CAPACITY } from '@/data/constants'
+import { BAG_CAPACITY, EQUIP_AFFIX_HARD_CAP } from '@/data/constants'
 import { resolveEquipStats } from '@/core/equipGen'
 import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactEvictedBy, artifactValue } from '@/data/artifacts'
 import { artifactUpCost, upgradeArtifact } from '@/core/forge'
@@ -436,6 +436,56 @@ describe('行囊容量 · 坏档截断', () => {
     inv.items = makeItems(BAG_CAPACITY) as never
     inv.sanitize()
     expect(inv.bagFull).toBe(true)
+  })
+})
+
+/**
+ * 单件词条数上限。
+ *
+ * 品质表最高 8 条、洗练只换不增,而 sanitize 原先不限制条数:
+ * 手改存档能给一件装备塞几千条,存档爆量且词条面板要渲染那几千行。
+ */
+describe('装备 · 词条数上限', () => {
+  const DEFS = ['atk1', 'atk2', 'atk3', 'def1', 'def2', 'crit1', 'crit2', 'dg1', 'dg2', 'ac1']
+
+  function withAffixes(n: number) {
+    const inv = useInventoryStore()
+    inv.items = [
+      {
+        uid: 'u1',
+        templateId: 'w_zhuqing',
+        tier: 1,
+        quality: 'mortal',
+        level: 1,
+        locked: false,
+        affixes: Array.from({ length: n }, (_, i) => ({ id: DEFS[i % DEFS.length], roll: 0.5 }))
+      }
+    ] as never
+    inv.sanitize()
+    return inv.items[0]!.affixes
+  }
+
+  it('正常条数原样保留(9 条是品质表峰值)', () => {
+    expect(withAffixes(9)).toHaveLength(9)
+  })
+
+  it('超出硬上界的部分被截掉', () => {
+    expect(withAffixes(EQUIP_AFFIX_HARD_CAP + 1)).toHaveLength(EQUIP_AFFIX_HARD_CAP)
+    expect(withAffixes(5000)).toHaveLength(EQUIP_AFFIX_HARD_CAP)
+  })
+
+  it('截断保留前面的条(读档顺序即优先序)', () => {
+    const kept = withAffixes(5000)
+    expect(kept[0]!.id).toBe(DEFS[0])
+    expect(kept).toHaveLength(EQUIP_AFFIX_HARD_CAP)
+  })
+
+  it('截断后每条仍是合法词条(不留下占位空项)', () => {
+    for (const a of withAffixes(5000)) {
+      expect(a.id.length).toBeGreaterThan(0)
+      expect(a.roll).toBeGreaterThanOrEqual(0)
+      expect(a.roll).toBeLessThanOrEqual(1)
+    }
   })
 })
 })

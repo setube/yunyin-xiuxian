@@ -300,6 +300,21 @@ export const BAG_CAPACITY = 120
  */
 export const NAME_MAX_LENGTH = 8
 
+/**
+ * 单件装备的词条数硬上界。
+ *
+ * 品质表最高 8 条(divine 的 affixes 上界),洗练只换不增,故 9 已是真实峰值。
+ * 这里放到 16 是为了给「未来加词条位」留余量,同时仍能拦下坏档 ——
+ * 读档时不设界,手改存档能塞进几千条,存档爆量且词条面板要渲染那几千行。
+ */
+export const EQUIP_AFFIX_HARD_CAP = 16
+
+/**
+ * 辅修功法的席位数硬上界 = 洞府藏经阁满级时的席数(1 + 12/3)。
+ * 应用侧仍按 `dongfu.subGongfaSlots` 动态限,这里只防读档时的冗余数据。
+ */
+export const SUB_GONGFA_SLOT_HARD_CAP = 5
+
 // ============ 掉落 ============
 /**
  * 品质基础权重(凡→神),与品质窗口(QUALITY_OUT_OF_BAND / data/qualities 的 fromTier/toTier)共同决定获取难度。
