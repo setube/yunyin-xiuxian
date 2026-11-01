@@ -135,8 +135,8 @@ export const GONGFA: GongfaDef[] = [
     'profound',
     4,
     '光明所照,诸邪辟易',
-    { cultivationSpeed: 0.22, maxHpPct: 0.16, breakthroughRate: 0.02 },
-    { cultivationSpeed: 0.03, maxHpPct: 0.02 },
+    { cultivationSpeed: 0.26, maxHpPct: 0.2, breakthroughRate: 0.03 },
+    { cultivationSpeed: 0.034, maxHpPct: 0.024 },
     { element: 'light', skill: { name: '大光明拳', mult: 2.3, rate: 0.25 } }
   ),
   g(
@@ -179,8 +179,8 @@ export const GONGFA: GongfaDef[] = [
     'profound',
     5,
     '炼神返虚,虚室生白',
-    { cultivationSpeed: 0.2, defensePct: 0.12, qiRegen: 0.1 },
-    { cultivationSpeed: 0.03, defensePct: 0.014 },
+    { cultivationSpeed: 0.24, defensePct: 0.16, qiRegen: 0.14 },
+    { cultivationSpeed: 0.034, defensePct: 0.018 },
     { skill: { name: '炼神返虚', mult: 2.4, rate: 0.24 } }
   ),
   g(
@@ -440,8 +440,8 @@ export const GONGFA: GongfaDef[] = [
     'immortal',
     13,
     '大罗天上,万法归真',
-    { attackPct: 0.26, maxHpPct: 0.2, damageReduction: 0.08 },
-    { attackPct: 0.028, maxHpPct: 0.02 }
+    { cultivationSpeed: 0.24, attackPct: 0.26, maxHpPct: 0.2, damageReduction: 0.08 },
+    { cultivationSpeed: 0.026, attackPct: 0.028, maxHpPct: 0.02 }
   ),
   g(
     'm_shenxiao',
@@ -533,8 +533,8 @@ export const GONGFA: GongfaDef[] = [
     'immortal',
     10,
     '御气而行,气机不竭',
-    { cultivationSpeed: 0.36, qiRegen: 0.18, defensePct: 0.14 },
-    { cultivationSpeed: 0.045, defensePct: 0.015 },
+    { cultivationSpeed: 0.42, attackPct: 0.2, defensePct: 0.18, qiRegen: 0.2 },
+    { cultivationSpeed: 0.05, attackPct: 0.022, defensePct: 0.018 },
     { skill: { name: '玄仙一气', mult: 3.1, rate: 0.26 } }
   ),
   g(
@@ -544,8 +544,8 @@ export const GONGFA: GongfaDef[] = [
     'immortal',
     11,
     '玉京金阙之上刻着的章句,读之如读万剑之诀',
-    { attackPct: 0.2, defensePct: 0.16, critRate: 0.02 },
-    { attackPct: 0.022, defensePct: 0.016 },
+    { cultivationSpeed: 0.26, attackPct: 0.24, defensePct: 0.18, critRate: 0.03 },
+    { cultivationSpeed: 0.026, attackPct: 0.026, defensePct: 0.018 },
     { element: 'metal', skill: { name: '金阙剑气', mult: 3.2, rate: 0.26 } }
   ),
   g(
@@ -555,8 +555,8 @@ export const GONGFA: GongfaDef[] = [
     'immortal',
     12,
     '太乙救苦,一诵经则伤者自起',
-    { maxHpPct: 0.22, regenPerRound: 0.018, damageReduction: 0.06 },
-    { maxHpPct: 0.022, damageReduction: 0.012 },
+    { cultivationSpeed: 0.4, maxHpPct: 0.24, regenPerRound: 0.02, damageReduction: 0.07 },
+    { cultivationSpeed: 0.046, maxHpPct: 0.024, damageReduction: 0.012 },
     { element: 'light', skill: { name: '太乙金光', mult: 3.0, rate: 0.25 } }
   ),
   g(
@@ -587,8 +587,8 @@ export const GONGFA: GongfaDef[] = [
     'divine',
     15,
     '神兵列于天关,进退皆合军律',
-    { attackPct: 0.24, defensePct: 0.2, armorPen: 0.06 },
-    { attackPct: 0.026, defensePct: 0.02 },
+    { cultivationSpeed: 0.28, attackPct: 0.24, defensePct: 0.2, armorPen: 0.06 },
+    { cultivationSpeed: 0.03, attackPct: 0.026, defensePct: 0.02 },
     { element: 'metal', skill: { name: '天关神兵', mult: 3.5, rate: 0.27 } }
   ),
   g(
@@ -598,8 +598,8 @@ export const GONGFA: GongfaDef[] = [
     'divine',
     16,
     '神域之主,御极临下',
-    { attackPct: 0.26, maxHpPct: 0.22, executeDamage: 0.1 },
-    { attackPct: 0.028, maxHpPct: 0.022 },
+    { cultivationSpeed: 0.28, attackPct: 0.26, maxHpPct: 0.22, executeDamage: 0.1 },
+    { cultivationSpeed: 0.03, attackPct: 0.028, maxHpPct: 0.022 },
     { skill: { name: '神王御极', mult: 3.6, rate: 0.27 } }
   ),
   g(
@@ -609,8 +609,8 @@ export const GONGFA: GongfaDef[] = [
     'divine',
     17,
     '神帝临尘,众神俯首',
-    { attackPct: 0.28, speed: 0.08, stunRate: 0.04 },
-    { attackPct: 0.03, speed: 0.008 },
+    { cultivationSpeed: 0.3, attackPct: 0.28, speed: 0.08, stunRate: 0.04 },
+    { cultivationSpeed: 0.032, attackPct: 0.03, speed: 0.008 },
     { skill: { name: '神帝临尘', mult: 3.7, rate: 0.28 } }
   ),
   // 混沌海三境
@@ -631,8 +631,8 @@ export const GONGFA: GongfaDef[] = [
     'divine',
     19,
     '神魔一体,以身开界',
-    { attackPct: 0.3, maxHpPct: 0.24, lifesteal: 0.03 },
-    { attackPct: 0.03, maxHpPct: 0.022 },
+    { cultivationSpeed: 0.36, attackPct: 0.32, maxHpPct: 0.26, lifesteal: 0.04 },
+    { cultivationSpeed: 0.04, attackPct: 0.032, maxHpPct: 0.024 },
     { element: 'chaos', skill: { name: '开天一击', mult: 3.9, rate: 0.28 } }
   ),
   g(
