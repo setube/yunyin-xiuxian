@@ -815,9 +815,9 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   it('法宝炼化按缺口置灰,行内写清悟道点与灵石各差多少', () => {
     const view = src('../components/inventory/ArtifactPanel.vue')
     expect(view, '禁用态读同一份缺口判定').toContain('artifactShortfall(upCost)')
-    expect(view, '禁用态按缺的那一样判,不能拿整个缺口对象当布尔').toContain(
-      ':disabled="row.short?.short != null"'
-    )
+    // 满重时也禁用(按钮不再消失),故判据取「缺一样 + 满重」两段都写出来
+    expect(view, '禁用态按缺的那一样判,不能拿整个缺口对象当布尔').toContain(':disabled="!row.upCost || row.short?.short != null"')
+    expect(view, '满重不隐藏按钮,改为禁用并写原因').toContain('<template v-else>已至上限</template>')
     expect(view, '行内写悟道缺口').toContain('悟道点尚差 ${short.wudao}')
     expect(view, '行内写灵石缺口').toContain('灵石尚差 ${formatGap(short.stone)}')
     expect(view, '行内不再缀 toast 的来路提示').not.toContain('artifactShortToast(')
