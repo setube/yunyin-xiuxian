@@ -44,6 +44,39 @@ describe('GameNumber 大数运算', () => {
     expect(mul(huge, huge).e).toBe(1000)
   })
 
+  /**
+   * 溢出判据不能只看指数:m × 10^308 在 m > 1.7976… 时就已超过 Number.MAX_VALUE。
+   * 旧写法 `if (a.e > 308) return Infinity` 放 m 较大的数过去,乘出来照样是 Infinity ——
+   * 守卫对那一档形同虚设。现在直接算完再判结果是否有限。
+   */
+  it('e=308 时 m 较大也会溢出(溢出判据不能只看指数)', () => {
+    expect(toNum({ m: 1, e: 308 }), 'm=1 仍应可表示').toBeCloseTo(1e308, -300)
+    expect(toNum({ m: 1.9, e: 308 }), 'm=1.9 × 10^308 已超 MAX_VALUE').toBe(Infinity)
+    expect(toNum({ m: 9.9, e: 308 })).toBe(Infinity)
+  })
+
+  it('任何情况下都不返回 NaN(溢出只可能是 Infinity)', () => {
+    for (const g of [
+      { m: 0, e: 0 },
+      { m: 1, e: 0 },
+      { m: 1, e: 307 },
+      { m: 1, e: 308 },
+      { m: 1.9, e: 308 },
+      { m: 1, e: 309 },
+      { m: 1e-300, e: -50 }
+    ]) {
+      const v = toNum(g)
+      expect(Number.isNaN(v), `${JSON.stringify(g)} 算出了 NaN`).toBe(false)
+    }
+  })
+
+  it('未溢出的值与直接相乘一致(修形不改正常数值)', () => {
+    for (const g of [{ m: 1.5, e: 3 }, { m: 12, e: 15 }, { m: 1, e: 100 }, { m: 0, e: 5 }]) {
+      const direct = g.m === 0 ? 0 : g.m * Math.pow(10, g.e)
+      expect(toNum(g)).toBe(direct)
+    }
+  })
+
   it('比较', () => {
     expect(cmp(gn(100), gn(99))).toBe(1)
     expect(cmp(gn(1e20), gn(2e20))).toBe(-1)
