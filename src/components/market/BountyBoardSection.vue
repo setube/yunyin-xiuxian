@@ -17,7 +17,7 @@
             <span class="flex items-center gap-0.5 tabular text-gold-ink"><GameIcon name="gem" :size="12" />{{ b.rewardText }}</span>
             <span v-if="b.extraText" class="text-azure">· {{ b.extraText }}</span>
           </span>
-          <button v-if="b.kind === 'equip'" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="b.claimed || !b.ready" @click="openEquipOrder = openEquipOrder === b.idx ? null : b.idx">
+          <button v-if="b.kind === 'equip'" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="b.claimed || !b.ready" :aria-expanded="openEquipOrder === b.idx" @click="openEquipOrder = openEquipOrder === b.idx ? null : b.idx">
             {{ b.claimed ? '已交' : openEquipOrder === b.idx ? '收起' : b.ready ? '选一件交货' : b.shortText }}
           </button>
           <button v-else class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="b.claimed || !b.ready" @click="claimOne(b.idx)">

@@ -89,4 +89,52 @@ describe('互斥选择钮 · 选中态要对读屏可见', () => {
       expect(readFileSync(file, 'utf-8'), `${file} 少了 ${needle}`).toContain(needle)
     }
   })
+
+
+/**
+ * 展开/收起钮必须带 aria-expanded。
+ *
+ * 与上面「互斥选择钮」是同一类缺口:视觉上有箭头 ▾ 或「展开/收起」字样,
+ * 读屏却听不出这块是可展开的、更听不出现在展开没展开。
+ *
+ * 判据:点击表达式是自反切换(`x = !x`)或「再点一次取消」(`x = x === y ? null : y`),
+ * 且该钮没有 aria-expanded / aria-pressed。
+ * 这两类写法不会出现在「按状态着色」的展示钮上,所以不会误报。
+ */
+describe('展开钮 · 状态要对读屏可见', () => {
+  function togglesMissingExpanded(): string[] {
+    const out: string[] = []
+    for (const file of vueFiles()) {
+      const text = readFileSync(file, 'utf-8')
+      for (const m of text.matchAll(/<button\b[^>]*>/gs)) {
+        const tag = m[0]!
+        const click = /@click="([^"]*)"/s.exec(tag)
+        if (!click) continue
+        const src = click[1]!
+        const toggle = /(\w+)\s*=\s*!\1/.exec(src) ?? /(\w+)\s*=\s*\1\s*===/.exec(src)
+        if (!toggle) continue
+        if (/aria-(expanded|pressed)/.test(tag)) continue
+        const line = text.slice(0, m.index).split('\n').length
+        out.push(`${file}:${line}(${toggle[1]})`)
+      }
+    }
+    return out
+  }
+
+  it('切换式按钮都带 aria-expanded 或 aria-pressed', () => {
+    const bad = togglesMissingExpanded()
+    expect(bad, `这些展开钮没告诉读屏展开没展开:\n${bad.join('\n')}`).toEqual([])
+  })
+
+  it('三处已知展开钮带的是各自的绑定值', () => {
+    const known = [
+      ['src/views/RealmCodexView.vue', ':aria-expanded="showAllHex"'],
+      ['src/views/AdventureView.vue', ':aria-expanded="mansionRedirectOpen"'],
+      ['src/components/market/BountyBoardSection.vue', ':aria-expanded="openEquipOrder === b.idx"']
+    ] as const
+    for (const [file, needle] of known) {
+      expect(readFileSync(file, 'utf-8'), `${file} 少了 ${needle}`).toContain(needle)
+    }
+  })
+})
 })
