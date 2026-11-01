@@ -150,12 +150,31 @@ async function auditModalControls(page) {
       .filter(x => x && x.ratio < 3)
       .slice(0, 3)
       .map(x => `${x.ratio}:1 «${x.text}»`)
+    // 弹窗里的选择组:aria-pressed 是 toggle(允许一个都不选),aria-selected 必须恰有一个
+    const badGroups = (() => {
+      const out = []
+      for (const attr of ['aria-pressed', 'aria-selected']) {
+        const byParent = new Map()
+        for (const el of panel.querySelectorAll(`[${attr}]`)) {
+          const parent = el.parentElement
+          if (!parent) continue
+          byParent.set(parent, [...(byParent.get(parent) ?? []), el])
+        }
+        for (const [, els] of byParent) {
+          if (els.length < 2) continue
+          const on = els.filter(e => e.getAttribute(attr) === 'true').length
+          if (attr === 'aria-pressed' ? on > 1 : on !== 1) out.push(`${attr} 组(${els.length} 项)里有 ${on} 个选中`)
+        }
+      }
+      return out
+    })()
     return {
       count: rows.length,
       label: (panel.getAttribute('aria-label') || panel.querySelector('h3')?.textContent || '').trim(),
       unnamed: rows.filter(r => !r.name).map(r => `${r.h.toFixed(1)}px`),
       small: rows.filter(r => !r.ok).map(r => `${r.h.toFixed(1)}px «${r.name || '无名'}»`),
-      dimDisabled
+      dimDisabled,
+      badGroups
     }
   })
 }
@@ -672,6 +691,7 @@ for (const vp of VIEWPORTS) {
     if (audit?.unnamed.length) failures.push(`[${vp.tag}] 隐私弹窗里有 ${audit.unnamed.length} 个无名控件`)
     if (audit?.small.length) failures.push(`[${vp.tag}] 隐私弹窗里可点元素过小:${audit.small.join(' | ')}`)
     if (audit?.dimDisabled.length) failures.push(`[${vp.tag}] 隐私弹窗里禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+    if (audit?.badGroups.length) failures.push(`[${vp.tag}] 隐私弹窗里选择组没选中态:${audit.badGroups.join(' | ')}`)
   }
   await page.locator('input[type=checkbox]').first().check()
   await page.getByRole('button', { name: /同意并开始/ }).first().click()
@@ -809,6 +829,7 @@ for (const vp of VIEWPORTS) {
   if (inModal?.unnamed.length) failures.push(`[375] 弹窗场景:面板里有 ${inModal.unnamed.length} 个无名控件(读屏只会念「按钮」)`)
   if (inModal?.small.length) failures.push(`[375] 弹窗场景:面板里可点元素过小:${inModal.small.join(' | ')}`)
   if (inModal?.dimDisabled.length) failures.push(`[375] 弹窗场景:禁用态的字读不出来:${inModal.dimDisabled.join(' | ')}`)
+  if (inModal?.badGroups.length) failures.push(`[375] 弹窗场景:选择组没选中态:${inModal.badGroups.join(' | ')}`)
 
   let escaped = false
   for (let i = 0; i < 6; i++) {
@@ -2659,6 +2680,7 @@ for (const vp of [
     const audit = await auditModalControls(page)
     if (audit?.small.length) failures.push(`${tag} 开炉弹窗里可点元素过小:${audit.small.join(' | ')}`)
     if (audit?.dimDisabled.length) failures.push(`${tag} 开炉弹窗里禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+    if (audit?.badGroups.length) failures.push(`${tag} 开炉弹窗里选择组没选中态:${audit.badGroups.join(' | ')}`)
     if (audit?.unnamed.length) failures.push(`${tag} 开炉弹窗里有 ${audit.unnamed.length} 个无名控件`)
 
     // 渐隐提示:正文超长时,在顶 → 只亮底边;滚到底 → 只亮顶边
@@ -2795,6 +2817,7 @@ for (const vp of [
     const audit = await auditModalControls(page)
     if (audit?.small.length) failures.push(`${tag} ${step}:可点元素过小 ${audit.small.join(' | ')}`)
     if (audit?.dimDisabled.length) failures.push(`${tag} ${step}:禁用态的字读不出来 ${audit.dimDisabled.join(' | ')}`)
+    if (audit?.badGroups.length) failures.push(`${tag} ${step}:选择组没选中态 ${audit.badGroups.join(' | ')}`)
     if (audit?.unnamed.length) failures.push(`${tag} ${step}:${audit.unnamed.length} 个无名控件`)
     const nested = await page.evaluate(() => {
       const panel = document.querySelector('.modal-panel')
@@ -3316,6 +3339,7 @@ for (const vp of [
     if (audit.unnamed.length) failures.push(`[弹窗巡逻] ${name} 里有 ${audit.unnamed.length} 个无名控件:${audit.unnamed.join(' | ')}`)
     if (audit.small.length) failures.push(`[弹窗巡逻] ${name} 里可点元素过小(<28px):${audit.small.join(' | ')}`)
     if (audit.dimDisabled.length) failures.push(`[弹窗巡逻] ${name} 里禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+    if (audit.badGroups.length) failures.push(`[弹窗巡逻] ${name} 里选择组没选中态:${audit.badGroups.join(' | ')}`)
     console.log(`弹窗巡逻:${name} · ${audit.count} 控件${audit.small.length ? ' · 过小:' + audit.small.join(' | ') : ' · 触控达标'}`)
   }
 
