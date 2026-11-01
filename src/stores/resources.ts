@@ -7,6 +7,7 @@ import { QI_BANK_MULT } from '@/data/constants'
 import { FURNACE_HERB_MIN_GRADE } from '@/data/endgame'
 import { HERB_GRADES, herbGradeOfMajor, isHerbGrade, type HerbGrade } from '@/data/herbGrades'
 import { persistConfig } from '@/utils/storage'
+import { asBoundedGNum } from '@/utils/saveShape'
 import { usePlayerStore } from '@/stores/player'
 
 /** 入账只认有限正数 */
@@ -161,9 +162,15 @@ export const useResourcesStore = defineStore(
       qi.value = Math.max(0, Math.min(cap * QI_BANK_MULT, v))
     }
 
-    /** 存档修复:重建大数,负数/非有限值夹回 0(与 settings.sanitize 同判据) */
+    /**
+     * 存档修复:重建大数,负数/非有限值夹回 0(与 settings.sanitize 同判据)。
+     *
+     * 灵石必须经 asBoundedGNum 而不是 gn():gn 只规范化尾数、**不限指数**,
+     * 坏档写 `{ m: 1, e: 1000000000 }` 会被原样收下,界面随即显示
+     * 「1.00e1000000000」这种非法数字(saveShape 头注释点的就是这个坑)。
+     */
     function sanitize(): void {
-      const stone = gn(spiritStone.value)
+      const stone = asBoundedGNum(spiritStone.value)
       spiritStone.value = stone.m < 0 ? gnZero() : stone
       const raw = herbByGrade.value as unknown
       const clean: Record<HerbGrade, number> = emptyHerbMap()
