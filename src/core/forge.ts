@@ -6,7 +6,7 @@ import { artifactDef, ARTIFACT_MAX_LEVEL, ARTIFACT_UP_STONE_TIER, ARTIFACT_UP_WU
 import { EQUIP_MAX_LEVEL_BASE } from '@/data/constants'
 import { stoneByTier, upgradeCost } from './formulas'
 import { add, gnZero, isZero, subClamp } from '@/utils/gnum'
-import { formatGN } from '@/utils/format'
+import { formatGN, formatGap } from '@/utils/format'
 import {
   artifactBatchDoneToast,
   artifactBatchInterruptedToast,
@@ -81,7 +81,7 @@ export function upgradeEquipment(uid: string, opts: { quiet?: boolean } = {}): b
     if (!opts.quiet) {
       playSfx('warn')
       const gap = upgradeShortfall(cost)
-      ui.toast(upgradeShortToast(short, { stone: formatGN(gap.stone), dust: gap.dust }), 'warn')
+      ui.toast(upgradeShortToast(short, { stone: formatGap(gap.stone), dust: gap.dust }), 'warn')
     }
     return false
   }
@@ -155,7 +155,7 @@ export function upgradeEquipmentBatch(uid: string): number {
     const short = next ? upgradeShort(next) : null
     const gap = next ? upgradeShortfall(next) : { dust: 0, stone: gnZero() }
     useUiStore().toast(
-      plan.atCap ? upgradeCapToast() : upgradeShortToast(short ?? 'stone', { stone: formatGN(gap.stone), dust: gap.dust }),
+      plan.atCap ? upgradeCapToast() : upgradeShortToast(short ?? 'stone', { stone: formatGap(gap.stone), dust: gap.dust }),
       'warn'
     )
     return 0
@@ -309,7 +309,7 @@ export function upgradeArtifact(defId: string, opts: { quiet?: boolean } = {}): 
     if (!opts.quiet) {
       playSfx('warn')
       const gap = artifactShortfall(cost)
-      ui.toast(artifactShortToast(short, { wudao: gap.wudao, stone: formatGN(gap.stone) }), 'warn')
+      ui.toast(artifactShortToast(short, { wudao: gap.wudao, stone: formatGap(gap.stone) }), 'warn')
     }
     return false
   }
@@ -373,7 +373,7 @@ export function upgradeArtifactBatch(defId: string): number {
     const text = plan.atCap
       ? artifactCapToast()
       : short && gap
-        ? artifactShortToast(short, { wudao: gap.wudao, stone: formatGN(gap.stone) })
+        ? artifactShortToast(short, { wudao: gap.wudao, stone: formatGap(gap.stone) })
         : '祭炼未成'
     useUiStore().toast(text, 'warn')
     return 0

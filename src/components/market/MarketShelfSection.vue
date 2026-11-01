@@ -40,10 +40,10 @@
           <button
             class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
             :disabled="c.sold || !c.afford || (c.kind === 'equipment' && inventory.bagFull)"
-            :title="c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : !c.sold && !c.afford ? `灵石尚差 ${formatGN(c.stoneShort)}` : undefined"
+            :title="c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : !c.sold && !c.afford ? `灵石尚差 ${formatGap(c.stoneShort)}` : undefined"
             @click="buyOne(c.idx)"
           >
-            {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : c.afford ? '买下' : `尚差 ${formatGN(c.stoneShort)}` }}
+            {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : c.afford ? '买下' : `尚差 ${formatGap(c.stoneShort)}` }}
           </button>
         </div>
       </div>
@@ -70,7 +70,7 @@
   import { tint } from '@/utils/colorToken'
   import { focusHerbSlot, marketEquipInstance } from '@/core/marketService'
   import { cmp, gnZero, subClamp } from '@/utils/gnum'
-  import { formatGN } from '@/utils/format'
+  import { formatGN, formatGap } from '@/utils/format'
   import { classicalDuration } from '@/data/timeUnits'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -189,7 +189,7 @@
     const slot = market.stock.find(s => s.idx === idx)
     const name = slot ? renderSlot(slot).name : ''
     if (result === 'ok') ui.toast(`购得「${name}」`, 'success')
-    else if (result === 'poor') ui.toast(slot ? `灵石尚差 ${formatGN(renderSlot(slot).stoneShort)}` : '灵石不足', 'warn')
+    else if (result === 'poor') ui.toast(slot ? `灵石尚差 ${formatGap(renderSlot(slot).stoneShort)}` : '灵石不足', 'warn')
     else if (result === 'bagfull') ui.toast('行囊已满', 'warn')
     else if (result === 'expired') ui.toast('货架已刷新', 'warn')
   }

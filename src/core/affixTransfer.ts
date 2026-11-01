@@ -18,7 +18,7 @@ import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import { DIMINISH_KEYS, REFORGE_DUST_BASE, REFORGE_SEAL_LOAD, REFORGE_STONE_BASE, TRANSFER_PRICE_RATE } from '@/data/constants'
 import { add, gnZero, subClamp } from '@/utils/gnum'
-import { formatGN } from '@/utils/format'
+import { formatGap } from '@/utils/format'
 import { stoneByTier } from './formulas'
 import { playSfx } from './audio'
 import { expectedRollsToHit, sealCost } from './reforge'
@@ -265,7 +265,7 @@ export function transferAffix(req: TransferRequest): boolean {
   if (short) {
     playSfx('warn')
     const gap = transferShortfall(check.plan.cost)
-    ui.toast(transferShortText(short, { stone: formatGN(gap.stone), dust: gap.dust }), 'warn')
+    ui.toast(transferShortText(short, { stone: formatGap(gap.stone), dust: gap.dust }), 'warn')
     return false
   }
   resources.spendStone(check.plan.cost.stone)

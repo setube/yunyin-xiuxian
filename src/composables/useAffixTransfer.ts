@@ -27,7 +27,7 @@ import {
   transferDeltaText,
   transferShortText
 } from '@/ui/affixTransferText'
-import { formatGN } from '@/utils/format'
+import { formatGap } from '@/utils/format'
 
 /** 候选目标默认列几件;其余由「全部 N 件」展开 */
 const PREVIEW_LIMIT = 8
@@ -114,7 +114,7 @@ export function useAffixTransfer(sourceUid: MaybeRefOrGetter<string | null>) {
     if (!c.ok) return transferBlockText(c.block, state.affixId)
     if (short.value && shortfall.value) {
       return transferShortText(short.value, {
-        stone: formatGN(shortfall.value.stone),
+        stone: formatGap(shortfall.value.stone),
         dust: shortfall.value.dust
       })
     }

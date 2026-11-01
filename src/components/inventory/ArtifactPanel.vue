@@ -134,7 +134,7 @@ import {
 import { artifactBatchPlan, artifactShortfall, artifactUpCost, upgradeArtifact, upgradeArtifactBatch } from '@/core/forge'
 import { STAT_NAMES, statCaveat, statModPhrase } from '@/data/statNames'
 import { artifactSlotReplacedToast } from '@/ui/inventoryText'
-import { cnNumber, formatGN, formatPercent } from '@/utils/format'
+import { cnNumber, formatGN, formatGap, formatPercent } from '@/utils/format'
 import { tint } from '@/utils/colorToken'
 import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
 import GameIcon from '@/components/common/GameIcon.vue'
@@ -205,7 +205,7 @@ function runArtifactBatch(defId: string): void {
 function artifactShortText(short: NonNullable<(typeof artifactRows.value)[number]['short']>): string {
   const parts: string[] = []
   if (short.wudao > 0) parts.push(`悟道点尚差 ${short.wudao}`)
-  if (short.stone.m > 0) parts.push(`灵石尚差 ${formatGN(short.stone)}`)
+  if (short.stone.m > 0) parts.push(`灵石尚差 ${formatGap(short.stone)}`)
   return parts.join(' · ')
 }
 

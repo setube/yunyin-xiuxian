@@ -9,7 +9,7 @@ import { REGIONS } from '@/data/regions'
 import { EQUIP_SLOT_NAMES, EQUIP_SLOTS } from '@/data/equipment'
 import { herbGradeOfMajor } from '@/data/herbGrades'
 import { breakthroughGoalText } from '@/ui/cultivationText'
-import { formatNum } from '@/utils/format'
+import { formatGap } from '@/utils/format'
 
 export type GoalType = 'breakthrough' | 'equipment' | 'explore' | 'material' | 'build'
 
@@ -30,7 +30,7 @@ const MATERIAL_LOW_HERB = 10
 
 /** 临近突破读数:破境耗 qiCost = 灵气上限 × BT_QI_COST_RATIO(门槛拒因见 ui/cultivationText 的 breakthroughQiReason);只报灵气尚差,够了不出 */
 function qiShortHint(qiShort: number): string | undefined {
-  return qiShort > 0 ? `灵气尚差 ${formatNum(qiShort)}` : undefined
+  return qiShort > 0 ? `灵气尚差 ${formatGap(qiShort)}` : undefined
 }
 
 /** 纯函数:根据玩家状态生成当前目标 */

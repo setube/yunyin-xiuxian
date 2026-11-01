@@ -4,7 +4,7 @@ import { rng } from '@/utils/random'
 import { pillDef } from '@/data/pills'
 import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
-import { formatGN } from '@/utils/format'
+import { formatGN, formatGap } from '@/utils/format'
 import { recipeCraft, type SkillId } from '@/data/crafting'
 import { expFromSecs, pillStoneCost } from './formulas'
 import { collect, track } from './progress'
@@ -189,9 +189,9 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
     const stoneShort = stoneLimited && stoneRounds === 0 && gap.stone.m > 0
     // 缺草报株数、缺石报石差,不写笼统的「不足」
     if (stoneShort && gap.herb > 0) {
-      return blocked(craftShortToast({ herb: gap.herb, stone: formatGN(gap.stone) }), 'both', gap.herb, gap.stone)
+      return blocked(craftShortToast({ herb: gap.herb, stone: formatGap(gap.stone) }), 'both', gap.herb, gap.stone)
     }
-    if (stoneShort) return blocked(craftShortToast({ stone: formatGN(gap.stone) }), 'stone', undefined, gap.stone)
+    if (stoneShort) return blocked(craftShortToast({ stone: formatGap(gap.stone) }), 'stone', undefined, gap.stone)
     return blocked(craftShortToast({ herb: gap.herb }), 'herb', gap.herb)
   }
   return { rounds, herb: rounds * cost.herb, stone: mulN(cost.stone, rounds) }
@@ -244,7 +244,7 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
       ui.toast(
         craftShortToast({
           herb: gap.herb,
-          ...(gap.stone.m > 0 ? { stone: formatGN(gap.stone) } : {})
+          ...(gap.stone.m > 0 ? { stone: formatGap(gap.stone) } : {})
         }),
         'warn'
       )

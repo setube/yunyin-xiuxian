@@ -46,12 +46,12 @@
         <button
           class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
           :disabled="stoneShort.m > 0"
-          :title="stoneShort.m > 0 ? `灵石尚差 ${formatGN(stoneShort)}` : undefined"
+          :title="stoneShort.m > 0 ? `灵石尚差 ${formatGap(stoneShort)}` : undefined"
           @click="furnaceConvertStone()"
         >
           {{
             stoneShort.m > 0
-              ? `熔铸(灵石尚差 ${formatGN(stoneShort)})`
+              ? `熔铸(灵石尚差 ${formatGap(stoneShort)})`
               : `${formatGN(furnaceStoneCost())} → ${FURNACE_STONE_DAO_SOURCE} 道源`
           }}
         </button>
@@ -132,7 +132,7 @@ import {
   fruitMarginalInfo,
   shouldShowFruitTutorial
 } from '@/core/resourceGuidance'
-import { formatGN, formatNum } from '@/utils/format'
+import { formatGN, formatGap, formatNum } from '@/utils/format'
 import { gnZero, subClamp } from '@/utils/gnum'
 import { daoSourceShortfall, daoSourceShortText } from '@/core/daoSource'
 

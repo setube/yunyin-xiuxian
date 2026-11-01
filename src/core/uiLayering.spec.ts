@@ -130,7 +130,7 @@ describe('界面分层 · 浮层只有一个出处', () => {
       ':disabled="player.fateFocus !== s.id && focusShort > 0"'
     )
     expect(codex!.src, '点化差额要走指数感知减法').toContain('subClamp(focusCost, resources.spiritStone)')
-    expect(codex!.src, '点化按钮要直说差多少灵石').toContain('灵石尚差 ${formatGN(focusShortGN)}')
+    expect(codex!.src, '点化按钮要直说差多少灵石').toContain('灵石尚差 ${formatGap(focusShortGN)}')
   })
 
   it('到期倒计时按 1 秒游戏钟走,不借 5 秒修行心跳', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cnNumber, formatClock, formatCountdown, formatDuration, formatGN, formatPercent, roundToSum } from './format'
+import { cnNumber, formatClock, formatCountdown, formatDuration, formatGap, formatGN, formatPercent, roundToSum } from './format'
 import { gn, powN } from './gnum'
 
 describe('数值格式化', () => {
@@ -192,4 +192,55 @@ it('1~100 之间的小数四舍五入到一位(差额提示可能少报)', () =>
   expect(formatGN(gn(0.04))).toBe('0.04')
   expect(formatGN(gn(0.004))).toBe('0.004')
 })
+})
+
+/**
+ * 差额提示专用:位数与 formatGN 同一把尺,但末位一律向上进一。
+ * 判据是「按提示补足一定够」,所以每条都拿 formatGN 的读数对账:
+ * formatGap(v) 换算成数字必须 ≥ v,且不多进一格。
+ */
+describe('formatGap 差额向上取整', () => {
+  /** 把「1.9」「12.35万」这类读数换回数字,单位按 formatGN 的 4 位一档 */
+  const back = (s: string): number => {
+    const unit = /万|亿|兆|京|垓/.exec(s)
+    const scale = unit ? Math.pow(10000, '万亿兆京垓'.indexOf(unit[0]!) + 1) : 1
+    return Number(s.replace(/[,万兆京垓亿]/g, '')) * scale
+  }
+
+  it('少报的那一档补足到位:1.824 不再印成 1.8', () => {
+    expect(formatGap(gn(1.824))).toBe('1.9')
+    expect(back(formatGap(gn(1.824)))).toBeGreaterThanOrEqual(1.824)
+    // 同一档里本来就四舍五入上去的值不该再多进一格
+    expect(formatGap(gn(1.86))).toBe('1.9')
+    expect(formatGap(gn(2.28))).toBe('2.3')
+    expect(formatGap(gn(2.04))).toBe('2.1')
+  })
+
+  it('小数与整数档都只进到 formatGN 会显示的那一位', () => {
+    expect(formatGap(gn(0.04))).toBe('0.04')
+    expect(formatGap(gn(0.004))).toBe('0.004')
+    expect(formatGap(gn(0.28))).toBe('0.3')
+    expect(formatGap(gn(7))).toBe('7')
+    expect(formatGap(gn(999))).toBe('999')
+    expect(formatGap(gn(1234))).toBe('1,234')
+  })
+
+  it('中文单位档同口径向上进,不整档进位', () => {
+    expect(formatGap(gn(123500))).toBe('12.35万')
+    expect(formatGap(gn(123510))).toBe('12.36万')
+    expect(formatGap(gn(1.2351e8))).toBe('1.236亿')
+    expect(formatGap(gn(1e6))).toBe('100万')
+  })
+
+  it('浮点尾差不会多进一格', () => {
+    // 1.8000000000000002 这类值按 0.1 进格仍应是 1.8
+    expect(formatGap({ m: 1.8000000000000002, e: 0 })).toBe('1.8')
+    expect(formatGap(gn(0.1))).toBe('0.1')
+    expect(formatGap(gn(2.3))).toBe('2.3')
+  })
+
+  it('零与负数没有「尚差」语义,退回原格式化', () => {
+    expect(formatGap(gn(0))).toBe('0')
+    expect(formatGap(gn(-5))).toBe('-5')
+  })
 })

@@ -4,10 +4,10 @@
     class="shrink-0 min-h-[28px] rounded-md px-1.5 py-1 text-[10px] text-azure active:scale-90 active:opacity-60 disabled:text-ink-faint disabled:opacity-60"
     :disabled="sealShort"
     :aria-label="sealLabel"
-    :title="sealShort ? `灵石尚差 ${formatGN(sealGap!)}` : undefined"
+    :title="sealShort ? `灵石尚差 ${formatGap(sealGap!)}` : undefined"
     @click="doSealAffix"
   >
-    {{ sealShort ? `差${formatGN(sealGap!)}` : '封存' }}
+    {{ sealShort ? `差${formatGap(sealGap!)}` : '封存' }}
   </button>
   <button
     v-else-if="sealed"
@@ -24,7 +24,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useInventoryStore } from '@/stores/inventory'
   import { sealAffix, sealCost, sealShortfall, unsealAffix } from '@/core/reforge'
-  import { formatGN } from '@/utils/format'
+  import { formatGap } from '@/utils/format'
   import GameIcon from '@/components/common/GameIcon.vue'
 
   /** 能封与否只问 core/reforge 的 sealCost / sealShortfall(与 sealAffix 同源);解封免费即时 */
@@ -40,7 +40,7 @@
   const sealed = computed(() => (inst.value?.sealedAffixIds ?? []).includes(props.affixId))
   const canSealAffix = computed(() => inst.value !== undefined && sealCostVal.value !== null && !sealed.value)
   const sealLabel = computed(() =>
-    sealShort.value ? `封存词条${props.name},灵石尚差 ${formatGN(sealGap.value!)}` : `封存词条${props.name}`
+    sealShort.value ? `封存词条${props.name},灵石尚差 ${formatGap(sealGap.value!)}` : `封存词条${props.name}`
   )
 
   function doSealAffix(): void {

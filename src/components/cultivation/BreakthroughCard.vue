@@ -40,7 +40,7 @@
         </button>
         <button type="button" class="chip-ink chip-ink-wrap !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
           {{ prepPill.label }} · {{ prepPillCost }}灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
-          <span v-if="!prepCanPill" class="text-ink-faint">({{ prepPillDisabledLabel(formatGN(prepPillShort)) }})</span>
+          <span v-if="!prepCanPill" class="text-ink-faint">({{ prepPillDisabledLabel(formatGap(prepPillShort)) }})</span>
         </button>
       </div>
     </div>
@@ -75,7 +75,7 @@
   import { attemptBreakthrough, breakthroughInfo } from '@/core/breakthrough'
   import { breakthroughPrepShortfall, prepareBreakthrough } from '@/core/earlyGameService'
   import { gnZero } from '@/utils/gnum'
-  import { formatCountdown, formatGN } from '@/utils/format'
+  import { formatCountdown, formatGap } from '@/utils/format'
   import { signedPercent } from '@/data/statNames'
   import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
   import { breakthroughRateView, prepPillDisabledLabel, prepPillShortToast } from '@/ui/cultivationText'
@@ -104,7 +104,7 @@
     if (prepareBreakthrough(option)) {
       ui.toast(option === 'meditate' ? '开始调息' : '加成就绪', 'info')
     } else {
-      ui.toast(prepPillShortToast(formatGN(prepPillShort.value)), 'warn')
+      ui.toast(prepPillShortToast(formatGap(prepPillShort.value)), 'warn')
     }
   }
 </script>
