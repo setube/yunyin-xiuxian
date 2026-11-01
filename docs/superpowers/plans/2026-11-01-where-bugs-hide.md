@@ -85,14 +85,14 @@
 
 以下都系统查过，**重复查是浪费轮次**：
 
-- `palette.spec`（颜色/对比度/印面色）、`dataTextAudit`（80 例）、`saveRoundTrip`（7 例）
+- `palette.spec`（颜色/对比度/印面色）、`dataTextAudit`（77 例）、`saveRoundTrip`（10 例，含极端数值往返）
 - `mortalRouteAccess`（28 例）、`statsCalc` 递减行为、`effectWiring`
 - 7 个 `offline*` 平价 spec、`smoke`、`offline-check`、`layout-check`、`focus-check`、
   `aria-check`、`multitab-check`（165 轮全绿）
 - `src/composables/` 13 个模块（spec 一个不缺）
 - `src/ui/*Text.ts` 25 个模块（165 轮补齐最后两个）
-- 17 个 store 的 `sanitize()`（只有 `resources` 那处漏指数界，已修）
-- `stoneByTier` 全部 13 个调用点（都骑 `maxTierForMajor`）
+- 18 个 store 的 `sanitize()`（其中 17 个有 `persistConfig`；只有 `resources` 那处漏指数界，已修）
+- `stoneByTier` 全部 41 处调用（21 个文件，都骑 `maxTierForMajor` 或它的别名）
 - 启动顺序（`main.ts` 三条断言）、版本三件套（package.json / CHANGELOG / releaseNotes）
 
 ## 找 bug 的优先顺序
