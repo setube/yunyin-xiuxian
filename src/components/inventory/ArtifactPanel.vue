@@ -139,7 +139,7 @@ import {
 } from '@/data/artifacts'
 import { artifactBatchPlan, artifactShortfall, artifactUpCost, upgradeArtifact, upgradeArtifactBatch } from '@/core/forge'
 import { STAT_NAMES, statCaveat, statModPhrase } from '@/data/statNames'
-import { artifactSlotReplacedToast } from '@/ui/inventoryText'
+import { artifactSlotReplacedToast, artifactToggleToast } from '@/ui/inventoryText'
 import { cnNumber, formatGN, formatGap, formatPercent } from '@/utils/format'
 import { tint } from '@/utils/colorToken'
 import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
@@ -198,9 +198,13 @@ function toggleArtifact(defId: string): void {
     id => artifactDef(id)?.name ?? id
   )
   const result = inventory.toggleArtifact(defId, artifactSlots.value)
+  const name = artifactDef(defId)?.name ?? defId
   if (result === 'replaced') {
     // 让位件全念出来,须与按钮点名一致
     ui.toast(artifactSlotReplacedToast(evicted), 'info')
+  } else if (result === 'equipped' || result === 'unequipped') {
+    // 正常祭炼/收回也要有回执:按钮是同一个,不回执就看不出点成没成
+    ui.toast(artifactToggleToast(name, result === 'equipped'), 'info')
   }
 }
 
