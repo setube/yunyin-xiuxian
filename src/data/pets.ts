@@ -83,7 +83,13 @@ export const PETS: PetDef[] = [
     desc: '龙生九子,此其一也',
     family: 'dragon',
     quality: 'heaven',
-    mods: { attackPct: 0.2, maxHpPct: 0.2, cultivationSpeed: 0.12 },
+    /**
+     * 「幼子」的卖点是还可以长,不是已经能打 ——
+     * 原先与应龙同为 attackPct+maxHpPct+cultivationSpeed,只是各项小 1.5 倍,
+     * 同一族里两只同形,仙品那只等于「同样的东西数值更高」。
+     * 改为破境+修为方向(幼龙未成器,先养其根骨),预算仍守天品档 2.10。
+     */
+    mods: { cultivationSpeed: 0.24, breakthroughRate: 0.16, maxHpPct: 0.14 },
     personality: 'fierce'
   },
   // ---- 仙界及以上神兽 ----
