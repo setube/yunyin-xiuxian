@@ -100,4 +100,33 @@ describe('满级标记 · 玩家挣来的状态要有形状', () => {
     expect(ARTIFACT_PANEL, '法宝卡应渲染满级横杠').toContain('class="mastery-bar"')
     expect(ARTIFACT_PANEL, '法宝卡的满重判定走 masteryMark').toContain('artifactMastery(a.level)')
   })
+
+  /**
+   * 满级不许让控件消失 —— 236 轮连续踩了三次同一个坑。
+   *
+   * `equipUpgradeCost` / `artifactUpCost` 在满级/满重时返回 null,而按钮原先写
+   * `v-if="cost"`。代价算不出来就把整颗钮拿掉,玩家看到的只是「强化」「炼化」凭空不见,
+   * 既不知道是不是满了,也看不出是不是坏了;并排的两颗钮还会因此重排。
+   *
+   * 判据不是「不能出现 v-if」,而是「代价为 null 时仍有一句话」。
+   * 故障注入:把任一处改回 `v-if="upCost"` / `v-if="row.upCost"`,本条红。
+   */
+  it('代价算不出来时,控件不消失而是禁用并写原因', () => {
+    const DETAIL = readFileSync(resolve(ROOT, 'src/components/equipment/EquipmentDetailDialog.vue'), 'utf-8')
+    const PANEL = readFileSync(resolve(ROOT, 'src/components/equipment/UpgradePanel.vue'), 'utf-8')
+
+    // 装备详情:按钮常驻,代价为 null 时禁用
+    expect(DETAIL, '装备强化钮不该写 v-if="upCost"').not.toMatch(/<button[^>]*\bv-if="upCost"/)
+    expect(DETAIL, '装备满级时按钮禁用').toContain(':disabled="upCost ? upShort !== null : true"')
+    expect(DETAIL, '装备满级时按钮写短状态').toContain("!upCost ? '已至上限'")
+
+    // 强化面板:整块不整块消失,留一条状态行
+    expect(PANEL, '强化面板满级时应有状态行').toContain('v-else-if="inst && !upCost"')
+    expect(PANEL, '状态行要写出原因').toContain('{{ upgradeCapToast() }}')
+
+    // 法宝:炼化钮同理
+    expect(ARTIFACT_PANEL, '法宝炼化钮不该写 v-if="row.upCost"').not.toMatch(/<button[^>]*\bv-if="row\.upCost"/)
+    expect(ARTIFACT_PANEL, '法宝满重时按钮禁用').toContain(':disabled="!row.upCost || row.short?.short != null"')
+    expect(ARTIFACT_PANEL, '法宝满重时按钮写短状态').toContain('<template v-else>已至上限</template>')
+  })
 })
