@@ -94,6 +94,29 @@ describe('资源公共写入边界 · 非有限值与反向扣款', () => {
     expect(res.spendStone(gn(1)), '修形后的空账不能凭空支付').toBe(false)
   })
 
+  /**
+   * 有限但离谱的指数。
+   *
+   * 上面那条只挡住了 Infinity,而 `{ m: 1, e: 1000000000 }` 是指数**有限**的坏档:
+   * 旧写法 `gn(spiritStone.value)` 只规范化尾数、不限指数,于是原样收下,
+   * 界面随即印出「1.00e1000000000」——正是 saveShape 头注释点名的那个场景。
+   * 改走 asBoundedGNum 后,越界一律归零。
+   */
+  it('读档修形把指数有限但越界的灵石归零', () => {
+    const res = useResourcesStore()
+    res.$patch({ spiritStone: { m: 1, e: 1_000_000_000 } })
+    res.sanitize()
+    expect(res.spiritStone, '越界指数必须归零,不能原样收下').toEqual(gn(0))
+
+    // 界内的照常保留,别把正常档一起清掉
+    res.$patch({ spiritStone: { m: 1, e: 999 } })
+    res.sanitize()
+    expect(res.spiritStone).toEqual({ m: 1, e: 999 })
+    res.$patch({ spiritStone: gn(1234) })
+    res.sanitize()
+    expect(res.spiritStone).toEqual(gn(1234))
+  })
+
   it('熔炉跨品扣款遇到 NaN 不进入逐品扣料循环', () => {
     const res = useResourcesStore()
     res.$patch({ herbByGrade: { 1: 0, 2: 0, 3: 5, 4: 0, 5: 0 } })
