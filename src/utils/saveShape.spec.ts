@@ -1,7 +1,8 @@
 /** 存档价格 / 非负整数守卫,坊市与悬赏共用 */
 import { describe, expect, it } from 'vitest'
 import { SKILL_MULT_CAP } from '@/data/constants'
-import { asCombatSkill, asCombatSkills, asNonNegInt, asPrice } from './saveShape'
+import { asCombatSkill, asCombatSkills, asNonNegInt, asPrice, SAVE_GNUM_MAX_EXP } from './saveShape'
+import { formatGN } from '@/utils/format'
 
 describe('saveShape · asPrice', () => {
   it('形状正确的 GNum 原样读回', () => {
@@ -12,6 +13,36 @@ describe('saveShape · asPrice', () => {
     for (const bad of [undefined, null, 42, '12', {}, { m: 1 }, { m: NaN, e: 2 }, { m: 1, e: Infinity }]) {
       expect(asPrice(bad), `坏样本 ${JSON.stringify(bad)} 应归零`).toEqual({ m: 0, e: 0 })
     }
+  })
+
+  /**
+   * 指数须有界:gn 只规范化 m、不限制 e,而 formatGN 会把 e 原样印出来。
+   * 坏档写 { m: 1, e: 1e9 } 会让界面出现「1.00e1000000000」,
+   * { m: 1e308, e: 1e308 } 更会印成「1.00e1e+308」这种非法数字。
+   */
+  it('指数越界一律归零(否则界面会印出 1.00e1000000000 这种非法数字)', () => {
+    for (const bad of [
+      { m: 1, e: 1e9 },
+      { m: 1, e: -1e9 },
+      { m: 1e308, e: 1e308 },
+      { m: 1, e: SAVE_GNUM_MAX_EXP + 1 },
+      { m: 1, e: -(SAVE_GNUM_MAX_EXP + 1) }
+    ]) {
+      expect(asPrice(bad), `e=${bad.e} 应归零`).toEqual({ m: 0, e: 0 })
+    }
+  })
+
+  it('上界之内的正常价格原样读回(修形非空转)', () => {
+    // 满级玩家四维实测最大 e=15,999 宽到不可能误伤
+    expect(asPrice({ m: 12, e: 15 })).toEqual({ m: 1.2, e: 16 })
+    expect(asPrice({ m: 1, e: SAVE_GNUM_MAX_EXP })).toEqual({ m: 1, e: SAVE_GNUM_MAX_EXP })
+    expect(asPrice({ m: -5, e: 3 })).toEqual({ m: -5, e: 3 })
+  })
+
+  it('格式化的输出始终是合法数字(不再出现 e 套 e)', () => {
+    // formatGN 对归零后的价格给「0」,对合法价给常规缩写
+    expect(formatGN(asPrice({ m: 1e308, e: 1e308 }))).toBe('0')
+    expect(formatGN(asPrice({ m: 1, e: 1e9 }))).toBe('0')
   })
 })
 
