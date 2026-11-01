@@ -65,7 +65,14 @@
     stopTimers = () => clearTimeout(leave)
   }
 
-  /** 灵根品阶全集,须与 linggenGen.ts 的 gradeName 取值一致 */
+  /**
+   * 灵根品阶全集,须与 linggenGen.ts 的 gradeName 取值一致。
+   *
+   * 配色六档走语义色 token,另两档用裸 hex —— 这两色不在色板里,是有意的:
+   * 杂/伪用 #857f70(比 ink-faint 更灰的土色,以示「芜杂」),
+   * 天灵根用 #c9a227(比 gold-ink 亮的金,与转场特效的金同源),
+   * 都要与相邻档拉开距离才读得出品阶差。改这里请连带核 CIE76 可辨性。
+   */
   const GRADES: { name: string; color: string }[] = [
     { name: '杂灵根', color: '#857f70' },
     { name: '伪灵根', color: '#857f70' },

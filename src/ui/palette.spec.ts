@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { QUALITIES } from '@/data/qualities'
 import { DAO_QUALITY_COLOR, DAO_QUALITY_NAME } from '@/data/pills'
 import { ELEMENTS } from '@/data/linggen'
@@ -436,4 +436,67 @@ describe('调色板 · 色阶分得开', () => {
     expect(pair(...q9), '品阶两档糊在一起了').toBe('')
     expect(pair(...l11), '五行两档糊在一起了').toBe('')
   })
+
+
+/**
+ * 语义色禁用裸 hex —— 只留两处已登记的例外。
+ *
+ * AGENTS.md 的规矩是颜色只以 `--color-x-rgb` 定义在 style.css,组件里走语义类。
+ * 但有两个组件确实需要固定色,已在各自文件里写明理由:
+ *   WarpPortal      全屏黑屏转场:遮罩必须固定近黑、标题必须固定金,跟主题走会黑底黑字
+ *   SpiritRootReveal 灵根品阶:杂/伪的土色与天灵根的金不在色板里,要与相邻档拉开距离
+ *
+ * 本条不是要消灭裸 hex,而是让「下一次有人随手写个 #fff」时能被看见 ——
+ * 此前没有任何治理,新增一处裸 hex 完全无人察觉。
+ *
+ * 判定时跳过注释行(注释里常引用色值做说明)与 `var(--color-x, #fallback)` 兜底写法。
+ */
+describe('语义色 · 裸 hex 只许出现在已登记的例外', () => {
+  const ALLOWED = new Set(['components/common/WarpPortal.vue', 'components/common/SpiritRootReveal.vue'])
+
+  function offenders(): string[] {
+    const out: string[] = []
+    const walk = (dir: string): void => {
+      for (const ent of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, ent.name)
+        if (ent.isDirectory()) walk(full)
+        else if (ent.name.endsWith('.vue')) {
+          const rel = relative('src', full)
+          const text = readFileSync(full, 'utf-8')
+          for (const m of text.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
+            if (!/[a-fA-F]/.test(m[0].slice(1))) continue // 纯数字是议题号
+            const lineStart = text.lastIndexOf('\n', m.index!) + 1
+            const lineEnd = text.indexOf('\n', m.index!)
+            const line = text.slice(lineStart, lineEnd < 0 ? undefined : lineEnd)
+            if (/^\s*\*/.test(line) || /^\s*\/\//.test(line) || /<!--/.test(line)) continue // 注释
+            if (/var\(--color/.test(line)) continue // 兜底写法
+            if (ALLOWED.has(rel)) continue
+            out.push(`${rel}:${text.slice(0, m.index).split('\n').length} ${m[0]}`)
+          }
+        }
+      }
+    }
+    walk('src/components')
+    walk('src/views')
+    return out
+  }
+
+  it('扫描覆盖到组件与视图', () => {
+    expect(readdirSync('src/views').length).toBeGreaterThan(10)
+  })
+
+  it('例外文件之外没有裸 hex', () => {
+    const bad = offenders()
+    expect(bad, `这些地方直接写了色值,应改成语义色:\n${bad.join('\n')}`).toEqual([])
+  })
+
+  it('两处例外仍各自写着为什么可以用裸 hex', () => {
+    expect(readFileSync('src/components/common/WarpPortal.vue', 'utf-8'), 'WarpPortal 缺例外说明').toContain(
+      '本块刻意用裸 hex'
+    )
+    expect(readFileSync('src/components/common/SpiritRootReveal.vue', 'utf-8'), 'SpiritRootReveal 缺例外说明').toContain(
+      '另两档用裸 hex'
+    )
+  })
+})
 })
