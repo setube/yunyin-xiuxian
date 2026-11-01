@@ -13,7 +13,9 @@ import {
 describe('行囊提示 · 只报结果,仍报清件数与尘石', () => {
   it('法宝位、化尘、收纳不说分解替换', () => {
     // 祭炼/收回都要有回执:按钮是同一颗,不回执就分不出点成哪一种
-    expect(artifactToggleToast('神魔镜', true)).toBe('已祭炼「神魔镜」')
+    expect(artifactToggleToast('神魔镜', true)).toBe('已随身「神魔镜」')
+    // 「祭炼」在法宝面板里专指重数,携带另用「随身」—— 一个词不许同时指两个动作
+    expect(artifactToggleToast('神魔镜', true), '携带的回执不该用「祭炼」').not.toContain('祭炼')
     expect(artifactToggleToast('神魔镜', false)).toBe('已收回「神魔镜」')
     expect(artifactSlotReplacedToast()).toContain('祭炼')
     expect(artifactSlotReplacedToast()).not.toContain('替换')
@@ -53,5 +55,20 @@ describe('行囊页与提示同源', () => {
     expect(view).toContain("got.count > 0 ? 'success' : 'info'")
     expect(view).not.toContain('无可分解之物')
     expect(view).not.toContain('法宝位已满')
+  })
+})
+
+/**
+ * 「祭炼」在法宝面板里专指重数(`祭炼 3/9 重`、「祭炼一重,被动与神通各强」)。
+ * 原先携带按钮写「祭炼随身」、回执写「已祭炼」,同一屏里一个词指两个动作。
+ * 故障注入:把按钮改回「祭炼随身」,本条红。
+ */
+describe('法宝面板 · 一个词不指两个动作', () => {
+  const PANEL = readFileSync(new URL('../components/inventory/ArtifactPanel.vue', import.meta.url), 'utf8')
+
+  it('携带写「随身」,「祭炼」只留给重数', () => {
+    expect(PANEL, '按钮里还有「祭炼随身」').not.toContain('祭炼随身')
+    expect(PANEL, '携带按钮应写「随身携带」').toContain('随身携带')
+    expect(artifactToggleToast('神魔镜', true), '携带回执不该用「祭炼」').not.toContain('祭炼')
   })
 })
