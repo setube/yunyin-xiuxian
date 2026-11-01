@@ -30,6 +30,8 @@
       }"
     >
       <QualityAura :quality="row.def.quality" />
+      <!-- 满重:与品阶光环分开的一套形状(顶边横杠),见 ui/masteryMark -->
+      <span v-if="row.mastery" class="mastery-bar" :title="row.mastery.label" />
       <span v-if="row.rare" class="absolute right-2 top-2 leading-none">
         <QualitySeal :quality="row.def.quality" :size="16" />
       </span>
@@ -144,6 +146,7 @@ import { cnNumber, formatGN, formatGap, formatPercent } from '@/utils/format'
 import { tint } from '@/utils/colorToken'
 import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
 import { qualityAura } from '@/ui/qualityAura'
+import { artifactMastery } from '@/ui/masteryMark'
 import GameIcon from '@/components/common/GameIcon.vue'
 import QualityTag from '@/components/common/QualityTag.vue'
 import QualitySeal from '@/components/common/QualitySeal.vue'
@@ -176,6 +179,8 @@ const artifactRows = computed(() =>
         equipped: inventory.equippedArtifacts.includes(a.defId),
         rare: isRareQuality(def.quality),
         plaque: qualityAura(def.quality).plaque,
+        /** 满重标记:与品阶分开的一套形制 */
+        mastery: artifactMastery(a.level),
         /** 按下会替下哪几件;判据与槽位画法同源 */
         evicts: (() => {
           const ids = artifactEvictedBy(inventory.equippedArtifacts, artifactSlots.value)
