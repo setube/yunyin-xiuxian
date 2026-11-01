@@ -73,6 +73,26 @@ describe('灵兽品阶阶梯 · 品阶要能预测强度', () => {
     expect(dupes, `同品阶预算完全相同(等于同一只):\n${dupes.join('\n')}`).toEqual([])
   })
 
+  /**
+   * 不许有两只灵兽的词条组合完全相同 —— 同形即是同一只,只是贵一些。
+   *
+   * 241 轮实测:螭龙幼子(天品)与应龙(仙品)都是 attackPct+maxHpPct+cultivationSpeed,
+   * 连 personality 都是 fierce,应龙只是把三项各放大 1.5 倍。
+   * 上面那条「同品阶内预算各不相同」查的是同一 rank,跨品阶正好落在盲区。
+   *
+   * 故障注入:把螭龙幼子改回 attackPct+maxHpPct+cultivationSpeed,本条红。
+   */
+  it('没有两只灵兽的词条组合完全相同', () => {
+    const seen = new Map<string, string[]>()
+    for (const p of PETS) {
+      const key = Object.keys(p.mods).sort().join('+')
+      seen.set(key, [...(seen.get(key) ?? []), `${p.name}(${p.quality})`])
+    }
+    const dupes = [...seen.entries()].filter(([, names]) => names.length > 1)
+      .map(([key, names]) => `${key}: ${names.join(' / ')}`)
+    expect(dupes, `词条组合完全相同的灵兽(后一只只是前一只放大一点):\n${dupes.join('\n')}`).toEqual([])
+  })
+
   it('每只灵兽至少两条词条 —— 单条只是数值,两条才成方向', () => {
     for (const p of PETS) {
       expect(Object.keys(p.mods).length, `${p.name} 只有一条词条`).toBeGreaterThanOrEqual(2)
