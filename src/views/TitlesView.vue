@@ -35,11 +35,18 @@
         <div
           v-for="row in petRows"
           :key="row.def.id"
-          class="card-ink flex items-center gap-2.5 px-4 py-2.5"
+          class="card-ink relative flex items-center gap-2.5 px-4 py-2.5"
+          :class="{ 'ring-1 ring-jade/40': row.active }"
         >
+          <QualityAura :quality="row.def.quality" />
           <div class="min-w-0 grow">
             <p class="flex flex-wrap items-center gap-1.5">
-              <span class="truncate font-kai text-[13px]" :style="{ color: qualityDef(row.def.quality).color }">{{ row.def.name }}</span>
+              <span
+                class="truncate font-kai text-[13px]"
+                :class="{ 'q-plaque': row.plaque }"
+                :style="{ color: qualityDef(row.def.quality).color }"
+                >{{ row.def.name }}</span
+              >
               <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px]" :style="{ color: qualityDef(row.def.quality).color }">{{ qualityDef(row.def.quality).name }}</span>
               <span v-if="row.active" class="shrink-0 rounded bg-jade/15 px-1.5 py-0.5 text-[10px] text-jade">相伴</span>
             </p>
@@ -75,10 +82,12 @@
   import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
   import { petTraitText } from '@/ui/itemText'
   import { qualityDef } from '@/data/qualities'
+  import { qualityAura } from '@/ui/qualityAura'
   import { modsText } from '@/data/statNames'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
+  import QualityAura from '@/components/common/QualityAura.vue'
 
   const player = usePlayerStore()
   const quests = useQuestsStore()
@@ -128,7 +137,9 @@
         modText: modsText(player.petModsFor(def!)),
         personalityName: PERSONALITY_NAMES[def!.personality],
         personalityDesc: personalityDesc(def!.personality),
-        traitText: petTraitText(def!)
+        traitText: petTraitText(def!),
+        /** 稀有档的名字加描边与字距,与法宝/装备同一套(见 ui/qualityAura) */
+        plaque: qualityAura(def!.quality).plaque
       }))
       .sort((a, b) => Number(b.active) - Number(a.active))
   )
