@@ -73,7 +73,11 @@
           <EquipmentCard v-for="row in allItems" :key="row.item.uid" :item="row.item" :equipped="row.equipped" @open="openDetail" />
         </div>
       </div>
-      <p v-else class="mt-8 text-center text-[12px] text-ink-faint">暂无藏品</p>
+      <!-- 空态与名号/灵兽册同一套:哑印 + 楷体标签,不再只是一行灰字 -->
+      <p v-else class="mt-12 text-center">
+        <span class="empty-seal" aria-hidden="true">器</span>
+        <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">暂无藏品</span>
+      </p>
     </template>
 
     <template v-else-if="tab === 'pill'">
@@ -119,7 +123,10 @@
           <span class="absolute bottom-0.5 right-1 text-[9px] leading-none text-ink-soft tabular">×{{ row.count }}</span>
         </button>
       </div>
-      <p v-else class="mt-10 text-center text-[12px] text-ink-faint">暂无丹药</p>
+      <p v-else class="mt-12 text-center">
+        <span class="empty-seal" aria-hidden="true">丹</span>
+        <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">暂无丹药</span>
+      </p>
     </template>
 
     <template v-else-if="tab === 'material'">
