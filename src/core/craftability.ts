@@ -48,8 +48,12 @@ export function bearableRank(major: number): number {
 /** 超规格惩罚:不禁止,只陡峭 */
 export function overReachFactor(over: number): number {
   if (over <= 0) return 1
+  // 先取整再查表:签名收的是 number,而 TABLE 只认整数下标 ——
+  // 传 1.5 时 `TABLE[1.5]` 是 undefined,`!` 会把它当有效值一路传进成功率算式。
+  // 生产路径上 over = craft.rank - bearableRank(major) 恒为整数,这里是防接口误用。
+  const n = Math.floor(over)
   const TABLE = [1, 0.6, 0.35, 0.18]
-  return over < TABLE.length ? TABLE[over]! : 0.18 * Math.pow(0.45, over - 3)
+  return n < TABLE.length ? TABLE[n]! : 0.18 * Math.pow(0.45, n - 3)
 }
 
 /** 方中灵材的平均认知度(0~1) */

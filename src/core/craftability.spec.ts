@@ -251,4 +251,48 @@ describe('Phase 32.3:端到端口径 —— 开局到大师', () => {
     console.log(`  回灵丹(药材技艺不变,只把方子读熟):${(raw * 100).toFixed(1)}% → ${(fluent * 100).toFixed(1)}%`)
     expect(fluent / raw).toBeGreaterThan(2.5)
   })
+
+/**
+ * 越阶惩罚对非整数入参的处理。
+ *
+ * 原实现 `over < TABLE.length ? TABLE[over]! : …` 直接拿 over 当下标:
+ * 传 0.5 / 1.5 / 2.5 时 `TABLE[1.5]` 是 undefined,`!` 把它当有效值返回 ——
+ * 函数的返回类型写着 number,实际却吐 undefined,一路混进成功率算式变成 NaN。
+ *
+ * 生产路径上 over = craft.rank - bearableRank(major) 恒为整数(两者都是整数),
+ * 所以这只是接口误用的防护;但 undefined 比错值更难查,值得钉住。
+ */
+describe('越阶惩罚 · 非整数入参', () => {
+  it('小数入参也返回有限正数(不再吐 undefined)', () => {
+    for (const over of [0.5, 1.5, 2.5, 3.5, 9.9]) {
+      const f = overReachFactor(over)
+      expect(typeof f, `over=${over} 返回了 ${typeof f}`).toBe('number')
+      expect(Number.isFinite(f), `over=${over} 返回了 ${f}`).toBe(true)
+      expect(f, `over=${over} 的惩罚值非正`).toBeGreaterThan(0)
+    }
+  })
+
+  it('小数按向下取整落档:1.5 与 1 同档,2.5 与 2 同档', () => {
+    expect(overReachFactor(1.5)).toBe(overReachFactor(1))
+    expect(overReachFactor(2.5)).toBe(overReachFactor(2))
+    expect(overReachFactor(3.5)).toBe(overReachFactor(3))
+  })
+
+  it('小数与整数的结果都不越过 [0, 1]', () => {
+    for (const over of [-1, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 6, 20]) {
+      const f = overReachFactor(over)
+      expect(f, `over=${over} 越界`).toBeGreaterThan(0)
+      expect(f, `over=${over} 越界`).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('惩罚随越阶数单调不增(小数档不破坏单调性)', () => {
+    let prev = overReachFactor(0)
+    for (let over = 0.5; over <= 10; over += 0.5) {
+      const cur = overReachFactor(over)
+      expect(cur, `over=${over} 时惩罚反而变轻`).toBeLessThanOrEqual(prev)
+      prev = cur
+    }
+  })
+})
 })
