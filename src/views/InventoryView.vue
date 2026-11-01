@@ -99,6 +99,11 @@
           :style="{ borderColor: tint(pillQualityColor(row.def!), qualityTierByRank(pillRank(row.def!)).border), background: tint(pillQualityColor(row.def!), qualityTierByRank(pillRank(row.def!)).bg) }"
           @click="pillDetail = row.def!.id"
         >
+          <QualityAura
+            :rank="pillRank(row.def!)"
+            :tone="pillQualityColor(row.def!)"
+            compact
+          />
           <span
             v-if="isRareRank(pillRank(row.def!))"
             class="absolute right-0.5 top-0.5 rounded-[3px] border px-[3px] py-px font-kai text-[9px] leading-none text-ink"
@@ -245,6 +250,7 @@
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
+  import QualityAura from '@/components/common/QualityAura.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import ArtifactPanel from '@/components/inventory/ArtifactPanel.vue'
   import BrewingDialog from '@/components/inventory/BrewingDialog.vue'
