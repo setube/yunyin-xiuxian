@@ -124,4 +124,41 @@ describe('不可逆确认的两次点击各写什么', () => {
     expect(src, '不该再按落痕时刻回查道痕').not.toContain('endgame.marks.find(m => m.at === at)')
     expect(src, '高亮也不该按落痕时刻比').not.toContain('compareAt === c.at')
   })
+
+
+  /**
+   * 「复述动作」这一族不受「确认+动词」约束。
+   *
+   * AGENTS.md 明确把它们列为例外:连 升 / 连 投 / 连 炼 / 开 炉 ×N / 清理化尘 / 改 立 ——
+   * 这些钮的正文本身就在复述这一步做什么,再加「确认」反而啰嗦。
+   * 此前 spec 完全没有记录它们,于是「谁是例外」只活在文档里:
+   * 有人把「连 升」改成「确认连升」不会有任何提示,反之把某处普通钮改成「连 升」也不会。
+   *
+   * 本条把六个落点逐一钉住:既确认它们仍用复述动作写法,
+   * 也确认它们和「再想想」成对出现(两步确认的结构没变)。
+   */
+  const BATCH_FAMILY: Array<[string, string]> = [
+    ['components/dongfu/BuildingCard.vue', '连 升'],
+    ['components/equipment/UpgradePanel.vue', '连 升'],
+    ['components/dongfu/VeinInvestCard.vue', '连 投'],
+    ['components/inventory/ArtifactPanel.vue', '连 炼'],
+    ['components/inventory/BrewingDialog.vue', '开 炉 ×'],
+    ['components/inventory/DismantleDialog.vue', '清理化尘']
+  ]
+
+  it('复述动作族的六个落点都用复述写法,且与「再想想」成对', () => {
+    for (const [rel, word] of BATCH_FAMILY) {
+      const src = read(rel)
+      expect(src, `${rel} 少了复述动作「${word}」`).toContain(word)
+      expect(src, `${rel} 缺「再想想」,两步确认的结构破了`).toContain('再想想')
+      expect(src, `${rel} 不该给复述动作加「确认」前缀`).not.toContain(`确认${word.replace(' ', '')}`)
+    }
+  })
+
+  it('复述动作族的正文都很短(它们不是句子)', () => {
+    // 「连 升」4 字符、「清理化尘」4 字,都远在「按钮主词 2~6 汉字」之内
+    for (const [rel, word] of BATCH_FAMILY) {
+      expect(word.replace(/\s/g, '').length, `${rel} 的「${word}」超过 6 字,该重新措辞`).toBeLessThanOrEqual(6)
+    }
+  })
 })
