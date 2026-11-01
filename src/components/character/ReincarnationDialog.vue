@@ -143,6 +143,7 @@
           :key="id"
           class="w-full rounded-lg border px-3 py-2 text-left transition-all active:scale-98"
           :class="chosen === id ? 'border-cinnabar bg-cinnabar/5' : 'border-ink/20'"
+          :aria-pressed="chosen === id"
           @click="chosen = id"
         >
           <p class="flex items-center gap-2">
@@ -180,6 +181,7 @@
             :key="t.id"
             class="w-full rounded-lg border px-3 py-2 text-left transition-all active:scale-98"
             :class="theme === t.id ? 'border-cinnabar bg-cinnabar/5' : 'border-ink/20'"
+            :aria-pressed="theme === t.id"
             @click="theme = theme === t.id ? null : t.id"
           >
             <p class="flex items-center justify-between">
