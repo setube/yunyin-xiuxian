@@ -5,7 +5,7 @@ import type { AdventureSession, CombatResult, CombatSideStats, FoeOrigin, FoeOri
 import { persistConfig } from '@/utils/storage'
 import { regionDef, unlockClosure } from '@/data/regions'
 import { gn } from '@/utils/gnum'
-import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
+import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray, asBoundedGNum } from '@/utils/saveShape'
 import { eventDef } from '@/data/events'
 import { exploreModeOf } from '@/core/exploreModes'
 
@@ -93,7 +93,8 @@ function sanitizeSideStats(raw: unknown): CombatSideStats | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const r = raw as Record<string, unknown>
   const out = {} as Record<string, GNum | number>
-  for (const key of SIDE_GNUM_KEYS) out[key] = gn(r[key] as GNum)
+  // 读档的 GNum 一律走 asBoundedGNum:gn 不限 e,坏档会让战报印出「1.00e1000000000」
+  for (const key of SIDE_GNUM_KEYS) out[key] = asBoundedGNum(r[key])
   for (const key of SIDE_COUNT_KEYS) out[key] = Math.max(0, Math.floor(asFiniteNumber(r[key], 0)))
   return out as unknown as CombatSideStats
 }

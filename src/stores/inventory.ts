@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { ArtifactOwned, EquipmentInstance, EquipSlot, GNum, StatMods } from '@/types'
-import { add, gn, gnZero } from '@/utils/gnum'
+import { add, gnZero } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
 import { resolveEquipStats } from '@/core/equipGen'
 import { mergeMods } from '@/core/statsCalc'
@@ -14,7 +14,7 @@ import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment
 import { pillDef } from '@/data/pills'
 import { QUALITIES } from '@/data/qualities'
 import { affixDef } from '@/data/affixes'
-import { asArray, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
+import { asArray, asBoundedGNum, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
 
 export const useInventoryStore = defineStore(
   'inventory',
@@ -73,7 +73,7 @@ export const useInventoryStore = defineStore(
             ? {
                 invested: {
                   dust: Math.floor(asFiniteNumber((it.invested as { dust?: unknown }).dust, 0, 0)),
-                  stone: gn((it.invested as { stone?: unknown }).stone as never)
+                  stone: asBoundedGNum((it.invested as { stone?: unknown }).stone)
                 }
               }
             : {})

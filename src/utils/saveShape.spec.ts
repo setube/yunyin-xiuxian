@@ -1,7 +1,14 @@
 /** 存档价格 / 非负整数守卫,坊市与悬赏共用 */
 import { describe, expect, it } from 'vitest'
 import { SKILL_MULT_CAP } from '@/data/constants'
-import { asCombatSkill, asCombatSkills, asNonNegInt, asPrice, SAVE_GNUM_MAX_EXP } from './saveShape'
+import {
+  asBoundedGNum,
+  asCombatSkill,
+  asCombatSkills,
+  asNonNegInt,
+  asPrice,
+  SAVE_GNUM_MAX_EXP
+} from './saveShape'
 import { formatGN } from '@/utils/format'
 
 describe('saveShape · asPrice', () => {
@@ -115,4 +122,56 @@ describe('saveShape · asCombatSkill', () => {
       { name: '刺', mult: 0, rate: 0, effect: 'pierce' }
     ])
   })
+
+/**
+ * asBoundedGNum:读档 GNum 的统一入口。
+ *
+ * gn() 只规范化 m、不限制 e,而 formatGN 会把 e 原样印出来。
+ * 凡是读档处直接 gn(raw) 的地方,坏档都能让界面出现「1.00e1000000000」。
+ * 本条钉住它与 asPrice 同一条界 —— 两者若分叉,就又会出现「一个入口拦、另一个不拦」。
+ */
+describe('saveShape · asBoundedGNum', () => {
+  it('合法 GNum 原样读回(含规范化)', () => {
+    expect(asBoundedGNum({ m: 1.5, e: 3 })).toEqual({ m: 1.5, e: 3 })
+    expect(asBoundedGNum({ m: 12, e: 15 })).toEqual({ m: 1.2, e: 16 })
+    expect(asBoundedGNum({ m: -5, e: 3 })).toEqual({ m: -5, e: 3 })
+  })
+
+  it('形状坏或指数越界一律归零', () => {
+    for (const bad of [
+      undefined,
+      null,
+      42,
+      '12',
+      {},
+      { m: 1 },
+      { m: NaN, e: 2 },
+      { m: 1, e: Infinity },
+      { m: 1, e: SAVE_GNUM_MAX_EXP + 1 },
+      { m: 1, e: 1e9 }
+    ]) {
+      expect(asBoundedGNum(bad), `坏样本 ${JSON.stringify(bad)} 应归零`).toEqual({ m: 0, e: 0 })
+    }
+  })
+
+  it('与 asPrice 完全同界(两个读档入口不许分叉)', () => {
+    const samples: unknown[] = [
+      { m: 1.5, e: 3 },
+      { m: 1, e: SAVE_GNUM_MAX_EXP },
+      { m: 1, e: SAVE_GNUM_MAX_EXP + 1 },
+      { m: 1, e: 1e9 },
+      { m: 1e308, e: 1e308 },
+      { m: -5, e: 3 },
+      { m: 0, e: 0 }
+    ]
+    for (const s of samples) {
+      expect(asBoundedGNum(s), `样本 ${JSON.stringify(s)} 两个入口给出了不同结果`).toEqual(asPrice(s))
+    }
+  })
+
+  it('格式化输出始终合法:越界归零后印成「0」', () => {
+    expect(formatGN(asBoundedGNum({ m: 1, e: 1e9 }))).toBe('0')
+    expect(formatGN(asBoundedGNum({ m: 1, e: SAVE_GNUM_MAX_EXP }))).not.toContain('e+')
+  })
+})
 })
