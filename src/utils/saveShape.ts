@@ -1,5 +1,5 @@
 /** 存档形状修复(各 store 的 sanitize 用):形状不对就用兜底值,不抛错。 */
-import type { CombatSkill, GNum } from '@/types'
+import type { CombatRules, CombatSkill, GNum } from '@/types'
 import { COMBAT_SKILL_EFFECTS, SKILL_MULT_CAP } from '@/data/constants'
 import { gn, gnZero } from './gnum'
 
@@ -139,4 +139,68 @@ export function asPrice(v: unknown): GNum {
 /** 存档里的非负整数(索引/层数/件数):非数用兜底,负数夹回 0 */
 export function asNonNegInt(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : fallback
+}
+
+/**
+ * 战斗规则修形 —— 凡人界世界规则(adventure)与虚界远征规则(endgame)共用。
+ *
+ * 两处存档字段此前都只判「是不是对象」,内部字段一概原样收下。
+ * 而 combat.ts 第 202 行是 `mulN(maxHp, rules.playerStartHpPct ?? 1)`:
+ * 实测 `mulN(100, Infinity)` 与 `mulN(100, NaN)` 都回 0 —— 坏档写这两个值,
+ * 玩家一进战斗就满血变空血、开局即死。
+ * `maxRounds` 写 Infinity 会让第 547 行的回合循环失去上界(双方零伤害时走不到 break)。
+ * `perRounds.interval` 写 0 会让 `round % 0` 恒为 NaN,整条规则静默失效。
+ *
+ * 比例类一律夹回 [0,1];倍率类允许大于 1,但必须有上界,否则一击必杀。
+ */
+export const RULE_MULT_MAX = 100
+export const RULE_ROUNDS_MAX = 9999
+
+function ruleRatio(v: unknown, fallback: number | undefined): number | undefined {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return fallback
+  return Math.min(1, Math.max(0, v))
+}
+
+function ruleMult(v: unknown, fallback: number | undefined): number | undefined {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return fallback
+  return Math.min(RULE_MULT_MAX, Math.max(0, v))
+}
+
+export function asPerRounds(raw: unknown): CombatRules['perRounds'] | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const p = raw as Partial<NonNullable<CombatRules['perRounds']>>
+  // interval 是模数:0 会让 `round % 0` 恒为 NaN,整条规则静默失效
+  const interval = Math.min(RULE_ROUNDS_MAX, Math.max(1, Math.floor(asFiniteNumber(p.interval, 1, 1))))
+  return {
+    interval,
+    playerHealPct: ruleRatio(p.playerHealPct, 0) ?? 0,
+    playerShieldPct: ruleRatio(p.playerShieldPct, 0) ?? 0,
+    enemyAtkGrowth: ruleMult(p.enemyAtkGrowth, 1) ?? 1
+  }
+}
+
+export function asCombatRules(raw: unknown): CombatRules {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const r = raw as CombatRules
+  const out: CombatRules = {}
+  if (typeof r.maxRounds === 'number' && Number.isFinite(r.maxRounds)) {
+    out.maxRounds = Math.min(RULE_ROUNDS_MAX, Math.max(1, Math.floor(r.maxRounds)))
+  }
+  const startHp = ruleRatio(r.playerStartHpPct, undefined)
+  // 0 气血等于「进战斗即判负」,与缺省语义不同,故只在 (0,1] 时才写回
+  if (startHp !== undefined && startHp > 0) out.playerStartHpPct = startHp
+  for (const key of ['playerAtkMult', 'enemyAtkMult', 'enemyHpMult', 'healMult'] as const) {
+    const v = ruleMult(r[key], undefined)
+    if (v !== undefined) out[key] = v
+  }
+  const shield = ruleRatio(r.shieldCapRatio, undefined)
+  if (shield !== undefined) out.shieldCapRatio = shield
+  const per = asPerRounds(r.perRounds)
+  if (per) out.perRounds = per
+  return out
+}
+
+/** 修形后还有内容的才算「有规则」,空对象与字段全被剔除同义 */
+export function hasCombatRules(raw: unknown): boolean {
+  return Object.keys(asCombatRules(raw)).length > 0
 }

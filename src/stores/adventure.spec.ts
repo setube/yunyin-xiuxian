@@ -341,4 +341,60 @@ describe('历练会话 · 收益量级', () => {
     expect(s!.endsAt).toBe(2000)
   })
 })
+
+
+/**
+ * 凡人界世界规则的修形。
+ *
+ * `rules` 与虚界的远征规则同源,都会原样进 `resolveCombat`
+ * (mortalWorldGen.ts 第 357 行)。此前这里只判了「是不是对象」,内部字段一概收下,
+ * 而 `mulN(maxHp, rules.playerStartHpPct ?? 1)` 对 Infinity / NaN 都回 0 ——
+ * 坏档写这两个值,玩家一进战斗就满血变空血。
+ */
+describe('凡人界世界规则 · 坏档字段修形', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('开场气血为 Infinity / NaN / 超范围时都不留成可致死值', () => {
+    for (const bad of [Number.POSITIVE_INFINITY, Number.NaN, -1, 5]) {
+      const a = useAdventureStore()
+      a.setMortalWorld(mortalWorld({ rules: { playerStartHpPct: bad } }) as never)
+      a.sanitize()
+      const got = (a.mortalWorld as never as { rules?: { playerStartHpPct?: number } }).rules?.playerStartHpPct
+      expect(got === undefined || (got > 0 && got <= 1), `playerStartHpPct=${bad} 修形后仍是 ${got}`).toBe(true)
+    }
+    // 正常的 0.5 照常保留
+    const a = useAdventureStore()
+    a.setMortalWorld(mortalWorld({ rules: { playerStartHpPct: 0.5 } }) as never)
+    a.sanitize()
+    expect((a.mortalWorld as never as { rules?: { playerStartHpPct?: number } }).rules?.playerStartHpPct).toBe(0.5)
+  })
+
+  it('maxRounds 为 Infinity 时剔除,否则回合循环失去上界', () => {
+    const a = useAdventureStore()
+    a.setMortalWorld(mortalWorld({ rules: { maxRounds: Number.POSITIVE_INFINITY } }) as never)
+    a.sanitize()
+    expect((a.mortalWorld as never as { rules?: { maxRounds?: number } }).rules?.maxRounds).toBeUndefined()
+  })
+
+  it('倍率与 perRounds 一并夹回', () => {
+    const a = useAdventureStore()
+    a.setMortalWorld(
+      mortalWorld({
+        rules: { playerAtkMult: 1e9, healMult: -5, perRounds: { interval: 0, playerHealPct: 9, playerShieldPct: Number.NaN, enemyAtkGrowth: -2 } }
+      }) as never
+    )
+    a.sanitize()
+    const rules = (a.mortalWorld as never as {
+      rules?: { playerAtkMult?: number; healMult?: number; perRounds?: { interval: number; playerHealPct: number; playerShieldPct: number; enemyAtkGrowth: number } }
+    }).rules
+    expect(rules?.playerAtkMult).toBe(100)
+    expect(rules?.healMult).toBe(0)
+    expect(rules?.perRounds?.interval).toBe(1)
+    expect(rules?.perRounds?.playerHealPct).toBe(1)
+    expect(rules?.perRounds?.playerShieldPct).toBe(0)
+    expect(rules?.perRounds?.enemyAtkGrowth).toBe(0)
+  })
+})
 })
