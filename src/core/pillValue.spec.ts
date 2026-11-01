@@ -498,4 +498,35 @@ describe('道品顶档的成员不变式', () => {
       }
     }
   })
+
+  /**
+   * 修速丹不该被同档修为丹碾压。
+   *
+   * 修速丹的等效挂机秒 = 时长 × 速率加成,**与境界无关**;
+   * 它要顶替的那一次闭关(修为丹的 expSecs)却随境界涨了近 1500 倍。
+   * 于是 1800 秒的高境界修速丹只值同档修为丹的 9% —— 同样要灵草、同样占一个丹方位,
+   * 炼它不如直接炼修为丹。玩家不会算这一笔,只会觉得这味丹没用。
+   *
+   * 判据取下限 35%:低境界本就该由短时丹承担(聚灵丹与玄元丹持平是设计),
+   * 这里只拦「高境界掉到零头」。上限 150% 拦反向:修速丹是副渠道,不该完全顶替闭关丹。
+   */
+  it('修速丹在各境界都不被同档修为丹碾压(≥35%),也不越权顶替(≤150%)', () => {
+    const expPills = PILLS.filter(p => pillLine(p) === 'craft' && (p.instant?.expSecs ?? 0) > 0)
+    const tempoPills = PILLS.filter(p => pillLine(p) === 'craft' && pillFamily(p) === 'tempo')
+    expect(tempoPills.length, '判据失去对象').toBeGreaterThan(2)
+    const bad: string[] = []
+    for (const t of tempoPills) {
+      const gain = pillGainSecAt(t, t.minRealm)
+      // 同档口径:准入门槛最近的那味修为丹(±2 境界),没有则跳过
+      const peer = expPills
+        .filter(e => Math.abs(e.minRealm - t.minRealm) <= 2)
+        .sort((a, b) => Math.abs(a.minRealm - t.minRealm) - Math.abs(b.minRealm - t.minRealm))[0]
+      if (!peer) continue
+      const ratio = gain / pillGainSecAt(peer, peer.minRealm)
+      if (ratio < 0.35 || ratio > 1.5) {
+        bad.push(`${t.name}(境界 ${t.minRealm}) 只值同档 ${peer.name} 的 ${(ratio * 100).toFixed(0)}%`)
+      }
+    }
+    expect(bad, `这些修速丹与同档修为丹不成比例:\n${bad.join('\n')}`).toEqual([])
+  })
 })
