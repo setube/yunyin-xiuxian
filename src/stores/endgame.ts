@@ -1,7 +1,7 @@
 /** 真仙终局状态 —— 道途 / 道源 / 战绩 / 道痕 / 远征进行时 */
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { CelestialWorldDef, CombatRules, DaoMark, DaoPathId, StatMods } from '@/types'
+import type { CelestialWorldDef, DaoMark, DaoPathId, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { mergeMods } from '@/core/statsCalc'
 import {
@@ -23,8 +23,10 @@ import { useAdventureStore } from '@/stores/adventure'
 import {
   asArray,
   asCarriedHpPct,
+  asCombatRules,
   asCombatSkills,
   asBoundedGNum,
+  hasCombatRules,
   asFiniteNumber,
   asNumberRecord,
   asObjectOrNull,
@@ -128,7 +130,7 @@ function sanitizeVoidWorld(raw: unknown): CelestialWorldDef | null {
         name: node.name,
         desc: typeof node.desc === 'string' ? node.desc : '',
         foe,
-        ...(hasRules(node.rules) ? { rules: sanitizeCombatRules(node.rules) } : {}),
+        ...(hasCombatRules(node.rules) ? { rules: asCombatRules(node.rules) } : {}),
         bonus: Math.floor(asFiniteNumber(node.bonus, 0, 0)),
         riskText: typeof node.riskText === 'string' ? node.riskText : ''
       }
@@ -143,7 +145,7 @@ function sanitizeVoidWorld(raw: unknown): CelestialWorldDef | null {
     anchorTier: asFiniteNumber(w.anchorTier, 0, 0),
     desc: typeof w.desc === 'string' ? w.desc : '',
     ruleText: asStringArray(w.ruleText),
-    rules: sanitizeCombatRules(w.rules),
+    rules: asCombatRules(w.rules),
     entryCost: Math.floor(asFiniteNumber(w.entryCost, 0, 0)),
     fights: Math.max(1, Math.floor(asFiniteNumber(w.fights, 1, 1))),
     healBetweenPct: asFiniteNumber(w.healBetweenPct, 0.5, 0),
@@ -154,73 +156,6 @@ function sanitizeVoidWorld(raw: unknown): CelestialWorldDef | null {
   }
 }
 
-/**
- * 战斗规则修形。
- *
- * `world.rules` 此前只判了「是不是对象」,内部字段一概原样收下 ——
- * 而 combat.ts 第 202 行是 `mulN(maxHp, rules.playerStartHpPct ?? 1)`:
- * 坏档写 `Infinity` / `NaN` 时 mulN 回 0,玩家一进远征满血变空血、开局即死。
- * `maxRounds` 写 `Infinity` 则让第 547 行的回合循环失去上界
- * (双方零伤害时不会走到 break),与 combat.spec 的无死循环红线冲突。
- *
- * 比例类一律夹回 [0,1];倍率类允许大于 1,但要有上界,否则一击必杀。
- */
-const RULE_RATIO_MAX = 1
-const RULE_MULT_MAX = 100
-const RULE_ROUNDS_MAX = 9999
-
-function ratioOr(v: unknown, fallback: number | undefined): number | undefined {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return fallback
-  return Math.min(RULE_RATIO_MAX, Math.max(0, v))
-}
-
-function multOr(v: unknown, fallback: number | undefined): number | undefined {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return fallback
-  return Math.min(RULE_MULT_MAX, Math.max(0, v))
-}
-
-/** 修形后还有内容的才算「有规则」,空对象与字段全被剔除同义 */
-function hasRules(raw: unknown): boolean {
-  return Object.keys(sanitizeCombatRules(raw)).length > 0
-}
-
-function sanitizePerRounds(raw: unknown): CombatRules['perRounds'] | undefined {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
-  const p = raw as Partial<NonNullable<CombatRules['perRounds']>>
-  // interval 是模数,0 会让 `round % 0` 恒为 NaN、整条规则静默失效
-  const interval = Math.max(1, Math.floor(asFiniteNumber(p.interval, 1, 1)))
-  return {
-    interval: Math.min(RULE_ROUNDS_MAX, interval),
-    playerHealPct: ratioOr(p.playerHealPct, 0) ?? 0,
-    playerShieldPct: ratioOr(p.playerShieldPct, 0) ?? 0,
-    enemyAtkGrowth: multOr(p.enemyAtkGrowth, 1) ?? 1
-  }
-}
-
-function sanitizeCombatRules(raw: unknown): CombatRules {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
-  const r = raw as CombatRules
-  const out: CombatRules = {}
-  if (typeof r.maxRounds === 'number' && Number.isFinite(r.maxRounds)) {
-    out.maxRounds = Math.min(RULE_ROUNDS_MAX, Math.max(1, Math.floor(r.maxRounds)))
-  }
-  const startHp = ratioOr(r.playerStartHpPct, undefined)
-  // 0 气血等于「进战斗即判负」,与缺省语义不同,故只在 (0,1] 时才写回
-  if (startHp !== undefined && startHp > 0) out.playerStartHpPct = startHp
-  const atk = multOr(r.playerAtkMult, undefined)
-  if (atk !== undefined) out.playerAtkMult = atk
-  const eatk = multOr(r.enemyAtkMult, undefined)
-  if (eatk !== undefined) out.enemyAtkMult = eatk
-  const ehp = multOr(r.enemyHpMult, undefined)
-  if (ehp !== undefined) out.enemyHpMult = ehp
-  const heal = multOr(r.healMult, undefined)
-  if (heal !== undefined) out.healMult = heal
-  const shield = ratioOr(r.shieldCapRatio, undefined)
-  if (shield !== undefined) out.shieldCapRatio = shield
-  const per = sanitizePerRounds(r.perRounds)
-  if (per) out.perRounds = per
-  return out
-}
 
 /**
  * 忆战快照修形:`snapFromReplay` 直接 `.map` 技能/法宝,三维经 `gn()` 归一后不能为零。

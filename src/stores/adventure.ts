@@ -4,7 +4,15 @@ import { computed, ref } from 'vue'
 import type { AdventureSession, CombatResult, CombatSideStats, FoeOrigin, FoeOriginPart, GNum } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { regionDef, unlockClosure } from '@/data/regions'
-import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray, asBoundedGNum } from '@/utils/saveShape'
+import {
+  asBoundedGNum,
+  asCombatRules,
+  asFiniteNumber,
+  asNumberRecord,
+  asObjectOrNull,
+  asRecord,
+  asStringArray
+} from '@/utils/saveShape'
 import { eventDef } from '@/data/events'
 import { exploreModeOf } from '@/core/exploreModes'
 
@@ -44,7 +52,9 @@ function sanitizeMortalWorld(raw: unknown): import('@/core/mortalWorldGen').Mort
       eventTags: asStringArray(p.eventTags)
     })
   }
-  const rules = w.rules && typeof w.rules === 'object' && !Array.isArray(w.rules) ? w.rules : {}
+  // 世界规则会原样进 resolveCombat(mortalWorldGen 第 357 行),须按字段修形:
+  // playerStartHpPct 写 Infinity/NaN 会让玩家一进战斗即判负(详见 saveShape 的说明)
+  const rules = asCombatRules(w.rules)
   return {
     seed: asFiniteNumber(w.seed, 0),
     chain,
