@@ -27,7 +27,7 @@ import { currentDaoRules } from './endgameService'
 import { afterWin } from './loot'
 import { autoResolveEvent, pickEventFor } from './eventEngine'
 import { eventTierDef, eventTierOf } from './eventTier'
-import { modOf } from './statsCalc'
+import { capChance, modOf } from './statsCalc'
 import { track } from './progress'
 import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore, type LastBattleView } from '@/stores/adventure'
@@ -450,7 +450,10 @@ export function exploreEventChance(regionId: string, mods: StatMods): number {
   // 区域事件的际遇率修正须真算,不能只写在 desc 里
   const ev = currentRegionEvent(regionId)
   const eventMult = ev ? (regionEventDef(ev.eventId)?.eventMult ?? 1) : 1
-  return EXPLORE_EVENT_CHANCE * (1 + modOf(mods, 'eventLuck') + mansionEventLuck(regionId)) * eventMult
+  // 钳到 [0, 1]:离线按 `Math.round(encounters * p)` 折算事件数,
+  // p > 1 结算出比遭遇还多的事件,p < 0 则会让 `battles = encounters - events` 反而变大。
+  // 正常满配约 0.86(词条 60% 上限 × 6 槽 + 洞府 10% + 区域 1.5 倍),只有多轮回堆叠/负加成才越界。
+  return capChance(EXPLORE_EVENT_CHANCE * (1 + modOf(mods, 'eventLuck') + mansionEventLuck(regionId)) * eventMult)
 }
 
 /** 每 Tick 推进历练(由引擎调用) */

@@ -719,4 +719,44 @@ describe('战斗页敌方半卡 · 特性与星级读开打快照', () => {
     for (const name of traitNames) expect(known, `眼熟后该见「${name}」`).toContain(name)
     expect(await renderPanel(true), '眼熟后该见星级').toMatch(STARS)
   })
+
+/**
+ * 际遇率必须封顶 1。
+ *
+ * 在线走 `rng.chance(p)`,p > 1 只是恒真、不出错;
+ * 但离线走 `Math.round(encounters * p)` —— p = 1.78 时 100 场遭遇会结算出 178 次事件,
+ * 事件数比遭遇数还多。正常满配约 0.86(词条 60% × 6 槽 + 洞府 10% + 区域 1.5 倍),
+ * 只有多轮回堆叠才可能越界,所以这是慢性的数值溢出而非日常 bug。
+ *
+ * 三处独立相乘(EXPLORE_EVENT_CHANCE / eventLuck / 区域 eventMult),
+ * 任何一处调整都可能把乘积推过 1,故用边界值钉住。
+ */
+describe('际遇率 · 封顶', () => {
+  it('极端加成下也不超过 1', () => {
+    for (const luck of [10, 100, 1000]) {
+      expect(exploreEventChance('qingyun', { eventLuck: luck }), `eventLuck=${luck} 时际遇率越界`).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('事件数不超过遭遇数(离线按 Math.round(encounters × p) 折算)', () => {
+    const encounters = 100
+    for (const luck of [0, 3.7, 10, 100]) {
+      const p = exploreEventChance('qingyun', { eventLuck: luck })
+      expect(Math.round(encounters * p), `eventLuck=${luck} 时事件数超过遭遇数`).toBeLessThanOrEqual(encounters)
+    }
+  })
+
+  it('正常区间不封顶(修形别把平日加成也压掉)', () => {
+    const base = exploreEventChance('qingyun', {})
+    const boosted = exploreEventChance('qingyun', { eventLuck: 1 })
+    expect(base).toBeGreaterThan(0)
+    expect(base).toBeLessThan(1)
+    expect(boosted).toBeGreaterThan(base)
+    expect(boosted).toBeLessThan(1)
+  })
+
+  it('负加成不会把际遇率压到 0 以下', () => {
+    expect(exploreEventChance('qingyun', { eventLuck: -100 })).toBeGreaterThanOrEqual(0)
+  })
+})
 })
