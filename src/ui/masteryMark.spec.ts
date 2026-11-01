@@ -64,6 +64,23 @@ describe('满级标记 · 玩家挣来的状态要有形状', () => {
     expect(light, '日主题应加深一档(amber-ink)').toContain('--color-amber-ink-rgb')
   })
 
+  /**
+   * 装备格顶边已是「寸土寸金」:左上「佩」字、右上角章(top-3,14px)、右上锁图标。
+   * 横杠靠**垂直错开**避让,不靠水平缩短 —— 它在顶边外侧 2px 处,
+   * 而角章从 12px 处才开始,两者不在同一条横线上。
+   */
+  it('横杠贴顶边外侧,与角章/「佩」字上下错开', () => {
+    const bar = /\.mastery-bar \{([\s\S]*?)\n\}/.exec(CSS)?.[1] ?? ''
+    expect(bar, '横杠应居中').toContain('left: 50%')
+    expect(bar, '横杠应被 translateX 拉回中心').toContain('translateX(-50%)')
+    expect(bar, '横杠贴顶边外侧,不进内容区').toContain('top: -1px')
+    expect(bar, '横杠只有 2px 高').toContain('height: 2px')
+    // 不让横杠铺满:两角的角标各有内容,留白比铺满稳
+    expect(bar, '横杠不该铺满整条边').toContain('width: 62%')
+    // 角章确实在 12px 处(top-3),这条是上下错开成立的前提
+    expect(EQUIPMENT_CARD, '角章仍应在 top-3 —— 横杠的让位靠这条').toContain('right-0.5 top-3')
+  })
+
   it('两处卡都接上了,且带可访问说法', () => {
     expect(EQUIPMENT_CARD, '装备格应渲染满级横杠').toContain('class="mastery-bar"')
     expect(EQUIPMENT_CARD, '装备格的读屏说法应带上标记').toContain('mastery.label')
