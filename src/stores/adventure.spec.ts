@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useAdventureStore } from '@/stores/adventure'
 import type { AdventureSession } from '@/types'
 import { gnZero } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
 
 function session(over: Partial<AdventureSession> = {}): AdventureSession {
   return {
@@ -222,6 +223,74 @@ describe('本世之界 · 读档自愈', () => {
     expect(a.mortalCleared).toContain('n1')
     a.setMortalWorld(mortalWorld({ ruleId: 'r2' }) as never)
     expect(a.mortalCleared, '换了世界,旧世界的通关记录就不该再算数').toEqual([])
+  })
+})
+
+/**
+ * 战报数值的量级守卫。
+ *
+ * sanitizeSideStats 原先直接 `gn(r[key])`,而 gn 只规范化 m、不限制 e:
+ * 坏档写下 { m: 1, e: 1e9 } 后,战报页会把总输出/总承伤印成「1.00e1000000000」。
+ * 现已改走 asBoundedGNum,与 asPrice 同一条界。
+ */
+describe('战报数值 · 坏档量级', () => {
+  function side(gnum: unknown) {
+    return {
+      dealt: gnum,
+      taken: gnum,
+      healed: gnum,
+      shieldAbsorbed: gnum,
+      biggestHitTaken: gnum,
+      pierceTaken: gnum,
+      hitsLanded: 0,
+      missedHits: 0,
+      crits: 0,
+      combos: 0,
+      counters: 0,
+      skillCasts: 0,
+      artifactProcs: 0
+    }
+  }
+
+  function withStats(gnum: unknown) {
+    const a = useAdventureStore()
+    a.lastBattle = {
+      enemyName: '试敌',
+      enemyIcon: 'sword',
+      result: { win: true, log: [], stats: { player: side(gnum), enemy: side(gnum) } }
+    } as never
+    a.sanitize()
+    return (a.lastBattle as { result?: { stats?: { player?: unknown } } } | null)?.result?.stats?.player as
+      | { dealt: never; taken: never }
+      | undefined
+  }
+
+  it('指数越界的战报数值归零(不再印出 1.00e1000000000)', () => {
+    const st = withStats({ m: 1, e: 1e9 })
+    expect(st, '坏档不该让整份战报丢掉').toBeDefined()
+    expect(formatGN(st!.dealt)).toBe('0')
+    expect(formatGN(st!.taken)).toBe('0')
+  })
+
+  it('正常战报数值原样保留(修形非空转)', () => {
+    const st = withStats({ m: 1.5, e: 5 })
+    expect(st).toBeDefined()
+    expect(formatGN(st!.dealt)).not.toBe('0')
+    expect(formatGN(st!.dealt)).not.toContain('e+')
+  })
+
+  it('形状坏的单项归零,不影响同侧其它项', () => {
+    const a = useAdventureStore()
+    const mixed = { ...side({ m: 1, e: 1e9 }), taken: { m: 2, e: 3 } }
+    a.lastBattle = {
+      enemyName: '试敌',
+      enemyIcon: 'sword',
+      result: { win: true, log: [], stats: { player: mixed, enemy: mixed } }
+    } as never
+    a.sanitize()
+    const st = a.lastBattle as unknown as { result: { stats: { player: { dealt: never; taken: never } } } }
+    expect(formatGN(st.result.stats.player.dealt)).toBe('0')
+    expect(formatGN(st.result.stats.player.taken)).not.toBe('0')
   })
 })
 })
