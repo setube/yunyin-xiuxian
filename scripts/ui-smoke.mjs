@@ -89,6 +89,11 @@ const dead = []
 /**
  * 干净重试:回本路由单独点同一按钮,排除「前次交互已带入目标态」的误报。
  * 返回 true 有变化 / false 仍无变化 / null 干净态找不到该按钮。
+ *
+ * 判「有反应」不能只看页面指纹:拒因型按钮(闭关中/远征在途时的「出发」等)点下去
+ * 只弹一条 toast、页面别处不动,而 toast 的 TTL(2600ms)比 settle 的封顶(2s)还长,
+ * 指纹若采在 toast 入队之前就会把有回执的拒绝当成死按钮。故额外轮询 toast 数量。
+ * 新增判据时请照这条:页面指纹只是「有没有变化」的一个信号,不是唯一信号。
  */
 async function cleanRetry(route, label) {
   await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
