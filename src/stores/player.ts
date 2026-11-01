@@ -5,7 +5,7 @@ import type { FinalStats, GNum, LinggenProfile, StatMods, WorldId } from '@/type
 import { gn, gnZero, add, gte, mulN, progress, subClamp } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
 import { realmDef, realmLabel, worldOf, WORLDS, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
-import { SUB_LEVELS, START_AGE } from '@/data/constants'
+import { NAME_MAX_LENGTH, SUB_LEVELS, START_AGE } from '@/data/constants'
 import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
 import {
   STAR_FOCUS_COST_BASE, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX,
@@ -669,7 +669,11 @@ export const usePlayerStore = defineStore(
       dead.value = dead.value === true
       // 道号进字符串方法(.trim / 拼接);坏档写成数字会在渲染或建号处抛错。
       // 空串也算坏档:顶栏是 {{ player.name }} 裸渲染,空串会显示成一片空白(建号与导入检视都有「无名散修」兜底,唯独这里没有)
-      name.value = typeof name.value === 'string' && name.value.trim() !== '' ? name.value : '无名散修'
+      // 长度也要截:输入侧截到 NAME_MAX_LENGTH,读档侧不截就能被手改存档塞进几十万字符
+      name.value =
+        typeof name.value === 'string' && name.value.trim() !== ''
+          ? name.value.trim().slice(0, NAME_MAX_LENGTH)
+          : '无名散修'
       // 角色页/建号页裸用 `ELEMENTS[root.element].color` 与 `linggen.growthMult.toFixed(2)`:坏档在渲染期抛错
       linggen.value = sanitizeLinggen(linggen.value)
       if (!Number.isFinite(age.value)) age.value = START_AGE
