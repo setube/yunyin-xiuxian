@@ -301,3 +301,37 @@
 原矩阵里那 26% 是被 `atkMult 0.78` 压出来的**假象**,不是机制上的克制。
 若确认这条设定该改,修法是先改断言(把「锋芒 > 反震」换成别的区分方式),
 再抬 `atkMult` 到 0.9 —— 那是一次设计决策,不是一次 bug 修复,需要拍板。
+
+## 十四、包体实测：健康，只有一处已知浪费（240 轮）
+
+量了一遍首屏,结论是**不必优化**。数据留档,免得下次再花一轮重新量:
+
+| 项 | 实测 |
+| --- | --- |
+| 首屏直接加载 | `polyfills` + `index` = **121.5 KB gzip** |
+| 首屏含 modulepreload(24 个) | 344 KB gzip |
+| 主 CSS | 99.5 KB → **29.0 KB gzip** |
+| 资源总数 | 161 个 |
+
+24 个预加载里,一个 `player-*.js`(178 KB gzip)就占了 80%;
+其余 23 个加起来只有 44 KB。**切分本身没有问题,是那一个块太大。**
+
+### 那一个块为什么大,以及为什么不动
+
+它叫 `player`,但里面装的是 Vue 运行时 + **CryptoJS**(约占该块 84%),
+被「依赖 player store 的模块」一起卷进来的,文件名有误导性。
+
+CryptoJS 进首屏是因为 `utils/storage.ts` 也要用 —— 而 Pinia persist 的
+`serialize` / `deserialize` **必须同步**(`JSON.parse(readSaveText(raw))` 直接嵌在配置里)。
+把 `encryptSave` / `decryptSave` 改成异步会一路牵到启动流程,
+换轻量实现则要自己担 AES 的正确性 —— **回归风险远大于 150 KB 的收益**。
+
+真要改,方向是「存档加密换 WebCrypto + 首次读档前 await 一次」,
+那是一次基建改造,不是细节打磨。
+
+### 同轮顺带测的两项(都没问题)
+
+- **极端数值不泄漏**:把灵石塞到 `{ m: 9.99, e: 999 }`、灵气 1e18、其余资源全 0,
+  逐页扫 12 个路由的 `body.innerText`,`NaN / Infinity / undefined / null` 零命中
+- **存档防线**:`storeResilience`(12 例)与 `importCorruption` 全绿;
+  `deadExportAudit` 也绿,ALLOWLIST 仍只有 1 条
