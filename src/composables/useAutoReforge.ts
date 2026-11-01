@@ -13,7 +13,7 @@ import {
   AUTO_REFORGE_MAX_TARGETS,
   type ReforgeTarget
 } from '@/core/reforge'
-import { formatGN } from '@/utils/format'
+import { formatGN, formatGap } from '@/utils/format'
 import { mulN } from '@/utils/gnum'
 import { playSfx } from '@/core/audio'
 import { AFFIX_RARITY_META } from '@/data/statNames'
@@ -108,7 +108,7 @@ export function useAutoReforge() {
       if (out.rolls === 0) {
         // 与手动重铸缺料同一句
         const gap = reforgeCostVal.value ? reforgeShortfall(reforgeCostVal.value) : null
-        ui.toast(reforgeShortToast(short, gap ? { stone: formatGN(gap.stone), dust: gap.dust } : undefined), 'warn')
+        ui.toast(reforgeShortToast(short, gap ? { stone: formatGap(gap.stone), dust: gap.dust } : undefined), 'warn')
       } else {
         ui.toast(`${reforgeShortToast(short)} · ${tally}`, 'warn')
       }

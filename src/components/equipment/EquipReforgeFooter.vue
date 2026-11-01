@@ -24,7 +24,7 @@
         >
           <span>封存一词 {{ formatGN(sealCostVal) }}</span>
           <span v-if="sealGap && sealGap.m > 0" class="text-[9px] text-cinnabar tabular">
-            灵石尚差 {{ formatGN(sealGap) }}
+            灵石尚差 {{ formatGap(sealGap) }}
           </span>
         </div>
       </template>
@@ -73,7 +73,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useInventoryStore } from '@/stores/inventory'
   import { reforgeEquipment, reforgeCost, reforgeShortfall, sealCapacity, sealCost, sealShortfall } from '@/core/reforge'
-  import { formatGN } from '@/utils/format'
+  import { formatGN, formatGap } from '@/utils/format'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
 
   /**
@@ -96,7 +96,7 @@
     const s = reforgeShortVal.value
     if (!s) return ''
     const parts: string[] = []
-    if (s.stone.m > 0) parts.push(`灵石尚差 ${formatGN(s.stone)}`)
+    if (s.stone.m > 0) parts.push(`灵石尚差 ${formatGap(s.stone)}`)
     if (s.dust > 0) parts.push(`器灵尘尚差 ${s.dust}`)
     return parts.join(' · ')
   })

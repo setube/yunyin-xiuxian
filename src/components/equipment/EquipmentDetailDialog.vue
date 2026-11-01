@@ -129,9 +129,9 @@
             v-if="upCost"
             class="btn-ghost flex-1"
             :disabled="upShort !== null"
-            :title="upShort === 'stone' ? `灵石尚差 ${formatGN(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `器灵尘尚差 ${upGap?.dust ?? 0}` : undefined"
+            :title="upShort === 'stone' ? `灵石尚差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `器灵尘尚差 ${upGap?.dust ?? 0}` : undefined"
             @click="doUpgrade"
-          >{{ upShort === 'stone' ? `强 化(石差${formatGN(upGap?.stone ?? { m: 0, e: 0 })})` : upShort === 'dust' ? `强 化(尘差${upGap?.dust ?? 0})` : '强 化' }}</button>
+          >{{ upShort === 'stone' ? `强 化(石差${formatGap(upGap?.stone ?? { m: 0, e: 0 })})` : upShort === 'dust' ? `强 化(尘差${upGap?.dust ?? 0})` : '强 化' }}</button>
           <!-- 分解须二步确认,防误触 -->
           <template v-if="decomposeArm !== inst?.uid">
             <button
@@ -170,7 +170,7 @@
   import { detectBuild } from '@/core/buildDetect'
   import { qualityDef } from '@/data/qualities'
   import { usePlayerStore } from '@/stores/player'
-  import { formatGN, formatNum } from '@/utils/format'
+  import { formatGN, formatGap, formatNum } from '@/utils/format'
   import { isZero, sub } from '@/utils/gnum'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/data/statNames'

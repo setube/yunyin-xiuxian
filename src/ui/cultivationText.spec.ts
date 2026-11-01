@@ -88,8 +88,8 @@ describe('修行页与提示同源', () => {
     const card = readFileSync(new URL('../components/cultivation/BreakthroughCard.vue', import.meta.url), 'utf8')
     const trib = readFileSync(new URL('../composables/useTribulation.ts', import.meta.url), 'utf8')
     expect(view).toContain('repairActLabel(')
-    expect(card).toContain('prepPillShortToast(formatGN(prepPillShort.value))')
-    expect(card, '备药禁用说明读同一份石差').toContain('prepPillDisabledLabel(formatGN(prepPillShort))')
+    expect(card).toContain('prepPillShortToast(formatGap(prepPillShort.value))')
+    expect(card, '备药禁用说明读同一份石差').toContain('prepPillDisabledLabel(formatGap(prepPillShort))')
     // 破境按钮与准备板只此一份
     expect(view, '宿主只挂载破境卡').toContain('<BreakthroughCard />')
     expect(view, '宿主不再自带突破按钮').not.toContain('引 劫 突 破')

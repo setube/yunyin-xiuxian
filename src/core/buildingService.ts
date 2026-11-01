@@ -4,7 +4,7 @@ import { buildingDef } from '@/data/buildings'
 import { buildingCost } from './formulas'
 import { track } from './progress'
 import { add, gte, gnZero, subClamp } from '@/utils/gnum'
-import { formatGN } from '@/utils/format'
+import { formatGN, formatGap } from '@/utils/format'
 import { playSfx } from './audio'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -90,7 +90,7 @@ export function buildingShortfall(stone: GNum, ore: number): BuildingShortfall {
     side,
     stone: stoneShort,
     ore: oreShort,
-    reason: side ? buildingShortReason(side, formatGN(stoneShort), oreShort) : ''
+    reason: side ? buildingShortReason(side, formatGap(stoneShort), oreShort) : ''
   }
 }
 
@@ -136,7 +136,7 @@ export function upgradeBuilding(id: BuildingId): boolean {
   if (!resources.hasStone(info.stone) || !resources.hasSmall('ore', info.ore)) {
     const shortfall = buildingShortfall(info.stone, info.ore)
     const text = shortfall.side
-      ? buildingShortToast(shortfall.side, formatGN(shortfall.stone), shortfall.ore)
+      ? buildingShortToast(shortfall.side, formatGap(shortfall.stone), shortfall.ore)
       : buildingShortToast()
     ui.toast(text, 'warn')
     return false
@@ -200,7 +200,7 @@ export function buildingBatchPlan(id: BuildingId): BuildingBatchPlan {
     const shortfall = buildingShortfall(buildingCost(def.costBase, from), def.costOre * (from + 1))
     return zero(
       shortfall.side
-        ? buildingShortToast(shortfall.side, formatGN(shortfall.stone), shortfall.ore)
+        ? buildingShortToast(shortfall.side, formatGap(shortfall.stone), shortfall.ore)
         : buildingShortToast()
     )
   }

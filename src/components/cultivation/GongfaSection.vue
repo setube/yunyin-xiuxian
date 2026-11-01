@@ -141,7 +141,7 @@
     COMPREHEND_PAGE_COST,
     WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN
   } from '@/data/constants'
-  import { formatGN } from '@/utils/format'
+  import { formatGN, formatGap } from '@/utils/format'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
   import { exchangeOkToast, exchangeFailText } from '@/ui/cultivationText'
   import { qualityDef } from '@/data/qualities'
@@ -157,7 +157,7 @@
   const exchangeState = computed(() => player.wudaoExchangeState)
   const exchangeBlockedText = computed(() => {
     const state = exchangeState.value
-    return exchangeFailText(state.lockedByRealm, state.dailyFull, formatGN(state.stoneShort))
+    return exchangeFailText(state.lockedByRealm, state.dailyFull, formatGap(state.stoneShort))
   })
 
   const GONGFA_CAT_ORDER: GongfaType[] = ['main', 'sub', 'secret']
@@ -286,7 +286,7 @@
         : exchangeFailText(
             exchangeState.value.lockedByRealm,
             exchangeState.value.dailyFull,
-            formatGN(exchangeState.value.stoneShort)
+            formatGap(exchangeState.value.stoneShort)
           ),
       ok ? 'success' : 'warn'
     )

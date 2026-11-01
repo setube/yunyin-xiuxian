@@ -162,7 +162,7 @@
               player.fateFocus === s.id
                 ? '已显化'
                 : focusShort > 0
-                  ? `点化 · 灵石尚差 ${formatGN(focusShortGN)}`
+                  ? `点化 · 灵石尚差 ${formatGap(focusShortGN)}`
                   : `点化 · 灵石 ${focusCostText}`
             }}
           </button>
@@ -258,7 +258,7 @@
   import { IMAGES, MANSIONS, type ImageId } from '@/data/xiangxiu'
   import { GATES } from '@/data/qimen'
   import { gateRuleSummary } from '@/core/gateRuleText'
-  import { cnNumber, formatCountdown, formatGN } from '@/utils/format'
+  import { cnNumber, formatCountdown, formatGN, formatGap } from '@/utils/format'
   import { gn, gnZero, subClamp } from '@/utils/gnum'
   import { STAR_FOCUS_COST_BASE } from '@/data/constants'
   import { mansionLuckPercent, effectiveFavoredWorld, todayMansionLine } from '@/core/astronomy'
@@ -338,7 +338,7 @@
       return
     }
     if (focusShort.value > 0) {
-      ui.toast(`灵石尚差 ${formatGN(focusShortGN.value)}`, 'warn')
+      ui.toast(`灵石尚差 ${formatGap(focusShortGN.value)}`, 'warn')
       return
     }
     const ok = player.focusFateStar(id)

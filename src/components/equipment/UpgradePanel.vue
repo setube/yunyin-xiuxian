@@ -7,7 +7,7 @@
     </p>
     <p class="mt-1 text-[11px] tabular text-azure">{{ equipNextLevelText(inst.level) }}</p>
     <p v-if="short" class="mt-1 text-[10px] leading-relaxed text-cinnabar tabular">
-      <template v-if="gap.dust > 0">器灵尘尚差 {{ gap.dust }}</template><template v-if="gap.dust > 0 && gap.stone.m > 0"> · </template><template v-if="gap.stone.m > 0">灵石尚差 {{ formatGN(gap.stone) }}</template>
+      <template v-if="gap.dust > 0">器灵尘尚差 {{ gap.dust }}</template><template v-if="gap.dust > 0 && gap.stone.m > 0"> · </template><template v-if="gap.stone.m > 0">灵石尚差 {{ formatGap(gap.stone) }}</template>
     </p>
     <!--
       连升二步确认与分解/散去同款。
@@ -39,7 +39,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useInventoryStore } from '@/stores/inventory'
   import { equipLevelCap, equipUpgradeCost, upgradeBatchPlan, upgradeEquipmentBatch, upgradeShort, upgradeShortfall, type UpgradeBatchPlan } from '@/core/forge'
-  import { formatGN } from '@/utils/format'
+  import { formatGN, formatGap } from '@/utils/format'
   import { gnZero } from '@/utils/gnum'
   import { equipNextLevelText } from '@/ui/equipText'
 

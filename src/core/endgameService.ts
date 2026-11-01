@@ -1,7 +1,7 @@
 /** 终局服务:道途 / 天道熔炉 / 特殊世界远征 / 天道试炼 / 道痕 */
 import type { ArtifactDef, CombatantSnap, CombatRules, DaoMark, DaoPathId } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
-import { formatGN } from '@/utils/format'
+import { formatGN, formatGap } from '@/utils/format'
 import { subClamp } from '@/utils/gnum'
 import { artifactDef } from '@/data/artifacts'
 import { pactDef } from '@/data/pacts'
@@ -104,7 +104,7 @@ export function furnaceConvertStone(): boolean {
   const cost = furnaceStoneCost()
   if (!resources.spendStone(cost)) {
     const short = subClamp(cost, resources.spiritStone)
-    ui.toast(`灵石尚差 ${formatGN(short)}`, 'warn')
+    ui.toast(`灵石尚差 ${formatGap(short)}`, 'warn')
     return false
   }
   endgame.addDaoSource(FURNACE_STONE_DAO_SOURCE)

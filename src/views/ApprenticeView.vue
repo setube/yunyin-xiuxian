@@ -6,9 +6,9 @@
         <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
           <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
         </p>
-        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull || !canAffordRecruit" :title="!canAffordRecruit ? `灵石尚差 ${formatGN(recruitShort)}` : undefined" @click="doRecruit">
+        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull || !canAffordRecruit" :title="!canAffordRecruit ? `灵石尚差 ${formatGap(recruitShort)}` : undefined" @click="doRecruit">
           收道童<span v-if="!slotsFull" class="ml-1 text-[10px]">
-            {{ canAffordRecruit ? `(${recruitCostLine})` : `(灵石尚差 ${formatGN(recruitShort)})` }}
+            {{ canAffordRecruit ? `(${recruitCostLine})` : `(灵石尚差 ${formatGap(recruitShort)})` }}
           </span>
         </button>
       </div>
@@ -75,7 +75,7 @@
 
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref } from 'vue'
-  import { formatCountdown, formatGN } from '@/utils/format'
+  import { formatCountdown, formatGN, formatGap } from '@/utils/format'
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
   import { useApprenticeStore } from '@/stores/apprentice'
@@ -167,7 +167,7 @@
   function doRecruit(): void {
     const result = appr.recruit(player.major)
     if (result === 'ok') ui.toast('已收道童', 'success')
-    else if (result === 'poor') ui.toast(`灵石尚差 ${formatGN(recruitShort.value)}`, 'warn')
+    else if (result === 'poor') ui.toast(`灵石尚差 ${formatGap(recruitShort.value)}`, 'warn')
     else ui.toast('门中已满', 'info')
   }
 

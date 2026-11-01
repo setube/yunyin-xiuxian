@@ -5,7 +5,7 @@ import { veinDef } from '@/data/veins'
 import { VEIN_MAIN_CAPACITY, VEIN_POINT_STONE, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
 import { stoneByTier } from './formulas'
 import { playerTier } from './progress'
-import { formatGN } from '@/utils/format'
+import { formatGN, formatGap } from '@/utils/format'
 import { gnZero, mulN, ratio, subClamp } from '@/utils/gnum'
 import { playSfx } from './audio'
 import { usePlayerStore } from '@/stores/player'
@@ -74,7 +74,7 @@ export function investVein(id: VeinId): boolean {
   }
   const cost = veinPointCost()
   if (!resources.hasStone(cost)) {
-    ui.toast(veinShortToast(formatGN(veinPointShortfall())), 'warn')
+    ui.toast(veinShortToast(formatGap(veinPointShortfall())), 'warn')
     return false
   }
   // 立主须在全部守卫之后:被拒的点击不得占主脉
@@ -124,7 +124,7 @@ export function investVeinBatch(veinId: VeinId): number {
   if (plan.points === 0) {
     if (plan.blocked === 'full') ui.toast(veinFullToast(), 'warn')
     else if (plan.blocked === 'peak') ui.toast(veinPeakToast(dongfu.veinMain === veinId), 'warn')
-    else ui.toast(veinShortToast(formatGN(veinPointShortfall())), 'warn')
+    else ui.toast(veinShortToast(formatGap(veinPointShortfall())), 'warn')
     playSfx('warn')
     return 0
   }
@@ -147,7 +147,7 @@ export function switchMainVein(id: VeinId): boolean {
   const gap = veinSwitchShortfall()
   if (gap.m > 0) {
     playSfx('warn')
-    ui.toast(veinSwitchShortToast(formatGN(gap)), 'warn')
+    ui.toast(veinSwitchShortToast(formatGap(gap)), 'warn')
     return false
   }
   resources.spendStone(cost)

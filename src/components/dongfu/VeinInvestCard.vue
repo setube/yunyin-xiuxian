@@ -64,11 +64,11 @@
               class="btn-ghost flex-wrap !px-2.5 !py-2 !text-[10px]"
               :disabled="switchShort"
               :aria-label="switchLabel(v.id)"
-              :title="switchShort ? `灵石尚差 ${formatGN(switchGap)}` : undefined"
+              :title="switchShort ? `灵石尚差 ${formatGap(switchGap)}` : undefined"
               @click="switchArm = v.id"
             >
               <span class="whitespace-nowrap">改立主脉 ·</span>
-              <span v-if="switchShort" class="whitespace-nowrap">尚差 {{ formatGN(switchGap) }}</span>
+              <span v-if="switchShort" class="whitespace-nowrap">尚差 {{ formatGap(switchGap) }}</span>
               <span v-else class="whitespace-nowrap">{{ formatGN(switchCost) }} 石</span>
             </button>
           </div>
@@ -100,7 +100,7 @@
             改立「<span class="font-kai text-[11px] text-cinnabar">{{ v.name }}</span>」为主脉 · 耗灵石
             <span class="tabular text-ink">{{ formatGN(switchCost) }}</span>
             <span v-if="switchShort" class="mt-0.5 block text-[9px] leading-relaxed text-cinnabar tabular">
-              灵石尚差 {{ formatGN(switchGap) }}
+              灵石尚差 {{ formatGap(switchGap) }}
             </span>
             <span v-if="switchLoss" class="mt-0.5 block text-[9px] leading-relaxed text-gold-ink">
               「{{ switchLoss.oldName }}」转副脉<template v-if="switchLoss.lost > 0"> · 超额 {{ switchLoss.lost }} 点 · 效果保留</template>
@@ -111,7 +111,7 @@
             <button
               class="btn-seal !px-2.5 !py-2 !text-[11px]"
               :disabled="switchShort"
-              :title="switchShort ? `灵石尚差 ${formatGN(switchGap)}` : undefined"
+              :title="switchShort ? `灵石尚差 ${formatGap(switchGap)}` : undefined"
               @click="confirmSwitch(v.id)"
             >
               改 立
@@ -145,7 +145,7 @@
   import { veinEffectText } from '@/ui/veinText'
   import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinPointShortfall, veinSwitchCost, veinSwitchShortfall, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
   import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
-  import { formatGN } from '@/utils/format'
+  import { formatGN, formatGap } from '@/utils/format'
 
   const dongfu = useDongfuStore()
   const player = usePlayerStore()
@@ -219,7 +219,7 @@
     if (currentLevel(veinId) >= cap(veinId)) return isMain(veinId) ? '主脉圆满' : '副脉已至上限'
     if (veinTotal.value >= VEIN_TOTAL_CAPACITY) return '容量已尽'
     if (!veinsUnlocked.value) return '未解锁'
-    if (!resources.hasStone(investCost.value)) return `灵石尚差 ${formatGN(investGap.value)}`
+    if (!resources.hasStone(investCost.value)) return `灵石尚差 ${formatGap(investGap.value)}`
     return '不可投'
   }
 
@@ -231,7 +231,7 @@
 
   function switchLabel(veinId: VeinId): string {
     const base = `改立${veinDef(veinId).name}为主脉`
-    return switchShort.value ? `${base},灵石尚差 ${formatGN(switchGap.value)}` : base
+    return switchShort.value ? `${base},灵石尚差 ${formatGap(switchGap.value)}` : base
   }
 
   /** 四脉连投计划;行只读量,不另算价 */

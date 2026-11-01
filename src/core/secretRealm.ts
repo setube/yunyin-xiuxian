@@ -4,7 +4,7 @@
  */
 import type { CombatantSnap, CombatRules, GNum } from '@/types'
 import type { WorldFoeShape } from '@/types'
-import { cnNumber, formatGN } from '@/utils/format'
+import { cnNumber, formatGN, formatGap } from '@/utils/format'
 import { gnZero, subClamp } from '@/utils/gnum'
 import { rng } from '@/utils/random'
 import { ENEMIES, enemyDef } from '@/data/enemies'
@@ -99,7 +99,7 @@ export function entryShortfallOf(def: SecretRealmDef, major: number): SecretEntr
     const resources = useResourcesStore()
     if (resources.hasStone(cost.stone)) return null
     const stone = subClamp(cost.stone, resources.spiritStone)
-    return { kind: 'stone', stone, daoSource: 0, reason: `灵石尚差 ${formatGN(stone)}` }
+    return { kind: 'stone', stone, daoSource: 0, reason: `灵石尚差 ${formatGap(stone)}` }
   }
   const endgame = useEndgameStore()
   if (endgame.daoSource >= cost.daoSource) return null

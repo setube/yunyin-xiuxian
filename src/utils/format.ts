@@ -42,6 +42,50 @@ function fixedByMag(v: number): string {
   return String(Math.floor(v))
 }
 
+/**
+ * 差额专用格式化:量级与位数跟 formatGN 同一把尺,但**末位一律向上进一**。
+ * 「灵石尚差」这类提示照它写才保证按提示补足一定够 —— formatGN 是四舍五入,
+ * 1.824 会印成「1.8」,玩家补 1.8 仍然不够(见 docs/superpowers/plans/2026-11-01-format-gn-shortfall-underreport.md)。
+ * 只给差额用,不要拿它替换全站展示的 formatGN:精度一变,阅读密度与列宽都会跟着动。
+ */
+export function formatGap(v: GNum | number): string {
+  const g = typeof v === 'number' ? gn(v) : v
+  if (g.m === 0) return '0'
+  // 负数没有「尚差」语义,退回原格式化
+  if (g.m < 0) return formatGN(g)
+  if (g.e < 4) {
+    const n = toNum(g)
+    if (n < 1000) return trimZero(String(ceilTo(n, plainStep(n))))
+    return ceilTo(n, 1).toLocaleString('en-US')
+  }
+  const unitIdx = Math.floor(g.e / 4) - 1
+  if (unitIdx >= UNITS.length) return formatGN(g)
+  const value = g.m * Math.pow(10, g.e - (unitIdx + 1) * 4)
+  return trimZero(String(ceilTo(value, unitStep(value)))) + UNITS[unitIdx]
+}
+
+/** formatGN 在 n < 1000 档留到的末位(0.001 / 0.1 / 1),差额须进到同一位 */
+function plainStep(n: number): number {
+  if (n < 100 && !Number.isInteger(n)) {
+    return n > 0 && n < 0.1 ? Math.pow(10, Math.floor(Math.log10(n)) - 1) : 0.1
+  }
+  return 1
+}
+
+/** formatGN 在中文单位档留到的末位,与 fixedByMag 的位数一一对应 */
+function unitStep(v: number): number {
+  if (v < 10) return 0.001
+  if (v < 100) return 0.01
+  if (v < 1000) return 0.1
+  return 1
+}
+
+/** 向上进到 step 的整数倍;先抹浮点尾差,免得 1.8 因为 1.8000000000000002 多进一格 */
+function ceilTo(n: number, step: number): number {
+  const scaled = Math.round((n / step) * 1e6) / 1e6
+  return Number((Math.ceil(scaled) * step).toFixed(10))
+}
+
 function trimZero(s: string): string {
   return s.includes('.') ? s.replace(/\.?0+$/, '') : s
 }

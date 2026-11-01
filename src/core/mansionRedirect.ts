@@ -3,7 +3,7 @@
  * 独立成模块:stores/player 若为复用判据 import astronomy(后者又读 player store),会形成运行时环。
  */
 import { MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
-import { formatGN } from '@/utils/format'
+import { formatGap } from '@/utils/format'
 import { gn, gnZero, gte, subClamp } from '@/utils/gnum'
 import type { GNum, WorldId } from '@/types'
 
@@ -47,7 +47,7 @@ export function mansionRedirectCheck(
   const cost = gn(MANSION_REDIRECT_COST)
   if (!gte(stone, cost)) {
     const stoneShort = subClamp(cost, stone)
-    return { blocked: 'stone', stoneShort, reason: `灵石尚差 ${formatGN(stoneShort)}` }
+    return { blocked: 'stone', stoneShort, reason: `灵石尚差 ${formatGap(stoneShort)}` }
   }
   return { blocked: null, stoneShort: gnZero(), reason: null }
 }
