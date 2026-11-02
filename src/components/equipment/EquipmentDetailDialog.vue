@@ -11,7 +11,7 @@
         </span>
         <span v-if="inst.level > 0" class="text-[11px] text-gold-ink tabular">+{{ inst.level }}</span>
         <!-- 满级时补一句,别让玩家自己去猜还能不能升 -->
-        <span v-if="mastery" class="rounded bg-gold-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-gold-ink">{{ mastery.label }}</span>
+        <span v-if="mastery" class="rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-ink">{{ mastery.label }}</span>
         <button
           class="-m-1.5 flex min-h-[28px] min-w-[28px] items-center justify-center p-1.5 text-ink-faint active:scale-90"
           :aria-label="inst.locked ? '解锁' : '锁定'"

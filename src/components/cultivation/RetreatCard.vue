@@ -2,7 +2,7 @@
   <div class="card-ink flex items-start gap-3 px-4 py-3" :class="retreating ? 'bg-amber-ink/6' : ''">
     <span
       class="grid h-9 w-9 shrink-0 place-items-center rounded-md font-kai text-[15px]"
-      :class="retreating ? 'animate-breathe bg-amber-ink/15 text-amber-ink' : 'bg-jade/15 text-jade'"
+      :class="retreating ? 'animate-breathe border border-amber-ink/40 bg-amber-ink/15 text-ink' : 'border border-jade/40 bg-jade/15 text-ink'"
     >静</span>
     <div class="min-w-0 grow">
       <div class="flex items-center justify-between">

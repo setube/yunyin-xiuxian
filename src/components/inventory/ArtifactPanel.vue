@@ -59,12 +59,12 @@
       </div>
       <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">{{ row.def.desc }}</p>
       <p class="mt-1 flex items-baseline gap-1.5 text-[11px]">
-        <span class="shrink-0 rounded bg-azure/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-azure">被动</span>
+        <span class="shrink-0 rounded border border-azure/40 bg-azure/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-ink">被动</span>
         <span class="text-azure">{{ passiveLines(row.def.id, row.owned.level).join(' · ') }}</span>
       </p>
       <!-- 神通说明按祭炼现算,与战斗同读 artifactActiveText -->
       <p class="mt-1 flex items-baseline gap-1.5 text-[11px]">
-        <span class="shrink-0 rounded bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-violet-ink">神通</span>
+        <span class="shrink-0 rounded border border-violet-ink/40 bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-ink">神通</span>
         <span class="text-violet-ink">「{{ row.def.active.name }}」:{{ artifactActiveText(row.def, row.owned.level) }}</span>
       </p>
       <p v-if="nextGainText(row.def.id, row.owned.level)" class="mt-1 text-[10px] leading-relaxed text-ink-faint tabular">

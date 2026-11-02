@@ -28,7 +28,7 @@
         class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98"
         @click="ui.gongfaDetailId = mainDef.id"
       >
-        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-cinnabar/10 font-kai text-cinnabar">主</span>
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-cinnabar/40 bg-cinnabar/10 font-kai text-ink">主</span>
         <span class="min-w-0 grow">
           <span class="flex items-center gap-1.5">
             <span class="min-w-0 truncate font-kai text-[14px] text-ink">{{ mainDef.name }}</span>
@@ -40,11 +40,11 @@
             </span>
             <span
               v-else-if="canEnlighten(mainDef.id)"
-              class="shrink-0 rounded bg-azure/10 px-1.5 py-0.5 text-[10px] text-azure"
+              class="shrink-0 rounded border border-azure/40 bg-azure/10 px-1.5 py-0.5 text-[10px] text-ink"
             >
               待悟道
             </span>
-            <span v-if="mainCanUpgrade" class="shrink-0 rounded bg-jade/10 px-1.5 py-0.5 text-[10px] text-jade">可升层</span>
+            <span v-if="mainCanUpgrade" class="shrink-0 rounded border border-jade/40 bg-jade/10 px-1.5 py-0.5 text-[10px] text-ink">可升层</span>
           </span>
           <span class="block text-[11px] text-ink-faint">
             第 {{ cultivation.learned[mainDef.id] }} 层 · {{ qualityDef(mainDef.quality).name }}
@@ -108,7 +108,7 @@
           <span v-if="branchName(def.id)" class="max-w-24 shrink-0 truncate rounded bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-gold-ink">
             {{ branchName(def.id) }}
           </span>
-          <span v-else-if="canEnlighten(def.id)" class="shrink-0 rounded bg-azure/10 px-1.5 py-0.5 text-[10px] text-azure">待悟道 →</span>
+          <span v-else-if="canEnlighten(def.id)" class="shrink-0 rounded border border-azure/40 bg-azure/10 px-1.5 py-0.5 text-[10px] text-ink">待悟道 →</span>
           <span v-else-if="isFull(def.id)" class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] text-ink-faint">圆满</span>
           <span class="shrink-0 text-[10px]" :class="equipStateOf(def.id) ? 'text-jade' : 'text-ink-faint'">
             {{ equipStateOf(def.id) || '未装配' }}
@@ -189,12 +189,16 @@
   )
 
   /** 门类印章配色(非激活态) */
+  /**
+   * 未选中门类的方印底色。字色走墨色(见上一条判据:彩色字压同色淡底过不了 4.5),
+   * 门类的区分交给色块与描边。
+   */
   function gongfaCatSeal(type: GongfaType): string {
     return type === 'secret'
-      ? 'bg-violet-ink/15 text-violet-ink'
+      ? 'border border-violet-ink/40 bg-violet-ink/15 text-ink'
       : type === 'main'
-        ? 'bg-cinnabar/10 text-cinnabar'
-        : 'bg-jade/15 text-jade'
+        ? 'border border-cinnabar/40 bg-cinnabar/10 text-ink'
+        : 'border border-jade/40 bg-jade/15 text-ink'
   }
 
   /**

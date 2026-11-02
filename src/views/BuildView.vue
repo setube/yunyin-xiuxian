@@ -102,7 +102,7 @@
           <div class="mt-1.5 space-y-1">
             <div v-for="row in matchupSorted" :key="row.id" class="flex items-center gap-2">
               <span class="w-9 shrink-0 truncate text-[11px] text-ink-soft">{{ row.name }}</span>
-              <span v-if="row.wall" class="shrink-0 rounded bg-cinnabar/10 px-1 py-0.5 text-[9px] leading-none text-cinnabar">墙</span>
+              <span v-if="row.wall" class="shrink-0 rounded border border-cinnabar/40 bg-cinnabar/10 px-1 py-0.5 text-[9px] leading-none text-ink">墙</span>
               <span class="track-ink h-1.25 min-w-0 flex-1 overflow-hidden rounded-full">
                 <span class="bar-fill h-full rounded-full" :class="winBarCls(row.winRate)" :style="{ width: `${row.winRate * 100}%` }" />
               </span>
