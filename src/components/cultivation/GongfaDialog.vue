@@ -106,8 +106,17 @@
         >
           {{ subFull ? `辅修已满 ${cultivation.subGongfa.length}/${dongfu.subGongfaSlots}` : subActionText }}
         </button>
-        <button v-if="upCost" class="btn-ghost flex-1" :disabled="upShort !== null" @click="def && upgradeGongfa(def.id)">
-          {{ upShort ? '进 修(缺料)' : '进 修' }}
+        <!--
+          满级不再让按钮消失:它与「设为主修 / 辅修」并排各占一半,一消失整行宽度就重置。
+          代价算不出来(gongfaUpgradeCost 满级返 null)时改成禁用并写状态词,与装备强化、法宝炼化同规。
+        -->
+        <button
+          class="btn-ghost flex-1"
+          :disabled="!upCost || upShort !== null"
+          :title="!upCost ? gongfaPeakLabel() : undefined"
+          @click="def && upgradeGongfa(def.id)"
+        >
+          {{ !upCost ? gongfaPeakLabel() : upShort ? '进 修(缺料)' : '进 修' }}
         </button>
       </div>
     </template>
@@ -130,7 +139,7 @@
   import { gongfaModsAt } from '@/stores/cultivation'
   import { STAT_NAMES, modsText, statValueText } from '@/data/statNames'
   import { gongfaSkillLine } from '@/ui/itemText'
-  import { gongfaMainToast, gongfaSubFullToast, gongfaSubToast, gongfaUpShortToast } from '@/ui/gongfaText'
+  import { gongfaMainToast, gongfaPeakLabel, gongfaSubFullToast, gongfaSubToast, gongfaUpShortToast } from '@/ui/gongfaText'
   import type { AnyStatKey, StatMods } from '@/types'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'

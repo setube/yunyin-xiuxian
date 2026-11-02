@@ -27,6 +27,15 @@ export function gongfaUpDoneToast(name: string, level: number): string {
   return `《${name}》已至第 ${level} 层`
 }
 
+/**
+ * 功法满级时「进 修」钮的状态词。
+ * 该钮与「设为主修 / 辅修」并排各占一半,代价算不出来时不能消失(见 masteryMark.spec 的同族判据);
+ * 用既有状态词「圆满」—— 功法卡与地界卡都这么写,不再新造一个。
+ */
+export function gongfaPeakLabel(): string {
+  return '已圆满'
+}
+
 export function gongfaSubFullToast(slots: number): string {
   return `辅修已满 ${slots} 席`
 }

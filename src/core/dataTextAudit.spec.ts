@@ -842,7 +842,8 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   it('功法进修按缺口置灰,行内写清悟道点与残页各差多少', () => {
     const view = src('../components/cultivation/GongfaDialog.vue')
     expect(view, '禁用态读同一份缺口判定').toContain('gongfaUpgradeShort(upCost.value)')
-    expect(view, '付得起才不置灰').toContain(':disabled="upShort !== null"')
+    // 满级时 upCost 为 null:那颗钮改为禁用并写状态词,不再消失(见 masteryMark.spec 的同族判据)
+    expect(view, '付得起才不置灰,且满级时不放行').toContain(':disabled="!upCost || upShort !== null"')
     expect(view, '行内复用 core 的短差').toContain('gongfaUpgradeShortfall(c)')
     expect(view, '短差交给同一份拒因文案').toContain('gongfaUpShortToast(s, gongfaUpgradeShortfall(c))')
     expect(view, '不许再用笼统的「悟道点或残页不足」').not.toContain('悟道点或残页不足')

@@ -14,6 +14,8 @@ import { resolve } from 'node:path'
 import { artifactMastery, equipMastery } from './masteryMark'
 import { ARTIFACT_MAX_LEVEL } from '@/data/artifacts'
 import { upgradeCapToast } from './forgeText'
+import { gongfaPeakLabel } from './gongfaText'
+import { buildingPeakToast } from './buildingText'
 
 const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
@@ -128,5 +130,28 @@ describe('满级标记 · 玩家挣来的状态要有形状', () => {
     expect(ARTIFACT_PANEL, '法宝炼化钮不该写 v-if="row.upCost"').not.toMatch(/<button[^>]*\bv-if="row\.upCost"/)
     expect(ARTIFACT_PANEL, '法宝满重时按钮禁用').toContain(':disabled="!row.upCost || row.short?.short != null"')
     expect(ARTIFACT_PANEL, '法宝满重时按钮写短状态').toContain('<template v-else>已至上限</template>')
+  })
+
+  /**
+   * 同一形态的第四例:功法弹窗页脚的「进 修」。
+   *
+   * `gongfaUpgradeCost` 满级返 null,那颗钮写的是 `v-if="upCost"` —— 满级就整个不见。
+   * 它与「设为主修 / 辅修」并排各占一半,消失后整行宽度重置;玩家也分不出是满了还是坏了。
+   * 计划档第十一节曾把它记作「不是缺陷」,理由是「下面本来就走悟道分支」——
+   * 那是把**正文里的悟道面板**当成了回执,页脚少一颗钮并不会因此得到解释。
+   *
+   * 故障注入:把那颗钮改回 `v-if="upCost"`,本条红。
+   */
+  it('功法满级时「进 修」钮也常驻,改成禁用并写状态词', () => {
+    const DIALOG = readFileSync(resolve(ROOT, 'src/components/cultivation/GongfaDialog.vue'), 'utf-8')
+    expect(DIALOG, '功法进修钮不该写 v-if="upCost"').not.toMatch(/<button[^>]*\bv-if="upCost"/)
+    expect(DIALOG, '满级时按钮禁用').toContain(':disabled="!upCost || upShort !== null"')
+    expect(DIALOG, '满级时写状态词,不写空').toContain('gongfaPeakLabel()')
+  })
+
+  it('状态词复用既有的「已圆满」,不自创第五个说法', () => {
+    // 地界卡与功法卡都写「圆满 / 已圆满」;这里与地界卡同词,不新造「进修至顶」之类
+    expect(gongfaPeakLabel()).toBe('已圆满')
+    expect(buildingPeakToast(), '地与功法同一句,不各写一套').toBe(gongfaPeakLabel())
   })
 })
