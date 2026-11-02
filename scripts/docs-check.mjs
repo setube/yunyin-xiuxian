@@ -108,6 +108,42 @@ for (const rel of docFiles) {
       "components 组",
     ],
   ];
+  /*
+   * 这几项的数目在数据模块里没有同名常量,要把模块读进来才数得出。
+   * 用「从源码数声明行」的办法:模块都写成 `{ id: '…', … }` 的数组字面量,
+   * 数 id 声明的个数即可,不需要跑 vitest。
+   */
+  const countById = (rel, exportName) => {
+    const src = readFileSync(join(ROOT, "src/data", rel), "utf-8");
+    /*
+     * 从 `export const NAME… = [` 起,到下一个顶层 `export const` 或文件末为止。
+     * 不按 `];` 找结尾 —— 这几个文件里有缩进不同的收尾写法(ziwei 的 PALACES
+     * 后面还跟着别的导出)。
+     */
+    const at = src.indexOf(`export const ${exportName}`);
+    if (at < 0) return -1;
+    const rest = src.slice(at);
+    const next = rest.slice(1).search(/\nexport const /);
+    const block = next < 0 ? rest : rest.slice(0, next + 1);
+    /*
+     * 数「顶格单花括号」= 数组里的一条记录。
+     *
+     * 别改成数 id / name:这几个模块的写法并不统一(MANSIONS 只有 name、
+     * PALACES 只有 id、TRIGRAMS 两者都有),按字段数会分别得到 0、0、16。
+     */
+    return (block.match(/^\s*\{/gm) ?? []).length;
+  };
+  const dataChecks = [
+    [/│\s+├── xiangxiu\.ts\s+# (\d+) 星宿/, countById("xiangxiu.ts", "MANSIONS"), "xiangxiu 星宿"],
+    [/│\s+├── ziwei\.ts\s+# (\d+) 宫/, countById("ziwei.ts", "PALACES"), "ziwei 宫"],
+    [/│\s+├── yijing\.ts\s+# (\d+) 卦/, countById("yijing.ts", "TRIGRAMS"), "yijing 卦"],
+  ];
+  for (const [re, actual, label] of dataChecks) {
+    const m = re.exec(readme);
+    if (!m) failures.push(`README 项目结构里找不到「${label}」—— 写法变了?`);
+    else if (Number(m[1]) !== actual) failures.push(`README 项目结构写 ${label} ${m[1]},实际 ${actual}`);
+  }
+
   for (const [re, actual, label] of checks) {
     const m = re.exec(readme);
     if (!m) {
