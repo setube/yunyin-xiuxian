@@ -38,4 +38,23 @@ describe('排版自检量法', () => {
     expect(SCRIPT).toContain("if (s.overflowX === 'auto' || s.overflowX === 'scroll') return false")
     expect(SCRIPT, 'hidden 的外壳恰是「玩家滚不动」的事故层').not.toContain("s.overflowX === 'hidden'")
   })
+
+  /**
+   * 量词表。判据是「数字后紧跟量词、且二者被折到两行」。
+   * 表里少一个量词,那一处断行就整片没人管 —— 而断行在 320 窄屏才现形,肉眼很难复查。
+   * 原先只有 13 个,漏了倍/成/席/页/部/条/味/处/世/点/星/门/座/片/重。
+   *
+   * 故障注入:把表改回 13 个,本条红。
+   */
+  it('数字与量词不拆行的量词表覆盖全站实际用到的单位', () => {
+    const m = /const UNITS = '([^']+)'/.exec(SCRIPT)
+    expect(m, '找不到量词表').toBeTruthy()
+    const table = m![1]!
+    // 逐个点名:每一条都在源码里真实跟着数字用过
+    const must = ['石', '铁', '尘', '株', '张', '载', '年', '次', '件', '层', '场', '阶', '枚', '缕', '时', '日']
+    const added = ['倍', '成', '席', '页', '部', '条', '味', '处', '世', '点', '星', '门', '座', '片', '重']
+    for (const u of [...must, ...added]) {
+      expect(table, `量词表缺「${u}」—— 那一处「N${u}」的断行没人管`).toContain(u)
+    }
+  })
 })

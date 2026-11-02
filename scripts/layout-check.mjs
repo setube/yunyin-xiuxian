@@ -409,7 +409,14 @@ async function measurePage(page) {
         .map(el => `${Math.round(el.getBoundingClientRect().width)}px 宽 «${(el.textContent || '').trim().slice(0, 10)}»`),
       // 通用挤压判据二:数字与量词被换行拆开
       unitBreaks: (() => {
-        const UNITS = '石铁尘株张载年次件层场阶枚缕时日'
+        /*
+         * 量词表。原先只有 13 个,而实际用到的远不止:倍/成(丹方与倍率)、
+         * 席(辅修槽)、页(残页)、部(功法)、条(词条)、味(丹药)、处(镇压)、
+         * 世(轮回)、点(灵脉投点)、星(命星)、门(八门)、座(虚界)、片(镇压区)、重(祭炼)。
+         * 漏一档,那一处断行就没人管了 —— 表宁全勿缺,多出来的字不会造成误报
+         * (判据是「数字后紧跟该字且被折到下一行」,不是所有该字都算)。
+         */
+        const UNITS = '石铁尘株张载年次件层场阶枚缕时日倍成席页部条味处世点星门座片重'
         const rectAt = (node, i) => {
           const r = document.createRange()
           r.setStart(node, i)
