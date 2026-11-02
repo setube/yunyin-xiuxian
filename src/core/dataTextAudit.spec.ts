@@ -9,6 +9,8 @@ import { ARTIFACTS } from '@/data/artifacts'
 import { PETS } from '@/data/pets'
 import { GONGFA } from '@/data/gongfa'
 import { TITLES } from '@/data/titles'
+import { EVENTS, FORTUNE_EVENTS } from '@/data/events'
+import { PILLS } from '@/data/pills'
 import { MUTATORS } from '@/data/mutators'
 import { SECRET_RULES } from '@/data/secretRealms'
 import { BUFFS, buffDef } from '@/data/buffs'
@@ -1201,7 +1203,7 @@ describe('数据文本 · 机械体检', () => {
     if (/[a-zA-Z]{2,}/.test(text)) bad.push(`${tag}「${name}」混入英文:${text}`)
   }
 
-  it('法宝 / 灵兽 / 功法 / 称号的文本没有机械错误', () => {
+  it('七类数据的文本都没有机械错误', () => {
     const bad: string[] = []
     for (const a of ARTIFACTS) {
       scan('法宝', a.name, a.desc, bad)
@@ -1210,6 +1212,11 @@ describe('数据文本 · 机械体检', () => {
     for (const p of PETS) scan('灵兽', p.name, p.desc, bad)
     for (const g of GONGFA) scan('功法', g.name, g.desc, bad)
     for (const t of TITLES) scan('称号', t.name, t.desc, bad)
+    // 事件是仓库里最长的一批散文(81 条随机 + 11 条机缘),最易出标点问题
+    for (const e of EVENTS) scan('事件', e.id, e.text, bad)
+    for (const e of FORTUNE_EVENTS) scan('机缘', e.id, e.text, bad)
+    for (const p of PILLS) scan('丹药', p.name, p.desc, bad)
+    for (const b of BUILDINGS) scan('建筑', b.name, b.desc, bad)
     expect(bad, `数据文本有机械错误:\n${bad.join('\n')}`).toEqual([])
   })
 })
