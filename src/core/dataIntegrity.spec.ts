@@ -19,6 +19,8 @@ import { ARTIFACTS } from '@/data/artifacts'
 import { AFFIXES } from '@/data/affixes'
 import { MATERIALS } from '@/data/materials'
 import { GONGFA } from '@/data/gongfa'
+import { PETS } from '@/data/pets'
+import { TITLES } from '@/data/titles'
 import { EVENTS } from '@/data/events'
 import { BUILDINGS } from '@/data/buildings'
 import { SECRET_REALMS } from '@/data/secretRealms'
@@ -72,6 +74,34 @@ describe('数据完整性 · id 必须唯一', () => {
         seen.add(x.id)
       }
       expect(dup, `表 ${name} 有重复 id:${dup.join('、')} —— 查表只会取到后写的那条`).toEqual([])
+    }
+  })
+
+  /**
+   * 显示名也要唯一 —— id 唯一不等于名字唯一。
+   *
+   * 上面那条守的是查表键,玩家看不到;玩家看到的是 `name`。
+   * 两件都叫「静心锁」时,查表不会出错,但列表里就是两条一样的名字,
+   * 那正是「各件之间区分度不够」最直接的一种。
+   * 只收按「一类一物」设计的表;装备/词缀/灵材的名字按设计会有复用(同款不同阶),不收。
+   * 故障注入:把任一表的两个 name 改成同一个,本条红。
+   */
+  it('各表显示名无重复', () => {
+    const TABLES: Array<[string, ReadonlyArray<{ name: string }>]> = [
+      ['artifacts', ARTIFACTS],
+      ['pets', PETS],
+      ['gongfa', GONGFA],
+      ['titles', TITLES],
+      ['pills', PILLS]
+    ]
+    for (const [name, list] of TABLES) {
+      const seen = new Set<string>()
+      const dup: string[] = []
+      for (const x of list) {
+        if (seen.has(x.name)) dup.push(x.name)
+        seen.add(x.name)
+      }
+      expect(dup, `表 ${name} 有重复显示名:${dup.join('、')} —— 玩家会在列表里看到两条一样的`).toEqual([])
     }
   })
 
