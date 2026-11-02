@@ -444,6 +444,26 @@ describe('可访问性 · 状态播报', () => {
     expect(host, 'toast 按钮不该进 Tab 序:键盘焦点会落到一条即将消失的元素上').toMatch(/tabindex="-1"/)
   })
 
+  /**
+   * PWA 更新横幅的触控尺子。
+   *
+   * 它只在 Service Worker 装上新版本后出现 —— `layout-check` 的巡页摸不到,
+   * `ui-smoke` 也不会触发,是唯一一块「没人量过」的界面。
+   * 实测修前「重新加载」盒高 24.5px、关闭钮 21.4×32px,都低于 28px 触控线。
+   * 判据取静态类名(py / h-w),不依赖运行时。
+   */
+  it('PWA 更新横幅的两颗钮都过 28px 触控线', () => {
+    const src = readFileSync(resolve(SRC, 'components/common/UpdatePrompt.vue'), 'utf-8')
+    // 只看按钮标签本身:注释里写着「不可降回 !py-1」,整文件正则会把那句也算进来
+    const reload = /<button\b[^>]*>\s*重新加载/.exec(src)?.[0] ?? ''
+    expect(reload, '找不到「重新加载」那颗钮').not.toBe('')
+    // 11px 字 + !py-1 只有 24.5px;!py-1.5 是 28.5px
+    expect(reload, '「重新加载」的竖向 padding 低于 28px 触控线').toContain('!py-1.5')
+    const close = /<button\b[^>]*aria-label="关闭"[^>]*>/.exec(src)?.[0] ?? ''
+    expect(close, '找不到关闭钮').not.toBe('')
+    expect(close, '关闭钮须给 28px 见方的触面').toContain('h-7 w-7')
+  })
+
   it('其它动态区已有播报的不许回退', () => {
     const anchors: Array<[string, RegExp]> = [
       ['src/components/common/SpiritRootReveal.vue', /role="status"/],
