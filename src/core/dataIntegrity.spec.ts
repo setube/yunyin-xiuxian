@@ -23,6 +23,7 @@ import { PETS } from '@/data/pets'
 import { TITLES } from '@/data/titles'
 import { EVENTS } from '@/data/events'
 import { BUILDINGS } from '@/data/buildings'
+import { BEAST_FAMILIES } from '@/data/beastFamilies'
 import { SECRET_REALMS } from '@/data/secretRealms'
 
 const DATA_DIR = resolve(__dirname, '../data')
@@ -119,6 +120,32 @@ describe('数据完整性 · id 必须唯一', () => {
       seen.add(n)
     }
     expect(dup, `功法技能名重复:${dup.join('、')} —— 玩家会在技能列表里看到两条一样的`).toEqual([])
+  })
+
+  /**
+   * 图标也要唯一 —— 法宝与装备各有自己的 icon spec,建筑与灵兽族此前裸奔。
+   *
+   * 这两张表都是「一类一物」(7 座建筑 / 21 个灵兽族),图标是玩家在列表里
+   * 区分它们的第一个线索,重复等于又回到「看着都一样」。
+   * 敌人 132 种与增益不在此列:同类共用图标是设计。
+   * 故障注入:把任两座建筑的 icon 改成同一个,本条红。
+   */
+  it('建筑与灵兽族的图标无重复', () => {
+    const TABLES: Array<[string, ReadonlyArray<{ icon?: string; name?: string }>]> = [
+      ['buildings', BUILDINGS],
+      ['beastFamilies', Object.values(BEAST_FAMILIES)]
+    ]
+    for (const [name, list] of TABLES) {
+      const seen = new Map<string, string>()
+      const dup: string[] = []
+      for (const x of list) {
+        if (!x.icon) continue
+        const prev = seen.get(x.icon)
+        if (prev !== undefined) dup.push(`${x.icon}(${prev} / ${x.name ?? '?'})`)
+        else seen.set(x.icon, x.name ?? '?')
+      }
+      expect(dup, `表 ${name} 有重复图标:${dup.join('、')} —— 列表里两格看起来一样`).toEqual([])
+    }
   })
 
   it('区域引用的敌人阶级与该区域阶级不相差太远', () => {
