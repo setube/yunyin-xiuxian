@@ -5,6 +5,10 @@
  * 其余文案的数字可能来自别的表,硬对只会误报。
  */
 import { describe, expect, it } from 'vitest'
+import { ARTIFACTS } from '@/data/artifacts'
+import { PETS } from '@/data/pets'
+import { GONGFA } from '@/data/gongfa'
+import { TITLES } from '@/data/titles'
 import { MUTATORS } from '@/data/mutators'
 import { SECRET_RULES } from '@/data/secretRealms'
 import { BUFFS, buffDef } from '@/data/buffs'
@@ -1176,5 +1180,36 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(view.match(/fruitDialogOpen(?:\.value)?\s*=\s*false/g), '别处不许绕过保护期直接关').toHaveLength(1)
     expect(view.match(/\bdismissFruitTutorial\(/g), '置已见只经关窗一处').toHaveLength(1)
     expect(view, '别处不许绕过保护期直接置已见').not.toMatch(/markFruitTutorialSeen\(|daoFruitTutorialSeen\s*=/)
+  })
+})
+
+/**
+ * 数据文本的机械体检:括号配对、重复标点、连续空白、混入英文。
+ *
+ * 这类错别字级问题此前没有守卫 —— `artifactEffects` 只对账数值,`petLore` 只查方向,
+ * 而「(先削其防,再入减免」少打一个右括号这种事,两者都看不见。
+ * 覆盖面取叙事与说明字段,不碰 id / 数值。
+ */
+describe('数据文本 · 机械体检', () => {
+  function scan(tag: string, name: string, text: string | undefined, bad: string[]): void {
+    if (!text) return
+    const opens = (text.match(/[(（「《]/g) ?? []).length
+    const closes = (text.match(/[)）」》]/g) ?? []).length
+    if (opens !== closes) bad.push(`${tag}「${name}」括号不配对:${text}`)
+    if (/[,,。;；]{2,}/.test(text)) bad.push(`${tag}「${name}」重复标点:${text}`)
+    if (/\s{2,}/.test(text)) bad.push(`${tag}「${name}」连续空白:${text}`)
+    if (/[a-zA-Z]{2,}/.test(text)) bad.push(`${tag}「${name}」混入英文:${text}`)
+  }
+
+  it('法宝 / 灵兽 / 功法 / 称号的文本没有机械错误', () => {
+    const bad: string[] = []
+    for (const a of ARTIFACTS) {
+      scan('法宝', a.name, a.desc, bad)
+      scan('法宝神通', a.name, a.active.desc, bad)
+    }
+    for (const p of PETS) scan('灵兽', p.name, p.desc, bad)
+    for (const g of GONGFA) scan('功法', g.name, g.desc, bad)
+    for (const t of TITLES) scan('称号', t.name, t.desc, bad)
+    expect(bad, `数据文本有机械错误:\n${bad.join('\n')}`).toEqual([])
   })
 })
