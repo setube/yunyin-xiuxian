@@ -1001,7 +1001,8 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(card, '备药钮写实际石差').toContain('prepPillDisabledLabel(formatGap(prepPillShort))')
     expect(card, '备药 toast 写实际石差').toContain('prepPillShortToast(formatGap(prepPillShort.value))')
     expect(service, '突破准备缺口单源').toContain('breakthroughPrepShortfall')
-    expect(view, '疗伤钮写实际气差').toContain('formatNum(repair.shortfall)')
+    // 差额走 formatGap:灵气按 dt 累积是小数,formatNum 四舍五入会少报(见 format-gn 计划档)
+    expect(view, '疗伤钮写实际气差').toContain('formatGap(repair.shortfall)')
   })
 
   /**

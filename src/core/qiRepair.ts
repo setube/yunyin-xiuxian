@@ -6,7 +6,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useUiStore } from '@/stores/ui'
-import { formatNum } from '@/utils/format'
+import { formatGap, formatNum } from '@/utils/format'
 import {
   repairDoneToast,
   repairIdleToast,
@@ -54,7 +54,8 @@ export function repairWithQi(): boolean {
   }
   const view = qiRepairView()
   if (!view.affordable) {
-    ui.toast(repairShortToast(formatNum(view.shortfall), formatNum(view.cost)), 'warn')
+    // 差额用 formatGap:灵气按 dt 累积是小数,formatNum 四舍五入会少报(1.824 → 1.8,补足仍不够)
+    ui.toast(repairShortToast(formatGap(view.shortfall), formatNum(view.cost)), 'warn')
     return false
   }
   resources.setQi(resources.qi - view.cost, player.qiCapValue)
