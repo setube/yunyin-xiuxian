@@ -92,7 +92,7 @@
     },
     "win": {
       "target": "zip",
-      "icon": "public/favicon.ico",
+      "icon": "public/icons/icon-512.png",
       "artifactName": "yunyin-${version}-win.${ext}"
     }
   }

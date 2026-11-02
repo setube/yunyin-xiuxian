@@ -251,3 +251,26 @@ describe('视口 · 允许用户缩放', () => {
     expect(viewport, 'viewport-fit=cover 丢了,刘海屏安全区会失效').toContain('viewport-fit=cover')
   })
 })
+
+/**
+ * Electron 打包图标。electron-builder 要求 Windows 图标至少 256×256。
+ * favicon 瘦身时只留 16/32/48 三档,而 build.win.icon 曾指着它 —— 标签页没问题,
+ * 打 Windows 包当场 `Icon must be at least 256x256 pixels, provided: 48x48`。
+ * 这条守的是打包配置,不是标签页那条线。故障注入:把 icon 改回 public/favicon.ico,本条红。
+ */
+describe('打包图标 · Electron 要 256 以上', () => {
+  const PKG = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8')) as {
+    build?: { win?: { icon?: string } }
+  }
+  const icon = PKG.build?.win?.icon ?? ''
+
+  it('build.win.icon 指着存在的 PNG,且边长 ≥256', () => {
+    expect(icon, 'build.win.icon 没配').not.toBe('')
+    const path = resolve(ROOT, icon)
+    expect(existsSync(path), `build.win.icon 指向的 ${icon} 不存在`).toBe(true)
+    const png = readFileSync(path)
+    expect(png.subarray(1, 4).toString(), `${icon} 不是 PNG,electron-builder 还要再转一次`).toBe('PNG')
+    const side = Math.min(png.readUInt32BE(16), png.readUInt32BE(20))
+    expect(side, `${icon} 只有 ${side}px —— electron-builder 要 ≥256`).toBeGreaterThanOrEqual(256)
+  })
+})
