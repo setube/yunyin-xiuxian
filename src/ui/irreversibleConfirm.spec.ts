@@ -161,4 +161,31 @@ describe('不可逆确认的两次点击各写什么', () => {
       expect(word.replace(/\s/g, '').length, `${rel} 的「${word}」超过 6 字,该重新措辞`).toBeLessThanOrEqual(6)
     }
   })
+
+  /**
+   * 复述动作**整族都带字间空格**。
+   *
+   * 空格是排版的一部分(AGENTS.md 第 9 条:按汉字计,「应 战」中间的空格不算字数)。
+   * 这一族原本只在两字动词上写了空格:连 升 / 连 投 / 连 炼 / 开 炉 / 收 炉 / 收 下 …
+   * 而 `BrewingDialog` 的「连炼 ×5」漏了 —— 同一个动词在两页之间是两种写法,
+   * 且它右边紧挨着写对了的「炼 满 ×N」,同屏就不一致。
+   *
+   * 判据:凡是带「连」「开 炉」这类批处理动词的按钮正文,动词内部必须有空格。
+   * 故障注入:把「连 炼 ×5」改回「连炼 ×5」,本条红。
+   */
+  it('批处理动词的字间空格不缺(连 炼 / 开 炉 / 炼 满)', () => {
+    const VERBS = ['连炼', '开炉', '炼满', '连升', '连投']
+    const files = ['components/inventory/BrewingDialog.vue', 'components/inventory/ArtifactPanel.vue', 'components/dongfu/BuildingCard.vue', 'components/equipment/UpgradePanel.vue', 'components/dongfu/VeinInvestCard.vue']
+    const bad: string[] = []
+    for (const rel of files) {
+      const src = read(rel)
+      for (const v of VERBS) {
+        // 只查按钮正文里的写法;说明性文字(「连炼结果与连点一致」)是散文,不管
+        for (const m of src.matchAll(new RegExp(`>([^<>]*${v}[^<>]*)</button>`, 'g'))) {
+          bad.push(`${rel}: «${m[1]!.trim()}» 应为「${v[0]} ${v[1]}…」`)
+        }
+      }
+    }
+    expect(bad, `这些按钮的动词缺字间空格:\n${bad.join('\n')}`).toEqual([])
+  })
 })

@@ -41,7 +41,7 @@
             -->
             <template v-if="r.plan.rounds > 0">
               <template v-if="pillFullId !== r.def.id">
-                <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连炼 ×5</button>
+                <button class="btn-ghost !px-3 !py-2 !text-[11px]" @click="craftPillBatch(r.def.id, 5)">连 炼 ×5</button>
                 <button
                   v-if="r.plan.rounds > 5"
                   class="btn-ghost !px-2.5 !py-2 !text-[11px]"
