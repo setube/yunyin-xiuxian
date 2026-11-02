@@ -92,6 +92,15 @@ export const PETS: PetDef[] = [
     mods: { cultivationSpeed: 0.24, breakthroughRate: 0.16, maxHpPct: 0.14 },
     personality: 'fierce'
   },
+  {
+    id: 'pet_zidian',
+    name: '紫电貔貅',
+    desc: '云中踏电而行,只进不出',
+    family: 'beast',
+    quality: 'heaven',
+    mods: { critRate: 0.1, critDamage: 0.3, speed: 0.06 },
+    personality: 'fierce'
+  },
   // ---- 仙界及以上神兽 ----
   {
     id: 'pet_yinglong',
