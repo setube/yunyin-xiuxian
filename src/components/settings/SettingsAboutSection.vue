@@ -7,8 +7,10 @@
     <button class="flex w-full items-center justify-between py-3 active:opacity-60" @click="openRelease">
       <span class="flex items-center gap-2 text-[13px] text-ink-soft">
         版本与更新
+        <!-- role="img":裸 span 属 generic,不接 aria-label,读屏听不到「有新版本」 -->
         <span
           v-if="settings.hasUnseenRelease"
+          role="img"
           class="rounded bg-cinnabar px-1 py-px text-[10px] leading-none seal-face"
           aria-label="有新版本"
         >新</span>

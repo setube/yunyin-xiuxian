@@ -542,6 +542,52 @@ describe('可访问性 · 表单控件有名字', () => {
 })
 
 /**
+ * 可访问名不能挂在 generic 元素上。
+ *
+ * ARIA 规定 `generic`(无 role 的 span / div)不接受可访问名 —— 裸 <span aria-label="x"> 的
+ * 名字在严格实现里会被丢掉。Chrome 的 AX 树会给它一个 generic 节点,看着像念出来了,
+ * 但这正是「用宽松实现验证宽松写法」。实测三处:
+ *   QualitySeal 的品阶角章(天/仙/神 只有一个字,读屏要念的是「天品档」)
+ *   TopStatusBar 的寿元与灵石(补的正是「读屏只会念两个数字」)
+ * 三处都补了 role="img"。同时修掉寿元那句话里的重字:formatYears 本身带「载」,
+ * 原写法末尾又加一个,读屏念成「寿元 3000/1000亿载 载」。
+ *
+ * 故障注入:摘掉任一处的 role="img",本条红。
+ */
+describe('可访问性 · 名字要有 role 才接得住', () => {
+  it('裸 span/div 上的 aria-label 必须配 role', () => {
+    const offenders: string[] = []
+    for (const f of FILES) {
+      for (const m of f.src.matchAll(/<(span|div)\b[^>]*>/gs)) {
+        const tag = m[0]
+        if (!/\baria-label=/.test(tag) && !/\baria-labelledby=/.test(tag)) continue
+        if (/\brole=/.test(tag)) continue
+        const line = f.src.slice(0, m.index).split('\n').length
+        offenders.push(`${f.path}:${line} ${tag.replace(/\s+/g, ' ').slice(0, 80)}`)
+      }
+    }
+    expect(
+      offenders,
+      `这些可访问名挂在 generic 元素上,严格实现会丢掉:\n${offenders.join('\n')}`
+    ).toEqual([])
+  })
+
+  it('三处已修的落点仍带 role="img"', () => {
+    const seal = readFileSync(resolve(SRC, 'components/common/QualitySeal.vue'), 'utf-8')
+    expect(seal, '品阶角章缺 role="img"').toContain('role="img"')
+    const bar = readFileSync(resolve(SRC, 'components/common/TopStatusBar.vue'), 'utf-8')
+    const imgs = (bar.match(/role="img"/g) ?? []).length
+    expect(imgs, '寿元与灵石两格都要 role="img"').toBeGreaterThanOrEqual(2)
+  })
+
+  it('寿元的可访问名不重复「载」字(formatYears 自带单位)', () => {
+    const bar = readFileSync(resolve(SRC, 'components/common/TopStatusBar.vue'), 'utf-8')
+    // 原写法 `...formatYears(...)} 载` 会念成「...亿载 载」
+    expect(bar, '寿元 aria-label 末尾又加了一个「载」').not.toMatch(/formatYears\([^)]*\)\s*载/)
+  })
+})
+
+/**
  * 图标是装饰,不该进读屏的事件流。
  * GameIcon 被引 111 处,lucide 生成的 <svg> 默认无 aria-hidden —— 若在每处补,漏一处就多一段噪音;
  * 收在 GameIcon 一处,新增用法自动继承。

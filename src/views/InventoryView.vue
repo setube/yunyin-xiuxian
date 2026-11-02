@@ -108,8 +108,10 @@
             :tone="pillQualityColor(row.def!)"
             compact
           />
+          <!-- role="img":角章只有一个字,读屏要念的是「天品档」;裸 span 属 generic,不接可访问名 -->
           <span
             v-if="isRareRank(pillRank(row.def!))"
+            role="img"
             class="absolute right-0.5 top-0.5 rounded-[3px] border px-[3px] py-px font-kai text-[9px] leading-none text-ink"
             :style="{ borderColor: tint(pillQualityColor(row.def!), 0.45), background: tint(pillQualityColor(row.def!), 0.12) }"
             :aria-label="`${pillQualityName(row.def!)}档`"
