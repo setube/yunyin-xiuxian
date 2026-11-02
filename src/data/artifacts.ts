@@ -1,5 +1,5 @@
 /**
- * 法宝池 —— 53 件,拥有被动属性与自动触发的主动神通
+ * 法宝池 —— 54 件,拥有被动属性与自动触发的主动神通
  *
  * passive / active.effect 是凡品零重基线(算式第一个因子),品阶与祭炼两条放大由 artifactValue 施加;
  * desc 与 effect 描述的是基线,不是面板。
@@ -186,6 +186,19 @@ export const ARTIFACTS: ArtifactDef[] = [
     4,
     { type: 'weaken', pct: 0.3 },
     'bell-ring'
+  ),
+  f(
+    'af_xueyu',
+    '血玉戒',
+    'fine',
+    13,
+    '戒面一点血红,饮血则亮',
+    { attackPct: 0.04, lifesteal: 0.03 },
+    '饮血',
+    '每 3 回合饮血而归,造成 145% 攻击伤害并回复其中 35%',
+    3,
+    { type: 'drain', mult: 1.45, healPct: 0.35 },
+    'fish'
   ),
   f(
     'af_xingpan',
