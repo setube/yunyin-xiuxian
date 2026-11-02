@@ -185,4 +185,24 @@ describe('法宝品阶阶梯', () => {
       expect(b, `${def.name} 被动预算 ${b}`).toBeLessThan(5)
     }
   })
+
+  /**
+   * 神通名全游唯一 —— 族内唯一不等于全局唯一。
+   *
+   * 上面那条只按效果族分组查重,跨族重名落在盲区:若伤害族与治疗族各有一个「净世」,
+   * 两条族内检查各自通过,玩家在法宝列表里却看到两个一模一样的名字。
+   * 图标已有 `artifactsIcon.spec` 钉着不可复用,名字这边此前只钉了一半。
+   */
+  it('神通名全游唯一', () => {
+    const seen = new Map<string, string[]>()
+    for (const def of ARTIFACTS) {
+      const owners = seen.get(def.active.name) ?? []
+      owners.push(`${def.name}(${def.active.effect.type})`)
+      seen.set(def.active.name, owners)
+    }
+    const dupes = [...seen.entries()]
+      .filter(([, owners]) => owners.length > 1)
+      .map(([name, owners]) => `「${name}」被 ${owners.join(' 与 ')} 共用`)
+    expect(dupes, `跨族重名的神通(玩家看到两个一样的名字):\n${dupes.join('\n')}`).toEqual([])
+  })
 })
