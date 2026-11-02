@@ -770,6 +770,44 @@ label.includes(visible)  // false 即是违规
 
 ---
 
+## 二十八、加一个键,改坏了一个判定(第 256 轮)
+
+上一轮为修首帧主题,加了一个明文小键 `yunyin.__theme`。它本身没问题 —— 问题是**它长得像存档**。
+
+「两页同开」的判定原先写的是:
+
+```js
+if (e.key.startsWith('yunyin.') && !e.key.startsWith('yunyin.corrupt.')) setOtherTab(true)
+```
+
+`yunyin.__theme` 以 `yunyin.` 开头,于是被当成「另一页在写档」。
+
+### 后果比误报一次更糟
+
+`otherTab` 只在**心跳超时**时复位(`setOtherTab(false)` 全仓只有一处,在 `watchOtherTabSave(false)` 里)。
+所以主题键把它置真之后,它就那么挂着;等玩家真开两页时,那条「存档已在另一页打开」
+因为 `setOtherTab` 有去重,**反而一声不响**。
+
+一次假警报,换掉了将来那次真警报。
+
+### 修法
+
+用 `PERSISTED_STORES` 派生一个键集合,只认真正的分片:
+
+```js
+const SAVE_SLICE_KEYS = new Set(PERSISTED_STORES.map(id => SAVE_PREFIX + id))
+```
+
+前缀匹配天生会长出新成员;要让「新加的键不算进度」这件事成立,只能反过来**枚举**。
+
+### 教训
+
+**给存档命名空间加键时,先搜一遍谁在按前缀认它。**
+`startsWith(前缀)` 这种写法在加键的那一刻就悄悄失效了,而且失效方向是「多认」,
+不会有任何报错 —— 只会在很久以后表现为「该报的没报」。
+
+---
+
 ## 二十七、首帧:没人量过的那 200 毫秒(第 255 轮)
 
 所有界面自检都在**页面加载完之后**才开始量(`layout-check`、`ui-smoke`、`aria-check` 都是 `goto` 之后 `waitForTimeout`)。于是「首帧长什么样」这件事,一直没有任何判据看着。
