@@ -74,11 +74,11 @@
         >
           <span
             class="grid h-5 w-5 place-items-center rounded font-kai text-[11px]"
-            :class="gongfaCat === g.type ? 'seal-face' : gongfaCatSeal(g.type)"
+            :class="gongfaCat === g.type ? 'bg-ink/8' : gongfaCatSeal(g.type)"
           >{{ g.seal }}</span>
           <span>{{ GONGFA_TYPE_NAMES[g.type] }}</span>
-          <!-- 半透明字在两主题都跌破 AA(纸/15 内格 4.17:1、奶油 60% 2.95:1);层级由字号承担 -->
-          <span class="text-[10px]" :class="gongfaCat === g.type ? 'seal-face' : 'text-ink-faint'">{{ g.items.length }} 部</span>
+          <!-- 半透明字在两主题都跌破 AA(纸/15 内格 4.17:1、奶油 60% 2.95:1);层级由字号承担,颜色继承印面 -->
+          <span class="text-[10px]" :class="gongfaCat === g.type ? '' : 'text-ink-faint'">{{ g.items.length }} 部</span>
         </button>
       </div>
 
@@ -198,10 +198,11 @@
   }
 
   /**
-   * 激活态配色:印面文字一律走 .seal-face,不用 text-paper。
+   * 激活态配色:整颗 tab 走 .seal-face,不用 text-paper。
    * text-paper 依纸色路由,而夜主题把 paper 翻成近黑(33 31 28),印底却是亮朱/亮紫/亮绿:
    * 实测朱印 3.83:1、内层 bg-paper/15 再降到 3.13:1,同一屏的 .btn-seal 是奶油字,两套脸。
    * .seal-face 把夜主题整面压成深朱并固定奶油字,与 .btn-seal / .world-seal 同源(AGENTS.md 明文)。
+   * 只给这颗 tab 挂,不给里面的字形与「N 部」挂:类里有背景,挂到子节点就会在印面上再压两块深朱。
    */
   function gongfaCatActive(type: GongfaType): string {
     return type === 'secret' ? 'bg-violet-ink seal-face' : type === 'main' ? 'bg-cinnabar seal-face' : 'bg-jade seal-face'
