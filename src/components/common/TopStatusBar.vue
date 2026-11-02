@@ -13,11 +13,16 @@
         <p class="flex items-center gap-1.5 whitespace-nowrap text-[10px] text-ink-faint">
           <!-- 局促时境界名先省略;寿元与「N 世」shrink-0 -->
           <span class="min-w-0 flex-1 truncate">{{ player.realmName }}</span>
-          <!-- 「16/150」视觉上人人都懂,读屏只会念两个数字;补一句「寿元 16/150 载」 -->
+          <!--
+            「16/150」视觉上人人都懂,读屏只会念两个数字;补一句「寿元 16载 / 150载」。
+            role="img" 不可去:ARIA 规定 generic(无 role 的 span)不接受可访问名,
+            裸 span 上的 aria-label 在严格实现里会被丢掉。
+          -->
           <span
+            role="img"
             class="tabular shrink-0"
             :class="player.lifespanRatio < LIFESPAN_WARN_RATIO ? 'text-cinnabar' : ''"
-            :aria-label="`寿元 ${Math.floor(player.age)}/${formatYears(player.lifespanMax)} 载`"
+            :aria-label="`寿元 ${formatYears(player.age)} / ${formatYears(player.lifespanMax)}`"
           >
             {{ Math.floor(player.age) }}/{{ formatYears(player.lifespanMax) }}
           </span>
@@ -29,8 +34,16 @@
       </div>
     </div>
     <div class="flex shrink-0 items-center gap-3 text-[11px] text-ink-soft tabular short:gap-2">
-      <!-- title 只在悬停时补全,读屏不保证念;图标上一轮已 aria-hidden,这里须自带名字 -->
-      <span class="flex items-center gap-1 whitespace-nowrap" :aria-label="`灵石 ${formatGN(resources.spiritStone)}`" title="灵石">
+      <!--
+        title 只在悬停时补全,读屏不保证念;图标上一轮已 aria-hidden,这里须自带名字。
+        同寿元那格:裸 span 属 generic,不接 aria-label,须给个 role 才念得出。
+      -->
+      <span
+        role="img"
+        class="flex items-center gap-1 whitespace-nowrap"
+        :aria-label="`灵石 ${formatGN(resources.spiritStone)}`"
+        title="灵石"
+      >
         <GameIcon name="gem" :size="13" class="text-gold-ink" />
         {{ formatGN(resources.spiritStone) }}
       </span>

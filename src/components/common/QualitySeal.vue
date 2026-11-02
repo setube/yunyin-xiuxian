@@ -1,5 +1,12 @@
 <template>
+  <!--
+    role="img" 不可去:ARIA 规定 `generic`(无 role 的 span/div)不接受可访问名,
+    裸 span 上的 aria-label 在严格实现里会被丢掉。角章只有一个字(天/仙/神),
+    读屏要念的正是「天品档」这三个字,所以按「一段有名字的图」暴露。
+    与此同源:InventoryView 的「可换」角标、AffixTransferPanel 的封存锁。
+  -->
   <span
+    role="img"
     class="inline-flex shrink-0 items-center justify-center rounded-[3px] border font-kai leading-none text-ink"
     :style="{
       ...boxStyle,
