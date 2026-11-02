@@ -80,7 +80,7 @@
           :disabled="!repair.affordable"
           @click="repairWithQi()"
         >
-          {{ repairActLabel(repair.affordable, formatNum(repair.cost), formatNum(repair.shortfall)) }}
+          {{ repairActLabel(repair.affordable, formatNum(repair.cost), formatGap(repair.shortfall)) }}
         </button>
       </div>
 
@@ -203,7 +203,7 @@
   import { buffDef } from '@/data/buffs'
   import { pillDef, pillQualityColor, pillRank } from '@/data/pills'
   import { QI_RICH_BONUS } from '@/data/constants'
-  import { formatCountdown, formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
+  import { formatCountdown, formatDuration, formatGap, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
   import { signedPercent } from '@/data/statNames'
   import { repairActLabel } from '@/ui/cultivationText'
   import SectionTitle from '@/components/common/SectionTitle.vue'
