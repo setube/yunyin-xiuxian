@@ -508,6 +508,16 @@ export function clearAllSave(): void {
       // 残留交由下面的兜底处理
     }
   }
+  /*
+   * 首帧主题标记也要清 —— 它不是玩家数据,但清档后留着会让新角色沿用上一位的角色主题:
+   * 实测清档后重进,系统是亮色、新档也回到默认 auto,首帧却仍按残留的 dark 渲染,
+   * 直到 App 挂载才翻回来。键名与 core/theme.ts 的 THEME_HINT_KEY 同源(utils 不引 core,故重抄一份)。
+   */
+  try {
+    localStorage.removeItem('yunyin.__theme')
+  } catch {
+    // 同上面:清不掉就交由重载后的路由守卫兜底
+  }
   // removeItem 在个别 WebView 实现上会静默失效:还剩任何一片就整体清空,
   // 半清的存档会卡出主页空角色
   const leftover = PERSISTED_STORES.some(id => {
