@@ -63,18 +63,22 @@ function surfacesOf(theme: 'light' | 'dark'): Rgb[] {
   return [p.get('paper')!, p.get('paper-deep')!, [Number(m[1]), Number(m[2]), Number(m[3])] as const]
 }
 
-/** 正文承载档:浅/夜两套、三张底全 ≥4.5 */
-const STRONG = ['ink', 'ink-soft', 'ink-faint', 'violet-ink', 'azure', 'gold-ink', 'amber-ink', 'jade', 'indigo-ink']
+/**
+ * 正文承载档:浅/夜两套、三张底全 ≥4.5。
+ *
+ * `cinnabar` 在本轮之前不在这一档 —— 它走的是强调档的 3.0 宽线,却承担了
+ * 夜主题下 41 处 9~17px 的正文(拒因、待办标记、可点装饰)。实测那批字的
+ * 底色只有 3.83:1。现已把夜间 cinnabar 提亮到 `228 122 112`(四张底最差 4.52),
+ * 印面另有 `cinnabar-deep` 兜底,所以提亮不影响奶油字。
+ */
+const STRONG = ['ink', 'ink-soft', 'ink-faint', 'violet-ink', 'azure', 'gold-ink', 'amber-ink', 'jade', 'indigo-ink', 'cinnabar']
 
 /**
  * 强调档(标题/大字):≥3 大字 AA。
  *
- * 这一档**已经空了**:cinnabar 曾在这里,但它实际承担的是正文 ——
- * 暗色主题下量出 41 处 cinnabar 文本 < 18px(9~17px:拒因、待办标记、可点装饰),
- * 而 cinnabar 在夜主题对纸只有 3.83:1,达不到小字的 4.5。
- * 挪进 STRONG 之前得先提亮 token,而那会牵动印面(奶油字 5.31 → 跌到 4.5 以下),
- * 属色板取舍,见 plans 的「品阶色当文字用」一节。故此处留空表,
- * 断言仍然成立(空集合恒过),但**新加强调档色不得再借这个口子绕过 4.5**。
+ * 这一档现在是空的。留着这条判据是为了**堵住口子**:新加的颜色一旦进 WEAK,
+ * 就只按 3:1 考核,而它能被用在任何字号上 —— cinnabar 就是这么漏了 41 处。
+ * 真要往里加,得同时说明「这个色只出现在 18px 以上的大字里」。
  */
 const WEAK: readonly string[] = []
 
@@ -271,20 +275,16 @@ describe('调色板 · 承载文字的色都过线', () => {
   /**
    * 强调档是个口子,不许拿它当「小字也能用」的后门。
    *
-   * cinnabar 曾在 WEAK 里,于是在夜主题以 3.83:1 承担了 41 处 9~17px 的正文
-   * (拒因、待办标记、可点装饰)。同一套色板里,正文档的 9 个 token 都守着 4.5,
-   * 只有它走了 3:1 的宽线 —— 而玩家看到的差别只有「这行字有点淡」。
-   *
-   * 判据:cinnabar 必须按正文档(4.5)考核。当前**未达标**(夜 3.83),
-   * 所以这里断言的是「它没被偷偷放回强调档」,而不是「它达标了」。
-   * 修法见 plans 第二十四节:提亮 token 会牵动印面,属色板取舍。
+   * cinnabar 曾在 WEAK 里,于是在夜主题以 3.83:1 承担了 41 处 9~17px 的正文。
+   * 现已提亮并挪进 STRONG。这条判据守住两件事:
+   *   一 它没被偷偷放回强调档;
+   *   二 STRONG 与 WEAK 没有交集(一个 token 只能按一套线考核)。
    */
-  it('cinnabar 不再借强调档绕过小字线', () => {
+  it('cinnabar 按正文档考核,不再借强调档的宽线', () => {
     expect(WEAK as readonly string[], 'cinnabar 又回强调档了 —— 它承担的是正文字号').not.toContain('cinnabar')
-    expect(
-      worst('cinnabar', 'dark'),
-      '夜主题的 cinnabar 已达标(≥4.5),把它挪进 STRONG 档并更新本节注释'
-    ).toBeLessThan(4.5)
+    expect(STRONG as readonly string[], 'cinnabar 该在正文档里').toContain('cinnabar')
+    const overlap = STRONG.filter(t => (WEAK as readonly string[]).includes(t))
+    expect(overlap, '同一个 token 不能同时按两套线考核').toEqual([])
   })
 
   it('纸上的墨只有三档:ink-ghost 已撤档,四处都不得请它回来', () => {
@@ -603,4 +603,100 @@ describe('语义色 · 裸 hex 只许出现在已登记的例外', () => {
     )
   })
 })
+})
+
+/**
+ * 同色淡底 + 同色文字,是一套注定过不了 AA 的写法。
+ *
+ * 底色与文字色同源,叠上去只会把两者拉近:淡底越明显,字越糊。
+ * 实测全仓 17 组(`bg-cinnabar/10 text-cinnabar` 等),其中 15 组跌破 4.5:1,
+ * 最差的是 `bg-cinnabar/10 text-cinnabar`(日 4.22 / 夜 3.91)。
+ *
+ * 数学上**没有可用的 alpha**:把 alpha 压到让对比度过线,那层淡底也就不存在了;
+ * 唯一能同时保住「有色块」与「读得清」的做法是让文字走主题墨色(ink/ink-soft),
+ * 色块只做底,不作字色。品阶角章走的就是这条路(深墨字 + 品阶淡底,见上文那条)。
+ *
+ * 本条是**棘轮**:登记当前的存量,不要求本轮清零;新写一行同色淡底就会红,
+ * 逼你用「墨字 + 色块」或「裸色字、不要底」。存量清理单独立项(见 plans 第二十六节)。
+ */
+describe('调色板 · 同色淡底不该承载同色文字', () => {
+  /** 已登记的组合 → 允许出现的次数(只许减,不许增) */
+  const KNOWN: Record<string, number> = {
+    'cinnabar/10 text-cinnabar': 14,
+    'cinnabar/15 text-cinnabar': 3,
+    'cinnabar/8 text-cinnabar': 2,
+    'cinnabar/5 text-cinnabar': 2,
+    'jade/15 text-jade': 8,
+    'jade/10 text-jade': 5,
+    'jade/8 text-jade': 1,
+    'violet-ink/15 text-violet-ink': 4,
+    'violet-ink/10 text-violet-ink': 3,
+    'gold-ink/20 text-gold-ink': 1,
+    'gold-ink/15 text-gold-ink': 1,
+    'gold-ink/10 text-gold-ink': 8,
+    'gold-ink/8 text-gold-ink': 1,
+    'azure/15 text-azure': 2,
+    'azure/10 text-azure': 4,
+    'azure/5 text-azure': 3,
+    'amber-ink/15 text-amber-ink': 1,
+    'amber-ink/10 text-amber-ink': 2,
+    'indigo-ink/10 text-indigo-ink': 1
+  }
+
+  /**
+   * 墨系与纸系不受此约束:ink 本就是主题墨(它叠自己的淡底只是「更深一点的墨」,
+   * 文字仍是同一枚墨,对比度反而更高);paper 叠 paper 是「更实一点的纸」,同理。
+   * 真正把字糊掉的是**彩色**同色淡底 —— 那才是这条要拦的。
+   */
+  const NEUTRAL = new Set(['ink', 'ink-soft', 'ink-faint', 'paper', 'paper-deep', 'paper-dark'])
+
+  it('同色淡底的使用次数不得超过已登记量', () => {
+    const found: Record<string, number> = {}
+    const walk = (d: string): void => {
+      for (const entry of readdirSync(d, { withFileTypes: true })) {
+        const path = resolve(d, entry.name)
+        if (entry.isDirectory()) {
+          walk(path)
+          continue
+        }
+        if (!/\.(vue|ts)$/.test(entry.name) || entry.name.endsWith('.spec.ts')) continue
+        const src = readFileSync(path, 'utf-8')
+        for (const m of src.matchAll(/\bbg-([a-z-]+)\/(\d+)\b[^"'`]*\btext-([a-z-]+)\b/g)) {
+          if (m[1] !== m[3] || NEUTRAL.has(m[1]!)) continue
+          const key = `${m[1]}/${m[2]} text-${m[3]}`
+          found[key] = (found[key] ?? 0) + 1
+        }
+        for (const m of src.matchAll(/\btext-([a-z-]+)\b[^"'`]*\bbg-([a-z-]+)\/(\d+)\b/g)) {
+          if (m[1] !== m[2] || NEUTRAL.has(m[1]!)) continue
+          const key = `${m[2]}/${m[3]} text-${m[1]}`
+          found[key] = (found[key] ?? 0) + 1
+        }
+      }
+    }
+    walk(resolve(ROOT, 'src'))
+    const grew = Object.entries(found)
+      .filter(([k, n]) => n > (KNOWN[k] ?? 0))
+      .map(([k, n]) => `${k} 现 ${n} 处,已登记 ${KNOWN[k] ?? 0}`)
+    expect(grew, `同色淡底的字过不了 4.5:1,别再新增(改用墨色字 + 色块):\n${grew.join('\n')}`).toEqual([])
+  })
+
+  it('这类组合确实过不了 AA —— 判据不是在守一个假问题', () => {
+    const bad: string[] = []
+    for (const theme of ['light', 'dark'] as const) {
+      const palette = theme === 'light' ? LIGHT : DARK
+      for (const m of Object.keys(KNOWN)) {
+        const parsed = /^([a-z-]+)\/(\d+) text-[a-z-]+$/.exec(m)
+        if (!parsed) continue
+        const tone = palette.get(parsed[1]!)
+        if (!tone) continue
+        for (const bg of surfacesOf(theme)) {
+          // 淡底叠在底上,再用同色作字
+          const tile = mix(tone, bg, Number(parsed[2]) / 100)
+          const ratio = contrast(tone, tile)
+          if (ratio < 4.5) bad.push(`${m}@${theme} ${ratio.toFixed(2)}:1`)
+        }
+      }
+    }
+    expect(bad.length, '若这条空了,说明同色淡底其实没问题,可以把棘轮撤掉').toBeGreaterThan(10)
+  })
 })

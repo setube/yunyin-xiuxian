@@ -368,7 +368,9 @@ html[data-theme='dark'] {
   --color-ink-rgb: 232 226 210;
   --color-ink-soft-rgb: 198 191 169;
   --color-ink-faint-rgb: 168 161 140;
-  --color-cinnabar-rgb: 201 85 78;
+  /* 朱砂(夜):提亮到四张底上都过 4.5:1 —— 它承担 41 处 9~17px 正文(拒因/待办标记/可点装饰),
+     原 201 85 78 对纸只有 3.83。印面另有 --color-cinnabar-deep 兜底,不吃这一档。 */
+  --color-cinnabar-rgb: 228 122 112;
   --color-cinnabar-deep-rgb: 163 70 64;
   --color-indigo-ink-rgb: 147 179 185;
   --color-gold-ink-rgb: 200 163 90;
