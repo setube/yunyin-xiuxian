@@ -1,5 +1,5 @@
 /**
- * 法宝池 —— 51 件,拥有被动属性与自动触发的主动神通
+ * 法宝池 —— 52 件,拥有被动属性与自动触发的主动神通
  *
  * passive / active.effect 是凡品零重基线(算式第一个因子),品阶与祭炼两条放大由 artifactValue 施加;
  * desc 与 effect 描述的是基线,不是面板。
@@ -225,6 +225,19 @@ export const ARTIFACTS: ArtifactDef[] = [
     4,
     { type: 'heal', pctMaxHp: 0.28 },
     'droplets'
+  ),
+  f(
+    'af_jincheng',
+    '金城罩',
+    'fine',
+    14,
+    '罩下自成一座孤城',
+    { defensePct: 0.26, damageReduction: 0.1 },
+    '金城',
+    '每 4 回合金城自守,获得 29% 生命护盾',
+    4,
+    { type: 'shield', pctMaxHp: 0.29 },
+    'castle'
   ),
   f(
     'af_shiling',
