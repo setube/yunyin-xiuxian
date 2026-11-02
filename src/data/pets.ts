@@ -80,7 +80,7 @@ export const PETS: PetDef[] = [
   {
     id: 'pet_longzi',
     name: '螭龙幼子',
-    desc: '龙生九子,此其一也',
+    desc: '龙生九子,此其一也;未成器时,先养根骨',
     family: 'dragon',
     quality: 'heaven',
     /**
