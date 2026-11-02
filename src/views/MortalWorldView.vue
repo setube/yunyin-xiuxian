@@ -99,7 +99,7 @@
             <p class="mt-0.5 flex items-center gap-2 text-[10px] text-ink-faint">
               <span class="truncate">镇守 {{ p.bossName }}</span>
               <span class="flex shrink-0 gap-0.5">
-                <span v-for="n in p.eventLevel" :key="n" class="h-1 w-1 rounded-full bg-gold-ink/60" />
+                <span v-for="n in p.eventLevel" :key="n" class="h-1 w-1 rounded-full bg-gold-ink/80" />
               </span>
             </p>
             <p v-if="!unlocked(p)" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar">

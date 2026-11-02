@@ -772,6 +772,12 @@ describe('调色板 · 同色淡底不该承载同色文字', () => {
     for (const cls of ['bg-azure/80', 'bg-jade']) {
       expect(view, `图例少了「${cls}」那一档,三态就分不出了`).toContain(cls)
     }
+    /*
+     * 「处事多少」的金点:4×4 的圆点同样属非文本图形。
+     * 60% 叠在卡片上日 2.46 / 夜 2.93,两头都够不着 3:1;80% 是日 3.54 / 夜 4.06。
+     */
+    expect(view, '金点又淡回去了').toContain('bg-gold-ink/80')
+    expect(view).not.toContain('bg-gold-ink/60')
   })
 
   it('这类组合确实过不了 AA —— 判据不是在守一个假问题', () => {
