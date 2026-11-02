@@ -9,8 +9,9 @@ on:
 
 # 同一 tag 串行:并发 run 会在 release job 互删对方刚传的资产
 # cancel-in-progress 须为 false:取消可能落在「已删完、还没传完」的窗口,留下资产不全的 Release
+# 组名不取 github.workflow:改名后新旧两次 run 会分属不同组,同 tag 的 release 就不互斥了
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -79,6 +80,20 @@ jobs:
           name: android-apk
           path: android/app/build/outputs/apk/release/*.apk
 
+      # 自建站用的 web 包:dist/ 的内容,解压即站点根(README「多端安装 · 自建站」)
+      - name: 打 Web 包
+        run: |
+          VER=$(bun -e "console.log(require('./package.json').version)")
+          mkdir -p web-pkg
+          (cd dist && zip -qr "../web-pkg/yunyin-$VER-web.zip" .)
+          ls -la web-pkg/*.zip
+
+      - name: 上传 Web 包
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-zip
+          path: web-pkg/*.zip
+
   release:
     needs: [guard, build-android]
     runs-on: ubuntu-latest
@@ -107,6 +122,8 @@ jobs:
           mkdir -p ./final-release
 
           find ./raw-assets/android-apk -type f -name "*.apk" -exec cp {} ./final-release/ \; || true
+
+          find ./raw-assets/web-zip -type f -name "*.zip" -exec cp {} ./final-release/ \; || true
 
           echo "Final assets to upload:"
           ls -R ./final-release
