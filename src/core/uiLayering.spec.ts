@@ -464,11 +464,28 @@ describe('可访问性 · 状态播报', () => {
     const src = readFileSync(resolve(SRC, 'components/common/UpdatePrompt.vue'), 'utf-8')
     const outer = /<div v-if="ui\.pwaUpdatePending"[^>]*class="([^"]*)"/.exec(src)?.[1] ?? ''
     expect(outer, '找不到横幅外层').not.toBe('')
-    expect(outer, '外层缺 items-start,align-items 缺省 stretch 会把卡片拉满整屏').toContain('items-start')
+    expect(
+      outer,
+      '外层没写 items-start / items-end —— align-items 缺省 stretch 会把卡片拉满整屏'
+    ).toMatch(/items-(start|end)/)
     // class 写在 role 之前(多行标签),两段分别取再合看
     const cardTag = /<div\s+class="[^"]*"\s+role="status"/.exec(src)?.[0] ?? ''
     expect(cardTag, '找不到横幅卡片').not.toBe('')
     expect(cardTag, '卡片不该自己再撑高').not.toContain('h-full')
+  })
+
+  /**
+   * 横幅不能跟 toast 抢位置。
+   * toast 从 top-12(48px)起、最多叠五条(实测最深到 260px)、层级 z-70 高于横幅的 z-50 ——
+   * 横幅原先也在顶部 56px,一条提示就把它整个盖住,「重新加载」点不到。
+   * 修法是贴底。故障注入:把 items-end 改回 items-start,本条红。
+   */
+  it('PWA 更新横幅避开 toast 的占地(贴底,不在顶部)', () => {
+    const src = readFileSync(resolve(SRC, 'components/common/UpdatePrompt.vue'), 'utf-8')
+    const outer = /<div v-if="ui\.pwaUpdatePending"[^>]*class="([^"]*)"/.exec(src)?.[1] ?? ''
+    expect(outer, '横幅须贴底(items-end),别跟 toast 抢顶部').toContain('items-end')
+    expect(outer, '横幅须留出与底栏的距离(pb-*)').toMatch(/\bpb-\d/)
+    expect(outer, '横幅不该再用 pt- 贴顶').not.toMatch(/\bpt-/)
   })
 
   it('PWA 更新横幅的两颗钮都过 28px 触控线', () => {
