@@ -19,8 +19,18 @@ function saveTransferPlugin(): SaveTransferPlugin {
   return Capacitor.registerPlugin<SaveTransferPlugin>('SaveTransfer')
 }
 
+/**
+ * 导出文件名:本地日期,补零到 `YYYY-MM-DD`。
+ *
+ * 原先是 `new Date().toISOString().slice(0, 10)` —— 那是 **UTC 日**。
+ * 中国的玩家在本地 08:00 之前导出,文件名会写成前一天:
+ * 实测本地 11 月 3 日 06:00 导出的文件叫 `...-2026-11-02.save`。
+ * 全站其他日期(今日任务重置、修习日号)一律走本地日,这里也跟本地。
+ */
 function exportFileName(): string {
-  return `yunyin-xiuxian-${new Date().toISOString().slice(0, 10)}.save`
+  const d = new Date()
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  return `yunyin-xiuxian-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.save`
 }
 
 async function exportSaveOnAndroid(text: string, file: string): Promise<string | null> {

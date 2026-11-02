@@ -100,11 +100,45 @@ describe('savePlatform(Web 分支)', () => {
       text: expect.any(String),
       fileName: expect.stringMatching(/^yunyin-xiuxian-\d{4}-\d{2}-\d{2}\.save$/)
     })
+    // 文件名里的日期须是**本地**日(见下一个 it:整天跑下来两种写法大多同天,故此处只校格式)
     expect(mocks.requestPermissions, 'SAF 不需要公共存储权限').not.toHaveBeenCalled()
     expect(mocks.writeFile, 'Android 不得再直接写公共 Documents').not.toHaveBeenCalled()
     expect(useUiStore().toasts).toContainEqual(
       expect.objectContaining({ text: expect.stringContaining('已导出「yunyin-xiuxian-'), kind: 'success' })
     )
+  })
+
+  /**
+   * 导出文件名用本地日,不用 UTC 日。
+   *
+   * 原先是 `new Date().toISOString().slice(0, 10)`。UTC 日在中国的本地 08:00 之前
+   * 会写成前一天:实测本地 11 月 3 日 06:00 导出的文件叫 `...-2026-11-02.save`。
+   *
+   * **这条必须伪造时刻** —— 一天里绝大多数时间本地日与 UTC 日相同,
+   * 拿真实时间跑,UTC 写法也能通过(本轮就撞到过:故障注入没红)。
+   * 这里把时钟钉在「本地 1 月 2 日 00:30」与「本地 1 月 1 日 23:30」,
+   * 两者只有在用本地日时才各自成立。
+   */
+  it('导出文件名取本地日,不取 UTC 日', async () => {
+    const cases = [
+      { local: [2027, 0, 2, 0, 30], want: '2027-01-02' },
+      { local: [2027, 0, 1, 23, 30], want: '2027-01-01' }
+    ]
+    for (const c of cases) {
+      const at = new Date(c.local[0]!, c.local[1]!, c.local[2]!, c.local[3]!, c.local[4]!, 0, 0)
+      // 只有当本地日与 UTC 日不同时,这条才真的有鉴别力
+      const utcDay = at.toISOString().slice(0, 10)
+      if (utcDay === c.want) continue
+      vi.setSystemTime(at)
+      const { exportSaveText } = await import('./save')
+      expect(typeof exportSaveText, '导出入口应可用').toBe('function')
+      const { exportSaveToDevice } = await import('./savePlatform')
+      mocks.isNativePlatform.mockReturnValue(true)
+      mocks.getPlatform.mockReturnValue('android')
+      await exportSaveToDevice()
+      expect(mocks.saveTransfer.mock.calls.at(-1)?.[0].fileName, `本地 ${c.want} 时刻的导出文件名写成了 UTC 日`).toContain(c.want)
+    }
+    vi.useRealTimers()
   })
 
   it('Android 用户在保存面板取消:不假装成功,设置页不记上次导出', async () => {
