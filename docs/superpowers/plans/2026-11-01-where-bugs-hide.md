@@ -1393,6 +1393,41 @@ equipped: { weapon: "smoke_w", armor: "smoke_a" }   // armor 不是合法槽位
 故障注入验证过:把 `templateId` 改回不存在的 `a_hufu`,自检当场报
 「夹具写的已装备的头冠没有出现在界面上」;改回来即恢复绿。
 
+## 四十一、过场层补验:动画本身与 reduce-motion(第 275 轮)
+
+上一轮结论是「那 2.5 秒是 `WarpPortal` 过场动画,`innerText` 读不到」。
+本轮把它补验完整:**截图看它长什么样**,以及**降动效两档是否真的停住**。
+
+### 动画本身
+
+截图确认:金色光晕居中、放射线自中心铺开、下方「云深不知处 / 仙路自此始」。
+画面完整,不是空白 —— 上一轮「测不到 ≠ 不存在」的判断成立。
+
+### reduce-motion:两档都停住了
+
+`WarpPortal` 内部有多条 `animation: … infinite`(星点流动、光环脉冲、射线展开),
+组件自己**没有**写 `prefers-reduced-motion` 分支。看着像漏了。
+
+但 `style.css` 有全局兜底,两档各一段:
+
+```css
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; … } }
+.reduce-motion *                        { … 同上 … }
+```
+
+实测(过场播放中逐个读 `getComputedStyle`):
+
+| 档位 | 仍在动的元素 |
+| --- | --- |
+| 系统 `prefers-reduced-motion: reduce` | **0** |
+| 设置项 `.reduce-motion` | **0** |
+
+**全局兜底 + `!important` + 带伪元素**是这套写法扎实的原因 ——
+组件不必各写一遍,也就不会漏。这条以后再看到「组件没写 reduce-motion」不用查了,
+先看全局那段。
+
+---
+
 ## 四十、新手前 3 分钟实况:一处差点误判的「空白」(第 274 轮)
 
 按真实链路走一遍:启动 → 开始游戏 → 同意隐私 → 取名 → 入局。
