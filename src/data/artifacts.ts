@@ -1,5 +1,5 @@
 /**
- * 法宝池 —— 54 件,拥有被动属性与自动触发的主动神通
+ * 法宝池 —— 55 件,拥有被动属性与自动触发的主动神通
  *
  * passive / active.effect 是凡品零重基线(算式第一个因子),品阶与祭炼两条放大由 artifactValue 施加;
  * desc 与 effect 描述的是基线,不是面板。
@@ -264,6 +264,19 @@ export const ARTIFACTS: ArtifactDef[] = [
     3,
     { type: 'damage', mult: 4.0 },
     'skull'
+  ),
+  f(
+    'af_poyue',
+    '破岳凿',
+    'fine',
+    17,
+    '凿尖一点寒芒,山岳亦为之开',
+    { attackPct: 0.05, armorPen: 0.02 },
+    '破岳',
+    '每 4 回合凿其护体,余下回合敌人防御降低 25%',
+    4,
+    { type: 'sunder', pct: 0.25 },
+    'mountain'
   ),
   f(
     'af_taixu',
