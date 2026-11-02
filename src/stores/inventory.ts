@@ -14,7 +14,7 @@ import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment
 import { pillDef } from '@/data/pills'
 import { QUALITIES } from '@/data/qualities'
 import { affixDef } from '@/data/affixes'
-import { asArray, asBoundedGNum, asFiniteNumber, asNumberRecord, asRecord, asStringArray } from '@/utils/saveShape'
+import { asArray, asBoundedGNum, asFiniteNumber, asNumberRecord, asRecord, asStringArray, truncateCodePoints } from '@/utils/saveShape'
 
 export const useInventoryStore = defineStore(
   'inventory',
@@ -70,7 +70,7 @@ export const useInventoryStore = defineStore(
           reforgeCount: Math.floor(asFiniteNumber(it.reforgeCount, 0, 0)),
           sealedAffixIds: [...new Set(asStringArray(it.sealedAffixIds))].filter(id => affixes.some(a => a.id === id)),
           transferCount: Math.floor(asFiniteNumber(it.transferCount, 0, 0)),
-          note: typeof it.note === 'string' && it.note ? it.note.slice(0, 4) : undefined,
+          note: typeof it.note === 'string' && it.note ? truncateCodePoints(it.note, 4) : undefined,
           ...(it.invested && typeof it.invested === 'object'
             ? {
                 invested: {

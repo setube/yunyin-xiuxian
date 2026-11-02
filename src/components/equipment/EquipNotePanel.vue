@@ -18,6 +18,7 @@
   import { computed, ref, watch } from 'vue'
   import { useUiStore } from '@/stores/ui'
   import { useInventoryStore } from '@/stores/inventory'
+  import { truncateCodePoints } from '@/utils/saveShape'
 
   /** 草稿随当前件走(与宿主同读 ui.equipDetailUid);写回直落 inventory,空串 = 清除 */
   const ui = useUiStore()
@@ -39,7 +40,7 @@
   function applyNote(): void {
     if (!inst.value) return
     const note = noteDraft.value.trim()
-    inventory.replaceItem({ ...inst.value, note: note.length > 0 ? note.slice(0, 4) : undefined })
+    inventory.replaceItem({ ...inst.value, note: note.length > 0 ? truncateCodePoints(note, 4) : undefined })
   }
 
   function clearNote(): void {
