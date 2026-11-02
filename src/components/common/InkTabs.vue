@@ -21,6 +21,7 @@
         v-for="t in tabs"
         :key="t.id"
         role="tab"
+        :aria-label="t.name ?? t.label"
         :aria-selected="model === t.id"
         :tabindex="model === t.id ? 0 : -1"
         class="relative z-10 flex-1 rounded-md py-1.5 font-kai text-[13px] tracking-[0.2em] transition-colors duration-200"
@@ -42,7 +43,11 @@
   import { computed } from 'vue'
 
   const props = defineProps<{
-    tabs: readonly { id: T; label: string; dot?: boolean }[]
+    /**
+     * `name` 可选:可见 label 只有一两个字时(如坊市的「购」「售」),
+     * 读屏念出来是个孤零零的字;给了 name 就用它,不给仍退回 label。
+     */
+    tabs: readonly { id: T; label: string; name?: string; dot?: boolean }[]
   }>()
 
   const model = defineModel<T>({ required: true })

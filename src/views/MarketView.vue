@@ -59,12 +59,16 @@
   }
 
   // 悬赏签圆点:与 BountyBoardSection 的 ready 同源
-  const tabs = computed<readonly { id: 'buy' | 'sell' | 'bounty'; label: string; dot?: boolean }[]>(() => {
+  /**
+   * 可见 label 守「按钮主词 2~6 字」里的短轴(购/售与悬赏各占一格,写全会把签挤开);
+   * `name` 只供读屏 —— 单字签念出来没有主语,听不出是买东西还是卖东西。
+   */
+  const tabs = computed<readonly { id: 'buy' | 'sell' | 'bounty'; label: string; name: string; dot?: boolean }[]>(() => {
     const ready = bountyRows.value.some(b => !b.claimed && b.ready)
     return [
-      { id: 'buy', label: '购' },
-      { id: 'sell', label: '售' },
-      { id: 'bounty', label: '悬赏', dot: ready }
+      { id: 'buy', label: '购', name: '买货' },
+      { id: 'sell', label: '售', name: '卖出' },
+      { id: 'bounty', label: '悬赏', name: '悬赏', dot: ready }
     ]
   })
 
