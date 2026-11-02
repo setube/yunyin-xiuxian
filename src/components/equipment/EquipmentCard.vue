@@ -36,8 +36,10 @@
 
     <!-- 满级:与品阶光环分开的一套形状(顶边横杠),见 ui/masteryMark -->
     <span v-if="mastery" class="mastery-bar" :title="mastery.label" />
+    <!-- role="img":满级时那句「强化已至上限 +10」须读得出;裸 span 属 generic,不接可访问名 -->
     <span
       v-if="props.item.level > 0"
+      role="img"
       class="absolute bottom-0.5 right-1 text-[9px] leading-none text-gold-ink tabular"
       :aria-label="mastery ? `${mastery.label} +${props.item.level}` : undefined"
     >
