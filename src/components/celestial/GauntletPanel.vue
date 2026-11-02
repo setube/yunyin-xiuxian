@@ -9,7 +9,7 @@
         :aria-pressed="i === current"
         :class="
           i === current
-            ? 'bg-cinnabar/85 seal-face'
+            ? 'bg-cinnabar seal-face'
             : fight.win
               ? 'border border-ink/20 text-ink-faint'
               : 'border border-cinnabar/40 text-cinnabar'

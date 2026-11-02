@@ -331,6 +331,80 @@ describe('调色板 · 印面', () => {
   })
 })
 
+/**
+ * 印面(.seal-face)两条硬约束 —— 都是实测出来的,不是风格偏好。
+ *
+ * 一 **不许配 text-paper**:它依纸色路由,日主题的 paper 就是奶油,看着对;
+ *   夜主题把 paper 翻成近黑(33 31 28),印底却仍是亮朱/亮金 —— 现出「黑字顶红方」,
+ *   朱印实测 3.83:1,比同一屏 .btn-seal 的奶油字(5.31:1)低一整档。AGENTS.md 明令用 .seal-face。
+ *
+ * 二 **底不许带透明度**:夜主题有 `html[data-theme='dark'] .seal-face` 兜底换深朱,
+ *   半透明只影响日主题 —— 按纸色混淡后,朱 /85 只剩 4.17:1、金 /85 3.93:1、紫 /85 3.95:1。
+ *   这一档最隐蔽:夜主题全绿,只有日主题跌破,而且降幅不到 1 档,肉眼很难指认。
+ */
+describe('调色板 · 印面两条硬约束', () => {
+  const CREAM: Rgb = [246, 241, 229]
+  /** 日主题印面底:实际用到的几个 token,逐个托奶油字 */
+  const SEAL_TOKENS = ['cinnabar', 'gold-ink', 'indigo-ink', 'violet-ink', 'jade']
+
+  it('日主题每个印面底色都托得住奶油字 ≥4.5:1', () => {
+    for (const name of SEAL_TOKENS) {
+      const color = LIGHT.get(name)
+      expect(color, `色板里没有 ${name}`).toBeTruthy()
+      expect(contrast(color!, CREAM), `${name} 印面上的奶油字读不清`).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('夜主题印面统一压成深朱,同样托得住奶油字', () => {
+    const deep = DARK.get('cinnabar-deep')
+    expect(deep, '夜主题缺 cinnabar-deep').toBeTruthy()
+    expect(contrast(deep!, CREAM)).toBeGreaterThanOrEqual(4.5)
+    expect(CSS, '夜主题须把印面压成深朱').toMatch(/html\[data-theme='dark'\] \.seal-face \{[^}]*background: var\(--color-cinnabar-deep\)/)
+  })
+
+  /**
+   * 扫组件与视图,两条分别判:
+   *   一 彩色底 + text-paper → 该用 seal-face。判据不能以「这一行有 seal-face」为前提,
+   *     否则把 seal-face 换回 text-paper 之后那一行根本不进扫描 —— 故障注入实测过,是绿的。
+   *   二 seal-face + 半透明底 → 日主题混纸后跌破 4.5:1。
+   * `bg-ink` 不在此列:墨块上 text-paper 两主题分别 12.99 / 12.71,本来就是对的。
+   */
+  const COLORED_BG = /\bbg-(cinnabar|gold-ink|indigo-ink|violet-ink|jade|azure|amber-ink)(?![-\w])/
+
+  it('彩色印面上不用 text-paper,一律 seal-face', () => {
+    const bad: string[] = []
+    for (const dir of ['src/components', 'src/views']) {
+      for (const file of filesMatching(resolve(ROOT, dir), /text-paper/, /\.vue$/)) {
+        const text = readFileSync(resolve(ROOT, file), 'utf-8')
+        text.split('\n').forEach((line, i) => {
+          if (/^\s*(\*|\/\/|<!--)/.test(line)) return
+          if (!/\btext-paper\b/.test(line)) return
+          if (!COLORED_BG.test(line)) return
+          if (/\bseal-face\b/.test(line)) return
+          bad.push(`${file}:${i + 1} 彩色印面用了 text-paper(夜主题会翻成黑字)`)
+        })
+      }
+    }
+    expect(bad, `这些印面该改用 .seal-face:\n${bad.join('\n')}`).toEqual([])
+  })
+
+  it('印面底色不带透明度', () => {
+    const bad: string[] = []
+    for (const dir of ['src/components', 'src/views']) {
+      for (const file of filesMatching(resolve(ROOT, dir), /seal-face/, /\.vue$/)) {
+        const text = readFileSync(resolve(ROOT, file), 'utf-8')
+        text.split('\n').forEach((line, i) => {
+          if (/^\s*(\*|\/\/|<!--)/.test(line)) return
+          if (!/\bseal-face\b/.test(line)) return
+          const translucent = /bg-[a-z-]+\/(\d+|\[[\d.]+\])/.exec(line)
+          if (translucent) bad.push(`${file}:${i + 1} 印面底色 ${translucent[0]} 带透明度(日主题混纸后跌破 4.5:1)`)
+        })
+      }
+    }
+    expect(bad, `这些印面底色该去掉透明度:\n${bad.join('\n')}`).toEqual([])
+  })
+})
+
 describe('调色板 · 两处手抄关系', () => {
   it('浏览器 chrome 色跟的是纸色(theme.ts 与 index.html 首帧 meta 互为一致)', () => {
     const m = /const THEME_CHROME = \{ light: '(#[0-9A-Fa-f]{6})', dark: '(#[0-9A-Fa-f]{6})' \}/.exec(THEME_TS)

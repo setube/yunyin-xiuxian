@@ -56,7 +56,7 @@
           class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98"
           @click="idleOpen = true"
         >
-          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-violet-ink/85 font-kai text-[19px] text-paper">意</span>
+          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-violet-ink font-kai text-[19px] seal-face">意</span>
           <span class="min-w-0 flex-1">
             <span class="block font-kai text-[14px] tracking-widest text-ink">散置形意</span>
             <span class="block truncate text-[10px] leading-relaxed text-ink-faint">
@@ -70,7 +70,7 @@
           class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98"
           @click="forgeOpen = true"
         >
-          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/85 font-kai text-[19px] text-paper">炼</span>
+          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar font-kai text-[19px] seal-face">炼</span>
           <span class="min-w-0 flex-1">
             <span class="block font-kai text-[14px] tracking-widest text-ink">凝炼台</span>
             <span class="block truncate text-[10px] leading-relaxed text-ink-faint">

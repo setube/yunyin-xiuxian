@@ -27,7 +27,7 @@
           <SectionTitle title="道途" hint="一世一择" />
           <div v-if="currentDao" class="card-ink mt-2 px-4 py-3">
             <p class="flex items-center gap-3">
-              <span class="grid h-10 w-10 place-items-center rounded-md bg-cinnabar/90 font-kai text-[20px] seal-face">
+              <span class="grid h-10 w-10 place-items-center rounded-md bg-cinnabar font-kai text-[20px] seal-face">
                 {{ currentDao.seal }}
               </span>
               <span class="font-kai text-[16px] tracking-widest text-ink">{{ currentDao.name }}</span>
@@ -48,7 +48,7 @@
           <div v-else class="mt-2 grid grid-cols-2 gap-2.5">
             <button v-for="dao in DAO_PATHS" :key="dao.id" class="card-ink px-3 py-3 text-left active:scale-98" @click="pickDao(dao.id)">
               <p class="flex items-center gap-2">
-                <span class="grid h-8 w-8 place-items-center rounded-md bg-cinnabar/85 font-kai text-[16px] seal-face">
+                <span class="grid h-8 w-8 place-items-center rounded-md bg-cinnabar font-kai text-[16px] seal-face">
                   {{ dao.seal }}
                 </span>
                 <span class="font-kai text-[14px] tracking-widest text-ink">{{ dao.name }}</span>
@@ -65,7 +65,7 @@
             class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98"
             @click="furnaceOpen = true"
           >
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/85 font-kai text-[19px] seal-face">炉</span>
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar font-kai text-[19px] seal-face">炉</span>
             <span class="min-w-0 flex-1">
               <span class="block font-kai text-[14px] tracking-widest text-ink">天道熔炉</span>
             </span>
@@ -73,7 +73,7 @@
           </button>
 
           <button class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98" @click="goSouls()">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-gold-ink/85 font-kai text-[19px] seal-face">魂</span>
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-gold-ink font-kai text-[19px] seal-face">魂</span>
             <span class="min-w-0 flex-1">
               <span class="block font-kai text-[14px] tracking-widest text-ink">器 魂</span>
               <span class="block truncate text-[10px] leading-relaxed text-ink-faint">

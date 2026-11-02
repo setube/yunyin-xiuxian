@@ -66,7 +66,7 @@
     <div class="mt-2 space-y-2.5">
       <div v-for="trial in TRIALS" :key="trial.id" class="card-ink px-4 py-3">
         <p class="flex items-center gap-2">
-          <span class="grid h-8 w-8 place-items-center rounded-md bg-gold-ink/85 font-kai text-[15px] seal-face">
+          <span class="grid h-8 w-8 place-items-center rounded-md bg-gold-ink font-kai text-[15px] seal-face">
             {{ trial.seal }}
           </span>
           <span class="font-kai text-[15px] tracking-widest text-ink">{{ trial.name }}</span>

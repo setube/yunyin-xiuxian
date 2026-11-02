@@ -9,7 +9,7 @@
         版本与更新
         <span
           v-if="settings.hasUnseenRelease"
-          class="rounded bg-cinnabar px-1 py-px text-[10px] leading-none text-paper"
+          class="rounded bg-cinnabar px-1 py-px text-[10px] leading-none seal-face"
           aria-label="有新版本"
         >新</span>
       </span>

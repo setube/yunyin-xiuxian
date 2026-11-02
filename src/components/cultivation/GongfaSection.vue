@@ -74,10 +74,11 @@
         >
           <span
             class="grid h-5 w-5 place-items-center rounded font-kai text-[11px]"
-            :class="gongfaCat === g.type ? 'bg-paper/15 text-paper' : gongfaCatSeal(g.type)"
+            :class="gongfaCat === g.type ? 'seal-face' : gongfaCatSeal(g.type)"
           >{{ g.seal }}</span>
           <span>{{ GONGFA_TYPE_NAMES[g.type] }}</span>
-          <span class="text-[10px]" :class="gongfaCat === g.type ? 'text-paper/60' : 'text-ink-faint'">{{ g.items.length }} 部</span>
+          <!-- 半透明字在两主题都跌破 AA(纸/15 内格 4.17:1、奶油 60% 2.95:1);层级由字号承担 -->
+          <span class="text-[10px]" :class="gongfaCat === g.type ? 'seal-face' : 'text-ink-faint'">{{ g.items.length }} 部</span>
         </button>
       </div>
 
@@ -196,13 +197,14 @@
         : 'bg-jade/15 text-jade'
   }
 
-  /** 激活态配色:沿用该门类印章色 */
+  /**
+   * 激活态配色:印面文字一律走 .seal-face,不用 text-paper。
+   * text-paper 依纸色路由,而夜主题把 paper 翻成近黑(33 31 28),印底却是亮朱/亮紫/亮绿:
+   * 实测朱印 3.83:1、内层 bg-paper/15 再降到 3.13:1,同一屏的 .btn-seal 是奶油字,两套脸。
+   * .seal-face 把夜主题整面压成深朱并固定奶油字,与 .btn-seal / .world-seal 同源(AGENTS.md 明文)。
+   */
   function gongfaCatActive(type: GongfaType): string {
-    return type === 'secret'
-      ? 'bg-violet-ink text-paper'
-      : type === 'main'
-        ? 'bg-cinnabar text-paper'
-        : 'bg-jade text-paper'
+    return type === 'secret' ? 'bg-violet-ink seal-face' : type === 'main' ? 'bg-cinnabar seal-face' : 'bg-jade seal-face'
   }
 
   /** WAI-ARIA tabs 键盘导航:左右键在门类间回绕,Home/End 直达首尾(与 InkTabs 同约定) */
