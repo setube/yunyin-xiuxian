@@ -31,6 +31,36 @@ function vueFiles(): string[] {
 }
 
 /**
+ * 列出某个标签的全部开标签文本。
+ *
+ * 不能用 `/<button\b[^>]*>/` —— 属性值里常有 `>`(`v-if="rounds > 5"`、`:disabled="x > 0"`)。
+ * 那样会在引号中间截断,后面的 `:class` / `@click` / `aria-*` 全部落空,
+ * 判据于是静默放过。实测全仓 91 处开标签的引号里含 `>`。
+ * 这里按引号配对往后走,遇到不在引号里的 `>` 才收尾。
+ */
+function openTags(text: string, tagName: string): { tag: string; index: number }[] {
+  const out: { tag: string; index: number }[] = []
+  const head = new RegExp(`<${tagName}\\b`, 'g')
+  for (const m of text.matchAll(head)) {
+    let i = m.index! + m[0].length
+    let quote: string | null = null
+    while (i < text.length) {
+      const ch = text[i]!
+      if (quote) {
+        if (ch === quote) quote = null
+      } else if (ch === '"' || ch === "'") {
+        quote = ch
+      } else if (ch === '>') {
+        out.push({ tag: text.slice(m.index!, i + 1), index: m.index! })
+        break
+      }
+      i += 1
+    }
+  }
+  return out
+}
+
+/**
  * 找出「互斥选择钮」:样式按 `X === 项` 切换、点击又改到 X,却没带 aria 选中态。
  *
  * 判据刻意保守 —— 只认「直接给变量赋值」这一种写法。
@@ -43,8 +73,7 @@ function missingAria(): string[] {
   const out: string[] = []
   for (const file of vueFiles()) {
     const text = readFileSync(file, 'utf-8')
-    for (const m of text.matchAll(/<button\b[^>]*>/gs)) {
-      const tag = m[0]!
+    for (const { tag, index } of openTags(text, 'button')) {
       const cls = /:class="([^"]*)"/s.exec(tag)
       const click = /@click="([^"]*)"/s.exec(tag)
       if (!cls || !click) continue
@@ -54,7 +83,7 @@ function missingAria(): string[] {
       if (!new RegExp(`\\b${varName}\\s*=[^=]`).test(click[1]!)) continue
       if (/aria-(pressed|selected|checked)/.test(tag)) continue
       if (/\brole=/.test(tag)) continue
-      const line = text.slice(0, m.index).split('\n').length
+      const line = text.slice(0, index).split('\n').length
       out.push(`${file}:${line}(${varName})`)
     }
   }
@@ -106,15 +135,14 @@ describe('展开钮 · 状态要对读屏可见', () => {
     const out: string[] = []
     for (const file of vueFiles()) {
       const text = readFileSync(file, 'utf-8')
-      for (const m of text.matchAll(/<button\b[^>]*>/gs)) {
-        const tag = m[0]!
+      for (const { tag, index } of openTags(text, 'button')) {
         const click = /@click="([^"]*)"/s.exec(tag)
         if (!click) continue
         const src = click[1]!
         const toggle = /(\w+)\s*=\s*!\1/.exec(src) ?? /(\w+)\s*=\s*\1\s*===/.exec(src)
         if (!toggle) continue
         if (/aria-(expanded|pressed)/.test(tag)) continue
-        const line = text.slice(0, m.index).split('\n').length
+        const line = text.slice(0, index).split('\n').length
         out.push(`${file}:${line}(${toggle[1]})`)
       }
     }
