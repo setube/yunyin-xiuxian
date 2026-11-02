@@ -92,7 +92,7 @@ bun run test -- src/ui/kaiFontCoverage.spec.ts
 > 楷体(霞鹜文楷 GB 屏幕阅读版,随包分发)按用法频次切成二十来片 woff2,每片一段
 > `unicode-range` 按需下载 —— 首屏只取最热的几片(~30KB 起步,而不是整份 1.8MB)。
 > 重新切分:**`uv run scripts/fonts/build-kai-font.py --source scripts/fonts/lxgw-wenkai-gb-screen-subset.woff2`**
-> (离线,从已入库的全量字库再切;能联网时去掉 `--source` 会自动下载母体)。母体 24.4MB 不入库,
+> (离线,从已入库的全量字库再切;能联网时去掉 `--source` 会自动下载母体)。母体 24.8MB 不入库,
 > 协议全文在 `public/fonts/OFL.txt`(再分发须保留)。
 
 ### 多端构建

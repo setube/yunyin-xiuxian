@@ -83,8 +83,8 @@ META = ROOT / "scripts/fonts/kai-subset.meta.json"
 CHARS = ROOT / "scripts/fonts/kai-subset.chars.txt"
 CACHE = pathlib.Path("/tmp/lxgw-wenkai-cache")
 
-# 切片数:多了只堆请求数(每片一次往返),少了第一片太肥
-CHUNKS = 5
+# 切片数不写死:由 --per-band(默认 180 字/片)与语料字数算出,
+# 实测切成 22 片。片数多了只堆请求数(每片一次往返),少了第一片太肥。
 
 # 界面会用到、但未必出现在源码字面量里的字符
 EXTRA = (
