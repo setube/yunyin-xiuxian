@@ -171,14 +171,14 @@ docker run -d -p 8080:80 yunyin-xiuxian
 
 ```text
 src/
-├── data/                 # 内容层：纯静态声明式定义（48 个模块）
+├── data/                 # 内容层：纯静态声明式定义（58 个模块）
 │   ├── realms.ts             # 4 界域 · 21 境界
 │   ├── regions.ts            # 44 区域
 │   ├── enemies.ts            # 132 敌人
 │   ├── equipment.ts          # 288 装备模板(一阶一名)
-│   ├── affixes.ts            # 113 词条
-│   ├── gongfa.ts             # 46 功法
-│   ├── gongfaBranches.ts     # 107 悟道分支
+│   ├── affixes.ts            # 119 词条
+│   ├── gongfa.ts             # 63 功法
+│   ├── gongfaBranches.ts     # 141 悟道分支
 │   ├── pills.ts              # 72 丹药
 │   ├── artifacts.ts          # 56 法宝
 │   ├── souls.ts              # 6 类 6 阶器魂
@@ -190,7 +190,7 @@ src/
 │   ├── endgame.ts            # 道途 / 天界 / 试炼
 │   ├── mutators.ts           # 8 变数
 │   └── constants.ts          # 全局平衡参数
-├── core/                 # 逻辑层（124 个模块 + 222 个同目录 spec）
+├── core/                 # 逻辑层（126 个模块 + 243 个同目录 spec）
 │   ├── engine.ts             # 在线心跳驱动（1000ms）
 │   ├── offline.ts            # 离线收益结算
 │   ├── combat.ts             # 回合制战斗预解算
@@ -202,9 +202,9 @@ src/
 │   ├── progress.ts           # 任务成就横向总线
 │   ├── worldGen.ts           # 终局世界生成（三重审计门）
 │   └── *Service.ts           # 各系统服务（另有 *Sim.ts 平衡模拟器）
-├── stores/               # Pinia 状态（14 个，绝大部分自动持久化）
-├── views/                # 17 个页面
-├── components/           # 组件（8 组）
+├── stores/               # Pinia 状态（19 个，绝大部分自动持久化）
+├── views/                # 19 个页面
+├── components/           # 组件（12 组）
 ├── ui/                   # 图标、词条名、图鉴与提示等展示层数据
 ├── utils/                # GNum 大数（m×10^e）/ 格式化 / 随机 / 存档底层
 ├── composables/          # useNow / useWallClock 等
