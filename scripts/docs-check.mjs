@@ -75,6 +75,35 @@ for (const rel of docFiles) {
   }
 }
 
+/*
+ * CHANGELOG 的当前版本段必须分「修复 / 调整与优化 / 新增」三节之一。
+ *
+ * 发版时这三节是现成的;若平时平铺成裸 bullet,发版那一刻就得手工归类,
+ * 而归类依据只有写的人自己记得。实测踩过:连续十几条平铺着追加,
+ * 到要发版时 31 条混在一起,每条讲的是修复还是调整只能逐条重读。
+ */
+{
+  const log = readFileSync(join(ROOT, "CHANGELOG.md"), "utf-8").split("\n");
+  const start = log.findIndex((l) => l.trim() === "## [Unreleased]");
+  if (start < 0) failures.push("CHANGELOG.md 里找不到「## [Unreleased]」段");
+  else {
+    const end = log.findIndex((l, i) => i > start && l.startsWith("## ["));
+    const body = log.slice(start + 1, end < 0 ? undefined : end);
+    const bullets = body.filter((l) => /^- /.test(l));
+    const heads = body.filter((l) => /^### /.test(l));
+    if (bullets.length > 0 && heads.length === 0) {
+      failures.push(
+        `CHANGELOG.md 的 [Unreleased] 段有 ${bullets.length} 条却一个「### 」小节都没有 —— 平铺了,` +
+          `发版时得逐条重读才知道归「修复」还是「调整与优化」`,
+      );
+    }
+    for (const h of heads) {
+      const known = ["### 修复", "### 调整与优化", "### 新增"];
+      if (!known.includes(h.trim())) failures.push(`CHANGELOG.md 的 [Unreleased] 段有未知小节「${h.trim()}」`);
+    }
+  }
+}
+
 // 防空转:文档挪走或正则失灵时判据会空过
 if (commands < 4) failures.push(`只从文档里读出 ${commands} 条命令 —— 路径变了,或者写法改了?`);
 if (paths < 5) failures.push(`只从文档里读出 ${paths} 条路径 —— 写法变了?`);
