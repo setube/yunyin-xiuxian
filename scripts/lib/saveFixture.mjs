@@ -76,9 +76,10 @@ export function lateSlices() {
     inventory: {
       items: [
         { uid: "smoke_w", templateId: "w_zidian", quality: "heaven", tier: 20, level: 0, affixes: [{ id: "bs3", roll: 1 }] },
-        { uid: "smoke_a", templateId: "a_hufu", quality: "heaven", tier: 20, level: 0, affixes: [{ id: "low2", roll: 1 }] },
+        { uid: "smoke_a", templateId: "h_muzan", quality: "heaven", tier: 20, level: 0, affixes: [{ id: "low2", roll: 1 }] },
       ],
-      equipped: { weapon: "smoke_w", armor: "smoke_a" },
+      // 槽位名取 EquipSlot('weapon'|'head'|'body'|…);原先写的 armor 不在表里,那件装备从不会出现在已装备栏
+      equipped: { weapon: "smoke_w", head: "smoke_a" },
       pills: {},
       artifacts: [],
       equippedArtifacts: [],
