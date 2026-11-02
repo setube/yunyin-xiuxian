@@ -76,6 +76,53 @@ for (const rel of docFiles) {
 }
 
 /*
+ * README 的「项目结构」块里复述了一批规模数。它不参与任何构建,
+ * 于是从来没人校 —— 实测 8 处全飘:data 48→58、affixes 113→119、
+ * gongfa 46→63、branches 107→141、core 124+222→126+243、
+ * stores 14→19、views 17→19、components 8→12。
+ *
+ * 只校能用一行数出来的那几项;星宿/宫/卦这类要从嵌套结构里数的,
+ * 判据写出来比数字本身还长,不值当。
+ */
+{
+  const readme = readFileSync(join(ROOT, "README.md"), "utf-8");
+  const dirCount = (dir, ext) =>
+    readdirSync(join(ROOT, "src", dir)).filter((f) => f.endsWith(ext) && !f.endsWith(".spec.ts")).length;
+  /** [README 里的正则, 实际值, 说明] */
+  const checks = [
+    [/├── data\/\s+# 内容层：纯静态声明式定义（(\d+) 个模块）/, dirCount("data", ".ts"), "data 模块"],
+    [
+      /├── core\/\s+# 逻辑层（(\d+) 个模块 \+ (\d+) 个同目录 spec）/,
+      [dirCount("core", ".ts"), readdirSync(join(ROOT, "src/core")).filter((f) => f.endsWith(".spec.ts")).length],
+      "core 模块与 spec",
+    ],
+    [/├── stores\/\s+# Pinia 状态（(\d+) 个/, dirCount("stores", ".ts"), "stores"],
+    [
+      /├── views\/\s+# (\d+) 个页面/,
+      readdirSync(join(ROOT, "src/views")).filter((f) => f.endsWith(".vue")).length,
+      "views",
+    ],
+    [
+      /├── components\/\s+# 组件（(\d+) 组）/,
+      readdirSync(join(ROOT, "src/components"), { withFileTypes: true }).filter((d) => d.isDirectory()).length,
+      "components 组",
+    ],
+  ];
+  for (const [re, actual, label] of checks) {
+    const m = re.exec(readme);
+    if (!m) {
+      failures.push(`README 的项目结构里找不到「${label}」那一行 —— 写法变了?`);
+      continue;
+    }
+    const stated = m.slice(1).map(Number);
+    const want = Array.isArray(actual) ? actual : [actual];
+    if (stated.length !== want.length || stated.some((v, i) => v !== want[i])) {
+      failures.push(`README 项目结构写 ${label} ${stated.join(" + ")},实际 ${want.join(" + ")}`);
+    }
+  }
+}
+
+/*
  * 楷体切片的事实只有一份:build-kai-font.py 写出的 kai-subset.meta.json。
  * README 与脚本注释各自复述了片数与母体大小,容易各说各话。
  * 实测踩过:README 写母体 24.4MB、脚本注释写 24.8MB;脚本里还留着一个
