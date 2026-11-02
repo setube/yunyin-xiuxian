@@ -14,6 +14,8 @@ import { buildIdentity } from '@/core/identityService'
 import { mentorHint } from '@/core/fortuneChain'
 import { echoEligible } from '@/core/fortuneEcho'
 import { battleDataRows } from '@/core/battleAnalysis'
+import { useEndgameStore } from '@/stores/endgame'
+import { todayLocalNum } from '@/utils/time'
 
 describe('sanitizeAllStores 逐仓自愈', () => {
   beforeEach(() => {
@@ -213,6 +215,44 @@ describe('sanitizeAllStores 修「按 id 认对象」的坏账', () => {
   })
 
   /** 坏档写成 null 时,identityService 的 Object.entries、师承推荐与遗产回声三处一起抛错 */
+  /**
+   * 日记号不许落在今天之后。
+   *
+   * 三道每日闸门写的都是等号比较(`lastCaveEventDay === today`、`dailyDoneDay === daily.day`、
+   * `wudaoExchange.gameDay === day`)。等号遇到未来的值**两个方向各错一边**:
+   *   lastCaveEventDay 未来 → 等号永不成立 → 每日巡游永久停摆(实测一年后的日期一路通过)
+   *   dailyDoneDay 未来     → 等号永不成立 → 「今日已挑战」后台为假,可重复领赏
+   * 两种都不会报错,只表现为「某项每日玩法突然没有了 / 突然能刷了」。
+   */
+  it('日记号落在未来时归零,每日闸门不会永久停摆或永久可刷', () => {
+    const player = usePlayerStore()
+    player.initCharacter('测试', { roots: [] } as never)
+    const today = todayLocalNum()
+    const future = today + 10000
+
+    player.lastCaveEventDay = future
+    player.wudaoExchange = { gameDay: 999999, count: 1 }
+    player.sanitize()
+    expect(player.lastCaveEventDay, '未来的巡游日会让每日巡游永久停摆').toBe(0)
+    expect(player.wudaoExchange?.gameDay, '未来的兑换日会让每日兑换永久停摆').toBe(0)
+
+    // 健康值不该被动
+    player.lastCaveEventDay = today
+    player.sanitize()
+    expect(player.lastCaveEventDay, '今天的巡游日应原样保留').toBe(today)
+  })
+
+  it('天道每日的日记号落在未来时清空,不会变成可重复挑战', () => {
+    const endgame = useEndgameStore()
+    endgame.dailyDoneDay = todayLocalNum() + 10000
+    endgame.sanitize()
+    expect(endgame.dailyDoneDay, '未来的天道日会让「今日已挑战」恒假').toBeNull()
+    // 健康的今天不该被清
+    endgame.dailyDoneDay = todayLocalNum()
+    endgame.sanitize()
+    expect(endgame.dailyDoneDay, '今天的挑战日应原样保留').toBe(todayLocalNum())
+  })
+
   it('机缘选择记忆坏掉时回落空表:身份/师承推荐/回声都不再抛错', () => {
     const p = usePlayerStore()
     useCultivationStore()

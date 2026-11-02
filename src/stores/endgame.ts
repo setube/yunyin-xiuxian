@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { CelestialWorldDef, DaoMark, DaoPathId, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
+import { localDayNum } from '@/utils/time'
 import { mergeMods } from '@/core/statsCalc'
 import {
   EXPEDITION_GUARDIAN_LAYER,
@@ -357,9 +358,18 @@ export const useEndgameStore = defineStore(
       if (worldRun.value?.worldId === 'void' && !voidWorld.value) {
         worldRun.value = null
       }
+      /*
+       * 天道日记号不许落在今天之后。
+       *
+       * 闸门写的是 `dailyDoneDay === daily.day`,闸门值小时它恒真(选不了),大时恒假(可重复挑战)。
+       * 坏档(时钟调快过)正好给的是后者 —— 实测一年后的日期能一路通过 sanitize。
+       * 超出今天的归 null,即「今日未挑战」。
+       */
       dailyDoneDay.value =
         typeof dailyDoneDay.value === 'number' && Number.isFinite(dailyDoneDay.value) && dailyDoneDay.value >= 0
-          ? Math.floor(dailyDoneDay.value)
+          ? Math.floor(dailyDoneDay.value) > localDayNum(Date.now())
+            ? null
+            : Math.floor(dailyDoneDay.value)
           : null
       // 修行节点只认 MILESTONE_DEFS 里的 id:野 id 会把「修行节点 N/总数」顶破
       milestones.value = asArray<{ id: string; life: number; at: number }>(

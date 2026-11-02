@@ -24,6 +24,7 @@ import { sanitizeLinggen } from '@/core/linggenGen'
 import { randomDaoName } from '@/data/names'
 import { rng } from '@/utils/random'
 import { baseCultPerSec, baseQiRegen, expRequirement, gameDay, qiCap } from '@/core/formulas'
+import { todayLocalNum } from '@/utils/time'
 import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
 import { divinationActiveAt, readingFromState, readingMods } from '@/core/divination'
@@ -735,8 +736,10 @@ export const usePlayerStore = defineStore(
       if (!we || !Number.isFinite(we.gameDay) || !Number.isFinite(we.count)) {
         wudaoExchange.value = { gameDay: 0, count: 0 }
       } else {
+        // 同理:gameDay 落在今天之后会让「今日已兑」的等号恒不成立,每日兑换停摆
+        const day = Math.max(0, Math.floor(we.gameDay))
         wudaoExchange.value = {
-          gameDay: Math.max(0, Math.floor(we.gameDay)),
+          gameDay: day > gameDay(useGameStore().totalPlaySec) ? 0 : day,
           count: Math.min(WUDAO_EXCHANGE_PER_DAY, Math.max(0, Math.floor(we.count)))
         }
       }
@@ -871,7 +874,13 @@ export const usePlayerStore = defineStore(
       regionStats.value = fixedRegionStats
       // 巡游日期为 NaN 时「今日已抽」恒假,每 30 秒重掷一次
       winStreak.value = Math.floor(asFiniteNumber(winStreak.value, 0, 0))
+      /*
+       * 日记号不许落在今天之后:闸门写的是 `lastCaveEventDay === today`,
+       * 时钟调快过留下的未来日会让等号永不成立,每日巡游就此停摆(实测一年后的日期能一路通过)。
+       * 归零等于「今日未做」,与坏档该有的行为一致。
+       */
       lastCaveEventDay.value = Math.floor(asFiniteNumber(lastCaveEventDay.value, 0, 0))
+      if (lastCaveEventDay.value > todayLocalNum()) lastCaveEventDay.value = 0
       regionWins.value = Object.fromEntries(
         Object.entries(asNumberRecord(regionWins.value, 0)).map(([id, n]) => [id, Math.floor(n)])
       )
