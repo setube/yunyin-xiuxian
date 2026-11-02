@@ -7,6 +7,28 @@
     <meta name="description" content="一款文字版修仙放置游戏。一念修行 · 云深不知处。" />
     <!-- theme-color 由 src/core/theme.ts 在启动与主题切换时同步(亮/暗各一色) -->
     <meta name="theme-color" content="#F3EFE4" />
+    <!--
+      首帧主题:必须在样式与模块脚本之前跑完,否则暗色用户先看到一屏亮底
+      (实测约 200ms,慢设备更久)。存档是加密的,内联脚本解不开,
+      故读 __theme.ts 写的明文小键 yunyin.__theme;没有就跟随系统。
+      颜色与 src/core/theme.ts 的 THEME_CHROME 互为手抄,改一处须改另一处。
+    -->
+    <script>
+      ;(function () {
+        try {
+          var hint = localStorage.getItem('yunyin.__theme')
+          var dark =
+            hint === 'dark' ||
+            (hint !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          var root = document.documentElement
+          root.dataset.theme = dark ? 'dark' : 'light'
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.content = dark ? '#211F1C' : '#F3EFE4'
+        } catch (e) {
+          /* 存储被禁:保持 index.html 里的亮色兜底 */
+        }
+      })()
+    </script>
     <meta name="keywords" content="云隐修仙录,云隐,云隐修仙,修仙,修仙游戏,文字游戏,文字修仙,放置修仙,放置游戏" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

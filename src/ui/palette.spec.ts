@@ -445,6 +445,31 @@ describe('调色板 · 两处手抄关系', () => {
     expect(meta![1]!.toUpperCase()).toBe(hexOf(LIGHT.get('paper')!))
   })
 
+  /**
+   * 首帧主题必须在模块脚本之前定下来。
+   *
+   * 修复前:`initTheme` 在 App.vue 挂载时才跑,而那时 JS bundle 已下载执行完。
+   * 实测暗色用户前 198ms 里 `data-theme` 还没挂上、状态栏是亮色的 `#F3EFE4` ——
+   * 一屏白底 + 一条亮状态栏,慢设备上更明显。
+   *
+   * 存档是加密的,内联脚本解不开,故 `__theme` 另存一个明文小键(只写 light/dark)。
+   *
+   * 故障注入:删掉 index.html 里的这段内联脚本,本条红。
+   */
+  it('暗色用户的首帧不闪白底:内联脚本在模块脚本之前挂上 data-theme', () => {
+    const scriptAt = INDEX_HTML.indexOf('yunyin.__theme')
+    const moduleAt = INDEX_HTML.indexOf('type="module"')
+    expect(scriptAt, 'index.html 里没有读主题标记的内联脚本 —— 暗色用户会先看到一屏亮底').toBeGreaterThan(0)
+    expect(moduleAt, 'index.html 里找不到模块脚本入口').toBeGreaterThan(0)
+    expect(scriptAt, '内联脚本排在了模块脚本之后,首帧就来不及了').toBeLessThan(moduleAt)
+    // 两个颜色都要在,且与 THEME_CHROME 同源
+    const m = /const THEME_CHROME = \{ light: '(#[0-9A-Fa-f]{6})', dark: '(#[0-9A-Fa-f]{6})' \}/.exec(THEME_TS)!
+    expect(INDEX_HTML, '内联脚本里的亮色与 theme.ts 不同步').toContain(m[1]!)
+    expect(INDEX_HTML, '内联脚本里的暗色与 theme.ts 不同步').toContain(m[2]!)
+    // 明文标记的键名须与 theme.ts 一致
+    expect(THEME_TS, 'theme.ts 里的键名与 index.html 对不上').toContain('yunyin.__theme')
+  })
+
   it('public/privacy.html 手抄的那几个颜色与色板一致,且死 token(古代 qinghua)不回魂', () => {
     const body = /:root \{([\s\S]*?)\n {6}\}/.exec(PRIVACY)?.[1]
     expect(body, 'privacy.html 的色板块变了形状,判据要跟着改').toBeTruthy()
