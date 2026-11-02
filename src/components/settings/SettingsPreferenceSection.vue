@@ -75,7 +75,7 @@
         <button
           v-for="s in BATTLE_SPEEDS"
           :key="s"
-          :aria-label="`战报速度 ${s} 倍`"
+          :aria-label="`战报速度 ×${s}`"
           :aria-pressed="settings.battleSpeed === s"
           class="chip-ink !py-1.5"
           :class="settings.battleSpeed === s ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
