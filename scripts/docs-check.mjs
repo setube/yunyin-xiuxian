@@ -76,6 +76,50 @@ for (const rel of docFiles) {
 }
 
 /*
+ * AGENTS.md 里的 spec 细分数必须与仓库一致。
+ *
+ * README 的「全量 N 个 spec」已有校验,但 AGENTS.md 另写了一份分目录明细,
+ * 而它不在 docFiles 里(根目录文件),于是从没被校过。实测已飘:
+ * 写 379/核心 239,实际 392/核心 243;constants 写 556 行,实际 432。
+ *
+ * 分目录明细只在这里校 —— README 不写细分,没必要两处都记。
+ */
+{
+  const md = readFileSync(join(ROOT, "AGENTS.md"), "utf-8");
+  const buckets = ["core", "ui", "stores", "utils", "data", "composables", "router"];
+  const n = (dir) =>
+    readdirSync(join(ROOT, "src", dir), { recursive: true, encoding: "utf-8" }).filter(
+      (f) => typeof f === "string" && f.endsWith(".spec.ts"),
+    ).length;
+  const claim = /共 (\d+) 个 spec：core (\d+)、ui (\d+)、stores (\d+)、utils (\d+)、data (\d+)、composables (\d+)、router (\d+)/.exec(md);
+  if (!claim) {
+    failures.push("AGENTS.md 里找不到「共 N 个 spec：core A、ui B…」这份分目录明细 —— 写法变了?");
+  } else {
+    const stated = [Number(claim[1]), ...claim.slice(2).map(Number)];
+    const actual = [totalSpecs, ...buckets.map(n)];
+    if (stated[0] !== actual[0]) failures.push(`AGENTS.md 写共 ${stated[0]} 个 spec,实际 ${actual[0]}`);
+    buckets.forEach((b, i) => {
+      if (stated[i + 1] !== actual[i + 1]) failures.push(`AGENTS.md 写 ${b} ${stated[i + 1]} 个 spec,实际 ${actual[i + 1]}`);
+    });
+  }
+  // Key Directories 表里也有一个 core 的 spec 数
+  const row = /\| `src\/core\/` \| 游戏逻辑 \+ (\d+) 个同目录 `\*\.spec\.ts` \|/.exec(md);
+  if (!row) failures.push("AGENTS.md 的 Key Directories 表里找不到 core 的 spec 数 —— 行被改了?");
+  else if (Number(row[1]) !== n("core")) failures.push(`AGENTS.md 的 Key Directories 写 core ${row[1]} 个,实际 ${n("core")}`);
+
+  // data 模块数与 constants 行数
+  const mods = readdirSync(join(ROOT, "src/data")).filter((f) => f.endsWith(".ts") && !f.endsWith(".spec.ts")).length;
+  const modClaim = /(\d+) 个模块：realms/.exec(md);
+  if (!modClaim) failures.push("AGENTS.md 里找不到「N 个模块:realms…」—— 写法变了?");
+  else if (Number(modClaim[1]) !== mods) failures.push(`AGENTS.md 写 ${modClaim[1]} 个 data 模块,实际 ${mods}`);
+
+  const lines = readFileSync(join(ROOT, "src/data/constants.ts"), "utf-8").split("\n").length - 1;
+  const lineClaim = /constants（(\d+) 行，含/.exec(md);
+  if (!lineClaim) failures.push("AGENTS.md 里找不到「constants(N 行,含…」—— 写法变了?");
+  else if (Number(lineClaim[1]) !== lines) failures.push(`AGENTS.md 写 constants ${lineClaim[1]} 行,实际 ${lines}`);
+}
+
+/*
  * CHANGELOG 的当前版本段必须分「修复 / 调整与优化 / 新增」三节之一。
  *
  * 发版时这三节是现成的;若平时平铺成裸 bullet,发版那一刻就得手工归类,
