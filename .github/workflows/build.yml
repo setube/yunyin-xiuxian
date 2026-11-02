@@ -1,4 +1,4 @@
-name: 构建多平台程序 (Electron & Android)
+name: 构建发行包 (Android APK)
 
 # 只由 tag 触发:挂 main push 会让每个提交都留下一个 release
 # main 的闸门(类型检查 + ESLint + 单测)在 deploy.yml
@@ -29,65 +29,6 @@ jobs:
             echo "::error::tag($TAG)与 package.json 的版本($PKG)不一致 —— 先把 package.json 的版本提上去再打 tag"
             exit 1
           fi
-
-  build-electron:
-    name: 构建 Electron (${{ matrix.os }})
-    needs: [guard]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            platform: win
-    steps:
-      - uses: actions/checkout@v7
-      - name: 安装 Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: 静态检查 + 单元测试
-        run: |
-          bun install --frozen-lockfile
-          bun run check
-          bun run test:report
-
-      - name: 缓存 Electron Builder
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/AppData/Local/electron/Cache
-            ~/AppData/Local/electron-builder/Cache
-          key: electron-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            electron-${{ runner.os }}-
-
-      - name: 构建 Electron
-        run: bun run build:electron --${{ matrix.platform }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 增量包 yunyin-<ver>-win-update.zip:只含 resources/app,解压到安装目录(与 云隐修仙录.exe 同级)覆盖;
-      #   前提是 Electron 运行时版本没变,升 electron 依赖的那一版发布说明须提醒下完整包
-      # Web 包 yunyin-<ver>-web.zip:dist/ 的内容,解压即站点根
-      # tar 是 Windows 自带的 bsdtar(System32\tar.exe),-a 按 .zip 后缀选格式
-      - name: 打增量包与 Web 包
-        shell: bash
-        run: |
-          VER=$(bun -e "console.log(require('./package.json').version)")
-          TAR=/c/Windows/System32/tar.exe
-          "$TAR" -a -cf "pkg/yunyin-$VER-win-update.zip" -C pkg/win-unpacked resources/app
-          "$TAR" -a -cf "pkg/yunyin-$VER-web.zip" -C dist $(cd dist && ls -A)
-          ls -la pkg/*.zip
-
-      # 完整包 + 增量包 + Web 包
-      - name: 上传 Electron 安装包
-        uses: actions/upload-artifact@v7
-        with:
-          name: electron-${{ matrix.platform }}
-          path: |
-            pkg/*.zip
 
   build-android:
     name: 构建 Android APK
@@ -139,7 +80,7 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
 
   release:
-    needs: [guard, build-electron, build-android]
+    needs: [guard, build-android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -164,8 +105,6 @@ jobs:
       - name: 整理并重命名产物
         run: |
           mkdir -p ./final-release
-
-          find ./raw-assets/electron-* -type f -name "*.zip" -exec cp {} ./final-release/ \;
 
           find ./raw-assets/android-apk -type f -name "*.apk" -exec cp {} ./final-release/ \; || true
 

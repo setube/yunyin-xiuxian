@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-**云隐修仙录** — 一款 Vue 3 驱动的文字修仙放置（idle）游戏，单机离线成长玩法。版本 1.43.0，`type: module`。支持 Web/PWA、Electron、Android（Capacitor）多端。许可证 CC BY-NC 4.0（禁止商用）；打包的楷体字型为 LXGW WenKai，SIL OFL 1.1（许可证文本在 `public/fonts/OFL.txt`，再分发时须保留）。
+**云隐修仙录** — 一款 Vue 3 驱动的文字修仙放置（idle）游戏，单机离线成长玩法。版本 1.43.0，`type: module`。支持 Web/PWA 与 Android（Capacitor）两端；桌面直接用浏览器开网页，不另发行客户端。许可证 CC BY-NC 4.0（禁止商用）；打包的楷体字型为 LXGW WenKai，SIL OFL 1.1（许可证文本在 `public/fonts/OFL.txt`，再分发时须保留）。
 
 ## Architecture & Data Flow
 
@@ -40,7 +40,7 @@ src/ui/    展示层字符串/图标注册（非逻辑）
 | `src/router/` | hash 路由 + 首启流程守卫 |
 | `src/composables/` | useNow / useWallClock 等 |
 | `scripts/` | test-report.mjs、ui-smoke.mjs、focus-check.mjs、aria-check.mjs、multitab-check.mjs、layout-check.mjs、offline-check.mjs、fonts/build-kai-font.py |
-| `.github/workflows/` | CI（PR 检查、发布 Pages/PWA/Docker/Electron/APK） |
+| `.github/workflows/` | CI（PR 检查、发布 Pages/PWA/Docker/APK） |
 
 tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` + `noUnusedLocals/Parameters`；`vue-tsc -b` 走 project references 做类型检查。
 
@@ -58,7 +58,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run smoke` / `smoke:late` — 构建 + playwright ui-smoke
 - `bun run layout-check` — 构建 + `node scripts/layout-check.mjs`（**仅本地**，已从 CI 移除；Windows 用 `node` 而非 bun，耗时约 10 分钟）
 - `bun run offline-check` — 构建 + SW 离线自检
-- `bun run build:electron` / `build:android` / `build:apk`
+- `bun run build:android` / `build:apk` — 安卓客户端打包（桌面端不另发行客户端，直接开网页）
 - 楷体打包：`uv run scripts/fonts/build-kai-font.py`
 
 ## Code Conventions & Common Patterns
@@ -173,7 +173,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 
 - 必需运行时：**Bun**（开发与构建）。Windows 上 `layout-check` 等个别脚本需用 `node`。
 - 包管理：`package.json` 锁定，安装用 `bun install`。
-- Node/TS 栈：Vue 3.5、Pinia 3、TS 6.0 strict、Vite 8、Tailwind 3.4、Vitest 5、lucide-vue-next、Tone.js（音频）、CryptoJS（存档 AES）。Electron 39 / Capacitor 8 / PWA。
+- Node/TS 栈：Vue 3.5、Pinia 3、TS 6.0 strict、Vite 8、Tailwind 3.4、Vitest 5、lucide-vue-next、Tone.js（音频）、CryptoJS（存档 AES）。Capacitor 8 / PWA。
 - Browserslist：Chrome≥51 / Android≥7 / iOS≥12 / Safari≥12。
 
 ## Testing & QA
