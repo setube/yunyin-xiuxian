@@ -34,7 +34,7 @@
             <span class="min-w-0 truncate font-kai text-[14px] text-ink">{{ mainDef.name }}</span>
             <span
               v-if="branchName(mainDef.id)"
-              class="min-w-0 shrink truncate rounded bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-gold-ink"
+              class="min-w-0 shrink truncate rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-ink"
             >
               {{ branchName(mainDef.id) }}
             </span>

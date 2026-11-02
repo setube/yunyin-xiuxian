@@ -26,11 +26,12 @@ export interface BountyRow {
   shortText: string | null
 }
 
+/** 角标底色:单字是文字,字色走墨色(彩色字压同色淡底过不了 4.5) */
 const B_TAG_CLS: Record<string, string> = {
-  herb: 'bg-jade/15 text-jade',
+  herb: 'border border-jade/40 bg-jade/15 text-ink',
   ore: 'bg-ink/10 text-ink-soft',
-  pill: 'bg-cinnabar/10 text-cinnabar',
-  equip: 'bg-violet-ink/15 text-violet-ink'
+  pill: 'border border-cinnabar/40 bg-cinnabar/10 text-ink',
+  equip: 'border border-violet-ink/40 bg-violet-ink/15 text-ink'
 }
 
 /**

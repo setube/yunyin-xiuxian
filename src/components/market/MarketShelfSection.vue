@@ -3,7 +3,7 @@
     <SectionTitle title="货架" :hint="`${cards.length} 格`" />
     <p
       v-if="focusHerbState"
-      class="mt-2 rounded-md border border-gold-ink/30 bg-gold-ink/10 px-3 py-2 text-[10px] leading-relaxed text-gold-ink"
+      class="mt-2 rounded-md border border-gold-ink/30 px-3 py-2 text-[10px] leading-relaxed text-gold-ink"
       data-focus-herb-missing
     >
       {{ focusHerbState === 'soldOut' ? '此品灵草已售罄' : '暂无此品灵草' }}
@@ -106,10 +106,14 @@
     herb: { name: '灵草', icon: 'leaf' },
     ore: { name: '玄铁', icon: 'mountain' }
   }
+  /**
+   * 角标底色。单字(丹/材/器)是**文字**,不是图标 —— 彩色字压同色淡底过不了 4.5,
+   * 故字色走墨色,品类区分由色块与描边承担。
+   */
   const TAG_CLS: Record<string, string> = {
-    pill: 'bg-cinnabar/10 text-cinnabar',
-    material: 'bg-jade/15 text-jade',
-    equipment: 'bg-violet-ink/15 text-violet-ink'
+    pill: 'border border-cinnabar/40 bg-cinnabar/10 text-ink',
+    material: 'border border-jade/40 bg-jade/15 text-ink',
+    equipment: 'border border-violet-ink/40 bg-violet-ink/15 text-ink'
   }
 
   const market = useMarketStore()

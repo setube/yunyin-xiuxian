@@ -11,7 +11,7 @@
         </p>
       </div>
       <!-- 遗产回声(叙事,无数值) -->
-      <p v-if="narrative.echo" class="mb-2 rounded-md border border-azure/30 bg-azure/5 px-3 py-2 text-[12px] leading-relaxed text-azure">
+      <p v-if="narrative.echo" class="mb-2 rounded-md border border-azure/30 px-3 py-2 text-[12px] leading-relaxed text-azure">
         {{ narrative.echo.line }}
       </p>
       <!-- 余波文本:完成过的事件再遇时概率出现 -->

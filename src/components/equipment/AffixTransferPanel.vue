@@ -133,7 +133,7 @@
         >
           <span class="flex items-center gap-1.5">
             <span class="whitespace-nowrap font-kai text-[12px]" :style="{ color: AFFIX_RARITY_META[line.rarity].color }">「{{ line.name }}」</span>
-            <span v-if="line.id === flow.plan.moved.id" class="rounded bg-cinnabar/15 px-1 text-[9px] leading-relaxed text-cinnabar">
+            <span v-if="line.id === flow.plan.moved.id" class="rounded border border-cinnabar/40 bg-cinnabar/15 px-1 text-[9px] leading-relaxed text-ink">
               {{ TRANSFER_LABELS.newTag }}
             </span>
             <span v-if="flow.resultSealed.has(line.id)" class="text-jade" role="img" :aria-label="TRANSFER_LABELS.sealed"><GameIcon name="lock" :size="11" /></span>
