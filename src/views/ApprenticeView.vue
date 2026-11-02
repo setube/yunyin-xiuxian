@@ -25,7 +25,7 @@
       <div class="mt-2 space-y-2">
         <div v-for="a in apprenticesList" :key="a.uid" class="card-ink p-3">
           <div class="flex items-center gap-2">
-            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-jade/15 font-kai text-[15px] text-jade">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-jade/40 bg-jade/15 font-kai text-[15px] text-ink">
               {{ a.def.name[0] }}
             </span>
             <div class="min-w-0 grow">

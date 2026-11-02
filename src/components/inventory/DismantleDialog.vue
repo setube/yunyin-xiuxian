@@ -35,7 +35,7 @@
     <p class="text-[11px] leading-relaxed text-ink-faint">新掉落:无缘即化尘 · 满包顶走最弱无缘件</p>
     <div
       class="mt-2.5 rounded-md px-3 py-2 text-[10px] leading-relaxed"
-      :class="settings.smartKeep.enabled ? 'bg-jade/8 text-jade' : 'bg-ink/4 text-ink-faint'"
+      :class="settings.smartKeep.enabled ? 'text-jade' : 'bg-ink/4 text-ink-faint'"
     >
       {{ smartStatusLine }}
     </div>

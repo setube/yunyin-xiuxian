@@ -28,11 +28,11 @@
           </span>
           <span
             v-if="atMax"
-            class="shrink-0 rounded bg-gold-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-gold-ink"
+            class="shrink-0 rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-ink"
           >圆满</span>
           <span
             v-else-if="atGateCap"
-            class="shrink-0 rounded bg-amber-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-amber-ink"
+            class="shrink-0 rounded border border-amber-ink/40 bg-amber-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-ink"
           >辖限</span>
           <span
             v-else-if="locked"

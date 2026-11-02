@@ -6,13 +6,13 @@
     <p class="text-[11px] tabular" :class="backupPrompt ? 'text-amber-ink' : 'text-ink-faint'">
       上次导出备份:{{ lastExportText }}
     </p>
-    <p v-if="saveFailed" class="rounded-md border border-cinnabar/40 bg-cinnabar/8 px-2 py-1.5 text-[11px] leading-relaxed text-cinnabar">
+    <p v-if="saveFailed" class="rounded-md border border-cinnabar/40 px-2 py-1.5 text-[11px] leading-relaxed text-cinnabar">
       存档写入失败
     </p>
     <!-- 坏档分片须常驻一条:启动提示只有 2.4 秒 -->
     <p
       v-if="corruptedNotice.length"
-      class="rounded-md border border-cinnabar/40 bg-cinnabar/8 px-2 py-1.5 text-[11px] leading-relaxed text-cinnabar"
+      class="rounded-md border border-cinnabar/40 px-2 py-1.5 text-[11px] leading-relaxed text-cinnabar"
     >
       存档损坏:{{ corruptedNotice.map(id => STORE_NAMES[id] ?? id).join('、') }} · 原档留在本机
       <button class="mt-1 block text-ink-faint underline" @click="ui.corruptedNotice = []">知道了</button>

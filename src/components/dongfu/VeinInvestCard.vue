@@ -156,10 +156,10 @@
    * 类串须写全字面量,不许拼:Tailwind JIT 只认源码里写全的类。
    */
   const TONES: Record<VeinId, { seal: string; row: string; dot: string; bar: string }> = {
-    gather: { seal: 'bg-jade/10 text-jade', row: 'border-jade/35 bg-jade/5', dot: 'bg-jade', bar: 'bg-jade' },
-    craft: { seal: 'bg-cinnabar/10 text-cinnabar', row: 'border-cinnabar/35 bg-cinnabar/6', dot: 'bg-cinnabar', bar: 'bg-cinnabar' },
-    alchemy: { seal: 'bg-gold-ink/10 text-gold-ink', row: 'border-gold-ink/35 bg-gold-ink/6', dot: 'bg-gold-ink', bar: 'bg-gold-ink' },
-    insight: { seal: 'bg-violet-ink/15 text-violet-ink', row: 'border-violet-ink/40 bg-violet-ink/7', dot: 'bg-violet-ink', bar: 'bg-violet-ink' }
+    gather: { seal: 'border border-jade/40 bg-jade/10 text-ink', row: 'border-jade/35 bg-jade/5', dot: 'bg-jade', bar: 'bg-jade' },
+    craft: { seal: 'border border-cinnabar/40 bg-cinnabar/10 text-ink', row: 'border-cinnabar/35 bg-cinnabar/6', dot: 'bg-cinnabar', bar: 'bg-cinnabar' },
+    alchemy: { seal: 'border border-gold-ink/40 bg-gold-ink/10 text-ink', row: 'border-gold-ink/35 bg-gold-ink/6', dot: 'bg-gold-ink', bar: 'bg-gold-ink' },
+    insight: { seal: 'border border-violet-ink/40 bg-violet-ink/15 text-ink', row: 'border-violet-ink/40 bg-violet-ink/7', dot: 'bg-violet-ink', bar: 'bg-violet-ink' }
   }
 
   const investCost = computed(() => veinPointCost())

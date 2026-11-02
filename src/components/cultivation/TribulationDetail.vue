@@ -59,7 +59,7 @@
   </div>
   <p class="mt-1 flex items-center gap-1.5 text-[11px] text-ink-faint tabular">
     耗灵气 {{ formatNum(qiCost) }}
-    <span v-if="needTribulation" class="rounded bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-violet-ink">
+    <span v-if="needTribulation" class="rounded border border-violet-ink/40 bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-ink">
       大关 · 渡劫
     </span>
   </p>

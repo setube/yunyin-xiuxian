@@ -37,7 +37,7 @@
             v-if="row.upgradeable"
             role="img"
             aria-label="可换"
-            class="absolute right-1 top-1 rounded-sm bg-gold-ink/20 px-1 font-kai text-[8px] leading-[12px] text-gold-ink"
+            class="absolute right-1 top-1 rounded-sm border border-gold-ink/50 bg-gold-ink/20 px-1 font-kai text-[8px] leading-[12px] text-ink"
           >可换</span>
           <span class="text-[9px] text-ink-faint">
             {{ row.name }}
