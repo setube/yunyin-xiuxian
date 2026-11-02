@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { useUiStore } from './ui'
 
 describe('ui store · Toast', () => {
@@ -99,7 +101,8 @@ describe('ui store · Toast', () => {
  */
 describe('ui store · 没有只声明不使用的字段', () => {
   it('每个导出字段都至少有一处消费方', () => {
-    const root = new URL('..', import.meta.url).pathname
+    // URL.pathname 在 Windows 上是 /C:/… 形式且不转义百分号;fileURLToPath 才是可读的本地路径
+    const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
     const files: string[] = []
     const walk = (dir: string): void => {
       for (const name of readdirSync(dir)) {
