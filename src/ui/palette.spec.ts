@@ -65,8 +65,18 @@ function surfacesOf(theme: 'light' | 'dark'): Rgb[] {
 
 /** 正文承载档:浅/夜两套、三张底全 ≥4.5 */
 const STRONG = ['ink', 'ink-soft', 'ink-faint', 'violet-ink', 'azure', 'gold-ink', 'amber-ink', 'jade', 'indigo-ink']
-/** 强调档(标题/大字):≥3 大字 AA;提过 4.5 后挪进 STRONG */
-const WEAK = ['cinnabar']
+
+/**
+ * 强调档(标题/大字):≥3 大字 AA。
+ *
+ * 这一档**已经空了**:cinnabar 曾在这里,但它实际承担的是正文 ——
+ * 暗色主题下量出 41 处 cinnabar 文本 < 18px(9~17px:拒因、待办标记、可点装饰),
+ * 而 cinnabar 在夜主题对纸只有 3.83:1,达不到小字的 4.5。
+ * 挪进 STRONG 之前得先提亮 token,而那会牵动印面(奶油字 5.31 → 跌到 4.5 以下),
+ * 属色板取舍,见 plans 的「品阶色当文字用」一节。故此处留空表,
+ * 断言仍然成立(空集合恒过),但**新加强调档色不得再借这个口子绕过 4.5**。
+ */
+const WEAK: readonly string[] = []
 
 function channel(c: number): number {
   const v = c / 255
@@ -256,6 +266,25 @@ describe('调色板 · 承载文字的色都过线', () => {
       }
     }
     expect(bad, '强调档也承载文字,跌破 3:1 就真的看不见了').toEqual([])
+  })
+
+  /**
+   * 强调档是个口子,不许拿它当「小字也能用」的后门。
+   *
+   * cinnabar 曾在 WEAK 里,于是在夜主题以 3.83:1 承担了 41 处 9~17px 的正文
+   * (拒因、待办标记、可点装饰)。同一套色板里,正文档的 9 个 token 都守着 4.5,
+   * 只有它走了 3:1 的宽线 —— 而玩家看到的差别只有「这行字有点淡」。
+   *
+   * 判据:cinnabar 必须按正文档(4.5)考核。当前**未达标**(夜 3.83),
+   * 所以这里断言的是「它没被偷偷放回强调档」,而不是「它达标了」。
+   * 修法见 plans 第二十四节:提亮 token 会牵动印面,属色板取舍。
+   */
+  it('cinnabar 不再借强调档绕过小字线', () => {
+    expect(WEAK as readonly string[], 'cinnabar 又回强调档了 —— 它承担的是正文字号').not.toContain('cinnabar')
+    expect(
+      worst('cinnabar', 'dark'),
+      '夜主题的 cinnabar 已达标(≥4.5),把它挪进 STRONG 档并更新本节注释'
+    ).toBeLessThan(4.5)
   })
 
   it('纸上的墨只有三档:ink-ghost 已撤档,四处都不得请它回来', () => {
