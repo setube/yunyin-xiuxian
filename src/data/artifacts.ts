@@ -1,5 +1,5 @@
 /**
- * 法宝池 —— 55 件,拥有被动属性与自动触发的主动神通
+ * 法宝池 —— 56 件,拥有被动属性与自动触发的主动神通
  *
  * passive / active.effect 是凡品零重基线(算式第一个因子),品阶与祭炼两条放大由 artifactValue 施加;
  * desc 与 effect 描述的是基线,不是面板。
@@ -277,6 +277,19 @@ export const ARTIFACTS: ArtifactDef[] = [
     4,
     { type: 'sunder', pct: 0.25 },
     'mountain'
+  ),
+  f(
+    'af_jingxin',
+    '静心锁',
+    'fine',
+    17,
+    '锁上一点心火,万念不侵',
+    { damageReduction: 0.02, maxHpPct: 0.04 },
+    '静心',
+    '受慑时以四成概率当场挣脱,那一手照出',
+    1,
+    { type: 'purge', pct: 0.4 },
+    'lock'
   ),
   f(
     'af_taixu',
