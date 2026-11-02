@@ -66,8 +66,9 @@
   const tabs = computed<readonly { id: 'buy' | 'sell' | 'bounty'; label: string; name: string; dot?: boolean }[]>(() => {
     const ready = bountyRows.value.some(b => !b.claimed && b.ready)
     return [
-      { id: 'buy', label: '购', name: '买货' },
-      { id: 'sell', label: '售', name: '卖出' },
+      // 读屏名以可见的那个字开头:语音控制念「点 购」也要能命中(WAI-ARIA:名字含可见文本)
+      { id: 'buy', label: '购', name: '购买' },
+      { id: 'sell', label: '售', name: '出售' },
       { id: 'bounty', label: '悬赏', name: '悬赏', dot: ready }
     ]
   })

@@ -40,12 +40,33 @@ describe('页签 · 读屏名', () => {
     const names = [...view.matchAll(/name: '([^']*)'/g)].map(m => m[1]!)
     expect(names.length, '三个签都该有 name').toBeGreaterThanOrEqual(3)
     for (const n of names) expect(n.length, `读屏名「${n}」太短,起不到解释作用`).toBeGreaterThanOrEqual(2)
+    // 名字须以可见的那个字开头:语音控制念「点 购」也要能命中
+    const market = read('views/MarketView.vue')
+    for (const [label, name] of [['购', '购买'], ['售', '出售']]) {
+      expect(market, `读屏名「${name}」没有包含可见文本「${label}」`).toContain(`label: '${label}', name: '${name}'`)
+    }
   })
 
-  /** 战报速度的可见文案只有 ×2,读屏念「times two」没有主语 */
-  it('战报速度的钮各自带上「战报速度 N 倍」', () => {
+  /**
+   * 战报速度的可见文案只有 ×2,读屏念「times two」没有主语。
+   * 名字里带上可见的 `×2` 本身:语音控制念「点 ×2」也要能命中
+   * (WAI-ARIA:可访问名应包含可见文本)。
+   */
+  it('战报速度的钮各自带上「战报速度 ×N」', () => {
     const pref = read('components/settings/SettingsPreferenceSection.vue')
-    expect(pref, '战报速度钮缺可访问名').toContain(':aria-label="`战报速度 ${s} 倍`"')
+    expect(pref, '战报速度钮缺可访问名').toContain(':aria-label="`战报速度 ×${s}`"')
     expect(pref, '战报速度钮应保留 aria-pressed').toContain(':aria-pressed="settings.battleSpeed === s"')
+  })
+
+  /**
+   * 可访问名须包含可见文本 —— 否则语音控制用户念着屏幕上的字却点不中。
+   * 实例:星象定向的可见文本会随定向状态变成「星象定向 · 仙界 ▾」,
+   * 而名字写死成「星象定向」,两者对不上。
+   */
+  it('星象定向的可访问名跟着可见文案走', () => {
+    const view = read('views/AdventureView.vue')
+    // 连「▾」也算进名字:那是可见文本的一部分,念「点 星象定向 ▾」同样要能命中
+    expect(view, '名字须包含动态后缀与 ▾').toContain(':aria-label="`星象定向${redirectActiveText} ▾`"')
+    expect(view, '不该退回写死的静态名').not.toContain('aria-label="星象定向"')
   })
 })

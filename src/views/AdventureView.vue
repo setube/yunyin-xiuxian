@@ -24,7 +24,13 @@
         <span class="tabular">+{{ mansionLuckPct }}%</span>
       </p>
       <p class="mt-1 flex items-center gap-2 text-[10px]">
-        <button class="chip-ink min-h-[28px] text-azure" aria-label="星象定向" :aria-expanded="mansionRedirectOpen" @click="mansionRedirectOpen = !mansionRedirectOpen">
+        <!-- 名字要随可见文案走:已定向时可见文本是「星象定向 · 仙界 ▾」,写死一个静态名就对不上了 -->
+        <button
+          class="chip-ink min-h-[28px] text-azure"
+          :aria-label="`星象定向${redirectActiveText} ▾`"
+          :aria-expanded="mansionRedirectOpen"
+          @click="mansionRedirectOpen = !mansionRedirectOpen"
+        >
           星象定向{{ redirectActiveText }} ▾
         </button>
       </p>
