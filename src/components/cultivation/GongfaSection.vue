@@ -105,7 +105,7 @@
           >{{ sealOf(def.type) }}</span>
           <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: qualityDef(def.quality).color }">{{ def.name }}</span>
           <span class="shrink-0 text-[10px] text-ink-faint">{{ cultivation.learned[def.id] }} 层</span>
-          <span v-if="branchName(def.id)" class="max-w-24 shrink-0 truncate rounded bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-gold-ink">
+          <span v-if="branchName(def.id)" class="max-w-24 shrink-0 truncate rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-ink">
             {{ branchName(def.id) }}
           </span>
           <span v-else-if="canEnlighten(def.id)" class="shrink-0 rounded border border-azure/40 bg-azure/10 px-1.5 py-0.5 text-[10px] text-ink">待悟道 →</span>

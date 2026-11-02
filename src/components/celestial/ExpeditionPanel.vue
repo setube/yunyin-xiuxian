@@ -70,7 +70,7 @@
       </button>
       <div v-else class="mt-2 grid grid-cols-2 gap-2">
         <button class="btn-ghost !py-2 !text-[11px] !text-ink-soft" @click="abandonConfirm = false">再想想</button>
-        <button class="btn-seal !py-2 !text-[11px] !bg-cinnabar/15 !text-cinnabar" @click="abandonRun">
+        <button class="btn-seal !py-2 !text-[11px]" @click="abandonRun">
           确认返还(不可逆)
         </button>
       </div>

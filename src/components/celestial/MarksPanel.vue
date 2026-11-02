@@ -36,7 +36,7 @@
         <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">{{ mark.rounds }}回合 · {{ mark.buildName }}</span>
         <button
           v-if="isStaleRuleset(mark.ruleset)"
-          class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-1 py-0.5 font-kai text-[9px] text-cinnabar active:scale-90"
+          class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-1 py-0.5 font-kai text-[9px] text-ink active:scale-90"
           :title="`旧纪 ${mark.ruleset}`"
           @click="openEra(mark)"
         >
@@ -55,7 +55,7 @@
         <!-- 重写花道源:代价写在按钮上(不靠 hover),二步确认 -->
         <template v-if="mark.cleared && mark.replay && rewriteConfirm === mark">
           <button
-            class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90"
+            class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-2 py-1 font-kai text-[10px] text-ink active:scale-90"
             @click="rewriteConfirm = null"
           >
             再想想
