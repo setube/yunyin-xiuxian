@@ -60,7 +60,8 @@
       <RouterLink to="/world" class="card-ink flex flex-col items-center gap-1.5 px-1.5 py-3 text-center active:scale-98">
         <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-azure/15 text-azure"><GameIcon name="cloud" :size="18" /></span>
         <span class="font-kai text-[13px] tracking-widest text-ink">本世之界</span>
-        <span class="w-full truncate text-[9px] leading-tight text-ink-faint">{{ worldBrief }}</span>
+        <!-- 320 窄屏下这句会被截成半句;补 title 让整句仍可读,空态词很短不会截断 -->
+        <span class="w-full truncate text-[9px] leading-tight text-ink-faint" :title="worldBrief">{{ worldBrief }}</span>
       </RouterLink>
 
       <RouterLink to="/market" class="card-ink flex flex-col items-center gap-1.5 px-1.5 py-3 text-center active:scale-98">
