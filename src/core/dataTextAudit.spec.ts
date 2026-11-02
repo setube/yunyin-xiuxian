@@ -9,6 +9,7 @@ import { ARTIFACTS } from '@/data/artifacts'
 import { PETS } from '@/data/pets'
 import { GONGFA } from '@/data/gongfa'
 import { TITLES } from '@/data/titles'
+import { SOUL_TYPES } from '@/data/souls'
 import { EVENTS, FORTUNE_EVENTS } from '@/data/events'
 import { PILLS } from '@/data/pills'
 import { MUTATORS } from '@/data/mutators'
@@ -1203,7 +1204,7 @@ describe('数据文本 · 机械体检', () => {
     if (/[a-zA-Z]{2,}/.test(text)) bad.push(`${tag}「${name}」混入英文:${text}`)
   }
 
-  it('七类数据的文本都没有机械错误', () => {
+  it('十类数据的文本都没有机械错误', () => {
     const bad: string[] = []
     for (const a of ARTIFACTS) {
       scan('法宝', a.name, a.desc, bad)
@@ -1217,6 +1218,12 @@ describe('数据文本 · 机械体检', () => {
     for (const e of FORTUNE_EVENTS) scan('机缘', e.id, e.text, bad)
     for (const p of PILLS) scan('丹药', p.name, p.desc, bad)
     for (const b of BUILDINGS) scan('建筑', b.name, b.desc, bad)
+    for (const s of SOUL_TYPES) scan('器灵', s.name, s.desc, bad)
+    // 奇门有 desc(机制一行)与 gist(八门本义)两段文本,都要过
+    for (const g of GATES) {
+      scan('奇门', g.name, g.desc, bad)
+      scan('奇门本义', g.name, g.gist, bad)
+    }
     expect(bad, `数据文本有机械错误:\n${bad.join('\n')}`).toEqual([])
   })
 })
