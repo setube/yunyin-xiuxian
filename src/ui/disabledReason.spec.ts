@@ -56,14 +56,41 @@ describe('禁用按钮 · 要给拒因', () => {
     expect(disabled, '一个禁用按钮都没扫到').toBeGreaterThan(20)
   })
 
+  /**
+   * 取开标签的完整文本。
+   *
+   * 不能用 `/<button\b[^>]*>/` —— 属性值里常有 `>`(`:disabled="x > 0"`),
+   * 那样会在引号中间截断,截断点之后的 `title` / `aria-label` 就看不见了,
+   * 于是「有拒因」被判成「没拒因」(或反过来)。全仓 289 个按钮里 11 个会截断。
+   */
+  function openTags(text: string, tagName: string): { tag: string; index: number }[] {
+    const out: { tag: string; index: number }[] = []
+    for (const m of text.matchAll(new RegExp(`<${tagName}\\b`, 'g'))) {
+      let i = m.index! + m[0].length
+      let quote: string | null = null
+      while (i < text.length) {
+        const ch = text[i]!
+        if (quote) {
+          if (ch === quote) quote = null
+        } else if (ch === '"' || ch === "'") {
+          quote = ch
+        } else if (ch === '>') {
+          out.push({ tag: text.slice(m.index!, i + 1), index: m.index! })
+          break
+        }
+        i += 1
+      }
+    }
+    return out
+  }
+
   it('除白名单外,每个禁用按钮都带得出拒因', () => {
     const bad: string[] = []
     for (const file of vueFiles()) {
       const text = readFileSync(file, 'utf-8')
-      for (const m of text.matchAll(/<button\b[^>]*>/gs)) {
-        const tag = m[0]!
+      for (const { tag, index } of openTags(text, 'button')) {
         if (!/:disabled|\bdisabled\b/.test(tag)) continue
-        const end = m.index! + tag.length
+        const end = index + tag.length
         const close = text.indexOf('</button>', end)
         const raw = close > 0 ? text.slice(end, close) : ''
         const plain = raw.replace(/<[^>]+>/g, '').trim()
@@ -75,7 +102,7 @@ describe('禁用按钮 · 要给拒因', () => {
         if (hasReason) continue
         const waived = REASON_ELSEWHERE.some(([f, needle]) => file.endsWith(f) && raw.includes(needle))
         if (waived) continue
-        const line = text.slice(0, m.index).split('\n').length
+        const line = text.slice(0, index).split('\n').length
         bad.push(`${file}:${line}(${plain.slice(0, 24)})`)
       }
     }
