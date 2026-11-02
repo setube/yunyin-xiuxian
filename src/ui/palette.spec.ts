@@ -699,4 +699,40 @@ describe('调色板 · 同色淡底不该承载同色文字', () => {
     }
     expect(bad.length, '若这条空了,说明同色淡底其实没问题,可以把棘轮撤掉').toBeGreaterThan(10)
   })
+
+  /**
+   * 「把透明度降下来就安全了」是错觉 —— 这里逐档验一遍。
+   *
+   * 一度以为低档(5%/8%)达标、只有 10% 以上跌破,据此可以去降透明度。
+   * 按三张真实底(纸 / 纸深 / 卡片 lifted)重算,结论相反:
+   * 除 indigo-ink 外,六种彩色**在 5% 就已经有一边跌破**。
+   * 原因是这些色对纸本来就只贴着 4.5 过线,再叠一层自己的淡底必然拉近。
+   *
+   * 所以清理只能走「文字换墨色」,不能靠降透明度。这条判据把这个结论钉住,
+   * 免得下次又有人(包括我)先想到去减 alpha。
+   */
+  it('降透明度救不了这类组合 —— 5% 就已经跌破', () => {
+    const paperLifted = (theme: 'light' | 'dark'): Rgb => {
+      const body = theme === 'light' ? bodyOf(/:root \{([\s\S]*?)\n\}/) : bodyOf(/html\[data-theme='dark'\] \{([\s\S]*?)\n\}/)
+      const m = /--color-paper-lifted-rgb:\s*(\d+)\s+(\d+)\s+(\d+);/.exec(body)!
+      return [Number(m[1]), Number(m[2]), Number(m[3])] as Rgb
+    }
+    const stillBad = (token: string, alpha: number): boolean => {
+      for (const theme of ['light', 'dark'] as const) {
+        const palette = theme === 'light' ? LIGHT : DARK
+        const tone = palette.get(token)!
+        const surfaces: Rgb[] = [palette.get('paper')!, palette.get('paper-deep')!, paperLifted(theme)]
+        for (const bg of surfaces) {
+          if (contrast(tone, mix(tone, bg, alpha)) < 4.5) return true
+        }
+      }
+      return false
+    }
+    // 六种彩色在最低档 5% 就仍然跌破
+    for (const token of ['cinnabar', 'jade', 'violet-ink', 'gold-ink', 'azure', 'amber-ink']) {
+      expect(stillBad(token, 0.05), `${token} 在 5% 竟然达标了 —— 请重算本节的结论`).toBe(true)
+    }
+    // indigo-ink 是唯一在低档安全的,留作反例
+    expect(stillBad('indigo-ink', 0.05), 'indigo-ink 低档应安全').toBe(false)
+  })
 })
