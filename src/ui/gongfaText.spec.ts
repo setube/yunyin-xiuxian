@@ -14,7 +14,8 @@ import {
   gongfaPageShortToast,
   gongfaSubFullToast,
   gongfaUpDoneToast,
-  gongfaUpShortToast
+  gongfaUpShortToast,
+  gongfaPeakLabel
 } from './gongfaText'
 
 describe('功法提示 · 缺资源只报缺的那样', () => {
@@ -45,8 +46,14 @@ describe('功法提示 · 缺资源只报缺的那样', () => {
     expect(gongfaSubFullToast(2)).toBe('辅修已满 2 席')
   })
 
+  it('满级状态词:与地界卡同词,主词守 8 字线', () => {
+    expect(gongfaPeakLabel()).toBe('已圆满')
+    expect(gongfaPeakLabel().length).toBeLessThanOrEqual(8)
+  })
+
   it('都不带劝导与解释(文案规范)', () => {
     const all = [
+      gongfaPeakLabel(),
       gongfaPageShortToast(7),
       gongfaAllLearnedToast(),
       gongfaComprehendToast('太玄经'),
