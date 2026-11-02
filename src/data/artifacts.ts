@@ -1,5 +1,5 @@
 /**
- * 法宝池 —— 52 件,拥有被动属性与自动触发的主动神通
+ * 法宝池 —— 53 件,拥有被动属性与自动触发的主动神通
  *
  * passive / active.effect 是凡品零重基线(算式第一个因子),品阶与祭炼两条放大由 artifactValue 施加;
  * desc 与 effect 描述的是基线,不是面板。
@@ -622,6 +622,19 @@ export const ARTIFACTS: ArtifactDef[] = [
     4,
     { type: 'shield', pctMaxHp: 0.29 },
     'scroll'
+  ),
+  f(
+    'af_fentianji',
+    '鸿蒙焚天戟',
+    'heaven',
+    31,
+    '一戟落下,天火自九霄倾泻',
+    { attackPct: 0.07, armorPen: 0.055 },
+    '倾天',
+    '每 3 回合天火倾泻,造成 420% 攻击伤害',
+    3,
+    { type: 'damage', mult: 4.2 },
+    'flame'
   ),
 
   // ============ 混沌海(30-32 阶)============
