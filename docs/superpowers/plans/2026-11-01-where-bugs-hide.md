@@ -514,3 +514,52 @@ find src -name "_*.spec.ts"
 
 **教训**:同名字段在不同表里可能承担不同语义层级。套用守卫前先问一句
 「这个字段描述的是哪一层」,否则做出来的是一条满屏误报的检查。
+
+## 二十一、查某个主题之前，先扫一眼审计 spec（第 179~188 轮）
+
+这个仓库有 **33 个审计类 spec**。我在第 179~186 轮连续六次「提出一个怀疑 → 查半天 →
+发现早有守卫」，全部白费。根因只有一个:**动手排查前没先看 spec 名单**。
+
+最典型的一次:第 181 轮列了 19 个 `stoneByTier` 调用点准备逐个手查层级尺,
+而 `tierLandmine.spec.ts` 就在仓库里,第 36 行的断言标题是
+「没有任何一处把裸 major 直接喂给 stoneByTier」——它整体覆盖了这件事。
+
+### 动作
+
+```bash
+find src -name "*.spec.ts" | grep -i <主题关键词>
+```
+
+**注意 `-i`**:spec 文件名是驼峰(`tierLandmine` / `dataIntegrity` / `artifactLadder`),
+不区分大小写才搜得到。
+
+有对应 spec 就先读它的 `it(...)` 标题 —— 标题通常就是设计意图的浓缩。
+读懂了再决定要不要动手。
+
+### 已确认内容的守卫
+
+| 主题 | spec | 它回答什么 |
+| --- | --- | --- |
+| 层级地雷 | `tierLandmine` | 有没有把裸 `major` 喂给 `stoneByTier`;`maxTierForMajor` 是否铺到 32 阶 |
+| 经济两极 | `economyAudit` | 早期瓶颈(<0.7)与后期过剩(>10)是否在设计带内 |
+| 数据完整性 | `dataIntegrity` | id / 显示名 / 技能名 / 图标有无重复;声明的属性键有无数据在用 |
+| 文案对账 | `dataTextAudit` | 说明里的数等于数据吗;文本有括号 / 标点 / 空白 / 英文错误吗 |
+| 法宝阶梯 | `artifactLadder` | 同族数值与被动预算随层级单调吗;神通名全局唯一吗 |
+| 灵兽描述 | `petLore` | 描述的方向与词条一致吗 |
+| 属性名质量 | `statNames` | 名字非空、不含英文键、不重名、长度克制(漏键由类型系统保证) |
+| 版本对齐 | `releaseNotes` | 首条版本号与 `package.json` 同源吗 |
+| 存档自愈 | `storeResilience` | 每个持久化 store 都有 `sanitize` 吗 |
+| 内容密度 | `contentDensity` | 每界灵兽 ≥2 只吗 |
+| spec 归类 | `gateWiring` | 新增 spec 有没有登记到分类表 |
+| 文档计数 | `dataHeaderAudit` | 表头注释 / README 的数字与数组长度一致吗 |
+
+### 其余守卫(名字即主题,用时先读断言)
+
+`auditBaseline` `bossAudit` `bossPhaseAudit` `compoundingAudit` `contentGateAudit`
+`contentReachabilityAudit` `deadExportAudit` `decisionAudit` `effectWiring`
+`gongfaLadder` `inflationAudit` `layeringAudit` `petLadder` `phase31LinkAudit`
+`realmLadder` `resilience` `rewardReachability` `samsaraAudit` `scriptDepsAudit`
+`singleSourceAudit` `softCapAudit` `talentLadder` `titleLadder` `veinEconomyAudit`
+
+这 24 个我没读过内容,不写臆测的描述 —— 名字本身就是主题索引,足够用来判断
+「这件事已经有人管了」,省掉逐个排查的工夫。
