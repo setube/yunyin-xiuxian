@@ -95,7 +95,7 @@ export const PETS: PetDef[] = [
   {
     id: 'pet_zidian',
     name: '紫电貔貅',
-    desc: '云中踏电而行,只进不出',
+    desc: '紫电缠爪,落处必是七寸',
     family: 'beast',
     quality: 'heaven',
     mods: { critRate: 0.1, critDamage: 0.3, speed: 0.06 },
