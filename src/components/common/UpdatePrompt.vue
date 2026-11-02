@@ -6,9 +6,15 @@
         role="status"
       >
         <p class="min-w-0 grow text-[12px] leading-snug text-ink-soft">新版本已就绪</p>
-        <button class="btn-seal shrink-0 !px-2.5 !py-1 !text-[11px]" @click="ui.applyPwaUpdate()">重新加载</button>
+        <!--
+          !py-1.5 不可降回 !py-1:11px 字 + 上下各 4px 只有 24.5px,
+          低于 28px 触控线(layout-check 的尺子,其余按钮都按它量)。
+          这条横幅只在 Service Worker 更新后出现,巡页摸不到,所以更容易漏。
+        -->
+        <button class="btn-seal shrink-0 !px-2.5 !py-1.5 !text-[11px]" @click="ui.applyPwaUpdate()">重新加载</button>
+        <!-- 关闭钮是纯图标:负外边距抵回视觉位移,触面抬到 28px -->
         <button
-          class="shrink-0 p-1 -mr-1 text-ink-faint active:scale-90"
+          class="-my-1 -mr-1 grid h-7 w-7 shrink-0 place-items-center text-ink-faint active:scale-90"
           aria-label="关闭"
           @click="ui.dismissPwaUpdate()"
         >
