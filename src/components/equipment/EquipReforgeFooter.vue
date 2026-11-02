@@ -20,7 +20,7 @@
         </button>
         <div
           v-if="sealCostVal"
-          class="flex flex-1 flex-col items-center justify-center rounded-md border border-azure/20 bg-azure/5 px-2 py-2 text-azure"
+          class="flex flex-1 flex-col items-center justify-center rounded-md border border-azure/20 px-2 py-2 text-ink"
         >
           <span>封存一词 {{ formatGN(sealCostVal) }}</span>
           <span v-if="sealGap && sealGap.m > 0" class="text-[9px] text-cinnabar tabular">
