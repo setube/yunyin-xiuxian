@@ -19,7 +19,23 @@ const product = readFileSync(resolve(ROOT, 'src/utils/crypto.ts'), 'utf-8')
 const storage = readFileSync(resolve(ROOT, 'src/utils/storage.ts'), 'utf-8')
 const fixture = readFileSync(resolve(ROOT, 'scripts/lib/saveFixture.mjs'), 'utf-8')
 
+const layoutCheck = readFileSync(resolve(ROOT, 'scripts/layout-check.mjs'), 'utf-8')
+
 describe('夹具 · 存档格式与产品代码同源', () => {
+  /**
+   * `layout-check.mjs` 也自己写了一份密钥与加密函数 —— 它不通过 saveFixture,
+   * 是另一条独立的注入路径。这两处此前各抄了 23 遍,现已抽成模块级常量;
+   * 这一条钉住「只留一处」,免得哪天又复制回去。
+   */
+  it('layout-check 只留一份密钥与加密函数', () => {
+    const secret = layoutCheck.match(/const SAVE_SECRET = '([^']+)'/g) ?? []
+    expect(secret, 'layout-check 里 SAVE_SECRET 出现不止一次 —— 又抄回去了').toHaveLength(1)
+    expect(layoutCheck.match(/CryptoJS\.AES\.encrypt/g) ?? [], '加密函数不该出现多份').toHaveLength(1)
+    expect(/const SAVE_SECRET = '([^']+)'/.exec(layoutCheck)?.[1], 'layout-check 的密钥与产品不一致').toBe(
+      /SAVE_SECRET\s*=\s*['"]([^'"]+)['"]/.exec(product)?.[1],
+    )
+  })
+
   it('两边用同一个密钥', () => {
     const a = /SAVE_SECRET\s*=\s*['"]([^'"]+)['"]/.exec(product)?.[1]
     const b = /SAVE_SECRET\s*=\s*['"]([^'"]+)['"]/.exec(fixture)?.[1]
