@@ -555,12 +555,37 @@ describe('可访问性 · 表单控件有名字', () => {
  * 故障注入:摘掉任一处的 role="img",本条红。
  */
 describe('可访问性 · 名字要有 role 才接得住', () => {
+  /**
+   * 取一个开标签的完整文本。
+   *
+   * 不能用 `/<(span|div)\b[^>]*>/` —— 属性值里常有 `>`(如 `v-if="props.item.level > 0"`),
+   * 那样会在引号中间截断,后面的 `:aria-label` 整个落空。实测 EquipmentCard 的「+N」
+   * 就这么漏了两轮。这里按引号配对往后走,遇到不在引号里的 `>` 才收尾。
+   */
+  function openTagAt(src: string, start: number): string {
+    let i = start
+    let quote: string | null = null
+    while (i < src.length) {
+      const ch = src[i]!
+      if (quote) {
+        if (ch === quote) quote = null
+      } else if (ch === '"' || ch === "'") {
+        quote = ch
+      } else if (ch === '>') {
+        return src.slice(start, i + 1)
+      }
+      i += 1
+    }
+    return src.slice(start)
+  }
+
   it('裸 span/div 上的 aria-label 必须配 role', () => {
     const offenders: string[] = []
     for (const f of FILES) {
-      for (const m of f.src.matchAll(/<(span|div)\b[^>]*>/gs)) {
-        const tag = m[0]
-        if (!/\baria-label=/.test(tag) && !/\baria-labelledby=/.test(tag)) continue
+      for (const m of f.src.matchAll(/<(span|div)\b/gs)) {
+        const tag = openTagAt(f.src, m.index!)
+        // 动态绑定写的是 `:aria-label=` —— 只认静态写法会整片漏掉
+        if (!/:?aria-label(?:ledby)?=/.test(tag)) continue
         if (/\brole=/.test(tag)) continue
         const line = f.src.slice(0, m.index).split('\n').length
         offenders.push(`${f.path}:${line} ${tag.replace(/\s+/g, ' ').slice(0, 80)}`)
