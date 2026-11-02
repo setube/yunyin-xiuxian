@@ -15,7 +15,8 @@ const DOC_FILES = [
   { rel: 'README.md', file: join(ROOT, 'README.md') },
   ...readdirSync(join(ROOT, 'docs'), { recursive: true, encoding: 'utf-8' })
     .filter(name => typeof name === 'string' && name.endsWith('.md'))
-    .map(name => `docs/${name}`)
+    // Windows 上 recursive readdir 返回反斜杠,不归一则下面的豁免前缀与 join 都对不上
+    .map(name => `docs/${name}`.replace(/\\/g, '/'))
     // 参考仓学习笔记引的是 xian 的读数
     .filter(rel => !rel.startsWith('docs/superpowers/plans/') && rel !== 'docs/study-xian.md')
     .map(rel => ({ rel, file: join(ROOT, rel) })),

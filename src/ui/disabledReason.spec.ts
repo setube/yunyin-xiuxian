@@ -26,7 +26,8 @@ function vueFiles(): string[] {
     for (const ent of readdirSync(dir, { withFileTypes: true })) {
       const full = join(dir, ent.name)
       if (ent.isDirectory()) walk(full)
-      else if (ent.name.endsWith('.vue')) out.push(full)
+      // 白名单写的是正斜杠路径,Windows 上 join 出来是反斜杠
+      else if (ent.name.endsWith('.vue')) out.push(full.replace(/\\/g, '/'))
     }
   }
   for (const r of ROOTS) walk(r)
