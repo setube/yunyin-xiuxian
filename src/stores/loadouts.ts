@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { EquipSlot } from '@/types'
 import { persistConfig } from '@/utils/storage'
-import { asArray, asFiniteNumber, asRecord, asStringArray } from '@/utils/saveShape'
+import { asArray, asFiniteNumber, asRecord, asStringArray, truncateCodePoints } from '@/utils/saveShape'
 import { uid } from '@/utils/id'
 import { EQUIP_SLOTS } from '@/data/equipment'
 import { NAME_MAX_LENGTH, SUB_GONGFA_SLOT_HARD_CAP } from '@/data/constants'
@@ -45,7 +45,7 @@ export const useLoadoutsStore = defineStore(
           return {
             id: l.id,
             // 与输入侧同界:构筑名在 loadoutService 里截到 NAME_MAX_LENGTH,读档侧也要截
-            name: typeof l.name === 'string' ? l.name.trim().slice(0, NAME_MAX_LENGTH) : '',
+            name: typeof l.name === 'string' ? truncateCodePoints(l.name.trim(), NAME_MAX_LENGTH) : '',
             seal: typeof l.seal === 'string' ? l.seal : '',
             mainGongfa: typeof l.mainGongfa === 'string' ? l.mainGongfa : null,
             // 辅修/法宝是集合:重复项会被 applyLoadout 原样写回,算两次

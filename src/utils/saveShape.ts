@@ -204,3 +204,20 @@ export function asCombatRules(raw: unknown): CombatRules {
 export function hasCombatRules(raw: unknown): boolean {
   return Object.keys(asCombatRules(raw)).length > 0
 }
+
+/**
+ * 按**码点**截断字符串,不切开代理对。
+ *
+ * `'一二三四五六七\u{1F600}'.slice(0, 8)` 得到 `'一二三四五六七\ud83d'` —— 一个落单的高代理项,
+ * `isWellFormed()` 为 false。这种串写进存档能原样读回,但渲染时是乱码方块,
+ * 且会让后续的字体回退、正则、`JSON.stringify` 走不可预期的分支。
+ *
+ * 玩家可输入的名字/标记都走这里:输入框的 `maxlength` 也是按码元算的,
+ * 到 sanitize 这一层再截一次才不会漏。
+ */
+export function truncateCodePoints(s: string, max: number): string {
+  if (!Number.isFinite(max) || max <= 0) return ''
+  if (s.length <= max) return s
+  const chars = Array.from(s)
+  return chars.length <= max ? s : chars.slice(0, max).join('')
+}
