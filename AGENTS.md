@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-**云隐修仙录** — 一款 Vue 3 驱动的文字修仙放置（idle）游戏，单机离线成长玩法。版本 1.42.0，`type: module`。支持 Web/PWA、Electron、Android（Capacitor）多端。许可证 CC BY-NC 4.0（禁止商用）；打包的楷体字型为 LXGW WenKai，SIL OFL 1.1（许可证文本在 `public/fonts/OFL.txt`，再分发时须保留）。
+**云隐修仙录** — 一款 Vue 3 驱动的文字修仙放置（idle）游戏，单机离线成长玩法。版本 1.43.0，`type: module`。支持 Web/PWA、Electron、Android（Capacitor）多端。许可证 CC BY-NC 4.0（禁止商用）；打包的楷体字型为 LXGW WenKai，SIL OFL 1.1（许可证文本在 `public/fonts/OFL.txt`，再分发时须保留）。
 
 ## Architecture & Data Flow
 
