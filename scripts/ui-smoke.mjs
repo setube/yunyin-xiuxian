@@ -204,6 +204,37 @@ if (!LATE) {
 }
 await page.waitForTimeout(LATE ? 1800 : 1500)
 
+/**
+ * 夹具自检:写进去的东西必须真的出现在界面上。
+ *
+ * 夹具是**所有检查的基准**,而基准本身没人验。实测踩过一次:
+ * `inventory.items` 里写了个不存在的模板 id,`equipped` 里写了个不在 `EquipSlot` 表的键,
+ * 界面于是显示「?」占位、头冠那格永远「未装备」—— 而五个脚本一个都没报,
+ * 它们只核对「相对起点有没有变化」,起点本身错着也照样绿。
+ *
+ * 这里只验**能一眼看见**的几项。故意不写成「全量比对」:夹具改了要跟着改,
+ * 写得太细会变成第二个假基准。
+ */
+if (LATE) {
+  const expectSeen = [
+    ['灵石余额', '9.038兆'],
+    ['器灵尘', '器灵尘 500'],
+    ['已装备的武器', '雾隐长枪'],
+    ['已装备的头冠', '桃木簪'],
+    ['轮回世数', '2 世'],
+  ]
+  await page.goto(INDEX + '#' + '/', { waitUntil: 'load' })
+  await page.waitForTimeout(1200)
+  const homeText = await page.evaluate(() => document.body.innerText)
+  await page.goto(INDEX + '#' + '/inventory', { waitUntil: 'load' })
+  await page.waitForTimeout(1200)
+  const invText = await page.evaluate(() => document.body.innerText)
+  const all = homeText + '\n' + invText
+  for (const [what, needle] of expectSeen) {
+    if (!all.includes(needle)) errors.push({ where: 'fixture', msg: `夹具写的${what}没有出现在界面上(找「${needle}」)` })
+  }
+}
+
 let clicked = 0
 /**
  * 只点最上层弹窗:每轮重取 z 最高的可见弹窗,走完再 Esc 回下层;按钮打一次性标记,重排/替换不重复点。
