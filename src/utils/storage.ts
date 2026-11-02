@@ -216,9 +216,16 @@ function setOtherTab(active: boolean): void {
   for (const handler of otherTabHandlers) handler(active)
 }
 
+/** 真存档分片的键集合:判重只认这些,其余 yunyin.* 都不是进度 */
+const SAVE_SLICE_KEYS = new Set(PERSISTED_STORES.map(id => SAVE_PREFIX + id))
+
 /**
  * storage 事件只在「别的标签页」写入时触发,本页自己的写入不会回调 —— 正合用来判重。
- * 只认分片键与实际存档键;LIVE_KEY 的心跳单独比时间戳,免得把心跳当成写档。
+ *
+ * 只认**存档分片**;心跳单独比时间戳,免得把心跳当成写档。
+ * 原先写的是 `key.startsWith('yunyin.')` —— 那会把 `yunyin.__theme`(首帧主题小键)
+ * 也算成「另一页在写档」。实测:另一页切一次主题,A 页就置上 otherTab 且不再复位
+ * (复位只在心跳超时时发生),下次真开两页时那条提示已经去重掉了。
  */
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', e => {
@@ -228,7 +235,7 @@ if (typeof window !== 'undefined') {
       setOtherTab(Number.isFinite(at) && Date.now() - at < LIVE_STALE_MS)
       return
     }
-    if (e.key.startsWith(SAVE_PREFIX) && !e.key.startsWith(SAVE_PREFIX + 'corrupt.')) setOtherTab(true)
+    if (SAVE_SLICE_KEYS.has(e.key)) setOtherTab(true)
   })
 }
 
