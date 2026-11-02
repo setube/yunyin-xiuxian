@@ -22,6 +22,7 @@ const TAILWIND = readFileSync(resolve(ROOT, 'tailwind.config.js'), 'utf-8')
 const THEME_TS = readFileSync(resolve(ROOT, 'src/core/theme.ts'), 'utf-8')
 const PRIVACY = readFileSync(resolve(ROOT, 'public/privacy.html'), 'utf-8')
 const INDEX_HTML = readFileSync(resolve(ROOT, 'index.html'), 'utf-8')
+const STORE_UTILS = readFileSync(resolve(ROOT, 'src/utils/storage.ts'), 'utf-8')
 
 type Rgb = readonly [number, number, number]
 
@@ -468,6 +469,25 @@ describe('调色板 · 两处手抄关系', () => {
     expect(INDEX_HTML, '内联脚本里的暗色与 theme.ts 不同步').toContain(m[2]!)
     // 明文标记的键名须与 theme.ts 一致
     expect(THEME_TS, 'theme.ts 里的键名与 index.html 对不上').toContain('yunyin.__theme')
+  })
+
+  /**
+   * 清档时首帧主题标记也要清掉。
+   *
+   * 实测:选过暗色 → 清档 → 重进,系统是亮色、新档也回到默认 auto,
+   * 首帧却仍按残留的 dark 渲染,直到 App 挂载才翻回来 —— 新角色顶着上一位的主题闪一下。
+   * `clearAllSave` 只清 PERSISTED_STORES,这个键不在清单里,于是漏了。
+   *
+   * utils 不许引 core(分层判据),故两处各写一遍字面量,这里钉住它们一致。
+   * 故障注入:删掉 storage.ts 里那行 removeItem,本条红。
+   */
+  it('清档连带清掉首帧主题标记,两处键名一致', () => {
+    expect(STORE_UTILS, 'utils/storage.ts 里找不到主题标记的键名').toContain("'yunyin.__theme'")
+    expect(STORE_UTILS, 'clearAllSave 没有清掉主题标记 —— 新角色会沿用上一位的主题闪一下').toMatch(
+      /removeItem\('yunyin\.__theme'\)/
+    )
+    expect(THEME_TS).toContain("THEME_HINT_KEY = 'yunyin.__theme'")
+    expect(INDEX_HTML).toContain('yunyin.__theme')
   })
 
   it('public/privacy.html 手抄的那几个颜色与色板一致,且死 token(古代 qinghua)不回魂', () => {
