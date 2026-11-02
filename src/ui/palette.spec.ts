@@ -752,6 +752,28 @@ describe('调色板 · 同色淡底不该承载同色文字', () => {
     expect(total, '棘轮总量应比第 264 轮(66)明显下降').toBeLessThanOrEqual(30)
   })
 
+  /**
+   * 非文本图形也须 3:1(WCAG 1.4.11)。
+   *
+   * 界域志那三个状态点是 6×6 的圆点,只靠颜色区分「未至 / 可往 / 已通」。
+   * 「未至」原先写 `bg-ink-faint/40` —— 叠到卡片上实测日 1.74 / 夜 2.01,
+   * 连 3:1 都不到,图例那一行的灰点基本看不见。
+   *
+   * 修法:墨色 alpha 提到 75(日 3.18 / 夜 3.53),SVG 里的同款点同步 0.35 → 0.75。
+   * 三色 ΔE 仍在 50 以上,区分度不受影响。
+   */
+  it('状态点这类非文本图形守 3:1', () => {
+    const view = readFileSync(resolve(ROOT, 'src/views/MortalWorldView.vue'), 'utf-8')
+    expect(view, '图例的「未至」点又淡回去了').toContain('bg-ink-faint/75')
+    expect(view).not.toContain('bg-ink-faint/40')
+    // SVG 里的同款点用 fill-opacity,须同步
+    expect(view, 'SVG 的「未至」点还停在 0.35').toContain('unlocked(p) ? 0.85 : 0.75')
+    // 三色仍可区分:不能为了对比度把它们都改成同一个墨色
+    for (const cls of ['bg-azure/80', 'bg-jade']) {
+      expect(view, `图例少了「${cls}」那一档,三态就分不出了`).toContain(cls)
+    }
+  })
+
   it('这类组合确实过不了 AA —— 判据不是在守一个假问题', () => {
     const bad: string[] = []
     for (const theme of ['light', 'dark'] as const) {
