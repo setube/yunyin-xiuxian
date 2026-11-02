@@ -105,6 +105,22 @@ describe('数据完整性 · id 必须唯一', () => {
     }
   })
 
+  /**
+   * 功法的技能名与法宝的神通名同理:重名时技能列表里会并排出现两个一样的名字。
+   * `skill` 是可选的,只有一部分功法带;26 个技能名目前全唯一。
+   */
+  it('功法技能名无重复', () => {
+    const seen = new Set<string>()
+    const dup: string[] = []
+    for (const g of GONGFA) {
+      const n = g.skill?.name
+      if (!n) continue
+      if (seen.has(n)) dup.push(n)
+      seen.add(n)
+    }
+    expect(dup, `功法技能名重复:${dup.join('、')} —— 玩家会在技能列表里看到两条一样的`).toEqual([])
+  })
+
   it('区域引用的敌人阶级与该区域阶级不相差太远', () => {
     const far = REGIONS.filter(r => r.enemies.some(id => Math.abs((enemyDef(id)?.tier ?? 0) - r.tier) > 4))
     expect(far.map(r => r.id), `这些区域挂着阶级差 >4 的怪:${far.map(r => r.id).join('、')}`).toEqual([])
