@@ -76,6 +76,30 @@ for (const rel of docFiles) {
 }
 
 /*
+ * 楷体切片的事实只有一份:build-kai-font.py 写出的 kai-subset.meta.json。
+ * README 与脚本注释各自复述了片数与母体大小,容易各说各话。
+ * 实测踩过:README 写母体 24.4MB、脚本注释写 24.8MB;脚本里还留着一个
+ * 从没用过的 `CHUNKS = 5`(实际切成 22 片)。
+ */
+{
+  const meta = JSON.parse(readFileSync(join(ROOT, "scripts/fonts/kai-subset.meta.json"), "utf-8"));
+  const shardCount = Array.isArray(meta.chunks) ? meta.chunks.length : -1;
+  const onDisk = readdirSync(join(ROOT, "src/assets/fonts")).filter((f) => f.endsWith(".woff2")).length;
+  if (shardCount !== onDisk) {
+    failures.push(`kai-subset.meta.json 记 ${shardCount} 片,src/assets/fonts 里实际 ${onDisk} 个 woff2`);
+  }
+  // README 与脚本注释对母体大小的说法必须一致
+  const readme = readFileSync(join(ROOT, "README.md"), "utf-8");
+  const readmeMb = /母体 ([\d.]+)MB 不入库/.exec(readme);
+  const scriptMb = /母体 ([\d.]+)MB 太重/.exec(readFileSync(join(ROOT, "scripts/fonts/build-kai-font.py"), "utf-8"));
+  if (!readmeMb) failures.push("README 里找不到「母体 N MB 不入库」—— 写法变了?");
+  if (!scriptMb) failures.push("build-kai-font.py 里找不到「母体 N MB 太重」—— 写法变了?");
+  if (readmeMb && scriptMb && readmeMb[1] !== scriptMb[1]) {
+    failures.push(`母体大小两处不一致:README ${readmeMb[1]}MB / build-kai-font.py ${scriptMb[1]}MB`);
+  }
+}
+
+/*
  * AGENTS.md 里的 spec 细分数必须与仓库一致。
  *
  * README 的「全量 N 个 spec」已有校验,但 AGENTS.md 另写了一份分目录明细,
