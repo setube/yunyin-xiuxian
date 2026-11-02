@@ -67,9 +67,15 @@
     <div class="flex items-center justify-between py-3">
       <span class="text-[13px] text-ink-soft">战报速度</span>
       <div role="group" aria-label="战报速度" class="flex gap-1">
+        <!--
+          aria-label 补全成「战报速度 2 倍」:可见文案只有 ×2,读屏念出来是「times two」,
+          没有主语 —— 三个钮挨在一起时更分不出是在调什么。
+          可见文案不动(按钮主词守 2~6 字,且这一格与主题钮同一套 chip 宽度)。
+        -->
         <button
           v-for="s in BATTLE_SPEEDS"
           :key="s"
+          :aria-label="`战报速度 ${s} 倍`"
           :aria-pressed="settings.battleSpeed === s"
           class="chip-ink !py-1.5"
           :class="settings.battleSpeed === s ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
