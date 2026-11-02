@@ -1,6 +1,11 @@
 <template>
   <Transition name="modal-fade">
-    <div v-if="ui.pwaUpdatePending" class="pointer-events-none absolute inset-0 z-50 flex justify-center px-4 pt-14">
+    <!--
+      items-start 不可去:外层是 inset-0 的 flex,align-items 缺省为 stretch,
+      内层卡片会被拉满整屏(实测 788px 高、面积盖住整个页面),
+      于是这条「提示横幅」变成一层吃掉全部点击的遮罩 —— 而它只在 SW 更新后出现,巡页摸不到。
+    -->
+    <div v-if="ui.pwaUpdatePending" class="pointer-events-none absolute inset-0 z-50 flex items-start justify-center px-4 pt-14">
       <div
         class="pointer-events-auto flex w-full max-w-90 items-center gap-2 rounded-xl border border-cinnabar/30 bg-paper-deep/95 px-3 py-2.5 shadow-lg backdrop-blur"
         role="status"
