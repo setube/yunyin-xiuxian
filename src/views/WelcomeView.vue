@@ -1,7 +1,8 @@
 <template>
   <div class="stagger-in flex min-h-full flex-col items-center justify-center px-8 py-10">
-    <div class="grid h-24 w-24 place-items-center rounded-2xl bg-cinnabar shadow-lg shadow-cinnabar/30">
-      <span class="font-kai text-[56px] leading-none text-paper">道</span>
+    <!-- 印面在方块本身:seal-face 的夜主题底要盖住整块,套在字上会留一圈亮朱 -->
+    <div class="seal-face grid h-24 w-24 place-items-center rounded-2xl bg-cinnabar shadow-lg shadow-cinnabar/30">
+      <span class="font-kai text-[56px] leading-none">道</span>
     </div>
 
     <h1 class="mt-6 font-kai text-[40px] leading-tight tracking-[0.3em] text-ink">云隐修仙录</h1>

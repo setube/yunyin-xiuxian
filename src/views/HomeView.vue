@@ -53,7 +53,7 @@
       </RouterLink>
 
       <RouterLink v-if="player.major >= WORLD_BREAK_MAJOR" to="/celestial" class="card-ink flex flex-col items-center gap-1.5 px-1.5 py-3 text-center active:scale-98">
-        <span class="seal-face grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar/90 font-kai text-[17px] animate-breathe">天</span>
+        <span class="seal-face grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar font-kai text-[17px] animate-breathe">天</span>
         <span class="font-kai text-[13px] tracking-widest text-ink">天界</span>
       </RouterLink>
 
