@@ -654,7 +654,7 @@ describe('语义色 · 裸 hex 只许出现在已登记的例外', () => {
  * 同色淡底 + 同色文字,是一套注定过不了 AA 的写法。
  *
  * 底色与文字色同源,叠上去只会把两者拉近:淡底越明显,字越糊。
- * 实测全仓 17 组(`bg-cinnabar/10 text-cinnabar` 等),其中 15 组跌破 4.5:1,
+ * 实测全仓 19 组(`bg-cinnabar/10 text-cinnabar` 等),其中 18 组跌破 4.5:1,
  * 最差的是 `bg-cinnabar/10 text-cinnabar`(日 4.22 / 夜 3.91)。
  *
  * 数学上**没有可用的 alpha**:把 alpha 压到让对比度过线,那层淡底也就不存在了;
@@ -667,21 +667,21 @@ describe('语义色 · 裸 hex 只许出现在已登记的例外', () => {
 describe('调色板 · 同色淡底不该承载同色文字', () => {
   /** 已登记的组合 → 允许出现的次数(只许减,不许增) */
   const KNOWN: Record<string, number> = {
-    'cinnabar/10 text-cinnabar': 14,
-    'cinnabar/15 text-cinnabar': 3,
+    'cinnabar/10 text-cinnabar': 9,
+    'cinnabar/15 text-cinnabar': 2,
     'cinnabar/8 text-cinnabar': 2,
     'cinnabar/5 text-cinnabar': 2,
-    'jade/15 text-jade': 8,
-    'jade/10 text-jade': 5,
+    'jade/15 text-jade': 6,
+    'jade/10 text-jade': 3,
     'jade/8 text-jade': 1,
     'violet-ink/15 text-violet-ink': 4,
-    'violet-ink/10 text-violet-ink': 3,
+    'violet-ink/10 text-violet-ink': 2,
     'gold-ink/20 text-gold-ink': 1,
     'gold-ink/15 text-gold-ink': 1,
-    'gold-ink/10 text-gold-ink': 8,
+    'gold-ink/10 text-gold-ink': 6,
     'gold-ink/8 text-gold-ink': 1,
     'azure/15 text-azure': 2,
-    'azure/10 text-azure': 4,
+    'azure/10 text-azure': 2,
     'azure/5 text-azure': 3,
     'amber-ink/15 text-amber-ink': 1,
     'amber-ink/10 text-amber-ink': 2,
@@ -723,6 +723,43 @@ describe('调色板 · 同色淡底不该承载同色文字', () => {
       .filter(([k, n]) => n > (KNOWN[k] ?? 0))
       .map(([k, n]) => `${k} 现 ${n} 处,已登记 ${KNOWN[k] ?? 0}`)
     expect(grew, `同色淡底的字过不了 4.5:1,别再新增(改用墨色字 + 色块):\n${grew.join('\n')}`).toEqual([])
+  })
+
+  /**
+   * 承载**文字**的同色淡底已全部转成墨色字(第 264 轮)。
+   *
+   * 这一条钉住那次清理的落点:这些位置的字必须是 `text-ink`,不能再回到彩色字。
+   * 色块与描边保留,视觉上的品类区分由颜色块本身承担。
+   *
+   * 故障注入:把任一处改回 `text-cinnabar` / `text-jade` 等,本条红。
+   */
+  it('承载文字的徽章一律用墨色字,不再用彩色字压同色底', () => {
+    const SPOTS: Array<[string, string]> = [
+      ['components/adventure/CombatPanel.vue', '宿敌'],
+      ['components/character/ReincarnationDialog.vue', '境地已迁'],
+      ['components/cultivation/GongfaSection.vue', '可升层'],
+      ['components/cultivation/GongfaSection.vue', '待悟道'],
+      ['components/dongfu/VeinInvestCard.vue', '主脉'],
+      ['components/inventory/ArtifactPanel.vue', '被动'],
+      ['components/inventory/ArtifactPanel.vue', '神通'],
+      ['views/BuildView.vue', '墙'],
+      ['views/TitlesView.vue', '相伴']
+    ]
+    const bad: string[] = []
+    for (const [rel, word] of SPOTS) {
+      const src = readFileSync(resolve(ROOT, 'src', rel), 'utf-8')
+      // 找到含这个词的那一行,检查它引的 class 里没有彩色 text-*
+      const line = src.split('\n').find(l => l.includes(word) && /bg-[a-z-]+\/\d+/.test(l))
+      if (!line) {
+        bad.push(`${rel} 找不到「${word}」那一行`)
+        continue
+      }
+      if (/\btext-(cinnabar|jade|azure|violet-ink|gold-ink|amber-ink|indigo-ink)\b/.test(line)) {
+        bad.push(`${rel} 的「${word}」仍是彩色字压同色底`)
+      }
+      if (!/\btext-ink\b/.test(line)) bad.push(`${rel} 的「${word}」没有改成 text-ink`)
+    }
+    expect(bad, `这些徽章又回到彩色字了:\n${bad.join('\n')}`).toEqual([])
   })
 
   it('这类组合确实过不了 AA —— 判据不是在守一个假问题', () => {

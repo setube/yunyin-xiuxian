@@ -11,7 +11,7 @@
           >
             <span class="truncate font-kai text-[15px] tracking-[0.08em] text-ink">{{ note.title }}</span>
             <span class="flex shrink-0 items-center gap-1.5">
-              <span class="shrink-0 rounded bg-cinnabar/10 px-1.5 py-0.5 text-[10px] text-cinnabar tabular">v{{ note.version }}</span>
+              <span class="shrink-0 rounded border border-cinnabar/40 bg-cinnabar/10 px-1.5 py-0.5 text-[10px] text-ink tabular">v{{ note.version }}</span>
               <span
                 class="grid h-5 w-5 shrink-0 place-items-center transition-transform duration-200"
                 :class="openVersions[note.version] ? 'rotate-180' : ''"

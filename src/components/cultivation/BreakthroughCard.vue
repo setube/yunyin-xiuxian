@@ -22,7 +22,7 @@
 
   <!-- 突破准备:静坐调息 / 服聚气丹(无劫突破时,一次性加成) -->
   <div v-if="!btInfo.needTribulation" class="mt-2 flex items-start gap-2.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
-    <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-jade/15 font-kai text-[12px] text-jade">备</span>
+    <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md border border-jade/40 bg-jade/15 font-kai text-[12px] text-ink">备</span>
     <div class="min-w-0 grow">
       <div class="flex items-center justify-between text-[10px] text-ink-faint">
         <span>突破准备(一次有效)</span>

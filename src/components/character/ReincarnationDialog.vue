@@ -58,7 +58,7 @@
         </p>
         <p class="mt-2 flex items-center gap-2">
           <span class="font-kai text-[14px]" :class="view.stageAdvanced ? 'text-cinnabar' : 'text-ink'">{{ view.stageName }}</span>
-          <span v-if="view.stageAdvanced" class="rounded bg-cinnabar/10 px-1.5 py-0.5 text-[10px] text-cinnabar">境地已迁</span>
+          <span v-if="view.stageAdvanced" class="rounded border border-cinnabar/40 bg-cinnabar/10 px-1.5 py-0.5 text-[10px] text-ink">境地已迁</span>
         </p>
         <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">{{ view.stageDesc }}</p>
         <p v-if="view.toNextStage !== null" class="mt-1 text-[11px] text-ink-faint tabular">

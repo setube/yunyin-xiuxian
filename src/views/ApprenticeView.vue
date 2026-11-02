@@ -31,8 +31,8 @@
             <div class="min-w-0 grow">
               <p class="flex items-center gap-2 truncate font-kai text-[14px] text-ink">
                 {{ a.def.name }}
-                <span class="rounded bg-gold-ink/10 px-1.5 text-[10px] text-gold-ink">第 {{ a.level }} 层</span>
-                <span class="rounded bg-jade/10 px-1.5 text-[10px] text-jade">{{ a.bondTitle }}</span>
+                <span class="rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 text-[10px] text-ink">第 {{ a.level }} 层</span>
+                <span class="rounded border border-jade/40 bg-jade/10 px-1.5 text-[10px] text-ink">{{ a.bondTitle }}</span>
               </p>
               <p class="truncate text-[10px] text-ink-faint">{{ a.def.desc }}</p>
             </div>

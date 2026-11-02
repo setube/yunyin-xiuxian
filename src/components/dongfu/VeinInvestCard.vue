@@ -26,7 +26,7 @@
           <div class="min-w-0 flex-1">
             <p class="flex flex-wrap items-center gap-1.5">
               <span class="truncate font-kai text-[13px] text-ink">{{ v.name }}</span>
-              <span v-if="isMain(v.id)" class="shrink-0 rounded bg-cinnabar/15 px-1 py-0.5 text-[10px] leading-none text-cinnabar">主脉</span>
+              <span v-if="isMain(v.id)" class="shrink-0 rounded border border-cinnabar/40 bg-cinnabar/15 px-1 py-0.5 text-[10px] leading-none text-ink">主脉</span>
               <span v-else-if="dongfu.veinMain === null" class="shrink-0 text-[10px] text-ink-faint">首投成主</span>
             </p>
             <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">{{ v.desc }}</p>
