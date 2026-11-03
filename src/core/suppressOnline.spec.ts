@@ -53,6 +53,13 @@ describe('玩家反馈: 镇压后在线产出(真实场景)', () => {
    * 哪天镇压产出接上了灵脉,这条会红,提醒去补对应的数值判据。
    */
   it('灵脉投资不影响镇压产出(它只进洞府产出,不进镇压)', () => {
+    /*
+     * 两次测量必须同世界时刻:产出受繁荣度影响,而 prosperity 由
+     * `now - suppressedAt` 与累计胜场推出(deriveProsperity) ——
+     * 用默认的 Date.now() 两次会落在不同繁荣档,产出跟着变。
+     * 那是产品行为,不是灵脉生效;这里把 `worldAt` 钉死排除掉。
+     */
+    const WORLD_AT = 1_700_000_000_000
     const measure = (veinGather: number): number => {
       setActivePinia(createPinia())
       const player = usePlayerStore()
@@ -62,7 +69,7 @@ describe('玩家反馈: 镇压后在线产出(真实场景)', () => {
         useDongfuStore().veinPoints = { gather: veinGather, craft: 0, alchemy: 0, insight: 0 }
       }
       const before = resources.spiritStone.m * Math.pow(10, resources.spiritStone.e)
-      settleSuppressedRegions(3600)
+      settleSuppressedRegions(3600, undefined, WORLD_AT)
       return resources.spiritStone.m * Math.pow(10, resources.spiritStone.e) - before
     }
 
