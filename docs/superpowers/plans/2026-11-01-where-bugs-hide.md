@@ -55,6 +55,58 @@
 | 数字格式化边界 | 单位表逐档 + 千分位 | 万/亿/兆/京/垓/秭/穰 全部正确;999999 → `100万`、1e6 → `100万` 一档不错 |
 | 极端大数 | e307 / e308 / e309 | 超单位表走科学计数 `1.00e307` —— 这是**有意兜底**(单位表到「极」为止),不是缺陷 |
 
+## 把四个 QA 脚本过了一遍(第 296 轮)
+
+上一轮的教训是「改 DOM 结构要搜一遍按结构取元素的脚本」。这一轮把那句话执行到底。
+
+### 脚本引用的选择器,逐个对回源码
+
+把 `scripts/*.mjs` 里所有 `querySelector(All)` 的字面量抓出来,拆成 class 与
+属性两类,逐个查源码里还在不在:
+
+```
+脚本引用了但源码中找不到的选择器:0
+```
+
+上一轮那处 `[role="status"] button` 是唯一一处,已修。
+
+顺带看了几处「看着可疑、其实没问题」的:
+
+| 选择器 | 判断 |
+| --- | --- |
+| `.pointer-events-none.fixed button`(19 处) | 指提示条外层里的关闭钮,改结构后**仍然命中**,语义也对 |
+| `.modal-panel` | `BaseModal.vue` 仍在用 |
+| `[data-modal-body]` / `[data-focus-herb-missing]` | 各 1 处,都在 |
+
+### 四个脚本都跑了一遍
+
+| 脚本 | 结果 |
+| --- | --- |
+| `multitab-check` | ✓ 三项全绿 |
+| `aria-check` | ✓ 读屏属性在真实 DOM 上都成立 |
+| `focus-check` | ✓ 切页后焦点落回 main |
+| `offline-check` | ✓ 断网可重开、旧缓存会清、发版能接管 |
+
+### 再收一处:等条件,不等时长
+
+`multitab-check` 里我上一轮把第一页的等待提到 6000ms。**这是治标** ——
+慢机器上照样会偶发。看 `App.vue` 才注意到:
+
+```vue
+<BottomNavigation v-if="game.started && route.name !== 'create'" />
+```
+
+`nav` 出现即代表开局完成,直接等它:
+
+```js
+await first.waitForSelector('nav', { timeout: 15000 })
+await first.waitForTimeout(500)
+```
+
+**凡是「等某个状态成立」,就等那个状态本身。** 写死的毫秒数是在赌机器速度。
+
+---
+
 ## 我自己改坏的判据,挂了二十来轮(第 295 轮,**已修**)
 
 上一轮我说「`bun run smoke` 里那条两页同开的失败是既有的、与本次改动无关」。
@@ -102,8 +154,15 @@ for (const b of document.querySelectorAll('[role="status"] button')) {
 
 ### 顺带
 
-第一页的等待由 1500ms 提到 6000ms:心跳开表挂在 `started` 上,
-1.5 秒时开局流程往往还没走完。这条是真实的时序脆弱点,虽然不是本次的主因。
+第一页的等待原先只有 1500ms —— 心跳开表挂在 `started` 上,那时开局流程往往还没走完。
+先提到 6000ms,**随后又改成等条件**:
+
+```js
+await first.waitForSelector('nav', { timeout: 15000 })   // BottomNavigation 由 v-if="game.started" 控制
+await first.waitForTimeout(500)
+```
+
+写死时长在慢机器上依然会偶发失败;`nav` 出现即代表开局完成。**等条件,不等时长。**
 
 ---
 
