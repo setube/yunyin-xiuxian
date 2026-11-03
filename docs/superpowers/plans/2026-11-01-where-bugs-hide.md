@@ -1778,6 +1778,46 @@ it('sampleWinRate 取样数超表长时顶格,不越界取到 undefined→NaN', 
 前几轮修的那些都是「特定输入下的错误状态」,而这一类是「任意操作序列下的稳定性」——
 两者互补,且后者成本很低(十几秒跑完)。
 
+### 先量「还剩哪些面没查」,再动手(第 292 轮)
+
+连着十来轮读代码都空手,这一轮先做一件事:**数覆盖密度**。
+
+```
+core       实现 126 / spec 243
+stores     实现  19 / spec  27
+ui         实现  37 / spec  58
+utils      实现  12 / spec  19
+data       实现  58 / spec  33      ← 比例最低
+composables 实现 13 / spec  13      ← 一一对应
+router      实现  2 / spec   2
+views / components          0         ← 完全没有
+```
+
+`views` / `components` 零 spec,但它们被 `ui-smoke` / `aria-check` / `layout-check`
+三轮真实浏览器脚本盖着。真正的空白在 `data`:58 个模块只有 33 个自带 spec。
+
+### 但「没有自带 spec」不等于「没人管」
+
+`data` 靠的是横向审计:`dataIntegrity` / `contentCounts` / `dataTextAudit` /
+`contentReachabilityAudit`。这些不是「一个模块一个 spec」,而是「一个判据扫一片」。
+
+所以这一轮换了个角度查**跨模块引用有没有悬空**(横向审计很少逐条钉这个):
+
+| 检查 | 结果 |
+| --- | --- |
+| 导师 → 功法 id | 0 悬空 |
+| 区域 → 首领 id | 0 悬空 |
+| 法宝效果类型 | 8 种(damage/drain/heal/purge/shield/stun/sunder/weaken),与 `combat.ts` 的分支完全对应 |
+
+### 一次自查
+
+第一版查「区域 → 首领」时用 `ENEMIES.map(e => e.name)` 建集合,报了 6 个悬空。
+翻数据才看到 `boss` 字段存的是 **id**(`e_wolfking`),不是名字 —— **探针的错**。
+改用 id 后归零。
+
+同一类错误这一期犯过三次(漏 `.vue` 文件、按 name 比 id、少取一个 class)。
+**建集合之前先确认被比的字段是什么。**
+
 ### 一个操作教训
 
 子代理留下的探针文件叫 `zzz-probe*.spec.ts` / `zz*Probe.spec.ts`,我清理了两轮:
