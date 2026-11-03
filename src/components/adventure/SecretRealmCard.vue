@@ -36,8 +36,9 @@
           v-for="r in list"
           :key="r.id"
           class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98 disabled:cursor-not-allowed"
-          :class="{ 'opacity-60': !canPay(r) }"
+          :class="{ 'opacity-60': !canPay(r), 'realm-top-gain': isTopGain(realmMark(r)) }"
           :disabled="!canPay(r)"
+          :aria-label="realmMark(r).label"
           @click="enter(r.id)"
         >
           <span class="flex items-baseline gap-2">
@@ -49,6 +50,15 @@
           </span>
           <span v-if="entryBlockText(r)" class="mt-0.5 block text-[10px] tabular text-cinnabar">
             {{ entryBlockText(r) }}
+          </span>
+          <!-- 险利双轴:上一轴有多伤、下一轴值不值。两轴共用五处秘境的最小与最大,可横向比 -->
+          <span class="mt-1 flex items-center gap-1.5">
+            <span class="w-5 shrink-0 text-[9px] leading-none text-jade">回血</span>
+            <span class="realm-axes min-w-0 flex-1" aria-hidden="true">
+              <span class="realm-axis realm-axis--heal" :style="{ '--axis-pos': `${realmMark(r).heal * 100}%` }" />
+              <span class="realm-axis realm-axis--gain" :style="{ '--axis-pos': `${realmMark(r).gain * 100}%` }" />
+            </span>
+            <span class="w-5 shrink-0 text-right text-[9px] leading-none text-gold-ink">战利</span>
           </span>
           <span class="mt-0.5 block text-[10px] leading-relaxed text-ink-faint">{{ r.desc }}</span>
         </button>
@@ -66,6 +76,7 @@
   import { useEndgameStore } from '@/stores/endgame'
   import { useUiStore } from '@/stores/ui'
   import { secretRealmDef, type SecretRealmDef } from '@/data/secretRealms'
+  import { isTopGain, realmMark } from '@/ui/realmMark'
   import { cnNumber } from '@/utils/format'
   import {
     SECRET_LAYERS,
