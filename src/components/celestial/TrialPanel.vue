@@ -145,11 +145,19 @@
           v-for="p in PACTS"
           :key="p.id"
           class="chip-ink !py-1.5"
-          :class="draft.pactId === p.id ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
+          :class="[pactMark(p.id) ? `pact-weight-${pactMark(p.id)!.weight}` : '', draft.pactId === p.id ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint']"
           :title="p.ruleText"
+          :aria-label="pactMark(p.id)?.label ?? p.name"
           :aria-pressed="draft.pactId === p.id"
           @click="setDraftPact(p.id)"
         >
+          <!-- 契纹:同一套形状语言,挑战书与远征择契读得通 -->
+          <span
+            v-if="pactMark(p.id)"
+            class="pact-crest mr-1 inline-block h-3 w-3 align-[-2px]"
+            :class="`pact-crest--${pactMark(p.id)!.crest}`"
+            aria-hidden="true"
+          />
           {{ p.name }}
         </button>
       </div>
@@ -194,6 +202,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { CELESTIAL_WORLDS, TRIALS } from '@/data/endgame'
   import { PACTS, pactDef } from '@/data/pacts'
+  import { pactMark } from '@/ui/pactMark'
   import { MUTATORS, mutatorDef } from '@/data/mutators'
   import { todayChallenge, undertakeDaily } from '@/core/dailyChallenge'
   import { useWallNow } from '@/composables/useWallClock'

@@ -1,6 +1,13 @@
 /** 天道契约:玩家主动签下的不公平规则,风险换道源 */
 import type { PactDef } from '@/types'
 
+/**
+ * 重注阈值:道源倍率达到这条线即算「重契」。
+ * 唯一定义处 —— `core/identity` 用它数「主动接下天道重注」,`ui/pactMark` 用它上形制。
+ * 两处各写一个 2.5,迟早分叉成「界面说这是重注、画像里不算」。
+ */
+export const PACT_HEAVY_MULT = 2.5
+
 export const PACTS: PactDef[] = [
   {
     id: 'xue',

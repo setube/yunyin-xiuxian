@@ -1113,6 +1113,82 @@ html[data-theme='dark'] .dao-crest {
     linear-gradient(-45deg, transparent 0 43%, currentColor 43% 51%, transparent 51% 100%);
 }
 
+/* ================= 天道契约形制(pactMark) =================
+ * 六张契摆在眼前,要做的判断是「这一趟敢下多大的注」。此前六张只差一个字与一个 ×N,
+ * 轻重得逐个读倍数(见 src/ui/pactMark.ts)。这里补两样:
+ *   契纹:每张契一枚自己的线纹(裂/缺/促/独/完/逆);
+ *   契重:轻/中/重三档描边 —— 阈值取 data/pacts.PACT_HEAVY_MULT,与画像那边同一根线。
+ * 色只表达轻重,不表达「这几张不一样」:色弱玩家靠纹样与描边仍然分得开。
+ *
+ * 契纹是印面**旁边**的一枚独立纹样,不与那个 11px 的印字重叠 ——
+ * 实测叠在一起时六张契反而更像同一张。纹样色跟随上下文(currentColor)。
+ */
+.pact-crest {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.pact-crest::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+/* 血契:一道细裂 */
+.pact-crest--crack::before {
+  background-image: linear-gradient(158deg, transparent 0 46%, currentColor 46% 54%, transparent 54% 100%);
+}
+/* 天残契:缺角 —— 两道边线,右上那一段是空的 */
+.pact-crest--broken::before {
+  background-image:
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-size: 1.5px 100%, 62% 1.5px;
+  background-position: left bottom, left bottom;
+}
+/* 疾战契:两道并行短促斜线 */
+.pact-crest--haste::before {
+  background-image:
+    linear-gradient(118deg, transparent 0 40%, currentColor 40% 48%, transparent 48% 100%),
+    linear-gradient(118deg, transparent 0 58%, currentColor 58% 66%, transparent 66% 100%);
+}
+/* 孤剑契:一枚空心圆 */
+.pact-crest--solo::before {
+  inset: 22%;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+/* 无伤契:一圈闭合方框 */
+.pact-crest--whole::before {
+  inset: 22%;
+  border: 1.5px solid currentColor;
+  border-radius: 1px;
+}
+/* 逆命契:一道折返的尖角(人字) */
+.pact-crest--reversed::before {
+  background-image:
+    linear-gradient(48deg, transparent 0 52%, currentColor 52% 62%, transparent 62% 100%),
+    linear-gradient(-48deg, transparent 0 52%, currentColor 52% 62%, transparent 62% 100%);
+  background-size: 100% 64%, 100% 64%;
+  background-position: left top, right top;
+}
+
+/* 契重描边:轻/中/重三档。只用描边粗细与明度,不另造颜色 */
+.pact-weight-light {
+  outline: 1px solid rgb(var(--color-ink-rgb) / 0.16);
+  outline-offset: -1px;
+}
+.pact-weight-mid {
+  outline: 1.5px solid rgb(var(--color-amber-ink-rgb) / 0.4);
+  outline-offset: -1px;
+}
+.pact-weight-heavy {
+  outline: 2px solid rgb(var(--color-cinnabar-rgb) / 0.5);
+  outline-offset: -1px;
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
