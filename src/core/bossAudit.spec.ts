@@ -1,7 +1,8 @@
 /* eslint-disable no-console -- 审计报告 */
 import { describe, expect, it } from 'vitest'
 import { ENEMIES } from '@/data/enemies'
-import { REGIONS } from '@/data/regions'
+import { REGIONS, maxTierForMajor } from '@/data/regions'
+import { MAX_MAJOR } from '@/data/realms'
 
 /** Boss 生态审计:技能、mod、攻防血倍率与机制组合的多样性;不测玩家能否击败 */
 
@@ -173,22 +174,35 @@ describe('Phase 30.6: Boss 生态审计', () => {
  * 上一条断言 `ALL_BOSSES.length === REGIONS.length`,但两个首领挤在同一阶时
  * 这条照样绿 —— 而另一阶就没首领可打了。玩家会卡在那个境界推不动。
  */
+/**
+ * 期望阶梯**写死在判据里**,不从观测数据现推。
+ *
+ * 原先写 `const maxTier = Math.max(...byTier.keys())`:数据把最高那一阶整个删掉后,
+ * 上限跟着缩到 31,1..31 仍然一个不缺 —— 那一阶此后没有首领可打,判据却照样绿。
+ * 现在的上限取自真实区域阶梯(`maxTierForMajor(MAX_MAJOR)`),删数据就会红。
+ */
+const TIER_TOP = maxTierForMajor(MAX_MAJOR)
+
 describe('Boss 覆盖 · 每个 tier 都要有首领', () => {
   it('1..32 阶一个不缺,且每阶至少一位', () => {
+    expect(TIER_TOP, '区域阶梯的上限变了,下面的期望范围要跟着改').toBe(32)
     const byTier = new Map<number, number>()
     for (const b of ALL_BOSSES) byTier.set(b.tier, (byTier.get(b.tier) ?? 0) + 1)
-    const maxTier = Math.max(...byTier.keys())
     const gaps: number[] = []
-    for (let t = 1; t <= maxTier; t += 1) if (!byTier.has(t)) gaps.push(t)
+    for (let t = 1; t <= TIER_TOP; t += 1) if (!byTier.has(t)) gaps.push(t)
     expect(gaps, `这些 tier 没有首领可打:${gaps.join(',')}`).toEqual([])
     for (const [tier, n] of byTier) expect(n, `${tier} 阶的首领数量异常`).toBeGreaterThan(0)
+    // 超出真实阶梯的首领玩家永远碰不到
+    const outOfRange = ALL_BOSSES.filter(b => b.tier < 1 || b.tier > TIER_TOP)
+    expect(outOfRange, `首领 tier 超出 1..${TIER_TOP}:${outOfRange.map(b => b.id).join(',')}`).toEqual([])
   })
 
   it('非首领敌人的 tier 覆盖也不缺', () => {
     const tiers = new Set(ENEMIES.map(e => e.tier))
-    const maxTier = Math.max(...tiers)
     const gaps: number[] = []
-    for (let t = 1; t <= maxTier; t += 1) if (!tiers.has(t)) gaps.push(t)
+    for (let t = 1; t <= TIER_TOP; t += 1) if (!tiers.has(t)) gaps.push(t)
     expect(gaps, `这些 tier 一个敌人都没有:${gaps.join(',')}`).toEqual([])
+    const outOfRange = ENEMIES.filter(e => e.tier < 1 || e.tier > TIER_TOP)
+    expect(outOfRange, `敌人 tier 超出 1..${TIER_TOP}:${outOfRange.map(e => e.id).join(',')}`).toEqual([])
   })
 })

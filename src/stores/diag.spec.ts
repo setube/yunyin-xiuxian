@@ -153,5 +153,28 @@ describe('异常留档', () => {
       expect(summarizeError(undefined)).toBe('undefined')
       expect(summarizeError(null)).toBe('null')
     })
+
+    /**
+     * 截断必须按码点:emoji 占两个码元,按 `slice` 截到 200 会把第 200 位劈开,
+     * 留下一个落单的高位代理项。这种串能照常存进存档、照常读回,
+     * 只是那一条诊断在页面上显示成乱码方块 —— 而诊断正是用来看故障的。
+     */
+    it('截断按码点走,超长字符串不留下落单代理项', () => {
+      const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
+      // 每个 emoji 占两个码元;199 个字符 + emoji 正好会在第 200 个码元处劈开
+      const longString = '令'.repeat(DIAG_MESSAGE_MAX - 1) + '🌙'.repeat(20)
+      expect(summarizeError(longString)).not.toMatch(lone)
+      expect(summarizeError(new Error(longString)).length).toBeLessThanOrEqual(DIAG_MESSAGE_MAX + 10)
+      expect(summarizeError({ name: longString })).not.toMatch(lone)
+    })
+
+    it('读档自愈里的消息截断同样按码点', () => {
+      const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
+      setActivePinia(createPinia())
+      const diag = useDiagStore()
+      diag.errors = [{ at: 1, info: '', route: '', count: 1, message: '错'.repeat(DIAG_MESSAGE_MAX - 1) + '🌙🌙' }]
+      diag.sanitize()
+      expect(diag.errors[0]!.message).not.toMatch(lone)
+    })
   })
 })

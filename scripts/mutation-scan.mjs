@@ -13,7 +13,7 @@
  * 用法:node scripts/mutation-scan.mjs [--limit N]
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { join, resolve } from 'node:path'
 
 const ROOT = resolve(import.meta.dirname, '..')
@@ -44,7 +44,8 @@ for (const file of files) {
   const src = readFileSync(file, 'utf-8')
   for (const { name, re, rep } of PATTERNS) {
     for (const m of src.matchAll(re)) {
-      found.push({ file, spec, name, index: m.index, text: m[0], mutated: m[0].replace(re, rep) })
+      const line = src.slice(0, m.index).split('\n').length
+      found.push({ file, spec, name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
       if (found.length >= LIMIT) break
     }
     if (found.length >= LIMIT) break
@@ -54,31 +55,70 @@ for (const file of files) {
 
 console.log(`扫到 ${found.length} 个可变异点(上限 ${LIMIT})`)
 
+/**
+ * 跑一次被变异文件的 spec。
+ *
+ * 退出码不能直接当「抓到了」用:启动失败、语法错误、setup 崩掉都会非零退出,
+ * 把设施故障记成「这条守卫有牙」等于给自己发一张假绿灯。故按 vitest 的 JSON
+ * 报告区分三态 —— 只有「跑完了且有用例失败」才算抓到。
+ *
+ * @returns {'caught' | 'survived' | 'infra'}
+ */
+function runSpec(spec) {
+  const out = join(ROOT, '.vitest', 'mutation-scan.json')
+  const res = spawnSync(
+    'bunx',
+    ['vitest', 'run', spec, '--reporter=json', `--outputFile=${out}`],
+    { cwd: ROOT, stdio: 'pipe', encoding: 'utf-8' }
+  )
+  let report
+  try {
+    report = JSON.parse(readFileSync(out, 'utf-8'))
+  } catch {
+    // stderr 前几行常是 esbuild/oxc 的固定告警,取最后一行更像真错误
+    const tail = (res.stderr ?? '').trim().split('\n').filter(Boolean).slice(-1)[0]
+    return { verdict: 'infra', detail: (tail ?? `退出码 ${res.status}`).slice(0, 160) }
+  }
+  const failed = (report.testResults ?? []).filter(r => r.status === 'failed')
+  if (failed.length > 0) return { verdict: 'caught' }
+  // 一条都没跑,等同于什么都没验证
+  if ((report.numTotalTests ?? 0) === 0) return { verdict: 'infra', detail: '没有用例被执行' }
+  if (res.status !== 0) return { verdict: 'infra', detail: `退出码 ${res.status} 但报告里没有失败用例` }
+  return { verdict: 'survived' }
+}
+
 const missed = []
+const infra = []
 let checked = 0
 for (const t of found) {
   const orig = readFileSync(t.file, 'utf-8')
-  if (!orig.includes(t.text) || t.mutated === t.text) continue
-  writeFileSync(t.file, orig.replace(t.text, t.mutated))
-  let caught = false
+  // 同一段文本可能在文件里出现多次:按记录的下标定位,否则后续几处会重复变异第一处
+  if (orig.slice(t.index, t.index + t.text.length) !== t.text || t.mutated === t.text) continue
+  writeFileSync(t.file, orig.slice(0, t.index) + t.mutated + orig.slice(t.index + t.text.length))
+  let verdict
   try {
-    execFileSync('bunx', ['vitest', 'run', t.spec], { cwd: ROOT, stdio: 'pipe' })
-  } catch {
-    caught = true
+    verdict = runSpec(t.spec)
   } finally {
     writeFileSync(t.file, orig)
   }
   checked += 1
-  const rel = t.file.slice(ROOT.length + 1)
-  if (!caught) {
+  const rel = `${t.file.slice(ROOT.length + 1)}:${t.line ?? t.index}`
+  if (verdict.verdict === 'survived') {
     missed.push(t)
     console.log(`  ✗ 漏  ${rel}  [${t.name}]  ${t.text.trim().slice(0, 60)}`)
+  } else if (verdict.verdict === 'infra') {
+    infra.push({ ...t, detail: verdict.detail })
+    console.log(`  ! 故障 ${rel}  [${t.name}]  ${verdict.detail}`)
   }
 }
 
-console.log(`\n检查 ${checked} 处 | 漏 ${missed.length} 处`)
+console.log(`\n检查 ${checked} 处 | 漏 ${missed.length} 处 | 设施故障 ${infra.length} 处`)
 if (missed.length > 0) {
   console.log('\n漏掉的(改坏了不会红):')
   for (const m of missed) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.text.trim().slice(0, 70)}`)
-  process.exitCode = 1
 }
+if (infra.length > 0) {
+  console.log('\n设施故障(没测成,不算抓到也不算漏):')
+  for (const m of infra) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.detail}`)
+}
+if (missed.length > 0 || infra.length > 0) process.exitCode = 1

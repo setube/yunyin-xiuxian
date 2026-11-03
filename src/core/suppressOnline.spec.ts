@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { setActivePinia, createPinia } from 'pinia'
@@ -7,6 +7,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useDongfuStore } from '@/stores/dongfu'
 import { settleSuppressedRegions } from './suppress'
+import { mulberry32, RandomService } from '@/utils/random'
 
 describe('玩家反馈: 镇压后在线产出(真实场景)', () => {
   beforeEach(() => {
@@ -75,6 +76,11 @@ describe('玩家反馈: 镇压后在线产出(真实场景)', () => {
      * 那是产品行为,不是灵脉生效;这里把 `worldAt` 钉死排除掉。
      */
     const WORLD_AT = 1_700_000_000_000
+    /*
+     * 随机源每次**同种子新建**:结算里装备掉落要掷骰,若共用模块级 `rng`,
+     * 第一次与第二次调用的点数本就不同 —— 实测同一配置连测两次是 225.6 与 180。
+     * 那点差异与灵脉无关,却会让「相等」这条判据红(=误报),也会让「都 > 0」那条绿(=没用)。
+     */
     const measure = (veinGather: number): number => {
       setActivePinia(createPinia())
       const player = usePlayerStore()
@@ -84,14 +90,24 @@ describe('玩家反馈: 镇压后在线产出(真实场景)', () => {
         useDongfuStore().veinPoints = { gather: veinGather, craft: 0, alchemy: 0, insight: 0 }
       }
       const before = resources.spiritStone.m * Math.pow(10, resources.spiritStone.e)
-      settleSuppressedRegions(3600, undefined, WORLD_AT)
+      settleSuppressedRegions(3600, new RandomService(mulberry32(424242)), WORLD_AT)
       return resources.spiritStone.m * Math.pow(10, resources.spiritStone.e) - before
     }
 
-    const plain = measure(0)
-    const withVein = measure(30)
-    expect(plain, '镇压本该有产出,否则这条判据没有意义').toBeGreaterThan(0)
-    // 数值相等这件事交给上面那条源码守卫;这里的 `now` 走真实时钟,两次可能跨繁荣档
-    expect(withVein, '镇压产出不该为零').toBeGreaterThan(0)
+    /*
+     * 假时钟把 `Date.now()` 钉死:繁荣度由 `now - suppressedAt` 与累计胜场推出,
+     * 实钟下两次测量可能跨档,产出本就该不同 —— 那就分不清差异来自灵脉还是时钟。
+     * 冻住之后,「相等」才是对灵脉的真正判据(原先只判了两边都 > 0)。
+     */
+    vi.useFakeTimers()
+    vi.setSystemTime(WORLD_AT)
+    try {
+      const plain = measure(0)
+      const withVein = measure(30)
+      expect(plain, '镇压本该有产出,否则这条判据没有意义').toBeGreaterThan(0)
+      expect(withVein, '灵脉投资不该改变镇压产出').toBe(plain)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

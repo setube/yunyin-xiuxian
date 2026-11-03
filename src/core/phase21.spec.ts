@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { CombatRules, CombatantSnap } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
+import { toNum } from '@/utils/gnum'
 import { CELESTIAL_WORLDS, MUTATION_FOES, TRIAL_FOES } from '@/data/endgame'
 import { PACTS } from '@/data/pacts'
 import { MUTATORS } from '@/data/mutators'
@@ -235,6 +236,38 @@ describe('组合技裁判', () => {
       discriminating,
       `场景已能分出胜负(基础组 ${(baseRate * 100).toFixed(0)}%),请把本条换成「带枯泽显著更优」的判据`
     ).toBe(false)
+
+    /*
+     * 胜率测不出枯泽,就直接测它的机制本身:濒死时治疗 ×1.5。
+     * 光靠上面两条,把 healSelf 里那半行增幅删掉也照样绿 —— 那才是这条用例该防的东西。
+     * 战报里那条 proc 行同时确认它确实触发过(此前枯泽静默加成,一行日志都没有)。
+     */
+    /*
+     * 上面那两条测不出枯泽,就直接测它的机制:濒死时治疗 ×1.5。
+     *
+     * 场景要能**打到**濒死(血量掉到 30% 以下),光把开局血量压到 28% 不够 ——
+     * 实测那种开局下全程不回血,两边治疗量逐位相同,判据等于没写。
+     * 这里改用一场必输的消耗战(第 12 档敌人放大到 4 倍):玩家一路掉到濒死,
+     * 每口治疗都吃满增幅。同种子对跑,差异只可能来自枯泽。
+     */
+    const grindFoe = worldFoeSnap(TRIAL_FOES[1]!, SIM_REFERENCE, 4)
+    const kuzeRun = resolveCombat(
+      { ...base, comboArt: 'kuze' },
+      grindFoe,
+      new RandomService(mulberry32(4242)),
+      {},
+      true
+    )
+    const plainRun = resolveCombat(base, grindFoe, new RandomService(mulberry32(4242)), {}, true)
+    const healOf = (r: typeof kuzeRun): number => toNum(r.stats!.player.healed)
+    expect(healOf(kuzeRun), '带枯泽在濒死场景应比不带的治疗量显著更高').toBeGreaterThan(healOf(plainRun) * 1.5)
+    // 战报里必须有触发记录 —— 枯泽此前静默加成,按 proc 行统计的判据永远数出 0
+    const kuzeProcs = kuzeRun.log.filter(l => l.t === 'proc' && /枯泽回春/.test(l.text))
+    expect(kuzeProcs.length, '枯泽触发了却没写 proc 战报').toBeGreaterThan(0)
+    expect(
+      plainRun.log.filter(l => l.t === 'proc' && /枯泽回春/.test(l.text)).length,
+      '不带枯泽却报了枯泽触发'
+    ).toBe(0)
   })
 })
 

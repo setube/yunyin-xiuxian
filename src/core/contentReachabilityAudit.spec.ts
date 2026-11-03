@@ -359,14 +359,23 @@ describe('内容可达性 · 全局报告', () => {
  */
 describe('内容可达性 · 洞府惩罚 buff 的命名约定', () => {
   it('每个 penalty.type 都能拼出一个真实存在的 buff', () => {
-    const types = [...new Set([...JSON.stringify(CAVE_EVENT_POOL).matchAll(/"type":"(\w+)"/g)].map(m => m[1]!))]
-      .filter(t => !['exp', 'buff', 'pill', 'herb', 'ore', 'item'].includes(t))
-    expect(types.length, '没扫到任何惩罚类型,守卫空转').toBeGreaterThan(0)
+    /*
+     * 原先靠 `JSON.stringify(...).includes('"penalty":{"type":"…"')` 认惩罚:
+     * 属性顺序一变(先写 value 再写 type)就匹配不上,循环直接 `continue`,
+     * 命名约定检查照样绿,而那条惩罚其实没有对应 buff。现在直接读对象。
+     */
+    const types = new Set<string>()
+    for (const pool of Object.values(CAVE_EVENT_POOL)) {
+      for (const ev of pool as { options: { penalty?: { type?: string } }[] }[]) {
+        for (const opt of ev.options ?? []) {
+          const t = opt.penalty?.type
+          if (typeof t === 'string' && t) types.add(t)
+        }
+      }
+    }
+    expect(types.size, '没扫到任何惩罚类型,守卫空转').toBeGreaterThan(0)
     for (const t of types) {
-      const id = `cave_penalty_${t}`
-      // 只有真正作为 penalty 出现过的类型才要求有对应 buff
-      if (!JSON.stringify(CAVE_EVENT_POOL).includes(`"penalty":{"type":"${t}"`)) continue
-      expect(buffDef(id), `惩罚类型 ${t} 拼出的 ${id} 在 BUFFS 里不存在 —— 惩罚会静默失效`).toBeDefined()
+      expect(buffDef(`cave_penalty_${t}`), `惩罚类型 ${t} 拼出的 cave_penalty_${t} 在 BUFFS 里不存在 —— 惩罚会静默失效`).toBeDefined()
     }
   })
 })

@@ -240,7 +240,7 @@ describe('变数抽取 · 三条不重复', () => {
     const ids = new Set(MUTATORS.map(m => m.id))
     for (let i = 0; i < 60; i += 1) {
       const picked = rollMutators()
-      expect(picked.length, `第 ${i} 次只抽到 ${picked.length} 条`).toBe(3)
+      expect(picked.length, `第 ${i} 次只抽到 ${picked.length} 条`).toBe(Math.min(3, MUTATORS.length))
       expect(new Set(picked).size, `第 ${i} 次出现重复:${picked.join(',')}`).toBe(3)
       for (const id of picked) expect(ids.has(id), `抽到了池外的 ${id}`).toBe(true)
     }
@@ -253,8 +253,15 @@ describe('变数抽取 · 三条不重复', () => {
   })
 
   it('池子不足三条时给几条算几条,不硬凑空 id', () => {
-    // 该函数按 `pool.length` 兜底;此处只钉「返回的都是合法 id」这一条
-    for (const id of rollMutators()) expect(typeof id).toBe('string')
+    /*
+     * 原先只对**全量池**调一次、再查 `typeof id === 'string'` —— 那是最弱的断言,
+     * 「不足三条」这个标题写的事情一次都没发生过。改成注入短池。
+     */
+    expect(rollMutators([{ id: 'a' }]), '单条池只该给一条').toEqual(['a'])
+    const two = rollMutators([{ id: 'a' }, { id: 'b' }])
+    expect(two.length, '两条池只该给两条').toBe(2)
+    expect(new Set(two).size, '两条池不该抽出重复').toBe(2)
+    expect(rollMutators([]), '空池给空数组,不该塞 undefined').toEqual([])
   })
 })
 
