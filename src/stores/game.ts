@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { persistConfig, SAVE_VERSION } from '@/utils/storage'
+import { truncateCodePoints } from '@/utils/saveShape'
 import { CREATE_REROLL_QUOTA } from '@/data/constants'
 import type { LinggenProfile } from '@/types'
 import { asFiniteNumber } from '@/utils/saveShape'
@@ -44,7 +45,7 @@ export const useGameStore = defineStore(
             )
       // 建号页裸下标读 ELEMENTS[root.element] / growthMult.toFixed,坏草稿会白屏;一根灵根不剩即作废
       createProfile.value = sanitizeLinggen(createProfile.value)
-      createName.value = typeof createName.value === 'string' ? createName.value.slice(0, 8) : ''
+      createName.value = typeof createName.value === 'string' ? truncateCodePoints(createName.value, 8) : ''
     }
 
     /** 记下当前掷出的灵根(不扣次数,见 spendCreateReroll) */
@@ -71,7 +72,8 @@ export const useGameStore = defineStore(
 
     function setCreateName(name: string): void {
       if (typeof name !== 'string') return
-      createName.value = name.slice(0, 8)
+      // 按码点截:emoji 占两个码元,slice 会把末尾那个切成孤立代理项
+      createName.value = truncateCodePoints(name, 8)
     }
 
     function markStarted(): void {
