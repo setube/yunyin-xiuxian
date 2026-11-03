@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { DaoMark } from '@/types'
 import { gn } from '@/utils/gnum'
-import { cultivatorProfile, daoNarrative, MILESTONE_DEFS } from './identity'
+import { cultivatorProfile, daoNarrative, MILESTONE_DEFS, trackClearRecords } from './identity'
+import { recordDef } from '@/data/identity'
 import { useEndgameStore } from '@/stores/endgame'
 
 function mark(partial: Partial<DaoMark>): DaoMark {
@@ -93,5 +94,56 @@ describe('道途行为叙事', () => {
     expect(a).not.toBe(b)
     // 样本不足不语
     expect(daoNarrative('sword', [mark({ life: 7 })], 7)).toBeNull()
+  })
+})
+
+/**
+ * 破界纪录:三个 `updateRecord` 的取值方向必须与数据定义同向。
+ *
+ * `updateRecord` 里 `if (!def || def.better !== better) return false` ——
+ * 传错方向**不报错、不抛异常,只是永远记不上**。而这三条纪录正是玩家档案里
+ * 最有存在感的三行,静默失效很长时间都不会被发现。
+ */
+describe('破界纪录 · 三条的取值方向', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('最快破界记短的(更少回合才刷新)', () => {
+    const endgame = useEndgameStore()
+    trackClearRecords('赤炎天', 120, null, 0)
+    expect(endgame.records.fastest_world?.value, '第一次应当记上').toBe(120)
+    trackClearRecords('赤炎天', 90, null, 0)
+    expect(endgame.records.fastest_world?.value, '更少的回合应当刷新').toBe(90)
+    trackClearRecords('赤炎天', 200, null, 0)
+    expect(endgame.records.fastest_world?.value, '更多回合不该覆盖最快').toBe(90)
+  })
+
+  it('最高风险破界记大的', () => {
+    const endgame = useEndgameStore()
+    // 无契时不写这条
+    trackClearRecords('赤炎天', 100, null, 0)
+    expect(endgame.records.highest_pact, '没有逆旅契就不该写这条').toBeUndefined()
+  })
+
+  it('赏金记大的,且为零时不写', () => {
+    const endgame = useEndgameStore()
+    trackClearRecords('赤炎天', 100, null, 0)
+    expect(endgame.records.biggest_reward, '零赏不该占一条纪录').toBeUndefined()
+    trackClearRecords('赤炎天', 100, null, 500)
+    expect(endgame.records.biggest_reward?.value, '有赏就该记上').toBe(500)
+    trackClearRecords('赤炎天', 100, null, 300)
+    expect(endgame.records.biggest_reward?.value, '更小的赏不该覆盖').toBe(500)
+  })
+
+  it('三条纪录的 better 方向与实现同向(传反就会静默永不更新)', () => {
+    const rows = ['fastest_world', 'highest_pact', 'biggest_reward'] as const
+    for (const id of rows) {
+      const def = recordDef(id)
+      expect(def, `${id} 在数据里不存在`).toBeTruthy()
+    }
+    expect(recordDef('fastest_world')!.better, '最快应当是 min').toBe('min')
+    expect(recordDef('highest_pact')!.better, '最高应当是 max').toBe('max')
+    expect(recordDef('biggest_reward')!.better, '最厚应当是 max').toBe('max')
   })
 })
