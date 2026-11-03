@@ -44,10 +44,10 @@
               <span
                 class="truncate font-kai text-[13px]"
                 :class="{ 'q-plaque': row.plaque }"
-                :style="{ color: qualityDef(row.def.quality).color }"
+                :style="{ color: qualityTextColor(row.def.quality) }"
                 >{{ row.def.name }}</span
               >
-              <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px]" :style="{ color: qualityDef(row.def.quality).color }">{{ qualityDef(row.def.quality).name }}</span>
+              <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px]" :style="{ color: qualityTextColor(row.def.quality) }">{{ qualityDef(row.def.quality).name }}</span>
               <span v-if="row.active" class="shrink-0 rounded border border-jade/40 bg-jade/15 px-1.5 py-0.5 text-[10px] text-ink">相伴</span>
             </p>
             <p class="truncate text-[10px] text-ink-faint">{{ row.def.desc }}</p>
@@ -81,7 +81,7 @@
   import { petDef, PETS } from '@/data/pets'
   import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
   import { petTraitText } from '@/ui/itemText'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { qualityAura } from '@/ui/qualityAura'
   import { modsText } from '@/data/statNames'
   import SectionTitle from '@/components/common/SectionTitle.vue'

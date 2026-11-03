@@ -63,10 +63,10 @@
   import { useInventoryStore } from '@/stores/inventory'
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
-  import { pillDef, pillQualityColor, pillQualityName } from '@/data/pills'
+  import { pillDef, pillQualityName, pillQualityTextColor } from '@/data/pills'
   import { HERB_GRADE_NAMES, herbGradeBandLabel, herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
   import { qualityAura } from '@/ui/qualityAura'
   import { tint } from '@/utils/colorToken'
@@ -159,7 +159,7 @@
       return {
         ...base,
         name: def.name,
-        nameCls: { color: pillQualityColor(def) },
+        nameCls: { color: pillQualityTextColor(def) },
         sub: `${pillQualityName(def)} · ×${slot.count}`,
         price: slot.price
       }
@@ -184,7 +184,7 @@
     return {
       ...base,
       name: tmpl?.name ?? inst.templateId,
-      nameCls: { color: quality.color },
+      nameCls: { color: qualityTextColor(quality.id) },
       sub: `${quality.name} · ${slot.tier} 阶`,
       quality: inst.quality,
       rare: isRareQuality(inst.quality),

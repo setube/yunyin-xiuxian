@@ -25,6 +25,26 @@ export const QUALITIES: QualityDef[] = [
 
 const BY_ID = new Map<QualityId, QualityDef>(QUALITIES.map(q => [q.id, q]))
 
+/**
+ * 品阶色**当文字用**时的取值。
+ *
+ * 九档里三档的原色在正文线上过不去(实测日主题:玄 4.28、天 2.11、仙 3.36;
+ * 夜主题:玄 3.34、仙 4.26),而 `color` 那一列还要兼任光环/边框/角章,
+ * 那些地方只需要「色差够大分得开」,不该为了文字压暗。
+ *
+ * 所以文字走单独一组 token:日主题用暗版、夜主题反过来用亮版
+ * (夜纸近黑,压暗只会更看不见)。其余六档原色本就双端达标,直接复用。
+ */
+const TEXT_COLOR: Partial<Record<QualityId, string>> = {
+  profound: 'var(--color-quality-profound-text)',
+  heaven: 'var(--color-quality-heaven-text)',
+  immortal: 'var(--color-quality-immortal-text)'
+}
+
+export function qualityTextColor(id: QualityId): string {
+  return TEXT_COLOR[id] ?? qualityDef(id).color
+}
+
 export function qualityDef(id: QualityId): QualityDef {
   return BY_ID.get(id) ?? QUALITIES[0]!
 }

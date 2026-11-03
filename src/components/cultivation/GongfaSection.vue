@@ -103,7 +103,7 @@
             class="grid h-8 w-8 shrink-0 place-items-center rounded-md font-kai text-[13px]"
             :class="gongfaCatSeal(def.type)"
           >{{ sealOf(def.type) }}</span>
-          <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: qualityDef(def.quality).color }">{{ def.name }}</span>
+          <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: qualityTextColor(def.quality) }">{{ def.name }}</span>
           <span class="shrink-0 text-[10px] text-ink-faint">{{ cultivation.learned[def.id] }} 层</span>
           <span v-if="branchName(def.id)" class="max-w-24 shrink-0 truncate rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-ink">
             {{ branchName(def.id) }}
@@ -145,7 +145,7 @@
   import { formatGN, formatGap } from '@/utils/format'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
   import { exchangeOkToast, exchangeFailText } from '@/ui/cultivationText'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 

@@ -31,7 +31,12 @@ export default {
         jade: withAlpha('--color-jade-rgb'),
         azure: withAlpha('--color-azure-rgb'),
         'violet-ink': withAlpha('--color-violet-ink-rgb'),
-        'amber-ink': withAlpha('--color-amber-ink-rgb')
+        'amber-ink': withAlpha('--color-amber-ink-rgb'),
+        /* 品阶色当文字用时的暗/亮版;装饰那一层仍用 data/qualities.ts 的原色 */
+        'quality-profound-text': withAlpha('--color-quality-profound-text-rgb'),
+        'quality-heaven-text': withAlpha('--color-quality-heaven-text-rgb'),
+        'quality-immortal-text': withAlpha('--color-quality-immortal-text-rgb'),
+        'quality-dao-text': withAlpha('--color-quality-dao-text-rgb')
       },
       fontFamily: {
         /* 只做「utility 名 → 变量」;字体栈事实源在 style.css 的 --font-kai / --font-song。

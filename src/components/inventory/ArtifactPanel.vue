@@ -41,7 +41,7 @@
         <span
           class="font-kai text-[14px]"
           :class="{ 'q-plaque': row.plaque }"
-          :style="{ color: qualityDef(row.def.quality).color }"
+          :style="{ color: qualityTextColor(row.def.quality) }"
           >{{ row.def.name }}</span
         >
         <QualityTag :quality="row.def.quality" />
@@ -132,7 +132,7 @@ import { computed, ref } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { useUiStore } from '@/stores/ui'
-import { qualityDef } from '@/data/qualities'
+import { qualityDef, qualityTextColor } from '@/data/qualities'
 import { REALMS } from '@/data/realms'
 import {
   artifactActiveText,
