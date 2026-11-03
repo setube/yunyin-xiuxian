@@ -515,18 +515,30 @@ bun run check 2>&1 | tail -2 && git add ... && git commit ...
 bun run check > /tmp/chk.log 2>&1; echo "EXIT=$?"; tail -3 /tmp/chk.log
 ```
 
-### 2. 被 gitignore 的临时文件不进 `git status`
+### 2. 探针文件可能逃过「工作区干净」的判断
 
-第 75 轮写的探针 `src/_mp2.spec.ts` 被 `src/_*` 规则忽略,所以 `git status` 一直显示干净 ——
-但 `docs-check` 扫的是**文件系统**,它数出 387 个 spec,而 README 写 386,门槛红了。
+> **2026-11-03 修订**:这一段原先写的是「`src/_*` 被 `.gitignore` 忽略,所以
+> `git status` 看不到」。**复核后没有这回事** —— `.gitignore` 与
+> `.git/info/exclude` 里都没有 `src/_*` 规则,`git log --all -p -- .gitignore`
+> 全历史也搜不到;实测 `touch src/_x.spec.ts` 后 `git status` 能正常显示它。
+>
+> **第 75 轮当时究竟发生了什么,我查不出来了** —— 没有留下当时的 `git status` 输出。
+> 归因(「被 gitignore 吞了」)已证伪,但真因不可考。不编一个替代解释。
 
-**判「工作区干净」不能只看 git**,清理探针后要用:
+**能确认的是这件事**:`git status` 只报「与 HEAD 有差异」的文件。
+探针被 `git add` 过再删掉源文件、或残留文件的命名变体没被同一轮的 `rm` 覆盖到,
+都会让「看 `git status` 觉得干净」与「文件系统里其实有」分家。
+本期就真发生过:子代理留下的 `zzz-probe6` / `zzReachProbe` 漏了两轮才清掉,
+期间 `gateWiring` 与 `layeringAudit` 变红,而我一度以为是自己改坏的。
+
+**所以「判工作区干净」要多查一层**:不只看 `git status`,还要按**文件系统**数一遍:
 
 ```bash
-find src -name "_*.spec.ts"
+find src -name "_*.spec.ts" -o -name "zz*.spec.ts" -o -name "*Probe*.spec.ts"
 ```
 
-确认没有残留。这条盲区存在了几十轮,直到 `docs-check` 报错才暴露。
+`docs-check` 数 spec 时扫的正是**文件系统**(不是 `git ls-files`),
+所以残留会直接顶出「全量 N 个 spec」的对不上 —— 这是它比 `git status` 强的地方。
 
 ### 一句话
 
