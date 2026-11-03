@@ -34,7 +34,9 @@
             <span class="min-w-0 truncate font-kai text-[14px] text-ink">{{ mainDef.name }}</span>
             <span
               v-if="branchName(mainDef.id)"
-              class="min-w-0 shrink truncate rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-ink"
+              class="min-w-0 shrink truncate rounded border px-1.5 py-0.5 text-[10px]"
+              :class="branchActive(mainDef.id) ? 'border-gold-ink/40 bg-gold-ink/10 text-ink' : 'border-ink/15 text-ink-faint'"
+              :title="branchActive(mainDef.id) ? undefined : '未满级 · 暂不生效'"
             >
               {{ branchName(mainDef.id) }}
             </span>
@@ -105,7 +107,12 @@
           >{{ sealOf(def.type) }}</span>
           <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: qualityTextColor(def.quality) }">{{ def.name }}</span>
           <span class="shrink-0 text-[10px] text-ink-faint">{{ cultivation.learned[def.id] }} 层</span>
-          <span v-if="branchName(def.id)" class="max-w-24 shrink-0 truncate rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 py-0.5 text-[10px] text-ink">
+          <span
+            v-if="branchName(def.id)"
+            class="max-w-24 shrink-0 truncate rounded border px-1.5 py-0.5 text-[10px]"
+            :class="branchActive(def.id) ? 'border-gold-ink/40 bg-gold-ink/10 text-ink' : 'border-ink/15 text-ink-faint'"
+            :title="branchActive(def.id) ? undefined : '未满级 · 暂不生效'"
+          >
             {{ branchName(def.id) }}
           </span>
           <span v-else-if="canEnlighten(def.id)" class="shrink-0 rounded border border-azure/40 bg-azure/10 px-1.5 py-0.5 text-[10px] text-ink">待悟道 →</span>
@@ -283,6 +290,22 @@
   function branchName(id: string): string | undefined {
     const branchId = cultivation.gongfaBranch[id]
     return branchId ? gongfaBranchDef(branchId)?.name : undefined
+  }
+
+  /**
+   * 分支是否正在生效。
+   *
+   * 词条只在功法**满级**时并进 mods(见 cultivation 的 gongfaMods),
+   * 而转世只留一门功法的等级、其余落回 1 层(carryGongfa) ——
+   * 于是「转世不失」的分支会留在界面上却不产生任何效果。
+   * 这里把那个状态标出来,免得玩家以为它还在加属性。
+   */
+  function branchActive(id: string): boolean {
+    const branchId = cultivation.gongfaBranch[id]
+    if (!branchId) return false
+    const def = gongfaDef(id)
+    if (!def) return false
+    return (cultivation.learned[id] ?? 0) >= gongfaMaxLevel(def)
   }
 
   function doExchange(): void {

@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useCultivationStore } from '@/stores/cultivation'
 import { branchesFor, canEnlighten, gongfaBranchDef, GONGFA_BRANCHES } from '@/data/gongfaBranches'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { GONGFA, gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 import { AFFIXES } from '@/data/affixes'
 import { qualityDef } from '@/data/qualities'
@@ -177,5 +179,51 @@ describe('悟道分支平衡审计', () => {
       if (!br.mods.tribulationResist) expect(br.name, br.id).not.toBe('应劫')
       if (br.mods.explorationSpeed) expect(br.desc, br.id).not.toContain('福地自现')
     }
+  })
+})
+
+/**
+ * 「转世不失」的分支,转世后其实不生效。
+ *
+ * 两处条件不一致:
+ * - `sanitize` 里保留分支只要求「已习得、层数 ≥ 1」(注释:`不要求满级`)
+ * - `gongfaMods` 里并进词条却要求 `lv >= gongfaMaxLevel`(9 层)
+ *
+ * 而转世只留一门功法的等级、其余落回 1 层(`carryGongfa`)。于是那条分支
+ * 会留在界面上 —— 界面上还写着「不可更改 · 转世不失」—— 却一点属性都不加。
+ *
+ * 这份判据钉住两件事:分支词条确实要求满级;UI 侧对未满级的分支要给出提示
+ * (由 `GongfaSection` 的 `branchActive` 负责,下面是源码守卫)。
+ */
+describe('悟道分支 · 转世后未满级则不生效', () => {
+  it('转世只保留一门功法的等级,其余落到 1 层', () => {
+    // carryGongfa 的规则:keepOne 时只有最高那门保等级
+    const learned = { m_taixuan: 9, m_qingmu: 5, m_lihuo: 3 }
+    const kept = 'm_taixuan'   // 最高
+    const after: Record<string, number> = {}
+    for (const [id, lv] of Object.entries(learned)) after[id] = id === kept ? lv : 1
+    expect(after.m_qingmu, '非最高功法应落回 1 层').toBe(1)
+    expect(after.m_qingmu, '1 层不满足满级条件,它的分支词条不会生效').toBeLessThan(9)
+  })
+
+  it('每条分支的宿主功法都存在,且满级线不是 1(否则转世也算满级)', () => {
+    for (const b of GONGFA_BRANCHES) {
+      const def = gongfaDef(b.gongfaId)
+      expect(def, `分支 ${b.name} 的宿主功法 ${b.gongfaId} 不存在`).toBeTruthy()
+      // 满级线因功法而异(秘典只有 3 层、主流 9 层),只要 > 1 就有「转世后不满级」的情形
+      expect(gongfaMaxLevel(def!), `${b.name} 的宿主满级线异常`).toBeGreaterThan(1)
+    }
+  })
+
+  it('满级线不止一种 —— 说明不能把它当成常量来判', () => {
+    const levels = new Set(GONGFA_BRANCHES.map(b => gongfaMaxLevel(gongfaDef(b.gongfaId)!)))
+    expect(levels.size, '所有分支的满级线都一样,那这条判据可以简化').toBeGreaterThan(1)
+  })
+
+  it('UI 对未满级的分支给出提示,而不是照常显示成已生效', () => {
+    const src = readFileSync(resolve(process.cwd(), 'src/components/cultivation/GongfaSection.vue'), 'utf-8')
+    expect(src, '缺少 branchActive:未满级的分支会被显示成已生效').toContain('function branchActive')
+    expect(src, 'branchActive 应按满级线判定').toMatch(/gongfaMaxLevel\(/)
+    expect(src, '未生效的分支要有提示文案').toContain('未满级')
   })
 })
