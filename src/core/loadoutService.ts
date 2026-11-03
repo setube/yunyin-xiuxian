@@ -1,6 +1,8 @@
 /** 构筑服务:捕获当前整套 Build / 一键切换 */
 import type { EquipSlot } from '@/types'
 import { uid } from '@/utils/id'
+import { truncateCodePoints } from '@/utils/saveShape'
+import { NAME_MAX_LENGTH } from '@/data/constants'
 import { EQUIP_SLOT_NAMES, EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
 import { artifactDef, artifactSlotsFor } from '@/data/artifacts'
 import { gongfaDef } from '@/data/gongfa'
@@ -32,7 +34,8 @@ export function captureLoadout(name: string): Loadout | null {
   const detected = detectBuild(player.finalStats.mods)
   const loadout: Loadout = {
     id: uid(),
-    name: name.trim().slice(0, 8) || detected?.style.name || '无名构筑',
+    // 按码点截:构筑名可能是 emoji,`.slice(0, 8)` 会在第八位劈开留下落单代理项
+    name: truncateCodePoints(name.trim(), NAME_MAX_LENGTH) || detected?.style.name || '无名构筑',
     seal: detected?.style.seal ?? '道',
     mainGongfa: cultivation.mainGongfa,
     subGongfa: [...cultivation.subGongfa],
@@ -128,7 +131,7 @@ export function renameLoadout(id: string, name: string): boolean {
   const loadouts = useLoadoutsStore()
   const ui = useUiStore()
   if (!loadouts.list.some(l => l.id === id)) return false
-  const next = name.trim().slice(0, 8) || '无名构筑'
+  const next = truncateCodePoints(name.trim(), NAME_MAX_LENGTH) || '无名构筑'
   loadouts.rename(id, next)
   ui.toast(loadoutRenamedToast(next), 'success')
   return true
