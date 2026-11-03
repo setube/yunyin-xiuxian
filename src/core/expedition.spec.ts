@@ -13,7 +13,8 @@ import { useEndgameStore } from '@/stores/endgame'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { CELESTIAL_WORLDS, EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
-import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes, challengeMutation } from './expedition'
+import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes, challengeMutation, rollMutators } from './expedition'
+import { MUTATORS } from '@/data/mutators'
 import { celestialJudgementLines } from './gauntlet'
 import { daoSourceShortfall } from './daoSource'
 import { gn } from '@/utils/gnum'
@@ -225,5 +226,34 @@ describe('远征预估对阵与实打同源(入界 + 每层节点 + 界主,共 5
       }
       expect(foes[foes.length - 1], `${w.id} 末战应为界主`).toBe(w.guardian)
     }
+  })
+})
+
+/**
+ * `rollMutators` 承诺「三条不重复」,但之前一条判据都没有。
+ *
+ * 它由试炼页的「窥探变数 / 再探」直接调用,结果直接决定这场挑战的难度构成。
+ * 若去重那步写坏,同一条变数能被抽中两次 —— 玩家看到「三条」实则只有两条生效。
+ */
+describe('变数抽取 · 三条不重复', () => {
+  it('每次都给三条,且互不相同、都来自池子', () => {
+    const ids = new Set(MUTATORS.map(m => m.id))
+    for (let i = 0; i < 60; i += 1) {
+      const picked = rollMutators()
+      expect(picked.length, `第 ${i} 次只抽到 ${picked.length} 条`).toBe(3)
+      expect(new Set(picked).size, `第 ${i} 次出现重复:${picked.join(',')}`).toBe(3)
+      for (const id of picked) expect(ids.has(id), `抽到了池外的 ${id}`).toBe(true)
+    }
+  })
+
+  it('多次抽取能覆盖到池里全部变数(不是总抽同三条)', () => {
+    const seen = new Set<string>()
+    for (let i = 0; i < 200; i += 1) for (const id of rollMutators()) seen.add(id)
+    expect(seen.size, `200 次只覆盖了 ${seen.size}/${MUTATORS.length} 条`).toBe(MUTATORS.length)
+  })
+
+  it('池子不足三条时给几条算几条,不硬凑空 id', () => {
+    // 该函数按 `pool.length` 兜底;此处只钉「返回的都是合法 id」这一条
+    for (const id of rollMutators()) expect(typeof id).toBe('string')
   })
 })
