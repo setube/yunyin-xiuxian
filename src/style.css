@@ -1423,6 +1423,91 @@ html[data-theme='dark'] .bond-halo {
     0 0 12px rgb(var(--color-cinnabar-rgb) / 0.2);
 }
 
+/* ================= 远征路线节点形制(routeMark) =================
+ * 每重两径择一,而两张卡此前是同一个灰框:「这一径险在哪」得读小字。
+ * 这里给两个形制(见 src/ui/routeMark.ts):
+ *   险纹:敌手首个技艺的类型各一枚线纹,形状可数;
+ *   份量:额外道源的高低,用左内沿一道色条的长短表达。
+ * 险纹只吃 currentColor,色由使用点按险情给。
+ */
+.route-peril {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.route-peril::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+/* 多段连击:三道并行的短斜线 */
+.route-peril--multi::before {
+  background-image:
+    linear-gradient(115deg, transparent 0 30%, currentColor 30% 40%, transparent 40% 100%),
+    linear-gradient(115deg, transparent 0 46%, currentColor 46% 56%, transparent 56% 100%),
+    linear-gradient(115deg, transparent 0 62%, currentColor 62% 72%, transparent 72% 100%);
+}
+/* 真伤穿透:一条贯穿的横线 + 右端一个箭头 */
+.route-peril--pierce::before {
+  background-image:
+    linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-size: 72% 1.5px, 34% 1.5px, 34% 1.5px;
+  background-position: left center, right top, right bottom;
+  background-repeat: no-repeat;
+  transform: translateX(6%);
+}
+/* 流血消耗:一滴下坠 */
+.route-peril--bleed::before {
+  background-image: radial-gradient(circle at 50% 62%, currentColor 0 26%, transparent 26%),
+    linear-gradient(180deg, transparent 0 34%, currentColor 34% 44%, transparent 44% 62%);
+}
+/* 汲血:一道回流弧 */
+.route-peril--drain::before {
+  background-image: radial-gradient(circle, transparent 0 34%, currentColor 34% 46%, transparent 46%);
+  clip-path: polygon(0 0, 62% 0, 62% 100%, 0 100%);
+}
+/* 震慑打断:一道断口 */
+.route-peril--stun::before {
+  background-image:
+    linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor);
+  background-size: 42% 1.5px, 42% 1.5px;
+  background-position: left center, right center;
+}
+/* 重击高爆:一枚实心菱 */
+.route-peril--burst::before {
+  background-image: radial-gradient(circle, currentColor 0 30%, transparent 30%);
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+/* 寻常:一枚空心点 */
+.route-peril--plain::before {
+  background-image: radial-gradient(circle, transparent 0 26%, currentColor 26% 40%, transparent 40%);
+}
+
+/* 份量:左内沿一道竖条,越长越重 */
+.route-weight {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.route-weight--light {
+  background: rgb(var(--color-ink-rgb) / 0.18);
+}
+.route-weight--mid {
+  background: rgb(var(--color-amber-ink-rgb) / 0.5);
+}
+.route-weight--heavy {
+  background: rgb(var(--color-gold-ink-rgb) / 0.75);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;

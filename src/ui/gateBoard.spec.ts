@@ -106,9 +106,12 @@ describe('九宫盘 · 三、吉凶靠形状,不只靠色', () => {
 })
 
 describe('九宫盘 · 四、两处界面都接上了', () => {
-  it('盘面样式:九宫格 + 方形宫格 + 中宫留空', () => {
+  it('盘面样式:九宫格 + 高度受限的宫格 + 中宫留空', () => {
     expect(block('.gate-board'), '九宫盘应是三列网格').toContain('grid-template-columns: repeat(3')
-    expect(block('.gate-palace'), '每宫应是方形').toContain('aspect-ratio: 1')
+    // 宫格不再用 aspect-ratio:正方形会把下面的说明挤出弹窗视口(实测),改限高
+    const palace = block('.gate-palace')
+    expect(palace, '每宫须限高,否则九宫占满弹窗').toContain('max-height')
+    expect(palace, '宫格不该再用 aspect-ratio 撑成正方形').not.toContain('aspect-ratio')
     expect(block('.gate-palace--void'), '中宫留空应有自己的样式').not.toBe('')
   })
 
