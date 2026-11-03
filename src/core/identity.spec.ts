@@ -6,6 +6,8 @@ import { gn } from '@/utils/gnum'
 import { cultivatorProfile, daoNarrative, MILESTONE_DEFS, trackClearRecords } from './identity'
 import { recordDef } from '@/data/identity'
 import { useEndgameStore } from '@/stores/endgame'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 function mark(partial: Partial<DaoMark>): DaoMark {
   return {
@@ -145,5 +147,48 @@ describe('破界纪录 · 三条的取值方向', () => {
     expect(recordDef('fastest_world')!.better, '最快应当是 min').toBe('min')
     expect(recordDef('highest_pact')!.better, '最高应当是 max').toBe('max')
     expect(recordDef('biggest_reward')!.better, '最厚应当是 max').toBe('max')
+  })
+})
+
+/**
+ * 全仓守卫:`updateRecord` 的取值方向必须与 `RECORD_DEFS` 同向。
+ *
+ * `updateRecord` 里 `if (!def || def.better !== better) return false` ——
+ * 方向传反**不报错、不抛异常,只是永远记不上**。这类静默失效是本仓库最隐蔽的一类:
+ * 运行时一切正常,只是玩家档案里那一行永远空着。
+ *
+ * 逐条补判据管不住新增的调用点;这里直接扫源码,新增一处传反就红。
+ */
+describe('破界纪录 · 全仓方向守卫', () => {
+  it('每处 updateRecord 调用的方向都与数据定义一致', () => {
+    const calls: { file: string; line: number; id: string; better: string }[] = []
+    for (const file of ['src/core/identity.ts', 'src/core/challenge.ts']) {
+      const src = readFileSync(resolve(process.cwd(), file), 'utf-8')
+      src.split('\n').forEach((line, i) => {
+        for (const m of line.matchAll(/updateRecord\('([a-z_]+)'[^)]*'(min|max)'\)/g)) {
+          calls.push({ file, line: i + 1, id: m[1]!, better: m[2]! })
+        }
+      })
+    }
+    expect(calls.length, '一处调用都没扫到,守卫没在起作用').toBeGreaterThan(0)
+
+    for (const c of calls) {
+      const def = recordDef(c.id)
+      expect(def, `${c.file}:${c.line} 写了一条数据里不存在的纪录 ${c.id}`).toBeTruthy()
+      expect(
+        c.better,
+        `${c.file}:${c.line} 的 ${c.id} 方向是 '${c.better}',而数据定义是 '${def!.better}' —— 传反会静默永不更新`
+      ).toBe(def!.better)
+    }
+  })
+
+  it('扫到的调用点覆盖了所有会写纪录的地方(防止新增文件绕过)', () => {
+    const known = new Set(['best_custom', 'fastest_world', 'highest_pact', 'biggest_reward'])
+    const src = readFileSync(resolve(process.cwd(), 'src/core/identity.ts'), 'utf-8')
+      + readFileSync(resolve(process.cwd(), 'src/core/challenge.ts'), 'utf-8')
+    const ids = new Set([...src.matchAll(/updateRecord\('([a-z_]+)'/g)].map(m => m[1]!))
+    for (const id of ids) {
+      expect(known.has(id), `发现未纳入守卫的纪录 ${id}`).toBe(true)
+    }
   })
 })
