@@ -1685,6 +1685,51 @@ html[data-theme='dark'] .fruit-curve polyline {
   box-shadow: 0 0 6px rgb(var(--color-violet-ink-rgb) / 0.45);
 }
 
+/* ================= 秘境双轴(realmMark) =================
+ * 五处秘境在清单上只差名字与代价,而玩家要比较的是「能撑几层」与「值得走多远」。
+ * 两根轴各说各的真话(见 src/ui/realmMark.ts):
+ *   上轴回血(青):层间回血比例,枯荣每层倒扣落在最左;
+ *   下轴战利(金):战利倍率,归墟最丰落在最右。
+ * 两轴共用五处秘境的最小与最大,任意两处可横向比。
+ * 不合成一根「险」:试过,结果是「受伤」一个量在冒充「凶险」,反而把归墟判得居中。
+ */
+.realm-axes {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+}
+.realm-axis {
+  position: relative;
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.12);
+}
+.realm-axis::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: var(--axis-pos, 0%);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: var(--axis-tone, rgb(var(--color-ink-rgb)));
+  box-shadow: 0 0 5px var(--axis-tone, transparent);
+}
+.realm-axis--heal {
+  --axis-tone: rgb(var(--color-jade-rgb) / 0.85);
+}
+.realm-axis--gain {
+  --axis-tone: rgb(var(--color-gold-ink-rgb) / 0.9);
+}
+
+/* 战利最丰的那一处:一道极淡的整卡描边。与「最上档才给」同一条铁律 */
+.realm-top-gain {
+  box-shadow: inset 0 0 0 1px rgb(var(--color-gold-ink-rgb) / 0.25);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
