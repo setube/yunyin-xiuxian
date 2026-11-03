@@ -1508,6 +1508,69 @@ html[data-theme='dark'] .bond-halo {
   background: rgb(var(--color-gold-ink-rgb) / 0.75);
 }
 
+/* ================= 天道变数主题形制(mutatorTheme) =================
+ * 变数池按五轴组织(生机/天时/杀伐/虚影/坚守),而界面此前只印成「◇ 名称:说明」一行字。
+ * 这里给五轴各一枚轴纹(见 src/ui/mutatorTheme.ts):
+ *   生(芽) 时(漏) 杀(锋) 影(叠影) 守(垒)
+ * 轴纹只吃 currentColor,色由使用点按轴给。
+ */
+.axis-glyph {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.axis-glyph::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+/* 生机:一株芽(一竖两叶) */
+.axis-glyph--sprout::before {
+  background-image:
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(45deg, transparent 0 42%, currentColor 42% 56%, transparent 56% 100%),
+    linear-gradient(-45deg, transparent 0 42%, currentColor 42% 56%, transparent 56% 100%);
+  background-size: 1.5px 52%, 42% 42%, 42% 42%;
+  background-position: center bottom, left top, right top;
+}
+/* 天时:一只沙漏(两横 + 交线) */
+.axis-glyph--hourglass::before {
+  background-image:
+    linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor),
+    linear-gradient(45deg, transparent 0 44%, currentColor 44% 56%, transparent 56% 100%),
+    linear-gradient(-45deg, transparent 0 44%, currentColor 44% 56%, transparent 56% 100%);
+  background-size: 76% 1.5px, 76% 1.5px, 76% 76%, 76% 76%;
+  background-position: left top, left bottom, center, center;
+}
+/* 杀伐:一把斜刃(粗斜线 + 左下短柄),与虚影的两点形状拉开 */
+.axis-glyph--blade::before {
+  background-image:
+    linear-gradient(135deg, transparent 0 40%, currentColor 40% 58%, transparent 58% 100%),
+    linear-gradient(135deg, transparent 0 66%, currentColor 66% 78%, transparent 78% 100%);
+  background-size: 100% 100%, 46% 46%;
+  background-position: center, left bottom;
+}
+/* 虚影:三枚错开的点(叠影)—— 数量与杀伐的线、生机的芽都不同 */
+.axis-glyph--shadow::before {
+  background-image:
+    radial-gradient(circle, currentColor 0 40%, transparent 40%),
+    radial-gradient(circle, currentColor 0 34%, transparent 34%),
+    radial-gradient(circle, currentColor 0 28%, transparent 28%);
+  background-size: 44% 44%, 36% 36%, 28% 28%;
+  background-position: left center, center, right center;
+}
+/* 坚守:一段垒(下沿 + 两垛) */
+.axis-glyph--rampart::before {
+  background-image:
+    linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-size: 100% 1.5px, 34% 44%, 34% 44%;
+  background-position: left bottom, left bottom, right bottom;
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
