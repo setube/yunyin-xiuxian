@@ -489,3 +489,42 @@ describe('装备 · 词条数上限', () => {
   })
 })
 })
+
+/**
+ * 背包满时 addEquipment 必须拒收。
+ *
+ * 它是调用方折算成尘的唯一依据(见 offline 与 salvage 的 `if (!acquireEquipment(...))`)。
+ * 删掉 `if (bagFull.value) return false` 后,背包会越过 BAG_CAPACITY 无限膨胀,
+ * 而现有判据只覆盖了「坏档截断」,没覆盖「满时拒收」—— 实测变异后全绿。
+ */
+describe('背包 · 满了就拒收新装备', () => {
+  function mkItems(n: number) {
+    return Array.from({ length: n }, (_, i) => ({
+      uid: `u${i}`,
+      templateId: 'w_zhuqing',
+      tier: 1,
+      quality: 'mortal',
+      level: 1,
+      locked: false,
+      affixes: []
+    }))
+  }
+
+  it('未满时收下并返回 true,满了返回 false 且件数不再增长', () => {
+    const inv = useInventoryStore()
+    inv.items = []
+
+    const first = mkItems(1)[0]!
+    expect(inv.addEquipment(first as never), '空包应当收下').toBe(true)
+    expect(inv.bagItems.length).toBe(1)
+
+    // 撑到刚好满
+    inv.items = mkItems(BAG_CAPACITY) as never
+    expect(inv.bagFull, '前提:这时应当是满的').toBe(true)
+
+    const extra = mkItems(1)[0]!
+    const before = inv.items.length
+    expect(inv.addEquipment(extra as never), '满了还返回 true,调用方不会折算成尘').toBe(false)
+    expect(inv.items.length, '满了还往包里塞').toBe(before)
+  })
+})
