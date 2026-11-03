@@ -394,7 +394,7 @@ html[data-theme='dark'] {
   --color-violet-ink-rgb: 169 143 211;
   --color-amber-ink-rgb: 207 154 69;
   /* 品阶文字色 · 夜主题:此处的纸是近黑,压暗只会更看不见,故反过来提亮 */
-  --color-quality-profound-text-rgb: 218 120 82;
+  --color-quality-profound-text-rgb: 232 140 102;
   --color-quality-heaven-text-rgb: 201 162 39;
   --color-quality-immortal-text-rgb: 81 185 181;
   --color-quality-dao-text-rgb: 233 185 73;
