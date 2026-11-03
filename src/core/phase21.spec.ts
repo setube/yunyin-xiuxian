@@ -48,6 +48,36 @@ function worldRateWithRules(worldIdx: number, extra: CombatRules | undefined, sn
   return clears / runs
 }
 
+/**
+ * 整轮通关里组合技触发了多少次(读战报的 proc 行)。
+ *
+ * 用来区分「没变差」和「压根没生效」:触发条件严的能力(fenglian 要求满血会心)
+ * 在长链战斗里可能一次都不触发,只看胜率会把它当成「有增益但没削」而放过。
+ */
+function comboHitsIn(worldIdx: number, snap: CombatantSnap, runs: number, seed: number): number {
+  const world = CELESTIAL_WORLDS[worldIdx]!
+  const rng = new RandomService(mulberry32(seed))
+  const foes: CombatantSnap[] = []
+  for (let i = 0; i < world.fights - 1; i += 1) {
+    foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, SIM_REFERENCE))
+  }
+  foes.push(worldFoeSnap(world.guardian, SIM_REFERENCE))
+  const rules: CombatRules | undefined = mergeRules(world.rules, undefined)
+  let hits = 0
+  for (let i = 0; i < runs; i += 1) {
+    // 逐场战报在 rows[].logs[] 里,不是 report.logs;buildLog 必须开才有
+    const out = runGauntlet(snap, foes, rules, world.healBetweenPct, rng, { buildLog: true })
+    for (const fight of out.rows) {
+      for (const row of fight.logs ?? []) {
+        if (row.t !== 'proc' || typeof row.text !== 'string') continue
+        // 技能名在 strike 的独立参数里,不在 text 里,所以按 proc 行的实词匹配
+        if (/锋连诀|反震|枯泽|沐泽/.test(row.text)) hits += 1
+      }
+    }
+  }
+  return hits
+}
+
 describe('天道契约裁判', () => {
   const RULE_PACTS = PACTS.filter(p => p.rules !== undefined)
 
@@ -145,7 +175,25 @@ describe('组合技裁判', () => {
       const withArt: CombatantSnap = { ...base, comboArt: c.art }
       const plainStrong = worldRateWithRules(c.strongIdx, undefined, base, 40, 51000)
       const boostedStrong = worldRateWithRules(c.strongIdx, undefined, withArt, 40, 51000)
-      expect(boostedStrong, `${c.art} 优势界反而变弱`).toBeGreaterThanOrEqual(plainStrong - 0.05)
+      /*
+       * 原判据只有 `boosted >= plain - 0.05`,而实测三组里 xuangang 与 fenglian
+       * 都是 0pp 差异(100/100 与 70/70) —— 5% 的容差把它们盖住了。
+       * 标题说的是「有实际增益」,容差允许的却是「弱 5% 也算过」。
+       *
+       * 收敛成两条:
+       *   1) 带技之后不能变弱(容差 0,不含糊);
+       *   2) 若胜率没有变化,至少要能证明它**真的触发过** —— 触发条件严的能力
+       *      (fenglian 要求满血会心)在整轮通关里可能一次都不触发,那是数据问题,
+       *      不该被「胜率没变差」蒙混过去。
+       */
+      expect(boostedStrong, `${c.art} 优势界反而变弱了`).toBeGreaterThanOrEqual(plainStrong)
+      if (boostedStrong === plainStrong) {
+        const fired = comboHitsIn(c.strongIdx, withArt, 40, 51000)
+        expect(
+          fired,
+          `${c.art} 优势界胜率与不带技完全相同(${(plainStrong * 100).toFixed(0)}%),且整轮一次都没触发 —— 这条判据没测到增益`
+        ).toBeGreaterThan(0)
+      }
       const boostedWeak = worldRateWithRules(c.weakIdx, undefined, withArt, 40, 52000)
       expect(boostedWeak, `${c.art} 劣势界翻盘成通吃`).toBeLessThan(0.95)
     }
