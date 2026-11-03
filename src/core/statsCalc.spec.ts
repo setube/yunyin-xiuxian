@@ -6,7 +6,8 @@
 import { describe, expect, it } from 'vitest'
 import type { StatMods } from '@/types'
 import { DIMINISH_KEYS, DIMINISH_WEIGHTS, SOFT_CAPS } from '@/data/constants'
-import { capChance, effectiveDaoFruit, isSoftCapped, mergeMods, mergeModsDetailed, modDepth, modOf } from './statsCalc'
+import { capChance, computeFinalStats, effectiveDaoFruit, isSoftCapped, mergeMods, mergeModsDetailed, modDepth, modOf, type StatsInput } from './statsCalc'
+import { gnZero, toNum } from '@/utils/gnum'
 
 /** 取一个确定在 DIMINISH_KEYS 里的键与其对应的软上限键(两者无关,各取各的) */
 const DIMINISH_KEY = DIMINISH_KEYS[0]!
@@ -117,5 +118,51 @@ describe('工具函数', () => {
   it('modDepth 不计负值与 0', () => {
     expect(modDepth({ damageBonus: -0.5 })).toBe(0)
     expect(modDepth({ damageBonus: 0 })).toBe(0)
+  })
+})
+
+/**
+ * 负加成累积不能把三维压成 0 或负数。
+ *
+ * 合并时只有 `v > 0` 才进递减折扣,负值直接相加 —— 而「重伤」是 `attackPct: -0.2`。
+ * 正常玩法里同一 defId 只留一条,但坏档可能留下多行(见 cultivation.ts 的 dedupe 注释),
+ * 多条叠起来就能过 -100%。`Math.max(0.1, …)` 这层兜底正是防这个:
+ * 没有它,攻击会算成负数,战斗里的伤害符号就反了。
+ *
+ * 这条之前没有判据:把三处 Math.max(0.1, …) 删掉,全套测试仍绿。
+ */
+describe('属性合并 · 负加成累积的下限', () => {
+  const input = (pct: number): StatsInput => ({
+    major: 0,
+    sub: 0,
+    linggenMult: 1,
+    modSources: [{ attackPct: pct, defensePct: pct, maxHpPct: pct }],
+    sourceNames: ['重伤 ×N'],
+    equipFlats: { attack: gnZero(), defense: gnZero(), maxHp: gnZero() },
+    daoFruit: 0,
+    qiRich: false
+  })
+
+  it('attackPct 到 -500% 时,三维仍为正(钳在 0.1 倍)', () => {
+    const stats = computeFinalStats(input(-5))
+    for (const key of ['attack', 'defense', 'maxHp'] as const) {
+      const v = toNum(stats[key])
+      expect(v, `${key} 被负加成压成了 ${v}`).toBeGreaterThan(0)
+      expect(Number.isFinite(v), `${key} 不是有限数`).toBe(true)
+    }
+  })
+
+  it('负加成超过 -100% 之后,结果不再随幅度变化(已触底)', () => {
+    const a = computeFinalStats(input(-1.5))
+    const b = computeFinalStats(input(-5))
+    expect(toNum(a.attack)).toBeCloseTo(toNum(b.attack), 6)
+    expect(toNum(a.attack)).toBeGreaterThan(0)
+  })
+
+  it('处在 −50% 时按比例下降,不是一律钳到底', () => {
+    const half = computeFinalStats(input(-0.5))
+    const none = computeFinalStats(input(0))
+    expect(toNum(half.attack)).toBeGreaterThan(0)
+    expect(toNum(half.attack)).toBeLessThan(toNum(none.attack))
   })
 })
