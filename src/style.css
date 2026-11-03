@@ -1189,6 +1189,72 @@ html[data-theme='dark'] .dao-crest {
   outline-offset: -1px;
 }
 
+/* ================= 悟道分支形制(branchMark) =================
+ * 分支是「不可更改、转世不失」的一次抉择,而界面此前三个分支排成一模一样的按钮。
+ * 这一层给三个槽位三套线纹(见 src/ui/branchMark.ts):
+ *   一 · 一道直纹  ／ 二 · 两道折纹  ／ 三 · 三环  ／ 四 · 回字(超过四条时复用一)
+ * 以**序号**定位而不按分支名 —— 「开天」在四门功法里各有其一,按名字画会把它们画成同一个。
+ * 色由使用点注入(取所属功法的品阶色),纹样只吃 currentColor。
+ */
+.branch-glyph {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.branch-glyph::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  opacity: 0.85;
+}
+/* 第一道:一条直纹 */
+.branch-glyph--branch-1::before {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 2px 100%;
+  background-position: center;
+}
+/* 第二道:两道并行 */
+.branch-glyph--branch-2::before {
+  background-image:
+    linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor);
+  background-size: 2px 100%, 2px 100%;
+  background-position: 26% center, 74% center;
+}
+/* 第三道:三枚点列 */
+.branch-glyph--branch-3::before {
+  background-image: radial-gradient(circle, currentColor 0 45%, transparent 45%);
+  background-size: 26% 26%;
+  background-position: 0 center;
+  background-repeat: repeat-x;
+}
+/* 第四道:回字(一圈加一点) */
+.branch-glyph--branch-4::before {
+  background-image: radial-gradient(circle, currentColor 0 30%, transparent 30%);
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+}
+
+/* 分支卡:品阶淡底 + 左内沿一道品阶色竖条(与功法列表同一套语言) */
+.branch-card {
+  position: relative;
+  overflow: hidden;
+}
+.branch-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--branch-tone, transparent);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
