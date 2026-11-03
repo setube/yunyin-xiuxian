@@ -177,9 +177,12 @@
 
     <!-- 保存 / 改名同一弹窗;存的那套功/宝/装原样不动 -->
     <BaseModal :open="saveOpen" :title="renameId ? '为构筑改名' : '存为构筑'" @close="closeSave">
+      <!--
+        不写 maxlength:它按 UTF-16 码元计数,emoji 占两个 —— 输入阶段就会劈开,
+        后面再怎么按码点截也救不回来。收敛交给 captureLoadout / renameLoadout 的 truncateCodePoints。
+      -->
       <input
         v-model="saveName"
-        maxlength="8"
         class="w-full rounded-md border border-ink/20 bg-paper-deep/60 px-3 py-2 font-kai text-[14px] tracking-widest text-ink outline-none focus:border-cinnabar/50"
         placeholder="构筑名号"
       />

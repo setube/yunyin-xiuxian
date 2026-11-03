@@ -47,21 +47,39 @@ function walk(dir: string, out: string[] = []): string[] {
 /**
  * 找出「对字符串按码元截」的地方。
  *
- * 只看 `.slice(0, 数字)` / `.substring(0, 数字)` / `.substr(0, 数字)`,
- * 且接收者不是明显的数组名。`slice(0, -1)` 这类负数是剥尾字符,不算。
+ * 两类写法分开判:
+ *  1. `x.slice(0, N)` —— 接收者是纯标识符,靠名字猜是不是数组(见 looksArray)。
+ *  2. `x.trim().slice(0, N)` / `String(y).slice(0, N)` —— 带方法调用。**只在方法名
+ *     必然返回字符串时才判**:`trim` / `toString` / `String` / `JSON.stringify`。
+ *     其余调用(`recommendForRegion(x).slice(0, 2)`)返回的是数组,取前 N 项是正常写法。
+ *
+ * 第 2 类原先整个没扫到:构筑名在 loadoutService 里连着两处
+ * `name.trim().slice(0, 8)`,守卫从头到尾是绿的。
  */
+const STRING_RETURNING = new Set(['trim', 'toString', 'String', 'stringify'])
 function offenders(): { file: string; line: number; code: string }[] {
   const hits: { file: string; line: number; code: string }[] = []
+  const callSlice = /([A-Za-z_$][\w$.]*)\([^()]*\)\s*\.\s*(slice|substring|substr)\(0,\s*\d+\)/g
+  const plainSlice = /([A-Za-z_$][\w$.]*)\.(slice|substring|substr)\(0,\s*(\d+)\)/g
   for (const file of walk(SRC)) {
     const lines = readFileSync(file, 'utf-8').split('\n')
     lines.forEach((code, i) => {
-      const m = /([A-Za-z_$][\w$.]*)\.(slice|substring|substr)\(0,\s*(\d+)\)/g
-      let g: RegExpExecArray | null
-      while ((g = m.exec(code)) !== null) {
-        const recv = g[1]!
-        if (looksArray(recv)) continue
+      const hit = (): void => {
         hits.push({ file: file.slice(ROOT.length + 1), line: i + 1, code: code.trim().slice(0, 100) })
       }
+      let isString = false
+      for (const g of code.matchAll(callSlice)) {
+        // 取最后一段方法名:`name.trim()` 要判 `trim`,不是 `name.trim`
+        const callee = g[1]!.split('.').pop() ?? ''
+        if (STRING_RETURNING.has(callee)) isString = true
+      }
+      if (isString) {
+        hit()
+        return
+      }
+      let isPlain = false
+      for (const g of code.matchAll(plainSlice)) if (!looksArray(g[1]!)) isPlain = true
+      if (isPlain) hit()
     })
   }
   return hits
@@ -81,10 +99,22 @@ describe('全仓 · 字符串不许按码元截', () => {
     expect(game, 'sanitize 里别再退回 slice').not.toMatch(/createName\.value\.slice\(0,\s*8\)/)
   })
 
-  it('建角页的输入框不设 maxlength(maxlength 按码元计数)', () => {
+  it('建角页与构筑名的输入框都不设 maxlength(maxlength 按码元计数)', () => {
     const create = readFileSync(join(SRC, 'views/CreateView.vue'), 'utf-8')
     const input = /<input[\s\S]*?\/>/.exec(create)?.[0] ?? ''
     expect(input).toContain('道号')
     expect(input).not.toMatch(/maxlength/)
+
+    // 构筑名同一毛病:输入框按码元砍,后面两处收敛也按码元
+    const build = readFileSync(join(SRC, 'views/BuildView.vue'), 'utf-8')
+    const buildInput = /<input[\s\S]*?\/>/.exec(build.slice(build.indexOf('构筑名号') - 800))?.[0] ?? ''
+    expect(buildInput, '构筑名输入框没找到,守卫空转').toContain('构筑名号')
+    expect(buildInput, '构筑名输入框别设 maxlength').not.toMatch(/maxlength/)
+  })
+
+  it('构筑名的两处收敛走 truncateCodePoints(带方法调用的接收者也要能扫到)', () => {
+    const svc = readFileSync(join(SRC, 'core/loadoutService.ts'), 'utf-8')
+    expect(svc, 'captureLoadout 与 renameLoadout 都该按码点收敛').toMatch(/truncateCodePoints\(/)
+    expect(svc, '别再退回 name.trim().slice(0, 8)').not.toMatch(/\.trim\(\)\.slice\(0,\s*8\)/)
   })
 })
