@@ -51,10 +51,18 @@ describe('Phase 30.8: Boss 阶段与机制有效性审计', () => {
       for (const p of boss.phases ?? []) {
         if (!p.modChanges) continue
         for (const [k, v] of Object.entries(p.modChanges)) {
-          const base = boss.mods?.[k as keyof typeof boss.mods] ?? 0
-          const delta = (v as number) - (base as number)
-          if (Math.abs(delta) < 0.1) {
-            weakChanges.push(`${boss.name}: ${k} 变化仅 ${delta.toFixed(2)}`)
+          const base = (boss.mods?.[k as keyof typeof boss.mods] ?? 0) as number
+          const delta = (v as number) - base
+          /*
+           * 标题说「增量为原始值的 50%+」是**相对**判定,而旧实现判的是绝对差 < 0.1。
+           * 两者会得出相反的结论:万妖林主的 regenPerRound 从 0.015 到 0.04,
+           * 绝对差 0.025(旧实现判为弱),相对变化 +167%(其实是强变化)。
+           * 基数很小时相对判定才有意义;基数近零时退回绝对差,否则任何增量都是无穷倍。
+           */
+          const rel = base > 1e-6 ? Math.abs(delta) / base : Number.POSITIVE_INFINITY
+          const strong = base > 1e-6 ? rel >= 0.5 : Math.abs(delta) >= 0.1
+          if (!strong) {
+            weakChanges.push(`${boss.name}: ${k} 由 ${base} 变为 ${v}(相对 ${base > 1e-6 ? (rel * 100).toFixed(0) + '%' : '—'})`)
           }
         }
       }
@@ -67,7 +75,7 @@ describe('Phase 30.8: Boss 阶段与机制有效性审计', () => {
       console.log('    ✅ 所有阶段变化均 ≥0.1')
     }
 
-    expect(weakChanges.length, '不应有显著的弱变化').toBeLessThanOrEqual(3)
+    expect(weakChanges, '标题说「每个阶段都显著」,那就不该有任何一处不达标' + (weakChanges.length ? '：' + weakChanges.join(';') : '')).toEqual([])
   })
 
   it('④ Boss 生态一致性: archetype 应与技能/mod 机制匹配', () => {
