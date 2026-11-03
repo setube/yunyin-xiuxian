@@ -9,7 +9,15 @@
         <span class="ml-auto tabular text-[11px] text-gold-ink">赏 {{ daily.verdict.reward }}</span>
       </p>
       <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
-        <span v-for="m in dailyMutators" :key="m!.id">◇ {{ m!.name }}:{{ m!.text }}</span>
+        <span v-for="m in dailyMutators" :key="m!.id" class="inline-flex items-center gap-1">
+          <!-- 轴纹:这条变数落在哪条主题轴上,形状可数(见 ui/mutatorTheme) -->
+          <span
+            class="axis-glyph h-3.5 w-3.5 shrink-0"
+            :class="`axis-glyph--${themeMark(m!.id).glyph}`"
+            aria-hidden="true"
+          />
+          {{ m!.name }}:{{ m!.text }}
+        </span>
         <span v-if="dailyPact" class="text-cinnabar">契·{{ dailyPact.name }}</span>
       </p>
       <button
@@ -35,7 +43,15 @@
     <SectionTitle title="天道变数" hint="规则随机" />
     <div class="card-ink mt-2 px-4 py-3">
       <template v-if="mutationDraw.length">
-        <p v-for="m in mutationRows" :key="m!.id" class="text-[11px] text-violet-ink">◇ {{ m!.name }}:{{ m!.text }}</p>
+        <p v-for="m in mutationRows" :key="m!.id" class="flex items-center gap-1.5 text-[11px] text-violet-ink">
+          <span
+            class="axis-glyph h-3.5 w-3.5 shrink-0"
+            :class="`axis-glyph--${themeMark(m!.id).glyph}`"
+            :title="themeMark(m!.id).identity"
+            aria-hidden="true"
+          />
+          {{ m!.name }}:{{ m!.text }}
+        </p>
         <div class="mt-2 flex gap-2">
           <button
             class="btn-seal flex-1 !py-2 !text-[12px]"
@@ -120,18 +136,26 @@
         <button
           v-for="m in MUTATORS"
           :key="m.id"
-          class="chip-ink !py-1.5"
+          class="chip-ink flex items-center gap-1 !py-1.5"
           :class="draft.mutatorIds.includes(m.id) ? 'border-violet-ink text-violet-ink' : 'border-ink/25 text-ink-faint'"
-          :title="m.text"
+          :title="`${themeMark(m.id).identity} · ${m.text}`"
           :aria-pressed="draft.mutatorIds.includes(m.id)"
           @click="toggleDraftMutator(m.id)"
         >
+          <!-- 轴纹:先看出这一条属于哪条轴,再读规则 -->
+          <span
+            class="axis-glyph h-3.5 w-3.5 shrink-0"
+            :class="`axis-glyph--${themeMark(m.id).glyph}`"
+            aria-hidden="true"
+          />
           {{ m.name }}
         </button>
       </div>
       <p v-if="selectedMutators.length" class="mt-1 text-[10px] leading-relaxed text-violet-ink">
         {{ selectedMutators.map(m => `${m.name}：${m.text}`).join('；') }}
       </p>
+      <!-- 同轴几条:落在同一轴上的越多,这一趟的打法就越极端,此前只能靠玩家自己数 -->
+      <p v-if="selectedThemeRow" class="mt-0.5 text-[10px] text-ink-faint">{{ selectedThemeRow }}</p>
       <div class="mt-1.5 flex flex-wrap gap-1.5">
         <button
           class="chip-ink !py-1.5"
@@ -204,6 +228,7 @@
   import { PACTS, pactDef } from '@/data/pacts'
   import { pactMark } from '@/ui/pactMark'
   import { MUTATORS, mutatorDef } from '@/data/mutators'
+  import { themeBreakdown, themeMark } from '@/ui/mutatorTheme'
   import { todayChallenge, undertakeDaily } from '@/core/dailyChallenge'
   import { useWallNow } from '@/composables/useWallClock'
   import { localDayNum } from '@/utils/time'
@@ -306,6 +331,14 @@
   const challengeVerdict = ref<ChallengeVerdict | null>(null)
   /** 已选变数:效果正文亮到行内,移动端不靠 hover */
   const selectedMutators = computed(() => MUTATORS.filter(m => draft.value.mutatorIds.includes(m.id)))
+
+  /** 已选变数的主题分布;只有一条时不报(一条谈不上「落在哪轴」) */
+  const selectedThemeRow = computed(() => {
+    const ids = draft.value.mutatorIds
+    if (ids.length < 2) return ''
+    const parts = themeBreakdown(ids).map(t => `${t.identity}×${t.count}`)
+    return parts.join(' · ')
+  })
   const challengePact = computed(() => (draft.value.pactId ? pactDef(draft.value.pactId) ?? null : null))
   const busy = computed(() => endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, useAdventureStore().session))
   const challengeBlockText = computed(() => {
