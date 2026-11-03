@@ -43,7 +43,20 @@ export interface VoidWorldAudit {
 }
 
 /** 平衡裁判:各流派模拟通关率 */
-export function auditVoidWorld(world: CelestialWorldDef, runs = 10): VoidWorldAudit {
+/**
+ * 平衡裁判:各流派模拟通关率。
+ *
+ * `runs` 默认 200,不是 10。10 次的通关率分辨率只有 10%(0/10、1/10…),
+ * 而调用方按 35% 这类阈值去数「几个流派能通」——
+ * **一个样本的抖动就能让达标数跳变**。实测同一个世界、同一套配置:
+ *
+ * ```
+ * runs= 10 → viable=2    runs= 50 → 3    runs=200 → 3    runs=400 → 4
+ * ```
+ *
+ * 200 跑的耗时约 0.5s,对测试无压力。
+ */
+export function auditVoidWorld(world: CelestialWorldDef, runs = 200): VoidWorldAudit {
   const rates = BUILD_PROFILES.map((p, i) => ({
     name: p.name,
     rate: worldClearRate(world, buildSnap(p), runs, 77000 + i * 31 + world.name.length)
