@@ -55,6 +55,68 @@
 | 数字格式化边界 | 单位表逐档 + 千分位 | 万/亿/兆/京/垓/秭/穰 全部正确;999999 → `100万`、1e6 → `100万` 一档不错 |
 | 极端大数 | e307 / e308 / e309 | 超单位表走科学计数 `1.00e307` —— 这是**有意兜底**(单位表到「极」为止),不是缺陷 |
 
+## 点击命中:126 颗按钮,0 颗被遮挡(第 299 轮)
+
+上一轮归纳出「验浏览器给的行为要用真实输入」。这一轮拿它验**命中测试** ——
+按钮看得见、但点击被上层元素吃掉,是界面上最难自查的一类缺陷(用户只会觉得「点了没反应」)。
+
+### 第一版脚本报了 1 颗
+
+```
+/dongfu  「起造 ·100 石· 10 铁」命中点被 A.relative.flex 占住
+```
+
+**又是探针的错。**
+
+`elementFromPoint` 用的是**视口坐标**,而这颗按钮当时在 `y=1475` ——
+视口只有 844 高,它压根不在屏上。`elementFromPoint` 对屏外坐标返回 `null`,
+我的脚本把 `null` 当成「被别的元素占住」了。
+
+我明明写了视口过滤:
+
+```js
+if (r.top < 0 || r.left < 0 || r.bottom > innerHeight || r.right > innerWidth) continue
+```
+
+但那是在**滚动之前**取的 `getBoundingClientRect()` —— 判断的是「此刻在不在屏上」,
+而按钮本来就在页面下方,得先滚过去。
+
+### 改法
+
+先 `scrollIntoViewIfNeeded()`,**滚完再取 rect、再问命中**:
+
+```js
+await loc.scrollIntoViewIfNeeded()
+const r = await loc.evaluate(el => {
+  const rc = el.getBoundingClientRect()
+  if (rc.top < 0 || rc.bottom > innerHeight /* … */) return 'OFFSCREEN'
+  const top = document.elementFromPoint(中心点)
+  return top.closest('button') === el ? 'SELF' : top.tagName
+})
+```
+
+### 结果
+
+```
+检查 126 颗(跳过屏外/不可见 1),被遮挡 0 颗
+```
+
+顺手用真实点击验了一次那颗「起造」:点下去真建成了,回执「「洞府」已至 1 级」。
+
+### 第四次探针误报
+
+| 探针 | 声称 | 真相 |
+| --- | --- | --- |
+| `innerText` 查全屏过场 | 找不到元素 | 过场在 `WarpPortal` 里 |
+| 脚本合成底色查对比度 | cinnabar 4.03 不达标 | 不透明底被当成半透明叠 |
+| `element.click()` 查焦点 | 焦点没回到触发钮 | 程序化点击不搬焦点 |
+| `elementFromPoint` 查遮挡 | 1 颗被 `A` 占住 | 用了屏外坐标,返回 `null` |
+
+**这四次都是「工具的行为没搞清」,不是产品有问题。**
+写着「用真实输入」还得再补一句:**真实输入之前,先把元素滚到可交互的位置。**
+
+---
+
 ## 又一次探针说谎:程序化 click 不搬焦点(第 298 轮)
 
 接着查「弹窗关掉之后,焦点回不回到打开它的那颗钮」。WCAG 对这项有明确要求,
