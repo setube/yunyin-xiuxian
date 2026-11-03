@@ -1638,6 +1638,42 @@ export function auditVoidWorld(world: CelestialWorldDef, runs = 10): VoidWorldAu
 数值不动。这条从待办里划掉 —— 但划掉的理由不是「没空做」,
 是**拿四个世界的数据看过之后,确认它本来就不该有那三成胜率**。
 
+### 同一个坑的第二处(第 288 轮)
+
+上一轮修好「死后不再追击」之后,顺手把 `strike()` 里**所有后续节拍**都过了一遍,
+发现第二处同样的漏网:
+
+```ts
+strike(self, foe, mult, label, round, { isSkill, pierce: effect === 'pierce' })
+if (effect && !isZero(foe.hp)) {          // ← 只查敌人
+  if (effect === 'multi') {
+    for (...; !isZero(foe.hp) && !isZero(self.hp); ...)   // ← 这里查了自己
+  } else if (effect === 'drain') { … }
+```
+
+**同一个 `if` 块里,`multi` 分支查了自身存活,`drain`/`shield`/`stun`/`bleed` 没查。**
+
+实测(裂伤诀 + 对手反击 100%,玩家 5% 血开战):
+
+```
+1: skill/p ehp=0.9990  你施展【裂伤诀】,击中【敌】。
+3: atk/e   ehp=0.9990  【敌】使出反击,击中你。        ← 玩家归零
+4: lose/sys ehp=0.9987  你气血耗尽,重伤败退。          ← 敌人还在掉血
+```
+
+`0.9990 → 0.9987`,**尸体还在给敌人放血**。
+
+### 这一类怎么系统地找
+
+这次的找法是:**不要只看「刚才修的那一行」,要看它所在的那个函数里
+所有「挂在出手方身上的后续动作」**。
+
+`strike()` 依次做:伤害 → 吸血 → 反击 → 组合技 → 追击 → 震摄。
+其中只有伤害是「出手方主动发起、必须有存活」的,**后面每一个都挂着出手方的名义**。
+所以它们每一个前面都该有 `isZero(attacker.hp)`。
+
+第一处(追击)与第二处(附加效果)都是这么找出来的。
+
 ### 一个操作教训
 
 子代理留下的探针文件叫 `zzz-probe*.spec.ts` / `zz*Probe.spec.ts`,我清理了两轮:
