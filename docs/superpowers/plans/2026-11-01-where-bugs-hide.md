@@ -1550,7 +1550,42 @@ WCAG 有两条线:**文字 4.5:1**,**图形/图标 3:1**(1.4.11)。
 
 ---
 
-## 三十五、提示条会吞掉下方那一下点击(第 267 轮,**未修,待定**)
+## 三十五、提示条会吞掉下方那一下点击(第 267 轮,**第 276 轮已修**)
+
+> 第 276 轮按「只让关闭热区吃事件」修掉了。下面保留当初的分析与四个备选方案。
+
+### 修法(第 276 轮)
+
+```html
+<!-- 条身穿透 -->
+<div class="pointer-events-none relative … pr-8">…<button class="pointer-events-auto absolute right-0 top-0 h-7 w-7" aria-label="关闭提示">×</button></div>
+```
+
+实测(`elementsFromPoint`):
+
+| 探针位置 | 命中的元素 |
+| --- | --- |
+| 条身中心 | **下面那颗真实的按钮**(`BUTTON.relative`) |
+| 关闭叉中心 | 关闭叉自身,`28×28` |
+
+关闭叉沿用 `tabindex="-1"`:与提示本体同理,键盘焦点不该落到一条即将消失的元素上。
+
+**代价**:不能再「点提示条任意处关闭」。四个候选里只有这一条能真正让下面的按钮可点,
+其余三条(缩短时长、挪位置、按 hover 切换)都是缓解或绕路。
+
+**判据**:`src/ui/toastPassthrough.spec.ts` 四条 —— 条身须 `pointer-events-none`;
+`pointer-events-auto` 全文件只许出现一次且属于关闭叉;叉不低于 28px 且不进 Tab 序;有可访问名。
+故障注入:把条身改回 `pointer-events-auto`,两条当场红。
+
+### 一个分类登记的坑
+
+新 spec 放 `src/ui/` 下会**自动**落进 `Regression`(该类按 `'/ui/'` 子串匹配)。
+再往 `Unit` 里登记 `toastPassthrough` 就重复命中,`gateWiring` 当场红。
+`src/ui/` 的新 spec 不必登记。
+
+---
+
+
 
 第 249 轮修过「toast 盖住更新横幅」,当时只把横幅挪开,没反过来问:
 **toast 会不会盖住页面本身的按钮**。
