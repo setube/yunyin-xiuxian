@@ -549,3 +549,38 @@ describe('战斗 · 玄罡反震打死出手方后不再结算', () => {
     expect(res.win).toBe(false)
   })
 })
+
+/**
+ * 规则附加的负百分比不能把三维折成负数。
+ *
+ * `foldExtraMods` 对 attackPct / defensePct / maxHpPct 都乘 `Math.max(0.1, 1 + v)`,
+ * 与 `statsCalc` 里那三处是同一层兜底。当前数据里没有负的 `attackPct`
+ * (`endgame` 里只有 `damageReduction: -0.1`),但规则可来自世界生成与逆旅契,
+ * 二者都由数据拼装 —— 一处写错就能把攻击折成负数,而战斗里的伤害符号会跟着反。
+ *
+ * 这条之前没有判据:把三处 `Math.max(0.1, …)` 删掉,combat.spec 仍全绿。
+ */
+describe('战斗 · 规则附加的负百分比有下限', () => {
+  const wolfDef = enemyDef('e_wolf')!
+  it('attackPct 到 -500% 时三维仍为正', () => {
+    const enemy = makeEnemySnap(wolfDef, 1, 1)
+    const base = playerSnap(10)
+    const eff = applyCombatRuleSnap(base, enemy, {
+      playerExtraMods: { attackPct: -5, defensePct: -5, maxHpPct: -5 }
+    }).pEff
+    for (const key of ['attack', 'defense', 'maxHp'] as const) {
+      const v = toNum(eff[key])
+      expect(v, `${key} 被负百分比折成了 ${v}`).toBeGreaterThan(0)
+      expect(Number.isFinite(v), `${key} 不是有限数`).toBe(true)
+    }
+  })
+
+  it('超过 -100% 之后触底,不再随幅度变化', () => {
+    const enemy = makeEnemySnap(wolfDef, 1, 1)
+    const base = playerSnap(10)
+    const deep = applyCombatRuleSnap(base, enemy, { playerExtraMods: { attackPct: -5 } }).pEff
+    const deeper = applyCombatRuleSnap(base, enemy, { playerExtraMods: { attackPct: -50 } }).pEff
+    expect(toNum(deep.attack)).toBeCloseTo(toNum(deeper.attack), 6)
+    expect(toNum(deep.attack)).toBeGreaterThan(0)
+  })
+})
