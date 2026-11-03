@@ -32,11 +32,14 @@ export const DIAG_MESSAGE_MAX = 200
 /** 任意异常值 → 一行摘要 */
 export function summarizeError(err: unknown): string {
   if (err instanceof Error) return truncateCodePoints(`${err.name}: ${err.message}`, DIAG_MESSAGE_MAX)
-  if (typeof err === 'string') return err.slice(0, DIAG_MESSAGE_MAX)
+  // 三条兜底同样按码点截:异常消息里常带玩家道号或装备名,emoji 会在第 200 个码元处被劈成半个
+  if (typeof err === 'string') return truncateCodePoints(err, DIAG_MESSAGE_MAX)
   try {
-    return JSON.stringify(err).slice(0, DIAG_MESSAGE_MAX)
+    // JSON.stringify(undefined / 函数 / symbol) 返回 undefined,得回落到 String
+    const json = JSON.stringify(err)
+    return truncateCodePoints(json === undefined ? String(err) : json, DIAG_MESSAGE_MAX)
   } catch {
-    return String(err).slice(0, DIAG_MESSAGE_MAX)
+    return truncateCodePoints(String(err), DIAG_MESSAGE_MAX)
   }
 }
 
@@ -52,7 +55,7 @@ export const useDiagStore = defineStore(
         .map(e => ({
           at: asFiniteNumber(e.at, 0, 0),
           info: typeof e.info === 'string' ? e.info : '',
-          message: String(e.message).slice(0, DIAG_MESSAGE_MAX),
+          message: truncateCodePoints(String(e.message), DIAG_MESSAGE_MAX),
           route: typeof e.route === 'string' ? e.route : '',
           count: Math.max(1, Math.floor(asFiniteNumber(e.count, 1, 1)))
         }))

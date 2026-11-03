@@ -11,7 +11,8 @@
         class="flex items-center gap-2.5 rounded-md px-2.5 py-2"
         :class="row.equipped ? 'bg-jade/10' : 'bg-paper-deep/70'"
       >
-        <GameIcon :name="row.template.icon" :size="16" :style="{ color: qualityTextColor(row.item.quality) }" />
+        <!-- 图标是装饰:用品质的原色(与装备卡同一档),文字专用色只留给名字 -->
+        <GameIcon :name="row.template.icon" :size="16" :style="{ color: qualityDef(row.item.quality).color }" />
         <button class="min-w-0 grow text-left active:opacity-60" @click="openDetail(row.item.uid)">
           <span class="block truncate font-kai text-[13px]" :style="{ color: qualityTextColor(row.item.quality) }">
             {{ row.template.name }}

@@ -377,8 +377,8 @@ export const MUTATION_FIGHTS = 6
 export const MUTATION_ESCALATION = 1.06
 
 /** 抽取本次变数(三条不重复) */
-export function rollMutators(): string[] {
-  const pool = [...MUTATORS]
+export function rollMutators(source: readonly { id: string }[] = MUTATORS): string[] {
+  const pool = [...source]
   const picked: string[] = []
   for (let i = 0; i < 3 && pool.length; i += 1) {
     const idx = rng.int(0, pool.length - 1)

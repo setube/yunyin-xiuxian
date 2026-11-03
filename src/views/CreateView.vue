@@ -21,11 +21,15 @@
           不写 maxlength:它按 UTF-16 码元计数,emoji 占两个 —— 玩家粘「一二三四五六七」加一个星月符号
           会在输入阶段就被切成孤立代理项,后面再怎么按码点截也救不回来。
           改由 @input 按码点钳制,与提交时的 truncateCodePoints 同一把尺。
+          组合输入(拼音/日文候选)期间不钳也不回写:此时改 :value 会把候选缓冲区整个替换掉,
+          未上屏的字直接输不进来。等 compositionend 再钳。
         -->
         <input
           :value="name"
           class="w-full rounded-md border border-ink/20 bg-paper-deep/60 px-3 py-2 font-kai text-[15px] tracking-widest text-ink outline-none focus:border-cinnabar/50"
           placeholder="道号"
+          @compositionstart="composing = true"
+          @compositionend="onNameCompositionEnd"
           @input="onNameInput"
         />
         <button class="btn-ghost shrink-0 !px-3" aria-label="随机道号" @click="randomName">
@@ -154,7 +158,16 @@
     }
   }
 
+  /** 输入法组合输入进行中:此间不钳也不回写,否则候选缓冲区会被替换 */
+  const composing = ref(false)
+
   function onNameInput(e: Event): void {
+    if (composing.value) return
+    name.value = truncateCodePoints((e.target as HTMLInputElement).value, 8)
+  }
+
+  function onNameCompositionEnd(e: Event): void {
+    composing.value = false
     name.value = truncateCodePoints((e.target as HTMLInputElement).value, 8)
   }
 

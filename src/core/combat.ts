@@ -293,7 +293,15 @@ export function resolveCombat(
     let amount = healMult === 1 ? rawAmount : mulN(rawAmount, healMult)
     // 组合技·枯泽回春:濒死时治疗增幅,护盾随之消散一半
     const kuze = f.snap.comboArt === 'kuze' && hpPct(f) < LOW_HP_THRESHOLD
-    if (kuze) amount = mulN(amount, 1.5)
+    if (kuze) {
+      amount = mulN(amount, 1.5)
+      /*
+       * 写一条 proc 行:组合技裁判要能分辨「没变差」和「压根没触发」。
+       * 其余三个组合技(玄罡反震 / 锋连诀 / 沐泽)都有战报事件,唯独枯泽在治疗里静默加成,
+       * 于是按 proc 行统计的判据对枯泽永远数出 0,只能退化成「两边都 ≥0」的空断言。
+       */
+      push('proc', f.snap.isPlayer ? 'p' : 'e', '枯泽回春:濒死之际药力大盛。')
+    }
     const missing = subClamp(f.snap.maxHp, f.hp)
     const applied = gnMin(missing, amount)
     f.hp = add(f.hp, applied)
