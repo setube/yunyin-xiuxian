@@ -155,6 +155,32 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - Workflow: `commit_message.txt` → `git commit -F` → delete; **only commit when the user explicitly asks**.
 - **NEVER** `--no-verify`, force-push `main`, or append a `Co-Authored-By` AI attribution.
 
+## 文档提交（写作边界）
+
+历史里文档提交长期压过代码提交：近 200 条里 **73 条 `docs(plans)`**（36.5%），
+而 `docs/superpowers/plans/` 下的文档**几乎没有被代码或脚本引用过**（全仓仅 1 处，
+来自 `format.ts` 的注释）。那不是文档，是流水账。
+
+**默认不写。** 满足下面任一条才动笔，且单次提交不超过 30 行：
+
+| 该写 | 不该写 |
+| --- | --- |
+| 修了一个缺陷，**根因不明显**（要读三处以上才看出来） | 「本轮查了 A、B、C，都没问题」 |
+| 一个反直觉的取舍，**后人会想改回去** | 复述 CHANGELOG 已经写过的内容 |
+| 一条新判据**为什么这样定阈值** | 列举跑过哪些命令、看到什么输出 |
+| 删除/替换某个机制的理由 | 「下一步可以做什么」的规划 |
+
+- **零发现不提交。** 没找到缺陷的那一轮，没有可交付物；把「查过且稳」并入已有的查稳表，
+  单条一行，不另起一节。
+- **CHANGELOG 归用户价值**（玩家能感知的变化），**plans 归根因与取舍**（维护者才关心的）。
+  两边都写同一件事就是赘述。
+- 文档里**不写命令输出**。要证明什么，写成一句结论，别贴终端记录。
+- 一次性文档（设计稿）在**实现落地后删除**：代码就是事实源。若某个 spec 需要读它做校验
+  （如 `tribulationDoc.spec` 读界膜设计稿），那才保留，并在文档开头写明被谁读。
+- `docs/` 根目录**不入库**（`.gitignore` 的 `docs/*`），本机审计文档放那里。
+
+**判断方法**：写完问「删掉这段，下一次改这块代码的人会做错什么？」答不上来就删。
+
 ## Important Files
 
 - `package.json` — 版本/脚本/依赖入口
