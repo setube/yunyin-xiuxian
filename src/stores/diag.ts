@@ -6,6 +6,7 @@
  * - 相邻同条只加计数:连发会刷满格子,挤掉第一条
  */
 import { defineStore } from 'pinia'
+import { truncateCodePoints } from '@/utils/saveShape'
 import { ref } from 'vue'
 import { persistConfig } from '@/utils/storage'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
@@ -30,7 +31,7 @@ export const DIAG_MESSAGE_MAX = 200
 
 /** 任意异常值 → 一行摘要 */
 export function summarizeError(err: unknown): string {
-  if (err instanceof Error) return `${err.name}: ${err.message}`.slice(0, DIAG_MESSAGE_MAX)
+  if (err instanceof Error) return truncateCodePoints(`${err.name}: ${err.message}`, DIAG_MESSAGE_MAX)
   if (typeof err === 'string') return err.slice(0, DIAG_MESSAGE_MAX)
   try {
     return JSON.stringify(err).slice(0, DIAG_MESSAGE_MAX)
@@ -67,7 +68,7 @@ export const useDiagStore = defineStore(
       const at = typeof rawAt === 'number' && Number.isFinite(rawAt) && rawAt >= 0 ? rawAt : Date.now()
       const rawMessage = raw?.message
       const message =
-        typeof rawMessage === 'string' && rawMessage ? rawMessage.slice(0, DIAG_MESSAGE_MAX) : '未知异常'
+        typeof rawMessage === 'string' && rawMessage ? truncateCodePoints(rawMessage, DIAG_MESSAGE_MAX) : '未知异常'
       const info = typeof raw?.info === 'string' ? raw.info : ''
       const route = typeof raw?.route === 'string' ? raw.route : ''
       const last = errors.value[errors.value.length - 1]
