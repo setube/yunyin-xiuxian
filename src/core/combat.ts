@@ -394,6 +394,12 @@ export function resolveCombat(
       })
     }
     if (opts.skipFollowups) return
+    /*
+     * 反击可以当场把人打死。这里补一道自身归零的检查,理由与前面锋连诀之后那道一样:
+     * 后面的追击/震摄都还挂在 attacker 身上,不查就变成「已经倒下的人继续出手」。
+     * 实测:玩家被反击打到 0 血,追击照样打出,吸血再把血拉回 → 判胜。
+     */
+    if (isZero(attacker.hp)) return
     // 组合技·锋连诀:满血会心接一记追击(每场限一次)
     if (isCrit && attacker.snap.comboArt === 'fenglian' && selfPct > FULL_HP_THRESHOLD && attacker.comboUses < 1 && !isZero(target.hp)) {
       attacker.comboUses += 1

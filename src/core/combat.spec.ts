@@ -409,3 +409,50 @@ describe('首领阶段', () => {
     expect(phaseCasts, '20 场里狂化之后一次新招都没出,判据失去对象').toBeGreaterThan(0)
   })
 })
+
+/**
+ * 倒下的人不再出手。
+ *
+ * 反击是「对方打完那一下顺带还手」,它可能当场把出手方打死。
+ * 而追击 / 震摄这些后续节拍仍挂在出手方身上 —— 少一道自身归零的检查,
+ * 就会出现「气血已经归零的人继续追击,吸血再把血拉回来,从而判胜」。
+ *
+ * 实测(攻击 100 / 吸血 5% / 连击 100%,对手攻击 200 / 反击 100%):
+ * 第 3 拍玩家被反击打到 php=0,第 4 拍照样追击并吸血回到 0.003,最终判胜。
+ */
+describe('战斗 · 气血归零后不再出手', () => {
+  it('被反击打死之后,不再发出追击', () => {
+    const player: CombatantSnap = {
+      name: '我',
+      icon: 'user',
+      isPlayer: true,
+      attack: gn(100),
+      defense: gn(0),
+      maxHp: gn(1000),
+      speed: 1,
+      mods: { lifesteal: 0.05, comboRate: 1 },
+      skills: []
+    }
+    const foe: CombatantSnap = {
+      name: '敌',
+      icon: 'skull',
+      isPlayer: false,
+      attack: gn(200),
+      defense: gn(0),
+      maxHp: gn(150),
+      speed: 1,
+      mods: { counterRate: 1 },
+      skills: []
+    }
+    // flat(0.5) 让「有概率的触发」全部命中:连击必出、反击必出
+    const res = resolveCombat(player, foe, new RandomService(() => 0.5), { playerStartHpPct: 0.05 })
+
+    expect(res.win, '气血归零后靠追击吸血翻盘判胜了').toBe(false)
+    expect(res.playerHpPct, '败北时气血应为 0').toBe(0)
+    // 归零之后不该再出现任何由玩家发出的攻击
+    const zeroAt = res.log.findIndex(l => l.php === 0)
+    expect(zeroAt, '这局里玩家没被打到归零,用例前提变了').toBeGreaterThan(-1)
+    const afterDeath = res.log.slice(zeroAt + 1).filter(l => l.side === 'p' && l.t === 'atk')
+    expect(afterDeath, '归零之后玩家还在出手').toEqual([])
+  })
+})

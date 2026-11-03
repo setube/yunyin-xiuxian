@@ -191,6 +191,33 @@ export const RISK_ATLAS: RiskProfile[] = [
     counters: ['厚血墙'],
     incidents: ['P24 首扫(旧签名制)'],
     risk: 'low'
+  },
+  /*
+   * 下面三条是修掉「被反击打死后仍能追击吸血」之后新露出来的结构。
+   * 那处修复让反震/护盾一系的收益变实(打死你之后不再被你的追击抵消),
+   * 于是三类含护盾的组合跨过了破墙线。破墙率仍是 0.8%(红线 1.5%),
+   * 故按 watch 档建档观察,不是已知高危。
+   */
+  {
+    signature: 'burst+desperate+shield',
+    riskContexts: ['低血爆发 + 护盾续命'],
+    counters: ['真伤穿透', '斩杀类'],
+    incidents: ['P26 反震流复查(修死后追击后新露头)'],
+    risk: 'watch'
+  },
+  {
+    signature: 'burst+mitigation+sustain',
+    riskContexts: ['长战久拖,护盾与减伤叠加'],
+    counters: ['真伤', '禁疗'],
+    incidents: ['P26 反震流复查(修死后追击后新露头)'],
+    risk: 'watch'
+  },
+  {
+    signature: 'combo+counter+shield',
+    riskContexts: ['出手频次 + 反震 + 护盾'],
+    counters: ['震慑', '高闪避', '真伤穿透'],
+    incidents: ['P26 反震流复查(修死后追击后新露头)'],
+    risk: 'watch'
   }
 ]
 
