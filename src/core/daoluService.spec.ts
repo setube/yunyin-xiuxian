@@ -14,6 +14,7 @@ import {
   currentBond,
   destinedCandidate,
   fall,
+  gainBondOpportunities,
   highestReachable,
   meet,
   nextGateHint,
@@ -329,5 +330,71 @@ describe('道侣候选 · 永不为空(exploration 的空池守卫依赖此前�
     expect(all.length, '通配项没了:空地貌也筛不出人,池子会空').toBeGreaterThan(0)
     const wildcard = DAOLU.filter(d => d.terrains.length === 0)
     expect(wildcard.length, 'DAOLU 里没有通配项,任意地貌都可能筛空').toBeGreaterThan(0)
+  })
+})
+
+/**
+ * 离线结算每场历练都会调 `gainBondOpportunities`,但四个提前返回分支都没判据。
+ *
+ * 它在 `offline.ts` 的结算里给道侣累加机会点 —— 无道侣、道侣已逝/已离、
+ * 或传入非正数时应当什么都不做。删掉任一道守卫,分数会加到不该加的人身上,
+ * 或者把已逝道侣的机会点继续往上堆。
+ */
+describe('道侣机会点 · 四个不该加的情形', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const makeBond = (over: Record<string, unknown> = {}) =>
+    ({
+      daoluId: 'dl_muyan',
+      stage: 'met',
+      fate: 10,
+      trust: 10,
+      accord: 10,
+      shared: 0,
+      metAt: 0,
+      fallen: false,
+      doneEvents: [],
+      opportunities: 3,
+      nextEventAt: 0,
+      ...over
+    }) as never
+
+  it('有道侣时按场次累加(向下取整)', () => {
+    const player = usePlayerStore()
+    player.setBond(makeBond())
+    gainBondOpportunities(2.9)
+    expect(player.bond?.opportunities, '小数场次应向下取整').toBe(5)
+  })
+
+  it('没有道侣时什么都不做(不崩、不建空壳)', () => {
+    const player = usePlayerStore()
+    player.setBond(null)
+    expect(() => gainBondOpportunities(3)).not.toThrow()
+    expect(player.bond).toBeNull()
+  })
+
+  it('道侣已逝:不再累加', () => {
+    const player = usePlayerStore()
+    player.setBond(makeBond({ fallen: true }))
+    gainBondOpportunities(5)
+    expect(player.bond?.opportunities, '已逝道侣不该再攒机会点').toBe(3)
+  })
+
+  it('道侣已离开:不再累加', () => {
+    const player = usePlayerStore()
+    player.setBond(makeBond({ departed: true }))
+    gainBondOpportunities(5)
+    expect(player.bond?.opportunities, '已离道侣不该再攒机会点').toBe(3)
+  })
+
+  it('非正场次不累加(含 0 与负数)', () => {
+    const player = usePlayerStore()
+    player.setBond(makeBond())
+    gainBondOpportunities(0)
+    expect(player.bond?.opportunities).toBe(3)
+    gainBondOpportunities(-4)
+    expect(player.bond?.opportunities, '负数不该把机会点减回去').toBe(3)
   })
 })
