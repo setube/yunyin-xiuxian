@@ -4,6 +4,8 @@ import { QUALITIES, qualityDef } from '@/data/qualities'
 import { AFFIX_RARITY_RANK, AFFIXES, affixDef, affixFitBlock } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
+import { maxTierForMajor } from '@/data/regions'
+import { MAX_MAJOR } from '@/data/realms'
 import { isZero, toNum } from '@/utils/gnum'
 import { generateEquipment, resolveEquipStats, rollQuality, qualityWeightAt, sortAffixLines } from './equipGen'
 import { budgetOfMods } from './ruleBudget'
@@ -235,10 +237,22 @@ describe('装备模板 · 每阶槽位齐全', () => {
       if (!byTier.has(t.tier)) byTier.set(t.tier, new Set())
       byTier.get(t.tier)!.add(t.slot)
     }
+    /*
+     * 期望阶梯写死为 1..真实区域上限,不拿 `byTier.keys()` 现推:
+     * 只数「有 32 个不同 tier」的话,删掉 1 阶又补个 33 阶照样过关,
+     * 而 1 阶那一整列装备此后永远刷不出来。
+     */
+    const TIER_TOP = maxTierForMajor(MAX_MAJOR)
+    expect(TIER_TOP, '区域阶梯的上限变了,下面的期望范围要跟着改').toBe(32)
     const tiers = [...byTier.keys()].sort((a, b) => a - b)
-    expect(tiers.length, '阶数不足 32,数据缩水了').toBe(32)
+    const outOfRange = tiers.filter(t => t < 1 || t > TIER_TOP)
+    expect(outOfRange, `模板里出现了 1..${TIER_TOP} 之外的阶:${outOfRange.join(',')}`).toEqual([])
     const missing: string[] = []
-    for (const tier of tiers) {
+    for (let tier = 1; tier <= TIER_TOP; tier += 1) {
+      if (!byTier.has(tier)) {
+        missing.push(`${tier} 阶整阶没有模板`)
+        continue
+      }
       for (const s of SLOTS) if (!byTier.get(tier)!.has(s)) missing.push(`${tier} 阶缺 ${s}`)
     }
     expect(missing, `有阶缺槽位,那一阶该槽位永远刷不出装备:\n${missing.join('\n')}`).toEqual([])

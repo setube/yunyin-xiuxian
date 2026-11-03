@@ -1696,7 +1696,7 @@ it.note.slice(0, 4)                           // 装备标记,4
 **代价**:不能再「点提示条任意处关闭」。四个候选里只有这一条能真正让下面的按钮可点,
 其余三条(缩短时长、挪位置、按 hover 切换)都是缓解或绕路。
 
-**判据**:`src/ui/toastPassthrough.spec.ts` 四条 —— 条身须 `pointer-events-none`;
+**判据**:`src/ui/toastPassthrough.spec.ts` —— 条身须 `pointer-events-none`;
 `pointer-events-auto` 全文件只许出现一次且属于关闭叉;叉不低于 28px 且不进 Tab 序;有可访问名。
 故障注入:把条身改回 `pointer-events-auto`,两条当场红。
 

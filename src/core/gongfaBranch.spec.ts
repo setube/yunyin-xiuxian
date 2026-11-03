@@ -2,7 +2,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useCultivationStore } from '@/stores/cultivation'
-import { branchesFor, canEnlighten, gongfaBranchDef, GONGFA_BRANCHES } from '@/data/gongfaBranches'
+import { branchEffective, branchesFor, canEnlighten, gongfaBranchDef, GONGFA_BRANCHES } from '@/data/gongfaBranches'
+import { carryGongfa } from './reincarnation'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { GONGFA, gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
@@ -196,14 +197,22 @@ describe('悟道分支平衡审计', () => {
  * (由 `GongfaSection` 的 `branchActive` 负责,下面是源码守卫)。
  */
 describe('悟道分支 · 转世后未满级则不生效', () => {
+  /**
+   * 这条原先在用例里**自己**按「非最高落 1 层」造了一遍结果,再断言自己造的 `after` ——
+   * carryGongfa 改成保留全部等级也照样绿,等于没测。现在走真实转世路径。
+   */
   it('转世只保留一门功法的等级,其余落到 1 层', () => {
-    // carryGongfa 的规则:keepOne 时只有最高那门保等级
     const learned = { m_taixuan: 9, m_qingmu: 5, m_lihuo: 3 }
-    const kept = 'm_taixuan'   // 最高
-    const after: Record<string, number> = {}
-    for (const [id, lv] of Object.entries(learned)) after[id] = id === kept ? lv : 1
-    expect(after.m_qingmu, '非最高功法应落回 1 层').toBe(1)
-    expect(after.m_qingmu, '1 层不满足满级条件,它的分支词条不会生效').toBeLessThan(9)
+    // keepOne:只有修为最深的那门按原等级带走,其余门类留下但落回 1 层
+    expect(carryGongfa(learned, true), '只留最高那门').toEqual({ m_taixuan: 9, m_qingmu: 1, m_lihuo: 1 })
+    // keepOne=false:全部落回 1 层
+    expect(carryGongfa(learned, false), '不保留时全部落回 1 层').toEqual({
+      m_taixuan: 1,
+      m_qingmu: 1,
+      m_lihuo: 1
+    })
+    // 大乘道统:全部按原等级带走
+    expect(carryGongfa(learned, false, true), '持传承者全部带走').toEqual(learned)
   })
 
   it('每条分支的宿主功法都存在,且满级线不是 1(否则转世也算满级)', () => {
@@ -220,10 +229,39 @@ describe('悟道分支 · 转世后未满级则不生效', () => {
     expect(levels.size, '所有分支的满级线都一样,那这条判据可以简化').toBeGreaterThan(1)
   })
 
-  it('UI 对未满级的分支给出提示,而不是照常显示成已生效', () => {
+  /**
+   * 原先只查源码里有没有 `branchActive` / `gongfaMaxLevel(` / `未满级` 这几个字面量 ——
+   * 把满级比较由 `>=` 改成 `>` 也照样绿,而刚好满级的分支会被显示成不生效。
+   * 现在直接调 `branchEffective` 做行为断言,界面与 store 都读它。
+   */
+  it('分支生效判据:满级 + 装配缺一不可,边界不含糊', () => {
+    const max = gongfaMaxLevel(gongfaDef('m_taixuan')!)
+    const base = { hasBranch: true, isMain: true, isEffectiveSub: false }
+    expect(branchEffective('m_taixuan', { ...base, level: max }), '刚好满级 + 主修,应生效').toBe(true)
+    expect(branchEffective('m_taixuan', { ...base, level: max - 1 }), '差一层就不该生效').toBe(false)
+    expect(
+      branchEffective('m_taixuan', { level: max, hasBranch: true, isMain: false, isEffectiveSub: true }),
+      '满级 + 有效辅修席,应生效'
+    ).toBe(true)
+    expect(
+      branchEffective('m_taixuan', { level: max, hasBranch: true, isMain: false, isEffectiveSub: false }),
+      '满级但两个装配席都让出去了,不该生效'
+    ).toBe(false)
+    expect(
+      branchEffective('m_taixuan', { level: max, hasBranch: false, isMain: true, isEffectiveSub: false }),
+      '没择分支就谈不上生效'
+    ).toBe(false)
+    expect(branchEffective('m_not_a_gongfa', { ...base, level: 9 }), '认不出的功法不该生效').toBe(false)
+  })
+
+  it('界面与 store 读的是同一条生效判据,不是各写一遍', () => {
     const src = readFileSync(resolve(process.cwd(), 'src/components/cultivation/GongfaSection.vue'), 'utf-8')
-    expect(src, '缺少 branchActive:未满级的分支会被显示成已生效').toContain('function branchActive')
-    expect(src, 'branchActive 应按满级线判定').toMatch(/gongfaMaxLevel\(/)
-    expect(src, '未生效的分支要有提示文案').toContain('未满级')
+    expect(src, 'GongfaSection 应读 branchEffective').toMatch(/branchEffective\(/)
+    // 只看 branchActive 自己的函数体:别的地方(满级线文案、canEnlighten)用 gongfaMaxLevel 是正当的
+    const body = src.slice(src.indexOf('function branchActive'), src.indexOf('function branchInactiveReason'))
+    expect(body.length, 'branchActive 没找到,守卫空转').toBeGreaterThan(0)
+    expect(body, 'branchActive 自己又判了一次满级线 —— 会和 store 的 gongfaMods 分叉').not.toMatch(
+      /gongfaMaxLevel\(/
+    )
   })
 })
