@@ -5,7 +5,9 @@ import { formatGN } from '@/utils/format'
 import { buffDef } from '@/data/buffs'
 import { CULT_BASE_SPEED, CULT_SPEED_SOFT_CAP_T } from '@/data/constants'
 import { baseCultPerSec } from './formulas'
-import { retreatGainText, retreatGainedText, checkStateAchievements, retreatMarginalSpeed } from './progress'
+import { retreatGainText, retreatGainedText, checkStateAchievements, retreatMarginalSpeed, rolloverDailyIfNeeded } from './progress'
+import { todayStr } from '@/utils/time'
+import { DAILY_TASKS } from '@/data/quests'
 import { useQuestsStore } from '@/stores/quests'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { readFileSync } from 'node:fs'
@@ -155,4 +157,43 @@ describe('成就条件 · 每条都有判定路径', () => {
     }
   })
 })
+})
+
+/**
+ * 换日守卫:同一天重复调用不能把当日进度清掉。
+ *
+ * `rolloverDaily(date)` 会整块替换 `daily` —— 连 `done` 一起清空。
+ * 而 `rolloverDailyIfNeeded` 被 engine 在每次启动与换日时调用,
+ * 守卫(`daily.date !== today`)一旦失效,玩家同一天里反复丢日课进度,且没有任何报错。
+ */
+describe('日课 · 换日守卫', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('同一天再调一次:当日已完成项不被清掉', () => {
+    const quests = useQuestsStore()
+    const today = todayStr()
+    quests.rolloverDaily(today)
+    quests.markDailyDone(DAILY_TASKS[0]!.id)
+    const doneBefore = [...quests.daily.done]
+
+    rolloverDailyIfNeeded()   // 同一天
+
+    expect(quests.daily.done, '同一天不该重置日课').toEqual(doneBefore)
+    expect(quests.daily.date).toBe(today)
+  })
+
+  it('日期变了才重置,且新的 base 取当下计数', () => {
+    const quests = useQuestsStore()
+    quests.rolloverDaily('1999-01-01')       // 假装是上个世纪
+    quests.markDailyDone(DAILY_TASKS[0]!.id)
+    quests.inc('battles', 5)
+
+    rolloverDailyIfNeeded()
+
+    expect(quests.daily.date, '该换到今天的日期').toBe(todayStr())
+    expect(quests.daily.done, '换日后已完成项该清空').toEqual([])
+    expect(quests.daily.base.battles ?? 0, '新的 base 要取当下计数(增量从零开始)').toBe(5)
+  })
 })
