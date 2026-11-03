@@ -6,6 +6,9 @@
     @click="emit('open', props.item.uid)"
   >
     <QualityAura :quality="props.item.quality" compact />
+    <!-- 最上档质感的静态形制:四角御纹(与品阶角饰位置错开),动效只是加成 -->
+    <span v-if="luster" class="luster-cornice" aria-hidden="true" />
+    <span v-if="luster" class="luster-sheen" aria-hidden="true" />
     <span v-if="props.equipped" class="absolute left-0.5 top-0.5 font-kai text-[8px] leading-none text-jade">佩</span>
     <span v-if="props.item.locked" class="absolute right-0.5 top-0.5 leading-none text-ink-faint">
       <GameIcon name="lock" :size="8" />
@@ -64,6 +67,7 @@
   import { equipSetDef } from '@/core/equipSet'
   import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
   import { qualityAura } from '@/ui/qualityAura'
+  import { lusterOf } from '@/ui/luster'
   import { equipMastery } from '@/ui/masteryMark'
   import { equipLevelCap } from '@/core/forge'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -80,6 +84,8 @@
   const tier = computed(() => qualityTierStyle(props.item.quality))
   const rare = computed(() => isRareQuality(props.item.quality))
   const plaque = computed(() => qualityAura(props.item.quality).plaque)
+  /** 质感层(最上档才有);非最上档为 null,不挂任何类 */
+  const luster = computed(() => lusterOf(props.item.quality))
   // 上限随炼器台等级变,取值在组件里,判定在 ui/masteryMark
   const mastery = computed(() => equipMastery(props.item.level, equipLevelCap()))
   const setName = computed(() => (template.value?.set ? equipSetDef(template.value.set)?.name ?? '' : ''))

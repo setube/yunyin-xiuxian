@@ -18,7 +18,8 @@ import {
 } from '@/data/artifacts'
 import { formatPercent } from '@/utils/format'
 import { EQUIPMENT_TEMPLATES } from '@/data/equipment'
-import { PILLS, pillQualityColor } from '@/data/pills'
+import { PILLS, pillQualityColor, pillRank } from '@/data/pills'
+import { lusterByRank, lusterOf } from '@/ui/luster'
 import type { ArtifactDef, EquipmentTemplate, PillDef } from '@/types'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
@@ -44,6 +45,11 @@ export interface CodexEntry {
   stageName: string
   /** 满深度的一字标记,未满为空,两态图鉴恒空;悟道录「已见」为「可择」 */
   badge: string
+  /**
+   * 最上档物件的质感标记(见 ui/luster)。图鉴是标签流,不是卡片,
+   * 四角御纹在这里既挤又乱;改用一枚小字,与详情弹窗的整幅框同源。
+   */
+  luster?: { label: string } | null
   /** 下一层的条件(装备「曾上手」档为该阶成色目标,法宝谱为祭炼收益);到顶或无可补充为空,无方之丹到顶为 PILL_NO_RECIPE_HINT */
   hint: string
   /** 详情页脚注(各类口径不同,随条目给) */
@@ -400,6 +406,7 @@ export function artifactCodex(): CodexCat {
   const levelOf = new Map(inventory.artifacts.map(a => [a.defId, a.level]))
   const entries = ARTIFACTS.map(def => ({
     ...describeArtifact(def, levelOf.get(def.id) ?? 0, owned.has(def.id)),
+    luster: lusterOf(def.quality),
     icon: def.icon,
     foot: { label: '收录时间', value: collectedTimeText(quests.collectedAt[`artifact:${def.id}`]) }
   })).sort((a, b) => b.stage - a.stage)
@@ -420,6 +427,7 @@ export function pillCodex(): CodexCat {
   const owned = new Set(quests.collections.pill)
   const entries = PILLS.map(def => ({
     ...describePill(def, owned.has(def.id), lore.recipeMastery(def.id)),
+    luster: lusterByRank(pillRank(def)),
     foot: { label: '收录时间', value: collectedTimeText(quests.collectedAt[`pill:${def.id}`]) }
   })).sort((a, b) => b.stage - a.stage)
   const seen = entries.filter(e => e.stage >= 1).length

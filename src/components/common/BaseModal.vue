@@ -14,12 +14,12 @@
           :aria-label="props.ariaLabel || props.title || undefined"
           tabindex="-1"
           class="modal-panel paper-grain relative w-full max-h-[82vh] flex flex-col overflow-hidden rounded-xl border border-ink/20 bg-paper shadow-2xl outline-none"
-          :class="props.wide ? 'max-w-100' : 'max-w-90'"
+          :class="[props.wide ? 'max-w-100' : 'max-w-90', props.panelClass]"
           @keydown="onPanelKeydown"
         >
           <!-- 卷轴上缘 -->
           <header v-if="props.title || props.closable" class="relative z-10 flex items-center justify-between px-5 pt-4 pb-1 shrink-0">
-            <h3 class="font-kai text-lg tracking-[0.2em] text-ink">{{ props.title }}</h3>
+            <h3 class="font-kai text-lg tracking-[0.2em] text-ink" :class="props.titleClass">{{ props.title }}</h3>
             <!-- aria-label 供读屏;30px 触面(负外边距抵消,视觉位置不动),下限 28px -->
             <button
               v-if="props.closable"
@@ -88,8 +88,15 @@
       top?: boolean
       /** 最顶层弹窗(z-70,与 toast 同层):叠在 top 弹窗(z-60)之上,只给真嵌套用(如词条信息盖装备详情) */
       topmost?: boolean
+      /**
+       * 附加到面板的类(形制层)。只给「这件东西值得单独一套外观」的少数调用点用;
+       * 语义色不许从这里传 —— 颜色走 style.css 的 token,传进来的应是形制类(如最上档的 .luster-frame)。
+       */
+      panelClass?: string
+      /** 附加到标题的类(形制层);同样只放形制类,颜色走 token */
+      titleClass?: string
     }>(),
-    { title: '', closable: true, wide: false, top: false, topmost: false, ariaLabel: '' }
+    { title: '', closable: true, wide: false, top: false, topmost: false, ariaLabel: '', panelClass: '', titleClass: '' }
   )
 
   const emit = defineEmits<{ close: [] }>()

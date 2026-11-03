@@ -23,7 +23,10 @@
         </button>
       </div>
       <div class="mt-2 space-y-2">
-        <div v-for="a in apprenticesList" :key="a.uid" class="card-ink p-3">
+        <div v-for="a in apprenticesList" :key="a.uid" class="card-ink relative p-3">
+          <!-- 最上档道童:四角御纹 + 流光(见 ui/luster) -->
+          <span v-if="a.luster" class="luster-cornice" aria-hidden="true" />
+          <span v-if="a.luster" class="luster-sheen" aria-hidden="true" />
           <div class="flex items-center gap-2">
             <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-jade/40 bg-jade/15 font-kai text-[15px] text-ink">
               {{ a.def.name[0] }}
@@ -33,6 +36,7 @@
                 {{ a.def.name }}
                 <span class="rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 text-[10px] text-ink">第 {{ a.level }} 层</span>
                 <span class="rounded border border-jade/40 bg-jade/10 px-1.5 text-[10px] text-ink">{{ a.bondTitle }}</span>
+                <span v-if="a.luster" class="text-[10px] text-ink-faint">{{ a.luster.label }}</span>
               </p>
               <p class="truncate text-[10px] text-ink-faint">{{ a.def.desc }}</p>
             </div>
@@ -91,6 +95,7 @@
   } from '@/data/apprentices'
   import { apprenticeRecruitCost, apprenticeRecruitShortfall } from '@/core/apprenticeService'
   import { apprenticeHerbName, apprenticeReturnText } from '@/ui/apprenticeText'
+  import { lusterOf } from '@/ui/luster'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 
@@ -122,6 +127,7 @@
         level: a.level,
         bondTitle: bondTitle(a.bond),
         def,
+        luster: lusterOf(def.quality),
         busy,
         taskName: task?.name ?? '',
         taskIcon: task?.icon ?? '',

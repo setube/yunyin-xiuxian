@@ -19,6 +19,9 @@
         :style="c.tierStyle"
       >
         <QualityAura v-if="c.quality" :quality="c.quality" />
+        <!-- 最上档质感 -->
+        <span v-if="c.luster" class="luster-cornice" aria-hidden="true" />
+        <span v-if="c.luster" class="luster-sheen" aria-hidden="true" />
         <span v-if="c.rare" class="absolute right-1.5 top-1.5 leading-none">
           <QualitySeal :quality="c.quality!" :size="14" />
         </span>
@@ -63,12 +66,13 @@
   import { useInventoryStore } from '@/stores/inventory'
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
-  import { pillDef, pillQualityName, pillQualityTextColor } from '@/data/pills'
+  import { pillDef, pillQualityName, pillQualityTextColor, pillRank } from '@/data/pills'
   import { HERB_GRADE_NAMES, herbGradeBandLabel, herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
   import { qualityAura } from '@/ui/qualityAura'
+  import { lusterByRank, lusterOf } from '@/ui/luster'
   import { tint } from '@/utils/colorToken'
   import { focusHerbSlot, marketEquipInstance } from '@/core/marketService'
   import { cmp, gnZero, subClamp } from '@/utils/gnum'
@@ -94,6 +98,8 @@
     rare: boolean
     /** 名牌是否加描边与字距(稀有档),见 ui/qualityAura */
     plaque: boolean
+    /** 最上档质感层;非最上档为 null,见 ui/luster */
+    luster: import('@/ui/luster').Luster | null
     tierStyle?: { borderColor: string; background: string }
     price: GNum
     sold: boolean
@@ -152,6 +158,8 @@
       afford,
       rare: false,
       plaque: false,
+      // 丹药格走 rank 入口(道品 rank 9 在这里也要享有质感层)
+      luster: slot.kind === 'pill' ? lusterByRank(pillRank(pillDef(slot.pillId)!)) : null,
       stoneShort: afford ? gnZero() : subClamp(slot.price, resources.spiritStone)
     }
     if (slot.kind === 'pill') {
@@ -189,6 +197,7 @@
       quality: inst.quality,
       rare: isRareQuality(inst.quality),
       plaque: qualityAura(inst.quality).plaque,
+    luster: lusterOf(inst.quality),
       // 密卡底色固定弱晕染,品阶浓淡交给边框与角章
       tierStyle: { borderColor: tint(quality.color, tier.border), background: tint(quality.color, 0.06) },
       price: slot.price

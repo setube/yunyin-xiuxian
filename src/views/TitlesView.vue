@@ -39,6 +39,8 @@
           :class="{ 'ring-1 ring-jade/40': row.active }"
         >
           <QualityAura :quality="row.def.quality" />
+          <span v-if="row.luster" class="luster-cornice" aria-hidden="true" />
+          <span v-if="row.luster" class="luster-sheen" aria-hidden="true" />
           <div class="min-w-0 grow">
             <p class="flex flex-wrap items-center gap-1.5">
               <span
@@ -83,6 +85,7 @@
   import { petTraitText } from '@/ui/itemText'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { qualityAura } from '@/ui/qualityAura'
+  import { lusterOf } from '@/ui/luster'
   import { modsText } from '@/data/statNames'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
@@ -139,7 +142,8 @@
         personalityDesc: personalityDesc(def!.personality),
         traitText: petTraitText(def!),
         /** 稀有档的名字加描边与字距,与法宝/装备同一套(见 ui/qualityAura) */
-        plaque: qualityAura(def!.quality).plaque
+        plaque: qualityAura(def!.quality).plaque,
+        luster: lusterOf(def!.quality)
       }))
       .sort((a, b) => Number(b.active) - Number(a.active))
   )
