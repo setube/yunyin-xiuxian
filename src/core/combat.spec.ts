@@ -502,3 +502,50 @@ describe('战斗 · 技能附加效果须在自身存活时结算', () => {
     expect(after.every(v => v === before), `归零之后敌方血量还在变:${after.join(' → ')}`).toBe(true)
   })
 })
+
+/**
+ * 玄罡反震也能当场把人打死。
+ *
+ * 组合技反震是「护盾崩碎时反击」,伤害按对方攻击的 0.9 倍缩放 —— 拉到高攻敌人身上
+ * 就是一击必杀。它之后那条 `if (isZero(attacker.hp)) return` 若被删掉,
+ * 尸体会接着走吸血与追击(实测变异后能多出一条 `你使出追击`)。
+ *
+ * 这条之前没有判据:同文件里另一处(追击前)有,但那是第 283 轮补的,只管那一段。
+ */
+describe('战斗 · 玄罡反震打死出手方后不再结算', () => {
+  it('反震归零之后,日志里不再出现玩家发出的攻击', () => {
+    const flat = (v: number): RandomService => new RandomService(() => v)
+    const player: CombatantSnap = {
+      name: '我',
+      icon: 'user',
+      isPlayer: true,
+      attack: gn(100),
+      defense: gn(0),
+      maxHp: gn(1000),
+      speed: 1,
+      mods: { lifesteal: 0.3, comboRate: 1 },
+      skills: []
+    }
+    // 攻击拉到反震能一击必杀;护盾极薄,保证第一击就崩
+    const foe = {
+      name: '敌',
+      icon: 'skull',
+      isPlayer: false,
+      attack: gn(3000),
+      defense: gn(0),
+      maxHp: gn(5000),
+      speed: 1,
+      mods: { shieldOnStart: 0.005, counterRate: 0.2, counterDamage: 5 },
+      skills: [],
+      comboArt: 'xuangang'
+    } as unknown as CombatantSnap
+
+    const res = resolveCombat(player, foe, flat(0.5), { playerStartHpPct: 0.05 })
+
+    const zeroAt = res.log.findIndex(l => l.php === 0)
+    expect(zeroAt, '这局里玩家没被打到归零,用例前提变了').toBeGreaterThan(-1)
+    const after = res.log.slice(zeroAt + 1).filter(l => l.side === 'p' && l.t === 'atk')
+    expect(after, '反震归零之后玩家还在出手').toEqual([])
+    expect(res.win).toBe(false)
+  })
+})
