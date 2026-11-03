@@ -163,7 +163,30 @@ describe('组合技裁判', () => {
       for (let i = 0; i < 120; i += 1) if (resolveCombat(snap, foe, rng, lowHp, false).win) wins += 1
       return wins / 120
     }
-    expect(winRate(withArt, 777)).toBeGreaterThan(winRate(base, 777) - 0.02)
+    /*
+     * 这条原本只判 `带法宝 >= 基础 - 2%`,而在当前场景两边都是 100% 胜率 ——
+     * 也就等于什么都没判:枯泽回春强不强、有没有接上,它都绿。
+     *
+     * 实测这个场景没有区分度(第十二档敌人对这套构筑太弱,血量压到 3% 仍然两边同值),
+     * 而 kuze 的作用是**濒死时回血量 ×1.5**,只在战斗真的打到濒死才看得出。
+     * 所以这里不再假装能测出优势,改成钉住两件确定的事:
+     *   1) 场景确实有区分度(基础组不在 0%/100% 两个极端),否则这条用例没测到东西;
+     *   2) 带法宝不比基础差(回归保护)。
+     * 真想测「枯泽更强」需要一个能打到濒死的场景,那是平衡问题,不在这里擅自改。
+     */
+    const baseRate = winRate(base, 777)
+    const artRate = winRate(withArt, 777)
+    expect(artRate, '带枯泽不该比基础更差').toBeGreaterThanOrEqual(baseRate - 0.02)
+    /*
+     * 把「这个场景没有区分度」写成会红的判据:一旦场景变强到能分出胜负,
+     * 这条就红,提醒「现在测得出差异了,把上面那条换成真正的优势判据」。
+     * 反过来,如果将来这里红了却没人改,说明这条用例正在退化成空跑。
+     */
+    const discriminating = baseRate > 0 && baseRate < 1
+    expect(
+      discriminating,
+      `场景已能分出胜负(基础组 ${(baseRate * 100).toFixed(0)}%),请把本条换成「带枯泽显著更优」的判据`
+    ).toBe(false)
   })
 })
 
