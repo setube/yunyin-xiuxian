@@ -1,7 +1,7 @@
 /** 玩家身份与传奇:画像与叙事全部来自真实道痕统计,不能人工选择,不给任何属性 */
 import type { DaoMark, DaoPathId } from '@/types'
 import { DAO_PATHS, celestialWorldDef } from '@/data/endgame'
-import { pactDef } from '@/data/pacts'
+import { PACT_HEAVY_MULT, pactDef } from '@/data/pacts'
 import { MILESTONE_DEFS, milestoneDef, RECORD_DEFS, type MilestoneDef, type RecordDef } from '@/data/identity'
 import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore } from '@/stores/endgame'
@@ -100,7 +100,7 @@ export function daoNarrative(daoId: DaoPathId | null, marks: DaoMark[], currentL
   if (thisLife.length < 2) return null
   const builds = new Set(thisLife.map(m => m.buildName))
   const pacted = thisLife.filter(m => m.replay?.pactId)
-  const heavyPacts = pacted.filter(m => (pactDef(m.replay!.pactId!)?.sourceMult ?? 1) >= 2.5)
+  const heavyPacts = pacted.filter(m => (pactDef(m.replay!.pactId!)?.sourceMult ?? 1) >= PACT_HEAVY_MULT)
   const canPacts = pacted.filter(m => m.replay!.pactId === 'can' || m.replay!.pactId === 'xue')
 
   switch (daoId) {

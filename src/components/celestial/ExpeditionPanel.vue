@@ -182,11 +182,22 @@
           v-for="pact in PACTS"
           :key="pact.id"
           class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left"
-          :class="prepPact === pact.id ? 'bg-cinnabar/10 border border-cinnabar/40' : 'bg-paper-deep/60 border border-transparent'"
+          :class="[
+            pactMark(pact.id) ? `pact-weight-${pactMark(pact.id)!.weight}` : '',
+            prepPact === pact.id ? 'bg-cinnabar/10 border border-cinnabar/40' : 'bg-paper-deep/60 border border-transparent'
+          ]"
           :aria-pressed="prepPact === pact.id"
+          :aria-label="pactMark(pact.id)?.label ?? pact.name"
           @click="prepPact = pact.id"
         >
+          <!-- 印 + 契纹并排:六张契形状各不相同,不必逐个读倍数 -->
           <span class="grid h-6 w-6 shrink-0 place-items-center rounded bg-ink/80 font-kai text-[11px] text-paper">{{ pact.seal }}</span>
+          <span
+            v-if="pactMark(pact.id)"
+            class="pact-crest h-4 w-4 shrink-0 text-ink-faint"
+            :class="`pact-crest--${pactMark(pact.id)!.crest}`"
+            aria-hidden="true"
+          />
           <span class="min-w-0">
             <span class="block font-kai text-[12px] text-ink">{{ pact.name }}</span>
             <span class="block text-[10px] text-ink-faint">{{ pact.ruleText }}</span>
@@ -267,6 +278,7 @@
   import { tierMajor } from '@/core/formulas'
   import { CELESTIAL_WORLDS, EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
   import { PACTS, pactDef } from '@/data/pacts'
+  import { pactMark } from '@/ui/pactMark'
   import { GATES, gateDef } from '@/data/qimen'
   import { gateRuleSummary } from '@/core/gateRuleText'
   import {
