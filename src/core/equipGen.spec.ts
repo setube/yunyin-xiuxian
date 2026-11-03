@@ -220,3 +220,32 @@ describe('饰品专属战斗词缀(B-1)', () => {
     expect(hit.size, '高阶梯多次 J 槽掷取应碰上专属战斗词缀').toBeGreaterThan(0)
   })
 })
+
+/**
+ * 每阶的每个装备槽都要有模板,否则那一阶该槽位永远刷不出装备。
+ *
+ * 这是数据表的完整性,不是逻辑:少一个模板不会报错,只会让玩家在某个境界
+ * 卡着某个槽位空着。`artifact` 槽不在此列 —— 法宝走 `ARTIFACTS` 独立表。
+ */
+describe('装备模板 · 每阶槽位齐全', () => {
+  it('32 阶 × 九个可掉落槽位,一个不缺', () => {
+    const SLOTS = ['weapon', 'head', 'body', 'wrist', 'belt', 'boots', 'necklace', 'ring', 'talisman'] as const
+    const byTier = new Map<number, Set<string>>()
+    for (const t of EQUIPMENT_TEMPLATES) {
+      if (!byTier.has(t.tier)) byTier.set(t.tier, new Set())
+      byTier.get(t.tier)!.add(t.slot)
+    }
+    const tiers = [...byTier.keys()].sort((a, b) => a - b)
+    expect(tiers.length, '阶数不足 32,数据缩水了').toBe(32)
+    const missing: string[] = []
+    for (const tier of tiers) {
+      for (const s of SLOTS) if (!byTier.get(tier)!.has(s)) missing.push(`${tier} 阶缺 ${s}`)
+    }
+    expect(missing, `有阶缺槽位,那一阶该槽位永远刷不出装备:\n${missing.join('\n')}`).toEqual([])
+  })
+
+  it('artifact 槽不混进模板表(法宝有独立数据源)', () => {
+    const artifacts = EQUIPMENT_TEMPLATES.filter(t => t.slot === 'artifact')
+    expect(artifacts, `模板表里出现了法宝槽:${artifacts.map(a => a.id).join(',')}`).toEqual([])
+  })
+})
