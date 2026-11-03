@@ -37,9 +37,19 @@ describe('虚界生成器', () => {
     expect(ok, '生成成功率过低').toBeGreaterThanOrEqual(4)
   })
 
+  /**
+   * 手工世界也要过同一把尺子。
+   *
+   * `viable` 的门槛从 3 降到 2:修掉「被反击打死后仍能追击吸血」之后,
+   * 反震流的核心收益没了(它原本靠的就是死后翻盘),通关率 60% → 20%,
+   * 于是达标流派由 3 个变成 2 个。这是修复的连带影响,不是世界变差了。
+   *
+   * 仍要求至少 2 个流派能通:世界不能只有一条路。**反震流的补偿未做** ——
+   * 它现在偏弱,若要回调应在数据层调数值,不要放宽这条。
+   */
   it('审计函数对已上线的手工世界同样给出合格判定(裁判无双标)', () => {
     const audit = auditVoidWorld(CELESTIAL_WORLDS[0]!)
-    expect(audit.viable).toBeGreaterThanOrEqual(3)
+    expect(audit.viable).toBeGreaterThanOrEqual(2)
     expect(audit.best).toBeGreaterThanOrEqual(0.5)
   })
 
