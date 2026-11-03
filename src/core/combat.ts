@@ -495,7 +495,13 @@ export function resolveCombat(
       }
     }
     strike(self, foe, mult, label, round, { isSkill, pierce: effect === 'pierce' })
-    if (effect && !isZero(foe.hp)) {
+    /*
+     * 这一段是「技能命中之后的附加效果」。必须同时确认**自己还活着** ——
+     * 命中的同时可能被反击打死,尸体不该再给敌人上流血/护盾/慑。
+     * 实测:裂伤诀命中后挨反击归零,第 4 拍敌人血量还在掉(流血清算)。
+     * 下面 multi 的循环本来就有 !isZero(self.hp),其余几个分支漏了。
+     */
+    if (effect && !isZero(foe.hp) && !isZero(self.hp)) {
       if (effect === 'multi') {
         for (let i = 0; i < SKILL_MULTI_HITS && !isZero(foe.hp) && !isZero(self.hp); i += 1) {
           strike(self, foe, mult * SKILL_MULTI_RATIO, label, round, { isSkill: true, skipFollowups: true })
