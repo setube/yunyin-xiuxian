@@ -57,6 +57,8 @@
               <GameIcon v-if="entry.icon" :name="entry.icon" :size="11" />
               {{ entry.name }}
               <span v-if="entry.badge" class="text-[9px] opacity-70">{{ entry.badge }}</span>
+              <!-- 最上档:标签流放不下御纹,换一枚小字(与详情整幅框同源) -->
+              <span v-if="entry.luster" class="text-[8px] opacity-80">{{ entry.luster.label.charAt(0) }}</span>
             </button>
             <!-- 未收录降噪:更细的虚线框,不与已收的彩签同粗 -->
             <span
@@ -69,7 +71,14 @@
       </section>
     </template>
 
-    <BaseModal :open="detail !== null" :title="detail?.entry.name ?? ''" @close="detail = null">
+    <BaseModal
+      :open="detail !== null"
+      :title="detail?.entry.name ?? ''"
+      :panel-class="detail?.entry.luster ? 'luster-frame' : undefined"
+      :title-class="detail?.entry.luster ? 'luster-title' : undefined"
+      @close="detail = null"
+    >
+      <span v-if="detail?.entry.luster" class="luster-crown" aria-hidden="true">{{ detail.entry.luster.label }}</span>
       <div v-if="detail">
         <p class="flex flex-wrap items-center gap-2">
           <span class="chip-ink border-current" :style="{ color: detail.entry.color ?? 'var(--color-ink-soft)' }">
@@ -105,6 +114,7 @@
   import { chainOfEvent } from '@/data/chains'
   import { TALENTS, TALENT_GRADE_COLORS } from '@/data/talents'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
+  import { lusterOf } from '@/ui/luster'
   import {
     CODEX_SOURCES,
     artifactCodex,
@@ -218,7 +228,8 @@
           name: g.name,
           desc: [g.desc, gongfaFuncText(g)].filter(Boolean).join('\n'),
           meta: gongfaMetaText(g),
-          color: qualityTextColor(g.quality)
+          color: qualityTextColor(g.quality),
+          luster: lusterOf(g.quality)
         }))
       ),
       branchCodex(),
@@ -235,7 +246,8 @@
           desc: [p.desc, modsText(player.petModsFor(p))].filter(Boolean).join('\n'),
           meta: qualityDef(p.quality).name,
           icon: beastIcon(p.family),
-          color: qualityTextColor(p.quality)
+          color: qualityTextColor(p.quality),
+          luster: lusterOf(p.quality)
         }))
       ),
       makeCat(

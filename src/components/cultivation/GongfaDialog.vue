@@ -1,5 +1,13 @@
 <template>
-  <BaseModal :open="def !== undefined" :title="def?.name ?? ''" @close="close">
+  <BaseModal
+    :open="def !== undefined"
+    :title="def?.name ?? ''"
+    :panel-class="luster ? 'luster-frame' : undefined"
+    :title-class="luster ? 'luster-title' : undefined"
+    @close="close"
+  >
+    <!-- 最上档头饰:骑缝印(与装备/丹药详情同一套,见 ui/luster) -->
+    <span v-if="luster" class="luster-crown" aria-hidden="true">{{ luster.label }}</span>
     <div v-if="def">
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <QualityTag :quality="def.quality" />
@@ -143,6 +151,7 @@
   import type { AnyStatKey, StatMods } from '@/types'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
+  import { lusterOf } from '@/ui/luster'
 
   const ui = useUiStore()
   const cultivation = useCultivationStore()
@@ -150,6 +159,8 @@
   const player = usePlayerStore()
 
   const def = computed(() => (ui.gongfaDetailId ? gongfaDef(ui.gongfaDetailId) : undefined))
+  /** 最上档功法的质感层;非最上档为 null,弹窗保持原样 */
+  const luster = computed(() => (def.value ? lusterOf(def.value.quality) : null))
   const level = computed(() => (def.value ? (cultivation.learned[def.value.id] ?? 0) : 0))
   const learned = computed(() => level.value > 0)
   const upCost = computed(() => (def.value ? gongfaUpgradeCost(def.value.id) : null))

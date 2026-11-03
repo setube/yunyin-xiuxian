@@ -1,5 +1,15 @@
 <template>
-  <BaseModal ref="modalRef" :open="inst !== undefined" :title="template?.name ?? ''" top @close="close">
+  <BaseModal
+    ref="modalRef"
+    :open="inst !== undefined"
+    :title="template?.name ?? ''"
+    :panel-class="luster ? 'luster-frame' : undefined"
+    :title-class="luster ? 'luster-title' : undefined"
+    top
+    @close="close"
+  >
+    <!-- 最上档头饰:面板是圆角 + overflow-hidden,印须整体落在面板内 -->
+    <span v-if="luster" class="luster-crown" aria-hidden="true">神品</span>
     <!-- 词条转移在同一弹窗内切换正文与页脚,不另叠一层 -->
     <AffixTransferPanel v-if="transferOpen && inst" :flow="transfer" @view="viewTarget" />
     <div v-else-if="inst && template && resolved">
@@ -186,6 +196,7 @@
   import { useAutoReforge } from '@/composables/useAutoReforge'
   import BaseModal from '@/components/common/BaseModal.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
+  import { lusterOf } from '@/ui/luster'
   import AutoReforgePanel from './AutoReforgePanel.vue'
   import UpgradePanel from './UpgradePanel.vue'
   import EquipNotePanel from './EquipNotePanel.vue'
@@ -216,6 +227,8 @@
     return '分解'
   })
   const mastery = computed(() => (inst.value ? equipMastery(inst.value.level, equipLevelCap()) : null))
+  /** 质感层:详情弹窗的整幅框、头饰与标题字面(见 ui/luster) */
+  const luster = computed(() => (inst.value ? lusterOf(inst.value.quality) : null))
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
   const upShort = computed(() => (upCost.value ? upgradeShort(upCost.value) : null))
   const upGap = computed(() => (upCost.value ? upgradeShortfall(upCost.value) : null))

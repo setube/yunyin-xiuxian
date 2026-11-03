@@ -30,6 +30,9 @@
       }"
     >
       <QualityAura :quality="row.def.quality" />
+      <!-- 最上档质感:四角御纹 + 流光 -->
+      <span v-if="lusterOf(row.def.quality)" class="luster-cornice" aria-hidden="true" />
+      <span v-if="lusterOf(row.def.quality)" class="luster-sheen" aria-hidden="true" />
       <!-- 满重:与品阶光环分开的一套形状(顶边横杠),见 ui/masteryMark -->
       <span v-if="row.mastery" class="mastery-bar" :title="row.mastery.label" />
       <span v-if="row.rare" class="absolute right-2 top-2 leading-none">
@@ -160,6 +163,7 @@ import GameIcon from '@/components/common/GameIcon.vue'
 import QualityTag from '@/components/common/QualityTag.vue'
 import QualitySeal from '@/components/common/QualitySeal.vue'
 import QualityAura from '@/components/common/QualityAura.vue'
+import { lusterOf } from '@/ui/luster'
 
 const inventory = useInventoryStore()
 const player = usePlayerStore()
