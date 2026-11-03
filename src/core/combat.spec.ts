@@ -456,3 +456,49 @@ describe('战斗 · 气血归零后不再出手', () => {
     expect(afterDeath, '归零之后玩家还在出手').toEqual([])
   })
 })
+
+/**
+ * 技能命中后挨反击死了,附加效果不该再结算。
+ *
+ * 技能命中与反击是同一次 `strike` 里连着发生的:先算伤害,对方顺势还手。
+ * 还手可能把出手方当场打死 —— 而 `effect` 那一整段(流血/吸血/护盾/震慑)挂在后面,
+ * 只查了「敌人还活着没有」。
+ *
+ * 实测(裂伤诀 + 对手反击 100%):玩家归零之后,敌方血量仍在往下掉,
+ * 说明流血还在清。下面 `multi` 的循环本来就有 `!isZero(self.hp)`,其余分支漏了。
+ */
+describe('战斗 · 技能附加效果须在自身存活时结算', () => {
+  it('被反击打死后不再施加流血', () => {
+    const flat = (v: number): RandomService => new RandomService(() => v)
+    const player: CombatantSnap = {
+      name: '我',
+      icon: 'user',
+      isPlayer: true,
+      attack: gn(100),
+      defense: gn(0),
+      maxHp: gn(1000),
+      speed: 1,
+      mods: {},
+      skills: [{ name: '裂伤诀', rate: 1, mult: 1, effect: 'bleed' }]
+    }
+    const foe: CombatantSnap = {
+      name: '敌',
+      icon: 'skull',
+      isPlayer: false,
+      attack: gn(2000),
+      defense: gn(0),
+      maxHp: gn(99999),
+      speed: 1,
+      mods: { counterRate: 1 },
+      skills: []
+    }
+    const res = resolveCombat(player, foe, flat(0.5), { playerStartHpPct: 0.05 })
+
+    const deathAt = res.log.findIndex(l => l.php === 0)
+    expect(deathAt, '这局里玩家没被打到归零,用例前提变了').toBeGreaterThan(-1)
+    // 死亡之后,敌方血量不应再变化
+    const before = res.log[deathAt]!.ehp
+    const after = res.log.slice(deathAt).map(l => l.ehp)
+    expect(after.every(v => v === before), `归零之后敌方血量还在变:${after.join(' → ')}`).toBe(true)
+  })
+})
