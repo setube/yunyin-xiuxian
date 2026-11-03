@@ -154,20 +154,34 @@
         </button>
 
         <!-- 道侣:只记关系与经历,不给任何属性 -->
-        <button class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98" @click="bondDialog = true">
+        <button class="card-ink relative flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98" @click="bondDialog = true">
+          <!-- 最上阶(道侣)独有的一圈外环;其余阶只有阶点(见 ui/bondMark) -->
+          <span v-if="bondStageMark.top" class="bond-halo" aria-hidden="true" />
           <GameIcon name="user" :size="16" class="shrink-0 text-azure" />
           <span class="min-w-0 grow">
             <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">道 侣</span>
             <!-- 与 herIntent/pendingEvent 同判定,intentPending/pendingEventId 只在没回时才置位 -->
-            <span class="block truncate text-[10px] text-ink-faint">
-              <span v-if="hasBondWord" class="chip-ink mr-1 align-middle border-cinnabar/50 text-[9px] text-cinnabar">有话说</span>
-              {{
-                bondDef && bond
-                  ? `${bondDef.name}·${STAGE_NAMES[bond.stage]}${bond.fallen ? '(已殁)' : ''} | ${bondDef.brief}`
-                  : pastBonds.length
-                    ? `尚未遇见 · 历世同行 ${pastBonds.length} 段`
-                    : '尚未遇见'
-              }}
+            <span class="flex min-w-0 items-center gap-1.5 text-[10px] text-ink-faint">
+              <span
+                v-if="bond"
+                class="bond-pips shrink-0"
+                :class="{ 'bond-pips--top': bondStageMark.top }"
+                :style="{ '--bond-tone': bondStageMark.tone }"
+                role="img"
+                :aria-label="`${bondStageMark.label}阶`"
+              >
+                <i v-for="p in bondStageMark.pips" :key="p" />
+              </span>
+              <span v-if="hasBondWord" class="chip-ink mr-1 shrink-0 border-cinnabar/50 text-[9px] text-cinnabar">有话说</span>
+              <span class="truncate">
+                {{
+                  bondDef && bond
+                    ? `${bondDef.name}·${STAGE_NAMES[bond.stage]}${bond.fallen ? '(已殁)' : ''} | ${bondDef.brief}`
+                    : pastBonds.length
+                      ? `尚未遇见 · 历世同行 ${pastBonds.length} 段`
+                      : '尚未遇见'
+                }}
+              </span>
             </span>
           </span>
           <span class="shrink-0 text-[11px] text-azure">{{ bondDef ? '相知 →' : '履历 →' }}</span>
@@ -274,6 +288,7 @@
   import { computed, ref } from 'vue'
   import { usePlayerStore } from '@/stores/player'
   import { STAGE_NAMES } from '@/data/daolu'
+  import { bondMark } from '@/ui/bondMark'
   import { useQuestsStore } from '@/stores/quests'
   import { ELEMENTS } from '@/data/linggen'
   import { titleDef } from '@/data/titles'
@@ -411,6 +426,8 @@
   const bondDialog = ref(false)
   // 与道侣弹窗共用同一份投影(composable 单源)
   const { bond, bondDef, pastBonds, hasBondWord } = useBondOverview()
+  /** 缘阶形制(入口卡只要阶点与最上阶外环);未建立关系时按素昧平生 */
+  const bondStageMark = computed(() => bondMark(bond.value?.stage ?? 'none'))
   const mentorDialog = ref(false)
   const mentorVer = computed(() => mentorVerdict(player.mentor))
   const identityOpen = ref(false)

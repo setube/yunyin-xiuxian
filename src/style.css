@@ -1255,6 +1255,114 @@ html[data-theme='dark'] .dao-crest {
   pointer-events: none;
 }
 
+/* ================= 道侣缘阶形制(bondMark) =================
+ * 道侣七阶(素昧平生 → 道侣)此前只有一行阶名小字,「知交」与「同行」长得一样。
+ * 关系推进是本作里唯一「只进不退、由选择累积」的一条线,该有可数的形制(见 src/ui/bondMark.ts):
+ *   阶点:一阶一点、七阶七点;
+ *   缘纹:每阶一枚线纹,形状可数;最上阶(道侣)另有外环。
+ * 色由使用点注入(--bond-tone / color),纹样只吃 currentColor。
+ */
+.bond-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+}
+.bond-pips i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bond-tone, currentColor);
+  opacity: 0.9;
+}
+/* 最上阶:点改菱形 —— 除点数外还要有「另一种形状」 */
+.bond-pips--top i {
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+/* 缘纹:每阶一枚,画在独立的小方徽里 */
+.bond-crest {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.bond-crest::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+/* 素昧平生:一枚虚点 */
+.bond-crest--none::before {
+  background-image: radial-gradient(circle, transparent 0 24%, currentColor 34% 44%, transparent 46%);
+}
+/* 萍水相逢:一道斜线 */
+.bond-crest--met::before {
+  background-image: linear-gradient(128deg, transparent 0 44%, currentColor 44% 54%, transparent 54% 100%);
+}
+/* 相识:两道并行 */
+.bond-crest--known::before {
+  background-image:
+    linear-gradient(128deg, transparent 0 36%, currentColor 36% 46%, transparent 46% 100%),
+    linear-gradient(128deg, transparent 0 56%, currentColor 56% 66%, transparent 66% 100%);
+}
+/* 同行:两道相接,成一条折线 */
+.bond-crest--together::before {
+  background-image:
+    linear-gradient(128deg, transparent 0 44%, currentColor 44% 54%, transparent 54% 100%),
+    linear-gradient(52deg, transparent 0 44%, currentColor 44% 54%, transparent 54% 100%);
+}
+/* 知交:一圈内一横 */
+.bond-crest--confidant::before {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 46% 1.5px;
+  background-position: center;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+/* 结契:一圈内一菱(方转一角) */
+.bond-crest--pledged::before {
+  inset: 14%;
+  border: 1.5px solid currentColor;
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+/* 道侣:双环相叠 */
+.bond-crest--daolv::before {
+  inset: 4%;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+.bond-crest--daolv::after {
+  content: '';
+  position: absolute;
+  inset: 26%;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+/* 道侣外环:最上阶专属。与器魂的魂环同一套做法 —— 每阶都加等于都没有 */
+.bond-halo {
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1.5px rgb(var(--color-cinnabar-rgb) / 0.4),
+    0 0 14px rgb(var(--color-cinnabar-rgb) / 0.2);
+}
+html[data-theme='dark'] .bond-halo {
+  box-shadow:
+    0 0 0 1.5px rgb(var(--color-cinnabar-rgb) / 0.55),
+    0 0 18px rgb(var(--color-cinnabar-rgb) / 0.3);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;

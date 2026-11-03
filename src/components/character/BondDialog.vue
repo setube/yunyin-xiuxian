@@ -1,12 +1,30 @@
 <template>
   <BaseModal :open="open" :title="bondDef ? `道侣 · ${bondDef.name}` : '道侣'" @close="emit('close')">
     <template v-if="bondDef && bond">
-      <p class="font-kai text-[14px] text-ink">{{ bondDef.name }}</p>
+      <p class="flex items-center gap-1.5 font-kai text-[14px] text-ink">
+        <!-- 缘阶:阶纹 + 阶点(一阶一点、七阶七点),不必读阶名也知道走到哪一步 -->
+        <span
+          class="bond-crest h-4 w-4 shrink-0"
+          :class="`bond-crest--${mark.glyph}`"
+          :style="{ color: mark.tone }"
+          role="img"
+          :aria-label="`${mark.label}阶`"
+        />
+        {{ bondDef.name }}
+      </p>
       <p class="mt-0.5 text-[11px] leading-relaxed text-ink-faint">{{ bondDef.brief }}</p>
-      <p class="mt-2 text-[11px] text-ink-soft">
-        {{ TEMPER_NAMES[bondDef.temper] }} · {{ LEAN_NAMES[bondDef.lean] }}道
-        <span class="ml-1 text-azure">{{ STAGE_NAMES[bond.stage] }}</span>
-        <span v-if="bond.fallen" class="ml-1 text-cinnabar">已殁</span>
+      <p class="mt-2 flex items-center gap-2 text-[11px] text-ink-soft">
+        <span>{{ TEMPER_NAMES[bondDef.temper] }} · {{ LEAN_NAMES[bondDef.lean] }}道</span>
+        <span
+          class="bond-pips"
+          :class="{ 'bond-pips--top': mark.top }"
+          :style="{ '--bond-tone': mark.tone }"
+          aria-hidden="true"
+        >
+          <i v-for="p in mark.pips" :key="p" />
+        </span>
+        <span class="text-azure">{{ STAGE_NAMES[bond.stage] }}</span>
+        <span v-if="bond.fallen" class="text-cinnabar">已殁</span>
       </p>
 
       <!-- 三维只影响关系推进,不进任何属性 -->
@@ -80,8 +98,16 @@
     <template v-if="pastBonds.length">
       <p class="mt-4 font-kai text-[13px] tracking-widest text-ink-soft">历世同行</p>
       <div class="mt-2 max-h-40 space-y-1.5 overflow-y-auto">
-        <p v-for="(r, i) in pastBonds" :key="i" class="flex justify-between text-[11px]">
-          <span class="text-ink-soft">{{ r.name }}</span>
+        <p v-for="(r, i) in pastBonds" :key="i" class="flex items-center justify-between text-[11px]">
+          <span class="flex items-center gap-1.5">
+            <span
+              class="bond-crest h-3 w-3 shrink-0"
+              :class="`bond-crest--${bondMark(r.stage).glyph}`"
+              :style="{ color: bondMark(r.stage).tone }"
+              aria-hidden="true"
+            />
+            <span class="text-ink-soft">{{ r.name }}</span>
+          </span>
           <span class="text-ink-faint">{{ STAGE_NAMES[r.stage] }} · {{ ENDING_NAMES[r.ending] }}</span>
         </p>
       </div>
@@ -92,6 +118,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
   import { ENDING_NAMES, LEAN_NAMES, STAGE_NAMES, TEMPER_NAMES } from '@/data/daolu'
+  import { bondMark } from '@/ui/bondMark'
   import { chooseBondEvent, herStance, nextGateHint, respondIntent } from '@/core/daoluService'
   import { RESPONSE_NAMES, SPARK_NAMES } from '@/data/bondIntent'
   import { TRIGGER_NAMES } from '@/data/bondEvents'
@@ -106,6 +133,9 @@
   const emit = defineEmits<{ close: [] }>()
 
   const { bond, bondDef, pastBonds, pendingEvent, herIntent, pronoun, ta } = useBondOverview()
+
+  /** 当前缘阶形制;bond 未建立时按素昧平生画 */
+  const mark = computed(() => bondMark(bond.value?.stage ?? 'none'))
 
   const bondMeters = computed(() =>
     bond.value
