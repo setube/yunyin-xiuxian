@@ -35,8 +35,14 @@
       <div class="mt-2 space-y-2">
         <div v-for="m in materialRows" :key="m.id" class="card-ink flex items-center justify-between px-3 py-2.5">
           <div class="flex items-center gap-2">
-            <GameIcon :name="m.icon" :size="16" class="text-jade" />
-            <span class="font-kai text-[13px] text-ink">{{ m.name }}</span>
+            <!-- 灵草按品阶上色;玄铁无品阶,保持原样 -->
+            <GameIcon v-if="m.grade == null" :name="m.icon" :size="16" class="text-jade" />
+            <GameIcon v-else :name="m.icon" :size="16" :style="{ color: herbQualityTone(m.grade) }" />
+            <span
+              class="font-kai text-[13px]"
+              :style="m.grade == null ? undefined : { color: herbQualityTextColor(m.grade) }"
+              :class="m.grade == null ? 'text-ink' : ''"
+            >{{ m.name }}</span>
             <span class="text-[10px] text-ink-faint">存 {{ m.count }}</span>
             <span v-if="m.count < MARKET_MAT_COUNT" class="text-[10px] text-cinnabar">尚差 {{ MARKET_MAT_COUNT - m.count }}</span>
           </div>
@@ -80,6 +86,7 @@
   import { useWallNow } from '@/composables/useWallClock'
   import { pillDef, pillQualityColor } from '@/data/pills'
   import { HERB_GRADE_NAMES, HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
+  import { herbQualityTextColor, herbQualityTone } from '@/ui/herbQuality'
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { consignPrice, herbSellBatch, materialSellPrice, pillSellPrice } from '@/core/marketService'
