@@ -948,6 +948,59 @@ html[data-theme='dark'] {
     0 1px 0 rgb(var(--luster-tone) / 0.35);
 }
 
+/* ================= 器魂阶位形制(soulMark) =================
+ * 六阶只在「锋/盾/棘」那个字的颜色上差一档,而颜色是连续量 —— 三阶以后读不出层数。
+ * 这里补两样可数、可用形状说清的线索(见 src/ui/soulMark.ts):
+ *   阶点:一阶一点,六阶六点,数得出来;
+ *   魂环:最上阶(化真)独有的一圈,与 luster 同一条铁律 —— 每阶都给等于都没给。
+ * 色一律由调用点经 --soul-tone 注入(data/souls 是唯一事实源),这里不写死器魂色。
+ */
+.soul-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+}
+.soul-pips i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--soul-tone, currentColor);
+  opacity: 0.9;
+}
+/* 最上阶:点改成菱形,形状再拉开一档 —— 除了数得出几枚,还要有「另一种形状」 */
+.soul-pips--top i {
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+.soul-halo {
+  position: absolute;
+  /* 退到卡片外沿 2px:画在 inset:0 上会被卡片自己的 1px 边框压住,等于没画 */
+  inset: -2px;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1.5px rgb(var(--color-gold-ink-rgb) / 0.55),
+    0 0 16px rgb(var(--color-gold-ink-rgb) / 0.3);
+  animation: soul-halo-breathe 4.2s ease-in-out infinite;
+}
+/* 夜纸近黑,金环再提一档才立得住 */
+html[data-theme='dark'] .soul-halo {
+  box-shadow:
+    0 0 0 1.5px rgb(var(--color-gold-ink-rgb) / 0.7),
+    0 0 20px rgb(var(--color-gold-ink-rgb) / 0.38);
+}
+@keyframes soul-halo-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
