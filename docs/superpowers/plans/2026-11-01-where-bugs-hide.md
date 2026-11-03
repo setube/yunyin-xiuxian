@@ -1459,6 +1459,49 @@ enterTimer = setTimeout(() => { void router.push('/create') }, 2500)
 
 ---
 
+## 四十三、先看审计清单,再动手(第 281 轮)
+
+上一轮的教训是「先搜有没有现成审计」。这一轮照做,先清点:
+
+```
+29 条 *Audit / *Coverage / *Parity / *Wiring spec
+```
+
+覆盖范围很宽,列几条:
+
+| 审计 | 管什么 |
+| --- | --- |
+| `deadExportAudit` | 导出有没有人接 |
+| `singleSourceAudit` | 同一件事只许一处算法 |
+| `contentReachabilityAudit` | 有没有玩家永远够不到的内容 |
+| `dataTextAudit` | 条目说明里的数字与实现是否一致 |
+| `vocabularyCoverage` | 类型里写的每种词汇引擎都接得住 |
+| `ifaceCoverage` | 持久化结构的每个字段都在 sanitize 里处理过 |
+| `layeringAudit` | 分层有没有反向依赖 |
+| `effectWiring` / `gateWiring` | 效果与门禁的接线 |
+
+`dataTextAudit` 只钉「条目自带的说明文本」,于是我怀疑**模板里手写的数字**没人管
+(比如「静坐调息 · 3分钟 +8%」「服聚气丹 · 80灵石 +5%」)。
+
+查下来:
+
+```ts
+// BreakthroughCard.vue
+/** 破境卡:成功率与备药判据读 core/breakthrough 与 BREAKTHROUGH_PREP_OPTIONS,视图不写第二份 */
+const prepMeditate = BREAKTHROUGH_PREP_OPTIONS.find(o => o.id === 'meditate')!
+```
+
+视图读的就是那份常量,注释还写明了不许写第二份。**这一处本来就对。**
+
+### 结论
+
+`singleSourceAudit` 没有逐条钉住这个常量,但视图侧有注释、有实际读取,
+两者一致。这里没留下可提交的缺口。
+
+**这一轮的价值在于:先看清单,就没有再重复造轮子。**
+
+---
+
 ## 四十二、死导出:仓库早有审计,我的探针还不如它(第 280 轮)
 
 想查「定义了却没人接的导出」,自己写了个正则扫 `src/data`。结论 52 个,
