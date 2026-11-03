@@ -22,8 +22,13 @@ async function watchToasts(page) {
   await page.evaluate(() => {
     window.__toasts = []
     new MutationObserver(() => {
-      for (const b of document.querySelectorAll('[role="status"] button')) {
-        const t = (b.textContent ?? '').trim()
+      /*
+       * 直接取每条提示的整块,不要用 `[role="status"] button` ——
+       * 提示条本体已改成 `div`(整条可点会变成一层盖住内容的透明遮罩),
+       * 只剩右侧那颗关闭钮还是 button,按它取只会拿到一个「×」。
+       */
+      for (const el of document.querySelectorAll('[role="status"] > div')) {
+        const t = (el.textContent ?? '').replace(/\s*×\s*$/, '').trim()
         if (t && !window.__toasts.includes(t)) window.__toasts.push(t)
       }
     }).observe(document.body, { childList: true, subtree: true })
@@ -74,11 +79,25 @@ try {
   const first = await ctx.newPage()
   await first.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
   await watchToasts(first)
-  await first.waitForTimeout(1500)
+  /*
+   * 先等第一页把开局流程走完、心跳跑起来。
+   *
+   * 原先只等 1500ms 就开第二页 —— 那时第一页的 `started` 往往还没置真,
+   * `watchOtherTabSave(started)` 因此没开表,storage 事件来了也判不出「对面还开着」。
+   * 实测:等 6 秒再开第二页,提示稳定出现。
+   */
+  await first.waitForTimeout(6000)
   const second = await ctx.newPage()
   await second.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
-  await second.waitForTimeout(2000)
-  await first.waitForTimeout(2500)
+  /*
+   * 心跳周期是 LIVE_PING_MS = 4000,且从第二页开局算起。
+   * 原先第二页等 2000、第一页再等 2500 —— 合计 4.5 秒看着够,
+   * 但第二页那次 2000ms 等待排在页面加载之后,心跳要等它自己的 4 秒计时到点,
+   * 第一页往往在心跳发出之前就检查完了,于是长期误报「没收到提示」。
+   * 等足一个周期再加余量。
+   */
+  await second.waitForTimeout(4500)
+  await first.waitForTimeout(3000)
   const warned = await first.evaluate(w => window.__toasts.some(t => t.includes(w)), WARN)
   if (!warned) failures.push('开了第二页,第一页没收到「存档已在另一页打开」')
   console.log(`  ${warned ? '✓' : '✗'} 两页同开时提示已给出`)
