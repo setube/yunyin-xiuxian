@@ -304,3 +304,30 @@ describe('道侣 · 共命之险的生死判据', () => {
     expect(player.bond?.fallen).toBe(true)
   })
 })
+
+/**
+ * `candidatesFor` 必须永不返回空。
+ *
+ * `exploration.maybeEncounter` 依赖这一点:`pool.length === 0` 那道守卫之下是
+ * `rng.int(0, pool.length - 1)` 再取 `pool[...]` —— 池子空了会先算成
+ * `rng.int(0, -1)` 得到 0,接着 `undefined.id` 直接抛 TypeError。
+ * 守卫在,所以现在不炸;但守卫能成立,靠的是**这里永不返回空**。
+ *
+ * 这条锚的是那个前提,而不是守卫本身:哪天有人给 DAOLU 加筛选、或把通配项删了,
+ * 这里立刻红,提示「守卫下面那段会崩」。
+ */
+describe('道侣候选 · 永不为空(exploration 的空池守卫依赖此前提)', () => {
+  it('任意地貌组合(含空与未知地貌)都至少给一个候选', () => {
+    const cases: string[][] = [[], ['不存在的地貌'], ['林泽'], ['幽冥'], ['a', 'b', 'c', 'd', 'e']]
+    for (const t of cases) {
+      expect(candidatesFor(t as never).length, `地貌 ${JSON.stringify(t)} 时池子空了`).toBeGreaterThan(0)
+    }
+  })
+
+  it('靠的是至少有一个「通配」道侣(terrains 为空即不论地貌都收)', () => {
+    const all = candidatesFor([] as never)
+    expect(all.length, '通配项没了:空地貌也筛不出人,池子会空').toBeGreaterThan(0)
+    const wildcard = DAOLU.filter(d => d.terrains.length === 0)
+    expect(wildcard.length, 'DAOLU 里没有通配项,任意地貌都可能筛空').toBeGreaterThan(0)
+  })
+})
