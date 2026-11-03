@@ -25,17 +25,25 @@
       <template v-if="celTab === 'dao'">
         <section>
           <SectionTitle title="道途" hint="一世一择" />
-          <div v-if="currentDao" class="card-ink mt-2 px-4 py-3">
-            <p class="flex items-center gap-3">
+          <div v-if="currentDao" class="card-ink relative mt-2 overflow-hidden px-4 py-3">
+            <!-- 道途形制:卡角一枚本道道纹(剑锋/回环/三横/交刃),四道不必比色也分得开 -->
+            <span
+              v-if="currentMark"
+              class="dao-crest pointer-events-none absolute right-1 top-1 h-20 w-20"
+              :class="`dao-crest--${currentMark.crest}`"
+              :style="{ color: currentMark.tone }"
+              aria-hidden="true"
+            />
+            <p class="relative flex items-center gap-3">
               <span class="grid h-10 w-10 place-items-center rounded-md bg-cinnabar font-kai text-[20px] seal-face">
                 {{ currentDao.seal }}
               </span>
               <span class="font-kai text-[16px] tracking-widest text-ink">{{ currentDao.name }}</span>
             </p>
-            <p class="mt-2 text-[11px] leading-relaxed text-ink-faint">{{ currentDao.desc }}</p>
-            <p v-for="(r, i) in currentDao.ruleText" :key="i" class="mt-0.5 text-[11px] text-azure">· {{ r }}</p>
-            <p v-for="(r, i) in currentDao.deepText" :key="`d${i}`" class="mt-0.5 text-[11px] text-gold-ink">◈ {{ r }}</p>
-            <p v-if="swordInfo" class="mt-1.5 text-[11px] text-violet-ink tabular">
+            <p class="relative mt-2 text-[11px] leading-relaxed text-ink-faint">{{ currentDao.desc }}</p>
+            <p v-for="(r, i) in currentDao.ruleText" :key="i" class="relative mt-0.5 text-[11px] text-azure">· {{ r }}</p>
+            <p v-for="(r, i) in currentDao.deepText" :key="`d${i}`" class="relative mt-0.5 text-[11px] text-gold-ink">◈ {{ r }}</p>
+            <p v-if="swordInfo" class="relative mt-1.5 text-[11px] text-violet-ink tabular">
               剑意 {{ swordInfo.layers }}/{{ SWORD_PURITY_MAX_LAYERS }} 层<template v-if="swordInfo.layers > 0">({{
                 swordInfo.checks
                   .filter(c => c.ok)
@@ -43,19 +51,32 @@
                   .join('、')
               }})</template>
             </p>
-            <p v-if="daoStory" class="mt-1.5 font-kai text-[11px] leading-relaxed text-ink-soft">「{{ daoStory }}」</p>
+            <p v-if="daoStory" class="relative mt-1.5 font-kai text-[11px] leading-relaxed text-ink-soft">「{{ daoStory }}」</p>
           </div>
           <div v-else class="mt-2 grid grid-cols-2 gap-2.5">
-            <button v-for="dao in DAO_PATHS" :key="dao.id" class="card-ink px-3 py-3 text-left active:scale-98" @click="pickDao(dao.id)">
-              <p class="flex items-center gap-2">
+            <button
+              v-for="dao in DAO_PATHS"
+              :key="dao.id"
+              class="card-ink relative overflow-hidden px-3 py-3 text-left active:scale-98"
+              @click="pickDao(dao.id)"
+            >
+              <!-- 四道各有道纹:择道是最不可逆的一步,四张卡得先长得不一样 -->
+              <span
+                v-if="daoMarkOf(dao.id)"
+                class="dao-crest pointer-events-none absolute right-1 top-1 h-12 w-12"
+                :class="`dao-crest--${daoMarkOf(dao.id)!.crest}`"
+                :style="{ color: daoMarkOf(dao.id)!.tone }"
+                aria-hidden="true"
+              />
+              <p class="relative flex items-center gap-2">
                 <span class="grid h-8 w-8 place-items-center rounded-md bg-cinnabar font-kai text-[16px] seal-face">
                   {{ dao.seal }}
                 </span>
                 <span class="font-kai text-[14px] tracking-widest text-ink">{{ dao.name }}</span>
               </p>
-              <p class="mt-1.5 text-[10px] leading-relaxed text-ink-faint">{{ dao.desc }}</p>
-              <p v-for="(r, i) in dao.ruleText" :key="i" class="mt-0.5 text-[10px] text-azure">· {{ r }}</p>
-              <p v-for="(r, i) in dao.deepText" :key="`d${i}`" class="mt-0.5 text-[10px] text-gold-ink">◈ {{ r }}</p>
+              <p class="relative mt-1.5 text-[10px] leading-relaxed text-ink-faint">{{ dao.desc }}</p>
+              <p v-for="(r, i) in dao.ruleText" :key="i" class="relative mt-0.5 text-[10px] text-azure">· {{ r }}</p>
+              <p v-for="(r, i) in dao.deepText" :key="`d${i}`" class="relative mt-0.5 text-[10px] text-gold-ink">◈ {{ r }}</p>
             </button>
           </div>
         </section>
@@ -102,7 +123,17 @@
 
     <BaseModal :open="pendingDao !== undefined" title="定下道途" @close="pendingDaoId = null">
       <template v-if="pendingDao">
-        <p class="font-kai text-[14px] tracking-wider text-ink">{{ pendingDao.name }}</p>
+        <p class="flex items-center gap-2">
+          <span class="grid h-7 w-7 place-items-center rounded-md bg-cinnabar font-kai text-[13px] seal-face">{{ pendingDao.seal }}</span>
+          <span class="font-kai text-[14px] tracking-wider text-ink">{{ pendingDao.name }}</span>
+          <span
+            v-if="pendingMark"
+            class="dao-crest h-5 w-5 shrink-0"
+            :class="`dao-crest--${pendingMark.crest}`"
+            :style="{ color: pendingMark.tone }"
+            aria-hidden="true"
+          />
+        </p>
         <p class="mt-1.5 text-[12px] leading-relaxed text-ink-soft">{{ pendingDao.desc }}</p>
         <p v-for="(r, i) in pendingDao.ruleText" :key="i" class="mt-0.5 text-[11px] text-azure">· {{ r }}</p>
         <p v-for="(r, i) in pendingDao.deepText" :key="`confirm-${i}`" class="mt-0.5 text-[11px] text-gold-ink">◈ {{ r }}</p>
@@ -148,6 +179,7 @@
   import { useEndgameStore } from '@/stores/endgame'
   import { SOUL_SLOTS } from '@/data/souls'
   import { DAO_PATHS, daoPathDef } from '@/data/endgame'
+  import { daoMark } from '@/ui/daoMark'
   import { chooseDaoPath, endgameUnlocked } from '@/core/endgameService'
   import { currentDaoNarrative } from '@/core/identity'
   import { detectBuild } from '@/core/buildDetect'
@@ -200,6 +232,11 @@
   }
 
   const currentDao = computed(() => (endgame.daoPath ? daoPathDef(endgame.daoPath) : undefined))
+  /** 当前道途的形制;未择道或旧档野 id 时为 undefined,不挂符纹 */
+  const currentMark = computed(() => (endgame.daoPath ? daoMark(endgame.daoPath) : undefined))
+  function daoMarkOf(id: string) {
+    return daoMark(id)
+  }
 
   type CelTab = 'dao' | 'exped' | 'trial' | 'marks'
   const celTab = ref<CelTab>(endgame.worldRun ? 'exped' : 'dao')
@@ -221,6 +258,7 @@
   /** 道途选择二段式:先弹确认;一世只定一次,误触即锁死到转世 */
   const pendingDaoId = ref<(typeof DAO_PATHS)[number]['id'] | null>(null)
   const pendingDao = computed(() => (pendingDaoId.value ? daoPathDef(pendingDaoId.value) : undefined))
+  const pendingMark = computed(() => (pendingDaoId.value ? daoMark(pendingDaoId.value) : undefined))
 
   function pickDao(id: (typeof DAO_PATHS)[number]['id']): void {
     pendingDaoId.value = id
