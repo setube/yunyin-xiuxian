@@ -3,11 +3,25 @@
     <div class="card-ink divide-y divide-ink/6 px-4">
       <div v-for="row in furnaceRows" :key="row.rate.resource" class="py-2.5">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[12px] text-ink-soft">{{
-            row.rate.resource === "herb"
-              ? `灵草(仙品+存 ${formatNum(row.have)})`
-              : `${row.rate.name}(存 ${formatNum(row.have)})`
-          }}</span>
+          <!-- 名称与存量分两行:率条插进来后单行会把「(存 3,000)」挤成折行 -->
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center gap-1.5">
+              <span class="truncate text-[12px] text-ink-soft">{{
+                row.rate.resource === "herb" ? '灵草' : row.rate.name
+              }}</span>
+              <!-- 熔率条:越划算越长。四类的 25/15/60/80 不必自己比 -->
+              <span
+                class="furnace-rate w-9 shrink-0"
+                :class="`furnace-rate--${rateMark(row.rate.per, row.rate.name).tier}`"
+                :style="{ '--rate-fill': `${rateMark(row.rate.per, row.rate.name).fill * 100}%` }"
+                role="img"
+                :aria-label="rateMark(row.rate.per, row.rate.name).label"
+              />
+            </span>
+            <span class="block text-[10px] leading-tight text-ink-faint tabular">
+              存 {{ formatNum(row.have) }}
+            </span>
+          </span>
           <!-- 全熔防误触:亮出整包与可得道源,再按一下才熔 -->
           <button
             class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
@@ -155,6 +169,7 @@ import { formatGN, formatGap, formatNum } from '@/utils/format'
 import { gnZero, subClamp } from '@/utils/gnum'
 import { daoSourceShortfall, daoSourceShortText } from '@/core/daoSource'
 import { MARGIN_PIPS, marginCurvePoints, marginMark } from '@/ui/fruitMargin'
+import { rateMark } from '@/ui/furnaceRate'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
