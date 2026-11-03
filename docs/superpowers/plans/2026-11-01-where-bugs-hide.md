@@ -1695,6 +1695,55 @@ if (effect && !isZero(foe.hp)) {          // ← 只查敌人
 
 **这一类到此收口。** 同一个函数里不会再有了。
 
+### 一次差点误报:离线胜率「只采 3 次」(第 290 轮)
+
+战斗那一类收口后,把同样的找法用到离线结算。看到这段:
+
+```ts
+const winRate = mobDef
+  ? sampleWinRate(buildPlayerSnap(), makeEnemySnap(...), rng, 3, explorationRules())
+  : 0.3
+wins = Math.round(battles * winRate)
+```
+
+**只采 3 次。** 而 72 小时离线约 21600 场。算了一下量化误差:
+
+| 真实胜率 | 采到 | wins | 偏差 |
+| --- | --- | --- | --- |
+| 48% | 33% | 7200 | **-3168** |
+| 48% | 67% | 14400 | **+4032** |
+
+`wins` 又直接乘进灵石、修为、材料。看着像个大 bug,±40% 的收益偏差。
+
+**但翻到 `sampleWinRate` 的实现就明白了:**
+
+```ts
+const table = [0.08, 0.4, 0.72, 0.93]
+return table[Math.min(table.length - 1, wins)]!
+```
+
+它**不是**在算比例,是在把「三局几胜」映射到四档平滑胜率。0 胜 → 8%,
+3 胜 → 93%。**采样数就是设计参数**,采多了反而会偏离这张表。
+
+而且这张表有 spec 钉着:
+
+```ts
+it('sampleWinRate 取样数超表长时顶格,不越界取到 undefined→NaN', () => {
+  const rate = sampleWinRate(playerSnap(1000), enemy, seeded(9), 5)
+  expect(rate).toBe(0.93)
+})
+```
+
+**判断作废,不改。**
+
+### 教训
+
+**「参数看起来太小」不等于「参数不对」。** 这个 `3` 是函数契约的一部分,
+而契约写在实现与它的 spec 里 —— 我只看调用点就下了结论。
+
+上一轮的 `runs=10` 之所以真是缺陷,是因为那里的产出**要被阈值再过一遍**;
+这里的 `3` 是一张查表的索引。**同样是「小数字」,性质完全不同。**
+
 ### 一个操作教训
 
 子代理留下的探针文件叫 `zzz-probe*.spec.ts` / `zz*Probe.spec.ts`,我清理了两轮:
