@@ -40,10 +40,22 @@
           <button
             v-for="(node, i) in currentNodes"
             :key="node.id"
-            class="rounded-md border border-ink/15 bg-paper-deep/60 px-2.5 py-2 text-left active:scale-98"
+            class="relative overflow-hidden rounded-md border border-ink/15 bg-paper-deep/60 px-2.5 py-2 pl-3 text-left active:scale-98"
+            :aria-label="`${node.name} · ${routeMark(node).label} · 道源 +${node.bonus}`"
             @click="pickNode(i as 0 | 1)"
           >
-            <p class="font-kai text-[13px] text-ink">{{ node.name }}</p>
+            <!-- 份量:两径谁更险一眼可比,不必逐字读「道源 +7 / +12」 -->
+            <span class="route-weight" :class="`route-weight--${routeMark(node).weight}`" aria-hidden="true" />
+            <p class="flex items-center gap-1.5 font-kai text-[13px] text-ink">
+              <!-- 险纹:这一径险在何处,形状可数(见 ui/routeMark) -->
+              <span
+                class="route-peril h-3.5 w-3.5 shrink-0"
+                :class="`route-peril--${perilGlyph(routeMark(node).peril)}`"
+                :style="{ color: node.riskText === '寻常之敌' ? 'var(--color-ink-faint)' : 'var(--color-cinnabar)' }"
+                aria-hidden="true"
+              />
+              {{ node.name }}
+            </p>
             <p class="mt-0.5 text-[10px] text-ink-faint">{{ node.desc }}</p>
             <p class="mt-1 text-[10px] text-cinnabar">险:{{ node.riskText }}</p>
             <p class="text-[10px] text-gold-ink tabular">道源 +{{ node.bonus }}</p>
@@ -299,6 +311,7 @@
   import { pactMark } from '@/ui/pactMark'
   import { gateDef } from '@/data/qimen'
   import { gateKindMark, palaceBoard } from '@/ui/gateBoard'
+  import { perilGlyph, routeMark } from '@/ui/routeMark'
   import { gateRuleSummary } from '@/core/gateRuleText'
   import {
     abandonExpedition,
