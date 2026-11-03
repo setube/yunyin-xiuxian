@@ -36,7 +36,7 @@
               v-if="branchName(mainDef.id)"
               class="min-w-0 shrink truncate rounded border px-1.5 py-0.5 text-[10px]"
               :class="branchActive(mainDef.id) ? 'border-gold-ink/40 bg-gold-ink/10 text-ink' : 'border-ink/15 text-ink-faint'"
-              :title="branchActive(mainDef.id) ? undefined : '未满级 · 暂不生效'"
+              :title="branchInactiveReason(mainDef.id)"
             >
               {{ branchName(mainDef.id) }}
             </span>
@@ -111,7 +111,7 @@
             v-if="branchName(def.id)"
             class="max-w-24 shrink-0 truncate rounded border px-1.5 py-0.5 text-[10px]"
             :class="branchActive(def.id) ? 'border-gold-ink/40 bg-gold-ink/10 text-ink' : 'border-ink/15 text-ink-faint'"
-            :title="branchActive(def.id) ? undefined : '未满级 · 暂不生效'"
+            :title="branchInactiveReason(def.id)"
           >
             {{ branchName(def.id) }}
           </span>
@@ -144,7 +144,7 @@
   import { comprehendGongfa, gongfaUpgradeCost } from '@/core/gongfaService'
   import { GONGFA, gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import type { GongfaDef, GongfaType } from '@/types'
-  import { canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
+  import { branchEffective, canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import {
     COMPREHEND_PAGE_COST,
     WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN
@@ -301,11 +301,26 @@
    * 这里把那个状态标出来,免得玩家以为它还在加属性。
    */
   function branchActive(id: string): boolean {
-    const branchId = cultivation.gongfaBranch[id]
-    if (!branchId) return false
+    // 与 store 的 gongfaMods 同读一条判据:两处各写一遍就会分叉
+    return branchEffective(id, {
+      level: cultivation.learned[id] ?? 0,
+      hasBranch: !!cultivation.gongfaBranch[id],
+      isMain: cultivation.mainGongfa === id,
+      isEffectiveSub: cultivation.subGongfa.slice(0, dongfu.subGongfaSlots).includes(id)
+    })
+  }
+
+  /**
+   * 分支不生效的**那一个**原因(生效时不写 title)。
+   * 满级与装配是两件独立的事,分开说 —— 合成「未满级 · 暂不生效」会把
+   * 「等级不够」和「没装配」混成同一个状态,玩家照着提示做也无从下手。
+   */
+  function branchInactiveReason(id: string): string | undefined {
+    if (branchActive(id)) return undefined
     const def = gongfaDef(id)
-    if (!def) return false
-    return (cultivation.learned[id] ?? 0) >= gongfaMaxLevel(def)
+    if (!def) return undefined
+    if ((cultivation.learned[id] ?? 0) < gongfaMaxLevel(def)) return '未满级'
+    return '未装配'
   }
 
   function doExchange(): void {

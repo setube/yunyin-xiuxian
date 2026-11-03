@@ -5,7 +5,7 @@ import type { BuffInstance, CombatSkill, StatMods } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
 import { buffDef } from '@/data/buffs'
-import { gongfaBranchDef } from '@/data/gongfaBranches'
+import { branchEffective, gongfaBranchDef } from '@/data/gongfaBranches'
 import { mergeMods } from '@/core/statsCalc'
 import { buffCapSec } from '@/core/buffCap'
 import { useDongfuStore } from '@/stores/dongfu'
@@ -105,17 +105,18 @@ export const useCultivationStore = defineStore(
       for (const id of subGongfa.value.slice(0, subCap)) {
         if (learned.value[id]) sources.push(gongfaModsAt(id, learned.value[id]!))
       }
-      // 悟道分支词条只在「仍满级且仍装配」时生效
+      // 悟道分支词条只在「仍满级且仍装配」时生效 —— 与界面上的生效标记同读 branchEffective
       for (const [gid, bid] of Object.entries(gongfaBranch.value)) {
         const def = gongfaBranchDef(bid)
-        const gdef = gongfaDef(gid)
         const lv = learned.value[gid]
         if (
           def?.gongfaId === gid &&
-          gdef &&
-          lv != null &&
-          lv >= gongfaMaxLevel(gdef) &&
-          (gid === mainGongfa.value || subGongfa.value.slice(0, subCap).includes(gid))
+          branchEffective(gid, {
+            level: lv ?? 0,
+            hasBranch: true,
+            isMain: gid === mainGongfa.value,
+            isEffectiveSub: subGongfa.value.slice(0, subCap).includes(gid)
+          })
         ) {
           sources.push(def.mods)
         }

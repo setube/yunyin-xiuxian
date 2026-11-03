@@ -339,3 +339,31 @@ export function canEnlighten(gongfaId: string, level: number): boolean {
   if (!def) return false
   return level >= gongfaMaxLevel(def) && branchesFor(gongfaId).length > 0
 }
+
+/**
+ * 悟道分支此刻是否**真的在加属性**。
+ *
+ * 三个条件缺一不可,顺序也照它们各自的事实来源:
+ *   1. 这门功法已择分支;
+ *   2. 功法仍满级 —— 转世只留一门功法的等级、其余落回 1 层(`carryGongfa`),
+ *      「转世不失」的分支会留在界面上却不再产生任何效果;
+ *   3. 功法仍装配着 —— 主修席或**有效**辅修槽位(超槽的选择保留但不生效)。
+ *
+ * 由 `stores/cultivation` 的 `gongfaMods` 与跟界面同读此判据:两处各写一遍,
+ * 就会重演「store 按装配算、界面按满级算」那种分叉(issue 见 GongfaSection 的历史注释)。
+ */
+export function branchEffective(
+  gongfaId: string,
+  ctx: {
+    level: number
+    hasBranch: boolean
+    isMain: boolean
+    isEffectiveSub: boolean
+  }
+): boolean {
+  if (!ctx.hasBranch) return false
+  const def = gongfaDef(gongfaId)
+  if (!def) return false
+  if (ctx.level < gongfaMaxLevel(def)) return false
+  return ctx.isMain || ctx.isEffectiveSub
+}

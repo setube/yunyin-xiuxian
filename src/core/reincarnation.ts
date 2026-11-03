@@ -133,7 +133,7 @@ export function rerollReincarnationLinggen(): void {
  * 已习功法的折损:门类留下,层数回一层。
  * 「百世老修」阶修为最深的一门按原等级带走;持「大乘道统」传承者全部按原等级带走。
  */
-function carryGongfa(
+export function carryGongfa(
   learned: Readonly<Record<string, number>>,
   keepOne: boolean,
   keepAll = false
