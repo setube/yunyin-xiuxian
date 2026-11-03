@@ -158,7 +158,7 @@ docker run -d -p 8080:80 yunyin-xiuxian
 | Vue 3           | 3.5   | 组合式 API + `<script setup>`               |
 | TypeScript      | 6.0   | strict 严格类型检查                         |
 | Vite            | 8     | 构建与开发服务器（legacy 插件兜旧 WebView） |
-| Pinia           | 3     | 状态管理（14 个 store，自动持久化）         |
+| Pinia           | 3     | 状态管理（除 ui 外自动持久化）              |
 | Tailwind CSS    | 3.4   | 水墨色系语义色与暗色主题                    |
 | Vue Router      | 4     | 客户端路由（hash 模式）                     |
 | Tone.js         | 15    | FluidR3 乐器采样播放（BGM + SFX）           |
@@ -171,27 +171,27 @@ docker run -d -p 8080:80 yunyin-xiuxian
 
 ```text
 src/
-├── data/                 # 内容层：纯静态声明式定义（58 个模块）
-│   ├── realms.ts             # 4 界域 · 21 境界
-│   ├── regions.ts            # 44 区域
-│   ├── enemies.ts            # 132 敌人
-│   ├── equipment.ts          # 288 装备模板(一阶一名)
-│   ├── affixes.ts            # 119 词条
-│   ├── gongfa.ts             # 63 功法
-│   ├── gongfaBranches.ts     # 141 悟道分支
-│   ├── pills.ts              # 72 丹药
-│   ├── artifacts.ts          # 56 法宝
-│   ├── souls.ts              # 6 类 6 阶器魂
-│   ├── xiangxiu.ts           # 28 星宿 · 四象
-│   ├── ziwei.ts              # 12 宫 · 14 主星
-│   ├── yijing.ts             # 8 卦 · 64 重卦
+├── data/                 # 内容层：纯静态声明式定义，唯一数据源
+│   ├── realms.ts             # 界域与境界
+│   ├── regions.ts            # 区域与首领
+│   ├── enemies.ts            # 敌人与首领
+│   ├── equipment.ts          # 装备模板（一阶一名）
+│   ├── affixes.ts            # 词条
+│   ├── gongfa.ts             # 功法
+│   ├── gongfaBranches.ts     # 悟道分支
+│   ├── pills.ts              # 丹药
+│   ├── artifacts.ts          # 法宝
+│   ├── souls.ts              # 器魂
+│   ├── xiangxiu.ts           # 星宿 · 四象
+│   ├── ziwei.ts              # 紫微宫 · 主星
+│   ├── yijing.ts             # 卦 · 重卦
 │   ├── qimen.ts              # 奇门八门
 │   ├── daolu.ts              # 道侣
 │   ├── endgame.ts            # 道途 / 天界 / 试炼
-│   ├── mutators.ts           # 8 变数
+│   ├── mutators.ts           # 变数
 │   └── constants.ts          # 全局平衡参数
-├── core/                 # 逻辑层（126 个模块 + 243 个同目录 spec）
-│   ├── engine.ts             # 在线心跳驱动（1000ms）
+├── core/                 # 逻辑层：引擎、战斗、数值、存档
+│   ├── engine.ts             # 在线心跳驱动
 │   ├── offline.ts            # 离线收益结算
 │   ├── combat.ts             # 回合制战斗预解算
 │   ├── formulas.ts           # 数值公式
@@ -202,15 +202,17 @@ src/
 │   ├── progress.ts           # 任务成就横向总线
 │   ├── worldGen.ts           # 终局世界生成（三重审计门）
 │   └── *Service.ts           # 各系统服务（另有 *Sim.ts 平衡模拟器）
-├── stores/               # Pinia 状态（19 个，绝大部分自动持久化）
-├── views/                # 19 个页面
-├── components/           # 组件（12 组）
+├── stores/               # Pinia 状态（绝大部分自动持久化）
+├── views/                # 页面
+├── components/           # 组件
 ├── ui/                   # 图标、词条名、图鉴与提示等展示层数据
-├── utils/                # GNum 大数（m×10^e）/ 格式化 / 随机 / 存档底层
+├── utils/                # GNum 大数 / 格式化 / 随机 / 存档底层
 ├── composables/          # useNow / useWallClock 等
 ├── types/                # 领域类型定义
 └── router/               # 路由与首次流程守卫
 ```
+
+> 各模块的具体条目数不在这里复述 —— 数字以数据表为准，由 `dataHeaderAudit.spec.ts` 从表实际数出并核对。
 
 ## 游戏系统一览
 
