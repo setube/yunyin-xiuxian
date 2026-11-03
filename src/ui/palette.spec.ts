@@ -828,10 +828,24 @@ describe('调色板 · 同色淡底不该承载同色文字', () => {
       }
       return false
     }
-    // 六种彩色在最低档 5% 就仍然跌破
-    for (const token of ['cinnabar', 'jade', 'violet-ink', 'gold-ink', 'azure', 'amber-ink']) {
+    /*
+     * 五种彩色在最低档 5% 就仍然跌破。
+     *
+     * `cinnabar` 已从名单里去掉:2026-11-03 把夜主题那一档由 228 122 112 提到
+     * 238 136 126(它在 card-ink 叠半透明层的底上只有 4.03),提亮之后
+     * 日 4.51~5.00、夜 4.84~6.14,**5% 淡底反而安全了** ——
+     * 底色越接近文字色,对比度越差;文字色自身越亮,这个坑越浅。
+     *
+     * 也就是说:这一节的结论仍然成立(同色淡底是坏写法),但 cinnabar 已经不是
+     * 例子之一。哪天它再被压暗,这条会红,提醒把它加回去。
+     */
+    for (const token of ['jade', 'violet-ink', 'gold-ink', 'azure', 'amber-ink']) {
       expect(stillBad(token, 0.05), `${token} 在 5% 竟然达标了 —— 请重算本节的结论`).toBe(true)
     }
+    expect(
+      stillBad('cinnabar', 0.05),
+      'cinnabar 在 5% 又不安全了 —— 它大概被压暗了,请复核夜主题那一档'
+    ).toBe(false)
     // indigo-ink 是唯一在低档安全的,留作反例
     expect(stillBad('indigo-ink', 0.05), 'indigo-ink 低档应安全').toBe(false)
   })

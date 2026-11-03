@@ -59,7 +59,7 @@
           :class="flow.targetUid === c.item.uid ? 'border-cinnabar bg-cinnabar/5' : 'border-ink/15 bg-paper-deep/50'"
           @click="flow.pickTarget(c.item.uid)"
         >
-          <span class="block truncate font-kai text-[12px]" :style="{ color: qualityDef(c.item.quality).color }">
+          <span class="block truncate font-kai text-[12px]" :style="{ color: qualityTextColor(c.item.quality) }">
             {{ itemName(c.item.templateId) }}<template v-if="c.item.level > 0"> +{{ c.item.level }}</template>
             <template v-if="c.item.note"> ·{{ c.item.note }}</template>
           </span>
@@ -163,7 +163,7 @@
   import { computed, nextTick, ref, watch } from 'vue'
   import { affixDef } from '@/data/affixes'
   import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { AFFIX_RARITY_META } from '@/data/statNames'
   import {
     TRANSFER_LABELS,

@@ -45,7 +45,7 @@
           </span>
           <template v-if="row.item && row.template">
             <GameIcon :name="row.template.icon" :size="16" :style="{ color: qualityDef(row.item.quality).color }" />
-            <span class="w-full truncate text-center font-kai text-[10px]" :style="{ color: qualityDef(row.item.quality).color }">
+            <span class="w-full truncate text-center font-kai text-[10px]" :style="{ color: qualityTextColor(row.item.quality) }">
               {{ row.template.name }}
               <template v-if="row.item.level > 0">+{{ row.item.level }}</template>
               <template v-if="row.item.note">·{{ row.item.note }}</template>
@@ -236,7 +236,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useSettingsStore } from '@/stores/settings'
   import { useCultivationStore } from '@/stores/cultivation'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { pillDef, pillQualityColor, pillQualityName, pillRank } from '@/data/pills'
   import { HERB_GRADE_SHORT } from '@/data/herbGrades'
   import { herbStashText } from '@/ui/herbText'

@@ -28,6 +28,15 @@
   --color-azure-rgb: 65 103 139;
   --color-violet-ink-rgb: 114 85 158;
   --color-amber-ink-rgb: 135 93 25;
+  /*
+   * 品阶文字色:三档在日主题上过不了 4.5:1 的品阶,单独给一套「当文字用」的暗版。
+   * 装饰那一层(光环/边框/角章)仍用 data/qualities.ts 里的原色 —— 它只需 ΔE 分得开。
+   * 原色与实测:玄 #A85C3F 4.28、天 #C9A227 2.11、仙 #3E8E8B 3.36,都低于正文线。
+   */
+  --color-quality-profound-text-rgb: 138 74 51;
+  --color-quality-heaven-text-rgb: 122 95 14;
+  --color-quality-immortal-text-rgb: 46 107 105;
+  --color-quality-dao-text-rgb: 132 89 10;
 
   --color-paper: rgb(var(--color-paper-rgb));
   --color-paper-deep: rgb(var(--color-paper-deep-rgb));
@@ -43,6 +52,10 @@
   --color-azure: rgb(var(--color-azure-rgb));
   --color-violet-ink: rgb(var(--color-violet-ink-rgb));
   --color-amber-ink: rgb(var(--color-amber-ink-rgb));
+  --color-quality-profound-text: rgb(var(--color-quality-profound-text-rgb));
+  --color-quality-heaven-text: rgb(var(--color-quality-heaven-text-rgb));
+  --color-quality-immortal-text: rgb(var(--color-quality-immortal-text-rgb));
+  --color-quality-dao-text: rgb(var(--color-quality-dao-text-rgb));
 
   /*
    * 楷体栈唯一事实源(tailwind.config 里的 kai/song 只是把它接成 utility)。
@@ -370,7 +383,9 @@ html[data-theme='dark'] {
   --color-ink-faint-rgb: 168 161 140;
   /* 朱砂(夜):提亮到四张底上都过 4.5:1 —— 它承担 41 处 9~17px 正文(拒因/待办标记/可点装饰),
      原 201 85 78 对纸只有 3.83。印面另有 --color-cinnabar-deep 兜底,不吃这一档。 */
-  --color-cinnabar-rgb: 228 122 112;
+  /* 2026-11-03:再提一档。228 122 112 在 paper 上是 5.73,但境界名那类压在
+     card-ink 叠了半透明层的底上只有 4.03。改到 238 136 126:最亮的实测底 4.64、对纸 6.62。 */
+  --color-cinnabar-rgb: 238 136 126;
   --color-cinnabar-deep-rgb: 163 70 64;
   --color-indigo-ink-rgb: 147 179 185;
   --color-gold-ink-rgb: 200 163 90;
@@ -378,6 +393,11 @@ html[data-theme='dark'] {
   --color-azure-rgb: 124 159 195;
   --color-violet-ink-rgb: 169 143 211;
   --color-amber-ink-rgb: 207 154 69;
+  /* 品阶文字色 · 夜主题:此处的纸是近黑,压暗只会更看不见,故反过来提亮 */
+  --color-quality-profound-text-rgb: 218 120 82;
+  --color-quality-heaven-text-rgb: 201 162 39;
+  --color-quality-immortal-text-rgb: 81 185 181;
+  --color-quality-dao-text-rgb: 233 185 73;
   --shadow-ink: rgb(8 7 5);
   --shadow-ink-rgb: 8 7 5;
   /* 暗色 paper 92% + white 8% 预计算 */

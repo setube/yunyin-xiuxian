@@ -123,7 +123,7 @@
             :key="t.item.uid"
             class="flex items-baseline justify-between gap-2 py-1 text-[10px]"
           >
-            <span class="min-w-0 truncate font-kai" :style="{ color: qualityDef(t.item.quality).color }">
+            <span class="min-w-0 truncate font-kai" :style="{ color: qualityTextColor(t.item.quality) }">
               {{ equipmentTemplate(t.item.templateId)?.name ?? '旧物' }}
             </span>
             <span class="shrink-0 text-ink-faint tabular">{{ t.item.tier }} 阶 · {{ t.reason }}</span>
@@ -144,7 +144,7 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { QUALITIES, qualityDef } from '@/data/qualities'
+  import { QUALITIES, qualityTextColor } from '@/data/qualities'
   import { MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
   import { useInventoryStore } from '@/stores/inventory'
   import { useSettingsStore } from '@/stores/settings'
@@ -171,7 +171,7 @@
   const decomposeRows = computed(() =>
     QUALITIES.map(q => {
       const got = decomposePreview([q.rank])
-      return { rank: q.rank, name: q.name, color: q.color, count: got.count, text: batchYieldText(got) }
+      return { rank: q.rank, name: q.name, color: qualityTextColor(q.id), count: got.count, text: batchYieldText(got) }
     })
   )
 

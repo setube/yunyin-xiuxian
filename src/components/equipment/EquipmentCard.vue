@@ -28,7 +28,7 @@
       <span
         class="w-full truncate text-center text-[9px] leading-tight"
         :class="{ 'q-plaque': plaque }"
-        :style="{ color: quality.color }"
+        :style="{ color: qualityText }"
       >
         {{ template?.name ?? '?' }}
       </span>
@@ -59,7 +59,7 @@
   import { computed } from 'vue'
   import type { EquipmentInstance } from '@/types'
   import { equipmentTemplate } from '@/data/equipment'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { tint } from '@/utils/colorToken'
   import { equipSetDef } from '@/core/equipSet'
   import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
@@ -75,6 +75,8 @@
 
   const template = computed(() => equipmentTemplate(props.item.templateId))
   const quality = computed(() => qualityDef(props.item.quality))
+  /** 名字那处要专用文字色:品阶原色在日/夜各有一档过不了 4.5 */
+  const qualityText = computed(() => qualityTextColor(props.item.quality))
   const tier = computed(() => qualityTierStyle(props.item.quality))
   const rare = computed(() => isRareQuality(props.item.quality))
   const plaque = computed(() => qualityAura(props.item.quality).plaque)

@@ -15,7 +15,7 @@
  * 各计价轴随境界走势不同,跨丹比较须折算到同一境界,口径见 core/pillValue.ts。
  */
 import type { PillDef, PillQuality } from '@/types'
-import { qualityDef } from './qualities'
+import { qualityDef, qualityTextColor } from './qualities'
 
 function p(
   id: string,
@@ -412,4 +412,15 @@ export function pillQualityName(def: Pick<PillDef, 'quality'>): string {
 
 export function pillQualityColor(def: Pick<PillDef, 'quality'>): string {
   return def.quality === 'dao' ? DAO_QUALITY_COLOR : qualityDef(def.quality).color
+}
+
+/**
+ * 丹名**当文字用**的颜色。
+ *
+ * 与 `pillQualityColor` 分开:那个是「这味丹属于哪一档」的识别色,
+ * 光环/图标都用它,判据也拿它比对。而文字要求 4.5:1,道品原色
+ * `#E9B949` 在日主题只有 1.59,天/仙/玄三档也各有短板。
+ */
+export function pillQualityTextColor(def: Pick<PillDef, 'quality'>): string {
+  return def.quality === 'dao' ? 'var(--color-quality-dao-text)' : qualityTextColor(def.quality)
 }

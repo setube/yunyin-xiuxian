@@ -104,7 +104,7 @@
   import { EVENTS } from '@/data/events'
   import { chainOfEvent } from '@/data/chains'
   import { TALENTS, TALENT_GRADE_COLORS } from '@/data/talents'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import {
     CODEX_SOURCES,
     artifactCodex,
@@ -218,7 +218,7 @@
           name: g.name,
           desc: [g.desc, gongfaFuncText(g)].filter(Boolean).join('\n'),
           meta: gongfaMetaText(g),
-          color: qualityDef(g.quality).color
+          color: qualityTextColor(g.quality)
         }))
       ),
       branchCodex(),
@@ -235,7 +235,7 @@
           desc: [p.desc, modsText(player.petModsFor(p))].filter(Boolean).join('\n'),
           meta: qualityDef(p.quality).name,
           icon: beastIcon(p.family),
-          color: qualityDef(p.quality).color
+          color: qualityTextColor(p.quality)
         }))
       ),
       makeCat(

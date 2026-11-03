@@ -57,7 +57,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useBountyRows, type BountyRow } from '@/composables/useBountyRows'
   import { equipmentTemplate } from '@/data/equipment'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import GameIcon from '@/components/common/GameIcon.vue'
 
   const bounty = useBountyStore()
@@ -91,7 +91,7 @@
         return {
           uid: eq.uid,
           name: equipmentTemplate(eq.templateId)?.name ?? eq.templateId,
-          color: q.color,
+          color: qualityTextColor(q.id),
           qualityName: q.name,
           tier: eq.tier,
           stone: r.stone,

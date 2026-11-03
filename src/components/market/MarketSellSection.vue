@@ -81,7 +81,7 @@
   import { pillDef, pillQualityColor } from '@/data/pills'
   import { HERB_GRADE_NAMES, HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { consignPrice, herbSellBatch, materialSellPrice, pillSellPrice } from '@/core/marketService'
   import { formatCountdown, formatGN } from '@/utils/format'
   import { classicalDuration } from '@/data/timeUnits'
@@ -130,7 +130,7 @@
       .map(eq => ({
         uid: eq.uid,
         name: equipmentTemplate(eq.templateId)?.name ?? eq.templateId,
-        color: qualityDef(eq.quality).color,
+        color: qualityTextColor(eq.quality),
         tier: eq.tier,
         price: consignPrice(eq.tier, qualityDef(eq.quality).rank)
       }))

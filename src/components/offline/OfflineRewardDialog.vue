@@ -34,7 +34,7 @@
             :key="eq.uid ?? i"
             type="button"
             class="chip-ink !py-1.5 text-[11px]"
-            :style="{ color: qualityDef(eq.quality).color }"
+            :style="{ color: qualityTextColor(eq.quality) }"
             @click="eq.uid && openEquip(eq.uid)"
           >
             {{ qualityDef(eq.quality).name }}·{{ eq.name }}
@@ -56,7 +56,7 @@
   import { formatDuration, formatGN, formatNum } from '@/utils/format'
   import { offlineAwayPhrase } from '@/ui/offlineText'
   import { HERB_GRADE_SHORT } from '@/data/herbGrades'
-  import { qualityDef } from '@/data/qualities'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { playSfx } from '@/core/audio'
   import BaseModal from '@/components/common/BaseModal.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
