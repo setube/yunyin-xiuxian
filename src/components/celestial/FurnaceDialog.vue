@@ -77,8 +77,27 @@
           <span class="text-gold-ink"
             >→ 凝后 {{ fruitCountLabel(fruitInfo.nextEffective) }}(+{{ fruitInfo.deltaPct }}%)</span
           >
-          · 边际收益渐减
         </p>
+        <!-- 边际刻度:再凝一枚还剩几成力。刻度递减,不靠「边际渐减」四个字 -->
+        <div v-if="fruitInfo.total > 0" class="mt-1 flex items-center gap-2">
+          <span
+            class="fruit-pips shrink-0"
+            role="img"
+            :aria-label="`${nextMargin.label} · 六格中 ${nextMargin.pips} 格`"
+          >
+            <i v-for="n in MARGIN_PIPS" :key="n" :class="{ on: n <= nextMargin.pips }" />
+          </span>
+          <svg
+            v-if="showCurve"
+            class="fruit-curve min-w-0 flex-1"
+            viewBox="0 0 100 24"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <polyline :points="curvePoints" />
+          </svg>
+        </div>
       </div>
     </div>
     <template #footer>
@@ -135,6 +154,7 @@ import {
 import { formatGN, formatGap, formatNum } from '@/utils/format'
 import { gnZero, subClamp } from '@/utils/gnum'
 import { daoSourceShortfall, daoSourceShortText } from '@/core/daoSource'
+import { MARGIN_PIPS, marginCurvePoints, marginMark } from '@/ui/fruitMargin'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -167,6 +187,12 @@ function doFurnace(rate: FurnaceRate): void {
 }
 
 const fruitInfo = computed(() => fruitMarginalInfo())
+/** 下一枚(凝后那一枚)的边际形制:刻度与折线都从它起算 */
+const nextMargin = computed(() => marginMark(fruitInfo.value.total + 1))
+const curvePoints = computed(() => marginCurvePoints(fruitInfo.value.total))
+/** 一两枚时曲线是平的:没有可读的形状,不如不画 */
+const showCurve = computed(() => fruitInfo.value.total >= 4)
+
 const fruitShort = computed(() => daoSourceShortfall(DAO_SOURCE_PER_FRUIT, endgame.daoSource))
 /** 灵石熔铸缺口;价签与 furnaceConvertStone 同源 */
 const stoneShort = computed(() => {

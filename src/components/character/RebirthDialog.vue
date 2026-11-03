@@ -12,6 +12,28 @@
       </span>
       <span class="tabular font-kai text-[15px] text-cinnabar">{{ player.reincarnation.daoFruit }}</span>
     </p>
+    <!-- 边际刻度:当前这枚还剩几成力。递减是这条曲线的全部要义,不该只写四个字 -->
+    <div v-if="fruitInfo.total > 0" class="mt-1 flex items-center gap-2">
+      <span class="text-[10px] text-ink-faint">本枚边际</span>
+      <span
+        class="fruit-pips shrink-0"
+        role="img"
+        :aria-label="`${curMargin.label} · 六格中 ${curMargin.pips} 格`"
+      >
+        <i v-for="n in MARGIN_PIPS" :key="n" :class="{ on: n <= curMargin.pips }" />
+      </span>
+      <!-- 折线只在已过前几枚才有意义:一两枚时曲线是平的,画出来只是占位 -->
+      <svg
+        v-if="showCurve"
+        class="fruit-curve min-w-0 flex-1"
+        viewBox="0 0 100 24"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <polyline :points="curvePoints" />
+      </svg>
+    </div>
     <p class="mt-1 text-[11px] text-ink-faint tabular">
       有效
       <span class="text-gold-ink">{{ fruitCountLabel(fruitInfo.effective) }}</span>
@@ -163,6 +185,7 @@
   import { prepareReincarnation, MANUAL_REBIRTH_MIN_MAJOR } from '@/core/reincarnation'
   import { DAO_FRUIT_COMBAT_BONUS, DAO_FRUIT_CULT_BONUS } from '@/data/constants'
   import { fruitCountLabel, fruitMarginalInfo } from '@/core/resourceGuidance'
+import { MARGIN_PIPS, marginCurvePoints, marginMark } from '@/ui/fruitMargin'
   import { modsText } from '@/data/statNames'
   import { heritageViewRows, rebirthDecisionHint } from '@/ui/rebirthText'
   import { formatPercent } from '@/utils/format'
@@ -178,6 +201,11 @@
 
   /** 道果有效收益与当前加成 */
   const fruitInfo = computed(() => fruitMarginalInfo())
+/** 当前这枚的边际形制;一枚都没有时不显示 */
+const curMargin = computed(() => marginMark(fruitInfo.value.total))
+const curvePoints = computed(() => marginCurvePoints(Math.max(0, fruitInfo.value.total - 1)))
+/** 一两枚时曲线是平的:没有可读的形状,不如不画 */
+const showCurve = computed(() => fruitInfo.value.total >= 4)
   const ownedTalents = computed(() => player.reincarnation.talents.map(id => talentDef(id)).filter(t => t !== undefined))
   const ownedHeritage = computed(() => player.reincarnation.heritage.map(id => heritageDef(id)).filter(d => d !== undefined))
 

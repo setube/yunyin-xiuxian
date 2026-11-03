@@ -1571,6 +1571,50 @@ html[data-theme='dark'] .bond-halo {
   background-position: left bottom, left bottom, right bottom;
 }
 
+/* ================= 道果边际刻度(fruitMargin) =================
+ * 道果收益递减(有效值 = 枚数^0.9),而界面此前只写「边际渐减」四个字。
+ * 这里给两样(见 src/ui/fruitMargin.ts):
+ *   刻度:本枚还剩几成力,满格 6,分段可数;
+ *   折线:最近几枚的边际效率,下跌在图形里比在文字里直接。
+ * 色取既有语义 token;都只是装饰,不吃指针事件。
+ */
+.fruit-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  pointer-events: none;
+}
+.fruit-pips i {
+  display: block;
+  width: 9px;
+  height: 4px;
+  border-radius: 1px;
+  background: rgb(var(--color-ink-rgb) / 0.14);
+}
+/* 已亮的格:金。段数递减,长度不变 —— 少的是格数,不是格长 */
+.fruit-pips i.on {
+  background: rgb(var(--color-gold-ink-rgb) / 0.75);
+}
+
+.fruit-curve {
+  display: block;
+  width: 100%;
+  height: 24px;
+  pointer-events: none;
+}
+.fruit-curve polyline {
+  fill: none;
+  stroke: rgb(var(--color-gold-ink-rgb) / 0.65);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+/* 夜纸近黑:同一条线要再亮一档才立得住 */
+html[data-theme='dark'] .fruit-curve polyline {
+  stroke: rgb(var(--color-gold-ink-rgb) / 0.85);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
