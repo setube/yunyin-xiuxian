@@ -166,3 +166,29 @@ describe('Phase 30.6: Boss 生态审计', () => {
     expect(ALL_BOSSES.every(b => b.archetype !== undefined), '首领必须带 archetype 机制家族').toBe(true)
   })
 })
+
+/**
+ * 数量对得上 ≠ 每阶都有首领。
+ *
+ * 上一条断言 `ALL_BOSSES.length === REGIONS.length`,但两个首领挤在同一阶时
+ * 这条照样绿 —— 而另一阶就没首领可打了。玩家会卡在那个境界推不动。
+ */
+describe('Boss 覆盖 · 每个 tier 都要有首领', () => {
+  it('1..32 阶一个不缺,且每阶至少一位', () => {
+    const byTier = new Map<number, number>()
+    for (const b of ALL_BOSSES) byTier.set(b.tier, (byTier.get(b.tier) ?? 0) + 1)
+    const maxTier = Math.max(...byTier.keys())
+    const gaps: number[] = []
+    for (let t = 1; t <= maxTier; t += 1) if (!byTier.has(t)) gaps.push(t)
+    expect(gaps, `这些 tier 没有首领可打:${gaps.join(',')}`).toEqual([])
+    for (const [tier, n] of byTier) expect(n, `${tier} 阶的首领数量异常`).toBeGreaterThan(0)
+  })
+
+  it('非首领敌人的 tier 覆盖也不缺', () => {
+    const tiers = new Set(ENEMIES.map(e => e.tier))
+    const maxTier = Math.max(...tiers)
+    const gaps: number[] = []
+    for (let t = 1; t <= maxTier; t += 1) if (!tiers.has(t)) gaps.push(t)
+    expect(gaps, `这些 tier 一个敌人都没有:${gaps.join(',')}`).toEqual([])
+  })
+})
