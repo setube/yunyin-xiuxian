@@ -28,7 +28,8 @@
     "perf-profile": "bun run build && bun scripts/perf-profile.mjs",
     "build:electron": "vue-tsc -b && vite build && esbuild electron/main.js --bundle --platform=node --format=esm --outfile=dist-electron/main.js --external:electron && esbuild electron/preload.js --bundle --platform=node --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never",
     "build:android": "bun run build && bunx cap sync android",
-    "build:apk": "bun run build:android && cd android && ./gradlew assembleRelease"
+    "build:apk": "bun run build:android && cd android && ./gradlew assembleRelease",
+    "mutation-scan": "node scripts/mutation-scan.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.1.0",
