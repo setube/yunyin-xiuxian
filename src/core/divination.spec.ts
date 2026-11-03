@@ -267,3 +267,31 @@ describe('问卦 · 真的进了属性汇总', () => {
     expect(player.divinationMods).toEqual({})
   })
 })
+
+/**
+ * `readingOfLines` 的三个 null 出口都要有判据。
+ *
+ * `drawHexagram` 里 `if (!reading) throw new Error('摇卦失败:六爻未成卦')`,
+ * 而等价测试只走「正常六爻」这一条路 —— 三个失败出口删掉也全绿,
+ * 那样摇卦会静默返回一个残缺读数,而不是明确失败。
+ */
+describe('成卦 · 三个 null 出口', () => {
+  it('爻数不是六:直接不成卦', () => {
+    expect(readingOfLines([], []), '零爻不该成卦').toBeNull()
+    expect(readingOfLines([1, 0, 1], []), '三爻不该成卦').toBeNull()
+    expect(readingOfLines([1, 0, 1, 0, 1, 0, 1], []), '七爻不该成卦').toBeNull()
+  })
+
+  it('六爻但不是合法阴阳值(非 0/1)时不成卦,而不是硬算一个出来', () => {
+    // trigramOfLines 只认 0/1;给个 2 应当识别不出卦象
+    const weird = readingOfLines([2, 2, 2, 2, 2, 2], [])
+    expect(weird, '非法爻值该不成卦').toBeNull()
+  })
+
+  it('合法六爻一定成卦 —— 三个 null 出口不会误伤正常输入', () => {
+    for (let mask = 0; mask < 64; mask += 1) {
+      const lines = Array.from({ length: 6 }, (_, i) => (mask >> i) & 1)
+      expect(readingOfLines(lines, []), `爻 ${lines.join('')} 没能成卦`).not.toBeNull()
+    }
+  })
+})
