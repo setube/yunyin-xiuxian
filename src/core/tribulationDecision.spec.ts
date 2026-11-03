@@ -19,7 +19,8 @@ import {
   NO_STAT_GUARD,
   traceTribulation,
   waveDamage,
-  effectiveBurstTier
+  effectiveBurstTier,
+  weatherSeed
 } from './tribulationDecision'
 import { baseCombatStats, tribulationWaveDamage } from './formulas'
 import { LOW_HP_THRESHOLD, TRIB_REDUCTION_CAP, TRIB_RESIST_CAP } from '@/data/constants'
@@ -343,4 +344,47 @@ describe('抗性封顶 · TRIB_RESIST_CAP', () => {
     expect(currentTribResist({} as StatMods)).toBe(0)
   })
 })
+})
+
+/**
+ * 天时 → 种子的散列必须走完整 id。
+ *
+ * 原实现取 `id.charCodeAt(0)`,而 14 个天时里三组首字母重合:
+ * `leiming`/`lingyu`、`shenhui`/`shenwei`、`xianjie`/`xianyu`。
+ * 那三组会算出同一个种子,于是「按今日天时派生劫型」形同虚设 ——
+ * 换了个天时,劫型纹丝不动。
+ *
+ * 这里不直接调 rollTribulation(它要读天气),而是把「散列对不同 id 是否可分」
+ * 这件事拔出来测:同首字母的两组必须给出不同种子。
+ */
+describe('① 劫型派生 · 天时种子散列', () => {
+  /*
+   * 直接读实现里的 weatherSeed,不在这里复刻一份算法。
+   * 复刻会让判据与实现脱钩:把实现改回 `charCodeAt(0)`,判据仍拿旧算法自测自过。
+   */
+  const seedOf = weatherSeed
+
+  it('首字母相同的天时不再撞种子', () => {
+    const groups: Array<[string, string]> = [
+      ['leiming', 'lingyu'],
+      ['shenhui', 'shenwei'],
+      ['xianjie', 'xianyu']
+    ]
+    for (const [a, b] of groups) {
+      expect(seedOf(a), `${a} 与 ${b} 的首字母相同,种子不该也相同`).not.toBe(seedOf(b))
+    }
+  })
+
+  it('首字母相同的那三组,散列后的种子也不相同', () => {
+    // 只断言「两个 id 的散列不等」,不假定具体取模值 —— 换模数不该让这条红
+    const groups: Array<[string, string]> = [
+      ['leiming', 'lingyu'],
+      ['shenhui', 'shenwei'],
+      ['xianjie', 'xianyu']
+    ]
+    for (const [a, b] of groups) {
+      expect(seedOf(a), `${a} 与 ${b} 的首字母相同`).not.toBe(seedOf(b))
+      expect(seedOf(a), `${a} 与 ${b} 的散列相同`).not.toBe(seedOf(b))
+    }
+  })
 })

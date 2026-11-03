@@ -61,9 +61,24 @@ export function verdictLabel(v: TribulationPlan['verdict']): string {
   return VERDICT_LABEL[v]
 }
 
+/**
+ * 天时 id → 稳定的小整数。
+ *
+ * 不能只取首字母:14 个天时里有三组首字母重合(`leiming`/`lingyu`、
+ * `shenhui`/`shenwei`、`xianjie`/`xianyu`),那样两组天时会算出同一个种子,
+ * 于是「按今日天时派生劫型」的设计意图落空 —— 换了个天时,劫型纹丝不动。
+ *
+ * 这里用 djb2 走完整串,再收到 32 位以内(种子只用来喂 mulberry32,不必很大)。
+ */
+export function weatherSeed(id: string): number {
+  let h = 5381
+  for (let i = 0; i < id.length; i += 1) h = ((h << 5) + h + id.charCodeAt(i)) | 0
+  return h >>> 0
+}
+
 /** 派生本次劫型(境界 × 今日天时 → 确定性) */
 export function rollTribulation(targetMajor: number): TribulationKind {
-  const seed = targetMajor * 31 + ((todayWeather().id.charCodeAt(0) - 96) * 7)
+  const seed = targetMajor * 31 + (weatherSeed(todayWeather().id) % 509) * 7
   const rng = mulberry32(seed)
   const idx = Math.floor(rng() * TRIBULATIONS.length)
   return TRIBULATIONS[idx]!.id
