@@ -19,6 +19,8 @@
         :style="c.tierStyle"
       >
         <QualityAura v-if="c.quality" :quality="c.quality" />
+        <!-- 灵草格按品阶上形制;玄铁等无品阶材料不挂 -->
+        <QualityAura v-else-if="c.herbGrade" :rank="herbQualityRank(c.herbGrade)" :tone="herbQualityTone(c.herbGrade)" />
         <!-- 最上档质感 -->
         <span v-if="c.luster" class="luster-cornice" aria-hidden="true" />
         <span v-if="c.luster" class="luster-sheen" aria-hidden="true" />
@@ -67,12 +69,13 @@
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
   import { pillDef, pillQualityName, pillQualityTextColor, pillRank } from '@/data/pills'
-  import { HERB_GRADE_NAMES, herbGradeBandLabel, herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
+  import { HERB_GRADE_NAMES, herbGradeBandLabel, herbGradeOfMajor, isHerbGrade, type HerbGrade } from '@/data/herbGrades'
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
   import { qualityAura } from '@/ui/qualityAura'
   import { lusterByRank, lusterOf } from '@/ui/luster'
+  import { herbQualityLuster, herbQualityRank, herbQualityTextColor, herbQualityTier, herbQualityTone } from '@/ui/herbQuality'
   import { tint } from '@/utils/colorToken'
   import { focusHerbSlot, marketEquipInstance } from '@/core/marketService'
   import { cmp, gnZero, subClamp } from '@/utils/gnum'
@@ -90,6 +93,8 @@
     kind: string
     /** 仅 material 格有;深链高亮靠它认草格 */
     matId?: 'herb' | 'ore'
+    /** 仅灵草格有:品阶(1~5),决定形制与字色;玄铁等其它材料为 undefined */
+    herbGrade?: HerbGrade
     name: string
     nameCls: Record<string, string>
     sub: string
@@ -176,12 +181,27 @@
       const meta = MAT_META[slot.matId]
       // 灵草按上货时品阶显示(与标价、入账同源);旧档无 grade 按当下品兜底
       const grade = slot.grade ?? herbGradeOfMajor(player.major)
+      if (slot.matId !== 'herb') {
+        return {
+          ...base,
+          matId: slot.matId,
+          name: meta.name,
+          nameCls: {},
+          sub: `×${slot.count}`,
+          price: slot.price
+        }
+      }
+      // 灵草走品阶形制(见 ui/herbQuality):同一套光环/角章/浓淡,与丹药格并排时读得通
+      const herbTier = herbQualityTier(grade)
       return {
         ...base,
         matId: slot.matId,
-        name: slot.matId === 'herb' ? HERB_GRADE_NAMES[grade] : meta.name,
-        nameCls: {},
-        sub: slot.matId === 'herb' ? `${herbGradeBandLabel(grade)} · ×${slot.count}` : `×${slot.count}`,
+        name: HERB_GRADE_NAMES[grade],
+        nameCls: { color: herbQualityTextColor(grade) },
+        sub: `${herbGradeBandLabel(grade)} · ×${slot.count}`,
+        herbGrade: grade,
+        luster: herbQualityLuster(grade),
+        tierStyle: { borderColor: tint(herbQualityTone(grade), herbTier.border), background: tint(herbQualityTone(grade), herbTier.bg) },
         price: slot.price
       }
     }

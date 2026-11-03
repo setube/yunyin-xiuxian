@@ -139,12 +139,18 @@
         <button
           v-for="m in materialGrid"
           :key="m.key"
-          class="relative aspect-square rounded-md border border-ink/15 bg-ink/[0.03] transition-transform active:scale-98"
+          class="relative aspect-square rounded-md border transition-transform active:scale-98"
+          :class="m.herbGrade ? '' : 'border-ink/15 bg-ink/[0.03]'"
+          :style="m.herbGrade ? m.tierStyle : undefined"
           @click="materialDetail = m.key"
         >
+          <!-- 灵草按品阶上形制,与装备/丹药同一套(见 ui/herbQuality) -->
+          <QualityAura v-if="m.herbGrade" :rank="herbQualityRank(m.herbGrade)" :tone="herbQualityTone(m.herbGrade)" compact />
+          <span v-if="m.luster" class="luster-cornice" aria-hidden="true" />
+          <span v-if="m.luster" class="luster-sheen" aria-hidden="true" />
           <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
             <GameIcon :name="m.icon" :size="20" :class="m.color" />
-            <span class="w-full truncate text-center text-[9px] leading-tight text-ink-soft">{{ m.name }}</span>
+            <span class="w-full truncate text-center text-[9px] leading-tight" :class="m.herbGrade ? '' : 'text-ink-soft'" :style="m.herbGrade ? { color: herbQualityTextColor(m.herbGrade) } : undefined">{{ m.name }}</span>
           </span>
           <span class="absolute bottom-0.5 right-1 text-[9px] leading-none text-ink-soft tabular">{{ m.display }}</span>
         </button>
@@ -213,18 +219,41 @@
       </template>
     </BaseModal>
 
-    <BaseModal :open="currentMaterial !== null" :title="currentMaterial?.name ?? ''" @close="materialDetail = null">
+    <BaseModal
+      :open="currentMaterial !== null"
+      :title="currentMaterial?.name ?? ''"
+      :panel-class="currentMaterial?.luster ? 'luster-frame' : undefined"
+      :title-class="currentMaterial?.luster ? 'luster-title' : undefined"
+      @close="materialDetail = null"
+    >
+      <!-- 最上档头饰:骑缝印(与装备、丹药详情同一套,见 ui/luster) -->
+      <span v-if="currentMaterial?.herbGrade && currentMaterial.luster" class="luster-crown" aria-hidden="true">
+        {{ currentMaterial.name.charAt(0) }}
+      </span>
       <template v-if="currentMaterial">
         <div class="flex items-center gap-3">
-          <span class="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-ink/5">
-            <GameIcon :name="currentMaterial.icon" :size="24" :class="currentMaterial.color" />
+          <span
+            class="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-ink/5"
+            :style="currentMaterial.herbGrade ? { color: herbQualityTone(currentMaterial.herbGrade) } : undefined"
+          >
+            <GameIcon :name="currentMaterial.icon" :size="24" :class="currentMaterial.herbGrade ? '' : currentMaterial.color" />
           </span>
           <div class="min-w-0">
-            <p class="font-kai text-[15px] text-ink tabular">{{ currentMaterial.full }}</p>
+            <p
+              class="font-kai text-[15px] tabular"
+              :style="currentMaterial.herbGrade ? { color: herbQualityTextColor(currentMaterial.herbGrade) } : undefined"
+              :class="currentMaterial.herbGrade ? '' : 'text-ink'"
+            >
+              {{ currentMaterial.herbGrade ? `${currentMaterial.display} 株` : currentMaterial.full }}
+            </p>
             <p class="text-[10px] text-ink-faint">持有</p>
           </div>
         </div>
         <p class="mt-3 text-[12px] leading-relaxed text-ink-soft">{{ currentMaterial.desc }}</p>
+        <!-- 五品不可互换:一格只讲一品,其余品在材料页各占一格 -->
+        <p v-if="currentMaterial.herbGrade" class="mt-2 text-[11px] leading-relaxed text-ink-faint tabular">
+          逐品:{{ herbStash }}
+        </p>
       </template>
       <template #footer>
         <button class="btn-seal w-full" @click="materialDetail = null">收 起</button>
@@ -250,8 +279,9 @@
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { lusterByRank } from '@/ui/luster'
   import { pillDef, pillQualityColor, pillQualityName, pillRank } from '@/data/pills'
-  import { HERB_GRADE_SHORT } from '@/data/herbGrades'
+  import { HERB_GRADES, HERB_GRADE_SHORT, type HerbGrade } from '@/data/herbGrades'
   import { herbStashText } from '@/ui/herbText'
+  import { herbQualityLuster, herbQualityRank, herbQualityTextColor, herbQualityTier, herbQualityTone } from '@/ui/herbQuality'
   import { pillFuncText } from '@/ui/itemText'
   import { EQUIP_SLOT_NAMES, EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
@@ -371,15 +401,43 @@
 
   /** 灵草的量取当前品,`full` 留给详情弹窗逐品陈列 */
   const materialRows = computed(() => [
-    { icon: 'leaf', name: `${HERB_GRADE_SHORT[herbGrade.value]}灵草`, desc: '炼丹的根本', value: resources.herbOf(herbGrade.value), full: `逐品:${herbStash.value}` },
     { icon: 'mountain', name: '玄铁', desc: '筑造与炼器之材', value: resources.ore, full: String(resources.ore) },
     { icon: 'scroll', name: '功法残页', desc: '集残页可参悟功法', value: resources.page, full: String(resources.page) },
     { icon: 'sparkles', name: '器灵尘', desc: '强化装备的灵性之尘', value: resources.dust, full: String(resources.dust) },
     { icon: 'book', name: '悟道点', desc: '功法进修与法宝炼化所需', value: resources.wudao, full: String(resources.wudao) }
   ])
 
+  /**
+   * 灵草逐品各占一格:五品不可互换,存量本来就分账,摊成五格才看得见「手里有哪几品」。
+   * 当前品恒在(哪怕 0 株),其余品只在持有 >0 时出现 —— 不然每一品都挂一格空位,格子会一直空着四格。
+   */
+  const herbCells = computed(() => {
+    const held = HERB_GRADES.filter(g => g !== herbGrade.value && resources.herbOf(g) > 0)
+    return [herbGrade.value, ...held].map(g => ({
+      grade: g,
+      name: `${HERB_GRADE_SHORT[g]}灵草`,
+      count: resources.herbOf(g)
+    }))
+  })
+
   /** 含灵石;数量走 formatNum,免得长数字撑破格子 */
   const materialGrid = computed(() => [
+    ...herbCells.value.map(h => ({
+      key: h.name,
+      icon: 'leaf',
+      name: h.name,
+      desc: '炼丹的根本',
+      color: 'text-ink-soft',
+      display: formatNum(h.count),
+      full: `逐品:${herbStash.value}`,
+      herbGrade: h.grade,
+      // 品阶浓淡与边框色走同一把尺(见 ui/herbQuality);凡品为 plain,观感与原来的材料格一致
+      tierStyle: {
+        borderColor: tint(herbQualityTone(h.grade), herbQualityTier(h.grade).border),
+        background: tint(herbQualityTone(h.grade), herbQualityTier(h.grade).bg)
+      },
+      luster: herbQualityLuster(h.grade)
+    })),
     ...materialRows.value.map(m => ({
       key: m.name,
       icon: m.icon,
@@ -387,7 +445,10 @@
       desc: m.desc,
       color: 'text-ink-soft',
       display: formatNum(m.value),
-      full: m.full
+      full: m.full,
+      herbGrade: null as HerbGrade | null,
+      tierStyle: undefined,
+      luster: null
     })),
     {
       key: '灵石',
@@ -396,7 +457,10 @@
       desc: '修行界的通行货币',
       color: 'text-gold-ink',
       display: formatGN(resources.spiritStone),
-      full: formatGN(resources.spiritStone)
+      full: formatGN(resources.spiritStone),
+      herbGrade: null as HerbGrade | null,
+      tierStyle: undefined,
+      luster: null
     }
   ])
 
