@@ -1069,6 +1069,50 @@ html[data-theme='dark'] .soul-halo {
   }
 }
 
+/* ================= 道途形制(daoMark) =================
+ * 四条道途(剑/长生/天机/杀伐)此前只有一枚朱砂方印,四道同一个红底。
+ * 道途是「一世一择、不可更改」的东西,该比一枚通用印章更有分量(见 src/ui/daoMark.ts)。
+ *
+ * 形制是卡角的一枚**道纹水印**,不是压在印字上的花纹 ——
+ * 印面上只有 8~10px 的字,底纹一叠就读不清了(实测:机字的膈线正好劈开三道横)。
+ * 四道靠**形状**区分,不靠色:色弱玩家也分得开,也免得给道途再造第五套色表。
+ *   剑   单锋(一道斜刃)
+ *   长生 回环(一枚圆环)
+ *   天机 三横(卦象式横线)
+ *   杀伐 交刃(两道交叉)
+ * 线色一律 currentColor:调用点按需给道色(取既有语义色),纹样本身不写死。
+ */
+html[data-theme='dark'] .dao-crest {
+  /* 夜纸近黑,同样的不透明度会糊成一团灰,略收一档 */
+  opacity: 0.3;
+}
+.dao-crest {
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  /* 只做底噪:卡上有正文,纹样不能比字更响。
+     日主题的纸本就浅,0.16 下金/靛两道几乎看不见,故日夜分开给。 */
+  opacity: 0.22;
+}
+.dao-crest--blade {
+  background-image: linear-gradient(135deg, transparent 0 42%, currentColor 42% 50%, transparent 50% 100%);
+}
+.dao-crest--ring {
+  background-image: radial-gradient(circle, transparent 0 44%, currentColor 44% 56%, transparent 56%);
+}
+.dao-crest--bars {
+  background-image:
+    linear-gradient(0deg, transparent 0 22%, currentColor 22% 30%, transparent 30% 100%),
+    linear-gradient(0deg, transparent 0 46%, currentColor 46% 54%, transparent 54% 100%),
+    linear-gradient(0deg, transparent 0 70%, currentColor 70% 78%, transparent 78% 100%);
+}
+.dao-crest--cross {
+  background-image:
+    linear-gradient(45deg, transparent 0 43%, currentColor 43% 51%, transparent 51% 100%),
+    linear-gradient(-45deg, transparent 0 43%, currentColor 43% 51%, transparent 51% 100%);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;

@@ -29,7 +29,18 @@
         class="flex items-center gap-2 py-2"
       >
         <span class="shrink-0 font-kai text-[11px] text-ink-faint">第{{ mark.life }}世</span>
-        <span class="shrink-0 text-[11px] text-violet-ink">{{ mark.daoPathId ? daoPathDef(mark.daoPathId)?.name : '无道' }}</span>
+        <!-- 道途符纹:与天界「道途」页同一套(见 ui/daoMark),历世翻看时认得出是哪条路。
+             符纹画在独立的小方徽里,不压在道名上。 -->
+        <span class="flex shrink-0 items-center gap-1">
+          <span
+            v-if="mark.daoPathId && daoMark(mark.daoPathId)"
+            class="dao-crest h-3.5 w-3.5 shrink-0"
+            :class="`dao-crest--${daoMark(mark.daoPathId)!.crest}`"
+            :style="{ color: daoMark(mark.daoPathId)!.tone }"
+            aria-hidden="true"
+          />
+          <span class="text-[11px] text-violet-ink">{{ mark.daoPathId ? daoPathDef(mark.daoPathId)?.name : '无道' }}</span>
+        </span>
         <span class="min-w-0 truncate font-kai text-[12px]" :class="mark.cleared ? 'text-ink' : 'text-ink-faint'">
           {{ mark.targetName }}{{ mark.cleared ? '·破' : '·殁' }}
         </span>
@@ -107,6 +118,7 @@ import { computed, ref } from 'vue'
 import { useEndgameStore } from '@/stores/endgame'
 import { RULESET_CHANGELOG, RULESET_VERSION, isStaleRuleset, rulesetChangesSince } from '@/data/ruleset'
 import { daoPathDef } from '@/data/endgame'
+import { daoMark } from '@/ui/daoMark'
 import { legacyComparisons } from '@/core/compare'
 import { replayMark, rewriteMark, REWRITE_ENTRY_COST } from '@/core/endgameService'
 import { endgameBusy } from '@/core/endgameActivity'
