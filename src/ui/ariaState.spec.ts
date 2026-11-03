@@ -97,7 +97,7 @@ const KNOWN: readonly (readonly [string, string])[] = [
   ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="prepPact === null"'],
   ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="prepPact === pact.id"'],
   ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="prepGate === null"'],
-  ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="prepGate === g.id"'],
+  ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="cell.gate ? prepGate === cell.gate.id : undefined"'],
   ['src/components/celestial/TrialPanel.vue', ':aria-pressed="draft.worldId === w.id"'],
   ['src/components/character/ReincarnationDialog.vue', ':aria-pressed="chosen === id"'],
   ['src/components/character/ReincarnationDialog.vue', ':aria-pressed="theme === t.id"']
