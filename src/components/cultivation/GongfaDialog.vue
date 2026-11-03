@@ -48,7 +48,14 @@
         <div v-if="fullLevel && branches.length" class="mt-3">
           <p class="mb-2 font-kai text-[12px] tracking-[0.2em] text-ink-faint">悟 道</p>
           <div v-if="branchPicked" class="rounded-md bg-paper-deep/70 px-3 py-2">
-            <p>
+            <p class="flex items-center gap-1.5">
+              <span
+                v-if="branchMarkOf(branchPicked.id)"
+                class="branch-glyph h-3.5 w-3.5 shrink-0"
+                :class="`branch-glyph--${branchMarkOf(branchPicked.id)!.glyph}`"
+                :style="{ color: branchMarkOf(branchPicked.id)!.tone }"
+                aria-hidden="true"
+              />
               <span class="font-kai text-[13px] text-gold-ink">{{ branchPicked.name }}</span>
               <span class="ml-2 text-[11px] text-ink-faint">{{ branchPicked.desc }}</span>
             </p>
@@ -58,13 +65,25 @@
             <button
               v-for="b in branches"
               :key="b.id"
-              class="flex w-full items-center justify-between gap-2 rounded-md border border-ink/20 px-3 py-2 text-left active:scale-98"
+              class="branch-card flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 pl-3.5 text-left active:scale-98"
+              :style="branchStyle(b.id)"
+              :aria-label="branchMarkOf(b.id)?.label ?? b.name"
               @click="branchConfirm = b.id"
             >
-              <span class="min-w-0">
-                <span class="font-kai text-[13px] text-ink">{{ b.name }}</span>
-                <span class="ml-2 text-[11px] text-ink-faint">{{ b.desc }}</span>
-                <span class="tabular mt-0.5 block text-[11px] text-azure">{{ modsText(b.mods) }}</span>
+              <span class="flex min-w-0 items-start gap-2">
+                <!-- 道纹:同一门功法的第几道分支,形状可数(见 ui/branchMark) -->
+                <span
+                  v-if="branchMarkOf(b.id)"
+                  class="branch-glyph mt-0.5 h-5 w-5 shrink-0"
+                  :class="`branch-glyph--${branchMarkOf(b.id)!.glyph}`"
+                  :style="{ color: branchMarkOf(b.id)!.tone }"
+                  aria-hidden="true"
+                />
+                <span class="min-w-0">
+                  <span class="font-kai text-[13px] text-ink">{{ b.name }}</span>
+                  <span class="ml-2 text-[11px] text-ink-faint">{{ b.desc }}</span>
+                  <span class="tabular mt-0.5 block text-[11px] text-azure">{{ modsText(b.mods) }}</span>
+                </span>
               </span>
               <span class="shrink-0 text-[10px] text-azure">择此道 →</span>
             </button>
@@ -141,6 +160,8 @@
   import { gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import { ELEMENTS } from '@/data/linggen'
   import { branchesFor, gongfaBranchDef } from '@/data/gongfaBranches'
+  import { branchMarkOf, branchTier } from '@/ui/branchMark'
+  import { tint } from '@/utils/colorToken'
   import { gongfaUpgradeCost, gongfaUpgradeShort, gongfaUpgradeShortfall, upgradeGongfa } from '@/core/gongfaService'
   import { gongfaAffinity, rootElements } from '@/core/linggenAffinity'
   import { mergeMods } from '@/core/statsCalc'
@@ -212,6 +233,19 @@
   // 满级悟道分支
   const fullLevel = computed(() => (def.value ? level.value >= gongfaMaxLevel(def.value) : false))
   const branches = computed(() => (def.value ? branchesFor(def.value.id) : []))
+
+  /** 分支卡的品阶淡底与左内沿色:取所属功法的品阶,不与六条分支各造一色 */
+  function branchStyle(branchId: string): Record<string, string> | undefined {
+    const mark = branchMarkOf(branchId)
+    const quality = def.value?.quality
+    if (!mark || !quality) return undefined
+    const tier = branchTier(quality)
+    return {
+      borderColor: tint(mark.tone, Math.min(0.6, tier.border)),
+      background: tint(mark.tone, Math.max(0.04, tier.bg * 0.6)),
+      '--branch-tone': mark.tone
+    }
+  }
   const branchPicked = computed(() => {
     if (!def.value) return undefined
     const id = cultivation.gongfaBranch[def.value.id]
