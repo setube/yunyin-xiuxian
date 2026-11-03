@@ -4,6 +4,8 @@
  * 只度量,不改命名算法。
  */
 import { describe, expect, it } from 'vitest'
+import { readdirSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { skeletonDistance, terrainOf, visibleFeatures, worldIdentity } from './mortalIdentity'
 import { generateMortalWorld, type MortalWorld } from './mortalWorldGen'
 
@@ -157,15 +159,55 @@ describe('语义完整度 · 四层职责已确立', () => {
     )
   })
 
-  it('已知问题:资源偏向是纯装饰,不影响任何游戏数值', () => {
-    // bias 只进摘要文案与新颖度计算(审计用),不影响掉落、产出或任何数值
-    const biases = new Set(POOL.map(w => w.bias))
-    expect(biases.size).toBeGreaterThan(1)
-    console.log(
-      `\n资源偏向有 ${biases.size} 种取值:${[...biases].join('、')}` +
-        '\n但它只出现在摘要文案与新颖度计算里,不接任何经济或掉落逻辑。' +
-        '\n要么给它真实效果,要么从摘要里拿掉 —— 现状是「看似有信息、实际没信息」'
-    )
+  /**
+   * 已知问题:bias 只进摘要文案与新颖度计算(审计用),不接任何掉落/产出。
+   *
+   * 原先这条只有 console.log,唯一的断言(`biases.size > 1`)与标题无关 ——
+   * 它永远不会因为「装饰性字段」这件事失败,和 `regionEvent.spec` 里
+   * 「灵脉暴动」那种带 KNOWN_NEUTRAL 清单的处理方式差了一档。
+   *
+   * 这里把「哪些字段是装饰性的」钉成显式清单:新增一个只写文案不接数值的字段时,
+   * 本行会红,迫使后来者决定「接数值」还是「从摘要里拿掉」。
+   */
+  const DECORATIVE_FIELDS = new Set(['bias'])
+  it('装饰性字段必须已登记:只写文案、不接任何游戏数值', () => {
+    // 源码里 `.bias` 的读取点必须全部落在摘要/距离计算里,不许出现在经济或掉落路径
+    const economyHits: string[] = []
+    const walk = (dir: string): void => {
+      for (const name of readdirSync(dir, { withFileTypes: true })) {
+        const full = resolve(dir, name.name)
+        if (name.isDirectory()) {
+          if (name.name === 'node_modules') continue
+          walk(full)
+        } else if (/\.(ts|vue)$/.test(name.name) && !name.name.endsWith('.spec.ts')) {
+          const src = readFileSync(full, 'utf-8')
+          src.split('\n').forEach((line, i) => {
+            if (!DECORATIVE_FIELDS.has('bias')) return
+            if (!/\.bias\b/.test(line)) return
+            /*
+             * 允许的四类:摘要文案、新颖度/骨架距离、世界身份键(区分同名世界)、
+             * 存档清洗与透传(字段校验 + 原样带回)。这四类都不碰经济与掉落。
+             */
+            /*
+             * 注意 `bias === "灵石"` 这种**不许**放行 —— 那是拿偏向当条件去做经济分支。
+             * 只有两个世界互比(va.bias === vb.bias,新颖度/距离)才算合理比较。
+             */
+            const comparedBetweenWorlds = /\b[va]\w*\.bias\s*===\s*[va]\w*\.bias/.test(line)
+            if (
+              comparedBetweenWorlds || /summary|距离|Distance|similar/.test(line) ||
+              /\.bias\s*\}|bias:\s*w\.bias|\bv\.bias\]|\.bias\s*\]/.test(line) ||
+              /typeof w\.bias/.test(line)
+            ) return
+            economyHits.push(`${full.slice(process.cwd().length + 1)}:${i + 1} ${line.trim()}`)
+          })
+        }
+      }
+    }
+    walk(resolve(process.cwd(), 'src'))
+    expect(
+      economyHits,
+      `bias 出现在非文案/非距离的路径上 —— 它要么该有真实效果,要么该从摘要里拿掉:\n${economyHits.join('\n')}`
+    ).toEqual([])
   })
 })
 
