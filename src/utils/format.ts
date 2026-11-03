@@ -194,10 +194,16 @@ export function formatClock(ts: number): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-/** 寿元年数展示 */
+/**
+ * 寿元年数展示。
+ *
+ * 数字与「载」之间留一个空格,与全站其他单位一致:模板里 `{{ formatGN(x) }} 石`、
+ * `{{ n }} 场`、`{{ n }} 层` 无一例外都是分开的(中英混排本来就该留),
+ * 唯独这一个把单位拼进了函数返回值,印出来是「150载」。
+ */
 export function formatYears(y: number): string {
-  if (y >= 10000) return formatNum(Math.floor(y)) + '载'
-  return `${Math.floor(y)}载`
+  if (y >= 10000) return `${formatNum(Math.floor(y))} 载`
+  return `${Math.floor(y)} 载`
 }
 
 /**
