@@ -29,14 +29,26 @@
           <div
             v-for="i in SOUL_SLOTS"
             :key="i"
-            class="card-ink flex min-h-[86px] flex-col items-center justify-center px-2 py-2 text-center"
+            class="card-ink relative flex min-h-[86px] flex-col items-center justify-center px-2 py-2 text-center"
             :class="endgame.activeSouls[i - 1] ? '' : 'opacity-50'"
           >
+            <!-- 最上阶(化真)独有的一圈魂环;其余阶只有阶点(见 ui/soulMark) -->
+            <span v-if="slotMark(i)?.top" class="soul-halo" aria-hidden="true" />
             <template v-if="endgame.activeSouls[i - 1]">
               <span class="font-kai text-[22px] leading-none" :style="{ color: soulColor(endgame.activeSouls[i - 1]!) }">
                 {{ soulSeal(endgame.activeSouls[i - 1]!) }}
               </span>
               <span class="mt-1 text-[10px] leading-tight text-ink-soft">{{ soulLabel(endgame.activeSouls[i - 1]!) }}</span>
+              <!-- 阶点:几阶就几点,数得出来;最上阶的点为菱形 -->
+              <span
+                class="soul-pips mt-1"
+                :class="{ 'soul-pips--top': slotMark(i)!.top }"
+                :style="{ '--soul-tone': slotMark(i)!.color }"
+                role="img"
+                :aria-label="`${slotMark(i)!.label}阶`"
+              >
+                <i v-for="p in slotMark(i)!.pips" :key="p" />
+              </span>
               <!-- 纯文字只有 15px 高;内联块给拇指 30px 靶面 -->
               <button
                 class="mt-1 inline-block px-2 py-2 text-[10px] text-ink-faint underline"
@@ -88,7 +100,18 @@
       <div v-if="idleSouls.length > 0" class="card-ink max-h-64 divide-y divide-ink/6 overflow-y-auto px-4">
         <div v-for="soul in idleSouls" :key="soul.uid" class="flex items-center justify-between gap-2 py-2.5">
           <div class="min-w-0">
-            <p class="truncate text-[12px]" :style="{ color: soulColor(soul) }">{{ soulLabel(soul) }}</p>
+            <p class="flex items-center gap-1.5 text-[12px]">
+              <span class="truncate" :style="{ color: soulColor(soul) }">{{ soulLabel(soul) }}</span>
+              <span
+                class="soul-pips shrink-0"
+                :class="{ 'soul-pips--top': soulMark(soul.grade).top }"
+                :style="{ '--soul-tone': soulColor(soul) }"
+                role="img"
+                :aria-label="`${soulMark(soul.grade).label}阶`"
+              >
+                <i v-for="p in soulMark(soul.grade).pips" :key="p" />
+              </span>
+            </p>
             <p class="text-[10px] text-ink-faint">凝自「{{ soul.fromName }}」 · {{ soulModText(soul) }}</p>
           </div>
           <!-- 巡页夹具无灵魂,28px 尺子碰不到这些钮;!py-2 盒高 35px,与同行确认态按钮同高 -->
@@ -117,7 +140,16 @@
         <div v-for="row in refinable" :key="row.inst.uid" class="flex items-center justify-between gap-2 py-2.5">
           <div class="min-w-0">
             <p class="truncate text-[12px] text-ink-soft">{{ row.name }}</p>
-            <p class="truncate text-[10px] text-ink-faint">
+            <p class="flex items-center gap-1.5 truncate text-[10px] text-ink-faint">
+              <span
+                class="soul-pips"
+                :class="{ 'soul-pips--top': soulMark(row.gradeRank).top }"
+                :style="{ '--soul-tone': soulGradeDef(row.gradeRank).color }"
+                role="img"
+                :aria-label="`${soulMark(row.gradeRank).label}阶`"
+              >
+                <i v-for="p in soulMark(row.gradeRank).pips" :key="p" />
+              </span>
               将凝出
               <span :style="{ color: soulGradeDef(row.gradeRank).color }">{{ soulGradeDef(row.gradeRank).name }}·{{ row.typeName }}</span>
             </p>
@@ -160,6 +192,7 @@
   import { formatNum } from '@/utils/format'
   import { modsText } from '@/data/statNames'
   import { dissolveNote, refineCostLine } from '@/ui/soulText'
+  import { soulMark } from '@/ui/soulMark'
   import { equipmentTemplate } from '@/data/equipment'
   import { SOUL_SLOTS, soulGradeDef, soulMods, soulName, soulTypeDef, type SoulInstance } from '@/data/souls'
   import { canRefine, dissolveSoul, previewSoul, refineEquipment, removeSoul, SOUL_REFINE_COST, wearSoul } from '@/core/soulService'
@@ -218,6 +251,11 @@
   }
   function soulColor(soul: SoulInstance): string {
     return soulGradeDef(soul.grade).color
+  }
+  /** 装配槽位里那枚器魂的形制;空槽为 null(不挂魂环与阶点) */
+  function slotMark(i: number) {
+    const soul = endgame.activeSouls[i - 1]
+    return soul ? soulMark(soul.grade) : null
   }
   function soulModText(soul: SoulInstance): string {
     return modsText(soulMods(soul))
