@@ -1363,6 +1363,66 @@ html[data-theme='dark'] .bond-halo {
     0 0 18px rgb(var(--color-cinnabar-rgb) / 0.3);
 }
 
+/* ================= 奇门九宫盘(gateBoard) =================
+ * 八门各居洛书一宫(中五无门),而界面此前把它们平铺成一列文字 ——
+ * 九宫是位置信息,竖排读不出来(见 src/ui/gateBoard.ts)。
+ * 这里只给盘面与吉凶边框:吉=实线、平=虚线、凶=双线,色弱玩家靠形状也分得开。
+ */
+.gate-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+/* 一宫:方形格,宫位号压在角上,门名居中 */
+.gate-palace {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  /* 弹窗里给九宫留的高度有限:方角 + 上限高度,窄屏也不把下面的说明挤出视口 */
+  max-height: 72px;
+  border-radius: 6px;
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.14);
+  background: rgb(var(--color-paper-lifted-rgb));
+  padding: 6px 2px;
+}
+/* 中五无门:留一格空,不画门 */
+.gate-palace--void {
+  border-style: dashed;
+  background: rgb(var(--color-ink-rgb) / 0.03);
+}
+.gate-palace__no {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  font-size: 9px;
+  line-height: 1;
+  color: rgb(var(--color-ink-faint-rgb));
+  font-variant-numeric: tabular-nums;
+}
+
+/* 吉凶:靠边框形态区分,不只靠颜色 */
+.gate-kind-solid {
+  border-style: solid;
+  border-width: 1.5px;
+}
+.gate-kind-dashed {
+  border-style: dashed;
+}
+.gate-kind-double {
+  border-style: double;
+  border-width: 3px;
+}
+
+/* 择门态:在盘上直接标出「这一趟走哪一门」 */
+.gate-palace--picked {
+  box-shadow:
+    0 0 0 1.5px rgb(var(--color-cinnabar-rgb) / 0.55),
+    0 0 12px rgb(var(--color-cinnabar-rgb) / 0.2);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;

@@ -138,7 +138,9 @@ describe('择门 · 接线', () => {
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/.*$/gm, '')
-    expect(src).toContain('in GATES')
+    // 择门改成洛书九宫盘:门从盘面取(盘面再按宫位查数据层),不再是平铺的 `in GATES`
+    expect(src, '择门应画九宫盘').toContain('palaceBoard()')
+    expect(src, '九宫盘上的门要能点选').toContain('prepGate = cell.gate.id')
     expect(src).toContain('forecastExpedition(prepWorldId.value, prepPact.value, prepGate.value)')
     expect(src).toContain('startWorldExpedition(prepWorld.value.id, prepPact.value, prepGate.value)')
   })

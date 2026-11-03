@@ -208,6 +208,27 @@
       <p class="text-[11px] leading-relaxed text-ink-faint">
         洛书九宫:{{ luoshuGatesText }}。择门:远征启程前,仅限本趟。
       </p>
+      <!-- 九宫盘:八门各居一宫,中五无门;吉/平/凶靠边框形态区分(见 ui/gateBoard) -->
+      <div class="gate-board mx-auto mt-2.5 max-w-64">
+        <div
+          v-for="cell in codexBoard"
+          :key="cell.palace"
+          class="gate-palace"
+          :class="[cell.gate ? `gate-kind-${gateKindMark(cell.gate.kind).shape}` : 'gate-palace--void']"
+        >
+          <span class="gate-palace__no">{{ cell.palace }}</span>
+          <template v-if="cell.gate">
+            <span
+              class="font-kai text-[15px] leading-none"
+              :class="cell.gate.kind === '凶' ? 'text-cinnabar' : cell.gate.kind === '吉' ? 'text-jade' : 'text-ink-soft'"
+            >
+              {{ cell.gate.name }}
+            </span>
+            <span class="text-[9px] leading-none text-ink-faint">{{ cell.gate.gua }}{{ cell.gate.direction }}</span>
+          </template>
+          <span v-else class="text-[9px] leading-none text-ink-faint">无门</span>
+        </div>
+      </div>
       <div class="mt-2.5 divide-y divide-ink/6">
         <div v-for="g in GATES" :key="g.id" class="flex items-start gap-2 py-2">
           <span class="w-12 shrink-0 font-kai text-[13px]" :class="g.kind === '凶' ? 'text-cinnabar' : g.kind === '吉' ? 'text-jade' : 'text-ink-soft'">
@@ -257,6 +278,7 @@
   import { fateLordLine } from '@/core/fate'
   import { IMAGES, MANSIONS, type ImageId } from '@/data/xiangxiu'
   import { GATES } from '@/data/qimen'
+  import { gateKindMark, palaceBoard } from '@/ui/gateBoard'
   import { gateRuleSummary } from '@/core/gateRuleText'
   import { cnNumber, formatCountdown, formatGN, formatGap } from '@/utils/format'
   import { gn, gnZero, subClamp } from '@/utils/gnum'
@@ -363,6 +385,9 @@
   }
 
   /** 洛书九宫排布句:从 GATES 表推出,不手写;中五无门由循环补出 */
+  /** 图鉴的九宫盘:与远征择门同读一份排布 */
+  const codexBoard = palaceBoard()
+
   const luoshuGatesText = computed(() =>
     Array.from({ length: 9 }, (_, i) => {
       const palace = i + 1

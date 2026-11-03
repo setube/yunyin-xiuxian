@@ -204,28 +204,46 @@
           </span>
         </button>
       </div>
-      <!-- 奇门遁甲:择门免费,不碰道源倍数 -->
-      <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">奇门 · 择门入界 · 免费</p>
-      <div class="mt-1.5 grid grid-cols-4 gap-1.5">
+      <!-- 奇门遁甲:择门免费,不碰道源倍数。八门按洛书九宫摆位 —— 九宫是位置信息,竖排读不出来 -->
+      <div class="mt-3 flex items-baseline justify-between gap-2">
+        <p class="text-[11px] leading-relaxed text-ink-faint">奇门 · 择门入界 · 免费</p>
         <button
-          class="rounded-md px-1 py-1.5 text-center text-[11px]"
-          :class="prepGate === null ? 'bg-jade/10 border border-jade/40 text-ink-soft' : 'bg-paper-deep/60 border border-transparent text-ink-faint'"
+          class="shrink-0 rounded-md border px-2 py-1 text-[10px]"
+          :class="prepGate === null ? 'border-jade/40 bg-jade/10 text-ink-soft' : 'border-ink/20 text-ink-faint'"
           :aria-pressed="prepGate === null"
           @click="prepGate = null"
         >
           常道
         </button>
+      </div>
+      <div class="gate-board mt-1.5">
         <button
-          v-for="g in GATES"
-          :key="g.id"
-          class="rounded-md px-1 py-1.5 text-center text-[11px]"
-          :class="prepGate === g.id ? 'bg-violet-ink/10 border border-violet-ink/40 text-ink' : 'bg-paper-deep/60 border border-transparent text-ink-faint'"
-          :aria-pressed="prepGate === g.id"
-          :title="`${g.fullName}(${g.kind}) · ${g.gua}${g.direction}${g.palace}宫 —— ${g.desc}`"
-          @click="prepGate = g.id"
+          v-for="cell in palaceBoard()"
+          :key="cell.palace"
+          class="gate-palace text-center"
+          :class="[
+            cell.gate ? '' : 'gate-palace--void',
+            cell.gate ? `gate-kind-${gateKindMark(cell.gate.kind).shape}` : '',
+            cell.gate && prepGate === cell.gate.id ? 'gate-palace--picked' : ''
+          ]"
+          :disabled="!cell.gate"
+          :aria-pressed="cell.gate ? prepGate === cell.gate.id : undefined"
+          :aria-label="cell.gate ? `${cell.gate.fullName}(${cell.gate.kind}) · ${cell.gate.palace}宫` : `第 ${cell.palace} 宫无门`"
+          :title="
+            cell.gate
+              ? `${cell.gate.fullName}(${cell.gate.kind}) · ${cell.gate.gua}${cell.gate.direction}${cell.gate.palace}宫 —— ${cell.gate.desc}`
+              : undefined
+          "
+          @click="cell.gate && (prepGate = cell.gate.id)"
         >
-          <span class="font-kai text-[13px]">{{ g.name }}</span>
-          <span class="ml-0.5 text-[9px]" :class="g.kind === '凶' ? 'text-cinnabar' : g.kind === '吉' ? 'text-jade' : 'text-ink-faint'">{{ g.kind }}</span>
+          <span class="gate-palace__no">{{ cell.palace }}</span>
+          <template v-if="cell.gate">
+            <span class="font-kai text-[15px] leading-none" :class="cell.gate.kind === '凶' ? 'text-cinnabar' : cell.gate.kind === '吉' ? 'text-jade' : 'text-ink-soft'">
+              {{ cell.gate.name }}
+            </span>
+            <span class="text-[9px] leading-none text-ink-faint">{{ cell.gate.kind }}</span>
+          </template>
+          <span v-else class="text-[9px] leading-none text-ink-faint">无门</span>
         </button>
       </div>
       <p v-if="selectedGate" class="mt-1.5 rounded-md bg-paper-deep/70 px-3 py-2 text-[10px] leading-relaxed text-ink-soft">
@@ -279,7 +297,8 @@
   import { CELESTIAL_WORLDS, EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
   import { PACTS, pactDef } from '@/data/pacts'
   import { pactMark } from '@/ui/pactMark'
-  import { GATES, gateDef } from '@/data/qimen'
+  import { gateDef } from '@/data/qimen'
+  import { gateKindMark, palaceBoard } from '@/ui/gateBoard'
   import { gateRuleSummary } from '@/core/gateRuleText'
   import {
     abandonExpedition,
