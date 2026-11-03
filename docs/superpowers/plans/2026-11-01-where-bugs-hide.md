@@ -1459,6 +1459,33 @@ enterTimer = setTimeout(() => { void router.push('/create') }, 2500)
 
 ---
 
+## 四十二、死导出:仓库早有审计,我的探针还不如它(第 280 轮)
+
+想查「定义了却没人接的导出」,自己写了个正则扫 `src/data`。结论 52 个,
+逐级收紧后剩 5 个 —— 而仓库里**早有一条 `deadExportAudit.spec.ts`** 在管这件事,
+它是用 TypeScript 语法树做的,比正则准得多。
+
+### 我的探针错在哪
+
+第一版只扫 `.ts`,漏掉 `.vue`,于是把 `LIFESPAN_WARN_RATIO`(顶栏与首页都在用)判成死导出。
+第二版补上 `.vue` 后剩 5 个:
+
+```
+ARTIFACT_SUNDER_CAP / ARTIFACT_PURGE_CAP / ARTIFACT_DRAIN_HEAL_CAP / SKILL_EXP_SCALE / INSIGHT_LEGACY_PER_LIFE
+```
+
+逐个查:五个**都在同文件内被用了**(如 `Math.min(ARTIFACT_SUNDER_CAP, …)`),
+只是没有跨文件复用。而那条判据的口径正是「除声明处外还有别人用」—— 同文件的其他引用算。
+**所以它们不是问题,是我对口径的误解。**
+
+### 教训
+
+**动手写探针之前,先搜一遍有没有现成的审计 spec。**
+这个仓库里 `*Audit.spec.ts` / `*Coverage.spec.ts` 有十几条,覆盖死导出、分层、
+可访问性、数据可达性……自己搓一份通常还不如它们。
+
+---
+
 ## 三十九、重复代码:哪些该抽,哪些抽了更糟(第 273 轮)
 
 上一轮把 `layout-check.mjs` 里抄了 23 遍的密钥抽成常量,这一轮顺手扫了全仓的重复。
