@@ -763,6 +763,74 @@ html[data-theme='light'] .q-aura-halo {
   text-shadow: 0 0 10px var(--q-tone, transparent);
 }
 
+/* 行内品阶光环(功法列表这类「一行一件」的宿主)。
+ * 与卡片上的 QualityAura 不同:行只有 36~40px 高、左右两侧紧邻文字与角标,
+ * 四角角饰会压到「N 层」「主修」这些读数上,故只留一条左内沿的竖线 ——
+ * 竖线不占正文宽度(落在 px-2.5 的内边距里),稀有档再配一层极淡的横向晕染。
+ * 形制仍可数:凡/良/精无、灵~地一道、天~神一道 + 晕染。 */
+.q-row-aura {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: var(--q-tone, transparent);
+  opacity: 0.55;
+}
+.q-row-aura--radiant {
+  opacity: 0.9;
+  box-shadow: 0 0 8px var(--q-tone, transparent);
+}
+/* 横向晕染:用整条渐变 + 整体 opacity 做淡,不用 color-mix(Chrome 111+)与相对颜色(119+),
+   两端浏览器的下限按 AGENTS.md 是 Chrome 51 —— 那是明写的兼容目标。 */
+/* 行内的最上档御纹:卡片上那套四角在 40px 高、两侧紧邻读数的行里会压到文字,
+ * 故行内只取「右上 + 左下」两枚短角,长度收一半。仍与光环竖线构成两层框。 */
+.q-row-cornice {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.q-row-cornice::before,
+.q-row-cornice::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: rgb(var(--luster-tone) / 0.7);
+  border-style: solid;
+  border-width: 0;
+}
+.q-row-cornice::before {
+  right: 2px;
+  top: 2px;
+  border-right-width: 1px;
+  border-top-width: 1px;
+  border-top-right-radius: 4px;
+}
+.q-row-cornice::after {
+  left: 2px;
+  bottom: 2px;
+  border-left-width: 1px;
+  border-bottom-width: 1px;
+  border-bottom-left-radius: 4px;
+}
+
+.q-row-aura--radiant::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 180px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--q-tone, transparent), transparent 65%);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
 /* 神品专属流光:斜向掠过的一道亮线,只在最顶档 */
 .q-aura-sheen {
   position: absolute;
