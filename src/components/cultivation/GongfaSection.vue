@@ -25,13 +25,18 @@
       <!-- 主修 -->
       <button
         v-if="mainDef"
-        class="card-ink flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98"
+        class="card-ink relative flex w-full items-center gap-3 px-4 py-3 text-left active:scale-98"
         @click="ui.gongfaDetailId = mainDef.id"
       >
+        <!-- 品阶形制:与装备/丹药同一套(见 ui/qualityAura、ui/luster) -->
+        <span v-if="rowOf(mainDef.id).luster" class="q-row-cornice" aria-hidden="true" />
         <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-cinnabar/40 bg-cinnabar/10 font-kai text-ink">主</span>
         <span class="min-w-0 grow">
           <span class="flex items-center gap-1.5">
-            <span class="min-w-0 truncate font-kai text-[14px] text-ink">{{ mainDef.name }}</span>
+            <span
+              class="min-w-0 truncate font-kai text-[14px] text-ink"
+              :class="{ 'q-plaque': auraOf(mainDef.quality).plaque }"
+            >{{ mainDef.name }}</span>
             <span
               v-if="branchName(mainDef.id)"
               class="min-w-0 shrink truncate rounded border px-1.5 py-0.5 text-[10px]"
@@ -96,29 +101,42 @@
         :aria-labelledby="`gongfa-cat-tab-${gongfaCat}`"
       >
         <button
-          v-for="def in activeGongfaItems"
-          :key="def.id"
-          class="flex w-full items-center gap-2.5 px-2.5 py-2 text-left active:bg-ink/4"
-          @click="ui.gongfaDetailId = def.id"
+          v-for="row in activeGongfaItems"
+          :key="row.def.id"
+          class="relative flex w-full items-center gap-2.5 px-2.5 py-2 text-left active:bg-ink/4"
+          @click="ui.gongfaDetailId = row.def.id"
         >
+          <!-- 品阶光环与最上档御纹:灵品起有形制,神品另有四角御纹(与装备/丹药同源) -->
+          <span
+            v-if="row.aura.tier !== 'plain'"
+            class="q-row-aura"
+            :class="`q-row-aura--${row.aura.tier}`"
+            :style="{ '--q-tone': qualityDef(row.def.quality).color }"
+            aria-hidden="true"
+          />
+          <span v-if="row.luster" class="q-row-cornice" aria-hidden="true" />
           <span
             class="grid h-8 w-8 shrink-0 place-items-center rounded-md font-kai text-[13px]"
-            :class="gongfaCatSeal(def.type)"
-          >{{ sealOf(def.type) }}</span>
-          <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: qualityTextColor(def.quality) }">{{ def.name }}</span>
-          <span class="shrink-0 text-[10px] text-ink-faint">{{ cultivation.learned[def.id] }} 层</span>
+            :class="gongfaCatSeal(row.def.type)"
+          >{{ sealOf(row.def.type) }}</span>
           <span
-            v-if="branchName(def.id)"
+            class="min-w-0 grow truncate font-kai text-[13px]"
+            :class="{ 'q-plaque': row.aura.plaque }"
+            :style="{ color: qualityTextColor(row.def.quality) }"
+          >{{ row.def.name }}</span>
+          <span class="shrink-0 text-[10px] text-ink-faint">{{ cultivation.learned[row.def.id] }} 层</span>
+          <span
+            v-if="branchName(row.def.id)"
             class="max-w-24 shrink-0 truncate rounded border px-1.5 py-0.5 text-[10px]"
-            :class="branchActive(def.id) ? 'border-gold-ink/40 bg-gold-ink/10 text-ink' : 'border-ink/15 text-ink-faint'"
-            :title="branchInactiveReason(def.id)"
+            :class="branchActive(row.def.id) ? 'border-gold-ink/40 bg-gold-ink/10 text-ink' : 'border-ink/15 text-ink-faint'"
+            :title="branchInactiveReason(row.def.id)"
           >
-            {{ branchName(def.id) }}
+            {{ branchName(row.def.id) }}
           </span>
-          <span v-else-if="canEnlighten(def.id)" class="shrink-0 rounded border border-azure/40 bg-azure/10 px-1.5 py-0.5 text-[10px] text-ink">待悟道 →</span>
-          <span v-else-if="isFull(def.id)" class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] text-ink-faint">圆满</span>
-          <span class="shrink-0 text-[10px]" :class="equipStateOf(def.id) ? 'text-jade' : 'text-ink-faint'">
-            {{ equipStateOf(def.id) || '未装配' }}
+          <span v-else-if="canEnlighten(row.def.id)" class="shrink-0 rounded border border-azure/40 bg-azure/10 px-1.5 py-0.5 text-[10px] text-ink">待悟道 →</span>
+          <span v-else-if="isFull(row.def.id)" class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] text-ink-faint">圆满</span>
+          <span class="shrink-0 text-[10px]" :class="equipStateOf(row.def.id) ? 'text-jade' : 'text-ink-faint'">
+            {{ equipStateOf(row.def.id) || '未装配' }}
           </span>
         </button>
         <p v-if="activeGongfaItems.length === 0" class="px-2.5 py-5 text-center text-[10px] text-ink-faint">暂无功法</p>
@@ -153,6 +171,8 @@
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
   import { exchangeOkToast, exchangeFailText } from '@/ui/cultivationText'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
+  import { qualityAura } from '@/ui/qualityAura'
+  import { lusterOf } from '@/ui/luster'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 
@@ -174,6 +194,21 @@
     return type === 'secret' ? '秘' : type === 'main' ? '主' : '辅'
   }
 
+  /** 品阶光环(稀有度形制);主修卡与列表行共用同一次取数 */
+  function auraOf(quality: GongfaDef['quality']) {
+    return qualityAura(quality)
+  }
+
+  /**
+   * 一行的形制投影:光环 + 最上档质感。列表与主修卡读同一份,
+   * 免得两处各判一次、某天只改了一边。
+   */
+  function rowOf(id: string) {
+    const def = gongfaDef(id)
+    const quality = def?.quality ?? 'mortal'
+    return { aura: qualityAura(quality), luster: lusterOf(quality) }
+  }
+
   /** 已习得功法按门类(主/辅/秘)分组,恒出三门;栏内已装配置顶,再按品质降序 */
   const gongfaCategories = computed(() =>
     GONGFA_CAT_ORDER.map(type => ({
@@ -187,6 +222,7 @@
         const eb = Number(equipStateOf(b.id) !== '')
         return eb - ea || qualityDef(b.quality).rank - qualityDef(a.quality).rank
       })
+        .map(def => ({ def, ...rowOf(def.id) }))
     }))
   )
 
