@@ -84,9 +84,12 @@ try {
    *
    * 原先只等 1500ms 就开第二页 —— 那时第一页的 `started` 往往还没置真,
    * `watchOtherTabSave(started)` 因此没开表,storage 事件来了也判不出「对面还开着」。
-   * 实测:等 6 秒再开第二页,提示稳定出现。
+   *
+   * 等条件而不是等时长:`BottomNavigation` 由 `v-if="game.started"` 控制,
+   * 它出现即代表开局完成。写死 6000ms 在慢机器上依然会偶发失败。
    */
-  await first.waitForTimeout(6000)
+  await first.waitForSelector('nav', { timeout: 15000 })
+  await first.waitForTimeout(500)
   const second = await ctx.newPage()
   await second.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
   /*
