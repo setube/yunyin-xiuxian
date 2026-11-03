@@ -1615,6 +1615,76 @@ html[data-theme='dark'] .fruit-curve polyline {
   stroke: rgb(var(--color-gold-ink-rgb) / 0.85);
 }
 
+/* ================= 天道试炼形制(trialMark) =================
+ * 三场试炼此前只有一枚共用金印:「这场难在哪」得逐条读规则。
+ * 这里把三个可数的量画出来(见 src/ui/trialMark.ts):
+ *   战纹:连战几场就几枚(七/四/五,封顶七);
+ *   恢复档:全满 / 部分 / 无 —— 实心 / 半实心 / 空心,靠形状不靠色;
+ *   层阶:锚点层级刻度,两端取三场试炼的最小与最大。
+ */
+.trial-fights {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  pointer-events: none;
+}
+.trial-fights i {
+  display: block;
+  width: 3.5px;
+  height: 9px;
+  border-radius: 1px;
+  /* 每一枚都是「这一场」:只有实心一种形态,没有空槽 */
+  background: rgb(var(--color-cinnabar-rgb) / 0.7);
+}
+
+/* 恢复档:三枚点,实心/半实心/空心 */
+.trial-recover {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+}
+.trial-recover i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--color-jade-rgb) / 0.7);
+}
+.trial-recover--full i {
+  background: rgb(var(--color-jade-rgb) / 0.85);
+}
+.trial-recover--partial i:nth-child(1),
+.trial-recover--partial i:nth-child(2) {
+  background: rgb(var(--color-jade-rgb) / 0.5);
+}
+.trial-recover--none i {
+  border-color: rgb(var(--color-cinnabar-rgb) / 0.6);
+  background: transparent;
+}
+
+/* 层阶刻度:一条浅槽 + 一个当前位置的点 */
+.trial-tier {
+  position: relative;
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.12);
+  pointer-events: none;
+}
+.trial-tier::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: var(--tier-pos, 0%);
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: rgb(var(--color-violet-ink-rgb) / 0.9);
+  box-shadow: 0 0 6px rgb(var(--color-violet-ink-rgb) / 0.45);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;

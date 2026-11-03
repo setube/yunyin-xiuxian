@@ -82,14 +82,38 @@
     <div class="mt-2 space-y-2.5">
       <div v-for="trial in TRIALS" :key="trial.id" class="card-ink px-4 py-3">
         <p class="flex items-center gap-2">
-          <span class="grid h-8 w-8 place-items-center rounded-md bg-gold-ink font-kai text-[15px] seal-face">
+          <span class="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-gold-ink font-kai text-[15px] seal-face">
             {{ trial.seal }}
           </span>
           <span class="font-kai text-[15px] tracking-widest text-ink">{{ trial.name }}</span>
+          <!-- 战纹:连战几场就几枚,七/四/五各有自己的枚数 -->
+          <span
+            class="trial-fights shrink-0"
+            role="img"
+            :aria-label="trialMark(trial).label"
+          >
+            <!-- 只画这一场真有的枚数:它说的是「连战几场」,不是「还剩几场」——
+                 画满七格留空槽会读成「还差几场才打满」 -->
+            <i v-for="n in trialMark(trial).fights" :key="n" class="on" />
+          </span>
           <span v-if="endgame.trialRecords[trial.id]" class="ml-auto tabular text-[10px] text-gold-ink">
             最佳 {{ endgame.trialRecords[trial.id]!.bestRounds }} 回合
           </span>
         </p>
+        <!-- 恢复档与层阶:一条说场间能回几成,一条说站在梯子的哪一段 -->
+        <div class="mt-1.5 flex items-center gap-2">
+          <span
+            class="trial-recover shrink-0"
+            :class="`trial-recover--${trialMark(trial).recovery}`"
+            role="img"
+            :aria-label="RECOVERY_LABEL[trialMark(trial).recovery]"
+          >
+            <i v-for="n in 3" :key="n" />
+          </span>
+          <span class="shrink-0 text-[10px] text-ink-faint">{{ RECOVERY_LABEL[trialMark(trial).recovery] }}</span>
+          <span class="trial-tier min-w-0 flex-1" :style="{ '--tier-pos': `${tierPosition(trialMark(trial).tier) * 100}%` }" aria-hidden="true" />
+          <span class="shrink-0 tabular text-[10px] text-ink-faint">{{ trialMark(trial).tier }} 阶</span>
+        </div>
         <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">{{ trial.desc }}</p>
         <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
           <span v-for="(r, i) in trial.ruleText" :key="i">{{ r }}</span>
@@ -229,6 +253,7 @@
   import { pactMark } from '@/ui/pactMark'
   import { MUTATORS, mutatorDef } from '@/data/mutators'
   import { themeBreakdown, themeMark } from '@/ui/mutatorTheme'
+  import { RECOVERY_LABEL, tierPosition, trialMark } from '@/ui/trialMark'
   import { todayChallenge, undertakeDaily } from '@/core/dailyChallenge'
   import { useWallNow } from '@/composables/useWallClock'
   import { localDayNum } from '@/utils/time'
