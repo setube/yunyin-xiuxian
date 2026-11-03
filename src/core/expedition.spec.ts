@@ -13,7 +13,7 @@ import { useEndgameStore } from '@/stores/endgame'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { CELESTIAL_WORLDS, EXPEDITION_ROUTE_LAYERS } from '@/data/endgame'
-import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes, challengeMutation, rollMutators } from './expedition'
+import { forecastExpedition, startWorldExpedition, chooseRouteNode, challengeGuardian, expeditionFoeShapes, challengeMutation, rollMutators, abandonExpedition } from './expedition'
 import { MUTATORS } from '@/data/mutators'
 import { celestialJudgementLines } from './gauntlet'
 import { daoSourceShortfall } from './daoSource'
@@ -255,5 +255,62 @@ describe('变数抽取 · 三条不重复', () => {
   it('池子不足三条时给几条算几条,不硬凑空 id', () => {
     // 该函数按 `pool.length` 兜底;此处只钉「返回的都是合法 id」这一条
     for (const id of rollMutators()) expect(typeof id).toBe('string')
+  })
+})
+
+/**
+ * 放弃远征:不可逆操作,之前一条判据都没有。
+ *
+ * 它由远征面板的「退出」直接调用:记一条未通关的道痕、弹一句回执、清空 worldRun。
+ * 少了任一步都会留下坏状态 —— 不记录则这一趟白打且不会出现在道痕里;
+ * 不清空则玩家被卡在「已在远征中」,再也开不了新的。
+ */
+describe('远征 · 放弃这一趟', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const runStub = (worldId: string) =>
+    ({
+      worldId,
+      pactId: null,
+      layer: 1,
+      bonus: 0,
+      rows: [],
+      carriedHpPct: 1,
+      totalRounds: 12,
+      winStacks: 0
+    }) as never
+
+  it('没有进行中的远征时什么都不做(不崩、不弹回执)', () => {
+    const endgame = useEndgameStore()
+    const ui = useUiStore()
+    endgame.worldRun = null
+    expect(() => abandonExpedition()).not.toThrow()
+    expect(endgame.worldRun).toBeNull()
+    expect(ui.toasts.length, '没有远征却弹了回执').toBe(0)
+  })
+
+  it('有远征时:清空 worldRun 并记一条未通关的道痕', () => {
+    const endgame = useEndgameStore()
+    const world = CELESTIAL_WORLDS[0]!
+    endgame.worldRun = runStub(world.id)
+    const before = endgame.marks.length
+    abandonExpedition()
+    expect(endgame.worldRun, '不清空会让玩家卡在「已在远征中」').toBeNull()
+    expect(endgame.marks.length, '放弃这一趟应当留下道痕').toBe(before + 1)
+    const mark = endgame.marks[endgame.marks.length - 1]!
+    expect(mark.targetId).toBe(world.id)
+    expect(mark.cleared, '放弃不是通关,不该记为已清').toBe(false)
+    expect(mark.rounds, '应当带上这趟打过的回合数').toBe(12)
+  })
+
+  it('放弃之后还能再开一趟(状态没被卡死)', () => {
+    const endgame = useEndgameStore()
+    endgame.daoPath = 'sword' as never
+    const world = CELESTIAL_WORLDS[0]!
+    endgame.worldRun = runStub(world.id)
+    abandonExpedition()
+    expect(endgame.worldRun).toBeNull()
   })
 })
