@@ -604,6 +604,9 @@ html[data-theme='dark'] .btn-seal:disabled {
 }
 
 .bar-fill {
+  /* 必须自证是块级:曾写成 <span> 而漏了 block,行内元素不吃宽高百分比,
+     整条塌成 0×0 —— 底槽在、填充不在,看着像「胜率条只有一根空槽」。 */
+  display: block;
   position: relative;
   height: 100%;
   border-radius: 999px;
