@@ -167,13 +167,26 @@
         <span class="text-[10px] text-azure">{{ showAllHex ? '收起' : '展开' }}</span>
       </button>
       <div v-if="showAllHex" class="mt-2 max-h-72 divide-y divide-ink/6 overflow-y-auto">
-        <div v-for="x in HEXAGRAMS" :key="x.order" class="flex items-baseline gap-2 py-2">
-          <span class="w-6 shrink-0 tabular text-[10px] text-ink-faint">{{ x.order }}</span>
-          <span class="w-14 shrink-0 font-kai text-[13px] text-ink">{{ x.name }}</span>
-          <span class="w-16 shrink-0 text-[10px] text-ink-faint tabular">
-            {{ trigramDef(x.upper)?.symbol }}{{ trigramDef(x.lower)?.symbol }}
+        <div v-for="row in hexRows" :key="row.order" class="flex items-baseline gap-2 py-2">
+          <span class="w-6 shrink-0 tabular text-[10px] text-ink-faint">{{ row.order }}</span>
+          <span class="w-14 shrink-0 font-kai text-[13px] text-ink">{{ row.name }}</span>
+          <!--
+            原先是两个单卦符号并排(☰☱):要认出一卦,得先在脑中把两组三爻叠起来。
+            重卦本来就是「上三爻 + 下三爻」,这里直接画成六爻。
+          -->
+          <span class="hex-figure hex-figure--inline shrink-0" role="img" :aria-label="row.aria">
+            <span
+              v-for="line in row.lines"
+              :key="line.position"
+              class="hex-line"
+            >
+              <span class="hex-line__bar" :class="line.yang ? 'hex-line__bar--yang' : 'hex-line__bar--yin'">
+                <template v-if="line.yang"><i /></template>
+                <template v-else><i /><i /></template>
+              </span>
+            </span>
           </span>
-          <span class="min-w-0 text-[11px] leading-relaxed text-ink-soft">{{ x.gist }}</span>
+          <span class="min-w-0 text-[11px] leading-relaxed text-ink-soft">{{ row.gist }}</span>
         </div>
       </div>
     </section>
@@ -391,7 +404,7 @@
   import { IMAGES, MANSIONS, type ImageId } from '@/data/xiangxiu'
   import { GATES } from '@/data/qimen'
   import { gateKindMark, palaceBoard } from '@/ui/gateBoard'
-  import { hexFigure, movingCount } from '@/ui/hexagramFigure'
+  import { hexFigure, hexagramLines, movingCount } from '@/ui/hexagramFigure'
   import { gateRuleSummary } from '@/core/gateRuleText'
   import { cnNumber, formatCountdown, formatGN, formatGap } from '@/utils/format'
   import { gn, gnZero, subClamp } from '@/utils/gnum'
@@ -422,6 +435,25 @@
   const codexTab = ref<CodexTab>('realm')
 
   const showAllHex = ref(false)
+
+  /**
+   * 六十四卦谱:每卦画成六爻(上卦三爻在上、下卦三爻在下),与在身之卦同一套爻画。
+   * 认不出的卦(坏数据)给空爻,不编一幅假的 —— 谱表宁可留白。
+   */
+  const hexRows = computed(() =>
+    HEXAGRAMS.map(x => {
+      const upper = trigramDef(x.upper)
+      const lower = trigramDef(x.lower)
+      const lines = upper && lower ? hexagramLines(upper.lines, lower.lines) : []
+      return {
+        order: x.order,
+        name: x.name,
+        gist: x.gist,
+        lines,
+        aria: `${x.name}卦:上${upper?.name ?? ''}下${lower?.name ?? ''}`
+      }
+    })
+  )
 
   /** 在身之卦:读 1 秒游戏钟,与服务端同一判据 divinationActiveAt */
   const currentState = computed(() => divinationActiveAt(player.divination, now.value))

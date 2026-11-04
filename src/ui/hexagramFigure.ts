@@ -106,3 +106,16 @@ export function hexFigure(reading: HexagramReading): HexFigure {
 export function movingCount(lines: readonly HexLine[]): number {
   return lines.filter(l => l.changing).length
 }
+
+/**
+ * 重卦的六爻(不涉动爻):由上卦、下卦各三爻拼成,供「六十四卦」这类谱表用。
+ *
+ * 谱表里原先是两个单卦符号并排(☰☱):要认出一卦,得先在脑中把两组三爻叠起来。
+ * 重卦本来就是「上三爻 + 下三爻」,直接画成六爻省这一步。
+ *
+ * @param upperLines 上卦三爻,自下而上(TrigramDef.lines)
+ * @param lowerLines 下卦三爻,自下而上
+ */
+export function hexagramLines(upperLines: readonly number[], lowerLines: readonly number[]): HexLine[] {
+  return hexLines([...lowerLines, ...upperLines], [])
+}
