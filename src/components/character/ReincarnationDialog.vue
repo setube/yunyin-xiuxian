@@ -151,6 +151,15 @@
               {{ talentDef(id)?.name }}
             </span>
             <span class="text-[10px] text-ink-faint">{{ TALENT_GRADE_NAMES[talentDef(id)?.grade ?? 1] }}</span>
+            <!-- 阶点与转世弹窗同一套(见 ui/talentMark):四档里谁高一档,数点便知 -->
+            <span
+              class="talent-pips"
+              :class="{ 'talent-pips--top': talentMark(talentDef(id)?.grade ?? 1).top }"
+              :style="{ color: TALENT_GRADE_COLORS[talentDef(id)?.grade ?? 1] }"
+              aria-hidden="true"
+            >
+              <i v-for="(on, i) in talentPips(talentDef(id)?.grade ?? 1)" :key="i" :class="{ on }" />
+            </span>
           </p>
           <p class="mt-0.5 text-[11px] text-ink-faint">{{ talentDef(id)?.desc }}</p>
           <p v-if="talentDef(id) && modsText(talentDef(id)!.mods)" class="mt-0.5 text-[11px] tabular text-azure">
@@ -213,6 +222,7 @@
   import { prepareReincarnation, confirmReincarnation, rerollReincarnationLinggen } from '@/core/reincarnation'
   import { ELEMENTS } from '@/data/linggen'
   import { talentDef, TALENT_GRADE_COLORS, TALENT_GRADE_NAMES } from '@/data/talents'
+  import { talentMark, talentPips } from '@/ui/talentMark'
   import { modsText } from '@/data/statNames'
   import { lifeThemeDef, TABOO_NAMES } from '@/data/lifeThemes'
   import { heritageGroups } from '@/core/samsaraAudit'

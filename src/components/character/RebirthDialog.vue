@@ -65,6 +65,11 @@
 
     <div class="mt-2">
       <div class="flex flex-wrap gap-1.5">
+        <!--
+          天赋品阶:轮回择姿那边写着品阶名,这边原先只有一枚彩色标签 ——
+          同一个东西在两处长得不一样,而四档里靛与紫放在一起谁高一档读不出来。
+          现补上阶点(一档一点、四档四点)与品阶名(见 ui/talentMark)。
+        -->
         <button
           v-for="t in ownedTalents"
           :key="t!.id"
@@ -74,7 +79,17 @@
           :aria-expanded="talentTap === t!.id"
           @click="talentTap = talentTap === t!.id ? null : t!.id"
         >
-          {{ t!.name }}
+          <span class="flex items-center gap-1">
+            {{ t!.name }}
+            <span
+              class="talent-pips"
+              :class="{ 'talent-pips--top': talentMark(t!.grade).top }"
+              role="img"
+              :aria-label="talentMark(t!.grade).name"
+            >
+              <i v-for="(on, i) in talentPips(t!.grade)" :key="i" :class="{ on }" />
+            </span>
+          </span>
         </button>
         <span v-if="!ownedTalents.length" class="text-[11px] text-ink-faint">暂无先天之姿</span>
       </div>
@@ -180,6 +195,7 @@
   import { LIFE_TRIALS, type LifeTrialDef } from '@/data/lifeTrials'
   import { activeLifeTrial, canSignLifeTrial, lifeTrialShortfall, signLifeTrial } from '@/core/lifeTrialService'
   import { talentDef, TALENT_GRADE_COLORS } from '@/data/talents'
+  import { talentMark, talentPips } from '@/ui/talentMark'
   import { heritageDef } from '@/data/heritage'
   import { REALMS } from '@/data/realms'
   import { prepareReincarnation, MANUAL_REBIRTH_MIN_MAJOR } from '@/core/reincarnation'
