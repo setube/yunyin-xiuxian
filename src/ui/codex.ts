@@ -61,6 +61,11 @@ export interface CodexCat {
   name: string
   /** 标题右侧的计数文案(各类口径不同,不用 have/total) */
   hint: string
+  /**
+   * 已收录条数,供进度条用。
+   * 与 entries 同源(收录深度 ≥1),不另存一份 —— 两者分叉会让条与标签各说各话。
+   */
+  done: number
   /** 本册来源说明 */
   source: string
   entries: CodexEntry[]
@@ -146,6 +151,7 @@ export function materialCodex(): CodexCat {
     key: 'material',
     name: '灵材谱',
     hint: `已辨识 ${known}/${MATERIALS.length} · 通晓 ${mastered}`,
+    done: known,
     source: '来源:采集、掉落、炼丹',
     entries
   }
@@ -201,6 +207,7 @@ export function branchCodex(): CodexCat {
     key: 'branch',
     name: '悟道录',
     hint: `已见 ${seen}/${GONGFA_BRANCHES.length} · 已择 ${picked}`,
+    done: seen,
     source: '来源:功法圆满后择道',
     entries
   }
@@ -394,6 +401,7 @@ export function equipCodex(): CodexCat {
     key: 'equip',
     name: '装备图鉴',
     hint: `已入目 ${seen}/${EQUIPMENT_TEMPLATES.length} · 见过天品 ${best}`,
+    done: seen,
     source: CODEX_SOURCES.equip,
     entries
   }
@@ -416,6 +424,7 @@ export function artifactCodex(): CodexCat {
     key: 'artifact',
     name: '法宝谱',
     hint: `已录 ${seen}/${ARTIFACTS.length} · 祭炼圆满 ${full}`,
+    done: seen,
     source: CODEX_SOURCES.artifact,
     entries
   }
@@ -437,6 +446,7 @@ export function pillCodex(): CodexCat {
     key: 'pill',
     name: '丹方录',
     hint: `已录 ${seen}/${PILLS.length} · 得方 ${known} · 通晓 ${mastered}`,
+    done: seen,
     source: CODEX_SOURCES.pill,
     entries
   }
