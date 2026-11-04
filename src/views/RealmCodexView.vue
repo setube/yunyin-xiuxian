@@ -238,6 +238,32 @@
       <p class="mt-1.5 text-[11px] text-azure">
         今日利 <span class="text-gold-ink">{{ favoredWorldName }}</span>
       </p>
+      <!--
+        二十八宿按象成组(东苍龙七宿、南朱雀七宿…),原先只有文字一句。
+        四象各一排,今值之宿另标 —— 哪一象的宿今值、排在第七位(见 ui/mansionBoard)。
+      -->
+      <div class="mansion-board mt-2.5 space-y-1.5">
+        <div v-for="g in mansionGroupsList" :key="g.id" class="mansion-row" :class="{ 'mansion-row--here': g.here }">
+          <p class="flex items-baseline gap-1.5">
+            <span class="shrink-0 font-kai text-[10px]" :class="g.here ? 'text-cinnabar' : 'text-ink-soft'">
+              {{ g.direction }}{{ g.name }}
+            </span>
+            <span class="shrink-0 text-[9px] text-ink-faint">{{ worldName(g.world) }}</span>
+            <span v-if="g.here" class="ml-auto shrink-0 text-[9px] tabular text-cinnabar">
+              今值 {{ mansionOrdinal(g, todayMansionName) }}/{{ g.mansions.length }}
+            </span>
+          </p>
+          <p class="mt-0.5 flex flex-wrap gap-x-1 gap-y-0.5">
+            <span
+              v-for="m in g.mansions"
+              :key="m.name"
+              class="mansion-star font-kai text-[11px] leading-none"
+              :class="{ 'mansion-star--today': m.name === todayMansionName }"
+              :title="`${m.fullName} · ${m.domain} · ${m.good}`"
+            >{{ m.name }}</span>
+          </p>
+        </div>
+      </div>
       <button class="-my-1 mt-2 w-full py-2 text-left text-[10px] text-azure" @click="showAllMansions = true">
         {{ cnNumber(MANSIONS.length) }}宿 →
       </button>
@@ -320,6 +346,7 @@
   import { useResourcesStore } from '@/stores/resources'
   import { REALMS, WORLDS, realmDef } from '@/data/realms'
   import { worldPips, worldProgress } from '@/ui/worldProgress'
+  import { mansionGroups, mansionOrdinal } from '@/ui/mansionBoard'
   import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm } from '@/data/classics'
   import { HEXAGRAMS, TRIGRAMS, trigramDef } from '@/data/yijing'
   import {
@@ -340,7 +367,7 @@
   import { cnNumber, formatCountdown, formatGN, formatGap } from '@/utils/format'
   import { gn, gnZero, subClamp } from '@/utils/gnum'
   import { STAR_FOCUS_COST_BASE } from '@/data/constants'
-  import { mansionLuckPercent, effectiveFavoredWorld, todayMansionLine } from '@/core/astronomy'
+  import { mansionLuckPercent, effectiveFavoredWorld, todayMansion, todayMansionLine } from '@/core/astronomy'
   import { worldDef } from '@/data/realms'
   import type { WorldId } from '@/types'
   import { modsText } from '@/data/statNames'
@@ -437,6 +464,10 @@
   // 值日之宿与所利界域由游戏日派生,随心跳刷新
   const showAllMansions = ref(false)
   const mansionLine = computed(() => todayMansionLine())
+  /** 今值之宿的宿名,供四象盘标位(与 todayMansion 同一处取) */
+  const todayMansionName = computed(() => todayMansion().name)
+  /** 四象二十八宿分组(见 ui/mansionBoard) */
+  const mansionGroupsList = computed(() => mansionGroups(todayMansionName.value))
   const favoredWorldName = computed(() => worldDef(effectiveFavoredWorld()).name)
   function worldName(id: WorldId): string {
     return worldDef(id).name

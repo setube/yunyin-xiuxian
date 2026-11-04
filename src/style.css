@@ -2351,6 +2351,34 @@ html[data-theme='dark'] .fruit-curve polyline {
   color: rgb(var(--color-cinnabar-rgb) / 0.9);
 }
 
+/* ================= 四象二十八宿盘(mansionBoard) =================
+ * 星象页原先只写一句「今日值某宿」,加一句「四象配四界」——
+ * 二十八宿按象成组(东苍龙七宿、南朱雀七宿…),本来就能摆成四排
+ * (见 src/ui/mansionBoard.ts)。今值之宿另标,哪一象今值一眼看得见。
+ */
+.mansion-board {
+  pointer-events: none;
+}
+.mansion-row {
+  border-radius: 4px;
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.1);
+  background: rgb(var(--color-ink-rgb) / 0.02);
+  padding: 5px 7px;
+}
+/* 今值所在之象:朱框,与另外三象分开 */
+.mansion-row--here {
+  border-color: rgb(var(--color-cinnabar-rgb) / 0.45);
+  background: rgb(var(--color-cinnabar-rgb) / 0.05);
+}
+.mansion-star {
+  color: rgb(var(--color-ink-rgb) / 0.55);
+}
+/* 今值那一宿:转朱并加描边,在一排七宿里一眼认得出 */
+.mansion-star--today {
+  color: rgb(var(--color-cinnabar-rgb) / 0.95);
+  text-shadow: 0 0 3px rgb(var(--color-cinnabar-rgb) / 0.4);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
