@@ -7,7 +7,7 @@
   >
     <QualityAura :quality="props.item.quality" compact />
     <!-- 最上档质感的静态形制:四角御纹(与品阶角饰位置错开),动效只是加成 -->
-    <span v-if="luster" class="luster-cornice" aria-hidden="true" />
+    <span v-if="luster" class="luster-cornice luster-cornice--tile" aria-hidden="true" />
     <span v-if="luster" class="luster-sheen" aria-hidden="true" />
     <span v-if="props.equipped" class="absolute left-0.5 top-0.5 font-kai text-[8px] leading-none text-jade">佩</span>
     <span v-if="props.item.locked" class="absolute right-0.5 top-0.5 leading-none text-ink-faint">

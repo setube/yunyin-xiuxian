@@ -109,7 +109,7 @@
             compact
           />
           <!-- 最上档质感:四角御纹 + 流光(丹药走 rank 入口,道品 rank 9 同样享有) -->
-          <span v-if="lusterByRank(pillRank(row.def!))" class="luster-cornice" aria-hidden="true" />
+          <span v-if="lusterByRank(pillRank(row.def!))" class="luster-cornice luster-cornice--tile" aria-hidden="true" />
           <span v-if="lusterByRank(pillRank(row.def!))" class="luster-sheen" aria-hidden="true" />
           <!-- role="img":角章只有一个字,读屏要念的是「天品档」;裸 span 属 generic,不接可访问名 -->
           <span
@@ -146,7 +146,7 @@
         >
           <!-- 灵草按品阶上形制,与装备/丹药同一套(见 ui/herbQuality) -->
           <QualityAura v-if="m.herbGrade" :rank="herbQualityRank(m.herbGrade)" :tone="herbQualityTone(m.herbGrade)" compact />
-          <span v-if="m.luster" class="luster-cornice" aria-hidden="true" />
+          <span v-if="m.luster" class="luster-cornice luster-cornice--tile" aria-hidden="true" />
           <span v-if="m.luster" class="luster-sheen" aria-hidden="true" />
           <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
             <GameIcon :name="m.icon" :size="20" :class="m.color" />
