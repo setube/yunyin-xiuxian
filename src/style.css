@@ -2572,6 +2572,24 @@ html[data-theme='dark'] .fruit-curve polyline {
   border-radius: 999px;
 }
 
+/* ================= 紫微十二宫的属性路数(fate-channel) =================
+ * 「此宫给哪一路属性」:data/ziwei 的 channel(修行/同道/因缘/灵兽…)。
+ * 原先界面只写「所主 · 管什么」,说不到它落在哪一路 —— 而十二宫各管一路正是这张盘的骨架。
+ * 一枚两字签:与宫名同排,命宫那枚转朱,与盘上朱框呼应。
+ * 不取底色,只描一道细边 —— 十二宫铺下来,十二块色补丁会盖过盘面。
+ */
+.fate-channel {
+  padding: 1px 4px;
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.2);
+  border-radius: 3px;
+  line-height: 1.35;
+  color: rgb(var(--color-ink-soft-rgb));
+}
+.fate-channel--ming {
+  border-color: rgb(var(--color-cinnabar-rgb) / 0.45);
+  color: rgb(var(--color-cinnabar-rgb));
+}
+
 /* ================= 典籍所指境界的位置(classicRealm) =================
  * 典籍卡原写「相涉:筑基、金丹、元婴」—— 一串纯文字,看不出哪几个是自己走过的。
  * 而这正是翻典籍时最先想知道的事:这本书讲的是来路,还是去路(见 ui/classicRealm)。
