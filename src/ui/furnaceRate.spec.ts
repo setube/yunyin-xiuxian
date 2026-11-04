@@ -100,7 +100,9 @@ describe('熔率形制 · 四、界面接上了', () => {
   })
 
   it('三档的色只取既有 token', () => {
-    const seg = CSS.slice(CSS.indexOf('.furnace-rate--rich'), CSS.indexOf('/* ================= 满级标记'))
+    // 切到**下一个段落标记**为止:原先写死切到「满级标记」,中间插进新段落就会把别段的色算进来
+    const from = CSS.indexOf('.furnace-rate--rich')
+    const seg = CSS.slice(from, CSS.indexOf('/* =================', from))
     for (const m of seg.matchAll(/rgb\(var\(--color-([a-z-]+)-rgb\)/g)) {
       expect(['gold-ink', 'amber-ink', 'ink-faint'], `新造了色 ${m[1]}`).toContain(m[1])
     }
