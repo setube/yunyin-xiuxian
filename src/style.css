@@ -2490,6 +2490,42 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-cinnabar-rgb) / 0.9);
 }
 
+/* ================= 修行倍率刻度(growthGauge) =================
+ * 建号页掷完灵根只给一个数「修行倍率 ×1.11」:1.11 算好还是不好无从判断。
+ * 倍率是三个因子相乘出来的,因子有上下界,故区间 [0.6, 4.0] 可以算出来(见 ui/growthGauge)。
+ * 一根刻度上一个点:点在哪儿,这一手就在牌山的哪一段。两端标数,刻度才有参照。
+ */
+.growth-gauge {
+  position: relative;
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.12);
+  pointer-events: none;
+}
+.growth-gauge i {
+  position: absolute;
+  top: 50%;
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  /* 色由档位给:低/中/上/绝各有自己的档色,点在轴上即可看出这一手属哪档 */
+  background: rgb(var(--color-ink-faint-rgb));
+  border: 1px solid rgb(var(--color-paper-rgb));
+}
+.growth-gauge--mid i {
+  background: rgb(var(--color-ink-soft-rgb));
+}
+.growth-gauge--high i {
+  background: rgb(var(--color-azure-rgb));
+}
+.growth-gauge--peak i {
+  background: rgb(var(--color-cinnabar-rgb));
+  box-shadow: 0 0 6px rgb(var(--color-cinnabar-rgb) / 0.45);
+}
+
 /* ================= 历练三档分布条(eventTierBar) =================
  * 历练页顶部原写三句独立的话(「约每 2 程 / 约每 240 程 / 约每 40 程」),
  * 想比出哪档更常见,得先把三个数在脑子里排一下(见 src/ui/eventTierBar.ts)。

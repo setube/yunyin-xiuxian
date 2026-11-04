@@ -69,10 +69,33 @@
           </span>
         </div>
       </div>
-      <p class="mt-4 text-center text-[12px] text-ink-faint">
-        修行倍率
-        <span :key="rollSeq" class="tabular text-[14px] text-ink animate-ink-pop">×{{ profile.growthMult.toFixed(2) }}</span>
-      </p>
+      <!--
+        倍率原只给一个数:「修行倍率 ×1.11」。1.11 算好还是不好,玩家无从判断 ——
+        同屏有五个资质数、一个「杂灵根」标签,唯独没有「这一手在你可能拿到的牌里排哪一段」。
+        倍率是三个因子相乘出来的,因子有上下界,故区间可以算出来(见 ui/growthGauge)。
+      -->
+      <div class="mt-4">
+        <p class="flex items-baseline justify-center gap-2 text-[12px] text-ink-faint">
+          <span>修行倍率</span>
+          <span :key="rollSeq" class="tabular text-[14px] text-ink animate-ink-pop">×{{ profile.growthMult.toFixed(2) }}</span>
+          <span class="rounded border border-ink/15 px-1.5 py-0.5 text-[10px] leading-none" :class="GROWTH_TONE[growthTier.tier]">
+            {{ growthTier.label }}
+          </span>
+        </p>
+        <!-- 轴两端标数:没有参照的刻度等于没有 -->
+        <div class="mt-1.5 flex items-center gap-1.5">
+          <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">×{{ growthTier.floor.toFixed(1) }}</span>
+          <span
+            class="growth-gauge min-w-0 flex-1"
+            :class="`growth-gauge--${growthTier.tier}`"
+            role="img"
+            :aria-label="`修行倍率 ×${growthTier.mult.toFixed(2)},区间 ${growthTier.floor.toFixed(1)} 至 ${growthTier.ceil.toFixed(1)},属${growthTier.label}`"
+          >
+            <i :style="{ left: `${growthTier.position * 100}%` }" />
+          </span>
+          <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">×{{ growthTier.ceil.toFixed(1) }}</span>
+        </div>
+      </div>
       <div v-if="tendencies.length" :key="`tend-${rollSeq}`" class="stagger-in mt-3 space-y-1.5 border-t border-ink/10 pt-3">
         <p v-for="t in tendencies" :key="t.element" class="flex gap-2 text-[11px] leading-relaxed text-ink-soft">
           <span class="shrink-0 font-kai" :style="{ color: ELEMENTS[t.element].color }">{{ ELEMENTS[t.element].char }}</span>
@@ -102,6 +125,7 @@
   import { randomDaoName } from '@/data/names'
   import { ELEMENTS } from '@/data/linggen'
   import { rootMarks, rootPips } from '@/ui/rootMark'
+  import { growthGauge } from '@/ui/growthGauge'
   import { generateEquipment } from '@/core/equipGen'
   import { acquireEquipment } from '@/core/loot'
   import { trackRealm } from '@/core/progress'
@@ -142,6 +166,15 @@
   const revealRef = ref<InstanceType<typeof SpiritRootReveal> | null>(null)
   /** 鉴定动画进行中(约 2.6s):防连点重复建号、重复发新手馈赠 */
   const starting = ref(false)
+
+  /** 倍率在可能区间里的位置与档次(见 ui/growthGauge) */
+  const growthTier = computed(() => growthGauge(profile.value.growthMult))
+  const GROWTH_TONE: Record<string, string> = {
+    low: 'text-ink-faint',
+    mid: 'text-ink-soft',
+    high: 'text-azure',
+    peak: 'text-cinnabar'
+  }
 
   /** 这一世的天然牌面(倾向文案,不含任何数值) */
   const tendencies = computed(() => tendencyLines(rootElements(profile.value.roots)))
