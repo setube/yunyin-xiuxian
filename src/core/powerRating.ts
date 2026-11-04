@@ -2,6 +2,7 @@
  * 战力五维星级:进攻 / 生存 / 身法 / 恢复 / 机制。
  * 词条合计的定性分段,不做精确排名;战力总数只作综合参考。
  */
+import { starRow } from '@/ui/starRow'
 import type { AnyStatKey, FinalStats, StatMods } from '@/types'
 import { STAT_NAMES } from '@/data/statNames'
 import { detectBuild } from './buildDetect'
@@ -190,6 +191,5 @@ export function ratePower(stats: FinalStats): PowerRating {
  * 与 buildAdvisor.starsText 的钳制取法保持一致。
  */
 export function ratingStars(stars: number): string {
-  const n = Math.max(1, Math.min(5, Math.round(stars)))
-  return '★'.repeat(n) + '☆'.repeat(5 - n)
+  return starRow(stars)
 }

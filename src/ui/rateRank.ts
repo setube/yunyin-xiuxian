@@ -1,3 +1,4 @@
+import { starRow } from './starRow'
 /**
  * 胜率 → 五档说法。
  *
@@ -44,8 +45,7 @@ export function rateStars(rate: number): number {
 
 /** 星串(★/☆ 各五格);与 ratingStars 同形,但取的是胜率档而非战力维 */
 export function rateStarsText(rate: number): string {
-  const n = rateStars(rate)
-  return '★'.repeat(n) + '☆'.repeat(5 - n)
+  return starRow(rateStars(rate))
 }
 
 /** 全部说法(供自检读) */
