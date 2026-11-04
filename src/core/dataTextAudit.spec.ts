@@ -319,6 +319,34 @@ describe('文案数值对账 · 视图不手抄数字', () => {
    *
    * 故障注入:把 dailyLeft 改回写死的数,本条红。
    */
+  /**
+   * 首页六个入口格:原只有两个带副信息(本世之界、洞府营造),
+   * 其余四格各自都有可数的状态,却要打开对应页面才看得到。
+   * 现六格都报出实况,且每一条都取既有的同源算法 —— 不另算一遍。
+   *
+   * 故障注入:把任一条改成写死的字面量,本条红。
+   */
+  it('首页六格都报实况,且各取同源算法', () => {
+    const home = src('../views/HomeView.vue')
+    const WANT: Array<[string, string]> = [
+      ['天界', '今日天道未应'],
+      ['坊市', '刷新中'],
+      ['道童', '无道童'],
+      ['修行志', '日课余'],
+      ['洞府', '已启']
+    ]
+    for (const [tile, word] of WANT) {
+      expect(home, `${tile}格没有实况`).toContain(word)
+    }
+    // 每条实况都从既有算法来,不自己判断
+    expect(home, '天劫闸门须与 store 同一份').toContain('dailyDoneDay')
+    expect(home, '坊市倒计时须走 marketService').toContain('marketRemainingSec(')
+    expect(home, '道童闲置须查 task').toContain("apprentices.filter(a => !a.task)")
+    expect(home, '日课余数须由 dailyRows 现算').toContain('dailyRows.value.filter(t => !t.done)')
+    // 货架未同步过时不报倒计时:那时 remainingSec 也是 0,会写成「刷新中」
+    expect(home, '未同步时不报').toContain('market.stockedAt > 0 ?')
+  })
+
   it('首页修行志格报出未成的日课数,且与弹窗同源', () => {
     const home = src('../views/HomeView.vue')
     expect(home, '格上该报余数').toContain('日课余')
