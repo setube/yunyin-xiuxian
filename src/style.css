@@ -1458,6 +1458,16 @@ html[data-theme='dark'] .bond-halo {
   border-style: double;
   border-width: 3px;
 }
+/*
+ * 宫号是 absolute 定位,基准是 padding box —— 边框越宽,它离外框越远。
+ * 三种边框宽度不同(dashed 1px / solid 1.5px / double 3px),
+ * 于是凶门的「2/3/7」比其余六格往里 2px,九宫看着是歪的。
+ * 这里把 double 那两格补回去,让九个宫号同在外框内 3px。
+ */
+.gate-kind-double > .gate-palace__no {
+  left: 1px;
+  top: 0px;
+}
 
 /* 择门态:在盘上直接标出「这一趟走哪一门」 */
 .gate-palace--picked {
