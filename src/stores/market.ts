@@ -26,6 +26,8 @@ import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, 
 import type { HerbGrade } from '@/data/herbGrades'
 import { herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
 import { asArray, asFiniteNumber, asPrice } from '@/utils/saveShape'
+import { gnZero, mulN } from '@/utils/gnum'
+import type { GNum } from '@/types'
 
 /** `expired` = 点下去的这一瞬正好跨过换货窗口:货架已整架换新,`idx` 指的是另一格货;宁可不成交 */
 export type MarketBuyResult = 'ok' | 'sold' | 'poor' | 'bagfull' | 'missing' | 'expired'
@@ -267,7 +269,55 @@ export const useMarketStore = defineStore(
       return true
     }
 
-    return { stock, stockedAt, consign, sanitize, sync, buy, consignEquip, collectConsign, sellPill, sellMaterial, sellHerb }
+    /**
+     * 售尽某一味的全部存货:逐枚走同一个 sellPill,判据与计价都不分叉。
+     * 后期丹匣常堆几十枚,一枚一枚点没有意义。
+     * @returns 实售枚数与总所得;一枚也没卖出时枚数为 0
+     */
+    function sellPillAll(pillId: string): { count: number; stone: GNum } {
+      const inventory = useInventoryStore()
+      const before = inventory.pills[pillId] ?? 0
+      let n = 0
+      while (n < before && sellPill(pillId)) n += 1
+      return { count: n, stone: n > 0 ? mulN(pillSellPrice(pillId), n) : gnZero() }
+    }
+
+    /**
+     * 售尽某品灵草 / 玄铁:整摞计价,不足一摞即一枚也卖不出。
+     * @returns 实售摞数
+     */
+    function sellHerbAll(grade: HerbGrade): number {
+      const resources = useResourcesStore()
+      const lots = Math.floor(resources.herbOf(grade) / MARKET_MAT_COUNT)
+      let n = 0
+      while (n < lots && sellHerb(grade)) n += 1
+      return n
+    }
+
+    function sellOreAll(major: number): number {
+      const resources = useResourcesStore()
+      const lots = Math.floor(resources.ore / MARKET_MAT_COUNT)
+      let n = 0
+      while (n < lots && sellMaterial(major)) n += 1
+      return n
+    }
+
+    return {
+      stock,
+      stockedAt,
+      consign,
+      sanitize,
+      sync,
+      buy,
+      consignEquip,
+      collectConsign,
+      sellPill,
+      sellMaterial,
+      sellHerb,
+      sellPillAll,
+      sellHerbAll,
+      sellOreAll
+    }
   },
   { persist: persistConfig('market') }
 )

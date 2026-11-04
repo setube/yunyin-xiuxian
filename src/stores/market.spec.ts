@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS, MARKET_REFRESH_SECONDS, type MarketSlot } from '@/data/market'
+import { pillSellPrice } from '@/core/marketService'
 import { gn, toNum } from '@/utils/gnum'
 import { BAG_CAPACITY } from '@/data/constants'
 import { consignPrice, focusHerbSlot, marketRemainingSec, herbSellBatch, materialSellPrice } from '@/core/marketService'
@@ -392,6 +393,43 @@ describe('坊市 · 买卖', () => {
     expect(toNum(resources.spiritStone)).toBeGreaterThan(0)
     expect(market.sellPill('p_nope'), '无此丹').toBe(false)
     expect(market.sellPill('p_jvqisan'), '还有货可再卖').toBe(true)
+  })
+
+  it('售尽某味丹药:一枚不剩,且所得与逐枚卖同一把尺', () => {
+    const market = useMarketStore()
+    const inventory = useInventoryStore()
+    const resources = useResourcesStore()
+    inventory.$patch({ pills: { p_jvqisan: 7 } })
+    resources.spiritStone = gn(0)
+    const unit = pillSellPrice('p_jvqisan')
+    const r = market.sellPillAll('p_jvqisan')
+    expect(r.count).toBe(7)
+    expect(inventory.pills['p_jvqisan'], '售尽后仍有剩').toBeUndefined()
+    // 总量 = 单价 × 枚数:与逐枚卖同一把尺
+    expect(toNum(r.stone)).toBeCloseTo(toNum(unit) * 7, 3)
+    expect(toNum(resources.spiritStone)).toBeCloseTo(toNum(unit) * 7, 3)
+    // 再售一次:已无货
+    expect(market.sellPillAll('p_jvqisan').count).toBe(0)
+  })
+
+  it('售尽玄铁:按整摞整除,不足一摞的零头留下', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    resources.ore = MARKET_MAT_COUNT * 5 + 3
+    const lots = market.sellOreAll(14)
+    expect(lots, '可售摞数与整除口径不符').toBe(5)
+    expect(resources.ore, '零头不该被卖掉').toBe(3)
+    expect(market.sellOreAll(14), '不足一摞时应一枚也不卖').toBe(0)
+  })
+
+  it('售尽灵草:同一品的整摞口径,别品不动', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    resources.herbByGrade[1] = MARKET_MAT_COUNT * 2
+    resources.herbByGrade[2] = MARKET_MAT_COUNT * 3
+    expect(market.sellHerbAll(1)).toBe(2)
+    expect(resources.herbOf(1)).toBe(0)
+    expect(resources.herbOf(2), '卖一品不该动别品').toBe(MARKET_MAT_COUNT * 3)
   })
 
   it('即时售材:玄铁走一批扣库存入账;灵草按品(低品不够不售、高品够则按该品售)', () => {
