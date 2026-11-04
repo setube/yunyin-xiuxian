@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { TRIALS } from '@/data/endgame'
-import { RECOVERY_LABEL, TRIAL_FIGHT_CAP, recoveryOf, tierPosition, trialMark, trialMarks } from './trialMark'
+import { RECOVERY_LABEL, TRIAL_FIGHT_CAP, recoveryOf, tierPosition, tierSpan, trialMark, trialMarks } from './trialMark'
 
 const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
@@ -93,6 +93,30 @@ describe('试炼形制 · 三、层阶两端从数据现算', () => {
     expect(tierPosition(-99)).toBe(0)
     expect(tierPosition(999)).toBe(1)
     expect(tierPosition(Number.NaN)).toBe(0)
+  })
+})
+
+describe('试炼形制 · 三之二、轴两端的标签', () => {
+  it('两端与 tierPosition 同一份取法,不另数一遍', () => {
+    const tiers = TRIALS.map(t => t.anchorTier)
+    const span = tierSpan()
+    expect(span.lo).toBe(Math.min(...tiers))
+    expect(span.hi).toBe(Math.max(...tiers))
+    // 落在两端的场次,位置恰好是 0 与 1 —— 标签与点同源
+    expect(tierPosition(span.lo)).toBe(0)
+    expect(tierPosition(span.hi)).toBe(1)
+  })
+
+  it('两端不会写死在 UI 里', () => {
+    const panel = readFileSync(resolve(ROOT, 'src/components/celestial/TrialPanel.vue'), 'utf-8')
+    expect(panel, '两端的数该从 tierSpan 取').toContain('tierLimits')
+    expect(panel, '不许把 23 当最低阶写死').not.toMatch(/>\s*23\s*</)
+  })
+
+  it('卡面上真画了两个端点', () => {
+    const panel = readFileSync(resolve(ROOT, 'src/components/celestial/TrialPanel.vue'), 'utf-8')
+    expect(panel).toContain('tierLimits.lo')
+    expect(panel).toContain('tierLimits.hi')
   })
 })
 

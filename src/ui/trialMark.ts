@@ -78,6 +78,17 @@ export function trialMarks(): TrialMark[] {
  * 取三场试炼的最小/最大 anchorTier 为两端 —— 不写死 23 与 30,
  * 将来增删试炼时这条刻度自动跟上。
  */
+/**
+ * 这条梯子的两端 —— 与 tierPosition 同一份取法,不另数一遍。
+ *
+ * 轴上只落一个点、两端无字时,「23 阶」读不出它在全谱里站哪一段:
+ * 23 是三场里最低的、还是中间那一场?故两端各标一个数。
+ */
+export function tierSpan(): { lo: number; hi: number } {
+  const tiers = TRIALS.map(t => t.anchorTier)
+  return { lo: Math.min(...tiers), hi: Math.max(...tiers) }
+}
+
 export function tierPosition(tier: number): number {
   const tiers = TRIALS.map(t => t.anchorTier)
   const lo = Math.min(...tiers)

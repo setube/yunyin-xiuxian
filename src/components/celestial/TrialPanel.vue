@@ -111,7 +111,15 @@
             <i v-for="n in 3" :key="n" />
           </span>
           <span class="shrink-0 text-[10px] text-ink-faint">{{ RECOVERY_LABEL[trialMark(trial).recovery] }}</span>
-          <span class="trial-tier min-w-0 flex-1" :style="{ '--tier-pos': `${tierPosition(trialMark(trial).tier) * 100}%` }" aria-hidden="true" />
+          <!--
+            这条轴原先只有一个点、两端无字:「23 阶」读不出它站在全谱的哪一段。
+            两端各标一个数,点才有参照(见 ui/trialMark.tierSpan)。
+          -->
+          <span class="flex min-w-0 flex-1 items-center gap-1">
+            <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">{{ tierLimits.lo }}</span>
+            <span class="trial-tier min-w-0 flex-1" :style="{ '--tier-pos': `${tierPosition(trialMark(trial).tier) * 100}%` }" aria-hidden="true" />
+            <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">{{ tierLimits.hi }}</span>
+          </span>
           <span class="shrink-0 tabular text-[10px] text-ink-faint">{{ trialMark(trial).tier }} 阶</span>
         </div>
         <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">{{ trial.desc }}</p>
@@ -253,7 +261,7 @@
   import { pactMark } from '@/ui/pactMark'
   import { MUTATORS, mutatorDef } from '@/data/mutators'
   import { themeBreakdown, themeMark } from '@/ui/mutatorTheme'
-  import { RECOVERY_LABEL, tierPosition, trialMark } from '@/ui/trialMark'
+  import { RECOVERY_LABEL, tierPosition, tierSpan, trialMark } from '@/ui/trialMark'
   import { todayChallenge, undertakeDaily } from '@/core/dailyChallenge'
   import { useWallNow } from '@/composables/useWallClock'
   import { localDayNum } from '@/utils/time'
@@ -299,6 +307,9 @@
     daily.value ? daily.value.draft.mutatorIds.map(id => mutatorDef(id)).filter(m => m !== undefined) : []
   )
   const dailyPact = computed(() => (daily.value?.draft.pactId ? pactDef(daily.value.draft.pactId) : undefined))
+
+  /** 层阶轴的两端:三场试炼里最低与最高的锚点阶,轴上那个点才有参照 */
+  const tierLimits = tierSpan()
 
   function celestialWorldDefLocal(id: string) {
     return CELESTIAL_WORLDS.find(w => w.id === id)
