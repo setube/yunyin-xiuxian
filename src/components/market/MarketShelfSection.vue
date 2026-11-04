@@ -18,11 +18,16 @@
         :class="[c.sold ? 'opacity-50' : '', i === focusCard ? 'ring-2 ring-jade/70' : '']"
         :style="c.tierStyle"
       >
-        <QualityAura v-if="c.quality" :quality="c.quality" />
+        <!-- 两列窄卡(168×99),角上已给到三枚形制,不适用宽卡那套;compact 只画左上 -->
+        <QualityAura v-if="c.quality" :quality="c.quality" compact />
         <!-- 灵草格按品阶上形制;玄铁等无品阶材料不挂 -->
-        <QualityAura v-else-if="c.herbGrade" :rank="herbQualityRank(c.herbGrade)" :tone="herbQualityTone(c.herbGrade)" />
-        <!-- 最上档质感 -->
-        <span v-if="c.luster" class="luster-cornice" aria-hidden="true" />
+        <QualityAura v-else-if="c.herbGrade" :rank="herbQualityRank(c.herbGrade)" :tone="herbQualityTone(c.herbGrade)" compact />
+        <!--
+          最上档质感:窄卡的右下角是「买下」按钮,御纹的右下直角会直接压在按钮上 ——
+          实测御纹 (148,79)–(166,97) 与按钮 (110,54)–(156,89) 相交。
+          故走格子档,只留左上。
+        -->
+        <span v-if="c.luster" class="luster-cornice luster-cornice--tile" aria-hidden="true" />
         <span v-if="c.luster" class="luster-sheen" aria-hidden="true" />
         <span v-if="c.rare" class="absolute right-1.5 top-1.5 leading-none">
           <QualitySeal :quality="c.quality!" :size="14" />
