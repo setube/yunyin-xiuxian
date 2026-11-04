@@ -8,13 +8,13 @@
  *   一 一格十点、十格为满,上限取数据里的资质天花板。
  *   二 主根是「资质最高那一根」,并列时都标 —— 两根同资质没有理由只亮一根。
  *   三 资质不直接加修速(data/linggenAffinity 的红线),故只画刻度,不排序、不改色。
- *   四 两处界面(角色页、建号页)同读一份形制。
+ *   四 三处界面(建号页、转世弹窗、人物页)同读一份形制。
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { SpiritRoot } from '@/types'
-import { APTITUDE_CAP, APTITUDE_PIPS, rootMarks, rootPips, topRootElement } from './rootMark'
+import { APTITUDE_CAP, APTITUDE_PIPS, rootMarks, rootPips } from './rootMark'
 
 const ROOT = resolve(__dirname, '../..')
 const CHAR = readFileSync(resolve(ROOT, 'src/views/CharacterView.vue'), 'utf-8')
@@ -66,7 +66,6 @@ describe('灵根刻度 · 二、主根', () => {
   it('资质最高那一根标为主根', () => {
     const marks = rootMarks([root('fire', 92), root('water', 68), root('earth', 45)])
     expect(marks.filter(m => m.top).map(m => m.element)).toEqual(['fire'])
-    expect(topRootElement(marks)).toBe('fire')
   })
 
   it('并列最高时都标 —— 两根同资质没有理由只亮一根', () => {
@@ -76,7 +75,6 @@ describe('灵根刻度 · 二、主根', () => {
 
   it('空表与全零不当主根', () => {
     expect(rootMarks([])).toEqual([])
-    expect(topRootElement([])).toBeNull()
     // 全零:没有「最高」可说
     expect(rootMarks([root('fire', 0), root('water', 0)]).every(m => !m.top)).toBe(true)
   })
@@ -129,5 +127,50 @@ describe('灵根刻度 · 四、两处界面同读一份', () => {
     const seg = CSS.slice(from, CSS.indexOf('/* =================', from))
     expect(seg).not.toMatch(/rgb\(var\(--color-/)
     expect(seg).toContain('--root-tone')
+  })
+})
+
+describe('资质刻度 · 三处渲染同用一份', () => {
+  /*
+   * 灵根画像在三处出现:建号页(掷牌)、转世弹窗(来世掷牌)、人物页(当前灵根)。
+   * 同一份数据、同一个问题「哪一根是主根」,三处该用同一套刻度。
+   * 转世弹窗原先是唯一没有刻度的 —— 而那正是玩家决定要不要「逆天改命」的地方:
+   * 一根在哪儿,主根就在哪儿;没有刻度,就得逐个读数字再比。
+   */
+  const SITES = [
+    ['src/views/CreateView.vue', '建号页'],
+    ['src/components/character/ReincarnationDialog.vue', '转世弹窗'],
+    ['src/views/CharacterView.vue', '人物页']
+  ] as const
+
+  it('三处都有资质刻度', () => {
+    for (const [path, name] of SITES) {
+      const src = readFileSync(resolve(__dirname, '../..', path), 'utf-8')
+      expect(src, `${name}没有 root-pips`).toContain('root-pips')
+      expect(src, `${name}没走 ui/rootMark`).toContain("from '@/ui/rootMark'")
+    }
+  })
+
+  it('三处都按 top 标出主根', () => {
+    for (const [path, name] of SITES) {
+      const src = readFileSync(resolve(__dirname, '../..', path), 'utf-8')
+      expect(src, `${name}没标主根`).toContain('root-pips--top')
+    }
+  })
+
+  it('三处的刻度都取 rootPips,不各自数格子', () => {
+    for (const [path, name] of SITES) {
+      const src = readFileSync(resolve(__dirname, '../..', path), 'utf-8')
+      expect(src, `${name}没走 rootPips`).toContain('rootPips(')
+    }
+  })
+
+  it('刻度带读屏名 —— 图形不能独占「几格」这个信息', () => {
+    for (const [path, name] of SITES) {
+      const src = readFileSync(resolve(__dirname, '../..', path), 'utf-8')
+      const at = src.indexOf('root-pips')
+      const near = src.slice(at, at + 600)
+      expect(near, `${name}的刻度没挂 aria-label`).toContain('aria-label')
+    }
   })
 })
