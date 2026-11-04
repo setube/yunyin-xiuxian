@@ -552,6 +552,49 @@ describe('调色板 · 数据层颜色', () => {
   })
 })
 
+describe('调色板 · 条槽底只走一支 token', () => {
+  /*
+   * 进度条、刻度轴、分布条这些「空槽」是同一种几何:3~6px 高的圆角条。
+   * 原先十一条槽各写各的墨深(0.06 / 0.08 / 0.10 / 0.12)。
+   * 深浅差已低于可辨阈值(最悬殊那对只差 1.08:1),画面上看不出问题;
+   * 问题在「新加一条槽该取哪个值」没有答案,只能照抄邻近那段 —— 于是继续分叉。
+   *
+   * 故障注入:把任一条改回手写的小数,本条红。
+   */
+  const TRACKS = [
+    'track-ink', 'trial-tier', 'realm-axis', 'furnace-rate', 'vein-axis',
+    'bond-meter', 'fight-bar', 'trib-forecast', 'growth-gauge', 'tier-bar', 'rating-gauge'
+  ]
+
+  function blockOf(sel: string): string {
+    const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:^|\\n)\\.${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+  }
+
+  it('十一条槽的底都引用 --track-ink-alpha', () => {
+    for (const cls of TRACKS) {
+      const body = blockOf(cls)
+      expect(body, `${cls} 找不到`).not.toBe('')
+      expect(body, `${cls} 的槽底没走 token`).toContain('var(--track-ink-alpha)')
+    }
+  })
+
+  it('没有任何一条还手写小数', () => {
+    const offenders: string[] = []
+    for (const cls of TRACKS) {
+      const body = blockOf(cls)
+      if (/background:\s*rgb\(var\(--color-ink-rgb\) \/ 0?\.[0-9]+\)/.test(body)) offenders.push(cls)
+    }
+    expect(offenders, '这些槽底又写回了手写小数').toEqual([])
+  })
+
+  it('token 只定 alpha,色仍走 --color-ink-rgb —— 夜主题才好自动跟', () => {
+    expect(CSS, '缺 --track-ink-alpha').toContain('--track-ink-alpha:')
+    // 若有 --track-ink-rgb,夜主题就得另写一行,容易漏
+    expect(CSS, '不该另开一个 rgb 变量').not.toContain('--track-ink-rgb:')
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)
