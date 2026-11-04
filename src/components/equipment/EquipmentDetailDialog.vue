@@ -68,7 +68,21 @@
         <div class="ink-divider my-3" />
         <p class="mb-1.5 flex items-baseline justify-between font-kai text-[12px] tracking-[0.3em] text-ink-faint">
           <span>词 条</span>
-          <span class="text-[10px] tracking-normal tabular">{{ inst.affixes.length }} / {{ affixCap }} 条</span>
+          <span class="flex items-center gap-1.5 text-[10px] tracking-normal tabular">
+            <!--
+              词条位刻度:上限是品阶给的(九档从 1 到 9),不是一律五格(见 ui/affixSlots)。
+              还差几个位、哪几个位空着,数格便知。
+            -->
+            <span
+              class="affix-slots"
+              :class="{ 'affix-slots--full': slotMark.full }"
+              role="img"
+              :aria-label="`词条 ${slotMark.used}/${slotMark.cap} 条`"
+            >
+              <i v-for="(on, i) in affixSlotPips(slotMark)" :key="i" :class="{ on }" />
+            </span>
+            {{ slotMark.used }} / {{ slotMark.cap }} 条
+          </span>
         </p>
         <ul class="overflow-hidden rounded-md bg-violet-ink/6">
           <li
@@ -186,6 +200,7 @@
   import { salvageOf, salvageRefundPhrase } from '@/core/salvage'
   import { detectBuild } from '@/core/buildDetect'
   import { qualityDef } from '@/data/qualities'
+  import { affixSlotMark, affixSlotPips } from '@/ui/affixSlots'
   import { usePlayerStore } from '@/stores/player'
   import { formatGN, formatGap, formatNum } from '@/utils/format'
   import { isZero, sub } from '@/utils/gnum'
@@ -245,7 +260,14 @@
   })
 
   /** 词条条数上限:取品质表,不在界面另写 */
+  /** 词条位形制:上限与词条生成同源(见 ui/affixSlots) */
+  /**
+   * 词条上限:与词条生成同源(品阶表)。模板直读这一处,
+   * spec 钉着「上限不在模板里写死数字」,故不在 ui 层再藏一份。
+   */
   const affixCap = computed(() => (inst.value ? qualityDef(inst.value.quality).affixes[1] : 0))
+  /** 词条位形制:上限由上而给,不在这里再查表(见 ui/affixSlots) */
+  const slotMark = computed(() => affixSlotMark(affixCap.value, inst.value?.affixes.length ?? 0))
 
   // ---- 词条转移(议题 #22):本件作源件 ----
   const transferOpen = ref(false)
