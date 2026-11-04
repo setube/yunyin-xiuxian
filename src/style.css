@@ -1872,6 +1872,41 @@ html[data-theme='dark'] .fruit-curve polyline {
   pointer-events: none;
 }
 
+/* ================= 天劫波次(tribWave) =================
+ * 渡劫弹窗原先把「第 N 道天雷,气血余 X%」写成二十行同形灰字,
+ * 哪一道最险、从第几道开始吃紧,只能逐行读百分数自己比(见 src/ui/tribWave.ts)。
+ * 现每道雷落定后的余血落成一根柱,柱高以本场最高者为满格 ——
+ * 以 100% 为顶会让开头几道挤成一排等高柱,落差读不出来。
+ * 色取既有语义 token;形制层不吃指针事件。
+ */
+.trib-waves {
+  height: 44px;
+  /* 柱有宽度上限,整组居中;间距定死,不随道数摊开 —— 四道雷散成四个孤点就失去「一连串」的意思 */
+  justify-content: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.trib-wave {
+  display: block;
+  flex: 1 1 0;
+  /* 柱宽夹在 3~14px:四道雷时不会摊成四条板,二十道时也不至于细到看不见 */
+  min-width: 3px;
+  max-width: 14px;
+  min-height: 3px;
+  border-radius: 1px 1px 0 0;
+  background: rgb(var(--color-ink-rgb) / 0.35);
+  /* 每根柱从底部长起,不是从上往下掉 */
+  align-self: flex-end;
+}
+.trib-wave--danger {
+  background: rgb(var(--color-cinnabar-rgb) / 0.75);
+}
+/* 坠地那一格:不是「余血很少」,是「到此为止」—— 用空心与其余区分 */
+.trib-wave--fallen {
+  min-height: 2px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgb(var(--color-cinnabar-rgb) / 0.5);
+}
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
