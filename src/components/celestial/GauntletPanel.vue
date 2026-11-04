@@ -27,13 +27,22 @@
         <span class="shrink-0 text-[10px] text-ink-faint">第 {{ current + 1 }} 战 · {{ row.rounds }} 回合</span>
         <span class="min-w-0 truncate text-right font-kai text-cinnabar">{{ row.foeName }}</span>
       </div>
+      <!--
+        两条血条原先只是并排的两根色条:哪根是我、还剩几成,都得拿颜色去猜。
+        名字在上方两端各一处,这里补读数并让两条各带一个小字,一眼对得上人。
+        与历练页战斗面板同一套读数(见 CombatPanel 的 hpPercent)。
+      -->
       <div class="mt-1.5 flex items-center gap-2">
-        <div class="track-ink h-1.5 flex-1">
+        <span class="shrink-0 text-[9px] leading-none text-jade">我</span>
+        <div class="track-ink h-1.5 min-w-0 flex-1">
           <div class="bar-fill h-full bg-jade" :style="{ width: `${Math.max(0, php * 100)}%` }" />
         </div>
-        <div class="track-ink h-1.5 flex-1">
+        <span class="w-7 shrink-0 text-right tabular text-[9px] leading-none text-jade">{{ hpPercent(php) }}</span>
+        <div class="track-ink h-1.5 min-w-0 flex-1">
           <div class="bar-fill h-full bg-cinnabar" :style="{ width: `${Math.max(0, ehp * 100)}%` }" />
         </div>
+        <span class="w-7 shrink-0 text-right tabular text-[9px] leading-none text-cinnabar">{{ hpPercent(ehp) }}</span>
+        <span class="shrink-0 text-[9px] leading-none text-cinnabar">敌</span>
       </div>
     </div>
 
@@ -57,6 +66,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hpPercent } from '@/ui/hpReadout'
   import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
   import type { CombatLogEntry } from '@/types'
   import type { GauntletFightRow } from '@/core/gauntlet'
