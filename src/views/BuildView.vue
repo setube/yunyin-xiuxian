@@ -62,12 +62,13 @@
               <!--
                 只给一排星时,「进攻 3 星」与「进攻 3 星」之间差多少读不出来 ——
                 而 core 早算好了连续得分与那道阈值表(见 ui/ratingGauge)。
-                星说在哪一档,条说这一档走完了多少;每维按自己那四道线归一,不共尺。
+                星说在哪一档,条说离满还有多远;每维按自己那四道线归一,不共尺。
+                条长取 gaugeFill(总规模),不取本档进度 —— 后者会让 1 星的条比 4 星还长。
               -->
               <span class="flex items-center justify-between gap-2 text-[11px]">
                 <span class="shrink-0 text-ink-soft">{{ g.name }}</span>
                 <span class="rating-gauge shrink-0" :class="{ 'rating-gauge--weak': weakestRating?.key === g.key }" aria-hidden="true">
-                  <i :style="{ width: `${g.progress * 100}%` }" />
+                  <i :style="{ width: `${gaugeFill(g) * 100}%` }" />
                 </span>
                 <span class="shrink-0 tabular tracking-widest text-gold-ink">{{ ratingStars(g.stars) }}</span>
               </span>
@@ -244,7 +245,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { detectBuild, buildSources } from '@/core/buildDetect'
   import { ratePower, ratingStars, type PowerDimKey } from '@/core/powerRating'
-  import { ratingGauges, weakestGauge } from '@/ui/ratingGauge'
+  import { gaugeFill, ratingGauges, weakestGauge } from '@/ui/ratingGauge'
   import { comboPairNames, matchComboArt, COMBO_SECONDARY_MIN } from '@/data/comboArts'
   import { measureResilience, resilienceText } from '@/core/resilience'
   import { playerMatchups, MATCHUP_SAMPLE_RUNS } from '@/core/playerMatchup'

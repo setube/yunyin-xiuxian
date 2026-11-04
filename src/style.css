@@ -2677,7 +2677,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-gold-ink-rgb) / 0.8);
   transition: width 0.3s ease;
 }
-/* 最短板:转朱,与那一行的小字同一档色 —— 条与小字说的是同一件事 */
+/* 条长 = (已过档数 + 本档进度) / 5,与星数同向;详见 ui/ratingGauge.gaugeFill */
 .rating-gauge--weak i {
   background: rgb(var(--color-cinnabar-rgb) / 0.9);
 }
