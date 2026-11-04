@@ -172,8 +172,10 @@ function runTribulation(targetMajor: number): { survived: boolean; log: string[]
       log.push(`第 ${w} 道天雷轰然落下,你护体灵光崩碎,重伤坠地。`)
       return { survived: false, log }
     }
-    const pct = Math.max(1, Math.round(hpLeft * 100))
-    log.push(`第 ${w} 道天雷落下,你咬牙硬撼,气血余 ${Math.min(999, pct)}%。`)
+    // 护持可使初值越过 1(1 + 护持 + 折算),结算照此走,但报数不能超过满值 ——
+    // 「气血余 115%」是无意义读数,且会让同一场里的柱子与数字各说各话
+    const pct = Math.min(100, Math.max(1, Math.round(hpLeft * 100)))
+    log.push(`第 ${w} 道天雷落下,你咬牙硬撼,气血余 ${pct}%。`)
   }
   log.push('雷云散尽,你于劫灰中立起,渡劫已成。')
   return { survived: true, log }

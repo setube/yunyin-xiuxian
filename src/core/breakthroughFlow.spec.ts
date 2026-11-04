@@ -150,6 +150,12 @@ describe('突破 · 大关(渡劫)', () => {
     expect(player.lifespanMax, '跨了大境界寿元却一动没动').toBeGreaterThan(lifespanBefore)
     expect(view!.tribulationLog.length, '渡劫没有战报,玩家不知道自己怎么过来的').toBeGreaterThan(2)
     expect(view!.tribulationLog[view!.tribulationLog.length - 1]).toContain('渡劫')
+    // 护持能让结余越过满值(1 + 护持 + 折算),结算照此走,但报数不能超过 100% ——
+    // 「气血余 115%」是无意义读数,且会让同一场里按它画的柱子与数字各说各话
+    for (const line of view!.tribulationLog) {
+      const m = /气血余 (\d+)%/.exec(line)
+      if (m) expect(Number(m[1]), `战报里出现了超过满值的气血:${line}`).toBeLessThanOrEqual(100)
+    }
     expect(useQuestsStore().counter('tribulations')).toBe(1)
   })
 
