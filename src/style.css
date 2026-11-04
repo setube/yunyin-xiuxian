@@ -2322,6 +2322,35 @@ html[data-theme='dark'] .fruit-curve polyline {
   box-shadow: none;
 }
 
+/* ================= 紫微盘(fate-board) =================
+ * 十二宫原先铺成十二行文字:哪一宫是命宫、哪一宫有星,得逐行读。
+ * 它本来是四正三合的一张盘 —— 四列三行,命宫朱框,有星的宫点亮。
+ * 色取既有语义 token;盘面不吃指针事件(逐星另有 title)。
+ */
+.fate-board {
+  pointer-events: none;
+}
+.fate-cell {
+  min-width: 0;
+  border-radius: 4px;
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.12);
+  background: rgb(var(--color-ink-rgb) / 0.02);
+  padding: 5px 6px;
+}
+/* 有星的宫:边框实一档 —— 空宫与有星宫一眼分得开 */
+.fate-cell--starred {
+  border-color: rgb(var(--color-ink-rgb) / 0.28);
+  background: rgb(var(--color-ink-rgb) / 0.05);
+}
+/* 命宫:朱框,一身之根本 */
+.fate-cell--ming {
+  border-color: rgb(var(--color-cinnabar-rgb) / 0.55);
+  background: rgb(var(--color-cinnabar-rgb) / 0.06);
+}
+.fate-star {
+  color: rgb(var(--color-cinnabar-rgb) / 0.9);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
