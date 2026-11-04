@@ -8,8 +8,18 @@
       </span>
       <span class="shrink-0 tabular text-[11px] text-ink-faint">{{ veinTotal }}/{{ VEIN_TOTAL_CAPACITY }}</span>
     </p>
-    <div class="mt-2 flex h-1.5 w-full items-center overflow-hidden rounded-full bg-ink/6">
-      <div class="h-full rounded-full bg-gold-ink/70 transition-all" :style="{ width: totalPct + '%' }"></div>
+    <!--
+      总容量分段:段长即该脉点数,空着的那截就是还能投多少。
+      原先一根纯色条只说得出「74/100」一个总数,四脉各占多少看不出来。
+    -->
+    <div class="vein-budget mt-2" aria-hidden="true">
+      <span
+        v-for="band in budget.bands"
+        :key="band.id"
+        class="vein-budget-seg"
+        :style="{ width: band.pct + '%', '--vein-tone': TONES[band.id].tone }"
+      ></span>
+      <span v-if="budget.freePct > 0" class="vein-budget-free" :style="{ width: budget.freePct + '%' }"></span>
     </div>
 
     <div class="mt-3 space-y-2">
@@ -34,9 +44,14 @@
             <p class="mt-0.5 text-[10px] leading-relaxed text-azure">
               {{ currentLevel(v.id) > 0 ? veinEffectText(v, currentLevel(v.id)) : `每点 ${veinEffectText(v, 1)}` }}
             </p>
+            <!--
+              四条共用一把尺:一律按 0→主脉上限。原先各按本脉上限,42/70 画的比 20/30 还短。
+              副脉上限在轴上落一枚刻度,越过它就是「超额保留」的旧主脉。
+            -->
             <div class="mt-1.5 flex items-center gap-2">
-              <div class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-ink/6">
-                <div class="h-full rounded-full transition-all" :class="TONES[v.id].bar" :style="{ width: capPct(v.id) + '%' }"></div>
+              <div class="vein-axis min-w-0 flex-1">
+                <div class="vein-axis-fill" :style="{ width: axisPct(currentLevel(v.id), VEIN_MAIN_CAPACITY) + '%', '--vein-tone': TONES[v.id].tone }"></div>
+                <span class="vein-axis-tick" :style="{ left: sideTickPct + '%' }"></span>
               </div>
               <span class="shrink-0 text-[10px] tabular" :class="surplusPoints(v.id) > 0 ? 'text-gold-ink' : 'text-ink-faint'">
                 {{ currentLevel(v.id) }}/{{ cap(v.id) }}
@@ -143,6 +158,7 @@
   import { useResourcesStore } from '@/stores/resources'
   import { VEINS, veinDef, type VeinId } from '@/data/veins'
   import { veinEffectText } from '@/ui/veinText'
+  import { axisPct, veinBudget } from '@/ui/veinShape'
   import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinPointShortfall, veinSwitchCost, veinSwitchShortfall, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
   import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
   import { formatGN, formatGap } from '@/utils/format'
@@ -152,14 +168,15 @@
   const resources = useResourcesStore()
 
   /**
-   * 四脉色系,章/行描边/进度条/列账圆点全从这里取。
+   * 四脉色系,章/行描边/轴/预算段全从这里取。
    * 类串须写全字面量,不许拼:Tailwind JIT 只认源码里写全的类。
+   * tone 走 CSS 变量(形制层在 style.css),故写成颜色值而非类名。
    */
-  const TONES: Record<VeinId, { seal: string; row: string; dot: string; bar: string }> = {
-    gather: { seal: 'border border-jade/40 bg-jade/10 text-ink', row: 'border-jade/35 bg-jade/5', dot: 'bg-jade', bar: 'bg-jade' },
-    craft: { seal: 'border border-cinnabar/40 bg-cinnabar/10 text-ink', row: 'border-cinnabar/35 bg-cinnabar/6', dot: 'bg-cinnabar', bar: 'bg-cinnabar' },
-    alchemy: { seal: 'border border-gold-ink/40 bg-gold-ink/10 text-ink', row: 'border-gold-ink/35 bg-gold-ink/6', dot: 'bg-gold-ink', bar: 'bg-gold-ink' },
-    insight: { seal: 'border border-violet-ink/40 bg-violet-ink/15 text-ink', row: 'border-violet-ink/40 bg-violet-ink/7', dot: 'bg-violet-ink', bar: 'bg-violet-ink' }
+  const TONES: Record<VeinId, { seal: string; row: string; dot: string; tone: string }> = {
+    gather: { seal: 'border border-jade/40 bg-jade/10 text-ink', row: 'border-jade/35 bg-jade/5', dot: 'bg-jade', tone: 'rgb(var(--color-jade-rgb) / 0.75)' },
+    craft: { seal: 'border border-cinnabar/40 bg-cinnabar/10 text-ink', row: 'border-cinnabar/35 bg-cinnabar/6', dot: 'bg-cinnabar', tone: 'rgb(var(--color-cinnabar-rgb) / 0.7)' },
+    alchemy: { seal: 'border border-gold-ink/40 bg-gold-ink/10 text-ink', row: 'border-gold-ink/35 bg-gold-ink/6', dot: 'bg-gold-ink', tone: 'rgb(var(--color-gold-ink-rgb) / 0.75)' },
+    insight: { seal: 'border border-violet-ink/40 bg-violet-ink/15 text-ink', row: 'border-violet-ink/40 bg-violet-ink/7', dot: 'bg-violet-ink', tone: 'rgb(var(--color-violet-ink-rgb) / 0.7)' }
   }
 
   const investCost = computed(() => veinPointCost())
@@ -181,7 +198,10 @@
     return lv > 0 ? `${lv} 点 · ${veinEffectText(veinDef(veinId), lv)}` : '未投'
   }
 
-  const totalPct = computed(() => Math.round((veinTotal.value / VEIN_TOTAL_CAPACITY) * 100))
+  /** 总容量上的四段;段长即各脉点数 */
+  const budget = computed(() => veinBudget(dongfu.veinPoints, VEIN_TOTAL_CAPACITY))
+  /** 副脉上限在主脉轴上的位置:四条横条共用这一枚刻度 */
+  const sideTickPct = axisPct(VEIN_SIDE_CAP, VEIN_MAIN_CAPACITY)
 
   function isMain(veinId: VeinId): boolean {
     return dongfu.veinMain === veinId
@@ -190,12 +210,6 @@
   /** 该脉实际可投上限;未定主脉时每条按主脉档 */
   function cap(veinId: VeinId): number {
     return veinCap(veinId)
-  }
-
-  /** 超额封顶百分百,数字照实报 */
-  function capPct(veinId: VeinId): number {
-    const c = cap(veinId)
-    return c <= 0 ? 0 : Math.min(100, Math.round((currentLevel(veinId) / c) * 100))
   }
 
   function currentLevel(veinId: VeinId): number {
