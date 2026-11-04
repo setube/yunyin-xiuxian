@@ -16,6 +16,7 @@ import { resolveCombat } from './combat'
 import { mergeRules, worldFoeSnap } from './gauntlet'
 import { buildPlayerSnap } from './playerSnap'
 import { currentDaoRules } from './endgameService'
+import { BUSY_REASON } from './endgameActivity'
 import { stoneByTier } from './formulas'
 import { generateEquipment } from './equipGen'
 import { acquireEquipment } from './loot'
@@ -137,7 +138,7 @@ export function enterSecretRealm(defId: string): EnterResult {
   const def = secretRealmDef(defId)
   if (!def) return { ok: false, reason: '此境不存在' }
   if (player.major < def.minMajor) return { ok: false, reason: '境界未到' }
-  if (player.secretRealm) return { ok: false, reason: '身在秘境' }
+  if (player.secretRealm) return { ok: false, reason: BUSY_REASON.secretRealm }
   // 秘境与历练/远征互斥。
   // 判据与拒绝文案只取 endgameBusy,不另写;拒绝须 toast。
   // 传 player.secretRealm 只为对齐签名,上面已拒过「身在秘境」。
