@@ -1,4 +1,4 @@
-name: 构建发行包 (Android APK)
+name: 构建发行包 (Windows 桌面客户端 & Android APK)
 
 # 只由 tag 触发:挂 main push 会让每个提交都留下一个 release
 # main 的闸门(类型检查 + ESLint + 单测)在 deploy.yml
@@ -30,6 +30,59 @@ jobs:
             echo "::error::tag($TAG)与 package.json 的版本($PKG)不一致 —— 先把 package.json 的版本提上去再打 tag"
             exit 1
           fi
+
+  # 桌面端:Electron 打包 Windows 客户端。
+  # 跑在 ubuntu 上交叉打包,不在 windows-latest:electron-builder 的 win zip 目标不需要 Windows 宿主,
+  # 而 Windows runner 装 Bun + 下载 Electron 要慢一倍以上;产物名与在 Windows 上打的一致。
+  build-electron:
+    name: 构建 Windows 桌面客户端
+    needs: [guard]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: 安装 Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: 静态检查 + 单元测试
+        run: |
+          bun install --frozen-lockfile
+          bun run check
+          bun run test:report
+
+      # Electron 的 zip 与 electron-builder 的 icon-tool 各有一份下载缓存,分开放;
+      # icon-tool 是 CommonJS,缓存若落进本仓库会被 "type": "module" 判成 ESM 而报 require is not defined
+      - name: 缓存 Electron 与 electron-builder
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            electron-${{ runner.os }}-
+
+      # 出两个包:
+      #   yunyin-<ver>-win.zip        完整包,解压即用
+      #   yunyin-<ver>-win-update.zip 增量包,只含 resources/app,解压到安装目录覆盖;
+      #     前提是 Electron 运行时版本没变,升 electron 依赖的那一版发布说明须提醒下完整包
+      - name: 构建 Electron
+        run: bun run build:electron --win
+
+      - name: 打增量包
+        run: |
+          VER=$(bun -e "console.log(require('./package.json').version)")
+          mkdir -p pkg
+          # -y 保符号链接原样,不让 zip 跟随;增量包只需 resources/app 整棵
+          (cd pkg/win-unpacked && zip -qry "../../pkg/yunyin-$VER-win-update.zip" resources/app)
+          ls -la pkg/*.zip
+
+      - name: 上传桌面端产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: electron-win
+          path: pkg/*.zip
 
   build-android:
     name: 构建 Android APK
@@ -95,7 +148,7 @@ jobs:
           path: web-pkg/*.zip
 
   release:
-    needs: [guard, build-android]
+    needs: [guard, build-electron, build-android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -120,6 +173,9 @@ jobs:
       - name: 整理并重命名产物
         run: |
           mkdir -p ./final-release
+
+          # 桌面端:完整包 + 增量包
+          find ./raw-assets/electron-win -type f -name "*.zip" -exec cp {} ./final-release/ \; || true
 
           find ./raw-assets/android-apk -type f -name "*.apk" -exec cp {} ./final-release/ \; || true
 

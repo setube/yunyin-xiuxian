@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-**云隐修仙录** — 一款 Vue 3 驱动的文字修仙放置（idle）游戏，单机离线成长玩法。版本 1.43.0，`type: module`。支持 Web/PWA 与 Android（Capacitor）两端；桌面直接用浏览器开网页，不另发行客户端。许可证 CC BY-NC 4.0（禁止商用）；打包的楷体字型为 LXGW WenKai，SIL OFL 1.1（许可证文本在 `public/fonts/OFL.txt`，再分发时须保留）。
+**云隐修仙录** — 一款 Vue 3 驱动的文字修仙放置（idle）游戏，单机离线成长玩法。版本 1.43.0，`type: module`。支持 Web/PWA、Android（Capacitor）与 Windows 桌面（Electron）三端。许可证 CC BY-NC 4.0（禁止商用）；打包的楷体字型为 LXGW WenKai，SIL OFL 1.1（许可证文本在 `public/fonts/OFL.txt`，再分发时须保留）。
 
 ## Architecture & Data Flow
 
@@ -58,7 +58,8 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run smoke` / `smoke:late` — 构建 + playwright ui-smoke
 - `bun run layout-check` — 构建 + `node scripts/layout-check.mjs`（**仅本地**，已从 CI 移除；Windows 用 `node` 而非 bun，耗时约 10 分钟）
 - `bun run offline-check` — 构建 + SW 离线自检
-- `bun run build:android` / `build:apk` — 安卓客户端打包（桌面端不另发行客户端，直接开网页）
+- `bun run build:android` / `build:apk` — 安卓客户端打包
+- `bun run build:electron --win` — Windows 桌面客户端打包，产物在 `pkg/`（完整包 + 增量包）
 - 楷体打包：`uv run scripts/fonts/build-kai-font.py`
 
 ## Code Conventions & Common Patterns
