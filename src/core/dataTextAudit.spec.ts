@@ -1153,8 +1153,8 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
   /** 故障注入:doCondense 开窗时调 markFruitTutorialSeen(),本用例红 */
   it('凝道果按未见标志开说明,开窗不置已见 —— 开窗即置,说明显示中刷新或按返回就永久丢失', () => {
     const view = src('../components/celestial/FurnaceDialog.vue')
-    const body = /function doCondense\(\)[^{]*\{([\s\S]*?)\n\}/.exec(view)?.[1] ?? ''
-    expect(body, '没读到 doCondense —— 判据会假绿').toContain('condenseDaoFruit()')
+    const body = /function doCondense\([^)]*\)[^{]*\{([\s\S]*?)\n\}/.exec(view)?.[1] ?? ''
+    expect(body, '没读到 doCondense —— 判据会假绿').toMatch(/condenseDaoFruit\([^)]*\)/)
     expect(body, '开窗前须问 shouldShowFruitTutorial(),否则每次凝果都弹').toContain('shouldShowFruitTutorial()')
     expect(body, '已见只在关掉说明时置').not.toMatch(/markFruitTutorialSeen|dismissFruitTutorial|daoFruitTutorialSeen/)
   })
@@ -1177,7 +1177,7 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(close, '没读到道果说明的 @close —— 判据会假绿').not.toBe('')
     expect(modal, '「知道了」与 @close 同一个关闭').toMatch(new RegExp(`@click="${close}\\(\\)"[^>]*>\\s*知道了`))
     const fnBody = (name: string): string =>
-      new RegExp(`function ${name}\\(\\)[^{]*\\{([\\s\\S]*?)\\n\\}`).exec(view)?.[1] ?? ''
+      new RegExp(`function ${name}\\([^)]*\\)[^{]*\\{([\\s\\S]*?)\\n\\}`).exec(view)?.[1] ?? ''
     const closeBody = fnBody(close)
     // dismissFruitTutorial:保护期内不作数,作数才置已见(resourceGuidance.spec 验行为)
     const openedAt = /dismissFruitTutorial\((\w+)/.exec(closeBody)?.[1] ?? ''

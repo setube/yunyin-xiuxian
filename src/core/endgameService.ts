@@ -112,20 +112,38 @@ export function furnaceConvertStone(): boolean {
   return true
 }
 
-/** 道源凝道果:终局唯一数值出口,受道果软上限约束 */
-export function condenseDaoFruit(): boolean {
+/**
+ * 道源凝道果:终局唯一数值出口,受道果软上限约束。
+ * @param n 凝几枚(默认 1);整笔原子 —— 道源不够全额就一枚也不凝,免得半途而废留下零头
+ */
+export function condenseDaoFruit(n = 1): boolean {
   const endgame = useEndgameStore()
   const player = usePlayerStore()
   const ui = useUiStore()
-  const short = daoSourceShortfall(DAO_SOURCE_PER_FRUIT, endgame.daoSource)
-  if (!endgame.spendDaoSource(DAO_SOURCE_PER_FRUIT)) {
-    ui.toast(short.reason ?? `道源不足 ${DAO_SOURCE_PER_FRUIT}`, 'warn')
+  const want = Number.isFinite(n) && n > 0 ? Math.floor(n) : 1
+  const total = DAO_SOURCE_PER_FRUIT * want
+  const short = daoSourceShortfall(total, endgame.daoSource)
+  if (!endgame.spendDaoSource(total)) {
+    ui.toast(short.reason ?? `道源不足 ${total}`, 'warn')
     return false
   }
-  player.addDaoFruit(1)
+  player.addDaoFruit(want)
   // 道果说明归熔炉弹窗(resourceGuidance.daoFruitDialog),toast 只报结果;已见归玩家关掉说明时置,此处不置
-  ui.toast(`${DAO_SOURCE_PER_FRUIT} 缕道源凝作一枚道果`, 'rare')
+  ui.toast(
+    want === 1 ? `${DAO_SOURCE_PER_FRUIT} 缕道源凝作一枚道果` : `${formatGN(total)} 缕道源凝作 ${want} 枚道果`,
+    'rare'
+  )
   return true
+}
+
+/**
+ * 手上道源最多能凝几枚 —— 一次连凝的可凝数。
+ * 与 condenseDaoFruit 同一口径:整枚计,不算零头。
+ */
+export function condenseFruitAffordable(): number {
+  const endgame = useEndgameStore()
+  const have = Math.max(0, Math.floor(endgame.daoSource))
+  return Math.floor(have / DAO_SOURCE_PER_FRUIT)
 }
 
 // ---------- 远征与试炼 ----------

@@ -7,7 +7,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useGameStore } from '@/stores/game'
-import { gn, sub, toNum } from '@/utils/gnum'
+import { gn, mulN, sub, toNum } from '@/utils/gnum'
 import {
   WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_TIER_AMOUNT
 } from '@/data/constants'
@@ -146,6 +146,35 @@ describe('后期限量灵石→悟道兑换(Phase C-1)', () => {
     expect(player.exchangeStoneForWudao()).toBe(true)
     // 用 GNum 减法对账:两边都是大数,转 number 比会吃掉尾差
     expect(toNum(sub(before, res.spiritStone)), '实扣与报价不一致').toBeCloseTo(toNum(cost), -3)
+  })
+
+  it('连兑次数与当日额度、灵石余额三者取小', () => {
+    const player = usePlayerStore()
+    const res = useResourcesStore()
+    player.initCharacter('测试', linggen())
+    player.major = 20
+    const cost = player.wudaoExchangeState.cost
+    // 余额只够两次
+    res.spiritStone = mulN(cost, 2)
+    expect(player.wudaoExchangeAffordable, '余额只够两次').toBe(2)
+    // 兑完之后余额见底,可兑数随之归零
+    expect(player.exchangeStoneForWudaoBatch()).toBe(2)
+    expect(player.wudaoExchangeAffordable).toBe(0)
+    expect(player.wudaoExchangeToday).toBe(2)
+  })
+
+  it('当日额度是硬上限:灵石再多也只兑到上限为止', () => {
+    const player = usePlayerStore()
+    const res = useResourcesStore()
+    player.initCharacter('测试', linggen())
+    player.major = 20
+    // 余额要真的够兑满十次:混沌海的单价是层级阶梯,猜一个「很大」的数会在高价档上不够
+    res.spiritStone = mulN(player.wudaoExchangeState.cost, WUDAO_EXCHANGE_PER_DAY)
+    expect(player.wudaoExchangeAffordable, '余额刚好够兑满时应给满额度').toBe(WUDAO_EXCHANGE_PER_DAY)
+    const done = player.exchangeStoneForWudaoBatch()
+    expect(done).toBeGreaterThan(0)
+    expect(player.wudaoExchangeToday, '兑过了当日额度').toBeLessThanOrEqual(WUDAO_EXCHANGE_PER_DAY)
+    expect(player.exchangeStoneForWudao(), '额度用尽后仍可单兑').toBe(false)
   })
 
   it('坏档 count 越界:sanitize 夹回上限,不留下"永不可兑"', () => {
