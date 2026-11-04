@@ -16,6 +16,11 @@ const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
 const AURA_VUE = readFileSync(resolve(ROOT, 'src/components/common/QualityAura.vue'), 'utf-8')
 const ARTIFACT_PANEL = readFileSync(resolve(ROOT, 'src/components/inventory/ArtifactPanel.vue'), 'utf-8')
+function block(selector: string): string {
+  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+}
+
 const EQUIPMENT_CARD = readFileSync(resolve(ROOT, 'src/components/equipment/EquipmentCard.vue'), 'utf-8')
 const MARKET_SHELF = readFileSync(resolve(ROOT, 'src/components/market/MarketShelfSection.vue'), 'utf-8')
 
@@ -138,6 +143,20 @@ describe('品阶光环 · 样式与可访问性', () => {
     const tl = AURA_VUE.slice(AURA_VUE.indexOf('q-aura-corner--tl') - 200, AURA_VUE.indexOf('q-aura-corner--tl'))
     expect(tl, '左上角饰不该被 compact 关掉').not.toContain('v-if')
     expect(EQUIPMENT_CARD, '装备格应走紧凑模式').toContain('<QualityAura :quality="props.item.quality" compact />')
+  })
+
+  it('紧凑格的左上角饰是内容的让位对象 —— 角标不许压上去', () => {
+    /*
+     * 实测:装备格的「佩」原在 left-0.5 top-0.5,坐标 (3,3) 8×8,
+     * 而角饰在 (4,4) 11×11 —— 两枚整块重叠,渲染出来「佩」压在角饰上。
+     * 左上那枚角饰是「有角饰 = 进阶以上」的判据,不能收,于是让位的是角标。
+     */
+    const tl = block('.q-aura-corner--tl')
+    expect(tl, '左上角饰贴角').toMatch(/left:\s*3px/)
+    expect(tl, '角饰占 9px 见方').toContain('width: 9px')
+    // 四个角里,左上已被角饰占:内容角标须另择一角
+    expect(EQUIPMENT_CARD, '「佩」不该再占左上').not.toMatch(/absolute\s+left-0\.5\s+top-0\.5[^>]*>佩/)
+    expect(EQUIPMENT_CARD, '「佩」应挪到底边').toMatch(/absolute bottom-0\.5 left-1[^>]*>佩/)
   })
 
   it('光环整体 aria-hidden:品阶名已由角章报出,不重复念', () => {
