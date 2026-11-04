@@ -97,6 +97,10 @@ describe('渡劫推演 · 四、险度档', () => {
 })
 
 describe('渡劫推演 · 五、界面接上了', () => {
+  it('崩了不画空槽 —— 跌穿的条宽是 0,一根空槽只会让人以为「没数据」', () => {
+    expect(DETAIL, '画条要以存活为条件').toMatch(/v-if="forecast\.survived"/)
+  })
+
   it('劫势详情里画出了推演水位与读数', () => {
     expect(DETAIL).toContain('tribForecast')
     expect(DETAIL, '该把读数那行写出来').toContain('forecast')

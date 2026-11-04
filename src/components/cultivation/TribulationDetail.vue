@@ -60,7 +60,13 @@
         <span class="text-ink-faint">推演水位</span>
         <span class="tabular" :class="FORECAST_COLOR[forecast.tone]">{{ forecast.line }}</span>
       </div>
-      <span class="trib-forecast mt-1" :class="`trib-forecast--${forecast.tone}`" aria-hidden="true">
+      <!-- 崩了就不画条:跌穿的条宽是 0,一根空槽只会让人以为「没数据」;那一句文字已经是结论 -->
+      <span
+        v-if="forecast.survived"
+        class="trib-forecast mt-1"
+        :class="`trib-forecast--${forecast.tone}`"
+        aria-hidden="true"
+      >
         <i :style="{ width: `${forecast.lowPct * 100}%` }" />
       </span>
     </div>
