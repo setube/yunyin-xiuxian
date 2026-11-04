@@ -2351,6 +2351,71 @@ html[data-theme='dark'] .fruit-curve polyline {
   color: rgb(var(--color-cinnabar-rgb) / 0.9);
 }
 
+/* ================= 卦画(hexagramFigure) =================
+ * 卦画原先是六行文字条,且照着自下而上的 lines 数组正序铺 —— 整幅倒竖。
+ * 这里把爻画成一条实线(阳)或两段(阴):形状本身分得开,不只靠颜色。
+ * 次序由 ui/hexagramFigure 排好(上爻在上),样式只管画。
+ *
+ * 本卦与之卦**同形**:易里两幅卦象地位相当,主次只在额题与动爻记号上,
+ * 不在把哪一幅压淡。字色一律整色 token —— 半透明墨的小字在纸上只有 2:1。
+ */
+.hex-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+}
+/* 「本卦 / 之某」的额题,压在爻画上方 */
+.hex-figure__cap {
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  color: rgb(var(--color-ink-faint-rgb));
+}
+.hex-line {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+/* 一爻:宽 30px、高 3px;阳爻整条,阴爻两段之间留断口 */
+.hex-line__bar {
+  display: flex;
+  align-items: center;
+  width: 30px;
+  height: 3px;
+  color: rgb(var(--color-ink-rgb));
+}
+.hex-line__bar i {
+  display: block;
+  flex: 1;
+  height: 3px;
+  border-radius: 0.5px;
+  background: currentColor;
+}
+/* 阴爻的断口本身就是形制 —— 不靠颜色也分得开阴阳 */
+.hex-line__bar--yin {
+  gap: 6px;
+}
+/* 爻题:初九、六二…… 只作认位 */
+.hex-line__label {
+  font-size: 9px;
+  line-height: 1;
+  color: rgb(var(--color-ink-faint-rgb));
+}
+/* 动爻:整爻转朱 —— 一列六爻里唯一带色的一爻 */
+.hex-line--moving .hex-line__bar {
+  color: rgb(var(--color-cinnabar-rgb));
+}
+.hex-line--moving .hex-line__label {
+  color: rgb(var(--color-cinnabar-rgb));
+}
+/* 动爻古记号:阳动 ○、阴动 × */
+.hex-line__mark {
+  font-size: 10px;
+  line-height: 1;
+  color: rgb(var(--color-cinnabar-rgb));
+}
+
 /* ================= 四象二十八宿盘(mansionBoard) =================
  * 星象页原先只写一句「今日值某宿」,加一句「四象配四界」——
  * 二十八宿按象成组(东苍龙七宿、南朱雀七宿…),本来就能摆成四排

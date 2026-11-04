@@ -15,7 +15,6 @@ import {
   CHANGING_TIERS,
   DIVINATION_COST,
   castLines,
-  drawLines,
   drawHexagram,
   readingCounsel,
   readingFromState,
@@ -169,13 +168,14 @@ describe('卦力 · 由上下卦推出', () => {
     expect(back.changed?.name).toBe(reading.changed?.name)
   })
 
-  it('卦画:六爻自下而上,动爻另标', () => {
+  it('爻序自下而上:lines[0] 是初爻,内卦取前三爻、外卦取后三爻', () => {
+    // core 的契约到此为止;卦画怎么摆由 ui/hexagramFigure 负责,
+    // 但那层「翻成上爻在上」必须建立在「这里给出的仍是自下而上」之上。
     const reading = readingOfLines([1, 0, 1, 0, 1, 0], [2, 5])!
-    const drawn = drawLines(reading)
-    expect(drawn.length).toBe(6)
-    expect(drawn[1]).toContain('动')
-    expect(drawn[4]).toContain('动')
-    expect(drawn[0]).not.toContain('动')
+    expect(reading.lines).toEqual([1, 0, 1, 0, 1, 0])
+    expect(reading.lower.lines).toEqual([1, 0, 1])
+    expect(reading.upper.lines).toEqual([0, 1, 0])
+    expect(reading.changingAt).toEqual([2, 5])
   })
 })
 
