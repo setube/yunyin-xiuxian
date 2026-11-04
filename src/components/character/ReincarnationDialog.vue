@@ -129,9 +129,34 @@
             <span class="tabular text-[11px] text-ink-soft">资质 {{ root.aptitude }}</span>
           </div>
         </div>
-        <p class="mt-3 text-center text-[12px] text-ink-faint">
-          修行倍率 <span class="tabular text-ink">×{{ view.nextLinggen.growthMult.toFixed(2) }}</span>
-        </p>
+        <!--
+          倍率原只给一个数。这一手算好还是不好,与建号页是同一件事、同一个数、同一个区间 ——
+          两处该用同一份刻度(见 ui/growthGauge),不在这里另写一套判断。
+        -->
+        <div class="mt-3">
+          <p class="flex items-baseline justify-center gap-2 text-[12px] text-ink-faint">
+            <span>修行倍率</span>
+            <span class="tabular text-[14px] text-ink">×{{ nextGrowth.mult.toFixed(2) }}</span>
+            <span
+              class="rounded border border-ink/15 px-1.5 py-0.5 text-[10px] leading-none"
+              :class="GROWTH_TONE[nextGrowth.tier]"
+            >
+              {{ nextGrowth.label }}
+            </span>
+          </p>
+          <div class="mt-1.5 flex items-center gap-1.5">
+            <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">×{{ nextGrowth.floor.toFixed(1) }}</span>
+            <span
+              class="growth-gauge min-w-0 flex-1"
+              :class="`growth-gauge--${nextGrowth.tier}`"
+              role="img"
+              :aria-label="`修行倍率 ×${nextGrowth.mult.toFixed(2)},区间 ${nextGrowth.floor.toFixed(1)} 至 ${nextGrowth.ceil.toFixed(1)},属${nextGrowth.label}`"
+            >
+              <i :style="{ left: `${nextGrowth.position * 100}%` }" />
+            </span>
+            <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">×{{ nextGrowth.ceil.toFixed(1) }}</span>
+          </div>
+        </div>
         <button class="btn-ghost mt-3 w-full" @click="rerollReincarnationLinggen">逆天改命</button>
         <p class="mt-2 text-center text-[11px] text-ink-faint">不限次数</p>
       </div>
@@ -223,6 +248,7 @@
   import { ELEMENTS } from '@/data/linggen'
   import { talentDef, TALENT_GRADE_COLORS, TALENT_GRADE_NAMES } from '@/data/talents'
   import { talentMark, talentPips } from '@/ui/talentMark'
+  import { growthGauge } from '@/ui/growthGauge'
   import { modsText } from '@/data/statNames'
   import { lifeThemeDef, TABOO_NAMES } from '@/data/lifeThemes'
   import { heritageGroups } from '@/core/samsaraAudit'
@@ -259,6 +285,15 @@
   })
 
   const view = computed(() => ui.reincarnation)
+
+  /** 来世灵根的倍率刻度:与建号页同一份(见 ui/growthGauge) */
+  const nextGrowth = computed(() => growthGauge(view.value?.nextLinggen.growthMult ?? 1))
+  const GROWTH_TONE: Record<string, string> = {
+    low: 'text-ink-faint',
+    mid: 'text-ink-soft',
+    high: 'text-azure',
+    peak: 'text-cinnabar'
+  }
   const reviewTheme = computed(() => (view.value?.review.themeId ? lifeThemeDef(view.value.review.themeId) : undefined))
   const themeDefs = computed(() => (view.value?.themeChoices ?? []).flatMap(id => lifeThemeDef(id) ?? []))
 
