@@ -595,6 +595,52 @@ describe('调色板 · 条槽底只走一支 token', () => {
   })
 })
 
+describe('调色板 · 禁用钮要看得见', () => {
+  /*
+   * 夜主题的禁用印钮原用 paper-dark 当惰性底 —— 白字对底 11.37:1,读得出拒因,
+   * 但 paper-dark 与纸只差 1.25:1:按钮整块融进纸里,
+   * 玩家看不出「这里本该有个按钮,只是现在按不了」。
+   * 禁用态本就该「看得见、按不动」,不是「看不见」。
+   *
+   * 现补回一道描边:轮廓对纸 2.58:1、白字对底仍 11.37:1,两样都保住。
+   */
+  function rule(sel: string): string {
+    const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+  }
+
+  it('夜主题禁用印钮留一道描边,不把 box-shadow 一并抹掉', () => {
+    const body = rule("html[data-theme='dark'] .btn-seal:disabled")
+    expect(body, '找不到夜主题禁用态那条规则').not.toBe('')
+    expect(body, '禁用态连描边都抹了,按钮会融进纸里').not.toMatch(/box-shadow:\s*none/)
+    expect(body, '该留一道能看见的描边').toContain('inset 0 0 0 1px')
+  })
+
+  it('轮廓与纸的对比够看出形状(≥2.5:1)', () => {
+    const lin = (c: number): number => {
+      const s = c / 255
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+    }
+    const L = (rgb: [number, number, number]): number => 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2])
+    const ratio = (a: [number, number, number], b: [number, number, number]): number => {
+      const la = L(a)
+      const lb = L(b)
+      const hi = Math.max(la, lb)
+      const lo = Math.min(la, lb)
+      return (hi + 0.05) / (lo + 0.05)
+    }
+    // 描边 ink-soft(198,191,169) × 0.4 叠在夜纸上(33,31,28)
+    const paper: [number, number, number] = [33, 31, 28]
+    const soft: [number, number, number] = [198, 191, 169]
+    const border: [number, number, number] = [
+      soft[0] * 0.4 + paper[0] * 0.6,
+      soft[1] * 0.4 + paper[1] * 0.6,
+      soft[2] * 0.4 + paper[2] * 0.6
+    ]
+    expect(ratio(border, paper), '描边太淡,看不出按钮形状').toBeGreaterThanOrEqual(2.5)
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)
