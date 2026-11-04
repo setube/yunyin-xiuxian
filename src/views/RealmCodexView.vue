@@ -14,6 +14,21 @@
       <div class="flex items-baseline gap-2">
         <span class="font-kai text-[15px] tracking-[0.25em] text-ink">{{ row.world.name }}</span>
         <span class="text-[10px] text-ink-faint">第 {{ row.world.start + 1 }}–{{ row.world.end + 1 }} 境</span>
+        <!--
+          界域刻度:本界域含几境就几格,已过几格(见 ui/worldProgress)。
+          四个界域各含 9/5/4/3 境,不按同一个尺画。
+        -->
+        <span class="ml-auto flex shrink-0 items-center gap-1.5">
+          <span
+            class="world-pips"
+            :class="{ 'world-pips--here': row.prog.here }"
+            role="img"
+            :aria-label="`${row.prog.name} 已过 ${row.prog.passed}/${row.prog.total} 境`"
+          >
+            <i v-for="(on, i) in worldPips(row.prog)" :key="i" :class="{ on }" />
+          </span>
+          <span class="text-[9px] tabular text-ink-faint">{{ row.prog.passed }}/{{ row.prog.total }}</span>
+        </span>
       </div>
       <p class="mt-0.5 text-[11px] leading-relaxed text-ink-faint">{{ row.world.desc }}</p>
       <div class="mt-2 space-y-2">
@@ -263,6 +278,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useResourcesStore } from '@/stores/resources'
   import { REALMS, WORLDS, realmDef } from '@/data/realms'
+  import { worldPips, worldProgress } from '@/ui/worldProgress'
   import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm } from '@/data/classics'
   import { HEXAGRAMS, TRIGRAMS, trigramDef } from '@/data/yijing'
   import {
@@ -398,12 +414,15 @@
 
   const imageWorldMap = computed(() => IMAGES.map(i => `${i.direction}配${worldName(i.world)}`).join('、'))
 
-  const worldRows = computed(() =>
-    WORLDS.map(w => ({
+  const worldRows = computed(() => {
+    // 界域进度算一次:模板里按 row.prog 取(见 ui/worldProgress)
+    const prog = worldProgress(player.major)
+    return WORLDS.map((w, i) => ({
       world: w,
+      prog: prog[i]!,
       realms: REALMS.map((def, index) => ({ def, index })).filter(c => c.index >= w.start && c.index <= w.end)
     }))
-  )
+  })
 
   function realmName(id: string): string {
     const idx = REALMS.findIndex(r => r.id === id)
