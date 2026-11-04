@@ -2232,19 +2232,20 @@ html[data-theme='dark'] .fruit-curve polyline {
 .world-pips {
   display: inline-flex;
   align-items: center;
-  gap: 1.5px;
+  gap: 2px;
   pointer-events: none;
 }
 .world-pips i {
   display: block;
-  width: 2.5px;
+  width: 3px;
   height: 5px;
   border-radius: 0.5px;
   /* 未到的格:空心中性,不抢已到的 */
-  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.25);
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.2);
 }
+/* 已到的格要压得住未到的:实测 0.45 与 0.25 只差 1.6:1,小格上分不出哪几格亮 */
 .world-pips i.on {
-  background: rgb(var(--color-ink-rgb) / 0.45);
+  background: rgb(var(--color-ink-rgb) / 0.7);
   box-shadow: none;
 }
 /* 当前所在界域:整排提亮一档,与已过 / 未到的界域分开 */
@@ -2260,19 +2261,24 @@ html[data-theme='dark'] .fruit-curve polyline {
 .upgrade-pips {
   display: inline-flex;
   align-items: center;
-  gap: 1.5px;
+  gap: 2px;
   pointer-events: none;
 }
 .upgrade-pips i {
   display: block;
-  width: 3px;
+  width: 4px;
   height: 5px;
   border-radius: 0.5px;
   /* 未到的格:空心中性,不抢已到的 */
-  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.25);
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.2);
 }
+/*
+ * 已到的格要压得住未到的。
+ * 实测原 0.5 与 0.25 只差 1.81:1 —— 十格排开是一条带缺口的粗线,
+ * 「十格里哪一格亮着」在小屏上读不出来。改到 0.7 / 0.2(亮暗 3.55:1、亮纸 5.22:1)。
+ */
 .upgrade-pips i.on {
-  background: rgb(var(--color-ink-rgb) / 0.5);
+  background: rgb(var(--color-ink-rgb) / 0.7);
   box-shadow: none;
 }
 /* 至顶:整排转金,与「还在升」的那几件分开 */
