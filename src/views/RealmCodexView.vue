@@ -97,13 +97,42 @@
             上{{ currentReading.upper.name }}{{ currentReading.upper.symbol }} · 下{{ currentReading.lower.name
             }}{{ currentReading.lower.symbol }}
           </span>
-          <span v-if="currentReading.changed" class="chip-ink !text-[9px]">之{{ currentReading.changed.name }}</span>
           <span class="ml-auto text-[10px] tabular text-ink-faint">
             尚余 <span class="countdown-slot">{{ remainCountdown }}</span>
           </span>
         </p>
-        <div class="mt-1.5 space-y-0.5 font-kai text-[12px] tracking-[0.2em] text-ink-soft">
-          <p v-for="(bar, i) in drawnLines" :key="i">{{ bar }}</p>
+        <!--
+          卦画原先照着 lines 数组正序铺,而 lines 自下而上 —— 整幅是倒的:
+          「下卦为身、上卦为境」在图上正好读反。之卦更只剩一个名字,卦象没画。
+          今按 ui/hexagramFigure 排:上爻在上,爻题另标,动爻记 ○ ×,之卦并排画出。
+        -->
+        <div v-if="figure" class="mt-2 flex items-start gap-3" role="img" :aria-label="figureAria">
+          <div class="hex-figure">
+            <span class="hex-figure__cap font-kai">本卦</span>
+            <div
+              v-for="line in figure.lines"
+              :key="line.position"
+              class="hex-line"
+              :class="{ 'hex-line--moving': line.changing }"
+            >
+              <span class="hex-line__bar" :class="line.yang ? 'hex-line__bar--yang' : 'hex-line__bar--yin'">
+                <template v-if="line.yang"><i /></template>
+                <template v-else><i /><i /></template>
+              </span>
+              <span class="hex-line__label font-kai">{{ line.label }}</span>
+              <span v-if="line.mark" class="hex-line__mark font-kai">{{ line.mark }}</span>
+            </div>
+          </div>
+          <div v-if="figure.changed" class="hex-figure">
+            <span class="hex-figure__cap font-kai">之{{ figure.changedName }}</span>
+            <div v-for="line in figure.changed" :key="line.position" class="hex-line hex-line--changed">
+              <span class="hex-line__bar" :class="line.yang ? 'hex-line__bar--yang' : 'hex-line__bar--yin'">
+                <template v-if="line.yang"><i /></template>
+                <template v-else><i /><i /></template>
+              </span>
+              <span class="hex-line__label font-kai">{{ line.label }}</span>
+            </div>
+          </div>
         </div>
         <p class="mt-1.5 text-[11px] leading-relaxed text-ink-soft">{{ currentReading.hexagram.gist }}</p>
         <p v-for="(line, i) in counsel" :key="`c${i}`" class="mt-0.5 text-[11px] leading-relaxed text-ink-faint">{{ line }}</p>
@@ -352,7 +381,6 @@
   import {
     DIVINATION_COST,
     divinationActiveAt,
-    drawLines,
     readingCounsel,
     readingFromState,
     readingMods
@@ -363,6 +391,7 @@
   import { IMAGES, MANSIONS, type ImageId } from '@/data/xiangxiu'
   import { GATES } from '@/data/qimen'
   import { gateKindMark, palaceBoard } from '@/ui/gateBoard'
+  import { hexFigure, movingCount } from '@/ui/hexagramFigure'
   import { gateRuleSummary } from '@/core/gateRuleText'
   import { cnNumber, formatCountdown, formatGN, formatGap } from '@/utils/format'
   import { gn, gnZero, subClamp } from '@/utils/gnum'
@@ -400,7 +429,18 @@
     const state = currentState.value
     return state ? readingFromState(state) : null
   })
-  const drawnLines = computed(() => (currentReading.value ? drawLines(currentReading.value) : []))
+  /** 卦画:六爻自上而下排好,之卦由动爻反向得出(见 ui/hexagramFigure) */
+  const figure = computed(() => (currentReading.value ? hexFigure(currentReading.value) : null))
+  const figureAria = computed(() => {
+    const fig = figure.value
+    const reading = currentReading.value
+    if (!fig || !reading) return ''
+    const moving = movingCount(fig.lines)
+    return (
+      `本卦${reading.hexagram.name},六爻自上而下:${fig.lines.map(l => l.label).join('、')};` +
+      (moving > 0 ? `动爻${moving}爻,之${reading.changed?.name ?? ''}。` : '六爻不动。')
+    )
+  })
   const counsel = computed(() => (currentReading.value ? readingCounsel(currentReading.value) : []))
   const powerText = computed(() => (currentReading.value ? modsText(readingMods(currentReading.value)) : ''))
   const remainCountdown = computed(() => {

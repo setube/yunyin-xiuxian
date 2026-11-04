@@ -135,11 +135,3 @@ export function readingFromState(state: {
   if (!upper || !lower) return null
   return readingOfLines([...state.lines], [...state.changingAt])
 }
-
-/** 卦画文案,自下而上;动爻带 ○ */
-export function drawLines(reading: HexagramReading): string[] {
-  return reading.lines.map((v, i) => {
-    const bar = v ? '▬▬▬' : '▬ ▬'
-    return reading.changingAt.includes(i + 1) ? `${bar} ○ 动` : bar
-  })
-}
