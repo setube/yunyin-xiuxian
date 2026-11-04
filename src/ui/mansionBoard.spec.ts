@@ -137,7 +137,12 @@ describe('星宿盘 · 五、形制', () => {
     const from = CSS.indexOf('.mansion-board {')
     const seg = CSS.slice(from, CSS.indexOf('/* =================', from))
     for (const m of seg.matchAll(/rgb\(var\(--color-([a-z-]+)-rgb\)/g)) {
-      expect(['ink', 'cinnabar'], `新造了色 ${m[1]}`).toContain(m[1])
+      expect(['ink', 'ink-soft', 'cinnabar'], `新造了色 ${m[1]}`).toContain(m[1])
     }
+  })
+
+  it('廿八宿名走整色 token —— 11px 半透明墨在浅纸上只有 3.4:1', () => {
+    expect(block('.mansion-star')).toContain('ink-soft')
+    expect(block('.mansion-star'), '宿名不许叠透明度').not.toMatch(/rgb\(var\(--color-[a-z-]+-rgb\)\s*\//)
   })
 })

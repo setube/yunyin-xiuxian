@@ -2438,12 +2438,14 @@ html[data-theme='dark'] .fruit-curve polyline {
   border-color: rgb(var(--color-cinnabar-rgb) / 0.45);
   background: rgb(var(--color-cinnabar-rgb) / 0.05);
 }
+/* 廿八宿名是 11px 正文:半透明墨在浅纸上只有 3.4:1,读不清 —— 走整色 token。
+   四象的轻重由外面的框分(今值那象朱框),不靠把字压淡。 */
 .mansion-star {
-  color: rgb(var(--color-ink-rgb) / 0.55);
+  color: rgb(var(--color-ink-soft-rgb));
 }
 /* 今值那一宿:转朱并加描边,在一排七宿里一眼认得出 */
 .mansion-star--today {
-  color: rgb(var(--color-cinnabar-rgb) / 0.95);
+  color: rgb(var(--color-cinnabar-rgb));
   text-shadow: 0 0 3px rgb(var(--color-cinnabar-rgb) / 0.4);
 }
 
