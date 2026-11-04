@@ -1797,6 +1797,55 @@ html[data-theme='dark'] .fruit-curve polyline {
   pointer-events: none;
 }
 
+/* ================= 灵脉预算条与共用横轴(veinShape) =================
+ * 四条脉原先各按本脉上限填条:主脉 42 点填到 60%、副脉 20 点填到 67% ——
+ * 点数多的那条反而显得短,「哪条投得多」读不出来(见 src/ui/veinShape.ts)。
+ * 这里一把尺:四条都按 0→主脉上限,副脉上限在轴上落刻度。
+ * 色取既有语义 token;形制层不吃指针事件。
+ */
+.vein-budget {
+  display: flex;
+  width: 100%;
+  gap: 1px;
+  pointer-events: none;
+}
+/* 一段一脉:段长就是点数,空着的那截就是还能投多少 */
+.vein-budget-seg,
+.vein-budget-free {
+  height: 6px;
+  border-radius: 1px;
+  pointer-events: none;
+}
+.vein-budget-seg {
+  background: var(--vein-tone, rgb(var(--color-ink-rgb) / 0.35));
+}
+/* 还能投的那截:最淡,与已投的分开但不断开 */
+.vein-budget-free {
+  background: rgb(var(--color-ink-rgb) / 0.07);
+}
+
+.vein-axis {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.06);
+  pointer-events: none;
+}
+.vein-axis-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--vein-tone, rgb(var(--color-ink-rgb) / 0.4));
+}
+/* 副脉上限刻度:轴上同一位,四条横条共用它 */
+.vein-axis-tick {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  background: rgb(var(--color-ink-faint-rgb) / 0.5);
+  pointer-events: none;
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
