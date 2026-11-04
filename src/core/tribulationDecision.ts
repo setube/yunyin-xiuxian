@@ -48,6 +48,14 @@ export interface TribulationPlan {
   /** 风险点(人类可读) */
   risks: string[]
   verdict: 'danger' | 'hard' | 'ok' | 'easy'
+  /**
+   * 逐波推演的低点(期望值,无随机浮动)。
+   *
+   * 决意前最该知道的是「最险会掉到哪」与「第几道不支」,而这两项原只在
+   * buildTribulationPlan 内部用来算 verdict,算完即弃 —— 玩家只读到一句「劫势:可渡」。
+   * 现已随计划一并给出,由界面自行取用(见 ui/tribForecast)。
+   */
+  trace: TribulationTrace
 }
 
 const VERDICT_LABEL: Record<TribulationPlan['verdict'], string> = {
@@ -368,7 +376,8 @@ export function buildTribulationPlan(
     expectedRate,
     prep,
     risks: riskLines(def, prep, trace, relief),
-    verdict
+    verdict,
+    trace
   }
 }
 

@@ -50,6 +50,20 @@
     <p v-if="tribWave" class="mt-1 text-[10px] text-ink-faint tabular">
       共 {{ tribWave.waves }} 道,单波 {{ formatPercent(tribWave.min, 0) }}–{{ formatPercent(tribWave.max, 0) }} 最大生命(合计约 {{ formatPercent(tribWave.total, 0) }})
     </p>
+    <!--
+      逐波推演:决意前最该知道的是「最险会掉到哪」与「第几道不支」。
+      core 的 traceTribulation 早算出了这两项,原只用来定「劫势」一档、算完即弃 ——
+      界面上只有一句结论,没有结论的来路(见 ui/tribForecast)。
+    -->
+    <div v-if="forecast" class="mt-2">
+      <div class="flex items-baseline justify-between gap-2 text-[10px]">
+        <span class="text-ink-faint">推演水位</span>
+        <span class="tabular" :class="FORECAST_COLOR[forecast.tone]">{{ forecast.line }}</span>
+      </div>
+      <span class="trib-forecast mt-1" :class="`trib-forecast--${forecast.tone}`" aria-hidden="true">
+        <i :style="{ width: `${forecast.lowPct * 100}%` }" />
+      </span>
+    </div>
 
     <div class="ink-divider my-1.5" />
     <p class="text-[10px] leading-relaxed text-ink-faint"><span class="text-ink-soft">主要风险:</span>{{ tribPlan.risks.join('; ') }}</p>
@@ -66,13 +80,23 @@
 </template>
 
 <script setup lang="ts">
+  import { computed } from 'vue'
   import { ELEMENTS } from '@/data/linggen'
   import { formatNum, formatPercent } from '@/utils/format'
   import { useTribulation } from '@/composables/useTribulation'
+  import { forecastOf, type TribForecast } from '@/ui/tribForecast'
 
   /** 与摘要卡同读 useTribulation,不各算一份;数全来自 core/tribulationDecision */
   const props = defineProps<{ needTribulation: boolean; qiCost: number }>()
   const { tribPlan, tribLedger, worldStep, tribWeatherLine, tribWave, reliefRoots } = useTribulation(() => props.needTribulation)
+
+  /** 逐波推演读数(见 ui/tribForecast);道数取 tribWave,不另数 */
+  const FORECAST_COLOR: Record<TribForecast['tone'], string> = {
+    safe: 'text-jade',
+    graze: 'text-amber-ink',
+    danger: 'text-cinnabar'
+  }
+  const forecast = computed(() => forecastOf(tribPlan.value, tribWave.value?.waves ?? 0))
 
   const PREP_NAMES = { guard: '护持', sustain: '恢复', resist: '抗性', burst: '爆发' } as const
   const PREP_STARS = ['·', '✧', '✧✧', '✧✧✧'] as const

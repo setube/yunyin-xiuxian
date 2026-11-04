@@ -2449,6 +2449,36 @@ html[data-theme='dark'] .fruit-curve polyline {
   color: rgb(var(--color-cinnabar-rgb));
 }
 
+/* ================= 渡劫推演水位(tribForecast) =================
+ * 决意前最该知道「最险会掉到哪」,而原界面只有一句「劫势:可渡」。
+ * 一根水位条:开到哪就是推演的最低点。三档色与推演读数同源,不另判。
+ * 战后那排波次柱(ui/tribWave)画的是已发生的事,这根画的是将要发生的事。
+ */
+.trib-forecast {
+  position: relative;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.12);
+}
+.trib-forecast i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+/* 稳过 · 险过 · 不支:色由档位给,文字与条同色同源 */
+.trib-forecast--safe i {
+  background: rgb(var(--color-jade-rgb) / 0.9);
+}
+.trib-forecast--graze i {
+  background: rgb(var(--color-amber-ink-rgb) / 0.9);
+}
+.trib-forecast--danger i {
+  background: rgb(var(--color-cinnabar-rgb) / 0.9);
+}
+
 /* ================= 五维刻度(ratingGauge) =================
  * 五维评级原只给一排星(★★★☆☆):星级是离散的,「3 星」与「3 星」之间差多少读不出来。
  * core 早已算好连续得分与那道阈值表,这里把它落成一根条:
