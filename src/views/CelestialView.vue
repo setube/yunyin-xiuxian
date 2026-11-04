@@ -158,8 +158,19 @@
           <p class="font-kai text-[12px] tracking-wider text-ink">获取</p>
           <p class="text-ink-faint">{{ daoSourceDialog().gains.join(' · ') }}</p>
         </div>
-        <p class="border-l-2 border-cinnabar/60 pl-2 text-[11px] text-cinnabar">
-          {{ daoSourceDialog().lifecycle }}
+        <!--
+          生命周期:原先只是一行左边框色各写各的。roleTone 早已在数据里表达「本世 / 跨世」,
+          却没人读 —— 这里按它挂形制(见 ui/resourceTone),与道果那扇同一套。
+        -->
+        <p
+          class="flex items-start gap-2 border-l-2 pl-2 text-[11px]"
+          :class="`res-tone res-tone--${toneOf(daoSourceDialog().roleTone).tone}`"
+        >
+          <span class="res-tone__seal shrink-0 font-kai" aria-hidden="true">{{ toneOf(daoSourceDialog().roleTone).seal }}</span>
+          <span class="min-w-0">
+            <span class="block text-ink">{{ daoSourceDialog().lifecycle }}</span>
+            <span class="block text-[10px] text-ink-faint">{{ toneOf(daoSourceDialog().roleTone).note }}</span>
+          </span>
         </p>
       </div>
       <template #footer>
@@ -201,6 +212,7 @@
     markEndgameTutorialSeen,
     markResourceDialogSeen
   } from '@/core/resourceGuidance'
+  import { resourceTone as toneOf } from '@/ui/resourceTone'
 
   const player = usePlayerStore()
   const inventory = useInventoryStore()
