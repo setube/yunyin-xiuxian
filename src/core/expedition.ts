@@ -2,6 +2,7 @@
  * 路线远征 —— 天道契约 × 逐层择路 × 道途深化 × 天道变数
  * 状态机:入界战 → 三层二择一 → 界主;层间可回凡界换构筑再续行
  */
+import { rateStarsText, rateText } from '@/ui/rateRank'
 import type { CelestialWorldDef, CombatantSnap, CombatRules, PactDef, StatMods, WorldFoeShape, WorldRouteNode } from '@/types'
 import { rng } from '@/utils/random'
 import { mulberry32, RandomService } from '@/utils/random'
@@ -541,11 +542,11 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
     if (wins / 5 >= 0.4) viableStyles += 1
   }
 
-  const starN = pRate >= 0.85 ? 5 : pRate >= 0.6 ? 4 : pRate >= 0.4 ? 3 : pRate >= 0.15 ? 2 : 1
+  // 档位与说法收在 ui/rateRank:与 core/compare、core/lab 同一份阈值,不在这里再写一遍
   return {
-    difficulty: pRate >= 0.85 ? '稳操胜券' : pRate >= 0.6 ? '略占上风' : pRate >= 0.4 ? '胜负各半' : pRate >= 0.15 ? '凶险' : '九死一生',
+    difficulty: rateText(pRate),
     judgementLines: celestialJudgementLines(player.celestialStats.mods, player.major, world.anchorTier),
     viableStyles,
-    stars: '★'.repeat(starN) + '☆'.repeat(5 - starN)
+    stars: rateStarsText(pRate)
   }
 }
