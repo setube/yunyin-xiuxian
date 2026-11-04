@@ -41,7 +41,7 @@ import { personalityEffects } from './petPersonality'
 // earlyGameService(连胜)与 worldMemory(宿敌)各有一个 recordLoss,连胜那份走别名以免遮蔽
 import { recordWin as recordStreakWin, recordLoss as recordStreakLoss, isRetreating } from './earlyGameService'
 import { currentRegionEvent, regionEventDef, rollRegionEvent } from './regionEvent'
-import { endgameBusy } from './endgameActivity'
+import { BUSY_REASON, endgameBusy } from './endgameActivity'
 import { noteEnemy } from './loreService'
 import { noteTaboo } from './samsaraService'
 import { useInventoryStore } from '@/stores/inventory'
@@ -73,16 +73,16 @@ export function startExploration(regionId: string, mode: ExploreMode): boolean {
   if (!region || player.dead) return false
   // 闭关与历练双向互斥(另一半在 startRetreat)
   if (isRetreating()) {
-    ui.toast('闭关中', 'warn')
+    ui.toast(BUSY_REASON.retreat, 'warn')
     return false
   }
   // 拒绝须有 toast,不得静默 return false
   if (adventure.session) {
-    ui.toast('历练在途', 'warn')
+    ui.toast(BUSY_REASON.exploration, 'warn')
     return false
   }
   if (player.secretRealm) {
-    ui.toast('身在秘境', 'warn')
+    ui.toast(BUSY_REASON.secretRealm, 'warn')
     return false
   }
   // 远征在途不许开历练;判据与拒因取 endgameBusy,不手抄。

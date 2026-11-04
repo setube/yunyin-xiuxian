@@ -488,6 +488,38 @@ describe('文案数值对账 · 视图不手抄数量', () => {
   })
 
   /**
+   * 四个在途状态词以 endgameActivity 的 BUSY_REASON 为准(AGENTS.md 明文)。
+   *
+   * 有四处拒绝路径并不经过 endgameBusy(闭关与历练互斥的另一半、秘境入口自己那道门、
+   * 首页状态行),从前各自手抄一份字面量 —— 改词就得全仓搜,漏一处就出现两套说法。
+   *
+   * 故障注入:把任一处改回字面量,本条红。
+   */
+  it('四个在途状态词只有一份出处,各处取 BUSY_REASON', () => {
+    const SITES = [
+      ['../core/exploration.ts', 'startExploration'],
+      ['../core/secretRealm.ts', '秘境入口'],
+      ['../ui/homeStatus.ts', '首页状态行'],
+      ['../core/endgameActivity.ts', '判据本体']
+    ] as const
+    const WORDS = ['闭关中', '远征在途', '身在秘境', '历练在途']
+    for (const [path, name] of SITES) {
+      const body = src(path)
+      for (const w of WORDS) {
+        // 判据本体是唯一允许写字面量的地方
+        if (name === '判据本体') continue
+        expect(body, `${name}又手抄了「${w}」`).not.toContain(`'${w}'`)
+      }
+    }
+    // 判据本体确实定义了四个词
+    const hub = src('../core/endgameActivity.ts')
+    for (const w of ['闭关中', '远征在途', '身在秘境', '历练在途']) {
+      expect(hub, `BUSY_REASON 缺「${w}」`).toContain(`'${w}'`)
+    }
+    expect(hub, '该导出成常量').toContain('export const BUSY_REASON')
+  })
+
+  /**
    * 词条名是玩家在行囊卡、转移面板、战报里认词条的唯一凭据:
    * 曾有两个都叫「破妄」(增伤 dmg1 与 命中 ac2),同屏两个「破妄」加不同效果,分不清谁是谁。
    * 故障注入:把任一词条名改成与另一条相同,本条红。
