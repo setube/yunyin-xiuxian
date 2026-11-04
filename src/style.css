@@ -1797,6 +1797,32 @@ html[data-theme='dark'] .fruit-curve polyline {
   pointer-events: none;
 }
 
+/* ================= 师承契合十格印(mentorShare) =================
+ * 弹窗原先写「当下契合 +1.00 / 1.0」:四门里三门都满格,读不出差别
+ * —— 那个数是钳位后的结果(原始分 8.69 / 2.55 / 7.27),且只能得非负值,
+ * 「未纯」那一档永远打不出来(见 src/ui/mentorShare.ts)。
+ * 现改为四门分账的份额,落成十格:可数的形制,不靠颜色连续量。
+ * 色取既有语义 token;形制层不吃指针事件。
+ */
+.mentor-pips {
+  display: inline-flex;
+  gap: 2px;
+  pointer-events: none;
+}
+.mentor-pips i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  /* 未到的格子:空心中性,不抢已到的格 */
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 0.35;
+}
+.mentor-pips i.is-on {
+  background: currentColor;
+  opacity: 1;
+}
+
 /* ================= 灵脉预算条与共用横轴(veinShape) =================
  * 四条脉原先各按本脉上限填条:主脉 42 点填到 60%、副脉 20 点填到 67% ——
  * 点数多的那条反而显得短,「哪条投得多」读不出来(见 src/ui/veinShape.ts)。

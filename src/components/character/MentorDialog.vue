@@ -5,11 +5,17 @@
       <p class="text-[12px] leading-relaxed text-ink-soft">
         「{{ mentorVer.line }}」
       </p>
-      <p class="text-[11px] text-ink-faint tabular">
-        契合度
-        <span :class="mentorVer.affinity > 0.2 ? 'text-jade' : mentorVer.affinity < -0.2 ? 'text-cinnabar' : 'text-ink-faint'">
-          {{ mentorVer.affinity.toFixed(2) }} / 1.0
+      <!--
+        契合度:十格印 + 档名。原先是一个钳位后的实数,四门里三门都满格 ——
+        那个数是钳位后的结果,读不出差别(见 src/ui/mentorShare.ts)。
+        份额是四门分账,加起来才 1,故这一门几格就是它占你多少。
+      -->
+      <p class="flex items-center gap-2 text-[11px] text-ink-faint">
+        <span>契合</span>
+        <span class="mentor-pips shrink-0" :class="TIER_CLASS[verMark.tier]" aria-hidden="true">
+          <i v-for="(on, i) in sharePips(verMark.pips)" :key="i" :class="{ 'is-on': on }"></i>
         </span>
+        <span class="tabular" :class="TIER_CLASS[verMark.tier]">{{ TIER_LABEL[verMark.tier] }} {{ verMark.pct }}%</span>
       </p>
       <p class="text-[11px] leading-relaxed text-ink-faint">
         师承词条:{{ mentorVer.mentor ? modsText(mentorVer.mentor.mods) : '—' }}
@@ -31,8 +37,13 @@
         </p>
         <p class="mt-0.5 text-[11px] text-ink-faint">{{ m!.desc }}</p>
         <p class="mt-0.5 text-[11px] text-azure tabular">{{ modsText(m!.mods) }}</p>
-        <p class="mt-0.5 text-[10px] tabular" :class="mentorAffinityChip(m!.id)">
-          当下契合 {{ mentorAffinityText(m!.id) }}
+        <p class="mt-0.5 flex items-center gap-2 text-[10px]">
+          <span class="mentor-pips shrink-0" :class="TIER_CLASS[affinityMark(m!.id).tier]" aria-hidden="true">
+            <i v-for="(on, i) in sharePips(affinityMark(m!.id).pips)" :key="i" :class="{ 'is-on': on }"></i>
+          </span>
+          <span class="tabular" :class="TIER_CLASS[affinityMark(m!.id).tier]">
+            当下{{ TIER_LABEL[affinityMark(m!.id).tier] }} {{ affinityMark(m!.id).pct }}%
+          </span>
         </p>
       </button>
     </div>
@@ -45,10 +56,11 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { usePlayerStore } from '@/stores/player'
-  import { mentorVerdict, mentorChoices } from '@/core/mentorService'
+  import { mentorVerdict, mentorChoices, mentorTopShare, type MentorVerdict } from '@/core/mentorService'
   import { mentorHint } from '@/core/fortuneChain'
   import { modsText } from '@/data/statNames'
   import type { MentorId } from '@/data/mentors'
+  import { shareMark, sharePips, TIER_CLASS, TIER_LABEL } from '@/ui/mentorShare'
   import BaseModal from '@/components/common/BaseModal.vue'
 
   /**
@@ -62,29 +74,31 @@
   const mentorVer = computed(() => mentorVerdict(player.mentor))
   /** 纯静态数据,setup 只算一次 */
   const mentorChoicesList = mentorChoices()
+
   /**
-   * 拜师前预读契合度,与拜后 verdict 同一函数。
-   * 契合取值 -1~1(见 mentorService),非百分比,显示带标尺「/ 1.0」。
+   * 拜师前预读契合,与拜后 verdict 同一函数。
+   * 四门分账:份额之和为 1,故四张卡上的十格印可以直接横向比。
    * 备选师尊一次算齐进 Map,模板同一人只读一份。
    */
-  const mentorAffinityMap = computed(() => {
-    const map = new Map<MentorId, number>()
-    for (const m of mentorChoicesList) map.set(m.id, mentorVerdict(m.id)?.affinity ?? 0)
+  const verdictMap = computed(() => {
+    const map = new Map<MentorId, MentorVerdict>()
+    for (const m of mentorChoicesList) {
+      const v = mentorVerdict(m.id)
+      if (v) map.set(m.id, v)
+    }
     return map
   })
-  function mentorAffinity(mentorId: MentorId): number {
-    return mentorAffinityMap.value.get(mentorId) ?? 0
+  /** 四门最大份额:判未纯的标尺,与 service 内同一条判据 */
+  const topShare = computed(() => mentorTopShare())
+  /** 门的数量:均分由它算,不手挑门槛 */
+  const domains = mentorChoicesList.length
+
+  function affinityMark(mentorId: MentorId) {
+    const v = verdictMap.value.get(mentorId)
+    return shareMark(v?.share ?? 0, topShare.value, domains)
   }
-  function mentorAffinityText(mentorId: MentorId): string {
-    const a = mentorAffinity(mentorId)
-    return `${a > 0 ? '+' : ''}${a.toFixed(2)} / 1.0`
-  }
-  function mentorAffinityChip(mentorId: MentorId): string {
-    const a = mentorAffinity(mentorId)
-    if (a > 0.2) return 'text-jade'
-    if (a < -0.2) return 'text-cinnabar'
-    return 'text-ink-faint'
-  }
+  const verMark = computed(() => shareMark(mentorVer.value?.share ?? 0, topShare.value, domains))
+
   // 机缘链:机缘取/弃记忆 → 师承推荐
   const hintMentor = computed(() => mentorHint())
 </script>

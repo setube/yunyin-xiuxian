@@ -44,7 +44,8 @@ describe('师承(mentor)', () => {
     const verdict = mentorVerdict(player.mentor)
     expect(verdict).not.toBeNull()
     console.log(`[师承叙事] ${verdict!.line}`)
-    expect(verdict!.affinity).toBeGreaterThan(0)
+    expect(verdict!.share).toBeGreaterThan(0)
+    expect(verdict!.tier).toBe('aligned')
     expect(verdict!.line).toContain('剑')
   })
 
@@ -61,8 +62,11 @@ describe('师承(mentor)', () => {
     // 人物页拜师卡用的就是这一行
     const verdict = mentorVerdict('swordsman')
     expect(verdict).not.toBeNull()
-    expect(verdict!.affinity).toBeGreaterThan(0)
+    expect(verdict!.share).toBeGreaterThan(0)
     const other = mentorVerdict('alchemist')
-    expect(other!.affinity).toBeLessThan(verdict!.affinity)
+    expect(other!.share).toBeLessThan(verdict!.share)
+    // 只杀不炼:剑修契合,丹修未纯 —— 两档都可判
+    expect(verdict!.tier).toBe('aligned')
+    expect(other!.tier).toBe('unaligned')
   })
 })
