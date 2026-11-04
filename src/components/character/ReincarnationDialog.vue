@@ -64,6 +64,39 @@
         <p v-if="view.toNextStage !== null" class="mt-1 text-[11px] text-ink-faint tabular">
           下一境地 · 宿慧尚差 {{ view.toNextStage }}
         </p>
+        <!--
+          这段原只写「宿慧 +40 / 共计 400 / 第四境地 / 尚差 120」——
+          数都摆着,却从不说什么能力是这些宿慧换来的(见 ui/samsaraPowers)。
+        -->
+        <div class="mt-2 border-t border-ink/10 pt-2">
+          <p class="flex items-baseline justify-between text-[10px]">
+            <span class="text-ink-faint">宿慧所得</span>
+            <span class="tabular text-ink-faint">{{ powerTally(stageIndexOf(view.stageId)).owned }} / {{ powerTally(stageIndexOf(view.stageId)).total }}</span>
+          </p>
+          <!-- 最快将至的那项单独点名:下面虚框列三行,哪一项最先到手仍要自己比阶数 -->
+          <p v-if="nextPower(stageIndexOf(view.stageId))" class="mt-0.5 text-[10px] text-ink-faint">
+            再转一世可得 <span class="text-ink-soft">{{ nextPower(stageIndexOf(view.stageId))!.name }}</span>
+          </p>
+          <ul class="mt-1 space-y-0.5">
+            <li
+              v-for="pw in samaraPowers(stageIndexOf(view.stageId)).owned"
+              :key="pw.id"
+              class="flex items-baseline gap-1.5 text-[11px] leading-relaxed"
+            >
+              <span class="samara-power shrink-0 font-kai text-[10px]" :class="`samara-power--${pw.kind}`">{{ POWER_KIND_LABEL[pw.kind] }}</span>
+              <span class="min-w-0 text-ink-soft">{{ pw.name }}</span>
+            </li>
+            <li
+              v-for="pw in upcomingPowers(stageIndexOf(view.stageId), 3)"
+              :key="pw.id"
+              class="flex items-baseline gap-1.5 text-[11px] leading-relaxed text-ink-faint"
+            >
+              <span class="samara-power samara-power--locked shrink-0 font-kai text-[10px]">{{ POWER_KIND_LABEL[pw.kind] }}</span>
+              <span class="min-w-0">{{ pw.name }}</span>
+              <span class="shrink-0 text-[10px] tabular">· {{ pw.fromStage }} 阶</span>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <p class="mt-3 text-[11px] leading-relaxed text-ink-faint">
@@ -264,6 +297,8 @@
   import { talentMark, talentPips } from '@/ui/talentMark'
   import { growthGauge } from '@/ui/growthGauge'
   import { rootMarks, rootPips } from '@/ui/rootMark'
+  import { POWER_KIND_LABEL, nextPower, powerTally, samaraPowers, upcomingPowers } from '@/ui/samsaraPowers'
+  import { SAMSARA_STAGES } from '@/data/samsara'
   import { modsText } from '@/data/statNames'
   import { lifeThemeDef, TABOO_NAMES } from '@/data/lifeThemes'
   import { heritageGroups } from '@/core/samsaraAudit'
@@ -303,6 +338,11 @@
 
   /** 来世灵根的倍率刻度:与建号页同一份(见 ui/growthGauge) */
   const nextGrowth = computed(() => growthGauge(view.value?.nextLinggen.growthMult ?? 1))
+  /** 阶序:view 只带 stageId(如 st_first),按 data 的阶序表反查 */
+  function stageIndexOf(stageId: string): number {
+    return SAMSARA_STAGES.find(s => s.id === stageId)?.index ?? 0
+  }
+
   /** 来世灵根的资质刻度:与建号页、人物页同一份(见 ui/rootMark) */
   const nextRootMarks = computed(() => rootMarks(view.value?.nextLinggen.roots ?? []))
   const nextRootMark = (el: string) => nextRootMarks.value.find(m => m.element === el)
