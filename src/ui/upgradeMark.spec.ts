@@ -25,6 +25,36 @@ function block(selector: string): string {
   return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
 }
 
+describe('强化刻度 · 零、已到的格要压得住未到的', () => {
+  /*
+   * 实测:亮格 ink/0.5 与未到格的描边 ink/0.25 只差 1.81:1。
+   * 十格排成一条带缺口的粗线 —— 「十格里哪一格亮着」在小屏上读不出来,
+   * 而这排刻度存在的唯一理由就是让人读出「还差几格」。
+   */
+  it('亮格与未到格的明度差够读', () => {
+    const on = block('.upgrade-pips i.on')
+    const off = block('.upgrade-pips i')
+    expect(on, '缺亮格样式').not.toBe('')
+    expect(off, '缺未到格样式').not.toBe('')
+    // 亮格取 0.7、未到格描边 0.2:实算亮暗 3.55:1
+    expect(on, '亮格要够实').toMatch(/ink-rgb\)\s*\/\s*0\.7/)
+    expect(off, '未到格要够虚').toMatch(/ink-rgb\)\s*\/\s*0\.2/)
+  })
+
+  it('格够宽、缝够开 —— 3px 挨 1.5px 会糊成一条', () => {
+    const cell = block('.upgrade-pips i')
+    expect(cell, '格宽至少 4px').toContain('width: 4px')
+    expect(block('.upgrade-pips'), '缝至少 2px').toContain('gap: 2px')
+  })
+
+  it('界域刻度是同一类读法,同样要压得住', () => {
+    // 两套刻度长一样、读法一样,只改一处会让同一屏出现两种深浅
+    const on = block('.world-pips i.on')
+    expect(on, '界域已到的格也要够实').toMatch(/ink-rgb\)\s*\/\s*0\.7/)
+    expect(block('.world-pips i'), '界域未到格同款').toMatch(/ink-rgb\)\s*\/\s*0\.2/)
+  })
+})
+
 describe('强化刻度 · 一、格数随上限变', () => {
   it('上限 10 画十格,上限 12 画十二格', () => {
     expect(upgradePips(upgradeMark(3, 10))).toHaveLength(10)
