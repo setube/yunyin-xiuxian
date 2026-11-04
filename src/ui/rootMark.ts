@@ -55,9 +55,3 @@ export function rootPips(pips: number): boolean[] {
   const n = Number.isFinite(pips) ? Math.max(0, Math.min(APTITUDE_PIPS, Math.round(pips))) : 0
   return Array.from({ length: APTITUDE_PIPS }, (_, i) => i < n)
 }
-
-/** 主根名:资质最高那一根的元素;空表返回 null */
-export function topRootElement(marks: readonly RootMark[]): SpiritRoot['element'] | null {
-  const top = marks.find(m => m.top)
-  return top ? top.element : null
-}

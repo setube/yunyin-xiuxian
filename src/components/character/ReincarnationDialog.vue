@@ -127,6 +127,20 @@
               {{ ELEMENTS[root.element].char }}
             </span>
             <span class="tabular text-[11px] text-ink-soft">资质 {{ root.aptitude }}</span>
+            <!--
+              资质刻度:多根时哪一根是主根,原先得逐个读数字再比。
+              建号页与人物页都有这根,唯独这里没有 —— 而这正是玩家决定要不要「逆天改命」的地方
+              (见 ui/rootMark)。
+            -->
+            <span
+              class="root-pips"
+              :class="{ 'root-pips--top': nextRootMark(root.element)?.top }"
+              :style="{ '--root-tone': ELEMENTS[root.element].color }"
+              role="img"
+              :aria-label="`资质 ${root.aptitude}`"
+            >
+              <i v-for="(on, i) in rootPips(nextRootMark(root.element)?.pips ?? 0)" :key="i" :class="{ on }" />
+            </span>
           </div>
         </div>
         <!--
@@ -249,6 +263,7 @@
   import { talentDef, TALENT_GRADE_COLORS, TALENT_GRADE_NAMES } from '@/data/talents'
   import { talentMark, talentPips } from '@/ui/talentMark'
   import { growthGauge } from '@/ui/growthGauge'
+  import { rootMarks, rootPips } from '@/ui/rootMark'
   import { modsText } from '@/data/statNames'
   import { lifeThemeDef, TABOO_NAMES } from '@/data/lifeThemes'
   import { heritageGroups } from '@/core/samsaraAudit'
@@ -288,6 +303,9 @@
 
   /** 来世灵根的倍率刻度:与建号页同一份(见 ui/growthGauge) */
   const nextGrowth = computed(() => growthGauge(view.value?.nextLinggen.growthMult ?? 1))
+  /** 来世灵根的资质刻度:与建号页、人物页同一份(见 ui/rootMark) */
+  const nextRootMarks = computed(() => rootMarks(view.value?.nextLinggen.roots ?? []))
+  const nextRootMark = (el: string) => nextRootMarks.value.find(m => m.element === el)
   const GROWTH_TONE: Record<string, string> = {
     low: 'text-ink-faint',
     mid: 'text-ink-soft',
