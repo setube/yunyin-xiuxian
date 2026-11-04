@@ -19,6 +19,7 @@ const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
 const CELESTIAL = readFileSync(resolve(ROOT, 'src/views/CelestialView.vue'), 'utf-8')
 const FURNACE = readFileSync(resolve(ROOT, 'src/components/celestial/FurnaceDialog.vue'), 'utf-8')
+const TUTORIAL = readFileSync(resolve(ROOT, 'src/components/celestial/TutorialDialog.vue'), 'utf-8')
 
 describe('生命周期形制 · 一、两档分得开', () => {
   it('本世与跨世各有自己的签与说法', () => {
@@ -77,6 +78,14 @@ describe('生命周期形制 · 四、两扇弹窗同用一份', () => {
     expect(CELESTIAL, '道源该走 ui/resourceTone').toContain("from '@/ui/resourceTone'")
     expect(CELESTIAL, '道源该按 roleTone 取形制').toContain('toneOf(daoSourceDialog().roleTone)')
     expect(CELESTIAL, '道源不该再硬写边框色').not.toMatch(/class="border-l-2 border-cinnabar\/60 pl-2/)
+  })
+
+  it('登临真仙的导览也走同一份 —— 那里原先另写一套「此世 / 跨世」', () => {
+    // 同一个事实(道源此世耗、道果跨世留)原在三处各有说法;导览这里此前也硬写着色
+    expect(TUTORIAL, '导览该走 ui/resourceTone').toContain("from '@/ui/resourceTone'")
+    expect(TUTORIAL, '两行的说法与色都该从 resourceTone 取').toContain('resourceTone(')
+    expect(TUTORIAL, '导览不该再硬写「此世」「跨世」两个字').not.toMatch(/>此世</)
+    expect(TUTORIAL).not.toMatch(/>跨世</)
   })
 
   it('道果弹窗同样接上,不再各写一个色', () => {
