@@ -71,6 +71,16 @@
      --color-paper-lifted-rgb 预计算 paper 92% + white 8% */
   --shadow-ink-rgb: 41 39 34;
   --color-paper-lifted-rgb: 244 240 230;
+
+  /*
+   * 条槽底:进度条、刻度轴、分布条这些「空槽」的共用底色。
+   * 原先十一条槽各写各的墨深(0.06 / 0.08 / 0.10 / 0.12),几何却是同一类 ——
+   * 3~6px 高的圆角条。深浅差已低于可辨阈值(最悬殊那对只差 1.08:1),
+   * 但「新加一条槽该取哪个值」没有答案,只能照抄邻近那段。
+   * 收成一支 alpha token,色仍走 --color-ink-rgb —— 夜间主题翻转墨色时槽底自动跟着走,
+   * 不必再为夜主题另写一行。
+   */
+  --track-ink-alpha: 0.1;
 }
 
 @keyframes rise-in {
@@ -598,7 +608,7 @@ html[data-theme='dark'] .btn-seal:disabled {
 }
 
 .track-ink {
-  background: rgb(var(--color-ink-rgb) / 0.10);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
   border-radius: 999px;
   overflow: hidden;
 }
@@ -1686,7 +1696,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   display: block;
   height: 3px;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.12);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
   pointer-events: none;
 }
 .trial-tier::before {
@@ -1721,7 +1731,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   display: block;
   height: 3px;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.12);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
 }
 .realm-axis::before {
   content: '';
@@ -1757,7 +1767,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   display: block;
   height: 3px;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.1);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
   pointer-events: none;
   overflow: hidden;
 }
@@ -1871,7 +1881,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   position: relative;
   height: 4px;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.06);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
   pointer-events: none;
 }
 .vein-axis-fill {
@@ -1966,7 +1976,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   display: block;
   height: 4px;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.1);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
   pointer-events: none;
 }
 .bond-meter-fill {
@@ -2037,7 +2047,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   width: 28px;
   height: 4px;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.12);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
   pointer-events: none;
 }
 .fight-bar-fill {
@@ -2475,7 +2485,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   height: 4px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.12);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
 }
 .trib-forecast i {
   display: block;
@@ -2504,7 +2514,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   display: block;
   height: 3px;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.12);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
   pointer-events: none;
 }
 .growth-gauge i {
@@ -2543,7 +2553,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   height: 6px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.08);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
 }
 .tier-bar__seg {
   position: absolute;
@@ -2577,7 +2587,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   height: 3px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgb(var(--color-ink-rgb) / 0.12);
+  background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
 }
 .rating-gauge i {
   display: block;
