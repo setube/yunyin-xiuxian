@@ -2071,8 +2071,8 @@ html[data-theme='dark'] .fruit-curve polyline {
   width: 2.5px;
   height: 6px;
   border-radius: 1px;
-  /* 未到的格:空心中性,不抢已到的格 */
-  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.25);
+  /* 未到的格:空心中性,不抢已到的。原 0.25 与金色实心只差 2.15:1,排开分不出哪几格亮 */
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.2);
 }
 .appr-pips i.on {
   background: rgb(var(--color-gold-ink-rgb) / 0.8);
@@ -2163,8 +2163,8 @@ html[data-theme='dark'] .fruit-curve polyline {
   width: 3px;
   height: 6px;
   border-radius: 0.5px;
-  /* 未到的格:空心中性,不抢已到的 */
-  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.3);
+  /* 未到的格:空心中性,不抢已到的。原 0.3 与靛色实心只差 1.74:1 */
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.2);
 }
 .gongfa-pips i.on {
   background: rgb(var(--color-azure-rgb) / 0.75);
