@@ -1,5 +1,7 @@
 /** 成就方向:未达成者不现名目,只给一条方向标签;方向由条件本身推出,不另写清单 */
 import type { AchvCond, CounterKey } from '@/types'
+import { REALMS } from '@/data/realms'
+import { QUALITIES } from '@/data/qualities'
 
 /** 计数器 → 方向。新增 CounterKey 须在此补齐(spec 钉:achievementHint.spec) */
 export const COUNTER_DIRECTIONS: Record<CounterKey, string> = {
@@ -35,6 +37,36 @@ export function achievementDirection(cond: AchvCond): string {
       return '掉落与鉴宝'
     case 'custom':
       return '历程节点'
+  }
+}
+
+/**
+ * 未达成成就的引导语:「方向 + 这道门槛」。
+ *
+ * 原先进给方向(「境界精进」),同一组里六条未达成成就写成完全一样的字 ——
+ * 「???」不现名目是防剧透,六条提示一字不差却让人无从分辨它们差在哪。
+ * 条件本身带着门槛(`major` / `rank` / `value`),那是**要走到哪**而不是**叫什么名字**:
+ * 说出来不剧透名目,却让人知道还差什么。
+ *
+ * 门槛名一律取数据层(REALMS / qualityDef),不在这里手抄。
+ */
+export function achievementGuide(cond: AchvCond): string {
+  const dir = achievementDirection(cond)
+  switch (cond.type) {
+    case 'counter':
+      // 计数类的门槛是「多少次」,写出来比只写方向有用
+      return cond.value > 0 ? `${dir} · ${cond.value} 次` : dir
+    case 'realm': {
+      const realm = REALMS[cond.major]
+      return realm ? `${dir} · ${realm.name}` : dir
+    }
+    case 'quality': {
+      const q = QUALITIES.find(x => x.rank === cond.rank)
+      return q ? `${dir} · ${q.name}` : dir
+    }
+    case 'custom':
+      // custom 的 key 是历程节点标识,写出来会剧透;只留方向
+      return dir
   }
 }
 
