@@ -9,7 +9,12 @@
     <!-- 最上档质感的静态形制:四角御纹(与品阶角饰位置错开),动效只是加成 -->
     <span v-if="luster" class="luster-cornice luster-cornice--tile" aria-hidden="true" />
     <span v-if="luster" class="luster-sheen" aria-hidden="true" />
-    <span v-if="props.equipped" class="absolute left-0.5 top-0.5 font-kai text-[8px] leading-none text-jade">佩</span>
+    <!--
+      佩:原在左上角 (3,3),与品阶角饰的左上角 (4,4)–(15,15) 整块重叠 ——
+      紧凑格的左上那枚角饰是「有角饰 = 进阶以上」的判据,不能收(见 ui/qualityAura);
+      于是让位的还是内容:挪到底边左,与共鸣的「共」同处一排。
+    -->
+    <span v-if="props.equipped" class="absolute bottom-0.5 left-1 font-kai text-[8px] leading-none text-jade">佩</span>
     <span v-if="props.item.locked" class="absolute right-0.5 top-0.5 leading-none text-ink-faint">
       <GameIcon name="lock" :size="8" />
     </span>
@@ -20,7 +25,7 @@
     <!-- 共鸣件(两件才亮,见 core/equipSet) -->
     <span
       v-if="setName"
-      class="absolute bottom-0.5 left-1 font-kai text-[8px] leading-none text-violet-ink"
+      class="absolute bottom-0.5 left-3 font-kai text-[8px] leading-none text-violet-ink"
       :title="setName"
     >
       共
