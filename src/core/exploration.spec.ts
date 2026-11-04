@@ -3,6 +3,8 @@
  * 含灵兽性格「败北保护」:lossReduction 须接入 runBattle,败北时低概率护住(不重伤、不计败绩、历练继续)。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createPinia, setActivePinia, type Pinia } from 'pinia'
 import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -719,6 +721,43 @@ describe('战斗页敌方半卡 · 特性与星级读开打快照', () => {
     for (const name of traitNames) expect(known, `眼熟后该见「${name}」`).toContain(name)
     expect(await renderPanel(true), '眼熟后该见星级').toMatch(STARS)
   })
+
+describe('战斗页血条读数 · 条与数字同源', () => {
+  it('敌我血条旁各有一个百分数 —— 条只画比例,读不出还剩几成', async () => {
+    const player = usePlayerStore()
+    player.initCharacter('读数', { roots: [] } as never)
+    useAdventureStore().lastBattle = {
+      enemyName: '赤目野狼',
+      enemyIcon: 'paw',
+      enemyId: FOE,
+      isBoss: false,
+      result: { win: true, log: [], rounds: 2, playerHpPct: 1 },
+      at: Date.now()
+    }
+    const html = await renderPanel()
+    // 首帧回放尚未开始,两侧都是满血;要的是「两侧各有一处读数」这件事成立
+    const shown = [...html.matchAll(/>([0-9]{1,3}%)</g)].map(m => m[1])
+    expect(shown.length, '两侧血条各该有一个百分数').toBeGreaterThanOrEqual(2)
+    for (const v of shown) expect(Number((v ?? '').replace('%', ''))).toBeLessThanOrEqual(100)
+  })
+
+  it('读数边界:归零写 0%、满血写 100%,0.6% 不许四舍五入成「有血」', () => {
+    const src = readFileSync(resolve(__dirname, '../components/adventure/CombatPanel.vue'), 'utf8')
+    // 判据读实现:两端各自硬写死,不走 Math.round —— 否则 0.4% 会被抹成 0 而 0.6% 又会被抹成 1
+    expect(src, '归零要硬写 0%').toContain("return '0%'")
+    expect(src, '满血要硬写 100%').toContain("return '100%'")
+    expect(src, '非有限值要给一个明确的占位').toContain("return '—'")
+    expect(src, '中间值才取整').toContain('Math.round(pct)')
+  })
+
+  it('条与数字用的确是同一个值:改 php/ehp 两侧一起变', () => {
+    // 判据读源码:两处都必须走 hpPercent(...),不许各写一个 Math.round
+    const src = readFileSync(resolve(__dirname, '../components/adventure/CombatPanel.vue'), 'utf8')
+    expect(src, '敌方读数该走 hpPercent(ehp)').toContain('hpPercent(ehp)')
+    expect(src, '我方读数该走 hpPercent(php)').toContain('hpPercent(php)')
+    expect(src.match(/hpPercent\(/g)!.length, '除定义处外恰好两处调用').toBeGreaterThanOrEqual(3)
+  })
+})
 
 /**
  * 际遇率必须封顶 1。
