@@ -83,7 +83,7 @@
           </span>
           <span class="text-[10px] text-ink-faint">{{ schoolNote(row.school) }}</span>
           <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">
-            {{ row.count }} 部 · 涉 {{ row.realmCount }} 境
+            {{ row.count }} 部 · 涉 {{ schoolSpan(row.school).total }} 境<template v-if="schoolSpan(row.school).past > 0"> · 已过 {{ schoolSpan(row.school).past }}</template>
           </span>
         </p>
         <div class="mt-1.5 divide-y divide-ink/6">
@@ -93,8 +93,19 @@
               <span class="text-[10px] text-ink-faint">{{ c.source }}</span>
             </p>
             <p class="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{{ c.gist }}</p>
-            <p v-if="c.realms.length" class="mt-0.5 text-[10px] text-ink-faint">
-              相涉:{{ c.realms.map(id => realmName(id)).join('、') }}
+            <!--
+              「相涉」原是一串纯文字,看不出哪几个是自己走过的。
+              同一页的境界页签早已把「已过 / 当前 / 未至」讲清楚了,
+              两处读同一份境界表,没理由一处讲、一处不讲(见 ui/classicRealm)。
+            -->
+            <p v-if="c.realms.length" class="mt-0.5 flex flex-wrap items-baseline gap-x-1 text-[10px] text-ink-faint">
+              <span>相涉:</span>
+              <span
+                v-for="m in classicRealmMarks(c, player.major)"
+                :key="m.id"
+                class="classic-realm tabular"
+                :class="`classic-realm--${m.phase}`"
+              >{{ m.name }}</span>
             </p>
           </div>
         </div>
@@ -403,10 +414,11 @@
   import { usePlayerStore } from '@/stores/player'
   import { useUiStore } from '@/stores/ui'
   import { useResourcesStore } from '@/stores/resources'
-  import { REALMS, WORLDS, realmDef } from '@/data/realms'
+  import { REALMS, WORLDS } from '@/data/realms'
   import { worldPips, worldProgress } from '@/ui/worldProgress'
   import { mansionGroups, mansionOrdinal } from '@/ui/mansionBoard'
   import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm, type ClassicSchool } from '@/data/classics'
+  import { classicRealmMarks, schoolRealmSpan } from '@/ui/classicRealm'
   import { classicsBySchool, schoolNote } from '@/ui/classicBoard'
   import { HEXAGRAMS, TRIGRAMS, trigramDef } from '@/data/yijing'
   import {
@@ -599,12 +611,12 @@
     }))
   })
 
-  function realmName(id: string): string {
-    const idx = REALMS.findIndex(r => r.id === id)
-    return idx >= 0 ? realmDef(idx).name : id
-  }
-
   function classicsOf(realmId: string) {
     return classicsForRealm(realmId)
+  }
+
+  /** 一脉的境界并集与其中已过几境(见 ui/classicRealm) */
+  function schoolSpan(school: ClassicSchool) {
+    return schoolRealmSpan(CLASSICS.filter(c => c.school === school), player.major)
   }
 </script>
