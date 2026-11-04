@@ -1089,6 +1089,22 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     )
   })
 
+  /**
+   * 道童卡那一行左边是「层数 1/20」,右边原写「还差 10 趟」——
+   * 两个数挨在一行,读者会把它读成「还差 19 趟升满 20 层」。
+   * 可右边数的是羁绊位阶(10/30/60/100 趟),与层数各算各的。
+   *
+   * 故障注入:把「羁绊还差」改回「还差」,本条红。
+   */
+  it('道童的羁绊差额带主语,不与层数混成一把尺', () => {
+    const view = src('../views/ApprenticeView.vue')
+    expect(view, '羁绊差额该写全「羁绊还差」').toContain('羁绊还差 ${a.mark.toNextBond} 趟')
+    expect(view, '已至真传也该带主语').toContain('羁绊已至真传')
+    // 层数与羁绊是两套数,各自的说法都要在
+    expect(view, '层数刻度该仍在').toContain('a.mark.level.have')
+    expect(view, '层数上限说明该仍在').toContain('APPRENTICE_MAX_LEVEL')
+  })
+
   it('器魂与道童付不起时置灰并写出实际差额', () => {
     const souls = src('../views/SoulsView.vue')
     expect(souls, '凝炼入口读同一份道源缺口').toContain('daoSourceShortfall(SOUL_REFINE_COST, endgame.daoSource)')
