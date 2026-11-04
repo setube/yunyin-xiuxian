@@ -93,16 +93,18 @@ describe('高级物质感 · 二、不抢内容', () => {
      */
     expect(block('.luster-cornice--tile::after'), '格子档要收掉右下那枚').toContain('content: none')
 
-    // 三个方形小格(装备 / 丹药 / 材料)都得挂格子档:它们右下都放着读数
+    // 窄卡都得挂格子档:它们右下都放着读数或按钮
     expect(EQUIPMENT_CARD, '装备格右下有强化 +N').toContain("props.item.level > 0")
     expect(EQUIPMENT_CARD, '装备格应走格子档').toContain('luster-cornice--tile')
     expect(PILL_VIEW, '丹药格应走格子档').toContain('luster-cornice luster-cornice--tile')
     expect(PILL_VIEW, '材料格应走格子档').toMatch(/m\.luster.*luster-cornice--tile|class="luster-cornice luster-cornice--tile"/)
+    // 坊市两列窄卡(168×99):实测御纹 (148,79)–(166,97) 与右下「买下」按钮 (110,54)–(156,89) 相交
+    expect(MARKET, '坊市货格右下是「买下」按钮').toContain('买下')
+    expect(MARKET, '坊市货格应走格子档').toContain('luster-cornice luster-cornice--tile')
 
-    // 宽卡右下不摆读数,保持两枚(岿然两道框)
+    // 宽卡右下不摆读数也不摆按钮,保持两枚形制
     for (const [src, name] of [
       [ARTIFACT_PANEL, '法宝卡'],
-      [MARKET, '坊市货格'],
       [TITLES, '灵兽卡']
     ] as const) {
       expect(src, `${name}是宽卡,不必收角`).toContain('class="luster-cornice"')
