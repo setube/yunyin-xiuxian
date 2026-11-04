@@ -2449,6 +2449,35 @@ html[data-theme='dark'] .fruit-curve polyline {
   color: rgb(var(--color-cinnabar-rgb));
 }
 
+/* ================= 五维刻度(ratingGauge) =================
+ * 五维评级原只给一排星(★★★☆☆):星级是离散的,「3 星」与「3 星」之间差多少读不出来。
+ * core 早已算好连续得分与那道阈值表,这里把它落成一根条:
+ *   星说在哪一档,条说这一档走完了多少。
+ * 每维按**自己那四道线**归一(身法 4 星要 0.7,进攻要 1.6),不共尺 ——
+ * 共尺会把 1.0 的进攻画成刚过一半、0.7 的身法画成已近满。
+ */
+.rating-gauge {
+  /* 细条:与星同一行,不能比星更抢 */
+  position: relative;
+  display: block;
+  width: 2.5rem;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.12);
+}
+.rating-gauge i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: rgb(var(--color-gold-ink-rgb) / 0.8);
+  transition: width 0.3s ease;
+}
+/* 最短板:转朱,与那一行的小字同一档色 —— 条与小字说的是同一件事 */
+.rating-gauge--weak i {
+  background: rgb(var(--color-cinnabar-rgb) / 0.9);
+}
+
 /* ================= 资源生命周期形制(resourceTone) =================
  * 道源与道果的说明弹窗都有同一句「生命周期」—— 这是玩家最容易记错的一条:
  * 转世时哪一个会清零。数据里早有 roleTone('action' | 'permanent')表达这件事,
