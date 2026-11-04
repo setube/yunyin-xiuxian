@@ -119,8 +119,12 @@
 
   /** 洞府等级,作离线档位条的当前档(0..4) */
   const mansionLv = computed(() => dongfu.levels.mansion ?? 0)
-  /** 洞府 0 级时那一行的下一档离线时数,随 OFFLINE_CAP_HOURS 现算 */
-  const offlineLaunchLine = computed(() => `洞府 1 级 · 离线可攒 ${OFFLINE_CAP_HOURS[1]} 时`)
+  /**
+   * 洞府 0 级时那一行:报的是**起造后**的下一档离线时数,随 OFFLINE_CAP_HOURS 现算。
+   * 原写「洞府 1 级 · 离线可攒 12 时」—— 这一行只在未启用时显示,
+   * 读者会当成现状,而下方建筑卡又写着「未启用」,同屏两句互相顶。
+   */
+  const offlineLaunchLine = computed(() => `起造后:洞府 1 级 · 离线可攒 ${OFFLINE_CAP_HOURS[1]} 时`)
 
   /** 未达门槛时只给一行开启境界 */
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)

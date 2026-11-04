@@ -1105,6 +1105,23 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(view, '层数上限说明该仍在').toContain('APPRENTICE_MAX_LEVEL')
   })
 
+  /**
+   * 洞府 0 级时顶部那行原写「洞府 1 级 · 离线可攒 12 时」。
+   * 这一行只在 mansionLv === 0 时显示,读者会当成现状陈述,
+   * 而下方建筑卡又写着「未启用」—— 同屏两句互相顶。
+   * 它报的其实是起造后的下一档,故须带「起造后」。
+   *
+   * 故障注入:把「起造后」去掉,本条红。
+   */
+  it('洞府未启用时那行报的是起造后的下一档,不是现状', () => {
+    const view = src('../views/DongfuView.vue')
+    expect(view, '该写「起造后」').toContain('起造后:洞府 1 级')
+    // 这一行只在未启用时出现,判据钉住那个条件
+    expect(view, '该只在 mansionLv === 0 时显示').toContain('v-if="mansionLv === 0"')
+    // 时数仍取常数,不手抄
+    expect(view, '时数该取 OFFLINE_CAP_HOURS').toContain('OFFLINE_CAP_HOURS[1]')
+  })
+
   it('器魂与道童付不起时置灰并写出实际差额', () => {
     const souls = src('../views/SoulsView.vue')
     expect(souls, '凝炼入口读同一份道源缺口').toContain('daoSourceShortfall(SOUL_REFINE_COST, endgame.daoSource)')
