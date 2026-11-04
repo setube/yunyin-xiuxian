@@ -2006,6 +2006,36 @@ html[data-theme='dark'] .fruit-curve polyline {
     linear-gradient(-45deg, transparent 0 41%, currentColor 41% 55%, transparent 55% 100%);
 }
 
+/* ================= 连战逐场余血柱(fightStreak) =================
+ * 远征与天道试炼都是「一场接一场」,而逐场摘要此前只有文字:
+ * 「第 3 战 · 妖将 · 胜」「12回合 · 余血 42%」(见 src/ui/fightStreak.ts)。
+ * 一段里真正决定「还能不能走下一重」的是余血走势,
+ * 而文字把它写成了十来个互不相干的百分数。
+ * 柱高以满血为顶 —— 与天劫不同:连战记的是「还剩多少」,绝对值本身有意义。
+ * 色取既有语义 token;形制层不吃指针事件。
+ */
+.fight-bar {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.12);
+  pointer-events: none;
+}
+.fight-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--color-jade-rgb) / 0.65);
+}
+/* 败下来的那一场:整根转朱 —— 它是这一串里要回头看的那一行 */
+.fight-bar--worst .fight-bar-fill {
+  background: rgb(var(--color-cinnabar-rgb) / 0.8);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;

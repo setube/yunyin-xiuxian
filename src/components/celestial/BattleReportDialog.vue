@@ -10,17 +10,28 @@
         <GauntletPanel :rows="report.rows" :player-name="playerName" />
       </div>
 
-      <!-- 逐场摘要:限高滚动,不撑到弹窗 82vh 上限 -->
+      <!--
+        逐场摘要:限高滚动,不撑到弹窗 82vh 上限。
+        每行一根余血条 — 一串连战里真正决定「还能不能走下一重」的是余血的走势,
+        而文字把它写成了十来个互不相干的百分数(见 ui/fightStreak)。
+      -->
       <div class="mt-2 max-h-40 space-y-1 overflow-y-auto">
         <p
           v-for="(row, i) in report.rows"
           :key="i"
-          class="flex items-center justify-between rounded bg-paper-deep/70 px-3 py-1.5 text-[12px]"
+          class="flex items-center justify-between gap-2 rounded bg-paper-deep/70 px-3 py-1.5 text-[12px]"
         >
-          <span :class="row.win ? 'text-ink-soft' : 'text-cinnabar'">
+          <span class="min-w-0 shrink" :class="row.win ? 'text-ink-soft' : 'text-cinnabar'">
             第{{ i + 1 }}战 · {{ row.foeName }} · {{ row.win ? '胜' : '负' }}
           </span>
-          <span class="tabular text-[11px] text-ink-faint">{{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%</span>
+          <span class="flex shrink-0 items-center gap-1.5">
+            <span class="fight-bar" :class="{ 'fight-bar--worst': marks[i]?.worst }" aria-hidden="true">
+              <span class="fight-bar-fill" :style="{ width: `${marks[i]?.barPct ?? 0}%` }" />
+            </span>
+            <span class="tabular text-[11px] text-ink-faint">
+              {{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%
+            </span>
+          </span>
         </p>
       </div>
       <!-- 敌方判定(道之理解 / 境界压制)与战前预估同源;只报来源与倍率,不附劝导 -->
@@ -42,7 +53,9 @@
 </template>
 
 <script setup lang="ts">
+  import { computed } from 'vue'
   import type { CombatantSnap } from '@/types'
+  import { fightMarks } from '@/ui/fightStreak'
   import BaseModal from '@/components/common/BaseModal.vue'
   import GauntletPanel from '@/components/celestial/GauntletPanel.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -61,11 +74,14 @@
     judgementLines?: string[]
   }
 
-  defineProps<{
+  const props = defineProps<{
     report: ReportView | null
     /** 玩家道号(战报左栏) */
     playerName: string
   }>()
 
   const emit = defineEmits<{ close: [] }>()
+
+  /** 逐场余血柱:满血为顶,败下来的那一场另标(见 ui/fightStreak) */
+  const marks = computed(() => fightMarks(props.report?.rows ?? []))
 </script>
