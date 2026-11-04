@@ -24,12 +24,18 @@
           · {{ endgame.daoPath === 'sword' ? '剑意' : '杀意' }} {{ run.winStacks }} 层
         </template>
       </p>
+      <!-- 逐场余血柱:与战报弹窗同一套形制(见 ui/fightStreak),不必先看战报才知道血还剩多少 -->
       <div class="mt-1.5 space-y-1">
-        <p v-for="(row, i) in run.rows" :key="i" class="flex justify-between text-[11px]">
-          <span :class="row.win ? 'text-ink-soft' : 'text-cinnabar'">
+        <p v-for="(row, i) in run.rows" :key="i" class="flex items-center justify-between gap-2 text-[11px]">
+          <span class="min-w-0 shrink" :class="row.win ? 'text-ink-soft' : 'text-cinnabar'">
             第{{ i + 1 }}战 {{ row.foeName }} · {{ row.win ? '胜' : '负' }}
           </span>
-          <span class="tabular text-ink-faint">{{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%</span>
+          <span class="flex shrink-0 items-center gap-1.5">
+            <span class="fight-bar" :class="{ 'fight-bar--worst': runMarks[i]?.worst }" aria-hidden="true">
+              <span class="fight-bar-fill" :style="{ width: `${runMarks[i]?.barPct ?? 0}%` }" />
+            </span>
+            <span class="tabular text-ink-faint">{{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%</span>
+          </span>
         </p>
       </div>
       <div class="ink-divider my-2.5" />
@@ -312,6 +318,7 @@
   import { gateDef } from '@/data/qimen'
   import { gateKindMark, palaceBoard } from '@/ui/gateBoard'
   import { perilGlyph, routeMark } from '@/ui/routeMark'
+  import { fightMarks } from '@/ui/fightStreak'
   import { gateRuleSummary } from '@/core/gateRuleText'
   import {
     abandonExpedition,
@@ -383,6 +390,8 @@
 
   // ---- 进行中远征 ----
   const run = computed(() => endgame.worldRun)
+  /** 逐场余血柱:与战报弹窗同一套判据(见 ui/fightStreak) */
+  const runMarks = computed(() => fightMarks(run.value?.rows ?? []))
   const runWorld = computed(() => (run.value ? (resolveWorld(run.value.worldId) ?? null) : null))
   const runPact = computed(() => (run.value?.pactId ? pactDef(run.value.pactId) : undefined))
   const currentNodes = computed(() => {
