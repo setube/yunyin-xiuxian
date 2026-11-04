@@ -128,6 +128,25 @@
         </div>
       </div>
       <p v-else class="px-4 py-6 text-center text-[11px] leading-relaxed text-ink-faint">暂无闲置器魂</p>
+      <!--
+        散置的几枚要一枚枚点确认,而后期闲置器魂常有一堆。
+        与其他复述动作族同一套写法:主词「清理散置」、两步确认、「再想想」。
+        后果文案读 dissolveNote(),不在模板里手打 —— 同一件事两处写会分叉。
+      -->
+      <div v-if="idleSouls.length > 1" class="mt-2 flex items-center justify-between gap-2 rounded-md bg-cinnabar/5 px-3 py-2">
+        <span class="min-w-0 text-[10px] leading-relaxed text-cinnabar tabular">
+          散置 {{ idleSouls.length }} 枚 · {{ dissolveNote() }}
+        </span>
+        <template v-if="clearIdleArm">
+          <span class="flex shrink-0 items-center gap-1.5">
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="clearIdleArm = false">再想想</button>
+            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doClearIdle">清理散置</button>
+          </span>
+        </template>
+        <button v-else class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="clearIdleArm = true">
+          清理散置
+        </button>
+      </div>
       <template #footer>
         <button class="btn-seal w-full" @click="idleOpen = false">收 起</button>
       </template>
@@ -215,6 +234,8 @@
   const pendingRefineUid = ref<string | null>(null)
   /** 散去同样二步确认(不可逆) */
   const pendingDissolveUid = ref<string | null>(null)
+  /** 清理散置的二次确认态;弹窗关闭即复位 */
+  const clearIdleArm = ref(false)
 
   function doRefine(uid: string): void {
     refineEquipment(uid)
@@ -224,6 +245,14 @@
   function doDissolve(uid: string): void {
     dissolveSoul(uid)
     pendingDissolveUid.value = null
+  }
+
+  /** 清理散置:逐枚走同一个 dissolveSoul,判据不分叉;只动未装配的那些 */
+  function doClearIdle(): void {
+    clearIdleArm.value = false
+    const uids = idleSouls.value.map(s => s.uid)
+    for (const uid of uids) dissolveSoul(uid)
+
   }
 
   const idleSouls = computed(() => endgame.soulList.filter(s => !endgame.activeSouls.some(a => a.uid === s.uid)))
