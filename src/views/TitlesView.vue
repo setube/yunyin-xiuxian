@@ -31,6 +31,19 @@
     <template v-else>
       <SectionTitle title="灵兽" :hint="`${petRows.length}/${PETS.length} · 伴一只`" />
       <ProgressBar class="mt-2" :value="PETS.length > 0 ? petRows.length / PETS.length : 0" :height="3" />
+      <!-- 族谱:五族各收了几头。只列有灵兽的族 -->
+      <p v-if="petRows.length" class="beast-roster mt-2">
+        <span
+          v-for="f in roster"
+          :key="f.family"
+          class="beast-roster-row text-[10px] tabular"
+          :class="f.owned > 0 ? 'text-ink-soft' : 'text-ink-faint'"
+        >
+          <span class="beast-crest shrink-0" aria-hidden="true">{{ f.seal }}</span>
+          {{ f.name }}
+          <span class="text-ink-faint">{{ f.owned }}/{{ f.total }}</span>
+        </span>
+      </p>
       <div v-if="petRows.length" class="space-y-2">
         <div
           v-for="row in petRows"
@@ -43,12 +56,15 @@
           <span v-if="row.luster" class="luster-sheen" aria-hidden="true" />
           <div class="min-w-0 grow">
             <p class="flex flex-wrap items-center gap-1.5">
+              <!-- 族徽:这一头是走兽还是龙属。族类是分类,印面取中性墨色 -->
+              <span class="beast-crest shrink-0" aria-hidden="true">{{ row.crest.seal }}</span>
               <span
                 class="truncate font-kai text-[13px]"
                 :class="{ 'q-plaque': row.plaque }"
                 :style="{ color: qualityTextColor(row.def.quality) }"
                 >{{ row.def.name }}</span
               >
+              <span class="sr-only">{{ row.crest.name }}</span>
               <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px]" :style="{ color: qualityTextColor(row.def.quality) }">{{ qualityDef(row.def.quality).name }}</span>
               <span v-if="row.active" class="shrink-0 rounded border border-jade/40 bg-jade/15 px-1.5 py-0.5 text-[10px] text-ink">相伴</span>
             </p>
@@ -84,6 +100,7 @@
   import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
   import { petTraitText } from '@/ui/itemText'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
+  import { beastCrest, familyRoster } from '@/ui/beastCrest'
   import { qualityAura } from '@/ui/qualityAura'
   import { lusterOf } from '@/ui/luster'
   import { modsText } from '@/data/statNames'
@@ -141,12 +158,17 @@
         personalityName: PERSONALITY_NAMES[def!.personality],
         personalityDesc: personalityDesc(def!.personality),
         traitText: petTraitText(def!),
+        /** 族徽:族名首字成印,族名原样转发给读屏 */
+        crest: beastCrest(def!.family),
         /** 稀有档的名字加描边与字距,与法宝/装备同一套(见 ui/qualityAura) */
         plaque: qualityAura(def!.quality).plaque,
         luster: lusterOf(def!.quality)
       }))
       .sort((a, b) => Number(b.active) - Number(a.active))
   )
+
+  /** 族谱:只列有灵兽的族,按数据表首次出现的次序 */
+  const roster = computed(() => familyRoster(quests.collections.pet))
 
   function togglePet(id: string): void {
     const def = petDef(id)
