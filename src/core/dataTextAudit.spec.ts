@@ -548,6 +548,21 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     expect(hits, '一处 busy.reason 都没读到,断言形同虚设').toBeGreaterThanOrEqual(5)
   })
 
+  it('启程按钮只写代价与余量 —— 收益归卡面,不塞进主词后面把自己撑成两行', () => {
+    /*
+     * 实测:390 宽下「启 程(道源 20 · 余 1,200 · 破界底赏 60)」折成两行,
+     * 括号里断在「破界底赏 / 60」处。三样里面「破界底赏」是**收益**,
+     * 按本站文案纪律(按钮写代价或拒因,收益归卡面)不该在按钮里。
+     */
+    const expedition = src('../components/celestial/ExpeditionPanel.vue')
+    expect(expedition, '卡面要摊出入界代价与破界底赏').toMatch(/入界 \{\{ world\.entryCost \}\} 道源 · 破界底赏/)
+    expect(expedition, '虚界之门同样摊在卡面').toMatch(/入界 \{\{ endgame\.voidWorld\.entryCost \}\} 道源 · 破界底赏/)
+    // 按钮里的文案不许再出现收益:它只报代价与余量
+    for (const m of expedition.matchAll(/启 程\(([^`]*?)`/g)) {
+      expect(m[1] ?? '', `启程按钮里不该夹收益:${(m[1] ?? '').slice(0, 60)}`).not.toContain('破界底赏')
+    }
+  })
+
   it('远征行程与变数连战数取自 EXPEDITION_* / MUTATION_FIGHTS', () => {
     // 宿主与子面板合扫
     const view =
