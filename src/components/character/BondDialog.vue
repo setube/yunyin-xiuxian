@@ -27,14 +27,25 @@
         <span v-if="bond.fallen" class="text-cinnabar">已殁</span>
       </p>
 
-      <!-- 三维只影响关系推进,不进任何属性 -->
+      <!--
+        三维只影响关系推进,不进任何属性。
+        条上那枚刻度是**下一阶的门槛**:三条各有各的线(下一阶可能要缘分 50、
+        信任 45、契合 0),满到线以后这一根就不再是卡着推进的那根了。
+        门槛取自 data/daolu 的 STAGE_GATES(见 src/ui/bondMeter.ts)。
+      -->
       <div class="mt-3 space-y-1.5">
-        <p v-for="m in bondMeters" :key="m.label" class="flex items-center gap-2 text-[11px]">
-          <span class="w-10 shrink-0 text-ink-faint">{{ m.label }}</span>
-          <span class="h-1 grow rounded-full bg-ink/10">
-            <span class="block h-1 rounded-full bg-azure/70" :style="{ width: `${m.v}%` }" />
+        <p v-for="m in meterRows" :key="m.key" class="flex items-center gap-2 text-[11px]">
+          <span class="w-10 shrink-0" :class="m.met ? 'text-ink-faint' : 'text-ink-soft'">{{ m.label }}</span>
+          <span class="bond-meter grow" :class="{ 'bond-meter--met': m.met }">
+            <span class="bond-meter-fill" :style="{ width: `${m.pct}%` }" />
+            <span
+              v-if="m.gatePct !== null"
+              class="bond-meter-gate"
+              :style="{ left: `${m.gatePct}%` }"
+              aria-hidden="true"
+            />
           </span>
-          <span class="w-8 shrink-0 text-right tabular text-ink-soft">{{ m.v }}</span>
+          <span class="w-8 shrink-0 text-right tabular" :class="m.met ? 'text-ink-soft' : 'text-cinnabar'">{{ m.value }}</span>
         </p>
       </div>
       <p class="mt-2 text-[11px] text-ink-faint">共历 {{ bond.shared }} 次</p>
@@ -119,6 +130,7 @@
   import { computed, ref, watch } from 'vue'
   import { ENDING_NAMES, LEAN_NAMES, STAGE_NAMES, TEMPER_NAMES } from '@/data/daolu'
   import { bondMark } from '@/ui/bondMark'
+  import { bondMeterRows } from '@/ui/bondMeter'
   import { chooseBondEvent, herStance, nextGateHint, respondIntent } from '@/core/daoluService'
   import { RESPONSE_NAMES, SPARK_NAMES } from '@/data/bondIntent'
   import { TRIGGER_NAMES } from '@/data/bondEvents'
@@ -137,15 +149,12 @@
   /** 当前缘阶形制;bond 未建立时按素昧平生画 */
   const mark = computed(() => bondMark(bond.value?.stage ?? 'none'))
 
-  const bondMeters = computed(() =>
-    bond.value
-      ? [
-          { label: '缘分', v: bond.value.fate },
-          { label: '信任', v: bond.value.trust },
-          { label: '契合', v: bond.value.accord }
-        ]
-      : []
-  )
+  /** 三条关系值 + 下一阶的门槛刻度;门槛取自 data/daolu,不另立 */
+  const meterRows = computed(() => {
+    const b = bond.value
+    if (!b) return []
+    return bondMeterRows({ fate: b.fate, trust: b.trust, accord: b.accord }, b.stage)
+  })
   const gateHint = computed(() => nextGateHint())
   /** 事件因何而来:触发名取自 bondEvents,不手写 */
   const pendingEventTriggers = computed(() =>
