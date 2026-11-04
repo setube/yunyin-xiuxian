@@ -77,6 +77,13 @@
       <button type="button" class="card-ink flex flex-col items-center gap-1.5 px-1.5 py-3 text-center active:scale-98" aria-haspopup="dialog" @click="questsOpen = true">
         <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-amber-ink/10 text-amber-ink"><GameIcon name="book" :size="18" /></span>
         <span class="font-kai text-[13px] tracking-widest text-ink">修行志</span>
+        <!--
+          六个入口里只有两个带副信息,这一格空着而它恰恰有可数的状态:
+          今日几项日课还没做。打开弹窗才看得到,不如摆在格上。
+        -->
+        <span class="text-[9px] leading-snug tabular" :class="dailyLeft > 0 ? 'text-amber-ink' : 'text-jade'">
+          {{ dailyLeft > 0 ? `日课余 ${dailyLeft}` : '日课已尽' }}
+        </span>
       </button>
 
       <RouterLink to="/dongfu" class="card-ink flex flex-col items-center gap-1.5 px-1.5 py-3 text-center active:scale-98">
@@ -250,6 +257,9 @@
       nav: dailyTaskNav(t.counterKey)
     }))
   )
+
+  /** 今日未成的日课数:与弹窗里的 dailyRows 同一份数据,不另算一遍 */
+  const dailyLeft = computed(() => dailyRows.value.filter(t => !t.done).length)
 
   // 距重置倒计时属墙钟域:暂停时也须照常走向真实重置时刻
   const now = useWallNow()

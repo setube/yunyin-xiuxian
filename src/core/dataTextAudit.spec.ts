@@ -313,6 +313,22 @@ describe('文案数值对账 · 视图不手抄数字', () => {
     expect(host, '圆点不得另起一套可交判据').not.toMatch(/bounty\.orders\.some\(/)
   })
 
+  /**
+   * 首页六个入口格里只有两个带副信息,修行志那格空着 —— 而它恰恰有可数的状态:
+   * 今日几项日课还没做。要打开弹窗才看得到,不如摆在格上。
+   *
+   * 故障注入:把 dailyLeft 改回写死的数,本条红。
+   */
+  it('首页修行志格报出未成的日课数,且与弹窗同源', () => {
+    const home = src('../views/HomeView.vue')
+    expect(home, '格上该报余数').toContain('日课余')
+    expect(home, '余数须由 dailyRows 现算').toContain('dailyRows.value.filter(t => !t.done)')
+    // 弹窗与格上读同一份 dailyRows,不各算一遍(模板里不带 .value,computed 里带)
+    expect(home, '弹窗该读 dailyRows').toContain('v-for="t in dailyRows"')
+    // 模板里那一行必须真的插值 dailyLeft,不是写死的数
+    expect(home, '格上该插值 dailyLeft').toMatch(/\{\{\s*dailyLeft\s*>\s*0\s*\?/)
+  })
+
   it('墙钟域的倒计时不随引擎暂停冻结', () => {
     const sell = src('../components/market/MarketSellSection.vue')
     const rows = src('../composables/useBountyRows.ts')
