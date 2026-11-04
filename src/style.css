@@ -2572,6 +2572,32 @@ html[data-theme='dark'] .fruit-curve polyline {
   border-radius: 999px;
 }
 
+/* ================= 宿慧所得的能力(samsaraPowers) =================
+ * 转世弹窗原只写宿慧数与阶名,从不说什么能力是这些宿慧换来的。
+ * core 的 INSIGHT_CONSUMERS 早有一张表:每项能力的名、内生还是常驻、从第几阶起(见 ui/samsaraPowers)。
+ * 已得的用实色签,将至的用虚框淡签 —— 一眼分得出哪些已经在身上、哪些还要再转一世。
+ */
+.samara-power {
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.35;
+}
+/* 常驻:整世都在,实色 */
+.samara-power--standing {
+  background: rgb(var(--color-jade-rgb) / 0.14);
+  color: rgb(var(--color-ink-rgb));
+}
+/* 内生:只在转世那一刻生效一次,换一档色与常驻分开 */
+.samara-power--opening {
+  background: rgb(var(--color-azure-rgb) / 0.14);
+  color: rgb(var(--color-ink-rgb));
+}
+/* 将至:还没到手,只描一道虚边 */
+.samara-power--locked {
+  border: 1px dashed rgb(var(--color-ink-rgb) / 0.22);
+  color: rgb(var(--color-ink-faint-rgb));
+}
+
 /* ================= 紫微十二宫的属性路数(fate-channel) =================
  * 「此宫给哪一路属性」:data/ziwei 的 channel(修行/同道/因缘/灵兽…)。
  * 原先界面只写「所主 · 管什么」,说不到它落在哪一路 —— 而十二宫各管一路正是这张盘的骨架。
