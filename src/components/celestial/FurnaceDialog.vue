@@ -165,8 +165,16 @@
         <p class="font-kai text-[12px] tracking-wider text-ink">获取</p>
         <p class="text-ink-faint">{{ fruitDialog.gains.join(" · ") }}</p>
       </div>
-      <p class="border-l-2 border-violet-ink/60 pl-2 text-[11px] text-violet-ink">
-        {{ fruitDialog.lifecycle }}
+      <!-- 生命周期形制:与道源那扇同一套(见 ui/resourceTone),不再各写一个左边框色 -->
+      <p
+        class="flex items-start gap-2 border-l-2 pl-2 text-[11px]"
+        :class="`res-tone res-tone--${toneOf(fruitDialog.roleTone).tone}`"
+      >
+        <span class="res-tone__seal shrink-0 font-kai" aria-hidden="true">{{ toneOf(fruitDialog.roleTone).seal }}</span>
+        <span class="min-w-0">
+          <span class="block text-ink">{{ fruitDialog.lifecycle }}</span>
+          <span class="block text-[10px] text-ink-faint">{{ toneOf(fruitDialog.roleTone).note }}</span>
+        </span>
       </p>
     </div>
     <template #footer>
@@ -177,6 +185,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { resourceTone as toneOf } from '@/ui/resourceTone'
 import BaseModal from '@/components/common/BaseModal.vue'
 import { useResourcesStore } from '@/stores/resources'
 import { usePlayerStore } from '@/stores/player'

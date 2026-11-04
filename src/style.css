@@ -2449,6 +2449,35 @@ html[data-theme='dark'] .fruit-curve polyline {
   color: rgb(var(--color-cinnabar-rgb));
 }
 
+/* ================= 资源生命周期形制(resourceTone) =================
+ * 道源与道果的说明弹窗都有同一句「生命周期」—— 这是玩家最容易记错的一条:
+ * 转世时哪一个会清零。数据里早有 roleTone('action' | 'permanent')表达这件事,
+ * 但两扇弹窗只是各写一个硬编码的左边框色,与 roleTone 是两套说法。
+ * 这里按 roleTone 给形制:一枚两字签 + 说法 + 色。色只取既有语义 token。
+ */
+.res-tone {
+  /* 色由调用方按 roleTone 挂 --res-tone-rgb,此处不写死 */
+  border-color: rgb(var(--res-tone-rgb) / 0.6);
+}
+.res-tone--cinnabar {
+  --res-tone-rgb: var(--color-cinnabar-rgb);
+}
+.res-tone--violet-ink {
+  --res-tone-rgb: var(--color-violet-ink-rgb);
+}
+/* 签:一字方印,与弹窗里其余小签同体例 */
+.res-tone__seal {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 2px;
+  font-size: 10px;
+  line-height: 1;
+  color: rgb(var(--color-paper-rgb));
+  background: rgb(var(--res-tone-rgb));
+}
+
 /* ================= 典籍谱(classicBoard) =================
  * 典籍册原先把 11 部书平铺成 11 张同形的卡:哪几部同出一脉,要靠读小签自己数。
  * 这里给每脉一枚脉签:五种来路靠**字与形**分开(签上的字本就是来路名),色只作辅助。
