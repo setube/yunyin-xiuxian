@@ -733,6 +733,75 @@ describe('调色板 · 品类的色块要真能区分', () => {
   })
 })
 
+describe('调色板 · 九宫的数字要对齐', () => {
+  /*
+   * 宫号是 absolute 定位,基准是 padding box —— 边框越宽,它离外框越远。
+   * 而九宫靠三种边框宽度区分吉凶(dashed 1px / solid 1.5px / double 3px),
+   * 于是凶门的「2/3/7」比其余六格往里 2px,整张盘看着是歪的。
+   *
+   * 现给 double 那三格补回偏移,九个宫号同在外框内 3px。
+   * 判据不仅看有没有补偿,还算一遍:补偿后三者对外框的偏移必须相等。
+   */
+  function rule(sel: string): string {
+    const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+  }
+  function px(body: string, prop: string): number {
+    // 两种写法都要认:`border-width: 3px` 与简写 `border: 1px solid …`
+    const explicit = new RegExp(`(?:^|\\n)\\s*${prop}:\\s*(-?[\\d.]+)px`).exec(body)
+    if (explicit) return Number(explicit[1])
+    const short = new RegExp(`(?:^|\\n)\\s*border:\\s*(-?[\\d.]+)px`).exec(body)
+    expect(short, `${prop} 没找到(试过简写)`).not.toBeNull()
+    return Number(short![1])
+  }
+
+  it('三种边框宽度的宫号,离外框的偏移一致', () => {
+    const no = rule('.gate-palace__no')
+    expect(no, '缺 .gate-palace__no').not.toBe('')
+    const baseLeft = px(no, 'left')
+    const baseTop = px(no, 'top')
+
+    const widths: [string, number][] = [
+      ['.gate-kind-solid', px(rule('.gate-kind-solid'), 'border-width')],
+      ['.gate-kind-double', px(rule('.gate-kind-double'), 'border-width')],
+      // dashed 只换 style,宽度走 .gate-palace 的 1px
+      ['.gate-kind-dashed', px(rule('.gate-palace'), 'border-width')]
+    ]
+
+    const fix = rule('.gate-kind-double > .gate-palace__no')
+    expect(fix, 'double 那几格没补偏移').not.toBe('')
+    const fixLeft = px(fix, 'left')
+    const fixTop = px(fix, 'top')
+
+    const offsets = widths.map(([sel, w]) => ({
+      sel,
+      // 补偿只对 double 生效,其余仍走基准值
+      left: baseLeft + w,
+      top: baseTop + w,
+      fixedLeft: sel === '.gate-kind-double' ? fixLeft + w : baseLeft + w,
+      fixedTop: sel === '.gate-kind-double' ? fixTop + w : baseTop + w
+    }))
+    /*
+     * solid 的 1.5px 边框会带来 0.5px 的半格差 —— 浏览器把它与 1px 都取整到同一个像素,
+     * 实测九个宫号渲染出来的 x 全等(4)。判据按精确值比会误报,故给 1px 容差。
+     */
+    const lefts = offsets.map(o => o.fixedLeft)
+    const tops = offsets.map(o => o.fixedTop)
+    const spread = (xs: number[]): number => Math.max(...xs) - Math.min(...xs)
+    expect(spread(lefts), `横向差 ${spread(lefts)}px,超过一个像素`).toBeLessThan(1)
+    expect(spread(tops), `纵向差 ${spread(tops)}px,超过一个像素`).toBeLessThan(1)
+  })
+
+  it('补偿前的偏移确实不一致 —— 否则这条判据没必要存在', () => {
+    const no = rule('.gate-palace__no')
+    const baseLeft = px(no, 'left')
+    const dashed = px(rule('.gate-palace'), 'border-width')
+    const double = px(rule('.gate-kind-double'), 'border-width')
+    expect(double, 'double 宽度没变,补偿可以删').toBeGreaterThan(dashed)
+    expect(baseLeft + double, '不加补偿时 double 的宫号并不更靠里').not.toBe(baseLeft + dashed)
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)
