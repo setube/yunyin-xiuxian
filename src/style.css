@@ -2066,6 +2066,37 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-gold-ink-rgb));
 }
 
+/* ================= 灵根资质刻度(rootMark) =================
+ * 灵根只画成一行圆圈、资质写在圈下(「88」):三根并排时哪一根是主根、
+ * 它高多少,得逐个读数字再比(见 src/ui/rootMark.ts)。
+ * 一格十点、十格为满;主根那根的刻度另给一道实心。
+ * 色取元素本色(行内 --root-tone),刻度自身不引入新颜色名。
+ */
+.root-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+.root-pips i {
+  display: block;
+  width: 2px;
+  height: 4px;
+  border-radius: 0.5px;
+  /* 未到的格:空心中性 */
+  box-shadow: inset 0 0 0 1px var(--root-tone, currentColor);
+  opacity: 0.35;
+}
+.root-pips i.on {
+  background: var(--root-tone, currentColor);
+  box-shadow: none;
+  opacity: 0.85;
+}
+/* 主根:整排提亮一档 —— 与「还有几根差得不多」的那几名分开 */
+.root-pips--top i.on {
+  opacity: 1;
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
