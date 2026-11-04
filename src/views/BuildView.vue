@@ -95,6 +95,15 @@
               {{ comboInfo.active ? '已成' : `需副体系 ${Math.round(COMBO_SECONDARY_MIN * 100)}%` }}
             </span>
           </p>
+          <!--
+            组合技由「哪两派配对」而来,data 里 pair 就是为此存的;
+            原先只显示技名与效果,玩家看不出是手上这两派的哪一对触发了它。
+          -->
+          <p class="mt-0.5 flex flex-wrap items-baseline gap-x-1 text-[10px] text-ink-faint">
+            <span>{{ comboInfo.pairNames[0] }}</span>
+            <span class="text-ink-faint">×</span>
+            <span>{{ comboInfo.pairNames[1] }}</span>
+          </p>
           <p class="mt-0.5 text-[11px] leading-relaxed" :class="comboInfo.active ? 'text-ink-soft' : 'text-ink-faint'">
             {{ comboInfo.art.desc }}
           </p>
@@ -236,7 +245,7 @@
   import { detectBuild, buildSources } from '@/core/buildDetect'
   import { ratePower, ratingStars, type PowerDimKey } from '@/core/powerRating'
   import { ratingGauges, weakestGauge } from '@/ui/ratingGauge'
-  import { matchComboArt, COMBO_SECONDARY_MIN } from '@/data/comboArts'
+  import { comboPairNames, matchComboArt, COMBO_SECONDARY_MIN } from '@/data/comboArts'
   import { measureResilience, resilienceText } from '@/core/resilience'
   import { playerMatchups, MATCHUP_SAMPLE_RUNS } from '@/core/playerMatchup'
   import { buildPlayerSnap } from '@/core/playerSnap'
@@ -278,10 +287,16 @@
   /** 主副体系凑对时展示组合技,未达门槛也展示 */
   const comboInfo = computed(() => {
     const b = build.value
-    if (!b?.secondary) return null
-    const art = matchComboArt(b.style.id, b.secondary.style.id)
+    const sec = b?.secondary
+    if (!b || !sec) return null
+    const art = matchComboArt(b.style.id, sec.style.id)
     if (!art) return null
-    return { art, active: b.secondary.affinity >= COMBO_SECONDARY_MIN }
+    return {
+      art,
+      // 配对两派名按 pair 原序取,不按主副(见 data/comboArts.comboPairNames)
+      pairNames: comboPairNames(art, b.style, sec.style),
+      active: sec.affinity >= COMBO_SECONDARY_MIN
+    }
   })
 
   /** 构筑韧性:主派封印后的战力保持(RESILIENCE_SAMPLE_RUNS 场等比敌采样,见 core/resilience) */
