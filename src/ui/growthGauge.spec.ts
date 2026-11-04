@@ -18,6 +18,7 @@ import { MULT_CEIL, MULT_FLOOR, growthGauge, growthPosition } from './growthGaug
 
 const ROOT = resolve(__dirname, '../..')
 const VIEW = readFileSync(resolve(ROOT, 'src/views/CreateView.vue'), 'utf-8')
+const REBIRTH = readFileSync(resolve(ROOT, 'src/components/character/ReincarnationDialog.vue'), 'utf-8')
 const GEN = rf(resolve(ROOT, 'src/core/linggenGen.ts'), 'utf-8')
 
 describe('倍率刻度 · 一、区间两端由因子上下界推出', () => {
@@ -111,6 +112,34 @@ describe('倍率刻度 · 四、建号页接上了', () => {
     expect(VIEW).toContain('growthGauge')
     expect(VIEW, '该有一根刻度').toContain('growth-gauge')
     expect(VIEW, '该说出这一手属哪档').toContain('growthTier')
+  })
+
+  it('转世弹窗的来世灵根也走同一份 —— 同一个数、同一个区间', () => {
+    // 建号页与转世弹窗掷的都是 rollLinggen(),growthMult 是同一个量纲
+    expect(REBIRTH, '转世弹窗该走 ui/growthGauge').toContain("from '@/ui/growthGauge'")
+    expect(REBIRTH, '该有一根刻度').toContain('growth-gauge')
+    expect(REBIRTH, '该按档挂色').toContain('GROWTH_TONE')
+    expect(REBIRTH, '该说出属哪档').toContain('nextGrowth.label')
+  })
+
+  it('两处都不再只甩一个数', () => {
+    // 原写法:`修行倍率 ×{{ …growthMult.toFixed(2) }}` 后面什么也没有。
+    // 建号页走 profile.growthMult,转世弹窗走 nextGrowth.mult —— 两种都须带参照。
+    const markers = [
+      [VIEW, '建号页', 'growthMult.toFixed(2)'],
+      [REBIRTH, '转世弹窗', 'nextGrowth.mult.toFixed(2)']
+    ] as const
+    for (const [src, name, marker] of markers) {
+      const at = src.indexOf(marker)
+      expect(at, `${name}找不到倍率渲染处`).toBeGreaterThan(-1)
+      const after = src.slice(at, at + 500)
+      expect(after, `${name}的倍率后头没有参照`).toMatch(/floor|growth-gauge|label/)
+    }
+  })
+
+  it('两处用的是同一个模块,不是各写一套判断', () => {
+    const mods = [VIEW, REBIRTH].filter(s => s.includes("from '@/ui/growthGauge'"))
+    expect(mods, '两处都该 import 同一份').toHaveLength(2)
   })
 
   it('轴两端有数 —— 没有参照的刻度等于没有', () => {
