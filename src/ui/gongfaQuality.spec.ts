@@ -75,7 +75,8 @@ describe('功法形制 · 二、主修卡与列表读同一份投影', () => {
 
   it('模板里的行循环用投影后的 row,不再自己再算一遍品质', () => {
     expect(SECTION, '列表应按 row 迭代').toContain('v-for="row in activeGongfaItems"')
-    expect(SECTION, '项目投影应带形制').toContain('.map(def => ({ def, ...rowOf(def.id) }))')
+    // 投影里允许再加别的字段(如层数形制),但必须以 def + rowOf 投影为底
+    expect(SECTION, '项目投影应带形制').toMatch(/\.map\(def => \(\{ def,.*\.\.\.rowOf\(def\.id\) \}\)\)/)
   })
 })
 

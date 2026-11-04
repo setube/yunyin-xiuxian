@@ -2129,6 +2129,35 @@ html[data-theme='dark'] .fruit-curve polyline {
   box-shadow: 0 0 3px currentColor;
 }
 
+/* ================= 功法层数刻度(gongfaMark) =================
+ * 功法行末尾只写「第 5 层」,而各功法上限不同(密法 3 层、主辅 9 层):
+ * 「第 5 层」在一门里是过半,在另一门里是练满(见 src/ui/gongfaMark.ts)。
+ * 上限几层就几格 —— 格数随功法变,不是写死的九格。
+ * 色取既有语义 token;形制层不吃指针事件。
+ */
+.gongfa-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+.gongfa-pips i {
+  display: block;
+  width: 3px;
+  height: 6px;
+  border-radius: 0.5px;
+  /* 未到的格:空心中性,不抢已到的 */
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.3);
+}
+.gongfa-pips i.on {
+  background: rgb(var(--color-azure-rgb) / 0.75);
+  box-shadow: none;
+}
+/* 满级:整排转实金,与「还在练」的那几门分开 */
+.gongfa-pips--max i.on {
+  background: rgb(var(--color-gold-ink-rgb) / 0.9);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
