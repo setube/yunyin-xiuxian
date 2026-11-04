@@ -157,6 +157,37 @@
       <p class="text-[11px] leading-relaxed text-ink-faint">按灵根与轮回安星 · 常驻 · 转世重算</p>
       <p class="mt-2 font-kai text-[13px] leading-relaxed text-ink">{{ fateLordLineText }}</p>
       <p class="mt-1 text-[11px] text-azure">命格之力:{{ fateModsText }}</p>
+      <!--
+        十二宫原先铺成十二行文字:哪一宫是命宫、哪一宫有星,得逐行读。
+        它本来是四正三合的一张盘 —— 改排四列三行,命宫朱框,有星的宫点亮。
+        宫名与星名仍取 data/ziwei,盘只是换了个摆法。
+      -->
+      <div class="fate-board mt-2.5 grid grid-cols-3 gap-1.5">
+        <div
+          v-for="row in fateRows"
+          :key="row.palace.id"
+          class="fate-cell"
+          :class="{ 'fate-cell--ming': row.isMing, 'fate-cell--starred': row.hasStar }"
+        >
+          <p class="flex items-baseline gap-1">
+            <span class="truncate font-kai text-[11px] leading-none" :class="row.isMing ? 'text-cinnabar' : 'text-ink-soft'">
+              {{ row.palace.name }}
+            </span>
+            <span v-if="row.isMing" class="shrink-0 text-[8px] leading-none text-cinnabar">命</span>
+          </p>
+          <p class="mt-1 flex flex-wrap gap-x-1 gap-y-0.5">
+            <span
+              v-for="st in row.starList"
+              :key="st.id"
+              class="fate-star font-kai text-[10px] leading-none"
+              :title="`${st.name} · ${st.nature}`"
+            >{{ st.name }}</span>
+          </p>
+        </div>
+      </div>
+      <p class="mt-1.5 text-[9px] leading-relaxed text-ink-faint">
+        命宫朱框 · 有星诸宫点亮 · 宫位说明见下
+      </p>
       <div class="mt-2.5 divide-y divide-ink/6">
         <div v-for="row in fateRows" :key="row.palace.id" class="flex items-baseline gap-2 py-1.5">
           <span class="w-14 shrink-0 font-kai text-[12px] text-ink-soft">{{ row.palace.name }}</span>
@@ -395,7 +426,11 @@
   const fateRows = computed(() =>
     player.fateChart.palaces.map(p => ({
       palace: p.palace,
-      starNames: p.stars.map(s => `${s.name}(${s.nature})`).join('、')
+      starNames: p.stars.map(s => `${s.name}(${s.nature})`).join('、'),
+      // 盘中要逐星排开,不能只留一串拼接文本
+      starList: p.stars,
+      hasStar: p.stars.length > 0,
+      isMing: p.palace.id === 'ming'
     }))
   )
 
