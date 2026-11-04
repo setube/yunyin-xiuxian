@@ -30,7 +30,11 @@
       <circle class="prog-bar" :class="{ full }" cx="60" cy="60" r="54" :style="{ strokeDashoffset: dashOffset }" />
     </svg>
 
-    <div class="bagua-wrap spinning">
+    <!--
+      八卦环与进度 SVG 同属纯视觉装饰,读屏不必念。
+      原只给 SVG 挂了 aria-hidden,这一圈没挂 —— 读屏会把「☰☱☲☳☴☵☶☷」逐个念出来。
+    -->
+    <div class="bagua-wrap spinning" aria-hidden="true">
       <span v-for="(sym, i) in BAGUA" :key="i" class="bagua-sym" :style="{ '--ang': i * 45 + 'deg' }">{{ sym }}</span>
     </div>
   </div>
