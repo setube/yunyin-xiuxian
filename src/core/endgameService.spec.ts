@@ -5,7 +5,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
 import { FURNACE_RATES, DAO_SOURCE_PER_FRUIT, FURNACE_STONE_TIER_AMOUNT, FURNACE_STONE_DAO_SOURCE } from '@/data/endgame'
-import { chooseDaoPath, condenseDaoFruit, currentDaoRules, endgameUnlocked, furnaceConvert, furnaceMaterialShortfall, furnaceStoneCost, furnaceConvertStone } from './endgameService'
+import { chooseDaoPath, condenseDaoFruit, condenseFruitAffordable, currentDaoRules, endgameUnlocked, furnaceConvert, furnaceMaterialShortfall, furnaceStoneCost, furnaceConvertStone } from './endgameService'
 import { stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
 import { resolveWorld, startWorldExpedition } from './expedition'
@@ -121,6 +121,30 @@ describe('真仙终局服务', () => {
     expect(condenseDaoFruit()).toBe(true)
     expect(player.reincarnation.daoFruit).toBe(1)
     expect(condenseDaoFruit()).toBe(false) // 道源不足
+  })
+
+  it('连凝 n 枚:整笔原子,道源不够全额就一枚也不凝', () => {
+    ascend()
+    const endgame = useEndgameStore()
+    const player = usePlayerStore()
+    // 只够 3 枚,却要 5 枚
+    endgame.addDaoSource(DAO_SOURCE_PER_FRUIT * 3)
+    expect(condenseDaoFruit(5), '道源不足全额却凝出了几枚').toBe(false)
+    expect(player.reincarnation.daoFruit, '失败的整笔不该留下半截').toBe(0)
+    expect(endgame.daoSource, '失败不该扣走道源').toBe(DAO_SOURCE_PER_FRUIT * 3)
+
+    // 恰好够 3 枚
+    expect(condenseDaoFruit(3)).toBe(true)
+    expect(player.reincarnation.daoFruit).toBe(3)
+    expect(endgame.daoSource).toBe(0)
+  })
+
+  it('可凝枚数与凝炼同口径:按整枚算,不算零头', () => {
+    ascend()
+    const endgame = useEndgameStore()
+    endgame.addDaoSource(DAO_SOURCE_PER_FRUIT * 4 + Math.floor(DAO_SOURCE_PER_FRUIT / 2))
+    expect(condenseFruitAffordable(), '零头被算成了一枚').toBe(4)
+    expect(condenseFruitAffordable()).toBe(Math.floor(endgame.daoSource / DAO_SOURCE_PER_FRUIT))
   })
 
   /** 故障注入:condenseDaoFruit 恢复置 daoFruitTutorialSeen,本用例红 */

@@ -1,6 +1,25 @@
 <template>
   <BaseModal :open="open" title="天道熔炉" @close="emit('close')">
     <div class="card-ink divide-y divide-ink/6 px-4">
+      <!--
+        四类物资各熔一次要点四次,而后期往往四样都堆着 —— 给一条「全部熔尽」。
+        整笔仍走 furnaceConvert(同一份判据),总计与逐类预览同源。
+      -->
+      <div v-if="totalMelt > 0" class="flex items-center justify-between gap-2 py-2.5">
+        <span class="min-w-0 flex-1 text-[12px] text-ink-soft">
+          四类合计
+          <span class="block text-[10px] leading-tight text-ink-faint tabular">可熔得 {{ totalMelt }} 道源</span>
+        </span>
+        <template v-if="meltAllArm">
+          <span class="flex shrink-0 items-center gap-1.5">
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="meltAllArm = false">再想想</button>
+            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doMeltAll">确认全熔</button>
+          </span>
+        </template>
+        <button v-else class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="meltAllArm = true">
+          全部熔尽
+        </button>
+      </div>
       <div v-for="row in furnaceRows" :key="row.rate.resource" class="py-2.5">
         <div class="flex items-center justify-between gap-2">
           <!-- 名称与存量分两行:率条插进来后单行会把「(存 3,000)」挤成折行 -->
@@ -71,20 +90,36 @@
         </button>
       </div>
       <div class="py-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
-          <button
-            class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
-            :disabled="fruitShort.short.m > 0"
-            :title="fruitShort.reason ?? undefined"
-            @click="doCondense()"
-          >
-            {{
-              fruitShort.short.m > 0
-                ? `道果 +1(道源尚差 ${daoSourceShortText(DAO_SOURCE_PER_FRUIT, endgame.daoSource)})`
-                : `${DAO_SOURCE_PER_FRUIT} 道源 → 道果 +1`
-            }}
-          </button>
+        <!--
+          凝一枚与连凝分开两颗钮:道源攒够几十枚的量时,一枚一枚点几十次没有意义。
+          连凝的可凝数与 condenseDaoFruit 同口径(整枚计),整笔原子 ——
+          不够全额就一枚也不凝,不留下半枚的零头。
+        -->
+        <!-- 标签与钮分两行:窄屏下并排会把「道源凝道果(跨世保留)」挤成竖排 -->
+        <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+          <span class="shrink-0 text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
+          <span class="ml-auto flex shrink-0 items-center gap-1.5">
+            <button
+              class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
+              :disabled="fruitShort.short.m > 0"
+              :title="fruitShort.reason ?? undefined"
+              @click="doCondense()"
+            >
+              {{
+                fruitShort.short.m > 0
+                  ? `道果 +1(道源尚差 ${daoSourceShortText(DAO_SOURCE_PER_FRUIT, endgame.daoSource)})`
+                  : `${DAO_SOURCE_PER_FRUIT} 道源 → 道果 +1`
+              }}
+            </button>
+            <!-- 只够凝一枚时不必摆连凝:两颗钮做同一件事 -->
+            <button
+              v-if="affordable > 1"
+              class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
+              @click="doCondenseAll()"
+            >
+              连凝 {{ affordable }} 枚
+            </button>
+          </span>
         </div>
         <p class="mt-1 text-[10px] leading-relaxed text-ink-faint tabular">
           当前 {{ fruitInfo.total }} 枚 · 有效 {{ fruitCountLabel(fruitInfo.effective) }}
@@ -154,6 +189,7 @@ import {
 } from '@/data/endgame'
 import {
   condenseDaoFruit,
+  condenseFruitAffordable,
   furnaceConvert,
   furnaceConvertStone,
   furnaceStoneCost
@@ -170,11 +206,13 @@ import { gnZero, subClamp } from '@/utils/gnum'
 import { daoSourceShortfall, daoSourceShortText } from '@/core/daoSource'
 import { MARGIN_PIPS, marginCurvePoints, marginMark } from '@/ui/fruitMargin'
 import { rateMark } from '@/ui/furnaceRate'
+import { useUiStore } from '@/stores/ui'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
 const resources = useResourcesStore()
+const furnaceUi = useUiStore()
 const player = usePlayerStore()
 const endgame = useEndgameStore()
 
@@ -192,6 +230,10 @@ function haveOf(rate: FurnaceRate): number {
   return rate.resource === 'herb' ? resources.herbMeltable : (resources[rate.resource] as number)
 }
 const furnaceRows = computed(() => FURNACE_RATES.map(rate => ({ rate, have: haveOf(rate) })))
+/** 四类全熔合计:逐类预览相加,与逐类推的是同一个函数 */
+const totalMelt = computed(() => FURNACE_RATES.reduce((sum, rate) => sum + furnacePreview(rate), 0))
+/** 全部熔尽的二次确认态 */
+const meltAllArm = ref(false)
 function furnacePreview(rate: FurnaceRate): number {
   // 直接按 rate 算,不经 find:同口径且不会因表对不上号而落到非空断言上
   return Math.floor(haveOf(rate) / rate.per)
@@ -199,6 +241,15 @@ function furnacePreview(rate: FurnaceRate): number {
 function doFurnace(rate: FurnaceRate): void {
   furnaceConfirm.value = null
   furnaceConvert(rate)
+}
+/** 全部熔尽:逐类走同一个 furnaceConvert,判据不分叉;某类不够一炉时自然跳过 */
+function doMeltAll(): void {
+  meltAllArm.value = false
+  let gained = 0
+  for (const rate of FURNACE_RATES) {
+    if (furnacePreview(rate) > 0) gained += furnaceConvert(rate)
+  }
+  if (gained > 0) furnaceUi.toast(`四类熔作道源 +${gained}`, 'success')
 }
 
 const fruitInfo = computed(() => fruitMarginalInfo())
@@ -209,6 +260,8 @@ const curvePoints = computed(() => marginCurvePoints(fruitInfo.value.total))
 const showCurve = computed(() => fruitInfo.value.total >= 4)
 
 const fruitShort = computed(() => daoSourceShortfall(DAO_SOURCE_PER_FRUIT, endgame.daoSource))
+/** 手上道源最多能凝几枚:连凝钮的可凝数,与 condenseDaoFruit 同口径 */
+const affordable = computed(() => condenseFruitAffordable())
 /** 灵石熔铸缺口;价签与 furnaceConvertStone 同源 */
 const stoneShort = computed(() => {
   const cost = furnaceStoneCost()
@@ -219,12 +272,16 @@ const stoneShort = computed(() => {
 const fruitDialogOpen = ref(false)
 const fruitDialog = computed(() => daoFruitDialog())
 let fruitOpenedAt = -Infinity
-function doCondense(): void {
+function doCondense(n = 1): void {
   const before = player.reincarnation.daoFruit
-  condenseDaoFruit()
+  condenseDaoFruit(n)
   if (player.reincarnation.daoFruit === before || !shouldShowFruitTutorial()) return
   fruitOpenedAt = performance.now()
   fruitDialogOpen.value = true
+}
+/** 连凝:一次把手上的道源凝尽;可凝数由 affordable 给,不在这里重算 */
+function doCondenseAll(): void {
+  doCondense(affordable.value)
 }
 /** 道果说明的一切关闭都走这里 */
 function closeFruitDialog(): void {

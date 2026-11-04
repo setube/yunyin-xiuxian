@@ -13,13 +13,23 @@
           {{ player.wudaoExchangeToday }}/{{ WUDAO_EXCHANGE_PER_DAY }}
         </p>
       </div>
-      <button
-        class="chip-ink shrink-0 !text-[10px]"
-        :disabled="!player.canExchangeWudao"
-        @click="doExchange"
-      >
-        {{ player.canExchangeWudao ? '兑换' : exchangeBlockedText }}
-      </button>
+      <!-- 每日限 10 次而灵石常够几十次:一枚一枚点十次没有意义,故给一次连兑 -->
+      <span class="flex shrink-0 items-center gap-1.5">
+        <button
+          class="chip-ink shrink-0 !text-[10px]"
+          :disabled="!player.canExchangeWudao"
+          @click="doExchange"
+        >
+          {{ player.canExchangeWudao ? '兑换' : exchangeBlockedText }}
+        </button>
+        <button
+          v-if="player.canExchangeWudao && player.wudaoExchangeAffordable > 1"
+          class="chip-ink shrink-0 !text-[10px]"
+          @click="doExchangeAll"
+        >
+          连兑 {{ player.wudaoExchangeAffordable }}
+        </button>
+      </span>
     </div>
     <div class="mt-2 space-y-2">
       <!-- 主修 -->
@@ -371,5 +381,21 @@
           ),
       ok ? 'success' : 'warn'
     )
+  }
+  /** 连兑:可兑次数由 store 现算,不在这里重算一遍 */
+  function doExchangeAll(): void {
+    const done = player.exchangeStoneForWudaoBatch()
+    if (done <= 0) {
+      ui.toast(
+        exchangeFailText(
+          exchangeState.value.lockedByRealm,
+          exchangeState.value.dailyFull,
+          formatGap(exchangeState.value.stoneShort)
+        ),
+        'warn'
+      )
+      return
+    }
+    ui.toast(exchangeOkToast(WUDAO_EXCHANGE_GAIN * done), 'success')
   }
 </script>
