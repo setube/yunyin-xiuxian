@@ -1937,6 +1937,43 @@ html[data-theme='dark'] .fruit-curve polyline {
   font-variant-numeric: tabular-nums;
 }
 
+/* ================= 道侣三条关系值(bondMeter) =================
+ * 弹窗里缘分 / 信任 / 契合是三根一模一样的蓝条,各填到 0~100。
+ * 可推进缘阶要三条各自过线,而三条的线并不相同(下一阶可能要缘分 50、
+ * 信任 45、契合 0)—— 界面一根门槛都没画(见 src/ui/bondMeter.ts)。
+ * 现每根条上标出下一阶的门槛:过线的那根转青,没过线的转朱,刻度即门槛。
+ * 色取既有语义 token;形制层不吃指针事件。
+ */
+.bond-meter {
+  position: relative;
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.1);
+  pointer-events: none;
+}
+.bond-meter-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--color-cinnabar-rgb) / 0.55);
+}
+/* 过线的那根转青 —— 这一根不再是卡着推进的那根 */
+.bond-meter--met .bond-meter-fill {
+  background: rgb(var(--color-jade-rgb) / 0.6);
+}
+/* 门槛刻度:一道竖线,左沿对齐条上的位置 */
+.bond-meter-gate {
+  position: absolute;
+  top: -2px;
+  width: 1px;
+  height: 8px;
+  border-radius: 1px;
+  background: rgb(var(--color-ink-rgb) / 0.45);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
