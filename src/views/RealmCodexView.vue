@@ -46,6 +46,16 @@
               {{ cell.def.name }}
             </span>
             <span class="chip-ink !text-[9px]">{{ cell.def.basis }}</span>
+            <!--
+              当前用朱字,已过与未到原先只靠字色深浅(text-ink-soft / text-ink-faint)——
+              两色差得很小,21 境铺下来读不出哪几境已过。已过的另给一道方印。
+            -->
+            <span
+              v-if="cell.index < player.major"
+              class="realm-passed grid h-3.5 w-3.5 shrink-0 place-items-center rounded-sm border border-jade/50 font-kai text-[8px] leading-none text-jade"
+              role="img"
+              aria-label="已过"
+            >过</span>
             <span v-if="cell.index === player.major" class="text-[9px] text-cinnabar">当前</span>
           </p>
           <p class="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{{ cell.def.desc }}</p>
