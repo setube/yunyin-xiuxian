@@ -57,13 +57,38 @@
         已镇压 {{ player.suppressedRegions.length }} 处
         <span class="text-ink-faint">· {{ suppressDaoText(player.suppressedRegions.length) }}</span>
       </p>
-      <!-- 途中档位:名字、档数与概率取自 core/eventTier,与事件引擎同源(见 data/constants) -->
-      <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px]">
-        <span class="text-ink-faint">途中{{ cnNumber(EVENT_TIERS.length) }}档:</span>
-        <span v-for="t in EVENT_TIERS" :key="t.id" class="chip-ink text-[10px]" :style="{ color: t.color }">
-          {{ t.name }} · {{ tierOddsText(t.id, chainPending, exploreEventChance(adventure.session?.regionId ?? '', player.finalStats.mods)) }}
-        </span>
-      </p>
+      <!--
+        途中档位。原先只是三个并排的 chip,各写一句「约每 N 程一次」——
+        想比出哪档更常见,得先把三个数在脑子里排一下。
+        core 的 tierChances 早算好了三档各自的发生概率,那个函数至今没有任何界面读过。
+        这里把它画成一根分段条:一段有多长,就是这档占多少(见 ui/eventTierBar)。
+      -->
+      <div class="text-[10px]">
+        <div class="flex items-baseline justify-between gap-2">
+          <span class="text-ink-faint">途中{{ cnNumber(EVENT_TIERS.length) }}档</span>
+          <span v-if="tierBase" class="text-ink-faint">
+            最常见 <span :style="{ color: tierBase.color }">{{ tierBase.name }}</span>
+          </span>
+        </div>
+        <div class="tier-bar mt-1" role="img" :aria-label="tierBarLabel">
+          <span
+            v-for="s in tierSegs"
+            :key="s.id"
+            class="tier-bar__seg"
+            :style="{ left: `${s.start * 100}%`, width: `${s.length * 100}%`, background: s.color }"
+          />
+        </div>
+        <p class="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+          <span v-for="s in tierSegs" :key="s.id" class="inline-flex items-center gap-1">
+            <i class="tier-bar__dot" :style="{ background: s.color }" aria-hidden="true" />
+            <span :style="{ color: s.color }">{{ s.name }}</span>
+            <span class="text-ink-faint tabular">
+              {{ tierOddsText(s.id, chainPending, tierAnyChance) }}
+            </span>
+            <span v-if="tierRarity[s.id]" class="text-ink-faint">· {{ tierRarity[s.id] }}</span>
+          </span>
+        </p>
+      </div>
       <!-- 镇压规则只留一行总纲,逐项「当前值 / 需≤阈值」在地界行 -->
       <p class="text-[10px] leading-relaxed text-ink-faint">
         镇压门槛:胜 {{ SUPPRESS_THRESHOLDS.minWins }} 场 · 均 ≤{{ SUPPRESS_THRESHOLDS.maxAvgRounds }} 回合 ·
@@ -117,7 +142,8 @@
   import { useEndgameStore } from '@/stores/endgame'
   import { MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
   import { exploreEventChance, startExploration } from '@/core/exploration'
-  import { EVENT_TIERS, tierOddsText } from '@/core/eventTier'
+  import { EVENT_TIERS, tierChances, tierOddsText } from '@/core/eventTier'
+  import { dominantTier, rarityRatio, tierSegments } from '@/ui/eventTierBar'
   import { pendingChainStages } from '@/core/eventEngine'
   import { SUPPRESS_EXP_MAX, SUPPRESS_EXP_PER_REGION, SUPPRESS_THRESHOLDS, suppressDaoText } from '@/core/suppress'
   import { REVIVE_AFTER_HOURS } from '@/core/worldMemory'
@@ -142,6 +168,20 @@
 
   /** 有没有缘在续:三档此刻的稀度取决于它(引擎先掷奇缘、再掷机缘,剩下才是际遇) */
   const chainPending = computed(() => pendingChainStages(player.major).length > 0)
+
+  /** 途中各档的实际概率:与事件引擎逐步同源(core/eventTier.tierChances),本页不另算 */
+  const tierAnyChance = computed(() => exploreEventChance(adventure.session?.regionId ?? '', player.finalStats.mods))
+  const tierChancesNow = computed(() => tierChances(chainPending.value, tierAnyChance.value))
+  const tierSegs = computed(() => tierSegments(tierChancesNow.value))
+  const tierBase = computed(() => dominantTier(tierSegs.value))
+  /** 每档相对最常见那档稀多少;常见那档自身不报 */
+  const tierRarity = computed(() =>
+    Object.fromEntries(tierSegs.value.map(s => [s.id, rarityRatio(s, tierBase.value)])) as Record<string, string>
+  )
+  /** 读屏名:把条上三段说成一句话,不让图形独占信息 */
+  const tierBarLabel = computed(() =>
+    tierSegs.value.map(s => `${s.name} ${tierOddsText(s.id, chainPending.value, tierAnyChance.value)}`).join(" · ")
+  )
 
   const worldBrief = computed(() => {
     const w = adventure.mortalWorld

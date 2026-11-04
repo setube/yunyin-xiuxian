@@ -2490,6 +2490,38 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-cinnabar-rgb) / 0.9);
 }
 
+/* ================= 历练三档分布条(eventTierBar) =================
+ * 历练页顶部原写三句独立的话(「约每 2 程 / 约每 240 程 / 约每 40 程」),
+ * 想比出哪档更常见,得先把三个数在脑子里排一下(见 src/ui/eventTierBar.ts)。
+ * 一根分段条:一段有多长,就是这档占多少。三段相加恒满条 —— 按三档之和归一,
+ * 不按绝对概率(那样九成是空的,三档全挤在左边一小截)。
+ * 色由数据层给(档位自己的 token),条只负责摆位置。
+ */
+.tier-bar {
+  position: relative;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(var(--color-ink-rgb) / 0.08);
+}
+.tier-bar__seg {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+/* 相邻两段之间留一道纸色细缝:同明度的两档挨着时,没有缝就看不出边界在哪 */
+.tier-bar__seg + .tier-bar__seg {
+  box-shadow: inset 1px 0 0 rgb(var(--color-paper-rgb) / 0.9);
+}
+/* 图例里的小色点:与条上那一段同一个色 */
+.tier-bar__dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+}
+
 /* ================= 五维刻度(ratingGauge) =================
  * 五维评级原只给一排星(★★★☆☆):星级是离散的,「3 星」与「3 星」之间差多少读不出来。
  * core 早已算好连续得分与那道阈值表,这里把它落成一根条:
