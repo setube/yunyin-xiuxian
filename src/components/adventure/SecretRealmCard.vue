@@ -5,7 +5,21 @@
     <p class="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span class="font-kai text-[14px] tracking-[0.2em] text-ink">秘境</span>
       <span class="chip-ink !text-[9px]">{{ gate === 'celestial' ? '天界秘境' : '凡境秘境' }} · {{ cnNumber(SECRET_LAYERS) }}层 · 出则散</span>
-      <span v-if="state" class="ml-auto text-[10px] tabular text-gold-ink">第 {{ state.layer }}/{{ SECRET_LAYERS }} 层</span>
+      <span v-if="state" class="ml-auto flex items-center gap-1.5 text-[10px] tabular text-gold-ink">
+        <!--
+          层数刻度:要不要再入一层,取决于「还差几层见底」(见 ui/realmProgress)。
+          格数随 SECRET_LAYERS 变,不是写死的三格。
+        -->
+        <span
+          class="realm-layer-pips"
+          :class="{ 'realm-layer-pips--deepest': progress.deepest }"
+          role="img"
+          :aria-label="`第 ${progress.layer}/${progress.layers} 层`"
+        >
+          <i v-for="(on, i) in realmLayerPips(progress)" :key="i" :class="{ on }" />
+        </span>
+        第 {{ progress.layer }}/{{ progress.layers }} 层
+      </span>
     </p>
 
     <!-- 在境中 -->
@@ -14,8 +28,17 @@
         {{ def?.name }} · {{ def?.desc }}
       </p>
       <p class="mt-1 text-[10px] leading-relaxed text-violet-ink">此地规则:{{ secretRuleTexts(state).join(' · ') }}</p>
-      <p v-if="state.losses > 0" class="mt-0.5 text-[10px] leading-relaxed tabular text-cinnabar">
-        已败 {{ state.losses }} 场 · 再败 {{ SECRET_MAX_LOSSES - state.losses }} 场逐出
+      <!-- 败场刻度:这是**剩余**而不是已得 —— 实心越少越危险,故与层数反过来 -->
+      <p v-if="state.losses > 0" class="mt-0.5 flex items-center gap-1.5 text-[10px] leading-relaxed tabular text-cinnabar">
+        <span
+          class="realm-life-pips"
+          :class="{ 'realm-life-pips--none': progress.livesLeft === 0 }"
+          role="img"
+          :aria-label="`还能败 ${progress.livesLeft} 场`"
+        >
+          <i v-for="(on, i) in realmLifePips(progress)" :key="i" :class="{ on }" />
+        </span>
+        已败 {{ state.losses }}/{{ SECRET_MAX_LOSSES }} 场 · 再败 {{ progress.livesLeft }} 场逐出
       </p>
       <p v-if="state.spoils.length" class="mt-1 max-h-24 overflow-y-auto text-[10px] leading-relaxed text-ink-faint">
         <span v-for="(s, i) in state.spoils" :key="i" class="block">· {{ s }}</span>
@@ -77,10 +100,10 @@
   import { useUiStore } from '@/stores/ui'
   import { secretRealmDef, type SecretRealmDef } from '@/data/secretRealms'
   import { isTopGain, realmMark } from '@/ui/realmMark'
+  import { realmLayerPips, realmLifePips, realmProgress, SECRET_MAX_LOSSES } from '@/ui/realmProgress'
   import { cnNumber } from '@/utils/format'
   import {
     SECRET_LAYERS,
-    SECRET_MAX_LOSSES,
     abandonRealm,
     availableRealms,
     currentRealm,
@@ -102,6 +125,9 @@
 
   const unlocked = computed(() => realmUnlock(props.gate))
   /** 在境中(仅认本册):`currentRealm` 全局单份不分册,须按 gate 过滤,与 `availableRealms` 同口径 */
+  /** 秘境进度形制:层数与剩余败场(见 ui/realmProgress) */
+  const progress = computed(() => realmProgress(state.value?.layer ?? 0, state.value?.losses ?? 0))
+
   const state = computed(() => {
     const s = currentRealm()
     if (!s) return null
