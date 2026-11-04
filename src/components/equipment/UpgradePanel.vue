@@ -2,7 +2,16 @@
   <template v-if="inst && upCost">
     <div class="ink-divider my-3" />
     <p class="flex items-center justify-between text-[12px] text-ink-faint">
-      <span>强化 +{{ inst.level + 1 }} / 上限 {{ equipLevelCap() }}</span>
+      <!--
+        刻度独占一行:放同一行会把「上限 10」挤断成两行(实测 375 宽下断成「上限 / 10」)。
+        文字整句 nowrap,刻度另起一行 —— 见 ui/masteryMark 的 upgradeMark。
+      -->
+      <span class="min-w-0">
+        <span class="upgrade-pips" :class="{ 'upgrade-pips--max': mark(inst.level + 1).maxed }" role="img" :aria-label="`强化 +${inst.level + 1} / 上限 ${equipLevelCap()}`">
+          <i v-for="(on, i) in upgradePips(mark(inst.level + 1))" :key="i" :class="{ on }" />
+        </span>
+        <span class="mt-0.5 block whitespace-nowrap">强化 +{{ inst.level + 1 }} / 上限 {{ equipLevelCap() }}</span>
+      </span>
       <span class="tabular">器灵尘×{{ upCost.dust }} · 灵石 {{ formatGN(upCost.stone) }}</span>
     </p>
     <p class="mt-1 text-[11px] tabular text-azure">{{ equipNextLevelText(inst.level) }}</p>
@@ -39,7 +48,12 @@
   <template v-else-if="inst && !upCost">
     <div class="ink-divider my-3" />
     <p class="flex items-center justify-between text-[12px] text-ink-faint">
-      <span>强化 +{{ inst.level }} / 上限 {{ equipLevelCap() }}</span>
+      <span class="min-w-0">
+        <span class="upgrade-pips" :class="{ 'upgrade-pips--max': mark(inst.level).maxed }" role="img" :aria-label="`强化 +${inst.level} / 上限 ${equipLevelCap()}`">
+          <i v-for="(on, i) in upgradePips(mark(inst.level))" :key="i" :class="{ on }" />
+        </span>
+        <span class="mt-0.5 block whitespace-nowrap">强化 +{{ inst.level }} / 上限 {{ equipLevelCap() }}</span>
+      </span>
       <span class="text-gold-ink">{{ upgradeCapToast() }}</span>
     </p>
   </template>
@@ -50,6 +64,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useInventoryStore } from '@/stores/inventory'
   import { upgradeCapToast } from '@/ui/forgeText'
+  import { upgradeMark, upgradePips } from '@/ui/masteryMark'
   import { equipLevelCap, equipUpgradeCost, upgradeBatchPlan, upgradeEquipmentBatch, upgradeShort, upgradeShortfall, type UpgradeBatchPlan } from '@/core/forge'
   import { formatGN, formatGap } from '@/utils/format'
   import { gnZero } from '@/utils/gnum'
@@ -63,6 +78,11 @@
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
   const short = computed(() => (upCost.value ? upgradeShort(upCost.value) : null))
   const gap = computed(() => (upCost.value ? upgradeShortfall(upCost.value) : { dust: 0, stone: gnZero() }))
+  /** 强化等级形制:上限随炼器台等级变,故在调用点取值(见 ui/masteryMark 的 upgradeMark) */
+  function mark(level: number) {
+    return upgradeMark(level, equipLevelCap())
+  }
+
   /** 连升计划:预览与执行同一份;升不动时 levels=0,整块隐藏 */
   const batchPlan = computed<UpgradeBatchPlan>(() =>
     inst.value ? upgradeBatchPlan(inst.value.uid) : { levels: 0, dust: 0, stone: gnZero(), atCap: false }

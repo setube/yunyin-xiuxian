@@ -27,6 +27,38 @@ export interface MasteryMark {
   label: string
 }
 
+/**
+ * 装备强化等级刻度。
+ *
+ * 强化行只写「+7 / 上限 10」:上限随炼器台等级变(基础 10,再加 forgeCapBonus),
+ * 「+7」在一件上限 10 的器上还差三级,在另一件上限 12 的器上差五级 ——
+ * 两个数仍要自己去减。格数随上限变,已到的实心。
+ *
+ * 上限同样由调用方传入,本模块不去读 store。
+ */
+export interface UpgradeMark {
+  /** 当前强化等级,夹到 0~上限 */
+  level: number
+  /** 上限等级 */
+  cap: number
+  /** 是否已至顶 */
+  maxed: boolean
+  /** 还差几级;已满级为 0 */
+  toMax: number
+}
+
+/** 一件装备的强化等级刻度 */
+export function upgradeMark(level: number, cap: number): UpgradeMark {
+  const capN = Number.isFinite(cap) ? Math.max(0, Math.floor(cap)) : 0
+  const lv = Number.isFinite(level) ? Math.max(0, Math.min(capN, Math.floor(level))) : 0
+  return { level: lv, cap: capN, maxed: capN > 0 && lv >= capN, toMax: capN - lv }
+}
+
+/** 强化等级刻度:已到的格为 true。格数随上限变 */
+export function upgradePips(mark: UpgradeMark): boolean[] {
+  return Array.from({ length: mark.cap }, (_, i) => i < mark.level)
+}
+
 /** 装备是否强化至顶。cap 取 `core/forge.equipLevelCap()`(随炼器台等级变) */
 export function equipMastery(level: number, cap: number): MasteryMark | null {
   if (!Number.isFinite(level) || !Number.isFinite(cap) || cap <= 0) return null
