@@ -69,18 +69,35 @@
     </template>
 
     <template v-if="codexTab === 'classics'">
-    <SectionTitle title="典籍" />
+    <SectionTitle title="典籍" :hint="`${cnNumber(classicRows.length)}脉`" />
+    <!--
+      典籍册原先把 11 部书平铺成 11 张同形的卡:哪几部同出一脉、这一脉占几部、
+      管着几个境界,全要靠读「丹道 / 道家 / 道教 / 网文」那枚小签自己数。
+      现按来路分谱:一脉一处,脉下逐部列书名与相涉境界(见 ui/classicBoard)。
+    -->
     <section class="space-y-2">
-      <article v-for="c in CLASSICS" :key="c.id" class="card-ink px-4 py-3">
-        <p class="flex flex-wrap items-center gap-2">
-          <span class="font-kai text-[14px] text-ink">《{{ c.title }}》</span>
-          <span class="chip-ink !text-[9px]">{{ c.school }}</span>
-          <span class="text-[10px] text-ink-faint">{{ c.source }}</span>
+      <article v-for="row in classicRows" :key="row.school" class="card-ink px-4 py-3">
+        <p class="flex flex-wrap items-baseline gap-2">
+          <span class="classic-school-tag shrink-0 font-kai text-[13px]" :class="`classic-school-tag--${schoolKey(row.school)}`">
+            {{ row.school }}
+          </span>
+          <span class="text-[10px] text-ink-faint">{{ schoolNote(row.school) }}</span>
+          <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">
+            {{ row.count }} 部 · 涉 {{ row.realmCount }} 境
+          </span>
         </p>
-        <p class="mt-1 text-[11px] leading-relaxed text-ink-soft">{{ c.gist }}</p>
-        <p v-if="c.realms.length" class="mt-1 text-[10px] text-ink-faint">
-          相涉:{{ c.realms.map(id => realmName(id)).join('、') }}
-        </p>
+        <div class="mt-1.5 divide-y divide-ink/6">
+          <div v-for="c in row.books" :key="c.id" class="py-1.5">
+            <p class="flex flex-wrap items-baseline gap-x-2">
+              <span class="font-kai text-[13px] text-ink">《{{ c.title }}》</span>
+              <span class="text-[10px] text-ink-faint">{{ c.source }}</span>
+            </p>
+            <p class="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{{ c.gist }}</p>
+            <p v-if="c.realms.length" class="mt-0.5 text-[10px] text-ink-faint">
+              相涉:{{ c.realms.map(id => realmName(id)).join('、') }}
+            </p>
+          </div>
+        </div>
       </article>
     </section>
     </template>
@@ -389,7 +406,8 @@
   import { REALMS, WORLDS, realmDef } from '@/data/realms'
   import { worldPips, worldProgress } from '@/ui/worldProgress'
   import { mansionGroups, mansionOrdinal } from '@/ui/mansionBoard'
-  import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm } from '@/data/classics'
+  import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm, type ClassicSchool } from '@/data/classics'
+  import { classicsBySchool, schoolNote } from '@/ui/classicBoard'
   import { HEXAGRAMS, TRIGRAMS, trigramDef } from '@/data/yijing'
   import {
     DIVINATION_COST,
@@ -433,6 +451,15 @@
     { id: 'qimen', label: '奇门' }
   ]
   const codexTab = ref<CodexTab>('realm')
+
+  /** 典籍谱:按来路分组,一脉一处(见 ui/classicBoard) */
+  const classicRows = computed(() => classicsBySchool(CLASSICS))
+
+  /** 来路的中文名作类名:固定五脉各一枚,认不出的落 default 一档 */
+  const SCHOOL_KEYS: Record<ClassicSchool, string> = { 丹道: 'dan', 道家: 'dao', 道教: 'jiao', 佛道: 'fo', 网文: 'web' }
+  function schoolKey(school: string): string {
+    return SCHOOL_KEYS[school as ClassicSchool] ?? 'other'
+  }
 
   const showAllHex = ref(false)
 

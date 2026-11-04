@@ -2449,6 +2449,43 @@ html[data-theme='dark'] .fruit-curve polyline {
   color: rgb(var(--color-cinnabar-rgb));
 }
 
+/* ================= 典籍谱(classicBoard) =================
+ * 典籍册原先把 11 部书平铺成 11 张同形的卡:哪几部同出一脉,要靠读小签自己数。
+ * 这里给每脉一枚脉签:五种来路靠**字与形**分开(签上的字本就是来路名),色只作辅助。
+ * 色一律取既有语义 token,不新增。
+ */
+.classic-school-tag {
+  display: inline-block;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  padding: 0 4px;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+}
+/* 丹道 · 朱:炉火药物,与印章同色 */
+.classic-school-tag--dan {
+  color: rgb(var(--color-cinnabar-rgb));
+}
+/* 道家 · 金:老庄之道,与「贵重」同色 */
+.classic-school-tag--dao {
+  color: rgb(var(--color-gold-ink-rgb));
+}
+/* 道教 · 靛:科仪斋醮,与「东方」同色 */
+.classic-school-tag--jiao {
+  color: rgb(var(--color-indigo-ink-rgb));
+}
+/* 佛道 · 紫:释氏修证 */
+.classic-school-tag--fo {
+  color: rgb(var(--color-violet-ink-rgb));
+}
+/* 网文 · 墨:无原典可引,不抢前面四脉 */
+.classic-school-tag--web {
+  color: rgb(var(--color-ink-soft-rgb));
+}
+.classic-school-tag--other {
+  color: rgb(var(--color-ink-faint-rgb));
+}
+
 /* ================= 四象二十八宿盘(mansionBoard) =================
  * 星象页原先只写一句「今日值某宿」,加一句「四象配四界」——
  * 二十八宿按象成组(东苍龙七宿、南朱雀七宿…),本来就能摆成四排
