@@ -47,6 +47,15 @@ describe('强化刻度 · 零、已到的格要压得住未到的', () => {
     expect(block('.upgrade-pips'), '缝至少 2px').toContain('gap: 2px')
   })
 
+  it('灵兽来源那两排(园 / 安抚)同样要压得住', () => {
+    // 绿实心配墨 0.22 空槽只差 2.4:1;收到 0.15 后亮暗回到 3.4:1 上下
+    expect(block('.beast-src-pips i'), '空槽收到 0.15').toMatch(/ink-rgb\)\s*\/\s*0\.15/)
+    for (const sel of ['.beast-src-pips--garden i.on', '.beast-src-pips--soothe i.on']) {
+      const body = block(sel)
+      expect(body, `${sel} 该取满色`).toMatch(/background: rgb\(var\(--color-[a-z-]+-rgb\)\)/)
+    }
+  })
+
   it('另外两排彩格同病:未到格原 0.25/0.3 与彩色实心只差 2.15 / 1.74', () => {
     // 道童层数与功法层数:彩实心配墨描边空槽,与强化那一排是同一类读法
     for (const cls of ['.appr-pips i', '.gongfa-pips i']) {
