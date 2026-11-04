@@ -1974,6 +1974,38 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-ink-rgb) / 0.45);
 }
 
+/* ================= 画像里的道途签(daoShare) =================
+ * 修行画像把这一世的道痕按四道分账,原先画成四根一模一样的朱砂条 ——
+ * 哪根是剑道、哪根是杀伐道,只能读左边的名字(见 src/ui/daoShare.ts)。
+ * 道纹本身上一轮已有(dao-crest),但那是卡角水印(0.22 不透明度),
+ * 在行首当记号太弱,故这里另给一个小尺寸的实色道签。
+ */
+.dao-tag {
+  width: 10px;
+  height: 10px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  pointer-events: none;
+}
+.dao-tag--blade {
+  background-image: linear-gradient(135deg, transparent 0 40%, currentColor 40% 54%, transparent 54% 100%);
+}
+.dao-tag--ring {
+  background-image: radial-gradient(circle, transparent 0 40%, currentColor 40% 60%, transparent 60%);
+}
+.dao-tag--bars {
+  background-image:
+    linear-gradient(0deg, transparent 0 18%, currentColor 18% 32%, transparent 32% 100%),
+    linear-gradient(0deg, transparent 0 43%, currentColor 43% 57%, transparent 57% 100%),
+    linear-gradient(0deg, transparent 0 68%, currentColor 68% 82%, transparent 82% 100%);
+}
+.dao-tag--cross {
+  background-image:
+    linear-gradient(45deg, transparent 0 41%, currentColor 41% 55%, transparent 55% 100%),
+    linear-gradient(-45deg, transparent 0 41%, currentColor 41% 55%, transparent 55% 100%);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
