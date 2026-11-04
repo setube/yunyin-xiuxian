@@ -2158,6 +2158,55 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-gold-ink-rgb) / 0.9);
 }
 
+/* ================= 秘境进度(realmProgress) =================
+ * 秘境是「出则散」的一次性内容:三层、败两次即被逐出。
+ * 而界面上这两样都只是数字(见 src/ui/realmProgress.ts)。
+ * 层数是**已得**(实心越多越好),败场是**剩余**(实心越少越危险)——两套形状刻意相反,
+ * 免得把「还能败一次」读成「已经败了一次」。
+ */
+.realm-layer-pips,
+.realm-life-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.realm-layer-pips i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 0.35;
+}
+.realm-layer-pips i.on {
+  background: currentColor;
+  box-shadow: none;
+  opacity: 1;
+}
+/* 已至最深层:整排转实朱,与「还差一层」分开 */
+.realm-layer-pips--deepest i.on {
+  background: rgb(var(--color-cinnabar-rgb));
+}
+.realm-life-pips i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  /* 剩余用方块,与层数的圆点形状不同 —— 两套读数不该长得一样 */
+  border-radius: 1px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 0.35;
+}
+.realm-life-pips i.on {
+  background: currentColor;
+  box-shadow: none;
+  opacity: 0.9;
+}
+/* 还剩最后一次:转朱并留一道外框,是最该被看见的一档 */
+.realm-life-pips--none i {
+  box-shadow: inset 0 0 0 1px rgb(var(--color-cinnabar-rgb) / 0.6);
+}
+
 /* ================= 满级标记 =================
  * 与品阶光环是两套语言(见 src/ui/masteryMark.ts):
  *   品阶 = 掉落时就定下的属性 → 角饰 + 外发光,越稀有越亮;
