@@ -117,6 +117,23 @@ describe('道童形制 · 四、界面接上了', () => {
     expect(block('.appr-pips--max i.on'), '满层没有单独的颜色').toContain('gold-ink')
   })
 
+  it('每格要够宽 —— 二十格挤在 78px 时,1/20 与未点几乎分不出', () => {
+    /*
+     * 原 2.5px:一格只占屏宽千分之七。二十格排开是一条带缺口的细线,
+     * 「才第 1 层」读不出来 —— 而这排刻度存在的唯一理由就是这个。
+     * 行内还有「N/20」与右侧羁绊阶点,320 宽下余约 185px,加宽到 4px 放得下。
+     */
+    expect(block('.appr-pips i'), '每格至少 4px').toContain('width: 4px')
+    // 已到的格取满色,不再压到 0.8 —— 小格上 0.8 与空槽的差还要再小一档
+    expect(block('.appr-pips i.on'), '已到格取满色').toMatch(/background: rgb\(var\(--color-gold-ink-rgb\)\)/)
+  })
+
+  it('加宽后 320 宽放得下(二十格 + 读数 + 羁绊点)', () => {
+    // 20 × 4 + 19 × 1.5 = 108.5px;读数约 20px、羁绊约 52px → 合计约 181px,行内可用 262px
+    const pips = 20 * 4 + 19 * 1.5
+    expect(pips).toBeLessThan(262 - 20 - 52)
+  })
+
   it('形制只取既有语义 token', () => {
     const from = CSS.indexOf('.appr-pips {')
     const seg = CSS.slice(from, CSS.indexOf('/* =================', from))
