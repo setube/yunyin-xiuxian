@@ -143,7 +143,8 @@ describe('不可逆确认的两次点击各写什么', () => {
     ['components/dongfu/VeinInvestCard.vue', '连 投'],
     ['components/inventory/ArtifactPanel.vue', '连 炼'],
     ['components/inventory/BrewingDialog.vue', '开 炉 ×'],
-    ['components/inventory/DismantleDialog.vue', '清理化尘']
+    ['components/inventory/DismantleDialog.vue', '清理化尘'],
+    ['views/SoulsView.vue', '清理散置']
   ]
 
   it('复述动作族的六个落点都用复述写法,且与「再想想」成对', () => {
