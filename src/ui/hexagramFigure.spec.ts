@@ -16,9 +16,9 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { TRIGRAMS } from '@/data/yijing'
+import { HEXAGRAMS, TRIGRAMS } from '@/data/yijing'
 import { readingOfLines } from '@/core/divination'
-import { changedLines, hexFigure, hexLines, movingCount } from './hexagramFigure'
+import { changedLines, hexFigure, hexLines, hexagramLines, movingCount } from './hexagramFigure'
 
 const ROOT = resolve(__dirname, '../..')
 const VIEW = readFileSync(resolve(ROOT, 'src/views/RealmCodexView.vue'), 'utf-8')
@@ -200,5 +200,40 @@ describe('卦画 · 六、界面与形制', () => {
     // 只有动爻那一档带色;之卦没有自己的颜色档
     expect(seg, '之卦不该另有一档色').not.toContain('.hex-line--changed .hex-line__bar')
     expect(VIEW, '模板上之卦与本卦走同一套 hex-line').toContain('class="hex-line hex-line--changed"')
+  })
+})
+
+describe('卦画 · 七、谱表里的重卦', () => {
+  it('上卦三爻在上、下卦三爻在下 —— 一眼认得出是哪一卦', () => {
+    // 乾上坤下 = 否;倒过来说成坤上乾下就成了泰
+    const qian = TRIGRAMS.find(t => t.id === 'qian')!
+    const kun = TRIGRAMS.find(t => t.id === 'kun')!
+    const lines = hexagramLines(qian.lines, kun.lines)
+    expect(lines.filter(l => l.yang).every(l => l.position >= 4)).toBe(true)
+    expect(lines.filter(l => !l.yang).every(l => l.position <= 3)).toBe(true)
+  })
+
+  it('谱表每一卦都画得出六爻,认不出的单卦才留白', () => {
+    for (const x of HEXAGRAMS) {
+      const upper = TRIGRAMS.find(t => t.id === x.upper)!
+      const lower = TRIGRAMS.find(t => t.id === x.lower)!
+      expect(hexagramLines(upper.lines, lower.lines), `${x.name}卦`).toHaveLength(6)
+    }
+  })
+
+  it('谱表不带动爻记号 —— 谱是词典,不是这一卦', () => {
+    const qian = TRIGRAMS.find(t => t.id === 'qian')!
+    for (const l of hexagramLines(qian.lines, qian.lines)) expect(l.mark).toBe('')
+  })
+
+  it('谱表里的阴爻断口留得出来 —— 2px 的线挨成一片就成了粗横杠', () => {
+    expect(block('.hex-figure--inline .hex-line__bar--yin')).toContain('gap:')
+    expect(block('.hex-figure--inline')).toContain('gap:')
+  })
+
+  it('视图按 hexRows 铺,不再并排两个单卦符号', () => {
+    expect(VIEW).toContain('hexRows')
+    expect(VIEW).toMatch(/v-for="row in hexRows"/)
+    expect(VIEW).not.toContain("trigramDef(x.upper)?.symbol")
   })
 })

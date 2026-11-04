@@ -102,8 +102,9 @@ describe('典籍志 · 未实装门类如实标注', () => {
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/.*$/gm, '')
-    // 只认用过的形态(调用/列表渲染),注释与 import 不算接线
-    for (const token of ['in TRIGRAMS', 'in HEXAGRAMS', 'askDivination(', 'DIVINATION_COST']) {
+    // 只认用过的形态(调用/列表渲染),注释与 import 不算接线。
+    // 六十四卦那栏现由 hexRows 铺(每卦画成六爻),故判据盯的是「hexRows 的来源仍是 HEXAGRAMS」。
+    for (const token of ['in TRIGRAMS', 'in hexRows', 'HEXAGRAMS.map', 'askDivination(', 'DIVINATION_COST']) {
       expect(src, `界域志没有接上 ${token}`).toContain(token)
     }
   })

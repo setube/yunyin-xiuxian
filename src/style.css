@@ -2380,6 +2380,22 @@ html[data-theme='dark'] .fruit-curve polyline {
   align-items: center;
   gap: 3px;
 }
+/* 谱表里的爻画:窄一档、不带爻题 —— 六十四行都要放得下,不抢文字。
+ * 阴阳仍须一眼可分:断口留得比爻高宽(阴爻中间那块空白要看得见),
+ * 爻线之间也留足缝 —— 2px 的线挨成一片就成了一条粗横杠,六爻读不出六爻。 */
+.hex-figure--inline {
+  gap: 2px;
+}
+.hex-figure--inline .hex-line__bar {
+  width: 16px;
+  height: 2px;
+}
+.hex-figure--inline .hex-line__bar i {
+  height: 2px;
+}
+.hex-figure--inline .hex-line__bar--yin {
+  gap: 5px;
+}
 /* 一爻:宽 30px、高 3px;阳爻整条,阴爻两段之间留断口 */
 .hex-line__bar {
   display: flex;
