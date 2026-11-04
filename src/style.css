@@ -520,11 +520,17 @@ html[data-theme='dark'] .seal-face {
   box-shadow: none;
 }
 
-/* 夜主题禁用态:夜里 ink-faint 是亮暖灰,白字只有 ~2:1;换 paper-dark 惰性底,92% 白字 >11:1 */
+/*
+ * 夜主题禁用态:夜里 ink-faint 是亮暖灰,白字只有 ~2:1;换 paper-dark 惰性底,92% 白字 >11:1。
+ * 但原写法连 box-shadow 一起抹掉,而 paper-dark 与纸只差 1.25:1 ——
+ * 按钮整块融进纸里,玩家看不出「这里本该有个按钮,只是现在按不了」。
+ * 现补回一道描边:轮廓对纸 2.58:1(看得出形状),92% 白字对底仍 11.37:1(读得出拒因)。
+ * 禁用态本就该「看得见、按不动」,不是「看不见」。
+ */
 html[data-theme='dark'] .btn-seal:disabled {
   background: rgb(var(--color-paper-dark-rgb));
   color: rgb(255 255 255 / 0.92);
-  box-shadow: none;
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-soft-rgb) / 0.4);
 }
 
 .btn-ghost {
