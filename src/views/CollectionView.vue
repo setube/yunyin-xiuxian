@@ -45,6 +45,8 @@
     <template v-else-if="tab === 'collection'">
       <section v-for="cat in collectionCats" :key="cat.key">
         <SectionTitle :title="cat.name" :hint="cat.hint" />
+        <!-- 成就页与成就分组都有进度条,收藏各类目却没有 —— 只有一行「已 X/Y」文字 -->
+        <ProgressBar class="mt-1.5" :value="cat.entries.length > 0 ? cat.done / cat.entries.length : 0" :height="2" />
         <p class="mt-1 text-[10px] text-ink-faint">{{ cat.source }}</p>
         <div class="card-ink mt-2 flex flex-wrap gap-1.5 px-3.5 py-3">
           <template v-for="entry in cat.entries" :key="entry.id">
@@ -60,14 +62,21 @@
               <!-- 最上档:标签流放不下御纹,换一枚小字(与详情整幅框同源) -->
               <span v-if="entry.luster" class="text-[8px] opacity-80">{{ entry.luster.label.charAt(0) }}</span>
             </button>
-            <!-- 未收录降噪:更细的虚线框,不与已收的彩签同粗 -->
+            <!--
+              未收录降噪:更细的虚线框,不与已收的彩签同粗。
+              同类只铺到 UNCOLLECTED_SHOWN 个,余下的折成一行计数 ——
+              装备一册 288 条,全铺开把整页撑成好几屏的「???」,屏幕里一条真信息也没有。
+            -->
             <span
-              v-else
+              v-else-if="uncollectedIndex(cat, entry.id) < UNCOLLECTED_SHOWN"
               class="inline-flex items-center rounded-full border border-dashed border-ink/15 px-2 py-0.5 text-[10px] leading-snug text-ink-faint"
               title="未收录"
             >???</span>
           </template>
         </div>
+        <p v-if="hiddenUncollected(cat) > 0" class="mt-1 px-1 text-[10px] text-ink-faint">
+          另有 {{ hiddenUncollected(cat) }} 条未收录
+        </p>
       </section>
     </template>
 
@@ -136,6 +145,26 @@
   import BaseModal from '@/components/common/BaseModal.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
+
+  /** 同类未收录最多铺几个虚框;余下折成一行计数(与坊市寄卖同一套) */
+  const UNCOLLECTED_SHOWN = 12
+
+  /** 本类里第几个未收录项(按 entries 原序);已收录项不参与 */
+  function uncollectedIndex(cat: { entries: { id: string; stage: number }[] }, id: string): number {
+    let n = 0
+    for (const e of cat.entries) {
+      if (e.stage >= 1) continue
+      if (e.id === id) return n
+      n += 1
+    }
+    return n
+  }
+
+  /** 本类被折起来的未收录条数 */
+  function hiddenUncollected(cat: { entries: { stage: number }[] }): number {
+    const total = cat.entries.filter(e => e.stage < 1).length
+    return Math.max(0, total - UNCOLLECTED_SHOWN)
+  }
 
   const quests = useQuestsStore()
   const player = usePlayerStore()
@@ -210,7 +239,8 @@
         foot: { label: '收录时间', value: collectedTimeText(quests.collectedAt[`${key}:${d.id}`]) }
       }))
       .sort((a, b) => b.stage - a.stage)
-    return { key, name, hint: `${ownedCount}/${defs.length}`, source: CODEX_SOURCES[key], entries }
+    // done 从 entries 现算(收录深度 ≥1 即已收),不另存一份会与 entries 分叉
+    return { key, name, hint: `${ownedCount}/${defs.length}`, done: entries.filter(e => e.stage >= 1).length, source: CODEX_SOURCES[key], entries }
   }
 
   /** 图鉴排布:悟道录紧随功法阁、灵材谱紧随丹方录 */
