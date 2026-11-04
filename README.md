@@ -65,7 +65,7 @@ bun run build
 # 预览构建结果
 bun preview
 
-# 全量测试（数值/战斗/流派/曲线/经济/回归/终局/决策，全量 415 个 spec）
+# 全量测试（数值/战斗/流派/曲线/经济/回归/终局/决策，全量 416 个 spec）
 # 注意用 bun run test,不能用 bun test —— 后者会调 Bun 自带的测试器而非 Vitest
 bun run test
 
@@ -111,20 +111,27 @@ bun run build:android
 
 # 直接出 Release APK（签名读仓库内的 android/keystore.properties + release.keystore，见下）
 bun run build:apk
+
+# Windows 桌面客户端（Electron）：产物在 pkg/
+bun run build:electron --win
 ```
 
-> **关于 Android 签名**：签名密钥（`android/release.keystore`）与口令（`android/keystore.properties`）随仓库分发，clone 下来即可出可安装的签名包，CI 也不需要任何 Secret。这只提供「用同一把钥匙签出的 APK」这一致性，**不构成官方性与防伪**——任何克隆仓库的人都能用它签出包，请以本仓库 release 页发布的 APK 与 Docker 镜像为准。要换一把不进仓库的密钥时，环境变量 `KEYSTORE_STORE_PASSWORD` / `KEYSTORE_KEY_PASSWORD` 或不入库的 `android/keystore.local.properties` 可覆盖文件里的口令。
+> **关于 Android 签名**：签名密钥（`android/release.keystore`）与口令（`android/keystore.properties`）随仓库分发，clone 下来即可出可安装的签名包，CI 也不需要任何 Secret。这只提供「用同一把钥匙签出的 APK」这一致性，**不构成官方性与防伪**——任何克隆仓库的人都能用它签出包，请以本仓库 release 页发布的 APK、Windows 客户端与 Docker 镜像为准。要换一把不进仓库的密钥时，环境变量 `KEYSTORE_STORE_PASSWORD` / `KEYSTORE_KEY_PASSWORD` 或不入库的 `android/keystore.local.properties` 可覆盖文件里的口令。
 
 ### 多端安装
 
 - **Web / PWA**：直接部署 `dist/`（或走下方 Docker 镜像），移动浏览器打开即玩，可「添加到主屏幕」；Service Worker 会缓存静态资源，**首次在线打开后，断网重开也能进游戏**（发版更新仍即时生效，不卡旧版本）。**iOS 上请务必「添加到主屏幕」**：Safari 会在网页七天没被打开后清掉它的本地数据（存档与离线缓存一起没），而已安装的 Web App 不受这条规则约束——游戏检测到这种情况会在主页提示一次，设置页里也常驻可查。
 - **Android**：CI 会把签好的 APK 作为 `android-apk` 产物上传；本地出包在 `android/app/build/outputs/apk/release/yunyin-<版本号>.apk`。把 APK 传到手机后点击安装（系统会提示允许安装未知来源应用，放行即可；覆盖安装需签名一致——自己构建的包与官方签名不同，需先卸载旧版）。
-- **桌面**：直接用浏览器开网页（可「添加到主屏幕 / 固定到任务栏」装成 PWA）。桌面不另发行客户端。
+- **Windows 桌面**：CI 同时出两个压缩包，解压到同一目录即可用（`云隐修仙录.exe`）。
+  - `yunyin-<版本号>-win.zip` — 完整包，解压即用；首次装、或换过 Electron 版本时用这个。
+  - `yunyin-<版本号>-win-update.zip` — 增量包，只含 `resources/app`，解压覆盖到安装目录即可。**升 Electron 依赖的那一版必须用完整包**，发布说明里会写明。
+
+  桌面外壳另带两样网页给不了的东西：托盘与开机自启（菜单「设置」里开），以及 WebDAV 备份的 CORS 直连。不想装客户端的话，浏览器开网页并「添加到主屏幕 / 固定到任务栏」装成 PWA 也一样能玩。
 - **自建站**：`yunyin-<版本号>-web.zip` 就是 `dist/` 的内容，解压后整个目录扔给任意静态服务器即可（也可走下方 Docker 镜像）。
 
 推送到 `main` 会经 GitHub Actions 走同一道闸：类型检查、ESLint、单元测试全绿后才部署 Web/PWA 到 Pages、推送 Docker 镜像。
 
-**发版是一个显式动作 —— 推 tag。** 构建 Android 产物、发布 Release 的那条流水线只在 tag 上触发：
+**发版是一个显式动作 —— 推 tag。** 构建 Windows 与 Android 产物、发布 Release 的那条流水线只在 tag 上触发：
 
 ```bash
 # 1. 先提 package.json 的版本号(它决定 APK 的 versionName/versionCode)
@@ -164,8 +171,9 @@ docker run -d -p 8080:80 yunyin-xiuxian
 | Tone.js         | 15    | FluidR3 乐器采样播放（BGM + SFX）           |
 | CryptoJS        | 4     | 存档 AES 加密                               |
 | lucide-vue-next | 0.577 | 图标库                                      |
-| Vitest          | 5     | 单元测试与平衡审计（全量 415 个 spec）        |
+| Vitest          | 5     | 单元测试与平衡审计（全量 416 个 spec）        |
 | Capacitor       | 8     | Android 客户端打包                          |
+| Electron        | 39    | Windows 桌面客户端打包（electron-builder）  |
 
 ## 项目结构
 
