@@ -46,3 +46,26 @@ export function matchComboArt(primaryId: string, secondaryId: string | undefined
 
 /** 组合技激活所需的副体系契合度 */
 export const COMBO_SECONDARY_MIN = 0.45
+
+/**
+ * 组合技配对的两派名,按 `pair` 的原序。
+ *
+ * 组合技不限主副次序(`matchComboArt` 两向都收),故显示也不能按手上的主副排 ——
+ * 否则同一招在「罡盾主 + 反震副」与「反震主 + 罡盾副」两套构筑里会写成不同样子。
+ * 配不上的那侧回落为原 id:数据错了要看得见,不静默吞掉。
+ *
+ * @param art 已匹配到的组合技
+ * @param primary 手上主体系的 id 与名
+ * @param secondary 手上副体系的 id 与名
+ */
+export function comboPairNames(
+  art: ComboArtDef,
+  primary: { id: string; name: string },
+  secondary: { id: string; name: string }
+): [string, string] {
+  return art.pair.map(id => {
+    if (id === primary.id) return primary.name
+    if (id === secondary.id) return secondary.name
+    return id
+  }) as [string, string]
+}
