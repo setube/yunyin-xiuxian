@@ -2572,6 +2572,27 @@ html[data-theme='dark'] .fruit-curve polyline {
   border-radius: 999px;
 }
 
+/* ================= 典籍所指境界的位置(classicRealm) =================
+ * 典籍卡原写「相涉:筑基、金丹、元婴」—— 一串纯文字,看不出哪几个是自己走过的。
+ * 而这正是翻典籍时最先想知道的事:这本书讲的是来路,还是去路(见 ui/classicRealm)。
+ * 三态各取既有语义色,与境界页签那套「已过给青印、当前转朱」同一口径:
+ *   已过 → ink-soft(走过的路,退一档)
+ *   当前 → cinnabar(身处其中)
+ *   未至 → ink-faint(还没到)
+ */
+.classic-realm--past {
+  /* 走过的路:退一档。原取 ink-soft(比未至还深),读起来反成「已过的最抢眼」 */
+  color: rgb(var(--color-ink-faint-rgb));
+}
+.classic-realm--here {
+  color: rgb(var(--color-cinnabar-rgb));
+  font-weight: 600;
+}
+.classic-realm--ahead {
+  /* 去路:比已过清楚一档 —— 那才是翻典籍时想知道的 */
+  color: rgb(var(--color-ink-soft-rgb));
+}
+
 /* ================= 五维刻度(ratingGauge) =================
  * 五维评级原只给一排星(★★★☆☆):星级是离散的,「3 星」与「3 星」之间差多少读不出来。
  * core 早已算好连续得分与那道阈值表,这里把它落成一根条:
