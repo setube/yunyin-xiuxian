@@ -59,8 +59,14 @@
               <span class="bond-pips" :style="{ '--bond-tone': a.mark.bondRank >= 3 ? 'var(--color-gold-ink)' : undefined }" aria-hidden="true">
                 <i v-for="p in a.mark.bondPips" :key="p" />
               </span>
+              <!--
+                这一行左边是「层数 1/20」,右边原写「还差 10 趟」——
+                两个数挨在一行,读者会把它读成「还差 19 趟升满 20 层」。
+                可右边数的是**羁绊位阶**(10/30/60/100 趟),与层数各算各的。
+                补上主语,免得两把尺混成一把。
+              -->
               <span class="text-[9px] text-ink-faint tabular">
-                {{ a.mark.toNextBond === null ? '已至真传' : `还差 ${a.mark.toNextBond} 趟` }}
+                {{ a.mark.toNextBond === null ? '羁绊已至真传' : `羁绊还差 ${a.mark.toNextBond} 趟` }}
               </span>
             </span>
           </div>
