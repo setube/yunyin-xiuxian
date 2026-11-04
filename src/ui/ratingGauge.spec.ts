@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { PowerDimension, PowerRating } from '@/core/powerRating'
-import { ratingGauge, ratingGauges, weakestGauge } from './ratingGauge'
+import { gaugeFill, ratingGauge, ratingGauges, weakestGauge } from './ratingGauge'
 
 const ROOT = resolve(__dirname, '../..')
 const VIEW = readFileSync(resolve(ROOT, 'src/views/BuildView.vue'), 'utf-8')
@@ -86,6 +86,58 @@ describe('五维刻度 · 二、按本维自己的线归一', () => {
         expect(g.nextLabel).toBeNull()
       }
     }
+  })
+})
+
+describe('五维刻度 · 二之二、条长与星数同向', () => {
+  /*
+   * 条形原先只画本档进度:1 星走了 93% 的「身法」,比 4 星走了 67% 的「机制」更长 ——
+   * 两根条并排时读者比的是长度,画面上正好传达了相反的意思。
+   * 现条长 = (已过档数 + 本档进度) / 5:与星数同向,又与星数互补。
+   *
+   * 故障注入:把 gaugeFill 改回 return g.progress,第一条即红。
+   */
+  const mk = (stars: number, progress: number): Parameters<typeof gaugeFill>[0] => ({
+    key: 'attack' as never,
+    name: '进攻',
+    score: 0,
+    stars,
+    progress,
+    toNext: 0,
+    nextLabel: null,
+    terms: []
+  })
+
+  it('星少条必短 —— 1 星走满也短于 4 星刚起步', () => {
+    expect(gaugeFill(mk(1, 1))).toBeLessThan(gaugeFill(mk(4, 0)))
+  })
+
+  it('同星时,本档进度决定长短', () => {
+    expect(gaugeFill(mk(3, 0.1))).toBeLessThan(gaugeFill(mk(3, 0.9)))
+  })
+
+  it('五档各自的刻度:1 星起点 0,5 星满 1', () => {
+    expect(gaugeFill(mk(1, 0))).toBe(0)
+    expect(gaugeFill(mk(5, 1))).toBe(1)
+    // 每档起点等距
+    for (let s = 1; s <= 5; s += 1) {
+      expect(gaugeFill(mk(s, 0))).toBeCloseTo((s - 1) / 5, 6)
+    }
+  })
+
+  it('始终落在 0~1,坏值也不越界', () => {
+    for (const [s, p] of [[0, 0], [9, 2], [Number.NaN, Number.NaN], [3, -1]] as const) {
+      const v = gaugeFill(mk(s as number, p as number))
+      expect(Number.isFinite(v)).toBe(true)
+      expect(v).toBeGreaterThanOrEqual(0)
+      expect(v).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('视图用 gaugeFill,不再直接画 progress', () => {
+    const view = readFileSync(resolve(__dirname, '../views/BuildView.vue'), 'utf-8')
+    expect(view, '该调 gaugeFill').toContain('gaugeFill(g)')
+    expect(view, '不该再直接画本档进度').not.toMatch(/width: `\$\{g\.progress/)
   })
 })
 

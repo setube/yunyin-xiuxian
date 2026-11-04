@@ -77,6 +77,24 @@ export function ratingGauge(dim: PowerDimension, thresholds: readonly number[]):
   }
 }
 
+/**
+ * 条形该画多长:整条按「总规模」画,而不是只画本档那一段。
+ *
+ * 原先条形只画 `progress`(本档内的进度),本意是「星说在哪一档,条说这一档走了多少」。
+ * 但两根条并排时,读者比的是长度 —— 于是 1 星走了 93% 的「身法」比 4 星走了 67% 的「机制」更长,
+ * 画面上正好传达了相反的意思(实测:56%、26%、93%、52%、67% 对应 3/2/1/2/4 星)。
+ *
+ * 现在条长 = (已过档数 + 本档进度) / 5:与星数同向,又与星数互补 ——
+ * 星说在哪一档,条说离满还有多远。本档内的确切进度仍在展开面板里(「距下一星还差 N」)。
+ */
+export function gaugeFill(g: RatingGauge): number {
+  // 星级先判有效再夹 —— Math.max(1, Math.min(5, NaN)) 仍是 NaN,会一路染成条宽 NaN
+  const rawStars = Number.isFinite(g.stars) ? g.stars : 1
+  const stars = Math.max(1, Math.min(5, Math.round(rawStars)))
+  const progress = Number.isFinite(g.progress) ? Math.max(0, Math.min(1, g.progress)) : 0
+  return Math.max(0, Math.min(1, (stars - 1 + progress) / 5))
+}
+
 /** 五维刻度,按 core 的 labels 原序 */
 export function ratingGauges(rating: PowerRating): RatingGauge[] {
   return rating.labels.map(l => ratingGauge(l, rating.thresholds[l.key] ?? []))
