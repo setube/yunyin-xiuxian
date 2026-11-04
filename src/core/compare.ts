@@ -9,6 +9,9 @@ import { CELESTIAL_WORLDS, celestialWorldDef } from '@/data/endgame'
 import { resolveCombat } from './combat'
 import { mergeRules, worldFoeSnap, type GauntletOpts } from './gauntlet'
 import { currentDaoRules, snapFromReplay } from './endgameService'
+import { rateText } from '@/ui/rateRank'
+
+export { rateText }
 
 export interface MeasureResult {
   clearRate: number
@@ -73,11 +76,10 @@ export function measureOnWorld(
   }
 }
 
-const RANK_TEXT = ['九死一生', '凶险', '胜负各半', '略占上风', '稳操胜券'] as const
-
-export function rateText(rate: number): string {
-  return RANK_TEXT[rate >= 0.85 ? 4 : rate >= 0.6 ? 3 : rate >= 0.4 ? 2 : rate >= 0.15 ? 1 : 0]!
-}
+/**
+ * 胜率档位的说法与档位换算收在 ui/rateRank —— 本文件、core/lab、core/expedition
+ * 三处说的是同一件事,阈值不许各写一份。本文件保留同名导出,调用点无需改。
+ */
 
 export interface CompareRow {
   worldName: string

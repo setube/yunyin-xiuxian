@@ -1,58 +1,100 @@
 /**
- * 胜率档位文案:compare.ts 与 lab.ts 各写了一份同一套阈值链与文案表。
- * 两处不一致会让「构筑对照」和「换装推演」对同一个胜率给出不同档位 —— 玩家看到自相矛盾的说法。
+ * 胜率档位:曾经两处各写一份,现已合并到 ui/rateRank。
  *
- * 这里不要求它们合并(重构会牵动两个调用点),只要求「别漂移」:
- * 从两边源码各抽一次阈值与文案,逐一比对。新增档位或调整阈值时,两边必须同时改,否则本条红。
+ * 历史:compare.ts 与 lab.ts 各写了一份逐字相同的 RANK_TEXT 与阈值链,
+ * expedition.ts 又内联了一遍三元链。当时的守卫本文件只要求「别漂移」,
+ * 因为重构会牵动调用点;现在三处都已改走同一份实现,本文件改为钉住那次合并 ——
+ * 合并的价值不在「少写几行」,在于「改阈值时三处必然一起动」。
+ *
+ * 判据:
+ *   一 三处都不再有本地阈值链或文案表 —— 合并不许回退。
+ *   二 三处都确实 import 了 ui/rateRank。
+ *   三 合并只动位置不动措辞:五档说法逐项与历史一致。
+ *   四 结构未改坏:四道线切五档、线严格递增、最低档兜底。
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { rateLabels, rateRank, rateText } from '@/ui/rateRank'
 
-const src = (f: string): string => readFileSync(resolve(__dirname, f), 'utf-8')
+const src = (f: string): string =>
+  readFileSync(resolve(__dirname, f), 'utf-8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '')
 
-/** 抽出一段源码里出现的档位文案数组 */
-function rankTexts(code: string): string[] {
-  const m = /RANK_TEXT = \[([^\]]+)\]/.exec(code)
-  if (!m) throw new Error('没找到 RANK_TEXT 数组')
-  return [...m[1]!.matchAll(/'([^']+)'/g)].map(x => x[1]!)
-}
+const COMPARE = src('compare.ts')
+const LAB = src('lab.ts')
+const EXPEDITION = src('expedition.ts')
 
-/** 抽出阈值链(>= 后面跟的数字,按出现顺序) */
-function thresholds(code: string): number[] {
-  const line = /rate >= [\d.]+ \? \d[\s\S]*?: 0/.exec(code)
-  if (!line) throw new Error('没找到阈值链')
-  return [...line[0].matchAll(/rate >= ([\d.]+)/g)].map(x => Number(x[1]))
-}
+const SITES = [
+  [COMPARE, 'compare.ts'],
+  [LAB, 'lab.ts'],
+  [EXPEDITION, 'expedition.ts']
+] as const
 
-describe('胜率档位 · 两个模块不许漂移', () => {
-  it('文案表一致', () => {
-    const a = rankTexts(src('compare.ts'))
-    const b = rankTexts(src('lab.ts'))
-    expect(a, '两处档位文案必须相同').toEqual(b)
-    expect(a.length).toBeGreaterThanOrEqual(3)
+describe('胜率档位 · 合并已落地,不许回退', () => {
+  it('三处都没有本地的 RANK_TEXT 数组了', () => {
+    for (const [code, name] of SITES) {
+      expect(code, `${name}又写回了 RANK_TEXT`).not.toMatch(/RANK_TEXT\s*=\s*\[/)
+    }
   })
 
-  it('阈值链一致', () => {
-    const a = thresholds(src('compare.ts'))
-    const b = thresholds(src('lab.ts'))
-    expect(a, '两处阈值必须逐项相同(顺序也算)').toEqual(b)
+  it('三处都没有本地的阈值链了', () => {
+    // 只查五档那条链的第一道线:0.85 是它独有的标志。
+    // 0.6 不行 —— expedition 另有一条「天机胜算」的四档文案(0.9/0.6/0.35),
+    // 那是**另一件事**(预演给玩家看的措辞),不是这里的五档,不该被这条判据波及。
+    for (const [code, name] of SITES) {
+      expect(code, `${name}又写回了 >= 0.85 ? … 这条链`).not.toMatch(/>=\s*0\.85\s*\?/)
+      expect(code, `${name}又写回了四道线的组合`).not.toMatch(/>=\s*0\.4\s*\?\s*\d/) 
+    }
   })
 
-  it('阈值从高到低排列 —— 否则档位判定会短路', () => {
-    const ts = thresholds(src('compare.ts'))
-    const sorted = [...ts].sort((x, y) => y - x)
-    expect(ts, '阈值必须降序,三目链才有意义').toEqual(sorted)
+  it('三处都确实 import 了 ui/rateRank', () => {
+    for (const [code, name] of SITES) {
+      expect(code, `${name}没接上 ui/rateRank`).toMatch(/from ['"]@\/ui\/rateRank['"]/)
+    }
   })
 
-  it('档位数 = 阈值数 + 1(最低档是兜底)', () => {
-    const texts = rankTexts(src('compare.ts'))
-    const ts = thresholds(src('compare.ts'))
-    expect(texts.length, '5 个文案对应 4 个阈值').toBe(ts.length + 1)
+  it('compare.ts 仍导出 rateText(调用点不变)', () => {
+    expect(COMPARE, 'compare.ts 该保留同名导出').toContain('rateText')
+    expect(rateText(1)).toBe('稳操胜券')
+  })
+})
+
+describe('胜率档位 · 合并只动位置不动行为', () => {
+  it('五档说法逐项与历史一致', () => {
+    expect([...rateLabels()]).toEqual(['九死一生', '凶险', '胜负各半', '略占上风', '稳操胜券'])
   })
 
-  it('抽取器本身有效(阳性对照):确实抽到了东西', () => {
-    expect(rankTexts(src('compare.ts')).length).toBeGreaterThan(0)
-    expect(thresholds(src('compare.ts')).length).toBeGreaterThan(0)
+  it('四道线切出五档,且线严格递增', () => {
+    const jumps: number[] = []
+    let prev = rateRank(0)
+    for (let i = 0; i <= 1000; i++) {
+      const r = i / 1000
+      const now = rateRank(r)
+      if (now !== prev) jumps.push(r)
+      prev = now
+    }
+    expect(jumps, '四道线').toHaveLength(4)
+    expect(rateLabels().length, '五档 = 四线 + 兜底').toBe(jumps.length + 1)
+    for (let i = 1; i < jumps.length; i++) {
+      expect(jumps[i]!, '档位线的顺序反了,三目链会短路').toBeGreaterThan(jumps[i - 1]!)
+    }
+  })
+
+  it('四道线就是历史那四个数', () => {
+    // 从档位跳变反推出的线,逐一等于 0.15 / 0.4 / 0.6 / 0.85(容差取步长)
+    const jumps: number[] = []
+    let prev = rateRank(0)
+    for (let i = 0; i <= 1000; i++) {
+      const r = i / 1000
+      const now = rateRank(r)
+      if (now !== prev) jumps.push(r)
+      prev = now
+    }
+    const expected = [0.15, 0.4, 0.6, 0.85]
+    for (const [i, line] of expected.entries()) {
+      expect(Math.abs(jumps[i]! - line), `第 ${i + 1} 道线该是 ${line}`).toBeLessThanOrEqual(0.001)
+    }
   })
 })

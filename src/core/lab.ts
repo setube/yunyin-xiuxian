@@ -15,6 +15,7 @@ import { celestialAnchor, celestialFoeCaliber, mergeRules, runGauntlet, worldFoe
 import { currentDaoRules } from './endgameService'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
+import { rateLabels, rateRank } from '@/ui/rateRank'
 
 export interface WhatIfWorldRow {
   name: string
@@ -32,14 +33,6 @@ export interface WhatIfReport {
   /** 主要词条变化(绝对值最大前四) */
   modChanges: { label: string; delta: number }[]
 }
-
-const RANK_TEXT = ['九死一生', '凶险', '胜负各半', '略占上风', '稳操胜券'] as const
-
-function rateRank(rate: number): number {
-  return rate >= 0.85 ? 4 : rate >= 0.6 ? 3 : rate >= 0.4 ? 2 : rate >= 0.15 ? 1 : 0
-}
-
-
 
 /**
  * `judgement` 由调用方传入并**前后共用**,不在函数内按各自身快照重算。
@@ -112,8 +105,8 @@ export function whatIfEquip(uid: string): WhatIfReport | null {
     return {
       name: w.name,
       seal: w.seal,
-      beforeText: RANK_TEXT[rb]!,
-      afterText: RANK_TEXT[ra]!,
+      beforeText: rateLabels()[rb]!,
+      afterText: rateLabels()[ra]!,
       trend: ra > rb ? 'up' : ra < rb ? 'down' : 'flat'
     }
   })
