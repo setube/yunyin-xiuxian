@@ -2235,6 +2235,34 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-cinnabar-rgb) / 0.8);
 }
 
+/* ================= 装备强化等级(upgradeMark) =================
+ * 强化行只写「+7 / 上限 10」:上限随炼器台等级变(基础 10 再加 forgeCapBonus),
+ * 「+7」在一件上限 10 的器上差三级,在另一件上限 12 的器上差五级(见 src/ui/masteryMark.ts)。
+ * 格数随上限变,不按同一个尺画。
+ */
+.upgrade-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5px;
+  pointer-events: none;
+}
+.upgrade-pips i {
+  display: block;
+  width: 3px;
+  height: 5px;
+  border-radius: 0.5px;
+  /* 未到的格:空心中性,不抢已到的 */
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.25);
+}
+.upgrade-pips i.on {
+  background: rgb(var(--color-ink-rgb) / 0.5);
+  box-shadow: none;
+}
+/* 至顶:整排转金,与「还在升」的那几件分开 */
+.upgrade-pips--max i.on {
+  background: rgb(var(--color-gold-ink-rgb) / 0.9);
+}
+
 /* ================= 装备词条位(affixSlots) =================
  * 装备详情只写「词条 3 / 5 条」:还差几个位得自己拿 3 去比 5,
  * 而 5 是品阶给的上限(九档从 1 到 9),不是一律五格(见 src/ui/affixSlots.ts)。

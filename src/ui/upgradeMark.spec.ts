@@ -1,0 +1,124 @@
+/**
+ * 装备强化等级刻度。
+ *
+ * 强化行只写「+7 / 上限 10」:上限随炼器台等级变(基础 10,再加 forgeCapBonus),
+ * 「+7」在一件上限 10 的器上还差三级,在另一件上限 12 的器上差五级 —— 仍要自己去减。
+ *
+ * 判据:
+ *   一 格数随上限变,不按同一个尺画;上限由调用方传(本模块不读 store)。
+ *   二 至顶标记只在真满时给。
+ *   三 坏值不产生负格或超长数组。
+ *   四 刻度独占一行 —— 与文字同行会把「上限 10」挤断。
+ */
+import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { upgradeMark, upgradePips } from './masteryMark'
+
+const ROOT = resolve(__dirname, '../..')
+const PANEL = readFileSync(resolve(ROOT, 'src/components/equipment/UpgradePanel.vue'), 'utf-8')
+const MODULE = readFileSync(resolve(ROOT, 'src/ui/masteryMark.ts'), 'utf-8')
+const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
+
+function block(selector: string): string {
+  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+}
+
+describe('强化刻度 · 一、格数随上限变', () => {
+  it('上限 10 画十格,上限 12 画十二格', () => {
+    expect(upgradePips(upgradeMark(3, 10))).toHaveLength(10)
+    expect(upgradePips(upgradeMark(3, 12))).toHaveLength(12)
+  })
+
+  it('已到几级就几点', () => {
+    expect(upgradePips(upgradeMark(4, 10)).filter(Boolean)).toHaveLength(4)
+    expect(upgradePips(upgradeMark(0, 10)).filter(Boolean)).toHaveLength(0)
+  })
+
+  it('同一个读数在不同上限下的意义不同 —— 取 7 级', () => {
+    expect(upgradeMark(7, 10).maxed).toBe(false)
+    expect(upgradeMark(7, 7).maxed).toBe(true)
+    expect(upgradeMark(7, 10).toMax).toBe(3)
+    expect(upgradeMark(7, 12).toMax).toBe(5)
+  })
+
+  it('上限由调用方传,本模块不 import store —— 与既有取舍一致', () => {
+    expect(MODULE, 'ui 层不该去读 store').not.toContain("from '@/stores/")
+    // 注释里可以提到它(那是在解释取舍),代码里不许调用
+    const code = MODULE.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    expect(code, 'ui 层不该自己去取上限').not.toContain('equipLevelCap(')
+    expect(PANEL, '上限应在调用点取值').toContain('equipLevelCap()')
+  })
+})
+
+describe('强化刻度 · 二、至顶标记', () => {
+  it('满级才标 maxed,且 toMax 为 0', () => {
+    const full = upgradeMark(10, 10)
+    expect(full.maxed).toBe(true)
+    expect(full.toMax).toBe(0)
+    expect(upgradeMark(9, 10).maxed).toBe(false)
+    expect(upgradeMark(9, 10).toMax).toBe(1)
+  })
+
+  it('零上限不当作满级', () => {
+    expect(upgradeMark(0, 0).maxed).toBe(false)
+  })
+})
+
+describe('强化刻度 · 三、坏值夹回', () => {
+  it('等级越界与坏值夹回 0~上限', () => {
+    for (const bad of [-3, 99, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const m = upgradeMark(bad, 10)
+      expect(m.level).toBeGreaterThanOrEqual(0)
+      expect(m.level).toBeLessThanOrEqual(10)
+      expect(upgradePips(m)).toHaveLength(10)
+    }
+  })
+
+  it('上限为坏值时不炸', () => {
+    for (const bad of [Number.NaN, Number.NEGATIVE_INFINITY, -5]) {
+      const m = upgradeMark(3, bad)
+      expect(m.cap).toBe(0)
+      expect(m.level).toBe(0)
+      expect(upgradePips(m)).toHaveLength(0)
+    }
+  })
+
+  it('等级按升序点数单调增', () => {
+    let last = -1
+    for (let lv = 0; lv <= 10; lv += 1) {
+      const n = upgradePips(upgradeMark(lv, 10)).filter(Boolean).length
+      expect(n).toBeGreaterThanOrEqual(last)
+      last = n
+    }
+  })
+})
+
+describe('强化刻度 · 四、排版与接线', () => {
+  it('强化面板渲染刻度并读 upgradeMark / upgradePips', () => {
+    expect(PANEL).toContain('upgrade-pips')
+    expect(PANEL).toContain('upgradeMark(')
+    expect(PANEL).toContain('upgradePips(')
+  })
+
+  it('刻度与文字分两行 —— 同行会把「上限 10」挤断成两行', () => {
+    expect(PANEL, '文字须整句 nowrap').toContain('whitespace-nowrap')
+    // 刻度在前、文字另起一块(block)
+    expect(PANEL).toMatch(/upgrade-pips[\s\S]{0,400}mt-0\.5 block whitespace-nowrap/)
+  })
+
+  it('刻度给读屏名', () => {
+    expect(PANEL).toContain('`强化 +${inst.level} / 上限 ${equipLevelCap()}`')
+  })
+
+  it('刻度的 CSS 存在,形制层不吃指针事件,只取既有 token', () => {
+    expect(block('.upgrade-pips')).toContain('pointer-events: none')
+    expect(block('.upgrade-pips--max i.on'), '至顶没有单独的颜色').toContain('gold-ink')
+    const from = CSS.indexOf('.upgrade-pips {')
+    const seg = CSS.slice(from, CSS.indexOf('/* =================', from))
+    for (const m of seg.matchAll(/rgb\(var\(--color-([a-z-]+)-rgb\)/g)) {
+      expect(['ink', 'gold-ink'], `新造了色 ${m[1]}`).toContain(m[1])
+    }
+  })
+})
