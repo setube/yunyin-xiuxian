@@ -46,9 +46,23 @@
             <span class="text-[10px] text-ink-faint">存 {{ m.count }}</span>
             <span v-if="m.count < MARKET_MAT_COUNT" class="text-[10px] text-cinnabar">尚差 {{ MARKET_MAT_COUNT - m.count }}</span>
           </div>
-          <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="m.count < MARKET_MAT_COUNT" @click="m.grade == null ? sellOreOne() : sellHerbOne(m.grade)">
-            售出 ×{{ MARKET_MAT_COUNT }} ({{ formatGN(m.price) }})
-          </button>
+          <span class="flex shrink-0 items-center gap-1.5">
+            <template v-if="sellArm === keyOf(m)">
+              <button class="btn-ghost !px-2 !py-2 !text-[11px]" @click="sellArm = null">再想想</button>
+              <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="sellAllOf(m)">确认售尽</button>
+            </template>
+            <template v-else>
+              <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" :disabled="m.count < MARKET_MAT_COUNT" @click="m.grade == null ? sellOreOne() : sellHerbOne(m.grade)">
+                售出 ×{{ MARKET_MAT_COUNT }} ({{ formatGN(m.price) }})
+              </button>
+              <!-- 后期常堆几十摞:整份售出要按几十次,故给「售尽」(两步确认,不可逆) -->
+              <button
+                v-if="m.lots > 1"
+                class="btn-ghost !px-2 !py-2 !text-[11px] text-cinnabar"
+                @click="sellArm = keyOf(m)"
+              >售尽</button>
+            </template>
+          </span>
         </div>
       </div>
     </div>
@@ -59,9 +73,22 @@
         <div v-for="p in sellablePills" :key="p.id" class="flex items-center gap-2 px-2.5 py-2">
           <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: p.color }">{{ p.name }}</span>
           <span class="shrink-0 text-[10px] text-ink-faint">×{{ p.count }}</span>
-          <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="sellPillOne(p.id)">
-            售出 ({{ formatGN(p.price) }})
-          </button>
+          <span class="flex shrink-0 items-center gap-1.5">
+            <template v-if="sellArm === p.id">
+              <button class="btn-ghost !px-2 !py-2 !text-[11px]" @click="sellArm = null">再想想</button>
+              <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="sellPillAll(p.id)">确认售尽</button>
+            </template>
+            <template v-else>
+              <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="sellPillOne(p.id)">
+                售出 ({{ formatGN(p.price) }})
+              </button>
+              <button
+                v-if="p.count > 1"
+                class="btn-ghost !px-2 !py-2 !text-[11px] text-cinnabar"
+                @click="sellArm = p.id"
+              >售尽</button>
+            </template>
+          </span>
         </div>
         <p v-if="sellablePills.length === 0" class="px-2.5 py-3 text-center text-[10px] text-ink-faint">暂无可售丹药</p>
       </div>
@@ -70,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import type { GNum } from '@/types'
   import {
     MARKET_CONSIGN_RENDER_MAX,
@@ -143,17 +170,48 @@
       }))
   )
 
+  /** 一摞多少单位;售尽的可售摞数按它整除,不足一摞不算 —— 与逐次售出同一口径 */
   const materialRows = computed(() => [
-    { id: 'ore', grade: null as HerbGrade | null, icon: 'mountain', name: '玄铁', count: resources.ore, price: materialSellPrice(player.major) },
+    {
+      id: 'ore',
+      grade: null as HerbGrade | null,
+      icon: 'mountain',
+      name: '玄铁',
+      count: resources.ore,
+      lots: Math.floor(resources.ore / MARKET_MAT_COUNT),
+      price: materialSellPrice(player.major)
+    },
     ...HERB_GRADES.filter(g => resources.herbOf(g) > 0).map(g => ({
       id: `herb_${g}`,
       grade: g,
       icon: 'leaf',
       name: HERB_GRADE_NAMES[g],
       count: resources.herbOf(g),
+      lots: Math.floor(resources.herbOf(g) / MARKET_MAT_COUNT),
       price: herbSellBatch(g, player.major)
     }))
   ])
+
+  /** 售尽的二次确认态:材料行的键或丹药 id;值为 null 表示无确认中 */
+  const sellArm = ref<string | null>(null)
+  function keyOf(m: { id: string }): string {
+    return m.id
+  }
+
+  /** 售尽某一行材料:逐摞走 store 的整摞售出,计价不分叉 */
+  function sellAllOf(m: { id: string; grade: HerbGrade | null; lots: number }): void {
+    sellArm.value = null
+    const n = m.grade === null ? market.sellOreAll(player.major) : market.sellHerbAll(m.grade)
+    if (n > 0) ui.toast(`${m.id === 'ore' ? '玄铁' : HERB_GRADE_NAMES[m.grade!]}×${n} 摞已售出`, 'success')
+  }
+
+  /** 售尽某一味丹药:逐枚走 store 的 sellPill */
+  function sellPillAll(pillId: string): void {
+    sellArm.value = null
+    const name = pillDef(pillId)?.name ?? ''
+    const r = market.sellPillAll(pillId)
+    if (r.count > 0) ui.toast(`「${name}」×${r.count} 已售出`, 'success')
+  }
 
   const sellablePills = computed(() =>
     Object.entries(inventory.pills)
