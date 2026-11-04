@@ -240,10 +240,17 @@ export const usePlayerStore = defineStore(
       ...talentMods.value
     ])
 
+    /**
+     * 安抚那一路的灵兽加成(0.3 即 +30%),供来源拆解用。
+     * 与 petModsFor 同一口径:都从 ownedModSources 取 beastPct,不另算一份 ——
+     * 两处若各读一处来源,卡片上的拆解就会与到账数值对不上。
+     */
+    const beastSoothePct = computed(() => modOf(mergeMods(ownedModSources.value), 'beastPct'))
+
     // 灵兽出战实际加成:基础词缀 × 灵兽园等级(beastMult) × 安抚灵兽增益(beastPct)
     // 图鉴/兽苑卡片须按它渲染,给 base 会与角色面板来源明细对不上
     function petModsFor(def: PetDef): StatMods {
-      const beastPct = 1 + modOf(mergeMods(ownedModSources.value), 'beastPct')
+      const beastPct = 1 + beastSoothePct.value
       const scaled: StatMods = {}
       for (const k in def.mods) {
         const key = k as keyof StatMods
@@ -1303,6 +1310,7 @@ export const usePlayerStore = defineStore(
       titleId,
       petId,
       petModsFor,
+      beastSoothePct,
       dead,
       reincarnation,
       eventChains,

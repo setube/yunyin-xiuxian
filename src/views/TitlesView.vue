@@ -104,6 +104,26 @@
             </p>
             <p class="truncate text-[10px] text-ink-faint">{{ row.def.desc }}</p>
             <p v-if="row.modText" class="text-[10px] text-azure tabular">{{ row.modText }}</p>
+            <!--
+              灵兽加成是两步放大出来的:灵兽园等级 × 安抚 buff。
+              卡上只写结果时,看不出十二个点里有多少是园子给的(见 ui/beastSource)。
+            -->
+            <p v-if="row.active" class="beast-src text-[9px] text-ink-faint">
+              <span class="flex items-center gap-1">
+                <span class="shrink-0">园 {{ row.beast.gardenLevel }} 级</span>
+                <span class="beast-src-pips beast-src-pips--garden" aria-hidden="true">
+                  <i v-for="(on, i) in row.beastPips.garden" :key="i" :class="{ on }" />
+                </span>
+                <span class="tabular">+{{ row.beast.gardenPct.toFixed(0) }}%</span>
+              </span>
+              <span class="mt-0.5 flex items-center gap-1">
+                <span class="shrink-0">安抚</span>
+                <span class="beast-src-pips beast-src-pips--soothe" aria-hidden="true">
+                  <i v-for="(on, i) in row.beastPips.soothe" :key="i" :class="{ on }" />
+                </span>
+                <span class="tabular">+{{ row.beast.soothePct.toFixed(0) }}%</span>
+              </span>
+            </p>
             <p class="text-[10px] text-violet-ink">
               {{ row.personalityName }} · <span class="text-ink-faint">{{ row.personalityDesc }}</span>
             </p>
@@ -135,6 +155,8 @@
   import { petTraitText } from '@/ui/itemText'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { beastCrest, familyRoster } from '@/ui/beastCrest'
+  import { beastSourcePips, beastSources } from '@/ui/beastSource'
+  import { useDongfuStore } from '@/stores/dongfu'
   import { realmTitleMajor, titleMark, worldSegs, TITLE_LADDER_STEPS } from '@/ui/titleMark'
   import { qualityAura } from '@/ui/qualityAura'
   import { lusterOf } from '@/ui/luster'
@@ -145,6 +167,7 @@
   import QualityAura from '@/components/common/QualityAura.vue'
 
   const player = usePlayerStore()
+  const dongfu = useDongfuStore()
   const quests = useQuestsStore()
   const ui = useUiStore()
 
@@ -207,9 +230,13 @@
         traitText: petTraitText(def!),
         /** 族徽:族名首字成印,族名原样转发给读屏 */
         crest: beastCrest(def!.family),
+        /** 灵兽加成的两段来源:灵兽园等级 × 安抚 buff(见 ui/beastSource) */
+        beast: beastSources(dongfu.levels.beast ?? 0, player.beastSoothePct),
         /** 稀有档的名字加描边与字距,与法宝/装备同一套(见 ui/qualityAura) */
         plaque: qualityAura(def!.quality).plaque,
-        luster: lusterOf(def!.quality)
+        luster: lusterOf(def!.quality),
+        /** 两段来源各铺十格,按较大值归一 */
+        beastPips: beastSourcePips(beastSources(dongfu.levels.beast ?? 0, player.beastSoothePct))
       }))
       .sort((a, b) => Number(b.active) - Number(a.active))
   )
