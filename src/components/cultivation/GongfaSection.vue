@@ -63,8 +63,17 @@
             </span>
             <span v-if="mainCanUpgrade" class="shrink-0 rounded border border-jade/40 bg-jade/10 px-1.5 py-0.5 text-[10px] text-ink">可升层</span>
           </span>
-          <span class="block text-[11px] text-ink-faint">
-            第 {{ cultivation.learned[mainDef.id] }} 层 · {{ qualityDef(mainDef.quality).name }}
+          <span class="mt-0.5 flex items-center gap-1.5 text-[11px] text-ink-faint">
+            <span
+              class="gongfa-pips"
+              :class="{ 'gongfa-pips--max': mainMark.maxed }"
+              role="img"
+              :aria-label="`第 ${mainMark.level} 层,共 ${mainMark.max} 层`"
+            >
+              <i v-for="(on, i) in gongfaPips(mainMark)" :key="i" :class="{ on }" />
+            </span>
+            <span class="tabular">第 {{ mainMark.level }} 层 · {{ qualityDef(mainDef.quality).name }}</span>
+            <span v-if="mainMark.peakLabel" class="text-gold-ink">{{ mainMark.peakLabel }}</span>
           </span>
         </span>
         <GameIcon name="flame" :size="15" class="text-cinnabar" />
@@ -134,7 +143,21 @@
             :class="{ 'q-plaque': row.aura.plaque }"
             :style="{ color: qualityTextColor(row.def.quality) }"
           >{{ row.def.name }}</span>
-          <span class="shrink-0 text-[10px] text-ink-faint">{{ cultivation.learned[row.def.id] }} 层</span>
+          <!--
+            层数刻度:各功法上限不同(密法 3 层、主辅 9 层),「第 5 层」在一门里是过半、
+            在另一门里是练满;上限几层就几格,已满几格(见 ui/gongfaMark)。
+          -->
+          <span class="flex shrink-0 items-center gap-1">
+            <span
+              class="gongfa-pips"
+              :class="{ 'gongfa-pips--max': row.mark.maxed }"
+              role="img"
+              :aria-label="`第 ${row.mark.level} 层,共 ${row.mark.max} 层`"
+            >
+              <i v-for="(on, i) in gongfaPips(row.mark)" :key="i" :class="{ on }" />
+            </span>
+            <span class="text-[10px] tabular text-ink-faint">{{ row.mark.level }}/{{ row.mark.max }}</span>
+          </span>
           <span
             v-if="branchName(row.def.id)"
             class="max-w-24 shrink-0 truncate rounded border px-1.5 py-0.5 text-[10px]"
@@ -172,6 +195,7 @@
   import { comprehendGongfa, gongfaUpgradeCost } from '@/core/gongfaService'
   import { GONGFA, gongfaDef, gongfaMaxLevel, GONGFA_TYPE_NAMES } from '@/data/gongfa'
   import type { GongfaDef, GongfaType } from '@/types'
+  import { gongfaMark, gongfaPips } from '@/ui/gongfaMark'
   import { branchEffective, canEnlighten as canEnlightenGongfa, gongfaBranchDef } from '@/data/gongfaBranches'
   import {
     COMPREHEND_PAGE_COST,
@@ -232,11 +256,17 @@
         const eb = Number(equipStateOf(b.id) !== '')
         return eb - ea || qualityDef(b.quality).rank - qualityDef(a.quality).rank
       })
-        .map(def => ({ def, ...rowOf(def.id) }))
+        // 层数形制在这里算一次:模板里反复调同一个函数既慢又难读
+        .map(def => ({ def, mark: gongfaMark(def, cultivation.learned[def.id] ?? 0), ...rowOf(def.id) }))
     }))
   )
 
   const gongfaCat = ref<GongfaType>('main')
+  /** 主修的层数形制;与已习列表同一份(见 ui/gongfaMark) */
+  const mainMark = computed(() =>
+    mainDef.value ? gongfaMark(mainDef.value, cultivation.learned[mainDef.value.id] ?? 0) : gongfaMark(undefined, 0)
+  )
+
   const activeGongfaItems = computed(
     () => gongfaCategories.value.find(g => g.type === gongfaCat.value)?.items ?? []
   )
