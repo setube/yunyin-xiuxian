@@ -673,6 +673,66 @@ describe('调色板 · 小胶囊当按钮也要有禁用态', () => {
   })
 })
 
+describe('调色板 · 品类的色块要真能区分', () => {
+  /*
+   * 坊市货架的单字角标(丹/材/器)按品类着色。字色必须走墨色 ——
+   * 彩色字压同色淡底过不了 4.5,故品类区分交给色块与描边。
+   *
+   * 但原先把这件事交给 0.10/0.15 的底与 0.40 的边:实测底与纸只差 1.16~1.23:1、
+   * 描边 1.78~1.89:1 —— 三色之别在画面上根本读不出来,那句「由色块与描边承担」形同虚设。
+   * 浅色底再往上堆也救不了(alpha 0.28 才 1.54:1):能担事的是描边。
+   *
+   * 现描边 0.70 得 3.0~3.3:1(图形元素可辨下限),底色 0.20 补一层色感,墨字仍有 10.77:1。
+   */
+  const MARKET = readFileSync(resolve(ROOT, 'src/components/market/MarketShelfSection.vue'), 'utf-8')
+
+  function lin(c: number): number {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  }
+  function ratio(a: [number, number, number], b: [number, number, number]): number {
+    const la = 0.2126 * lin(a[0]) + 0.7152 * lin(a[1]) + 0.0722 * lin(a[2])
+    const lb = 0.2126 * lin(b[0]) + 0.7152 * lin(b[1]) + 0.0722 * lin(b[2])
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+  }
+  function over(fg: [number, number, number], a: number): [number, number, number] {
+    const paper: [number, number, number] = [255, 252, 245]
+    return [fg[0] * a + paper[0] * (1 - a), fg[1] * a + paper[1] * (1 - a), fg[2] * a + paper[2] * (1 - a)]
+  }
+
+  it('三色角标的描边都够可辨(≥3:1)', () => {
+    /*
+     * alpha 必须从源码里读,不能在这里写死 ——
+     * 写死的话把源码改回 /40 判据照样绿(实测过:第一版就是这么失效的)。
+     */
+    const paper: [number, number, number] = [255, 252, 245]
+    const tones: [string, string, [number, number, number]][] = [
+      ['丹', 'cinnabar', [168, 63, 57]],
+      ['材', 'jade', [80, 109, 88]],
+      ['器', 'violet-ink', [114, 85, 158]]
+    ]
+    for (const [label, token, rgb] of tones) {
+      const m = new RegExp(`border-${token}/(\\d+)`).exec(MARKET)
+      expect(m, `${label} 的描边类没找到`).not.toBeNull()
+      const alpha = Number(m![1]) / 100
+      expect(ratio(over(rgb, alpha), paper), `${label} 的描边 alpha=${alpha} 太淡,看不出品类`).toBeGreaterThanOrEqual(2.95)
+    }
+  })
+
+  it('角标字色仍是墨色 —— 彩色字过不了 AA', () => {
+    expect(MARKET, '字色改回彩色会破 AA').toContain('text-ink')
+    expect(MARKET, '品类色该只在边与底上').toMatch(/border border-(cinnabar|jade|violet-ink)\/70/)
+  })
+
+  it('斜杠透明度只用 config 里的步进', () => {
+    // tailwind v3.4 默认步长 5;config 另补 4/6/7/8。手写 /22 这类会直接失效成透明
+    for (const m of MARKET.matchAll(/\b(?:bg|border|text)-[\w-]+\/(\d+)/g)) {
+      const step = Number(m[1])
+      expect([4, 6, 7, 8, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90], `/${step} 不是合法步进`).toContain(step)
+    }
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)

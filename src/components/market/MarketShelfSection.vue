@@ -125,11 +125,17 @@
   /**
    * 角标底色。单字(丹/材/器)是**文字**,不是图标 —— 彩色字压同色淡底过不了 4.5,
    * 故字色走墨色,品类区分由色块与描边承担。
+   *
+   * 但原先把这件事交给了 0.10/0.15 的底与 0.40 的边:实测底与纸只差 1.16~1.23:1,
+   * 描边 1.78~1.89:1 —— 玩家看不出三色之别,品类区分形同虚设。
+   * 浅色底再往上堆也救不了(alpha 0.28 才 1.54:1),能担事的是描边:
+   * 提到 0.70 得 3.0~3.3:1(图形元素可辨下限),底色同步提到 0.20 补一层色感。
+   * 墨字压在新底上仍有 10.44:1,原来的 AA 不变。
    */
   const TAG_CLS: Record<string, string> = {
-    pill: 'border border-cinnabar/40 bg-cinnabar/10 text-ink',
-    material: 'border border-jade/40 bg-jade/15 text-ink',
-    equipment: 'border border-violet-ink/40 bg-violet-ink/15 text-ink'
+    pill: 'border border-cinnabar/70 bg-cinnabar/20 text-ink',
+    material: 'border border-jade/70 bg-jade/20 text-ink',
+    equipment: 'border border-violet-ink/70 bg-violet-ink/20 text-ink'
   }
 
   const market = useMarketStore()
