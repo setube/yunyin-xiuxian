@@ -47,6 +47,13 @@ describe('强化刻度 · 零、已到的格要压得住未到的', () => {
     expect(block('.upgrade-pips'), '缝至少 2px').toContain('gap: 2px')
   })
 
+  it('另外两排彩格同病:未到格原 0.25/0.3 与彩色实心只差 2.15 / 1.74', () => {
+    // 道童层数与功法层数:彩实心配墨描边空槽,与强化那一排是同一类读法
+    for (const cls of ['.appr-pips i', '.gongfa-pips i']) {
+      expect(block(cls), `${cls} 的未到格该收到 0.2`).toMatch(/ink-rgb\)\s*\/\s*0\.2/)
+    }
+  })
+
   it('界域刻度是同一类读法,同样要压得住', () => {
     // 两套刻度长一样、读法一样,只改一处会让同一屏出现两种深浅
     const on = block('.world-pips i.on')
