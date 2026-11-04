@@ -2,6 +2,7 @@
  * Build 决策层:区域生态与敌人特性由正式敌人数据推导;流派×特性克制权重取自 buildSim 矩阵结论。
  * 只给评级与理由,不替玩家做决定。
  */
+import { starRow } from '@/ui/starRow'
 import type { EnemyDef, RegionDef } from '@/types'
 import { enemyDef } from '@/data/enemies'
 import { BUILD_STYLES, type BuildDetection, type BuildStyleDef } from './buildDetect'
@@ -166,6 +167,5 @@ export function ecologyChips(eco: RegionEcology): { trait: EcoTrait; name: strin
  * 钳制是防御性的, 不改变正常路径的输出。
  */
 export function starsText(stars: number): string {
-  const n = Math.max(1, Math.min(5, Math.round(stars)))
-  return '★'.repeat(n) + '☆'.repeat(5 - n)
+  return starRow(stars)
 }
