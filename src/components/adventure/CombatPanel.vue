@@ -178,6 +178,7 @@
   import { COMBAT_PLAYBACK_BASE_MS, COMBAT_PLAYBACK_MIN_MS, EXPLORE_MODES } from '@/data/constants'
   import { WIN_STREAK_REWARDS } from '@/data/earlyGame'
   import { formatClock, formatCountdown, formatGN } from '@/utils/format'
+  import { hpPercent } from '@/ui/hpReadout'
   import { useNow } from '@/composables/useNow'
   import { gameClock } from '@/composables/useGameClock'
   import { detectBuild } from '@/core/buildDetect'
@@ -199,17 +200,6 @@
   const displayed = ref<CombatLogEntry[]>([])
   const php = ref(1)
   const ehp = ref(1)
-  /**
-   * 血条百分数。取整到整数:这一格宽 8 个字符,带小数会被挤成竖排。
-   * 已归零固定写 0%,满血写 100% —— 不四舍五入成「满」,那会让 0.6% 读成有血。
-   */
-  function hpPercent(v: number): string {
-    if (!Number.isFinite(v)) return '—'
-    const pct = Math.max(0, Math.min(100, v * 100))
-    if (pct <= 0) return '0%'
-    if (pct >= 100) return '100%'
-    return `${Math.round(pct)}%`
-  }
   const floats = ref<{ id: number; text: string; side: 'p' | 'e'; crit: boolean }[]>([])
   const shakeCls = ref<{ p: string; e: string }>({ p: '', e: '' })
   const defeated = ref<'p' | 'e' | null>(null)

@@ -741,21 +741,14 @@ describe('战斗页血条读数 · 条与数字同源', () => {
     for (const v of shown) expect(Number((v ?? '').replace('%', ''))).toBeLessThanOrEqual(100)
   })
 
-  it('读数边界:归零写 0%、满血写 100%,0.6% 不许四舍五入成「有血」', () => {
-    const src = readFileSync(resolve(__dirname, '../components/adventure/CombatPanel.vue'), 'utf8')
-    // 判据读实现:两端各自硬写死,不走 Math.round —— 否则 0.4% 会被抹成 0 而 0.6% 又会被抹成 1
-    expect(src, '归零要硬写 0%').toContain("return '0%'")
-    expect(src, '满血要硬写 100%').toContain("return '100%'")
-    expect(src, '非有限值要给一个明确的占位').toContain("return '—'")
-    expect(src, '中间值才取整').toContain('Math.round(pct)')
-  })
-
-  it('条与数字用的确是同一个值:改 php/ehp 两侧一起变', () => {
-    // 判据读源码:两处都必须走 hpPercent(...),不许各写一个 Math.round
+  // 读数本身的端点与取整归 ui/hpReadout.spec 管;这里只钉住「界面真的接上了」
+  it('两处读数都走同一份实现,不各写一份 —— 口径分叉就会一处 0% 一处 1%', () => {
     const src = readFileSync(resolve(__dirname, '../components/adventure/CombatPanel.vue'), 'utf8')
     expect(src, '敌方读数该走 hpPercent(ehp)').toContain('hpPercent(ehp)')
     expect(src, '我方读数该走 hpPercent(php)').toContain('hpPercent(php)')
-    expect(src.match(/hpPercent\(/g)!.length, '除定义处外恰好两处调用').toBeGreaterThanOrEqual(3)
+    // 实现只该在 ui/hpReadout 一处;组件里再写一份就是两份口径
+    expect(src, '组件里不许再自写一份').not.toMatch(/function hpPercent\s*\(/)
+    expect(src, '要 import 共享实现').toContain("from '@/ui/hpReadout'")
   })
 })
 
