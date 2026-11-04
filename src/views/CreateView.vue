@@ -53,6 +53,20 @@
             {{ ELEMENTS[root.element].char }}
           </span>
           <span class="tabular text-[11px] text-ink-soft">资质 {{ root.aptitude }}</span>
+          <!-- 资质刻度与角色页同一套(见 ui/rootMark):掷了十几次时哪根是主根,一眼看得出 -->
+          <span
+            class="root-pips"
+            :class="{ 'root-pips--top': rootMarkList.find(m => m.element === root.element)?.top }"
+            :style="{ '--root-tone': ELEMENTS[root.element].color }"
+            role="img"
+            :aria-label="`资质 ${root.aptitude}`"
+          >
+            <i
+              v-for="(on, i) in rootPips(rootMarkList.find(m => m.element === root.element)?.pips ?? 0)"
+              :key="i"
+              :class="{ on }"
+            />
+          </span>
         </div>
       </div>
       <p class="mt-4 text-center text-[12px] text-ink-faint">
@@ -87,6 +101,7 @@
   import { rootElements, tendencyLines } from '@/core/linggenAffinity'
   import { randomDaoName } from '@/data/names'
   import { ELEMENTS } from '@/data/linggen'
+  import { rootMarks, rootPips } from '@/ui/rootMark'
   import { generateEquipment } from '@/core/equipGen'
   import { acquireEquipment } from '@/core/loot'
   import { trackRealm } from '@/core/progress'
@@ -114,6 +129,8 @@
   // 灵根草稿持久化:刷新不白拿一次重掷,也不洗掉已花掉的次数
   if (!game.createProfile) game.setCreateProfile(rollLinggen(rng))
   const profile = computed(() => game.createProfile!)
+  /** 灵根资质刻度:每根按资质点数,最高者为主根(见 ui/rootMark) */
+  const rootMarkList = computed(() => rootMarks(profile.value?.roots ?? []))
   const rerollsLeft = computed(() => game.createRerolls)
   /** 不限次建号:按钮不显示余量 */
   const unlimitedReroll = computed(() => rerollsLeft.value === null)
