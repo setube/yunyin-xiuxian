@@ -2068,14 +2068,18 @@ html[data-theme='dark'] .fruit-curve polyline {
 }
 .appr-pips i {
   display: block;
-  width: 2.5px;
+  /*
+   * 二十格。原 2.5px:一格只占屏宽千分之七,1/20 与未点几乎分不出。
+   * 行内还有「N/20」与右侧羁绊阶点,320 宽下余约 185px —— 加宽到 4px 放得下。
+   */
+  width: 4px;
   height: 6px;
   border-radius: 1px;
   /* 未到的格:空心中性,不抢已到的。原 0.25 与金色实心只差 2.15:1,排开分不出哪几格亮 */
   box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.2);
 }
 .appr-pips i.on {
-  background: rgb(var(--color-gold-ink-rgb) / 0.8);
+  background: rgb(var(--color-gold-ink-rgb));
   box-shadow: none;
 }
 /* 满层:整排转实金,与「还在升」的那几名分开 */
