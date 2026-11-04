@@ -85,7 +85,14 @@
                 {{ TRAIT_NAMES[t] }}
               </span>
             </p>
-            <ProgressBar :value="ehp" color="var(--color-cinnabar)" :height="6" class="mt-1" />
+            <!--
+              血条只画比例,读不出「还剩几成」—— 战报逐回合报伤害,而这条最该报的读数反而没有。
+              条右补一个百分数:与条同读 ehp,不另算一份。
+            -->
+            <div class="mt-1 flex items-center gap-2">
+              <ProgressBar :value="ehp" color="var(--color-cinnabar)" :height="6" class="min-w-0 flex-1" />
+              <span class="w-8 shrink-0 text-right tabular text-[10px] text-cinnabar">{{ hpPercent(ehp) }}</span>
+            </div>
             <!--
               敌我战力取开打那一刻的冻结快照(combat.snapPower + applyCombatRuleSnap,含规则改动);
               老战报缺 playerPower 时退回当前面板
@@ -138,7 +145,11 @@
           </span>
           <div class="grow">
             <p class="font-kai text-[14px] text-ink">{{ player.name }}</p>
-            <ProgressBar :value="php" color="var(--color-jade)" :height="6" class="mt-1" />
+            <!-- 与我方血条同一把尺:条右补百分数,见上 -->
+            <div class="mt-1 flex items-center gap-2">
+              <ProgressBar :value="php" color="var(--color-jade)" :height="6" class="min-w-0 flex-1" />
+              <span class="w-8 shrink-0 text-right tabular text-[10px] text-jade">{{ hpPercent(php) }}</span>
+            </div>
           </div>
         </div>
         <span
@@ -188,6 +199,17 @@
   const displayed = ref<CombatLogEntry[]>([])
   const php = ref(1)
   const ehp = ref(1)
+  /**
+   * 血条百分数。取整到整数:这一格宽 8 个字符,带小数会被挤成竖排。
+   * 已归零固定写 0%,满血写 100% —— 不四舍五入成「满」,那会让 0.6% 读成有血。
+   */
+  function hpPercent(v: number): string {
+    if (!Number.isFinite(v)) return '—'
+    const pct = Math.max(0, Math.min(100, v * 100))
+    if (pct <= 0) return '0%'
+    if (pct >= 100) return '100%'
+    return `${Math.round(pct)}%`
+  }
   const floats = ref<{ id: number; text: string; side: 'p' | 'e'; crit: boolean }[]>([])
   const shakeCls = ref<{ p: string; e: string }>({ p: '', e: '' })
   const defeated = ref<'p' | 'e' | null>(null)
