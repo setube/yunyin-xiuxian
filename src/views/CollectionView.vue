@@ -138,7 +138,7 @@
   } from '@/ui/codex'
   import { gongfaFuncText, gongfaMetaText } from '@/ui/itemText'
   import { modsText } from '@/data/statNames'
-  import { achievementDirection, achievementGroup, ACHIEVEMENT_GROUP_LABEL, ACHIEVEMENT_GROUP_ORDER } from '@/ui/achievementHint'
+  import { achievementGuide, achievementGroup, ACHIEVEMENT_GROUP_LABEL, ACHIEVEMENT_GROUP_ORDER } from '@/ui/achievementHint'
   import { rewardPreview } from '@/core/progress'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import InkTabs from '@/components/common/InkTabs.vue'
@@ -186,7 +186,8 @@
         group: achievementGroup(a.cond),
         achievedAt: quests.achievedAt[a.id],
         name: done ? a.name : '???',
-        desc: done ? a.desc : `方向:${achievementDirection(a.cond)}`,
+        // 未达成不现名目,但要说清「还差哪道门槛」—— 只给方向时同组六条一模一样
+        desc: done ? a.desc : `方向:${achievementGuide(a.cond)}`,
         // current 封顶在 target:周期补扫前计数可能暂超阈值
         progress:
           a.cond.type === 'counter'
