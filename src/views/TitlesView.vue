@@ -53,7 +53,11 @@
               {{ row.mark.worldName }} · 第 {{ row.mark.step }}/{{ TITLE_LADDER_STEPS }} 境
             </p>
             <p v-if="!row.owned && row.source" class="truncate text-[10px] text-ink-faint">来历:{{ row.source }}</p>
-            <p v-if="row.owned && row.modText" class="truncate text-[10px] text-azure tabular" :title="row.modText">{{ row.modText }}</p>
+            <!--
+              不截断:modsText 的括号里是这条加成的限定条件(「只入小境界」「只减天劫之伤」),
+              截掉后玩家只看得到幅度、看不到何时生效。灵兽卡同一份数据本就不截断,这里与它一致。
+            -->
+            <p v-if="row.owned && row.modText" class="text-[10px] leading-relaxed text-azure tabular">{{ row.modText }}</p>
           </div>
           <button v-if="row.owned" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="toggleTitle(row.def.id)">
             {{ row.worn ? '卸下' : '佩戴' }}
