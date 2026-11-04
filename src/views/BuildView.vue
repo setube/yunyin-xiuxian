@@ -44,27 +44,44 @@
           <span v-for="name in buildSourceNames" :key="name" class="text-azure">{{ name }}</span>
         </p>
         <div class="mt-2.5 rounded-md bg-paper-deep/60 px-3 py-2">
-          <p class="text-[10px] text-ink-faint">{{ cnNumber(powerRating.labels.length) }}维评级</p>
+          <p class="flex items-baseline justify-between gap-2 text-[10px] text-ink-faint">
+            <span>{{ cnNumber(powerRating.labels.length) }}维评级</span>
+            <!-- 最短板:五根条长短要拿眼睛比,不如直接点名 -->
+            <span v-if="weakestRating" class="shrink-0">
+              短板 <span class="text-cinnabar">{{ weakestRating.name }}</span>
+              <span class="tabular">· 距 {{ weakestRating.nextLabel }} 还差 {{ weakestRating.toNext.toFixed(2) }}</span>
+            </span>
+          </p>
           <div class="mt-1 grid grid-cols-1 gap-0.5">
             <button
-              v-for="l in powerRating.labels"
-              :key="l.key"
+              v-for="g in ratingRows"
+              :key="g.key"
               class="-my-1 py-1.5 text-left active:opacity-60"
-              @click="toggleDim(l.key)"
+              @click="toggleDim(g.key)"
             >
-              <span class="flex items-center justify-between text-[11px]">
-                <span class="text-ink-soft">{{ l.name }}</span>
-                <span class="tabular tracking-widest text-gold-ink">{{ ratingStars(l.stars) }}</span>
-              </span>
-              <span v-if="dimKey === l.key" class="mt-1 block rounded-md bg-paper/70 px-2 py-1.5">
-                <span class="block text-[10px] text-ink-soft">
-                  {{ l.name }}得分 {{ l.score.toFixed(2) }}
+              <!--
+                只给一排星时,「进攻 3 星」与「进攻 3 星」之间差多少读不出来 ——
+                而 core 早算好了连续得分与那道阈值表(见 ui/ratingGauge)。
+                星说在哪一档,条说这一档走完了多少;每维按自己那四道线归一,不共尺。
+              -->
+              <span class="flex items-center justify-between gap-2 text-[11px]">
+                <span class="shrink-0 text-ink-soft">{{ g.name }}</span>
+                <span class="rating-gauge shrink-0" :class="{ 'rating-gauge--weak': weakestRating?.key === g.key }" aria-hidden="true">
+                  <i :style="{ width: `${g.progress * 100}%` }" />
                 </span>
-                <span v-for="t in l.terms" :key="t.label" class="mt-0.5 flex justify-between text-[10px]">
+                <span class="shrink-0 tabular tracking-widest text-gold-ink">{{ ratingStars(g.stars) }}</span>
+              </span>
+              <span v-if="dimKey === g.key" class="mt-1 block rounded-md bg-paper/70 px-2 py-1.5">
+                <span class="block text-[10px] text-ink-soft">
+                  {{ g.name }}得分 {{ g.score.toFixed(2) }}
+                  <template v-if="g.nextLabel"> · 距 {{ g.nextLabel }} 还差 {{ g.toNext.toFixed(2) }}</template>
+                  <template v-else> · 已至满档</template>
+                </span>
+                <span v-for="t in g.terms" :key="t.label" class="mt-0.5 flex justify-between text-[10px]">
                   <span class="text-ink-faint">{{ t.label }}</span>
                   <span class="tabular text-azure">+{{ t.contribution.toFixed(2) }}</span>
                 </span>
-                <span v-if="!l.terms.length" class="block text-[10px] text-ink-faint">暂无词条</span>
+                <span v-if="!g.terms.length" class="block text-[10px] text-ink-faint">暂无词条</span>
               </span>
             </button>
           </div>
@@ -218,6 +235,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { detectBuild, buildSources } from '@/core/buildDetect'
   import { ratePower, ratingStars, type PowerDimKey } from '@/core/powerRating'
+  import { ratingGauges, weakestGauge } from '@/ui/ratingGauge'
   import { matchComboArt, COMBO_SECONDARY_MIN } from '@/data/comboArts'
   import { measureResilience, resilienceText } from '@/core/resilience'
   import { playerMatchups, MATCHUP_SAMPLE_RUNS } from '@/core/playerMatchup'
@@ -241,6 +259,9 @@
   const build = computed(() => detectBuild(player.finalStats.mods))
   /** 五维评级:进攻/生存/身法/恢复/机制 */
   const powerRating = computed(() => ratePower(player.finalStats))
+  /** 五维刻度:星说在哪档,条说这一档走了多少(见 ui/ratingGauge) */
+  const ratingRows = computed(() => ratingGauges(powerRating.value))
+  const weakestRating = computed(() => weakestGauge(ratingRows.value))
 
   /** 点开的那一维;明细之和 = 那一维的得分(与人物页属性明细同一条规矩) */
   const dimKey = ref<PowerDimKey | null>(null)
