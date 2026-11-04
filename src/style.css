@@ -2302,11 +2302,15 @@ html[data-theme='dark'] .fruit-curve polyline {
   width: 3px;
   height: 6px;
   border-radius: 0.5px;
-  /* 空位:虚框,与已占的实心分开 —— 这几个位还能洗出来 */
-  box-shadow: inset 0 0 0 1px rgb(var(--color-violet-ink-rgb) / 0.45);
+  /*
+   * 空位:虚框,与已占的实心分开 —— 这几个位还能洗出来。
+   * 原 0.45 与实心 0.85 之间只差 2.03:1,六格排开分不出哪几格已占;
+   * 现空位 0.25、实心满色:亮暗 3.71:1(浅)/ 3.85:1(暗),空位对纸 1.4:1 仍看得见。
+   */
+  box-shadow: inset 0 0 0 1px rgb(var(--color-violet-ink-rgb) / 0.25);
 }
 .affix-slots i.on {
-  background: rgb(var(--color-violet-ink-rgb) / 0.85);
+  background: rgb(var(--color-violet-ink-rgb));
   box-shadow: none;
 }
 /* 满位:整排转实金,与还有空位的分开 */
@@ -2334,14 +2338,15 @@ html[data-theme='dark'] .fruit-curve polyline {
   width: 2.5px;
   height: 4px;
   border-radius: 0.5px;
-  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.22);
+  /* 空槽原 0.22 与彩色实心只差 2.4:1;收到 0.15 后亮暗回到 3.4:1 上下 */
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.15);
 }
 .beast-src-pips--garden i.on {
-  background: rgb(var(--color-jade-rgb) / 0.85);
+  background: rgb(var(--color-jade-rgb));
   box-shadow: none;
 }
 .beast-src-pips--soothe i.on {
-  background: rgb(var(--color-gold-ink-rgb) / 0.85);
+  background: rgb(var(--color-gold-ink-rgb));
   box-shadow: none;
 }
 

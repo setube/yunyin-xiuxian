@@ -120,6 +120,14 @@ describe('词条位 · 四、界面接上了', () => {
     expect(DIALOG).toContain('`词条 ${slotMark.used}/${slotMark.cap} 条`')
   })
 
+  it('已占与空位之间要读得出差 —— 六格排开时「哪几格满了」是本排唯一的信息', () => {
+    // 实测原 0.85 实心与 0.45 空位只差 2.03:1,分不出哪几格已占
+    expect(block('.affix-slots i'), '空位收到 0.25').toMatch(/violet-ink-rgb\)\s*\/\s*0\.25/)
+    const on = block('.affix-slots i.on')
+    expect(on, '已占取满色').toMatch(/background: rgb\(var\(--color-violet-ink-rgb\)\)/)
+    expect(on, '已占不该再叠透明度').not.toMatch(/violet-ink-rgb\)\s*\//)
+  })
+
   it('刻度的 CSS 存在,形制层不吃指针事件,只取既有 token', () => {
     expect(block('.affix-slots')).toContain('pointer-events: none')
     // 空位是虚框、已占是实心 —— 两态形状不同
