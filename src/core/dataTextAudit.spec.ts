@@ -568,6 +568,35 @@ describe('文案数值对账 · 视图不手抄数量', () => {
    * 曾有两个都叫「破妄」(增伤 dmg1 与 命中 ac2),同屏两个「破妄」加不同效果,分不清谁是谁。
    * 故障注入:把任一词条名改成与另一条相同,本条红。
    */
+  /**
+   * 紫微十二宫各有「所给之路」:data/ziwei 的 channel(修行/同道/因缘/灵兽…)。
+   * 原先界面只写「所主 · 管什么」,说不到它落在哪一路 —— 而十二宫各管一路正是这张盘的骨架。
+   *
+   * 故障注入:把模板里那枚签删掉,本条红。
+   */
+  it('紫微逐宫标出所给之路,且取 data 的 channel', () => {
+    const view = src('../views/RealmCodexView.vue')
+    expect(view, '逐宫说明该带 channel').toContain('row.palace.channel')
+    expect(view, '该挂一枚签').toContain('fate-channel')
+    // 十二宫的 channel 两两不同(各管一路),数据侧也要对
+    const channels = PALACES.map(p => p.channel)
+    expect(new Set(channels).size, '十二宫的 channel 有重复').toBe(channels.length)
+    for (const c of channels) expect(c.length, `channel「${c}」过长`).toBeLessThanOrEqual(3)
+  })
+
+  it('窄屏下宫名与说明不挤成竖条(flex-wrap 不可去)', () => {
+    const view = src('../views/RealmCodexView.vue')
+    // 320 宽下宫名 + 签 + 星名 + 说明挤不下,说明会被压成每行两三个字
+    const at = view.indexOf('row.palace.channel')
+    // 取那一段:往前到上一处 v-for,往后到这一段结束
+    const start = view.lastIndexOf('v-for="row in fateRows"', at)
+    const seg = view.slice(start, at)
+    expect(seg, '那一行该允许换行').toContain('flex-wrap')
+    // 说明列的下界在签之后
+    const tail = view.slice(at, at + 800)
+    expect(tail, '说明列该有下界').toContain('min-w-')
+  })
+
   it('词条名唯一', () => {
     const byName = new Map<string, string[]>()
     for (const a of AFFIXES) {

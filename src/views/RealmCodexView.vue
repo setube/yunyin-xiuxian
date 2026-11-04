@@ -259,10 +259,19 @@
         命宫朱框 · 有星诸宫点亮 · 宫位说明见下
       </p>
       <div class="mt-2.5 divide-y divide-ink/6">
-        <div v-for="row in fateRows" :key="row.palace.id" class="flex items-baseline gap-2 py-1.5">
+        <!--
+          flex-wrap 不可去:320 宽下宫名 + 属性签 + 星名 + 说明挤不下,
+          说明会被压成每行两三个字的竖条。宽屏仍是一行,窄屏说明落到下一行。
+        -->
+        <div v-for="row in fateRows" :key="row.palace.id" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 py-1.5">
           <span class="w-14 shrink-0 font-kai text-[12px] text-ink-soft">{{ row.palace.name }}</span>
+          <!--
+            此宫给哪一路属性。data 里 channel 就为此而存(修行/同道/因缘/灵兽…),
+            却一直没进界面 —— 十二宫只写「所主 · 管什么」,说不到它落在哪一路。
+          -->
+          <span class="fate-channel shrink-0 font-kai text-[10px]" :class="{ 'fate-channel--ming': row.isMing }">{{ row.palace.channel }}</span>
           <span class="w-24 shrink-0 text-[11px] text-cinnabar">{{ row.starNames }}</span>
-          <span class="min-w-0 text-[11px] leading-relaxed text-ink-faint">{{ row.palace.domain }} · {{ row.palace.use }}</span>
+          <span class="min-w-[9rem] flex-1 text-[11px] leading-relaxed text-ink-faint">{{ row.palace.domain }} · {{ row.palace.use }}</span>
         </div>
       </div>
       <div class="mt-2 border-t border-ink/10 pt-2">
