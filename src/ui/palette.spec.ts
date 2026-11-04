@@ -641,6 +641,38 @@ describe('调色板 · 禁用钮要看得见', () => {
   })
 })
 
+describe('调色板 · 小胶囊当按钮也要有禁用态', () => {
+  /*
+   * chip-ink 五十处在用,其中一处(突破卡的第二枚准备钮)是带 :disabled 的按钮。
+   * 原先 chip-ink 没有 :disabled 规则 —— 胶囊边框与字色分毫不动,
+   * 只有内部一行小字变淡,看着还能按。突破准备是个要紧操作,按不动却没提示最伤人。
+   *
+   * 边框取 currentColor,故压字色即连带压轮廓:一条规则两样都管。
+   */
+  function rule(sel: string): string {
+    const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+  }
+
+  it('chip-ink 有 :disabled 规则,且压字色', () => {
+    const body = rule('.chip-ink:disabled')
+    expect(body, 'chip-ink 没有 :disabled 规则').not.toBe('')
+    // 整色 token(--color-ink-faint)与通道形式(--color-ink-faint-rgb)都合法
+    expect(body, '该压到 ink-faint').toMatch(/var\(--color-ink-faint(?:-rgb)?\)/)
+  })
+
+  it('边框跟着字色走 —— 所以压字色即压轮廓', () => {
+    const base = rule('.chip-ink')
+    expect(base, '边框不再取 currentColor,压字色就管不到轮廓了').toContain('border: 1px solid currentColor')
+  })
+
+  it('全部带 :disabled 的 chip-ink 按钮都真的有禁用态', () => {
+    // 判据用意:日后有人新加一处 chip-ink 按钮,上面那条规则自动管到
+    const views = readFileSync(resolve(ROOT, 'src/components/cultivation/BreakthroughCard.vue'), 'utf-8')
+    expect(views, '突破卡的准备钮该仍带 :disabled').toContain(':disabled="!prepCanPill"')
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)

@@ -575,6 +575,16 @@ html[data-theme='dark'] .btn-seal:disabled {
   white-space: nowrap;
 }
 
+/*
+ * chip-ink 当按钮用时(突破卡的两枚准备钮)也要有禁用态。
+ * 边框取 currentColor,故只需压字色,轮廓自动跟着变淡 —— 一条规则两样都管。
+ * 原先把 `disabled` 只写在内部那行小字上,胶囊本身分毫不动,看着还能按。
+ */
+.chip-ink:disabled {
+  color: var(--color-ink-faint);
+  cursor: not-allowed;
+}
+
 /* chip-ink 的显式换行覆写,长文案占行时用(如闭关按钮);「数+量词」各自 nowrap,换行只发生在分隔符处 */
 .chip-ink-wrap {
   white-space: normal;
