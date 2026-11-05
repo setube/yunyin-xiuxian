@@ -14,7 +14,8 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { APPRENTICE_MAX_LEVEL, BOND_TITLES } from '@/data/apprentices'
+import { APPRENTICE_MAX_LEVEL, APPRENTICES, BOND_TITLES } from '@/data/apprentices'
+import { qualityDef } from '@/data/qualities'
 import { apprenticeBondLabel, apprenticeMark, BOND_STEPS, LEVEL_PIPS, levelPips } from './apprenticeMark'
 
 const ROOT = resolve(__dirname, '../..')
@@ -144,5 +145,26 @@ describe('道童形制 · 四、界面接上了', () => {
 
   it('称谓仍读 data 的 bondTitle,不在模板里另写一份', () => {
     expect(VIEW).toContain('bondTitle(a.bond)')
+  })
+
+  /**
+   * 品阶形制:六个道童原型分属凡/良/精/灵四档,而卡上此前一字未提 ——
+   * 层数与羁绊都已各有刻度,品阶是这张卡上唯一还没有形制的量。
+   * 与装备、丹药、功法同一套语言:名字走品阶文字色,另加一枚品阶签。
+   *
+   * 色必须走 qualityTextColor,不能用品阶原色:玄/天/仙/神四档原色在日/夜
+   * 各有一档过不了 4.5:1(见 data/qualities 的 TEXT_COLOR)。
+   * 故障注入:把两处 qualityTextColor 删掉,本条红。
+   */
+  it('道童卡也标出品阶,且文字色走「当文字用」那一组', () => {
+    expect(VIEW, '名字应走品阶文字色').toContain('qualityTextColor(a.def.quality)')
+    expect(VIEW, '应另加一枚品阶签').toContain('qualityDef(a.def.quality).name')
+    // 阴性对照:不许用品阶原色顶文字
+    expect(VIEW, '不该拿 qualityDef(...).color 当字色').not.toMatch(/color: qualityDef\(a\.def\.quality\)\.color/)
+  })
+
+  it('四档品阶在道童里真的都有,这条判据才不是空集', () => {
+    const ranks = new Set(APPRENTICES.map(a => qualityDef(a.quality).rank))
+    expect(ranks.size, '道童只用一个品阶,判据形同虚设').toBeGreaterThan(1)
   })
 })
