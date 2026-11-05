@@ -388,6 +388,36 @@ describe('首领阶段', () => {
     expect(enemyShieldLines(result)).toBe(1)
   })
 
+  /**
+   * 减伤堆过 100% 时仍要受伤,不能无敌。
+   *
+   * `factor *= Math.max(0.1, taken)` 那道钳制是这条线的唯一守卫 ——
+   * 它是「减伤再高也至少吃一成」的下限,而不是可有可无的保险。
+   *
+   * 这条是变异扫描找出来的:把 `Math.max(0.1, taken)` 改成 `taken`,
+   * 全部测试照样绿 —— 因为既有用例只把减伤做到五成,走不到负值那一段。
+   *
+   * 故障注入:去掉 `Math.max(0.1, …)`,本条红。
+   */
+  it('减伤堆到两倍时仍会受伤', () => {
+    // killDummy 内部断言「必须打死」,两倍减伤正是它打不完的情形,故直接用 resolveCombat
+    const fight = (mods: StatMods) =>
+      resolveCombat({ ...playerSnap(1), attack: gn(150), maxHp: gn(1e9) }, dummyBoss(mods, []), seeded(1))
+    // 每回合伤害:取战报里对敌伤害的首条,直接比数值,不比回合数
+    const firstHit = (r: CombatResult): number => {
+      const line = r.log.find(l => l.side === 'p' && l.dmg)
+      return line ? Number(String(line.dmg).replace(/[^0-9.]/g, '')) : NaN
+    }
+    const naked = firstHit(fight({}))
+    const warded = firstHit(fight({ damageReduction: 0.9 }))
+    const over = firstHit(fight({ damageReduction: 2 }))
+    expect(naked, '无减伤应有伤害').toBeGreaterThan(0)
+    expect(warded, '九成减伤应显著更少').toBeLessThan(naked)
+    expect(over, '两倍减伤下仍须受伤,不能变成 0').toBeGreaterThan(0)
+    // 下限是一成:两倍减伤被钳到 0.1,与九成减伤(0.1)同档
+    expect(over, '两倍减伤应被钳到与九成一档').toBeCloseTo(warded, 6)
+  })
+
   it('阶段改词条照常生效:入阶段即带上新减伤', () => {
     const plain = killDummy(dummyBoss({}, []), 1)
     const warded = killDummy(dummyBoss({}, [{ hpThreshold: 1, modChanges: { damageReduction: 0.5 } }]), 1)
