@@ -105,31 +105,27 @@
       <div v-if="pillRows.length" class="mt-3 grid grid-cols-4 gap-1.5">
         <button
           v-for="row in pillRows"
-          :key="row.def!.id"
+          :key="row.def.id"
           class="relative aspect-square rounded-md border transition-transform active:scale-98"
-          :style="{ borderColor: tint(pillQualityColor(row.def!), qualityTierByRank(pillRank(row.def!)).border), background: tint(pillQualityColor(row.def!), qualityTierByRank(pillRank(row.def!)).bg) }"
-          @click="pillDetail = row.def!.id"
+          :style="row.style"
+          @click="pillDetail = row.def.id"
         >
-          <QualityAura
-            :rank="pillRank(row.def!)"
-            :tone="pillQualityColor(row.def!)"
-            compact
-          />
+          <QualityAura :rank="row.rank" :tone="row.tone" compact />
           <!-- 最上档质感:四角御纹 + 流光(丹药走 rank 入口,道品 rank 9 同样享有) -->
-          <span v-if="lusterByRank(pillRank(row.def!))" class="luster-cornice luster-cornice--tile" aria-hidden="true" />
-          <span v-if="lusterByRank(pillRank(row.def!))" class="luster-sheen" aria-hidden="true" />
+          <span v-if="row.luster" class="luster-cornice luster-cornice--tile" aria-hidden="true" />
+          <span v-if="row.luster" class="luster-sheen" aria-hidden="true" />
           <!-- role="img":角章只有一个字,读屏要念的是「天品档」;裸 span 属 generic,不接可访问名 -->
           <span
-            v-if="isRareRank(pillRank(row.def!))"
+            v-if="row.rare"
             role="img"
             class="absolute right-0.5 top-0.5 rounded-[3px] border px-[3px] py-px font-kai text-[9px] leading-none text-ink"
-            :style="{ borderColor: tint(pillQualityColor(row.def!), 0.45), background: tint(pillQualityColor(row.def!), 0.12) }"
-            :aria-label="`${pillQualityName(row.def!)}档`"
-          >{{ pillQualityName(row.def!).charAt(0) }}</span>
+            :style="{ borderColor: tint(row.tone, 0.45), background: tint(row.tone, 0.12) }"
+            :aria-label="`${row.qualityName}档`"
+          >{{ row.qualityName.charAt(0) }}</span>
           <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
-            <GameIcon :name="row.def!.icon" :size="20" :style="{ color: pillQualityColor(row.def!) }" />
-            <span class="w-full truncate text-center text-[9px] leading-tight" :style="{ color: pillQualityColor(row.def!) }">
-              {{ row.def!.name }}
+            <GameIcon :name="row.def.icon" :size="20" :style="{ color: row.tone }" />
+            <span class="w-full truncate text-center text-[9px] leading-tight" :style="{ color: row.tone }">
+              {{ row.def.name }}
             </span>
           </span>
           <span class="absolute bottom-0.5 right-1 text-[9px] leading-none text-ink-soft tabular">×{{ row.count }}</span>
@@ -181,14 +177,12 @@
         <div class="flex items-center gap-3">
           <span
             class="grid h-12 w-12 shrink-0 place-items-center rounded-md"
-            :style="{ color: pillQualityColor(currentPill.def), background: tint(pillQualityColor(currentPill.def), 0.08) }"
+            :style="{ color: currentPill.tone, background: tint(currentPill.tone, 0.08) }"
           >
             <GameIcon :name="currentPill.def.icon" :size="24" />
           </span>
           <div class="min-w-0">
-            <p class="text-[11px]" :style="{ color: pillQualityColor(currentPill.def) }">
-              {{ pillQualityName(currentPill.def) }}
-            </p>
+            <p class="text-[11px]" :style="{ color: currentPill.tone }">{{ currentPill.qualityName }}</p>
             <p class="text-[11px] text-ink-faint tabular">持有 ×{{ currentPill.count }}</p>
           </div>
         </div>
@@ -398,11 +392,36 @@
     ui.equipDetailUid = uid
   }
 
+  /**
+   * 丹匣的行:品阶、字色、浓淡、质感各算一次。
+   *
+   * 原先一个格子里 `pillQualityColor` 被调 7 次(边框、底色、光环、角章 ×2、图标、名字),
+   * `pillRank` 5 次、`tier` 与 `luster` 各 3 次 —— 全是同一次查表。
+   * 与 TrialPanel / 功法详情那两处同一种毛病:每帧算好几遍,
+   * 而且模板里读不出「这七处说的是同一枚丹药」。
+   */
   const pillRows = computed(() =>
     Object.entries(inventory.pills)
       .map(([id, count]) => ({ def: pillDef(id), count }))
       .filter(x => x.def !== undefined && x.count > 0)
-      .sort((a, b) => pillRank(b.def!) - pillRank(a.def!))
+      .map(x => {
+        const def = x.def!
+        const rank = pillRank(def)
+        const tone = pillQualityColor(def)
+        const tier = qualityTierByRank(rank)
+        return {
+          def,
+          count: x.count,
+          rank,
+          tone,
+          tier,
+          luster: lusterByRank(rank),
+          rare: isRareRank(rank),
+          qualityName: pillQualityName(def),
+          style: { borderColor: tint(tone, tier.border), background: tint(tone, tier.bg) }
+        }
+      })
+      .sort((a, b) => b.rank - a.rank)
   )
 
   // 丹药签圆点:有一味能开炉(与结算同源)
@@ -483,7 +502,8 @@
   const pillDetail = ref<string | null>(null)
   const currentPill = computed(() => (pillDetail.value ? (pillRows.value.find(r => r.def?.id === pillDetail.value) ?? null) : null))
   /** 当前查看的丹药的质感层(最上档才有);道品 rank 9 走同一入口 */
-  const pillLuster = computed(() => (currentPill.value?.def ? lusterByRank(pillRank(currentPill.value.def)) : null))
+  /** 当前查看的丹药的质感层(最上档才有);行上已算好,这里直接取 */
+  const pillLuster = computed(() => currentPill.value?.luster ?? null)
 
   /**
    * 增益丹服前判定,与 usePill 同口径 buffOverflowOf:full = 顶满再服白费(usePill 照扣库存),partial = 只续到顶。
