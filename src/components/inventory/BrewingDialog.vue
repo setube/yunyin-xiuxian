@@ -16,7 +16,14 @@
               <span v-if="r.able.overReach > 0" class="whitespace-nowrap text-[10px] text-cinnabar">越阶 {{ r.able.overReach }}</span>
               <span v-if="r.plan.rounds > 0" class="whitespace-nowrap text-[10px] text-jade">可炼 {{ r.plan.rounds }} 炉</span>
             </p>
-            <p class="text-[11px] text-ink-faint tabular">{{ HERB_GRADE_SHORT[r.cost.grade] }}灵草×{{ r.cost.herb }} · 灵石 {{ formatGN(r.cost.stone) }}</p>
+            <!--
+              灵草按品阶上色:同是「×3」,凡品与神品是两种代价 ——
+              背包、坊市两处灵草格都按品阶上色(见 ui/herbQuality),唯独炼丹这处只写品名。
+            -->
+            <p class="flex flex-wrap items-baseline gap-x-1.5 text-[11px] tabular">
+              <span :style="{ color: herbQualityTextColor(r.cost.grade) }">{{ HERB_GRADE_SHORT[r.cost.grade] }}灵草×{{ r.cost.herb }}</span>
+              <span class="text-ink-faint">· 灵石 {{ formatGN(r.cost.stone) }}</span>
+            </p>
             <p class="text-[10px] leading-relaxed text-azure">{{ pillFuncText(r.def) }}</p>
             <p v-for="w in r.able.weakness" :key="w" class="mt-0.5 text-[10px] text-ink-faint">· {{ w }}</p>
             <!-- 存货读 inventory.pills,与丹匣同一份账 -->
@@ -117,6 +124,7 @@
   import { pillQualityColor } from '@/data/pills'
   import { pillFuncText } from '@/ui/itemText'
   import { herbStashText } from '@/ui/herbText'
+  import { herbQualityTextColor } from '@/ui/herbQuality'
   import { craftPill, craftPillBatch } from '@/core/pillService'
   import { useBrewing } from '@/composables/useBrewing'
   import { formatGN, formatNum, formatPercent } from '@/utils/format'

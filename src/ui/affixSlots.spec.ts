@@ -139,4 +139,23 @@ describe('词条位 · 四、界面接上了', () => {
       expect(['violet-ink', 'gold-ink'], `新造了色 ${m[1]}`).toContain(m[1])
     }
   })
+
+  /**
+   * 第二处:词条转移的候选件列表。
+   *
+   * 选目标件时最该看的就是「这件还有几个空位」—— 而详情页早已有刻度,那里却还是纯文字
+   * 「词条 3/5」。同一种东西在两处只有一处有形制,玩家在另一处又要自己拿 3 去比 5。
+   *
+   * 判据同时钉「复用同一套类名」:另起一套 .affix-slot-pips 会让两处的刻度长得不一样。
+   * 故障注入:把候选行里的 affix-slots 删掉,本条红。
+   */
+  it('词条转移的候选件也画词条位刻度,且复用同一套类名', () => {
+    const panel = readFileSync(resolve(ROOT, 'src/components/equipment/AffixTransferPanel.vue'), 'utf-8')
+    expect(panel, '候选件应画刻度').toContain('affix-slots')
+    expect(panel, '应读形制').toContain('affixSlotPips(')
+    expect(panel, '上限应取品阶表').toContain('affixSlotMark(qualityDef(')
+    expect(panel, '不该另起一套类名').not.toContain('affix-slot-pips')
+    // 阴性对照:纯文字那行应已换成刻度 + 读数
+    expect(panel, '不该再只写纯文字的「词条 N/M」').not.toMatch(/词条 \{\{ c\.item\.affixes\.length \}\}/)
+  })
 })
