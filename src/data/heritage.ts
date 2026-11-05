@@ -82,6 +82,16 @@ export const HERITAGE_DEFS: HeritageDef[] = [
 
 const BY_ID: Record<string, HeritageDef> = Object.fromEntries(HERITAGE_DEFS.map(d => [d.id, d]))
 
+/**
+ * 入口门槛:六道传承里最低的那一道(金丹,`major` 2)。
+ *
+ * 界面上写的是「需金丹境」,而门槛实际由各条自己的 `gateMajor` 决定 ——
+ * `core/heritageForge` 的候选筛选就是 `gateMajor <= major`。
+ * 手抄境名会在两条线上分叉:改了最低那道传承的门槛,界面还写着旧境名。
+ * 与洞府灵脉的 `veinGateRealm` 同一套做法:门槛读数据,境名由界面临时取。
+ */
+export const HERITAGE_GATE_MAJOR = Math.min(...HERITAGE_DEFS.map(d => d.gateMajor))
+
 export function heritageDef(id: string): HeritageDef | undefined {
   return BY_ID[id]
 }

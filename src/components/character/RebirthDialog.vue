@@ -103,7 +103,8 @@
       <p class="text-[11px] text-ink-soft">
         宿命传承
         <span class="ml-1 text-[10px] text-violet-ink">【永久积累】</span>
-        <span class="block text-[10px] text-ink-faint">需金丹境 · 每世至多一道</span>
+        <!-- 门槛读数据(见 data/heritage 的 HERITAGE_GATE_MAJOR),不手抄境名 -->
+        <span class="block text-[10px] text-ink-faint">需{{ heritageGateRealm }}境 · 每世至多一道</span>
       </p>
       <ul v-if="ownedHeritage.length" class="mt-1.5 space-y-1.5">
         <li v-for="h in ownedHeritage" :key="h!.id" class="rounded-md border border-jade/40 bg-jade/5 px-2.5 py-1.5">
@@ -196,7 +197,7 @@
   import { activeLifeTrial, canSignLifeTrial, lifeTrialShortfall, signLifeTrial } from '@/core/lifeTrialService'
   import { talentDef, TALENT_GRADE_COLORS } from '@/data/talents'
   import { talentMark, talentPips } from '@/ui/talentMark'
-  import { heritageDef } from '@/data/heritage'
+  import { HERITAGE_GATE_MAJOR, heritageDef } from '@/data/heritage'
   import { REALMS } from '@/data/realms'
   import { prepareReincarnation, MANUAL_REBIRTH_MIN_MAJOR } from '@/core/reincarnation'
   import { DAO_FRUIT_COMBAT_BONUS, DAO_FRUIT_CULT_BONUS } from '@/data/constants'
@@ -213,6 +214,8 @@ import { MARGIN_PIPS, marginCurvePoints, marginMark } from '@/ui/fruitMargin'
 
   const player = usePlayerStore()
   const ui = useUiStore()
+  /** 传承入口门槛的境名:门槛读 HERITAGE_GATE_MAJOR,境名读 REALMS(同 veinGateRealm 的做法) */
+  const heritageGateRealm = computed(() => REALMS[HERITAGE_GATE_MAJOR]?.name ?? '更高')
   const stats = computed(() => player.finalStats)
 
   /** 道果有效收益与当前加成 */
