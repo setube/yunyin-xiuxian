@@ -121,23 +121,35 @@ describe('试炼形制 · 三之二、轴两端的标签', () => {
 })
 
 describe('试炼形制 · 四、界面接上了', () => {
+  /**
+   * 形制仍在，但落点从「模板里反复调」搬到了「setup 里算一次」。
+   *
+   * `TRIALS` 是静态数据、`trialMark` 是纯函数，原先一个渲染周期要调 7 次。
+   * 判据跟着落点走：三样形制都必须来自那一次预计算，模板不许再自己调。
+   */
   it('战纹、恢复档、层阶三样都画出来了', () => {
     expect(PANEL, '应挂战纹').toContain('trial-fights')
-    expect(PANEL, '应挂恢复档').toContain('trial-recover--${trialMark(trial).recovery}')
+    expect(PANEL, '应挂恢复档').toContain('trial-recover--${row.mark.recovery}')
     expect(PANEL, '应挂层阶刻度').toContain('trial-tier')
-    expect(PANEL, '层阶位置应现算').toContain('tierPosition(trialMark(trial).tier)')
+    expect(PANEL, '层阶位置应现算').toContain('tierPosition(mark.tier)')
   })
 
   it('战纹只画这一场真有的枚数,不画满封顶留空槽', () => {
     // 它说的是「连战几场」而不是「还剩几场」:画满七格留空槽会读成「还差几场打满」
-    expect(PANEL, '战纹枚数应取这一场的战数').toContain('v-for="n in trialMark(trial).fights"')
+    expect(PANEL, '战纹枚数应取这一场的战数').toContain('v-for="n in row.mark.fights"')
     expect(PANEL, '不该再按封顶画满').not.toContain('v-for="n in TRIAL_FIGHT_CAP"')
   })
 
   it('形制是装饰:战纹与恢复档带可念的说法,层阶 aria-hidden', () => {
-    expect(PANEL, '战纹应有可访问名').toContain(':aria-label="trialMark(trial).label"')
-    expect(PANEL, '恢复档应有可访问名').toContain(':aria-label="RECOVERY_LABEL[trialMark(trial).recovery]"')
+    expect(PANEL, '战纹应有可访问名').toContain(':aria-label="row.mark.label"')
+    expect(PANEL, '恢复档应有可访问名').toContain(':aria-label="row.recoveryLabel"')
     expect(PANEL, '层阶是纯装饰').toMatch(/trial-tier[\s\S]{0,160}aria-hidden="true"/)
+  })
+
+  it('预计算只算一次 —— 模板里不再逐行调纯函数', () => {
+    expect(PANEL, '应在 setup 里算一次').toContain('const mark = trialMark(t)')
+    const tpl = PANEL.slice(0, PANEL.indexOf('<script'))
+    expect(tpl, '模板不该再调 trialMark').not.toContain('trialMark(')
   })
 
   it('三样都不吃指针事件', () => {

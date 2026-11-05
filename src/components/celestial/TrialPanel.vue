@@ -80,64 +80,64 @@
   <section>
     <SectionTitle title="天道试炼" />
     <div class="mt-2 space-y-2.5">
-      <div v-for="trial in TRIALS" :key="trial.id" class="card-ink px-4 py-3">
+      <div v-for="row in trialRows" :key="row.def.id" class="card-ink px-4 py-3">
         <p class="flex items-center gap-2">
           <span class="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-gold-ink font-kai text-[15px] seal-face">
-            {{ trial.seal }}
+            {{ row.def.seal }}
           </span>
-          <span class="font-kai text-[15px] tracking-widest text-ink">{{ trial.name }}</span>
+          <span class="font-kai text-[15px] tracking-widest text-ink">{{ row.def.name }}</span>
           <!-- 战纹:连战几场就几枚,七/四/五各有自己的枚数 -->
           <span
             class="trial-fights shrink-0"
             role="img"
-            :aria-label="trialMark(trial).label"
+            :aria-label="row.mark.label"
           >
             <!-- 只画这一场真有的枚数:它说的是「连战几场」,不是「还剩几场」——
                  画满七格留空槽会读成「还差几场才打满」 -->
-            <i v-for="n in trialMark(trial).fights" :key="n" class="on" />
+            <i v-for="n in row.mark.fights" :key="n" class="on" />
           </span>
-          <span v-if="endgame.trialRecords[trial.id]" class="ml-auto tabular text-[10px] text-gold-ink">
-            最佳 {{ endgame.trialRecords[trial.id]!.bestRounds }} 回合
+          <span v-if="endgame.trialRecords[row.def.id]" class="ml-auto tabular text-[10px] text-gold-ink">
+            最佳 {{ endgame.trialRecords[row.def.id]!.bestRounds }} 回合
           </span>
         </p>
         <!-- 恢复档与层阶:一条说场间能回几成,一条说站在梯子的哪一段 -->
         <div class="mt-1.5 flex items-center gap-2">
           <span
             class="trial-recover shrink-0"
-            :class="`trial-recover--${trialMark(trial).recovery}`"
+            :class="`trial-recover--${row.mark.recovery}`"
             role="img"
-            :aria-label="RECOVERY_LABEL[trialMark(trial).recovery]"
+            :aria-label="row.recoveryLabel"
           >
             <i v-for="n in 3" :key="n" />
           </span>
-          <span class="shrink-0 text-[10px] text-ink-faint">{{ RECOVERY_LABEL[trialMark(trial).recovery] }}</span>
+          <span class="shrink-0 text-[10px] text-ink-faint">{{ row.recoveryLabel }}</span>
           <!--
             这条轴原先只有一个点、两端无字:「23 阶」读不出它站在全谱的哪一段。
             两端各标一个数,点才有参照(见 ui/trialMark.tierSpan)。
           -->
           <span class="flex min-w-0 flex-1 items-center gap-1">
             <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">{{ tierLimits.lo }}</span>
-            <span class="trial-tier min-w-0 flex-1" :style="{ '--tier-pos': `${tierPosition(trialMark(trial).tier) * 100}%` }" aria-hidden="true" />
+            <span class="trial-tier min-w-0 flex-1" :style="{ '--tier-pos': row.tierPct }" aria-hidden="true" />
             <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">{{ tierLimits.hi }}</span>
           </span>
-          <span class="shrink-0 tabular text-[10px] text-ink-faint">{{ trialMark(trial).tier }} 阶</span>
+          <span class="shrink-0 tabular text-[10px] text-ink-faint">{{ row.mark.tier }} 阶</span>
         </div>
-        <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">{{ trial.desc }}</p>
+        <p class="mt-1.5 text-[11px] leading-relaxed text-ink-faint">{{ row.def.desc }}</p>
         <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
-          <span v-for="(r, i) in trial.ruleText" :key="i">{{ r }}</span>
+          <span v-for="(r, i) in row.def.ruleText" :key="i">{{ r }}</span>
         </p>
         <button
           class="btn-ghost mt-2.5 w-full !py-2 !text-[13px]"
-          :disabled="busy !== null || endgame.daoSource < trial.entryCost"
-          :title="busy?.reason ?? (endgame.daoSource < trial.entryCost ? `道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)}` : undefined)"
-          @click="goTrial(trial.id)"
+          :disabled="busy !== null || endgame.daoSource < row.def.entryCost"
+          :title="busy?.reason ?? (endgame.daoSource < row.def.entryCost ? `道源尚差 ${daoSourceShortText(row.def.entryCost, endgame.daoSource)}` : undefined)"
+          @click="goTrial(row.def.id)"
         >
           {{
             busy
               ? `应 试(${busy.reason})`
-              : endgame.daoSource < trial.entryCost
-                ? `应 试(道源尚差 ${daoSourceShortText(trial.entryCost, endgame.daoSource)} · 需 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)})`
-                : `应 试(道源 ${trial.entryCost} · 余 ${formatNum(endgame.daoSource)} · 功成得 ${trial.rewardDaoSource})`
+              : endgame.daoSource < row.def.entryCost
+                ? `应 试(道源尚差 ${daoSourceShortText(row.def.entryCost, endgame.daoSource)} · 需 ${row.def.entryCost} · 余 ${formatNum(endgame.daoSource)})`
+                : `应 试(道源 ${row.def.entryCost} · 余 ${formatNum(endgame.daoSource)} · 功成得 ${row.def.rewardDaoSource})`
           }}
         </button>
       </div>
@@ -198,23 +198,23 @@
           不立契
         </button>
         <button
-          v-for="p in PACTS"
-          :key="p.id"
+          v-for="row in pactRows"
+          :key="row.def.id"
           class="chip-ink !py-1.5"
-          :class="[pactMark(p.id) ? `pact-weight-${pactMark(p.id)!.weight}` : '', draft.pactId === p.id ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint']"
-          :title="p.ruleText"
-          :aria-label="pactMark(p.id)?.label ?? p.name"
-          :aria-pressed="draft.pactId === p.id"
-          @click="setDraftPact(p.id)"
+          :class="[row.mark ? `pact-weight-${row.mark.weight}` : '', draft.pactId === row.def.id ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint']"
+          :title="row.def.ruleText"
+          :aria-label="row.mark?.label ?? row.def.name"
+          :aria-pressed="draft.pactId === row.def.id"
+          @click="setDraftPact(row.def.id)"
         >
           <!-- 契纹:同一套形状语言,挑战书与远征择契读得通 -->
           <span
-            v-if="pactMark(p.id)"
+            v-if="row.mark"
             class="pact-crest mr-1 inline-block h-3 w-3 align-[-2px]"
-            :class="`pact-crest--${pactMark(p.id)!.crest}`"
+            :class="`pact-crest--${row.mark.crest}`"
             aria-hidden="true"
           />
-          {{ p.name }}
+          {{ row.def.name }}
         </button>
       </div>
       <p v-if="challengePact" class="mt-1 text-[10px] leading-relaxed text-ink-soft">
@@ -310,6 +310,34 @@
 
   /** 层阶轴的两端:三场试炼里最低与最高的锚点阶,轴上那个点才有参照 */
   const tierLimits = tierSpan()
+
+  /**
+   * 天道试炼的行:每行的形制在这里算一次。
+   *
+   * `TRIALS` 是静态数据,`trialMark(trial)` 也是纯函数 ——
+   * 而模板里一个渲染周期要调它 7 次(标签、枚数、恢复档 ×2、层阶 ×2),
+   * 恢复档那一处的键还要再查一次表。同一种东西算七遍,
+   * 且模板里读不出「这七处说的是同一个 mark」。
+   *
+   * 铁律与仓库既有做法一致:纯函数在 setup 里算一次,模板只读字段。
+   */
+  /**
+   * 天道契约的行:契重与契纹各算一次。
+   *
+   * `pactMark` 在同一枚按钮里被调 5 次(契重、读屏说法、有无判断、契纹类名)——
+   * `PACTS` 是静态数据,`pactMark` 是纯函数,没理由每帧算五遍。
+   */
+  const pactRows = PACTS.map(p => ({ def: p, mark: pactMark(p.id) }))
+
+  const trialRows = TRIALS.map(t => {
+    const mark = trialMark(t)
+    return {
+      def: t,
+      mark,
+      recoveryLabel: RECOVERY_LABEL[mark.recovery],
+      tierPct: `${tierPosition(mark.tier) * 100}%`
+    }
+  })
 
   function celestialWorldDefLocal(id: string) {
     return CELESTIAL_WORLDS.find(w => w.id === id)
