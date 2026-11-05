@@ -287,6 +287,15 @@ export function describeEquipment(def: EquipmentTemplate, seen: EquipSeen | unde
     // q 与 t 各自独立取高(可能来自不同掉落),分开陈述
     lines.push(`见过最好成色:${qualityOfRank(seen.q).name} · 最高 ${seen.t} 阶`)
   }
+  /*
+   * 词条位:这一阶的模板在掉落窗口内最多能带几条词条。
+   *
+   * 而这一项此前在图鉴里一个数都没有 —— 玩家挑模板时看不到「满配能带几条」,
+   * 而词条位是装备之间的核心差异之一(同一模板在不同品阶下从 1 位到 9 位)。
+   * 上限取自品阶表与「该阶能见到的最高档」,与 equipStage2Hint 同一把尺,不另算。
+   */
+  const affixCeiling = qualityOfRank(maxReachableRankAtTier(def.tier)).affixes[1]
+  lines.push(`词条位:至多 ${affixCeiling} 条`)
   /**
    * 装备册是全站最大的一册(288 件),却也是唯一没有图标、没有品阶色的一册:
    * 同册的法宝谱与灵兽册都有。图标与色都取数据表已有的 —— `EquipmentTemplate.icon`

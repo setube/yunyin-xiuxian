@@ -4,6 +4,8 @@
  * 只测纯函数(describeXxx / branchStage),不挂 Pinia:materialCodex 与 branchCodex 只是读 store 再转调的薄封装。
  */
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { LORE_MAX, LORE_STAGE_NAMES, MATERIALS, materialDef } from '@/data/materials'
 import { GONGFA_BRANCHES, gongfaBranchDef } from '@/data/gongfaBranches'
 import { gongfaDef, gongfaMaxLevel } from '@/data/gongfa'
@@ -458,5 +460,36 @@ describe('codexOwnedCount(「已收 N」统一口径)', () => {
     expect(codexOwnedCount(['a', 'b', 'b', 'b', 'z'], defs)).toBe(2)
     expect(codexOwnedCount([], defs), '空集计 0').toBe(0)
     expect(codexOwnedCount(['a', 'b', 'c'], defs), '健康档全落进 defs,如数计入').toBe(3)
+  })
+})
+
+/**
+ * 装备册要报出词条位上限。
+ *
+ * 玩家在图鉴里挑模板,最关心的除了所主与固有,就是「满配能带几条词条」——
+ * 而这一项此前一个数都没有。词条位由品阶决定(1~9 条),同一模板在不同品阶下差别很大。
+ *
+ * 故障注入:把那行删掉,本条红。
+ */
+describe('图鉴形制 · 装备册报词条位上限', () => {
+  it('每条装备条目都写得出「词条位:至多 N 条」', () => {
+    for (const t of EQUIPMENT_TEMPLATES) {
+      const entry = describeEquipment(t, undefined, true)
+      expect(entry.desc, `${t.name} 没写词条位`).toMatch(/词条位:至多 \d+ 条/)
+    }
+  })
+
+  it('上限随阶升高 —— 低阶件不该报出高阶的上限', () => {
+    const low = describeEquipment(EQUIPMENT_TEMPLATES[0]!, undefined, true).desc
+    const high = describeEquipment(EQUIPMENT_TEMPLATES.at(-1)!, undefined, true).desc
+    const n = (s: string) => Number(/词条位:至多 (\d+) 条/.exec(s)![1])
+    expect(n(high), '顶阶的词条位应高于初阶').toBeGreaterThan(n(low))
+    expect(n(low), '初阶也该至少一位').toBeGreaterThanOrEqual(1)
+  })
+
+  it('上限取品阶表,不在图鉴层另立一张表', () => {
+    const src = readFileSync(resolve(__dirname, 'codex.ts'), 'utf-8')
+    expect(src, '应读品阶表的 affixes[1]').toContain('.affixes[1]')
+    expect(src, '应复用既有的阶上限函数').toContain('maxReachableRankAtTier(def.tier)')
   })
 })
