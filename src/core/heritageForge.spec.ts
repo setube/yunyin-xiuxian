@@ -45,22 +45,38 @@ describe('宿命传承 · 锻造生命周期', () => {
    * 转世弹窗原写「需金丹境」,而门槛实际由各条传承的 gateMajor 决定(候选筛选就是 gateMajor <= major)。
    * 手抄境名会在两条线上分叉:改了最低那道传承的门槛,界面还写着旧境名。
    * 与洞府灵脉的 veinGateRealm 同一套做法 —— 门槛读数据,境名由界面临时取。
-   * 故障注入:把 HERITAGE_GATE_MAJOR 改成写死的 2,或把弹窗改回手抄,本条红。
+   *
+   * 判据分三层,因为**单看数值挡不住硬编码**:六道传承里最低的恰好就是 2,
+   * 把导出改成写死的 `2` 也能通过「等于各条最低值」这一条。故另外两层:
+   *   ① 定义处真的从 HERITAGE_DEFS 现算(源码断言 —— 编译期常量只能这样验);
+   *   ② 弹窗模板里**渲染的是那个插值**,而不只是「文件里出现过这个名字」。
+   * 故障注入:把导出改成写死 2 → 定义层红;把模板改回手抄 → 模板层红。
    */
-  it('入口门槛从数据算,与「金丹以下永不返回」同一条线', () => {
-    const computed = Math.min(...HERITAGE_DEFS.map(d => d.gateMajor))
-    expect(HERITAGE_GATE_MAJOR, '入口门槛应是各条里最低的那道').toBe(computed)
-    expect(HERITAGE_GATE_MAJOR, '入口门槛不该高于「浅修永不返回」的那一境').toBe(2)
-    // 门槛之下的境界确实一道也拿不到
+  it('入口门槛的定义处真的从数据现算,不是写死的数', () => {
+    const src = readFileSync(resolve(ROOT, 'src/data/heritage.ts'), 'utf-8')
+    // 编译期常量没法在运行期「反推」,只能验定义:它必须由 HERITAGE_DEFS 的 gateMajor 求最小值
+    expect(src, 'HERITAGE_GATE_MAJOR 应由各条 gateMajor 求最小值').toMatch(
+      /HERITAGE_GATE_MAJOR\s*=\s*Math\.min\(\s*\.\.\.HERITAGE_DEFS\.map\(d => d\.gateMajor\)\s*\)/
+    )
+    // 数值层:与各条最低值一致(定义写对了才成立)
+    expect(HERITAGE_GATE_MAJOR, '入口门槛应是各条里最低的那道').toBe(
+      Math.min(...HERITAGE_DEFS.map(d => d.gateMajor))
+    )
+    // 语义层:门槛之下一道也拿不到,到达门槛就有候选
     expect(forgeCandidate(HERITAGE_GATE_MAJOR - 1), '门槛以下应返回空').toEqual([])
     expect(forgeCandidate(HERITAGE_GATE_MAJOR).length, '到达门槛应有候选').toBeGreaterThan(0)
   })
 
-  it('转世弹窗的境名读门槛,不手抄「需金丹境」', () => {
+  it('转世弹窗渲染的是那个插值,不只是文件里出现过这个名字', () => {
     const view = readFileSync(resolve(ROOT, 'src/components/character/RebirthDialog.vue'), 'utf-8')
-    expect(view, '传承门槛应读 HERITAGE_GATE_MAJOR').toContain('HERITAGE_GATE_MAJOR')
-    expect(view, '境名应由 REALMS 现取').toContain('heritageGateRealm')
+    // 判据落在模板那一句上:出现标识符但模板仍印死字,是这次要防的形态
+    expect(view, '模板应渲染 heritageGateRealm 插值').toMatch(/需\{\{\s*heritageGateRealm\s*\}\}境/)
+    expect(view, '境名应由 REALMS 按门槛现取').toMatch(
+      /heritageGateRealm\s*=\s*computed\(\(\) =>\s*REALMS\[HERITAGE_GATE_MAJOR\]/
+    )
     expect(view, '不该再手抄境名').not.toContain('需金丹境')
+    // 阴性对照:模板里不许出现写死的境名
+    expect(view, '模板里不该出现任何写死的「金丹」境名').not.toMatch(/需[^<{]*金丹[^<]*境/)
   })
 
   it('① 门槛:forgeCandidate 只返回 gateMajor<=major 的未锻造传承;浅修(major<2)永不返回', () => {
