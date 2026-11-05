@@ -24,25 +24,25 @@
 
     <div class="mt-3 space-y-2">
       <div
-        v-for="v in VEINS"
-        :key="v.id"
+        v-for="row in veinRows"
+        :key="row.def.id"
         class="rounded-lg border px-2.5 py-2.5"
-        :class="isMain(v.id) ? TONES[v.id].row : 'border-ink/8 bg-paper-deep/40'"
+        :class="row.main ? TONES[row.def.id].row : 'border-ink/8 bg-paper-deep/40'"
       >
         <div class="flex flex-wrap items-start gap-2.5">
-          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md font-kai text-[15px] leading-none" :class="TONES[v.id].seal">
-            <span class="translate-y-[1px]">{{ v.seal }}</span>
+          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md font-kai text-[15px] leading-none" :class="TONES[row.def.id].seal">
+            <span class="translate-y-[1px]">{{ row.def.seal }}</span>
           </span>
           <div class="min-w-0 flex-1">
             <p class="flex flex-wrap items-center gap-1.5">
-              <span class="truncate font-kai text-[13px] text-ink">{{ v.name }}</span>
-              <span v-if="isMain(v.id)" class="shrink-0 rounded border border-cinnabar/40 bg-cinnabar/15 px-1 py-0.5 text-[10px] leading-none text-ink">主脉</span>
+              <span class="truncate font-kai text-[13px] text-ink">{{ row.def.name }}</span>
+              <span v-if="row.main" class="shrink-0 rounded border border-cinnabar/40 bg-cinnabar/15 px-1 py-0.5 text-[10px] leading-none text-ink">主脉</span>
               <span v-else-if="dongfu.veinMain === null" class="shrink-0 text-[10px] text-ink-faint">首投成主</span>
             </p>
-            <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">{{ v.desc }}</p>
+            <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">{{ row.def.desc }}</p>
             <!-- 每条脉须自陈作用 -->
             <p class="mt-0.5 text-[10px] leading-relaxed text-azure">
-              {{ currentLevel(v.id) > 0 ? veinEffectText(v, currentLevel(v.id)) : `每点 ${veinEffectText(v, 1)}` }}
+              {{ row.effect }}
             </p>
             <!--
               四条共用一把尺:一律按 0→主脉上限。原先各按本脉上限,42/70 画的比 20/30 还短。
@@ -50,15 +50,15 @@
             -->
             <div class="mt-1.5 flex items-center gap-2">
               <div class="vein-axis min-w-0 flex-1">
-                <div class="vein-axis-fill" :style="{ width: axisPct(currentLevel(v.id), VEIN_MAIN_CAPACITY) + '%', '--vein-tone': TONES[v.id].tone }"></div>
+                <div class="vein-axis-fill" :style="{ width: row.axisWidth, '--vein-tone': TONES[row.def.id].tone }"></div>
                 <span class="vein-axis-tick" :style="{ left: sideTickPct + '%' }"></span>
               </div>
-              <span class="shrink-0 text-[10px] tabular" :class="surplusPoints(v.id) > 0 ? 'text-gold-ink' : 'text-ink-faint'">
-                {{ currentLevel(v.id) }}/{{ cap(v.id) }}
+              <span class="shrink-0 text-[10px] tabular" :class="row.surplus > 0 ? 'text-gold-ink' : 'text-ink-faint'">
+                {{ row.level }}/{{ row.cap }}
               </span>
             </div>
-            <p v-if="surplusPoints(v.id) > 0" class="mt-0.5 text-[10px] leading-relaxed text-gold-ink">
-              超额 {{ surplusPoints(v.id) }} 点 · 效果保留
+            <p v-if="row.surplus > 0" class="mt-0.5 text-[10px] leading-relaxed text-gold-ink">
+              超额 {{ row.surplus }} 点 · 效果保留
             </p>
           </div>
           <!--
@@ -67,20 +67,20 @@
             两钮放不下时折成两行;钮内两段各自不拆,钮窄时上下叠(不叠会被压成逐字竖排)。
           -->
           <div class="flex basis-full flex-wrap items-center justify-end gap-1.5">
-            <button class="btn-ghost flex-wrap whitespace-normal !px-2.5 !py-1.5 !text-[11px]" :disabled="!canInvest(v.id)" @click="doInvest(v.id)">
-              <template v-if="canInvest(v.id)">
+            <button class="btn-ghost flex-wrap whitespace-normal !px-2.5 !py-1.5 !text-[11px]" :disabled="!canInvest(row.def.id)" @click="doInvest(row.def.id)">
+              <template v-if="canInvest(row.def.id)">
                 <span class="whitespace-nowrap">投一点 ·</span>
                 <span class="whitespace-nowrap">{{ formatGN(investCost) }} 石</span>
               </template>
-              <template v-else>{{ investedStateLabel(v.id) }}</template>
+              <template v-else>{{ investedStateLabel(row.def.id) }}</template>
             </button>
             <button
-              v-if="canSwitchTo(v.id)"
+              v-if="canSwitchTo(row.def.id)"
               class="btn-ghost flex-wrap !px-2.5 !py-2 !text-[10px]"
               :disabled="switchShort"
-              :aria-label="switchLabel(v.id)"
+              :aria-label="switchLabel(row.def.id)"
               :title="switchShort ? `灵石尚差 ${formatGap(switchGap)}` : undefined"
-              @click="switchArm = v.id"
+              @click="switchArm = row.def.id"
             >
               <span class="whitespace-nowrap">改立主脉 ·</span>
               <span v-if="switchShort" class="whitespace-nowrap">尚差 {{ formatGap(switchGap) }}</span>
@@ -93,26 +93,26 @@
           连投行:总账与群批同一条式子。
           flex-wrap + 文本保底宽不可去:否则 flex-1 文本被 shrink-0 双钮压成 0 宽竖排(同建筑连升)。
         -->
-        <div v-if="plans[v.id].points >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
-          <template v-if="batchArm !== v.id">
+        <div v-if="row.plan.points >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+          <template v-if="batchArm !== row.def.id">
             <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
-              连投至 <span class="font-kai text-[11px] text-cinnabar">第 {{ currentLevel(v.id) + plans[v.id].points }} 点</span>
-              <span class="mt-0.5 block text-[9px] text-ink-faint tabular">共耗 灵石 {{ formatGN(plans[v.id].stone) }}</span>
+              连投至 <span class="font-kai text-[11px] text-cinnabar">第 {{ row.level + row.plan.points }} 点</span>
+              <span class="mt-0.5 block text-[9px] text-ink-faint tabular">共耗 灵石 {{ formatGN(row.plan.stone) }}</span>
             </p>
-            <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = v.id">连 投</button>
+            <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = row.def.id">连 投</button>
           </template>
           <template v-else>
             <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
-              连投 {{ plans[v.id].points }} 点 · 灵石 {{ formatGN(plans[v.id].stone) }}
+              连投 {{ row.plan.points }} 点 · 灵石 {{ formatGN(row.plan.stone) }}
             </p>
             <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArm = null">再想想</button>
-            <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runBatch(v.id)">连 投</button>
+            <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runBatch(row.def.id)">连 投</button>
           </template>
         </div>
 
-        <div v-if="switchArm === v.id" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+        <div v-if="switchArm === row.def.id" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
           <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
-            改立「<span class="font-kai text-[11px] text-cinnabar">{{ v.name }}</span>」为主脉 · 耗灵石
+            改立「<span class="font-kai text-[11px] text-cinnabar">{{ row.def.name }}</span>」为主脉 · 耗灵石
             <span class="tabular text-ink">{{ formatGN(switchCost) }}</span>
             <span v-if="switchShort" class="mt-0.5 block text-[9px] leading-relaxed text-cinnabar tabular">
               灵石尚差 {{ formatGap(switchGap) }}
@@ -127,7 +127,7 @@
               class="btn-seal !px-2.5 !py-2 !text-[11px]"
               :disabled="switchShort"
               :title="switchShort ? `灵石尚差 ${formatGap(switchGap)}` : undefined"
-              @click="confirmSwitch(v.id)"
+              @click="confirmSwitch(row.def.id)"
             >
               改 立
             </button>
@@ -139,11 +139,11 @@
     <div class="mt-3 border-t border-ink/6 pt-2.5">
       <p class="text-[10px] text-ink-faint">当前加成</p>
       <div class="mt-1.5 space-y-1">
-        <div v-for="v in VEINS" :key="v.id" class="flex items-center gap-2">
-          <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="currentLevel(v.id) > 0 ? TONES[v.id].dot : 'bg-ink/15'"></span>
-          <span class="w-14 shrink-0 text-[10px] text-ink-soft">{{ v.name }}</span>
-          <span class="min-w-0 truncate text-[10px] tabular" :class="currentLevel(v.id) > 0 ? 'text-ink' : 'text-ink-faint'">
-            {{ ledgerText(v.id) }}
+        <div v-for="row in veinRows" :key="row.def.id" class="flex items-center gap-2">
+          <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="row.level > 0 ? TONES[row.def.id].dot : 'bg-ink/15'"></span>
+          <span class="w-14 shrink-0 text-[10px] text-ink-soft">{{ row.def.name }}</span>
+          <span class="min-w-0 truncate text-[10px] tabular" :class="row.level > 0 ? 'text-ink' : 'text-ink-faint'">
+            {{ ledgerText(row.def.id) }}
           </span>
         </div>
       </div>
@@ -255,6 +255,29 @@
     alchemy: veinInvestPlan('alchemy'),
     insight: veinInvestPlan('insight')
   }))
+
+  /**
+   * 灵脉行的读数:每条脉一次算齐。
+   *
+   * 原先主循环里 `currentLevel(v.id)` 被调 4 次、`veinEffectText` 2 次、
+   * `axisPct` / `surplusPoints` / `cap` 各 1~2 次,连投区还要再调一次 `currentLevel`。
+   * 全是同一个 `dongfu.veinPoints[veinId]` 的查表 —— 每帧算十几次没有理由。
+   */
+  const veinRows = computed(() =>
+    VEINS.map(v => {
+      const level = currentLevel(v.id)
+      return {
+        def: v,
+        level,
+        cap: cap(v.id),
+        main: isMain(v.id),
+        effect: level > 0 ? veinEffectText(v, level) : `每点 ${veinEffectText(v, 1)}`,
+        axisWidth: `${axisPct(level, VEIN_MAIN_CAPACITY)}%`,
+        surplus: surplusPoints(v.id),
+        plan: plans.value[v.id]
+      }
+    })
+  )
 
   /** 连投二步确认态 */
   const batchArm = ref<VeinId | null>(null)
