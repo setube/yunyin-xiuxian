@@ -293,6 +293,12 @@
           <span class="min-w-0 flex-1">
             <span class="font-kai text-ink">{{ s.name }}</span>
             <span class="text-ink-faint"> · {{ s.nature }} · {{ s.gist }}</span>
+            <!--
+              点化要花灵石,而它给哪一路此前一字未提:十四主星各带 mods,
+              data/ziwei 的字段注释写的就是「此星所与之力」,界面却只印星性一句。
+              与上方「命格之力」合计同源(见 data/statNames 的 modsText)。
+            -->
+            <span class="mt-0.5 block text-[10px] tabular text-azure">{{ modsText(s.mods) }}</span>
           </span>
           <button
             class="shrink-0 cursor-pointer text-[10px]"

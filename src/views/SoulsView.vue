@@ -133,6 +133,8 @@
               </span>
             </p>
             <p class="text-[10px] text-ink-faint">凝自「{{ soul.fromName }}」 · {{ soulModText(soul) }}</p>
+            <!-- 六类器魂各有一句形意,原先只在数据表里(见 ui/soulText 的 soulFlavorText) -->
+            <p v-if="soulFlavorText(soul)" class="text-[10px] leading-relaxed text-violet-ink">{{ soulFlavorText(soul) }}</p>
           </div>
           <!-- 巡页夹具无灵魂,28px 尺子碰不到这些钮;!py-2 盒高 35px,与同行确认态按钮同高 -->
           <div class="flex shrink-0 gap-1">
@@ -230,7 +232,7 @@
   import { goBack } from '@/router/goBack'
   import { formatNum } from '@/utils/format'
   import { modsText } from '@/data/statNames'
-  import { dissolveNote, refineCostLine } from '@/ui/soulText'
+  import { dissolveNote, refineCostLine, soulFlavorText } from '@/ui/soulText'
   import { soulMark } from '@/ui/soulMark'
   import { soulPickSummary, soulPicks } from '@/ui/soulPick'
   import { equipmentTemplate } from '@/data/equipment'
