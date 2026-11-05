@@ -2551,6 +2551,13 @@ html[data-theme='dark'] .fruit-curve polyline {
 .growth-gauge i {
   position: absolute;
   top: 50%;
+  /*
+   * 圆心夹在轴内:position 由 growthPosition 严格夹到 0~1,
+   * 而端点必然出现(倍率 0.6 → 0%,4.0 → 100%)。圆 7px、translate(-50%) 居中,
+   * 端点处半个圆(3.5px)探到轴外,距两侧的 ×0.6 / ×4.0 只剩 2.5px ——
+   * 不再是「贴边」而是「几乎压上标签」。3.5px 即半径。
+   */
+  left: clamp(3.5px, var(--gauge-pos, 0%), calc(100% - 3.5px));
   display: block;
   width: 7px;
   height: 7px;

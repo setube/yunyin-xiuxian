@@ -199,7 +199,7 @@
               role="img"
               :aria-label="`修行倍率 ×${nextGrowth.mult.toFixed(2)},区间 ${nextGrowth.floor.toFixed(1)} 至 ${nextGrowth.ceil.toFixed(1)},属${nextGrowth.label}`"
             >
-              <i :style="{ left: `${nextGrowth.position * 100}%` }" />
+              <i :style="{ '--gauge-pos': `${nextGrowth.position * 100}%` }" />
             </span>
             <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">×{{ nextGrowth.ceil.toFixed(1) }}</span>
           </div>

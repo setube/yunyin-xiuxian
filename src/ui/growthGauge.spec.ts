@@ -107,6 +107,45 @@ describe('倍率刻度 · 三、绝品那一档刻意窄', () => {
   })
 })
 
+/**
+ * 端点处圆点不许探出轴外。
+ *
+ * position 由 growthPosition 严格夹到 0~1,端点必然出现(倍率 0.6 → 0%,4.0 → 100%)。
+ * 圆 7px、translate(-50%) 居中,端点处半个圆(3.5px)本来会探到轴外 ——
+ * 实测算下来圆心距两侧的 ×0.6 / ×4.0 只剩 2.5px,从「贴边」变成「几乎压上标签」。
+ *
+ * 故障注入:把 clamp 去掉,本条红(实测越界 3.5px)。
+ */
+describe('倍率刻度 · 五、端点处圆点夹在轴内', () => {
+  const CSS = readFileSync(resolve(__dirname, '../style.css'), 'utf-8')
+
+  function rule(sel: string): string {
+    const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+  }
+
+  it('圆点的 left 用 clamp,下限与上限都等于半径', () => {
+    const body = rule('.growth-gauge i')
+    expect(body, '缺 .growth-gauge i').not.toBe('')
+    expect(body, '该用 clamp 夹住圆心').toContain('clamp(')
+    expect(body, '圆宽该是 7px').toMatch(/width:\s*7px/)
+    expect(body, '下限该等于半径 3.5px').toMatch(/clamp\(\s*3\.5px\s*,/)
+    expect(body, '上限该让出半径').toContain('calc(100% - 3.5px)')
+  })
+
+  it('位置仍由 --gauge-pos 决定,没被夹成常量', () => {
+    expect(rule('.growth-gauge i'), '该仍读 --gauge-pos').toContain('var(--gauge-pos')
+  })
+
+  it('两处刻度都把位置写进 --gauge-pos,不再直接写 left', () => {
+    for (const f of ['../views/CreateView.vue', '../components/character/ReincarnationDialog.vue']) {
+      const src = readFileSync(resolve(__dirname, f), 'utf-8')
+      expect(src, `${f} 该写 --gauge-pos`).toContain("'--gauge-pos'")
+      expect(src, `${f} 不该再直接写 left 到 i 上`).not.toMatch(/<i :style="\{ left: `\$\{[^}]*\.position/)
+    }
+  })
+})
+
 describe('倍率刻度 · 四、建号页接上了', () => {
   it('倍率旁边有刻度与档次', () => {
     expect(VIEW).toContain('growthGauge')
