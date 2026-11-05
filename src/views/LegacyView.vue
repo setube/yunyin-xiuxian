@@ -107,6 +107,23 @@
           {{ vowTheme.goal }}
           <span v-if="vowProg" class="tabular">({{ Math.floor(vowProg.cur) }} / {{ vowProg.need }})</span>
         </p>
+        <!--
+          誓愿是本世的核心目标,而它此前只有一行「(已 / 需)」的读数 ——
+          同页的修行节点同样只有读数,于是「走到哪了」处处都要自己拿两个数相除。
+          条说走到哪,数字说还差多少,两者互补。
+        -->
+        <ProgressBar
+          v-if="vowProg && vowProg.need > 0"
+          class="mt-1.5"
+          :value="vowProg.cur / vowProg.need"
+          :color="vowBroken ? 'var(--color-amber-ink)' : vowDone ? 'var(--color-cinnabar)' : 'var(--color-jade)'"
+          :height="3"
+        />
+        <!--
+          誓愿是本世的核心目标,而它此前只有一行「(已 / 需)」的读数 ——
+          同页的修行节点同样只有读数,于是「走到哪了」处处都要自己拿两个数相除。
+          条说走到哪,数字说还差多少,两者互补。
+        -->
       </div>
       <p v-else class="mt-2 text-[11px] text-ink-faint">本世未立题</p>
     </div>
@@ -129,6 +146,12 @@
     </div>
 
     <SectionTitle title="修行节点" :hint="`${endgame.milestones.length}/${MILESTONE_DEFS.length}`" />
+    <!-- 节点已走完几分之几:标题旁的读数只给两个数,条给位置 -->
+    <ProgressBar
+      class="mb-1.5 mt-1 px-0.5"
+      :value="MILESTONE_DEFS.length > 0 ? endgame.milestones.length / MILESTONE_DEFS.length : 0"
+      :height="2"
+    />
     <div class="card-ink px-4 py-2">
       <div v-if="milestoneRows.length" class="relative ml-2 border-l border-ink/15 pl-4">
         <div v-for="row in milestoneRows" :key="row.id" class="relative py-1.5">
@@ -229,6 +252,7 @@
   import { chainProgressRows } from '@/core/eventEngine'
   import { formatDate } from '@/utils/time'
   import SectionTitle from '@/components/common/SectionTitle.vue'
+  import ProgressBar from '@/components/common/ProgressBar.vue'
 
   const endgame = useEndgameStore()
   const player = usePlayerStore()
