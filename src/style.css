@@ -2298,6 +2298,39 @@ html[data-theme='dark'] .fruit-curve polyline {
   box-shadow: inset 0 0 0 1px rgb(var(--color-cinnabar-rgb) / 0.6);
 }
 
+/* ================= 小境界十档刻度(subLayerMark) =================
+ * 「一层 … 九层 · 圆满」是全作最核心的进度读数:修为攒满当前层即小进阶,
+ * 攒到「圆满」才够格冲大关。而它一直只是两个字 —— 同样是「三层」,
+ * 从一层走到三层与从七层退到三层不是一回事,「圆满」离大关只差一次突破。
+ * 十档就是十格,已满几格(见 src/ui/subLayerMark)。
+ *
+ * 与 .realm-layer-pips 同一套几何(4px 圆点、2px 间距),但这里是**已得**:
+ * 从一层起第一格就该是实心 —— 玩家已经站在这一档了,不是还没进去。
+ * 到「圆满」整排转实朱:那是「够格冲大关了」,与「还差几层」是两种状态。
+ */
+.sub-layer-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.sub-layer-pips i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 0.35;
+}
+.sub-layer-pips i.on {
+  background: currentColor;
+  box-shadow: none;
+  opacity: 1;
+}
+.sub-layer-pips--complete i.on {
+  background: rgb(var(--color-cinnabar-rgb));
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。

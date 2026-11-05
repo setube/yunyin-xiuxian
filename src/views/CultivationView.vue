@@ -8,7 +8,21 @@
         <div class="text-center">
           <p class="font-kai text-[11px] tracking-[0.5em] text-ink-faint">{{ player.worldName }}</p>
           <p class="font-kai text-[30px] tracking-[0.3em] text-ink">{{ player.realm.name }}</p>
-          <p class="mt-0.5 font-kai text-[14px] tracking-[0.4em] text-cinnabar">{{ player.subName }}</p>
+          <!--
+            小境界十档的刻度:同样是「三层」,从一层走到三层与从七层退到三层不是一回事;
+            「圆满」离大关只差一次突破 —— 都得自己拿两个字去比(见 ui/subLayerMark)。
+          -->
+          <span class="mt-1 flex items-center justify-center gap-1.5">
+            <span
+              class="sub-layer-pips"
+              :class="{ 'sub-layer-pips--complete': subMark.complete }"
+              role="img"
+              :aria-label="`第 ${subMark.index + 1}/${subMark.total} 档`"
+            >
+              <i v-for="(on, i) in subLayerPips(subMark)" :key="i" :class="{ on }" />
+            </span>
+            <span class="font-kai text-[14px] tracking-[0.4em] text-cinnabar">{{ player.subName }}</span>
+          </span>
           <p class="mt-1 text-[11px] text-ink-faint">{{ player.realm.desc }}</p>
           <!-- 这一境的出处(典籍 / 网文常用 / 道家本源) -->
           <p class="mt-1 text-[10px] leading-relaxed text-ink-faint">
@@ -206,6 +220,7 @@
   import { formatCountdown, formatDuration, formatGap, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
   import { signedPercent } from '@/data/statNames'
   import { repairActLabel } from '@/ui/cultivationText'
+  import { subLayerMark, subLayerPips } from '@/ui/subLayerMark'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
   import RealmLadder from '@/components/cultivation/RealmLadder.vue'
@@ -223,6 +238,8 @@
 
   /** 修炼速度来路:基础(境界/层) × (1 + 各来源之和);来源取自 finalStats.breakdown,与人物页属性明细同源 */
   const showCultBreakdown = ref(false)
+  /** 小境界十档的刻度(见 ui/subLayerMark) */
+  const subMark = computed(() => subLayerMark(player.sub))
   const cultBase = computed(() => baseCultPerSec(player.major, player.sub))
   const cultSources = computed(() =>
     player.finalStats.breakdown
