@@ -3,6 +3,8 @@
  * 「/N 层」的分母由判据表长度算出,新增判据不必改 UI —— 这条由 SWORD_PURITY_MAX_LAYERS 保证。
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import type { StatMods } from '@/types'
 import type { BuildDetection } from './buildDetect'
 import { STYLE_MATURE_AFFINITY } from './buildDetect'
@@ -23,6 +25,28 @@ function pureScene(): { mods: StatMods; art: number; build: BuildDetection } {
     build: { affinity: STYLE_MATURE_AFFINITY, secondary: undefined } as unknown as BuildDetection
   }
 }
+
+/**
+ * 道途页那行括号:原先列的是**已达成**的四条,与上方 deepText 几乎逐字重复
+ * (还各用一套措辞:一处「主流派成形」,一处「契合 ≥60%」)。
+ * 已达成的不必再念一遍 —— 玩家要看的是「还差哪条」。改成只列未达成的。
+ */
+describe('剑意纯度 · 括号只报未达成项', () => {
+  const VIEW = readFileSync(resolve(__dirname, '../views/CelestialView.vue'), 'utf-8')
+
+  it('视图只筛未达成项,不再列已达成', () => {
+    expect(VIEW, '该按 !c.ok 筛').toContain('checks.filter(c => !c.ok)')
+    expect(VIEW, '不该再列已达成项').not.toContain('checks.filter(c => c.ok)')
+  })
+
+  it('全达成时不出括号', () => {
+    expect(VIEW, '该先判有没有未达成项').toContain('checks.some(c => !c.ok)')
+  })
+
+  it('未达成项仍取 core 的 name,不在视图里另写条件文案', () => {
+    expect(VIEW, '该直接读 c.name').toContain('.map(c => c.name)')
+  })
+})
 
 describe('剑意纯度', () => {
   it('四项全过时满层,且分母与判据数同源', () => {
