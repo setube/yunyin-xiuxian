@@ -61,7 +61,7 @@
         class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
         aria-label="至多洗炼次数"
       />
-      <span class="text-[10px] text-ink-faint tabular">次 · 每洗 {{ formatGN(reforgeCostVal.stone) }} 尘×{{ reforgeCostVal.dust }}</span>
+      <span class="text-[10px] text-ink-faint tabular">次 · 每洗 灵石 {{ formatGN(reforgeCostVal.stone) }} · 器灵尘×{{ reforgeCostVal.dust }}</span>
       <template v-if="!autoArm">
         <button
           class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
@@ -79,7 +79,11 @@
           :title="autoMaxShortText"
           @click="runAutoReforge"
         >
-          确认开洗 · 至多 灵石{{ autoMaxCost ? formatGN(autoMaxCost.stone) : '0' }}·尘×{{ autoMaxCost?.dust ?? 0 }}
+          <!--
+            单位与数字之间要留一个空格(全站规约,见 utils/format.formatYears 的注);
+            且与重铸、强化那几处同写「灵石」「器灵尘」全称,不在这处省成裸数 + 「尘」。
+          -->
+          确认开洗 · 至多 灵石 {{ autoMaxCost ? formatGN(autoMaxCost.stone) : '0' }} · 器灵尘×{{ autoMaxCost?.dust ?? 0 }}
         </button>
         <span v-if="autoMaxGap?.short" class="w-full text-[10px] leading-relaxed text-cinnabar tabular">
           {{ autoMaxShortText }}
