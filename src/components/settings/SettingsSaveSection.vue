@@ -1,7 +1,8 @@
 <template>
   <div class="card-ink space-y-2 px-4 py-3">
     <p class="text-[11px] text-ink-faint tabular">
-      存档版本 v{{ SAVE_VERSION }} · 修行时长 {{ formatDuration(game.totalPlaySec) }}
+      <!-- 版本报档内那一份(旧档导入后会被 migrate 升到当前),不印常量 -->
+      存档版本 v{{ game.saveVersion }} · 修行时长 {{ formatDuration(game.totalPlaySec) }}
     </p>
     <p class="text-[11px] tabular" :class="backupPrompt ? 'text-amber-ink' : 'text-ink-faint'">
       上次导出备份:{{ lastExportText }}

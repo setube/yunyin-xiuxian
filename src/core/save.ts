@@ -25,10 +25,22 @@ function migrate(payload: ExportPayload): ExportPayload {
   if (typeof migrated.data.resources === 'object' && migrated.data.resources !== null) {
     migrated.data.resources = migrateHerbSlice(migrated.data.resources as Record<string, unknown>)
   }
-  // lastActiveAt 重戳为现在:沿用导出时刻会被算成缺勤数月
-  // (离线资源按 8h 封顶、年龄却按全程流,先死)
+  /*
+   * game 分片里的 saveVersion 也要跟着升。
+   *
+   * 信封上的 version 是导入闸门用的那一份,而 game 分片里另存了一份 ——
+   * 界面「存档版本 v{{ SAVE_VERSION }}」读的是常量,档内那份此前只写不读,
+   * 于是导入一份 v1 旧档之后:信封已升到 2,档内还写着 1,界面印 v2。
+   * 实测磁盘 game 分片仍是 {"saveVersion":1},水合后 store 也是 1。
+   * 三处版本号各说各话,下次要按档内版本判断「这份档升级到哪一步」就无从判断。
+   */
   if (migrated.data.game && typeof migrated.data.game === 'object') {
-    migrated.data.game = { ...(migrated.data.game as Record<string, unknown>), lastActiveAt: Date.now() }
+    migrated.data.game = {
+      ...(migrated.data.game as Record<string, unknown>),
+      // lastActiveAt 重戳为现在:沿用导出时刻会被算成缺勤数月(离线资源按 8h 封顶、年龄却按全程流,先死)
+      lastActiveAt: Date.now(),
+      saveVersion: SAVE_VERSION
+    }
   }
   migrated.version = SAVE_VERSION
   return migrated
