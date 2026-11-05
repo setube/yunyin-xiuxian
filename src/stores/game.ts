@@ -32,6 +32,17 @@ export const useGameStore = defineStore(
     function sanitize(): void {
       // 只认严格 true:字符串 "false" 会绕过开局守卫并触发离线结算
       started.value = started.value === true
+      /*
+       * 档内版本号也要修:旧档(或坏档)里可能是 1、字符串、负数。
+       * 它此前只写不读,连 sanitize 都没碰过 —— 而界面要按它报「这份档升到哪一版」。
+       * 高于当前的值按当前夹住:那份档不是本版本能表达的,报更高只会误导。
+       */
+      const rawVersion = saveVersion.value
+      // 坏档里可能是字符串 '2':先转数再判有限,否则兜底分支会把字符串原样留下
+      const asNumber = typeof rawVersion === 'number' ? rawVersion : Number(rawVersion)
+      saveVersion.value = Number.isFinite(asNumber)
+        ? Math.max(0, Math.min(SAVE_VERSION, Math.floor(asNumber)))
+        : SAVE_VERSION
       createdAt.value = asFiniteNumber(createdAt.value, 0, 0)
       lastActiveAt.value = asFiniteNumber(lastActiveAt.value, 0, 0)
       totalPlaySec.value = asFiniteNumber(totalPlaySec.value, 0, 0)

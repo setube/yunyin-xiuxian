@@ -10,13 +10,15 @@ import { createApp } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import {
+  SAVE_VERSION,
   clearAllSave,
   dropPendingWrites,
   migrateInventorySlice,
   migrateLocalSchema,
   storageKey
 } from '@/utils/storage'
-import { decryptSave, encryptSave } from '@/utils/crypto'
+import { decryptSave, encryptSave, readSaveText } from '@/utils/crypto'
+import { readFileSync } from 'node:fs'
 import { importSaveText } from './save'
 import { useInventoryStore } from '@/stores/inventory'
 import { useGameStore } from '@/stores/game'
@@ -191,5 +193,57 @@ describe('迁移 · 灵草五品(旧档单标量 herb → 品阶分账)', () => 
     const back = JSON.parse(decryptSave(localStorage.getItem(storageKey('resources'))!)!)
     expect(back.herbByGrade[1], '仙界(9 境)旧草同样并入凡品账').toBe(60)
     expect('herb' in back).toBe(false)
+  })
+})
+
+/**
+ * 版本号有三处:信封的 `version`(导入闸门用)、`game` 分片里的 `saveVersion`、界面印的那个。
+ *
+ * `game.saveVersion` 此前只写不读:连 `sanitize` 都没碰过,界面印的是常量。
+ * 于是导入一份 v1 旧档之后,信封已升到 2、档内还写着 1、界面印 v2 —— 三处各说各话。
+ * 故障注入:去掉 migrate 里的 `saveVersion: SAVE_VERSION`,第一条红;
+ * 去掉 sanitize 里的夹取,第二条红。
+ */
+describe('迁移 · 档内版本号跟着升,且坏值修得掉', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+    installStorage()
+    dropPendingWrites()
+    clearAllSave()
+  })
+
+  it('导入 v1 旧档后,档内 saveVersion 也是当前版本', () => {
+    const v1 = {
+      game: 'yunyin-xiuxian',
+      version: 1,
+      exportedAt: Date.now(),
+      data: {
+        game: { started: true, saveVersion: 1, createdAt: 1, lastActiveAt: Date.now(), totalPlaySec: 0 },
+        player: { major: 2 }
+      }
+    }
+    expect(importSaveText(encryptSave(JSON.stringify(v1))), '旧档应能导入').toBeNull()
+    const back = JSON.parse(readSaveText(localStorage.getItem(storageKey('game'))!)!)
+    expect(back.saveVersion, '档内版本号没跟着升 —— 三处版本会各说各话').toBe(SAVE_VERSION)
+  })
+
+  it('坏值(字符串 / 负数 / 越界)在修形时夹回合法区间', () => {
+    bootStores()
+    const game = useGameStore()
+    for (const [raw, want] of [
+      ['2' as unknown as number, SAVE_VERSION],
+      [-3, 0],
+      [999, SAVE_VERSION],
+      [Number.NaN, SAVE_VERSION]
+    ] as const) {
+      game.saveVersion = raw
+      game.sanitize()
+      expect(game.saveVersion, `坏值 ${String(raw)} 应夹回 ${want}`).toBe(want)
+    }
+  })
+
+  it('界面报档内那一份,不印常量', () => {
+    const view = readFileSync(new URL('../components/settings/SettingsSaveSection.vue', import.meta.url), 'utf-8')
+    expect(view, '版本应读 game.saveVersion').toContain('game.saveVersion')
   })
 })
