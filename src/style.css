@@ -1176,6 +1176,8 @@ html[data-theme='dark'] .dao-crest {
   display: inline-block;
   flex-shrink: 0;
   color: currentColor;
+  /* 形制只负责画:点击交给外层按钮/整块,与 set-crest / branch-dir 同一条 */
+  pointer-events: none;
 }
 .pact-crest::before {
   content: '';
@@ -1249,6 +1251,8 @@ html[data-theme='dark'] .dao-crest {
   display: inline-block;
   flex-shrink: 0;
   color: currentColor;
+  /* 形制只负责画:点击交给外层按钮/整块,与 set-crest / branch-dir 同一条 */
+  pointer-events: none;
 }
 .branch-glyph::before {
   content: '';
@@ -1336,6 +1340,8 @@ html[data-theme='dark'] .dao-crest {
   display: inline-block;
   flex-shrink: 0;
   color: currentColor;
+  /* 形制只负责画:点击交给外层按钮/整块,与 set-crest / branch-dir 同一条 */
+  pointer-events: none;
 }
 .bond-crest::before {
   content: '';
@@ -1577,6 +1583,8 @@ html[data-theme='dark'] .bond-halo {
   display: inline-block;
   flex-shrink: 0;
   color: currentColor;
+  /* 形制只负责画:点击交给外层按钮/整块,与 set-crest / branch-dir 同一条 */
+  pointer-events: none;
 }
 .axis-glyph::before {
   content: '';
@@ -2833,6 +2841,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   display: inline-flex;
   align-items: center;
   gap: 1px;
+  pointer-events: none;
 }
 .beast-src-pips i {
   display: block;
@@ -3147,6 +3156,7 @@ html[data-theme='dark'] .fruit-curve polyline {
   overflow: hidden;
   border-radius: 999px;
   background: rgb(var(--color-ink-rgb) / var(--track-ink-alpha));
+  pointer-events: none;
 }
 .rating-gauge i {
   display: block;

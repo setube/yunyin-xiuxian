@@ -1353,3 +1353,40 @@ describe('调色板 · 同色淡底不该承载同色文字', () => {
     expect(stillBad('indigo-ink', 0.05), 'indigo-ink 低档应安全').toBe(false)
   })
 })
+
+/**
+ * 形制基类必须不吃指针事件。
+ *
+ * 形制是「加了层记号」:它画在按钮、卡片、整块区域的内部,
+ * 而玩家的点击意图永远属于外层那个控件。一枚 pips 挡住 2px,
+ * 就会让「点这里」变成「点在装饰上」——桌面看不太出,触屏上手指偏 1px 就落空。
+ *
+ * 这条规则此前只写在各自的 spec 里(每个形制模块各钉自己那一个),
+ * 于是漏了六处:四个早期加的 crest/glyph,加两个 aria-hidden 的纯装饰条。
+ * 现收成一条全站判据 —— 新增形制基类若忘了写,这里直接红。
+ *
+ * 豁免:名字是印章文字或按钮本身的(它们承载文本或接收点击)。
+ */
+describe('形制 · 不吃指针事件', () => {
+  const WAIVED = new Set(['btn-seal', 'empty-seal', 'title-seal', 'world-seal'])
+  /** 形制基类:名字以形制后缀结尾,且不带 `--` 修饰(修饰类只给色/角度) */
+  const FORM = /-(pips|crest|glyph|mark|halo|cornice|sheen|gauge|seal|dot|full|tilt|shape|dir|cadence)$/
+
+  it('每个形制基类都写了 pointer-events: none', () => {
+    const blocks = new Map<string, string>()
+    for (const m of CSS.matchAll(/^\.([a-z][a-z0-9-]+)\s*\{([\s\S]*?)^\}/gm)) blocks.set(m[1]!, m[2]!)
+    const missing: string[] = []
+    for (const [name, body] of blocks) {
+      if (!FORM.test(name) || WAIVED.has(name)) continue
+      if (!body.includes('pointer-events')) missing.push(name)
+    }
+    expect(missing, `这些形制基类会让点击落在装饰上:\n${missing.join('\n')}`).toEqual([])
+  })
+
+  it('判据本身不是空转 —— 确实扫到了一批形制类', () => {
+    const blocks = new Map<string, string>()
+    for (const m of CSS.matchAll(/^\.([a-z][a-z0-9-]+)\s*\{([\s\S]*?)^\}/gm)) blocks.set(m[1]!, m[2]!)
+    const hit = [...blocks.keys()].filter(n => FORM.test(n) && !WAIVED.has(n))
+    expect(hit.length, '扫到的形制基类太少,正则可能写歪了').toBeGreaterThan(20)
+  })
+})
