@@ -964,7 +964,8 @@ for (const vp of VIEWPORTS) {
      * 按文字找的话,点了第一条之后别的条还挂着自己的「×」,永远匹配得到,
      * 于是无论关没关掉都判失败。改成数条数。
      */
-    const bodySel = `${hostSel} [role=status] > div`
+    // hostSel 本身就是带 role=status 的那个容器,正文是它的直接 div 子元素
+    const bodySel = `${hostSel}[role=status] > div`
     const bodiesBefore = await page.locator(bodySel).count()
     const firstText = ((await page.locator(bodySel).first().textContent()) ?? '').replace(/\s*×\s*$/, '').trim()
     await page.locator(`${hostSel} button`).first().click({ timeout: 3000 })

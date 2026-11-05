@@ -136,6 +136,25 @@ describe('共鸣形制 · 四、两处界面都接上了', () => {
     expect(DETAIL, '件数刻度应有读屏说法').toContain('凑齐需')
   })
 
+  /**
+   * 加了套纹之后,共鸣那一行要能折行。
+   *
+   * 那一行有套纹、套名、N/M、说明、按钮五样。200% 缩放(视口约 195)下
+   * 右缘冲到 213,越界 18px —— 而套纹正是这一行里后加的那个。
+   * 这是「给一行加形制」的常见后遗症:局部看是加一枚小纹,整行看是多挤一样东西。
+   *
+   * 故障注入:去掉 flex-wrap,本条红。
+   */
+  it('共鸣行能折行 —— 加了套纹之后五样并排挤不下', () => {
+    const view = readFileSync(resolve(ROOT, 'src/views/InventoryView.vue'), 'utf-8')
+    const at = view.indexOf('v-for="s in setRows"')
+    expect(at, '找不到共鸣行').toBeGreaterThan(-1)
+    const tag = /<p v-for="s in setRows"[^>]*class="([^"]*)"/.exec(view)?.[1]
+      ?? (/class="([^"]*)"[^>]*v-for="s in setRows"/.exec(view)?.[1] ?? '')
+    expect(tag, '共鸣行须能折行').toContain('flex-wrap')
+    expect(tag, '折行时也要给行间距').toContain('gap-y-')
+  })
+
   it('纹样不吃指针事件 —— 形制不抢内容的点击', () => {
     expect(block('.set-crest'), '套纹不该吃指针事件').toContain('pointer-events: none')
     expect(block('.set-pips'), '件数刻度不该吃指针事件').toContain('pointer-events: none')
