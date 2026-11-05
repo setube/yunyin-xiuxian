@@ -61,10 +61,10 @@
           <div v-if="branchPicked" class="rounded-md bg-paper-deep/70 px-3 py-2">
             <p class="flex items-center gap-1.5">
               <span
-                v-if="branchMarkOf(branchPicked.id)"
+                v-if="pickedMark"
                 class="branch-glyph h-3.5 w-3.5 shrink-0"
-                :class="`branch-glyph--${branchMarkOf(branchPicked.id)!.glyph}`"
-                :style="{ color: branchMarkOf(branchPicked.id)!.tone }"
+                :class="`branch-glyph--${pickedMark.glyph}`"
+                :style="{ color: pickedMark.tone }"
                 aria-hidden="true"
               />
               <span class="font-kai text-[13px] text-gold-ink">{{ branchPicked.name }}</span>
@@ -74,26 +74,26 @@
           </div>
           <div v-else class="space-y-1.5">
             <button
-              v-for="b in branches"
-              :key="b.id"
+              v-for="row in branches"
+              :key="row.def.id"
               class="branch-card flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 pl-3.5 text-left active:scale-98"
-              :style="branchStyle(b.id)"
-              :aria-label="branchMarkOf(b.id)?.label ?? b.name"
-              @click="branchConfirm = b.id"
+              :style="row.style"
+              :aria-label="row.mark?.label ?? row.def.name"
+              @click="branchConfirm = row.def.id"
             >
               <span class="flex min-w-0 items-start gap-2">
                 <!-- 道纹:同一门功法的第几道分支,形状可数(见 ui/branchMark) -->
                 <span
-                  v-if="branchMarkOf(b.id)"
+                  v-if="row.mark"
                   class="branch-glyph mt-0.5 h-5 w-5 shrink-0"
-                  :class="`branch-glyph--${branchMarkOf(b.id)!.glyph}`"
-                  :style="{ color: branchMarkOf(b.id)!.tone }"
+                  :class="`branch-glyph--${row.mark.glyph}`"
+                  :style="{ color: row.mark.tone }"
                   aria-hidden="true"
                 />
                 <span class="min-w-0">
-                  <span class="font-kai text-[13px] text-ink">{{ b.name }}</span>
-                  <span class="ml-2 text-[11px] text-ink-faint">{{ b.desc }}</span>
-                  <span class="tabular mt-0.5 block text-[11px] text-azure">{{ modsText(b.mods) }}</span>
+                  <span class="font-kai text-[13px] text-ink">{{ row.def.name }}</span>
+                  <span class="ml-2 text-[11px] text-ink-faint">{{ row.def.desc }}</span>
+                  <span class="tabular mt-0.5 block text-[11px] text-azure">{{ modsText(row.def.mods) }}</span>
                 </span>
               </span>
               <span class="shrink-0 text-[10px] text-azure">择此道 →</span>
@@ -246,25 +246,38 @@
 
   // 满级悟道分支
   const fullLevel = computed(() => (def.value ? level.value >= gongfaMaxLevel(def.value) : false))
-  const branches = computed(() => (def.value ? branchesFor(def.value.id) : []))
-
-  /** 分支卡的品阶淡底与左内沿色:取所属功法的品阶,不与六条分支各造一色 */
-  function branchStyle(branchId: string): Record<string, string> | undefined {
-    const mark = branchMarkOf(branchId)
+  /**
+   * 分支卡的行:道纹、淡底、左内沿色各算一次。
+   *
+   * `branchMarkOf` 在同一个按钮里被调 5 次(读屏说法、有无判断、道纹类名、色 ×2),
+   * `branchStyle` 里还要再调一次 —— 而分支表是静态数据、这两个都是纯函数。
+   * 与 TrialPanel 那次同一种毛病:每帧算好几遍,且模板里读不出这几处说的是同一个 mark。
+   */
+  const branches = computed(() => {
     const quality = def.value?.quality
-    if (!mark || !quality) return undefined
-    const tier = branchTier(quality)
-    return {
-      borderColor: tint(mark.tone, Math.min(0.6, tier.border)),
-      background: tint(mark.tone, Math.max(0.04, tier.bg * 0.6)),
-      '--branch-tone': mark.tone
-    }
-  }
+    const tier = quality ? branchTier(quality) : null
+    return (def.value ? branchesFor(def.value.id) : []).map(b => {
+      const mark = branchMarkOf(b.id)
+      // 品阶淡底与左内沿色:取所属功法的品阶,不与六条分支各造一色
+      const style =
+        mark && tier
+          ? {
+              borderColor: tint(mark.tone, Math.min(0.6, tier.border)),
+              background: tint(mark.tone, Math.max(0.04, tier.bg * 0.6)),
+              '--branch-tone': mark.tone
+            }
+          : undefined
+      return { def: b, mark, style }
+    })
+  })
   const branchPicked = computed(() => {
     if (!def.value) return undefined
     const id = cultivation.gongfaBranch[def.value.id]
     return id ? gongfaBranchDef(id) : undefined
   })
+
+  /** 已择分支的道纹:算一次,模板里那 4 处读同一份(见 ui/branchMark) */
+  const pickedMark = computed(() => (branchPicked.value ? branchMarkOf(branchPicked.value.id) : undefined))
 
   /** 悟道分岔确认态(按分支 id);换功法/关弹窗即复位 */
   const branchConfirm = ref<string | null>(null)

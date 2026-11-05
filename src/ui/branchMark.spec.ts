@@ -112,12 +112,21 @@ describe('分支形制 · 三、坏档不挂假形制', () => {
 })
 
 describe('分支形制 · 四、对话框真的接上了', () => {
+  /**
+   * 选卡与已择卡都带同一枚道纹。
+   *
+   * 形制仍在,但选卡那一路的落点从「模板里反复调」搬到了「computed 里算一次」:
+   * 原先 `branchMarkOf` 在同一个按钮里被调 5 次,`branchStyle` 里还要再调一次。
+   */
   it('选卡与已择卡都带同一枚道纹', () => {
-    // 选卡:v-for 里的分支
-    expect(DIALOG, '选卡应挂道纹').toContain('branch-glyph--${branchMarkOf(b.id)!.glyph}')
-    expect(DIALOG, '已择卡也应挂道纹').toContain('branch-glyph--${branchMarkOf(branchPicked.id)!.glyph}')
-    expect(DIALOG, '分支卡应带品阶淡底').toContain('branchStyle(b.id)')
-    expect(DIALOG, '道纹是装饰,读屏靠 aria-label').toContain('branchMarkOf(b.id)?.label')
+    // 选卡:v-for 里的分支,形制由 computed 附上
+    expect(DIALOG, '选卡应挂道纹').toContain('branch-glyph--${row.mark.glyph}')
+    expect(DIALOG, '已择卡也应挂道纹').toContain('branch-glyph--${pickedMark.glyph}')
+    expect(DIALOG, '分支卡应带品阶淡底').toContain('const mark = branchMarkOf(b.id)')
+    expect(DIALOG, '道纹是装饰,读屏靠 aria-label').toContain('row.mark?.label')
+    // 阳性:模板里不许再逐行调纯函数
+    const tpl = DIALOG.slice(0, DIALOG.indexOf('<script'))
+    expect(tpl, '模板不该再调 branchMarkOf').not.toContain('branchMarkOf(')
   })
 
   it('道纹不吃指针事件,且不使用裸 hex', () => {
