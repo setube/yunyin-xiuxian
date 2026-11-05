@@ -2144,6 +2144,25 @@ html[data-theme='dark'] .fruit-curve polyline {
  * 一格十点、十格为满;主根那根的刻度另给一道实心。
  * 色取元素本色(行内 --root-tone),刻度自身不引入新颜色名。
  */
+/* 特殊灵根(风雷冰光暗混沌)的外环。
+ * 原先特殊与五行在界面上长得一样:都是一枚彩色圆章 + 一个字,
+ * 「这根是稀有的」只能靠读颜色分辨 —— 而颜色是连续量,读不出稀有。
+ * 与 qualityAura 的角饰、talentMark 的阶点同一条思路:加**可数的形制**,不靠颜色。
+ * 内白环把字与外环隔开,细线上再压一层同色淡晕,不抢字。 */
+.root-special {
+  position: relative;
+}
+.root-special::after {
+  content: '';
+  position: absolute;
+  /* 环宽随圆章尺寸走:人物页 24px、转世 40px、建号 48px,用 em 各处自成比例 */
+  inset: -0.22em;
+  border-radius: 9999px;
+  border: 1px solid var(--root-tone, currentColor);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .root-pips {
   display: inline-flex;
   align-items: center;

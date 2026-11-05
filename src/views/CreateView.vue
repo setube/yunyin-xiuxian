@@ -48,7 +48,8 @@
         <div v-for="root in profile.roots" :key="root.element" class="flex flex-col items-center gap-1.5">
           <span
             class="grid h-12 w-12 place-items-center rounded-full border-2 font-kai text-lg animate-breathe"
-            :style="{ borderColor: ELEMENTS[root.element].color, color: ELEMENTS[root.element].color }"
+            :class="{ 'root-special': ELEMENTS[root.element].special }"
+            :style="{ borderColor: ELEMENTS[root.element].color, color: ELEMENTS[root.element].color, '--root-tone': ELEMENTS[root.element].color }"
           >
             {{ ELEMENTS[root.element].char }}
           </span>
