@@ -2489,6 +2489,29 @@ html[data-theme='dark'] .fruit-curve polyline {
   opacity: 1;
 }
 
+/* ================= 法宝神通节奏(artifactCadence) =================
+ * 每件法宝都带一个神通,而「每隔几回合触发一次」在界面上**一处未读** ——
+ * 法宝卡只写「神通「X」:某效果」,不写它多久出手一次(见 src/ui/artifactCadence)。
+ * 而节奏正是法宝之间最实质的差别:同样一句「造成伤害」,三回合一次与五回合一次是两种分量。
+ *
+ * 刻度表达的是「多久一次」,不是「走了多远」,故格数等于间隔、全部实心:
+ * 五格比三格长,读出来就是「更慢」。随身常在型不画回合刻度,只留一句说法。
+ */
+.artifact-cadence-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.artifact-cadence-pips i {
+  display: block;
+  width: 5px;
+  height: 2px;
+  border-radius: 1px;
+  background: rgb(var(--color-violet-ink-rgb));
+  opacity: 0.75;
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。
