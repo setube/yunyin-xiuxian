@@ -1763,7 +1763,12 @@ html[data-theme='dark'] .fruit-curve polyline {
   content: '';
   position: absolute;
   top: 50%;
-  left: var(--axis-pos, 0%);
+  /*
+   * 圆心夹在轴内:圆点 6px、translate(-50%) 而以,pos 取到 0% / 100% 时
+   * 会有半个圆(3px)探出轴外 —— 一张卡两头都贴边时看着像跑出去了。
+   * 3px 是圆的半径,故下限/上限各让出 3px;中间段仍按 --axis-pos 走。
+   */
+  left: clamp(3px, var(--axis-pos, 0%), calc(100% - 3px));
   width: 6px;
   height: 6px;
   border-radius: 999px;

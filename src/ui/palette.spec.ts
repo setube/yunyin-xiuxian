@@ -802,6 +802,35 @@ describe('调色板 · 九宫的数字要对齐', () => {
   })
 })
 
+describe('调色板 · 刻度圆点不许探出轴外', () => {
+  /*
+   * 秘境卡的险利双轴:圆点 6px、`translate(-50%, -50%)` 居中于 --axis-pos。
+   * --axis-pos 取到 0% 或 100% 时,圆心正落在轴端,半个圆(3px)探到轴外 ——
+   * 一张卡两头都贴边时看着像跑出去了。
+   *
+   * 现用 clamp 把圆心夹在 [3px, 100%-3px](3px 即半径):中间段照旧按位置走。
+   */
+  function rule(sel: string): string {
+    const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+  }
+
+  it('圆点的 left 夹在轴内', () => {
+    const body = rule('.realm-axis::before')
+    expect(body, '缺 .realm-axis::before').not.toBe('')
+    expect(body, '该用 clamp 夹住圆心').toContain('clamp(')
+    // 日历:半径 3px 与圆宽 6px 必须对得上
+    expect(body, '圆宽该是 6px').toMatch(/width:\s*6px/)
+    expect(body, '下限该等于半径 3px').toMatch(/clamp\(\s*3px\s*,/)
+    expect(body, '上限该让出半径').toContain('calc(100% - 3px)')
+  })
+
+  it('夹具:轴仍读 --axis-pos,位置没被夹成常量', () => {
+    const body = rule('.realm-axis::before')
+    expect(body, '位置该仍由 --axis-pos 决定').toContain('var(--axis-pos')
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)
