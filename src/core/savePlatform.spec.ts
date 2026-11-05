@@ -202,6 +202,34 @@ describe('savePlatform(Web 分支)', () => {
     expect(mocks.saveTransfer, '非 Android 不该调用 Android SAF 桥').not.toHaveBeenCalled()
   })
 
+  /**
+   * 装不全的档不许照报「已导出」。
+   *
+   * `buildExportPayload` 里那个 catch 原是空吞:分片解不出就少装一片,导出照报成功 ——
+   * 玩家以为备份好了,恢复时才发现少一截,且没有任何信号。
+   * 现缺片时降级成警告并点名少哪几片,且返回非 null(设置页据此不记「上次导出」时间戳)。
+   *
+   * 故障注入:把 exportReceipt 改回恒返回 ok,本条红。
+   */
+  it('缺片时降级成警告并点名,且不算「形成了备份」', async () => {
+    // 塞一个解不出的分片(绕开 preflightScan,模拟会话中途损坏)
+    const { storageKey } = await import('@/utils/storage')
+    localStorage.setItem(storageKey('player'), '这不是 JSON,也解不出密文')
+
+    const { exportSaveToDevice } = await import('./savePlatform')
+    const { useUiStore } = await import('@/stores/ui')
+    const result = await exportSaveToDevice()
+
+    expect(result, '缺片的导出不算形成了持久备份').not.toBeNull()
+    const toasts = useUiStore().toasts
+    const last = toasts[toasts.length - 1]
+    expect(last?.kind, '缺片仍报成功 —— 玩家不会去查').toBe('warn')
+    expect(last?.text, '缺了哪一片要说得出来').toContain('缺')
+    expect(last?.text, '分片名走 STORE_NAMES,不印原始分片键').toContain('角色')
+
+    localStorage.clear()
+  })
+
   it('其他原生端首次导出递归创建 Export 父目录', async () => {
     mocks.isNativePlatform.mockReturnValue(true)
     mocks.getPlatform.mockReturnValue('ios')
