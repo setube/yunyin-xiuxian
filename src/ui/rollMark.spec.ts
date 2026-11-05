@@ -136,6 +136,30 @@ describe('掷值档 · 全满整件', () => {
     expect(block('.affix-full'), '缺全满样式').not.toBe('')
   })
 
+  /**
+   * 加了这枚印之后,详情标题行必须能折行。
+   *
+   * 那一行原有品质签、阶位、+N、满级签、锁钮五样;加「全满」印后共六样,
+   * 320 宽下正文 px-5 只剩约 280,六样并排挤不下 —— 锁钮会被挤出面板。
+   * 这是「加形制」的常见副作用:局部看是加一枚小印,整行看是多挤一样东西。
+   *
+   * 故障注入:去掉 flex-wrap,本条红。
+   */
+  it('详情标题行能折行 —— 加印之后六样并排挤不下', () => {
+    // 精确定位到「正文容器」到「品质签」之间那一小段
+    const start = DETAIL.indexOf('<div v-else-if="inst && template && resolved">')
+    // 切片到锁钮之前,覆盖品签、阶位、+N、满级签、全满印整段
+    const end = DETAIL.indexOf('class="-m-1.5 flex min-h-[28px]', start)
+    expect(start, '找不到正文容器').toBeGreaterThan(-1)
+    expect(end, '找不到品质签').toBeGreaterThan(start)
+    const header = DETAIL.slice(start, end)
+    // 注释里也写着「flex-wrap 不可去」—— 判据须只看标签本身,否则永远为真
+    const rowTag = /<div class="([^"]*)"/.exec(header)?.[1] ?? ''
+    expect(rowTag, '标题行须能折行').toContain('flex-wrap')
+    // 阳性:折行的同时文字仍可缩,别把文字撑出去
+    expect(header, '阶位文字须可缩').toContain('min-w-0 text-[11px] text-ink-faint')
+  })
+
   it('全满记号不与满级签混成同一件事', () => {
     // 满级是练出来的,全满是掷运 —— 两个独立条件、两套类名
     expect(DETAIL, '满级签与全满签应是两个独立条件').toMatch(/v-if="mastery"[\s\S]{0,400}v-if="allApex"/)

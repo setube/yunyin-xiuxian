@@ -13,10 +13,15 @@
     <!-- 词条转移在同一弹窗内切换正文与页脚,不另叠一层 -->
     <AffixTransferPanel v-if="transferOpen && inst" :flow="transfer" @view="viewTarget" />
     <div v-else-if="inst && template && resolved">
-      <div class="flex items-center gap-2">
+      <!--
+        flex-wrap 不可去:这一行原有品质签、阶位、+N、满级签、锁钮五样,
+        加了「全满」印后共六样 —— 320 宽下正文 px-5 只剩约 280,六样并排挤不下,
+        锁钮会被挤出面板。窄时整枚折行,不压文字。
+      -->
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <QualityTag :quality="inst.quality" />
         <!-- 阶位须带界域:同一阶在人间界与仙界不是一回事 -->
-        <span class="text-[11px] text-ink-faint">
+        <span class="min-w-0 text-[11px] text-ink-faint">
           {{ EQUIP_SLOT_NAMES[template.slot] }} · {{ worldNameOfTier(inst.tier) }} · {{ inst.tier }} 阶
         </span>
         <span v-if="inst.level > 0" class="text-[11px] text-gold-ink tabular">+{{ inst.level }}</span>
