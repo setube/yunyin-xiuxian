@@ -883,6 +883,71 @@ describe('调色板 · 轨道上的圆点一律夹在轴内', () => {
   })
 })
 
+describe('调色板 · 每个品阶都得有一套过线的文字色', () => {
+  /*
+   * data/qualities 里每档品阶有一个装饰色(color),但那几个色当正文用大多过不了 4.5:
+   * 实测玄 #A85C3F 4.28、天 #C9A227 2.11、仙 #3E8E8B 3.36、神 #A83F39 4.42。
+   * 于是 style.css 另给一套「当文字用」的暗版,--color-quality-*-text-rgb。
+   *
+   * 前三档都补了,神品漏了 —— 它一路回落到装饰色朱,压在神品卡自己的朱色淡底上只有 4.42:1。
+   * 本条把「每个品阶都要有文字色」和「都要过线」一起钉住,免得再漏下一档。
+   */
+  const QUALITY_IDS = ['mortal', 'fine', 'excellent', 'spirit', 'profound', 'earth', 'heaven', 'immortal', 'divine'] as const
+  /** 装饰色太浅、必须另给文字色的那几档(其余档的装饰色本身已过线) */
+  const NEEDS_OWN = ['profound', 'heaven', 'immortal', 'divine'] as const
+
+  function rgbOf(token: string): [number, number, number] {
+    const m = new RegExp(`${token}:\\s*(\\d+)\\s+(\\d+)\\s+(\\d+)`).exec(CSS)
+    expect(m, `style.css 里找不到 ${token}`).not.toBeNull()
+    return [Number(m![1]), Number(m![2]), Number(m![3])]
+  }
+
+  it('四档浅色品阶各有自己的文字色 token', () => {
+    for (const id of NEEDS_OWN) {
+      expect(CSS, `缺 --color-quality-${id}-text-rgb(日主题)`).toContain(`--color-quality-${id}-text-rgb`)
+    }
+  })
+
+  it('文字色到 data 层接上了,不是只写在 CSS 里', () => {
+    const src = readFileSync(resolve(ROOT, 'src/data/qualities.ts'), 'utf-8')
+    for (const id of NEEDS_OWN) {
+      expect(src, `TEXT_COLOR 缺 ${id}`).toContain(`${id}: 'var(--color-quality-${id}-text)'`)
+    }
+  })
+
+  it('每档文字色压在自己的淡底上都过 4.5:1', () => {
+    const lin = (c: number): number => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4) }
+    const L = (c: [number, number, number]): number => 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2])
+    const ratio = (a: [number, number, number], b: [number, number, number]): number => {
+      const la = L(a), lb = L(b)
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+    }
+    const paper: [number, number, number] = [243, 239, 228]
+    // 各品阶卡的淡底浓淡(fromTier 越高越浓,这里取最浓的 13%)
+    const TINT = 0.13
+    const DECOR: Record<string, [number, number, number]> = {
+      profound: [168, 92, 63],
+      heaven: [201, 162, 39],
+      immortal: [62, 142, 139],
+      divine: [168, 63, 57]
+    }
+    for (const id of NEEDS_OWN) {
+      const fg = rgbOf(`--color-quality-${id}-text-rgb`)
+      const d = DECOR[id]!
+      const bg: [number, number, number] = [d[0] * TINT + paper[0] * (1 - TINT), d[1] * TINT + paper[1] * (1 - TINT), d[2] * TINT + paper[2] * (1 - TINT)]
+      expect(ratio(fg, bg), `${id} 的文字色压在同色淡底上只有 ${ratio(fg, bg).toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5)
+      expect(ratio(fg, paper), `${id} 的文字色压在纸上只有 ${ratio(fg, paper).toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('九个品阶 id 一个不少 —— 新增档位时这里会先红', () => {
+    const src = readFileSync(resolve(ROOT, 'src/data/qualities.ts'), 'utf-8')
+    for (const id of QUALITY_IDS) {
+      expect(src, `qualities.ts 里没有 ${id}`).toMatch(new RegExp(`id: '${id}'`))
+    }
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)

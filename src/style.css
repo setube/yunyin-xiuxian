@@ -31,11 +31,12 @@
   /*
    * 品阶文字色:三档在日主题上过不了 4.5:1 的品阶,单独给一套「当文字用」的暗版。
    * 装饰那一层(光环/边框/角章)仍用 data/qualities.ts 里的原色 —— 它只需 ΔE 分得开。
-   * 原色与实测:玄 #A85C3F 4.28、天 #C9A227 2.11、仙 #3E8E8B 3.36,都低于正文线。
+   * 原色与实测:玄 #A85C3F 4.28、天 #C9A227 2.11、仙 #3E8E8B 3.36、神 #A83F39 4.42,都低于正文线。
    */
   --color-quality-profound-text-rgb: 138 74 51;
   --color-quality-heaven-text-rgb: 122 95 14;
   --color-quality-immortal-text-rgb: 46 107 105;
+  --color-quality-divine-text-rgb: 150 52 47;
   --color-quality-dao-text-rgb: 132 89 10;
 
   --color-paper: rgb(var(--color-paper-rgb));
@@ -55,6 +56,7 @@
   --color-quality-profound-text: rgb(var(--color-quality-profound-text-rgb));
   --color-quality-heaven-text: rgb(var(--color-quality-heaven-text-rgb));
   --color-quality-immortal-text: rgb(var(--color-quality-immortal-text-rgb));
+  --color-quality-divine-text: rgb(var(--color-quality-divine-text-rgb));
   --color-quality-dao-text: rgb(var(--color-quality-dao-text-rgb));
 
   /*
@@ -407,6 +409,9 @@ html[data-theme='dark'] {
   --color-quality-profound-text-rgb: 232 140 102;
   --color-quality-heaven-text-rgb: 201 162 39;
   --color-quality-immortal-text-rgb: 81 185 181;
+  /* 夜主题纸是近黑,压暗只会更看不见,故反过来提亮。比 cinnabar 再亮一档:
+     两者同值会被「无同值异名」那条判据拦下,而文字色本就该与装饰色分开一格 */
+  --color-quality-divine-text-rgb: 244 150 140;
   --color-quality-dao-text-rgb: 233 185 73;
   --shadow-ink: rgb(8 7 5);
   --shadow-ink-rgb: 8 7 5;
