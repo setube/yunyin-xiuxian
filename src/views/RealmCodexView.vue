@@ -59,8 +59,21 @@
             <span v-if="cell.index === player.major" class="text-[9px] text-cinnabar">当前</span>
           </p>
           <p class="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{{ cell.def.desc }}</p>
-          <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">{{ cell.def.lore }}</p>
-          <p v-if="classicsOf(cell.def.id).length" class="mt-1 text-[10px] text-ink-faint">
+          <!--
+            当前境界那张卡有一层 bg-cinnabar/8。夜主题下卡底是 paper-lifted(51,49,46),
+            叠上这层朱之后 ink-faint 只剩 4.41:1(实测,全站暗色扫描的唯一真实命中);
+            其余卡是 bg-paper-deep/50,ink-faint 有 6.11,没问题。
+            故只在当前卡改用 ink-soft(该底上 6.19),其它卡不动。
+          -->
+          <p
+            class="mt-1 text-[11px] leading-relaxed"
+            :class="cell.index === player.major ? 'text-ink-soft' : 'text-ink-faint'"
+          >{{ cell.def.lore }}</p>
+          <p
+            v-if="classicsOf(cell.def.id).length"
+            class="mt-1 text-[10px]"
+            :class="cell.index === player.major ? 'text-ink-soft' : 'text-ink-faint'"
+          >
             所据:{{ classicsOf(cell.def.id).map(c => `《${c.title}》`).join(' ') }}
           </p>
         </div>
