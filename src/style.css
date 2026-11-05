@@ -2618,6 +2618,48 @@ html[data-theme='dark'] .fruit-curve polyline {
   background-repeat: no-repeat;
 }
 
+/* ================= 悟道分支方向(branchDirection) =================
+ * 分支是不改不回的一次抉择,而分支卡上此前只有一行词条 ——
+ * 玩家得把三条词条逐字读完,再在心里折成同一个问题:这一条往哪个方向走
+ * (见 src/ui/branchDirection)。
+ *
+ * 四类方向各一色,跨两类以上报「合」转灰:
+ * 「两头都沾、样样不精」与「专精一处」是两种抉择,形制上要分得开。
+ * 方向印只吃既有语义 token,不新造颜色。
+ */
+.branch-dir {
+  display: inline-block;
+  border-radius: 2px;
+  padding: 0 3px;
+  font-size: 9px;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  vertical-align: 1px;
+  pointer-events: none;
+  background: rgb(var(--color-ink-rgb) / 0.06);
+}
+.branch-dir--attack {
+  color: rgb(var(--color-cinnabar-rgb));
+  background: rgb(var(--color-cinnabar-rgb) / 0.12);
+}
+.branch-dir--guard {
+  color: rgb(var(--color-jade-rgb));
+  background: rgb(var(--color-jade-rgb) / 0.12);
+}
+.branch-dir--growth {
+  color: rgb(var(--color-violet-ink-rgb));
+  background: rgb(var(--color-violet-ink-rgb) / 0.12);
+}
+.branch-dir--fate {
+  color: rgb(var(--color-azure-rgb));
+  background: rgb(var(--color-azure-rgb) / 0.12);
+}
+/* 合:跨两类以上 —— 转灰,与专精一处分开读 */
+.branch-dir--blend {
+  color: rgb(var(--color-ink-soft-rgb));
+  background: rgb(var(--color-ink-rgb) / 0.05);
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。
