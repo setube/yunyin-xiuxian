@@ -184,7 +184,7 @@
         </button>
       </div>
       <p v-if="selectedMutators.length" class="mt-1 text-[10px] leading-relaxed text-violet-ink">
-        {{ selectedMutators.map(m => `${m.name}：${m.text}`).join('；') }}
+        {{ selectedMutators.map(m => `${m.name}:${m.text}`).join('；') }}
       </p>
       <!-- 同轴几条:落在同一轴上的越多,这一趟的打法就越极端,此前只能靠玩家自己数 -->
       <p v-if="selectedThemeRow" class="mt-0.5 text-[10px] text-ink-faint">{{ selectedThemeRow }}</p>
@@ -218,7 +218,7 @@
         </button>
       </div>
       <p v-if="challengePact" class="mt-1 text-[10px] leading-relaxed text-ink-soft">
-        立约「{{ challengePact.name }}」：{{ challengePact.ruleText }}
+        立约「{{ challengePact.name }}」:{{ challengePact.ruleText }}
       </p>
       <input
         v-model="draft.name"

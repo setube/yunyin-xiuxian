@@ -843,6 +843,22 @@ describe('术语一致性 · 用户可见文本', () => {
     }
   })
 
+  /**
+   * 冒号:中文文本里全站用半角,403 处如此;全角只有 3 处,且都是「名字 + 说明」这一种结构 ——
+   * 同类结构在 ArtifactPanel 里写的是半角(「}}」:{{ … }})。同一种结构两种标点,读者会以为有别。
+   *
+   * 故障注入:把任一处改回全角,本条红。
+   */
+  it('冒号一律半角,与全站同一', () => {
+    const hits: string[] = []
+    for (const { file, text } of userText()) {
+      for (const m of text.matchAll(/[\u4e00-\u9fa5》」]\s*：/g)) {
+        hits.push(`${file} 「${m[0]}」`)
+      }
+    }
+    expect(hits, `这些地方用了全角冒号:\n${hits.join('\n')}`).toEqual([])
+  })
+
   it('随机事件一律叫「际遇」:用户可见文本里不再出现「奇遇」', () => {
     const hits: string[] = []
     for (const { file, text } of userText()) {

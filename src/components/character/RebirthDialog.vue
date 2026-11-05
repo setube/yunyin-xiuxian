@@ -95,7 +95,7 @@
       </div>
       <p v-if="talentTap && tappedTalent" class="mt-1.5 text-[10px] leading-relaxed text-ink-faint">
         <span :style="{ color: TALENT_GRADE_COLORS[tappedTalent.grade] }">{{ tappedTalent.name }}</span>
-        ：{{ tappedTalent.desc }}
+        :{{ tappedTalent.desc }}
         <span v-if="modsText(tappedTalent.mods)" class="mt-0.5 block text-azure tabular">{{ modsText(tappedTalent.mods) }}</span>
       </p>
     </div>
