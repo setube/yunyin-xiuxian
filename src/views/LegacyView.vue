@@ -139,7 +139,8 @@
       </div>
       <p v-else class="py-5 text-center">
         <span class="empty-seal" aria-hidden="true">白</span>
-        <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">暂无记录</span>
+        <!-- 区块标题是「修行节点」:空态按「暂无 + 具体名词」写「节点」,不写泛指的「记录」 -->
+        <span class="mt-2.5 block font-kai text-[12px] tracking-[0.2em] text-ink-soft">暂无节点</span>
       </p>
     </div>
 
