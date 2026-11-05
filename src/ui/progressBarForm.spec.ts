@@ -73,6 +73,23 @@ describe('进度条 · 二、$attrs 落到外壳', () => {
    * 条与读数同处一行:条说走到哪,数字说还差几次。
    * 故障注入:删掉那行 ProgressBar,本条红。
    */
+  /**
+   * 修行志的两处进度也接上了条。
+   *
+   * 誓愿是本世的核心目标,修行节点是本世的里程碑 —— 两处此前都只有「(已 / 需)」的读数,
+   * 「走到哪了」要自己拿两个数相除。同一页的其他地方(成就分组/类目)早就有条了。
+   * 故障注入:删掉任一处的 ProgressBar,本条红。
+   */
+  it('修行志的誓愿与修行节点都有条', () => {
+    const view = readFileSync(resolve(ROOT, 'src/views/LegacyView.vue'), 'utf-8')
+    expect(view, '誓愿应有一条').toContain(':value="vowProg.cur / vowProg.need"')
+    expect(view, '修行节点应有一条').toContain('endgame.milestones.length / MILESTONE_DEFS.length')
+    expect(view, '两处都走同一个组件').toMatch(/import ProgressBar from '@\/components\/common\/ProgressBar\.vue'/)
+    // 阴性对照:誓愿那块不许自己拼一根 div 当条(道途占比条是另一回事,它是横比,不是进度)
+    const vowBlock = view.slice(view.indexOf('vowTheme'), view.indexOf('本世未立题'))
+    expect(vowBlock, '誓愿不该绕过 ProgressBar 自己画条').not.toContain('bar-fill')
+  })
+
   it('单条成就的进度接上了条,与分组/类目同一套组件', () => {
     const view = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
     expect(view, '单条成就该有条').toContain(':value="row.progress.current / row.progress.target"')
