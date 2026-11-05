@@ -1729,7 +1729,12 @@ html[data-theme='dark'] .fruit-curve polyline {
   content: '';
   position: absolute;
   top: 50%;
-  left: var(--tier-pos, 0%);
+  /*
+   * 圆心夹在轴内,同 .realm-axis / .growth-gauge:
+   * tierPosition 严格夹到 0~1,而三场试炼里最低与最高那两场必然落在两端。
+   * 圆 7px 居中,端点处半个圆(3.5px)探出轴外,紧挨着两端的 lo / hi 两个数。
+   */
+  left: clamp(3.5px, var(--tier-pos, 0%), calc(100% - 3.5px));
   width: 7px;
   height: 7px;
   border-radius: 999px;
