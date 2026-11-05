@@ -109,17 +109,25 @@
             :key="line.id"
             class="flex items-center gap-2 py-1.5 pl-2 pr-1.5"
             :class="i > 0 ? 'border-t border-violet-ink/10' : ''"
-            :style="{ borderLeft: `2px solid ${AFFIX_RARITY_META[line.rarity].color}` }"
+            :style="{ borderLeft: `2px solid ${line.meta.color}` }"
           >
-            <span class="shrink-0 font-kai text-[12px]" :style="{ color: AFFIX_RARITY_META[line.rarity].color }">
+            <span class="shrink-0 font-kai text-[12px]" :style="{ color: line.meta.color }">
               「{{ line.name }}」
             </span>
-            <span class="shrink-0 text-[9px] opacity-80" :style="{ color: AFFIX_RARITY_META[line.rarity].color }">
-              {{ AFFIX_RARITY_META[line.rarity].name }}
+            <span class="shrink-0 text-[9px] opacity-80" :style="{ color: line.meta.color }">
+              {{ line.meta.name }}
             </span>
             <span class="ml-auto min-w-0 text-right text-[11px] leading-snug text-ink-soft">
               {{ line.before }}<span class="tabular font-medium text-ink">{{ line.value }}</span>{{ line.after }}
-              <span class="text-[9px] text-ink-faint" :title="affixRollHint">{{ affixRollText(line.roll) }}</span>
+              <!--
+                掷值档:同一条词条,浮 95% 与浮 15% 是两种东西 ——
+                而此前只有一个读数,两档长得一模一样(见 ui/rollMark)。
+              -->
+              <span
+                class="affix-roll"
+                :class="`affix-roll--${line.rollGrade.grade}`"
+                :title="affixRollHint"
+              >{{ line.rollGrade.label }}</span>
             </span>
             <EquipSealPanel :affix-id="line.id" :name="line.name" />
           </li>
@@ -226,7 +234,8 @@
   import { isZero, sub } from '@/utils/gnum'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/data/statNames'
-  import { affixRollHint, affixRollText, powerCompareLabel } from '@/ui/equipText'
+  import { rollMark } from '@/ui/rollMark'
+  import { affixRollHint, powerCompareLabel } from '@/ui/equipText'
   import { useAffixTransfer } from '@/composables/useAffixTransfer'
   import { useAutoReforge } from '@/composables/useAutoReforge'
   import BaseModal from '@/components/common/BaseModal.vue'
@@ -253,7 +262,20 @@
   const inst = computed(() => (ui.equipDetailUid ? inventory.findItem(ui.equipDetailUid) : undefined))
 
   const template = computed(() => (inst.value ? equipmentTemplate(inst.value.templateId) : undefined))
-  const resolved = computed(() => (inst.value ? resolveEquipStats(inst.value) : null))
+  /**
+   * 词条行:稀有度的名与色各算一次。
+   *
+   * 原先一行里 `AFFIX_RARITY_META[line.rarity]` 被调 4 次(左边框、字色 ×2、档次名),
+   * 而后一次就是前一次的同一次查表 —— 与前面几轮清掉的重复调用同一种毛病。
+   */
+  const resolved = computed(() => {
+    if (!inst.value) return null
+    const r = resolveEquipStats(inst.value)
+    return {
+      ...r,
+      affixLines: r.affixLines.map(line => ({ ...line, meta: AFFIX_RARITY_META[line.rarity], rollGrade: rollMark(line.roll) }))
+    }
+  })
   const isEquipped = computed(() => (inst.value && template.value ? inventory.equipped[template.value.slot] === inst.value.uid : false))
   /** 约定「禁用即给原因」 */
   const decomposeReason = computed(() => {

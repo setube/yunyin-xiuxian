@@ -31,11 +31,22 @@ describe('affixRollText', () => {
     expect(affixRollHint).toContain('100% 上限')
   })
 
+  /**
+   * 详情页按词条行渲染浮动与悬停说明,不手抄「浮」字与「%」。
+   *
+   * 读数格式只在一处写:掷值形制(ui/rollMark)管档位,「浮 N%」仍归这里 ——
+   * 形制读 `affixRollText`,详情读形制给出的 label,两边都不手抄。
+   */
   it('详情页按词条行渲染浮动与悬停说明,不手抄「浮」字与「%"', () => {
     const src = readFileSync(resolve(__dirname, '../components/equipment/EquipmentDetailDialog.vue'), 'utf8')
-    expect(src).toContain('affixRollText(line.roll)')
+    const rollMarkSrc = readFileSync(resolve(__dirname, 'rollMark.ts'), 'utf8')
+    expect(rollMarkSrc, '掷值形制应复用同一份读数格式').toContain('affixRollText(')
+    expect(src, '详情应读形制给出的读法').toContain('line.rollGrade.label')
     expect(src).toContain('affixRollHint')
-    expect(src).not.toMatch(/浮\s+\d+%/)
+    // 只看代码:注释里可以举「浮 95%」当例子,手抄进模板才算违规
+    const code = src.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(code, '模板不该手抄「浮 N%」').not.toMatch(/浮\s+\d+%/)
+    expect(rollMarkSrc, '形制层也不该手抄「浮 N%」').not.toMatch(/`浮 \$\{/)
   })
 })
 

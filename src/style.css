@@ -2660,6 +2660,34 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-ink-rgb) / 0.05);
 }
 
+/* ================= 词条掷值档(rollMark) =================
+ * 同一条「攻击 +12」,掷到 0.95 与掷到 0.15 是两种东西 ——
+ * 而详情里此前只有一个「浮 95%」的读数,两档长得一模一样(见 src/ui/rollMark)。
+ *
+ * 只给满档重形制(与 luster 同一条:每档都加,等于每档都没有):
+ *   满 → 描边小印 + 金色;良 → 只转色不加框;常 → 与原读数一致,不动。
+ * 阈值取自 data/constants 的 SMART_KEEP_PERFECT_ROLL —— 与智能收纳的保留线同一根线。
+ */
+.affix-roll {
+  display: inline-block;
+  border-radius: 2px;
+  padding: 0 2px;
+  font-size: 9px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+/* 良:只转色,不加框 —— 与「满」拉开落差 */
+.affix-roll--good {
+  color: rgb(var(--color-azure-rgb));
+}
+/* 满:描边 + 金色。这一档是全详情里除品阶之外唯一的金 */
+.affix-roll--apex {
+  color: rgb(var(--color-gold-ink-rgb));
+  border: 1px solid rgb(var(--color-gold-ink-rgb) / 0.45);
+  background: rgb(var(--color-gold-ink-rgb) / 0.08);
+  letter-spacing: 0.02em;
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。
