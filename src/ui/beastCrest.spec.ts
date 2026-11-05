@@ -108,6 +108,30 @@ describe('族徽 · 三、族谱只列有灵兽的族', () => {
   })
 })
 
+describe('族徽 · 五、图鉴册也标出族与性子', () => {
+  /**
+   * 灵兽册的 meta 原只写品阶名,而族类与性子在名号页都有:
+   * 这头兽是走兽、羽禽还是龙属瑞兽,以及它历练时的行为倾向。
+   * 两处同读一份数据,不另立 —— 族名走 beastCrest,性子名走 core/petPersonality。
+   * 故障注入:把 meta 改回只写品阶名,本条红。
+   */
+  const COLLECTION = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
+
+  it('灵兽册的 meta 带上族名与性子名', () => {
+    expect(COLLECTION, '灵兽册应读族徽').toContain('beastCrest(p.family)')
+    expect(COLLECTION, '灵兽册应读性子名').toContain('PERSONALITY_NAMES[p.personality]')
+    expect(COLLECTION, '族名与性子都应与品阶并列,不是各占一处').toMatch(
+      /beastCrest\(p\.family\)\.name\} · \$\{PERSONALITY_NAMES\[p\.personality\]\} · \$\{qualityDef\(p\.quality\)\.name/
+    )
+  })
+
+  it('族名与性子名都取自数据表,不另抄', () => {
+    // 名号页与图鉴册必须同一份族名,否则同一头兽在两处叫两个名
+    const TITLES = readFileSync(resolve(ROOT, 'src/views/TitlesView.vue'), 'utf-8')
+    expect(TITLES, '名号页也读同一份族徽').toContain('beastCrest(')
+  })
+})
+
 describe('族徽 · 四、界面接上了', () => {
   it('灵兽卡挂族徽,族名给读屏', () => {
     expect(VIEW, '灵兽卡应挂族徽').toContain('beast-crest')
