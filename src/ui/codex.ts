@@ -9,7 +9,7 @@ import { ELEMENTS } from '@/data/linggen'
 import { LORE_MAX, LORE_STAGE_NAMES, MATERIALS, type MaterialDef } from '@/data/materials'
 import { GONGFA_BRANCHES, canEnlighten, type GongfaBranchDef } from '@/data/gongfaBranches'
 import { GONGFA_TYPE_NAMES, gongfaDef } from '@/data/gongfa'
-import { QUALITIES, qualityDef } from '@/data/qualities'
+import { QUALITIES, qualityDef, qualityTextColor } from '@/data/qualities'
 import {
   ARTIFACTS,
   ARTIFACT_LEVEL_BONUS,
@@ -276,11 +276,20 @@ export function describeEquipment(def: EquipmentTemplate, seen: EquipSeen | unde
     // q 与 t 各自独立取高(可能来自不同掉落),分开陈述
     lines.push(`见过最好成色:${qualityOfRank(seen.q).name} · 最高 ${seen.t} 阶`)
   }
+  /**
+   * 装备册是全站最大的一册(288 件),却也是唯一没有图标、没有品阶色的一册:
+   * 同册的法宝谱与灵兽册都有。图标与色都取数据表已有的 —— `EquipmentTemplate.icon`
+   * 由 `data/equipment` 按名字字眼挑好(见 data/equipmentIcon.spec),品阶色取「当文字用」那一组
+   * (品阶原色在日/夜各有一档过不了 4.5:1,见 data/qualities 的 TEXT_COLOR)。
+   */
+  const tone = seen ? qualityOfRank(seen.q) : QUALITIES[0]!
   return {
     id: def.id,
     name: def.name,
     desc: lines.join('\n'),
     meta: equipMetaText(def),
+    icon: def.icon,
+    color: qualityTextColor(tone.id),
     stage,
     stageName: EQUIP_STAGE_NAMES[stage]!,
     badge: stage >= EQUIP_STAGE_MAX ? '极' : '',

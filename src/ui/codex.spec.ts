@@ -39,7 +39,8 @@ import {
 } from '@/data/artifacts'
 import { EQUIPMENT_TEMPLATES, equipmentTemplate } from '@/data/equipment'
 import { PILLS } from '@/data/pills'
-import { QUALITIES, qualityDef } from '@/data/qualities'
+import { QUALITIES, qualityDef, qualityTextColor } from '@/data/qualities'
+import { ICONS } from '@/ui/icons'
 import type { QualityId } from '@/types'
 import { cnNumber, formatPercent } from '@/utils/format'
 
@@ -363,6 +364,48 @@ describe('图鉴 · 用具三类的收录深度', () => {
     }
   })
 })
+
+/**
+ * 图鉴册的「形制一致」:同册里法宝谱与灵兽册都给图标与品阶色,装备册是全站最大的一册(288 件)
+ * 却两者皆无 —— 它本来最该有。数据早就备好了:`EquipmentTemplate.icon` 由 data/equipment
+ * 按名字字眼挑(见 data/equipmentIcon.spec),品阶色取「当文字用」那一组。
+ *
+ * 色必须走 qualityTextColor,不能用品阶原色:玄/天/仙/神四档原色在日/夜各有一档
+ * 过不了 4.5:1(见 data/qualities 的 TEXT_COLOR)。
+ * 故障注入:把 describeEquipment 的 icon / color 删掉,本条红。
+ */
+describe('图鉴形制 · 装备册也有图标与品阶色', () => {
+  it('每件装备都带图标,且图标键真的注册在 ui/icons', () => {
+    for (const t of EQUIPMENT_TEMPLATES) {
+      const e = describeEquipment(t, { q: 0, t: t.tier, u: 1 }, true)
+      expect(e.icon, `${t.name} 缺图标 —— 装备册是唯一没有图标的一册`).toBe(t.icon)
+      expect(t.icon in ICONS, `${t.name} 的图标键 ${t.icon} 未注册`).toBe(true)
+    }
+  })
+
+  it('品阶色走「当文字用」那一组,不拿原色顶文字', () => {
+    for (const t of EQUIPMENT_TEMPLATES) {
+      const e = describeEquipment(t, { q: 0, t: t.tier, u: 1 }, true)
+      expect(e.color, `${t.name} 缺品阶色`).toBeTruthy()
+      // 与 qualityTextColor 同源:四档有暗版/亮版的档位必须取暗版
+      const seen = qualityOfRankForTest(0)
+      expect(e.color, `${t.name} 用了品阶原色,夜/日主题会跌破 AA`).toBe(qualityTextColor(seen.id))
+    }
+  })
+
+  it('未收录也照给图标与色 —— 标签流里那枚「???」之外仍有可辨的形制', () => {
+    for (const t of EQUIPMENT_TEMPLATES.slice(0, 20)) {
+      const e = describeEquipment(t, undefined, false)
+      expect(e.icon).toBe(t.icon)
+      expect(e.color).toBeTruthy()
+    }
+  })
+})
+
+/** 与 describeEquipment 内部的 qualityOfRank 同口径:rank 0 = 凡品 */
+function qualityOfRankForTest(rank: number) {
+  return QUALITIES.find(q => q.rank === Math.max(0, Math.min(8, rank))) ?? QUALITIES[0]!
+}
 
 describe('codexOwnedCount(「已收 N」统一口径)', () => {
   const defs = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
