@@ -212,41 +212,35 @@
       <p v-if="view.talentChoices.length === 0" class="mt-2 text-[11px] leading-relaxed text-ink-faint">已集齐</p>
       <div class="mt-2 space-y-2">
         <button
-          v-for="id in view.talentChoices"
-          :key="id"
+          v-for="row in talentRows"
+          :key="row.id"
           class="w-full rounded-lg border px-3 py-2 text-left transition-all active:scale-98"
-          :class="chosen === id ? 'border-cinnabar bg-cinnabar/5' : 'border-ink/20'"
-          :aria-pressed="chosen === id"
-          @click="chosen = id"
+          :class="chosen === row.id ? 'border-cinnabar bg-cinnabar/5' : 'border-ink/20'"
+          :aria-pressed="chosen === row.id"
+          @click="chosen = row.id"
         >
           <p class="flex items-center gap-2">
-            <span class="font-kai text-[14px]" :style="{ color: TALENT_GRADE_COLORS[talentDef(id)?.grade ?? 1] }">
-              {{ talentDef(id)?.name }}
-            </span>
-            <span class="text-[10px] text-ink-faint">{{ TALENT_GRADE_NAMES[talentDef(id)?.grade ?? 1] }}</span>
+            <span class="font-kai text-[14px]" :style="{ color: row.color }">{{ row.name }}</span>
+            <span class="text-[10px] text-ink-faint">{{ row.gradeName }}</span>
             <!-- 阶点与转世弹窗同一套(见 ui/talentMark):四档里谁高一档,数点便知 -->
             <span
               class="talent-pips"
-              :class="{ 'talent-pips--top': talentMark(talentDef(id)?.grade ?? 1).top }"
-              :style="{ color: TALENT_GRADE_COLORS[talentDef(id)?.grade ?? 1] }"
+              :class="{ 'talent-pips--top': row.mark.top }"
+              :style="{ color: row.color }"
               aria-hidden="true"
             >
-              <i v-for="(on, i) in talentPips(talentDef(id)?.grade ?? 1)" :key="i" :class="{ on }" />
+              <i v-for="(on, i) in row.pips" :key="i" :class="{ on }" />
             </span>
           </p>
-          <p class="mt-0.5 text-[11px] text-ink-faint">{{ talentDef(id)?.desc }}</p>
-          <p v-if="talentDef(id) && modsText(talentDef(id)!.mods)" class="mt-0.5 text-[11px] tabular text-azure">
-            {{ modsText(talentDef(id)!.mods) }}
-          </p>
+          <p class="mt-0.5 text-[11px] text-ink-faint">{{ row.desc }}</p>
+          <p v-if="row.modsText" class="mt-0.5 text-[11px] tabular text-azure">{{ row.modsText }}</p>
         </button>
       </div>
       <div v-if="view.extraTalents.length" class="mt-3 text-[11px] text-ink-faint">
         <p>另得:</p>
-        <p v-for="id in view.extraTalents" :key="id" class="mt-1">
-          <span class="font-kai text-gold-ink">{{ talentDef(id)?.name }}</span>
-          <span v-if="talentDef(id) && modsText(talentDef(id)!.mods)" class="ml-1 tabular text-azure">
-            {{ modsText(talentDef(id)!.mods) }}
-          </span>
+        <p v-for="row in extraTalentRows" :key="row.id" class="mt-1">
+          <span class="font-kai text-gold-ink">{{ row.name }}</span>
+          <span v-if="row.modsText" class="ml-1 tabular text-azure">{{ row.modsText }}</span>
         </p>
       </div>
 
@@ -343,6 +337,30 @@
   function stageIndexOf(stageId: string): number {
     return SAMSARA_STAGES.find(s => s.id === stageId)?.index ?? 0
   }
+
+  /**
+   * 天赋行:每枚的品阶、字色、阶点、词条文本各算一次。
+   *
+   * 原先模板里 `talentDef(id)` 一个渲染周期要调十几次(名字、品阶名、字色 ×3、
+   * 阶点、形意、词条判空 ×2),`modsText` 还要再算一遍 ——
+   * 而这些全是纯查表。`id` 来自 view,一变全变,预计算与逐次调用的结果完全一致。
+   */
+  function talentRow(id: string) {
+    const def = talentDef(id)
+    const grade = def?.grade ?? 1
+    return {
+      id,
+      name: def?.name ?? '',
+      desc: def?.desc ?? '',
+      gradeName: TALENT_GRADE_NAMES[grade],
+      color: TALENT_GRADE_COLORS[grade],
+      mark: talentMark(grade),
+      pips: talentPips(grade),
+      modsText: def ? modsText(def.mods) : ''
+    }
+  }
+  const talentRows = computed(() => (view.value?.talentChoices ?? []).map(talentRow))
+  const extraTalentRows = computed(() => (view.value?.extraTalents ?? []).map(talentRow))
 
   /** 来世灵根的资质刻度:与建号页、人物页同一份(见 ui/rootMark) */
   const nextRootMarks = computed(() => rootMarks(view.value?.nextLinggen.roots ?? []))

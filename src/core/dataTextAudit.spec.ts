@@ -1153,7 +1153,7 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(souls, '器魂不许退回笼统道源不足').not.toContain('道源不足')
     expect(trial, '今日天道付不起要置灰').toContain('endgame.daoSource < CHALLENGE_ENTRY_COST')
     expect(trial, '天道变数付不起要置灰').toContain('busy !== null || endgame.daoSource < MUTATION_ENTRY_COST')
-    expect(trial, '天道试炼付不起要置灰').toContain('busy !== null || endgame.daoSource < trial.entryCost')
+    expect(trial, '天道试炼付不起要置灰').toContain('busy !== null || endgame.daoSource < row.def.entryCost')
     // 挑战书三条禁用原因(未验约、远征在途、道源不足)须逐因说明
     expect(trial, '挑战书按钮文案统一走分因投影').toContain('challengeButtonText')
     expect(trial, '挑战书 title 统一走分因投影').toContain(':title="challengeBlockText"')
