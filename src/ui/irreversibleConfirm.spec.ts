@@ -103,9 +103,12 @@ describe('不可逆确认的两次点击各写什么', () => {
    */
   it('忆战重写的确认态按道痕身份记,不按行号', () => {
     const src = read('components/celestial/MarksPanel.vue')
-    expect(src, '确认态须按那条痕本身比对').toContain('rewriteConfirm === mark')
-    expect(src, '武装须写入那条痕本身').toContain('rewriteConfirm = mark')
+    // 行数组把痕本身带在 row.mark 上,确认态比的仍是那条痕(不是行号)
+    expect(src, '确认态须按那条痕本身比对').toContain('rewriteConfirm === row.mark')
+    expect(src, '武装须写入那条痕本身').toContain('rewriteConfirm = row.mark')
     expect(src, '列表键也不该拿行号当身份').not.toContain('v-for="(mark, i) in endgame.marks"')
+    // 阳性:列表键按痕的身份,不按下标
+    expect(src, '列表键按痕的身份').toContain('`${row.mark.at}|${row.mark.targetId}|${row.mark.life}`')
     expect(src, '重写确认态须记道痕本身,不再记行号').toContain(
       'const rewriteConfirm = ref<(typeof endgame.marks)[number] | null>(null)'
     )

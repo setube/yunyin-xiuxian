@@ -101,7 +101,12 @@ describe('道途形制 · 三、不抢内容且真的接上了', () => {
   })
 
   it('道痕面板历世也认得出是哪条道', () => {
-    expect(MARKS, '道痕行应挂道纹').toContain('daoMark(mark.daoPathId)')
+    // 道纹在行数组里算一次(原先同一行里 daoMark 调 4 次)
+    expect(MARKS, '道痕行应挂道纹').toContain('mark.daoPathId ? daoMark(mark.daoPathId) : undefined')
+    // 阳性:模板不许再逐行调查表函数
+    const tpl = MARKS.slice(0, MARKS.indexOf('<script'))
+    expect(tpl, '模板不该再调 daoMark').not.toContain('daoMark(')
+    expect(tpl, '模板不该再调 daoPathDef').not.toContain('daoPathDef(')
     expect(MARKS, '道纹是装饰,读屏不重复念').toContain('aria-hidden="true"')
   })
 
