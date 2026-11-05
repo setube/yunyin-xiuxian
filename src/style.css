@@ -2711,6 +2711,20 @@ html[data-theme='dark'] .fruit-curve polyline {
   pointer-events: none;
 }
 
+/* ================= 丹匣「生效中」(InventoryView 的 pillRows.active) =================
+ * 丹匣此前看不出哪味增益丹正在生效 —— 玩家要翻到「状态」里挨个比对名字,
+ * 而服丹时最该知道的就是「这一味还要不要再补」。
+ * 一枚实心青点:青 = 「在你身上正起作用」,与朱砂(警示)、金(稀缺)分开。
+ * 位置在左下一角,与右下的数量分开,不抢名字与图标。
+ */
+.pill-active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(var(--color-jade-rgb));
+  pointer-events: none;
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。

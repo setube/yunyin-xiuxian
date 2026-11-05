@@ -128,6 +128,14 @@
               {{ row.def.name }}
             </span>
           </span>
+          <!-- 生效中:左下一枚小点,与右下的数量分开,不抢名字与图标 -->
+          <span
+            v-if="row.active"
+            class="pill-active-dot absolute bottom-1 left-1"
+            role="img"
+            aria-label="生效中"
+            title="生效中"
+          />
           <span class="absolute bottom-0.5 right-1 text-[9px] leading-none text-ink-soft tabular">×{{ row.count }}</span>
         </button>
       </div>
@@ -418,6 +426,14 @@
           luster: lusterByRank(rank),
           rare: isRareRank(rank),
           qualityName: pillQualityName(def),
+          /**
+           * 生效中:这味增益丹的 buff 还在身上。
+           *
+           * 丹匣此前看不出哪味正在生效 —— 玩家要翻到「状态」里挨个比对名字,
+           * 而服丹时最该知道的就是「这一味还要不要再补」。
+           * 判定与详情弹窗的 buffOverflowOf 同一份 buffs 账,不另算。
+           */
+          active: def.kind === 'buff' && !!def.buffId && cultivation.buffs.some(b => b.defId === def.buffId && b.endsAt > now.value),
           style: { borderColor: tint(tone, tier.border), background: tint(tone, tier.bg) }
         }
       })
