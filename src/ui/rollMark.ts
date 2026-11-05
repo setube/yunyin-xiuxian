@@ -62,3 +62,17 @@ export function rollMark(roll: number | undefined): RollMark {
     label: grade === 'apex' ? `${reading} · 近满` : reading
   }
 }
+
+/**
+ * 整件「全满」:每一条词条都达满档。
+ *
+ * 与 `core/smartKeep.perfectRolls` 是**同一根线**(都取 `SMART_KEEP_PERFECT_ROLL`),
+ * 但用途不同 —— 那边是收纳裁决(留不留),这里是形制(惊不惊喜)。
+ * 不直接 import 那个函数:它在 `core/` 且拉进 buildDetect / equipGen 一串依赖,
+ * 而形制层只需要这一个判定。两处的阈值同源,判据钉住它们不许分叉。
+ *
+ * 0 条词条不算全满 —— 一件没有词条的装备不该戴「运气极点」的记号。
+ */
+export function allRollsApex(rolls: readonly (number | undefined)[]): boolean {
+  return rolls.length > 0 && rolls.every(r => rollMark(r).grade === 'apex')
+}

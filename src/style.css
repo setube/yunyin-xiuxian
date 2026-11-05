@@ -2688,6 +2688,29 @@ html[data-theme='dark'] .fruit-curve polyline {
   letter-spacing: 0.02em;
 }
 
+/* ================= 词条全满(rollMark.allRollsApex) =================
+ * 一件装备所有词条同时掷到 85% 以上是运气极点 ——
+ * 那是智能收纳里「词条近满件永不自动处置」的同一根线(见 src/ui/rollMark)。
+ * 逐条看只能看出「每条都不错」,看不出「整件全满」这件事,故给一枚整体记号。
+ *
+ * 与满级签、品阶签各是各的一档:满级是练出来的,品阶是掉了什么,全满是掷运。
+ * 用实心金底 + 深字 —— 这一屏唯一一枚实心金,不与任何其他标记撞。
+ */
+.affix-full {
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  padding: 0 2px;
+  font-family: var(--font-kai);
+  font-size: 10px;
+  line-height: 1;
+  color: rgb(var(--color-ink-rgb));
+  background: rgb(var(--color-gold-ink-rgb));
+  pointer-events: none;
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。

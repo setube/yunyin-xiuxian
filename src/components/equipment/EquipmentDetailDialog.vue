@@ -22,6 +22,17 @@
         <span v-if="inst.level > 0" class="text-[11px] text-gold-ink tabular">+{{ inst.level }}</span>
         <!-- 满级时补一句,别让玩家自己去猜还能不能升 -->
         <span v-if="mastery" class="rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 py-0.5 text-[10px] leading-none text-ink">{{ mastery.label }}</span>
+        <!--
+          全满:每一条词条都达满档。这是「运气极点」,与满级、品阶各是各的一档 ——
+          见 ui/rollMark 的 allRollsApex,与智能收纳的保留线同一根。
+        -->
+        <span
+          v-if="allApex"
+          class="affix-full"
+          role="img"
+          aria-label="词条全满"
+          title="词条全满"
+        >满</span>
         <button
           class="-m-1.5 flex min-h-[28px] min-w-[28px] items-center justify-center p-1.5 text-ink-faint active:scale-90"
           :aria-label="inst.locked ? '解锁' : '锁定'"
@@ -234,7 +245,7 @@
   import { isZero, sub } from '@/utils/gnum'
   import type { AnyStatKey, GNum } from '@/types'
   import { AFFIX_RARITY_META, STAT_NAMES, statValueText } from '@/data/statNames'
-  import { rollMark } from '@/ui/rollMark'
+  import { allRollsApex, rollMark } from '@/ui/rollMark'
   import { affixRollHint, powerCompareLabel } from '@/ui/equipText'
   import { useAffixTransfer } from '@/composables/useAffixTransfer'
   import { useAutoReforge } from '@/composables/useAutoReforge'
@@ -284,6 +295,14 @@
     return '分解'
   })
   const mastery = computed(() => (inst.value ? equipMastery(inst.value.level, equipLevelCap()) : null))
+  /**
+   * 整件「全满」:每一条词条都达满档。
+   *
+   * 这是智能收纳里「词条近满件永不自动处置」的那根线 —— 玩家在收纳设置里被保留的件,
+   * 在详情里也该说得出为什么。一件装备所有词条同时掷到 85% 以上是运气极点,
+   * 而此前界面上逐条看只能看出「每条都不错」,看不出「整件全满」这件事。
+   */
+  const allApex = computed(() => (resolved.value ? allRollsApex(resolved.value.affixLines.map(l => l.roll)) : false))
   /** 质感层:详情弹窗的整幅框、头饰与标题字面(见 ui/luster) */
   const luster = computed(() => (inst.value ? lusterOf(inst.value.quality) : null))
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
