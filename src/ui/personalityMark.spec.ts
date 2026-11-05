@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { PetDef } from '@/types'
 import { EFFECTS, PERSONALITY_NAMES, personalityEffects } from '@/core/petPersonality'
+import { personalityDesc as personalityDescOf } from '@/core/petPersonality'
 import { PETS } from '@/data/pets'
 import {
   PERSONALITY_AXIS_NAMES,
@@ -118,6 +119,27 @@ describe('性格倾向 · 四、界面接上了', () => {
     expect(VIEW, '应读形制').toContain('personalityMark(def!.personality)')
     expect(VIEW, '应只列在动的项').toContain('personalityTiltRows(')
     expect(VIEW, '读屏说法应带性格名与倾向条数').toContain('row.personalityMark.label')
+  })
+
+  /**
+   * 灵兽册的详情也要报性子。
+   *
+   * 名号页的灵兽卡有四项倾向印(上一条判据钉着),而同一种性子在图鉴里只写「贪宝」两个字。
+   * 图鉴是纯文本流,只能把同一件事写成一句 —— 与名号页同读 core/petPersonality。
+   *
+   * 故障注入:把 personalityDesc 从 desc 里去掉,本条红。
+   */
+  it('灵兽册的详情写出性子倾向,与名号页同源', () => {
+    const VIEW = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
+    expect(VIEW, '灵兽册 desc 应带性子一句话').toContain('personalityDesc(p.personality)')
+    // 阳性:那句话来自 core,不在页面里另写一份
+    expect(VIEW, '应自 core 引入').toMatch(/import \{[^}]*personalityDesc[^}]*\} from '@\/core\/petPersonality'/)
+    // 且这句话确实报得出方向(四种性格都不为空)
+    for (const p of ['greedy', 'steady', 'fierce', 'cautious'] as const) {
+      const text = personalityDescOf(p)
+      expect(text.length, `${p} 的性子说明是空的`).toBeGreaterThan(3)
+      expect(text, `${p} 的说明没写出行程/遇险/气运/护持中的任一方向`).toMatch(/行程|遇险|气运|成色|护持/)
+    }
   })
 
   it('形制在行计算里算一次,模板不反复调', () => {

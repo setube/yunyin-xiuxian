@@ -141,7 +141,7 @@
   import { PETS } from '@/data/pets'
   import { beastIcon } from '@/data/beastFamilies'
   import { beastCrest } from '@/ui/beastCrest'
-  import { PERSONALITY_NAMES } from '@/core/petPersonality'
+  import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
   import { EVENTS } from '@/data/events'
   import { chainOfEvent } from '@/data/chains'
   import { TALENTS, TALENT_GRADE_COLORS } from '@/data/talents'
@@ -297,13 +297,24 @@
         PETS.map(p => ({
           id: p.id,
           name: p.name,
-          desc: [p.desc, modsText(player.petModsFor(p))].filter(Boolean).join('\n'),
+          /**
+           * 性子在历练中真会改遭遇走向,而册里原先只有「贪宝」两个字 ——
+           * 名号页的灵兽卡早就有四项倾向印(见 ui/personalityMark),
+           * 图鉴是纯文本流,只能把同一件事写成一句:与那边同读 core/petPersonality。
+           */
+          desc: [p.desc, modsText(player.petModsFor(p)), personalityDesc(p.personality)].filter(Boolean).join('\n'),
           /**
            * 灵兽册的 meta 原只写品阶名,而族类与性子在名号页都有:
            * 这头兽是走兽、羽禽还是龙属瑞兽,以及它历练时的行为倾向(贪宝/慢稳/好战/谨慎)。
            * 两处同读一份数据(见 data/beastFamilies、core/petPersonality),不另立。
            */
           meta: `${beastCrest(p.family).name} · ${PERSONALITY_NAMES[p.personality]} · ${qualityDef(p.quality).name}`,
+          /**
+           * 性子在历练中真会改遭遇走向,而册里原先只有「贪宝」两个字 ——
+           * 名号页的灵兽卡早就有四项倾向印(见 ui/personalityMark),
+           * 图鉴是纯文本流,只能把同一件事写成一句:与那边同读 core/petPersonality。
+           */
+
           icon: beastIcon(p.family),
           color: qualityTextColor(p.quality),
           luster: lusterOf(p.quality)
