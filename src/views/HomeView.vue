@@ -15,7 +15,8 @@
             {{ statusText }}
           </p>
           <div class="mt-3 flex items-center gap-1.5">
-            <GameIcon name="sparkles" :size="13" class="shrink-0 text-gold-ink" />
+            <!-- 图标随天时走(见 core/weather 的 icon):十四种天时各有其形,不再共用一枚 -->
+            <GameIcon :name="weather.icon" :size="13" class="shrink-0 text-gold-ink" />
             <span class="font-kai text-[12px] tracking-widest text-ink">{{ weather.name }}</span>
           </div>
           <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">{{ weather.desc }}</p>

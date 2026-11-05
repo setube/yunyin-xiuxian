@@ -1,5 +1,7 @@
 /** 天时:每日确定性环境;描述里承诺的战斗/掉落/渡劫影响须真能流进游戏 */
 import { describe, it, expect, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import { todayWeather, weatherDef, WEATHERS, WORLD_WEATHERS } from './weather'
 import { useGameStore } from '@/stores/game'
@@ -220,5 +222,40 @@ describe('界域天象(weather · 仙界及以上)', () => {
       (mods.attackPct ?? 0) > 0 ||
       (mods.luck ?? 0) > 0
     expect(anyPositive).toBe(true)
+  })
+})
+
+describe('天时 · 各有其形', () => {
+  /*
+   * 十四种天时原先共用首页那枚固定的 sparkles:名字与效果都不同,图形却一样,
+   * 「今天是哪种天时」只能逐字读名字。现在每种各配一枚语义贴切的图标。
+   */
+  const ALL = [...WEATHERS, ...Object.values(WORLD_WEATHERS).flat()]
+
+  it('每种天时都配了图标', () => {
+    for (const w of ALL) {
+      expect(w.icon, `${w.name} 没有图标`).toBeTruthy()
+      expect(typeof w.icon, `${w.name} 的图标须是字符串`).toBe('string')
+    }
+  })
+
+  it('图标都在 ui/icons 里真实存在', () => {
+    const icons = readFileSync(resolve(__dirname, '../ui/icons.ts'), 'utf-8')
+    for (const w of ALL) {
+      expect(icons, `${w.name} 的图标 ${w.icon} 在 ui/icons 里找不到`).toMatch(new RegExp(`\\b${w.icon}:`))
+    }
+  })
+
+  it('语义相邻的天时不共用同一枚图标', () => {
+    // 雨类可共用,其余各走各的:雷/日/月/风/潮/音/威/劫/辉/气/源/清
+    const seen = new Map<string, string[]>()
+    for (const w of ALL) {
+      const list = seen.get(w.icon) ?? []
+      list.push(w.name)
+      seen.set(w.icon, list)
+    }
+    const shared = [...seen.entries()].filter(([, names]) => names.length > 1)
+    // 只有雨类(droplets 与 umbrella 是不同图标)允许同族;此处列出所有共用情况供核对
+    expect(shared, `这些天时共用图标:\n${shared.map(([i, n]) => `  ${i}: ${n.join('、')}`).join('\n')}`).toEqual([])
   })
 })
