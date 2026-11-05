@@ -43,13 +43,14 @@
             <p class="relative mt-2 text-[11px] leading-relaxed text-ink-faint">{{ currentDao.desc }}</p>
             <p v-for="(r, i) in currentDao.ruleText" :key="i" class="relative mt-0.5 text-[11px] text-azure">· {{ r }}</p>
             <p v-for="(r, i) in currentDao.deepText" :key="`d${i}`" class="relative mt-0.5 text-[11px] text-gold-ink">◈ {{ r }}</p>
+            <!--
+              括号原列的是**已达成**的四条,与上方 deepText 那行几乎逐字重复(还各用一套措辞:
+              一处写「主流派成形」,一处写「契合 ≥60%」)。已达成的不必再念一遍 ——
+              玩家要看的是「还差哪条」。改成只列未达成的;全达成时不出括号。
+            -->
             <p v-if="swordInfo" class="relative mt-1.5 text-[11px] text-violet-ink tabular">
-              剑意 {{ swordInfo.layers }}/{{ SWORD_PURITY_MAX_LAYERS }} 层<template v-if="swordInfo.layers > 0">({{
-                swordInfo.checks
-                  .filter(c => c.ok)
-                  .map(c => c.name)
-                  .join('、')
-              }})</template>
+              剑意 {{ swordInfo.layers }}/{{ SWORD_PURITY_MAX_LAYERS }} 层<template v-if="swordInfo.checks.some(c => !c.ok)">
+                <span class="text-ink-faint">· 未合:{{ swordInfo.checks.filter(c => !c.ok).map(c => c.name).join('、') }}</span></template>
             </p>
             <p v-if="daoStory" class="relative mt-1.5 font-kai text-[11px] leading-relaxed text-ink-soft">「{{ daoStory }}」</p>
           </div>
