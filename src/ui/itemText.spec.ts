@@ -3,6 +3,8 @@
  * 需要等级的(法宝祭炼)按传进来的那一份给。
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { ARTIFACTS, artifactActiveText, artifactDef } from '@/data/artifacts'
 import { buffDef } from '@/data/buffs'
 import { EQUIPMENT_TEMPLATES, equipmentTemplate } from '@/data/equipment'
@@ -73,6 +75,32 @@ describe('用具 · 装备/法宝/功法三类的功用行', () => {
       expect(meta).toContain(GONGFA_TYPE_NAMES[g.type])
       if (g.element) expect(meta).toContain('属性')
     }
+  })
+
+  /**
+   * 图鉴的法宝行要写出神通节奏。
+   *
+   * 同样一句「造成伤害」,三回合一次与五回合一次是两种分量 ——
+   * 而图鉴是纯文本流,放不下面板里那排短刻度,只能写出来。
+   * 节奏与面板同源(见 ui/artifactCadence),不在这里另算一遍。
+   *
+   * 故障注入:把节奏从这行里去掉,本条红。
+   */
+  it('法宝的功用行写出神通节奏,与面板同源', () => {
+    const always = ARTIFACTS.filter(a => a.active.interval <= 1)
+    const perRound = ARTIFACTS.filter(a => a.active.interval > 1)
+    expect(always.length, '判据失去对象').toBeGreaterThan(0)
+    expect(perRound.length, '判据失去对象').toBeGreaterThan(0)
+    for (const a of always) {
+      expect(artifactFuncText(a, 0), `${a.name} 的随身常在没写出来`).toContain('(随身常在)')
+    }
+    for (const a of perRound) {
+      expect(artifactFuncText(a, 0), `${a.name} 的节奏没写出来`).toContain(`(每 ${a.active.interval} 回合一次)`)
+    }
+    // 阳性:节奏来自形制模块,不在 itemText 里另算
+    const SRC = readFileSync(resolve(__dirname, 'itemText.ts'), 'utf-8')
+    expect(SRC, '应读 cadenceMark').toContain('cadenceMark(')
+    expect(SRC, '不该自己判断 interval').not.toMatch(/active\.interval\s*[<>]/)
   })
 
   it('风化文本仍在,功用行是补上去的而不是顶替', () => {
