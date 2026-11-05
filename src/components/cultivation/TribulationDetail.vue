@@ -1,6 +1,15 @@
 <template>
   <div v-if="tribPlan" class="mt-2 rounded-md border border-violet-ink/25 bg-violet-ink/5 px-3 py-2">
     <div class="flex items-baseline gap-2">
+      <!-- 劫印:详情里同样标出是哪一劫(见 ui/tribMark);五种劫型解法完全不同 -->
+      <span
+        v-if="mark.seal"
+        role="img"
+        class="grid h-4 w-4 shrink-0 place-items-center rounded-[2px] bg-violet-ink font-kai text-[10px] leading-none seal-face"
+        :aria-label="mark.label"
+        :title="mark.label"
+        >{{ mark.seal }}</span
+      >
       <p class="grow text-[12px] font-kai leading-snug text-violet-ink">{{ tribPlan.desc }}</p>
       <span class="shrink-0 text-[10px] text-ink-faint">{{ tribPlan.def.waveShape === 'frontLoaded' ? '起手两道最重' : '逐道加重' }}</span>
     </div>
@@ -91,10 +100,13 @@
   import { formatNum, formatPercent } from '@/utils/format'
   import { useTribulation } from '@/composables/useTribulation'
   import { forecastOf, type TribForecast } from '@/ui/tribForecast'
+  import { tribMarkOf } from '@/ui/tribMark'
 
   /** 与摘要卡同读 useTribulation,不各算一份;数全来自 core/tribulationDecision */
   const props = defineProps<{ needTribulation: boolean; qiCost: number }>()
   const { tribPlan, tribLedger, worldStep, tribWeatherLine, tribWave, reliefRoots } = useTribulation(() => props.needTribulation)
+  /** 劫印:与摘要卡同源(见 ui/tribMark) */
+  const mark = computed(() => tribMarkOf(tribPlan.value?.def))
 
   /** 逐波推演读数(见 ui/tribForecast);道数取 tribWave,不另数 */
   const FORECAST_COLOR: Record<TribForecast['tone'], string> = {
