@@ -1,7 +1,11 @@
 /** 宿命传承机制回归(结构断言红线);用例 ①~⑧ 为承继自 xian 的评审判据 */
 import { describe, expect, it, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+const ROOT = resolve(__dirname, '../..')
 import { createPinia, setActivePinia } from 'pinia'
-import { HERITAGE_DEFS, heritageDef, type HeritageDef } from '@/data/heritage'
+import { HERITAGE_DEFS, HERITAGE_GATE_MAJOR, heritageDef, type HeritageDef } from '@/data/heritage'
 import { forgeCandidate, lifeForge } from './heritageForge'
 import { HERITAGE } from './samsaraAudit'
 import { usePlayerStore } from '@/stores/player'
@@ -34,6 +38,30 @@ function aura(d: HeritageDef): string {
 
 describe('宿命传承 · 锻造生命周期', () => {
   beforeEach(() => setActivePinia(createPinia()))
+
+  /**
+   * 界面上的入口门槛也要读数据,不许手抄境名。
+   *
+   * 转世弹窗原写「需金丹境」,而门槛实际由各条传承的 gateMajor 决定(候选筛选就是 gateMajor <= major)。
+   * 手抄境名会在两条线上分叉:改了最低那道传承的门槛,界面还写着旧境名。
+   * 与洞府灵脉的 veinGateRealm 同一套做法 —— 门槛读数据,境名由界面临时取。
+   * 故障注入:把 HERITAGE_GATE_MAJOR 改成写死的 2,或把弹窗改回手抄,本条红。
+   */
+  it('入口门槛从数据算,与「金丹以下永不返回」同一条线', () => {
+    const computed = Math.min(...HERITAGE_DEFS.map(d => d.gateMajor))
+    expect(HERITAGE_GATE_MAJOR, '入口门槛应是各条里最低的那道').toBe(computed)
+    expect(HERITAGE_GATE_MAJOR, '入口门槛不该高于「浅修永不返回」的那一境').toBe(2)
+    // 门槛之下的境界确实一道也拿不到
+    expect(forgeCandidate(HERITAGE_GATE_MAJOR - 1), '门槛以下应返回空').toEqual([])
+    expect(forgeCandidate(HERITAGE_GATE_MAJOR).length, '到达门槛应有候选').toBeGreaterThan(0)
+  })
+
+  it('转世弹窗的境名读门槛,不手抄「需金丹境」', () => {
+    const view = readFileSync(resolve(ROOT, 'src/components/character/RebirthDialog.vue'), 'utf-8')
+    expect(view, '传承门槛应读 HERITAGE_GATE_MAJOR').toContain('HERITAGE_GATE_MAJOR')
+    expect(view, '境名应由 REALMS 现取').toContain('heritageGateRealm')
+    expect(view, '不该再手抄境名').not.toContain('需金丹境')
+  })
 
   it('① 门槛:forgeCandidate 只返回 gateMajor<=major 的未锻造传承;浅修(major<2)永不返回', () => {
     expect(forgeCandidate(0)).toEqual([])
