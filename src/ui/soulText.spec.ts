@@ -46,8 +46,18 @@ describe('器魂形意', () => {
     expect(soulFlavorText({ type: '' })).toBe('')
   })
 
+  /**
+   * 页面真的接上了 —— 定义了却从不使用的文案是死代码。
+   *
+   * 形意句原先在模板里被调两次(v-if 判一次、渲染一次),现改成在 `idleSouls` 里算一次。
+   * 判据跟着落点走:要么模板里调,要么预计算里调,但模板不许再调。
+   */
   it('页面真的接上了 —— 定义了却从不使用的文案是死代码', () => {
     const view = readFileSync(new URL('../views/SoulsView.vue', import.meta.url), 'utf8')
-    expect(view, '散置列表应印形意句').toContain('soulFlavorText(soul)')
+    expect(view, '形意句应在 idleSouls 里算一次').toContain('flavor: soulFlavorText(s)')
+    // 阴性对照:模板里不许再重复调 —— 纯查表函数每帧算两遍,且读不出两处是同一件事
+    const tpl = view.slice(0, view.indexOf('<script'))
+    expect(tpl, '模板不该再调 soulFlavorText').not.toContain('soulFlavorText(')
+    expect(tpl, '模板读数取自预计算').toContain('row.flavor')
   })
 })
