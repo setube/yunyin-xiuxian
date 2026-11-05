@@ -3,6 +3,7 @@ import {
   applyImportPayload,
   buildExportPayload,
   clearAllSave,
+  clearCorrupted,
   migrateHerbSlice,
   migrateInventorySlice,
   SAVE_VERSION,
@@ -61,7 +62,13 @@ export interface ImportInspect {
   name: string
   realmLabel: string
   version: number
-  exportedAt: number
+  /**
+   * 导出时刻;文件里没写、或写了非有限值时是 null。
+   * 原先是 `number`,而检视函数要求它必须是 number —— 缺这一格就整份返回 null,
+   * 于是确认框既摊不开身份、也摊不开版本,`tooNew` 的置灰一并失效(拒因拖到点了确认才出现)。
+   * 而 `exportedAt` 只是文件自带的展示字段,`validateImportPayload` 从不要求它 —— 合法存档可以没有。
+   */
+  exportedAt: number | null
   /** 备份版本高于当前游戏(确认前展示) */
   tooNew: boolean
 }
@@ -73,15 +80,17 @@ export function inspectImportText(text: string): ImportInspect | null {
       ExportPayload & { data?: { player?: { name?: unknown; major?: unknown; sub?: unknown } } }
     >
     if (typeof parsed !== 'object' || parsed === null) return null
-    if (typeof parsed.version !== 'number' || typeof parsed.exportedAt !== 'number') return null
+    // 版本是导入闸门真正要的那一项;缺它就没有可摊开的东西
+    if (typeof parsed.version !== 'number' || !Number.isFinite(parsed.version)) return null
     const player = parsed.data?.player
     const major = typeof player?.major === 'number' && Number.isFinite(player.major) ? player.major : 0
     const sub = typeof player?.sub === 'number' && Number.isFinite(player.sub) ? player.sub : 0
+    const at = parsed.exportedAt
     return {
       name: typeof player?.name === 'string' && player.name ? player.name : '无名散修',
       realmLabel: realmLabel(major, sub),
       version: parsed.version,
-      exportedAt: parsed.exportedAt,
+      exportedAt: typeof at === 'number' && Number.isFinite(at) && at > 0 ? at : null,
       tooNew: parsed.version > SAVE_VERSION
     }
   } catch {
@@ -122,6 +131,11 @@ export function resetGame(): void {
   engine.stop()
   sealStorageWrites()
   clearAllSave()
+  /*
+   * 清空存档连隔离出来的坏档一起清 —— 导入不这么做(那边是换档,本机的坏档仍要留给玩家),
+   * 清空则是「本机不留上一份任何东西」。两者语义不同,故 clearCorrupted 单开一支。
+   */
+  clearCorrupted()
   // 内存兜底:reload 异步,卸载前页面仍在跑;两条封存路径都失效时,排队刷盘写回的也是 started:false
   try {
     useGameStore().started = false

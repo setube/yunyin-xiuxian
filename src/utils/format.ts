@@ -188,10 +188,39 @@ export function formatCountdown(totalSec: number): string {
   return `${pad2(m)}分${pad2(s)}秒`
 }
 
-/** 时间戳 → 「HH:MM」(本地时) */
+/**
+ * 时间戳 → 「HH:MM」(本地时)。
+ *
+ * 坏值一律印占位符,不印 `NaN:NaN`:
+ * 这个函数有两处输入**不是本机产生的** —— 导入确认框里的 `exportedAt` 来自别人导出的文件,
+ * `diag` 留档的时间戳来自可能损坏的持久化分片。`new Date(8640000000000001)`
+ * (超出 Date 范围)与 `Infinity` 都让 `getHours()` 返回 NaN,印出来就是「NaN:NaN」。
+ * 判据见 format.spec「时钟时刻」。
+ */
 export function formatClock(ts: number): string {
   const d = new Date(ts)
+  if (Number.isNaN(d.getTime())) return '--:--'
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+/**
+ * 时间戳 → 「月-日 HH:MM」(本地时)。
+ *
+ * 导入确认框原先用 `formatClock`,只印「14:32」—— 而那正是玩家决定要不要**整体覆盖**本档的地方。
+ * 一份三天前导出的备份与一份一小时前导出的备份,印出来只差一个时刻,
+ * 看不出哪份更新。跨年时补上年份,免得两份「01-03 09:00」分不清。
+ *
+ * 坏值同样印占位符:这个时间戳来自别人导出的文件,不是本机产生的。
+ */
+export function formatStamp(ts: number, now = Date.now()): string {
+  const d = new Date(ts)
+  if (Number.isNaN(d.getTime())) return '--:--'
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  const clock = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const monthDay = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  // 同一历年只印月日;跨年(或年份坏掉)时补年份
+  if (d.getFullYear() === new Date(now).getFullYear()) return `${monthDay} ${clock}`
+  return `${d.getFullYear()}-${monthDay} ${clock}`
 }
 
 /**

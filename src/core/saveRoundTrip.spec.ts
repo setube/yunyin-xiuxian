@@ -19,7 +19,8 @@ import {
   clearAllSave,
   dropPendingWrites,
   flushSaveWrites,
-  storageKey
+  storageKey,
+  validateImportPayload
 } from '@/utils/storage'
 import { readSaveText } from '@/utils/crypto'
 import { exportSaveText, importSaveText, inspectImportText } from './save'
@@ -292,6 +293,42 @@ describe('存档往返 · 导出再导入一模一样', () => {
       inspectImportText(`{"game":"yunyin-xiuxian","version":1,"exportedAt":2,"data":{"player":{},"game":{}}}`)?.name
     ).toBe('无名散修')
     expect(inspectImportText('完全不是存档')).toBeNull()
+  })
+
+  /**
+   * 检视不能因为一个展示字段就整份放弃。
+   *
+   * 原先 `inspectImportText` 要求 `version` 与 `exportedAt` **都**是 number,
+   * 而 `validateImportPayload` 从不要求 `exportedAt` —— 于是「合法但没写导出时刻」的档
+   * 检视返回 null,确认框摊不开身份、摊不开版本,`tooNew` 的置灰也一并失效:
+   * 未来版本的存档要等玩家点下「确认导入」才被告知「存档版本过高」。
+   *
+   * 故障注入:把 exportedAt 的判定改回「必须是 number」,第一条红。
+   */
+  it('缺导出时刻仍是合法档:身份与版本照摊,置灰照生效', () => {
+    const noStamp = `{"game":"yunyin-xiuxian","version":${SAVE_VERSION},"data":{"player":{"name":"青崖子","major":5},"game":{}}}`
+    expect(validateImportPayload(JSON.parse(noStamp)), '前置:这类档本就该放行').toBeNull()
+    const info = inspectImportText(noStamp)
+    expect(info, '缺 exportedAt 不该让整份检视作废').not.toBeNull()
+    expect(info!.name, '身份仍要摊得开').toBe('青崖子')
+    expect(info!.version).toBe(SAVE_VERSION)
+    expect(info!.exportedAt, '没有导出时刻时给 null,不编一个数').toBeNull()
+
+    // 未来版本 + 缺导出时刻:置灰的那条判据必须仍然成立
+    const futureNoStamp = `{"game":"yunyin-xiuxian","version":${SAVE_VERSION + 1},"data":{"player":{"name":"未来客","major":1},"game":{}}}`
+    const future = inspectImportText(futureNoStamp)
+    expect(future, '未来版本更要摊得开 —— 否则拒因拖到点确认才出现').not.toBeNull()
+    expect(future!.tooNew, '缺 exportedAt 不该把 tooNew 的置灰挡掉').toBe(true)
+  })
+
+  /** 导出时刻是别人文件里自带的数,可能被写成 1e999 / 字符串 / 负数 —— 一律按「没有」处理 */
+  it('导出时刻的坏值一律归 null,不印 NaN', () => {
+    const base = (exportedAt: string): string =>
+      `{"game":"yunyin-xiuxian","version":2,"exportedAt":${exportedAt},"data":{"player":{"name":"青崖子","major":5},"game":{}}}`
+    for (const bad of ['"2026-11-01"', '1e999', '-1', '0', 'null']) {
+      expect(inspectImportText(base(bad))?.exportedAt, `exportedAt=${bad} 应归 null`).toBeNull()
+    }
+    expect(inspectImportText(base('1700000000000'))?.exportedAt, '正常时间戳照常透传').toBe(1700000000000)
   })
 
 

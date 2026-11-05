@@ -50,7 +50,9 @@
         </p>
         <p class="mt-0.5 flex flex-wrap gap-x-2 tabular text-[10px]" :class="importInspect.tooNew ? 'text-cinnabar' : 'text-ink-faint'">
           <span>备份 v{{ importInspect.version }}</span>
-          <span>导出 {{ formatClock(importInspect.exportedAt) }}</span>
+          <!-- 带日期:三天前与一小时前的备份只差一个时刻,看不出哪份更新 -->
+          <span v-if="importInspect.exportedAt !== null">导出 {{ formatStamp(importInspect.exportedAt) }}</span>
+          <span v-else>无导出时刻</span>
           <span v-if="importInspect.tooNew">高于当前 v{{ SAVE_VERSION }}</span>
         </p>
       </div>
@@ -80,7 +82,7 @@
   import { readSaveFile, type SaveFileReadHandle } from '@/core/saveFileRead'
   import { exportSaveToDevice } from '@/core/savePlatform'
   import { formatLastExport, shouldPromptBackup } from '@/core/saveBackup'
-  import { formatClock, formatDuration } from '@/utils/format'
+  import { formatDuration, formatStamp } from '@/utils/format'
   import { SAVE_VERSION, STORE_NAMES, saveWriteFailure, subscribeSaveWriteFailure } from '@/utils/storage'
   import BaseModal from '@/components/common/BaseModal.vue'
 

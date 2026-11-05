@@ -445,6 +445,29 @@ export function corruptedCount(): number {
   return Object.keys(collectCorrupted()).length
 }
 
+/**
+ * 丢掉本机隔离出来的损坏分片。
+ *
+ * 与 `clearAllSave` 分开,是因为两条路径的语义不同:
+ *   · **导入**走 `clearAllSave` —— 玩家是在换一份存档,本机原档隔离出来的坏档仍要留着
+ *     (那是上一位玩家自己的东西,导入方没有资格替人删;判据见 importCorruption.spec)。
+ *   · **清空存档**走这里 —— 「清空」的语义是本机不留上一份任何东西,坏档同属上一份。
+ *
+ * 原先清空存档只清 `PERSISTED_STORES`,而 `corrupt.*` 不在那张表里(preflightScan
+ * 把它们移出存档位),于是被整个漏掉:实测清档后 localStorage 只剩
+ * `corrupt.yunyin.player`,而 buildExportPayload 见 corruptedCount() > 0 就把这一段
+ * 带进导出 —— 玩家清档、重开一局后导出的文件里仍带着上一位的坏档。
+ */
+export function clearCorrupted(): void {
+  for (const id of PERSISTED_STORES) {
+    try {
+      localStorage.removeItem(CORRUPT_PREFIX + storageKey(id))
+    } catch {
+      // 存储不可用时放弃清理
+    }
+  }
+}
+
 /** 校验导入数据结构,返回错误信息;null 表示通过 */
 export function validateImportPayload(obj: unknown): string | null {
   if (typeof obj !== 'object' || obj === null) return '存档格式无效'

@@ -113,6 +113,12 @@
     saveRead = readSaveFile(file, text => {
       if (unmounted) return
       saveRead = null
+      // 空文件与设置页同一个判据:空档走到 importSaveText 会被报成「文件无法解析」,
+      // 两处入口对同一种坏文件说两种话
+      if (!text.trim()) {
+        ui.toast('文件为空', 'warn')
+        return
+      }
       engine.pause()
       const err = importSaveText(text)
       if (err) {
