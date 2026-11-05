@@ -2361,6 +2361,35 @@ html[data-theme='dark'] .fruit-curve polyline {
   opacity: 1;
 }
 
+/* ================= 灵兽性格倾向(personalityMark) =================
+ * 四种性格(贪宝/慢稳/好战/谨慎)只影响历练时的四项倾向,而界面上此前只有名字与一句描述。
+ * 「贪宝」与「好战」都算「凶」,但它们动的是**不同的量** —— 要挑一只配当前打法,
+ * 得把描述那句话读两遍再在脑子里比对(见 src/ui/personalityMark)。
+ * 这里给每个在动的维度一枚小签:偏高的转朱、偏低的转青,平的(即不改的)不列。
+ * 色只作辅助,签上写着维度名 —— 色弱玩家照样读得出。
+ */
+.personality-tilt {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 2px;
+  padding: 0 3px;
+  font-size: 9px;
+  line-height: 1.4;
+  pointer-events: none;
+  background: rgb(var(--color-ink-rgb) / 0.06);
+  color: rgb(var(--color-ink-soft-rgb));
+}
+/* 偏高:转朱 —— 遇险更高、行程更久都是「更吃力」那一边 */
+.personality-tilt--up {
+  background: rgb(var(--color-cinnabar-rgb) / 0.12);
+  color: rgb(var(--color-cinnabar-rgb));
+}
+/* 偏低:转青 —— 更省力、更稳那一边 */
+.personality-tilt--down {
+  background: rgb(var(--color-jade-rgb) / 0.12);
+  color: rgb(var(--color-jade-rgb));
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。
