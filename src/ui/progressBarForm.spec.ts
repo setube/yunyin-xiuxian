@@ -64,6 +64,22 @@ describe('进度条 · 二、$attrs 落到外壳', () => {
     const view = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
     expect(view, '组内细条的外距仍在调用方给').toContain('class="pb-1.5"')
   })
+
+  /**
+   * 单条成就的进度也要有条。
+   *
+   * 同一页里,成就分组与收藏类目都有条,唯独单条成就只写「已 3 / 目标 10」——
+   * 而这三处回答的是同一个问题(「走到哪了」),不该只有一处要玩家自己算比例。
+   * 条与读数同处一行:条说走到哪,数字说还差几次。
+   * 故障注入:删掉那行 ProgressBar,本条红。
+   */
+  it('单条成就的进度接上了条,与分组/类目同一套组件', () => {
+    const view = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
+    expect(view, '单条成就该有条').toContain(':value="row.progress.current / row.progress.target"')
+    expect(view, '读数仍要留着 —— 条只说走到哪,数字说还差几次').toContain('已 {{ row.progress.current }} / {{ row.progress.target }}')
+    // 阴性对照:不许在成就行里自己拼一根 div 当条
+    expect(view, '不该绕过 ProgressBar 自己画条').not.toMatch(/row\.progress[^\n]*<div[^>]*bar-fill/)
+  })
 })
 
 describe('进度条 · 三、样式与组件同源', () => {

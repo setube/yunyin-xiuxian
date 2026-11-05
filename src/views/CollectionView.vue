@@ -31,9 +31,15 @@
                 <p v-if="row.done && row.achievedAt" class="mt-0.5 text-[10px] text-ink-faint">
                   达成于 {{ collectedTimeText(row.achievedAt) }}
                 </p>
-                <p v-if="!row.done && row.progress" class="mt-0.5 text-[10px] tabular text-azure">
-                  已 {{ row.progress.current }} / {{ row.progress.target }}
-                </p>
+                <!--
+                  进度条:同页的成就分组与收藏类目都有条,唯独单条成就只写「已 3 / 目标 10」——
+                  而这两者是同一种东西(「走到哪了」),不该只有一处要自己算比例。
+                  条与读数同处一行:条说走到哪,数字说还差几次。
+                -->
+                <div v-if="!row.done && row.progress" class="mt-0.5 flex items-center gap-1.5">
+                  <ProgressBar class="w-16 shrink-0" :value="row.progress.current / row.progress.target" :height="2" />
+                  <span class="text-[10px] tabular text-azure">已 {{ row.progress.current }} / {{ row.progress.target }}</span>
+                </div>
                 <p v-if="row.reward" class="mt-0.5 text-[10px] tabular text-azure">{{ row.reward }}</p>
               </div>
             </div>
