@@ -7,10 +7,10 @@
         文字整句 nowrap,刻度另起一行 —— 见 ui/masteryMark 的 upgradeMark。
       -->
       <span class="min-w-0">
-        <span class="upgrade-pips" :class="{ 'upgrade-pips--max': mark(inst.level + 1).maxed }" role="img" :aria-label="`强化 +${inst.level + 1} / 上限 ${equipLevelCap()}`">
-          <i v-for="(on, i) in upgradePips(mark(inst.level + 1))" :key="i" :class="{ on }" />
+        <span class="upgrade-pips" :class="{ 'upgrade-pips--max': previewMark.mark.maxed }" role="img" :aria-label="`强化 +${previewMark.level} / 上限 ${previewMark.cap}`">
+          <i v-for="(on, i) in upgradePips(previewMark.mark)" :key="i" :class="{ on }" />
         </span>
-        <span class="mt-0.5 block whitespace-nowrap">强化 +{{ inst.level + 1 }} / 上限 {{ equipLevelCap() }}</span>
+        <span class="mt-0.5 block whitespace-nowrap">强化 +{{ previewMark.level }} / 上限 {{ previewMark.cap }}</span>
       </span>
       <span class="tabular">器灵尘×{{ upCost.dust }} · 灵石 {{ formatGN(upCost.stone) }}</span>
     </p>
@@ -49,10 +49,10 @@
     <div class="ink-divider my-3" />
     <p class="flex items-center justify-between text-[12px] text-ink-faint">
       <span class="min-w-0">
-        <span class="upgrade-pips" :class="{ 'upgrade-pips--max': mark(inst.level).maxed }" role="img" :aria-label="`强化 +${inst.level} / 上限 ${equipLevelCap()}`">
-          <i v-for="(on, i) in upgradePips(mark(inst.level))" :key="i" :class="{ on }" />
+        <span class="upgrade-pips" :class="{ 'upgrade-pips--max': currentMark.mark.maxed }" role="img" :aria-label="`强化 +${currentMark.level} / 上限 ${currentMark.cap}`">
+          <i v-for="(on, i) in upgradePips(currentMark.mark)" :key="i" :class="{ on }" />
         </span>
-        <span class="mt-0.5 block whitespace-nowrap">强化 +{{ inst.level }} / 上限 {{ equipLevelCap() }}</span>
+        <span class="mt-0.5 block whitespace-nowrap">强化 +{{ currentMark.level }} / 上限 {{ currentMark.cap }}</span>
       </span>
       <span class="text-gold-ink">{{ upgradeCapToast() }}</span>
     </p>
@@ -82,6 +82,22 @@
   function mark(level: number) {
     return upgradeMark(level, equipLevelCap())
   }
+
+  /**
+   * 两处刻度各算一次。
+   *
+   * 每块里 `mark(...)` 被调 2 次(刻度类名、刻度点)、`equipLevelCap()` 被调 2 次,
+   * 而 `equipLevelCap()` 还要进 `mark` 里再查一次 —— 一个块算五六遍。
+   * 两块的差别只在等级:能升时预览 `+1`,满级时报当前。
+   */
+  const previewMark = computed(() => {
+    const level = (inst.value?.level ?? 0) + 1
+    return { level, cap: equipLevelCap(), mark: mark(level) }
+  })
+  const currentMark = computed(() => {
+    const level = inst.value?.level ?? 0
+    return { level, cap: equipLevelCap(), mark: mark(level) }
+  })
 
   /** 连升计划:预览与执行同一份;升不动时 levels=0,整块隐藏 */
   const batchPlan = computed<UpgradeBatchPlan>(() =>

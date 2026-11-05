@@ -113,6 +113,26 @@ describe('满级标记 · 玩家挣来的状态要有形状', () => {
    * 判据不是「不能出现 v-if」,而是「代价为 null 时仍有一句话」。
    * 故障注入:把任一处改回 `v-if="upCost"` / `v-if="row.upCost"`,本条红。
    */
+  /**
+   * 强化刻度的两处在 setup 里各算一次。
+   *
+   * 每块里 `mark(...)` 被调 2 次、`equipLevelCap()` 被调 2 次,
+   * 而 `equipLevelCap()` 还要进 `mark` 里再查一次 —— 一个块算五六遍。
+   * 故障注入:把刻度改回模板里调 mark,本条红。
+   */
+  it('强化刻度的两处算一次,模板不再逐块查表', () => {
+    const PANEL = readFileSync(resolve(ROOT, 'src/components/equipment/UpgradePanel.vue'), 'utf-8')
+    expect(PANEL, '应算预览与当前两份').toContain('const previewMark = computed(')
+    expect(PANEL, '应算预览与当前两份').toContain('const currentMark = computed(')
+    const tpl = PANEL.slice(0, PANEL.indexOf('<script'))
+    for (const fn of ['mark(', 'equipLevelCap(']) {
+      expect(tpl, `模板不该再调 ${fn}`).not.toContain(fn)
+    }
+    // 阳性:读数确实来自那两份
+    expect(tpl, '预览那块读 previewMark').toContain('previewMark.mark.maxed')
+    expect(tpl, '满级那块读 currentMark').toContain('currentMark.mark.maxed')
+  })
+
   it('代价算不出来时,控件不消失而是禁用并写原因', () => {
     const DETAIL = readFileSync(resolve(ROOT, 'src/components/equipment/EquipmentDetailDialog.vue'), 'utf-8')
     const PANEL = readFileSync(resolve(ROOT, 'src/components/equipment/UpgradePanel.vue'), 'utf-8')
