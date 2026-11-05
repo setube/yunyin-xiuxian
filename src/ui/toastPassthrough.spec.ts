@@ -69,6 +69,24 @@ describe('提示条 · 自检脚本的选择器与宿主结构一致', () => {
     )
   })
 
+  /**
+   * 拼接后的选择器必须真的能命中。
+   *
+   * 上一版把正文选择器写成 `${hostSel} [role=status] > div` ——
+   * 而 `hostSel` 本身就是带 `role=status` 的那个容器,中间那个空格让它变成「后代」,
+   * 于是永远匹配不到,脚本在第一个场景就超时。
+   *
+   * 字符串存在 ≠ 选择器有效。这条判据只查能机械判定的部分:
+   * 正文选择器里 `hostSel` 与 `[role=status]` 之间不许有空格。
+   *
+   * 故障注入:把 `${hostSel}[role=status]` 改成 `${hostSel} [role=status]`,本条红。
+   */
+  it('正文选择器与 hostSel 之间不许有后代空格', () => {
+    const line = /const bodySel = `\$\{hostSel\}([^`]*)`/.exec(SCRIPT)
+    expect(line, '找不到正文选择器的拼接处').toBeTruthy()
+    expect(line![1]!.startsWith('[role=status]'), 'hostSel 后应直接跟 [role=status],中间不许有空格').toBe(true)
+  })
+
   it('关闭钮仍按 button 找 —— 它确实是唯一吃事件的元素', () => {
     // 这一处是对的,别被上一条误伤:点击关闭钮就该按 button 找
     expect(SCRIPT, '点关闭钮仍按 button 找').toMatch(/querySelectorAll\('\.pointer-events-none\.fixed button'\)\) b\.click\(\)/)

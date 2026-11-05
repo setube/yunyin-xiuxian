@@ -6,7 +6,12 @@
       <!-- 小标题不写件数(有三件套),件数只走逐行 N/所需 -->
       <div v-if="setRows.length" class="card-ink mt-3 px-4 py-2.5">
         <p class="text-[10px] text-ink-faint">装备共鸣</p>
-        <p v-for="s in setRows" :key="s.def.id" class="mt-1 flex items-center gap-2 text-[11px]">
+        <!--
+          flex-wrap 不可去:这一行有套纹、套名、N/M、说明、按钮五样,
+          200% 缩放下(视口约 195)**实测**右缘冲到 213,越界 18px。
+          窄时按钮折到下一行,不挤说明。
+        -->
+        <p v-for="s in setRows" :key="s.def.id" class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
           <!-- 套纹:与装备格那枚同源(见 ui/setMark);六套各一枚,机制另有其色 -->
           <span
             v-if="s.mark"

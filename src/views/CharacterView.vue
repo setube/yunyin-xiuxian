@@ -16,7 +16,11 @@
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span class="shrink-0 font-kai text-[12px] tracking-widest text-ink-faint">灵根</span>
         <span class="shrink-0 whitespace-nowrap font-kai text-[13px] text-cinnabar">{{ player.linggen?.gradeName }}</span>
-        <div class="flex shrink-0 gap-1.5">
+        <!--
+          三根灵根时这一组约 90px 宽,而外层虽然能折行、它自己却 shrink-0 不参与收缩 ——
+          200% 缩放(视口约 195)**实测**右缘冲到 202,越界 7px。组内也允许折行。
+        -->
+        <div class="flex min-w-0 flex-wrap gap-1.5">
           <span
             v-for="root in player.linggen?.roots ?? []"
             :key="root.element"

@@ -174,3 +174,29 @@ describe('资质刻度 · 三处渲染同用一份', () => {
     }
   })
 })
+
+/**
+ * 灵根圆环那一组要能折行。
+ *
+ * 三根灵根时这一组约 90px 宽,而外层虽然能折行、它自己却写着 `shrink-0` 不参与收缩 ——
+ * 200% 缩放(视口约 195)下右缘冲到 202,越界 7px。
+ *
+ * 这是「给一行加形制」的常见后遗症:圆环、刻度、外环一样样加上去,
+ * 加的时候只看单样好不好看,没回头量整组还装不装得下。
+ *
+ * 故障注入:把那组改回 `flex shrink-0 gap-1.5`,本条红。
+ */
+describe('灵根 · 圆环组要能折行', () => {
+  it('人物页的灵根组允许折行,且不再 shrink-0', () => {
+    const src = readFileSync(resolve(__dirname, '../..', 'src/views/CharacterView.vue'), 'utf-8')
+    // 定位灵根圆环那一组的容器
+    const at = src.indexOf('v-for="root in player.linggen?.roots')
+    expect(at, '找不到灵根圆环那一组').toBeGreaterThan(-1)
+    // 往前找最近一个 <div class="...">:那就是圆环组的容器
+    const head = src.slice(Math.max(0, at - 500), at)
+    const all = [...head.matchAll(/<div class="([^"]*)"/g)]
+    const rowTag = all.length ? all[all.length - 1]![1]! : ''
+    expect(rowTag, '圆环组须能折行').toContain('flex-wrap')
+    expect(rowTag, '圆环组不该 shrink-0 —— 不参与收缩就折不了').not.toContain('shrink-0')
+  })
+})
