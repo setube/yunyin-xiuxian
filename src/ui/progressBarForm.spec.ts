@@ -90,6 +90,19 @@ describe('进度条 · 二、$attrs 落到外壳', () => {
     expect(vowBlock, '誓愿不该绕过 ProgressBar 自己画条').not.toContain('bar-fill')
   })
 
+  /**
+   * 洞府的营造进度也接上了条。
+   *
+   * 洞府是全游戏唯一「从零建到八」的地方,而标题旁只给「已启 N/8」两个数。
+   * 这份长期目标此前在页面上没有任何位置感。
+   * 故障注入:删掉那条 ProgressBar,本条红。
+   */
+  it('洞府的营造进度有条', () => {
+    const view = readFileSync(resolve(ROOT, 'src/views/DongfuView.vue'), 'utf-8')
+    expect(view, '营造应有一条').toContain('builtCount / BUILDINGS.length')
+    expect(view, '走同一个组件').toMatch(/import ProgressBar from '@\/components\/common\/ProgressBar\.vue'/)
+  })
+
   it('单条成就的进度接上了条,与分组/类目同一套组件', () => {
     const view = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
     expect(view, '单条成就该有条').toContain(':value="row.progress.current / row.progress.target"')
