@@ -95,7 +95,7 @@ const KNOWN: readonly (readonly [string, string])[] = [
   ['src/components/inventory/DismantleDialog.vue', ':aria-pressed="settings.smartKeep.minQuality === q.rank"'],
   ['src/components/inventory/DismantleDialog.vue', ':aria-pressed="settings.smartKeep.keepMinTier === t"'],
   ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="prepPact === null"'],
-  ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="prepPact === pact.id"'],
+  ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="prepPact === row.def.id"'],
   ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="prepGate === null"'],
   ['src/components/celestial/ExpeditionPanel.vue', ':aria-pressed="cell.gate ? prepGate === cell.gate.id : undefined"'],
   ['src/components/celestial/TrialPanel.vue', ':aria-pressed="draft.worldId === w.id"'],

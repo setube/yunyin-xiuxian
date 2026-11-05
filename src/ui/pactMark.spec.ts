@@ -111,10 +111,11 @@ describe('契约形制 · 三、样式与两处界面', () => {
   })
 
   it('契纹是装饰:读屏靠 aria-label 报「轻重 + 契名」,不念纹样', () => {
-    expect(EXPED, '远征择契的按钮应带轻重说法').toContain('pactMark(pact.id)?.label')
+    expect(EXPED, '远征择契的按钮应带轻重说法').toContain('row.mark?.label')
     // 挑战书的契重与契纹在 setup 里各算一次(原先同一个按钮里调 5 次)
     expect(TRIAL, '挑战书的按钮应带轻重说法').toContain('row.mark?.label')
     expect(TRIAL, '应在 setup 里算一次').toContain('const pactRows = PACTS.map(p => ({ def: p, mark: pactMark(p.id) }))')
+    expect(EXPED, '远征择契也应在 setup 里算一次').toContain('const pactRows = PACTS.map(p => ({ def: p, mark: pactMark(p.id) }))')
     expect(EXPED, '契纹应 aria-hidden').toMatch(/pact-crest[\s\S]{0,200}aria-hidden="true"/)
   })
 })

@@ -202,28 +202,28 @@
           <span class="ml-auto text-[10px] text-ink-faint">道源 ×1.0</span>
         </button>
         <button
-          v-for="pact in PACTS"
-          :key="pact.id"
+          v-for="row in pactRows"
+          :key="row.def.id"
           class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left"
           :class="[
-            pactMark(pact.id) ? `pact-weight-${pactMark(pact.id)!.weight}` : '',
-            prepPact === pact.id ? 'bg-cinnabar/10 border border-cinnabar/40' : 'bg-paper-deep/60 border border-transparent'
+            row.mark ? `pact-weight-${row.mark.weight}` : '',
+            prepPact === row.def.id ? 'bg-cinnabar/10 border border-cinnabar/40' : 'bg-paper-deep/60 border border-transparent'
           ]"
-          :aria-pressed="prepPact === pact.id"
-          :aria-label="pactMark(pact.id)?.label ?? pact.name"
-          @click="prepPact = pact.id"
+          :aria-pressed="prepPact === row.def.id"
+          :aria-label="row.mark?.label ?? row.def.name"
+          @click="prepPact = row.def.id"
         >
           <!-- 印 + 契纹并排:六张契形状各不相同,不必逐个读倍数 -->
-          <span class="grid h-6 w-6 shrink-0 place-items-center rounded bg-ink/80 font-kai text-[11px] text-paper">{{ pact.seal }}</span>
+          <span class="grid h-6 w-6 shrink-0 place-items-center rounded bg-ink/80 font-kai text-[11px] text-paper">{{ row.def.seal }}</span>
           <span
-            v-if="pactMark(pact.id)"
+            v-if="row.mark"
             class="pact-crest h-4 w-4 shrink-0 text-ink-faint"
-            :class="`pact-crest--${pactMark(pact.id)!.crest}`"
+            :class="`pact-crest--${row.mark.crest}`"
             aria-hidden="true"
           />
           <span class="min-w-0">
-            <span class="block font-kai text-[12px] text-ink">{{ pact.name }}</span>
-            <span class="block text-[10px] text-ink-faint">{{ pact.ruleText }}</span>
+            <span class="block font-kai text-[12px] text-ink">{{ row.def.name }}</span>
+            <span class="block text-[10px] text-ink-faint">{{ row.def.ruleText }}</span>
           </span>
         </button>
       </div>
@@ -354,6 +354,15 @@
   const endgame = useEndgameStore()
   const adventure = useAdventureStore()
   const busy = computed(() => endgameBusy(endgame.worldRun, player.secretRealm, adventure.session))
+
+  /**
+   * 择契行的形制:契重与契纹各算一次。
+   *
+   * `pactMark` 在同一个按钮里被调 5 次(轻重类名、读屏说法、有无判断、契纹类名),
+   * 挑战书那边(TrialPanel)同一处已在上一轮改成预计算,这里同法。
+   * `PACTS` 是静态数据、`pactMark` 是纯函数 —— 每帧算五遍没有理由。
+   */
+  const pactRows = PACTS.map(p => ({ def: p, mark: pactMark(p.id) }))
 
   /** 锚点层级所在境界;「此界宜 X 及以上」用它,不在模板里手写境界名 */
   function anchorMajorOf(anchorTier: number): number {
