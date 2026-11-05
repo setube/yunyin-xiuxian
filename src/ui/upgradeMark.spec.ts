@@ -155,7 +155,9 @@ describe('强化刻度 · 四、排版与接线', () => {
   })
 
   it('刻度给读屏名', () => {
-    expect(PANEL).toContain('`强化 +${inst.level} / 上限 ${equipLevelCap()}`')
+    // 两处刻度各在 computed 里算一次(原先模板里每块调 mark/equipLevelCap 五六遍)
+    expect(PANEL).toContain('`强化 +${previewMark.level} / 上限 ${previewMark.cap}`')
+    expect(PANEL).toContain('`强化 +${currentMark.level} / 上限 ${currentMark.cap}`')
   })
 
   it('刻度的 CSS 存在,形制层不吃指针事件,只取既有 token', () => {
