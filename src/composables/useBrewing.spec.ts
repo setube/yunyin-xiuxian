@@ -49,6 +49,23 @@ describe('炉前存货账(存 N · 药力状态)', () => {
     const dialog = readFileSync(join(__dirname, '../components/inventory/BrewingDialog.vue'), 'utf8')
     expect(dialog, '方子行要写出行囊存量').toContain('存 {{ r.stock }}')
   })
+
+  /**
+   * 炉级要报在弹窗上。
+   *
+   * 炉级与境界共同决定「哪些丹方可习得」(core/loreService 的 reachable),
+   * 而方子不够炉级的根本不会出现在下面那张清单里 —— 玩家只会以为是自己没找到。
+   * 弹窗此前一个字都不写炉级。
+   *
+   * 故障注入:把那行炉级删掉,本条红。
+   */
+  it('开炉弹窗报出当前炉级 —— 方子不够炉级时玩家才看得出原因', () => {
+    const dialog = readFileSync(join(__dirname, '../components/inventory/BrewingDialog.vue'), 'utf8')
+    expect(dialog, '弹窗应报炉级').toContain('dongfu.alchemyLevel')
+    expect(dialog, '读数要带「级」,否则一串数字读不出是什么').toContain('炉 {{ dongfu.alchemyLevel }} 级')
+    // 阳性对照:炉级读的是洞府 store 的那一份,不是另算一处
+    expect(dialog, '应读洞府 store').toContain('useDongfuStore()')
+  })
 })
 
 describe('炉前药力账(已顶 · 将顶)', () => {

@@ -1,6 +1,15 @@
 <template>
   <BaseModal :open="open" title="开炉炼丹" wide @close="emit('close')">
-    <p class="mb-2 text-[11px] text-ink-faint tabular">灵草 {{ herbStash }} · 灵石 {{ formatGN(resources.spiritStone) }}</p>
+    <!--
+      炉级与境界共同决定「哪些丹方习得」,而弹窗此前一个字都不写炉级:
+      方子不够炉级的,根本不会出现在下面那张清单里 —— 玩家只会以为是自己没找到。
+      读数只报现状,不解释、不给下一步(炉怎么升在洞府营建里)。
+    -->
+    <p class="mb-2 flex flex-wrap items-baseline gap-x-2 text-[11px] text-ink-faint tabular">
+      <span>炉 {{ dongfu.alchemyLevel }} 级</span>
+      <span>灵草 {{ herbStash }}</span>
+      <span>灵石 {{ formatGN(resources.spiritStone) }}</span>
+    </p>
     <!-- 翻检读数与 studyTick 同序(见 core/loreService.studyEta) -->
     <p v-if="studyLine" class="mb-2 text-[10px] leading-relaxed text-ink-faint tabular">{{ studyLine }}</p>
     <!-- 列表不可自带滚动框:弹窗正文已是滚动容器,两层滚动会切掉下一张卡(议题 #21) -->
@@ -120,6 +129,7 @@
 <script setup lang="ts">
   import { computed, watch } from 'vue'
   import { useResourcesStore } from '@/stores/resources'
+  import { useDongfuStore } from '@/stores/dongfu'
   import { HERB_GRADE_SHORT } from '@/data/herbGrades'
   import { pillQualityColor } from '@/data/pills'
   import { pillFuncText } from '@/ui/itemText'
@@ -136,6 +146,7 @@
   const emit = defineEmits<{ close: [] }>()
 
   const resources = useResourcesStore()
+  const dongfu = useDongfuStore()
   const { recipes, craftGuarantee, skillRows, studyLine, rateClass, pillFullId, runCraftFull } = useBrewing()
   const herbStash = computed(() => herbStashText(g => resources.herbOf(g), formatNum))
 
