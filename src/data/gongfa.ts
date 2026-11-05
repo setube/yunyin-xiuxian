@@ -1,4 +1,4 @@
-/** 功法库 —— 63 部:主修 27 / 辅修 22 / 秘术 14,每境都有新东西可参 */
+/** 功法库 —— 65 部:主修 29 / 辅修 19 / 秘术 12,每境都有新东西可参 */
 import type { GongfaDef, GongfaType, QualityId, StatMods } from '@/types'
 
 function g(
@@ -182,6 +182,36 @@ export const GONGFA: GongfaDef[] = [
     { cultivationSpeed: 0.24, defensePct: 0.16, qiRegen: 0.14 },
     { cultivationSpeed: 0.034, defensePct: 0.018 },
     { skill: { name: '炼神返虚', mult: 2.4, rate: 0.24 } }
+  ),
+  /*
+   * ---- 地品(rank 5):九档品阶里此前唯一空着的一档 ----
+   *
+   * 玄品(3.8~4.1)之后直接跳到天品(4.4~5.3),中间这一档一直没有主修。
+   * 两只按方向分工,满级预算各 4.4,正好接在玄品上沿:
+   *   镇岳不动经 = 守御,叠防御与生命上限,不碰减免(减免权重高,一加就跃出这一档);
+   *   裂甲吞锋诀 = 破甲,叠破甲与伤害增幅 —— 这两路此前只在秘术与词条里出现,主修从未提供。
+   */
+  g(
+    'm_zhenyue',
+    '镇岳不动经',
+    'main',
+    'earth',
+    6,
+    '山岳镇于前,不动如山;守得住,才谈得上走多远',
+    { defensePct: 0.34, maxHpPct: 0.3 },
+    { defensePct: 0.026, maxHpPct: 0.022 },
+    { element: 'earth', skill: { name: '镇岳印', mult: 2.6, rate: 0.24 } }
+  ),
+  g(
+    'm_liejia',
+    '裂甲吞锋诀',
+    'main',
+    'earth',
+    6,
+    '不斩人身,先斩其甲;甲裂则锋自吞',
+    { armorPen: 0.1, damageBonus: 0.1 },
+    { armorPen: 0.016, damageBonus: 0.016 },
+    { skill: { name: '裂甲锋', mult: 2.7, rate: 0.25 } }
   ),
   g(
     'm_wuliang',

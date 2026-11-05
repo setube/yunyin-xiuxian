@@ -1,7 +1,7 @@
 /**
  * 功法悟道分支:功法满级(learned[id] >= maxLevel)后择一条,从满级起追加词条;一经选择不可更改(转世保留)。
  * 份量 = 各词条值 ÷ 该词条在 data/affixes.ts 的最低档(「词条单位」),再相加。本表档位:
- *   凡品 3.5 · 良品 4~5 · 精品 5~6 · 灵品 7~7.5 · 玄品 7.5~9 · 天品 11~12 · 仙品 14
+ *   凡品 3.5 · 良品 4~5 · 精品 5~6 · 灵品 7~7.5 · 玄品 7.5~9 · 地品 9~10.5 · 天品 11~12 · 仙品 14
  * 同品质下辅修略低于主修;秘术满级只需 3 层,与同品质主修持平而不超。
  * gongfaBranch.spec.ts 钉两条:分支词条值不超过同名词条在装备上能出的最大值;同一功法各分支份量相当。
  * 分支从该功法的立意与既有词条里长出来。
@@ -88,6 +88,14 @@ export const GONGFA_BRANCHES: GongfaBranchDef[] = [
   b('m_youming', 'b_youming_shi', '噬魂', '饮血自补,战久不衰', { lifesteal: 0.09, attackPct: 0.07, maxHpPct: 0.03 }),
   b('m_youming', 'b_youming_duo', '夺魄', '残命者,必死其手', { executeDamage: 0.4, armorPen: 0.14, attackPct: 0.03 }),
   b('m_youming', 'b_youming_xie', '入邪', '以命换命,濒死更狂', { lowHpDamage: 0.6, lowHpReduction: 0.3, lifesteal: 0.04 }),
+
+  // ---- 主修:镇岳不动经(地品·土) ----
+  b('m_zhenyue', 'b_zhenyue_gang', '罡壁', '罡气成壁,愈守愈坚', { defensePct: 0.18, maxHpPct: 0.12 }),
+  b('m_zhenyue', 'b_zhenyue_zhen', '镇压', '山岳压身,敌自迟缓', { defensePct: 0.15, damageReduction: 0.04, regenPerRound: 0.02 }),
+
+  // ---- 主修:裂甲吞锋诀(地品·土) ----
+  b('m_liejia', 'b_liejia_po', '破锋', '甲既已裂,锋无可挡', { armorPen: 0.2, attackPct: 0.1 }),
+  b('m_liejia', 'b_liejia_tun', '吞锋', '折敌之锋为己用', { armorPen: 0.12, damageBonus: 0.1, defensePct: 0.08 }),
 
   // ---- 主修:混沌一气功(天品·混沌) ----
   b('m_hundun', 'b_hundun_hua', '化形', '一气化形,四象俱全', {

@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { GONGFA } from '@/data/gongfa'
-import { qualityDef } from '@/data/qualities'
+import { QUALITIES, qualityDef } from '@/data/qualities'
 import { budgetOfMods } from './ruleBudget'
 
 /** 满级时的词条总量:基础 + 每级 × 层数 */
@@ -88,6 +88,25 @@ describe('主修功法品阶阶梯 · 品阶要能预测份量', () => {
     expect(high.length, '判据失去对象').toBeGreaterThan(0)
     const weak = high.filter(g => fullBudget(g) < topMortal).map(g => `${g.name}(${fullBudget(g).toFixed(1)} < ${topMortal.toFixed(1)})`)
     expect(weak, `这些高界主修不如人间界顶配:\n${weak.join('\n')}`).toEqual([])
+  })
+
+  /**
+   * 主修的品阶档位不许留空档 —— 与灵兽那次同一条判据。
+   *
+   * 玄品(3.8~4.1)之后曾直接跳到天品(4.4~5.3),**地品这一档一直是空的**:
+   * 玩家在玄品与天品之间反复参悟,只会以为是自己残页不够。
+   * 品阶阶梯既然按档给了预算区间,档就该有人站。
+   *
+   * 判据按「从最低到最高之间跨过一整档没人站」来查,不看具体是哪一档 —— 增删品阶自动跟上。
+   * 故障注入:拿掉 m_zhenyue 与 m_liejia,本条报出 rank 5。
+   */
+  it('主修的品阶档位不许留空档', () => {
+    const ranks = new Set(GONGFA.filter(g => g.type === 'main').map(g => qualityDef(g.quality).rank))
+    const gaps: string[] = []
+    for (let r = Math.min(...ranks); r <= Math.max(...ranks); r += 1) {
+      if (!ranks.has(r)) gaps.push(`rank ${r}(${QUALITIES.find(q => q.rank === r)?.name ?? '?'})`)
+    }
+    expect(gaps, `这些品阶档位一部主修都没有:\n${gaps.join('\n')}`).toEqual([])
   })
 
   it('仍在单件内容预算上限内(主修满级可高于法宝,但不能失控)', () => {
