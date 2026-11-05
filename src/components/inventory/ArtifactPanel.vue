@@ -70,6 +70,23 @@
         <span class="shrink-0 rounded border border-violet-ink/40 bg-violet-ink/10 px-1.5 py-0.5 text-[10px] leading-relaxed text-ink">神通</span>
         <span class="text-violet-ink">「{{ row.def.active.name }}」:{{ artifactActiveText(row.def, row.owned.level) }}</span>
       </p>
+      <!--
+        神通节奏:每隔几回合出手一次,是法宝之间最实质的差别之一
+        —— 同样一句「造成伤害」,三回合一次与五回合一次是两种分量(见 ui/artifactCadence)。
+      -->
+      <p class="mt-0.5 flex items-center gap-1.5 text-[10px] text-ink-faint">
+        <span class="shrink-0">节奏</span>
+        <span
+          v-if="row.cadence.cadence === 'everyN'"
+          class="artifact-cadence-pips shrink-0"
+          role="img"
+          :aria-label="row.cadence.label"
+          :title="row.cadence.label"
+        >
+          <i v-for="(on, i) in cadencePips(row.cadence)" :key="i" :class="{ on }" />
+        </span>
+        <span :class="row.cadence.cadence === 'always' ? 'text-gold-ink' : ''">{{ row.cadence.label }}</span>
+      </p>
       <p v-if="nextGainText(row.def.id, row.owned.level)" class="mt-1 text-[10px] leading-relaxed text-ink-faint tabular">
         下一重:{{ nextGainText(row.def.id, row.owned.level) }}
       </p>
@@ -164,6 +181,7 @@ import QualityTag from '@/components/common/QualityTag.vue'
 import QualitySeal from '@/components/common/QualitySeal.vue'
 import QualityAura from '@/components/common/QualityAura.vue'
 import { lusterOf } from '@/ui/luster'
+import { cadenceMark, cadencePips } from '@/ui/artifactCadence'
 
 const inventory = useInventoryStore()
 const player = usePlayerStore()
@@ -194,6 +212,8 @@ const artifactRows = computed(() =>
         plaque: qualityAura(def.quality).plaque,
         /** 满重标记:与品阶分开的一套形制 */
         mastery: artifactMastery(a.level),
+        /** 神通节奏形制:每隔几回合出手一次(见 ui/artifactCadence) */
+        cadence: cadenceMark(def),
         /** 按下会替下哪几件;判据与槽位画法同源 */
         evicts: (() => {
           const ids = artifactEvictedBy(inventory.equippedArtifacts, artifactSlots.value)
