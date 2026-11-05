@@ -128,8 +128,23 @@
                 <span class="tabular">+{{ row.beast.soothePct.toFixed(0) }}%</span>
               </span>
             </p>
-            <p class="text-[10px] text-violet-ink">
-              {{ row.personalityName }} · <span class="text-ink-faint">{{ row.personalityDesc }}</span>
+            <!--
+              性格四项倾向的形制:四种性格都算「凶」,但动的是不同的量 ——
+              贪宝遇险更高且掉落更好,好战遇险更高得多(见 ui/personalityMark)。
+            -->
+            <p class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-violet-ink">
+              <span class="shrink-0">{{ row.personalityName }}</span>
+              <span class="flex shrink-0 items-center gap-1" aria-hidden="true">
+                <span
+                  v-for="t in row.tiltRows"
+                  :key="t.axis"
+                  class="personality-tilt"
+                  :class="`personality-tilt--${t.tilt}`"
+                  :title="`${t.axisName} ${t.tilt === 'up' ? '偏高' : t.tilt === 'down' ? '偏低' : '不变'}`"
+                >{{ t.axisName }}</span>
+              </span>
+              <span class="sr-only">{{ row.personalityMark.label }}</span>
+              <span class="text-ink-faint">{{ row.personalityDesc }}</span>
             </p>
             <p v-if="row.traitText" class="text-[10px] text-azure tabular">{{ row.traitText }}</p>
           </div>
@@ -156,6 +171,7 @@
   import { achievementDirection } from '@/ui/achievementHint'
   import { petDef, PETS } from '@/data/pets'
   import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
+  import { personalityMark, personalityTiltRows } from '@/ui/personalityMark'
   import { petTraitText } from '@/ui/itemText'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { beastCrest, familyRoster } from '@/ui/beastCrest'
@@ -230,6 +246,9 @@
         // 出战加成按真到账那份渲染(× 灵兽园等级 × 安抚增益),与角色面板来源明细一致,不用 base
         modText: modsText(player.petModsFor(def!)),
         personalityName: PERSONALITY_NAMES[def!.personality],
+        /** 性格四项倾向的形制(见 ui/personalityMark) */
+        personalityMark: personalityMark(def!.personality),
+        tiltRows: personalityTiltRows(personalityMark(def!.personality)),
         personalityDesc: personalityDesc(def!.personality),
         traitText: petTraitText(def!),
         /** 族徽:族名首字成印,族名原样转发给读屏 */

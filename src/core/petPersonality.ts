@@ -16,7 +16,12 @@ export interface PetPersonalityEffects {
   lossReduction: number
 }
 
-const EFFECTS: Record<PetDef['personality'], PetPersonalityEffects> = {
+/**
+ * 四种性格的效果表。导出供展示层读(见 ui/personalityMark)——
+ * 那张表原本是模块私有,展示层只能借 `personalityEffects(petId)` 猜,
+ * 而猜要拿一只具体灵兽当探针:换掉那只灵兽的性格,形制就跟着错。
+ */
+export const EFFECTS: Record<PetDef['personality'], PetPersonalityEffects> = {
   greedy: { exploreDurMult: 1.0, dangerMult: 1.05, dropLuck: 0.06, lossReduction: 0 },
   steady: { exploreDurMult: 1.1, dangerMult: 0.98, dropLuck: 0, lossReduction: 0.02 },
   fierce: { exploreDurMult: 1.0, dangerMult: 1.15, dropLuck: 0.02, lossReduction: 0 },
