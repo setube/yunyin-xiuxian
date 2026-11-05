@@ -1003,6 +1003,58 @@ describe('调色板 · 货架副标题在品阶淡底上也要过线', () => {
   })
 })
 
+describe('调色板 · 暗色当前境界卡的灰字也过线', () => {
+  /*
+   * 境界志的逐境卡:当前那一张铺 bg-cinnabar/8,其余铺 bg-paper-deep/50。
+   * 夜主题卡底是 paper-lifted(51,49,46),叠上那层朱后是 (66,56,52) ——
+   * ink-faint(168,161,140) 压上去只剩 4.41:1(全站暗色扫描的唯一真实命中);
+   * 其余卡的底(paper-deep/50)上它是 6.11,没问题。
+   *
+   * 故只在当前卡把 lore 与「所据」两行换成 ink-soft(该底上 6.19),其余卡不动。
+   */
+  const VIEW = readFileSync(resolve(ROOT, 'src/views/RealmCodexView.vue'), 'utf-8')
+
+  function lin(c: number): number {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  }
+  function ratio(a: [number, number, number], b: [number, number, number]): number {
+    const la = 0.2126 * lin(a[0]) + 0.7152 * lin(a[1]) + 0.0722 * lin(a[2])
+    const lb = 0.2126 * lin(b[0]) + 0.7152 * lin(b[1]) + 0.0722 * lin(b[2])
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+  }
+  function over(fg: [number, number, number], bg: [number, number, number], a: number): [number, number, number] {
+    return [fg[0] * a + bg[0] * (1 - a), fg[1] * a + bg[1] * (1 - a), fg[2] * a + bg[2] * (1 - a)]
+  }
+
+  it('当前卡的 lore 与「所据」两行按是不是当前卡分色', () => {
+    // 两行都该带 cell.index === player.major 的三元判断
+    const tiered = VIEW.match(/cell\.index === player\.major \? 'text-ink-soft' : 'text-ink-faint'/g) ?? []
+    expect(tiered.length, '当前卡以外仍该是 ink-faint,当前卡换 ink-soft').toBeGreaterThanOrEqual(2)
+  })
+
+  it('ink-soft 压在夜主题「卡底 + 朱8%」上过 4.5:1', () => {
+    const lifted: [number, number, number] = [51, 49, 46]
+    const cinnabar: [number, number, number] = [238, 136, 126]
+    const bg = over(cinnabar, lifted, 0.08)
+    expect(ratio([198, 191, 169], bg), 'ink-soft 在这个底上也过不了').toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('对照组:ink-faint 在该底上确实过不了 —— 所以这条判据必要', () => {
+    const lifted: [number, number, number] = [51, 49, 46]
+    const cinnabar: [number, number, number] = [238, 136, 126]
+    const bg = over(cinnabar, lifted, 0.08)
+    expect(ratio([168, 161, 140], bg), 'ink-faint 居然过线了,判据可以撤').toBeLessThan(4.5)
+  })
+
+  it('其余卡的底仍是 paper-deep,ink-faint 在上面够用', () => {
+    expect(VIEW, '非当前卡的底该仍是 paper-deep/50').toContain('bg-paper-deep/50')
+    const lifted: [number, number, number] = [51, 49, 46]
+    const deep: [number, number, number] = [41, 38, 34]
+    expect(ratio([168, 161, 140], over(deep, lifted, 0.5))).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)
