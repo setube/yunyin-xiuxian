@@ -32,10 +32,16 @@
               {{ a.def.name[0] }}
             </span>
             <div class="min-w-0 grow">
-              <p class="flex items-center gap-2 truncate font-kai text-[14px] text-ink">
-                {{ a.def.name }}
+              <!--
+                品阶形制:六个道童原型分属凡/良/精/灵四档,而卡上此前一字未提 ——
+                与装备、丹药、功法同一套语言(名字走品阶文字色,天品以上另有角章)。
+                层数与羁绊已各有刻度,品阶是这张卡上唯一还没有形制的量。
+              -->
+              <p class="flex items-center gap-2 truncate font-kai text-[14px]">
+                <span :style="{ color: qualityTextColor(a.def.quality) }">{{ a.def.name }}</span>
                 <span class="rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 text-[10px] text-ink">第 {{ a.level }} 层</span>
                 <span class="rounded border border-jade/40 bg-jade/10 px-1.5 text-[10px] text-ink">{{ a.bondTitle }}</span>
+                <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] leading-none" :style="{ color: qualityTextColor(a.def.quality) }">{{ qualityDef(a.def.quality).name }}</span>
                 <span v-if="a.luster" class="text-[10px] text-ink-faint">{{ a.luster.label }}</span>
               </p>
               <p class="truncate text-[10px] text-ink-faint">{{ a.def.desc }}</p>
@@ -126,6 +132,7 @@
   import { apprenticeHerbName, apprenticeReturnText } from '@/ui/apprenticeText'
   import { apprenticeMark, levelPips } from '@/ui/apprenticeMark'
   import { lusterOf } from '@/ui/luster'
+  import { qualityDef, qualityTextColor } from '@/data/qualities'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
 
