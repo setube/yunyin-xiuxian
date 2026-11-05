@@ -2512,6 +2512,112 @@ html[data-theme='dark'] .fruit-curve polyline {
   opacity: 0.75;
 }
 
+/* ================= 法宝神通性质(artifactShape) =================
+ * 八种神通此前只写成一句文案,「这一击是打人、是护身、还是削敌」看不出来
+ * (见 src/ui/artifactShape)。神通行上补一枚性质印:
+ *   攻 / 护 / 削 / 净 四类各一色,八种 type 各一枚线纹。
+ * 纹是主判据(色弱玩家靠纹分得开),色只表达性质。
+ * 纹样一律吃 currentColor,故色由性质那一层给,纹样本身不写死颜色。
+ */
+.artifact-shape {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 2px;
+  padding: 0 4px 0 3px;
+  line-height: 1.5;
+  pointer-events: none;
+  background: rgb(var(--color-ink-rgb) / 0.05);
+}
+/* 四类性质各一色,只吃既有语义 token */
+.artifact-shape--attack {
+  color: rgb(var(--color-cinnabar-rgb));
+}
+.artifact-shape--guard {
+  color: rgb(var(--color-jade-rgb));
+}
+.artifact-shape--debuff {
+  color: rgb(var(--color-violet-ink-rgb));
+}
+.artifact-shape--cleanse {
+  color: rgb(var(--color-azure-rgb));
+}
+.artifact-shape__name {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+.artifact-shape__crest {
+  position: relative;
+  display: block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+.artifact-shape__crest::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+/* 爆:中央一点 + 四向短芒 */
+.artifact-shape__crest--burst::before {
+  background-image:
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(90deg, currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-size: 2px 2px, 100% 1px, 1px 100%;
+  background-position: center, center, center;
+  background-repeat: no-repeat;
+}
+/* 滴:竖向渐窄(收束) */
+.artifact-shape__crest--drop::before {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 1px 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  clip-path: polygon(50% 0, 75% 60%, 50% 100%, 25% 60%);
+  background-size: 100% 100%;
+}
+/* 封:一圈闭合 */
+.artifact-shape__crest--seal::before {
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  inset: 10%;
+}
+/* 壁:一道实心竖墙 */
+.artifact-shape__crest--wall::before {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 3px 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+/* 缚:两道横缠 */
+.artifact-shape__crest--bind::before {
+  background-image:
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-size: 100% 1px, 100% 1px;
+  background-position: center 30%, center 70%;
+  background-repeat: no-repeat;
+}
+/* 裂:一道斜断 */
+.artifact-shape__crest--crack::before {
+  background-image: linear-gradient(70deg, transparent 0 44%, currentColor 44% 58%, transparent 58% 100%);
+}
+/* 解:开口方框(锁开) */
+.artifact-shape__crest--unlock::before {
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 1px;
+  inset: 12%;
+}
+/* 止:一道横杠压顶(震慑) */
+.artifact-shape__crest--halt::before {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 100% 2px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。
