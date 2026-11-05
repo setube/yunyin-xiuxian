@@ -8,6 +8,7 @@ import { qualityDef } from '@/data/qualities'
 import { pillQualityName } from '@/data/pills'
 import { EQUIP_SLOT_NAMES } from '@/data/equipment'
 import { artifactActiveText, artifactValue } from '@/data/artifacts'
+import { cadenceMark } from './artifactCadence'
 import { buffDef } from '@/data/buffs'
 import { GONGFA_TYPE_NAMES } from '@/data/gongfa'
 import { ELEMENTS } from '@/data/linggen'
@@ -52,7 +53,15 @@ export function artifactFuncText(a: ArtifactDef, level = 0): string {
   const passive = modsText(artifactValue(a, level).passive)
   const lines: string[] = []
   if (passive) lines.push(`被动:${passive}`)
-  lines.push(`神通「${a.active.name}」:${artifactActiveText(a, level)}`)
+  /*
+   * 节奏要写在这一行里。
+   *
+   * 同样一句「造成伤害」,三回合一次与五回合一次是两种分量 ——
+   * 而图鉴是纯文本流,放不下面板里那排短刻度,只能写出来。
+   * 节奏的算法与面板同源(见 ui/artifactCadence),不在这里另算一遍。
+   */
+  const cadence = cadenceMark(a)
+  lines.push(`神通「${a.active.name}」(${cadence.label}):${artifactActiveText(a, level)}`)
   return lines.join('\n')
 }
 
