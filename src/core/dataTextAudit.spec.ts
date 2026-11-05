@@ -1122,6 +1122,28 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(view, '时数该取 OFFLINE_CAP_HOURS').toContain('OFFLINE_CAP_HOURS[1]')
   })
 
+  /**
+   * 洞府的离线时长:数值面板写「N 时」,而 buildings.ts 的效果文案写「N 小时」。
+   * 「时」会被读成「时辰」(一个时辰 = 2 小时,见 data/timeUnits 的口径),
+   * 两处指着同一个数却用两个单位,读者得先猜它们是不是同一件事。
+   *
+   * 数值面板统一现代单位(小时),古语时制留给丹药/剧情那类内容文案。
+   * 故障注入:把「小时」改回「时」,本条红。
+   */
+  it('洞府的离线时长用「小时」,与建筑效果文案同一个单位', () => {
+    const view = src('../views/DongfuView.vue')
+    const data = src('../data/buildings.ts')
+    // 建筑效果文案的基准单位
+    expect(data, '建筑效果文案该仍写「小时」').toContain('离线收益上限 ${OFFLINE_CAP_HOURS')
+    expect(data, '建筑效果文案该仍带「小时」').toContain('小时')
+    // 视图三处都跟同一单位
+    const bare = view.match(/\$\{[^}]*\}\s*时(?![辰长])(?!间)/g) ?? []
+    expect(bare, `这些地方仍写裸「时」:${bare.join('、')}`).toEqual([])
+    expect(view, '摘要行该写「小时」').toMatch(/\}\}\s*小时/)
+    expect(view, '段条 title 该写「小时」').toContain('离线可攒 ${hr} 小时')
+    expect(view, '起造后那行该写「小时」').toContain('离线可攒 ${OFFLINE_CAP_HOURS[1]} 小时')
+  })
+
   it('器魂与道童付不起时置灰并写出实际差额', () => {
     const souls = src('../views/SoulsView.vue')
     expect(souls, '凝炼入口读同一份道源缺口').toContain('daoSourceShortfall(SOUL_REFINE_COST, endgame.daoSource)')

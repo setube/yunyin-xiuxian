@@ -51,7 +51,12 @@
       <!-- 离线档位:标签与数一行,段条单独占一整行(三种字号混排在同一行会显得细碎) -->
       <div class="mt-1.5 flex items-baseline justify-between">
         <span class="text-[9px] text-ink-faint">离线可攒</span>
-        <span class="font-kai text-[10px] tabular text-gold-ink">{{ summary.offlineHrs }} 时</span>
+        <!--
+          「时」会被读成「时辰」(一个时辰 = 2 小时),见 data/timeUnits 的口径。
+          而同一个数在 buildings.ts 的效果文案里写的是「小时」—— 一处说时、一处说小时,
+          读者得先猜这两个是不是同一件事。数值面板统一用现代单位。
+        -->
+        <span class="font-kai text-[10px] tabular text-gold-ink">{{ summary.offlineHrs }} 小时</span>
       </div>
       <div class="mt-1 flex items-center gap-1">
         <span
@@ -59,7 +64,7 @@
           :key="hr"
           class="h-1.5 flex-1 rounded-full transition-colors"
           :class="i <= mansionLv ? 'bg-gold-ink/70' : 'bg-ink/8'"
-          :title="`洞府 ${i} 级 · 离线可攒 ${hr} 时`"
+          :title="`洞府 ${i} 级 · 离线可攒 ${hr} 小时`"
         ></span>
       </div>
     </div>
@@ -124,7 +129,7 @@
    * 原写「洞府 1 级 · 离线可攒 12 时」—— 这一行只在未启用时显示,
    * 读者会当成现状,而下方建筑卡又写着「未启用」,同屏两句互相顶。
    */
-  const offlineLaunchLine = computed(() => `起造后:洞府 1 级 · 离线可攒 ${OFFLINE_CAP_HOURS[1]} 时`)
+  const offlineLaunchLine = computed(() => `起造后:洞府 1 级 · 离线可攒 ${OFFLINE_CAP_HOURS[1]} 小时`)
 
   /** 未达门槛时只给一行开启境界 */
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
