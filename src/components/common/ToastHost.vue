@@ -39,7 +39,7 @@
         <button
           type="button"
           tabindex="-1"
-          class="pointer-events-auto absolute right-0 top-0 grid h-7 w-7 place-items-center rounded text-[13px] leading-none opacity-50 active:opacity-80"
+          class="pointer-events-auto absolute right-0 top-0 grid h-7 w-7 min-h-[28px] min-w-[28px] place-items-center rounded text-[13px] leading-none opacity-50 active:opacity-80"
           aria-label="关闭提示"
           @click="ui.dismissToast(t.id)"
         >
