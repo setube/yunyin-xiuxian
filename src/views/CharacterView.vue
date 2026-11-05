@@ -23,9 +23,11 @@
             class="flex flex-col items-center"
             :title="`资质 ${root.aptitude}`"
           >
+            <!-- 特殊灵根(风雷冰光暗混沌)另加一道外环:与五行的圆章同尺寸,只多一层可数的形制 -->
             <span
               class="grid h-6 w-6 place-items-center rounded-full border text-[11px] font-kai"
-              :style="{ borderColor: ELEMENTS[root.element].color, color: ELEMENTS[root.element].color }"
+              :class="{ 'root-special': ELEMENTS[root.element].special }"
+              :style="{ borderColor: ELEMENTS[root.element].color, color: ELEMENTS[root.element].color, '--root-tone': ELEMENTS[root.element].color }"
             >
               {{ ELEMENTS[root.element].char }}
             </span>
