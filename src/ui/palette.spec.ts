@@ -948,6 +948,61 @@ describe('调色板 · 每个品阶都得有一套过线的文字色', () => {
   })
 })
 
+describe('调色板 · 货架副标题在品阶淡底上也要过线', () => {
+  /*
+   * 市场货架卡的副标题原用 ink-faint。它在纯纸上是 5.20:1,单独看没问题 ——
+   * 但灵草/装备卡会按品阶铺 6%~13% 的淡底,神品那档的朱色最深,
+   * ink-faint 压上去只剩 4.32:1(全站扫描 15 个路由,这是唯一跌破的一处)。
+   *
+   * 换 ink-soft:纸 8.18、6% 底 7.52、13% 底 6.80,各种卡上都留得住余量。
+   * 判据把三种底浓 × 最深的那几档装饰色都算一遍。
+   */
+  function lin(c: number): number {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  }
+  function ratio(a: [number, number, number], b: [number, number, number]): number {
+    const la = 0.2126 * lin(a[0]) + 0.7152 * lin(a[1]) + 0.0722 * lin(a[2])
+    const lb = 0.2126 * lin(b[0]) + 0.7152 * lin(b[1]) + 0.0722 * lin(b[2])
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+  }
+  const SHOP = readFileSync(resolve(ROOT, 'src/components/market/MarketShelfSection.vue'), 'utf-8')
+
+  it('副标题不再用 ink-faint', () => {
+    // 按「含 c.sub 的那一行」定位,不依赖具体空白
+    const line = SHOP.split('\n').find(l => l.includes('c.sub'))
+    expect(line, '找不到货架副标题那一行').toBeDefined()
+    expect(line!, '副标题又用回 ink-faint 了').not.toContain('text-ink-faint')
+    expect(line!, '副标题该用 ink-soft').toContain('text-ink-soft')
+  })
+
+  it('ink-soft 压在最深的品阶底上仍过 4.5:1', () => {
+    const paper: [number, number, number] = [243, 239, 228]
+    const soft: [number, number, number] = [74, 70, 61]
+    // 各品阶装饰色里最深的几档:珠(玄)/朱(神)/青(仙灵)/金(天)
+    const tones: [string, [number, number, number]][] = [
+      ['玄', [168, 92, 63]],
+      ['神', [168, 63, 57]],
+      ['仙/灵', [62, 142, 139]],
+      ['天', [201, 162, 39]]
+    ]
+    for (const alpha of [0.06, 0.1, 0.13]) {
+      for (const [name, c] of tones) {
+        const bg: [number, number, number] = [c[0] * alpha + paper[0] * (1 - alpha), c[1] * alpha + paper[1] * (1 - alpha), c[2] * alpha + paper[2] * (1 - alpha)]
+        expect(ratio(soft, bg), `${name} 阶 ${alpha * 100}% 底上只有 ${ratio(soft, bg).toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5)
+      }
+    }
+  })
+
+  it('对照组:ink-faint 在神品底上确实过不了 —— 所以这条判据必要', () => {
+    const paper: [number, number, number] = [243, 239, 228]
+    const faint: [number, number, number] = [104, 99, 88]
+    const c: [number, number, number] = [168, 63, 57]
+    const bg: [number, number, number] = [c[0] * 0.13 + paper[0] * 0.87, c[1] * 0.13 + paper[1] * 0.87, c[2] * 0.13 + paper[2] * 0.87]
+    expect(ratio(faint, bg), 'ink-faint 在神品底上居然过线了,判据可以撤').toBeLessThan(4.5)
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)
