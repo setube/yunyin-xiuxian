@@ -289,7 +289,12 @@
    * 而这三格各自都有可数的状态 —— 打开对应页面才看得到。
    */
   /** 今日天道是否已应:判据与 endgame store 的闸门同一份(完成日 vs 今日日号) */
-  const dailyTrialLeft = computed(() => endgame.dailyDoneDay !== localDayNum(Date.now()))
+  /*
+   * 今日天道这一格按墙钟日判,故须读 now.value —— 与同文件的 marketLeft / tilRollover 一样。
+   * 写成 Date.now() 时 computed 没有响应式依赖:玩家开着首页跨过午夜,
+   * 上面那行「距换日 N」会归零重计,这一格却还停在昨天的「已应」。
+   */
+  const dailyTrialLeft = computed(() => endgame.dailyDoneDay !== localDayNum(now.value))
   /**
    * 坊市还有多久换新:与坊市页同一条口径。
    * 货架还没同步过(stockedAt 为 0)时给 null —— 那时 remainingSec 也是 0,

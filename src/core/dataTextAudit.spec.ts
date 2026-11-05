@@ -780,6 +780,52 @@ describe('文案数值对账 · 手写的门槛与容量', () => {
  *   奇缘 = 阶段性连锁(奇缘录)
  *   vein 系统一律叫"灵脉",不叫"地脉"
  */
+describe('视图 · 跨天读数须挂响应式时间源', () => {
+  /*
+   * localDayNum(Date.now()) 写在 computed 里没有响应式依赖:时间推进不会触发重算。
+   * 玩家开着首页跨过午夜,同屏的「距换日 N」会归零重计,而「今日天道已应」还停在昨天。
+   *
+   * 实测(playwright clock,23:59 → 00:01):
+   *   Date.now() 版:已应 → 已应(不变,错)
+   *   now.value 版:已应 → 未应(对)
+   *
+   * 同一文件里 marketLeft / tilRollover 读的都是 now.value,只有这一处漏了。
+   * 本条把「凡按墙钟日判的 computed,时间参数不得是 Date.now()」钉住。
+   */
+  const WALL_DAY_FILES = ['views/HomeView.vue', 'components/celestial/TrialPanel.vue']
+
+  it('HomeView 的今日天道读 now.value,不读 Date.now()', () => {
+    const src = readFileSync(resolve(__dirname, '../views/HomeView.vue'), 'utf-8')
+    // 跳过 import 那一行,取真正的调用处
+    const line = src.split('\n').find(l => l.includes('localDayNum(') && !l.trimStart().startsWith('import'))
+    expect(line, '找不到 localDayNum 调用').toBeDefined()
+    expect(line!, '时间参数须是响应式的 now.value').not.toContain('Date.now()')
+    expect(line!, '应读 now.value').toContain('now.value')
+  })
+
+  it('TrialPanel 的今日试炼同样读响应式墙钟', () => {
+    const src = readFileSync(resolve(__dirname, '../components/celestial/TrialPanel.vue'), 'utf-8')
+    const line = src.split('\n').find(l => l.includes('localDayNum(') && !l.trimStart().startsWith('import'))
+    expect(line, '找不到 localDayNum 调用').toBeDefined()
+    expect(line!, '时间参数须是响应式的 wallNow.value').not.toContain('Date.now()')
+    expect(line!, '应读 wallNow.value').toContain('wallNow.value')
+  })
+
+  it('两处都用了墙钟组合式,不是游戏时钟', () => {
+    // 今日闸门按墙钟日(本地日)判,游戏暂停时不该冻住 —— 故用 useWallNow 而非 useNow
+    const home = readFileSync(resolve(__dirname, '../views/HomeView.vue'), 'utf-8')
+    const trial = readFileSync(resolve(__dirname, '../components/celestial/TrialPanel.vue'), 'utf-8')
+    expect(home, 'HomeView 该用 useWallNow').toContain('useWallNow')
+    expect(trial, 'TrialPanel 该用 useWallNow').toContain('useWallNow')
+  })
+
+  it('这两份文件确实在 walls 清单里 —— 新增同类页面时记得补进来', () => {
+    for (const f of WALL_DAY_FILES) {
+      expect(readFileSync(resolve(__dirname, '..', f.replace(/^src\//, '')), 'utf-8'), `${f} 不在清单内`).toContain('localDayNum')
+    }
+  })
+})
+
 describe('术语一致性 · 用户可见文本', () => {
   /** 用户可见文本:数据里的字符串字面量 + 视图模板 */
   const userText = (): { file: string; text: string }[] => {
