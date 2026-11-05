@@ -24,47 +24,47 @@
     <div v-if="endgame.marks.length" class="card-ink mt-2 max-h-64 divide-y divide-ink/6 overflow-y-auto px-4">
       <!-- 行键按痕本身:新痕插头部,用行号会让确认态错位 -->
       <div
-        v-for="mark in endgame.marks"
-        :key="`${mark.at}|${mark.targetId}|${mark.life}`"
+        v-for="row in markRows"
+        :key="`${row.mark.at}|${row.mark.targetId}|${row.mark.life}`"
         class="flex items-center gap-2 py-2"
       >
-        <span class="shrink-0 font-kai text-[11px] text-ink-faint">第{{ mark.life }}世</span>
+        <span class="shrink-0 font-kai text-[11px] text-ink-faint">第{{ row.mark.life }}世</span>
         <!-- 道途符纹:与天界「道途」页同一套(见 ui/daoMark),历世翻看时认得出是哪条路。
              符纹画在独立的小方徽里,不压在道名上。 -->
         <span class="flex shrink-0 items-center gap-1">
           <span
-            v-if="mark.daoPathId && daoMark(mark.daoPathId)"
+            v-if="row.path"
             class="dao-crest h-3.5 w-3.5 shrink-0"
-            :class="`dao-crest--${daoMark(mark.daoPathId)!.crest}`"
-            :style="{ color: daoMark(mark.daoPathId)!.tone }"
+            :class="`dao-crest--${row.path.crest}`"
+            :style="{ color: row.path.tone }"
             aria-hidden="true"
           />
-          <span class="text-[11px] text-violet-ink">{{ mark.daoPathId ? daoPathDef(mark.daoPathId)?.name : '无道' }}</span>
+          <span class="text-[11px] text-violet-ink">{{ row.pathName }}</span>
         </span>
-        <span class="min-w-0 truncate font-kai text-[12px]" :class="mark.cleared ? 'text-ink' : 'text-ink-faint'">
-          {{ mark.targetName }}{{ mark.cleared ? '·破' : '·殁' }}
+        <span class="min-w-0 truncate font-kai text-[12px]" :class="row.mark.cleared ? 'text-ink' : 'text-ink-faint'">
+          {{ row.mark.targetName }}{{ row.mark.cleared ? '·破' : '·殁' }}
         </span>
-        <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">{{ mark.rounds }}回合 · {{ mark.buildName }}</span>
+        <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">{{ row.mark.rounds }}回合 · {{ row.mark.buildName }}</span>
         <button
-          v-if="isStaleRuleset(mark.ruleset)"
+          v-if="isStaleRuleset(row.mark.ruleset)"
           class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-1 py-0.5 font-kai text-[9px] text-ink active:scale-90"
-          :title="`旧纪 ${mark.ruleset}`"
-          @click="openEra(mark)"
+          :title="`旧纪 ${row.mark.ruleset}`"
+          @click="openEra(row.mark)"
         >
           变
         </button>
         <button
-          v-if="mark.replay"
+          v-if="row.mark.replay"
           class="shrink-0 min-h-[28px] rounded border border-gold-ink/40 px-1.5 py-0.5 font-kai text-[10px] text-gold-ink active:scale-90"
           :disabled="busy !== null"
           :class="{ 'cursor-not-allowed border-ink/15 text-ink-faint': busy !== null }"
           :title="busy ? busy.reason : '忆战'"
-          @click="goReplay(mark)"
+          @click="goReplay(row.mark)"
         >
           忆
         </button>
         <!-- 重写花道源:代价写在按钮上(不靠 hover),二步确认 -->
-        <template v-if="mark.cleared && mark.replay && rewriteConfirm === mark">
+        <template v-if="row.mark.cleared && row.mark.replay && rewriteConfirm === row.mark">
           <button
             class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-2 py-1 font-kai text-[10px] text-ink active:scale-90"
             @click="rewriteConfirm = null"
@@ -73,19 +73,19 @@
           </button>
           <button
             class="shrink-0 min-h-[28px] rounded bg-cinnabar px-2 py-1 font-kai text-[10px] seal-face active:scale-90"
-            @click="doRewrite(mark)"
+            @click="doRewrite(row.mark)"
           >
             确认重写
           </button>
         </template>
         <button
-          v-else-if="mark.cleared && mark.replay"
+          v-else-if="row.mark.cleared && row.mark.replay"
           class="shrink-0 min-h-[28px] rounded border border-cinnabar/40 px-2 py-1 font-kai text-[10px] text-cinnabar active:scale-90 disabled:border-ink/15 disabled:text-ink-faint"
           :disabled="busy !== null || endgame.daoSource < REWRITE_ENTRY_COST"
           :title="busy ? busy.reason : endgame.daoSource < REWRITE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)}` : '重写'"
-          @click="rewriteConfirm = mark"
+          @click="rewriteConfirm = row.mark"
         >
-          {{ busy ? `写(${busy.reason})` : endgame.daoSource < REWRITE_ENTRY_COST ? `写(尚差${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${mark.rounds}回合)` }}
+          {{ busy ? `写(${busy.reason})` : endgame.daoSource < REWRITE_ENTRY_COST ? `写(尚差${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${row.mark.rounds}回合)` }}
         </button>
       </div>
     </div>
@@ -159,6 +159,23 @@ function goReplay(mark: (typeof endgame.marks)[number]): void {
  * 重写确认态:记道痕对象引用,不记行号(新痕插头部,重写本身也补一条新痕)。
  * 列表重建则自动回落未武装。
  */
+/**
+ * 道痕行:道途符纹、道名各算一次。
+ *
+ * 同一个行里 `daoMark(mark.daoPathId)` 被调 4 次(有无判断、符纹类名、色 ×2),
+ * 而 `daoPathDef` 还要再查一次名字。与 TrialPanel / 丹匣 / 器魂页同法。
+ */
+const markRows = computed(() =>
+  endgame.marks.map(mark => {
+    const path = mark.daoPathId ? daoMark(mark.daoPathId) : undefined
+    return {
+      mark,
+      path,
+      pathName: mark.daoPathId ? (daoPathDef(mark.daoPathId)?.name ?? '') : '无道'
+    }
+  })
+)
+
 const rewriteConfirm = ref<(typeof endgame.marks)[number] | null>(null)
 function goRewrite(mark: (typeof endgame.marks)[number]): void {
   const result = rewriteMark(mark)
