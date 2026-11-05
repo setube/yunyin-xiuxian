@@ -101,6 +101,33 @@ export const PETS: PetDef[] = [
     mods: { critRate: 0.1, critDamage: 0.3, speed: 0.06 },
     personality: 'fierce'
   },
+  /*
+   * ---- 地品(rank 5):九档品阶里此前唯一空着的一档 ----
+   *
+   * 玄品(1.8~1.9)之后直接跳到天品(2.2~2.6),中间这一档一直没有兽。
+   * 两只按方向分工,预算各守地品档(玄品上沿 1.9 至天品下沿 2.2 之间):
+   *   磐石貘 = 守御,补上灵兽此前从未有过的伤害减免;
+   *   蚀骨鸦 = 破甲,补上灵兽此前从未有过的破甲与伤害增幅。
+   * 两者都用「现有灵兽没有过的词条键」,与同阶之间不会撞形。
+   */
+  {
+    id: 'pet_panshi',
+    name: '磐石貘',
+    desc: '卧如一段山根,刀斧加身只当是雨;守而不动,让主人先走',
+    family: 'beast',
+    quality: 'earth',
+    mods: { defensePct: 0.2, maxHpPct: 0.2, damageReduction: 0.04 },
+    personality: 'steady'
+  },
+  {
+    id: 'pet_shigu',
+    name: '蚀骨鸦',
+    desc: '黑羽落处,甲胄先烂;它不咬人,只咬那层护身的硬壳',
+    family: 'winged',
+    quality: 'earth',
+    mods: { attackPct: 0.2, armorPen: 0.09, damageBonus: 0.04 },
+    personality: 'fierce'
+  },
   // ---- 仙界及以上神兽 ----
   {
     id: 'pet_yinglong',

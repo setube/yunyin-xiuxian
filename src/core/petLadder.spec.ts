@@ -9,8 +9,8 @@
  * 但**不同品阶的区间不许重叠** —— 区间一重叠,品阶就不再可预测。
  */
 import { describe, expect, it } from 'vitest'
-import { PETS } from '@/data/pets'
-import { qualityDef } from '@/data/qualities'
+import { IMMORTAL_RANK, PETS, genericPetPool } from '@/data/pets'
+import { QUALITIES, qualityDef } from '@/data/qualities'
 import { budgetOfMods } from './ruleBudget'
 
 interface Band {
@@ -102,6 +102,45 @@ describe('灵兽品阶阶梯 · 品阶要能预测强度', () => {
   it('仍在单件内容预算上限之内(与法宝/天赋同一把尺)', () => {
     for (const p of PETS) {
       expect(budgetOfMods(p.mods), `${p.name} 超预算`).toBeLessThan(5)
+    }
+  })
+
+  /**
+   * 品阶档位不许有空格。
+   *
+   * 九档品阶里灵兽曾只占七档 —— 玄品(1.8~1.9)之后直接跳到天品(2.2~2.6),
+   * **地品这一档一直是空的**:玩家在玄品与天品之间刷上几十程,以为是自己运气不好。
+   * 这不是平衡问题,是内容缺一档 —— 品阶阶梯既然按档给了预算区间,档就该有人站。
+   *
+   * 判据:凡「相邻两档之间夹着一整档」的位置,都要有人站上去。
+   * 只查灵兽自己用到的最高档以下 —— 地品以上的仙/神两档另有获取路径(指名事件),
+   * 不在此列,由 contentGateAudit 钉着。
+   *
+   * 故障注入:删掉 pet_panshi 与 pet_shigu,本条报出空着的地品档。
+   */
+  it('品阶档位不许留空档 —— 空档会让玩家以为是自己运气不好', () => {
+    const ranks = new Set(PETS.map(p => qualityDef(p.quality).rank))
+    const gaps: string[] = []
+    // 只看从最低到最高之间:跨过一整档没人站,就是内容缺一档
+    const lo = Math.min(...ranks)
+    const hi = Math.max(...ranks)
+    for (let r = lo; r <= hi; r += 1) {
+      if (!ranks.has(r)) gaps.push(`rank ${r}(${QUALITIES.find(q => q.rank === r)?.name ?? '?'})`)
+    }
+    expect(gaps, `这些品阶档位一只灵兽都没有:\n${gaps.join('\n')}`).toEqual([])
+  })
+
+  /**
+   * 新兽要真的能到手 —— 死内容比没有内容更糟(图鉴里一直挂着一条收不到的条目)。
+   * 泛型事件池是入门灵兽的唯一发放口(见 data/pets.genericPetPool),
+   * 仙品及以上才走指名事件。故地品及以下必须都在池里。
+   * 故障注入:把一只地品改成 immortal,本条红。
+   */
+  it('地品及以下都在泛型事件池里,能真的抽到', () => {
+    const pool = new Set(genericPetPool(new Set()).map(p => p.id))
+    for (const p of PETS) {
+      if (qualityDef(p.quality).rank >= IMMORTAL_RANK) continue
+      expect(pool.has(p.id), `${p.name} 不在泛型池里 —— 图鉴挂着却收不到`).toBe(true)
     }
   })
 })
