@@ -92,6 +92,18 @@
                 />
                 <span class="min-w-0">
                   <span class="font-kai text-[13px] text-ink">{{ row.def.name }}</span>
+                  <!--
+                    方向印:分支是不改不回的一次抉择,而卡上此前只有一行词条,
+                    玩家得把三条词条逐字读完才知道「这一条往哪个方向走」(见 ui/branchDirection)。
+                  -->
+                  <span
+                    v-if="row.direction.label"
+                    class="branch-dir ml-1.5"
+                    :class="`branch-dir--${row.direction.direction}`"
+                    role="img"
+                    :title="row.direction.label"
+                    :aria-label="row.direction.label"
+                  >{{ row.direction.name }}</span>
                   <span class="ml-2 text-[11px] text-ink-faint">{{ row.def.desc }}</span>
                   <span class="tabular mt-0.5 block text-[11px] text-azure">{{ modsText(row.def.mods) }}</span>
                 </span>
@@ -172,6 +184,7 @@
   import { ELEMENTS } from '@/data/linggen'
   import { branchesFor, gongfaBranchDef } from '@/data/gongfaBranches'
   import { branchMarkOf, branchTier } from '@/ui/branchMark'
+import { branchDirectionMark } from '@/ui/branchDirection'
   import { gongfaMark, gongfaPips } from '@/ui/gongfaMark'
   import { tint } from '@/utils/colorToken'
   import { gongfaUpgradeCost, gongfaUpgradeShort, gongfaUpgradeShortfall, upgradeGongfa } from '@/core/gongfaService'
@@ -267,7 +280,7 @@
               '--branch-tone': mark.tone
             }
           : undefined
-      return { def: b, mark, style }
+      return { def: b, mark, style, direction: branchDirectionMark(b.mods) }
     })
   })
   const branchPicked = computed(() => {
