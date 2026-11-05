@@ -407,6 +407,49 @@ function qualityOfRankForTest(rank: number) {
   return QUALITIES.find(q => q.rank === Math.max(0, Math.min(8, rank))) ?? QUALITIES[0]!
 }
 
+/**
+ * 图鉴册的品阶字色只有一套。
+ *
+ * 装备册与法宝谱同在收藏页,同一册里同一个品阶的字色不该有两种 ——
+ * 玩家会把「颜色深一档」误读成品阶差异。
+ * 而玄/天/仙/神四档的品阶**原色**当文字用时,在日/夜主题各有一档过不了 4.5:1
+ * (见 data/qualities 的 TEXT_COLOR 与 palette.spec 的角章判据)。
+ * 故三处(装备册 / 法宝谱 / 悟道录)一律走 qualityTextColor。
+ *
+ * 故障注入:把任一处改回 qualityDef(...).color,本条红。
+ */
+describe('图鉴形制 · 品阶字色只有一套', () => {
+  it('装备册、法宝谱、悟道录都走「当文字用」那一组', () => {
+    // 三处都必须与 qualityTextColor 同源
+    for (const t of EQUIPMENT_TEMPLATES) {
+      expect(describeEquipment(t, { q: 0, t: t.tier, u: 1 }, true).color).toBe(
+        qualityTextColor(qualityDef('mortal').id)
+      )
+    }
+    for (const a of ARTIFACTS) {
+      const e = describeArtifact(a, 0, true)
+      expect(e.color, `${a.name}(${a.quality}) 用了品阶原色,四档在日/夜会跌破 AA`).toBe(
+        qualityTextColor(a.quality)
+      )
+    }
+    for (const br of GONGFA_BRANCHES) {
+      const g = gongfaDef(br.gongfaId)
+      if (!g) continue
+      // 未择取所属功法的品阶文字色;已择另取金色(那是「已经选定了」,不是品阶)
+      const picked = describeBranch(br, BRANCH_STAGE_MAX).color
+      const open = describeBranch(br, 1).color
+      expect(open, `${br.name} 未择时的字色应与所属功法的品阶文字色一致`).toBe(qualityTextColor(g.quality))
+      expect(picked, `${br.name} 已择时应另取金,不跟着品阶走`).toBe('var(--color-gold-ink)')
+    }
+  })
+
+  it('四档有暗版/亮版的品阶,原色确实与文字色不同 —— 这条判据才不是空集', () => {
+    const differ = QUALITIES.filter(q => q.color !== qualityTextColor(q.id)).map(q => q.id)
+    expect(differ.length, '四档原色与文字色若都相同,本条判据形同虚设').toBe(4)
+    expect(differ.sort()).toEqual(['divine', 'heaven', 'immortal', 'profound'].sort())
+  })
+})
+
 describe('codexOwnedCount(「已收 N」统一口径)', () => {
   const defs = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
 

@@ -185,7 +185,12 @@ export function describeBranch(def: GongfaBranchDef, stage: number): CodexEntry 
     name: def.name,
     desc: lv >= 1 ? `${def.desc}\n${modsText(def.mods)}` : '',
     meta: g ? `${g.name} · ${GONGFA_TYPE_NAMES[g.type]} · ${qualityDef(g.quality).name}` : '',
-    color: lv >= BRANCH_STAGE_MAX ? PICKED_COLOR : g ? qualityDef(g.quality).color : undefined,
+    /**
+     * 字色同样走「当文字用」那一组 —— 分支卡在功法阁里与装备册/法宝谱同处一页,
+     * 三处的品阶字色该是同一套(原色在玄/天/仙/神四档当字用时过不了 4.5:1)。
+     * 已择的分支另取金色:那是「已经选定了」,不是品阶。
+     */
+    color: lv >= BRANCH_STAGE_MAX ? PICKED_COLOR : g ? qualityTextColor(g.quality) : undefined,
     stage: lv,
     stageName: BRANCH_STAGE_NAMES[lv]!,
     badge: lv >= BRANCH_STAGE_MAX ? '择' : lv >= 1 ? '可择' : '',
@@ -345,7 +350,13 @@ export function describeArtifact(def: ArtifactDef, level: number, collected: boo
     name: def.name,
     desc: [def.desc, artifactFuncText(def, level)].filter(Boolean).join('\n'),
     meta: artifactMetaText(def),
-    color: qualityDef(def.quality).color,
+    /**
+     * 字色走「当文字用」那一组,与同册的装备册一致。
+     * 原先这里取的是品阶**原色**:玄/天/仙/神四档的原色当字用时在日/夜主题各有一档
+     * 过不了 4.5:1(见 data/qualities 的 TEXT_COLOR 与 palette.spec 的角章判据)。
+     * 同一册图鉴里同一个品阶的字色不该有两种 —— 玩家会把「颜色深一档」误读成品阶差异。
+     */
+    color: qualityTextColor(def.quality),
     stage,
     stageName: ARTIFACT_STAGE_NAMES[stage]!,
     badge: stage >= ARTIFACT_STAGE_MAX ? '满' : '',
