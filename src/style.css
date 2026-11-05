@@ -2390,6 +2390,105 @@ html[data-theme='dark'] .fruit-curve polyline {
   color: rgb(var(--color-jade-rgb));
 }
 
+/* ================= 装备共鸣形制(setMark) =================
+ * 六套共鸣此前在格子上共用一枚「共」字:同一格里的「共」可能是铁壁、可能是妖庭,
+ * 得点开详情才知道;而共鸣只有凑齐才生效,看不出来就无从决定「下一件该先收哪个部位」
+ * (见 src/ui/setMark)。
+ *
+ * 两样形制:
+ *   套纹(crest):每套一枚线纹,六枚两两不同 —— 纹样才是主判据,色弱玩家照样分得开;
+ *   机制(mechanism):三钩子各一色(护命转朱 / 开战盾转靛 / 汲取转青),色只作辅助。
+ * 纹样一律吃 currentColor,故色由机制那一层给,纹样本身不写死颜色。
+ */
+.set-crest {
+  position: relative;
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+.set-crest::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+}
+/* 机制上色:三钩子各一色,只吃既有语义 token */
+.set-crest--guard {
+  color: rgb(var(--color-cinnabar-rgb));
+}
+.set-crest--shield {
+  color: rgb(var(--color-indigo-ink-rgb));
+}
+.set-crest--leech {
+  color: rgb(var(--color-jade-rgb));
+}
+/* 铁壁:一道实心竖墙 */
+.set-crest--wall::before {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 60% 100%;
+  background-position: center;
+}
+/* 星斗:一枚四角星(两条交叉的窄带) */
+.set-crest--star::before {
+  background-image:
+    linear-gradient(45deg, transparent 0 44%, currentColor 44% 56%, transparent 56% 100%),
+    linear-gradient(-45deg, transparent 0 44%, currentColor 44% 56%, transparent 56% 100%);
+}
+/* 仙甲:两片羽(左右各一道斜带) */
+.set-crest--feather::before {
+  background-image:
+    linear-gradient(60deg, transparent 0 40%, currentColor 40% 52%, transparent 52% 100%),
+    linear-gradient(-60deg, transparent 0 40%, currentColor 40% 52%, transparent 52% 100%);
+  background-size: 50% 100%, 50% 100%;
+  background-position: left center, right center;
+}
+/* 神铠:一枚闭合方框(甲片) */
+.set-crest--shell::before {
+  inset: 12%;
+  border: 1.5px solid currentColor;
+  border-radius: 1px;
+}
+/* 混沌:一枚回环(缺口圆) */
+.set-crest--chaos::before {
+  inset: 8%;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  border-top-color: transparent;
+}
+/* 妖庭:一枚尖角(兽牙) */
+.set-crest--fang::before {
+  background-image: linear-gradient(135deg, transparent 0 40%, currentColor 40% 62%, transparent 62% 100%);
+  background-size: 100% 100%;
+}
+
+/* 件数刻度:凑齐要几件就几格,已戴几件 */
+.set-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.set-pips i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 0.3;
+}
+.set-pips i.on {
+  background: currentColor;
+  box-shadow: none;
+  opacity: 0.9;
+}
+/* 凑齐:整排转青,与「还差一件」分开 */
+.set-pips--active i.on {
+  background: rgb(var(--color-jade-rgb));
+  opacity: 1;
+}
+
 /* ================= 界域进度刻度(worldProgress) =================
  * 境界谱按四个界域平铺 21 境,而界域标题只写「第 1–9 境」:
  * 身在人间界第 4 境时,本界域还剩几境得自己拿 4 去比 1 与 9(见 src/ui/worldProgress.ts)。

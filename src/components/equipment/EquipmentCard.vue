@@ -22,14 +22,19 @@
     <span v-if="rare" class="absolute right-0.5 top-3 leading-none">
       <QualitySeal :quality="props.item.quality" :size="14" />
     </span>
-    <!-- 共鸣件(两件才亮,见 core/equipSet) -->
+    <!--
+      共鸣件:六套此前共用一枚「共」字,格子上分不出是哪一套 ——
+      而共鸣只有凑齐才生效,看不出来就无从决定「下一件该先收哪个部位」。
+      现按套给一枚线纹(见 ui/setMark),色按三种机制分(护命/开战盾/汲取),纹样才是主判据。
+    -->
     <span
-      v-if="setName"
-      class="absolute bottom-0.5 left-3 font-kai text-[8px] leading-none text-violet-ink"
-      :title="setName"
-    >
-      共
-    </span>
+      v-if="setMark"
+      class="set-crest absolute bottom-0.5 left-3"
+      :class="`set-crest--${setMark.crest} set-crest--${setMark.mechanism}`"
+      :title="setMark.label"
+      :aria-label="setMark.label"
+      role="img"
+    />
 
     <span class="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1">
       <GameIcon :name="template?.icon ?? 'sword'" :size="20" :style="{ color: quality.color }" />
@@ -69,7 +74,7 @@
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { tint } from '@/utils/colorToken'
-  import { equipSetDef } from '@/core/equipSet'
+  import { setMarkOfItem, type SetMark } from '@/ui/setMark'
   import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
   import { qualityAura } from '@/ui/qualityAura'
   import { lusterOf } from '@/ui/luster'
@@ -93,5 +98,6 @@
   const luster = computed(() => lusterOf(props.item.quality))
   // 上限随炼器台等级变,取值在组件里,判定在 ui/masteryMark
   const mastery = computed(() => equipMastery(props.item.level, equipLevelCap()))
-  const setName = computed(() => (template.value?.set ? equipSetDef(template.value.set)?.name ?? '' : ''))
+  /** 共鸣形制:六套各一枚线纹,按三种机制上色(见 ui/setMark) */
+  const setMark = computed<SetMark | undefined>(() => setMarkOfItem(props.item))
 </script>

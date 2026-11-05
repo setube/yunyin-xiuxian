@@ -45,6 +45,11 @@ export function equipSetDef(setId: string): EquipSetDef | undefined {
   return SET_DEFS.get(setId)
 }
 
+/** 全部共鸣定义,按登记次序。展示层要「逐套列形制」时读它,不另抄一份 id 清单 */
+export function allEquipSets(): EquipSetDef[] {
+  return [...SET_DEFS.values()]
+}
+
 /** 已装备件中,同 set 的件数统计 */
 export function setCounts(equipped: EquipmentInstance[]): Map<string, number> {
   const counts = new Map<string, number>()
