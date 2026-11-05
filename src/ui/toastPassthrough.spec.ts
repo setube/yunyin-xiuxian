@@ -92,3 +92,29 @@ describe('提示条 · 自检脚本的选择器与宿主结构一致', () => {
     expect(SCRIPT, '点关闭钮仍按 button 找').toMatch(/querySelectorAll\('\.pointer-events-none\.fixed button'\)\) b\.click\(\)/)
   })
 })
+
+/**
+ * 量触控尺寸要用布局高度,不用 getBoundingClientRect。
+ *
+ * 提示条离场时带着 `transform: translateY(-6px) scale(0.96)`,而自检注入的
+ * `transition:none` 让它立刻停在终态 —— 28px 的关闭钮于是量成 26.9px(28×0.96),
+ * 报「可点元素过小」。那不是触控缺陷,是量到了动画中的缩放。
+ *
+ * `offsetHeight` 是布局高度,不受 transform 影响,量的才是这颗钮真实的命中尺寸。
+ * 两处测量(巡页与弹窗巡逻)必须同尺,否则同一颗钮在两种场景下判得不一样。
+ *
+ * 故障注入:把任一处改回只读 getBoundingClientRect,本条红。
+ */
+describe('提示条 · 自检量的必须是布局尺寸', () => {
+  const SCRIPT = readFileSync(resolve(__dirname, '../../scripts/layout-check.mjs'), 'utf-8')
+
+  it('两处触控尺寸测量都取 offsetHeight', () => {
+    const hits = SCRIPT.match(/const h = el\.offsetHeight \|\| rect\.height/g) ?? []
+    expect(hits.length, '巡页与弹窗巡逻两处都要按布局高度量').toBe(2)
+  })
+
+  it('判据不再直接拿 getBoundingClientRect 的高度去比 28', () => {
+    // 阴性对照:不该出现「rect.height >= 28」这种直接比法
+    expect(SCRIPT, '不该再拿缩放后的 rect.height 直接比 28').not.toMatch(/rect?\.height >= 28/)
+  })
+})

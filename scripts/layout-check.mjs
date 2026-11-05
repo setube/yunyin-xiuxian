@@ -106,10 +106,13 @@ async function auditModalControls(page) {
     if (!panel) return null
     const rows = [...panel.querySelectorAll('button, a, [role=button]')]
       .map(el => {
-        const r = el.getBoundingClientRect()
+        const rect = el.getBoundingClientRect()
+        // 量布局高度:弹窗里也可能有带 transform 的元素,getBoundingClientRect 会量到缩放后的值
+        const h = el.offsetHeight || rect.height
+        const r = { ...rect, height: h }
         // 声明 min-height ≥28 的给半像素容差(27.5);报数带一位小数,免得 27.6 打印成「28」
         const declared = parseFloat(getComputedStyle(el).minHeight) || 0
-        const ok = r.height >= 28 || (declared >= 28 && r.height >= 27.5)
+        const ok = h >= 28 || (declared >= 28 && h >= 27.5)
         return {
           name: (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14),
           h: r.height,
@@ -313,13 +316,22 @@ async function measurePage(page) {
        * 实测全站窄钮为 0;真要窄到点不准,先会撞上页面的横向溢出与孤字自检。
        * 宽度那一侧将来若要加,须一并给弹窗内那一组(auditModalControls)加,两处同尺。
        */
+      /*
+       * 量**布局高度**,不量 getBoundingClientRect。
+       *
+       * 提示条离场时带着 `transform: translateY(-6px) scale(0.96)`,
+       * 而注入的 `transition:none` 让它立刻停在终态 —— 28px 的关闭钮于是量成 26.9px(28×0.96),
+       * 报「可点元素过小」。那不是触控缺陷,是量到了动画中的缩放。
+       * offsetHeight 是布局高度,不受 transform 影响,量的才是这颗钮真实的命中尺寸。
+       */
       smallTargets: [...document.querySelectorAll('button, a, [role=button]')]
         .map(el => {
-          const r = el.getBoundingClientRect()
+          const rect = el.getBoundingClientRect()
+          const h = el.offsetHeight || rect.height
           // 与 auditModalControls 同一条尺子
           const declared = parseFloat(getComputedStyle(el).minHeight) || 0
-          const ok = r.height >= 28 || (declared >= 28 && r.height >= 27.5)
-          return { el, r, ok }
+          const ok = h >= 28 || (declared >= 28 && h >= 27.5)
+          return { el, r: { ...rect, height: h }, ok }
         })
         .filter(({ r, ok }) => r.width > 0 && r.height > 0 && !ok)
         .slice(0, 3)
