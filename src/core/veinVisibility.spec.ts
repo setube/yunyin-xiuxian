@@ -78,7 +78,9 @@ describe('灵脉可见性 · 通道本身是活的', () => {
 
 describe('灵脉可见性 · 展示层覆盖全部通道', () => {
   it('列账覆盖全部通道:遍历全部灵脉,效果行走 veinEffectText(专用通道并入其中)', () => {
-    expect(CARD_SRC, '列账必须遍历全部灵脉').toMatch(/v-for="v in VEINS"/)
+    // 两处列账都遍历全部灵脉;形制在 setup 里算一次(VEINS.map → veinRows)
+    expect(CARD_SRC, '列账行必须由全部灵脉生成').toContain('VEINS.map(')
+    expect(CARD_SRC, '两处遍历都读同一个行数组').toMatch(/v-for="row in veinRows"/g)
     expect(CARD_SRC, '效果行没有走 veinEffectText').toContain('veinEffectText(')
     expect(VEIN_TEXT_SRC, 'veinEffectText 没有并入专用通道').toContain('INSIGHT_EFFECT_NAME')
     expect(VEIN_TEXT_SRC, '效果行措辞没有与词条 caveat 同源').toContain('modsText(')

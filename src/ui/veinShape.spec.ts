@@ -124,6 +124,27 @@ describe('灵脉形制 · 四、界面接上了', () => {
     }
   })
 
+  /**
+   * 灵脉行的读数在 setup 里算一次。
+   *
+   * 原先主循环里 `currentLevel(v.id)` 被调 4 次、`veinEffectText` 2 次,
+   * 连投区还要再调一次 —— 全是同一个 `dongfu.veinPoints[veinId]` 的查表。
+   * 与 TrialPanel / 丹匣 / 器魂页同法。
+   *
+   * 故障注入:把段条宽度改回模板里调 axisPct,本条红。
+   */
+  it('灵脉行的读数算一次,模板不再逐行查表', () => {
+    expect(CARD, '应在 computed 里算齐').toContain('const veinRows = computed(')
+    const tpl = CARD.slice(0, CARD.indexOf('<script'))
+    for (const fn of ['currentLevel(', 'axisPct(', 'surplusPoints(', 'veinEffectText(']) {
+      expect(tpl, `模板不该再调 ${fn}`).not.toContain(fn)
+    }
+    // 阳性对照:读数确实来自行上的字段
+    expect(tpl, '段条宽度应读 row.axisWidth').toContain('row.axisWidth')
+    expect(tpl, '效果句应读 row.effect').toContain('row.effect')
+    expect(tpl, '点数应读 row.level').toContain('row.level')
+  })
+
   it('段条与刻度都不吃指针事件 —— 它们只是形制,不是控件', () => {
     for (const sel of ['.vein-budget', '.vein-axis']) {
       expect(block(sel), `${sel} 缺 pointer-events: none`).toContain('pointer-events: none')
