@@ -58,8 +58,14 @@ describe('品阶视觉 · 三档强度与稀有角章', () => {
   it('装备格与丹药格共享同一份强度;丹药的道品也盖章', () => {
     expect(EQUIPMENT_CARD, '装备格应读 qualityTierStyle').toContain('qualityTierStyle(props.item.quality)')
     expect(EQUIPMENT_CARD, '稀有装备应盖 QualitySeal').toContain('isRareQuality(props.item.quality)')
-    expect(INVENTORY_VIEW, '丹药格应按 pillRank 走同一份三档强度').toContain('qualityTierByRank(pillRank(row.def!))')
-    expect(INVENTORY_VIEW, '丹药稀有档应盖章').toContain('isRareRank(pillRank(row.def!))')
+    // 丹药格的形制在 pillRows 里算一次(原先同一个格子里 pillQualityColor 调 7 次)
+    expect(INVENTORY_VIEW, '丹药格应按 pillRank 走同一份三档强度').toContain('qualityTierByRank(rank)')
+    expect(INVENTORY_VIEW, '丹药稀有档应盖章').toContain('rare: isRareRank(rank)')
+    expect(INVENTORY_VIEW, '格子读行上的形制').toContain('v-if="row.rare"')
+    // 阳性:模板不许再逐格调查表函数 —— 同一个格子里原先调了 7 次
+    const tpl = INVENTORY_VIEW.slice(0, INVENTORY_VIEW.indexOf('<script'))
+    expect(tpl, '模板不该再调 pillQualityColor').not.toContain('pillQualityColor(')
+    expect(tpl, '模板不该再调 pillRank').not.toContain('pillRank(')
   })
 
   it('坊市货格也按同一套三档强度;稀有货盖角章,密卡底色不加深', () => {
@@ -81,8 +87,10 @@ describe('品阶视觉 · 三档强度与稀有角章', () => {
 
   it('丹匣专属角章也随主题用墨色', () => {
     expect(INVENTORY_VIEW, '丹药角章字形也应随主题用墨色').toContain('font-kai text-[9px] leading-none text-ink')
-    expect(INVENTORY_VIEW, '丹药角章不得把品阶色直接写进字形').not.toContain(
-      'background: tint(pillQualityColor(row.def!), 0.12), color: pillQualityColor(row.def!)'
+    expect(INVENTORY_VIEW, '丹药角章不得把品阶色直接写进字形').not.toMatch(
+      /background: tint\([^)]*\), color: tint\(/
     )
+    // 角章底色取行上算好的 tone,不在模板里再查一次
+    expect(INVENTORY_VIEW, '角章底色取行上的 tone').toContain('tint(row.tone, 0.12)')
   })
 })
