@@ -14,15 +14,19 @@
           @click="reforgeArm = inst?.uid ?? null"
         >
           重铸词条
+          <!--
+            灵石那个数原本裸着,只有「尘×N」带单位 —— 同屏的「强化」「连升」都写全了
+            「器灵尘×12 · 灵石 356.1万」,读者会以为 949.6万 是另一回事。
+          -->
           <span class="ml-1 tabular text-[10px] text-ink-faint">
-            {{ formatGN(reforgeCostVal.stone) }} · 尘×{{ reforgeCostVal.dust }}
+            灵石 {{ formatGN(reforgeCostVal.stone) }} · 器灵尘×{{ reforgeCostVal.dust }}
           </span>
         </button>
         <div
           v-if="sealCostVal"
           class="flex flex-1 flex-col items-center justify-center rounded-md border border-azure/20 px-2 py-2 text-ink"
         >
-          <span>封存一词 {{ formatGN(sealCostVal) }}</span>
+          <span>封存一词 灵石 {{ formatGN(sealCostVal) }}</span>
           <span v-if="sealGap && sealGap.m > 0" class="text-[9px] text-cinnabar tabular">
             灵石尚差 {{ formatGap(sealGap) }}
           </span>
@@ -34,7 +38,7 @@
           :disabled="reforgeShortVal?.short != null"
           @click="doReforge"
         >
-          确认重铸 {{ formatGN(reforgeCostVal?.stone ?? 0) }} · 尘×{{ reforgeCostVal?.dust ?? 0 }}
+          确认重铸 灵石 {{ formatGN(reforgeCostVal?.stone ?? 0) }} · 器灵尘×{{ reforgeCostVal?.dust ?? 0 }}
         </button>
         <button class="btn-ghost flex-1 !py-2 text-ink-faint" @click="reforgeArm = null">再想想</button>
       </template>

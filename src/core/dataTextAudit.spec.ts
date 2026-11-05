@@ -1144,6 +1144,36 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(view, '起造后那行该写「小时」').toContain('离线可攒 ${OFFLINE_CAP_HOURS[1]} 小时')
   })
 
+  /**
+   * 装备详情里几处花费的写法:
+   *   · 「灵石」与数字之间要留一个空格(全站规约,见 utils/format.formatYears 的注)
+   *   · 灵石那个数不能裸着 —— 同屏的「强化」「连升」都写全了单位
+   *   · 同一个弹窗里「器灵尘」不许一处全称一处简称
+   *
+   * 故障注入:去掉「灵石 」前缀、或把「灵石」与数字黏在一起,本条红。
+   */
+  it('装备花费的单位写全,且与数字之间留空格', () => {
+    const files = [
+      '../components/equipment/EquipReforgeFooter.vue',
+      '../components/equipment/AutoReforgePanel.vue'
+    ]
+    for (const f of files) {
+      const text = src(f)
+      // 黏在一起的写法
+      expect(text, `${f}:「灵石」与数字之间缺空格`).not.toMatch(/灵石\{\{/)
+      // 裸数后直接接「· 尘」或「尘×」:说明灵石那一项没写单位
+      const bare = text.match(/(?<!灵石 )\{\{\s*formatGN\([^)]*\)\s*\}\}\s*·\s*(?:器灵)?尘×/g) ?? []
+      expect(bare, `${f}:灵石那个数裸着没单位`).toEqual([])
+    }
+    // 同一弹窗里的尘统一用全称
+    const reforge = src('../components/equipment/EquipReforgeFooter.vue')
+    const auto = src('../components/equipment/AutoReforgePanel.vue')
+    for (const [name, s] of [['EquipReforgeFooter', reforge], ['AutoReforgePanel', auto]] as const) {
+      const short = s.match(/[^器灵]尘×\{\{/g) ?? []
+      expect(short, `${name} 里还有简称「尘×」与「器灵尘×」并存`).toEqual([])
+    }
+  })
+
   it('器魂与道童付不起时置灰并写出实际差额', () => {
     const souls = src('../views/SoulsView.vue')
     expect(souls, '凝炼入口读同一份道源缺口').toContain('daoSourceShortfall(SOUL_REFINE_COST, endgame.daoSource)')
