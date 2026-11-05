@@ -41,7 +41,13 @@
           </span>
           <div class="min-w-0">
             <p class="truncate font-kai text-[13px]" :class="{ 'q-plaque': c.plaque }" :style="c.nameCls">{{ c.name }}</p>
-            <p class="truncate text-[10px] text-ink-faint">{{ c.sub }}</p>
+            <!--
+              副标题原用 ink-faint,它在纯纸上是 5.20:1,可分。但货架卡有品阶淡底:
+              灵草/装备卡按品阶铺 6%~13%,神品那档的朱色最深,ink-faint 压上去只剩 4.32:1。
+              换 ink-soft:纸 8.18、6% 底 7.52、13% 底 6.80,各种卡上都留得住余量;
+              与标题(墨 / 品阶色)仍拉开一档,层级不变。
+            -->
+            <p class="truncate text-[10px] text-ink-soft">{{ c.sub }}</p>
           </div>
         </div>
         <div class="mt-auto flex items-center justify-between pt-2">
