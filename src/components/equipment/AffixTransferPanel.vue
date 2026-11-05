@@ -65,7 +65,21 @@
           </span>
           <span class="mt-0.5 block text-[10px] text-ink-faint">
             {{ slotName(c.item.templateId) }} · {{ qualityDef(c.item.quality).name }} · <span class="whitespace-nowrap">{{ c.item.tier }} 阶</span> ·
-            <span class="whitespace-nowrap">词条 {{ c.item.affixes.length }}/{{ qualityDef(c.item.quality).affixes[1] }}</span>
+            <!--
+              词条位刻度:选目标件时最该看的就是「这件还有几个空位」——
+              而详情页早已有刻度(见 ui/affixSlots),这里却还是纯文字。
+            -->
+            <span class="whitespace-nowrap">词条</span>
+            <span
+              class="affix-slots"
+              :class="{ 'affix-slots--full': c.slotMark.full }"
+              role="img"
+              :aria-label="`词条 ${c.slotMark.used}/${c.slotMark.cap},空 ${c.slotMark.free}`"
+            >
+              <i v-for="(on, i) in affixSlotPips(c.slotMark)" :key="i" :class="{ on }" />
+            </span>
+            <span class="whitespace-nowrap tabular">{{ c.slotMark.used }}/{{ c.slotMark.cap }}</span>
+
             <span v-if="c.worn" class="ml-1 text-jade">{{ TRANSFER_LABELS.equipped }}</span>
             <span v-if="c.block !== null" class="ml-1 text-cinnabar">{{ transferBlockText(c.block, flow.affixId) }}</span>
           </span>
@@ -165,6 +179,7 @@
   import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { AFFIX_RARITY_META } from '@/data/statNames'
+  import { affixSlotMark, affixSlotPips } from '@/ui/affixSlots'
   import {
     TRANSFER_LABELS,
     transferBlockText,
@@ -181,9 +196,19 @@
   const shownSourceLines = computed(() =>
     props.flow.affixId ? props.flow.sourceLines.filter(l => l.id === props.flow.affixId) : props.flow.sourceLines
   )
-  const shownCandidates = computed(() =>
-    props.flow.targetUid ? props.flow.candidates.filter(c => c.item.uid === props.flow.targetUid) : props.flow.shownCandidates
-  )
+  /**
+   * 候选件 + 各自的词条位形制。
+   * 形制在这里算一次(见 ui/affixSlots):上限取品阶表,模板不再自己查、也不反复调。
+   */
+  const shownCandidates = computed(() => {
+    const rows = props.flow.targetUid
+      ? props.flow.candidates.filter(c => c.item.uid === props.flow.targetUid)
+      : props.flow.shownCandidates
+    return rows.map(c => ({
+      ...c,
+      slotMark: affixSlotMark(qualityDef(c.item.quality).affixes[1], c.item.affixes.length)
+    }))
+  })
   const movedName = computed(() => (props.flow.affixId ? (affixDef(props.flow.affixId)?.name ?? '') : ''))
 
   function itemName(templateId: string): string {
