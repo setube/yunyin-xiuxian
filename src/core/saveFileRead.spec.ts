@@ -4,7 +4,7 @@
  * 故障注入:把 abort 改回只调 reader.abort() 而不置 settled,「卸载时 abort」用例红。
  */
 import { describe, expect, it } from 'vitest'
-import { readSaveFile } from './saveFileRead'
+import { MAX_SAVE_FILE_BYTES, readSaveFile } from './saveFileRead'
 
 class FakeFileReader {
   result: string | ArrayBuffer | null = null
@@ -32,7 +32,7 @@ describe('存档文件读取 · 取消即失效', () => {
   it('读取完成回调拿到文件文本', () => {
     const reader = new FakeFileReader()
     const loaded: string[] = []
-    readSaveFile({ name: 'save.json' } as File, text => loaded.push(text), () => undefined, () => reader as unknown as FileReader)
+    readSaveFile({ name: 'save.json' } as File, text => loaded.push(text), () => undefined, { createReader: () => reader as unknown as FileReader })
     reader.finish('{"game":"yunyin-xiuxian"}')
     expect(loaded).toEqual(['{"game":"yunyin-xiuxian"}'])
   })
@@ -49,7 +49,7 @@ describe('存档文件读取 · 取消即失效', () => {
       () => {
         errors += 1
       },
-      () => reader as unknown as FileReader
+      { createReader: () => reader as unknown as FileReader }
     )
     handle.abort()
     expect(reader.aborted, '取消应真的中止底层读取').toBe(true)
@@ -57,6 +57,43 @@ describe('存档文件读取 · 取消即失效', () => {
     reader.fail()
     expect(loads, '取消后不该再暂停引擎/写已销毁组件').toBe(0)
     expect(errors, '取消后不该再弹读取失败回执').toBe(0)
+  })
+
+  /**
+   * 文件选择器上玩家可能点到一个几百 MB 的视频:readAsText 会把它整个读进 WebView 内存,
+   * 安卓低端机上直接卡死或被系统杀掉。故超过上限就不读,当场回执。
+   * 故障注入:去掉开头的 size 判定,「超大文件不读」那条红。
+   */
+  it('超大文件不读进内存,当场报「文件过大」', () => {
+    const reader = new FakeFileReader()
+    let loads = 0
+    let tooLarge = 0
+    readSaveFile(
+      { name: 'video.mp4', size: MAX_SAVE_FILE_BYTES + 1 } as File,
+      () => {
+        loads += 1
+      },
+      () => undefined,
+      {
+        createReader: () => reader as unknown as FileReader,
+        onTooLarge: () => {
+          tooLarge += 1
+        }
+      }
+    )
+    expect(tooLarge, '超大文件应当场回执').toBe(1)
+    expect(loads, '超大文件不该被读进内存').toBe(0)
+    expect(reader.aborted, '连读都不该开始').toBe(false)
+    // 边界:刚好等于上限仍照常读
+    expect(reader.result).toBeNull()
+  })
+
+  it('取不到 size 时按未知放行,不误拒正常存档', () => {
+    const reader = new FakeFileReader()
+    const loaded: string[] = []
+    readSaveFile({ name: 'save.json' } as File, text => loaded.push(text), () => undefined, { createReader: () => reader as unknown as FileReader })
+    reader.finish('{"game":"yunyin-xiuxian"}')
+    expect(loaded, 'size 未知不该被当成超大').toEqual(['{"game":"yunyin-xiuxian"}'])
   })
 
   it('先完成再 abort 是幂等的:不会重复回调,也不抛', () => {
@@ -68,7 +105,7 @@ describe('存档文件读取 · 取消即失效', () => {
         loads += 1
       },
       () => undefined,
-      () => reader as unknown as FileReader
+      { createReader: () => reader as unknown as FileReader }
     )
     reader.finish('ok')
     expect(() => handle.abort()).not.toThrow()

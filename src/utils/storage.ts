@@ -396,12 +396,22 @@ export interface ExportPayload {
    * 导出随包带走,报问题时才能把坏档一并给人看。导入时不回写(坏档不该回到存档位)。
    */
   corrupted?: Record<string, string>
+  /**
+   * 导出时读不出、因而**没能装进 data** 的分片 id。
+   *
+   * 原先那个 catch 是空吞:分片解不出就少装一片,而导出照报「已导出」——
+   * 玩家以为备份好了,恢复时才发现少一截,且没有任何信号。
+   * 现在把丢掉的记下来:调用方据此把结果降级成警告,`ExportPayload` 自己也留着这段,
+   * 报问题时能看出这份文件本来就不全。
+   */
+  missing?: string[]
 }
 
 export function buildExportPayload(): ExportPayload {
   // 导出直接读 localStorage,须先落盘,否则导出的是旧档
   flushSaveWrites()
   const data: Record<string, unknown> = {}
+  const missing: string[] = []
   for (const id of PERSISTED_STORES) {
     const key = storageKey(id)
     try {
@@ -414,7 +424,8 @@ export function buildExportPayload(): ExportPayload {
       const raw = localStorage.getItem(key)
       if (raw !== null) data[id] = JSON.parse(readSaveText(raw))
     } catch {
-      // 跳过损坏分片
+      // 读不出的分片不阻断整份导出,但必须留名:少装了哪一片要说得出来
+      missing.push(id)
     }
   }
   return {
@@ -422,7 +433,8 @@ export function buildExportPayload(): ExportPayload {
     version: SAVE_VERSION,
     exportedAt: Date.now(),
     data,
-    ...(corruptedCount() > 0 ? { corrupted: collectCorrupted() } : {})
+    ...(corruptedCount() > 0 ? { corrupted: collectCorrupted() } : {}),
+    ...(missing.length > 0 ? { missing } : {})
   }
 }
 
@@ -486,10 +498,17 @@ export function validateImportPayload(obj: unknown): string | null {
 /**
  * 将导入数据加密写入 localStorage(调用方负责随后 reload)。
  * 先清空再逐片写入;中途失败(如配额不足)回滚到旧档,不留半清的存档(会造出主页空角色)。
+ *
+ * 回滚快照必须**连待落盘队列一起取**。
+ * 原先只读 localStorage,而存档写入是 5 秒节流合并的:玩家刚打完一仗、进度还在 `pending` 里,
+ * 磁盘上停着的是最多 5 秒前那份。导入失败时回滚到的就是那份旧档 —— 刚打的那一仗、刚炼的那炉丹,
+ * 连同中间所有变更一起没了,而玩家只看到一句「原档已保留」。
  */
 export function applyImportPayload(payload: ExportPayload): void {
   // payload.corrupted 是有意不消费的:那是导出方隔离出来的坏档,只供人看,不该回到存档位
-  // 快照现有各片(原样密文,回滚时原样写回)
+  // 快照现有各片(原样密文,回滚时原样写回);队列里有更新态时先落盘,让快照拿到最新那份
+  flushSaveWrites()
+
   const backup = new Map<string, string | null>()
   try {
     for (const id of PERSISTED_STORES) {

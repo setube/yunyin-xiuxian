@@ -3,10 +3,10 @@
  * 判据:要么明确拒绝,要么接受且水合不抛、字段类型可用;拒绝时本机现有存档原样留着。
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { createApp } from 'vue'
+import { createApp, nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import { PERSISTED_STORES, buildExportPayload, clearAllSave, clearCorrupted, collectCorrupted, dropPendingWrites, preflightScan, storageKey } from '@/utils/storage'
+import { PERSISTED_STORES, buildExportPayload, clearAllSave, clearCorrupted, collectCorrupted, dropPendingWrites, flushSaveWrites, preflightScan, storageKey } from '@/utils/storage'
 import { importSaveText } from './save'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
@@ -240,5 +240,44 @@ describe('半损坏档 · 进得了游戏,或者被明确拒绝', () => {
     expect(err, '写盘失败应当报错').not.toBeNull()
     expect(writes.get(storageKey('game')), '回滚后旧 game 分片原样保留').toBe('OLD_GAME')
     expect(writes.get(storageKey('player')), '回滚后旧 player 分片原样保留').toBe('OLD_PLAYER')
+  })
+
+  /**
+   * 回滚快照要连待落盘队列一起取。
+   *
+   * 存档写入是 5 秒节流合并的:玩家刚打完一仗、进度还在 pending 里,磁盘上停着最多 5 秒前那份。
+   * 原先 applyImportPayload 只读 localStorage 就快照,于是导入失败回滚到的是那份旧档 ——
+   * 刚打的那一仗连同中间所有变更一起没了,而玩家只看到一句「原档已保留」。
+   * 故障注入:去掉快照前那次 flushSaveWrites,本条红。
+   */
+  it('导入失败时回滚到最新进度,不是 5 秒前那份磁盘旧档', async () => {
+    bootStores()
+    dropPendingWrites()
+    // 先落一份「旧档」到磁盘(pinia 持久化要过一轮微任务才入队)
+    const player = usePlayerStore()
+    player.major = 2
+    await nextTick()
+    flushSaveWrites()
+    const stale = localStorage.getItem(storageKey('player'))
+    expect(stale, '前置:旧档已落盘').not.toBeNull()
+    // 再改内存到「新档」但不落盘:此时最新态只在 pending 队列里
+    player.major = 9
+    await nextTick()
+
+    // 让写入必失败(配额不足),触发回滚
+    const realSet = localStorage.setItem.bind(localStorage)
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k === storageKey('resources')) throw new DOMException('quota', 'QuotaExceededError')
+      realSet(k, v)
+    })
+    try {
+      const err = importSaveText(envelope({ game: { started: true }, player: { major: 3 }, resources: { spiritStone: { m: 1, e: 4 } } }))
+      expect(err, '写盘失败应当报错').not.toBeNull()
+    } finally {
+      spy.mockRestore()
+    }
+    // 回滚后磁盘里应是「刚改到的 9」,而不是 flush 前那份 stale
+    const after = localStorage.getItem(storageKey('player'))
+    expect(after, '回滚到的是旧快照 —— 刚打的那一仗没了').not.toBe(stale)
   })
 })

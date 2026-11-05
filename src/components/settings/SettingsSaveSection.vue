@@ -173,6 +173,13 @@
       if (unmounted) return
       saveRead = null
       ui.toast('文件无法读取', 'warn')
+    }, {
+      // 超大文件当场回执:读进内存才是伤害所在,与「读不出」分开报
+      onTooLarge: () => {
+        if (unmounted) return
+        saveRead = null
+        ui.toast('文件过大', 'warn')
+      }
     })
     // 清空 input,允许重复选择同一文件
     if (fileInput.value) fileInput.value.value = ''

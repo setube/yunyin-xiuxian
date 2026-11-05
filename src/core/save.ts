@@ -39,6 +39,17 @@ export function exportSaveText(): string {
   return encryptSave(JSON.stringify(buildExportPayload()))
 }
 
+/**
+ * 导出,并报出「有哪几片没装进去」。
+ *
+ * 导出原先只有 `exportSaveText`,调用方拿不到缺片信息:分片解不出时少装一片,
+ * 导出照报「已导出」。调用方(见 core/savePlatform)据 `missing` 把结果降级成警告。
+ */
+export function exportSaveTextWithReport(): { text: string; missing: string[] } {
+  const payload = buildExportPayload()
+  return { text: encryptSave(JSON.stringify(payload)), missing: payload.missing ?? [] }
+}
+
 /** 导入存档文本(密文或旧版明文皆可);成功返回 null,失败返回错误信息 */
 export function importSaveText(text: string): string | null {
   let parsed: unknown
