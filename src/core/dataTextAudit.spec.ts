@@ -813,6 +813,36 @@ describe('术语一致性 · 用户可见文本', () => {
   /** 例外:此处「地脉」指村子的风水脉,不是洞府灵脉系统 */
   const ALLOWED = ['须惊动山下一整座村子的地脉']
 
+  /**
+   * 数字与单位之间的空格,两个方向都踩过:
+   *   阿拉伯数字紧贴单位(「3分钟」「949.6万灵石」) —— 全站规约是留一个空格
+   *   汉字数字也加了空格(「至多 六 重」) —— 中文里「六重」不该断开,而同句的「祭炼一重」正是无空格
+   *
+   * 判据按两种数字分开查:formatGN / Math.round 一类出阿拉伯数字,`cnNumber` 出汉字数字。
+   * 故障注入:任一处改回去,本条红。
+   */
+  it('数字与单位之间的空格:阿拉伯数字留、汉字数字不留', () => {
+    const ARABIC_UNITS = ['分钟', '小时', '灵石', '修为', '灵草', '玄铁', '器灵尘']
+    const CN_UNITS = ['重', '层', '阶', '场', '次', '部', '卦', '档', '主星', '连战', '位']
+
+    for (const { file, text } of userText()) {
+      // 阿拉伯数字紧贴单位。只认「数字类插值」——「{{ 品阶 }}灵草」是构词(上品灵草),不是数字接单位
+      for (const u of ARABIC_UNITS) {
+        const hits = [...text.matchAll(new RegExp(`\\{\\{([^}]*)\\}\\}(?!\\s)${u}`, 'g'))]
+        const glued = hits
+          .filter(m => /formatGN|formatNum|formatGap|Math\.round|Math\.floor|\.toFixed|Cost|Short|price|Price/.test(m[1]!))
+          .map((): string => `}}${u}`)
+        expect(glued, `${file}:「}}${u}」缺空格`).toEqual([])
+      }
+      // 汉字数字后面又加空格
+      for (const u of CN_UNITS) {
+        // 中间隔着模板的 }} —— 汉字数字经 cnNumber 出来后先落到模板,再到单位
+        const spaced = text.match(new RegExp(`cnNumber\\([^)]*\\)\\s*\\}\\}\\s{2,}${u}`, 'g')) ?? []
+        expect(spaced, `${file}:cnNumber 之后「${u}」前多了空格`).toEqual([])
+      }
+    }
+  })
+
   it('随机事件一律叫「际遇」:用户可见文本里不再出现「奇遇」', () => {
     const hits: string[] = []
     for (const { file, text } of userText()) {

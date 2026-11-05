@@ -16,7 +16,7 @@
     「通常」不可删:神鞭/无相念珠的主体、神魔镜的回补零重即封顶,逐件由「下一重」照实报。
   -->
   <p class="mt-1 px-1 text-[10px] text-ink-faint">
-    祭炼一重,被动与神通通常各强 {{ formatPercent(ARTIFACT_LEVEL_BONUS) }} · 至多 {{ cnNumber(ARTIFACT_MAX_LEVEL) }} 重
+    祭炼一重,被动与神通通常各强 {{ formatPercent(ARTIFACT_LEVEL_BONUS) }} · 至多 {{ cnNumber(ARTIFACT_MAX_LEVEL) }}重
   </p>
   <div v-if="artifactRows.length" class="mt-2 space-y-2.5">
     <!-- 底色固定 6%,不随档加深:密卡深底会压低正文对比度;档位线索交给边框与角章 -->
