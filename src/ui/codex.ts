@@ -10,6 +10,7 @@ import { LORE_MAX, LORE_STAGE_NAMES, MATERIALS, type MaterialDef } from '@/data/
 import { GONGFA_BRANCHES, canEnlighten, type GongfaBranchDef } from '@/data/gongfaBranches'
 import { GONGFA_TYPE_NAMES, gongfaDef } from '@/data/gongfa'
 import { QUALITIES, qualityDef, qualityTextColor } from '@/data/qualities'
+import { artifactShapeMark, type ArtifactShapeMark } from './artifactShape'
 import {
   ARTIFACTS,
   ARTIFACT_LEVEL_BONUS,
@@ -50,6 +51,11 @@ export interface CodexEntry {
    * 四角御纹在这里既挤又乱;改用一枚小字,与详情弹窗的整幅框同源。
    */
   luster?: { label: string } | null
+  /**
+   * 神通性质印(只有法宝谱有,见 ui/artifactShape)。
+   * 图鉴是标签流,标签上放不下;详情弹窗的标题行放得下,而那里正是玩家决定要不要祭炼的地方。
+   */
+  shape?: ArtifactShapeMark
   /** 下一层的条件(装备「曾上手」档为该阶成色目标,法宝谱为祭炼收益);到顶或无可补充为空,无方之丹到顶为 PILL_NO_RECIPE_HINT */
   hint: string
   /** 详情页脚注(各类口径不同,随条目给) */
@@ -357,6 +363,8 @@ export function describeArtifact(def: ArtifactDef, level: number, collected: boo
      * 同一册图鉴里同一个品阶的字色不该有两种 —— 玩家会把「颜色深一档」误读成品阶差异。
      */
     color: qualityTextColor(def.quality),
+    // 神通性质:包里那枚性质印与这里同源,不复算
+    shape: artifactShapeMark(def),
     stage,
     stageName: ARTIFACT_STAGE_NAMES[stage]!,
     badge: stage >= ARTIFACT_STAGE_MAX ? '满' : '',
