@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { SMART_KEEP_PERFECT_ROLL } from '@/data/constants'
-import { ROLL_GRADE_NAMES, rollMark } from './rollMark'
+import { ROLL_GRADE_NAMES, allRollsApex, rollMark } from './rollMark'
 
 const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
@@ -95,6 +95,51 @@ describe('掷值档 · 三、坏值不画错', () => {
     expect(rollMark(-3).pct).toBe(0)
     expect(rollMark(9).grade).toBe('apex')
     expect(rollMark(9).pct, '越界应夹到 100').toBe(100)
+  })
+})
+
+/**
+ * 整件「全满」。
+ *
+ * 一件装备所有词条同时达满档是运气极点,也是智能收纳里「词条近满件永不自动处置」
+ * 的同一根线 —— 但那边是裁决(留不留),这里是形制(惊不惊喜)。
+ */
+describe('掷值档 · 全满整件', () => {
+  it('条条满档才算全满;有一条没满就不算', () => {
+    expect(allRollsApex([1, 0.99, 0.9])).toBe(true)
+    expect(allRollsApex([1, 0.99, 0.8]), '有一条掉到良档就不算').toBe(false)
+    expect(allRollsApex([0.9, 0.3])).toBe(false)
+  })
+
+  it('0 条词条不算全满 —— 空装备不该戴运气极点的记号', () => {
+    expect(allRollsApex([])).toBe(false)
+  })
+
+  it('坏值不算满 —— 与单条掷值档同一条兜底', () => {
+    expect(allRollsApex([1, Number.NaN]), 'NaN 按常档,不该混成全满').toBe(false)
+    expect(allRollsApex([1, undefined])).toBe(false)
+  })
+
+  it('与智能收纳的完美词条判据同一根线,不许分叉', () => {
+    // 两边都读 SMART_KEEP_PERFECT_ROLL;任一处改成别的阈值,本条即红
+    const smartKeep = readFileSync(resolve(ROOT, 'src/core/smartKeep.ts'), 'utf-8')
+    const src = readFileSync(resolve(ROOT, 'src/ui/rollMark.ts'), 'utf-8')
+    expect(src, '形制层应读同一个阈值').toContain('SMART_KEEP_PERFECT_ROLL')
+    expect(smartKeep, '收纳层也应读同一个阈值').toContain('SMART_KEEP_PERFECT_ROLL')
+    // 恰好等于阈值:两边都应判满
+    expect(allRollsApex([SMART_KEEP_PERFECT_ROLL])).toBe(true)
+  })
+
+  it('全满有自己的一枚记号,且只在详情挂', () => {
+    expect(DETAIL, '详情应算全满').toContain('allRollsApex(')
+    expect(DETAIL, '应有读屏说法').toContain('aria-label="词条全满"')
+    expect(block('.affix-full'), '缺全满样式').not.toBe('')
+  })
+
+  it('全满记号不与满级签混成同一件事', () => {
+    // 满级是练出来的,全满是掷运 —— 两个独立条件、两套类名
+    expect(DETAIL, '满级签与全满签应是两个独立条件').toMatch(/v-if="mastery"[\s\S]{0,400}v-if="allApex"/)
+    expect(block('.affix-full'), '全满不该复用满级签的类名').not.toBe(block('.mastery-bar'))
   })
 })
 
