@@ -108,6 +108,27 @@ describe('神通形制 · 四、界面接上了', () => {
     expect(PANEL, '称谓应读形制模块').toContain('artifactActiveNoun(')
   })
 
+  /**
+   * 法宝谱的详情也要报性质。
+   *
+   * 图鉴此前只报品阶与层级,「这一件是攻、是护、还是削敌」看不出来 ——
+   * 而玩家正是在那个弹窗里决定要不要祭炼。标签流上放不下(已是 chip 流),
+   * 详情弹窗的标题行放得下。
+   *
+   * 故障注入:删掉 CollectionView 里那枚性质印,本条红。
+   */
+  it('法宝谱详情页也挂性质印,与包里那枚同源', () => {
+    const CODEX = readFileSync(resolve(ROOT, 'src/ui/codex.ts'), 'utf-8')
+    const VIEW = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
+    // 条目带形制,取自同一个模块
+    expect(CODEX, '法宝谱条目应带形制').toContain('shape: artifactShapeMark(def)')
+    // 详情弹窗渲染它,类名与包里那枚一致
+    expect(VIEW, '详情弹窗应渲染性质印').toContain('detail.entry.shape')
+    expect(VIEW, '应复用同一套类名').toContain('artifact-shape__crest')
+    // 阳性:形状确实来自条目,不是页面里另算一份
+    expect(VIEW, '不该在页面里另调 artifactShapeMark').not.toContain('artifactShapeMark(')
+  })
+
   it('纹样不吃指针事件,色只取既有 token', () => {
     expect(block('.artifact-shape'), '性质印不该吃指针事件').toContain('pointer-events: none')
     for (const d of ['attack', 'guard', 'debuff', 'cleanse']) {

@@ -101,6 +101,21 @@
           </span>
           <span v-if="detail.entry.stageName" class="chip-ink border-ink/20 text-ink-faint">{{ detail.entry.stageName }}</span>
           <span v-if="detail.entry.meta" class="text-[11px] text-ink-faint">{{ detail.entry.meta }}</span>
+          <!--
+            神通性质:法宝谱此前只报品阶与层级,「这一件是攻、是护、还是削敌」看不出来 ——
+            而玩家正在弹窗里决定要不要祭炼(见 ui/artifactShape,与包里那枚印同源)。
+          -->
+          <span
+            v-if="detail.entry.shape"
+            class="artifact-shape"
+            :class="`artifact-shape--${detail.entry.shape.disposition}`"
+            :title="detail.entry.shape.label"
+            role="img"
+            :aria-label="detail.entry.shape.label"
+          >
+            <span class="artifact-shape__crest" :class="`artifact-shape__crest--${detail.entry.shape.crest}`" aria-hidden="true" />
+            <span class="artifact-shape__name">{{ detail.entry.shape.dispositionName }}</span>
+          </span>
         </p>
         <p v-if="detail.entry.desc" class="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">
           {{ detail.entry.desc }}
