@@ -113,4 +113,17 @@ describe('紫微盘 · 四、星的读法', () => {
     expect(VIEW).toContain('row.palace.domain')
     expect(VIEW).toContain('row.palace.use')
   })
+
+  /**
+   * 十四主星各带 mods(字段注释写的就是「此星所与之力」),而界面只印星性一句。
+   * 点化一颗要花灵石 —— 花之前最该知道的就是这颗给哪一路。
+   * 判据同时钉「走同一份 modsText」:自己拼百分比会与上方「命格之力」合计分叉。
+   * 故障注入:删掉星行里的 modsText(s.mods),本条红。
+   */
+  it('十四主星各自给出所与之力,与命格之力合计同源', () => {
+    expect(VIEW, '星行应印该星所与之力').toContain('modsText(s.mods)')
+    expect(VIEW, '所与之力应与上方合计走同一份实现').toContain('modsText(')
+    // 阴性对照:星行里不许自己拼百分比
+    expect(VIEW, '不该在模板里自己拼属性名与百分比').not.toMatch(/s\.mods\[[^\]]+\][^}]*%/)
+  })
 })
