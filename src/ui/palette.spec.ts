@@ -831,6 +831,58 @@ describe('调色板 · 刻度圆点不许探出轴外', () => {
   })
 })
 
+describe('调色板 · 轨道上的圆点一律夹在轴内', () => {
+  /*
+   * 三处同形制的刻度先后踩过同一个坑:圆点用 translate(-50%, -50%) 居中于
+   * 一个 0~1 的位置值,而那个值被各自的上游严格夹到两端 —— 端点必然出现。
+   *   秘境双轴 .realm-axis   :heal/gain 由五处秘境的最小最大归一,最左最右各有一处
+   *   修行倍率 .growth-gauge :growthPosition 夹到 0~1,倍率 0.6 / 4.0 各在端点
+   *   试炼层阶 .trial-tier   :tierPosition 夹到 0~1,三场里最低与最高各在端点
+   * 半个圆(3~3.5px)探出轴外,而这些轴的两侧都紧挨着数字或标签。
+   *
+   * 这条判据把三处一起钉住:谁把 clamp 去掉都会红在这里。
+   */
+  function rule(sel: string): string {
+    const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:^|\\n)${esc}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(CSS)?.[1] ?? ''
+  }
+
+  const TRACKS: { sel: string; width: number }[] = [
+    { sel: '.realm-axis::before', width: 6 },
+    { sel: '.growth-gauge i', width: 7 },
+    { sel: '.trial-tier::before', width: 7 }
+  ]
+
+  it('三处都用 clamp,上下限各让出一个半径', () => {
+    for (const { sel, width } of TRACKS) {
+      const body = rule(sel)
+      expect(body, `缺 ${sel}`).not.toBe('')
+      expect(body, `${sel} 该用 clamp`).toContain('clamp(')
+      expect(body, `${sel} 的圆宽该是 ${width}px`).toMatch(new RegExp(`width:\\s*${width}px`))
+      const r = width / 2
+      expect(body, `${sel} 的下限该等于半径 ${r}px`).toContain(`clamp(${r}px,`)
+      expect(body, `${sel} 的上限该让出半径`).toContain(`calc(100% - ${r}px)`)
+    }
+  })
+
+  it('三处的位置仍由各自的变量决定,没被夹成常量', () => {
+    const vars = [
+      ['.realm-axis::before', '--axis-pos'],
+      ['.growth-gauge i', '--gauge-pos'],
+      ['.trial-tier::before', '--tier-pos']
+    ] as const
+    for (const [sel, v] of vars) {
+      expect(rule(sel), `${sel} 该仍读 ${v}`).toContain(`var(${v}`)
+    }
+  })
+
+  it('轴本体的 height 与圆点的居中基准一致 —— 都靠 translate 居中', () => {
+    for (const { sel } of TRACKS) {
+      expect(rule(sel), `${sel} 少了居中变换`).toContain('translate(-50%, -50%)')
+    }
+  })
+})
+
 describe('调色板 · 投影墨不外泄', () => {
   it('--shadow-ink 只进 box-shadow(或它自己的定义),不当可见底色/线/槽/波 —— 夜主题深纸近黑墨会隐形', () => {
     // 纸上可见的线/槽/波用 --color-ink(夜主题翻转成亮墨)
