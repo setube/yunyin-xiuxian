@@ -91,7 +91,7 @@
             role="img"
             :aria-label="`修行倍率 ×${growthTier.mult.toFixed(2)},区间 ${growthTier.floor.toFixed(1)} 至 ${growthTier.ceil.toFixed(1)},属${growthTier.label}`"
           >
-            <i :style="{ left: `${growthTier.position * 100}%` }" />
+            <i :style="{ '--gauge-pos': `${growthTier.position * 100}%` }" />
           </span>
           <span class="shrink-0 tabular text-[9px] leading-none text-ink-faint">×{{ growthTier.ceil.toFixed(1) }}</span>
         </div>
