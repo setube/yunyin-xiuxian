@@ -32,11 +32,30 @@
       </div>
       <p class="mt-2 text-[12px] leading-relaxed text-ink-faint">{{ template.desc }}</p>
       <EquipNotePanel />
-      <p v-if="setInfo" class="mt-1.5 text-[11px] leading-relaxed">
+      <p v-if="setInfo" class="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-relaxed">
+        <!-- 套纹:六套各一枚,与格子那枚同源(见 ui/setMark) -->
+        <span
+          v-if="setMark"
+          class="set-crest shrink-0"
+          :class="`set-crest--${setMark.crest} set-crest--${setMark.mechanism}`"
+          aria-hidden="true"
+        />
         <span class="font-kai" :class="setInfo.active ? 'text-jade' : 'text-violet-ink'">
-          {{ setInfo.def.name }} {{ setInfo.count }}/{{ setInfo.def.required }}
+          {{ setInfo.def.name }}
         </span>
-        <span class="ml-1 text-ink-faint">{{ setInfo.def.effectDesc }}</span>
+        <!-- 件数刻度:凑齐要几件就几格,已戴几件 -->
+        <span
+          class="set-pips shrink-0"
+          :class="{ 'set-pips--active': setInfo.active }"
+          role="img"
+          :aria-label="`已戴 ${setInfo.count} 件,凑齐需 ${setInfo.def.required} 件`"
+        >
+          <i v-for="(on, i) in setPips(setMark!, setInfo.count)" :key="i" :class="{ on }" />
+        </span>
+        <span class="tabular" :class="setInfo.active ? 'text-jade' : 'text-ink-faint'">
+          {{ setInfo.count }}/{{ setInfo.def.required }}
+        </span>
+        <span class="text-ink-faint">{{ setInfo.def.effectDesc }}</span>
       </p>
       <div class="ink-divider my-3" />
       <p v-if="compareTarget" class="mb-1.5 text-[10px] text-ink-faint tabular">对比当前佩戴「{{ compareTarget.name }}」</p>
@@ -191,6 +210,7 @@
   import { useInventoryStore } from '@/stores/inventory'
   import { equipmentTemplate, EQUIP_SLOT_NAMES } from '@/data/equipment'
   import { equipSetDef, setCounts } from '@/core/equipSet'
+  import { setMark as setMarkOf, setPips } from '@/ui/setMark'
   import { worldNameOfTier } from '@/core/formulas'
   import { resolveEquipStats } from '@/core/equipGen'
   import { equippablePower } from '@/core/equipBest'
@@ -250,6 +270,8 @@
   const salvage = computed(() => (inst.value ? salvageOf(inst.value) : null))
 
   /** 共鸣件数只数已佩戴的(看挂载,不看行囊) */
+  /** 共鸣形制:六套各一枚线纹(见 ui/setMark);与格子那枚同源 */
+  const setMark = computed(() => setMarkOf(template.value?.set ?? ''))
   const setInfo = computed(() => {
     const setId = template.value?.set
     if (!setId) return null

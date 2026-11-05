@@ -7,6 +7,13 @@
       <div v-if="setRows.length" class="card-ink mt-3 px-4 py-2.5">
         <p class="text-[10px] text-ink-faint">装备共鸣</p>
         <p v-for="s in setRows" :key="s.def.id" class="mt-1 flex items-center gap-2 text-[11px]">
+          <!-- 套纹:与装备格那枚同源(见 ui/setMark);六套各一枚,机制另有其色 -->
+          <span
+            v-if="s.mark"
+            class="set-crest shrink-0"
+            :class="`set-crest--${s.mark.crest} set-crest--${s.mark.mechanism}`"
+            aria-hidden="true"
+          />
           <span class="font-kai shrink-0" :class="s.active ? 'text-jade' : 'text-ink-soft'">{{ s.def.name }}</span>
           <span class="tabular shrink-0" :class="s.active ? 'text-jade' : 'text-ink-faint'">{{ s.count }}/{{ s.def.required }}</span>
           <span class="min-w-0 grow text-[10px] leading-relaxed text-ink-faint">{{ s.def.effectDesc }}</span>
@@ -288,7 +295,8 @@
   import { usePill, usePillBatch } from '@/core/pillService'
   import { buffOverflowOf, type BuffOverflow } from '@/core/buffCap'
 
-  import { equipSetDef, setCounts, type EquipSetDef } from '@/core/equipSet'
+  import { allEquipSets, setCounts } from '@/core/equipSet'
+  import { setMark } from '@/ui/setMark'
   import { bestEquipFor, equipAllBest, equipSetCombo, equipSetPreview, unequipAllEquipped } from '@/core/equipBest'
   import { useLoreStore } from '@/stores/lore'
   import { useBrewing } from '@/composables/useBrewing'
@@ -339,16 +347,21 @@
   const SLOTS = EQUIP_SLOTS
   const pickerSlot = ref<EquipSlot | null>(null)
 
-  /** 装备共鸣:已装备件的同组计数,未满也列 */
+  /**
+   * 装备共鸣:六套全表,已戴几件就报几件。
+   *
+   * 原只列**已戴**的那几套 —— 于是「还有哪些共鸣可凑」只在拿到第一件时才知道,
+   * 而共鸣是这套装备唯一的机制卖点(数值之外的另一条线)。
+   * 全表列出之后,0/2 那几行本身就是「还差什么」的地图。
+   * 次序:已激活的在前,再按件数;同分按登记次序(core 的 SET_DEFS 保序)。
+   */
   const setRows = computed(() => {
     const counts = setCounts(inventory.equippedItems)
-    return [...counts.entries()]
-      .map(([id, count]) => {
-        const def = equipSetDef(id)
-        if (!def) return null
-        return { def, count, active: count >= def.required, preview: equipSetPreview(id) }
+    return allEquipSets()
+      .map(def => {
+        const count = counts.get(def.id) ?? 0
+        return { def, count, active: count >= def.required, preview: equipSetPreview(def.id), mark: setMark(def.id) }
       })
-      .filter((row): row is { def: EquipSetDef; count: number; active: boolean; preview: number } => row !== null)
       .sort((a, b) => Number(b.active) - Number(a.active) || b.count - a.count)
   })
 
