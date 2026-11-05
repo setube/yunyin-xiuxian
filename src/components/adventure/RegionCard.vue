@@ -33,7 +33,20 @@
         </p>
         <p class="mt-0.5 text-[11px] text-ink-faint">
           {{ REALMS[row.def.minRealm]?.name }}境相宜 ·
-          <span :class="row.def.danger >= 4 ? 'text-cinnabar' : ''">{{ DANGER_NAMES[row.def.danger] }}</span>
+          <!--
+            危险度是 1~5 的可数量,原先只写成两个字:「凶险」与「大凶」差多少,
+            得先记住五个词的次序(见 ui/dangerMark)。沿用本世地界页那套点阵。
+          -->
+          <span
+            class="danger-pips"
+            :class="{ 'danger-pips--severe': danger.severe }"
+            role="img"
+            :aria-label="`危险度 ${danger.label}`"
+            :title="`危险度 ${danger.label}`"
+          >
+            <i v-for="(on, i) in dangerPips(danger)" :key="i" :class="{ on }" />
+          </span>
+          <span :class="danger.severe ? 'text-cinnabar' : ''">{{ danger.name }}</span>
           <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界未到</span>
           <!-- 复聚状态读落盘的 adventure.revived -->
           <span v-if="row.revived" class="ml-1 text-cinnabar">· 旧主归来</span>
@@ -155,7 +168,8 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import type { RegionDef } from '@/types'
-  import { DANGER_NAMES, regionDef } from '@/data/regions'
+  import { regionDef } from '@/data/regions'
+  import { dangerMark, dangerPips } from '@/ui/dangerMark'
   import { REALMS } from '@/data/realms'
   import { ECO_LEVEL_NAMES, starsText } from '@/core/buildAdvisor'
   import { foeOriginPartsText } from '@/core/battleAnalysis'
@@ -168,6 +182,8 @@
   import type { RegionRow } from '@/composables/useRegionRows'
 
   const props = defineProps<{ row: RegionRow }>()
+  /** 危险度形制(见 ui/dangerMark);在脚本里算一次,模板不反复调同一个函数 */
+  const danger = computed(() => dangerMark(props.row.def.danger))
   const emit = defineEmits<{
     /** 出发;出行方式弹窗的开关在宿主 */
     depart: [region: RegionDef]
