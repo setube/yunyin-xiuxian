@@ -17,7 +17,18 @@
         </span>
         <!-- 同源功法参悟时更易撞见(倾向,非独占) -->
         <span v-if="sameRoot" class="chip-ink border-gold-ink/40 text-gold-ink" title="灵根同源 · 参悟更易得">同源</span>
-        <span v-if="learned" class="ml-auto tabular text-[12px] text-gold-ink">第 {{ level }}/{{ def.maxLevel }} 层</span>
+        <!-- 层数刻度:与主修卡/已习列表同一份(见 ui/gongfaMark);上限几层就几格 -->
+        <span v-if="learned" class="ml-auto flex items-center gap-1.5">
+          <span
+            class="gongfa-pips"
+            :class="{ 'gongfa-pips--max': mark.maxed }"
+            role="img"
+            :aria-label="`第 ${mark.level} 层,共 ${mark.max} 层`"
+          >
+            <i v-for="(on, i) in gongfaPips(mark)" :key="i" :class="{ on }" />
+          </span>
+          <span class="tabular text-[12px] text-gold-ink">第 {{ mark.level }}/{{ mark.max }} 层</span>
+        </span>
       </div>
       <p class="mt-2 text-[12px] leading-relaxed text-ink-faint">{{ def.desc }}</p>
       <!-- 参悟门槛与藏经阁习得同源:minRealm ≤ major+1 即在池内(超前一层,spec 钉死),更高才提示 -->
@@ -161,6 +172,7 @@
   import { ELEMENTS } from '@/data/linggen'
   import { branchesFor, gongfaBranchDef } from '@/data/gongfaBranches'
   import { branchMarkOf, branchTier } from '@/ui/branchMark'
+  import { gongfaMark, gongfaPips } from '@/ui/gongfaMark'
   import { tint } from '@/utils/colorToken'
   import { gongfaUpgradeCost, gongfaUpgradeShort, gongfaUpgradeShortfall, upgradeGongfa } from '@/core/gongfaService'
   import { gongfaAffinity, rootElements } from '@/core/linggenAffinity'
@@ -184,6 +196,8 @@
   const luster = computed(() => (def.value ? lusterOf(def.value.quality) : null))
   const level = computed(() => (def.value ? (cultivation.learned[def.value.id] ?? 0) : 0))
   const learned = computed(() => level.value > 0)
+  /** 层数形制:与主修卡/已习列表同一份(见 ui/gongfaMark) */
+  const mark = computed(() => gongfaMark(def.value, level.value))
   const upCost = computed(() => (def.value ? gongfaUpgradeCost(def.value.id) : null))
   /** 缺料判定,与服务升级路径同一处 */
   const upShort = computed(() => (upCost.value ? gongfaUpgradeShort(upCost.value) : null))

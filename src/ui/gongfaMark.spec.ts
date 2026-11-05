@@ -133,6 +133,23 @@ describe('功法层数 · 四、两处界面同读一份', () => {
     }
   })
 
+  /**
+   * 第三处:功法详情弹窗。
+   *
+   * 同一门功法的「第 N/M 层」在主修卡与已习列表都已有刻度,唯独点开详情弹窗又退回纯文字。
+   * 而那正是玩家决定「再练几层才满」的地方 —— 密法上限 3 层、主辅上限 9 层,
+   * 「第 5 层」在一门里是练满,在另一门里才过半。
+   * 故障注入:从弹窗模板里删掉 gongfaPips,本条红。
+   */
+  it('详情弹窗也读同一份层数形制', () => {
+    const dialog = readFileSync(resolve(ROOT, 'src/components/cultivation/GongfaDialog.vue'), 'utf-8')
+    expect(dialog, '详情弹窗应读形制').toContain('gongfaMark(')
+    expect(dialog, '详情弹窗应画刻度').toContain('gongfaPips(mark)')
+    expect(dialog, '刻度的读屏说法应带层数').toContain('`第 ${mark.level} 层,共 ${mark.max} 层`')
+    // 阴性对照:模板里不许再自己比大小算「还差几层」
+    expect(dialog, '不该在模板里自己算差额').not.toMatch(/def\.maxLevel\s*-\s*level/)
+  })
+
   it('上限仍读 gongfaMaxLevel,不在别处写 `?? 9`', () => {
     const src = readFileSync(resolve(ROOT, 'src/ui/gongfaMark.ts'), 'utf-8')
     expect(src).toContain('gongfaMaxLevel(')

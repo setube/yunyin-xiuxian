@@ -119,6 +119,8 @@
   import { GONGFA } from '@/data/gongfa'
   import { PETS } from '@/data/pets'
   import { beastIcon } from '@/data/beastFamilies'
+  import { beastCrest } from '@/ui/beastCrest'
+  import { PERSONALITY_NAMES } from '@/core/petPersonality'
   import { EVENTS } from '@/data/events'
   import { chainOfEvent } from '@/data/chains'
   import { TALENTS, TALENT_GRADE_COLORS } from '@/data/talents'
@@ -275,7 +277,12 @@
           id: p.id,
           name: p.name,
           desc: [p.desc, modsText(player.petModsFor(p))].filter(Boolean).join('\n'),
-          meta: qualityDef(p.quality).name,
+          /**
+           * 灵兽册的 meta 原只写品阶名,而族类与性子在名号页都有:
+           * 这头兽是走兽、羽禽还是龙属瑞兽,以及它历练时的行为倾向(贪宝/慢稳/好战/谨慎)。
+           * 两处同读一份数据(见 data/beastFamilies、core/petPersonality),不另立。
+           */
+          meta: `${beastCrest(p.family).name} · ${PERSONALITY_NAMES[p.personality]} · ${qualityDef(p.quality).name}`,
           icon: beastIcon(p.family),
           color: qualityTextColor(p.quality),
           luster: lusterOf(p.quality)
