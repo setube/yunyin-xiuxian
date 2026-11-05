@@ -38,7 +38,8 @@ const BY_ID = new Map<QualityId, QualityDef>(QUALITIES.map(q => [q.id, q]))
 const TEXT_COLOR: Partial<Record<QualityId, string>> = {
   profound: 'var(--color-quality-profound-text)',
   heaven: 'var(--color-quality-heaven-text)',
-  immortal: 'var(--color-quality-immortal-text)'
+  immortal: 'var(--color-quality-immortal-text)',
+  divine: 'var(--color-quality-divine-text)'
 }
 
 export function qualityTextColor(id: QualityId): string {

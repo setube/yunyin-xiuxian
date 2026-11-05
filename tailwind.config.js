@@ -36,6 +36,7 @@ export default {
         'quality-profound-text': withAlpha('--color-quality-profound-text-rgb'),
         'quality-heaven-text': withAlpha('--color-quality-heaven-text-rgb'),
         'quality-immortal-text': withAlpha('--color-quality-immortal-text-rgb'),
+        'quality-divine-text': withAlpha('--color-quality-divine-text-rgb'),
         'quality-dao-text': withAlpha('--color-quality-dao-text-rgb')
       },
       fontFamily: {
