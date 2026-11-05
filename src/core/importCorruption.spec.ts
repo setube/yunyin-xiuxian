@@ -6,7 +6,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { createApp } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import { PERSISTED_STORES, buildExportPayload, clearAllSave, collectCorrupted, dropPendingWrites, preflightScan, storageKey } from '@/utils/storage'
+import { PERSISTED_STORES, buildExportPayload, clearAllSave, clearCorrupted, collectCorrupted, dropPendingWrites, preflightScan, storageKey } from '@/utils/storage'
 import { importSaveText } from './save'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
@@ -138,6 +138,47 @@ describe('半损坏档 · 进得了游戏,或者被明确拒绝', () => {
     expect(localStorage.getItem(storageKey('player')), '坏档段被写回了存档位').not.toBe('这不是存档')
     // 本机原有的隔离备份不受影响
     expect(collectCorrupted().player).toBe('这不是存档')
+  })
+
+  /**
+   * 「清空存档」与「导入存档」对坏档的态度必须分开,两条语义不能合并。
+   *
+   * `corrupt.*` 不在 `PERSISTED_STORES` 里(preflightScan 把它们移出存档位),
+   * 于是 clearAllSave 逐个 removeItem 时整个漏掉它:实测清档后 localStorage 里
+   * 只剩 `corrupt.yunyin.player`,而 buildExportPayload 见 corruptedCount() > 0
+   * 就把这一段带进导出 —— 玩家清空存档、重开一局后,导出的文件里仍带着上一位的坏档。
+   *
+   * 但导入那条路**不能**跟着清:玩家是在换一份存档,本机原档隔离出来的坏档仍要留着
+   * (上一条用例钉着)。故 clearCorrupted 单开一支,只由清空存档调用。
+   * 故障注入:把 clearCorrupted 里的 removeItem 删掉,或让 clearAllSave 顺手清掉它,本条红。
+   */
+  it('清空存档清掉隔离出来的坏档;导入存档则保留本机的坏档', () => {
+    bootStores()
+    const key = storageKey('player')
+    localStorage.setItem(key, '这不是存档')
+    expect(preflightScan(), '前置:坏分片先被隔离').toContain('player')
+    expect(collectCorrupted().player, '前置:隔离备份已生成').toBe('这不是存档')
+
+    // 导入:本机坏档不动
+    importSaveText(
+      encryptSave(
+        JSON.stringify({
+          game: 'yunyin-xiuxian',
+          version: 2,
+          exportedAt: Date.now(),
+          data: {
+            player: { major: 1, sub: 0, name: 'x' },
+            game: { started: true, saveVersion: 2, createdAt: 1, lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null }
+          }
+        })
+      )
+    )
+    expect(collectCorrupted().player, '导入不该替玩家删掉本机隔离出来的坏档').toBe('这不是存档')
+
+    // 清空:坏档一并清掉,新一局的导出不再带上一位的坏档
+    clearCorrupted()
+    expect(collectCorrupted(), '清档后不该还留着上一位的坏档').toEqual({})
+    expect(buildExportPayload().corrupted, '清档后的导出不该带 corrupted 段').toBeUndefined()
   })
 
   it('整段不是存档(纯文本/空串)也只报错不炸', () => {

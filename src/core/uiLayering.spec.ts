@@ -165,6 +165,30 @@ describe('界面分层 · 浮层只有一个出处', () => {
     }
   })
 
+  /**
+   * 空文件两处入口要说同一句话。
+   *
+   * 设置页一直有 `!text.trim()` 判空 → 「文件为空」;欢迎页没有,
+   * 空档一路走到 `importSaveText`,被 JSON.parse 报成「文件无法解析」——
+   * 同一种坏文件,两处入口说两种话。判据与「空态优先『暂无 + 具体名词』」同一条思路:
+   * 空就是空,别报成「解析不了」。
+   */
+  it('空文件在导入前就判出来,两处入口同一句话', () => {
+    const EMPTY = "ui.toast('文件为空', 'warn')"
+    for (const path of ['views/WelcomeView.vue', 'components/settings/SettingsSaveSection.vue']) {
+      const f = FILES.find(x => x.path === path)
+      expect(f, `${path} 不见了`).toBeDefined()
+      const src = f!.src
+      const guardAt = src.indexOf('if (!text.trim())')
+      const emptyAt = src.indexOf(EMPTY)
+      const parseAt = src.indexOf('importSaveText(text)')
+      expect(guardAt, `${path} 缺空文件判据 —— 空档会被报成「文件无法解析」`).toBeGreaterThan(-1)
+      expect(emptyAt, `${path} 没有「文件为空」回执`).toBeGreaterThan(-1)
+      // 判空须发生在导入之前:先报「为空」,别再走一遍解析
+      expect(guardAt, `${path} 判空应在 importSaveText 之前`).toBeLessThan(parseAt)
+    }
+  })
+
   it('首页法球的断点监听随组件卸载 —— 重进首页不许累积闭包', () => {
     const f = FILES.find(x => x.path === 'views/HomeView.vue')
     expect(f, 'HomeView 不见了').toBeDefined()
