@@ -36,7 +36,11 @@ const HINTS: Record<string, string> = {
   critRate: '要害准寸',
   critDamage: '重狠',
   lifesteal: '血噬吞',
-  expGain: '修为经验丰获'
+  expGain: '修为经验丰获',
+  // 地品两只引入的三个新键:灵兽此前从未提供过这三路
+  damageReduction: '守御挡挡甲壳根山',
+  armorPen: '甲壳硬烂破蚀穿',
+  damageBonus: '伤势烈增幅'
 }
 
 describe('灵兽 · 描述与词条指向同一件事', () => {
