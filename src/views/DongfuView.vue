@@ -90,6 +90,15 @@
           灵脉 · 需{{ veinGateRealm }}境
         </span>
       </div>
+      <!--
+        营造进度:标题旁只给「已启 N/8」两个数,条给位置。
+        洞府是全游戏唯一「从零建到八」的地方,这条条本身就是长期目标的可视化。
+      -->
+      <ProgressBar
+        class="mt-1 px-0.5"
+        :value="BUILDINGS.length > 0 ? builtCount / BUILDINGS.length : 0"
+        :height="2"
+      />
       <BuildingCard :def="mansionDef" featured class="mt-2" />
       <div class="mt-2.5 grid grid-cols-1 gap-2.5 min-[320px]:grid-cols-2">
         <BuildingCard v-for="def in otherBuildings" :key="def.id" :def="def" />
@@ -113,6 +122,7 @@
   import { useDongfuStore, fieldHerbGrade } from '@/stores/dongfu'
   import { usePlayerStore } from '@/stores/player'
   import SectionTitle from '@/components/common/SectionTitle.vue'
+  import ProgressBar from '@/components/common/ProgressBar.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import BuildingCard from '@/components/dongfu/BuildingCard.vue'
