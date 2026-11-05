@@ -35,11 +35,11 @@
       <!-- 允许换行:chip-ink 是 nowrap 胶囊,320px 窄屏放不下两枚 -->
       <div v-if="!btInfo.prep.sitting && !btInfo.prep.ready" class="mt-1.5 flex flex-wrap gap-1.5">
         <button type="button" class="chip-ink chip-ink-wrap !py-1.5 text-[10px]" @click="startPrep('meditate')">
-          {{ prepMeditate.label }} · {{ Math.round(prepMeditate.duration / 60) }}分钟
+          {{ prepMeditate.label }} · {{ Math.round(prepMeditate.duration / 60) }} 分钟
           +{{ Math.round(prepMeditate.bonusRate * 100) }}%
         </button>
         <button type="button" class="chip-ink chip-ink-wrap !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
-          {{ prepPill.label }} · {{ prepPillCost }}灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
+          {{ prepPill.label }} · {{ prepPillCost }} 灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
           <span v-if="!prepCanPill" class="text-ink-faint">({{ prepPillDisabledLabel(formatGap(prepPillShort)) }})</span>
         </button>
       </div>
