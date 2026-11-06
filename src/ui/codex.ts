@@ -6,6 +6,8 @@
  * 只做映射与文案,不改任何状态(与 ui/enemyLore.ts 同规);describeXxx 为纯函数,xxxCodex 读 store。
  */
 import { ELEMENTS } from '@/data/linggen'
+import { DAOLU, ENDING_NAMES, LEAN_NAMES, STAGE_NAMES, TEMPER_NAMES, stageIndex, type BondStage } from '@/data/daolu'
+import { usePlayerStore } from '@/stores/player'
 import { LORE_MAX, LORE_STAGE_NAMES, MATERIALS, type MaterialDef } from '@/data/materials'
 import { GONGFA_BRANCHES, canEnlighten, type GongfaBranchDef } from '@/data/gongfaBranches'
 import { GONGFA_TYPE_NAMES, gongfaDef } from '@/data/gongfa'
@@ -501,4 +503,97 @@ export function collectedTimeText(ts: number | undefined): string {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// ============ 人缘册 ============
+
+/**
+ * 人缘册的收录深度。
+ *
+ * 这一册与其余各册不同:道侣的「拥有」不是一次性收录,而是一段有长度的关系 ——
+ * 从萍水相逢走到道侣有七阶,而这一世只遇一位、只能走一次。
+ * 故深度按走到过多深分四档,不是「有没有」两态。
+ */
+export const DAOLU_STAGE_NAMES = ['素昧平生', '萍水相逢', '知交', '结契'] as const
+export const DAOLU_STAGE_MAX = 3
+
+/** 深度门槛取阶序里的三处拐点(met / confidant / pledged),不另立阈值 */
+const DAOLU_DEPTH_AT: readonly BondStage[] = ['met', 'confidant', 'pledged']
+
+/** 某一阶对应几档深度;none 为 0 */
+export function daoluDepthOf(stage: BondStage | undefined): number {
+  if (!stage || stage === 'none') return 0
+  const at = stageIndex(stage)
+  let depth = 0
+  for (const [i, s] of DAOLU_DEPTH_AT.entries()) if (at >= stageIndex(s)) depth = i + 1
+  return depth
+}
+
+export interface DaoluRecord {
+  depth: number
+  stage: BondStage | undefined
+  ending: string | undefined
+  shared: number
+}
+
+/**
+ * 这位道侣在玩家的记录里最深到过哪一阶。
+ *
+ * 两处来源取高:这一世的关系(player.bond)与历世归档(reincarnation.bonds)。
+ * 同一人在不同世可以有多条归档 —— 取最深的那条,并记下就近一次的结局。
+ */
+export function daoluRecordOf(daoluId: string): DaoluRecord {
+  const player = usePlayerStore()
+  let best: DaoluRecord = { depth: 0, stage: undefined, ending: undefined, shared: 0 }
+  const cur = player.bond
+  if (cur && cur.daoluId === daoluId) {
+    const ending = cur.fallen ? ENDING_NAMES.perished : cur.departed ? ENDING_NAMES.parted : undefined
+    best = { depth: daoluDepthOf(cur.stage), stage: cur.stage, ending, shared: cur.shared }
+  }
+  for (const r of player.reincarnation.bonds) {
+    if (r.daoluId !== daoluId) continue
+    const depth = daoluDepthOf(r.stage)
+    // 同深时取有结局的那条:这一世的还没结束,历世的已经盖棺
+    if (depth > best.depth || (depth === best.depth && r.ending && !best.ending)) {
+      best = { depth, stage: r.stage, ending: ENDING_NAMES[r.ending], shared: r.shared }
+    }
+  }
+  return best
+}
+
+/** 人缘册条目:走到过才有正文 */
+export function describeDaolu(def: (typeof DAOLU)[number]): CodexEntry {
+  const rec = daoluRecordOf(def.id)
+  const lv = Math.max(0, Math.min(DAOLU_STAGE_MAX, rec.depth))
+  const lines = lv >= 1 ? [def.brief, `所求:${def.pursuit}`, `底线:${def.taboo}`] : []
+  // 关系走到哪一步单独一行放最前 —— 它是这一册的主读数
+  const where = rec.ending ?? (rec.stage ? STAGE_NAMES[rec.stage] : '')
+  if (lv >= 1 && where) lines.unshift(`曾至:${where}${rec.shared > 0 ? ` · 共历 ${rec.shared} 次` : ''}`)
+  return {
+    id: def.id,
+    name: def.name,
+    desc: lines.join('\n'),
+    meta: `${TEMPER_NAMES[def.temper]} · ${LEAN_NAMES[def.lean]}道 · ${ELEMENTS[def.element].name}灵根`,
+    // 结契及以上另取金色:那是「已经绑定了」,不是灵根色
+    color: lv >= 3 ? 'var(--color-gold-ink)' : ELEMENTS[def.element].color,
+    stage: lv,
+    stageName: DAOLU_STAGE_NAMES[lv]!,
+    badge: lv >= DAOLU_STAGE_MAX ? '契' : '',
+    hint: lv < 1 ? '需相遇' : '',
+    foot: { label: '收录时间', value: '' }
+  }
+}
+
+export function daoluCodex(): CodexCat {
+  const entries = DAOLU.map(describeDaolu)
+  const seen = entries.filter(e => e.stage >= 1).length
+  const pledged = entries.filter(e => e.stage >= DAOLU_STAGE_MAX).length
+  return {
+    key: 'daolu',
+    name: '人缘册',
+    hint: `已遇 ${seen}/${DAOLU.length} · 已结契 ${pledged}`,
+    done: seen,
+    source: CODEX_SOURCES.daolu,
+    entries
+  }
 }

@@ -135,8 +135,8 @@
   import { computed, ref } from 'vue'
   import { useQuestsStore } from '@/stores/quests'
   import type { CollectionCategory } from '@/stores/quests'
-  import { DAOLU, LEAN_NAMES, TEMPER_NAMES } from '@/data/daolu'
-  import { ELEMENTS } from '@/data/linggen'
+
+
   import { usePlayerStore } from '@/stores/player'
   import { ACHIEVEMENTS } from '@/data/achievements'
   import { GONGFA } from '@/data/gongfa'
@@ -154,6 +154,7 @@
     artifactCodex,
     branchCodex,
     collectedTimeText,
+    daoluCodex,
     equipCodex,
     materialCodex,
     pillCodex,
@@ -347,24 +348,10 @@
         }))
       ),
       /*
-       * 人缘册:历世遇见过的道侣。
-       *
-       * 道侣这一世只遇一位,换一世又是别人 —— 而 10 位各有各的速写、性情、
-       * 道途、所求与底线。不记下来,上一位就什么都不剩。
-       * 「所求」与「底线」是道侣自己的事,册里照录,不替玩家摘成一句话。
+       * 人缘册:走到过多深,不是「有没有」两态。
+       * 深度从这一世的关系与历世归档里现算,见 ui/codex.daoluCodex。
        */
-      makeCat(
-        'daolu',
-        '人缘册',
-        c.daolu,
-        DAOLU.map(d => ({
-          id: d.id,
-          name: d.name,
-          desc: [d.brief, `所求:${d.pursuit}`, `底线:${d.taboo}`].join('\n'),
-          meta: `${TEMPER_NAMES[d.temper]} · ${LEAN_NAMES[d.lean]}道 · ${ELEMENTS[d.element].name}灵根`,
-          color: ELEMENTS[d.element].color
-        }))
-      )
+      daoluCodex()
     ]
   })
 

@@ -4,7 +4,7 @@ import { describe, expect, it, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { DAOLU, LEAN_NAMES, STAGE_GATES, STAGE_NAMES, TEMPER_NAMES, stageIndex } from '@/data/daolu'
+import { DAOLU, LEAN_NAMES, STAGE_GATES, STAGE_NAMES, STAGE_ORDER, TEMPER_NAMES, stageIndex } from '@/data/daolu'
 import { BOND_EVENTS, resolveChoice } from '@/data/bondEvents'
 import {
   advanceBond,
@@ -21,6 +21,7 @@ import {
   part,
   type BondState
 } from './daoluService'
+import { DAOLU_STAGE_MAX, DAOLU_STAGE_NAMES, daoluCodex, daoluDepthOf, describeDaolu } from '@/ui/codex'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
 
@@ -28,6 +29,9 @@ const SRC = readFileSync(resolve(__dirname, 'daoluService.ts'), 'utf-8')
 /** 只看代码,不看注释:注释里写着这些名字 */
 const CODE = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
 const DATA = readFileSync(resolve(__dirname, '../data/daolu.ts'), 'utf-8').replace(/\/\*[\s\S]*?\*\//g, '')
+
+/** 按 id 取道侣定义:测试里不该拿下标猜 */
+const daoluById = (id: string) => DAOLU.find(d => d.id === id)!
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -425,5 +429,78 @@ describe('遇见 · 收录进人缘册', () => {
     for (const id of quests.collections.daolu) {
       expect(DAOLU.some(d => d.id === id), `册里有认不出的 id:${id}`).toBe(true)
     }
+  })
+})
+
+/**
+ * 人缘册:深度从关系里现算,不是「有没有」两态。
+ *
+ * 道侣的「拥有」不是一次性收录 —— 从萍水相逢走到道侣有七阶,
+ * 而这一世只遇一位、只能走一次。册子若只分「见过/没见过」,
+ * 玩家就看不出「和沈青璃曾经走到了知交」,也看不出历世那位的结局。
+ *
+ * 这些判据要读 store,故放在本文件(有 beforeEach 建 Pinia),不放 ui/codex.spec。
+ * 故障注入:把 daoluDepthOf 改成恒返 1,本条红。
+ */
+describe('人缘册 · 深度从关系现算', () => {
+  it('四个深度档对得上阶序的三处拐点', () => {
+    expect(daoluDepthOf('none'), '素昧平生是 0').toBe(0)
+    expect(daoluDepthOf(undefined), '没有关系也是 0').toBe(0)
+    expect(daoluDepthOf('met'), '萍水相逢 → 1').toBe(1)
+    expect(daoluDepthOf('known'), '相识仍属「萍水相逢」档').toBe(1)
+    expect(daoluDepthOf('confidant'), '知交 → 2').toBe(2)
+    expect(daoluDepthOf('pledged'), '结契 → 3').toBe(3)
+    expect(daoluDepthOf('daolv'), '道侣已过结契,仍是最高档').toBe(3)
+  })
+
+  it('深度随阶单调不减 —— 走到更深处不该反而变浅', () => {
+    let prev = -1
+    for (const s of STAGE_ORDER) {
+      const d = daoluDepthOf(s)
+      expect(d, `${s} 的深度 ${d} 比上一阶 ${prev} 还浅`).toBeGreaterThanOrEqual(prev)
+      prev = d
+    }
+    expect(prev, '最高阶应到顶').toBe(DAOLU_STAGE_MAX)
+  })
+
+  it('未相遇时不漏人物正文,但仍给性情与道途', () => {
+    for (const d of DAOLU) {
+      const e = describeDaolu(d)
+      expect(e.id).toBe(d.id)
+      expect(e.stage, '没有任何关系,应全为 0').toBe(0)
+      expect(e.desc, '未相遇不该给出人物正文').toBe('')
+      expect(e.hint, '未相遇要给下一步提示').toBe('需相遇')
+      expect(e.meta, '性情与道途是公开信息,未相遇也给').toContain('道')
+    }
+  })
+
+  it('走到知交就有正文,且报出「曾至」那一行', () => {
+    const player = usePlayerStore()
+    meet('dl_qingli')
+    player.setBond({ ...player.bond!, stage: 'confidant' })
+    const e = describeDaolu(daoluById('dl_qingli'))
+    expect(e.stage, '知交是第 2 档').toBe(2)
+    expect(e.desc).toContain('曾至')
+    expect(e.desc).toContain('所求:')
+    expect(e.desc).toContain('底线:')
+    expect(e.stageName).toBe(DAOLU_STAGE_NAMES[2])
+  })
+
+  it('历世归档也算数:结过契的报结局与共历次数', () => {
+    const player = usePlayerStore()
+    player.recordBond({ daoluId: 'dl_zhaoyan', name: '赵砚', stage: 'pledged', ending: 'accompanied', shared: 12 })
+    const e = describeDaolu(daoluById('dl_zhaoyan'))
+    expect(e.stage, '结契是最高档').toBe(DAOLU_STAGE_MAX)
+    expect(e.badge, '满档应挂契标').toBe('契')
+    expect(e.desc, '应报出结局').toContain('相伴终老')
+    expect(e.desc, '应报出共历次数').toContain('共历 12 次')
+  })
+
+  it('整册计数与逐条对得上', () => {
+    const cat = daoluCodex()
+    expect(cat.key).toBe('daolu')
+    expect(cat.entries).toHaveLength(DAOLU.length)
+    expect(cat.done).toBe(cat.entries.filter(e => e.stage >= 1).length)
+    expect(cat.source).toMatch(/^来源:/)
   })
 })
