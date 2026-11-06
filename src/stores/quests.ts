@@ -8,7 +8,7 @@ import { ACHIEVEMENTS } from '@/data/achievements'
 import { TITLES } from '@/data/titles'
 import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
 
-export type CollectionCategory = 'equip' | 'gongfa' | 'pill' | 'artifact' | 'pet' | 'event' | 'talent'
+export type CollectionCategory = 'equip' | 'gongfa' | 'pill' | 'artifact' | 'pet' | 'event' | 'talent' | 'daolu'
 
 export const useQuestsStore = defineStore(
   'quests',
@@ -29,7 +29,9 @@ export const useQuestsStore = defineStore(
       artifact: [],
       pet: [],
       event: [],
-      talent: []
+      talent: [],
+      // 人缘:历世遇见过的道侣。道侣这一世只遇一位,跨世累积才看得出「我都遇过谁」
+      daolu: []
     })
     /** 图鉴收录时刻,键为 `${category}:${id}`(旧档已收录条目无记录) */
     const collectedAt = ref<Record<string, number>>({})
@@ -62,7 +64,9 @@ export const useQuestsStore = defineStore(
         artifact: [...new Set(asStringArray(cats.artifact))],
         pet: [...new Set(asStringArray(cats.pet))],
         event: [...new Set(asStringArray(cats.event))],
-        talent: [...new Set(asStringArray(cats.talent))]
+        talent: [...new Set(asStringArray(cats.talent))],
+        // 旧档没有这一栏:asStringArray(undefined) 得空数组,自动补上
+        daolu: [...new Set(asStringArray(cats.daolu))]
       }
       collectedAt.value = asNumberRecord(collectedAt.value, 0)
       achievedAt.value = asNumberRecord(achievedAt.value, 0)

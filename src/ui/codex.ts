@@ -95,7 +95,9 @@ export const CODEX_SOURCES: Record<CollectionCategory, string> = {
   artifact: '来源:历练掉落',
   pet: '来源:历练际遇',
   event: '来源:历练际遇、奇缘',
-  talent: '来源:转世择姿'
+  talent: '来源:转世择姿',
+  // 道侣这一世只遇一位,历世不同;册里记的是「我都遇过谁」
+  daolu: '来源:历练际遇'
 }
 
 // ============ 灵材谱 ============
