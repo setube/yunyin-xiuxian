@@ -162,38 +162,51 @@ describe('共鸣形制 · 四、两处界面都接上了', () => {
 })
 
 /**
- * 套纹的定位方式须由调用点决定,基类不许写死。
+ * 套纹须只画在自己那 9×9 里。
  *
- * 这曾是一个真实缺陷:基类写着 `position: relative`,而它在 style.css 的产物里
- * 排在 Tailwind 的 `.absolute` 之后 —— 同为单类选择器,后到的赢,
- * 于是装备卡上那句 `absolute` 被覆盖,套纹回到文档流,把卡片从正方形撑成 66.8×90.8。
- * 288 个装备模板里 8 件带套的依次被撑高,肉眼就是「有些卡变成长方形」。
+ * 这曾是一个真实缺陷:套纹基类为了不盖掉调用点的 `absolute` 而不写 position,
+ * 但 ::before 仍是 `position: absolute; inset: 0`。详情与共鸣行上套纹留在流里,
+ * 没有定位上下文,伪元素的画布就成了最近的定位祖先 `.card-ink` ——
+ * 六套纹样被拉满整张卡,背包页的「装备共鸣」变成一片斜纹。
  *
- * 三处调用点的定位各不相同:卡面要 absolute(内容已占满),
- * 详情与共鸣行要留在流里跟文字并排。基类一写死,总有一边是错的。
+ * 尺寸固定,纹样不需要定位:伪元素用块级 100%×100% 填满方框,
+ * 三处调用点各自怎么摆都不影响纹样。
  *
- * 故障注入:把 `position: relative` 加回基类,本条红。
+ * 故障注入:把 `position: absolute; inset: 0` 加回 `.set-crest::before`,第一条红。
  */
-describe('套纹 · 定位交给调用点', () => {
-  it('基类不写 position —— 写了就会盖掉调用点的 absolute', () => {
+describe('套纹 · 只画在自己那 9×9 里', () => {
+  it('纹样不靠定位 —— 一绝对定位就会以最近的定位祖先为画布', () => {
+    const pseudo = block('.set-crest::before')
+    expect(pseudo, '找不到套纹纹样').not.toBe('')
+    expect(pseudo, '纹样不许绝对定位').not.toMatch(/position\s*:\s*(absolute|fixed|sticky)/)
+    expect(pseudo, '纹样不许用 inset 撑框').not.toMatch(/(^|[;\s])inset\s*:/)
+  })
+
+  it('纹样填满 9×9 方框', () => {
     const base = block('.set-crest')
-    expect(base, '套纹基类不该写死定位').not.toMatch(/position\s*:/)
+    expect(base, '套纹须是 9×9 的小方框').toMatch(/width:\s*9px/)
+    expect(base, '套纹须是 9×9 的小方框').toMatch(/height:\s*9px/)
+    const pseudo = block('.set-crest::before')
+    expect(pseudo, '纹样须铺满方框').toMatch(/width:\s*100%/)
+    expect(pseudo, '纹样须铺满方框').toMatch(/height:\s*100%/)
   })
 
-  it('基类仍须是伪元素的包含块 —— inline-block 本身就够', () => {
-    // ::before 用 absolute inset:0 画纹样,父元素须能当包含块
-    expect(block('.set-crest'), 'inline-block 是包含块,可作 ::before 的锚').toContain('display: inline-block')
-    expect(CSS, '不再需要手写 relative 来当锚').not.toMatch(/\.set-crest\s*\{[^}]*position\s*:/)
+  it('两枚带内缩的纹样用宽高与外边距,不靠 inset', () => {
+    for (const crest of ['shell', 'chaos']) {
+      const b = block(`.set-crest--${crest}::before`)
+      expect(b, `${crest} 纹样丢了`).not.toBe('')
+      expect(b, `${crest} 纹样不许用 inset`).not.toMatch(/(^|[;\s])inset\s*:/)
+      expect(b, `${crest} 纹样须写宽高`).toMatch(/width:\s*\d+%/)
+      expect(b, `${crest} 纹样须写宽高`).toMatch(/height:\s*\d+%/)
+    }
   })
 
-  it('三处调用点各自给出定位,不靠基类兜', () => {
-    const card = readFileSync(resolve(ROOT, 'src/components/equipment/EquipmentCard.vue'), 'utf-8')
-    const detail = readFileSync(resolve(ROOT, 'src/components/equipment/EquipmentDetailDialog.vue'), 'utf-8')
+  it('三处调用点仍接上套纹', () => {
+    // 卡面:压在底边一角,仍靠调用点的 absolute
+    expect(CARD, '装备卡的套纹须 absolute').toMatch(/class="set-crest absolute/)
+    // 详情与共鸣行:留在流里,纹样靠自身 100% 填满
+    expect(DETAIL, '详情套纹留在流里').toMatch(/class="set-crest shrink-0"/)
     const inv = readFileSync(resolve(ROOT, 'src/views/InventoryView.vue'), 'utf-8')
-    // 卡面:压在底边一角
-    expect(card, '装备卡的套纹须 absolute').toMatch(/class="set-crest absolute/)
-    // 详情与共鸣行:留在流里
-    expect(detail, '详情套纹留在流里').toMatch(/class="set-crest shrink-0"/)
     expect(inv, '共鸣行套纹留在流里').toMatch(/class="set-crest shrink-0"/)
   })
 })

@@ -2409,13 +2409,13 @@ html[data-theme='dark'] .fruit-curve polyline {
  * 纹样一律吃 currentColor,故色由机制那一层给,纹样本身不写死颜色。
  */
 /*
- * 套纹:只给尺寸与锚点,**不写 position**。
+ * 套纹:固定 9×9 的小方框,纹样由 ::before 填满,**一律不用定位**。
  *
- * 三个调用点的定位各不相同:装备格上它要 `absolute` 压在底边一角
- * (卡面已被内容占满),详情与共鸣行上它要留在流里跟文字并排。
- * 基类写 `position: relative` 时,它在产物里排在 Tailwind 的 `.absolute` 之后
- * 把后者盖掉 —— 套纹回到文档流,把装备卡从正方形撑成 66.8×90.8。
- * 定位交给调用点,基类只留 `inline-block`(它本身已是伪元素的包含块)。
+ * 伪元素用绝对定位时,画布是最近的定位祖先 —— 套纹在详情与共鸣行是留在流里的,
+ * 那个祖先就成了整张 .card-ink:六套纹样被拉满卡片,背包页的「装备共鸣」变成一片斜纹。
+ * 基类也不能补 `position: relative`:它在样式产物里排在 Tailwind 的 `.absolute` 之后,
+ * 会把装备卡上那句 `absolute` 盖掉,卡面被撑成长方形。
+ * 尺寸固定,根本不需要定位:块级 100%×100% 即可,调用点怎么摆都不影响纹样。
  */
 .set-crest {
   display: inline-block;
@@ -2426,8 +2426,9 @@ html[data-theme='dark'] .fruit-curve polyline {
 }
 .set-crest::before {
   content: '';
-  position: absolute;
-  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
   background-repeat: no-repeat;
 }
 /* 机制上色:三钩子各一色,只吃既有语义 token */
@@ -2462,13 +2463,17 @@ html[data-theme='dark'] .fruit-curve polyline {
 }
 /* 神铠:一枚闭合方框(甲片) */
 .set-crest--shell::before {
-  inset: 12%;
+  width: 76%;
+  height: 76%;
+  margin: 12%;
   border: 1.5px solid currentColor;
   border-radius: 1px;
 }
 /* 混沌:一枚回环(缺口圆) */
 .set-crest--chaos::before {
-  inset: 8%;
+  width: 84%;
+  height: 84%;
+  margin: 8%;
   border: 1.5px solid currentColor;
   border-radius: 50%;
   border-top-color: transparent;
