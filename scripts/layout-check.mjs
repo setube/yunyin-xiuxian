@@ -336,6 +336,24 @@ async function measurePage(page) {
         .filter(({ r, ok }) => r.width > 0 && r.height > 0 && !ok)
         .slice(0, 3)
         .map(({ el, r }) => `${r.height.toFixed(1)}px «${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 12)}»`),
+      /*
+       * 装备卡须是正方形。
+       *
+       * 卡面写着 aspect-square,但 aspect-ratio 只在内容不超宽时才管用 ——
+       * 一旦某个形制被基类的 `position: relative` 覆盖掉调用点的 `absolute`,
+       * 它就回到文档流,把卡片撑高(实测 66.8 → 90.8,共 8 件带套的)。
+       * 逐元素量宽高比,不靠 CSS 类名推断:类名写着什么不等于它渲染成什么。
+       */
+      nonSquareCards: [...document.querySelectorAll('main button[data-uid]')]
+        .filter(el => {
+          const r = el.getBoundingClientRect()
+          return r.width > 0 && r.height > 0 && Math.abs(r.height / r.width - 1) > 0.02
+        })
+        .slice(0, 4)
+        .map(el => {
+          const r = el.getBoundingClientRect()
+          return `${(r.height / r.width).toFixed(2)}:1 ${Math.round(r.width)}×${Math.round(r.height)}`
+        }),
       // 禁用按钮文字须读得出:量前景/背景对比度
       dimDisabled: [...document.querySelectorAll('.btn-seal:disabled, .btn-ghost:disabled')]
         .map(el => {
@@ -644,6 +662,7 @@ function problemsOf(info) {
   if (info.unnamed.length) problems.push(`无名控件:${info.unnamed.join(' | ')}`)
   if (info.smallTargets.length) problems.push(`可点元素过小:${info.smallTargets.join(' | ')}`)
   if (info.dimDisabled.length) problems.push(`禁用态的字读不出来(对比度不足):${info.dimDisabled.join(' | ')}`)
+  if (info.nonSquareCards?.length) problems.push(`装备卡不是正方形(被内容撑高):${info.nonSquareCards.join(' | ')}`)
   if (info.badGroups.length) problems.push(`选择组没选中态:${info.badGroups.join(' | ')}`)
   if (info.headerTall?.length) problems.push(`顶栏折行(数字断行看着像乱码):${info.headerTall.join(' | ')}`)
   if (info.regionCards?.tall.length) problems.push(`地界名被挤成竖排:${info.regionCards.tall.join(' | ')}`)

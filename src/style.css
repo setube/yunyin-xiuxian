@@ -2408,8 +2408,16 @@ html[data-theme='dark'] .fruit-curve polyline {
  *   机制(mechanism):三钩子各一色(护命转朱 / 开战盾转靛 / 汲取转青),色只作辅助。
  * 纹样一律吃 currentColor,故色由机制那一层给,纹样本身不写死颜色。
  */
+/*
+ * 套纹:只给尺寸与锚点,**不写 position**。
+ *
+ * 三个调用点的定位各不相同:装备格上它要 `absolute` 压在底边一角
+ * (卡面已被内容占满),详情与共鸣行上它要留在流里跟文字并排。
+ * 基类写 `position: relative` 时,它在产物里排在 Tailwind 的 `.absolute` 之后
+ * 把后者盖掉 —— 套纹回到文档流,把装备卡从正方形撑成 66.8×90.8。
+ * 定位交给调用点,基类只留 `inline-block`(它本身已是伪元素的包含块)。
+ */
 .set-crest {
-  position: relative;
   display: inline-block;
   width: 9px;
   height: 9px;

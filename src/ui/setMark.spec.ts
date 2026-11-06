@@ -160,3 +160,40 @@ describe('共鸣形制 · 四、两处界面都接上了', () => {
     expect(block('.set-pips'), '件数刻度不该吃指针事件').toContain('pointer-events: none')
   })
 })
+
+/**
+ * 套纹的定位方式须由调用点决定,基类不许写死。
+ *
+ * 这曾是一个真实缺陷:基类写着 `position: relative`,而它在 style.css 的产物里
+ * 排在 Tailwind 的 `.absolute` 之后 —— 同为单类选择器,后到的赢,
+ * 于是装备卡上那句 `absolute` 被覆盖,套纹回到文档流,把卡片从正方形撑成 66.8×90.8。
+ * 288 个装备模板里 8 件带套的依次被撑高,肉眼就是「有些卡变成长方形」。
+ *
+ * 三处调用点的定位各不相同:卡面要 absolute(内容已占满),
+ * 详情与共鸣行要留在流里跟文字并排。基类一写死,总有一边是错的。
+ *
+ * 故障注入:把 `position: relative` 加回基类,本条红。
+ */
+describe('套纹 · 定位交给调用点', () => {
+  it('基类不写 position —— 写了就会盖掉调用点的 absolute', () => {
+    const base = block('.set-crest')
+    expect(base, '套纹基类不该写死定位').not.toMatch(/position\s*:/)
+  })
+
+  it('基类仍须是伪元素的包含块 —— inline-block 本身就够', () => {
+    // ::before 用 absolute inset:0 画纹样,父元素须能当包含块
+    expect(block('.set-crest'), 'inline-block 是包含块,可作 ::before 的锚').toContain('display: inline-block')
+    expect(CSS, '不再需要手写 relative 来当锚').not.toMatch(/\.set-crest\s*\{[^}]*position\s*:/)
+  })
+
+  it('三处调用点各自给出定位,不靠基类兜', () => {
+    const card = readFileSync(resolve(ROOT, 'src/components/equipment/EquipmentCard.vue'), 'utf-8')
+    const detail = readFileSync(resolve(ROOT, 'src/components/equipment/EquipmentDetailDialog.vue'), 'utf-8')
+    const inv = readFileSync(resolve(ROOT, 'src/views/InventoryView.vue'), 'utf-8')
+    // 卡面:压在底边一角
+    expect(card, '装备卡的套纹须 absolute').toMatch(/class="set-crest absolute/)
+    // 详情与共鸣行:留在流里
+    expect(detail, '详情套纹留在流里').toMatch(/class="set-crest shrink-0"/)
+    expect(inv, '共鸣行套纹留在流里').toMatch(/class="set-crest shrink-0"/)
+  })
+})
