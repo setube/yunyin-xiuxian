@@ -38,8 +38,44 @@ const MODULE_KEYWORD: Record<string, string> = {
   'core/gongfaService.ts': '参悟',
   'core/pillService.ts': '炼',
   'core/eventEngine.ts': '际遇',
-  'core/reincarnation.ts': '转世'
+  'core/reincarnation.ts': '转世',
+  // 道侣在历练途中按地貌相遇(见 core/daoluService.candidatesFor),归「际遇」
+  'core/daoluService.ts': '际遇'
 }
+
+/**
+ * 每一类收藏册都要有落处:store 里初始化成空数组、sanitize 里回填。
+ *
+ * 加类别时最容易漏的不是 collect,而是这两处 ——
+ * 漏了 store 初始化,collect 时 `collections.value[category]` 是 undefined,
+ * 函数静默 return false,收录永远不生效而界面不报错。
+ * 旧档更麻烦:存档里根本没有这一栏,只有 sanitize 回填才补得回来。
+ *
+ * 故障注入:删掉 store 里任一 `xxx: []` 或 sanitize 里的回填行,本条红。
+ */
+describe('图鉴 · 每类都有落处', () => {
+  const STORE = readFileSync(resolve(__dirname, '../stores/quests.ts'), 'utf-8')
+  const cats = Object.keys(CODEX_SOURCES)
+
+  it('store 初始化把每一类都列出来', () => {
+    for (const cat of cats) {
+      expect(STORE, `store 的 collections 初始化漏了 ${cat}`).toMatch(new RegExp(`\\b${cat}:\\s*\\[\\]`))
+    }
+  })
+
+  it('sanitize 把每一类都回填 —— 旧档没有这一栏', () => {
+    for (const cat of cats) {
+      // 用 includes 而不是正则:这段里满是 `...` 与括号,正则的转义层级容易写错
+      expect(STORE, `sanitize 漏了 ${cat},旧档读进来会是 undefined`).toContain(
+        `${cat}: [...new Set(asStringArray(cats.${cat}))]`
+      )
+    }
+  })
+
+  it('判据本身不是空转 —— 类别数对得上说明表', () => {
+    expect(cats.length, '扫到的类别太少,可能 CODEX_SOURCES 被改坏了').toBeGreaterThanOrEqual(8)
+  })
+})
 
 describe('图鉴 · 来源说明与收录点同源', () => {
   const CATS = Object.keys(CODEX_SOURCES) as CollectionCategory[]

@@ -144,6 +144,14 @@ export function meet(daoluId: string, now = Date.now()): boolean {
     nextEventAt: EVENT_GAP,
     lastKind: null
   })
+  /*
+   * 收录进插图鉴的「人缘」册。
+   *
+   * 道侣这一世只能遇一位(上面 `if (player.bond) return false`),而 10 位各有各的
+   * 速写、性情、道途、所求与底线 —— 不记下来,换一世遇见别人时,上一位就什么都不剩。
+   * 册子是跨世累积的(与收藏册其余各册同表),记的是「历世都遇过谁」。
+   */
+  useQuestsStore().collect('daolu', daoluId)
   useUiStore().toast(`遇见${def.name}`, 'info')
   return true
 }

@@ -22,6 +22,7 @@ import {
   type BondState
 } from './daoluService'
 import { usePlayerStore } from '@/stores/player'
+import { useQuestsStore } from '@/stores/quests'
 
 const SRC = readFileSync(resolve(__dirname, 'daoluService.ts'), 'utf-8')
 /** 只看代码,不看注释:注释里写着这些名字 */
@@ -396,5 +397,33 @@ describe('道侣机会点 · 四个不该加的情形', () => {
     expect(player.bond?.opportunities).toBe(3)
     gainBondOpportunities(-4)
     expect(player.bond?.opportunities, '负数不该把机会点减回去').toBe(3)
+  })
+})
+
+/**
+ * 遇见道侣要收录进「人缘」册。
+ *
+ * 道侣这一世只遇一位(meet 里 `if (player.bond) return false`),而 10 位各有各的
+ * 速写、性情、道途、所求与底线。不记下来,换一世遇见别人时上一位就什么都不剩 ——
+ * 册子是跨世累积的,记的是「历世都遇过谁」。
+ *
+ * 故障注入:去掉 meet 里的 collect('daolu', …),本条红。
+ */
+describe('遇见 · 收录进人缘册', () => {
+  it('相遇即收录,重复相遇不重复计', () => {
+    const quests = useQuestsStore()
+    quests.collections.daolu = []
+    meet('dl_qingli')
+    expect(quests.collections.daolu, '相遇后应收录').toContain('dl_qingli')
+    // 已有道侣时 meet 直接返回 false,不会再收一位
+    meet('dl_zhaoyan')
+    expect(quests.collections.daolu, '这一世只能遇一位').toEqual(['dl_qingli'])
+  })
+
+  it('收录的是 id,不是名字 —— 册子按 id 对上数据表', () => {
+    const quests = useQuestsStore()
+    for (const id of quests.collections.daolu) {
+      expect(DAOLU.some(d => d.id === id), `册里有认不出的 id:${id}`).toBe(true)
+    }
   })
 })
