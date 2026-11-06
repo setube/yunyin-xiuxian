@@ -28,6 +28,7 @@ import { NO_RELIEF, type TribulationRelief } from '@/data/linggenAffinity'
 import { reliefFelt } from './linggenAffinity'
 import { track, trackRealm, checkStateAchievements } from './progress'
 import { recordMilestone } from './identity'
+import { worldLeap } from '@/ui/worldMark'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
@@ -221,6 +222,8 @@ export function attemptBreakthrough(): BreakthroughView | null {
     // 跨界飞升三步(入仙界/神界/混沌海)给独立叙事与跨世节点,人间界入口不算
     const crossedWorld = info.isMajor && player.major > 0 && isWorldEntry(player.major)
     const world = crossedWorld ? worldOf(player.major) : null
+    // 跨界的那一跃:离开哪一界、进入哪一界、寿元翻几倍(只认跨界入口,不认同界域的大关)
+    const leap = crossedWorld ? worldLeap(player.major) : undefined
     if (world) recordMilestone(`first_${world.id}`)
     const baseMessage = `${realm.desc}。寿元增至 ${formatYears(player.lifespanMax)}。`
     // 大关进阶附这一境的出处
@@ -236,7 +239,9 @@ export function attemptBreakthrough(): BreakthroughView | null {
         ? ''
         : world
           ? `已入${world.name}。${world.desc}。${baseMessage}${loreLine}`
-          : `${baseMessage}${loreLine}`
+          : `${baseMessage}${loreLine}`,
+      // 文本里那句「已入仙界」是文学;倍数才是分量,单独给弹窗画
+      ...(leap ? { leap } : {})
     }
   } else {
     // 渡劫跬步(宿命传承):本世一次突破失败豁免,不散修为,跨世不带
