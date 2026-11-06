@@ -10,6 +10,13 @@
  *   - `.length === 0`        → `.length < 0`
  * 每处变异后跑对应 spec,再原样写回(失败也写回)。
  *
+ * 三类结论:
+ *   caught      改坏了有人报 —— 这条守卫有牙
+ *   survived    改坏了没人报 —— 盲区,判据要补
+ *   EQUIVALENT  改坏了也改不出可见差别 —— 语义等价变异,任何判据都抓不到
+ *
+ * 等价变异必须进 EQUIVALENT 名单并写明理由。不写理由的「等价」就是在掩盖盲区。
+ *
  * 用法:node scripts/mutation-scan.mjs [--limit N]
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
@@ -24,6 +31,33 @@ const PATTERNS = [
   { name: '钳制下限', re: /Math\.max\(0(?:\.\d+)?,\s*([^;()]+(?:\([^)]*\))?[^;()]*)\)/g, rep: '$1' },
   { name: '空判取反', re: /\.length === 0\)/g, rep: '.length < 0)' }
 ]
+
+/**
+ * 等价变异名单:改了但改不出可见差别,任何判据都抓不到。
+ *
+ * 为什么必须有这份:扫描一次报一堆「漏」,真盲区和等价变异混在一起,
+ * 分不清该补哪条 —— 于是这份报告没人看,工具等于没用。
+ *
+ * 门槛:每条都要写清 why,并且是**读过代码确认过**的,不是猜的。
+ * 匹配口径是「文件 + 归一化原文」,不按行号(行号随改动漂)。
+ */
+const EQUIVALENT = [
+  {
+    file: 'src/core/combat.ts',
+    text: 'Math.max(0.2, 1 - target.defSunder)',
+    why: 'ARTIFACT_SUNDER_CAP 是 0.5,defSunder 封顶 0.5,1-0.5=0.5 远高于 0.2 的下限,这道钳制永不触发'
+  }
+]
+
+/** 归一化:压掉空白差异,让名单不因排版重排而失配 */
+const norm = t => t.replace(/\s+/g, ' ').trim()
+
+/** 命中名单就返回那条(含 why),否则 undefined */
+function equivalentOf(t) {
+  const rel = t.file.slice(ROOT.length + 1)
+  const key = norm(t.text)
+  return EQUIVALENT.find(e => e.file === rel && norm(e.text) === key)
+}
 
 function targets(dir, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -90,7 +124,14 @@ function runSpec(spec) {
 const missed = []
 const infra = []
 let checked = 0
+const skipped = []
 for (const t of found) {
+  // 等价变异不必真跑:省下的是一次 spec 启动(实测约 3.7 秒)
+  const eq = equivalentOf(t)
+  if (eq) {
+    skipped.push({ ...t, why: eq.why })
+    continue
+  }
   const orig = readFileSync(t.file, 'utf-8')
   // 同一段文本可能在文件里出现多次:按记录的下标定位,否则后续几处会重复变异第一处
   if (orig.slice(t.index, t.index + t.text.length) !== t.text || t.mutated === t.text) continue
@@ -112,7 +153,9 @@ for (const t of found) {
   }
 }
 
-console.log(`\n检查 ${checked} 处 | 漏 ${missed.length} 处 | 设施故障 ${infra.length} 处`)
+console.log(
+  `\n检查 ${checked} 处 | 漏 ${missed.length} 处 | 等价跳过 ${skipped.length} 处 | 设施故障 ${infra.length} 处`
+)
 if (missed.length > 0) {
   console.log('\n漏掉的(改坏了不会红):')
   for (const m of missed) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.text.trim().slice(0, 70)}`)
@@ -121,4 +164,9 @@ if (infra.length > 0) {
   console.log('\n设施故障(没测成,不算抓到也不算漏):')
   for (const m of infra) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.detail}`)
 }
+if (skipped.length > 0) {
+  console.log('\n等价变异(改不出可见差别,不算漏 —— 每条附理由):')
+  for (const m of skipped) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.text.trim().slice(0, 70)}\n      理由:${m.why}`)
+}
+// 等价变异不计入退出码:它不是缺陷。但**没写理由的等价**进不了这份名单,会照常算漏。
 if (missed.length > 0 || infra.length > 0) process.exitCode = 1
