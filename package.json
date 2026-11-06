@@ -26,6 +26,7 @@
     "offline-check": "bun run build && bun scripts/offline-check.mjs",
     "first-paint": "bun run build && bun scripts/first-paint.mjs",
     "perf-profile": "bun run build && bun scripts/perf-profile.mjs",
+    "treasure-check": "bun run build && node scripts/treasure-check.mjs",
     "build:electron": "vue-tsc -b && vite build && esbuild electron/main.js --bundle --platform=node --format=esm --outfile=dist-electron/main.js --external:electron && esbuild electron/preload.js --bundle --platform=node --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never",
     "build:android": "bun run build && bunx cap sync android",
     "build:apk": "bun run build:android && cd android && ./gradlew assembleRelease",

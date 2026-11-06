@@ -9,11 +9,12 @@ import { CHAIN_STAGE_CHANCE, FORTUNE_CHANCE, INSTANT_EXP_LAYER_CAP } from '@/dat
 import { pillDef, PILLS, pillRank } from '@/data/pills'
 import { HERB_GRADE_SHORT, herbGradeOfMajor } from '@/data/herbGrades'
 import { buffDef } from '@/data/buffs'
+import { GONGFA } from '@/data/gongfa'
 import { petDef, genericPetPool } from '@/data/pets'
 import { personalityEffects } from './petPersonality'
 import { expFromSecs, stoneByTier } from './formulas'
 import { generateEquipment } from './equipGen'
-import { acquireArtifact, acquireEquipment, randomDropArtifact } from './loot'
+import { acquireArtifact, acquireEquipment, celebrateTreasure, randomDropArtifact } from './loot'
 import { harvestMaterials } from './loreService'
 import { gameNow } from './enginePause'
 import { learnRandomGongfa } from './gongfaService'
@@ -137,6 +138,12 @@ function foldSession(stone?: GNum, exp?: GNum, items = 0): void {
 export interface EventApplyOpts {
   /** 空祭炼位时自动祭上法宝;默认 true,玩家不在场的自动结算(离线 / 遇事勿扰 / 超时)传 false,同 offline.ts 的 autoEquip=false */
   autoEquipArtifact?: boolean
+  /**
+   * 玩家不在场:不翻开得宝仪典。
+   * 与 autoEquipArtifact 同一批调用点 —— 那几处玩家没看着屏幕,
+   * 归来卷轴与 toast 已经交代了所得,再演一遍「那一刻」是假的。
+   */
+  silent?: boolean
 }
 
 function applyEffect(effect: EventEffect, tier: number, opts: EventApplyOpts = {}): string | null {
@@ -176,7 +183,8 @@ function applyEffect(effect: EventEffect, tier: number, opts: EventApplyOpts = {
         luck: modOf(player.finalStats.mods, 'luck') + personalityEffects(player.petId).dropLuck,
         minQualityRank: effect.minQualityRank
       })
-      const line = `获得 ${acquireEquipment(inst).line}`
+      // 静默结算(离线)时入账照旧,只是不弹 toast、不翻开仪典
+      const line = `获得 ${acquireEquipment(inst, { quiet: opts.silent === true }).line}`
       foldSession(undefined, undefined, 1)
       return line
     }
@@ -188,11 +196,17 @@ function applyEffect(effect: EventEffect, tier: number, opts: EventApplyOpts = {
       inventory.addPill(id, effect.count)
       collect('pill', id)
       foldSession(undefined, undefined, effect.count)
+      // 际遇赠顶档丹药:与掉落/自炼同一份仪典
+      if (!opts.silent) celebrateTreasure({ kind: 'pill', pill: def })
       return `丹药「${def.name}」×${effect.count}`
     }
     case 'gongfa': {
       const learnt = learnRandomGongfa(effect.id)
-      if (learnt) return `习得功法《${learnt}》`
+      if (learnt) {
+        const def = GONGFA.find(g => g.name === learnt)
+        if (def && !opts.silent) celebrateTreasure({ kind: 'gongfa', gongfa: def })
+        return `习得功法《${learnt}》`
+      }
       resources.addSmall('page', 10)
       return '功法残页 +10'
     }
@@ -227,6 +241,8 @@ function applyEffect(effect: EventEffect, tier: number, opts: EventApplyOpts = {
       collect('pet', id)
       if (!player.petId) player.setPet(id)
       const def = petDef(id)
+      // 仙品/神品神兽只由指名事件发放 —— 正是最该有一瞬的那条路
+      if (def && !opts.silent) celebrateTreasure({ kind: 'pet', pet: def })
       return `获得灵兽「${def?.name ?? ''}」`
     }
     case 'nothing':
@@ -276,11 +292,15 @@ export function resolveEventChoice(def: EventDef, choiceIdx: number, tier: numbe
 }
 
 /** 离线/超时/勿扰按默认选项自动结算(三者共用出口);玩家不在场,不自动祭法宝 */
-export function autoResolveEvent(eventId: string, tier: number): EventResolution | null {
+/**
+ * 按默认选项自动结算(离线 / 遇事勿扰 / 超时)。
+ * 玩家不在场时传 silent(offline 是真不在场;勿扰与超时那一刻玩家可能正看着,由调用点决定)。
+ */
+export function autoResolveEvent(eventId: string, tier: number, silent = false): EventResolution | null {
   const def = eventDef(eventId)
   if (!def) return null
   let idx = def.choices.findIndex(c => c.isDefault && choiceAvailable(c, tier))
   if (idx < 0) idx = def.choices.findIndex(c => choiceAvailable(c, tier))
   if (idx < 0) idx = 0
-  return resolveEventChoice(def, idx, tier, { autoEquipArtifact: false })
+  return resolveEventChoice(def, idx, tier, silent ? { autoEquipArtifact: false, silent: true } : { autoEquipArtifact: false })
 }

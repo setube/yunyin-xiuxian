@@ -15,7 +15,7 @@ import {
  * 直接去碰 `T.` 或采样器,就会在测试环境里当场抛错 → 红。configureAudio 把音量夹回 0..1。
  */
 describe('音频引擎 · 无音频环境下免疫(no-op 不抛错)', () => {
-  const ALL_SFX: SfxName[] = ['click', 'success', 'warn', 'info', 'rare', 'win', 'lose', 'breakthrough', 'fail']
+  const ALL_SFX: SfxName[] = ['click', 'success', 'warn', 'info', 'rare', 'treasure', 'win', 'lose', 'breakthrough', 'fail']
 
   it('未解锁也未加载 Tone 时,playSfx 每种音效都是无害 no-op(不抛)', () => {
     for (const n of ALL_SFX) expect(() => playSfx(n)).not.toThrow()

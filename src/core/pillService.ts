@@ -22,6 +22,7 @@ import { useLoreStore } from '@/stores/lore'
 import { useUiStore } from '@/stores/ui'
 import { playSfx } from './audio'
 import { craftOkToast, craftShortToast, craftUnknownToast, pillGoneToast, pillTakenToast } from '@/ui/pillText'
+import { treasureOf } from '@/ui/treasureCeremony'
 import type { GNum } from '@/types'
 
 /** 服用一枚丹药。quiet=true 供批量服丹:逐枚结算照旧,提示与音效由批量层合为一条。 */
@@ -288,6 +289,9 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
   if (!quiet) {
     playSfx('success')
     ui.toast(craftOkToast(def.name, extra > 0), extra ? 'rare' : 'success')
+    // 开炉开出顶档(神品 / 道品)那一炉,与拾得同办仪典 —— 自炼得来的更该被看见
+    const treasure = treasureOf({ kind: 'pill', pill: def })
+    if (treasure) ui.showTreasure(treasure)
   }
   return { ok: true, count: 1 + extra }
 }

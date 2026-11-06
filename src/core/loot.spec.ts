@@ -30,6 +30,9 @@ import { gn, toNum } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { modOf, capChance } from './statsCalc'
 import type { EquipmentInstance, QualityId } from '@/types'
+import { useUiStore } from '@/stores/ui'
+import { ARTIFACTS as ALL_ARTIFACTS } from '@/data/artifacts'
+import { equipmentTemplate } from '@/data/equipment'
 
 describe('自动回收 · 装备入包前的第一道闸', () => {
   beforeEach(() => {
@@ -410,5 +413,88 @@ describe('矿石掉落战报', () => {
     }
     expect(resources.ore, '矿石掉落实发').toBeGreaterThan(before)
     expect(lines.some(l => l.includes('玄铁')), '掉落的矿石必须报进战报行,不能给而不报').toBe(true)
+  })
+})
+
+
+describe('得宝仪典 · 顶档之物入手才翻开那一刻', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  /** 天/仙/神三档逐档拾一件;只有神品该开仪典 */
+  it('拾得神品开仪典,天品与仙品不开 —— 落差只给最顶那一档', () => {
+    const ui = useUiStore()
+    for (const q of ['heaven', 'immortal'] as const) {
+      ui.clearTreasure()
+      acquireEquipment({
+        uid: `t-${q}`,
+        templateId: 'b_qingyun',
+        quality: q,
+        tier: 3,
+        level: 0,
+        affixes: []
+      })
+      expect(ui.treasure, `${qualityDef(q).name}不该开仪典`).toBeNull()
+    }
+
+    ui.clearTreasure()
+    acquireEquipment({
+      uid: 't-divine',
+      templateId: 'b_qingyun',
+      quality: 'divine',
+      tier: 20,
+      level: 0,
+      affixes: []
+    })
+    expect(ui.treasure, '神品该开仪典').not.toBeNull()
+    expect(ui.treasure!.grade).toBe(qualityDef('divine').name)
+    expect(ui.treasure!.kindName).toBe('装备')
+    // 名取自模板表,不是 toast 里那串「神品·名」拼出来的
+    expect(ui.treasure!.name).toBe(equipmentTemplate('b_qingyun')!.name)
+  })
+
+  it('quiet(离线批量结算)一件都不开 —— 玩家没看着屏幕', () => {
+    const ui = useUiStore()
+    ui.clearTreasure()
+    acquireEquipment(
+      { uid: 'q-divine', templateId: 'b_qingyun', quality: 'divine', tier: 20, level: 0, affixes: [] },
+      { quiet: true, forceKeep: true }
+    )
+    expect(ui.treasure, '静默拾取不该翻开仪典').toBeNull()
+  })
+
+  it('神品法宝同样开;凡品法宝不开', () => {
+    const ui = useUiStore()
+    const divine = ALL_ARTIFACTS.find(a => a.quality === 'divine')!
+    const mortal = ALL_ARTIFACTS.find(a => a.quality === 'mortal')!
+    ui.clearTreasure()
+    acquireArtifact(mortal.id)
+    expect(ui.treasure, '凡品法宝不该开仪典').toBeNull()
+    ui.clearTreasure()
+    acquireArtifact(divine.id)
+    expect(ui.treasure, '神品法宝该开仪典').not.toBeNull()
+    expect(ui.treasure!.kindName).toBe('法宝')
+    expect(ui.treasure!.name).toBe(divine.name)
+  })
+
+  it('被自动回收/化尘的神品不翻仪典 —— 没入囊的东西不该敲锣', () => {
+    const ui = useUiStore()
+    ui.clearTreasure()
+    useSettingsStore().smartKeep.enabled = true
+    // 化尘发生在入包之前,仪典只在真正入囊那条分支上
+    acquireEquipment({ uid: 'dust-divine', templateId: 'b_qingyun', quality: 'mortal', tier: 1, level: 0, affixes: [] })
+    expect(ui.treasure).toBeNull()
+  })
+
+  it('store 的仪典是单件语义:后一件顶替前一件,不排队', () => {
+    const ui = useUiStore()
+    ui.clearTreasure()
+    acquireEquipment({ uid: 'd1', templateId: 'b_qingyun', quality: 'divine', tier: 20, level: 0, affixes: [] })
+    const first = ui.treasure!.name
+    acquireEquipment({ uid: 'd2', templateId: 'h_muzan', quality: 'divine', tier: 20, level: 0, affixes: [] })
+    expect(ui.treasure!.name).not.toBe(first)
+    ui.clearTreasure()
+    expect(ui.treasure).toBeNull()
   })
 })

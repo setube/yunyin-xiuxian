@@ -5,7 +5,7 @@
  */
 import type * as ToneNS from 'tone'
 
-export type SfxName = 'click' | 'success' | 'warn' | 'info' | 'rare' | 'win' | 'lose' | 'breakthrough' | 'fail'
+export type SfxName = 'click' | 'success' | 'warn' | 'info' | 'rare' | 'treasure' | 'win' | 'lose' | 'breakthrough' | 'fail'
 
 export interface AudioPrefs {
   musicOn: boolean
@@ -484,6 +484,12 @@ export function playSfx(name: SfxName): void {
     case 'rare':
       bellSampler?.triggerAttackRelease('D5', '1n', now, 0.6)
       chimeSampler?.triggerAttackRelease('D7', '1n', now + 0.15, 0.2)
+      break
+    case 'treasure':
+      /* 得宝仪典:磬一记 + 筝自低向高五声。比 rare 长、比 breakthrough 收 —— 这是「到了」不是「过了」 */
+      bellSampler?.triggerAttackRelease('A4', '2n', now, 0.7)
+      gliss(['A4', 'B4', 'D5', 'E5', 'A5'], 0.12, 0.5)
+      chimeSampler?.triggerAttackRelease('A6', '1n', now + 0.6, 0.18)
       break
     case 'win':
       gliss(['D5', 'E5', 'F#5', 'A5', 'B5'], 0.09)

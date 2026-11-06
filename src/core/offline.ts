@@ -392,10 +392,11 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
       if (offlineEventPool.length === 0) offlineEventPool = DEFAULT_OFFLINE_EVENT_IDS
       for (let i = 0; i < evCap; i += 1) {
         if (adventure.pendingEventId) {
-          autoResolveEvent(adventure.pendingEventId, region.tier)
+          // 玩家不在场:顶档所得不翻开得宝仪典,归来卷轴已交代(见 ui/treasureCeremony)
+          autoResolveEvent(adventure.pendingEventId, region.tier, true)
           adventure.setPendingEvent(null, nowMs)
         } else {
-          autoResolveEvent(rng.pick(offlineEventPool), region.tier)
+          autoResolveEvent(rng.pick(offlineEventPool), region.tier, true)
         }
       }
       // summary 与 session 只报实际结算的事件数

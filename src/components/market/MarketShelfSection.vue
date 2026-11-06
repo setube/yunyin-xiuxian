@@ -89,6 +89,7 @@
   import { herbQualityLuster, herbQualityRank, herbQualityTextColor, herbQualityTier, herbQualityTone } from '@/ui/herbQuality'
   import { tint } from '@/utils/colorToken'
   import { focusHerbSlot, marketEquipInstance } from '@/core/marketService'
+  import { celebrateTreasure } from '@/core/loot'
   import { cmp, gnZero, subClamp } from '@/utils/gnum'
   import { formatGN, formatGap } from '@/utils/format'
   import { classicalDuration } from '@/data/timeUnits'
@@ -245,10 +246,36 @@
     const result = market.buy(idx)
     const slot = market.stock.find(s => s.idx === idx)
     const name = slot ? renderSlot(slot).name : ''
-    if (result === 'ok') ui.toast(`购得「${name}」`, 'success')
-    else if (result === 'poor') ui.toast(slot ? `灵石尚差 ${formatGap(renderSlot(slot).stoneShort)}` : '灵石不足', 'warn')
+    if (result === 'ok') {
+      ui.toast(`购得「${name}」`, 'success')
+      // 顶档之物另办仪典:与拾得同一份判定(见 ui/treasureCeremony)
+      if (slot) celebratePurchase(slot)
+    } else if (result === 'poor') ui.toast(slot ? `灵石尚差 ${formatGap(renderSlot(slot).stoneShort)}` : '灵石不足', 'warn')
     else if (result === 'bagfull') ui.toast('行囊已满', 'warn')
     else if (result === 'expired') ui.toast('货架已刷新', 'warn')
+  }
+
+  /**
+   * 买到的若是顶档之物,与拾得同办得宝仪典(见 ui/treasureCeremony)。
+   *
+   * 货架上的装备实例由 (stockedAt, idx) 确定性再生 —— 买之前预览的那件、
+   * 买之后仪典报的那件,是同一件;这里按同一份再生存根名与成色。
+   */
+  function celebratePurchase(slot: MarketSlot): void {
+    if (slot.kind === 'pill' && slot.pillId) {
+      const def = pillDef(slot.pillId)
+      if (def) celebrateTreasure({ kind: 'pill', pill: def })
+      return
+    }
+    if (slot.kind !== 'equipment') return
+    const inst = marketEquipInstance(slot, market.stockedAt)
+    const tmpl = equipmentTemplate(inst.templateId)
+    celebrateTreasure({
+      kind: 'equip',
+      quality: inst.quality,
+      name: tmpl?.name ?? inst.templateId,
+      icon: tmpl?.icon ?? 'sword'
+    })
   }
 
   /** 续草落点:挂载与换货后都重算(高亮记渲染序号,换货后会指错);首次进入或换过货才滚 */
