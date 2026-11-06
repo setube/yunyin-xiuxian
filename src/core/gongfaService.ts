@@ -12,6 +12,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useUiStore } from '@/stores/ui'
+import { celebrateTreasure } from './loot'
 import {
   gongfaAllLearnedToast,
   gongfaComprehendToast,
@@ -63,6 +64,9 @@ export function comprehendGongfa(): boolean {
   const name = learnRandomGongfa()
   if (name) {
     ui.toast(gongfaComprehendToast(name), 'rare')
+    // 参悟得顶档功法:与拾得同办仪典。learnRandomGongfa 只回名字,成色按名字回查一次
+    const def = GONGFA.find(g => g.name === name)
+    if (def) celebrateTreasure({ kind: 'gongfa', gongfa: def })
     return true
   }
   return false

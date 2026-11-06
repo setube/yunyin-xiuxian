@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { LinggenProfile, OfflineSummary } from '@/types'
+import type { TreasureMark } from '@/ui/treasureCeremony'
 
 export interface Toast {
   id: number
@@ -80,6 +81,11 @@ export const useUiStore = defineStore('ui', () => {
   const pwaUpdatePending = ref(false)
   let pwaApplyReload: (() => void) | null = null
   const corruptedNotice = ref<string[]>([])
+  /**
+   * 待播的得宝仪典。置满即换:同一时刻只演一件 ——
+   * 连得两件时演后一件,前一件的 toast 仍在,信息不丢。
+   */
+  const treasure = ref<TreasureMark | null>(null)
 
   /** 每条 toast 的收起计时器;去重刷新时须先撤掉旧的 */
   const timers = new Map<number, ReturnType<typeof setTimeout>>()
@@ -115,6 +121,16 @@ export const useUiStore = defineStore('ui', () => {
   /** 手动关闭某条提示;与超时收起同一条路,计时器一起撤 */
   function dismissToast(id: number): void {
     removeToast(id)
+  }
+
+  /** 开仪典:只在顶档之物入手时调用(判据见 ui/treasureCeremony) */
+  function showTreasure(mark: TreasureMark): void {
+    treasure.value = mark
+  }
+
+  /** 仪典演完(或被打断)后收起;组件按自己的停留时长调用 */
+  function clearTreasure(): void {
+    treasure.value = null
   }
 
   /** 新版本已就绪:亮出「重载以应用」横幅 */
@@ -157,6 +173,9 @@ export const useUiStore = defineStore('ui', () => {
     setPwaApplyReload,
     applyPwaUpdate,
     corruptedNotice,
+    treasure,
+    showTreasure,
+    clearTreasure,
     toast,
     dismissToast
   }

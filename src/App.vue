@@ -17,6 +17,8 @@
 
     <!-- 全局浮层 -->
     <ToastHost />
+    <!-- 得宝仪典:顶档之物入手的「那一瞬」,层级高于 toast(见 ui/treasureCeremony) -->
+    <TreasureCeremony />
     <UpdatePrompt />
     <OfflineRewardDialog />
     <BreakthroughResultDialog />
@@ -44,6 +46,7 @@
   import TopStatusBar from '@/components/common/TopStatusBar.vue'
   import BottomNavigation from '@/components/common/BottomNavigation.vue'
   import ToastHost from '@/components/common/ToastHost.vue'
+  import TreasureCeremony from '@/components/common/TreasureCeremony.vue'
   import UpdatePrompt from '@/components/common/UpdatePrompt.vue'
   import OfflineRewardDialog from '@/components/offline/OfflineRewardDialog.vue'
   import BreakthroughResultDialog from '@/components/cultivation/BreakthroughResultDialog.vue'

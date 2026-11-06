@@ -5,6 +5,7 @@ import { gnZero, isZero } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 import { salvageYieldText } from '@/ui/forgeText'
 import { isRareQuality, qualityDef } from '@/data/qualities'
+import { treasureOf, type TreasureSource } from '@/ui/treasureCeremony'
 import { equipmentTemplate } from '@/data/equipment'
 import { PILLS, pillRank } from '@/data/pills'
 import { STONE_AMT_PER_BATTLE } from './pillValue'
@@ -135,8 +136,24 @@ function acquireInto(inst: EquipmentInstance, opts: { quiet?: boolean; forceKeep
   }
   if (!quiet && isRareQuality(q)) {
     ui.toast(`拾得「${label}」`, 'rare')
+    // 顶档另开仪典:天/仙/神三档在「到手」这一刻此前长得一样(见 ui/treasureCeremony)
+    celebrateTreasure({ kind: 'equip', quality: inst.quality, name: t?.name ?? '不明之物', icon: t?.icon ?? 'sword' })
   }
   return { line: label, bagged: true, evicted: false, dust: 0, stone: gnZero() }
+}
+
+/**
+ * 开得宝仪典。顶档之物入手时调用;非顶档返回 false,什么都不做。
+ *
+ * 收在这里而不是让每个发放点各自 import ui store:装备、法宝、丹药、功法、灵兽
+ * 五条发放路分散在 loot / pillService / gongfaService / eventEngine,
+ * 而「什么算顶档」只该判一次(判据在 ui/treasureCeremony)。调用点只报「得了什么」。
+ */
+export function celebrateTreasure(src: TreasureSource): boolean {
+  const mark = treasureOf(src)
+  if (!mark) return false
+  useUiStore().showTreasure(mark)
+  return true
 }
 
 /**
@@ -187,7 +204,10 @@ export function acquireArtifactGain(defId: string, quiet = false, autoEquip = tr
       wudao: ARTIFACT_DUPLICATE_WUDAO
     }
   }
-  if (!quiet) ui.toast(`获得法宝「${def.name}」`, 'rare')
+  if (!quiet) {
+    ui.toast(`获得法宝「${def.name}」`, 'rare')
+    celebrateTreasure({ kind: 'artifact', quality: def.quality, name: def.name, icon: def.icon })
+  }
   return { defId, name: def.name, line: `法宝「${def.name}」`, duplicate: false, wudao: 0 }
 }
 

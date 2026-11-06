@@ -9,6 +9,10 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { useLoreStore } from '@/stores/lore'
 import { useQuestsStore } from '@/stores/quests'
+import { useUiStore } from '@/stores/ui'
+import { PILLS } from '@/data/pills'
+import { PETS } from '@/data/pets'
+import { GONGFA } from '@/data/gongfa'
 import { MATERIALS, type MaterialBucket, type MaterialDef } from '@/data/materials'
 import { eventDef } from '@/data/events'
 import { rng } from '@/utils/random'
@@ -268,5 +272,81 @@ describe('事件所得灵材计照面', () => {
     } finally {
       spy.mockRestore()
     }
+  })
+})
+
+
+/**
+ * 际遇赠顶档之物,同样翻开得宝仪典。
+ *
+ * 这条路的特殊性:仙品/神品神兽**只由指名事件发放**(泛型事件池只到天品),
+ * 于是它恰恰是最该有一瞬的那条路 —— 而玩家若开着「遇事勿扰」或事件超时自动结算,
+ * 那一刻并不在场,仪典不该替他补演(见 EventApplyOpts.silent)。
+ */
+describe('得宝仪典 · 际遇赠顶档之物', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  function eventOf(...effects: EventEffect[]): EventDef {
+    return {
+      id: 'ev_test_treasure',
+      title: '',
+      text: '',
+      tags: ['general'],
+      weight: 1,
+      choices: [{ label: '取', outcomes: [{ weight: 1, text: '得', effects }] }]
+    }
+  }
+
+  const divinePet = PETS.find(p => p.quality === 'divine')!
+  const divinePill = PILLS.find(p => p.quality === 'divine' && !p.recipe)!
+
+  it('指名赠神品灵兽:翻开,且报出兽名', () => {
+    const ui = useUiStore()
+    ui.clearTreasure()
+    resolveEventChoice(eventOf({ type: 'pet', id: divinePet.id }), 0, 20)
+    expect(ui.treasure, '神品灵兽该开仪典').not.toBeNull()
+    expect(ui.treasure!.kindName).toBe('灵兽')
+    expect(ui.treasure!.name).toBe(divinePet.name)
+  })
+
+  it('赠天品灵兽不翻开 —— 落差只给最顶那一档', () => {
+    const ui = useUiStore()
+    const heaven = PETS.find(p => p.quality === 'heaven')!
+    ui.clearTreasure()
+    resolveEventChoice(eventOf({ type: 'pet', id: heaven.id }), 0, 20)
+    expect(ui.treasure).toBeNull()
+  })
+
+  it('赠神品丹(无方之丹只由际遇来)翻开', () => {
+    const ui = useUiStore()
+    ui.clearTreasure()
+    resolveEventChoice(eventOf({ type: 'pill', id: divinePill.id, count: 1 }), 0, 20)
+    expect(ui.treasure, '际遇赠顶档丹该开仪典').not.toBeNull()
+    expect(ui.treasure!.name).toBe(divinePill.name)
+  })
+
+  it('silent(自动结算 / 离线)不翻开 —— 玩家不在场,归来卷轴已交代', () => {
+    const ui = useUiStore()
+    ui.clearTreasure()
+    resolveEventChoice(eventOf({ type: 'pet', id: divinePet.id }), 0, 20, { silent: true, autoEquipArtifact: false })
+    expect(ui.treasure, '玩家不在场时不该补演那一刻').toBeNull()
+  })
+
+  it('静默结算照常入账 —— silent 只管仪典,不管所得', () => {
+    const quests = useQuestsStore()
+    resolveEventChoice(eventOf({ type: 'pet', id: divinePet.id }), 0, 20, { silent: true, autoEquipArtifact: false })
+    expect(quests.collections.pet, '静默也照常收录').toContain(divinePet.id)
+  })
+
+  it('习得顶档功法翻开,且名取自功法表', () => {
+    const ui = useUiStore()
+    const divine = GONGFA.find(g => g.quality === 'divine')!
+    ui.clearTreasure()
+    resolveEventChoice(eventOf({ type: 'gongfa', id: divine.id }), 0, 20)
+    expect(ui.treasure, '顶档功法该开仪典').not.toBeNull()
+    expect(ui.treasure!.kindName).toBe('功法')
+    expect(ui.treasure!.name).toBe(divine.name)
   })
 })

@@ -31,6 +31,8 @@ import { useQuestsStore } from '@/stores/quests'
 import { useDongfuStore } from '@/stores/dongfu'
 import { mulN, toNum } from '@/utils/gnum'
 import { ACHIEVEMENTS } from '@/data/achievements'
+import { useUiStore } from '@/stores/ui'
+import { qualityDef } from '@/data/qualities'
 import { MAIN_QUESTS } from '@/data/quests'
 
 /** 最低阶、有方、材料便宜的最普通路径 */
@@ -557,5 +559,86 @@ describe('双丹概率 · 展示与结算同一个数(封顶单源)', () => {
     )
     const able = readFileSync(resolve(__dirname, './craftability.ts'), 'utf8')
     expect(able).toContain('Math.min(PILL_SECOND_CAP')
+  })
+})
+
+
+/**
+ * 开炉开出顶档(神品 / 道品)那一炉要翻开得宝仪典。
+ *
+ * 为什么钉在结算侧:仪典只给最顶那一档,而「最顶」由丹药品阶决定 ——
+ * 若把判断放到界面,弹窗里每一味丹都会各自算一遍门槛,迟早分叉。
+ * 判据同时守另一头:开出通品丹时**不该**翻开(不是「每次成丹都演一遍」)。
+ */
+describe('得宝仪典 · 开炉出顶档那一炉', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockRand = 0
+    settleRewards()
+  })
+
+  /** 把玩家抬到能承受该丹方,并给足材料与技艺;顶档丹方按 stoneByTier 折价,灵石要多给 */
+  function readyFor(id: string): void {
+    const def = pillDef(id)!
+    const craft = recipeCraft(def)!
+    const player = usePlayerStore()
+    player.$patch({ major: Math.max(player.major, def.minRealm) })
+    useLoreStore().addRecipeMastery(id, 1)
+    for (const mid of craft.materials) useLoreStore().advanceLore(mid, 3)
+    const resources = useResourcesStore()
+    resources.addSmall('herb', 4000)
+    resources.addStone({ m: 1, e: 30 })
+  }
+
+  it('开出神品丹翻开,开出凡品丹不翻', () => {
+    const ui = useUiStore()
+    const mortal = PILLS.find(p => p.quality === 'mortal' && p.recipe)!
+    readyFor(mortal.id)
+    ui.clearTreasure()
+    expect(craftPill(mortal.id).ok, '前置:凡品丹该开得成').toBe(true)
+    expect(ui.treasure, '凡品丹不该翻开仪典').toBeNull()
+
+    const divine = PILLS.find(p => p.quality === 'divine' && p.recipe)!
+    readyFor(divine.id)
+    ui.clearTreasure()
+    const out = craftPill(divine.id)
+    expect(out.ok, '前置:神品丹该开得成').toBe(true)
+    expect(ui.treasure, '开出神品丹该翻开仪典').not.toBeNull()
+    expect(ui.treasure!.kindName).toBe('丹药')
+    expect(ui.treasure!.name).toBe(divine.name)
+    expect(ui.treasure!.grade).toBe(qualityDef('divine').name)
+  })
+
+  it('道品丹(不在共享品阶表里)同样翻开,品阶名报「道品」', () => {
+    const ui = useUiStore()
+    const dao = PILLS.find(p => p.quality === 'dao' && p.recipe)!
+    readyFor(dao.id)
+    ui.clearTreasure()
+    const out = craftPill(dao.id)
+    expect(out.ok, '前置:道品丹该开得成').toBe(true)
+    expect(ui.treasure, '道品该开仪典').not.toBeNull()
+    expect(ui.treasure!.grade).toBe('道品')
+  })
+
+  it('炸炉不翻开 —— 没成丹就没有「那一刻」', () => {
+    const ui = useUiStore()
+    const divine = PILLS.find(p => p.quality === 'divine' && p.recipe)!
+    readyFor(divine.id)
+    mockRand = 0.999 // 所有概率判定都成不了
+    ui.clearTreasure()
+    const out = craftPill(divine.id)
+    expect(out.ok).toBe(false)
+    expect(ui.treasure, '炸炉不该翻开仪典').toBeNull()
+  })
+
+  it('quiet(连炼 / 批量)不翻开 —— 一炉一炉演会把「那一刻」演成噪声', () => {
+    const ui = useUiStore()
+    const divine = PILLS.find(p => p.quality === 'divine' && p.recipe)!
+    readyFor(divine.id)
+    mockRand = 0
+    ui.clearTreasure()
+    const out = craftPill(divine.id, true)
+    expect(out.ok, '前置:静默也照常成丹').toBe(true)
+    expect(ui.treasure, '静默开炉不该翻开仪典').toBeNull()
   })
 })
