@@ -359,6 +359,37 @@ async function measurePage(page) {
           const name = (el.getAttribute('aria-label') || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 10) || '方格'
           return `${(r.height / r.width).toFixed(2)}:1 ${Math.round(r.width)}×${Math.round(r.height)} «${name}»`
         }),
+      /*
+       * 套纹须只画在自己那 9×9 里。
+       *
+       * 纹样是 .set-crest 的 ::before:它一旦用绝对定位,而套纹本身在流里没有定位上下文,
+       * 画布就变成最近的定位祖先(背包页共鸣行的 .card-ink)——
+       * 六套纹样被拉满整张卡,「装备共鸣」成了一整块斜纹。
+       * 指针事件平时是 none,这里临时打开,拿宿主卡片上的点阵去探:
+       * 套纹方框之外的命中都算纹样跑出来了。8px 步长只抓「整块被画满」,不判 1px 的圆角。
+       */
+      strayCrests: (() => {
+        const out = []
+        for (const el of document.querySelectorAll('.set-crest')) {
+          const r = el.getBoundingClientRect()
+          if (r.width <= 0 || r.height <= 0) continue
+          const host = el.closest('.card-ink')
+          const h = host?.getBoundingClientRect()
+          if (!h || h.width < 80 || h.height < 40) continue
+          const prev = el.style.pointerEvents
+          el.style.pointerEvents = 'auto'
+          let stray = false
+          for (let y = h.top + 3; y < h.bottom - 3 && !stray; y += 8) {
+            for (let x = h.left + 3; x < h.right - 3 && !stray; x += 8) {
+              if (x > r.left - 2 && x < r.right + 2 && y > r.top - 2 && y < r.bottom + 2) continue
+              if (document.elementsFromPoint(x, y).includes(el)) stray = true
+            }
+          }
+          el.style.pointerEvents = prev
+          if (stray) out.push(el.className.replace(/\s+/g, ' ').slice(0, 32))
+        }
+        return out.slice(0, 4)
+      })(),
       // 禁用按钮文字须读得出:量前景/背景对比度
       dimDisabled: [...document.querySelectorAll('.btn-seal:disabled, .btn-ghost:disabled')]
         .map(el => {
@@ -668,6 +699,7 @@ function problemsOf(info) {
   if (info.smallTargets.length) problems.push(`可点元素过小:${info.smallTargets.join(' | ')}`)
   if (info.dimDisabled.length) problems.push(`禁用态的字读不出来(对比度不足):${info.dimDisabled.join(' | ')}`)
   if (info.nonSquareCards?.length) problems.push(`方格被内容撑成非正方形:${info.nonSquareCards.join(' | ')}`)
+  if (info.strayCrests?.length) problems.push(`套纹画到了自己的方框外:${info.strayCrests.join(' | ')}`)
   if (info.badGroups.length) problems.push(`选择组没选中态:${info.badGroups.join(' | ')}`)
   if (info.headerTall?.length) problems.push(`顶栏折行(数字断行看着像乱码):${info.headerTall.join(' | ')}`)
   if (info.regionCards?.tall.length) problems.push(`地界名被挤成竖排:${info.regionCards.tall.join(' | ')}`)
