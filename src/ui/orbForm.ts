@@ -28,7 +28,7 @@ export interface OrbForm {
   particles: number
   /** 是否挂八卦环:只有人间界挂 —— 八卦是「还在山门里学」的记号 */
   bagua: boolean
-  /** 中心符:四界各一个 */
+  /** 球心那个字:四界共用「道」,不随界域换 */
   glyph: string
   /** 读屏与 title 的说法(法球整体 aria-hidden,这一项只供宿主页的 title 用) */
   label: string
@@ -40,22 +40,26 @@ export interface OrbForm {
  * 粒数取 8 的倍数(八卦那一圈本来就是 8),四界之间至少差 4 粒 ——
  * 少到数不出来就白加了。
  *
- * 中心符:凡取「道」(山门所学)、仙取「仙」、神取「神」、沌取「混」。
+ * 球心那个字一律是「道」:修的是道,走到哪一界都是这一个字。
+ * 界域的差异全交给外面那三样可数的东西 —— 环数、粒子数、八卦环。
  * 已挂载 slots 的调用点仍可用自己的内容覆盖。
  */
-const FORMS: Record<WorldId, Omit<OrbForm, 'label'>> = {
-  mortal: { rings: 1, particles: 8, bagua: true, glyph: '道' },
-  immortal: { rings: 2, particles: 12, bagua: false, glyph: '仙' },
-  god: { rings: 3, particles: 16, bagua: false, glyph: '神' },
-  chaos: { rings: 4, particles: 24, bagua: false, glyph: '混' }
+const FORMS: Record<WorldId, Omit<OrbForm, 'label' | 'glyph'>> = {
+  mortal: { rings: 1, particles: 8, bagua: true },
+  immortal: { rings: 2, particles: 12, bagua: false },
+  god: { rings: 3, particles: 16, bagua: false },
+  chaos: { rings: 4, particles: 24, bagua: false }
 }
+
+/** 球心那一个字:四界共用 —— 修的是道,走到哪一界都是这一个字 */
+const ORB_GLYPH = '道'
 
 /** 某个大境界的法球形制;越界钳到首尾界域,与 worldOf 同一口径 */
 export function orbForm(major: number): OrbForm {
   const m = Number.isFinite(major) ? Math.max(0, Math.min(21, Math.floor(major))) : 0
   const world = worldOf(m)
   const form = FORMS[world.id] ?? FORMS.mortal
-  return { ...form, label: `${world.name}法球` }
+  return { ...form, glyph: ORB_GLYPH, label: `${world.name}法球` }
 }
 
 /**

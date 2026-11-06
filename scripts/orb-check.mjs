@@ -104,8 +104,8 @@ async function readOrb(page) {
     if (new Set(orb.colors).size !== orb.rings) {
       fail(`三圈光环的色有重复:${orb.colors.join(' / ')}`)
     }
-    // 神人境的中心符当是「神」:中心符随界域走
-    if (orb.glyph !== '神') fail(`神人境的法球中心符读作「${orb.glyph}」,该是「神」`)
+    // 球心一律是「道」:走到哪一界都不换字
+    if (orb.glyph !== '道') fail(`神人境的球心读作「${orb.glyph}」,该是「道」`)
     if (orb.eating.length) fail(`这些装饰层没有 pointer-events: none:${orb.eating.join(' / ')}`)
     if (orb.interactive) fail('法球中心点压在了一个可交互元素上 —— 装饰挡了按钮')
   }
@@ -152,11 +152,12 @@ async function readOrb(page) {
   if (!rows) {
     fail('取不到 player store —— 应用实例或 pinia 的挂载路径变了')
   } else {
+    // 四界的差异全在环数 / 粒数 / 卦数上;球心一律「道」
     const want = [
       { major: 0, rings: 1, particles: 8, bagua: 8, glyph: '道' },
-      { major: 9, rings: 2, particles: 12, bagua: 0, glyph: '仙' },
-      { major: 14, rings: 3, particles: 16, bagua: 0, glyph: '神' },
-      { major: 18, rings: 4, particles: 24, bagua: 0, glyph: '混' }
+      { major: 9, rings: 2, particles: 12, bagua: 0, glyph: '道' },
+      { major: 14, rings: 3, particles: 16, bagua: 0, glyph: '道' },
+      { major: 18, rings: 4, particles: 24, bagua: 0, glyph: '道' }
     ]
     for (const w of want) {
       const got = rows.find(r => r.major === w.major)
@@ -167,7 +168,7 @@ async function readOrb(page) {
       if (got.rings !== w.rings) fail(`第 ${w.major} 境该有 ${w.rings} 圈,实有 ${got.rings}`)
       if (got.particles !== w.particles) fail(`第 ${w.major} 境该有 ${w.particles} 粒,实有 ${got.particles}`)
       if (got.bagua !== w.bagua) fail(`第 ${w.major} 境该有 ${w.bagua} 个八卦符号,实有 ${got.bagua}`)
-      if (got.glyph !== w.glyph) fail(`第 ${w.major} 境的中心符读作「${got.glyph}」,该是「${w.glyph}」`)
+      if (got.glyph !== w.glyph) fail(`第 ${w.major} 境的球心读作「${got.glyph}」,该是「${w.glyph}」`)
       if (new Set(got.insets).size !== got.rings) {
         fail(`第 ${w.major} 境的 ${got.rings} 圈 inset 有重复:${got.insets.join(' / ')}`)
       }

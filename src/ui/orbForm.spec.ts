@@ -22,6 +22,7 @@ const ROOT = resolve(__dirname, '../..')
 const ORB = readFileSync(resolve(ROOT, 'src/components/common/CultivationOrb.vue'), 'utf-8')
 const HOME = readFileSync(resolve(ROOT, 'src/views/HomeView.vue'), 'utf-8')
 const CULTIVATION = readFileSync(resolve(ROOT, 'src/views/CultivationView.vue'), 'utf-8')
+const ORBFORM = readFileSync(resolve(ROOT, 'src/ui/orbForm.ts'), 'utf-8')
 
 /** 四界各一态:每界的入口境就是该界形态 */
 const formsOfFourWorlds = () => WORLDS.map(w => orbForm(w.start))
@@ -125,16 +126,19 @@ describe('法球形制 · 二、组件接上了', () => {
     expect(ORB, '粒子角度该按实际粒数均分').toContain('(index / total)')
   })
 
-  it('中心符由界域给:槽位仍可覆盖,但两个宿主页都交给界域', () => {
+  it('球心一律是「道」,不随界域换', () => {
+    // 修的是道,走到哪一界都是这一个字。界域的差异全交给外面那三样可数的东西。
+    for (const w of WORLDS) {
+      expect(orbForm(w.start).glyph, `${w.name}的球心换了字`).toBe('道')
+    }
+    for (let m = 0; m <= MAX_MAJOR; m += 1) expect(orbForm(m).glyph).toBe('道')
+    // 球心的字只有一处事实源:四界共用同一个常量,不按界域分写四份
+    expect(ORBFORM, '球心符不该按界域各写一份').not.toMatch(/glyph:\s*'[^道]/)
     // 槽位保留 —— 日后要往球心塞别的东西不必改组件
     expect(ORB, '中心符没有从形态取').toContain('<slot>{{ form.glyph }}</slot>')
-    // 但两个宿主页此前各写死了一个字(☯ / 道),那会让四界共享同一枚中心符
-    expect(HOME, '首页仍在覆盖中心符 —— 四界会共用同一个字').not.toMatch(/<CultivationOrb[^>]*>\s*<span/)
-    expect(CULTIVATION, '修炼页仍在覆盖中心符 —— 四界会共用同一个字').not.toMatch(/<CultivationOrb[^>]*>\s*<span/)
-    // 四个中心符两两不同,且都是界域身份的字
-    const glyphs = formsOfFourWorlds().map(f => f.glyph)
-    expect(new Set(glyphs).size, `四界的中心符有重复:${glyphs.join('')}`).toBe(glyphs.length)
-    for (const g of glyphs) expect([...g]).toHaveLength(1)
+    // 两个宿主页此前各写死了一个字(☯ / 道),那会让球心变成页面各自的私事
+    expect(HOME, '首页仍在覆盖球心').not.toMatch(/<CultivationOrb[^>]*>\s*<span/)
+    expect(CULTIVATION, '修炼页仍在覆盖球心').not.toMatch(/<CultivationOrb[^>]*>\s*<span/)
   })
 
   it('两个宿主页都把当前境界传进来 —— 不传的话永远停在人间界', () => {
