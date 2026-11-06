@@ -2775,6 +2775,95 @@ html[data-theme='dark'] .fruit-curve polyline {
   background: rgb(var(--color-cinnabar-rgb) / 0.8);
 }
 
+/* ================= 界域印记(worldMark) =================
+ * 四个界域(人间界 / 仙界 / 神界 / 混沌海)此前只有一处身份:界域名那串灰字,
+ * 字号比正文还小,四界长得一模一样。而界域是这一局最大的分层 ——
+ * 寿元跨一次界翻几十上百倍、内容 gate 全按界域切、飞升是整局最重的里程碑之一(见 src/ui/worldMark.ts)。
+ *
+ * 两路并行分家,不只靠色:
+ *   框:单线方印(凡) / 双线方印(仙) / 粗线带光(神) / 圆印(沌)
+ *   色:墨 / 金 / 朱 / 紫,全部是既有语义 token,不新增色板项
+ * 12px 的小印上,墨与紫在夜主题的卡片底上 ΔE 只有十几 —— 光靠色读不出差,
+ * 框形才是主判据。形制不吃指针事件,与 set-crest / dao-crest 同规。
+ */
+.world-seal-mark {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  font-family: var(--font-kai);
+  font-size: 11px;
+  line-height: 1;
+  /* 印面:色由调用点的 --world-tone 承载,组件里不写死 */
+  color: var(--world-tone, rgb(var(--color-ink-rgb)));
+  background: rgb(var(--color-ink-rgb) / 0.06);
+  pointer-events: none;
+  user-select: none;
+}
+/* 凡:单线方印 —— 最朴素的一界 */
+.world-seal-mark--single {
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.28);
+  border-radius: 2px;
+}
+/* 仙:双线方印 —— 外一道、内一道 */
+.world-seal-mark--double {
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--color-ink-rgb) / 0.34),
+    inset 0 0 0 3px rgb(var(--color-paper-rgb) / 0.9),
+    inset 0 0 0 4px rgb(var(--color-ink-rgb) / 0.2);
+}
+/* 神:粗线带光 —— 边框最重、外圈一层淡光 */
+.world-seal-mark--bold {
+  border: 2px solid rgb(var(--color-ink-rgb) / 0.42);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--world-tone, transparent);
+}
+/* 沌:圆印 —— 混沌海没有四角 */
+.world-seal-mark--round {
+  border: 1px solid rgb(var(--color-ink-rgb) / 0.32);
+  border-radius: 999px;
+}
+
+/*
+ * 跨界那一跃(突破弹窗):左界 → 倍数 → 右界。
+ * 只画一次,不常驻 —— 它是「这一刻发生的事」,不是界面上的一枚常设形制。
+ * 底色取条槽那支 token,与进度条、刻度轴同一套空槽语言。
+ */
+.world-leap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgb(var(--color-ink-rgb) / 0.04);
+  pointer-events: none;
+}
+.world-leap-side {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.world-leap-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.world-leap-factor {
+  font-family: var(--font-kai);
+  font-size: 15px;
+  color: rgb(var(--color-cinnabar-rgb));
+}
+.world-leap-unit {
+  margin-top: 1px;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: rgb(var(--color-ink-faint-rgb));
+}
+
 /* ================= 装备强化等级(upgradeMark) =================
  * 强化行只写「+7 / 上限 10」:上限随炼器台等级变(基础 10 再加 forgeCapBonus),
  * 「+7」在一件上限 10 的器上差三级,在另一件上限 12 的器上差五级(见 src/ui/masteryMark.ts)。

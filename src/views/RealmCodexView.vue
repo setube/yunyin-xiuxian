@@ -12,6 +12,8 @@
     <template v-if="codexTab === 'realm'">
     <section v-for="row in worldRows" :key="row.world.id" class="card-ink px-4 py-3">
       <div class="flex items-baseline gap-2">
+        <!-- 界域印:四界各一枚,框形分家(见 ui/worldMark) -->
+        <WorldSeal :world="row.world.id" class="!mr-0.5 self-center" />
         <span class="font-kai text-[15px] tracking-[0.25em] text-ink">{{ row.world.name }}</span>
         <span class="text-[10px] text-ink-faint">第 {{ row.world.start + 1 }}–{{ row.world.end + 1 }} 境</span>
         <!--
@@ -444,6 +446,7 @@
   import { useResourcesStore } from '@/stores/resources'
   import { REALMS, WORLDS } from '@/data/realms'
   import { worldPips, worldProgress } from '@/ui/worldProgress'
+  import WorldSeal from '@/components/common/WorldSeal.vue'
   import { mansionGroups, mansionOrdinal } from '@/ui/mansionBoard'
   import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm, type ClassicSchool } from '@/data/classics'
   import { classicRealmMarks, schoolRealmSpan } from '@/ui/classicRealm'

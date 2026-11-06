@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { LinggenProfile, OfflineSummary } from '@/types'
 import type { TreasureMark } from '@/ui/treasureCeremony'
+import type { WorldLeap } from '@/ui/worldMark'
 
 export interface Toast {
   id: number
@@ -17,6 +18,12 @@ export interface BreakthroughView {
   isMajor: boolean
   tribulationLog: string[]
   message: string
+  /**
+   * 若是跨界飞升那一境,给出这一跃(离开的界域 / 进入的界域 / 寿元倍数)。
+   * 弹窗据此另开一段:跨界不是一个普通的大关,它是整局最重的那几次之一
+   * (见 ui/worldMark.worldLeap)。
+   */
+  leap?: WorldLeap
 }
 
 /** 上一世的回顾:轮回界面第一屏 */

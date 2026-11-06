@@ -99,6 +99,8 @@
       <div class="space-y-2.5">
         <template v-for="group in groupedRows" :key="group.world.id">
           <div class="flex items-center gap-2 pt-1">
+            <!-- 界域印:与境界谱同一枚(见 ui/worldMark),历练按界域分组时先认得出这是哪一界 -->
+            <WorldSeal :world="group.world.id" />
             <span class="font-kai text-[11px] tracking-[0.3em] text-ink-soft">{{ group.world.name }}</span>
             <span class="h-px grow bg-ink/10" />
             <span class="text-[10px] text-ink-faint">{{ group.rows.length }} 处</span>
@@ -136,6 +138,7 @@
   import { effectiveFavoredWorld, todayMansion, mansionLuckPercent, currentGameDay } from '@/core/astronomy'
   import { mansionRedirectCheck } from '@/core/mansionRedirect'
   import { worldDef } from '@/data/realms'
+  import WorldSeal from '@/components/common/WorldSeal.vue'
   import { worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
   import { endgameBusy } from '@/core/endgameActivity'

@@ -28,6 +28,25 @@
         <span :class="view.success ? 'text-cinnabar font-kai' : 'text-ink-faint'">{{ view.toLabel }}</span>
       </p>
       <!--
+        跨界的那一跃:离开的界域 → 进入的界域,中间是寿元倍数。
+        此前这一层只有正文里一句「已入仙界」,与「已入金丹」在弹窗上长得一样 ——
+        而这一跃是整局最重的几次之一(见 ui/worldMark.worldLeap)。
+      -->
+      <div v-if="view.leap" class="world-leap mt-3" role="img" :aria-label="leapLabel">
+        <span class="world-leap-side">
+          <WorldSeal :world="view.leap.from.id" />
+          <span class="font-kai text-[11px] text-ink-faint">{{ view.leap.from.name }}</span>
+        </span>
+        <span class="world-leap-arrow" aria-hidden="true">
+          <span class="world-leap-factor tabular">×{{ view.leap.factor }}</span>
+          <span class="world-leap-unit">寿元</span>
+        </span>
+        <span class="world-leap-side">
+          <WorldSeal :world="view.leap.to.id" />
+          <span class="font-kai text-[11px]" :style="{ color: view.leap.to.tone }">{{ view.leap.to.name }}</span>
+        </span>
+      </div>
+      <!--
         天劫波次:每道雷落定后的余血落成一根柱,柱高以本场最高者为满格。
         原先这里只有一串同形灰字,二十道雷就是二十行,哪道最险得自己逐行比。
         柱与下面的字同源(都取自战报原文,见 ui/tribWave.ts)。
@@ -68,6 +87,7 @@
   import { useUiStore } from '@/stores/ui'
   import { tribBarPct, tribPeak, tribWaves, tribWorst, TRIB_DANGER_PCT, type TribWave } from '@/ui/tribWave'
   import BaseModal from '@/components/common/BaseModal.vue'
+  import WorldSeal from '@/components/common/WorldSeal.vue'
 
   const ui = useUiStore()
 
@@ -79,6 +99,12 @@
   function barPct(w: TribWave): number {
     return tribBarPct(w, peak.value)
   }
+
+  /** 读屏一句话说清这一跃:只报三样事实,不劝不解释 */
+  const leapLabel = computed(() => {
+    const l = view.value?.leap
+    return l ? `${l.from.name} → ${l.to.name},寿元 ×${l.factor}` : ''
+  })
 
   function close(): void {
     ui.breakthrough = null
