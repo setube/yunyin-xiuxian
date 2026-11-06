@@ -2,9 +2,7 @@
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <div class="card-ink px-4 py-4" :class="player.expFull ? 'card-charged' : ''">
       <div class="flex flex-col items-center gap-3">
-        <CultivationOrb :active="retreating" :full="player.expFull" :progress="player.expProgress">
-          <span class="font-kai text-[18px]">道</span>
-        </CultivationOrb>
+        <CultivationOrb :active="retreating" :full="player.expFull" :progress="player.expProgress" :major="player.major" />
         <div class="text-center">
           <p class="font-kai text-[11px] tracking-[0.5em] text-ink-faint">{{ player.worldName }}</p>
           <p class="font-kai text-[30px] tracking-[0.3em] text-ink">{{ player.realm.name }}</p>

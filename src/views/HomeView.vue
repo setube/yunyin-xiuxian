@@ -25,9 +25,7 @@
         </div>
         <!-- 380px 以下改用 108px 法球,给左侧文本让出地方 -->
         <div class="relative mr-1 -mt-1 h-35 w-35 shrink-0 max-[380px]:h-[108px] max-[380px]:w-[108px]">
-          <CultivationOrb :active="true" :full="player.expFull" :progress="player.expProgress" :size="orbSize">
-            <span class="text-[17px] max-[380px]:text-[13px]">☯</span>
-          </CultivationOrb>
+          <CultivationOrb :active="true" :full="player.expFull" :progress="player.expProgress" :size="orbSize" :major="player.major" />
         </div>
       </div>
     </div>
