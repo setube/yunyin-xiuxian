@@ -322,7 +322,6 @@
         note: `际遇 ${m.times} 次`
       }))
       .sort((a, b) => b.at - a.at)
-      .slice(0, 8)
   )
 
   const profile = computed(() => cultivatorProfile(endgame.marks))
