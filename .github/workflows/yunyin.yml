@@ -13,6 +13,8 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # 显式超时:默认 6 小时,构建卡住会白占 runner。实测约三分钟
+    timeout-minutes: 30
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       # 镜像名跟随仓库,不写死:仓库改名后写死的包名会让 ghcr 回 permission_denied: write_package

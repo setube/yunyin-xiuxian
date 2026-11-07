@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 显式超时:默认是 6 小时,构建卡住时会白占一个 runner。
+    # 实测这一份约 3 分钟(类型检查 + 单测 + 变异扫描 + 构建),留到 20 分钟。
+    timeout-minutes: 20
     steps:
       - name: 检出代码
         uses: actions/checkout@v7
@@ -30,6 +33,11 @@ jobs:
         run: |
           bun run check
           bun run test:report
+      # 与 pr-check.yml 的「变异扫描」job 同一道闸。
+      # 合并走 --rebase 会重写提交 SHA,PR 上那次绿灯不等于 main 上这次也绿;
+      # 而这一份跑完就直接发布了。59 秒换「发布前再验一次」,值得。
+      - name: 变异扫描
+        run: bun run mutation-scan
       - name: 构建
         run: bun run build
       # 前置:Settings → Pages → Build and deployment 的 Source 须为 GitHub Actions,否则 configure-pages 报 Not Found
