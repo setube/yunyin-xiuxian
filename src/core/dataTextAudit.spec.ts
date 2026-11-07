@@ -1334,15 +1334,18 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     // 满级时按钮改为禁用并写原因(不再凭空消失),故判据取「缺料置灰」这一段
     expect(detail, '强化按钮按缺口置灰').toContain('upCost ? upShort !== null : true')
     /*
-     * 拒因是按钮里的第二块,与动作词分开写。
-     * 原先是一个字符串「强 化(尘差37)」直接塞进钮:113px 的钮把「强 化(尘」/「差 37」
-     * 从括号中间截断 —— 折行只许发生在动作词与拒因之间,故两段各带 whitespace-nowrap。
-     * 故障注入:把两段合回一个字符串、或去掉 whitespace-nowrap,本条红。
+     * 拒因走 aria-label / title,不挂在按钮正文上。
+     *
+     * 这个钮与「卸 下」「垃圾桶」并排,宽只 78~105px:正文挂「强 化(尘差 36)」必然折两行,
+     * 底行因此从 44px 涨到 57px,整条页脚跟着高 37px(375 与 320 都如此,见 detail-geometry)。
+     * 而同一份差额在正上方的强化面板里已经整句写出,按钮上再写一遍本是第二处。
+     * 「禁用即给原因」并未失守:原因仍在(读屏与 hover 拿得到),只是不占正文那一格。
+     * 故障注入:把差额从 aria-label / title 里删掉,或把括号拒因写回正文,本条红。
      */
-    expect(detail, '动作词与拒因分成两块').toContain("<span class=\"whitespace-nowrap\">")
-    expect(detail, '石差块').toContain('石差 ${formatGap(upGap?.stone')
-    expect(detail, '尘差块').toContain('尘差 ${upGap?.dust')
-    expect(detail, '两块各自不断行').toMatch(/whitespace-nowrap text-\[10px\] tabular"[\s\S]{0,40}\(/)
+    expect(detail, '拒因进 aria-label(石差)').toContain('`强 化,灵石尚差 ${formatGap(upGap?.stone')
+    expect(detail, '拒因进 aria-label(尘差)').toContain('`强 化,器灵尘尚差 ${upGap?.dust')
+    expect(detail, '拒因仍在 title 里').toContain('`器灵尘尚差 ${upGap?.dust ?? 0}`')
+    expect(detail, '正文只留动作词,不再挂括号拒因').not.toContain('石差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : `尘差')
     expect(panel, '强化面板列实际缺口').toContain('器灵尘尚差 {{ gap.dust }}')
     expect(panel, '强化面板列灵石缺口').toContain('灵石尚差 {{ formatGap(gap.stone) }}')
     // 满级不再让整块消失:玩家要看得到「已至上限」而不是一片空白

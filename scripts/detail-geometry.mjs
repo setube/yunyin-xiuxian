@@ -47,8 +47,12 @@ const browser = await chromium.launch({
 
 const gn = (m, e) => ({ m, e })
 
-/** 后期档:一件天品武器,四条词条、已封一条 —— 重铸与封存两个价签同时在 */
-function slices() {
+/**
+ * 后期档:一件天品武器,四条词条、已封一条 —— 重铸与封存两个价签同时在。
+ * poor = true 时把器灵尘压到 2:强化付不起,底行进「禁用 + 拒因」那一态 ——
+ * 那正是页脚第三种几何(曾从 44px 涨到 57px)。
+ */
+function slices({ poor = false } = {}) {
   return {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: {
@@ -56,7 +60,7 @@ function slices() {
       reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
     },
-    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 900, page: 300, dust: 50000 },
+    resources: { spiritStone: poor ? gn(1, 0) : gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 900, page: 300, dust: poor ? 2 : 50000 },
     inventory: {
       items: [{
         uid: 'geo_w', templateId: 'w_zidian', quality: 'heaven', tier: 20, level: 3,
@@ -130,15 +134,15 @@ async function verticalButtons(page) {
   })
 }
 
-async function run(width, height) {
-  const tag = `${width}`
+async function run(width, height, { poor = false } = {}) {
+  const tag = poor ? `${width}-poor` : `${width}`
   const context = await browser.newContext({ viewport: { width, height } })
   await context.route('**/*', r => {
     const url = r.request().url()
     if (/^(file|data|blob):/.test(url)) return r.continue()
     return r.abort()
   })
-  await seedSave(context, slices())
+  await seedSave(context, slices({ poor }))
   const page = await context.newPage()
   page.on('pageerror', e => fail(`[${tag}] 运行时异常:${e.message}`))
 
@@ -184,7 +188,12 @@ async function run(width, height) {
   if ((await entry.count()) === 0) {
     fail(`[${tag}] 找不到重铸入口钮`)
   } else if (await entry.isDisabled()) {
-    fail(`[${tag}] 后期档里重铸入口是禁用的,量不到两态(夹具资源不够?)`)
+    /*
+     * 付不起档:重铸入口自己也置灰(尘只有 2),量不到「未确认 → 确认」两态。
+     * 那一档要量的是底行(卸下 / 强化 / 分解)有没有因为强化付不起而变高 —— 见第五节,
+     * 这一档不该报「量不到两态」。
+     */
+    if (!poor) fail(`[${tag}] 后期档里重铸入口是禁用的,量不到两态(夹具资源不够?)`)
   } else {
     await entry.click()
     await page.waitForTimeout(400)
@@ -223,7 +232,42 @@ async function run(width, height) {
     } else fail(`[${tag}] 确认态里找不到「再想想」`)
   }
 
-  // 四、竖排
+  // 四、底行(卸下 / 强化 / 分解)不许因「付不起」而变高
+  /*
+   * 强化钮的拒因曾写在正文里(「强 化(尘差 36)」):78~105px 的钮必然折两行,
+   * 底行 44 → 57px、页脚 236.8 → 273.5。现拒因走 aria-label / title,
+   * 底行在付得起与付不起两态下同高。
+   */
+  const bottomRow = await page.evaluate(() => {
+    const footer = document.querySelector('.modal-panel footer')
+    if (!footer) return null
+    const last = footer.lastElementChild
+    if (!last) return null
+    const r = last.getBoundingClientRect()
+    const btns = [...last.querySelectorAll('button')]
+    return {
+      h: Math.round(r.height * 10) / 10,
+      lines: btns.map(b => {
+        const tops = new Set()
+        for (const node of b.childNodes) {
+          if (node.nodeType === 1) {
+            const q = node.getBoundingClientRect()
+            if (q.height > 0) tops.add(Math.round(q.top))
+          } else {
+            const range = document.createRange()
+            range.selectNodeContents(node)
+            for (const q of range.getClientRects()) if (q.height > 0) tops.add(Math.round(q.top))
+          }
+        }
+        return tops.size
+      })
+    }
+  })
+  if (bottomRow && bottomRow.lines.some(n => n > 1)) {
+    fail(`[${tag}] 底行有按钮正文折了行(${bottomRow.lines.join('/')} 行)—— 一折就把整条页脚撑高`)
+  }
+
+  // 五、竖排
   const vertical = await verticalButtons(page)
   if (vertical.length) fail(`[${tag}] 有按钮被折成竖排:${vertical.join(' / ')}`)
 
@@ -554,6 +598,8 @@ async function runBuild(width, height) {
 
 await run(375, 812)
 await run(320, 568)
+await run(375, 812, { poor: true })
+await run(320, 568, { poor: true })
 await runSouls(375, 812)
 await runSouls(320, 568)
 await runDongfu(375, 1200)
@@ -567,4 +613,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('二步确认几何通过:重铸/分解、器魂散去、洞府连升、构筑删除四处两态均不变形,无竖排按钮')
+console.log('二步确认几何通过:重铸/分解(含付不起档)、器魂散去、洞府连升、构筑删除四处两态均不变形,无折行与竖排按钮')
