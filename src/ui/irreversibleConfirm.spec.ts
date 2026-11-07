@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DAO_PATHS } from '@/data/endgame'
@@ -157,6 +157,51 @@ describe('不可逆确认的两次点击各写什么', () => {
       expect(src, `${rel} 缺「再想想」,两步确认的结构破了`).toContain('再想想')
       expect(src, `${rel} 不该给复述动作加「确认」前缀`).not.toContain(`确认${word.replace(' ', '')}`)
     }
+  })
+
+  /**
+   * 全仓静态按钮的主词都守「2~6 汉字」。
+   *
+   * AGENTS.md 第 9 条给了上限(按钮主词 2~6 个汉字,主词后的代价/拒因不计),
+   * 但此前只有「复述动作族」那几个固定词被钉住 —— 也就是新写一枚按钮时没有任何人拦。
+   * 实测现状 140 枚静态按钮全部合规(最长的是「选择存档文件」「转为镇压收益」各 6 字),
+   * 这条只是把已经做到的事固定下来,防的是以后有人顺手写一句长话上去。
+   *
+   * 主词的取法:去掉括号拒因(全角/半角)、去掉「·」之后的代价、去掉箭头与空格。
+   * 含插值({{ }})的按钮跳过 —— 那类文案由各自的 text 函数管,静态扫不到。
+   */
+  it('全仓静态按钮的主词都不超过 6 个汉字', () => {
+    const ROOTS = ['components', 'views']
+    const files: string[] = []
+    const walk = (dir: string): void => {
+      for (const ent of readdirSync(resolve(__dirname, '..', dir), { withFileTypes: true })) {
+        const rel = `${dir}/${ent.name}`
+        if (ent.isDirectory()) walk(rel)
+        else if (ent.name.endsWith('.vue')) files.push(rel)
+      }
+    }
+    for (const r of ROOTS) walk(r)
+    // 防空转:扫不到文件时下面的 offenders 恒空
+    expect(files.length, '一个 .vue 都没扫到,判据空转').toBeGreaterThan(50)
+
+    const offenders: string[] = []
+    let checked = 0
+    for (const rel of files) {
+      const src = readFileSync(resolve(__dirname, '..', rel), 'utf8')
+      const tpl = src.includes('</script>') ? src.split('</script>')[0]! : src
+      for (const m of tpl.matchAll(/<button[^>]*>([^<]{1,60})<\/button>/g)) {
+        const raw = (m[1] ?? '').trim()
+        if (!raw || raw.includes('{{')) continue
+        // 主词:括号之前、圆点之前
+        const main = raw.split(/[（(·|]/)[0]!.replace(/[\s→»«]/g, '')
+        const n = (main.match(/[\u4e00-\u9fff]/g) ?? []).length
+        if (n === 0) continue
+        checked += 1
+        if (n > 6) offenders.push(`${rel} 「${raw.slice(0, 20)}」主词 ${n} 字`)
+      }
+    }
+    expect(checked, '一枚静态按钮都没量到,判据空转').toBeGreaterThan(80)
+    expect(offenders, '按钮主词超过 6 汉字 —— 该拆短或把代价挪到按钮外').toEqual([])
   })
 
   it('复述动作族的正文都很短(它们不是句子)', () => {
