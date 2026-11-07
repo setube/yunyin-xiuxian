@@ -60,6 +60,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run offline-check` — 构建 + SW 离线自检
 - `bun run treasure-check` / `world-check` / `orb-check` — 构建 + 真浏览器验形制（得宝仪典 / 界域印与飞升跃升 / 法球界域形态）；三者都走后期存档夹具，前期档看不到顶档之物、四界与四态
 - `bun run detail-check` — `scripts/detail-geometry.mjs`：二步确认的几何实测，四处场景逐一点前后量真实宽高 —— 装备详情页脚（重铸/分解，含付不起档）、器魂散置行、洞府「连升至」段、构筑快照行；钮、行、段都不许变形，底行也不许折行。另挂**后期档**（大境界 18）扫十页的触控下限 ≥28px —— `aria-check` 挂默认前期档，悟道兑换/洞府灵脉/道童那些整块不渲染，量不到
+- `bun run modal-check` — `scripts/modal-patrol.mjs`：逐扇推开 13 个能自动找到入口的弹窗，对每扇量触控下限 / 可访问名 / 禁用态对比度 / 面板名。`layout-check` 的弹窗巡逻只开四扇，巡页更量不到没打开的弹窗 —— 上一轮修行页那两枚 21px 的「兑换」钮就是这样漏掉的
 - `bun run build:android` / `build:apk` — 安卓客户端打包
 - `bun run build:electron --win` — Windows 桌面客户端打包，产物在 `pkg/`（完整包 + 增量包）
 - 楷体打包：`uv run scripts/fonts/build-kai-font.py`
@@ -194,7 +195,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `src/utils/storage.ts` — 存档持久化/加密/迁移（SAVE_PREFIX、SAVE_VERSION、PERSISTED_STORES）
 - `src/utils/gnum.ts` — 大数
 - `src/router/` — 路由与首启守卫
-- `scripts/test-report.mjs`、`ui-smoke.mjs`、`focus-check.mjs`、`aria-check.mjs`、`multitab-check.mjs`、`layout-check.mjs`、`offline-check.mjs`、`treasure-check.mjs`、`world-check.mjs`、`orb-check.mjs`、`detail-geometry.mjs`
+- `scripts/test-report.mjs`、`ui-smoke.mjs`、`focus-check.mjs`、`aria-check.mjs`、`multitab-check.mjs`、`layout-check.mjs`、`offline-check.mjs`、`treasure-check.mjs`、`world-check.mjs`、`orb-check.mjs`、`detail-geometry.mjs`、`modal-patrol.mjs`
 - `.github/workflows/` — CI 定义
 - `vite.config.ts` / `vitest.config.ts` / `tsconfig*.json`
 

@@ -3,9 +3,14 @@
     <div class="space-y-4 text-[12px] leading-relaxed">
       <article v-for="note in RELEASE_NOTES" :key="note.version" class="card-ink px-3 py-3">
         <header class="flex items-center justify-between gap-2">
+          <!--
+            展开/收起每一版的那颗钮:内容是标题 + 版本号 + 箭头一行,实测 24px 高。
+            低于全站 28px 的触控下限,而它是这一整排里唯一的可点元素 ——
+            补 min-h-[28px],负外边距抵消视觉高度,排版不动。
+          -->
           <button
             type="button"
-            class="flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
+            class="flex min-h-[28px] min-w-0 flex-1 items-center justify-between gap-2 text-left"
             :aria-expanded="openVersions[note.version]"
             @click="toggleVersion(note.version)"
           >
