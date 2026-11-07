@@ -237,10 +237,10 @@
         </p>
         <p v-else class="text-[11px] text-cinnabar">{{ challengeVerdict.reason }}</p>
       </div>
-      <div class="mt-2 flex gap-2">
-        <button class="btn-ghost flex-1 !py-2 !text-[12px]" @click="doVerify">验 约</button>
+      <div class="mt-2 grid grid-cols-2 gap-2">
+        <button class="btn-ghost w-full !py-2 !text-[12px]" @click="doVerify">验 约</button>
         <button
-          class="btn-seal flex-1 !py-2 !text-[12px]"
+          class="btn-seal w-full !py-2 !text-[12px]"
           :disabled="!challengeVerdict?.ok || busy !== null || endgame.daoSource < CHALLENGE_ENTRY_COST"
           :title="challengeBlockText"
           @click="doUndertake"

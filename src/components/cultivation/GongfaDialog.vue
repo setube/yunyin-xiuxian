@@ -144,13 +144,13 @@
       </template>
     </div>
     <template v-if="learned" #footer>
-      <div class="flex gap-2">
-        <button v-if="def?.type === 'main'" class="btn-seal flex-1" :disabled="isMain" @click="setMain">
+      <div class="grid grid-cols-2 gap-2">
+        <button v-if="def?.type === 'main'" class="btn-seal w-full" :disabled="isMain" @click="setMain">
           {{ isMain ? '主修中' : '设为主修' }}
         </button>
         <button
           v-else
-          class="btn-seal flex-1 text-[12px]"
+          class="btn-seal w-full text-[12px]"
           :disabled="subFull"
           @click="toggleSub"
         >
@@ -161,7 +161,7 @@
           代价算不出来(gongfaUpgradeCost 满级返 null)时改成禁用并写状态词,与装备强化、法宝炼化同规。
         -->
         <button
-          class="btn-ghost flex-1"
+          class="btn-ghost w-full"
           :disabled="!upCost || upShort !== null"
           :title="!upCost ? gongfaPeakLabel() : undefined"
           @click="def && upgradeGongfa(def.id)"

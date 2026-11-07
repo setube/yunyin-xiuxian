@@ -43,9 +43,9 @@
       <p v-if="state.spoils.length" class="mt-1 max-h-24 overflow-y-auto text-[10px] leading-relaxed text-ink-faint">
         <span v-for="(s, i) in state.spoils" :key="i" class="block">· {{ s }}</span>
       </p>
-      <div class="mt-2 flex gap-2">
-        <button class="btn-seal flex-1 !py-1.5 !text-[12px]" @click="fight">再 入 一 层</button>
-        <button class="btn-ghost flex-1 !py-1.5 !text-[12px]" @click="abandonRealm()">出 秘 境</button>
+      <div class="mt-2 grid grid-cols-2 gap-2">
+        <button class="btn-seal w-full !py-1.5 !text-[12px]" @click="fight">再 入 一 层</button>
+        <button class="btn-ghost w-full !py-1.5 !text-[12px]" @click="abandonRealm()">出 秘 境</button>
       </div>
     </template>
 
