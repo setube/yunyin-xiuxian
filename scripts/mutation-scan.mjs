@@ -46,6 +46,40 @@ const EQUIVALENT = [
     file: 'src/core/combat.ts',
     text: 'Math.max(0.2, 1 - target.defSunder)',
     why: 'ARTIFACT_SUNDER_CAP 是 0.5,defSunder 封顶 0.5,1-0.5=0.5 远高于 0.2 的下限,这道钳制永不触发'
+  },
+  {
+    file: 'src/core/affixTransfer.ts',
+    text: 'Math.max(0, cost.dust - resources.dust)',
+    why:
+      '前置三元已经把「够付」写成 0;走到减法那支时 hasSmall("dust", cost.dust) 为假,' +
+      '即 resources.dust < cost.dust,差值必为正,钳制不改变结果。' +
+      '留着是因为这段读起来像「算差额」,钳一下能让下一个人不必回头确认前置。'
+  },
+  {
+    file: 'src/core/apprenticeService.ts',
+    text: '.length === 0)',
+    why:
+      'dispatchAllToNeed 的 `if (idle.length === 0) return []`:紧跟其后的两条分支都是 idle.map(...),' +
+      '空数组 map 本来就返回空数组,结果与提前返回完全一致;needTargetDoor 是纯函数,无副作用。'
+  },
+  {
+    file: 'src/core/apprenticeService.ts',
+    text: 'Math.max(0, Math.floor(amount))',
+    why:
+      'needScore 的分母。amount 来自 resources 的库存读数(herbOf / smallRef),' +
+      '那些字段在 sanitize 与 spend 两处都钳到非负,运行期取不到负数;' +
+      '这条钳制只在「存档被外部改坏且 sanitize 没跑到」的瞬间有意义,而那种状态下' +
+      '整个界面都已经不可信了。玩家侧观察不到差别。'
+  },
+  {
+    file: 'src/core/buffCap.ts',
+    text: 'Math.max(0, (instance.endsAt - now) / 1000)',
+    why:
+      '钳的是「已过期 buff 的剩余时间」。下文的两个判据是 `remain >= cap - 0.5`(→full) 与 ' +
+      '`remain + durationSec > cap`(→partial),两者都要 remain 接近 cap 才成立;' +
+      '而过期时 remain 至多是 0(甚至负数),cap 是四个时辰、duration 是一个时辰,' +
+      '0 与任何负数都落在「none」这一侧,两种算法给出同一个答案。' +
+      '玩家侧也观察不到:过期 buff 在 addBuff 之前就被剔掉了,这里读到负数只是时间边界上的防御。'
   }
 ]
 
