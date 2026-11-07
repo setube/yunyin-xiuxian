@@ -154,6 +154,35 @@ describe('展开钮 · 状态要对读屏可见', () => {
     expect(bad, `这些展开钮没告诉读屏展开没展开:\n${bad.join('\n')}`).toEqual([])
   })
 
+  /**
+   * 文本框要有可访问名。
+   *
+   * placeholder 不能替代 aria-label:输入内容后它就消失,部分读屏实现也不念它。
+   * 实测漏过三处玩家必填的框 —— 建号页「道号」(整页唯一必填项)、挑战立约页「挑战书名」、
+   * 构筑保存页「构筑名号」,它们旁边都只有一行普通文字,没有 <label for> 关联。
+   *
+   * 排除项只有一种:隐藏的 file input —— 它们由旁边的按钮程序化 click(),
+   * 不进 Tab 序,读屏也碰不到。
+   */
+  it('文本框都带可访问名(aria-label 或 label 关联),隐藏 file input 除外', () => {
+    const bad: string[] = []
+    for (const file of vueFiles()) {
+      const text = readFileSync(file, 'utf-8')
+      for (const { tag, index } of openTags(text, 'input')) {
+        if (/aria-label|aria-labelledby/.test(tag)) continue
+        // 隐藏 file input:由按钮程序化触发,不进 Tab 序
+        if (/type="file"/.test(tag) && /\bhidden\b/.test(tag)) continue
+        // 被 <label> 包着的算有名
+        const before = text.slice(0, index)
+        if (before.lastIndexOf('<label') > before.lastIndexOf('</label>')) continue
+        const line = text.slice(0, index).split('\n').length
+        const type = /type="([^"]*)"/.exec(tag)?.[1] ?? 'text'
+        bad.push(`${file}:${line}(type=${type})`)
+      }
+    }
+    expect(bad, `这些文本框读屏念不出名字(placeholder 会随输入消失):\n${bad.join('\n')}`).toEqual([])
+  })
+
   it('三处已知展开钮带的是各自的绑定值', () => {
     const known = [
       ['src/views/RealmCodexView.vue', ':aria-expanded="showAllHex"'],

@@ -24,8 +24,13 @@
           组合输入(拼音/日文候选)期间不钳也不回写:此时改 :value 会把候选缓冲区整个替换掉,
           未上屏的字直接输不进来。等 compositionend 再钳。
         -->
+        <!--
+          可访问名用 aria-label 而非 placeholder:placeholder 在输入后即消失,
+          部分读屏实现也不念它 —— 而「道号」是这个页面唯一的必填项。
+        -->
         <input
           :value="name"
+          aria-label="道号"
           class="w-full rounded-md border border-ink/20 bg-paper-deep/60 px-3 py-2 font-kai text-[15px] tracking-widest text-ink outline-none focus:border-cinnabar/50"
           placeholder="道号"
           @compositionstart="composing = true"
