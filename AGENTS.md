@@ -59,6 +59,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run layout-check` — 构建 + `node scripts/layout-check.mjs`（**仅本地**，已从 CI 移除；Windows 用 `node` 而非 bun，耗时约 10 分钟）
 - `bun run offline-check` — 构建 + SW 离线自检
 - `bun run treasure-check` / `world-check` / `orb-check` — 构建 + 真浏览器验形制（得宝仪典 / 界域印与飞升跃升 / 法球界域形态）；三者都走后期存档夹具，前期档看不到顶档之物、四界与四态
+- `bun run detail-check` — `scripts/detail-geometry.mjs`：装备详情页脚在「未确认 / 确认 / 退一步」三态下量真实宽高，钮与页脚不许变形（二步确认的几何抖动只在这一层测得出来）
 - `bun run build:android` / `build:apk` — 安卓客户端打包
 - `bun run build:electron --win` — Windows 桌面客户端打包，产物在 `pkg/`（完整包 + 增量包）
 - 楷体打包：`uv run scripts/fonts/build-kai-font.py`
@@ -193,7 +194,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `src/utils/storage.ts` — 存档持久化/加密/迁移（SAVE_PREFIX、SAVE_VERSION、PERSISTED_STORES）
 - `src/utils/gnum.ts` — 大数
 - `src/router/` — 路由与首启守卫
-- `scripts/test-report.mjs`、`ui-smoke.mjs`、`focus-check.mjs`、`aria-check.mjs`、`multitab-check.mjs`、`layout-check.mjs`、`offline-check.mjs`、`treasure-check.mjs`、`world-check.mjs`、`orb-check.mjs`
+- `scripts/test-report.mjs`、`ui-smoke.mjs`、`focus-check.mjs`、`aria-check.mjs`、`multitab-check.mjs`、`layout-check.mjs`、`offline-check.mjs`、`treasure-check.mjs`、`world-check.mjs`、`orb-check.mjs`、`detail-geometry.mjs`
 - `.github/workflows/` — CI 定义
 - `vite.config.ts` / `vitest.config.ts` / `tsconfig*.json`
 
@@ -216,7 +217,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
   - `combat.spec.ts` — 无死循环，HP 在 0..1。
   - `offlineCap.spec.ts` — 离线上限生效，混沌道祖 5 条离线台词有限。
 - **惯用模式**：TTL / 去重淘汰用 `vi.useFakeTimers`。
-- **QA 脚本**：`test-report.mjs`（按系统分桶，失败/整文件失败/未归类/文档例数/vitest 非零退出即退出 1）；`ui-smoke.mjs`（375x812 交互冒烟，pageerror + NaN/Infinity 泄漏即失败，跳过破坏性按钮）；`layout-check.mjs`（38 项自检：无横向溢出、双栏 dvh 固定、触控目标 ≥28px、模态触控巡逻、tab-rail 粘性、无纵向挤压/孤行标点/数字单位断行、a11y 图标 aria；约 10 分钟，仅本地）；`offline-check.mjs`（SW 接管 + 离线启动 + 发布接管）；`treasure-check.mjs` / `world-check.mjs` / `orb-check.mjs`（形制实测：量的是真实 DOM 上的层级、几何、命中与读屏属性，单测只能证明「源码里写了那一句」）。CI 对 `test-report` 限 maxWorkers=4。
+- **QA 脚本**：`test-report.mjs`（按系统分桶，失败/整文件失败/未归类/文档例数/vitest 非零退出即退出 1）；`ui-smoke.mjs`（375x812 交互冒烟，pageerror + NaN/Infinity 泄漏即失败，跳过破坏性按钮）；`layout-check.mjs`（38 项自检：无横向溢出、双栏 dvh 固定、触控目标 ≥28px、模态触控巡逻、tab-rail 粘性、无纵向挤压/孤行标点/数字单位断行、a11y 图标 aria；约 10 分钟，仅本地）；`offline-check.mjs`（SW 接管 + 离线启动 + 发布接管）；`treasure-check.mjs` / `world-check.mjs` / `orb-check.mjs` / `detail-geometry.mjs`（形制实测：量的是真实 DOM 上的层级、几何、命中与读屏属性，单测只能证明「源码里写了那一句」）。CI 对 `test-report` 限 maxWorkers=4。
 - **Git 保护**:main 仅通过 PR merge,禁止 force-push;v* release tag 只由发布流水线打。PR 校验 CI = 类型检查 + lint + 单测 + 生产构建全部绿。**CHANGELOG.md 需更新**(新增 / 调整与优化 / 修复 三节,中文一行式,格式 `## [ver] — date · 副标题`)。
 - **历史线性**:main 历史必须线性,禁止 merge 提交。合入 PR 一律用 `gh pr merge --rebase`,逐提交保留分支历史——**默认不要用 `--squash`**:合入用 squash 会把分支上那几个「可独立评审」的提交并成一个,提交条目在 main 历史里就没了(除非用户明确要压成单个提交);严禁「Create a merge commit」/ `gh pr merge --merge`(会在 main 上引入双亲 merge 节点,破坏线性)。同步主干一律 `git rebase main`,禁止「Merge main into …」式提交(`.github/workflows/history-linear.yml` 会把这类提交判为失败,其权威合并期闸门是分支规则集「Require a linear history」)。
 - **PR 承载多 commit**：一个 PR 可承载多个 commit；PR 内每个 commit 都须能被独立评审，且 PR 作为整体说明改动主题。

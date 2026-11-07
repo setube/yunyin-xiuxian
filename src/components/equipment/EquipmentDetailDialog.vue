@@ -192,34 +192,49 @@
           @update:auto-open="autoOpen = $event"
           @transfer="openTransfer"
         />
-        <div class="flex gap-2">
-          <button class="btn-seal flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
+        <!--
+          分解二步确认整行换掉,与词条转移的页脚同一做法。
+
+          原先确认态把「确认分解」「再想想」塞进同一条 flex 里:320 宽下四个钮抢 238px,
+          「装 备」「强 化」被挤成一行一个字,行高由 44 涨到 68 —— 点一下垃圾桶,整条页脚跟着长高。
+          换行后两态都是两枚等宽钮、同高(min-h-11),页脚高度不动。
+          返还多少器灵尘在正文「分解返还」那一行,确认钮不重复。
+        -->
+        <div v-if="decomposeArm !== inst?.uid" class="flex gap-2">
+          <button class="btn-seal min-h-11 flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
           <!--
             满级不再让按钮凭空消失:消失的按钮不解释任何事,玩家只看到「强 化」不见了。
             保留同一位置、换成禁用态并直接写出原因(AGENTS.md「禁用即给原因」)。
+
+            动作词与拒因各自成块、块内不断行:两段直接拼在一起时,113px 的钮会把
+            「强 化(尘」/「差 37」从中截断 —— 折行只允许发生在两块之间。
           -->
           <button
-            class="btn-ghost flex-1"
+            class="btn-ghost min-h-11 flex-1 !flex-wrap !px-2 !leading-tight"
             :disabled="upCost ? upShort !== null : true"
             :title="upCost ? (upShort === 'stone' ? `灵石尚差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `器灵尘尚差 ${upGap?.dust ?? 0}` : undefined) : upgradeCapToast()"
             @click="doUpgrade"
-          >{{ !upCost ? '已至上限' : upShort === 'stone' ? `强 化(石差${formatGap(upGap?.stone ?? { m: 0, e: 0 })})` : upShort === 'dust' ? `强 化(尘差${upGap?.dust ?? 0})` : '强 化' }}</button>
+          >
+            <span class="whitespace-nowrap">{{ !upCost ? '已至上限' : '强 化' }}</span>
+            <span
+              v-if="upCost && upShort"
+              class="whitespace-nowrap text-[10px] tabular"
+            >({{ upShort === 'stone' ? `石差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : `尘差 ${upGap?.dust ?? 0}` }})</span>
+          </button>
           <!-- 分解须二步确认,防误触 -->
-          <template v-if="decomposeArm !== inst?.uid">
-            <button
-              class="btn-ghost"
-              :disabled="isEquipped || inst?.locked"
-              :aria-label="decomposeReason"
-              :title="decomposeReason"
-              @click="decomposeArm = inst?.uid ?? null"
-            >
-              <GameIcon name="trash" :size="15" />
-            </button>
-          </template>
-          <template v-else>
-            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doDecompose">确认分解</button>
-            <button class="btn-ghost !px-2.5 !py-2 !text-[11px] text-ink-faint" @click="decomposeArm = null">再想想</button>
-          </template>
+          <button
+            class="btn-ghost min-h-11"
+            :disabled="isEquipped || inst?.locked"
+            :aria-label="decomposeReason"
+            :title="decomposeReason"
+            @click="decomposeArm = inst?.uid ?? null"
+          >
+            <GameIcon name="trash" :size="15" />
+          </button>
+        </div>
+        <div v-else class="flex gap-2">
+          <button class="btn-ghost min-h-11 flex-1" @click="decomposeArm = null">再想想</button>
+          <button class="btn-seal min-h-11 flex-1" @click="doDecompose">确认分解</button>
         </div>
       </div>
     </template>
