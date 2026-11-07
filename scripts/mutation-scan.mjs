@@ -48,6 +48,50 @@ const EQUIVALENT = [
     why: 'ARTIFACT_SUNDER_CAP 是 0.5,defSunder 封顶 0.5,1-0.5=0.5 远高于 0.2 的下限,这道钳制永不触发'
   },
   {
+    file: 'src/core/audio.ts',
+    text: 'if (!T) return',
+    why:
+      'onVisibilityChange 的模块守卫。T 是 `await import("tone")` 的结果,未解锁前为 null;' +
+      '这条守卫挡的是「用户从没点过页面(Tone 未加载)但浏览器派发 visibilitychange」。' +
+      '判据侧观察不到:没有 Tone 时其余音频入口也都是 no-op,visible/hidden 切换不产生任何可测行为;' +
+      '要验它得先完整模拟 Tone.js 的 Transport,成本远超收益(同 audioPrefs 那两处)。'
+  },
+  {
+    file: 'src/core/battleAnalysis.ts',
+    text: 'if (!s) return',
+    why:
+      'battleDataRows / analyzeBattle 两处 `result.stats` 判空。CombatResult.stats 是必填字段,' +
+      '唯一可能缺失的场景是读一条 v1 老存档里残缺的战报 —— 而 importCorruption 的规矩是' +
+      '「要么水合要么干净拒绝」,残缺战报进不来。兜底防的是将来放宽战报结构。' +
+      '注:两处调用点共用同一个归一化文本,故名单里只需一条。'
+  },
+  {
+    file: 'src/core/battleAnalysis.ts',
+    text: 'Math.max(0, Math.min(1, ratio(part, whole))',
+    why:
+      'share 的上下钳。三处调用里只有 bigShare(biggestHitTaken / maxHpProxy)可能越 1,' +
+      '而它的消费点是 `if (bigShare >= BIG_HIT_WARN)` —— 1.2 与 1.0 都过阈值,判定结果相同。' +
+      '若要写判据只能钉「文案里显示 100% 而不是 120%」,那是显示口径的选择,' +
+      '不是行为差异;现有 11 条用例不碰这条边界。'
+  },
+  {
+    file: 'src/core/battleAnalysis.ts',
+    text: 'Math.max(0, Math.round((enemySpeed - playerSpeed) * 100)',
+    why:
+      'gapPct 的唯一消费点(firstMoveFinding)写的是 `if (gap <= 0) return []` ——' +
+      '负数与 0 走同一条路,都提前返回空。故「钳成 0」与「留着负数」在玩家侧完全等价。' +
+      '钳一下是想让这个字段的语义明确为「差额」而不是「差值」,将来若有人直接展示它就不会出现「尚差 -3%」。'
+  },
+  {
+    file: 'src/core/compoundingAudit.ts',
+    text: 'Math.max(0, floor)',
+    why:
+      'expectedAptitude 的入参地板由 aptitudeFloorNow 派生:' +
+      '`REINCARNATE_APTITUDE_FLOOR * (count + 1)` 加 `floor(insight / INSIGHT_PER_APTITUDE)`,' +
+      'count 与 insight 都是只增不减的非负计数,故 floor 恒 ≥ 0。' +
+      '钳一句是为了让这个函数对任意入参都成立(它是审计口径的纯函数,将来可能被别处直接调)。'
+  },
+  {
     file: 'src/core/buildAdvisor.ts',
     text: 'if (!affinity) return',
     why:
