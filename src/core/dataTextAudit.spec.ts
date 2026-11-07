@@ -1175,10 +1175,19 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(marks, '道痕在途拒因来自统一判据').toContain('endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, useAdventureStore().session)')
     expect(furnace, '道果付不起要置灰').toContain(':disabled="fruitShort.short.m > 0"')
     expect(furnace, '灵石熔铸付不起也要置灰').toContain(':disabled="stoneShort.m > 0"')
-    expect(furnace, '灵石熔铸按钮就地写实际差额').toContain('灵石尚差 ${formatGap(stoneShort)}')
+    /*
+     * 差额写在左侧存量那一行,不在钮里。
+     *
+     * 钮里原本是「熔铸(灵石尚差 …)」或「33.51 亿 → 5 道源」:320 宽下这一格只有 100 余 px,
+     * 「源」被挤到第二行,整行比上面四行高出半行。价签挪到左边之后钮只写「熔 铸」,
+     * 与「熔尽本包」那四颗同宽同高。
+     * 差额本身仍在页面上(左边那行),「禁用即给原因」未失守。
+     * 故障注入:把差额从左侧那行删掉,或把括号拒因写回钮里,本条红。
+     */
+    expect(furnace, '灵石熔铸差额写在左侧存量行').toContain('灵石尚差 {{ formatGap(stoneShort) }}')
     expect(furnace, '灵石熔铸差额走指数感知减法').toContain('subClamp(cost, resources.spiritStone)')
     expect(furnace, '灵石熔铸价与扣费同源').toContain('const cost = furnaceStoneCost()')
-    expect(furnace, '灵石熔铸未付时直接写尚差').toContain('熔铸(灵石尚差 ${formatGap(stoneShort)})')
+    expect(furnace, '熔铸按钮正文只写动作词').toContain('>熔 铸</button>')
   })
 
   /** 天道熔炉材料差额由 furnaceMaterialShortfall 单源给出,两条失败路径都写实际差量 */

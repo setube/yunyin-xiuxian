@@ -13,8 +13,9 @@
  *   四 面板有可辨识名字(读屏不会只念「对话框」)。
  *
  * 用法(需先 `bun run build`):
- *   node scripts/modal-patrol.mjs            # 全部场景
- *   node scripts/modal-patrol.mjs --shots    # 另存图到 /tmp/modal-patrol
+ *   node scripts/modal-patrol.mjs                # 375 宽
+ *   node scripts/modal-patrol.mjs --width=320    # 窄屏那一档
+ *   node scripts/modal-patrol.mjs --shots        # 另存图到 /tmp/modal-patrol
  *
  * 入口找不到的不判失败(夹具未铺该窗前置),但要一条条打印出来 ——
  * 「这扇窗从没被量过」本身是事实,不该被静默吞掉。
@@ -136,12 +137,79 @@ async function auditModal(page) {
       .slice(0, 3)
       .map(x => `${x.ratio}:1 «${x.text}»`)
 
+    /*
+     * 排版三条:弹窗是窄屏最先出事的地方(面板最宽就 375 减去左右留白)。
+     *   一 横向溢出:面板内容比面板宽 —— 320 宽下最容易撞,撞了就出现横向滚动条;
+     *   二 竖排正文:某个块被挤到只剩一个字宽,正文立成一列(与前面几轮修的钮竖排同类);
+     *   三 按钮折行:钮内正文折成两行,把整排撑高(「强 化(尘差 36)」就是这么坏的)。
+     */
+    const pr = panel.getBoundingClientRect()
+    const overflow = []
+    for (const el of panel.querySelectorAll('*')) {
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0) continue
+      // 允许 1px 亚像素;只看明显超出面板右边界或左边界
+      if (r.right > pr.right + 1.5 || r.left < pr.left - 1.5) {
+        const t = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14)
+        overflow.push(`${Math.round(r.width)}px «${t || el.tagName.toLowerCase()}»`)
+      }
+    }
+    const squeezed = []
+    for (const el of panel.querySelectorAll('p, span, button, li')) {
+      const r = el.getBoundingClientRect()
+      // 高远大于宽且宽度很窄 = 竖排
+      if (r.width > 0 && r.height > r.width * 3 && r.width < 40) {
+        const t = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14)
+        if (t.length >= 2) squeezed.push(`${Math.round(r.width)}x${Math.round(r.height)} «${t}»`)
+      }
+    }
+    /*
+     * 同一水平行内的按钮必须等高。
+     *
+     * 这是「忽大忽小」那件事的精确形态:并排的两三颗钮里,有一颗被正文挤成了两行,
+     * 于是那一排的高度由最高的那颗决定,整排跟着长高 —— 玩家点一下确认,行就窜一截。
+     * 「强 化(尘差 36)」把底行从 44 抬到 57,「33.51亿 → 5 道源」把熔炉那一行抬高半行。
+     *
+     * 为什么不是别的写法:
+     *   · 数按钮里有几行 —— 会误报多行卡片(师承三张门派卡)与截断标题(版本号徽章);
+     *   · 数同面板按钮的高度差 —— 会误报「整行大钮 vs 小方钮」与本来就不同高的卡片。
+     * 只在**同一水平行**内比较,才是玩家看到的「一排」。
+     */
+    const wrapped = []
+    const byRow = new Map()
+    for (const el of panel.querySelectorAll('button')) {
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0) continue
+      /*
+       * 整行钮(占面板八成宽以上)不参与同类比较:页脚的「收 炉」「知道了」是足部主钮,
+       * 本来就比上面的小方钮高,把它们拉进来只会得到稳定误报。
+       */
+      if (r.width > pr.width * 0.8) continue
+      // 行以中心线的 y 归组(整数化,容忍亚像素)
+      const key = Math.round((r.top + r.bottom) / 2 / 4)
+      if (!byRow.has(key)) byRow.set(key, [])
+      byRow.get(key).push({ h: Math.round(r.height), text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 16) })
+    }
+    for (const group of byRow.values()) {
+      if (group.length < 2) continue
+      const hs = group.map(g => g.h)
+      const lo = Math.min(...hs)
+      const hi = Math.max(...hs)
+      if (hi >= lo + 4) {
+        const odd = group.filter(g => g.h >= lo + 4)
+        wrapped.push(`${odd.map(o => `${o.h}px «${o.text}»`).join(' + ')}(同行最低 ${lo}px)`)
+      }
+    }
+
     return {
       count: rows.length,
       label: (panel.getAttribute('aria-label') || panel.querySelector('h3')?.textContent || '').trim(),
       unnamed: rows.filter(r => !r.name).map(r => `${r.h.toFixed(1)}px`),
       small: rows.filter(r => !r.ok).map(r => `${r.h.toFixed(1)}px «${r.name || '无名'}»`),
-      dimDisabled
+      dimDisabled,
+      overflow: overflow.slice(0, 4),
+      squeezed: squeezed.slice(0, 3),
+      wrapped: wrapped.slice(0, 3)
     }
   })
 }
@@ -166,29 +234,62 @@ async function patrol(page, name, click) {
   await page.waitForTimeout(300)
 
   if (!audit) {
-    fail(`[${name}] 点开了但量不到 .modal-panel`)
+    fail(`[${WIDTH}] ${name}: 点开了但量不到 .modal-panel`)
     return
   }
   if (audit.count === 0) {
-    fail(`[${name}] 面板里一个控件都没数到(判据没跑到东西)`)
+    fail(`[${WIDTH}] ${name}: 面板里一个控件都没数到(判据没跑到东西)`)
     return
   }
-  if (!audit.label) fail(`[${name}] 没有可访问名(读屏只会念「对话框」)`)
-  if (audit.unnamed.length) fail(`[${name}] 有 ${audit.unnamed.length} 个无名控件`)
-  if (audit.small.length) fail(`[${name}] 可点元素过小(<28px):${audit.small.join(' | ')}`)
-  if (audit.dimDisabled.length) fail(`[${name}] 禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+  if (!audit.label) fail(`[${WIDTH}] ${name}: 没有可访问名(读屏只会念「对话框」)`)
+  if (audit.unnamed.length) fail(`[${WIDTH}] ${name}: 有 ${audit.unnamed.length} 个无名控件`)
+  if (audit.small.length) fail(`[${WIDTH}] ${name}: 可点元素过小(<28px):${audit.small.join(' | ')}`)
+  if (audit.dimDisabled.length) fail(`[${WIDTH}] ${name}: 禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+  if (audit.overflow.length) fail(`[${WIDTH}] ${name}: 面板里有元素横向溢出:${audit.overflow.join(' | ')}`)
+  if (audit.squeezed.length) fail(`[${WIDTH}] ${name}: 有块被挤成竖排:${audit.squeezed.join(' | ')}`)
+  if (audit.wrapped.length) fail(`[${WIDTH}] ${name}: 有按钮正文折了行:${audit.wrapped.join(' | ')}`)
   console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} ${name} · ${audit.count} 控件`)
 }
 
 /** 新开一页并落到某路由,等后期档那串成就 toast 散尽 */
+/**
+ * 后期档 + 修行分片。
+ *
+ * 只有 lateSlices 时,功法详情与状态胶囊两扇窗永远开不出来:
+ * 前者要已习得一部功法(learned 非空),后者要身上挂着一条没过期的增益。
+ * 两者都不属于「夹具没铺前置」—— 它们是每次启动都能补的状态,所以直接铺进去。
+ */
+function cultivationSlices() {
+  const base = lateSlices()
+  return {
+    ...base,
+    // 已习得一部主修:修行页才画得出主修卡,点开就是功法详情
+    cultivation: {
+      learned: { m_taixuan: 3 },
+      mainGongfa: 'm_taixuan',
+      subGongfa: [],
+      gongfaBranch: {},
+      // 一条还在生效的增益:修行页才画得出状态胶囊,点开就是它的说明
+      buffs: [{ defId: 'buff_juling', endsAt: Date.now() + 30 * 60 * 1000, added: 30 * 60 * 1000 }]
+    }
+  }
+}
+
+/*
+ * 两档宽度都量。375 是主档,320 是实测里最容易出事的那一档 ——
+ * 前面几轮找到的畸形(重铸钮竖排、构筑行「再想想」压成 20px)全都只在 320 出现。
+ */
+/** 由 --width=N 指定;缺省 375。脚本一次只跑一档,两档由外面跑两遍 */
+const WIDTH = Number(process.argv.find(a => /^--width=/.test(a))?.slice(8) ?? 375)
+
 async function open(route) {
-  const context = await browser.newContext({ viewport: { width: 375, height: 812 } })
+  const context = await browser.newContext({ viewport: { width: WIDTH, height: WIDTH === 375 ? 812 : 640 } })
   await context.route('**/*', r => {
     const url = r.request().url()
     if (/^(file|data|blob):/.test(url)) return r.continue()
     return r.abort()
   })
-  await seedSave(context, lateSlices())
+  await seedSave(context, cultivationSlices())
   const page = await context.newPage()
   page.on('pageerror', e => fail(`运行时异常:${String(e.message).slice(0, 120)}`))
   await page.goto(`${INDEX}#${route}`, { waitUntil: 'load' })
@@ -316,10 +417,10 @@ async function clickTab(page, re) {
           mkdirSync(SHOTS_DIR, { recursive: true })
           await page.locator('.modal-panel').last().screenshot({ path: join(SHOTS_DIR, '道果.png') }).catch(() => {})
         }
-        if (!audit || audit.count === 0) fail('[道果] 面板里一个控件都没数到')
+        if (!audit || audit.count === 0) fail(`[${WIDTH}] 道果:面板里一个控件都没数到`)
         else {
-          if (audit.small.length) fail(`[道果] 可点元素过小(<28px):${audit.small.join(' | ')}`)
-          if (audit.dimDisabled.length) fail(`[道果] 禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+          if (audit.small.length) fail(`[${WIDTH}] 道果:可点元素过小(<28px):${audit.small.join(' | ')}`)
+          if (audit.dimDisabled.length) fail(`[${WIDTH}] 道果:禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
           console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} 道果 · ${audit.count} 控件`)
         }
       }
@@ -349,8 +450,9 @@ async function clickTab(page, re) {
     }
     return false
   })
+  // 状态胶囊:修行页 buff 头像那一排,点开是 BuffDialog
   await patrol(page, '状态胶囊', async () => {
-    const chip = page.locator('main button').filter({ hasText: /闭关中|历练在途/ }).first()
+    const chip = page.locator('main button').filter({ hasText: /聚灵|仙韵|凝神/ }).first()
     if ((await chip.count()) === 0) return false
     await chip.click({ timeout: 3000 }).catch(() => {})
     return true
