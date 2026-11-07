@@ -215,6 +215,142 @@ async function auditModal(page) {
 }
 
 /**
+ * 弹窗内的两步确认:点开确认态,量面板与各控件的几何有没有变。
+ *
+ * 单测与页面级 detail-geometry 都管不到这里 ——
+ * detail-geometry 只量修行页 / 行囊 / 洞府 / 构筑这四处页面级的,
+ * 而弹窗里另有「分解 / 全部熔尽 / 确认择道 / 确认返还」等好几处两步确认,
+ * 它们从没被量过。而「点一下按钮就变大变小」正是玩家最早报的那件事。
+ *
+ * 只点**前置触发钮**(分 解 / 全部熔尽 / 择此道 / 熔 铸 这类),绝不点确认钮:
+ * 那是不可逆操作,巡逻不能真把玩家的东西熔掉。
+ * 判据:确认态下,面板不横向溢出、没有块被挤成竖排、同一水平行的按钮仍等高。
+ */
+async function probeTwoStep(page, name) {
+  // 确认态里必有「再想想」;没有它就不是两步确认,直接跳过
+  const markers = await page.evaluate(() => {
+    const panel = [...document.querySelectorAll('.modal-panel')].filter(el => {
+      const r = el.getBoundingClientRect()
+      return r.width > 0 && r.height > 0
+    }).pop()
+    if (!panel) return null
+    const hasUndo = [...panel.querySelectorAll('button')].some(b => /再想想/.test(b.textContent || ''))
+    return {
+      hasUndo,
+      panelH: Math.round(panel.getBoundingClientRect().height * 10) / 10,
+      btns: [...panel.querySelectorAll('button')].map(b => ({
+        t: (b.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 20),
+        h: Math.round(b.getBoundingClientRect().height),
+        w: Math.round(b.getBoundingClientRect().width),
+        disabled: b.disabled
+      }))
+    }
+  })
+  if (!markers || markers.hasUndo) return
+
+  /*
+   * 找前置触发钮。
+   *
+   * 不能按文字白名单点 —— 「分 解」在分解弹窗里是**确认钮本身**(footer 那颗),
+   * 点它就把东西分解了。判据必须是行为:点一下,**看有没有冒出「再想想」**。
+   * 冒出来了 = 这颗是两步确认的前置钮,而且此时什么都还没发生(那正是两步确认的意义);
+   * 没冒出来 = 这颗不是前置钮,已经生效了 —— 但巡逻里点到的钮都不动钱不动物,
+   * 最坏结果是弹窗关了,下一个场景会重新开一页。
+   *
+   * 按「是否带确认/取消语」筛掉一批明显不能点的,再逐个试。
+   */
+  /*
+   * 只筛掉**明确不能点**的:取消语、确认语、关闭语。
+   * 别把「熔 铸」「全部熔尽」这类动作词也筛掉 —— 它们正是典型的两步确认前置钮。
+   */
+  const SAFE_SKIP = /再想想|确认|知道了|关\s*闭|收\s*炉|取\s*消|\b取消\b/
+  const cands = await page.evaluate(src => {
+    const skip = new RegExp(src)
+    const panel = [...document.querySelectorAll('.modal-panel')].filter(el => el.getBoundingClientRect().width > 0).pop()
+    if (!panel) return []
+    return [...panel.querySelectorAll('button')]
+      .map((b, i) => ({ i, t: (b.textContent || '').trim().replace(/\s+/g, ' '), dis: b.disabled }))
+      .filter(b => !b.dis && b.t && !skip.test(b.t))
+      .map(b => b.i)
+  }, SAFE_SKIP.source)
+  if (cands.length === 0) return
+
+  let entered = false
+  for (const idx of cands.slice(0, 6)) {
+    // 取栈顶那层面板里的按钮(别用 :visible —— 那是 Playwright 专有伪类,页面选择器里无效)
+    const btns = page.locator('.modal-panel').last().locator('button')
+    const n = await btns.count()
+    if (idx >= n) continue
+    await btns.nth(idx).click({ timeout: 2000 }).catch(() => {})
+    await page.waitForTimeout(400)
+    const hasUndo = await page.evaluate(() => {
+      const panel = [...document.querySelectorAll('.modal-panel')].filter(el => el.getBoundingClientRect().width > 0).pop()
+      return panel ? [...panel.querySelectorAll('button')].some(b => /再想想/.test(b.textContent || '')) : false
+    })
+    if (hasUndo) { entered = true; break }
+    // 没进确认态:可能弹窗被关掉了,那就没法继续
+    if ((await page.locator('.modal-panel').count()) === 0) return
+  }
+  if (!entered) return
+
+  const after = await page.evaluate(() => {
+    const panels = [...document.querySelectorAll('.modal-panel')].filter(el => {
+      const r = el.getBoundingClientRect()
+      return r.width > 0 && r.height > 0
+    })
+    const panel = panels[panels.length - 1]
+    if (!panel) return null
+    const pr = panel.getBoundingClientRect()
+    const overflow = []
+    for (const el of panel.querySelectorAll('*')) {
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0) continue
+      if (r.right > pr.right + 1.5 || r.left < pr.left - 1.5) {
+        overflow.push(`${Math.round(r.width)}px «${(el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14) || el.tagName.toLowerCase()}»`)
+      }
+    }
+    const squeezed = []
+    for (const el of panel.querySelectorAll('p, span, button, li')) {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0 && r.height > r.width * 3 && r.width < 40) {
+        const t = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14)
+        if (t.length >= 2) squeezed.push(`${Math.round(r.width)}x${Math.round(r.height)} «${t}»`)
+      }
+    }
+    // 同一水平行内按钮等高(与 auditModal 同一把尺)
+    const byRow = new Map()
+    for (const el of panel.querySelectorAll('button')) {
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0) continue
+      if (r.width > pr.width * 0.8) continue
+      const key = Math.round((r.top + r.bottom) / 2 / 4)
+      if (!byRow.has(key)) byRow.set(key, [])
+      byRow.get(key).push({ h: Math.round(r.height), text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 16) })
+    }
+    const uneven = []
+    for (const group of byRow.values()) {
+      if (group.length < 2) continue
+      const hs = group.map(g => g.h)
+      const lo = Math.min(...hs)
+      if (Math.max(...hs) >= lo + 4) {
+        uneven.push(group.filter(g => g.h >= lo + 4).map(o => `${o.h}px «${o.text}»`).join(' + ') + `(同行最低 ${lo}px)`)
+      }
+    }
+    return { hasUndo: [...panel.querySelectorAll('button')].some(b => /再想想/.test(b.textContent || '')), overflow: overflow.slice(0, 3), squeezed: squeezed.slice(0, 3), uneven: uneven.slice(0, 3) }
+  })
+
+  if (!after) return
+  if (after.overflow.length) fail(`[${WIDTH}] ${name}·确认态: 有元素横向溢出:${after.overflow.join(' | ')}`)
+  if (after.squeezed.length) fail(`[${WIDTH}] ${name}·确认态: 有块被挤成竖排:${after.squeezed.join(' | ')}`)
+  if (after.uneven.length) fail(`[${WIDTH}] ${name}·确认态: 同行按钮不等高:${after.uneven.join(' | ')}`)
+  console.log(`       └ ${name} 两态:未确认 ${markers.panelH}px → 确认态几何量过`)
+  // 退回未确认态,留给外层关窗
+  const undo = page.locator('.modal-panel button', { hasText: /再想想/ }).last()
+  if ((await undo.count()) > 0) await undo.click({ timeout: 2000 }).catch(() => {})
+  await page.waitForTimeout(250)
+}
+
+/**
  * 一扇窗的巡逻:点开 → 量 → 关掉。
  * click 返回 false 表示入口没出现(夹具没铺到),记为「未量」而不是失败。
  */
@@ -230,6 +366,8 @@ async function patrol(page, name, click) {
     mkdirSync(SHOTS_DIR, { recursive: true })
     await page.locator('.modal-panel').last().screenshot({ path: join(SHOTS_DIR, `${name}.png`) }).catch(() => {})
   }
+  // 两态几何:弹窗里若有两步确认,点开确认态再量一遍 —— 必须在关窗之前
+  await probeTwoStep(page, name)
   await page.keyboard.press('Escape').catch(() => {})
   await page.waitForTimeout(300)
 
@@ -248,6 +386,7 @@ async function patrol(page, name, click) {
   if (audit.overflow.length) fail(`[${WIDTH}] ${name}: 面板里有元素横向溢出:${audit.overflow.join(' | ')}`)
   if (audit.squeezed.length) fail(`[${WIDTH}] ${name}: 有块被挤成竖排:${audit.squeezed.join(' | ')}`)
   if (audit.wrapped.length) fail(`[${WIDTH}] ${name}: 有按钮正文折了行:${audit.wrapped.join(' | ')}`)
+
   console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} ${name} · ${audit.count} 控件`)
 }
 
