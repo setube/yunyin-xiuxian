@@ -369,13 +369,20 @@ async function probeTwoStep(page, name) {
       if (!byRow.has(key)) byRow.set(key, [])
       byRow.get(key).push({ h: Math.round(r.height), text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 16) })
     }
+    /*
+     * 与未确认态同一把尺:阈值 2px,不是 4px。
+     *
+     * 上一轮把未确认态那处从 4 降到 2(因为「投一点/改立主脉」差 2px 被放过),
+     * 但确认态这里是另一份拷贝,当时漏改 —— 两处必须同一个阈值,
+     * 否则「点进确认态」之后又变成看不见 2px 的差。
+     */
     const uneven = []
     for (const group of byRow.values()) {
       if (group.length < 2) continue
       const hs = group.map(g => g.h)
       const lo = Math.min(...hs)
-      if (Math.max(...hs) >= lo + 4) {
-        uneven.push(group.filter(g => g.h >= lo + 4).map(o => `${o.h}px «${o.text}»`).join(' + ') + `(同行最低 ${lo}px)`)
+      if (Math.max(...hs) >= lo + 2) {
+        uneven.push(group.filter(g => g.h >= lo + 2).map(o => `${o.h}px «${o.text}»`).join(' + ') + `(同行最低 ${lo}px)`)
       }
     }
     return { hasUndo: [...panel.querySelectorAll('button')].some(b => /再想想/.test(b.textContent || '')), overflow: overflow.slice(0, 3), squeezed: squeezed.slice(0, 3), uneven: uneven.slice(0, 3) }
