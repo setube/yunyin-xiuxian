@@ -19,6 +19,8 @@ jobs:
   guard:
     name: 版本闸门
     runs-on: ubuntu-latest
+    # 显式超时:默认 6 小时,卡住会白占 runner。闸门只跑几步 git/tag 判断,10 分钟足够
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - name: 校验 tag 与 package.json 版本一致
@@ -36,6 +38,8 @@ jobs:
   # 而 Windows runner 装 Bun + 下载 Electron 要慢一倍以上;产物名与在 Windows 上打的一致。
   build-electron:
     name: 构建 Windows 桌面客户端
+    # electron-builder 打完整包 + 增量包,实测约二十分钟
+    timeout-minutes: 40
     needs: [guard]
     runs-on: ubuntu-latest
     steps:
@@ -86,6 +90,8 @@ jobs:
 
   build-android:
     name: 构建 Android APK
+    # gradle assembleRelease 冷启动含依赖下载,实测约二十五分钟
+    timeout-minutes: 45
     needs: [guard]
     runs-on: ubuntu-latest
     # 签名读仓库内 android/keystore.properties(含口令)+ release.keystore,CI 无 Secret —— 仓库所有者的既定选择
