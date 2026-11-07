@@ -280,4 +280,41 @@ describe('formatGap 差额向上取整', () => {
     expect(formatGap(gn(0))).toBe('0')
     expect(formatGap(gn(-5))).toBe('-5')
   })
+
+  /**
+   * 坏值守卫。
+   *
+   * formatGN / formatGap 的入参是 `GNum | number`,走的是
+   * `typeof v === 'number' ? gn(v) : v` —— **对象分支不经过 gn()**,
+   * 于是反序列化进来的坏 GNum 会直接进后面的算术。
+   *
+   * 补守卫之前实测:
+   *   gn(1, NaN)      → 「NaNundefined」
+   *   gn(1, Infinity) → 「1.00eInfinity」
+   *   gn(NaN, 0)      → 「∞」
+   * 而 formatPercent / formatDuration / formatCountdown 早就返回 `--` 了,只有这两个口漏着。
+   */
+  it('坏 GNum 印占位符「--」,不印 NaNundefined / 1.00eInfinity / ∞', () => {
+    const bads = [
+      { m: Number.NaN, e: 0 },
+      { m: 1, e: Number.NaN },
+      { m: 1, e: Number.POSITIVE_INFINITY },
+      { m: Number.POSITIVE_INFINITY, e: 1 },
+      { m: Number.NEGATIVE_INFINITY, e: 2 }
+    ]
+    for (const v of bads) {
+      for (const [name, fn] of [
+        ['formatGN', formatGN],
+        ['formatGap', formatGap]
+      ] as const) {
+        expect(fn(v), `${name}(${JSON.stringify(v)}) 印出了乱码`).toBe('--')
+      }
+    }
+  })
+
+  it('守卫不误伤正常值', () => {
+    expect(formatGN({ m: 1, e: 4 })).toBe('1万')
+    expect(formatGN(gn(1234))).toBe('1,234')
+    expect(formatGap(gn(880))).toBe('880')
+  })
 })
