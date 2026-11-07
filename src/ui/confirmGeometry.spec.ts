@@ -23,6 +23,34 @@ const REFORGE_FOOTER = 'components/equipment/EquipReforgeFooter.vue'
 const DETAIL = 'components/equipment/EquipmentDetailDialog.vue'
 const AUTO_PANEL = 'components/equipment/AutoReforgePanel.vue'
 
+
+/**
+ * 取模板里每个 `<button ...>` 的开标签原文,引号感知。
+ *
+ * 不能用 `/<button[^>]*>/` —— 属性值里常有 `>`(如 `v-if="count > 0"`),
+ * 那样会在引号中间截断,截断点之后的 class 就看不见了。
+ */
+function buttonOpenTags(src: string): string[] {
+  const out: string[] = []
+  for (const m of src.matchAll(/<button\b/g)) {
+    let i = m.index! + m[0].length
+    let quote: string | null = null
+    while (i < src.length) {
+      const ch = src[i]!
+      if (quote) {
+        if (ch === quote) quote = null
+      } else if (ch === '"' || ch === "'") {
+        quote = ch
+      } else if (ch === '>') {
+        out.push(src.slice(m.index!, i + 1))
+        break
+      }
+      i += 1
+    }
+  }
+  return out
+}
+
 describe('二步确认 · 两态同栏同高', () => {
   it('重铸页脚:价签不在按钮正文里', () => {
     const src = read(REFORGE_FOOTER)
@@ -172,8 +200,21 @@ describe('二步确认 · 两态同栏同高', () => {
     const bad: string[] = []
     for (const rel of files) {
       const src = read(rel)
-      for (const m of src.matchAll(/<button(?![^>]*:class)[^>]*\bclass="([^"]*)"[^>]*>/g)) {
-        const cls = m[1] ?? ''
+      /*
+       * 用引号感知的扫描取代纯正则。
+       *
+       * 原写法 `<button(?![^>]*:class)[^>]*\bclass="([^"]*)"[^>]*>` 有两处会漏:
+       *   `<button v-if="equippedCount > 0" class="...">` —— 属性值里的 `>` 提前截断,
+       *   这一颗 `w-full !py-1.5` 的钮从未被本判据看过;
+       *   `<button v-for="m in materialGrid" :key="m.key" class="...">` 同理。
+       * 实测 InventoryView 里正则只捞到 8 颗,实际 12 颗。
+       * 本次实测这两颗都另有触控高度来源(btn-ghost 基类 / aspect-square),
+       * 所以结论没变 —— 但判据此前是瞎的,下次真缺高度也不会报。
+       */
+      for (const tag of buttonOpenTags(src)) {
+        if (/\s:class=|\sv-bind:class=/.test(tag)) continue
+        const cm = /\bclass="([^"]*)"/.exec(tag)
+        const cls = cm?.[1] ?? ''
         if (!cls.trim()) continue
         if (/\b(btn-seal|btn-ghost|chip-ink|card-ink)\b/.test(cls)) continue
         const tall = /min-h-\[(\d+)px\]/.test(cls) || /!?py-(?:1\.5|2|2\.5|3)\b/.test(cls)
