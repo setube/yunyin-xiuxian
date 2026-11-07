@@ -88,7 +88,7 @@
             @click="furnaceOpen = true"
           >
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cinnabar font-kai text-[19px] seal-face">炉</span>
-            <span class="min-w-0 flex-1">
+            <span class="min-w-0">
               <span class="block font-kai text-[14px] tracking-widest text-ink">天道熔炉</span>
             </span>
             <span class="shrink-0 text-[12px] text-ink-faint">›</span>
@@ -96,7 +96,7 @@
 
           <button class="card-ink flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:scale-98" @click="goSouls()">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-gold-ink font-kai text-[19px] seal-face">魂</span>
-            <span class="min-w-0 flex-1">
+            <span class="min-w-0">
               <span class="block font-kai text-[14px] tracking-widest text-ink">器 魂</span>
               <span class="block truncate text-[10px] leading-relaxed text-ink-faint">
                 已凝 {{ endgame.activeSouls.length }}/{{ SOUL_SLOTS }}
@@ -141,9 +141,9 @@
         <p class="mt-3 border-l-2 border-cinnabar/60 pl-2 text-[11px] text-cinnabar">此世不可更改 · 转世可重择</p>
       </template>
       <template #footer>
-        <div class="flex gap-2">
-          <button class="btn-ghost flex-1" @click="pendingDaoId = null">再想想</button>
-          <button class="btn-seal flex-1 !bg-cinnabar-deep" @click="confirmDao">确认择道</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="btn-ghost w-full" @click="pendingDaoId = null">再想想</button>
+          <button class="btn-seal !bg-cinnabar-deep w-full" @click="confirmDao">确认择道</button>
         </div>
       </template>
     </BaseModal>

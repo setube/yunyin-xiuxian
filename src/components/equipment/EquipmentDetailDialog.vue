@@ -221,7 +221,7 @@
           >{{ !upCost ? '已至上限' : '强 化' }}</button>
           <!-- 分解须二步确认,防误触 -->
           <button
-            class="btn-ghost min-h-11"
+            class="btn-ghost min-h-11 shrink-0"
             :disabled="isEquipped || inst?.locked"
             :aria-label="decomposeReason"
             :title="decomposeReason"
@@ -230,9 +230,9 @@
             <GameIcon name="trash" :size="15" />
           </button>
         </div>
-        <div v-else class="flex gap-2">
-          <button class="btn-ghost min-h-11 flex-1" @click="decomposeArm = null">再想想</button>
-          <button class="btn-seal min-h-11 flex-1" @click="doDecompose">确认分解</button>
+        <div v-else class="grid grid-cols-2 gap-2">
+          <button class="btn-ghost min-h-11 w-full" @click="decomposeArm = null">再想想</button>
+          <button class="btn-seal min-h-11 w-full" @click="doDecompose">确认分解</button>
         </div>
       </div>
     </template>
