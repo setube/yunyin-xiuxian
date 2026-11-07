@@ -78,7 +78,7 @@ describe('二步确认 · 两态同栏同高', () => {
   it('分解确认:两态都写 min-h-11', () => {
     const src = read(DETAIL)
     const footer = src.slice(src.indexOf('decomposeArm !== inst?.uid'), src.indexOf('</template>', src.indexOf('确认分解')))
-    expect(footer, '未确认态三颗钮都带 min-h-11').toMatch(/btn-seal min-h-11 flex-1" @click="toggleEquip"/)
+    expect(footer, '未确认态三颗钮都带 min-h-11').toMatch(/btn-seal min-h-11 (?:w-full|flex-1)" @click="toggleEquip"/)
     expect(footer, '确认态两颗钮都带 min-h-11').toMatch(/btn-seal min-h-11 w-full" @click="doDecompose"/)
   })
 
@@ -112,10 +112,35 @@ describe('二步确认 · 两态同栏同高', () => {
     const bad: string[] = []
     for (const rel of files) {
       const src = read(rel)
-      // 逐个容器块看:同一块里既有 btn-ghost 又有 btn-seal,且两个都带 flex-1
-      for (const m of src.matchAll(/<div[^>]*class="([^"]*)"[^>]*>([\s\S]{0,900}?)<\/div>/g)) {
+      /*
+       * 逐个容器块看:同一块里既有 btn-ghost 又有 btn-seal,且两个都带 flex-1。
+       *
+       * 原先的块边界是 `[\s\S]{0,900}?<\/div>` —— 只认以 </div> 收尾的容器,
+       * 而装备详情页脚那段是 `<div class="flex gap-2">` 里面套按钮、按钮里还嵌 GameIcon,
+       * 惰性匹配撞上的第一个 </div> 落在垃圾桶钮内部,整块因此从未被检查过。
+       * 这一处就是这么漏的:两枚 flex-1 差 18px(320 是 96/78、390 是 131/113)。
+       *
+       * 改成按「开标签 → 配平的闭标签」切块,嵌套几层都不影响。
+       */
+      for (const m of src.matchAll(/<div[^>]*class="([^"]*)"[^>]*>/g)) {
         const cls = m[1] ?? ''
-        const body = m[2] ?? ''
+        const start = m.index! + m[0].length
+        // 从开标签之后数 div 的嵌套深度,找到与之配平的 </div>
+        let depth = 1
+        let i = start
+        while (i < src.length && depth > 0) {
+          const nextOpen = src.indexOf('<div', i)
+          const nextClose = src.indexOf('</div>', i)
+          if (nextClose < 0) break
+          if (nextOpen >= 0 && nextOpen < nextClose) {
+            depth += 1
+            i = nextOpen + 4
+          } else {
+            depth -= 1
+            i = nextClose + 6
+          }
+        }
+        const body = src.slice(start, i)
         if (!body.includes('btn-ghost') || !body.includes('btn-seal')) continue
         const n = (body.match(/\bflex-1\b/g) ?? []).length
         if (n >= 2 && /\bflex\b/.test(cls) && !cls.includes('grid')) {

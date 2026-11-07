@@ -189,6 +189,26 @@ async function run(width, height, { poor = false, theme = 'dark' } = {}) {
     await page.locator('.modal-panel').screenshot({ path: join(SHOTS_DIR, `detail-${tag}-rest.png`) })
   }
 
+  /*
+   * 零、同一行里的钮必须等宽。
+   *
+   * 原先「卸 下」是 .btn-seal(padding 18px)、「强 化」是 .btn-ghost + !px-2(padding 8px),
+   * 两枚都写了 flex-1 却因内容最小宽以 padding 为下界而永远差 18px
+   * (实测 320 是 96/78、375 是 123/105、390 是 131/113)。
+   * 这与 CHANGELOG 里「十六处并列按钮组差 2px」同族,只是差值更大。
+   *
+   * 只查「两颗以上、且都不是 shrink-0 图标钮」的行 —— 垃圾桶那枚本来就该窄。
+   */
+  for (const row of rest.rows) {
+    const wide = row.btns.filter(b => b.name !== '(图标)')
+    if (wide.length < 2) continue
+    const ws = wide.map(b => b.w)
+    const spread = Math.max(...ws) - Math.min(...ws)
+    if (spread > 1) {
+      fail(`[${tag}] 同一行并列钮宽不一致(差 ${spread}px):${wide.map(b => `「${b.name}」${b.w}px`).join(' / ')}`)
+    }
+  }
+
   // 一、重铸钮:未确认态
   const reforgeRow = rest.rows.find(r => r.key.includes('重铸词条'))
   if (!reforgeRow) fail(`[${tag}] 页脚里找不到「重铸词条」那一行(价签没渲染?判据没跑到东西)`)
