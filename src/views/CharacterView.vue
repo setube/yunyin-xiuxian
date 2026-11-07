@@ -297,7 +297,7 @@
             {{ signedPercent(c.value) }}
           </span>
         </p>
-        <p v-if="!breakdownRows.length" class="text-ink-faint">暂无数据</p>
+        <p v-if="!breakdownRows.length" class="text-ink-faint">暂无来源</p>
       </div>
     </BaseModal>
   </div>
