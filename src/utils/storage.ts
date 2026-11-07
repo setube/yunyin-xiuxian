@@ -330,7 +330,20 @@ export function migrateHerbSlice(resources: Record<string, unknown>): Record<str
     typeof resources.herb === 'number' && Number.isFinite(resources.herb as number)
       ? Math.floor(resources.herb as number)
       : 0
-  if (hasMap && scalar <= 0) return resources
+  /*
+   * 已有分账、且标量没有正贡献时提前返回(绝大多数新档都走这里)。
+   *
+   * 但**旧字段得先清掉**:标量为负或 NaN 时 scalar 落到 0,
+   * `{ herb: -100, herbByGrade: {...} }` 会带着 `herb: -100` 原样返回 ——
+   * 下游 sanitize 会丢弃它,可迁移层的契约是「清掉旧字段」,
+   * 留着它,下次迁移又会看见这个负标量。实测探针打到过这条。
+   */
+  if (hasMap && scalar <= 0) {
+    if (!('herb' in resources)) return resources
+    const trailing = { ...resources }
+    delete trailing.herb
+    return trailing
+  }
   const next = { ...resources }
   const rawMap =
     hasMap && resources.herbByGrade && typeof resources.herbByGrade === 'object'
