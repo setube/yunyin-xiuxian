@@ -48,6 +48,33 @@ const EQUIVALENT = [
     why: 'ARTIFACT_SUNDER_CAP 是 0.5,defSunder 封顶 0.5,1-0.5=0.5 远高于 0.2 的下限,这道钳制永不触发'
   },
   {
+    file: 'src/core/buildAdvisor.ts',
+    text: 'if (!affinity) return',
+    why:
+      'styleAdaptation 的兜底。它的三个生产调用点传的都是 BUILD_STYLES 里的 id' +
+      '(adaptationOf 的 main/sub,以及 rankStyles 的 map),而这些 id 在' +
+      'STYLE_TRAIT_AFFINITY 里逐一有条目;传不进未登记的 id。' +
+      '兜底防的是将来新增流派:漏登记时给中性三星而不是崩在 undefined 上。'
+  },
+  {
+    file: 'src/core/buildDetect.ts',
+    text: 'if (!mods) return',
+    why:
+      'hasCore 的判空。它的调用点在同一个函数里遍历装备与功法,两者的 StatMods 字段' +
+      '在 sanitize 中都重建成了对象(缺失写 {}),传不进 undefined;' +
+      '兜底防的是将来新增来源(如敌人 debuff 快照)忘记初始化。'
+  },
+  {
+    file: 'src/core/challenge.ts',
+    text: 'if (!world) return',
+    why:
+      'draftFoes 的判空是第二道。它的两个调用点(verifyChallenge 与发起挑战那处)都在' +
+      '调用前写过 `const world = celestialWorldDef(draft.worldId); if (!world) return null`,' +
+      '注释还写着「先认界再扣费:草案可能来自过期 UI 状态或外部调用」——' +
+      '界非法时根本走不到 draftFoes。此处判空防的是将来有人新增调用点时忘了先认界。' +
+      '注:两处调用点共用同一个归一化文本,故名单里只需一条。'
+  },
+  {
     file: 'src/core/battleAnalysis.ts',
     text: '.length === 0)',
     why:
