@@ -43,3 +43,4 @@ __pycache__/
 !.dev.vars.example
 .env*
 # 构建不需要任何环境变量
+commit_message.txt
