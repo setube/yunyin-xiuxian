@@ -106,6 +106,42 @@ describe('二步确认 · 两态同栏同高', () => {
     expect(src, '钮组不该与正文同一行').not.toMatch(/flex shrink-0 gap-1">\s*<button class="btn-ghost !px-2\.5/)
   })
 
+  /**
+   * 构筑快照行:识别行与钮组分两段,钮组右对齐独占一行。
+   *
+   * 原先一行里挤着印章、名字、换装、改名、删除;删除确认态再多出两枚 ——
+   * 320 宽下这一行从 99px 涨到 115.5px,「再想想」被压成 20px 宽 ×65px 高(两字竖排),
+   * 名字也被截成「青…」。
+   * 故障注入:把钮组塞回识别行(去掉 mt-1/justify-end),本条红。
+   */
+  it('构筑快照行:识别行与钮组分两段,两态同高', () => {
+    const src = read('views/BuildView.vue')
+    expect(src, '钮组须自成一行并右对齐').toMatch(/class="mt-1 flex justify-end gap-1\.5"/)
+    expect(src, '识别行须单独一段').toMatch(/<p class="flex items-center gap-2">\s*<span class="grid h-6 w-6 shrink-0/)
+    // 反向:钮组不该再挂在识别行里一起被挤压
+    expect(src, '钮组不该再与名字同行').not.toMatch(/<span class="min-w-0 grow truncate font-kai text-\[12px\] text-ink">\{\{ lo\.name \}\}<\/span>\s*<button class="btn-ghost[^"]*">换装/)
+  })
+
+  /**
+   * 洞府连升 / 灵脉连投 / 装备强化连升:两态正文同一段,钮组独占一行。
+   *
+   * 这三处的共同病灶是「确认态换了一段更短的正文」或「跟着正文挤同一行」:
+   * 洞府 375 宽实测 88.6 → 52.5px,强化 320 宽实测 52.5 → 66.8px。
+   * 故障注入:把正文按 batchArm 分岔,或把钮组的 w-full 去掉,本条红。
+   */
+  it('连升/连投/强化连升:两态正文同一段,钮组自带 w-full', () => {
+    for (const rel of [
+      'components/dongfu/BuildingCard.vue',
+      'components/dongfu/VeinInvestCard.vue',
+      'components/equipment/UpgradePanel.vue'
+    ] as const) {
+      const src = read(rel)
+      expect(src, `${rel} 的钮组须自带 w-full`).toMatch(/flex w-full shrink-0 justify-end gap-1\.5"/)
+      // 反向:正文里不该再按确认态分岔写第二段(那是段高变化的来源)
+      expect(src, `${rel} 不该再给确认态写第二段正文`).not.toMatch(/v-(?:if|else)="!?batch(?:Arm|Confirm|ArtConfirm)[^"]*">\s*<p class="(?:min-w-\[5rem\] )?flex-1 text-\[10px\]/)
+    }
+  })
+
   it('自动重铸确认钮不把总账写进正文:320 宽会溢出面板', () => {
     const src = read(AUTO_PANEL)
     expect(src, '确认钮正文只留动作词').toMatch(/>\s*确认开洗\s*<\/button>/)

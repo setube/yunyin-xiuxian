@@ -5,10 +5,12 @@
  * 它证明不了的是:真渲染出来两态是不是同一个高度。类写对了、@click 写对了,
  * 只要分栏与换行不同,钮照样会忽大忽小 —— 那正是玩家报的那件事。
  *
- * 量两处:
+ * 量四处:
  *   一 装备详情页脚 —— 重铸钮在「未确认 / 确认 / 退一步」三态下宽高一致、页脚不变高;
- *   二 器魂散置列表 —— 点「散去」前后行高一致,名字不被挤成竖排。
- *     那里确认态比未确认态多一枚钮,320 宽曾把左列压到 22px、行高 177 → 745px。
+ *   二 器魂散置列表 —— 点「散去」前后行高一致,名字不被挤成竖排
+ *     (确认态比未确认态多一枚钮,320 宽曾把左列压到 22px、行高 177 → 745px);
+ *   三 洞府「连升至」段 —— 点前后段高一致(未确认态摆着净得与逐条预览,确认态曾只剩一行);
+ *   四 构筑快照行 —— 点删除前后行高一致(320 宽下「再想想」曾被压成 20px 宽竖排)。
  * 共同判据:没有任何按钮正文被折成竖排。
  *
  * 用法(需先 `bun run build`):
@@ -448,12 +450,116 @@ async function runDongfu(width, height) {
   await context.close()
 }
 
+// ============ 四、构筑快照行:点删除前后行高一致 ============
+
+/** 两份构筑快照;别的都随便 */
+function buildSlices() {
+  return {
+    game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
+    player: {
+      name: '构筑自检', major: 18, sub: 0, exp: gn(0, 0), age: 3000, lifespanBonusYears: 0, dead: false,
+      reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
+      linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
+    },
+    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 8000, herb: 9000, ore: 4000, page: 300, dust: 500 },
+    inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
+    endgame: { daoPath: 'sword', daoSource: 100, souls: [], equippedSouls: [] },
+    loadouts: {
+      list: [
+        { id: 'geo_lo1', name: '青云剑修', seal: '剑', mainGongfa: null, subGongfa: [], artifactIds: [], equipment: {}, savedAt: 1 },
+        { id: 'geo_lo2', name: '丹道长生', seal: '丹', mainGongfa: null, subGongfa: [], artifactIds: [], equipment: {}, savedAt: 2 }
+      ]
+    },
+    settings: {
+      privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true,
+      battleSpeed: 4, decomposeRanks: [],
+      smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true },
+      theme: 'dark'
+    }
+  }
+}
+
+async function runBuild(width, height) {
+  const tag = `${width}`
+  const context = await browser.newContext({ viewport: { width, height } })
+  await context.route('**/*', r => {
+    const url = r.request().url()
+    if (/^(file|data|blob):/.test(url)) return r.continue()
+    return r.abort()
+  })
+  await seedSave(context, buildSlices())
+  const page = await context.newPage()
+  page.on('pageerror', e => fail(`[构筑 ${tag}] 运行时异常:${e.message}`))
+
+  await page.goto(`${INDEX}#/build`, { waitUntil: 'load' })
+  await page.waitForTimeout(2000)
+  await page.evaluate(() => {
+    for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+    Math.random = () => 1
+  })
+  for (let i = 0; i < 6; i += 1) {
+    if ((await page.locator('.modal-panel').count()) > 0) await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+  }
+
+  /** 第一份构筑那一行:含「换装」「改名」的那层 */
+  const rowBox = () =>
+    page.evaluate(() => {
+      for (const el of document.querySelectorAll('main div')) {
+        const t = el.textContent || ''
+        if (!/换装/.test(t) || !/改名/.test(t)) continue
+        if (el.querySelector('div[class*="card-ink"]')) continue
+        const r = el.getBoundingClientRect()
+        if (r.width < 100) continue
+        return { h: Math.round(r.height * 10) / 10, w: Math.round(r.width), n: el.querySelectorAll('button').length }
+      }
+      return null
+    })
+
+  const rest = await rowBox()
+  if (!rest) {
+    fail(`[构筑 ${tag}] 量不到构筑快照行(夹具没生效?)`)
+    await context.close()
+    return
+  }
+  if (SHOTS) {
+    mkdirSync(SHOTS_DIR, { recursive: true })
+    await page.screenshot({ path: join(SHOTS_DIR, `build-${tag}-rest.png`) })
+  }
+
+  const trash = page.locator('main button[aria-label="删除构筑"]').first()
+  if ((await trash.count()) === 0) {
+    fail(`[构筑 ${tag}] 找不到删除构筑钮`)
+    await context.close()
+    return
+  }
+  await trash.click()
+  await page.waitForTimeout(400)
+  const armed = await rowBox()
+  if (SHOTS) await page.screenshot({ path: join(SHOTS_DIR, `build-${tag}-armed.png`) })
+
+  // 确认态多出「再想想」「确认删除」两枚,若与名字挤同一行,行高与名字宽度都会被吃掉
+  if (armed && Math.abs(armed.h - rest.h) > 0.5) {
+    fail(`[构筑 ${tag}] 点「删除构筑」让这一行变了高:${rest.h} → ${armed.h}px`)
+  }
+  if (armed && Math.abs(armed.w - rest.w) > 0.5) {
+    fail(`[构筑 ${tag}] 点「删除构筑」让这一行变了宽:${rest.w} → ${armed.w}px`)
+  }
+
+  const vertical = await verticalButtons(page)
+  if (vertical.length) fail(`[构筑 ${tag}] 有按钮被折成竖排:${vertical.join(' / ')}`)
+
+  await context.close()
+}
+
 await run(375, 812)
 await run(320, 568)
 await runSouls(375, 812)
 await runSouls(320, 568)
 await runDongfu(375, 1200)
 await runDongfu(320, 1200)
+await runBuild(375, 1000)
+await runBuild(320, 1000)
 await browser.close()
 
 if (failures.length) {
@@ -461,4 +567,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('二步确认几何通过:重铸/分解两态同高同宽,器魂散去与洞府连升两态行高一致,无竖排按钮')
+console.log('二步确认几何通过:重铸/分解、器魂散去、洞府连升、构筑删除四处两态均不变形,无竖排按钮')

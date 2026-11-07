@@ -93,7 +93,7 @@
           连投行:总账与群批同一条式子。
           flex-wrap + 文本保底宽不可去:否则 flex-1 文本被 shrink-0 双钮压成 0 宽竖排(同建筑连升)。
         -->
-        <div v-if="row.plan.points >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+        <div v-if="row.plan.points >= 2" class="mt-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
           <!-- 正文两态同一段、钮组自成一行:见 BuildingCard 的连升行(同一种跳动) -->
           <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
             连投至 <span class="font-kai text-[11px] text-cinnabar">第 {{ row.level + row.plan.points }} 点</span>
