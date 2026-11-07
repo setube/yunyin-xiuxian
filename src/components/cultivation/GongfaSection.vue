@@ -14,9 +14,14 @@
         </p>
       </div>
       <!-- 每日限 10 次而灵石常够几十次:一枚一枚点十次没有意义,故给一次连兑 -->
+      <!--
+        chip-ink 自带的上下内边距只有 2px,只写 !text-[10px] 时盒高 21px ——
+        低于全站 28px 的触控下限(layout-check 与 aria-check 量的都是这条线)。
+        补 min-h-[28px]:兑一次与连兑都是要连点的钮,手指偏一点就落空。
+      -->
       <span class="flex shrink-0 items-center gap-1.5">
         <button
-          class="chip-ink shrink-0 !text-[10px]"
+          class="chip-ink min-h-[28px] shrink-0 !text-[10px]"
           :disabled="!player.canExchangeWudao"
           @click="doExchange"
         >
@@ -24,7 +29,7 @@
         </button>
         <button
           v-if="player.canExchangeWudao && player.wudaoExchangeAffordable > 1"
-          class="chip-ink shrink-0 !text-[10px]"
+          class="chip-ink min-h-[28px] shrink-0 !text-[10px]"
           @click="doExchangeAll"
         >
           连兑 {{ player.wudaoExchangeAffordable }}

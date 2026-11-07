@@ -142,6 +142,34 @@ describe('二步确认 · 两态同栏同高', () => {
     }
   })
 
+  /**
+   * chip-ink 当按钮用时,要自己补触控下限。
+   *
+   * `.chip-ink` 的上下内边距只有 2px:只写 `!text-[10px]` 时盒高 21px,
+   * 远低于全站 28px 的触控下限。修行页的「兑换」「连兑 10」就是这样 ——
+   * 而它们是每日限 10 次、要连点的钮。
+   * chip-ink 本身不能改内边距:它同时是标签(chip),标签不该撑高。
+   * 故判据落在「当按钮用的 chip-ink 必须自带 min-h 或够大的 py」。
+   * 故障注入:删掉任一处的 min-h-[28px],本条红。
+   */
+  it('chip-ink 当按钮用时自带触控下限', () => {
+    const files = [
+      'components/cultivation/GongfaSection.vue',
+      'components/cultivation/BreakthroughCard.vue',
+      'components/cultivation/RetreatCard.vue',
+      'components/inventory/DismantleDialog.vue'
+    ]
+    for (const rel of files) {
+      const src = read(rel)
+      for (const m of src.matchAll(/<button[\s\S]{0,400}?>/g)) {
+        const tag = m[0]
+        if (!tag.includes('chip-ink')) continue
+        const ok = /min-h-\[28px\]/.test(tag) || /!?py-(?:1\.5|2|2\.5|3)\b/.test(tag)
+        expect(ok, `${rel} 有 chip-ink 按钮没写触控下限:\n${tag.replace(/\s+/g, ' ').slice(0, 120)}`).toBe(true)
+      }
+    }
+  })
+
   it('自动重铸确认钮不把总账写进正文:320 宽会溢出面板', () => {
     const src = read(AUTO_PANEL)
     expect(src, '确认钮正文只留动作词').toMatch(/>\s*确认开洗\s*<\/button>/)
