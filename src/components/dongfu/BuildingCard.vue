@@ -76,37 +76,37 @@
     <!--
       连升行:与强化连升/祭炼连升同一套。
       flex-wrap + 文本保底宽不可去:窄卡(320 下内宽约 113px)上双钮已近满宽,flex-1 文本会被压成 0 宽竖排。
+
+      两态正文用同一段:确认态原先只写「连升 N 级 · 灵石 X · 玄铁 Y」一行,
+      而未确认态有「累积净得」「逐条预览」好几行 —— 一点「连 升」,这一段从 88.6px 缩到 52.5px,
+      下面所有卡整体上移 36px(375 宽实测)。须知情的正是按下那一下,故正文两态相同;
+      确认态只是把「连 升」换成「再想想 + 连 升」两枚,位置与高度都不动。
     -->
+    
     <div v-if="plan.levels >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
-      <template v-if="!batchArm">
-        <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
-          连升至 <span class="font-kai text-[11px] text-cinnabar">第 {{ level + plan.levels }} 级</span>
-          <span class="mt-0.5 block text-[9px] text-ink-faint tabular">
-            共耗 <span class="whitespace-nowrap">灵石 {{ formatGN(plan.stone) }}</span><span
-              v-if="plan.ore > 0"
-              class="whitespace-nowrap"
-            > · 玄铁 {{ plan.ore }} 块</span>
-          </span>
-          <span v-if="batchGain" class="mt-0.5 block text-[9px] text-jade tabular">累积净得:{{ batchGain }}</span>
-          <span
-            v-if="batchPreview.lines.length"
-            class="mt-0.5 block text-[9px] leading-snug"
-          >
-            <span v-for="line in batchPreview.lines" :key="line" class="block text-ink-soft">{{ line }}</span>
-          </span>
-        </p>
-        <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = true">连 升</button>
-      </template>
-      <template v-else>
-        <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
-          连升 {{ plan.levels }} 级 · <span class="whitespace-nowrap">灵石 {{ formatGN(plan.stone) }}</span><span
+      <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
+        连升至 <span class="font-kai text-[11px] text-cinnabar">第 {{ level + plan.levels }} 级</span>
+        <span class="mt-0.5 block text-[9px] text-ink-faint tabular">
+          共耗 <span class="whitespace-nowrap">灵石 {{ formatGN(plan.stone) }}</span><span
             v-if="plan.ore > 0"
             class="whitespace-nowrap"
           > · 玄铁 {{ plan.ore }} 块</span>
-        </p>
-        <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArm = false">再想想</button>
-        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runBatch">连 升</button>
-      </template>
+        </span>
+        <span v-if="batchGain" class="mt-0.5 block text-[9px] text-jade tabular">累积净得:{{ batchGain }}</span>
+        <span v-if="batchPreview.lines.length" class="mt-0.5 block text-[9px] leading-snug">
+          <span v-for="line in batchPreview.lines" :key="line" class="block text-ink-soft">{{ line }}</span>
+        </span>
+      </p>
+      <!--
+        钮组整段右对齐成一行:两态都是「一行高」。若跟着正文挤同一行,
+        320 宽下确认态那两枚放不下会折行 —— 段高从 88.6 涨到 113.4(实测),
+        与「缩到 52.5」同为一类跳动,只是方向相反。
+      -->
+      <div class="flex w-full shrink-0 justify-end gap-1.5">
+        <button v-if="batchArm" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchArm = false">再想想</button>
+        <button v-if="batchArm" class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runBatch()">连 升</button>
+        <button v-else class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchArm = true">连 升</button>
+      </div>
     </div>
   </div>
 </template>

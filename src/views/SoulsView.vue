@@ -124,7 +124,19 @@
       <!-- 散去的后果须在动手之前看见 -->
       <p class="mb-2 text-[10px] leading-relaxed text-ink-faint">{{ dissolveNote() }}</p>
       <div v-if="idleSouls.length > 0" class="card-ink max-h-64 divide-y divide-ink/6 overflow-y-auto px-4">
-        <div v-for="row in idleSouls" :key="row.soul.uid" class="flex items-center justify-between gap-2 py-2.5">
+        <!--
+          两段式:正文一段、钮组一段,各占一行。
+
+          原先是一行 justify-between 不可折:未确认态两枚钮 88px,确认态变成三枚(46+54+65=165)。
+          320 宽下左列被压到 22px ——「朦胧·锋魂」竖排成一行一个字,那一行从 177px 涨到 745px。
+          改成可折行之后仍然不稳:375 宽下未确认态挤得进一行(102.5px)、确认态挤不进就折(126.8px)——
+          点一下「散去」,整行就长高 24px。
+
+          钮组行宽随状态变,是这枚钮「忽大忽小」的根源;故钮组固定独占一行、右对齐:
+          两态行高一致,320 宽也不会把名字压成竖排。代价是每行多 35px 高 ——
+          换来的是点前点后位置不动,且一屏仍看得下两枚魂。
+        -->
+        <div v-for="row in idleSouls" :key="row.soul.uid" class="py-2.5">
           <div class="min-w-0">
             <p class="flex items-center gap-1.5 text-[12px]">
               <!-- 魂型印:与出战槽那枚同源(六类器魂各有单字,见 data/souls 的 seal) -->
@@ -149,7 +161,7 @@
             <p v-if="row.flavor" class="text-[10px] leading-relaxed text-violet-ink">{{ row.flavor }}</p>
           </div>
           <!-- 巡页夹具无灵魂,28px 尺子碰不到这些钮;!py-2 盒高 35px,与同行确认态按钮同高 -->
-          <div class="flex shrink-0 gap-1">
+          <div class="mt-1.5 flex justify-end gap-1">
             <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="wearSoul(row.soul.uid)">装配</button>
             <template v-if="pendingDissolveUid !== row.soul.uid">
               <button class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint" @click="pendingDissolveUid = row.soul.uid">散去</button>
@@ -243,7 +255,7 @@
   import { useRouter } from 'vue-router'
   import { goBack } from '@/router/goBack'
   import { formatNum } from '@/utils/format'
-  import { modsText } from '@/data/statNames'
+  import { modsBriefText, modsText } from '@/data/statNames'
   import { dissolveNote, refineCostLine, soulFlavorText } from '@/ui/soulText'
   import { soulMark } from '@/ui/soulMark'
   import { soulPickSummary, soulPicks } from '@/ui/soulPick'
@@ -373,8 +385,13 @@
       }
     })
   )
+  /**
+   * 散置列表里的词条读数:不带注脚的短版。
+   * 每枚魂三四个词条,全带注脚会摊成一百三十多字、把行撑到 156px(实测)。
+   * 完整注脚留给「装着看」的场合,列表只报「有哪几样、各多少」。
+   */
   function soulModText(soul: SoulInstance): string {
-    return modsText(soulMods(soul))
+    return modsBriefText(soulMods(soul))
   }
   const activeModText = computed(() => modsText(endgame.soulMods))
 </script>

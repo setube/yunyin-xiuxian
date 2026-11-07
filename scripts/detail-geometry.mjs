@@ -1,15 +1,15 @@
 /**
- * 装备详情页脚的几何实测。
+ * 二步确认的几何实测。
  *
  * 单测只能证明「源码里价签没挂在钮里」「两态都写了 min-h-11」(见 src/ui/confirmGeometry.spec);
  * 它证明不了的是:真渲染出来两态是不是同一个高度。类写对了、@click 写对了,
  * 只要分栏与换行不同,钮照样会忽大忽小 —— 那正是玩家报的那件事。
  *
- * 这条实测量四件事:
- *   一 重铸钮在「未确认 → 确认 → 退一步」三态下的宽高完全一致;
- *   二 页脚总高与正文滚动盒高度在三态下不变(页脚一变高,正文就缩一截);
- *   三 分解二步确认也不改页脚高度;
- *   四 没有任何按钮正文被折成竖排(320 宽下「重铸词条」曾被压成一行一个字)。
+ * 量两处:
+ *   一 装备详情页脚 —— 重铸钮在「未确认 / 确认 / 退一步」三态下宽高一致、页脚不变高;
+ *   二 器魂散置列表 —— 点「散去」前后行高一致,名字不被挤成竖排。
+ *     那里确认态比未确认态多一枚钮,320 宽曾把左列压到 22px、行高 177 → 745px。
+ * 共同判据:没有任何按钮正文被折成竖排。
  *
  * 用法(需先 `bun run build`):
  *   node scripts/detail-geometry.mjs            # 375 + 320 两档
@@ -243,8 +243,217 @@ async function run(width, height) {
   await context.close()
 }
 
+// ============ 二、器魂散置列表:点「散去」前后行高一致 ============
+
+/** 后期档 + 两枚闲置器魂(锋魂 / 盾魂),用来量散置列表的两态 */
+function soulSlices() {
+  return {
+    game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
+    player: {
+      name: '器魂自检', major: 18, sub: 0, exp: gn(0, 0), age: 3000, lifespanBonusYears: 0, dead: false,
+      reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
+      linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
+    },
+    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 900, page: 300, dust: 500 },
+    inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
+    // type 须是 SOUL_TYPES 的真 id,否则 sanitize 整枚丢掉、列表空着量不到
+    endgame: {
+      daoPath: 'sword',
+      daoSource: 100,
+      souls: [
+        { uid: 'geo_s1', type: 'fengmang', grade: 0, fromName: '青云剑' },
+        { uid: 'geo_s2', type: 'gangdun', grade: 5, fromName: '化真古刀' }
+      ],
+      equippedSouls: []
+    },
+    settings: {
+      privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true,
+      battleSpeed: 4, decomposeRanks: [],
+      smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true },
+      theme: 'dark'
+    }
+  }
+}
+
+/** 散置列表每一行的读数:行高、左列宽 */
+async function readSoulRows(page) {
+  return page.evaluate(() => {
+    const box = el => {
+      const r = el.getBoundingClientRect()
+      return { w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10 }
+    }
+    // 每行是 divide-y 容器里带「装配」钮的那一层
+    const rows = []
+    for (const li of document.querySelectorAll('.modal-panel [class*="divide-y"] > div')) {
+      if (!/装配/.test(li.textContent || '')) continue
+      rows.push({ ...box(li), leftW: box(li.firstElementChild).w })
+    }
+    return rows.length ? { top: rows[0], count: rows.length } : null
+  })
+}
+
+async function runSouls(width, height) {
+  const tag = `${width}`
+  const context = await browser.newContext({ viewport: { width, height } })
+  await context.route('**/*', r => {
+    const url = r.request().url()
+    if (/^(file|data|blob):/.test(url)) return r.continue()
+    return r.abort()
+  })
+  await seedSave(context, soulSlices())
+  const page = await context.newPage()
+  page.on('pageerror', e => fail(`[器魂 ${tag}] 运行时异常:${e.message}`))
+
+  await page.goto(`${INDEX}#/souls`, { waitUntil: 'load' })
+  await page.waitForTimeout(1800)
+  await page.evaluate(() => {
+    for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+    Math.random = () => 1
+  })
+  for (let i = 0; i < 6; i += 1) {
+    if ((await page.locator('.modal-panel').count()) > 0) await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+  }
+
+  await page.locator('main button', { hasText: '散置形意' }).first().click({ timeout: 3000 }).catch(() => {})
+  await page.waitForTimeout(700)
+  const rest = await readSoulRows(page)
+  if (!rest) {
+    fail(`[器魂 ${tag}] 散置列表里一行都没量到(夹具没生效?)`)
+    await context.close()
+    return
+  }
+  if (SHOTS) {
+    mkdirSync(SHOTS_DIR, { recursive: true })
+    await page.locator('.modal-panel').screenshot({ path: join(SHOTS_DIR, `souls-${tag}-rest.png`) })
+  }
+
+  const entry = page.locator('.modal-panel button', { hasText: /^散去$/ }).first()
+  if ((await entry.count()) === 0) {
+    fail(`[器魂 ${tag}] 找不到「散去」钮`)
+    await context.close()
+    return
+  }
+  await entry.click()
+  await page.waitForTimeout(400)
+  const armed = await readSoulRows(page)
+  if (SHOTS) await page.locator('.modal-panel').screenshot({ path: join(SHOTS_DIR, `souls-${tag}-armed.png`) })
+
+  // 行高一致:确认态比未确认态多一枚钮,若钮组与正文抢同一行,这里就会差出几十像素
+  if (armed && Math.abs(armed.top.h - rest.top.h) > 0.5) {
+    fail(`[器魂 ${tag}] 点「散去」把整行撑高了:${rest.top.h} → ${armed.top.h}px`)
+  }
+  // 左列宽一致:被钮组抢宽度时它会缩
+  if (armed && Math.abs(armed.top.leftW - rest.top.leftW) > 0.5) {
+    fail(`[器魂 ${tag}] 点「散去」把左列挤窄了:${rest.top.leftW} → ${armed.top.leftW}px`)
+  }
+  // 名字不许被压成竖排:低于 3em 就基本一列一个字
+  if (rest.top.leftW < 60) fail(`[器魂 ${tag}] 散置行的左列只剩 ${rest.top.leftW}px,名字要竖排了`)
+  const vertical = await verticalButtons(page)
+  if (vertical.length) fail(`[器魂 ${tag}] 有按钮被折成竖排:${vertical.join(' / ')}`)
+
+  await context.close()
+}
+
+// ============ 三、洞府营造的「连升至」段:点前后段高一致 ============
+
+/** 后期档:灵石管够、有玄铁,让「连 升」真的可点 */
+function dongfuSlices() {
+  return {
+    game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
+    player: {
+      name: '营造自检', major: 14, sub: 0, exp: gn(0, 0), age: 3000, lifespanBonusYears: 0, dead: false,
+      reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
+      linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
+    },
+    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 4000, page: 300, dust: 500 },
+    inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
+    endgame: { daoPath: 'sword', daoSource: 100, souls: [], equippedSouls: [] },
+    settings: {
+      privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true,
+      battleSpeed: 4, decomposeRanks: [],
+      smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true },
+      theme: 'dark'
+    }
+  }
+}
+
+async function runDongfu(width, height) {
+  const tag = `${width}`
+  const context = await browser.newContext({ viewport: { width, height } })
+  await context.route('**/*', r => {
+    const url = r.request().url()
+    if (/^(file|data|blob):/.test(url)) return r.continue()
+    return r.abort()
+  })
+  await seedSave(context, dongfuSlices())
+  const page = await context.newPage()
+  page.on('pageerror', e => fail(`[洞府 ${tag}] 运行时异常:${e.message}`))
+
+  await page.goto(`${INDEX}#/dongfu`, { waitUntil: 'load' })
+  await page.waitForTimeout(2000)
+  await page.evaluate(() => {
+    for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+    Math.random = () => 1
+  })
+  for (let i = 0; i < 6; i += 1) {
+    if ((await page.locator('.modal-panel').count()) > 0) await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+  }
+
+  /** 「连升至」那一段的高度:段是带 border + rounded-md 的那层 */
+  const segBox = () =>
+    page.evaluate(() => {
+      for (const el of document.querySelectorAll('main [class*="rounded-md"][class*="border"]')) {
+        if (!/连升至/.test(el.textContent || '')) continue
+        const r = el.getBoundingClientRect()
+        return { w: Math.round(r.width), h: Math.round(r.height * 10) / 10 }
+      }
+      return null
+    })
+
+  const rest = await segBox()
+  if (!rest) {
+    fail(`[洞府 ${tag}] 找不到「连升至」段(夹具没给够资源?)`)
+    await context.close()
+    return
+  }
+  if (SHOTS) {
+    mkdirSync(SHOTS_DIR, { recursive: true })
+    await page.locator('main [class*="rounded-md"]').filter({ hasText: '连升至' }).first()
+      .screenshot({ path: join(SHOTS_DIR, `dongfu-${tag}-rest.png`) }).catch(() => {})
+  }
+
+  const entry = page.locator('main button', { hasText: /^连\s*升$/ }).first()
+  if ((await entry.count()) === 0) {
+    fail(`[洞府 ${tag}] 找不到「连 升」钮`)
+    await context.close()
+    return
+  }
+  await entry.click()
+  await page.waitForTimeout(400)
+  const armed = await segBox()
+  if (SHOTS) {
+    await page.locator('main [class*="rounded-md"]').filter({ hasText: '连升至' }).first()
+      .screenshot({ path: join(SHOTS_DIR, `dongfu-${tag}-armed.png`) }).catch(() => {})
+  }
+  // 未确认态写着「累积净得」与逐条预览,确认态若只剩一行总账,这一段就会矮下去 —— 点一下,下方全部上移
+  if (armed && Math.abs(armed.h - rest.h) > 0.5) {
+    fail(`[洞府 ${tag}] 点「连 升」让这一段变了高:${rest.h} → ${armed.h}px`)
+  }
+
+  const vertical = await verticalButtons(page)
+  if (vertical.length) fail(`[洞府 ${tag}] 有按钮被折成竖排:${vertical.join(' / ')}`)
+
+  await context.close()
+}
+
 await run(375, 812)
 await run(320, 568)
+await runSouls(375, 812)
+await runSouls(320, 568)
+await runDongfu(375, 1200)
+await runDongfu(320, 1200)
 await browser.close()
 
 if (failures.length) {
@@ -252,4 +461,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('装备详情页脚几何通过:重铸/分解两态同高同宽,页脚与正文盒不动,无竖排按钮')
+console.log('二步确认几何通过:重铸/分解两态同高同宽,器魂散去与洞府连升两态行高一致,无竖排按钮')

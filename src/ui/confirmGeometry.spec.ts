@@ -89,6 +89,23 @@ describe('二步确认 · 两态同栏同高', () => {
     expect(src, '按钮段整段换行,不与读数抢宽度').toMatch(/ml-auto flex w-full items-center justify-end/)
   })
 
+  /**
+   * 器魂散置列表:钮组固定独占一行,不参与被压缩。
+   *
+   * 原先一行 justify-between、钮组跟着内容走:确认态比未确认态多一枚钮(88 → 165px),
+   * 320 宽下左列被压到 22px ——「朦胧·锋魂」竖排成一行一个字,那一行从 177px 涨到 745px。
+   * 改成可折行后仍不稳:375 宽下未确认态挤得进一行(102.5px)、确认态挤不进就折(126.8px),
+   * 点一下「散去」整行长高 24px。
+   * 故障注入:把钮组那行的 mt-1.5/justify-end 去掉、或让左列再吃 shrink,本条红。
+   */
+  it('器魂散置行:正文与钮组分两行,两态行高一致', () => {
+    const src = read('views/SoulsView.vue')
+    expect(src, '钮组须自成一行并右对齐').toMatch(/class="mt-1\.5 flex justify-end gap-1"/)
+    expect(src, '左列不许被挤到比名字还窄').toContain('<div class="min-w-0">')
+    // 反向:钮组不该再挂 shrink-0 挤在同一行
+    expect(src, '钮组不该与正文同一行').not.toMatch(/flex shrink-0 gap-1">\s*<button class="btn-ghost !px-2\.5/)
+  })
+
   it('自动重铸确认钮不把总账写进正文:320 宽会溢出面板', () => {
     const src = read(AUTO_PANEL)
     expect(src, '确认钮正文只留动作词').toMatch(/>\s*确认开洗\s*<\/button>/)

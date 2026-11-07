@@ -147,3 +147,17 @@ export function modsText(mods: StatMods): string {
     .map(([k, v]) => statModPhrase(k, v as number))
     .join(' · ')
 }
+
+/**
+ * 同一组词条,但不带括号注脚 —— 给「一屏列很多行」的地方用。
+ *
+ * `modsText` 把每个键的作用域注脚一起内联(「暴击率 +4%(叠于固有会心 5% 之上)」),
+ * 一条注脚二三十字。单条陈列时那是必要信息(择道、悟道要看清条件);
+ * 而器魂散置列表里每枚魂带三四个词条,一行就摊成一百三十多字、把行撑到 156px ——
+ * 一屏只看得下两枚魂。注脚只在真要用到时才需要,故这类列表用不带注脚的版本。
+ */
+export function modsBriefText(mods: StatMods): string {
+  return Object.entries(mods)
+    .map(([k, v]) => `${STAT_NAMES[k as AnyStatKey] ?? k} ${signedPercent(v as number)}`)
+    .join(' · ')
+}
