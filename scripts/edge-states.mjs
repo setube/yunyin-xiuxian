@@ -16,7 +16,7 @@
  *   node scripts/edge-states.mjs --shots    # 另存图到 /tmp/edge-states
  */
 import { chromium } from 'playwright'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lateSlices, seedSave } from './lib/saveFixture.mjs'
@@ -87,6 +87,7 @@ const REASON = /尚差|不足|已|无|未|中|满|上限|不可|无法|锁定|�
 /* ---------- 取数:只回原始事实,不在这里做判断 ---------- */
 
 const GRAB_PAGE = () => {
+  const panel = [...document.querySelectorAll('.modal-panel')].filter(e => e.getBoundingClientRect().width > 0).pop()
   const btns = [...document.querySelectorAll('main button')]
     .filter(b => b.getBoundingClientRect().width > 0)
     .map(b => ({
@@ -97,7 +98,15 @@ const GRAB_PAGE = () => {
     }))
   return {
     text: document.querySelector('main')?.innerText ?? '',
-    buttons: btns
+    buttons: btns,
+    panel: Boolean(panel),
+    panelText: panel ? panel.innerText : '',
+    panelButtons: panel
+      ? [...panel.querySelectorAll('button')].map(b => ({
+          text: (b.textContent || '').trim().replace(/\s+/g, ' '),
+          disabled: b.disabled
+        }))
+      : []
   }
 }
 
@@ -201,6 +210,38 @@ const SCENES = [
     }
   },
   {
+    name: '导入版本过新',
+    route: '/settings',
+    slices: () => lateSlices(),
+    /**
+     * 造一份 version 高于 SAVE_VERSION 的备份,直接喂给设置页那个隐藏的 file input。
+     * 走不了「点按钮再选文件」——浏览器文件选择器在无头里无法交互,
+     * 但 setInputFiles 可以直接把文件放进 input。
+     */
+    prep: async () => {
+      writeFileSync(
+        '/tmp/edge-too-new.save',
+        JSON.stringify({ version: 99, exportedAt: Date.now(), data: { player: { name: '未来修士', major: 6, sub: 0 } } })
+      )
+    },
+    after: async page => {
+      await page.locator('input[type=file]').setInputFiles('/tmp/edge-too-new.save')
+      await page.waitForTimeout(1800)
+    },
+    judge: page => {
+      if (!page.panel) return ['导入确认弹窗没打开(setInputFiles 没生效?判据没跑到东西)']
+      const out = []
+      /* 版本高于本机这个事实必须写出来,否则玩家只看到一颗灰钮,不知道为什么不让导 */
+      if (!/高于当前/.test(page.panelText)) out.push('备份版本高于本机,却没在弹窗里写明')
+      const confirm = page.panelButtons.find(b => b.disabled)
+      if (!confirm) out.push('版本过新的备份,确认钮却仍是可点的 —— 点下去会覆盖本机存档')
+      else if (!/无法导入/.test(confirm.text)) {
+        out.push(`确认钮被禁用了,但没写原因(只写「${confirm.text}」)`)
+      }
+      return out
+    }
+  },
+  {
     name: '未拜师',
     route: '/character',
     slices: () => lateSlices(),
@@ -239,12 +280,18 @@ for (const scene of SCENES) {
     for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
     Math.random = () => 1
   })
+  /*
+   * 先收掉开局自动浮上来的提示条与教学窗,再跑 after。
+   * 顺序不能反:after 里可能要**打开**一扇弹窗(导入确认),先 after 再清理会把它关掉 ——
+   * 这一版写错过,报出的是「弹窗没打开」,而实际是刚打开就被自己的清理循环关了。
+   */
   for (let i = 0; i < 10; i += 1) {
     if ((await page.locator('.modal-panel').count()) > 0) {
       await page.keyboard.press('Escape')
       await page.waitForTimeout(220)
     } else break
   }
+  if (scene.after) await scene.after(page)
   if (SHOTS) {
     mkdirSync(SHOTS_DIR, { recursive: true })
     await page.screenshot({ path: join(SHOTS_DIR, `${scene.name}.png`) }).catch(() => {})
@@ -267,4 +314,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 未拜师六档都解释得清')
+console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 未拜师七档都解释得清')
