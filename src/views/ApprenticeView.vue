@@ -1,7 +1,7 @@
 <template>
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <div class="card-ink flex items-center justify-between px-4 py-3">
-      <p class="font-kai text-[14px] tracking-widest text-ink">道童</p>
+      <h2 class="font-kai text-[14px] tracking-widest text-ink font-normal">道童</h2>
       <div class="flex items-center gap-3">
         <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
           <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
