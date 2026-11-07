@@ -63,7 +63,7 @@ const gn = (m, e) => ({ m, e })
  * 那正是页脚第三种几何(曾从 44px 涨到 57px)。
  * major 默认 14;触控扫描要 18 —— 悟道兑换(WUDAO_EXCHANGE_MIN_MAJOR)18 起才渲染。
  */
-function slices({ poor = false, major = 14 } = {}) {
+function slices({ poor = false, major = 14, theme = 'dark' } = {}) {
   return {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: {
@@ -94,7 +94,7 @@ function slices({ poor = false, major = 14 } = {}) {
       privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true,
       battleSpeed: 4, decomposeRanks: [],
       smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true },
-      theme: 'dark'
+      theme
     }
   }
 }
@@ -145,15 +145,15 @@ async function verticalButtons(page) {
   })
 }
 
-async function run(width, height, { poor = false } = {}) {
-  const tag = poor ? `${width}-poor` : `${width}`
+async function run(width, height, { poor = false, theme = 'dark' } = {}) {
+  const tag = poor ? `${width}-poor` : theme === 'light' ? `${width}-light` : `${width}`
   const context = await browser.newContext({ viewport: { width, height } })
   await context.route('**/*', r => {
     const url = r.request().url()
     if (/^(file|data|blob):/.test(url)) return r.continue()
     return r.abort()
   })
-  await seedSave(context, slices({ poor }))
+  await seedSave(context, slices({ poor, theme }))
   const page = await context.newPage()
   page.on('pageerror', e => fail(`[${tag}] 运行时异常:${e.message}`))
 
@@ -296,6 +296,20 @@ async function run(width, height, { poor = false } = {}) {
     const v2 = await verticalButtons(page)
     if (v2.length) fail(`[${tag}] 分解确认态有按钮被折成竖排:${v2.join(' / ')}`)
   }
+
+  /*
+   * 逐档报一句:否则跑完只看到最后一行总判定,分不清某一档是真跑过还是被跳过。
+   * 同时核对 data-theme 落地了 —— 夹具写 theme:'light' 但若存档没铺进去,
+   * 页面仍是默认主题,「亮色检查」就成了空跑。
+   */
+  const landedTheme = await page.evaluate(() => document.documentElement.dataset.theme)
+  if (landedTheme !== theme) fail(`[${tag}] 夹具要求 ${theme} 主题,页面实际是 ${landedTheme} —— 判据没在目标主题下跑`)
+  const bento = await page.evaluate(() => {
+    const p = [...document.querySelectorAll('.modal-panel')].filter(e => e.getBoundingClientRect().width > 0).pop()
+    return p ? p.getBoundingClientRect().height : 0
+  })
+  if (bento <= 0) fail(`[${tag}] 装备详情没量到(面板高度 ${bento}) —— 判据没跑到东西`)
+  console.log(`  · ${tag} 通过(主题 ${landedTheme})`)
 
   await context.close()
 }
@@ -672,6 +686,14 @@ async function runBuild(width, height) {
 
 await run(375, 812)
 await run(320, 568)
+/*
+ * 亮色主题:此前所有夹具都写死 theme:'dark',light 从未被真实渲染检查过。
+ * palette.spec 只做静态对比度计算(从 style.css 读变量),算不出半透明叠层与兄弟元素遮挡。
+ * 这里把同一套两态几何判据在亮色下再跑一遍 —— 几何本不该受主题影响,
+ * 但印面/描边/阴影在亮色下走的是另一套 token,真出问题会在这里露出来。
+ */
+await run(375, 812, { theme: 'light' })
+await run(320, 568, { theme: 'light' })
 await run(375, 812, { poor: true })
 await run(320, 568, { poor: true })
 /*
