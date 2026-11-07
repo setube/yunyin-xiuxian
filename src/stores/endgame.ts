@@ -12,6 +12,7 @@ import {
   daoPathDef,
   trialDef
 } from '@/data/endgame'
+import { NAME_MAX_LENGTH } from '@/data/constants'
 import { SOUL_GRADES, SOUL_SLOTS, soulMods as soulModsOf, soulTypeDef, type SoulInstance } from '@/data/souls'
 import { milestoneDef, recordDef } from '@/data/identity'
 import { mutatorDef } from '@/data/mutators'
@@ -33,7 +34,8 @@ import {
   asObjectOrNull,
   asRecord,
   asRecordOf,
-  asStringArray
+  asStringArray,
+  truncateCodePoints
 } from '@/utils/saveShape'
 
 interface TrialRecord {
@@ -576,7 +578,14 @@ export const useEndgameStore = defineStore(
       if (value <= 0) return false
       const prev = records.value[id]
       if (prev && (better === 'min' ? value >= prev.value : value <= prev.value)) return false
-      records.value = { ...records.value, [id]: { value, life: Math.floor(life), note } }
+      /*
+       * note 要截到 NAME_MAX_LENGTH。它有两个来源:
+       *   1. 自建挑战的书名 —— 输入框写了 maxlength=8,但那只是输入侧的约束;
+       *   2. 读档 —— 手改存档能塞进几十万字符,存档爆量且纪录行要渲染那一整段。
+       * 与 player.name / loadouts.name 同一把尺(见 data/constants 里 NAME_MAX_LENGTH 的注释)。
+       */
+      const fixedNote = truncateCodePoints(note.trim(), NAME_MAX_LENGTH)
+      records.value = { ...records.value, [id]: { value, life: Math.floor(life), note: fixedNote } }
       return true
     }
 
