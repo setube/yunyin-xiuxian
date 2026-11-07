@@ -51,20 +51,35 @@
         <span class="w-12 shrink-0 text-right tabular text-ink-faint">≥{{ Math.round((t.minRoll ?? 0) * 100) }}%</span>
       </p>
     </div>
-    <div class="mt-1.5 flex items-center gap-2">
-      <span class="text-[10px] text-ink-faint tabular">至多洗</span>
+    <!--
+      预算行:读数一段、按钮一段;按钮段宁可整段折到下一行,也不与读数抢宽度。
+
+      原先整行是一个 flex:320 宽下「至多洗」被压成竖排(13px 宽 × 45px 高),「开 洗」只剩 37px。
+      拆成两段后,窄屏下按钮整段换行,读数始终读得通。
+    -->
+    <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+      <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint">至多洗</span>
       <input
         v-model.number="autoBudget"
         type="number"
         :min="1"
         :max="AUTO_REFORGE_MAX_BUDGET"
-        class="w-16 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
+        class="w-16 shrink-0 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
         aria-label="至多洗炼次数"
       />
-      <span class="text-[10px] text-ink-faint tabular">次 · 每洗 灵石 {{ formatGN(reforgeCostVal.stone) }} · 器灵尘×{{ reforgeCostVal.dust }}</span>
+      <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint">次</span>
+      <!-- 每洗一炉的价签独占一段:它带着两个长数字,与预算读数挤同一行时会被截成两截 -->
+      <span class="whitespace-nowrap text-[10px] text-ink-faint tabular">
+        每洗 灵石 {{ formatGN(reforgeCostVal.stone) }} · 器灵尘×{{ reforgeCostVal.dust }}
+      </span>
+      <!--
+        按钮段:两态都是「主钮独占一行」,行高与宽度不随确认态变。
+        确认钮正文带整批总账(两个长数字),与「再想想」并排时 320 宽要 350px —— 会溢出面板;
+        故确认态把「再想想」与总账分行,总账另起一行写在钮下方。
+      -->
       <template v-if="!autoArm">
         <button
-          class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
+          class="btn-seal ml-auto shrink-0 !px-3 !py-1.5 !text-[11px]"
           :disabled="!autoTargets.length"
           :title="autoTargets.length ? undefined : '未选目标'"
           @click="autoArm = true"
@@ -73,22 +88,28 @@
         </button>
       </template>
       <template v-else>
-        <button
-          class="btn-seal ml-auto !px-3 !py-1.5 !text-[11px]"
-          :disabled="autoMaxGap?.short != null"
-          :title="autoMaxShortText"
-          @click="runAutoReforge"
-        >
-          <!--
-            单位与数字之间要留一个空格(全站规约,见 utils/format.formatYears 的注);
-            且与重铸、强化那几处同写「灵石」「器灵尘」全称,不在这处省成裸数 + 「尘」。
-          -->
-          确认开洗 · 至多 灵石 {{ autoMaxCost ? formatGN(autoMaxCost.stone) : '0' }} · 器灵尘×{{ autoMaxCost?.dust ?? 0 }}
-        </button>
-        <span v-if="autoMaxGap?.short" class="w-full text-[10px] leading-relaxed text-cinnabar tabular">
-          {{ autoMaxShortText }}
+        <span class="ml-auto flex w-full items-center justify-end gap-1.5">
+          <button class="btn-ghost shrink-0 !px-2.5 !py-1.5 !text-[11px] text-ink-faint" @click="autoArm = false">再想想</button>
+          <button
+            class="btn-seal shrink-0 !px-3 !py-1.5 !text-[11px]"
+            :disabled="autoMaxGap?.short != null"
+            :title="autoMaxShortText"
+            @click="runAutoReforge"
+          >
+            确认开洗
+          </button>
         </span>
-        <button class="btn-ghost !px-2.5 !py-1.5 !text-[11px] text-ink-faint" @click="autoArm = false">再想想</button>
+        <!--
+          整批总账:预算 × 单炉价,与服务层同一份 autoMaxCost。
+          单位与数字之间留一个空格(全站规约,见 utils/format.formatYears 的注),
+          且与重铸、强化那几处同写「灵石」「器灵尘」全称。
+        -->
+        <p class="w-full text-right text-[10px] leading-relaxed text-ink-faint tabular">
+          至多 灵石 {{ autoMaxCost ? formatGN(autoMaxCost.stone) : '0' }} · 器灵尘×{{ autoMaxCost?.dust ?? 0 }}
+        </p>
+        <p v-if="autoMaxGap?.short" class="w-full text-right text-[10px] leading-relaxed text-cinnabar tabular">
+          {{ autoMaxShortText }}
+        </p>
       </template>
     </div>
   </div>
