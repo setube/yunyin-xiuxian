@@ -219,6 +219,7 @@
       -->
       <input
         v-model="saveName"
+        aria-label="构筑名号"
         class="w-full rounded-md border border-ink/20 bg-paper-deep/60 px-3 py-2 font-kai text-[14px] tracking-widest text-ink outline-none focus:border-cinnabar/50"
         placeholder="构筑名号"
       />
