@@ -3,8 +3,8 @@
  * 难度实测、有解校验、奖励定价全由模拟裁判定,堵死「最低难度最高奖励」。
  */
 import type { CombatantSnap, CombatRules } from '@/types'
-import { rng } from '@/utils/random'
-import { mulberry32, RandomService } from '@/utils/random'
+import { rateText } from '@/ui/rateRank'
+import { mulberry32, RandomService, rng } from '@/utils/random'
 import { celestialWorldDef } from '@/data/endgame'
 import { mutatorDef } from '@/data/mutators'
 import { pactDef } from '@/data/pacts'
@@ -85,7 +85,15 @@ export function verifyChallenge(draft: ChallengeDraft): ChallengeVerdict | null 
   }).sort((a, b) => b - a)
   const best = rates[0]!
   const viable = rates.filter(r => r >= 0.35).length
-  const difficulty = best >= 0.85 ? '闲庭信步' : best >= 0.6 ? '略有凶险' : best >= 0.4 ? '凶险' : '九死一生'
+  /*
+   * 档位说法取 ui/rateRank —— 与远征(expedition.ts)、构筑对照(compare.ts)、
+   * 换装推演(lab.ts)同一份阈值与措辞。
+   *
+   * 这里原先内联了一套自定义说法(闲庭信步 / 略有凶险 / 凶险),阈值与 rateRank 完全相同,
+   * 只是措辞不同 —— 而两者都在天界页面上:「远征」tab 说「稳操胜券」,
+   * 「试炼」tab 说「闲庭信步」,玩家会把它们当成两个不同的量。
+   */
+  const difficulty = rateText(best)
   if (best < 0.15) {
     return { ok: false, reason: '近乎无解', difficulty, viable, reward: 0 }
   }

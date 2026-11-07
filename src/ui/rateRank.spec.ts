@@ -19,6 +19,7 @@ const ROOT = resolve(__dirname, '../..')
 const COMPARE = readFileSync(resolve(ROOT, 'src/core/compare.ts'), 'utf-8')
 const LAB = readFileSync(resolve(ROOT, 'src/core/lab.ts'), 'utf-8')
 const EXPEDITION = readFileSync(resolve(ROOT, 'src/core/expedition.ts'), 'utf-8')
+const CHALLENGE = readFileSync(resolve(ROOT, 'src/core/challenge.ts'), 'utf-8')
 
 describe('胜率档位 · 一、阈值只有一份,边界取「≥」', () => {
   it('每道线的上下两侧恰差一档', () => {
@@ -92,7 +93,8 @@ describe('胜率档位 · 四、三个调用点同用一份', () => {
     for (const [src, name] of [
       [COMPARE, 'core/compare'],
       [LAB, 'core/lab'],
-      [EXPEDITION, 'core/expedition']
+      [EXPEDITION, 'core/expedition'],
+      [CHALLENGE, 'core/challenge']
     ] as const) {
       expect(src, `${name}又写了一份 0.85/0.6/0.4/0.15 链`).not.toMatch(/>=\s*0\.85\s*\?\s*[0-9]/)
     }
@@ -116,6 +118,27 @@ describe('胜率档位 · 四、三个调用点同用一份', () => {
       [EXPEDITION, 'core/expedition']
     ] as const) {
       expect(src, `${name}又抄了一整组说法`).not.toContain(group)
+    }
+  })
+
+  /**
+   * 也不许内联这组阈值。
+   *
+   * challenge.ts 原先写的是
+   *   `best >= 0.85 ? '闲庭信步' : best >= 0.6 ? '略有凶险' : best >= 0.4 ? '凶险' : '九死一生'`
+   * 阈值与这里的 RANK_FLOOR 逐个相同,只有措辞不同 —— 而两者都在天界页面上:
+   * 「远征」tab 说「稳操胜券」,「试炼」tab 说「闲庭信步」,玩家会当成两个不同的量。
+   *
+   * 上面那条判据只查整组说法(五个词连写),这条查阈值三元链,补上前者漏掉的形态。
+   */
+  it('调用点不内联「0.85 / 0.6 / 0.4」这组阈值三元链', () => {
+    for (const [src, name] of [
+      [COMPARE, 'core/compare'],
+      [LAB, 'core/lab'],
+      [EXPEDITION, 'core/expedition'],
+      [CHALLENGE, 'core/challenge']
+    ] as const) {
+      expect(src, `${name}又内联了一套档位阈值 —— 该调 rateText`).not.toMatch(/0\.85\s*\?[^;]*0\.6\s*\?[^;]*0\.4/)
     }
   })
 })
