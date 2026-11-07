@@ -71,6 +71,42 @@ function targets(dir, out = []) {
 const files = targets(join(ROOT, 'src/core')).concat(targets(join(ROOT, 'src/stores'))).concat(targets(join(ROOT, 'src/utils')))
 const found = []
 
+/*
+ * 一个模块的判据未必写在同名 spec 里。
+ *
+ * 实测:bountyService.ts 的同名 spec 只测「募丹境界可达」2 条,
+ * 真正钉住 bountyRemainingSec 的断言在 src/data/bounty.spec.ts。
+ * 只跑同名 spec 时那处钳制被判「漏」—— 而手动改坏了跑别处的 spec 会红。
+ * 于是整份报告里混进大量假盲区,分不清该补哪条。
+ *
+ * 故为每个模块反查「src 下哪些 spec 引用了它」,一并纳入。
+ */
+const allSpecs = []
+const collectSpecs = (dir) => {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name)
+    if (e.isDirectory()) { collectSpecs(p); continue }
+    if (e.name.endsWith('.spec.ts')) allSpecs.push(p)
+  }
+}
+collectSpecs(join(ROOT, 'src'))
+
+/** 模块 → 引用它的 spec(含同名 spec,若存在) */
+function specsForModule(file) {
+  const same = file.replace(/\.ts$/, '.spec.ts')
+  const rel = file.slice(ROOT.length + 1)
+  // 判据可能用 `./x`、`@/core/x`、`x` 三种写法引用
+  const base = rel.replace(/^src\//, '').replace(/\.ts$/, '')
+  const forms = [`./${base.split('/').pop()}`, `@/${base}`, base.split('/').pop()]
+  const out = new Set()
+  for (const spec of allSpecs) {
+    if (spec === same) { out.add(spec); continue }
+    const src = readFileSync(spec, 'utf-8')
+    if (forms.some(f => src.includes(`'${f}'`) || src.includes(`"${f}"`))) out.add(spec)
+  }
+  return [...out]
+}
+
 for (const file of files) {
   const spec = file.replace(/\.ts$/, '.spec.ts')
   let specSrc
@@ -79,7 +115,7 @@ for (const file of files) {
   for (const { name, re, rep } of PATTERNS) {
     for (const m of src.matchAll(re)) {
       const line = src.slice(0, m.index).split('\n').length
-      found.push({ file, spec, name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
+      found.push({ file, spec, specs: specsForModule(file), name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
       if (found.length >= LIMIT) break
     }
     if (found.length >= LIMIT) break
@@ -98,7 +134,25 @@ console.log(`扫到 ${found.length} 个可变异点(上限 ${LIMIT})`)
  *
  * @returns {'caught' | 'survived' | 'infra'}
  */
-function runSpec(spec) {
+/** 跑给定的一批 spec;任一有用例失败即算抓到 */
+let lastInfra = null
+
+function runSpec(specs) {
+  lastInfra = null
+  for (const spec of specs) {
+    const one = runOneSpec(spec)
+    // 先跑到的失败即可返回;infra 要继续看后面的 spec 是否真能抓到
+    if (one.verdict === 'caught') return one
+    if (one.verdict === 'survived') continue
+    // infra: 记下来,但别因为某个 spec 起不来就下结论
+    lastInfra = one
+  }
+  const res = lastInfra ?? { verdict: 'survived' }
+  lastInfra = null
+  return res
+}
+
+function runOneSpec(spec) {
   const out = join(ROOT, '.vitest', 'mutation-scan.json')
   const res = spawnSync(
     'bunx',
@@ -138,7 +192,7 @@ for (const t of found) {
   writeFileSync(t.file, orig.slice(0, t.index) + t.mutated + orig.slice(t.index + t.text.length))
   let verdict
   try {
-    verdict = runSpec(t.spec)
+    verdict = runSpec(t.specs)
   } finally {
     writeFileSync(t.file, orig)
   }
