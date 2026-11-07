@@ -80,6 +80,22 @@ describe('sanitize:重复条目不再把计数撑破', () => {
     expect(quests.collections.pet, '灵兽册去重后不会画两行同 key').toEqual(['p1'])
   })
 
+  /**
+   * 日课的 done 也要按任务目录过滤。
+   *
+   * 写入路径(completeDaily)有 `DAILY_TASKS.some(t => t.id === taskId)` 这道闸,
+   * 读档路径原先只去重 —— 手改存档塞 10 万条假 id 后 $state 到 1.29MB,存档顶到配额。
+   * 同函数里 achieved / titlesOwned 早就按各自目录过滤了,只有 done 漏着。
+   */
+  it('读档时日课 done 里认不得的任务 id 被清掉', () => {
+    const quests = useQuestsStore()
+    const fake = Array.from({ length: 100000 }, (_, i) => `fake_${i}`)
+    quests.$patch({ daily: { date: '2026-11-08', base: {}, done: fake } } as never)
+    quests.sanitize()
+    expect(quests.daily.done.length, '认不得的任务 id 不该留在 done').toBeLessThan(100)
+    expect(JSON.stringify(quests.$state).length, '坏档把 state 撑爆了').toBeLessThan(5000)
+  })
+
   it('认不出的成就/名号 id 清掉,不再虚增「N/总数」', () => {
     const quests = useQuestsStore()
     quests.$patch({
