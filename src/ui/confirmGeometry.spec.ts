@@ -170,6 +170,24 @@ describe('二步确认 · 两态同栏同高', () => {
     }
   })
 
+  /**
+   * 重铸页脚两态各有两枚钮,必须严格等宽。
+   *
+   * 1px 级的左右挪动不好用「两态同高」那套判据抓(detail-geometry 量的是宽高:
+   * 114 与 116 都「差不多」),而玩家看得见 —— 点一下钮,两枚各挪一点。
+   * flex-1 + basis-0 + min-w-0 全写了仍然差 2px:.btn-seal 左右内边距 18px
+   * 比 .btn-ghost 的 16px 宽,内容最小宽以 padding 为下界,「确认重铸」那一格先被撑到 116。
+   * 统一 padding 只是把差值挪到另一枚(实测 120/110 更糟)。
+   * grid 的两栏与钮内文字长短无关,实测严格 115/115。
+   * 故障注入:把外层 grid 改回 flex,本条红。
+   */
+  it('重铸页脚用 grid 两栏:两态按钮严格等宽', () => {
+    const src = read('components/equipment/EquipReforgeFooter.vue')
+    expect(src, '页脚那行须是 grid 两栏').toMatch(/class="grid grid-cols-2 gap-2/)
+    // 反向:不许退回 flex + flex-1 的分栏
+    expect(src, '不许退回 flex + flex-1:那会让两枚差 2px').not.toMatch(/class="flex gap-2 text-\[11px\]"/)
+  })
+
   it('自动重铸确认钮不把总账写进正文:320 宽会溢出面板', () => {
     const src = read(AUTO_PANEL)
     expect(src, '确认钮正文只留动作词').toMatch(/>\s*确认开洗\s*<\/button>/)

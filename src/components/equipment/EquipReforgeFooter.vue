@@ -22,12 +22,20 @@
       </span>
     </p>
     <!-- !py-2 不可降回 !py-1:盒高 27px,低于 28px 可点阈值(巡页判据会量弹窗内控件) -->
-    <!-- min-h-11:两态同高。少了它,确认态两枚单行钮(34.5)与未确认态(封存格两行)差 5.5px -->
-    <div class="flex gap-2 text-[11px]">
+    <!--
+      min-h-11:两态同高。少了它,确认态两枚单行钮(34.5)与未确认态(封存格两行)差 5.5px。
+
+      用 grid 而不是 flex:两态各有两枚钮,grid 的两栏严格等宽,与钮内文字长短无关。
+      flex 那条路走不通 —— flex-1 + basis-0 + min-w-0 全写了,两枚仍然差 2px(114/116):
+      .btn-seal 的左右内边距 18px 比 .btn-ghost 的 16px 宽,而内容最小宽以 padding 为下界,
+      于是「确认重铸」那一格先被撑到 116。统一 padding 只是把差值挪到另一枚身上(120/110 更糟)。
+      那 2px 正是玩家说的「点一下钮就左右各挪一点」。
+    -->
+    <div class="grid grid-cols-2 gap-2 text-[11px]">
       <template v-if="reforgeArm !== inst?.uid">
         <button
           v-if="reforgeCostVal"
-          class="btn-ghost min-h-11 flex-1 !py-2"
+          class="btn-ghost min-h-11 min-w-0 !py-2"
           :disabled="reforgeShortVal?.short != null"
           :aria-label="reforgeShortVal?.short ? `重铸词条 · ${reforgeShortText}` : undefined"
           :title="reforgeShortVal?.short ? reforgeShortText : undefined"
@@ -41,7 +49,7 @@
         -->
         <button
           v-if="reforgeCostVal"
-          class="btn-ghost min-h-11 flex-1 !py-2"
+          class="btn-ghost min-h-11 min-w-0 !py-2"
           :aria-expanded="autoOpen"
           @click="emit('update:autoOpen', !autoOpen)"
         >
@@ -50,9 +58,9 @@
       </template>
       <template v-else>
         <!-- 取消在左、确认在右:与全站两步确认同一顺序(分解 / 熔尽 / 择道 / 立契) -->
-        <button class="btn-ghost min-h-11 flex-1 !py-2 text-ink-faint" @click="reforgeArm = null">再想想</button>
+        <button class="btn-ghost min-h-11 min-w-0 !py-2 text-ink-faint" @click="reforgeArm = null">再想想</button>
         <button
-          class="btn-seal min-h-11 flex-1 !py-2"
+          class="btn-seal min-h-11 min-w-0 !py-2"
           :disabled="reforgeShortVal?.short != null"
           :aria-label="reforgeShortVal?.short ? `确认重铸 · ${reforgeShortText}` : undefined"
           :title="reforgeShortVal?.short ? reforgeShortText : undefined"
