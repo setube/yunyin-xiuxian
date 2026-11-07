@@ -48,6 +48,43 @@ const EQUIVALENT = [
     why: 'ARTIFACT_SUNDER_CAP 是 0.5,defSunder 封顶 0.5,1-0.5=0.5 远高于 0.2 的下限,这道钳制永不触发'
   },
   {
+    file: 'src/core/combat.ts',
+    text: 'Math.max(0.02, factor)',
+    why:
+      '单次伤害的绝对下限。factor 由 mult × (1+damageBonus) × (1-weaken) × (1-red) × taken × 方差连乘,' +
+      '其中 taken 已被上一行钳到 ≥0.1、1-red ≥ 1-MITIGATION_CAP=0.25、方差 ≥0.9。' +
+      '逐项取极值算得 factor 下界约 0.0158(weaken 取法宝最高档 0.3),确实低于 0.02,' +
+      '但要同时命中「减伤词条堆满 + 被削弱法宝打中 + 方差取最低」——三者都是同一场战斗里的小概率叠加。' +
+      '实测 36 条战斗/终局用例都碰不到这条分支,故按「防御性下限」归等价,不是待补的盲区。'
+  },
+  {
+    file: 'src/core/combat.ts',
+    text: 'if (!buildLog) return',
+    why:
+      'push() 的日志早退。去掉后 log.push 照常执行,但 buildLog:false 的调用方(phase21 的战斗模拟)' +
+      '根本不读 report.logs,产出的结算结果逐字段相同 —— 逻辑等价。' +
+      '留着的理由是性能:模拟器单次要跑几百场,不建日志能省掉每回合的字符串拼接与 formatGN。' +
+      '变异扫描只看结果,不看耗时,故归等价而非漏。'
+  },
+  {
+    file: 'src/core/combat.ts',
+    text: 'if (!extra) return',
+    why:
+      'foldExtraMods 的早退。JS 语义上 `for (const k in undefined)` 迭代 0 次、' +
+      '`{ ...undefined }` 得到空对象,所以去掉守卫后走完循环得到的是' +
+      '`{ ...snap, attack, defense, maxHp, mods: { ...snap.mods } }` —— 字段值与 snap 全等,只换了对象引用。' +
+      '调用方 applyCombatRuleSnap 只读字段、不比较引用,故观察不到差别。'
+  },
+  {
+    file: 'src/core/combat.ts',
+    text: 'Math.max(0, 1 - armorPen)',
+    why:
+      'armorPen 是百分比词条(破甲 4~8 / 碎甲 8~15 / 洞虚 15~25,单位是百分点),' +
+      '聚合后最高不过三成;法宝的 defSunder 走另一条(见 ARTIFACT_SUNDER_CAP),与此无关。' +
+      '1 - armorPen 因此在运行期恒为正,钳制不触发。' +
+      '下方 `Math.min(MITIGATION_CAP, ...)` 才是真正管住结果的那一道。'
+  },
+  {
     file: 'src/core/affixTransfer.ts',
     text: 'Math.max(0, cost.dust - resources.dust)',
     why:
