@@ -199,8 +199,17 @@ async function auditModal(page) {
       const hs = group.map(g => g.h)
       const lo = Math.min(...hs)
       const hi = Math.max(...hs)
-      if (hi >= lo + 4) {
-        const odd = group.filter(g => g.h >= lo + 4)
+      /*
+       * 阈值 2px,不是 4px。
+       *
+       * 原先定 4 是为了抓「钮被正文挤成两行」那种大差(44 → 57),但 CHANGELOG 里
+       * 「全站十六处并列按钮组都差 2px」证明 2px 也是真缺陷 —— 玩家点一下两枚就走齐不齐。
+       * 洞府灵脉那对「投一点 / 改立主脉」正是 2px(py-1.5+11px 配 py-2+10px,31 对 33),
+       * 而 4px 的阈值把它放过了。
+       * 降到 2 后复跑 17 扇弹窗,零误报(当前代码里没有 2~3px 的合法高度差)。
+       */
+      if (hi >= lo + 2) {
+        const odd = group.filter(g => g.h >= lo + 2)
         wrapped.push(`${odd.map(o => `${o.h}px «${o.text}»`).join(' + ')}(同行最低 ${lo}px)`)
       }
     }

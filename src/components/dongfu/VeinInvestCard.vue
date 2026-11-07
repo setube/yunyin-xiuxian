@@ -67,7 +67,12 @@
             两钮放不下时折成两行;钮内两段各自不拆,钮窄时上下叠(不叠会被压成逐字竖排)。
           -->
           <div class="flex basis-full flex-wrap items-center justify-end gap-1.5">
-            <button class="btn-ghost flex-wrap whitespace-normal !px-2.5 !py-1.5 !text-[11px]" :disabled="!canInvest(row.def.id)" @click="doInvest(row.def.id)">
+            <!--
+              两枚并排,高度须一致。原先「投一点」是 !py-1.5 + 11px、「改立主脉」是 !py-2 + 10px
+              —— 同一行量出来 31px 与 33px(实测 390 宽),点一下两枚就走齐不齐。
+              统一到 !py-2 + !text-[11px];正文各自 nowrap 不拆的老行为保留。
+            -->
+            <button class="btn-ghost flex-wrap whitespace-normal !px-2.5 !py-2 !text-[11px]" :disabled="!canInvest(row.def.id)" @click="doInvest(row.def.id)">
               <template v-if="canInvest(row.def.id)">
                 <span class="whitespace-nowrap">投一点 ·</span>
                 <span class="whitespace-nowrap">{{ formatGN(investCost) }} 石</span>
@@ -76,7 +81,7 @@
             </button>
             <button
               v-if="canSwitchTo(row.def.id)"
-              class="btn-ghost flex-wrap !px-2.5 !py-2 !text-[10px]"
+              class="btn-ghost flex-wrap !px-2.5 !py-2 !text-[11px]"
               :disabled="switchShort"
               :aria-label="switchLabel(row.def.id)"
               :title="switchShort ? `灵石尚差 ${formatGap(switchGap)}` : undefined"
