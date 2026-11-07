@@ -83,7 +83,7 @@
       确认态只是把「连 升」换成「再想想 + 连 升」两枚,位置与高度都不动。
     -->
     
-    <div v-if="plan.levels >= 2" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+    <div v-if="plan.levels >= 2" class="mt-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
       <p class="min-w-[5rem] flex-1 text-[10px] leading-snug text-ink-soft">
         连升至 <span class="font-kai text-[11px] text-cinnabar">第 {{ level + plan.levels }} 级</span>
         <span class="mt-0.5 block text-[9px] text-ink-faint tabular">

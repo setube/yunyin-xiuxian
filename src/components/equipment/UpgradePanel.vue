@@ -22,23 +22,30 @@
       连升二步确认与分解/散去同款。
       flex-wrap + 文本保底宽不可去:否则窄屏 flex-1 文本被 shrink-0 钮压成 0 宽竖排。
     -->
-    <div v-if="batchPlan.levels > 0" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
-      <template v-if="batchConfirm !== inst.uid">
-        <div class="min-w-[5rem] flex-1">
-          <p class="text-[10px] text-ink-faint">
-            连升至 <span class="font-kai text-[12px] text-cinnabar">+{{ inst.level + batchPlan.levels }}</span> 级
-          </p>
-          <p class="mt-0.5 text-[9px] text-ink-faint tabular">共耗 器灵尘×{{ batchPlan.dust }} · 灵石 {{ formatGN(batchPlan.stone) }}</p>
-        </div>
-        <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchConfirm = inst.uid">连 升</button>
-      </template>
-      <template v-else>
-        <p class="min-w-[5rem] flex-1 text-[10px] leading-relaxed text-cinnabar">
-          连升 {{ batchPlan.levels }} 级 · 器灵尘×{{ batchPlan.dust }} · 灵石 {{ formatGN(batchPlan.stone) }}
+    <!--
+      外层不再 flex-wrap:正文与钮组各占一行(钮组自带 w-full),两态段高因此相同。
+      留着 flex-wrap 的话,320 宽下确认态的钮组会先挤进正文那一行再折 —— 段高 52.5 → 66.8(实测)。
+    -->
+    <div v-if="batchPlan.levels > 0" class="mt-2 rounded-md border border-ink/10 bg-paper-deep/50 px-2.5 py-2">
+      <!--
+        正文两态同一段、钮组自成一行 —— 与洞府连升同一套做法。
+        原先确认态正文压成一行、再多两枚钮:一段从两行缩成一行,钮却多出来。
+      -->
+      <div class="min-w-[5rem] flex-1">
+        <p class="text-[10px] text-ink-faint">
+          连升至 <span class="font-kai text-[12px] text-cinnabar">+{{ inst.level + batchPlan.levels }}</span> 级
         </p>
-        <button class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchConfirm = null">再想想</button>
-        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" @click="runBatchUpgrade">连 升</button>
-      </template>
+        <p class="mt-0.5 text-[9px] text-ink-faint tabular">共耗 器灵尘×{{ batchPlan.dust }} · 灵石 {{ formatGN(batchPlan.stone) }}</p>
+      </div>
+      <div class="flex w-full shrink-0 justify-end gap-1.5">
+        <button v-if="batchConfirm === inst.uid" class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]" @click="batchConfirm = null">再想想</button>
+        <button
+          v-if="batchConfirm === inst.uid"
+          class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]"
+          @click="runBatchUpgrade"
+        >连 升</button>
+        <button v-else class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="batchConfirm = inst.uid">连 升</button>
+      </div>
     </div>
   </template>
   <!--

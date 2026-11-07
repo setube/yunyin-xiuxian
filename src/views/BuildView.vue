@@ -156,28 +156,37 @@
         >{{ loadouts.list.length >= MAX_LOADOUTS ? '快照已满' : '+ 存当前构筑' }}</button>
       </p>
       <div v-if="loadouts.list.length" class="space-y-1.5">
-        <div v-for="lo in loadouts.list" :key="lo.id" class="flex items-center gap-2 rounded-md bg-paper-deep/70 px-2.5 py-1.5">
-          <span class="grid h-6 w-6 shrink-0 place-items-center rounded bg-cinnabar font-kai text-[12px] seal-face">
-            {{ lo.seal }}
-          </span>
-          <span class="min-w-0 grow truncate font-kai text-[12px] text-ink">{{ lo.name }}</span>
-          <!-- !py-2:触面须 ≥28px(!py-1 仅 27px),与确认态按钮同高;卡片只在有构筑时出现,巡页夹具量不到 -->
-          <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="applyLoadout(lo.id)">换装</button>
-          <button class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint" @click="openRename(lo)">改名</button>
-          <template v-if="confirmDelete !== lo.id">
+        <!--
+          两段式:识别行一段、钮组一段,钮组右对齐独占一行。
+
+          原先一行里挤着印章、名字、换装、改名、删除:删除确认态再多出「再想想」「确认删除」两枚,
+          320 宽下这一行从 99px 涨到 115.5px,而「再想想」被压到 20px 宽 ×65px 高 ——
+          两个字竖排成一行一个字,名字也被截成「青…」。钮组自成一行之后两态同高。
+        -->
+        <div v-for="lo in loadouts.list" :key="lo.id" class="rounded-md bg-paper-deep/70 px-2.5 py-1.5">
+          <p class="flex items-center gap-2">
+            <span class="grid h-6 w-6 shrink-0 place-items-center rounded bg-cinnabar font-kai text-[12px] seal-face">
+              {{ lo.seal }}
+            </span>
+            <span class="min-w-0 grow truncate font-kai text-[12px] text-ink">{{ lo.name }}</span>
+          </p>
+          <!-- !py-2:触面须 ≥28px(!py-1 仅 27px);卡片只在有构筑时出现,巡页夹具量不到 -->
+          <div class="mt-1 flex justify-end gap-1.5">
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="applyLoadout(lo.id)">换装</button>
+            <button class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint" @click="openRename(lo)">改名</button>
             <button
-              class="-m-1.5 flex min-h-[28px] min-w-[28px] items-center justify-center p-1.5 text-ink-faint active:text-cinnabar"
+              v-if="confirmDelete !== lo.id"
+              class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint"
               aria-label="删除构筑"
               @click="confirmDelete = lo.id"
             >
               <GameIcon name="trash" :size="12" />
             </button>
-          </template>
-          <template v-else>
-            <!-- 负外边距配正内边距把触面抬到 28px+,视觉占位不变(layout-check 量不到这段打开才存在的控件) -->
-            <button class="-my-4 py-2.5 text-[10px] text-ink-faint active:text-ink" @click="confirmDelete = null">再想想</button>
-            <button class="btn-seal -my-4 !px-2 !py-2.5 !text-[10px]" @click="doDeleteLoadout(lo.id)">确认删除</button>
-          </template>
+            <template v-else>
+              <button class="btn-ghost !px-2 !py-2 !text-[11px] text-ink-faint" @click="confirmDelete = null">再想想</button>
+              <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="doDeleteLoadout(lo.id)">确认删除</button>
+            </template>
+          </div>
         </div>
       </div>
       <p v-else class="empty-note mt-1 text-center text-[11px] text-ink-faint">暂无快照</p>

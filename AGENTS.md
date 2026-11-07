@@ -59,7 +59,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run layout-check` — 构建 + `node scripts/layout-check.mjs`（**仅本地**，已从 CI 移除；Windows 用 `node` 而非 bun，耗时约 10 分钟）
 - `bun run offline-check` — 构建 + SW 离线自检
 - `bun run treasure-check` / `world-check` / `orb-check` — 构建 + 真浏览器验形制（得宝仪典 / 界域印与飞升跃升 / 法球界域形态）；三者都走后期存档夹具，前期档看不到顶档之物、四界与四态
-- `bun run detail-check` — `scripts/detail-geometry.mjs`：二步确认的几何实测，三处场景逐一点前后量真实宽高 —— 装备详情页脚（重铸/分解）、器魂散置行、洞府「连升至」段；钮、行、段都不许变形
+- `bun run detail-check` — `scripts/detail-geometry.mjs`：二步确认的几何实测，四处场景逐一点前后量真实宽高 —— 装备详情页脚（重铸/分解）、器魂散置行、洞府「连升至」段、构筑快照行；钮、行、段都不许变形
 - `bun run build:android` / `build:apk` — 安卓客户端打包
 - `bun run build:electron --win` — Windows 桌面客户端打包，产物在 `pkg/`（完整包 + 增量包）
 - 楷体打包：`uv run scripts/fonts/build-kai-font.py`
