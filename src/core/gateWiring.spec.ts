@@ -79,6 +79,16 @@ describe("门禁接线 —— CI 里跑的命令,本地得有对等入口", () =
     );
   });
 
+  it("扫到的 spec 数量足够,没把 src 读空", () => {
+    /*
+     * 下一条判据是「每个 spec 恰好命中一个分类」—— SPECS 为空时它恒真,
+     * 而 test:report 的分类覆盖率也就无从谈起。
+     * 现有那条「没把目录读空」只查 workflow 里读到的命令,没查 SPECS。
+     * 下限按现网规模取(数百),改动时若真删了整片测试,这条会提醒一并下调。
+     */
+    expect(SPECS.length, `只扫到 ${SPECS.length} 个 spec —— src 遍历没读到东西`).toBeGreaterThan(300);
+  });
+
   it("每个 spec 恰好命中一个测试分类,没有漏登记也没有被两个分类截胡", () => {
     const bad = SPECS.map((path) => ({ path, hits: matchingCategories(path).map((c) => c.name) })).filter(
       ({ hits }) => hits.length !== 1,
