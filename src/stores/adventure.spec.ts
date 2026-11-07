@@ -1,3 +1,4 @@
+import { EVENTS, FORTUNE_EVENTS } from '@/data/events'
 /** 历练公共写入边界 —— 会话/区域/事件/暂停顺延 */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -77,6 +78,22 @@ describe('历练公共写入边界', () => {
     expect(a.seenOnceEvents).toEqual([])
     a.markEventSeen('ft_sword_remnant')
     expect(a.seenOnceEvents).toEqual(['ft_sword_remnant'])
+  })
+
+  /**
+   * 事件记忆要有上界。
+   *
+   * 写入路径(markEventSeen)有 `eventDef(id)` 这道闸,读档路径原先只有去重 ——
+   * 手改存档能塞进任意多条,实测 10 万条后 $state 序列化出来 1.49MB,存档顶到配额。
+   * 上界取事件目录规模的两倍:够容纳「改名/下线旧档」的残留,又远小于恶意膨胀量级。
+   */
+  it('读档时事件记忆截到目录规模的两倍以内', () => {
+    const a = useAdventureStore()
+    ;(a as unknown as { seenOnceEvents: unknown }).seenOnceEvents = Array.from({ length: 100000 }, (_, i) => `evt_${i}`)
+    a.sanitize()
+    const cap = (EVENTS.length + FORTUNE_EVENTS.length) * 2
+    expect(a.seenOnceEvents.length, `读档后 ${a.seenOnceEvents.length} 条超了上界 ${cap}`).toBeLessThanOrEqual(cap)
+    expect(JSON.stringify(a.$state).length, '坏档把 state 撑爆了').toBeLessThan(5000)
     expect(a.markNodeCleared('')).toBe(false)
     expect(a.mortalCleared).toEqual([])
   })
