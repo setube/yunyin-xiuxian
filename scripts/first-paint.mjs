@@ -253,9 +253,32 @@ if (fontBytes > BUDGETS.fontBytes * 1024)
     `楷体子集 ${kb(fontBytes)} 超过预算 ${kb(BUDGETS.fontBytes * 1024)} —— 「整份打进来」的回归在这里红,与机器快慢无关`,
   );
 
+/*
+ * 余量提示(不判红)。
+ *
+ * 三条预算都按基线留了约三成余量,于是「离上限只剩一成」这个状态是静默的 ——
+ * 下一处小改动就可能把某条顶过线,而红的时候已经不知道是哪天开始变紧的。
+ * 实测现状:FCP 2588ms / 预算 3000ms(余 14%),已比基线 2252ms 涨了 14%。
+ * 读到这条的人该去核一下是产物真涨了,还是本机负载不同。
+ */
+const TIGHT_RATIO = 0.85;
+const tight = [];
+const readings = [
+  ["冷启动解码字节", median(total) / (BUDGETS.bytes * 1024)],
+  ["FCP", median(fcp) / BUDGETS.fcp],
+  ["楷体换上", median(swap) / BUDGETS.fontSwap],
+  ["楷体子集", fontBytes / (BUDGETS.fontBytes * 1024)],
+];
+for (const [name, ratio] of readings) {
+  if (Number.isFinite(ratio) && ratio >= TIGHT_RATIO && ratio <= 1) {
+    tight.push(`${name} 已用掉 ${(ratio * 100).toFixed(0)}% 预算`);
+  }
+}
+
 if (failures.length) {
   for (const f of failures) console.log(`✗ ${f}`);
   process.exitCode = 1;
 } else {
   console.log("✓ 首屏三条读数都在预算内");
+  if (tight.length) console.log(`· 余量偏紧:${tight.join(" · ")} —— 核对是否产物真的涨了`);
 }
