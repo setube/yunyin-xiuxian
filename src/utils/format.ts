@@ -242,6 +242,8 @@ export function formatStamp(ts: number, now = Date.now()): string {
  * 唯独这一个把单位拼进了函数返回值,印出来是「150载」。
  */
 export function formatYears(y: number): string {
+  // 坏值守卫:缺了它 Math.floor(NaN) 会印出「NaN 载」,Math.floor(-Infinity) 印「-Infinity 载」
+  if (!Number.isFinite(y)) return NOT_AVAILABLE
   if (y >= 10000) return `${formatNum(Math.floor(y))} 载`
   return `${Math.floor(y)} 载`
 }
@@ -251,6 +253,8 @@ export function formatYears(y: number): string {
  * 只做到 9999,范围外原样返回阿拉伯数字。
  */
 export function cnNumber(n: number): string {
+  // 坏值守卫:范围判断走 `!Number.isInteger(n)`,NaN 恰好命中并落到 String(n) → 「NaN」
+  if (!Number.isFinite(n)) return NOT_AVAILABLE
   if (!Number.isInteger(n) || n < 0 || n > 9999) return String(n)
   const DIGITS = '零一二三四五六七八九'
   const UNITS = ['', '十', '百', '千']
