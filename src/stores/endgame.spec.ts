@@ -1,3 +1,4 @@
+import { NAME_MAX_LENGTH } from '@/data/constants'
 /**
  * 远征读档恢复守卫:endgame.sanitize() 把 worldRun(在途远征)每一域夹回安全区间。
  * 故障注入:sanitize 任一处 clamp 写坏(unknown worldId 不 void / layer 不夹 / carriedHp 不夹 / rows 不过滤),本文件红。
@@ -439,6 +440,24 @@ describe('终局公共写入 · 只认目录 id 与合法值', () => {
     expect(e.daoPath).toBeNull()
     expect(e.milestones.map(m => m.id)).toEqual(['first_world'])
     expect(e.records.fastest_world).toEqual({ value: 10, life: 1, note: '赤炎天' })
+  })
+
+  /**
+   * 纪录 note 要截到 NAME_MAX_LENGTH。
+   *
+   * 它有两个来源:自建挑战的书名(输入框写了 maxlength=8,但那只是输入侧约束)
+   * 与读档(手改存档能塞进几十万字符 —— 存档爆量、纪录行还要渲染那一整段)。
+   * 与 player.name / loadouts.name 同一把尺,见 data/constants 里 NAME_MAX_LENGTH 的注释。
+   * 补之前实测:5000 字的 note 被原样存进 records。
+   */
+  it('纪录 note 截到 NAME_MAX_LENGTH,超长不落库', () => {
+    const e = useEndgameStore()
+    e.updateRecord('best_custom', 100, 1, '甲'.repeat(5000), 'max')
+    const stored = e.records.best_custom?.note ?? ''
+    expect(stored.length, `存进来的 note 长度 ${stored.length} 超了上限`).toBeLessThanOrEqual(NAME_MAX_LENGTH)
+    // 正常长度原样保留
+    e.updateRecord('best_custom', 200, 1, '太虚试炼', 'max')
+    expect(e.records.best_custom?.note).toBe('太虚试炼')
   })
 
   it('每日落闸不接受非有限日号，避免 NaN 让当日赏无限重领', () => {
