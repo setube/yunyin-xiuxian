@@ -55,6 +55,21 @@ describe('换装推演的敌人标定 · 前后必须是同一个对手', () => 
     expect(body, '参照属性按 anchorTier 取,与玩家词条无关').toContain('celestialAnchor(world.anchorTier)')
   })
 
+  /**
+   * whatIfEquip 的两个早退分支。
+   *
+   * 本可以真调用它们,但那要给 core 用例引入 Pinia 激活 ——
+   * 而 layeringAudit.spec 有一条硬约束:「core 用例需要 Pinia 的文件数不超过 121,只许减」。
+   * 那条约束是对的(core 不该耦合 store),故这里退回源码断言,
+   * 不给它加第 122 个。真调用那版曾写过并验过(删掉早退后报
+   * 「换成它自己时前后必然一样,不该给推演结果: expected { buildBefore: null, … } to be null」),
+   * 确认这两条早退确实会返回 null,只是不该以 Pinia 为代价留在 core 用例里。
+   */
+  it('whatIfEquip 的两条早退都在:查不到装备、问的正是当前佩戴', () => {
+    expect(LAB, '查不到装备即返回 null,别弹空面板').toContain('if (!item || !template) return null')
+    expect(LAB, '问的正是当前佩戴那件即返回 null —— 换成它自己前后必然一样').toContain('if (currentUid === uid) return null')
+  })
+
   it('两次对比共用同一个 judgement', () => {
     expect(LAB, '一次推演只算一套 judgement').toContain('const j = judgementOf(w)')
     expect(LAB, 'before 与 after 传同一个 j').toContain('worldRate(w, before, j, 660000 + i * 97)')
