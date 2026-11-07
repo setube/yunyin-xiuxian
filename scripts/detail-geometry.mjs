@@ -32,7 +32,7 @@ import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { seedSave } from './lib/saveFixture.mjs'
+import { lateSlices, seedSave } from './lib/saveFixture.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const INDEX = `file://${join(ROOT, 'dist/index.html')}`
@@ -40,6 +40,8 @@ const SHOTS = process.argv.includes('--shots')
 const SHOTS_DIR = '/tmp/detail-geometry'
 
 const failures = []
+/** 各场景量的两态高度,收齐后统一比对 */
+const TWO_STEP_HEIGHTS = new Map()
 const fail = msg => failures.push(msg)
 
 const browser = await chromium.launch({
@@ -816,10 +818,94 @@ async function runCorruptNotice() {
   await context.close()
 }
 
+// ============ 七、名额满时的「收道童」:拒绝理由就地写明 ============
+
+/**
+ * 道童名额满时,那颗钮的正文要从「(3.351亿 灵石)」换成「(门中已满)」。
+ *
+ * 两种拒因各写各的:够钱却满员时只写「灵石尚差 N」会误导 —— 玩家会去攒钱,
+ * 而攒够了照样收不了。这条判据量两件事:
+ *   一 满员时正文里确实出现「门中已满」;
+ *   二 换了正文之后钮高不变(32.5px 两态一致),不因文字变长/变短而窜一截。
+ * 槽位数由 `apprenticeSlots(major)` 推,不进存档分片;major 14 给 4 个槽,填满四个即满员。
+ */
+async function runRecruitFull() {
+  const full = lateSlices()
+  const four = [1, 2, 3, 4].map(i => ({ uid: `geo_ap_${i}`, archId: 'ap_lingtong', task: null, level: 1, bornAt: 0, taskEndsAt: 0 }))
+  full.apprentice = { apprentices: four, rebirthKarma: 0 }
+
+  for (const [tag, slices] of [['有空位', lateSlices()], ['满员', full]]) {
+    const context = await browser.newContext({ viewport: { width: 375, height: 900 } })
+    await context.route('**/*', r => {
+      const url = r.request().url()
+      if (/^(file|data|blob):/.test(url)) return r.continue()
+      return r.abort()
+    })
+    await seedSave(context, slices)
+    const page = await context.newPage()
+    page.on('pageerror', e => fail(`[道童 ${tag}] 运行时异常:${e.message}`))
+    await page.goto(`${INDEX}#/apprentice`, { waitUntil: 'load' })
+    await page.waitForTimeout(2400)
+    await page.evaluate(() => {
+      for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+      Math.random = () => 1
+    })
+    for (let i = 0; i < 10; i += 1) {
+      if ((await page.locator('.modal-panel').count()) > 0) {
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(220)
+      } else break
+    }
+    const measured = await page.evaluate(() => {
+      const b = [...document.querySelectorAll('main button')].find(x => /收道童/.test(x.textContent || ''))
+      if (!b) return null
+      const r = b.getBoundingClientRect()
+      const txt = document.querySelector('main')?.innerText ?? ''
+      const seat = /座下道童\s*(\d+\/\d+)/.exec(txt)
+      return { h: Math.round(r.height * 10) / 10, text: (b.textContent || '').trim().replace(/\s+/g, ' '), seat: seat ? seat[1] : '?' }
+    })
+    const info = measured
+    const seatText = measured?.seat ?? '?'
+    if (!info) {
+      fail(`[道童 ${tag}] 找不到「收道童」钮`)
+      await context.close()
+      continue
+    }
+    /*
+     * 满员档先确认**夹具真的铺出来了**,再判文案。
+     *
+     * 两件事会给出同一个「(门中已满) 没出现」的表象,但原因完全不同:
+     *   一 存档夹具写错字段 → sanitize 静默丢弃整份 → 页面仍是开局白送那 1 名;
+     *   二 代码里根本没写这条拒因 → 满了也照报灵石差额。
+     * 混作一条会让人往错的方向查。故先看槽位读数(「4/4」),再看钮面。
+     * 这一轮自己踩过第一种:archId 写成 id,页面上一直显示 1/4。
+     */
+    if (tag === '满员') {
+      if (!/门中已满/.test(info.text) && !/4\/4/.test(seatText)) {
+        fail(`[道童] 满员档没铺出来(夹具被 sanitize 丢弃?页上槽位是「${seatText}」)`)
+      } else if (!/门中已满/.test(info.text)) {
+        fail(`[道童] 名额满了,钮面却没写拒因(只写「${info.text}」)—— 玩家会以为攒够灵石就能收`)
+      } else {
+        console.log(`  · 道童满员:「${info.text}」${info.h}px`)
+      }
+    }
+    if (TWO_STEP_HEIGHTS.has('recruit')) TWO_STEP_HEIGHTS.get('recruit').push(info.h)
+    else TWO_STEP_HEIGHTS.set('recruit', [info.h])
+    await context.close()
+  }
+
+  // 两态钮高须一致:正文从「(3.351亿 灵石)」换成「(门中已满)」,行高不该跟着变
+  const hs = TWO_STEP_HEIGHTS.get('recruit') ?? []
+  if (hs.length === 2 && Math.abs(hs[0] - hs[1]) > 0.5) {
+    fail(`[道童] 「收道童」两态钮高不一致:${hs[0]} → ${hs[1]}px`)
+  }
+}
+
 await runBuild(375, 1000)
 await runBuild(320, 1000)
 await runTouchTargets()
 await runCorruptNotice()
+await runRecruitFull()
 await browser.close()
 
 if (failures.length) {
