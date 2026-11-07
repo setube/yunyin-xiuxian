@@ -11,9 +11,14 @@
           <span class="block text-[10px] leading-tight text-ink-faint tabular">可熔得 {{ totalMelt }} 道源</span>
         </span>
         <template v-if="meltAllArm">
+          <!--
+            两枚必须等高。`.btn-seal` 无 border、`.btn-ghost` 有 1px border,
+            在同样的 !py-2 下内容盒同高、边框盒差 2px(实测 375 宽是 35 对 33)。
+            给确认钮补 1px 透明边框,两者边框盒对齐;不靠调 padding 去凑。
+          -->
           <span class="flex shrink-0 items-center gap-1.5">
             <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="meltAllArm = false">再想想</button>
-            <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="doMeltAll">确认全熔</button>
+            <button class="btn-seal border border-transparent !px-2.5 !py-2 !text-[11px]" @click="doMeltAll">确认全熔</button>
           </span>
         </template>
         <button v-else class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="meltAllArm = true">
