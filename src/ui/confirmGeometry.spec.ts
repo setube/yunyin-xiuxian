@@ -126,6 +126,38 @@ describe('二步确认 · 两态同栏同高', () => {
     expect(bad, 'ghost 与 seal 并排时 flex-1 会差 2px;改用 grid-cols-2 + w-full').toEqual([])
   })
 
+  /**
+   * 纯文字按钮(不带 btn-* 基类)必须自己给触控高度。
+   *
+   * .btn-seal / .btn-ghost / .chip-ink 自带内边距,盒高够 28px;
+   * 而「下划线 + 小字」那种文字按钮没有,盒高就等于行高(约 17px)。
+   * 实测漏过一处:设置页「存档损坏 … 知道了」——它是坏档提示里唯一的操作,
+   * 而坏档只在存档真的坏了时才渲染,巡页与 aria-check 的常规路径都量不到。
+   * 这类按钮要么补 min-h-[28px](负外边距配正内边距,视觉不占位),
+   * 要么本来就有够大的 py(如 py-1.5/py-2)。
+   * 故障注入:删掉任一处的 min-h/py,本条红。
+   */
+  it('不带 btn 基类的文字按钮自带触控高度', () => {
+    const files = [
+      'components/settings/SettingsSaveSection.vue',
+      'components/common/InstallToHomeNotice.vue',
+      'views/WelcomeView.vue',
+      'views/SoulsView.vue'
+    ]
+    const bad: string[] = []
+    for (const rel of files) {
+      const src = read(rel)
+      for (const m of src.matchAll(/<button(?![^>]*:class)[^>]*\bclass="([^"]*)"[^>]*>/g)) {
+        const cls = m[1] ?? ''
+        if (!cls.trim()) continue
+        if (/\b(btn-seal|btn-ghost|chip-ink|card-ink)\b/.test(cls)) continue
+        const tall = /min-h-\[(\d+)px\]/.test(cls) || /!?py-(?:1\.5|2|2\.5|3)\b/.test(cls)
+        if (!tall) bad.push(`${rel} → «${cls.slice(0, 48)}»`)
+      }
+    }
+    expect(bad, '纯文字按钮盒高只有行高;补 min-h-[28px] 或够大的 py').toEqual([])
+  })
+
   it('自动重铸预算行:读数不参与收缩,按钮段整段折行', () => {
     const src = read(AUTO_PANEL)
     expect(src, '「至多洗」不许被压窄').toMatch(/shrink-0 whitespace-nowrap text-\[10px\] text-ink-faint">至多洗/)
