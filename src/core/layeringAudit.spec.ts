@@ -80,7 +80,15 @@ const STATEFUL_CORE = new Set<string>([
   "worldMemory.ts",
 ]);
 
-/** core → store 的引用处数基线(只许减;名单没变时防止单个模块越挂越多) */
+/**
+ * core → store 的引用处数基线(只许减;名单没变时防止单个模块越挂越多)。
+ *
+ * 现状 192 已顶格(192/192):往任何已有模块里再挂一处 store 引用都会红,
+ * 加一个新的 import store 的 core 模块也要同时改 STATEFUL_CORE 名单。
+ * 这是有意的 —— 逼新逻辑走纯函数,真绕不开时在这里上调并写明理由。
+ *
+ * 分布(2026-11):offline.ts ×11、reincarnation.ts ×9、earlyGameService.ts ×7 最多。
+ */
 const CORE_STORE_SITES = 192;
 /**
  * core 用例里需要 Pinia 的文件数基线(只许减)。
