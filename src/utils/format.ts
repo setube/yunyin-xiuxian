@@ -134,6 +134,16 @@ export function formatRate(v: GNum | number): string {
  * 显示出来的各行相加正好等于原值合计的取整。unit 为最小显示单位(百分比一位小数即 0.001)。
  */
 export function roundToSum(values: readonly number[], unit: number): number[] {
+  /*
+   * 坏值守卫。缺了它有三个坑:
+   *   unit = 0 / NaN / Infinity → 每项都变 NaN(除以 0 或非有限数)
+   *   values 里某一项是 NaN / Infinity → 那一项变 NaN,还会把 target 的合计带偏
+   * 返回的 NaN 会原样进入调用方的展示与配色判断(见 cultivationText 的 breakthroughRateView)。
+   * 默认返回全 0:调用方按「没有可分配的份额」处理,比一串 NaN 安全。
+   */
+  if (!Number.isFinite(unit) || unit <= 0) return values.map(() => 0)
+  if (values.length === 0) return []
+  if (!values.every(v => Number.isFinite(v))) return values.map(() => 0)
   // 先抹浮点尾差:0.8599999999999999 / 0.001 不该落到 859
   const scaled = values.map(v => Math.round((v / unit) * 1e6) / 1e6)
   const target = Math.round(scaled.reduce((a, b) => a + b, 0))

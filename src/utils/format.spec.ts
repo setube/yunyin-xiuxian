@@ -332,6 +332,35 @@ describe('formatGap 差额向上取整', () => {
     }
   })
 
+  /**
+   * roundToSum 的坏值守卫。
+   *
+   * 补之前实测:unit 为 0 / NaN / Infinity 时每一项都变 NaN;
+   * values 里某一项是 NaN / Infinity 时那一项变 NaN,还会把 target 合计带偏。
+   * 返回的 NaN 会原样进调用方的展示与配色判断
+   * (唯一调用点 cultivationText.ts 的 breakthroughRateView)。
+   */
+  it('roundToSum 遇坏输入返回全 0,不返回 NaN', () => {
+    const badCases = [
+      ['unit=0', roundToSum([1, 2], 0)],
+      ['unit=NaN', roundToSum([1, 2], Number.NaN)],
+      ['unit=Infinity', roundToSum([1, 2], Number.POSITIVE_INFINITY)],
+      ['unit=-1', roundToSum([1, 2], -1)],
+      ['含 NaN', roundToSum([1, Number.NaN, 2], 0.001)],
+      ['含 Infinity', roundToSum([1, Number.POSITIVE_INFINITY], 0.001)]
+    ] as const
+    for (const [tag, out] of badCases) {
+      expect(out.every(Number.isFinite), `${tag} 返回了非有限值:${JSON.stringify(out)}`).toBe(true)
+      expect(out.every(v => v === 0), `${tag} 应返回全 0,实际 ${JSON.stringify(out)}`).toBe(true)
+    }
+  })
+
+  it('roundToSum 的正常路径与空数组不受守卫影响', () => {
+    expect(roundToSum([], 0.001)).toEqual([])
+    const shown = roundToSum([0.95, 0.0025, 0.05, -0.0225], 0.001)
+    expect(shown.reduce((a, b) => a + b, 0)).toBeCloseTo(0.98, 6)
+  })
+
   it('这两个函数的正常值不受守卫影响', () => {
     expect(formatYears(300)).toBe('300 载')
     expect(formatYears(20000)).toBe('2万 载')
