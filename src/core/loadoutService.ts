@@ -34,7 +34,7 @@ export function captureLoadout(name: string): Loadout | null {
   const detected = detectBuild(player.finalStats.mods)
   const loadout: Loadout = {
     id: uid(),
-    // 按码点截:构筑名可能是 emoji,`.slice(0, 8)` 会在第八位劈开留下落单代理项
+    // 按字素簇截:构筑名可能是 emoji,`.slice(0, 8)` 会劈开代理对或 ZWJ 序列
     name: truncateCodePoints(name.trim(), NAME_MAX_LENGTH) || detected?.style.name || '无名构筑',
     seal: detected?.style.seal ?? '道',
     mainGongfa: cultivation.mainGongfa,

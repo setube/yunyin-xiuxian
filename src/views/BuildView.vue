@@ -215,7 +215,7 @@
     <BaseModal :open="saveOpen" :title="renameId ? '为构筑改名' : '存为构筑'" @close="closeSave">
       <!--
         不写 maxlength:它按 UTF-16 码元计数,emoji 占两个 —— 输入阶段就会劈开,
-        后面再怎么按码点截也救不回来。收敛交给 captureLoadout / renameLoadout 的 truncateCodePoints。
+        后面再怎么按字素簇截也救不回来。收敛交给 captureLoadout / renameLoadout 的 truncateCodePoints。
       -->
       <input
         v-model="saveName"
