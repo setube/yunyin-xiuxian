@@ -94,6 +94,24 @@ describe('历练公共写入边界', () => {
     const cap = (EVENTS.length + FORTUNE_EVENTS.length) * 2
     expect(a.seenOnceEvents.length, `读档后 ${a.seenOnceEvents.length} 条超了上界 ${cap}`).toBeLessThanOrEqual(cap)
     expect(JSON.stringify(a.$state).length, '坏档把 state 撑爆了').toBeLessThan(5000)
+  })
+
+  /**
+   * unlocked / cleared 也要按区域目录过滤。
+   *
+   * 同函数里 revived 与 clearedAt 早就这么做了,只有这两个只做了去重 ——
+   * 手改存档塞 10 万条假 id 后 $state 到 1.98MB / 989KB。
+   * 这里可以安全过滤(不像事件记忆要兼容下线内容):区域 id 认得才能用。
+   */
+  it('读档时把认不得的区域 id 从 unlocked / cleared 里清掉', () => {
+    const a = useAdventureStore()
+    const fake = Array.from({ length: 100000 }, (_, i) => `fake_${i}`)
+    ;(a as unknown as { cleared: unknown }).cleared = fake
+    ;(a as unknown as { unlocked: unknown }).unlocked = fake
+    a.sanitize()
+    expect(a.cleared.length, '认不得的区域 id 不该留在 cleared').toBeLessThan(100)
+    expect(a.unlocked.length, '认不得的区域 id 不该留在 unlocked').toBeLessThan(100)
+    expect(JSON.stringify(a.$state).length, '坏档把 state 撑爆了').toBeLessThan(10000)
     expect(a.markNodeCleared('')).toBe(false)
     expect(a.mortalCleared).toEqual([])
   })
