@@ -20,7 +20,14 @@ if (!requireDist('多标签自检')) process.exit(1)
 const failures = []
 let browser
 
-/** 装一个把出现过的 toast 文本攒起来的观察器(2.6s 就消失,直接采样会漏) */
+/**
+ * 装一个把出现过的 toast 文本攒起来的观察器(2.6s 就消失,直接采样会漏)。
+ *
+ * 装完立刻探一次活:注入一条已知文本的提示,确认观察器真能抓到。
+ * 不探的话,选择器一旦与 DOM 结构脱节(比如提示条从 div 换成 span),
+ * `__toasts` 永远是空 —— 「单页无误报」这条就会**恒真**,
+ * 看起来绿,实际上它只证明了观察器什么都没看见。
+ */
 async function watchToasts(page) {
   await page.evaluate(() => {
     window.__toasts = []
@@ -36,6 +43,24 @@ async function watchToasts(page) {
       }
     }).observe(document.body, { childList: true, subtree: true })
   })
+}
+
+/**
+ * 观察器探活:往 ui store 塞一条提示,看 __toasts 里有没有它。
+ * @returns {boolean} 观察器工作则为 true
+ */
+async function probeWatcher(page) {
+  const marker = `观察器探活 ${Date.now()}`
+  const pushed = await page.evaluate(t => {
+    const pinia = document.querySelector('#app')?.__vue_app__?.config?.globalProperties?.$pinia
+    const ui = pinia?._s?.get('ui')
+    if (!ui) return false
+    ui.toast(t, 'info')
+    return true
+  }, marker)
+  if (!pushed) return false
+  await page.waitForTimeout(600)
+  return page.evaluate(m => window.__toasts.some(t => t.includes(m)), marker)
 }
 
 try {
@@ -72,6 +97,11 @@ try {
   const solo = await ctx.newPage()
   await solo.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
   await watchToasts(solo)
+  if (!(await probeWatcher(solo))) {
+    failures.push('提示观察器抓不到任何提示 —— 「单页无误报」因此恒真,这条检查没有验到东西')
+  } else {
+    console.log('  ✓ 提示观察器能抓到提示(探活通过)')
+  }
   await solo.waitForTimeout(9000)
   const soloWarned = await solo.evaluate(w => window.__toasts.some(t => t.includes(w)), WARN)
   if (soloWarned) failures.push('只开一页也报了「存档已在另一页打开」—— 误报')
