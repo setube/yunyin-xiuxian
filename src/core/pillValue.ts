@@ -65,7 +65,19 @@ export type PillLine = 'craft' | 'drop'
  */
 function tempoRateOf(def: PillDef): number {
   if (def.kind !== 'buff' || !def.buffId) return 0
-  return Math.max(0, buffDef(def.buffId)?.mods.cultivationSpeed ?? 0)
+  const mods = buffDef(def.buffId)?.mods
+  if (!mods) return 0
+  /*
+   * 灵气回复按 0.3 折算成修炼加速。
+   *
+   * 突破不吃灵气,灵气只用于战斗消耗与灵气条充盈,所以回复加快的价值低于等量的
+   * 修炼加速 —— 0.3 是保守取法,只求把「带 qiRegen 的丹」从口径外拉回可比口径,
+   * 不追求精确等价。全库只有混天丹一味带 qiRegen;不收进来时它的每-成本
+   * 看上去比 18 境的本源丹还差 78%,而同品草带内本应越晚越划算。
+   */
+  const speed = mods.cultivationSpeed ?? 0
+  const regen = (mods.qiRegen ?? 0) * 0.3
+  return Math.max(0, speed + regen)
 }
 
 export function pillFamily(def: PillDef): PillFamily {

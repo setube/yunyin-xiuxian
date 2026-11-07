@@ -358,8 +358,55 @@ describe('定价法则', () => {
  * perKsec = 炼成一枚的期望战斗场次 × 每场 12 秒 ÷ 准入境界药力(等效秒),越高越不划算。
  * 相对容差 1e-3:道源丹与混元丹设计上贴身相持,差不足千分之一。
  */
-describe('带内 exp 线无每-成本倒挂', () => {
-  it('同品草带内,修为可炼丹的每-成本随境界单调不涨', () => {
+/*
+ * 各族「同品草带内每-成本不倒挂」。
+ *
+ * 原先只查 exp 族。其余四族同样有这条要求:同一条草带里,高一味如果反而更不划算,
+ * 它就是死内容。实测补查时抓到两处:
+ *   一 tempo 品5 带:本源丹(18 境草 150)pk=0.215,混天丹(20 境草 400)pk=0.347 —— 倒挂 61%
+ *   二 本源丹本身是同带异常点:带内其余丹草量都在 410~560,只有它 150
+ * 修法是把本源丹提到 260、混天丹降到 340(都在带内合理区间),倒挂消失。
+ *
+ * qi 族的品1带(回灵丹 0.742 → 灵乳 1.099)不纳入:灵乳的溢价由「灵乳的单位灵气成本
+ * 落在回灵丹的一到三倍之间」那条单独钉着,它是刻意的入门锚点。
+ */
+describe('带内各族无每-成本倒挂', () => {
+  /** 参与本条的族;qi 的品1带另有专属判据,故排除 */
+  const CHEKC_FAMILIES = ['exp', 'tempo', 'wudao', 'lifespan'] as const
+  for (const fam of CHEKC_FAMILIES) {
+    it(`同品草带内,${FAMILY_NAME[fam]}可炼丹的每-成本随境界单调不涨`, () => {
+      const TOL = 1e-3
+      const craft = PILLS.filter(p => pillFamily(p) === fam && p.recipe).sort((a, b) => a.minRealm - b.minRealm)
+      if (craft.length < 2) return
+      const bad: string[] = []
+      let prevGrade: number | null = null
+      let prevPk = 0
+      let prevName = ''
+      for (const p of craft) {
+        const grade = herbGradeOfMajor(p.minRealm)
+        const gain = pillGainSecAt(p, p.minRealm)
+        if (!(gain > 0)) continue
+        const pk = (craftBattlesOf(p) * EXPLORE_BATTLE_INTERVAL) / gain
+        if (prevGrade !== grade) {
+          prevGrade = grade
+          prevPk = pk
+          prevName = p.name
+          continue
+        }
+        if (pk > prevPk * (1 + TOL)) {
+          bad.push(
+            `品${grade}草带内:${p.name}(境界 ${p.minRealm} 草${p.recipe?.herb}) 每-成本 ${pk.toFixed(4)} ` +
+              `高于同带更低味 ${prevName} 的 ${prevPk.toFixed(4)} —— 高一味反而不如低一味划算`
+          )
+        }
+        prevPk = pk
+        prevName = p.name
+      }
+      expect(bad, '同带内出现了性价比倒挂').toEqual([])
+    })
+  }
+
+  it('exp 线仍逐条比对(原有口径保持不变)', () => {
     const TOL = 1e-3
     const expCraft = PILLS.filter(p => pillFamily(p) === 'exp' && p.recipe && p.instant?.expSecs).sort(
       (a, b) => a.minRealm - b.minRealm
