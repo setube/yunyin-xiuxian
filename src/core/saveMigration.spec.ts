@@ -4,6 +4,9 @@
  * 导入时 `save.ts` 的 migrate 按 version 链式升级。
  * 故障注入:让 migrateInventorySlice 丢掉旧值(或保留 equippedArtifact),第一条红;
  * 去掉 migrateLocalSchema 里的 encryptSave,密文那条红。
+ *
+ * 灵草五品(`migrateHerbSlice`)此前一条测试都没有 —— 它动的是玩家资源,
+ * 且是「同版本形状迁移、恒执行」,比只跑一次的法宝位迁移更容易被后续改动碰坏。
  */
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { createApp } from 'vue'
@@ -13,6 +16,7 @@ import {
   SAVE_VERSION,
   clearAllSave,
   dropPendingWrites,
+  migrateHerbSlice,
   migrateInventorySlice,
   migrateLocalSchema,
   storageKey
@@ -71,6 +75,67 @@ describe('迁移 · v1 单法宝位 → v2 多法宝位', () => {
     expect(migrateInventorySlice({ equippedArtifact: '' }).equippedArtifacts).toEqual([])
     expect(migrateInventorySlice({ equippedArtifact: 42 }).equippedArtifacts).toEqual([])
     expect(migrateInventorySlice({}).equippedArtifacts).toEqual([])
+  })
+})
+
+describe('迁移 · 灵草单标量 → 五品分账', () => {
+  const herbMap = (out: Record<string, unknown>): Record<string, number> =>
+    out.herbByGrade as Record<string, number>
+
+  it('旧档的标量整份落进凡品(品 1),旧字段清掉', () => {
+    const out = migrateHerbSlice({ herb: 300 })
+    expect(herbMap(out)[1], '标量没搬进品 1 —— 玩家的草会凭空少 300').toBe(300)
+    expect(herbMap(out)[2]).toBe(0)
+    expect(herbMap(out)[5]).toBe(0)
+    expect('herb' in out, '旧字段留在档里,下次迁移又会再加一遍').toBe(false)
+  })
+
+  /*
+   * 已有分账 + 还残留标量:两者要**相加**,不是用标量盖掉分账。
+   * 这条路只有「手改存档」或「旧版写过一半」才会走到,但盖掉就是凭空吞资源。
+   */
+  it('分账与标量并存时相加,不互相覆盖', () => {
+    const out = migrateHerbSlice({ herb: 100, herbByGrade: { 1: 7, 2: 30, 3: 40 } })
+    expect(herbMap(out)[1], '标量该加到品 1 上').toBe(107)
+    expect(herbMap(out)[2], '高品分账不该被标量迁移冲掉').toBe(30)
+    expect(herbMap(out)[3]).toBe(40)
+  })
+
+  it('负数标量按 0 处理,不产生负库存', () => {
+    const out = migrateHerbSlice({ herb: -100 })
+    expect(herbMap(out)[1], '负数标量会变成负的草').toBe(0)
+  })
+
+  /*
+   * 负标量 + 已有分账:走的是 `hasMap && scalar <= 0` 的提前返回分支,
+   * 于是 `herb` 原样留着、没被清掉。下游 sanitize 会把它丢掉,
+   * 但迁移层的契约是「清掉旧字段」—— 留着它,下次迁移会再看到这个 -100。
+   * 这一条钉住提前返回分支的行为,不论将来是清掉还是留着,都必须是有意的。
+   */
+  it('负标量 + 已有分账:旧字段要么清掉,要么按 0 搬,不许原位留着', () => {
+    const out = migrateHerbSlice({ herb: -100, herbByGrade: { 1: 5 } })
+    expect('herb' in out, '负数旧标量留在档里,下次迁移还会再看见它').toBe(false)
+    expect(herbMap(out)[1], '已有分账不该被负标量冲掉').toBe(5)
+  })
+
+  it('标量是 NaN / 字符串时按 0 处理', () => {
+    expect(herbMap(migrateHerbSlice({ herb: Number.NaN }))[1]).toBe(0)
+    expect(herbMap(migrateHerbSlice({ herb: '300' }))[1]).toBe(0)
+  })
+
+  it('已有合法分账且无标量时原样返回(幂等)', () => {
+    const fresh = { herbByGrade: { 1: 10, 2: 20, 3: 0, 4: 0, 5: 0 } }
+    expect(migrateHerbSlice(structuredClone(fresh))).toEqual(fresh)
+  })
+
+  it('跑第二遍不该变样', () => {
+    const first = migrateHerbSlice({ herb: 300 })
+    expect(migrateHerbSlice(structuredClone(first))).toEqual(first)
+  })
+
+  it('空白对象补出全零分账', () => {
+    const out = migrateHerbSlice({})
+    expect(herbMap(out)).toEqual({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 })
   })
 })
 
