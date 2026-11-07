@@ -709,3 +709,27 @@ describe('存档 · 退出前须刷盘', () => {
     expect(src, 'engine 停止路径没有刷盘').toMatch(/flushSaveWrites\(\)/)
   })
 })
+
+/**
+ * 每一页都要有个标题元素。
+ *
+ * 底栏九个页面里,多数由 SectionTitle 渲染 h2;而「坊市」「道童」两页的页名写成了 <p>,
+ * 读屏用户按标题跳转时整个跳过这两页 —— 视觉上看不出差别,因为类名一模一样。
+ *
+ * 判据:每个 views/*.vue 要么用了 SectionTitle,要么自己写 <h1>/<h2>。
+ * h1/h2 的取舍留给各页:首页是仪表盘、补的是视觉隐藏的 sr-only h1,其余页用 SectionTitle 的 h2。
+ */
+describe('页面标题 · 每页都有标题元素', () => {
+  it('每个视图都有 h1/h2,或用了渲染 h2 的 SectionTitle', () => {
+    const dir = resolve(SRC, 'views')
+    const files = readdirSync(dir).filter(f => f.endsWith('.vue'))
+    expect(files.length, '一个视图都没扫到,判据空转').toBeGreaterThan(10)
+    const missing: string[] = []
+    for (const f of files) {
+      const src = readFileSync(resolve(dir, f), 'utf-8')
+      if (/<h[12][\s>]/.test(src) || src.includes('SectionTitle')) continue
+      missing.push(f)
+    }
+    expect(missing, `这些视图没有标题元素,读屏按标题跳转会跳过它们:${missing.join(', ')}`).toEqual([])
+  })
+})
