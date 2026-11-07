@@ -3,10 +3,15 @@
     法球随界域变形(见 ui/orbForm):环数、粒子数、八卦环的有无一样样可数。
     从炼气一路看到混沌道祖,此前 21 境这颗球一模一样 —— 界域只有一行字说得出。
   -->
+  <!--
+    原先还有个 `orb-root--${form.rings}` 的类绑定:ring 数是 1~4,拼出来是 orb-root--1..4,
+    但 CSS 与任何选择器里都没有这四个类 —— 环的个数由下面 orbRingIndexes 的 v-for 决定,
+    样式挂在 .ring 上。那个绑定从头到尾没生效过,是个哑类。
+  -->
   <div
     class="orb-root"
     :style="sizeStyle"
-    :class="[`orb-root--${form.rings}`, { cultivating: active, breakthrough: full }]"
+    :class="{ cultivating: active, breakthrough: full }"
   >
     <div class="particle-ring">
       <div v-for="i in particleCount" :key="i" class="orb-particle" :style="particleStyle(i)" />

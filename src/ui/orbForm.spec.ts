@@ -160,6 +160,32 @@ describe('法球形制 · 二、组件接上了', () => {
     }
   })
 
+  /**
+   * 组件上的动态类名必须真有样式接着。
+   *
+   * 原先根节点挂着 `orb-root--${form.rings}`,拼出来是 orb-root--1..4 ——
+   * 而全仓没有任何一处定义这四个类。环的个数由 orbRingIndexes 的 v-for 决定、
+   * 样式挂在 .ring 上,所以那个绑定从头到尾没生效过,是个哑类。
+   *
+   * 这类哑类不会报错、不会影响画面,只会让人以为「那里有分档样式」而去找。
+   */
+  it('组件里拼出来的类名都在样式表里有定义', () => {
+    /*
+     * 注释要先剥掉:那段解释哑类的注释里正好写着 `orb-root--${form.rings}`,
+     * 不剥的话会把注释当成代码去查,永远报一处不存在的缺口。
+     */
+    const stripComments = (t: string): string => t.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+    const code = stripComments(ORB)
+    const css = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8') + code
+    const prefixes = [...code.matchAll(/`([a-z][a-z0-9-]*--)\$\{/g)].map(m => m[1]!)
+    for (const prefix of prefixes) {
+      const hasVariant = new RegExp(`\\.${prefix.replace(/[-]/g, '\\-')}`).test(css)
+      expect(hasVariant, `CultivationOrb 拼出了 ${prefix}* 的类名,但样式里没有任何 ${prefix} 变体`).toBe(true)
+    }
+    // 防空转:组件确实还挂着至少一个动态类(未来若全删掉,本条应随之失效而非静默通过)
+    expect(prefixes.length, '组件里一个动态类都没有了 —— 本条该删或改判据').toBeGreaterThan(0)
+  })
+
   it('减少动效仍受管 —— 形态差异全在静态层,不靠动画分家', () => {
     // 环数 / 粒子数 / 八卦环的有无都是静态的;动画只是加成
     expect(formsOfFourWorlds()[0]!.rings).toBeGreaterThan(0)
