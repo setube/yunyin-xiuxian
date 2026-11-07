@@ -155,6 +155,13 @@ function sanitizeLastBattle(raw: unknown): LastBattleView | null {
     enemyName: b.enemyName,
     enemyIcon: b.enemyIcon,
     isBoss: b.isBoss === true,
+    /*
+     * enemyId 声明为 string?,但此前只有 `...b` 原样带过来 —— 坏档塞个数字进来,
+     * 界面上 `b.enemyId ? enemyLoreView(b.enemyId) : null` 会拿非字符串去查表。
+     * 查表本身安全(BY_ID.get 返回 undefined),但类型契约是假的:
+     * 后面任何一处 `enemyId.startsWith(...)` 之类都会当场炸。故按 string 收一遍。
+     */
+    enemyId: typeof b.enemyId === 'string' && b.enemyId ? b.enemyId : undefined,
     result: {
       ...r,
       win: r.win,

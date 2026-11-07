@@ -279,6 +279,39 @@ describe('战报数值 · 坏档量级', () => {
     expect(formatGN(st!.dealt)).not.toContain('e+')
   })
 
+  /**
+   * enemyId 声明为 `string?`,此前靠 `...b` 原样带过来 —— 坏档塞个数字进来,
+   * 类型是否成立没人管。查表本身安全(BY_ID.get 返回 undefined),
+   * 但后面任何一处按字符串用它(如 startsWith、拼进 URL)都会当场炸。
+   */
+  it('战报的 enemyId 非字符串时按缺失处理,不留在状态里', () => {
+    const a = useAdventureStore()
+    for (const bad of [123, { x: 1 }, [1], true]) {
+      a.lastBattle = {
+        enemyName: '试敌',
+        enemyIcon: 'sword',
+        enemyId: bad,
+        result: { win: true, log: [] }
+      } as never
+      a.sanitize()
+      const got = (a.lastBattle as { enemyId?: unknown } | null)?.enemyId
+      expect(typeof got, `enemyId 塞 ${JSON.stringify(bad)} 后仍是 ${typeof got}`).not.toBe('number')
+      expect(got, `enemyId 塞 ${JSON.stringify(bad)} 后该按缺失处理`).toBeUndefined()
+    }
+  })
+
+  it('正常 enemyId 原样保留(修形非空转)', () => {
+    const a = useAdventureStore()
+    a.lastBattle = {
+      enemyName: '试敌',
+      enemyIcon: 'sword',
+      enemyId: 'e_wolf',
+      result: { win: true, log: [] }
+    } as never
+    a.sanitize()
+    expect((a.lastBattle as { enemyId?: string } | null)?.enemyId, '好档的 enemyId 不该被清掉').toBe('e_wolf')
+  })
+
   it('形状坏的单项归零,不影响同侧其它项', () => {
     const a = useAdventureStore()
     const mixed = { ...side({ m: 1, e: 1e9 }), taken: { m: 2, e: 3 } }
