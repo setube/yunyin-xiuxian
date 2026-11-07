@@ -14,7 +14,11 @@
  *   五 灵脉连投段(弹窗内) —— 点「连 投」前后段高一致。
  * 共同判据:没有任何按钮正文被折成竖排。
  *
- * 另量一件事:后期档十页的触控下限。aria-check 量过主路由,但它挂默认前期档 ——
+ * 另量两件事:
+ *   一 后期档十页的触控下限;
+ *   二 坏档提示里那颗「知道了」的高度 —— 全站唯一只在异常路径下渲染的钮,
+ *      巡页与 aria-check 拿好人存档,永远量不到它(实测修复前 17.9px)。
+aria-check 量过主路由,但它挂默认前期档 ——
  * 悟道兑换、洞府灵脉、道童这些整块不渲染,那些按钮从来没被量过(实测修行页有两枚 21px)。
  *
  * 用法(需先 `bun run build`):
@@ -753,9 +757,69 @@ async function runTouchTargets() {
   await context.close()
 }
 
+// ============ 六、坏档提示:那颗「知道了」的触控高度 ============
+
+/**
+ * 存档损坏时设置页会多出一条提示,里面有一颗「知道了」。
+ *
+ * 这是全站唯一一处只在**异常路径**下渲染的按钮 —— 巡页、aria-check、弹窗巡逻
+ * 拿的都是好人存档,这条提示根本不出现。而它恰恰是玩家最需要点的位置:
+ * 提示说「原档留在本机」,玩家要关掉它继续看设置。
+ *
+ * 实测(修复前/后):盒高 17.9px / 28px。17.9 就是纯文字的行高。
+ * 造法:把某个分片的密文换成非法串,preflightScan 判它损坏并让 main.ts 记下来。
+ */
+async function runCorruptNotice() {
+  const context = await browser.newContext({ viewport: { width: 375, height: 900 } })
+  await context.route('**/*', r => {
+    const url = r.request().url()
+    if (/^(file|data|blob):/.test(url)) return r.continue()
+    return r.abort()
+  })
+  await seedSave(context, slices({ major: 18 }))
+  // 夹具之后覆写一枚非法分片 —— preflightScan 会判它损坏
+  await context.addInitScript(() => {
+    if (localStorage.getItem('__corruptDone')) return
+    localStorage.setItem('yunyin.inventory', 'NOT_VALID_CIPHERTEXT')
+    localStorage.setItem('__corruptDone', '1')
+  })
+  const page = await context.newPage()
+  page.on('pageerror', e => fail(`[坏档] 运行时异常:${e.message}`))
+  await page.goto(`${INDEX}#/settings`, { waitUntil: 'load' })
+  await page.waitForTimeout(3500)
+  await page.evaluate(() => {
+    for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+    Math.random = () => 1
+  })
+  for (let i = 0; i < 10; i += 1) {
+    if ((await page.locator('.modal-panel').count()) > 0) {
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(250)
+    } else break
+  }
+
+  const info = await page.evaluate(() => {
+    const txt = document.querySelector('main')?.innerText ?? ''
+    const btn = [...document.querySelectorAll('main button')].find(b => /^知道了$/.test((b.textContent || '').trim()))
+    const r = btn?.getBoundingClientRect()
+    return { noticed: /存档损坏/.test(txt), h: r ? r.height : null }
+  })
+  /*
+   * 防空转:提示没出来就是夹具没生效,判据跑了等于没跑。
+   * 第一版若这里写成 `if (info.h !== null && info.h < 28)`,提示没出来会静默通过。
+   */
+  if (!info.noticed) fail('[坏档] 提示没渲染出来(夹具没生效?判据没跑到东西)')
+  else if (info.h === null) fail('[坏档] 提示在,但找不到「知道了」那颗钮')
+  else if (info.h < 27.5) fail(`[坏档] 「知道了」盒高 ${info.h.toFixed(1)}px,低于 28px 触控下限`)
+  else console.log(`  · 坏档提示:「知道了」${info.h.toFixed(1)}px`)
+
+  await context.close()
+}
+
 await runBuild(375, 1000)
 await runBuild(320, 1000)
 await runTouchTargets()
+await runCorruptNotice()
 await browser.close()
 
 if (failures.length) {
@@ -763,4 +827,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('二步确认几何通过:重铸/分解(含付不起档)、器魂散去、洞府连升、构筑删除、灵脉连投五处两态均不变形,无折行与竖排按钮;后期档十页触控下限全部 ≥28px')
+console.log('二步确认几何通过:重铸/分解(含付不起档)、器魂散去、洞府连升、构筑删除、灵脉连投五处两态均不变形,无折行与竖排按钮;后期档十页触控下限全部 ≥28px;坏档提示的「知道了」也够 28px')
