@@ -29,6 +29,7 @@
     "treasure-check": "bun run build && node scripts/treasure-check.mjs",
     "detail-check": "bun run build && node scripts/detail-geometry.mjs",
     "modal-check": "bun run build && node scripts/modal-patrol.mjs",
+    "edge-check": "bun run build && node scripts/edge-states.mjs",
     "world-check": "bun run build && node scripts/world-check.mjs",
     "orb-check": "bun run build && node scripts/orb-check.mjs",
     "build:electron": "vue-tsc -b && vite build && esbuild electron/main.js --bundle --platform=node --format=esm --outfile=dist-electron/main.js --external:electron && esbuild electron/preload.js --bundle --platform=node --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never",
