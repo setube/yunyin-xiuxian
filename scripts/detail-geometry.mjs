@@ -10,7 +10,8 @@
  *   二 器魂散置列表 —— 点「散去」前后行高一致,名字不被挤成竖排
  *     (确认态比未确认态多一枚钮,320 宽曾把左列压到 22px、行高 177 → 745px);
  *   三 洞府「连升至」段 —— 点前后段高一致(未确认态摆着净得与逐条预览,确认态曾只剩一行);
- *   四 构筑快照行 —— 点删除前后行高一致(320 宽下「再想想」曾被压成 20px 宽竖排)。
+ *   四 构筑快照行 —— 点删除前后行高一致(320 宽下「再想想」曾被压成 20px 宽竖排);
+ *   五 灵脉连投段(弹窗内) —— 点「连 投」前后段高一致。
  * 共同判据:没有任何按钮正文被折成竖排。
  *
  * 另量一件事:后期档十页的触控下限。aria-check 量过主路由,但它挂默认前期档 ——
@@ -495,6 +496,69 @@ async function runDongfu(width, height) {
   const vertical = await verticalButtons(page)
   if (vertical.length) fail(`[洞府 ${tag}] 有按钮被折成竖排:${vertical.join(' / ')}`)
 
+  /*
+   * 灵脉连投卡:与洞府连升同一种跳动,但在弹窗里,此前一处都没量过。
+   * 「连投至 第 N 点」那一段在点「连 投」前后必须同高 ——
+   * 确认态多一枚「再想想」,若与正文挤同一行,段高就会变。
+   */
+  const veinEntry = page.locator('main button', { hasText: /灵脉投资/ }).first()
+  if ((await veinEntry.count()) === 0) {
+    fail(`[洞府 ${tag}] 找不到「灵脉投资」入口`)
+  } else {
+    await veinEntry.click()
+    await page.waitForTimeout(600)
+    /*
+     * 第一条灵脉的「连投」段 —— 从钮反向找祖先,不按正文文字找。
+     *
+     * 按文字找有两处会错,都踩过:
+     *   一 灵脉弹窗同时画三到四条灵脉,每条都有一段,取「第一个匹配」会在点了第一条之后量到第二条;
+     *   二 更要命的是:若确认态把正文整段去掉,「连投至」这几个字就没了 ——
+     *      按文字找会跳到第二条灵脉那一段(它还在未确认态),于是「段消失」被判成通过。
+     * 从钮找:钮在,段就在;段若真的塌了,量的就是塌掉之后的实际高度。
+     */
+    const veinSeg = () =>
+      page.evaluate(() => {
+        const btn = [...document.querySelectorAll('.modal-panel button')].find(b => /^连\s*投$/.test((b.textContent || '').trim()))
+        if (!btn) return null
+        // 钮组的上一层就是段容器
+        const seg = btn.parentElement?.parentElement ?? btn.parentElement
+        if (!seg) return null
+        const r = seg.getBoundingClientRect()
+        return { h: Math.round(r.height * 10) / 10, w: Math.round(r.width) }
+      })
+    const vRest = await veinSeg()
+    if (!vRest) {
+      fail(`[洞府 ${tag}] 灵脉弹窗里找不到「连投至」段`)
+    } else {
+      const veinBtn = page.locator('.modal-panel button', { hasText: /^连\s*投$/ }).first()
+      if ((await veinBtn.count()) === 0) {
+        fail(`[洞府 ${tag}] 灵脉弹窗里找不到「连 投」钮`)
+      } else {
+        await veinBtn.click()
+        await page.waitForTimeout(400)
+        const vArmed = await veinSeg()
+        /*
+         * 量不到确认态那一段 = 段被正文的显隐带走了 —— 那本身就是「变了形」。
+         * 第一版在这里写 `if (vArmed && ...)`,于是确认态整段消失时静默跳过,判据假绿。
+         */
+        if (!vArmed) {
+          fail(`[洞府 ${tag}] 点「连 投」后量不到「连投至」段(段随正文一起没了)`)
+        } else if (Math.abs(vArmed.h - vRest.h) > 0.5) {
+          fail(`[洞府 ${tag}] 点「连 投」让这一段变了高:${vRest.h} → ${vArmed.h}px`)
+        }
+        /*
+         * 改立主脉:另一处两步确认(耗灵石迁脉),确认态正文换成「耗灵石 N」+ 两颗钮。
+         * 同样要求段高不变。
+         */
+        const undo = page.locator('.modal-panel button', { hasText: /再想想/ }).first()
+        if ((await undo.count()) > 0) await undo.click({ timeout: 2000 }).catch(() => {})
+        await page.waitForTimeout(300)
+      }
+    }
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(250)
+  }
+
   await context.close()
 }
 
@@ -699,4 +763,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('二步确认几何通过:重铸/分解(含付不起档)、器魂散去、洞府连升、构筑删除四处两态均不变形,无折行与竖排按钮;后期档十页触控下限全部 ≥28px')
+console.log('二步确认几何通过:重铸/分解(含付不起档)、器魂散去、洞府连升、构筑删除、灵脉连投五处两态均不变形,无折行与竖排按钮;后期档十页触控下限全部 ≥28px')

@@ -59,7 +59,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run layout-check` — 构建 + `node scripts/layout-check.mjs`（**仅本地**，已从 CI 移除；Windows 用 `node` 而非 bun，耗时约 10 分钟）
 - `bun run offline-check` — 构建 + SW 离线自检
 - `bun run treasure-check` / `world-check` / `orb-check` — 构建 + 真浏览器验形制（得宝仪典 / 界域印与飞升跃升 / 法球界域形态）；三者都走后期存档夹具，前期档看不到顶档之物、四界与四态
-- `bun run detail-check` — `scripts/detail-geometry.mjs`：二步确认的几何实测，四处场景逐一点前后量真实宽高 —— 装备详情页脚（重铸/分解，含付不起档）、器魂散置行、洞府「连升至」段、构筑快照行；钮、行、段都不许变形，底行也不许折行。另挂**后期档**（大境界 18）扫十页的触控下限 ≥28px —— `aria-check` 挂默认前期档，悟道兑换/洞府灵脉/道童那些整块不渲染，量不到
+- `bun run detail-check` — `scripts/detail-geometry.mjs`：二步确认的几何实测，五处场景逐一点前后量真实宽高 —— 装备详情页脚（重铸/分解，含付不起档）、器魂散置行、洞府「连升至」段、构筑快照行、灵脉连投段（弹窗内）；钮、行、段都不许变形，底行也不许折行。另挂**后期档**（大境界 18）扫十页的触控下限 ≥28px —— `aria-check` 挂默认前期档，悟道兑换/洞府灵脉/道童那些整块不渲染，量不到
 - `bun run modal-check` — `scripts/modal-patrol.mjs`：逐扇推开 17 个能自动找到入口的弹窗，对每扇量触控下限 / 可访问名 / 禁用态对比度 / 面板名 / **同一水平行内按钮等高**，并对弹窗内的两步确认**点开确认态再量一遍几何**（装备详情的重铸、自动重铸、天道熔炉的全熔、灵脉的连投；只点前置触发钮，绝不点确认钮）。默认 375 宽，`--width=320` 跑窄屏那一档。`layout-check` 的弹窗巡逻只开四扇，巡页更量不到没打开的弹窗 —— 修行页那两枚 21px 的「兑换」钮就是这样漏掉的
 - `bun run build:android` / `build:apk` — 安卓客户端打包
 - `bun run build:electron --win` — Windows 桌面客户端打包，产物在 `pkg/`（完整包 + 增量包）

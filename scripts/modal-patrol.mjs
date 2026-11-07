@@ -35,6 +35,8 @@ const failures = []
 const fail = msg => failures.push(msg)
 /** 入口没出现的场景:不判失败,但逐条列出 */
 const notOpened = []
+/** 有两步确认但本轮没探到(前置状态没铺出来)的场景:同样逐条列出,不静默吞掉 */
+const twoStepMissed = []
 
 const browser = await chromium.launch({
   args: [
@@ -291,7 +293,14 @@ async function probeTwoStep(page, name) {
     // 没进确认态:可能弹窗被关掉了,那就没法继续
     if ((await page.locator('.modal-panel').count()) === 0) return
   }
-  if (!entered) return
+  if (!entered) {
+    /*
+     * 进不了确认态多半是前置没铺(要有可分解的件、要有凝过的器魂)。
+     * 不判失败 —— 但也绝不静默:上一轮就是因为静默跳过,判据空跑却报绿。
+     */
+    twoStepMissed.push(name)
+    return
+  }
 
   const after = await page.evaluate(() => {
     const panels = [...document.querySelectorAll('.modal-panel')].filter(el => {
@@ -654,6 +663,11 @@ await browser.close()
 if (notOpened.length) {
   console.log(`\n未量到的弹窗(${notOpened.length} 扇,入口没出现 —— 夹具未铺该窗前置):`)
   for (const n of notOpened) console.log(`  · ${n}`)
+}
+
+if (twoStepMissed.length) {
+  console.log(`\n两步确认没探到的窗(${twoStepMissed.length} 扇,点遍候选钮都没冒出「再想想」):`)
+  for (const n of twoStepMissed) console.log(`  · ${n}`)
 }
 
 if (failures.length) {
