@@ -203,8 +203,30 @@ async function auditModal(page) {
       }
     }
 
+    /*
+     * 正文可滚时滚到底,量最后一块内容有没有被裁。
+     * 扣掉滚动区自身的 padding-bottom —— 那是留白,不是被吃掉的内容;
+     * 第一版没扣,三扇窗一律报「被裁 12px」,恰好等于 py-3 的 12px。
+     */
+    let scrollClip = null
+    const scroller = panel.querySelector('.overflow-y-auto')
+    if (scroller && scroller.scrollHeight > scroller.clientHeight + 1) {
+      scroller.scrollTop = scroller.scrollHeight
+      const sr = scroller.getBoundingClientRect()
+      const padB = parseFloat(getComputedStyle(scroller).paddingBottom) || 0
+      const kids = [...scroller.children]
+      const last = kids[kids.length - 1]
+      const lr = last?.getBoundingClientRect()
+      if (lr) {
+        const over = Math.round(lr.bottom - (sr.bottom - padB))
+        if (over > 1) scrollClip = `${over}px «${(last.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 16) || last.tagName.toLowerCase()}»`
+      }
+      scroller.scrollTop = 0
+    }
+
     return {
       count: rows.length,
+      scrollClip,
       label: (panel.getAttribute('aria-label') || panel.querySelector('h3')?.textContent || '').trim(),
       unnamed: rows.filter(r => !r.name).map(r => `${r.h.toFixed(1)}px`),
       small: rows.filter(r => !r.ok).map(r => `${r.h.toFixed(1)}px «${r.name || '无名'}»`),
@@ -349,9 +371,9 @@ async function probeTwoStep(page, name) {
   })
 
   if (!after) return
-  if (after.overflow.length) fail(`[${WIDTH}] ${name}·确认态: 有元素横向溢出:${after.overflow.join(' | ')}`)
-  if (after.squeezed.length) fail(`[${WIDTH}] ${name}·确认态: 有块被挤成竖排:${after.squeezed.join(' | ')}`)
-  if (after.uneven.length) fail(`[${WIDTH}] ${name}·确认态: 同行按钮不等高:${after.uneven.join(' | ')}`)
+  if (after.overflow.length) fail(`[${WIDTH}x${HEIGHT}] ${name}·确认态: 有元素横向溢出:${after.overflow.join(' | ')}`)
+  if (after.squeezed.length) fail(`[${WIDTH}x${HEIGHT}] ${name}·确认态: 有块被挤成竖排:${after.squeezed.join(' | ')}`)
+  if (after.uneven.length) fail(`[${WIDTH}x${HEIGHT}] ${name}·确认态: 同行按钮不等高:${after.uneven.join(' | ')}`)
   console.log(`       └ ${name} 两态:未确认 ${markers.panelH}px → 确认态几何量过`)
   // 退回未确认态,留给外层关窗
   const undo = page.locator('.modal-panel button', { hasText: /再想想/ }).last()
@@ -381,20 +403,21 @@ async function patrol(page, name, click) {
   await page.waitForTimeout(300)
 
   if (!audit) {
-    fail(`[${WIDTH}] ${name}: 点开了但量不到 .modal-panel`)
+    fail(`[${WIDTH}x${HEIGHT}] ${name}: 点开了但量不到 .modal-panel`)
     return
   }
   if (audit.count === 0) {
-    fail(`[${WIDTH}] ${name}: 面板里一个控件都没数到(判据没跑到东西)`)
+    fail(`[${WIDTH}x${HEIGHT}] ${name}: 面板里一个控件都没数到(判据没跑到东西)`)
     return
   }
-  if (!audit.label) fail(`[${WIDTH}] ${name}: 没有可访问名(读屏只会念「对话框」)`)
-  if (audit.unnamed.length) fail(`[${WIDTH}] ${name}: 有 ${audit.unnamed.length} 个无名控件`)
-  if (audit.small.length) fail(`[${WIDTH}] ${name}: 可点元素过小(<28px):${audit.small.join(' | ')}`)
-  if (audit.dimDisabled.length) fail(`[${WIDTH}] ${name}: 禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
-  if (audit.overflow.length) fail(`[${WIDTH}] ${name}: 面板里有元素横向溢出:${audit.overflow.join(' | ')}`)
-  if (audit.squeezed.length) fail(`[${WIDTH}] ${name}: 有块被挤成竖排:${audit.squeezed.join(' | ')}`)
-  if (audit.wrapped.length) fail(`[${WIDTH}] ${name}: 有按钮正文折了行:${audit.wrapped.join(' | ')}`)
+  if (!audit.label) fail(`[${WIDTH}x${HEIGHT}] ${name}: 没有可访问名(读屏只会念「对话框」)`)
+  if (audit.unnamed.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 有 ${audit.unnamed.length} 个无名控件`)
+  if (audit.small.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 可点元素过小(<28px):${audit.small.join(' | ')}`)
+  if (audit.dimDisabled.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+  if (audit.overflow.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 面板里有元素横向溢出:${audit.overflow.join(' | ')}`)
+  if (audit.squeezed.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 有块被挤成竖排:${audit.squeezed.join(' | ')}`)
+  if (audit.wrapped.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 有按钮正文折了行:${audit.wrapped.join(' | ')}`)
+  if (audit.scrollClip) fail(`[${WIDTH}x${HEIGHT}] ${name}: 滚到底后最后一块内容被裁:${audit.scrollClip}`)
 
   console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} ${name} · ${audit.count} 控件`)
 }
@@ -427,11 +450,16 @@ function cultivationSlices() {
  * 两档宽度都量。375 是主档,320 是实测里最容易出事的那一档 ——
  * 前面几轮找到的畸形(重铸钮竖排、构筑行「再想想」压成 20px)全都只在 320 出现。
  */
-/** 由 --width=N 指定;缺省 375。脚本一次只跑一档,两档由外面跑两遍 */
+/**
+ * 由 --width=N / --height=N 指定。脚本一次只跑一档,各档由外面跑多遍。
+ * 高度也要能压:弹窗正文是可滚区,矮视口下才会出现滚动 ——
+ * 滚动之后贴底那块会不会被 padding 或 footer 吃掉,只有矮视口量得出来。
+ */
 const WIDTH = Number(process.argv.find(a => /^--width=/.test(a))?.slice(8) ?? 375)
+const HEIGHT = Number(process.argv.find(a => /^--height=/.test(a))?.slice(9) ?? (WIDTH === 375 ? 812 : 640))
 
 async function open(route) {
-  const context = await browser.newContext({ viewport: { width: WIDTH, height: WIDTH === 375 ? 812 : 640 } })
+  const context = await browser.newContext({ viewport: { width: WIDTH, height: HEIGHT } })
   await context.route('**/*', r => {
     const url = r.request().url()
     if (/^(file|data|blob):/.test(url)) return r.continue()
@@ -565,10 +593,10 @@ async function clickTab(page, re) {
           mkdirSync(SHOTS_DIR, { recursive: true })
           await page.locator('.modal-panel').last().screenshot({ path: join(SHOTS_DIR, '道果.png') }).catch(() => {})
         }
-        if (!audit || audit.count === 0) fail(`[${WIDTH}] 道果:面板里一个控件都没数到`)
+        if (!audit || audit.count === 0) fail(`[${WIDTH}x${HEIGHT}] 道果:面板里一个控件都没数到`)
         else {
-          if (audit.small.length) fail(`[${WIDTH}] 道果:可点元素过小(<28px):${audit.small.join(' | ')}`)
-          if (audit.dimDisabled.length) fail(`[${WIDTH}] 道果:禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+          if (audit.small.length) fail(`[${WIDTH}x${HEIGHT}] 道果:可点元素过小(<28px):${audit.small.join(' | ')}`)
+          if (audit.dimDisabled.length) fail(`[${WIDTH}x${HEIGHT}] 道果:禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
           console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} 道果 · ${audit.count} 控件`)
         }
       }
