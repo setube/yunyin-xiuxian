@@ -3,13 +3,15 @@
  * 历练灵石走 stoneByTier(与战斗同一条经济);采药/采矿/参悟给既有消耗品;
  * 寻宝从可炼丹池按等级确定取一枚,不喂全局随机。天赋门类产出 ×APPRENTICE_TALENT_BONUS,不另立数值源。
  */
-import type { GNum } from '@/types'
+import type { GNum, QualityId } from '@/types'
 import { mulN, subClamp } from '@/utils/gnum'
 import { stoneByTier } from './formulas'
 import { PILLS } from '@/data/pills'
 import { maxTierForMajor } from '@/data/regions'
+import { qualityDef } from '@/data/qualities'
 import {
   APPRENTICE_TALENT_BONUS,
+  APPRENTICE_QUALITY_YIELD_STEP,
   DISPATCH_ADVENTURE_FIXED_SCORE,
   DISPATCH_NEED_TARGET,
   RECRUIT_COST_TIER_AMOUNT,
@@ -73,11 +75,22 @@ function baseSpoils(major: number, level: number): Record<ApprenticeSpec, TaskSp
   }
 }
 
-/** 结算一趟任务:取基础账 × 天赋加成;与门派/装备互不相干 */
+/** 品阶产出倍率:凡品 1.0,每高一档 +APPRENTICE_QUALITY_YIELD_STEP */
+function qualityYieldOf(quality: QualityId): number {
+  return 1 + qualityDef(quality).rank * APPRENTICE_QUALITY_YIELD_STEP
+}
+
+/**
+ * 结算一趟任务:取基础账 × 天赋加成 × 品阶倍率;与门派/装备互不相干。
+ *
+ * 品阶此前只决定名字颜色与角章,不参与产出 —— 同名天赋的两名道童(悟道道童 精品 /
+ * 仙门慧童 灵品)一趟产出分毫不差,而收徒成本一样、抽到谁纯看运气。
+ */
 export function apprenticeSpoils(archId: string, spec: ApprenticeSpec, major: number, level: number): TaskSpoils {
   const def = apprenticeDef(archId)
   const base = baseSpoils(major, level)[spec]!
-  const mult = def && def.talent === spec ? APPRENTICE_TALENT_BONUS : 1
+  const talentMult = def && def.talent === spec ? APPRENTICE_TALENT_BONUS : 1
+  const mult = talentMult * (def ? qualityYieldOf(def.quality) : 1)
   const out: TaskSpoils = {}
   for (const k of ['herb', 'ore', 'dust', 'wudao'] as const) {
     const v = base[k]

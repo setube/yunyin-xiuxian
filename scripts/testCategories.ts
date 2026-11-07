@@ -38,7 +38,7 @@ export const TEST_CATEGORIES: readonly TestCategory[] = [
   },
   {
     name: 'Features    玩法·坊市/收徒/悬赏',
-    match: ['market.spec', 'apprentice.spec', 'apprenticeService.spec', 'apprentices.spec', 'bounty.spec', 'bountyService.spec', 'useBountyRows.spec']
+    match: ['market.spec', 'apprentice.spec', 'apprenticeService.spec', 'apprentices.spec', 'apprenticeQuality.spec', 'bounty.spec', 'bountyService.spec', 'useBountyRows.spec']
   }
 ]
 
