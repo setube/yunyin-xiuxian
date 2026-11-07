@@ -460,6 +460,17 @@ function cultivationSlices() {
  */
 const WIDTH = Number(process.argv.find(a => /^--width=/.test(a))?.slice(8) ?? 375)
 const HEIGHT = Number(process.argv.find(a => /^--height=/.test(a))?.slice(9) ?? (WIDTH === 375 ? 812 : 640))
+/*
+ * 主题档。夹具 lateSlices() 默认写 dark,亮色主题下的**禁用态对比度**
+ * 从未被量过 —— palette.spec 只做静态计算,算不出实际渲染的叠层。
+ * 用法:`node scripts/modal-patrol.mjs --theme=light`
+ */
+const THEME = /^--theme=(light|dark)$/.test(process.argv.find(a => /^--theme=/.test(a)) ?? '')
+  ? process.argv.find(a => /^--theme=/.test(a)).slice(8)
+  : 'dark'
+
+/** 当前档位标签,进每一条输出 */
+const TIER = `${WIDTH}x${HEIGHT}${THEME === 'dark' ? '' : ` · ${THEME}`}`
 
 async function open(route) {
   const context = await browser.newContext({ viewport: { width: WIDTH, height: HEIGHT } })
@@ -468,11 +479,20 @@ async function open(route) {
     if (/^(file|data|blob):/.test(url)) return r.continue()
     return r.abort()
   })
-  await seedSave(context, cultivationSlices())
+  const sl = cultivationSlices()
+  sl.settings = { ...sl.settings, theme: THEME }
+  await seedSave(context, sl)
   const page = await context.newPage()
   page.on('pageerror', e => fail(`运行时异常:${String(e.message).slice(0, 120)}`))
   await page.goto(`${INDEX}#${route}`, { waitUntil: 'load' })
   await page.waitForTimeout(4200)
+  /*
+   * 核对主题真落地了。夹具写 theme:'light' 不代表页面真是亮色 ——
+   * 存档没铺进去或 settings 分片被 sanitize 丢弃时,页面仍是默认暗色,
+   * 「亮色禁用态对比度」就成了空跑。
+   */
+  const landed = await page.evaluate(() => document.documentElement.dataset.theme)
+  if (landed !== THEME) fail(`夹具要求 ${THEME} 主题,页面实际是 ${landed} —— 判据没在目标主题下跑`)
   // 收掉提示条、钉死随机事件、关掉已浮上来的弹窗
   await page.evaluate(() => {
     for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
