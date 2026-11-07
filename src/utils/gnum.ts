@@ -7,7 +7,15 @@ const LOG10 = Math.log10
 const NEGLIGIBLE_EXP_DIFF = 15
 
 function normalize(m: number, e: number): GNum {
-  if (m === 0 || !Number.isFinite(m)) return { m: 0, e: 0 }
+  /*
+   * 两个参数都要查。原先只查 m —— 于是 e 是 NaN/Infinity 时,
+   * `e + shift` 与 `e + shift + 1` 会把坏值原样带出去:
+   *   add({m:1,e:Infinity}, gn(1)) → { m: 1, e: NaN }
+   *   mul({m:2,e:NaN}, gn(2))      → { m: 4, e: NaN }
+   * normalize 是全部算术的公共出口(gn/add/sub/mul/div/neg…),
+   * 漏在这里等于所有运算都漏。
+   */
+  if (m === 0 || !Number.isFinite(m) || !Number.isFinite(e)) return { m: 0, e: 0 }
   const sign = m < 0 ? -1 : 1
   const abs = Math.abs(m)
   const shift = Math.floor(LOG10(abs))
@@ -42,7 +50,13 @@ export function isZero(a: GNum): boolean {
   return a.m === 0
 }
 
+/** 操作数是否可参与运算(m/e 都有限);四处 `{...a}` 早退都绕过 normalize,故在入口挡 */
+function usable(a: GNum): boolean {
+  return Number.isFinite(a.m) && Number.isFinite(a.e)
+}
+
 export function add(a: GNum, b: GNum): GNum {
+  if (!usable(a) || !usable(b)) return gnZero()
   if (a.m === 0) return { ...b }
   if (b.m === 0) return { ...a }
   const diff = a.e - b.e
@@ -52,6 +66,8 @@ export function add(a: GNum, b: GNum): GNum {
 }
 
 export function neg(a: GNum): GNum {
+  // neg 不经 normalize,坏值得在这里挡(其余算术都走 normalize 了)
+  if (!Number.isFinite(a.m) || !Number.isFinite(a.e)) return gnZero()
   return { m: -a.m, e: a.e }
 }
 
@@ -91,6 +107,19 @@ export function powN(base: number, exp: number): GNum {
 
 /** 比较:a>b → 1, a<b → -1, 相等 → 0 */
 export function cmp(a: GNum, b: GNum): number {
+  /*
+   * 坏值当 0 看。缺这道守卫时同一对参数会给出自相矛盾的答案:
+   * 以 {m:1,e:Infinity} 与 gn(1) 为例,cmp(坏,1) 给 -1、cmp(1,坏) 也给 -1,
+   * 两边都说自己小 —— 于是 gte(坏,1)=false 而 gte(1,坏)=true,
+   * 排序与「够不够」判断都会错,且错法取决于调用方把谁写在前面。
+   */
+  const ok = (v: GNum): boolean => Number.isFinite(v.m) && Number.isFinite(v.e)
+  if (!ok(a) || !ok(b)) {
+    const za = ok(a) ? a : gnZero()
+    const zb = ok(b) ? b : gnZero()
+    if (za === a && zb === b) return 0
+    return cmp(za, zb)
+  }
   // 零永远排在正数之下、负数之上(不认 m===0 对象的指数)
   if (a.m === 0 && b.m === 0) return 0
   if (a.m === 0) return b.m > 0 ? -1 : 1

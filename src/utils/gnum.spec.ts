@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { add, cmp, div, gn, gte, gt, lte, mul, mulN, powN, progress, ratio, sub, subClamp, toNum } from './gnum'
+import { add, cmp, div, gn, gnZero, gte, gt, lte, mul, mulN, neg, powN, progress, ratio, sub, subClamp, toNum } from './gnum'
 
 describe('GameNumber 大数运算', () => {
   it('构造与规范化', () => {
@@ -119,5 +119,67 @@ describe('GameNumber 大数运算', () => {
     expect(ratio(gn(50), gn(200))).toBeCloseTo(0.25)
     expect(progress(gn(150), gn(100))).toBe(1)
     expect(progress(gn(0), gn(100))).toBe(0)
+  })
+})
+
+/**
+ * 坏值守卫。
+ *
+ * 这一族缺口比 format 那边更基础:normalize 是全部算术的公共出口,
+ * 它只查 m 不查 e,于是 e 为 NaN/Infinity 时坏值一路传下去。
+ * add / neg / cmp 各有绕过 normalize 的路径,得单独挡。
+ */
+describe('GameNumber 的坏值守卫', () => {
+  const BAD = [
+    { m: 1, e: Number.NaN },
+    { m: 1, e: Number.POSITIVE_INFINITY },
+    { m: 1, e: Number.NEGATIVE_INFINITY },
+    { m: Number.NaN, e: 0 },
+    { m: Number.POSITIVE_INFINITY, e: 0 }
+  ] as const
+
+  it('五个算术口对坏操作数都返回有限的 0,不把坏值传下去', () => {
+    for (const b of BAD) {
+      for (const [name, fn] of [
+        ['add', () => add(b, gn(1))],
+        ['sub', () => sub(b, gn(1))],
+        ['mul', () => mul(b, gn(2))],
+        ['div', () => div(b, gn(2))],
+        ['neg', () => neg(b)]
+      ] as const) {
+        const r = fn()
+        expect(Number.isFinite(r.m), `${name}(${JSON.stringify(b)}).m`).toBe(true)
+        expect(Number.isFinite(r.e), `${name}(${JSON.stringify(b)}).e`).toBe(true)
+        expect(r, `${name}(${JSON.stringify(b)}) 应返回 0`).toEqual(gnZero())
+      }
+    }
+  })
+
+  /**
+   * cmp 的坏值必须自洽:坏值当 0 看。
+   *
+   * 修之前同一对参数会自相矛盾 —— cmp(坏,1) 与 cmp(1,坏) 都给 -1,
+   * 于是 gte(坏,1)=false 而 gte(1,坏)=true,排序与「够不够」判断都错,
+   * 且错法取决于调用方把谁写在前面。
+   */
+  it('cmp 遇坏值当 0 看,反身与互换都自洽', () => {
+    for (const b of BAD) {
+      const ab = cmp(b, gn(1))
+      const ba = cmp(gn(1), b)
+      expect(ab, `cmp(坏,1) 与 cmp(1,坏) 应互为相反数`).toBe(-ba)
+      expect(ab, '坏值当 0 看,应小于 1').toBe(-1)
+      expect(cmp(b, gnZero()), '坏值与 0 应判相等').toBe(0)
+    }
+  })
+
+  it('守卫不误伤正常值', () => {
+    expect(add(gn(1000), gn(2000))).toEqual(gn(3000))
+    expect(sub(gn(2000), gn(1000))).toEqual(gn(1000))
+    expect(mul(gn(2), gn(3))).toEqual(gn(6))
+    expect(div(gn(6), gn(3))).toEqual(gn(2))
+    expect(neg(gn(5))).toEqual(gn(-5))
+    expect(cmp(gn(2), gn(1))).toBe(1)
+    expect(cmp(gn(1), gn(2))).toBe(-1)
+    expect(cmp(gn(1), gn(1))).toBe(0)
   })
 })
