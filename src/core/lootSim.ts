@@ -5,9 +5,9 @@
  */
 import { mulberry32, RandomService } from '@/utils/random'
 import { qualityDef, QUALITIES } from '@/data/qualities'
-import { BAG_CAPACITY, EQUIP_DROP_CHANCE, EXPLORE_BATTLE_INTERVAL, EXPLORE_EVENT_CHANCE, DECOMPOSE_DUST } from '@/data/constants'
+import { BAG_CAPACITY, EQUIP_DROP_CHANCE, DECOMPOSE_DUST } from '@/data/constants'
 import { generateEquipment } from './equipGen'
-import { TYPICAL_WIN_RATE } from './expIncome'
+import { winsPerHour } from './expIncome'
 
 export interface LootPressure {
   tier: number
@@ -33,8 +33,12 @@ export function simulateLootPressure(tier: number, samples = 600): LootPressure 
     rankCounts[rank]! += 1
     dustSum += DECOMPOSE_DUST[rank] ?? 1
   }
-  const winsPerHour = (3600 / EXPLORE_BATTLE_INTERVAL) * (1 - EXPLORE_EVENT_CHANCE) * TYPICAL_WIN_RATE
-  const dropsPerHour = winsPerHour * EQUIP_DROP_CHANCE
+  /*
+   * 遭遇速率取 core/expIncome 的唯一口径 —— 原先这里把那个公式手写展开了一遍,
+   * 与 winsPerHour() 逐项相同,只是没调它。
+   * economySim 里那句注释说的就是这种形态:「此处另算会出现两套『全时历练 = ×N』读数」。
+   */
+  const dropsPerHour = winsPerHour() * EQUIP_DROP_CHANCE
   const avgRank = rankCounts.reduce((s, n, r) => s + n * r, 0) / samples
   return {
     tier,
