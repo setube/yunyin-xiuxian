@@ -72,6 +72,30 @@ describe('资源公共写入边界 · 非有限值与反向扣款', () => {
     expect(res.ore).toBe(10)
   })
 
+  /**
+   * setQi 原先漏在「资源公共写入边界」这组判据之外 —— 它不走 spendAmount,
+   * 也没有自己的守卫,于是 NaN 会**永久写进 qi**:
+   * Math.min(NaN, NaN) 仍是 NaN,之后每次 add 都从 NaN 出发,灵气再也不会回正。
+   * 三个调用点(engine 心跳、offline 结算、breakthrough 扣费)传的都是算出来的数,
+   * 而 cap 来自 player.qiCapValue —— 这里是最后一道闸。
+   */
+  it('灵气写入挡住非有限值:坏 v 与坏 cap 都不动账', () => {
+    const res = useResourcesStore()
+    res.setQi(100, 1000)
+    expect(res.qi).toBe(100)
+    res.setQi(Number.NaN, 1000)
+    expect(res.qi, 'NaN v 不得把灵气写成 NaN').toBe(100)
+    res.setQi(500, Number.NaN)
+    expect(res.qi, 'NaN cap 不得把灵气写成 NaN').toBe(100)
+    res.setQi(Number.POSITIVE_INFINITY, 1000)
+    expect(res.qi, '无限 v 不得写进灵气').toBe(100)
+    // 正常路径不变:落在 [0, cap × QI_BANK_MULT] 内
+    res.setQi(200, 1000)
+    expect(res.qi).toBe(200)
+    res.setQi(-50, 1000)
+    expect(res.qi, '负数钳到 0').toBe(0)
+  })
+
   it('灵石入账与扣款挡住负大数与坏大数', () => {
     const res = useResourcesStore()
     res.addStone(gn(10))
