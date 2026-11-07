@@ -173,6 +173,11 @@ describe('高级物质感 · 二、不抢内容', () => {
       }
     }
     walk(resolve(ROOT, 'src'))
+    /*
+     * 防空转:files 为空时,下面那条 toEqual([]) 恒真 —— 它只证明「一个 .vue 都没扫到」。
+     * 实测 src 下有百余个 .vue,取 50 为下限。
+     */
+    expect(files.length, '没扫到任何 .vue —— 判据没跑到东西').toBeGreaterThan(50)
     const auraOnly = files
       .filter(f => readFileSync(f, 'utf-8').includes('QualityAura'))
       .filter(f => !readFileSync(f, 'utf-8').includes('luster'))

@@ -89,6 +89,7 @@ describe('useGameClock 薄壳 · 只该在组件 setup 里用', () => {
 
   it('调用点都在 .vue 组件或 composable 里(不在普通 core/store 模块里)', () => {
     const offenders: string[] = []
+    let scanned = 0
     const walk = (dir: string): void => {
       for (const ent of readdirSync(dir, { withFileTypes: true })) {
         const full = join(dir, ent.name)
@@ -96,11 +97,19 @@ describe('useGameClock 薄壳 · 只该在组件 setup 里用', () => {
           if (ent.name === 'composables' || ent.name === '__probe') continue
           walk(full)
         } else if (ent.name.endsWith('.ts') && !ent.name.endsWith('.spec.ts')) {
+          scanned += 1
           if (readFileSync(full, 'utf-8').includes('useGameClock(')) offenders.push(full)
         }
       }
     }
     walk('src')
+    /*
+     * 防空转:walk('src') 是**相对路径**,读的是测试进程的 cwd。
+     * 若 cwd 不是仓库根,或者 src 结构变了导致一个 .ts 都没扫到,
+     * offenders 天然为空,上面那条 toEqual([]) 便恒真 —— 它只证明了「什么都没看见」。
+     * 实测 src 下有数百个 .ts,取 100 为下限,留足余量。
+     */
+    expect(scanned, '没扫到任何 .ts —— 判据没跑到东西').toBeGreaterThan(100)
     expect(offenders, `这些普通模块里调了 useGameClock,组件外它会静默不起表:\n${offenders.join('\n')}`).toEqual([])
   })
 })
