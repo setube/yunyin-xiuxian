@@ -17,14 +17,25 @@
  *
  * 等价变异必须进 EQUIVALENT 名单并写明理由。不写理由的「等价」就是在掩盖盲区。
  *
- * 用法:node scripts/mutation-scan.mjs [--limit N]
+ * 用法:node scripts/mutation-scan.mjs [--limit=N]
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { join, resolve } from 'node:path'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const LIMIT = Number(process.argv.find(a => a.startsWith('--limit='))?.split('=')[1] ?? 40)
+/*
+ * 只认 `--limit=N`;也接受空格分隔的 `--limit N`。
+ * 原先只解析等号形式,而注释写的是 `--limit N` —— 按注释用的人会静默拿到默认值 40,
+ * 以为限制了条数,实际全跑。
+ */
+const LIMIT = (() => {
+  const eq = process.argv.find(a => a.startsWith('--limit='))
+  if (eq) return Number(eq.split('=')[1] ?? 40)
+  const i = process.argv.indexOf('--limit')
+  if (i >= 0) return Number(process.argv[i + 1] ?? 40)
+  return 40
+})()
 
 const PATTERNS = [
   { name: '守卫恒假', re: /if \((![A-Za-z_$][\w$.]*(?:\([^)]*\))?)\) return/g, rep: 'if (false) return' },
