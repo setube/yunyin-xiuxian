@@ -749,10 +749,16 @@ async function runTouchTargets() {
     })
     /*
      * 防空转:一页至少量到 5 个控件,否则这一页的判据等于没跑。
+     *
      * 这条不是形式主义 —— 第一版就是把夹具写成 major 14,而悟道兑换 18 起才渲染,
      * 于是「兑换」「连兑 10」那两枚 21px 的钮一次都没被量到,判据照样报绿。
+     *
+     * 阈值取 5:实测后期档十页的可点控件最少 6 个(/ 与 /adventure 各 6),
+     * 中位 13。留一档余量,页面塌掉一半也不至于还能过。
+     * 原先是 3,而注释写的是 5 —— 一条判据的实现与它自己的说明对不上,
+     * 比没有这条判据更糟:读注释的人会以为有 5 个兜底。
      */
-    if (measured.seen < 3) fail(`[触控] ${route} 只量到 ${measured.seen} 个控件,判据没跑到东西`)
+    if (measured.seen < 5) fail(`[触控] ${route} 只量到 ${measured.seen} 个控件(应 ≥5),判据没跑到东西`)
     if (measured.small.length) fail(`[触控] ${route} 有控件低于 28px:${measured.small.slice(0, 4).join(' | ')}`)
   }
 
