@@ -60,6 +60,17 @@ export const STARTER_APPRENTICE = 'ap_lingtong'
 
 export const APPRENTICE_MAX_LEVEL = 20
 export const APPRENTICE_TALENT_BONUS = 1.25
+/**
+ * 品阶产出倍率:凡品 1.0 起,每高一档 +6%。
+ *
+ * 此前品阶只影响名字颜色与角章(与装备/丹药/功法同一套语言),产出却与品阶无关 ——
+ * 玩家看到「仙门慧童(灵品)」自然以为强于「悟道道童(精品)」,两者天赋同为 study,
+ * 实际一趟产出分毫不差,而收徒成本一样、抽到谁是纯运气。品质成了纯装饰。
+ *
+ * 幅度刻意压小:道童是**离线被动收入**,不参与战斗,倍率过大会让「抽到灵童」
+ * 变成命定优势。每档 +6%,凡品→灵品(四档)也才 1.19 倍,低于天赋匹配的 1.25。
+ */
+export const APPRENTICE_QUALITY_YIELD_STEP = 0.1
 /** 收一名道童的灵石价(以 tier 折算);展示与实扣同读 */
 export const RECRUIT_COST_TIER_AMOUNT = 30
 
