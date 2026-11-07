@@ -231,10 +231,18 @@ export const useAdventureStore = defineStore(
 
     /** 存档修复:历练会话/解锁表/事件记忆被写坏会让历练页在渲染期抛错 */
     function sanitize(): void {
-      unlocked.value = asStringArray(unlocked.value)
+      /*
+       * unlocked / cleared 都要按区域目录过滤。
+       *
+       * 同函数里 revived 与 clearedAt 早就这么做了(`filter(id => !!regionDef(id))`),
+       * 只有这两个只做了去重 —— 手改存档塞 10 万条 id 后 $state 到 1.98MB / 989KB。
+       * 这里可以安全过滤(不像事件记忆要兼容下线内容):区域 id 认得才能用,
+       * 认不得的既进不了 unlockClosure,也渲染不出卡片。
+       */
+      unlocked.value = [...new Set(asStringArray(unlocked.value))].filter(id => !!regionDef(id))
       if (unlocked.value.length === 0) unlocked.value = ['qingyun']
       mortalCleared.value = [...new Set(asStringArray(mortalCleared.value))]
-      cleared.value = [...new Set(asStringArray(cleared.value))]
+      cleared.value = [...new Set(asStringArray(cleared.value))].filter(id => !!regionDef(id))
       revived.value = asStringArray(revived.value).filter(id => !!regionDef(id) && !cleared.value.includes(id))
       clearedAt.value = Object.fromEntries(
         Object.entries(asNumberRecord(clearedAt.value, 0)).filter(([id, at]) => at > 0 && !!regionDef(id))
