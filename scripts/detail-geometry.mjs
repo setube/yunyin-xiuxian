@@ -209,6 +209,7 @@ async function run(width, height, { poor = false, theme = 'dark' } = {}) {
     }
   }
 
+
   // 一、重铸钮:未确认态
   const reforgeRow = rest.rows.find(r => r.key.includes('重铸词条'))
   if (!reforgeRow) fail(`[${tag}] 页脚里找不到「重铸词条」那一行(价签没渲染?判据没跑到东西)`)
