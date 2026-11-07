@@ -34,6 +34,8 @@ const SHOTS_DIR = '/tmp/modal-patrol'
 const failures = []
 const fail = msg => failures.push(msg)
 /** 入口没出现的场景:不判失败,但逐条列出 */
+/** 巡逻次数(每调用一次 patrol 记一笔),用于覆盖率下限 */
+let PATROLLED = 0
 const notOpened = []
 /** 有两步确认但本轮没探到(前置状态没铺出来)的场景:同样逐条列出,不静默吞掉 */
 const twoStepMissed = []
@@ -386,6 +388,7 @@ async function probeTwoStep(page, name) {
  * click 返回 false 表示入口没出现(夹具没铺到),记为「未量」而不是失败。
  */
 async function patrol(page, name, click) {
+  PATROLLED += 1
   const hit = await click()
   if (!hit) {
     notOpened.push(name)
@@ -687,6 +690,29 @@ async function clickTab(page, re) {
 }
 
 await browser.close()
+
+/*
+ * 覆盖率下限。
+ *
+ * notOpened / twoStepMissed 这两个列表只打印、不参与判定 —— 各有合理原因
+ * (夹具没铺到某扇窗的前置、有些窗本来就没有不可逆操作)。
+ * 但正因如此,若哪天入口大面积失效,这两份清单会变长而脚本照样报绿:
+ * 量到的扇数趋近零,「开出来的每一扇都量过」这句话就变成了空话。
+ *
+ * 故给两个下限:至少开到 12 扇;至少探到 3 扇两步确认。
+ * 现网实测是 17 扇全开、4 扇探到,留足余量以免正常波动误报。
+ */
+const MIN_OPENED = 12
+const MIN_TWO_STEP = 3
+const openedCount = PATROLLED - notOpened.length
+if (openedCount < MIN_OPENED) {
+  console.error(`\n弹窗巡逻:只开到 ${openedCount} 扇(应 ≥ ${MIN_OPENED})—— 巡逻没验到东西`)
+  process.exit(1)
+}
+if (PATROLLED - twoStepMissed.length < MIN_TWO_STEP) {
+  console.error(`\n弹窗巡逻:只探到 ${PATROLLED - twoStepMissed.length} 扇两步确认(应 ≥ ${MIN_TWO_STEP})—— 确认态几何没验到`)
+  process.exit(1)
+}
 
 if (notOpened.length) {
   console.log(`\n未量到的弹窗(${notOpened.length} 扇,入口没出现 —— 夹具未铺该窗前置):`)
