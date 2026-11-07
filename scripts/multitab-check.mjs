@@ -9,11 +9,14 @@
 import { chromium } from 'playwright'
 import { preview } from 'vite'
 import { seedSave, lateSlices } from './lib/saveFixture.mjs'
+import { requireDist } from './lib/requireDist.mjs'
 
 const PORT = 4277
 const WARN = '存档已在另一页打开'
 const server = await preview({ preview: { port: PORT, strictPort: true } })
 const BASE = `http://localhost:${PORT}/`
+if (!requireDist('多标签自检')) process.exit(1)
+
 const failures = []
 let browser
 
