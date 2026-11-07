@@ -143,10 +143,17 @@
             class="grid h-8 w-8 shrink-0 place-items-center rounded-md font-kai text-[13px]"
             :class="gongfaCatSeal(row.def.type)"
           >{{ sealOf(row.def.type) }}</span>
+          <!--
+            功法名会被 truncate 掐掉:320px 下这一格只剩 55px,而「太玄引气诀」要 65px。
+            名字是这一行唯一的身份信息(层数刻度、品阶色都是副属性),截成「太玄引…」就分不清是哪门。
+            补 title 给悬停即可 —— 文本本身就在 DOM 里,读屏读得到,不需要 aria-label
+            (而且裸 span 挂 aria-label 会被严格的实现丢掉,见 uiLayering.spec)。
+          -->
           <span
             class="min-w-0 grow truncate font-kai text-[13px]"
             :class="{ 'q-plaque': row.aura.plaque }"
             :style="{ color: qualityTextColor(row.def.quality) }"
+            :title="row.def.name"
           >{{ row.def.name }}</span>
           <!--
             层数刻度:各功法上限不同(密法 3 层、主辅 9 层),「第 5 层」在一门里是过半、
