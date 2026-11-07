@@ -222,9 +222,15 @@
         </p>
       </template>
       <template #footer>
+        <!--
+          「服 用」在增益丹的弹窗里是**唯一**一颗(连服只给非增益丹)——
+          而它此前待在 grid-cols-2 里,只占左半栏,右边空着一大块。
+          故只有一颗时让它跨满两栏。
+        -->
         <div class="grid grid-cols-2 gap-2">
           <button
             class="btn-seal"
+            :class="currentPill?.def?.kind === 'buff' ? 'col-span-2' : ''"
             :disabled="currentPillOverflow === 'full'"
             @click="onUsePill()"
           >

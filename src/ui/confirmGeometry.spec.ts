@@ -158,6 +158,23 @@ describe('二步确认 · 两态同栏同高', () => {
     expect(bad, '纯文字按钮盒高只有行高;补 min-h-[28px] 或够大的 py').toEqual([])
   })
 
+  /**
+   * grid 两栏里只剩一颗钮时,它要跨满两栏。
+   *
+   * 上一次把十二处并列钮改成 grid-cols-2,是为了让两枚严格等宽;
+   * 但有一处的第二枚是条件渲染的:丹药详情里「连服」只给非增益丹,
+   * 增益丹的弹窗于是只剩「服 用」一颗 —— 它待在 grid-cols-2 里只占左半栏,
+   * 右边空出一大块(实测 142.5px,容器 293px)。
+   * 判据:凡 grid-cols-2 里的一颗能单独成立的钮,须带 col-span-2。
+   * 故障注入:去掉那一处 col-span-2,本条红。
+   */
+  it('grid 两栏里能单独成立的那颗钮跨满两栏', () => {
+    const src = read('views/InventoryView.vue')
+    expect(src, '「服 用」在增益丹弹窗里是唯一一颗,须跨满两栏').toContain("col-span-2")
+    // 反向:不许退回「只有一颗也占半栏」
+    expect(src, '不许去掉 col-span-2 的条件').not.toMatch(/class="btn-seal"\s*:disabled="currentPillOverflow === 'full'"/)
+  })
+
   it('自动重铸预算行:读数不参与收缩,按钮段整段折行', () => {
     const src = read(AUTO_PANEL)
     expect(src, '「至多洗」不许被压窄').toMatch(/shrink-0 whitespace-nowrap text-\[10px\] text-ink-faint">至多洗/)
