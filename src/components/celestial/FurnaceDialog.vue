@@ -74,20 +74,27 @@
           </div>
         </div>
       </div>
-      <div class="flex items-center justify-between py-2.5">
-        <span class="text-[12px] text-ink-soft">灵石(存 {{ formatGN(resources.spiritStone) }})</span>
+      <!--
+        灵石那一行与上面四行同一套排法:存量在左、动作在右。
+        原先钮里写着「33.51 亿 → 5 道源」——320 宽下这一格只有 100 余 px,
+        「源」被挤到第二行,整行比上面四行高出半行(实测 320 折成 2 行,375 是 1 行)。
+        价签挪到左侧存量那一行,钮只写动作词,与「熔尽本包」那四颗同宽。
+      -->
+      <div class="flex items-center justify-between gap-2 py-2.5">
+        <span class="min-w-0 text-[12px] text-ink-soft">
+          灵石(存 {{ formatGN(resources.spiritStone) }})
+          <span
+            v-if="stoneShort.m <= 0"
+            class="tabular text-[10px] text-ink-faint"
+          >{{ formatGN(furnaceStoneCost()) }} → {{ FURNACE_STONE_DAO_SOURCE }} 道源</span>
+          <span v-else class="tabular text-[10px] text-cinnabar">灵石尚差 {{ formatGap(stoneShort) }}</span>
+        </span>
         <button
-          class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
+          class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]"
           :disabled="stoneShort.m > 0"
           :title="stoneShort.m > 0 ? `灵石尚差 ${formatGap(stoneShort)}` : undefined"
           @click="furnaceConvertStone()"
-        >
-          {{
-            stoneShort.m > 0
-              ? `熔铸(灵石尚差 ${formatGap(stoneShort)})`
-              : `${formatGN(furnaceStoneCost())} → ${FURNACE_STONE_DAO_SOURCE} 道源`
-          }}
-        </button>
+        >熔 铸</button>
       </div>
       <div class="py-2.5">
         <!--
