@@ -218,6 +218,28 @@ export function hasCombatRules(raw: unknown): boolean {
 export function truncateCodePoints(s: string, max: number): string {
   if (!Number.isFinite(max) || max <= 0) return ''
   if (s.length <= max) return s
-  const chars = Array.from(s)
+  const chars = graphemes(s)
   return chars.length <= max ? s : chars.slice(0, max).join('')
+}
+
+/**
+ * 按字素簇切分 —— ZWJ 序列(家庭 emoji、带肤色的职业)是一个「字」,不是一个码点。
+ *
+ * 原先用 `Array.from(s)` 按码点切:五个汉字加一个四口之家的 emoji(7 码点)再截 8 位,
+ * 会把那个 emoji 劈成两个分开的人 —— 代理对仍是完整的(`isWellFormed()` 为 true,
+ * 所以旧写法看不出问题),但字面已经变了。
+ *
+ * `Intl.Segmenter` 是最准的做法,但它要 Chrome 87 / Safari 14.1,
+ * 而本项目声明支持 Chrome 51 / iOS 12 —— 故不可用时退回码点级(至少不切开代理对)。
+ */
+function graphemes(s: string): string[] {
+  const Segmenter = (Intl as { Segmenter?: new (l?: string, o?: { granularity: string }) => { segment: (x: string) => Iterable<{ segment: string }> } }).Segmenter
+  if (Segmenter) {
+    try {
+      return [...new Segmenter('zh', { granularity: 'grapheme' }).segment(s)].map(x => x.segment)
+    } catch {
+      // 构造失败(极老的实现)时退回码点级
+    }
+  }
+  return Array.from(s)
 }

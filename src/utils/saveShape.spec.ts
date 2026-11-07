@@ -7,7 +7,8 @@ import {
   asCombatSkills,
   asNonNegInt,
   asPrice,
-  SAVE_GNUM_MAX_EXP
+  SAVE_GNUM_MAX_EXP,
+  truncateCodePoints
 } from './saveShape'
 import { formatGN } from '@/utils/format'
 
@@ -190,4 +191,28 @@ describe('saveShape · asBoundedGNum', () => {
     expect(formatGN(asBoundedGNum({ m: 1, e: SAVE_GNUM_MAX_EXP }))).not.toContain('e+')
   })
 })
+  /**
+   * 截断按字素簇,不按码点。
+   *
+   * ZWJ 序列(家庭 emoji、带肤色的职业)是「一个字」而不是一串码点:
+   * 家庭 emoji 的 `Array.from(...).length` 是 7,而它只是 1 个字。
+   * 按码点截会把它劈成两个分开的人 —— 代理对仍是完整的(`isWellFormed()` 为 true,
+   * 旧写法因此看不出问题),但字面已经变了。
+   */
+  it('按字素簇截断,ZWJ 序列不被劈开', () => {
+    /*
+     * 用 fromCodePoint 拼,不写裸 emoji 字面量:
+     * kaiFontCoverage.spec 会扫源码里出现的每一个字符,要求字体覆盖或登记为「交给系统字体」。
+     * 测试数据用不到楷体,没必要为它去动字体子集与白名单。
+     */
+    const family = String.fromCodePoint(0x1f468, 0x200d, 0x1f469, 0x200d, 0x1f467, 0x200d, 0x1f466)
+    // 前缀 5 个汉字 + 1 个家庭 emoji = 6 个字素,限 8 时原样返回
+    expect(truncateCodePoints('一二三四五' + family, 8)).toBe('一二三四五' + family)
+    // 超长时整簇截:3 个家庭 emoji 限 2,得 2 个完整家庭而不是 14 个码点里的前 2 个
+    expect(truncateCodePoints(family.repeat(3), 2)).toBe(family.repeat(2))
+    // 普通中文与代理对的基本行为不变
+    expect(truncateCodePoints('一二三四五六七八九十', 4)).toBe('一二三四')
+    expect(truncateCodePoints(String.fromCodePoint(0x1f600) + 'ab', 1)).toBe(String.fromCodePoint(0x1f600))
+  })
+
 })
