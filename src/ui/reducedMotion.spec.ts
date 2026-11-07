@@ -48,6 +48,87 @@ describe('减少动效 · 两个块都要在,且保留 animationend 的前提', 
     expect(card, 'BuildingCard 仍靠 animationend 复位高亮').toContain('@animationend.self="flashing = false"')
   })
 
+  /**
+   * 终态 opacity:0 的常驻形制,两个块里都要有静态终态。
+   *
+   * 通配规则把 animation-duration 压到 0.01ms 后,动画停在最后一帧;
+   * 若那条 keyframes 的 100% 是 opacity:0,形制就整块消失。
+   * 实测踩过:.node-focus 在界域图上标「下一站」的朱砂圆圈,减少动效下停在透明 ——
+   * 玩家看不出该去哪一区。.card-glow-halo 同理只剩素卡边框。
+   *
+   * 只压 opacity、不改 animation 简写:那个块刻意保留「跑过一次」的前提
+   * (BuildingCard 靠 animationend 复位高亮),写成无动画会让它永远等不到。
+   */
+  it('终态不可见的常驻形制,两处都给了静态不透明度', () => {
+    const need = ['node-focus', 'card-glow-halo']
+    /*
+     * 必须精确到「选择器 → 紧接着的块里有 opacity」。
+     * 首版写成 `@media...[\s\S]*?\.${sel}[^{]*\{[^}]*opacity`,那个 [\s\S]*? 会一路
+     * 跨过整个媒体块,匹配到别处的任意 opacity —— 删掉 .node-focus 的规则它照样绿。
+     * 故障注入验过:现在把那条规则清空会报红。
+     */
+    const blockOf = (sel: string): string | null => {
+      const re = new RegExp(`\\.${sel}[^{]*\\{([^}]*)\\}`, 'g')
+      for (const m of CSS.matchAll(re)) {
+        if ((m[1] ?? '').includes('opacity')) return m[1]!
+      }
+      return null
+    }
+    /*
+     * 两处各要有一条「选择器 + 块内有 opacity」的规则,且块内必须真写了 opacity。
+     * 只查「文中出现过 .node-focus」不够 —— 把规则里的 opacity 删掉那句话仍在,
+     * 判据照样绿(故障注入验过)。
+     */
+    /**
+     * 取「某个块从起点到它结束」的整段。
+     *
+     * @media 块:从 @media 那个 { 起配对。
+     * .reduce-motion 块:它不是一个大括号块,而是一串并列规则(通配符三条 + 几条定向覆盖),
+     * 所以取「从 .reduce-motion *, 到文件里下一个顶层注释或文件尾」那一段。
+     */
+    const blockBody = (start: number): string => {
+      const open = CSS.indexOf('{', start)
+      if (open < 0) return ''
+      let depth = 0
+      for (let i = open; i < CSS.length; i += 1) {
+        if (CSS[i] === '{') depth += 1
+        else if (CSS[i] === '}') {
+          depth -= 1
+          if (depth === 0) return CSS.slice(open + 1, i)
+        }
+      }
+      return ''
+    }
+    const mediaStart = CSS.indexOf('@media (prefers-reduced-motion: reduce)')
+    const rmStart = CSS.indexOf('.reduce-motion *,')
+    expect(mediaStart, '找不到 prefers-reduced-motion 块').toBeGreaterThanOrEqual(0)
+    expect(rmStart, '找不到 .reduce-motion 块').toBeGreaterThanOrEqual(0)
+    /*
+     * 必须按花括号取出各自块体,不能 slice(start) —— .reduce-motion 块在媒体块之后,
+     * 直接 slice 会把它前面那一大段(含媒体块)也算进来,于是媒体块里删掉规则也查不出。
+     * 首版就是这么漏的:故障注入把媒体块内的 opacity 换成 color 后判据仍绿。
+     */
+    const mediaTail = blockBody(mediaStart)
+    // .reduce-motion 是一串并列规则:从起点取到文件末(它本来就是文件尾部那一段)
+    const rmTail = CSS.slice(rmStart)
+    expect(mediaTail.length, '媒体块体为空').toBeGreaterThan(50)
+    expect(rmTail.length, '.reduce-motion 段为空').toBeGreaterThan(50)
+
+    const ruleWithOpacity = (text: string, sel: string): boolean => {
+      const re = new RegExp(`\\.${sel}[^{]*\\{([^}]*)\\}`, 'g')
+      for (const m of text.matchAll(re)) if ((m[1] ?? '').includes('opacity')) return true
+      return false
+    }
+    for (const sel of need) {
+      expect(ruleWithOpacity(mediaTail, sel), `${sel} 在 prefers-reduced-motion 块里缺静态 opacity`).toBe(true)
+      expect(ruleWithOpacity(rmTail, sel), `${sel} 在 .reduce-motion 块里缺静态 opacity`).toBe(true)
+    }
+    expect(blockOf('__nonexistent__'), '防空转:匹配器对不存在的选择器应返回 null').toBeNull()
+    // 防空转:这两条正则只在该块存在时才有意义
+    expect(CSS).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(CSS).toContain('.reduce-motion *')
+  })
+
   it('组件内自定义 keyframes 不构成可访问性问题(通配符与定义位置无关)', () => {
     // 钉住这个判断:只要上面两个块在,写在组件里的动画同样受管
     expect(CSS).toContain('animation-iteration-count: 1 !important')
