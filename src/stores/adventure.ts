@@ -13,7 +13,7 @@ import {
   asRecord,
   asStringArray
 } from '@/utils/saveShape'
-import { eventDef } from '@/data/events'
+import { EVENTS, FORTUNE_EVENTS, eventDef } from '@/data/events'
 import { exploreModeOf } from '@/core/exploreModes'
 
 /**
@@ -273,7 +273,16 @@ export const useAdventureStore = defineStore(
       pendingEventSince.value = pendingEventId.value ? asFiniteNumber(pendingEventSince.value, 0, 0) : 0
       // 事件记忆:times / lastAt 为 NaN 会让 LegacyView 乱序、写出「NaN 次际遇」。
       // 认不出的事件 id 不清:可能是改名 / 下线的旧档内容。
-      seenOnceEvents.value = [...new Set(asStringArray(seenOnceEvents.value))]
+      /*
+       * 但长度要有上界。写入路径(markEventSeen)有 `eventDef(id)` 这道闸,
+       * 读档路径原先只有去重 —— 手改存档能塞进任意多条,实测 10 万条后
+       * $state 序列化出来 1.49MB,存档直接顶到配额上限。
+       *
+       * 上界取事件目录规模的两倍:够容纳「改名/下线旧档」的残留,
+       * 又远小于恶意膨胀的量级。超出的部分保留靠前的(它们才是真实玩过的)。
+       */
+      const SEEN_ONCE_CAP = (EVENTS.length + FORTUNE_EVENTS.length) * 2
+      seenOnceEvents.value = [...new Set(asStringArray(seenOnceEvents.value))].slice(0, SEEN_ONCE_CAP)
       const fixedMemories: Record<string, import('@/types').EventMemory> = {}
       for (const [id, raw] of Object.entries(asRecord<unknown>(eventMemories.value))) {
         if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue
