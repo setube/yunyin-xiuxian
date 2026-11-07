@@ -106,7 +106,24 @@ const GRAB_PAGE = () => {
           text: (b.textContent || '').trim().replace(/\s+/g, ' '),
           disabled: b.disabled
         }))
-      : []
+      : [],
+    /* 提示条:text 里查不到时,拒因常常只在这一层(如闭关中拦下「出发」) */
+    /*
+     * 提示条:挂在 fixed 层,结构里常有嵌套节点,故不限「叶子」——
+     * 只取「文字短、且所在层是 fixed/absolute」的那几块。
+     */
+    toasts: [...document.querySelectorAll('div,span,p')]
+      .filter(el => {
+        const t = (el.textContent || '').trim()
+        if (!t || t.length > 30) return false
+        const r = el.getBoundingClientRect()
+        if (r.width <= 0 || r.height <= 0) return false
+        const pos = getComputedStyle(el).position
+        const inFixedLayer = pos === 'fixed' || Boolean(el.closest('[class*="pointer-events-none"]'))
+        return inFixedLayer
+      })
+      .map(el => (el.textContent || '').trim())
+      .filter((t, i, a) => a.indexOf(t) === i)
   }
 }
 
@@ -242,6 +259,42 @@ const SCENES = [
     }
   },
   {
+    name: '闭关中不许历练',
+    route: '/adventure',
+    slices: () => ({
+      ...lateSlices(),
+      // 闭关是持久化的 retreat buff(时长由 data/buffs 的 durationSec 承载),endsAt 在未来即闭关中
+      cultivation: {
+        learned: {},
+        mainGongfa: null,
+        subGongfa: [],
+        gongfaBranch: {},
+        buffs: [{ defId: 'retreat', endsAt: Date.now() + 4 * 60 * 1000, added: 5 * 60 * 1000 }]
+      }
+    }),
+    /**
+     * 点「出发」:闭关期间不许外出历练,须**拦下并说出原因**,不能点了没反应。
+     * 拦在 chooseMode 里(ui.toast('闭关中')),startExploration 只兜底 ——
+     * 故拒因在提示条上,不在按钮上,也不在弹窗里。
+     */
+    after: async page => {
+      const go = page.locator('main button').filter({ hasText: /出\s*发/ }).first()
+      if ((await go.count()) === 0) return
+      if (await go.isDisabled()) return
+      await go.click({ timeout: 3000 }).catch(() => {})
+      await page.waitForTimeout(400)
+    },
+    judge: page => {
+      const out = []
+      // 出行弹窗不许打开
+      if (page.panel) out.push('闭关中点「出发」竟打开了出行弹窗 —— 应当直接拦下')
+      // 必须给出原因
+      const said = page.toasts.some(t => /闭关/.test(t)) || /闭关中/.test(page.text)
+      if (!said) out.push('闭关中点「出发」既没打开弹窗、也没说「闭关中」—— 玩家只看到点了没反应')
+      return out
+    }
+  },
+  {
     name: '未拜师',
     route: '/character',
     slices: () => lateSlices(),
@@ -314,4 +367,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 未拜师七档都解释得清')
+console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 闭关拦截 / 未拜师八档都解释得清')
