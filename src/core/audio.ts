@@ -385,6 +385,16 @@ function safeStart(): void {
 /** 首次用户交互时调用,加载引擎并解锁声音;每次交互重入无副作用 */
 export function unlockAudio(): void {
   if (typeof window === 'undefined' || typeof window.AudioContext === 'undefined') return
+  /*
+   * 两路都关着就不必加载引擎。
+   *
+   * init() 会 `await import('tone')`(动态 chunk)并下载整套 FluidR3 采样 mp3 ——
+   * 而 unlockAudio 挂在全局 onPointerDown 上,玩家就算在设置里把配乐与音效全关了,
+   * 第一次点击照样会把这些拉下来、建好整张音频图,只是之后什么都放不出来。
+   *
+   * 不置 unlocked:玩家若在本次会话里把开关打开,下一次交互会正常走完整流程。
+   */
+  if (!prefs.sfxOn && !prefs.musicOn) return
   unlocked = true
   if (T) {
     // 已就绪:在手势调用栈内直接恢复上下文
