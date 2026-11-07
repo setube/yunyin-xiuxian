@@ -63,6 +63,50 @@ try {
       if (r.tabindex !== '-1') failures.push('main 缺 tabindex=-1,无法用脚本把焦点移过去')
     }
   }
+
+  /*
+   * 弹窗焦点陷阱:正向与反向各 Tab 若干次,焦点都不许离开面板。
+   *
+   * 只测正向会漏 —— 打开时焦点落在**面板本身**(div,tabindex=-1),不是第一颗钮。
+   * BaseModal 原先判的是 `active === first` / `active === last`,焦点在面板上时两个都不命中,
+   * 于是浏览器把焦点交给面板外的上一个元素:实测反向 Tab 第一次就跳到导航栏的「人物」,
+   * 而正向连按 20 次一次不逃。判据须两个方向都量。
+   */
+  {
+    await page.goto(BASE + '#/inventory', { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(1600)
+    // 关掉可能挡路的提示浮层
+    await page.evaluate(() => {
+      for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+    })
+    await page.waitForTimeout(300)
+    const opener = page.locator('main button[data-uid]').first()
+    if ((await opener.count()) === 0) {
+      failures.push('行囊里找不到可开的装备钮 —— 弹窗焦点陷阱无从验起')
+    } else {
+      await opener.click()
+      await page.waitForTimeout(800)
+      const inPanel = () => page.evaluate(() => !!document.activeElement?.closest('.modal-panel'))
+      if (!(await page.evaluate(() => !!document.querySelector('.modal-panel')))) {
+        failures.push('点装备后弹窗没打开 —— 焦点陷阱无从验起')
+      } else {
+        for (const [label, key] of [['Shift+Tab', 'Shift+Tab'], ['Tab', 'Tab']]) {
+          const escaped = []
+          for (let i = 0; i < 16; i += 1) {
+            await page.keyboard.press(key)
+            if (!(await inPanel())) escaped.push(i + 1)
+          }
+          const ok = escaped.length === 0
+          console.log(`  ${ok ? '✓' : '✗'} 弹窗 ${label} 16 次 焦点${ok ? '未离开面板' : `逃出 ${escaped.length} 次(第 ${escaped.join(',')} 次)`}`)
+          if (!ok) failures.push(`弹窗内 ${label} 会把焦点放回页面(第 ${escaped.join(',')} 次)`)
+        }
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(500)
+        const back = await page.evaluate(() => ({ inMain: !!document.activeElement?.closest('main') }))
+        if (!back.inMain) failures.push('Escape 关窗后焦点没回到页面内容区')
+      }
+    }
+  }
 } finally {
   await browser?.close()
   await server.httpServer.close()
