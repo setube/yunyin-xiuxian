@@ -2,7 +2,7 @@
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <div v-if="!unlocked" class="card-ink px-6 py-16 text-center">
       <p class="font-kai text-[22px] tracking-[0.4em] text-ink">器 魂</p>
-      <p class="mt-4 text-[12px] leading-relaxed text-ink-faint">需<span class="text-cinnabar">真仙境</span></p>
+      <p class="mt-4 text-[12px] leading-relaxed text-ink-faint">需<span class="text-cinnabar">{{ endgameGateRealmName() }}境</span></p>
     </div>
 
     <template v-else>
@@ -264,7 +264,7 @@
   import { soulGradeTextColor } from '@/ui/soulMark'
   import { canRefine, dissolveSoul, previewSoul, refineEquipment, removeSoul, SOUL_REFINE_COST, wearSoul } from '@/core/soulService'
   import { daoSourceShortfall } from '@/core/daoSource'
-  import { endgameUnlocked } from '@/core/endgameService'
+  import { endgameGateRealmName, endgameUnlocked } from '@/core/endgameService'
   import { useEndgameStore } from '@/stores/endgame'
   import { useInventoryStore } from '@/stores/inventory'
   import SectionTitle from '@/components/common/SectionTitle.vue'

@@ -2,7 +2,7 @@
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <div v-if="!unlocked" class="card-ink px-6 py-16 text-center">
       <p class="font-kai text-[22px] tracking-[0.4em] text-ink">天 界</p>
-      <p class="mt-4 text-[12px] leading-relaxed text-ink-faint">需<span class="text-cinnabar">真仙境</span></p>
+      <p class="mt-4 text-[12px] leading-relaxed text-ink-faint">需<span class="text-cinnabar">{{ endgameGateRealmName() }}境</span></p>
     </div>
 
     <template v-else>
@@ -192,7 +192,7 @@
   import { SOUL_SLOTS } from '@/data/souls'
   import { DAO_PATHS, daoPathDef } from '@/data/endgame'
   import { daoMark } from '@/ui/daoMark'
-  import { chooseDaoPath, endgameUnlocked } from '@/core/endgameService'
+  import { chooseDaoPath, endgameGateRealmName, endgameUnlocked } from '@/core/endgameService'
   import { currentDaoNarrative } from '@/core/identity'
   import { detectBuild } from '@/core/buildDetect'
   import { foeOriginLines } from '@/core/battleAnalysis'

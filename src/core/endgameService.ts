@@ -5,6 +5,7 @@ import { formatGN, formatGap } from '@/utils/format'
 import { subClamp } from '@/utils/gnum'
 import { artifactDef } from '@/data/artifacts'
 import { pactDef } from '@/data/pacts'
+import { REALMS } from '@/data/realms'
 import { mutatorDef } from '@/data/mutators'
 import { gateDef } from '@/data/qimen'
 import { RULESET_VERSION, isStaleRuleset } from '@/data/ruleset'
@@ -36,6 +37,18 @@ import { endgameBusy } from './endgameActivity'
 /** 真仙(WORLD_BREAK_MAJOR)方可踏足天界;借 MAX_MAJOR 会让终局随加境漂移 */
 export function endgameUnlocked(): boolean {
   return usePlayerStore().major >= WORLD_BREAK_MAJOR
+}
+
+/**
+ * 天界/器魂门槛的境界名,给两个视图的「需 X 境」直接用。
+ *
+ * 原来天界页与器魂页各自硬编码「真仙境」,而解锁逻辑读的是 WORLD_BREAK_MAJOR ——
+ * 两处文案与一处常量靠人记着保持同步。将来若把门槛挪到别的境界,
+ * 逻辑会自动跟着变、文案不会,玩家就会看到「需真仙境」却进不去(或反之)。
+ * 由常量反查境界名,与 endgameUnlocked 同一事实源。
+ */
+export function endgameGateRealmName(): string {
+  return REALMS[WORLD_BREAK_MAJOR]?.name ?? ''
 }
 
 /** 当前道途的全局战斗规则(历练/离线同样生效) */
