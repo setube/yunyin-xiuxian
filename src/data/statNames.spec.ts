@@ -80,3 +80,25 @@ describe('属性名表 · 类型管不到的质量', () => {
     expect(KEYS.length).toBeLessThan(80)
   })
 })
+
+describe('行内截断须给出全文', () => {
+  /*
+   * 与上一条的分工:
+   *   上一条说「能放下就别截」(名号卡整行宽,截掉条件等于丢语义)。
+   *   这一条说「实在放不下时,截断必须可查」—— 坊市货格是 grid-cols-2,
+   *   320px 下格内宽只有 78px,而「神人~神帝境方子所用 · ×12」要 129px,
+   *   这里改布局代价远大于补一个提示。
+   *
+   * 实测:补之前 title 与 aria-label 都是 null,悬停无提示、读屏也念不全。
+   */
+  it('坊市的灵草说明行截断时带 title 与 aria-label', () => {
+    const src = readFileSync(resolve(__dirname, '../../src/components/market/MarketShelfSection.vue'), 'utf-8')
+    const lines = src.split('\n').filter(l => l.includes('c.sub'))
+    expect(lines.length, '找不到渲染 c.sub 的那一行').toBeGreaterThan(0)
+    for (const line of lines) {
+      if (!line.includes('truncate')) continue
+      expect(line, `截断了却不给全文:${line.trim()}`).toContain(':title=')
+      expect(line, `截断了却没给读屏全文:${line.trim()}`).toContain('aria-label')
+    }
+  })
+})
