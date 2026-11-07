@@ -21,6 +21,7 @@ import {
   PILL_STAGE_NAMES,
   artifactStage,
   branchStage,
+  collectedTimeText,
   describeArtifact,
   describeBranch,
   describeEquipment,
@@ -491,5 +492,29 @@ describe('图鉴形制 · 装备册报词条位上限', () => {
     const src = readFileSync(resolve(__dirname, 'codex.ts'), 'utf-8')
     expect(src, '应读品阶表的 affixes[1]').toContain('.affixes[1]')
     expect(src, '应复用既有的阶上限函数').toContain('maxReachableRankAtTier(def.tier)')
+  })
+})
+
+/**
+ * 收录时间读数。
+ *
+ * sanitize 用 asNumberRecord(v, 0) 把负值钳成 0,于是坏档写个 -1000 会变成 0,
+ * 再被 new Date(0) 渲染成「1970/01/01 08:00」—— 看着完全正常的一个日期,
+ * 玩家不会想到它是坏档。0 与负数一律当作「没有记录」。
+ */
+describe('收录时间读数', () => {
+  it('0 与负数写「未记录」,不显示 1970 年', () => {
+    expect(collectedTimeText(0), '1970 年看着像个真日期,玩家查不出它是坏档').toBe('未记录')
+    expect(collectedTimeText(-1000)).toBe('未记录')
+  })
+
+  it('undefined / 非有限数同样写「未记录」', () => {
+    expect(collectedTimeText(undefined)).toBe('未记录')
+    expect(collectedTimeText(Number.NaN)).toBe('未记录')
+    expect(collectedTimeText(Number.POSITIVE_INFINITY)).toBe('未记录')
+  })
+
+  it('正常时间戳照常渲染', () => {
+    expect(collectedTimeText(Date.now())).toMatch(/\d{4}\/\d{2}\/\d{2}/)
   })
 })
