@@ -450,6 +450,25 @@ describe('终局公共写入 · 只认目录 id 与合法值', () => {
    * 与 player.name / loadouts.name 同一把尺,见 data/constants 里 NAME_MAX_LENGTH 的注释。
    * 补之前实测:5000 字的 note 被原样存进 records。
    */
+  /**
+   * 读档侧也要截。
+   *
+   * 上一轮补的是 updateRecord 的**写入**路径,而 sanitize 那条仍原样收
+   * —— 手改存档塞 10 万字,$state 序列化出来 100343 字节,纪录行还要渲染那一整段。
+   * 写入与读档是两条独立路径,都得截。
+   */
+  it('sanitize 也把纪录 note 截到 NAME_MAX_LENGTH', () => {
+    const e = useEndgameStore()
+    const huge = '甲'.repeat(100000)
+    ;(e as unknown as { records: Record<string, unknown> }).records = {
+      fastest_world: { value: 10, life: 1, note: huge }
+    }
+    e.sanitize()
+    const stored = e.records.fastest_world?.note ?? ''
+    expect(stored.length, `读档后 note 长度 ${stored.length} 超了上限`).toBeLessThanOrEqual(NAME_MAX_LENGTH)
+    expect(JSON.stringify(e.$state).length, '坏档把 state 撑爆了').toBeLessThan(2000)
+  })
+
   it('纪录 note 截到 NAME_MAX_LENGTH,超长不落库', () => {
     const e = useEndgameStore()
     e.updateRecord('best_custom', 100, 1, '甲'.repeat(5000), 'max')
