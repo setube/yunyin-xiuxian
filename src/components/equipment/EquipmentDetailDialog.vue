@@ -200,8 +200,15 @@
           换行后两态都是两枚等宽钮、同高(min-h-11),页脚高度不动。
           返还多少器灵尘在正文「分解返还」那一行,确认钮不重复。
         -->
-        <div v-if="decomposeArm !== inst?.uid" class="flex gap-2">
-          <button class="btn-seal min-h-11 flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
+        <!--
+          两枚 flex-1 并列须真等宽。原先「卸 下」是 .btn-seal(padding 18px)、
+          「强 化」是 .btn-ghost + !px-2(padding 8px),内容最小宽以 padding 为下界,
+          于是永远一宽一窄:实测 320 是 96/78、375 是 123/105、390 是 131/113,
+          三档都差 18px(CHANGELOG 里「十六处并列按钮组差 2px」的同族问题,这一处漏了)。
+          改 grid 两栏,与钮内文字长短、padding 差异都无关。
+        -->
+        <div v-if="decomposeArm !== inst?.uid" class="grid grid-cols-[1fr_1fr_auto] gap-2">
+          <button class="btn-seal min-h-11 w-full" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
           <!--
             满级不再让按钮凭空消失:消失的按钮不解释任何事,玩家只看到「强 化」不见了。
             保留同一位置、换成禁用态并写出原因(AGENTS.md「禁用即给原因」)。
@@ -213,7 +220,7 @@
             按钮上再写一遍本是第二处。禁用态写「强 化」,读屏与 hover 拿得到差额。
           -->
           <button
-            class="btn-ghost min-h-11 flex-1 !px-2"
+            class="btn-ghost min-h-11 w-full"
             :disabled="upCost ? upShort !== null : true"
             :aria-label="!upCost ? upgradeCapToast() : upShort === 'stone' ? `强 化,灵石尚差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `强 化,器灵尘尚差 ${upGap?.dust ?? 0}` : '强 化'"
             :title="upCost ? (upShort === 'stone' ? `灵石尚差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `器灵尘尚差 ${upGap?.dust ?? 0}` : undefined) : upgradeCapToast()"
