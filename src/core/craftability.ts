@@ -95,9 +95,10 @@ function weaknessLines(c: {
   if (c.mastery < 0.35) out.push('丹方生疏')
   else if (c.mastery < 0.7) out.push('丹方未熟')
 
-  const unknown = c.craft.materials.filter(id => c.loreOf(id) < 1)
-  if (unknown.length > 0) {
-    out.push(`${unknown.length} 味灵材未识`)
+  // 变量名避开 TS 内置类型名 unknown,与 tierChances 那处同一考虑
+  const unknownIds = c.craft.materials.filter(id => c.loreOf(id) < 1)
+  if (unknownIds.length > 0) {
+    out.push(`${unknownIds.length} 味灵材未识`)
   } else {
     const shallow = c.craft.materials.filter(id => c.loreOf(id) < LORE_MAX)
     if (shallow.length > 0) {
