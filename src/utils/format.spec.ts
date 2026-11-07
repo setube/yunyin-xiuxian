@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cnNumber, formatClock, formatCountdown, formatDuration, formatGap, formatGN, formatPercent, formatStamp, formatYears, roundToSum } from './format'
+import { cnNumber, formatChoiceSpan, formatClock, formatCountdown, formatDuration, formatGap, formatGN, formatNum, formatPercent, formatRate, formatStamp, formatYears, roundToSum } from './format'
 import { gn, powN } from './gnum'
 
 describe('数值格式化', () => {
@@ -353,6 +353,43 @@ describe('formatGap 差额向上取整', () => {
       expect(out.every(Number.isFinite), `${tag} 返回了非有限值:${JSON.stringify(out)}`).toBe(true)
       expect(out.every(v => v === 0), `${tag} 应返回全 0,实际 ${JSON.stringify(out)}`).toBe(true)
     }
+  })
+
+  /**
+   * 全导出终验:13 个函数、14 个调用点,喂 NaN 都不许印脏值。
+   *
+   * 这是「喂坏值」系列的总闸 —— 逐个修好之后,用一条判据把整组行为钉住,
+   * 免得将来新增函数或改动某个守卫时悄悄退化。判据本身不关心印的是 `--` 还是 `0`,
+   * 只要求别出现 NaN / undefined / Infinity / Invalid / null 这些一眼能看出的脏串。
+   */
+  it('format 的全部导出对坏值都不印脏字符串', () => {
+    const calls: readonly (readonly [string, () => string])[] = [
+      ['formatGN', () => formatGN(Number.NaN)],
+      ['formatGN(坏对象)', () => formatGN({ m: Number.NaN, e: 0 })],
+      ['formatGap', () => formatGap(Number.NaN)],
+      ['formatNum', () => formatNum(Number.NaN)],
+      ['formatRate', () => formatRate(Number.NaN)],
+      ['formatPercent', () => formatPercent(Number.NaN)],
+      ['formatDuration', () => formatDuration(Number.NaN)],
+      ['formatChoiceSpan', () => formatChoiceSpan(Number.NaN)],
+      ['formatCountdown', () => formatCountdown(Number.NaN)],
+      ['formatClock', () => formatClock(Number.NaN)],
+      ['formatStamp', () => formatStamp(Number.NaN)],
+      ['formatYears', () => formatYears(Number.NaN)],
+      ['cnNumber', () => cnNumber(Number.NaN)],
+      ['roundToSum', () => JSON.stringify(roundToSum([1, 2], Number.NaN))]
+    ]
+    const dirty: string[] = []
+    for (const [name, fn] of calls) {
+      let out: string
+      try {
+        out = fn()
+      } catch (e) {
+        out = `抛错:${String(e).slice(0, 40)}`
+      }
+      if (/NaN|undefined|Infinity|Invalid|null/.test(out)) dirty.push(`${name} → ${out}`)
+    }
+    expect(dirty, `这些导出还印脏值:\n${dirty.join('\n')}`).toEqual([])
   })
 
   it('roundToSum 的正常路径与空数组不受守卫影响', () => {
