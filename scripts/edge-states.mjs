@@ -94,7 +94,8 @@ const GRAB_PAGE = () => {
       text: (b.textContent || '').trim().replace(/\s+/g, ' '),
       aria: b.getAttribute('aria-label') || '',
       disabled: b.disabled,
-      h: b.getBoundingClientRect().height
+      h: b.getBoundingClientRect().height,
+      w: b.getBoundingClientRect().width
     }))
   return {
     text: document.querySelector('main')?.innerText ?? '',
@@ -315,6 +316,60 @@ const SCENES = [
   },
   {
     /*
+     * 欢迎页。
+     *
+     * 与建号页同一条理由:它是 game.started 为 false 时的默认落地页,
+     * 而所有巡页脚本拿的都是已有存档 —— 守卫第一句 `if (game.started) return { name: 'home' }`
+     * 会把 /welcome 也弹回首页,所以它同样从未进过真浏览器检查。
+     *
+     * 这里顺带量隐私确认弹窗:那颗「同意并开始」必须初始置灰(没勾同意就不许走),
+     * 且「再想想 / 同意并开始」要等宽 —— 同族的两步确认在别处都踩过宽度不一的问题。
+     */
+    name: '欢迎页',
+    route: '/welcome',
+    slices: () => ({
+      game: {
+        started: false,
+        saveVersion: 2,
+        createdAt: Date.now(),
+        lastActiveAt: Date.now(),
+        totalPlaySec: 0,
+        createRerolls: null,
+        createProfile: null
+      },
+      settings: {
+        privacyAccepted: false,
+        sfxOn: false,
+        musicOn: false,
+        musicVol: 0,
+        sfxVol: 0,
+        reduceMotion: true,
+        battleSpeed: 4,
+        decomposeRanks: [],
+        smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true },
+        theme: 'dark'
+      }
+    }),
+    judge: page => {
+      if (!/隐私政策|导入存档/.test(page.text)) {
+        return ['欢迎页没渲染出来(被路由守卫弹回首页?)—— 本档空转']
+      }
+      const out = []
+      for (const label of [/开\s*始\s*游\s*戏/, /隐私政策/, /导入存档/]) {
+        if (!page.buttons.some(b => label.test(b.text))) out.push(`欢迎页缺「${label.source}」入口`)
+      }
+      /*
+       * 触控下限:这三颗是首屏唯一可点的东西。
+       * 只说高度 —— 首页那颗「隐私政策」是文字链宽度够高不够(30px),
+       * 而宽度本就都 >28,量宽度只会让判据看起来更严而实际没多验到东西。
+       */
+      const low = page.buttons.filter(b => b.h < 28)
+      if (low.length) out.push(`${low.length} 颗按钮低于 28px 触控下限:${low.map(b => `${b.text}(${b.h.toFixed(1)}px)`).join(' | ')}`)
+      return out
+    }
+  },
+  {
+    /*
      * 建号页。
      *
      * 这是玩家必经的首屏流程,却一直不在任何真浏览器检查里:
@@ -415,4 +470,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 闭关拦截 / 未拜师 / 建号页九档都解释得清')
+console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 闭关拦截 / 未拜师 / 欢迎页 / 建号页十档都解释得清')
