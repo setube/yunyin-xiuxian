@@ -117,13 +117,20 @@
     const first = items[0]!
     const last = items[items.length - 1]!
     const active = document.activeElement as HTMLElement | null
-    const outside = !active || !panel.contains(active)
+    /*
+     * 打开时焦点落在**面板本身**(div,tabindex=-1),不是第一颗钮 —— 此时 active 在面板内、
+     * 却不等于 first/last,原判据两头都不命中,于是浏览器把焦点交给面板外的上一个元素:
+     * 反向 Tab 第一次就跳到导航栏的「人物」。实测正向 Tab 20 次 0 逃、反向第 0 次即逃。
+     * 凡是「焦点在面板内但不在任何可聚焦控件上」都按『还没进入控件序列』处理:
+     * 正向给 first、反向给 last。
+     */
+    const onPanelOnly = !active || !panel.contains(active) || !items.includes(active as HTMLElement)
     if (e.shiftKey) {
-      if (outside || active === first) {
+      if (onPanelOnly || active === first) {
         e.preventDefault()
         last.focus()
       }
-    } else if (outside || active === last) {
+    } else if (onPanelOnly || active === last) {
       e.preventDefault()
       first.focus()
     }
