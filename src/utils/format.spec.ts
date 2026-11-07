@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cnNumber, formatClock, formatCountdown, formatDuration, formatGap, formatGN, formatPercent, formatStamp, roundToSum } from './format'
+import { cnNumber, formatClock, formatCountdown, formatDuration, formatGap, formatGN, formatPercent, formatStamp, formatYears, roundToSum } from './format'
 import { gn, powN } from './gnum'
 
 describe('数值格式化', () => {
@@ -316,5 +316,29 @@ describe('formatGap 差额向上取整', () => {
     expect(formatGN({ m: 1, e: 4 })).toBe('1万')
     expect(formatGN(gn(1234))).toBe('1,234')
     expect(formatGap(gn(880))).toBe('880')
+  })
+
+  /**
+   * 同一类缺口:formatYears 与 cnNumber 也漏了守卫。
+   *
+   * 补之前实测:formatYears(NaN) → 「NaN 载」、formatYears(-Infinity) → 「-Infinity 载」、
+   * cnNumber(NaN) → 「NaN」。cnNumber 更隐蔽 —— 它的范围判断是
+   * `!Number.isInteger(n) || ...`,NaN 恰好命中第一个条件,直接落到 `String(n)`。
+   */
+  it('formatYears 与 cnNumber 对坏值也印「--」', () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(formatYears(bad), `formatYears(${bad}) 印出了乱码`).toBe('--')
+      expect(cnNumber(bad), `cnNumber(${bad}) 印出了乱码`).toBe('--')
+    }
+  })
+
+  it('这两个函数的正常值不受守卫影响', () => {
+    expect(formatYears(300)).toBe('300 载')
+    expect(formatYears(20000)).toBe('2万 载')
+    expect(cnNumber(21)).toBe('二十一')
+    expect(cnNumber(0)).toBe('零')
+    // 范围外原样返回阿拉伯数字,这条语义保留
+    expect(cnNumber(10000)).toBe('10000')
+    expect(cnNumber(-3)).toBe('-3')
   })
 })
