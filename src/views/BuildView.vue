@@ -175,8 +175,8 @@
           </template>
           <template v-else>
             <!-- 负外边距配正内边距把触面抬到 28px+,视觉占位不变(layout-check 量不到这段打开才存在的控件) -->
-            <button class="btn-seal -my-4 !px-2 !py-2.5 !text-[10px]" @click="doDeleteLoadout(lo.id)">确认删除</button>
             <button class="-my-4 py-2.5 text-[10px] text-ink-faint active:text-ink" @click="confirmDelete = null">再想想</button>
+            <button class="btn-seal -my-4 !px-2 !py-2.5 !text-[10px]" @click="doDeleteLoadout(lo.id)">确认删除</button>
           </template>
         </div>
       </div>

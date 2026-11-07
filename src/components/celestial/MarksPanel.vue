@@ -44,10 +44,11 @@
         <span class="min-w-0 truncate font-kai text-[12px]" :class="row.mark.cleared ? 'text-ink' : 'text-ink-faint'">
           {{ row.mark.targetName }}{{ row.mark.cleared ? '·破' : '·殁' }}
         </span>
-        <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">{{ row.mark.rounds }}回合 · {{ row.mark.buildName }}</span>
+        <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">{{ row.mark.rounds }} 回合 · {{ row.mark.buildName }}</span>
         <button
           v-if="isStaleRuleset(row.mark.ruleset)"
           class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-1 py-0.5 font-kai text-[9px] text-ink active:scale-90"
+          :aria-label="`旧纪 ${row.mark.ruleset}`"
           :title="`旧纪 ${row.mark.ruleset}`"
           @click="openEra(row.mark)"
         >
@@ -58,6 +59,7 @@
           class="shrink-0 min-h-[28px] rounded border border-gold-ink/40 px-1.5 py-0.5 font-kai text-[10px] text-gold-ink active:scale-90"
           :disabled="busy !== null"
           :class="{ 'cursor-not-allowed border-ink/15 text-ink-faint': busy !== null }"
+          :aria-label="busy ? busy.reason : '忆战'"
           :title="busy ? busy.reason : '忆战'"
           @click="goReplay(row.mark)"
         >
@@ -85,7 +87,7 @@
           :title="busy ? busy.reason : endgame.daoSource < REWRITE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)}` : '重写'"
           @click="rewriteConfirm = row.mark"
         >
-          {{ busy ? `写(${busy.reason})` : endgame.daoSource < REWRITE_ENTRY_COST ? `写(尚差${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${row.mark.rounds}回合)` }}
+          {{ busy ? `写(${busy.reason})` : endgame.daoSource < REWRITE_ENTRY_COST ? `写(道源尚差 ${daoSourceShortText(REWRITE_ENTRY_COST, endgame.daoSource)})` : `写(道源${REWRITE_ENTRY_COST} · 破${row.mark.rounds} 回合)` }}
         </button>
       </div>
     </div>

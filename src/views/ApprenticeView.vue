@@ -6,8 +6,18 @@
         <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
           <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
         </p>
-        <button class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]" :disabled="slotsFull || !canAffordRecruit" :title="!canAffordRecruit ? `灵石尚差 ${formatGap(recruitShort)}` : undefined" @click="doRecruit">
-          收道童<span v-if="!slotsFull" class="ml-1 text-[10px]">
+        <!--
+          两种拒因各写各的:门中已满 / 灵石尚差 N。原先只写后者,而 slotsFull 为真时
+          正文里的代价 span 被整段抽掉 —— 只剩「收道童」三个字,按下才知道满员。
+        -->
+        <button
+          class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]"
+          :disabled="slotsFull || !canAffordRecruit"
+          :title="slotsFull ? '门中已满' : !canAffordRecruit ? `灵石尚差 ${formatGap(recruitShort)}` : undefined"
+          @click="doRecruit"
+        >
+          收道童<span v-if="slotsFull" class="ml-1 text-[10px]">(门中已满)</span>
+          <span v-else class="ml-1 text-[10px]">
             {{ canAffordRecruit ? `(${recruitCostLine})` : `(灵石尚差 ${formatGap(recruitShort)})` }}
           </span>
         </button>

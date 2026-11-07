@@ -288,8 +288,8 @@
   import { usePlayerStore } from '@/stores/player'
   import { prepareReincarnation, confirmReincarnation, rerollReincarnationLinggen } from '@/core/reincarnation'
   import { ELEMENTS } from '@/data/linggen'
-  import { talentDef, TALENT_GRADE_COLORS, TALENT_GRADE_NAMES } from '@/data/talents'
-  import { talentMark, talentPips } from '@/ui/talentMark'
+  import { talentDef, TALENT_GRADE_NAMES } from '@/data/talents'
+  import { talentMark, talentPips, talentTextColor } from '@/ui/talentMark'
   import { growthGauge } from '@/ui/growthGauge'
   import { rootMarks, rootPips } from '@/ui/rootMark'
   import { POWER_KIND_LABEL, nextPower, powerTally, samaraPowers, upcomingPowers } from '@/ui/samsaraPowers'
@@ -353,7 +353,7 @@
       name: def?.name ?? '',
       desc: def?.desc ?? '',
       gradeName: TALENT_GRADE_NAMES[grade],
-      color: TALENT_GRADE_COLORS[grade],
+      color: talentTextColor(grade),
       mark: talentMark(grade),
       pips: talentPips(grade),
       modsText: def ? modsText(def.mods) : ''

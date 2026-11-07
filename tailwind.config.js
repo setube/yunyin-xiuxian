@@ -37,7 +37,10 @@ export default {
         'quality-heaven-text': withAlpha('--color-quality-heaven-text-rgb'),
         'quality-immortal-text': withAlpha('--color-quality-immortal-text-rgb'),
         'quality-divine-text': withAlpha('--color-quality-divine-text-rgb'),
-        'quality-dao-text': withAlpha('--color-quality-dao-text-rgb')
+        'quality-dao-text': withAlpha('--color-quality-dao-text-rgb'),
+        /* 天赋 / 器魂品阶色当文字用时的暗/亮版;装饰那一层仍用 data 里的原色 */
+        'talent-mortal-text': withAlpha('--color-talent-mortal-text-rgb'),
+        'talent-dao-text': withAlpha('--color-talent-dao-text-rgb')
       },
       fontFamily: {
         /* 只做「utility 名 → 变量」;字体栈事实源在 style.css 的 --font-kai / --font-song。

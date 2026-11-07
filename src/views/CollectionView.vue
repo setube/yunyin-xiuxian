@@ -143,10 +143,11 @@
   import { PETS } from '@/data/pets'
   import { beastIcon } from '@/data/beastFamilies'
   import { beastCrest } from '@/ui/beastCrest'
+  import { talentTextColor } from '@/ui/talentMark'
   import { PERSONALITY_NAMES, personalityDesc } from '@/core/petPersonality'
   import { EVENTS } from '@/data/events'
   import { chainOfEvent } from '@/data/chains'
-  import { TALENTS, TALENT_GRADE_COLORS } from '@/data/talents'
+  import { TALENTS } from '@/data/talents'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { lusterOf } from '@/ui/luster'
   import {
@@ -344,7 +345,7 @@
           name: t.name,
           desc: [t.desc, modsText(t.mods)].filter(Boolean).join('\n'),
           meta: '先天之姿',
-          color: TALENT_GRADE_COLORS[t.grade]
+          color: talentTextColor(t.grade)
         }))
       ),
       /*

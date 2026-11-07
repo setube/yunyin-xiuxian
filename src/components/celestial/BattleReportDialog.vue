@@ -29,7 +29,7 @@
               <span class="fight-bar-fill" :style="{ width: `${marks[i]?.barPct ?? 0}%` }" />
             </span>
             <span class="tabular text-[11px] text-ink-faint">
-              {{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%
+              {{ row.rounds }} 回合 · 余血 {{ Math.round(row.hpLeftPct * 100) }}%
             </span>
           </span>
         </p>

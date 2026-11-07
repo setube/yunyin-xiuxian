@@ -34,7 +34,7 @@
             <span class="fight-bar" :class="{ 'fight-bar--worst': runMarks[i]?.worst }" aria-hidden="true">
               <span class="fight-bar-fill" :style="{ width: `${runMarks[i]?.barPct ?? 0}%` }" />
             </span>
-            <span class="tabular text-ink-faint">{{ row.rounds }}回合 · 余血{{ Math.round(row.hpLeftPct * 100) }}%</span>
+            <span class="tabular text-ink-faint">{{ row.rounds }} 回合 · 余血 {{ Math.round(row.hpLeftPct * 100) }}%</span>
           </span>
         </p>
       </div>

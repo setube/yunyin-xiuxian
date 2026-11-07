@@ -46,3 +46,22 @@ export function talentMark(grade: number): TalentMark {
 export function talentPips(grade: number): boolean[] {
   return Array.from({ length: TALENT_GRADES }, (_, i) => i < talentMark(grade).pips)
 }
+
+/**
+ * 档色作**正文**用时的文字色。
+ *
+ * 装饰处(标签边框、阶点、`between` 分隔)继续用 `tone` —— 那里只要色差够大。
+ * 正文另有线:日主题三张纸底上,凡赋 #857F70 实测 3.50、道赋 #C9A227 2.13,
+ * 都低于正文 AA。中间两档的 azure / violet-ink 本就达标,直接复用原色。
+ * 与品阶色同一套做法(见 data/qualities 的 TEXT_COLOR):原色管装饰,文字另给一档。
+ */
+const TEXT_TONE: Partial<Record<number, string>> = {
+  1: 'var(--color-talent-mortal-text)',
+  4: 'var(--color-talent-dao-text)'
+}
+
+/** 第 grade 档当正文用时的字色;未登记的档回落到原色 */
+export function talentTextColor(grade: number): string {
+  const m = talentMark(grade)
+  return TEXT_TONE[m.grade] ?? m.tone
+}

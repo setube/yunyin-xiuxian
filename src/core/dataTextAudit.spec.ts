@@ -868,7 +868,12 @@ describe('术语一致性 · 用户可见文本', () => {
    * 故障注入:任一处改回去,本条红。
    */
   it('数字与单位之间的空格:阿拉伯数字留、汉字数字不留', () => {
-    const ARABIC_UNITS = ['分钟', '小时', '灵石', '修为', '灵草', '玄铁', '器灵尘']
+    /*
+     * 「回合」原本不在表里,于是四处「{{ row.rounds }}回合」一路粘着没人管 ——
+     * 而同一个界面的旁处(GauntletPanel / TrialPanel / RegionCard)写的是「}} 回合」。
+     * 漏一档就等于漏了一整类写法,表宁全勿缺。
+     */
+    const ARABIC_UNITS = ['分钟', '小时', '灵石', '修为', '灵草', '玄铁', '器灵尘', '回合']
     const CN_UNITS = ['重', '层', '阶', '场', '次', '部', '卦', '档', '主星', '连战', '位']
 
     for (const { file, text } of userText()) {
@@ -876,7 +881,12 @@ describe('术语一致性 · 用户可见文本', () => {
       for (const u of ARABIC_UNITS) {
         const hits = [...text.matchAll(new RegExp(`\\{\\{([^}]*)\\}\\}(?!\\s)${u}`, 'g'))]
         const glued = hits
-          .filter(m => /formatGN|formatNum|formatGap|Math\.round|Math\.floor|\.toFixed|Cost|Short|price|Price/.test(m[1]!))
+          /*
+           * 认「这一格是数字」。除了格式化函数与算术,还要认 `rounds` / `Rounds` ——
+           * 它们本身就是整数读数,而 `{{ row.rounds }}回合` 正是原先漏掉的那一类:
+           * 只按 Math.round 认的话,这四个字一辈子抓不到(第一次写就是这样,注入后仍绿)。
+           */
+          .filter(m => /formatGN|formatNum|formatGap|Math\.round|Math\.floor|\.toFixed|Cost|Short|price|Price|rounds|Rounds/.test(m[1]!))
           .map((): string => `}}${u}`)
         expect(glued, `${file}:「}}${u}」缺空格`).toEqual([])
       }

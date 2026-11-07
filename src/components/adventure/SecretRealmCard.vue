@@ -55,11 +55,15 @@
         身在「{{ elsewhere.name }}」
       </p>
       <div v-else class="mt-2 space-y-1.5">
+        <!--
+          禁用态不压整块透明度:那会把正文一起压到 1.74~3.02:1(实测),
+          而卡片里那句「尚差 N 灵石」正是拒因本身。改为只换底色,字色不动。
+        -->
         <button
           v-for="r in list"
           :key="r.id"
-          class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98 disabled:cursor-not-allowed"
-          :class="{ 'opacity-60': !canPay(r), 'realm-top-gain': isTopGain(realmMark(r)) }"
+          class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98 disabled:cursor-not-allowed disabled:bg-ink/4"
+          :class="{ 'realm-top-gain': isTopGain(realmMark(r)) }"
           :disabled="!canPay(r)"
           :aria-label="realmMark(r).label"
           @click="enter(r.id)"

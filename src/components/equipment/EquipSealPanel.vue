@@ -1,7 +1,7 @@
 <template>
   <button
     v-if="canSealAffix"
-    class="shrink-0 min-h-[28px] rounded-md px-1.5 py-1 text-[10px] text-azure active:scale-90 active:opacity-60 disabled:text-ink-faint disabled:opacity-60"
+    class="shrink-0 min-h-[28px] rounded-md px-1.5 py-1 text-[10px] text-azure active:scale-90 active:opacity-60 disabled:text-ink-faint"
     :disabled="sealShort"
     :aria-label="sealLabel"
     :title="sealShort ? `灵石尚差 ${formatGap(sealGap!)}` : undefined"

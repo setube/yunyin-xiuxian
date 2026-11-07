@@ -26,9 +26,10 @@
             触控靶面:负外边距配正内边距,盒高 31px 过 layout-check(≥28),流中仍占 15px 行高;同页收纳/分解同法。
             无可换时置灰,不让人点一颗什么都不会发生的钮(AGENTS.md「禁用即给原因」);
             置灰态的字色自己写:btn-ghost 的禁用底色这里没有,继承下来会是可点态的 azure。
+            禁用态只压字色不压透明度 —— 那行「无可换」正是拒因,压到 60% 就读不出。
           -->
           <button
-            class="-my-2 shrink-0 px-1 py-2 text-[10px] text-azure active:opacity-60 disabled:text-ink-faint disabled:opacity-60"
+            class="-my-2 shrink-0 px-1 py-2 text-[10px] text-azure active:opacity-60 disabled:text-ink-faint"
             :disabled="s.preview <= 0"
             @click="onEquipSet(s.def.id)"
           >
