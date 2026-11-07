@@ -95,6 +95,20 @@ export function lateSlices() {
      * 等级取 (mansion + 1) * 5 这条与 stores/dongfu 的 buildingLevelCap 同源,
      * 手写 4/5 级是为了让「已营 7/7」在页面上成立;洞府本身满 4 级。
      */
+    /**
+     * 功法:主修一门满级 + 两门辅修 + 两门秘术(learned 的键须是 data/gongfa 里的真 id)。
+     *
+     * 与 dongfu 同一类缺口:没这一片时,修行页的功法栏、属性汇总里的功法词条、
+     * 择道/进修入口全是初始态,巡页脚本量到的是「什么都没学」。
+     * 等级取满级(主辅 9 / 秘术 3),让「已修满」这类分支也能被量到。
+     */
+    cultivation: {
+      learned: { m_taixuan: 9, s_tuna: 9, s_lianti: 9, m_qingmu: 3, s_yufeng: 3 },
+      mainGongfa: "m_taixuan",
+      subGongfa: ["s_tuna", "s_lianti"],
+      buffs: [],
+      gongfaBranch: {}
+    },
     dongfu: {
       levels: { mansion: 4, array: 5, alchemy: 5, forge: 4, field: 5, library: 4, beast: 3 },
       frac: { herb: 0, ore: 0, wudao: 0 },
