@@ -64,3 +64,23 @@ jobs:
         run: bun run test:report
       - name: 生产构建
         run: bun run build
+
+  # 变异扫描:改坏一处守卫再跑对应 spec,不红就说明那句守卫没有判据守着。
+  # 与本工作流其他 job 分开跑,是因为它要反复改写 src 下的源文件再还原 ——
+  # 和「类型检查 + 单测 + 构建」串在同一个 job 里,失败时会把工作区停在半改状态,
+  # 后面的步骤读到的是被改坏的源码。独立 job 各自一份干净检出。
+  # 实耗约 1 分 15 秒(16 处检查),与 20 分钟的总超时相比可忽略。
+  mutation-scan:
+    name: 变异扫描
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: 安装 Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: 安装依赖
+        run: bun install --frozen-lockfile
+      - name: 改坏守卫验证判据
+        run: bun run mutation-scan
