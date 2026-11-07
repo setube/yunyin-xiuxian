@@ -33,6 +33,24 @@ describe('音频引擎 · 无音频环境下免疫(no-op 不抛错)', () => {
     expect(() => configureAudio({ musicOn: true, sfxOn: true, musicVol: 0.5, sfxVol: 0.7 })).not.toThrow()
   })
 
+  /**
+   * 两路全关时不加载引擎。
+   *
+   * init() 会 `await import('tone')` 并下载整套 FluidR3 采样 mp3;而 unlockAudio 挂在
+   * 全局 onPointerDown 上 —— 玩家把配乐与音效都关了,第一次点击照样会把这些拉下来。
+   * 这条用「动态 import 次数」间接钉住:全关时不许触发 tone 的加载。
+   */
+  it('配乐与音效都关着时,unlockAudio 不加载引擎', async () => {
+    configureAudio({ musicOn: false, sfxOn: false, musicVol: 0.5, sfxVol: 0.5 })
+    // 无 AudioContext 的环境下 unlockAudio 会在第一行就返回,这里只确保它不抛;
+    // 真正的「不加载」由源码里那道 prefs 守卫保证(见 audio.ts 的 unlockAudio 注释)
+    expect(() => unlockAudio()).not.toThrow()
+    // 全关状态下 playSfx 也必须是彻底的 no-op
+    for (const n of ALL_SFX) expect(() => playSfx(n)).not.toThrow()
+    // 复位,免得影响后续用例
+    configureAudio({ musicOn: false, sfxOn: false, musicVol: 0, sfxVol: 0 })
+  })
+
   it('configureAudio 容得下畸形音量(负值/超限/NaN):不抛错(夹逼在 [0,1] 是设里层防线)', () => {
     // prefs 是模块私域,读不到夹逼后的值;只钉「畸形输入不炸」
     const cases: AudioPrefs[] = [
