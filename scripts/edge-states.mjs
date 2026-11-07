@@ -60,6 +60,24 @@ const stuffedBag = base => ({
   }
 })
 
+/**
+ * 让存档写不进去:覆写 localStorage.setItem,对 `yunyin.*` 抛 QuotaExceededError。
+ * 游戏每 5 秒把待落盘分片 flush 一次(SAVE_FLUSH_MS),故这一档要多等一会儿才出现提示。
+ */
+const breakWrites = async context => {
+  await context.addInitScript(() => {
+    const real = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key, value) {
+      if (String(key).startsWith('yunyin.')) {
+        const err = new Error('quota exceeded')
+        err.name = 'QuotaExceededError'
+        throw err
+      }
+      return real.call(this, key, value)
+    }
+  })
+}
+
 /** 去掉空白与全角空格 —— 排版空格在各字体下渲染不同,比较时一律略过 */
 const strip = t => t.replace(/[\s\u3000]/g, '')
 
@@ -166,6 +184,23 @@ const SCENES = [
     }
   },
   {
+    name: '存档写不进去',
+    route: '/settings',
+    slices: () => lateSlices(),
+    prep: breakWrites,
+    /*
+     * 写入失败要到下一轮 flush 才被感知:SAVE_FLUSH_MS 是 5 秒,而页面自己加载还要 2~3 秒 ——
+     * 实测提示在 +7 秒左右出现,故留 9 秒。只等 6.5 秒会误报「没报失败」。
+     */
+    settleMs: 9000,
+    judge: page => {
+      if (!/存档写入失败/.test(page.text)) {
+        return ['写盘一直失败,设置页却没报「存档写入失败」—— 玩家不知道进度保不住']
+      }
+      return []
+    }
+  },
+  {
     name: '未拜师',
     route: '/character',
     slices: () => lateSlices(),
@@ -198,7 +233,8 @@ for (const scene of SCENES) {
   const page = await context.newPage()
   page.on('pageerror', e => fail(`[${scene.name}] 运行时异常:${String(e.message).slice(0, 120)}`))
   await page.goto(`${INDEX}#${scene.route}`, { waitUntil: 'load' })
-  await page.waitForTimeout(3000)
+  // 各档页面加载耗时不同;「存档写不进去」那档要等 flush 跑一轮,自己给 settleMs
+  await page.waitForTimeout(scene.settleMs ?? 3000)
   await page.evaluate(() => {
     for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
     Math.random = () => 1
@@ -231,4 +267,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 未拜师五档都解释得清')
+console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 未拜师六档都解释得清')
