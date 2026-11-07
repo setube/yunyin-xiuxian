@@ -421,6 +421,17 @@ if (dead.length) {
   for (const d of dead) console.log(`  ✗ ${d}`)
   process.exitCode = 1
 }
+/*
+ * 点击量下限:这条脚本的全部价值在于「点过之后没炸」。
+ * 若按钮取不到(label 为空)、或被 SKIP / isVisible / isDisabled 过滤光,
+ * clicked 会接近于零,而 errors 也是零 —— 脚本照样报绿,只是它什么都没验。
+ * 下限按真实 ROUTES 规模定:每页至少要约到 1 个按钮,否则页面结构已经变了。
+ */
+const MIN_CLICKS = ROUTES.length
+if (clicked < MIN_CLICKS) {
+  console.log(`✗ 只点到 ${clicked} 个按钮(应 ≥ ${MIN_CLICKS},即每页至少 1 个)—— 冒烟没验到东西`)
+  process.exitCode = 1
+}
 if (errors.length === 0) {
   console.log('✓ 无运行时异常')
 } else {
