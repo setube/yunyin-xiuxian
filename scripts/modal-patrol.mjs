@@ -52,7 +52,17 @@ async function auditModal(page) {
     const st = document.createElement('style')
     st.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}'
     document.head.appendChild(st)
-    const panel = document.querySelector('.modal-panel')
+    /*
+     * 取栈顶那层,不是第一层。
+     * 弹窗可以叠着开(后期档会先弹「登临真仙」教学窗,天道熔炉开在它上面),
+     * querySelector 拿到的是 DOM 里第一个 = 底窗 —— 于是量的是下面那扇,
+     * 上面真正要审的那层一次都没被量到。实测「道果」叠开后报 2 控件,取栈顶才对得上 10。
+     */
+    const panels = [...document.querySelectorAll('.modal-panel')].filter(el => {
+      const r = el.getBoundingClientRect()
+      return r.width > 0 && r.height > 0
+    })
+    const panel = panels[panels.length - 1] ?? null
     if (!panel) return null
 
     const luma = rgb => {
@@ -188,13 +198,30 @@ async function open(route) {
     for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
     Math.random = () => 1
   })
-  for (let i = 0; i < 10; i += 1) {
-    if ((await page.locator('.modal-panel').count()) > 0) {
-      await page.keyboard.press('Escape')
-      await page.waitForTimeout(300)
-    } else break
-  }
+  await closeAllModals(page)
   return { page, context }
+}
+
+/**
+ * 把当前浮着的弹窗全关掉。
+ *
+ * 后期档一次性弹「登临真仙」教学窗,而它是 `:closable="false"` —— Esc 与遮罩都不关它,
+ * 只能点它自己那颗「知道了」。只按 Esc 循环会永远停在它上面(实测 12 次 Esc 后仍剩 1 层),
+ * 而它的遮罩会把后面所有点击吃掉。
+ */
+async function closeAllModals(page) {
+  for (let i = 0; i < 12; i += 1) {
+    if ((await page.locator('.modal-panel').count()) === 0) return
+    // 不可关的层先点它自己的收尾钮
+    const dismiss = page.locator('.modal-panel button', { hasText: /^知道了$|^知道了。$|^收 下$/ }).last()
+    if ((await dismiss.count()) > 0 && (await dismiss.isVisible().catch(() => false))) {
+      await dismiss.click({ timeout: 2000 }).catch(() => {})
+      await page.waitForTimeout(320)
+      continue
+    }
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(280)
+  }
 }
 
 /** 按文字找一个入口钮并点开 */
@@ -257,11 +284,47 @@ async function clickTab(page, re) {
     await page.waitForTimeout(400)
     return clickByText(page, /天道熔炉/)
   })
-  await patrol(page, '道果', async () => {
+  /*
+   * 道果说明:凝一枚才弹(道源够 + 还没看过说明)。
+   * 这里不能走 patrol 的通用流程 —— 它要在「凝果之后」判开没开,而凝果前已有一层熔炉。
+   * 故单独写:先开熔炉 → 点凝果 → 判层数从 1 变 2。
+   */
+  {
     await clickTab(page, /道途/)
     await page.waitForTimeout(400)
-    return clickByText(page, /道果/)
-  })
+    const opened = await clickByText(page, /天道熔炉/)
+    let layersBefore = 0
+    if (opened) {
+      await page.waitForTimeout(600)
+      layersBefore = await page.locator('.modal-panel').count()
+    }
+    // 钮面写的是「200 道源 → 道果 +1」,连凝钮写「连凝 6 枚」
+    const condense = page.locator('.modal-panel button', { hasText: /道果 \+1|连凝/ }).first()
+    const can = (await condense.count()) > 0 && !(await condense.isDisabled().catch(() => true))
+    if (!can) {
+      notOpened.push('道果')
+    } else {
+      await condense.click({ timeout: 3000 }).catch(() => {})
+      await page.waitForTimeout(700)
+      const layersAfter = await page.locator('.modal-panel').count()
+      if (layersAfter <= layersBefore) {
+        notOpened.push('道果')
+      } else {
+        // 栈顶那层就是道果说明
+        const audit = await auditModal(page)
+        if (SHOTS) {
+          mkdirSync(SHOTS_DIR, { recursive: true })
+          await page.locator('.modal-panel').last().screenshot({ path: join(SHOTS_DIR, '道果.png') }).catch(() => {})
+        }
+        if (!audit || audit.count === 0) fail('[道果] 面板里一个控件都没数到')
+        else {
+          if (audit.small.length) fail(`[道果] 可点元素过小(<28px):${audit.small.join(' | ')}`)
+          if (audit.dimDisabled.length) fail(`[道果] 禁用态的字读不出来:${audit.dimDisabled.join(' | ')}`)
+          console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} 道果 · ${audit.count} 控件`)
+        }
+      }
+    }
+  }
   await patrol(page, '器魂', async () => {
     await clickTab(page, /道途/)
     await page.waitForTimeout(400)
@@ -300,26 +363,27 @@ async function clickTab(page, re) {
   const { page, context } = await open('/character')
   await patrol(page, '修行画像', () => clickByText(page, /修行画像/))
   await patrol(page, '师承', () => clickByText(page, /师\s*承/))
-  await patrol(page, '道侣', () => clickByText(page, /道侣/))
+  await patrol(page, '道侣', () => clickByText(page, /道\s*侣/))
   await context.close()
 }
 
-/* 洞府:灵脉投点卡(弹窗式展开)与洞府纪事 */
+/* 洞府:灵脉投资弹窗(唯一的 BaseModal);「洞府纪事」是页面内的一块,不是弹窗 */
 {
   const { page, context } = await open('/dongfu')
-  await patrol(page, '洞府纪事', () => clickByText(page, /期许|纪事|营造/))
   await patrol(page, '灵脉', () => clickByText(page, /灵脉/))
   await context.close()
 }
 
-/* 收藏:图鉴详情 —— 册子里点一条就开 */
+/* 收藏:图鉴详情 —— 先切到「收藏」签(默认停在成就),册子里已收录的一条点开就是详情 */
 {
   const { page, context } = await open('/collection')
+  await clickTab(page, /收藏/)
+  await page.waitForTimeout(500)
   await patrol(page, '图鉴详情', async () => {
-    const cards = page.locator('main button.card-ink, main button.aspect-square')
-    const n = await cards.count()
-    for (let i = 0; i < n; i += 1) {
-      await cards.nth(i).click({ timeout: 2000 }).catch(() => {})
+    const chips = page.locator('main button.chip-ink')
+    const n = await chips.count()
+    for (let i = 0; i < n && i < 20; i += 1) {
+      await chips.nth(i).click({ timeout: 2000 }).catch(() => {})
       await page.waitForTimeout(300)
       if ((await page.locator('.modal-panel').count()) > 0) return true
     }
