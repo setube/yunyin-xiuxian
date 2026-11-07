@@ -13,6 +13,9 @@
  *   四 构筑快照行 —— 点删除前后行高一致(320 宽下「再想想」曾被压成 20px 宽竖排)。
  * 共同判据:没有任何按钮正文被折成竖排。
  *
+ * 另量一件事:后期档十页的触控下限。aria-check 量过主路由,但它挂默认前期档 ——
+ * 悟道兑换、洞府灵脉、道童这些整块不渲染,那些按钮从来没被量过(实测修行页有两枚 21px)。
+ *
  * 用法(需先 `bun run build`):
  *   node scripts/detail-geometry.mjs            # 375 + 320 两档
  *   node scripts/detail-geometry.mjs --shots    # 另存图到 /tmp/detail-geometry
@@ -51,12 +54,13 @@ const gn = (m, e) => ({ m, e })
  * 后期档:一件天品武器,四条词条、已封一条 —— 重铸与封存两个价签同时在。
  * poor = true 时把器灵尘压到 2:强化付不起,底行进「禁用 + 拒因」那一态 ——
  * 那正是页脚第三种几何(曾从 44px 涨到 57px)。
+ * major 默认 14;触控扫描要 18 —— 悟道兑换(WUDAO_EXCHANGE_MIN_MAJOR)18 起才渲染。
  */
-function slices({ poor = false } = {}) {
+function slices({ poor = false, major = 14 } = {}) {
   return {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: {
-      name: '几何自检', major: 14, sub: 0, exp: gn(0, 0), age: 3000, lifespanBonusYears: 0, dead: false,
+      name: '几何自检', major, sub: 0, exp: gn(0, 0), age: 3000, lifespanBonusYears: 0, dead: false,
       reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
     },
@@ -604,8 +608,90 @@ await runSouls(375, 812)
 await runSouls(320, 568)
 await runDongfu(375, 1200)
 await runDongfu(320, 1200)
+// ============ 五、后期档的触控下限:把「默认档看不到的控件」也量一遍 ============
+
+/**
+ * 全站触控下限 28px 的复查。
+ *
+ * aria-check 已经量了六条主路由,但它挂的是**默认前期档**:悟道兑换(金丹起)、
+ * 洞府灵脉(元婴起)、道童(筑基起)这些整块不渲染 —— 它们的按钮从来没有被量过。
+ * 实测修行页的「兑换」「连兑 10」只有 21px(chip-ink 自带上下内边距 2px,
+ * 只写 !text-[10px] 时盒高 21),而那是要连点的钮。
+ *
+ * 这里挂后期档,把十条路由都量一遍;只管 main 里的控件,弹窗另由 layout-check 的巡逻管。
+ */
+/*
+ * 去掉三条:本夹具下 /souls 没凝过器魂、/build 没存过构筑、/world 没开界域,
+ * 三页各自只剩一两个控件。它们的内容态由别的自检脚本各自覆盖。
+ */
+const TOUCH_ROUTES = [
+  '/',
+  '/cultivation',
+  '/adventure',
+  '/inventory',
+  '/character',
+  '/market',
+  '/celestial',
+  '/titles',
+  '/dongfu',
+  '/settings'
+]
+
+async function runTouchTargets() {
+  const context = await browser.newContext({ viewport: { width: 375, height: 900 } })
+  await context.route('**/*', r => {
+    const url = r.request().url()
+    if (/^(file|data|blob):/.test(url)) return r.continue()
+    return r.abort()
+  })
+  // major 18:悟道兑换(18 起)、洞府灵脉、道童这些整块才渲染 —— 用默认前期档量等于没量
+  await seedSave(context, slices({ major: 18 }))
+  const page = await context.newPage()
+  page.on('pageerror', e => fail(`[触控] 运行时异常:${e.message}`))
+
+  for (const route of TOUCH_ROUTES) {
+    await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
+    await page.waitForTimeout(1200)
+    await page.evaluate(() => {
+      for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+      Math.random = () => 1
+    })
+    for (let i = 0; i < 8; i += 1) {
+      if ((await page.locator('.modal-panel').count()) > 0) {
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+      } else break
+    }
+    const measured = await page.evaluate(() => {
+      const out = []
+      let seen = 0
+      for (const el of document.querySelectorAll('main button, main a, main [role=button]')) {
+        const r = el.getBoundingClientRect()
+        if (r.width <= 0 || r.height <= 0) continue
+        seen += 1
+        // 与 aria-check / layout-check 同一条尺子:声明 min-height ≥28 的给半像素容差
+        const h = el.offsetHeight || r.height
+        const declared = parseFloat(getComputedStyle(el).minHeight) || 0
+        if (h >= 28 || (declared >= 28 && h >= 27.5)) continue
+        out.push(`${h.toFixed(1)}px «${(el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 14)}»`)
+      }
+      return { small: out, seen }
+    })
+    /*
+     * 防空转:一页至少量到 5 个控件,否则这一页的判据等于没跑。
+     * 这条不是形式主义 —— 第一版就是把夹具写成 major 14,而悟道兑换 18 起才渲染,
+     * 于是「兑换」「连兑 10」那两枚 21px 的钮一次都没被量到,判据照样报绿。
+     */
+    if (measured.seen < 3) fail(`[触控] ${route} 只量到 ${measured.seen} 个控件,判据没跑到东西`)
+    if (measured.small.length) fail(`[触控] ${route} 有控件低于 28px:${measured.small.slice(0, 4).join(' | ')}`)
+  }
+
+  await context.close()
+}
+
 await runBuild(375, 1000)
 await runBuild(320, 1000)
+await runTouchTargets()
 await browser.close()
 
 if (failures.length) {
@@ -613,4 +699,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('二步确认几何通过:重铸/分解(含付不起档)、器魂散去、洞府连升、构筑删除四处两态均不变形,无折行与竖排按钮')
+console.log('二步确认几何通过:重铸/分解(含付不起档)、器魂散去、洞府连升、构筑删除四处两态均不变形,无折行与竖排按钮;后期档十页触控下限全部 ≥28px')
