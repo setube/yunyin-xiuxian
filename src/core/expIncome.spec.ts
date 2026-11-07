@@ -138,9 +138,19 @@ describe('即时修为 · 同源接线', () => {
     }
   })
 
-  it('收入结构只有一份算法 —— 经济审计读的是这里的速率,不许自己再推一遍', () => {
+  it('收入结构只有一份算法 —— 两个审计都读这里的速率,不许自己再推一遍', () => {
     const sim = src('./economySim.ts')
     expect(sim, '经济审计该读 expIncome 的速率口径').toContain('expIncome')
     expect(sim, '经济审计又自己写了一份遭遇/胜场速率').not.toMatch(/const battlesPerHour = \(3600/)
+
+    /*
+     * lootSim 原先手写展开了一遍:
+     *   `(3600 / EXPLORE_BATTLE_INTERVAL) * (1 - EXPLORE_EVENT_CHANCE) * TYPICAL_WIN_RATE`
+     * 与 winsPerHour() 逐项相同,只是没调它。economySim 里那句注释说的正是这种形态。
+     * 本条原先只查 economySim,漏了 lootSim —— 而 lootSim 才是真抄了的那一个。
+     */
+    const loot = src('./lootSim.ts')
+    expect(loot, '掉落审计该读 expIncome 的胜场速率').toContain('winsPerHour')
+    expect(loot, '掉落审计又自己写了一份胜场速率').not.toMatch(/3600 \/ EXPLORE_BATTLE_INTERVAL/)
   })
 })
