@@ -1,14 +1,16 @@
 /**
  * 「减少动效」那两个块用 0.01ms 而不是 none —— 这个选择有一个不显眼的依赖。
  *
- * 通配符规则会对**所有元素**生效,与 @keyframes 定义在哪无关,所以 25 处写在组件里的
- * keyframes(WarpPortal 10、CultivationOrb 8、SpiritRootReveal 7)照样受管。
+ * 通配符规则会对**所有元素**生效,与 @keyframes 定义在哪无关,所以写在组件里的
+ * keyframes 照样受管。实测 28 处:WarpPortal 10、CultivationOrb 8、SpiritRootReveal 7、
+ * TreasureCeremony 3 —— 最后那组写在 `<style scoped>` 里,但通配选择器作用于元素本身,
+ * 与样式块的 scoped 属性无关,故同样被那两个块压住(它自己还另有一份局部 @media 兜底)。
  *
  * 但 `animationend` 事件只在动画真的跑过一次时才触发:写成 `animation: none` 的话,
  * BuildingCard 的 `@animationend.self="flashing = false"` 就永远等不到,
  * 升级高亮会一直挂在卡上。0.01ms 保留了「跑一次」这个前提,是有意的。
  *
- * AGENTS.md 写的是「@keyframes 定义在 style.css」,实际有 25 处写在组件里 ——
+ * AGENTS.md 写的是「@keyframes 定义在 style.css」,实际有 28 处写在组件里 ——
  * 以代码为准:只要那两个块在,定义位置不影响可访问性,故本条不禁止组件内定义,
  * 只钉住「两处都在、都用 0.01ms、都没有被改成 none」。
  */
