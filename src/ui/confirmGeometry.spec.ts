@@ -103,7 +103,11 @@ describe('二步确认 · 两态同栏同高', () => {
       'components/equipment/EquipmentDetailDialog.vue',
       'views/CelestialView.vue',
       'views/WelcomeView.vue',
-      'components/equipment/EquipReforgeFooter.vue'
+      'components/equipment/EquipReforgeFooter.vue',
+      'components/adventure/SecretRealmCard.vue',
+      'components/celestial/TrialPanel.vue',
+      'components/cultivation/GongfaDialog.vue',
+      'components/inventory/ArtifactPanel.vue'
     ]
     const bad: string[] = []
     for (const rel of files) {

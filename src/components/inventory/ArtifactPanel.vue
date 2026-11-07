@@ -105,9 +105,9 @@
       <p v-if="nextGainText(row.def.id, row.owned.level)" class="mt-1 text-[10px] leading-relaxed text-ink-faint tabular">
         下一重:{{ nextGainText(row.def.id, row.owned.level) }}
       </p>
-      <div class="mt-2.5 flex gap-2">
+      <div class="mt-2.5 grid grid-cols-2 gap-2">
         <button
-          class="btn-seal flex-1 !py-1.5 !text-[12px]"
+          class="btn-seal w-full !py-1.5 !text-[12px]"
           :class="{ '!bg-ink-faint': row.equipped }"
           @click="toggleArtifact(row.def.id)"
         >
@@ -119,7 +119,7 @@
           玩家还看不出是「满了」还是「坏了」。改成禁用并写原因(AGENTS.md「禁用即给原因」)。
         -->
         <button
-          class="btn-ghost flex-1 !py-1.5 !text-[12px] tabular"
+          class="btn-ghost w-full !py-1.5 !text-[12px] tabular"
           :disabled="!row.upCost || row.short?.short != null"
           :title="row.upCost ? undefined : '祭炼已至上限'"
           @click="upgradeArtifact(row.def.id)"
