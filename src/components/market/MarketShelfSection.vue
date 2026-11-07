@@ -47,7 +47,12 @@
               换 ink-soft:纸 8.18、6% 底 7.52、13% 底 6.80,各种卡上都留得住余量;
               与标题(墨 / 品阶色)仍拉开一档,层级不变。
             -->
-            <p class="truncate text-[10px] text-ink-soft">{{ c.sub }}</p>
+            <!--
+              title:窄格上这行会被 truncate 掐掉。实测 320px 下格内宽 78px,
+              「神人~神帝境方子所用 · ×12」有 129px —— 只露出六个字,而这是功能信息
+              (这批草喂哪个境界的方子),不是装饰。悬停给全文,读屏靠 aria-label。
+            -->
+            <p class="truncate text-[10px] text-ink-soft" :title="c.sub" :aria-label="c.sub">{{ c.sub }}</p>
           </div>
         </div>
         <div class="mt-auto flex items-center justify-between pt-2">
