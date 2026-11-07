@@ -26,6 +26,7 @@ const MARKET = readFileSync(resolve(ROOT, 'src/components/market/MarketShelfSect
 const TITLES = readFileSync(resolve(ROOT, 'src/views/TitlesView.vue'), 'utf-8')
 const GONGFA_DIALOG = readFileSync(resolve(ROOT, 'src/components/cultivation/GongfaDialog.vue'), 'utf-8')
 const COLLECTION = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
+const APPRENTICE = readFileSync(resolve(ROOT, 'src/views/ApprenticeView.vue'), 'utf-8')
 const CODEX_TS = readFileSync(resolve(ROOT, 'src/ui/codex.ts'), 'utf-8')
 
 /** 取 CSS 里某个选择器的声明块 */
@@ -119,7 +120,7 @@ describe('高级物质感 · 二、不抢内容', () => {
     expect(crown, '印宽应与正文左留白相当(20px)').toContain('width: 20px')
   })
 
-  it('卡面类:装备/法宝/丹药/坊市/名号都接上了御纹与流光', () => {
+  it('卡面类:装备/法宝/丹药/坊市/名号/道童都接上了御纹与流光', () => {
     expect(EQUIPMENT_CARD, '装备卡应渲染御纹').toContain('luster-cornice')
     expect(EQUIPMENT_CARD, '装备卡应渲染流光').toContain('luster-sheen')
     expect(EQUIPMENT_CARD, '装备卡的挂载条件走 lusterOf').toContain('lusterOf(')
@@ -129,6 +130,12 @@ describe('高级物质感 · 二、不抢内容', () => {
     expect(PILL_VIEW, '丹药走 rank 入口(道品 rank 9 也要享有)').toContain('lusterByRank(')
     expect(MARKET, '坊市货格应渲染御纹').toContain('luster-cornice')
     expect(TITLES, '名号卡应渲染御纹').toContain('luster-cornice')
+    /*
+     * 顶档道童卡也挂这两样(见 ApprenticeView 里那句「四角御纹 + 流光」),
+     * 而它此前不在名单里 —— 判据只查了 8 个文件,漏了第 9 个。
+     */
+    expect(APPRENTICE, '顶档道童卡应渲染御纹').toContain('luster-cornice')
+    expect(APPRENTICE, '顶档道童卡应渲染流光').toContain('luster-sheen')
   })
 
   it('详情类:装备/丹药/功法/图鉴的弹窗都挂整幅框与骑缝印', () => {
