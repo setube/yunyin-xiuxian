@@ -16,7 +16,11 @@
       class="rounded-md border border-cinnabar/40 px-2 py-1.5 text-[11px] leading-relaxed text-cinnabar"
     >
       存档损坏:{{ corruptedNotice.map(id => STORE_NAMES[id] ?? id).join('、') }} · 原档留在本机
-      <button class="mt-1 block text-ink-faint underline" @click="ui.corruptedNotice = []">知道了</button>
+      <!--
+        触控靶面:纯文字只有 17px 高,低于全站 28px 下限(与行囊「收纳/分解」同法:
+        负外边距配正内边距,盒高抬到 28px+,流中仍占原行高)。
+      -->
+      <button class="-my-1 mt-1 block min-h-[28px] py-1 text-ink-faint underline active:text-ink-soft" @click="ui.corruptedNotice = []">知道了</button>
     </p>
     <div class="grid grid-cols-2 gap-2">
       <button class="btn-ghost !text-[12px] w-full" @click="onExport">导出存档</button>
