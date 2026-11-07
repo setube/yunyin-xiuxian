@@ -158,6 +158,13 @@ export const useResourcesStore = defineStore(
     }
 
     function setQi(v: number, cap: number): void {
+      /*
+       * 两个入参都要查有限性。缺了它 NaN 会**永久写进 qi**:
+       * Math.min(NaN, NaN) 仍是 NaN,之后每次 add 都从 NaN 出发,灵气再也不会回正。
+       * 三个调用点(engine 心跳、offline 结算、breakthrough 扣费)传的都是算出来的数,
+       * 而 cap 来自 player.qiCapValue —— 存档坏了或被外部改过时这里是最后一道闸。
+       */
+      if (!Number.isFinite(v) || !Number.isFinite(cap)) return
       // 可积余到标称容量的 QI_BANK_MULT 倍;标称容量是灵气充盈加成、突破耗时的基准,不是硬顶
       qi.value = Math.max(0, Math.min(cap * QI_BANK_MULT, v))
     }
