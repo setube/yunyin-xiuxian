@@ -687,10 +687,20 @@ await run(360, 812)
 await run(390, 812)
 await run(414, 812)
 await run(430, 812)
+/*
+ * 其余四处场景原先同样只测 320 与 375 端点。
+ * 上一条重铸场景补了五个中间宽度,证明「端点稳定 ≠ 中间稳定」这条不成立 ——
+ * 器魂散置行、洞府连升段、构筑快照行也一样是宽度敏感的两态几何,
+ * 故一并补 390(最常见的宽屏手机),便宜且能覆盖拐点。
+ * 只补 390 一档而非五档:这三处不是原始诉求里的痛点,补一个中间点校验单调性即可,
+ * 全补五档会让 detail-check 从约 3 分钟涨到 10 分钟以上。
+ */
 await runSouls(375, 812)
 await runSouls(320, 568)
+await runSouls(390, 812)
 await runDongfu(375, 1200)
 await runDongfu(320, 1200)
+await runDongfu(390, 1200)
 // ============ 五、后期档的触控下限:把「默认档看不到的控件」也量一遍 ============
 
 /**
@@ -922,6 +932,7 @@ async function runRecruitFull() {
 
 await runBuild(375, 1000)
 await runBuild(320, 1000)
+await runBuild(390, 1000)
 await runTouchTargets()
 await runCorruptNotice()
 await runRecruitFull()
