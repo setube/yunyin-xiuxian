@@ -48,6 +48,24 @@ const EQUIVALENT = [
     why: 'ARTIFACT_SUNDER_CAP 是 0.5,defSunder 封顶 0.5,1-0.5=0.5 远高于 0.2 的下限,这道钳制永不触发'
   },
   {
+    file: 'src/core/battleAnalysis.ts',
+    text: '.length === 0)',
+    why:
+      'foeOriginFinding 的早退。上一行调用的 foeOriginLines 结尾写的是' +
+      '`return lines.length > 0 ? lines : [兜底那一条]` —— 它永远返回非空数组,' +
+      '所以这个判空永不成立。留着是防御性写法(万一将来有人把那个兜底删了)。'
+  },
+  {
+    file: 'src/core/combat.ts',
+    text: 'Math.max(0, Math.min(1, ratio(f.hp, f.snap.maxHp))',
+    why:
+      'hpPct 的夹逼。两条边界在写入侧已经封死:' +
+      'applyDamage 末行是 `target.hp = subClamp(target.hp, remain)`(不会为负);' +
+      'healSelf 是 `missing = subClamp(maxHp, hp)`、`applied = gnMin(missing, amount)`(不会超过 maxHp)。' +
+      '所以 ratio 恒在 [0,1],钳制永不触发。留着是因为 hpPct 还兼作「进战报的 php/ehp 读数」,' +
+      '那条路直方图化,一个越界的 1.02 会让进度条画到框外。'
+  },
+  {
     file: 'src/core/audio.ts',
     text: 'Math.max(0, Math.min(1, p.musicVol))',
     why:
