@@ -312,6 +312,54 @@ const SCENES = [
       if (!mentor.hasArrow) out.push('师承卡没有入口箭头,点不开')
       return out
     }
+  },
+  {
+    /*
+     * 建号页。
+     *
+     * 这是玩家必经的首屏流程,却一直不在任何真浏览器检查里:
+     * layout-check / ui-smoke / focus-check 的 ROUTES 都不含 /create —— 那些脚本跑的是
+     * 已有存档,而路由守卫 `if (game.started) return { name: 'home' }` 会把 /create 弹回首页。
+     * aria-check 的 FORM_ROUTES 里写了 /create,但同样被弹走,于是那条判据第 49 轮就发现是空转的。
+     *
+     * 本档用「未开局 + 已同意隐私」两个条件才进得去(守卫:started 为 false 且 privacyAccepted)。
+     */
+    name: '建号页',
+    route: '/create',
+    slices: () => ({
+      game: {
+        started: false,
+        saveVersion: 2,
+        createdAt: Date.now(),
+        lastActiveAt: Date.now(),
+        totalPlaySec: 0,
+        createRerolls: null,
+        createProfile: null
+      },
+      settings: {
+        privacyAccepted: true,
+        sfxOn: false,
+        musicOn: false,
+        musicVol: 0,
+        sfxVol: 0,
+        reduceMotion: true,
+        battleSpeed: 4,
+        decomposeRanks: [],
+        smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true },
+        theme: 'dark'
+      }
+    }),
+    judge: page => {
+      // 被守卫弹回首页 = 夹具没生效,本档等于没跑
+      if (/修行|洞府|宗门/.test(page.text) && !/道\s*号/.test(page.text)) {
+        return ['建号页没渲染出来(被路由守卫弹回了首页?)—— 本档空转']
+      }
+      const out = []
+      if (!/道\s*号/.test(page.text)) out.push('建号页缺「道 号」输入区')
+      if (!/灵\s*根/.test(page.text)) out.push('建号页缺灵根一栏')
+      if (!page.buttons.some(b => /踏\s*入|开始/.test(b.text))) out.push('建号页没有开始按钮')
+      return out
+    }
   }
 ]
 
@@ -367,4 +415,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 闭关拦截 / 未拜师八档都解释得清')
+console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 闭关拦截 / 未拜师 / 建号页九档都解释得清')
