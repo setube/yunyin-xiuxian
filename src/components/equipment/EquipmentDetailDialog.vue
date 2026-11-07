@@ -204,23 +204,21 @@
           <button class="btn-seal min-h-11 flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
           <!--
             满级不再让按钮凭空消失:消失的按钮不解释任何事,玩家只看到「强 化」不见了。
-            保留同一位置、换成禁用态并直接写出原因(AGENTS.md「禁用即给原因」)。
+            保留同一位置、换成禁用态并写出原因(AGENTS.md「禁用即给原因」)。
 
-            动作词与拒因各自成块、块内不断行:两段直接拼在一起时,113px 的钮会把
-            「强 化(尘」/「差 37」从中截断 —— 折行只允许发生在两块之间。
+            拒因走 aria-label / title,不写进按钮正文:
+            这个钮与「卸 下」「垃圾桶」并排,宽只 78~105px。正文挂「强 化(尘差 36)」
+            必然折成两行 —— 底行因此从 44px 涨到 57px,整条页脚跟着高 37px(实测 375 与 320 都如此)。
+            而同一份差额在正上方的强化面板里已经整句列出(「器灵尘尚差 36」),
+            按钮上再写一遍本是第二处。禁用态写「强 化」,读屏与 hover 拿得到差额。
           -->
           <button
-            class="btn-ghost min-h-11 flex-1 !flex-wrap !px-2 !leading-tight"
+            class="btn-ghost min-h-11 flex-1 !px-2"
             :disabled="upCost ? upShort !== null : true"
+            :aria-label="!upCost ? upgradeCapToast() : upShort === 'stone' ? `强 化,灵石尚差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `强 化,器灵尘尚差 ${upGap?.dust ?? 0}` : '强 化'"
             :title="upCost ? (upShort === 'stone' ? `灵石尚差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : upShort === 'dust' ? `器灵尘尚差 ${upGap?.dust ?? 0}` : undefined) : upgradeCapToast()"
             @click="doUpgrade"
-          >
-            <span class="whitespace-nowrap">{{ !upCost ? '已至上限' : '强 化' }}</span>
-            <span
-              v-if="upCost && upShort"
-              class="whitespace-nowrap text-[10px] tabular"
-            >({{ upShort === 'stone' ? `石差 ${formatGap(upGap?.stone ?? { m: 0, e: 0 })}` : `尘差 ${upGap?.dust ?? 0}` }})</span>
-          </button>
+          >{{ !upCost ? '已至上限' : '强 化' }}</button>
           <!-- 分解须二步确认,防误触 -->
           <button
             class="btn-ghost min-h-11"
