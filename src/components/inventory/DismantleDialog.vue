@@ -104,9 +104,13 @@
     <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">与「一键分解」勾选无关</p>
     <template #footer>
       <template v-if="!cleanConfirm">
+        <!--
+          禁用态只由 :disabled 决定,不再叠 opacity-45:
+          .btn-ghost:disabled 刻意「压色不压字」(实测 5.55:1),叠一层 45% 透明后
+          跌到 1.84:1 —— 而那行字正是「为什么按不了」。
+        -->
         <button
           class="btn-ghost w-full !text-[12px]"
-          :class="cleanCount ? '' : 'opacity-45'"
           :disabled="cleanCount === 0"
           @click="cleanConfirm = true"
         >

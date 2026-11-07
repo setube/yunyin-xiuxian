@@ -26,11 +26,14 @@
       <section>
         <SectionTitle title="已凝形意" :hint="`${endgame.activeSouls.length} / ${SOUL_SLOTS} 缕`" />
         <div class="mt-2 grid grid-cols-3 gap-2">
+          <!--
+            空槽不再整卡压 50% 透明:卡里那句「空槽」是状态词,压到 2.04:1 就读不出。
+            空与有由内部分支(有无 soul)自己表达,不靠透明度。
+          -->
           <div
             v-for="row in slotRows"
             :key="row.index"
             class="card-ink relative flex min-h-[86px] flex-col items-center justify-center px-2 py-2 text-center"
-            :class="row.soul ? '' : 'opacity-50'"
           >
             <!-- 最上阶(化真)独有的一圈魂环;其余阶只有阶点(见 ui/soulMark) -->
             <span v-if="row.mark?.top" class="soul-halo" aria-hidden="true" />
@@ -69,15 +72,20 @@
           v-if="pickReady.length > 0"
           class="mt-2 rounded-md border border-jade/25 bg-jade/5 px-3 py-2"
         >
+          <!--
+            只报状态。判据挪进钮的 title —— 它是「凭什么按这个次序」的注解,
+            按需出现,不占正文那一行(AGENTS.md「优先用 UI 表达」)。
+          -->
           <div class="flex items-center justify-between gap-2">
             <span class="min-w-0 text-[10px] leading-relaxed text-jade">
-              建议装上 {{ pickReady.length }} 缕 · {{ pickNames }}
+              可装 {{ pickReady.length }} 缕 · {{ pickNames }}
             </span>
-            <button class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]" @click="doPickBest">择优装配</button>
+            <button
+              class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]"
+              title="优先看阶位;同阶再看词条总量"
+              @click="doPickBest"
+            >择优装配</button>
           </div>
-          <p class="mt-1 text-[9px] leading-relaxed text-ink-faint">
-            优先看阶位;同阶再看词条总量。装上后可逐格核对阶点。
-          </p>
         </div>
       </section>
 
@@ -125,7 +133,7 @@
                 :style="{ color: row.color, background: `color-mix(in srgb, ${row.color} 12%, transparent)` }"
                 aria-hidden="true"
               >{{ row.seal }}</span>
-              <span class="truncate" :style="{ color: row.color }">{{ row.label }}</span>
+              <span class="truncate" :style="{ color: row.textColor }">{{ row.label }}</span>
               <span
                 class="soul-pips shrink-0"
                 :class="{ 'soul-pips--top': row.mark.top }"
@@ -147,8 +155,8 @@
               <button class="btn-ghost !px-2 !py-2 !text-[11px] !text-ink-faint" @click="pendingDissolveUid = row.soul.uid">散去</button>
             </template>
             <template v-else>
-              <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="doDissolve(row.soul.uid)">确认散去</button>
               <button class="btn-ghost !px-2 !py-2 !text-[11px]" @click="pendingDissolveUid = null">再想想</button>
+              <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="doDissolve(row.soul.uid)">确认散去</button>
             </template>
           </div>
         </div>
@@ -210,6 +218,7 @@
             {{ refineShort.reason ? `入 炉(${refineShort.reason})` : '入 炉' }}
           </button>
           <div v-else class="flex shrink-0 items-center gap-1.5">
+            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pendingRefineUid = null">再想想</button>
             <button
               class="btn-seal !px-2.5 !py-2 !text-[11px]"
               :disabled="refineShort.short.m > 0"
@@ -218,7 +227,6 @@
             >
               确认凝炼
             </button>
-            <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pendingRefineUid = null">再想想</button>
           </div>
         </div>
       </div>
@@ -241,6 +249,7 @@
   import { soulPickSummary, soulPicks } from '@/ui/soulPick'
   import { equipmentTemplate } from '@/data/equipment'
   import { SOUL_SLOTS, soulGradeDef, soulMods, soulName, soulTypeDef, type SoulInstance } from '@/data/souls'
+  import { soulGradeTextColor } from '@/ui/soulMark'
   import { canRefine, dissolveSoul, previewSoul, refineEquipment, removeSoul, SOUL_REFINE_COST, wearSoul } from '@/core/soulService'
   import { daoSourceShortfall } from '@/core/daoSource'
   import { endgameUnlocked } from '@/core/endgameService'
@@ -313,7 +322,9 @@
           soul: s,
           flavor: soulFlavorText(s),
           // 字色、阶位形制、魂型印各算一次:模板里原先 soulColor 调 4 次、soulMark 3 次
+          // color 管装饰(魂型印底),textColor 管正文(名字):两端档的原色当正文过不了 AA
           color: gradeDef.color,
+          textColor: soulGradeTextColor(s.grade),
           mark: soulMark(s.grade),
           seal: soulTypeDef(s.type)?.seal ?? '魂',
           label: soulName(s)
@@ -336,7 +347,7 @@
           gradeRank: preview.gradeRank,
           mark: soulMark(preview.gradeRank),
           gradeName: gradeDef.name,
-          gradeColor: gradeDef.color
+          gradeColor: soulGradeTextColor(preview.gradeRank)
         }
       })
   })

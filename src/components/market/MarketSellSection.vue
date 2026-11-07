@@ -33,28 +33,51 @@
     <div>
       <SectionTitle title="售材料" />
       <div class="mt-2 space-y-2">
-        <div v-for="m in materialRows" :key="m.id" class="card-ink flex items-center justify-between px-3 py-2.5">
-          <div class="flex items-center gap-2">
+        <div v-for="m in materialRows" :key="m.id" class="card-ink flex items-center justify-between gap-2 px-3 py-2.5">
+          <!--
+            左列允许折行、且名字不许被压窄:「凡品灵草」四字在 320 宽曾被挤成一行一个字,
+            行高 100px(整行别的材料是 61)。名字是这一行唯一必须完整读出的东西,
+            该让位的是「存 / 每摞」那两段读数。
+          -->
+          <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
             <!-- 灵草按品阶上色;玄铁无品阶,保持原样 -->
             <GameIcon v-if="m.grade == null" :name="m.icon" :size="16" class="text-jade" />
             <GameIcon v-else :name="m.icon" :size="16" :style="{ color: herbQualityTone(m.grade) }" />
             <span
-              class="font-kai text-[13px]"
+              class="shrink-0 whitespace-nowrap font-kai text-[13px]"
               :style="m.grade == null ? undefined : { color: herbQualityTextColor(m.grade) }"
               :class="m.grade == null ? 'text-ink' : ''"
             >{{ m.name }}</span>
-            <span class="text-[10px] text-ink-faint">存 {{ m.count }}</span>
-            <span v-if="m.count < MARKET_MAT_COUNT" class="text-[10px] text-cinnabar">尚差 {{ MARKET_MAT_COUNT - m.count }}</span>
+            <span class="whitespace-nowrap text-[10px] text-ink-faint">存 {{ m.count }}</span>
+            <!--
+              整摞价原先内联在「售出」钮里:钮正文带一个长数字,与确认态那两枚短钮
+              差出 60px —— 一点一退,整行左列宽就从 76.8 跳到 96.6(320 宽实测卡片高度也变)。
+              价签放到存量旁,按钮只留动作词,两态宽度就咬住了。
+              「每摞」是量词:钮上的 ×12 是「一摞 12 份」,裸写一个数会读成单价。
+            -->
+            <span class="whitespace-nowrap text-[10px] text-ink-faint tabular">每摞 {{ formatGN(m.price) }}</span>
           </div>
+          <!--
+            两态同栏:确认态的两枚钮各自顶替「售出」与「售尽」这两格,不增删格位。
+            原先确认态是「再想想 + 确认售尽」两枚新钮(合计 119px),未确认态
+            「售出 ×12 (4.021亿) + 售尽」是 179px —— 一点一退,整行的左列宽就从 76.8 跳到 96.6,
+            320 宽下卡片高度也跟着 61 变成 56.5(实测)。格位固定,行就不动。
+          -->
           <span class="flex shrink-0 items-center gap-1.5">
             <template v-if="sellArm === keyOf(m)">
-              <button class="btn-ghost !px-2 !py-2 !text-[11px]" @click="sellArm = null">再想想</button>
+              <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="sellArm = null">再想想</button>
               <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="sellAllOf(m)">确认售尽</button>
             </template>
             <template v-else>
-              <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" :disabled="m.count < MARKET_MAT_COUNT" @click="m.grade == null ? sellOreOne() : sellHerbOne(m.grade)">
-                售出 ×{{ MARKET_MAT_COUNT }} ({{ formatGN(m.price) }})
-              </button>
+              <!--
+                份数不够时钮上直接写差多少(AGENTS.md「禁用即给原因」)。
+                这行原先是左侧一个独立的「尚差 N」小字:同一件事写两遍,而钮本身仍只写「售出」。
+              -->
+              <button
+                class="btn-ghost !px-2.5 !py-2 !text-[11px]"
+                :disabled="m.count < MARKET_MAT_COUNT"
+                @click="m.grade == null ? sellOreOne() : sellHerbOne(m.grade)"
+              >售出 ×{{ MARKET_MAT_COUNT }}{{ m.count < MARKET_MAT_COUNT ? `(尚差 ${MARKET_MAT_COUNT - m.count})` : '' }}</button>
               <!-- 后期常堆几十摞:整份售出要按几十次,故给「售尽」(两步确认,不可逆) -->
               <button
                 v-if="m.lots > 1"
@@ -73,15 +96,15 @@
         <div v-for="p in sellablePills" :key="p.id" class="flex items-center gap-2 px-2.5 py-2">
           <span class="min-w-0 grow truncate font-kai text-[13px]" :style="{ color: p.color }">{{ p.name }}</span>
           <span class="shrink-0 text-[10px] text-ink-faint">×{{ p.count }}</span>
+          <!-- 单价挪出「售出」钮,与材料行同一做法:钮正文只留动作词,两态宽度才咬得住 -->
+          <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint tabular">{{ formatGN(p.price) }}</span>
           <span class="flex shrink-0 items-center gap-1.5">
             <template v-if="sellArm === p.id">
               <button class="btn-ghost !px-2 !py-2 !text-[11px]" @click="sellArm = null">再想想</button>
               <button class="btn-seal !px-2 !py-2 !text-[11px]" @click="sellPillAll(p.id)">确认售尽</button>
             </template>
             <template v-else>
-              <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="sellPillOne(p.id)">
-                售出 ({{ formatGN(p.price) }})
-              </button>
+              <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="sellPillOne(p.id)">售出</button>
               <button
                 v-if="p.count > 1"
                 class="btn-ghost !px-2 !py-2 !text-[11px] text-cinnabar"

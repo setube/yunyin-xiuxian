@@ -60,8 +60,12 @@
       <template #footer>
         <div class="flex gap-2">
           <button class="btn-ghost flex-1" @click="closeImport">再想想</button>
+          <!--
+            不可叠 disabled:text-ink-faint:.btn-seal:disabled 本身就是「ink-faint 打底 + 92% 白字」,
+            再压一层灰字色,字与底同色,实测 1.00:1 —— 而「无法导入」这四个字正是此刻最该读出来的。
+          -->
           <button
-            class="btn-seal flex-1 disabled:text-ink-faint"
+            class="btn-seal flex-1"
             :disabled="importInspect?.tooNew === true"
             @click="confirmImport"
           >

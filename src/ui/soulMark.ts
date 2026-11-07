@@ -45,3 +45,21 @@ export function soulMark(grade: number): SoulMark {
   const def: SoulGradeDef = soulGradeDef(rank)
   return { pips: rank + 1, top: rank >= SOUL_TOP_GRADE, label: def.name, color: def.color }
 }
+
+/**
+ * 器魂档色作**正文**用时的文字色。
+ *
+ * 与天赋同一把尺:两端档(朦胧 #857F70 / 化真 #C9A227)的原色当正文过不了 AA,另给一档;
+ * 中间四档的 jade / azure / violet-ink / amber-ink 本就达标,直接复用。
+ * 装饰处(封印章、阶点、光环)仍用 `SOUL_GRADES[].color`。
+ */
+const TEXT_TONE: Partial<Record<number, string>> = {
+  0: 'var(--color-talent-mortal-text)',
+  5: 'var(--color-talent-dao-text)'
+}
+
+/** 第 rank 档当正文用时的字色;未登记的档回落到原色 */
+export function soulGradeTextColor(rank: number): string {
+  const def = soulGradeDef(rank)
+  return TEXT_TONE[def.rank] ?? def.color
+}

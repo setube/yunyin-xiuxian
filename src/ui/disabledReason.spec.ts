@@ -109,6 +109,47 @@ describe('禁用按钮 · 要给拒因', () => {
     expect(bad, `这些禁用按钮没说为什么不能点:\n${bad.join('\n')}`).toEqual([])
   })
 
+  /**
+   * 禁用态不许靠「整块压透明度」表达。
+   *
+   * style.css 里 `.btn-ghost:disabled` 的注释写着「压色不压字:字常常正是门槛本身,
+   * 整块压到 40% 透明只剩 2.23:1」—— 而调用点上多处在按钮/卡片上又叠了一层 opacity-*。
+   * 实测日主题(卡底 244,240,230):ink 压 40% 只剩 2.30、ink-soft 1.99、
+   * 拒因用的 cinnabar 1.84 —— 一律远低于 4.5。禁用的形状由 :disabled 的底色/描边表达,
+   * 拒因的文字必须留在可读的对比度上。
+   *
+   * 判据只查「同一元素上既有 :disabled 或 disabled: 变体、又有 opacity-*」这一种叠加。
+   * 纯装饰物的 opacity(如名号册里那枚未得的印)不在管辖内 —— 那里没有正文。
+   *
+   * 故障注入:任一处把 opacity-* 加回禁用元素,本条红。
+   */
+  it('禁用态不叠整块透明度(只压色,不压字)', () => {
+    const bad: string[] = []
+    for (const file of vueFiles()) {
+      const text = readFileSync(file, 'utf-8')
+      /*
+       * 只认「无前缀的 opacity-*」:active:opacity-60 是按下瞬间的反馈,不是禁用态的表达,
+       * 而 disabled:opacity-60 与裸 opacity-45 才是把正文压掉的那一类。
+       * 用词边界挡掉 `active:opacity-60` / `hover:opacity-80`,别把交互反馈算成可比性问题。
+       */
+      for (const { tag, index } of openTags(text, 'button')) {
+        if (!/:disabled|\bdisabled\b|disabled:/.test(tag)) continue
+        const line = text.slice(0, index).split('\n').length
+        const bare = /(?<![\w:-])opacity-(?:[1-9]|[1-9][0-9])\b/.exec(tag)
+        if (bare) bad.push(`${file}:${line} 的 ${bare[0]}`)
+        const dimVariant = /disabled:opacity-\d+/.exec(tag)
+        if (dimVariant) bad.push(`${file}:${line} 的 ${dimVariant[0]}`)
+      }
+      // :class 里按状态挂裸 opacity 的,与 :disabled 同为一颗钮也算
+      for (const m of text.matchAll(/<button[\s\S]{0,900}?:disabled[\s\S]{0,400}?'opacity-(?:[1-9]|[1-9][0-9])'/g)) {
+        const line = text.slice(0, m.index!).split('\n').length
+        const hit = `${file}:${line} 的 opacity 挂在禁用钮上`
+        if (!bad.some(b => b.startsWith(`${file}:${line} `))) bad.push(hit)
+      }
+    }
+    expect(bad, `这些禁用态把正文一起压透明了(拒因会读不出):\n${bad.join('\n')}`).toEqual([])
+  })
+
   it('本轮补的三处拒因还在', () => {
     const known: readonly (readonly [string, string])[] = [
       ['src/components/market/MarketSellSection.vue', "'寄卖(席位已满)'"],

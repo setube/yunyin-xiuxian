@@ -262,6 +262,25 @@ describe('调色板 · 承载文字的色都过线', () => {
     expect(bad, '正文档承载 10-14px 小字,达不到 AA 就别留在 STRONG 档').toEqual([])
   })
 
+  /**
+   * 天赋 / 器魂品阶色当**正文**用时也要过 AA。
+   *
+   * 两端档原本直接拿 data 里的装饰原色当字色:凡赋 #857F70 日主题三底最差 3.50、
+   * 道赋 #C9A227 最差 2.13 —— 而它们正落在「天赋鉴」「转世择姿」「器魂列表」的正文里。
+   * 品质色早有同一套治法(另给一组 --color-quality-*-text),本条把那套做法钉给这两类品阶。
+   * 中间几档(azure / violet-ink / jade / amber-ink)本就达标,不另立 token。
+   */
+  it('天赋 / 器魂品阶的文字色 token:两套主题、三张底都 ≥4.5:1', () => {
+    const bad: string[] = []
+    for (const name of ['talent-mortal-text', 'talent-dao-text']) {
+      for (const theme of ['light', 'dark'] as const) {
+        const w = worst(name, theme)
+        if (w < 4.5) bad.push(`${name}@${theme} ${w.toFixed(2)}:1`)
+      }
+    }
+    expect(bad, '品阶色当正文,达不到 AA 就别直接拿装饰原色当字色').toEqual([])
+  })
+
   it('强调档:守 ≥3:1 大字 AA(标题/图标/大字的主场)', () => {
     const bad: string[] = []
     for (const name of WEAK) {

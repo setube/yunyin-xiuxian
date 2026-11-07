@@ -38,6 +38,13 @@
   --color-quality-immortal-text-rgb: 46 107 105;
   --color-quality-divine-text-rgb: 150 52 47;
   --color-quality-dao-text-rgb: 132 89 10;
+  /*
+   * 天赋 / 器魂品阶的文字色。原色里两档当正文过不了 4.5:凡赋 #857F70 三底最差 3.50、
+   * 道赋 #C9A227 最差 2.13(实测日主题)。装饰处(边框、between 点)仍用原色,只有正文换这一套。
+   * 中间两档的 azure / violet-ink 本就达标,直接用,不另立 token。
+   */
+  --color-talent-mortal-text-rgb: 100 94 82;
+  --color-talent-dao-text-rgb: 118 89 38;
 
   --color-paper: rgb(var(--color-paper-rgb));
   --color-paper-deep: rgb(var(--color-paper-deep-rgb));
@@ -58,6 +65,8 @@
   --color-quality-immortal-text: rgb(var(--color-quality-immortal-text-rgb));
   --color-quality-divine-text: rgb(var(--color-quality-divine-text-rgb));
   --color-quality-dao-text: rgb(var(--color-quality-dao-text-rgb));
+  --color-talent-mortal-text: rgb(var(--color-talent-mortal-text-rgb));
+  --color-talent-dao-text: rgb(var(--color-talent-dao-text-rgb));
 
   /*
    * 楷体栈唯一事实源(tailwind.config 里的 kai/song 只是把它接成 utility)。
@@ -413,6 +422,9 @@ html[data-theme='dark'] {
      两者同值会被「无同值异名」那条判据拦下,而文字色本就该与装饰色分开一格 */
   --color-quality-divine-text-rgb: 244 150 140;
   --color-quality-dao-text-rgb: 233 185 73;
+  /* 天赋 / 器魂文字色 · 夜主题:暗底上反过来提亮(与品阶文字色同一做法) */
+  --color-talent-mortal-text-rgb: 180 172 153;
+  --color-talent-dao-text-rgb: 228 180 70;
   --shadow-ink: rgb(8 7 5);
   --shadow-ink-rgb: 8 7 5;
   /* 暗色 paper 92% + white 8% 预计算 */
