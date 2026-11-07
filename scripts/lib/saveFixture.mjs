@@ -96,6 +96,24 @@ export function lateSlices() {
      * 手写 4/5 级是为了让「已营 7/7」在页面上成立;洞府本身满 4 级。
      */
     /**
+     * 图鉴:材料与敌人各铺几条见闻,让图鉴页/敌情面板不再全空。
+     *
+     * 与 dongfu / cultivation 同一类缺口 —— 没有这一片时,图鉴页是空的、
+     * 敌人详情里「已见 N 次」恒为 0,巡页脚本量到的是「什么都没见过」。
+     *
+     * 只铺少量:id 必须是 data/materials、data/enemies 里的真值,sanitize 会清掉认不出的。
+     */
+    lore: {
+      materialLore: { mat_qingzhi: 3, mat_chiyan: 2, mat_xuanyin: 1 },
+      materialSeen: { mat_qingzhi: 5, mat_chiyan: 4, mat_xuanyin: 3 },
+      recipeLore: {},
+      blueprintLore: {},
+      skillExp: {},
+      enemyLore: { e_wolf: 5, e_boar: 4, e_wolfking: 3 },
+      enemySeen: { e_wolf: 12, e_boar: 9, e_wolfking: 2 },
+      studyFrac: 0
+    },
+    /**
      * 功法:主修一门满级 + 两门辅修 + 两门秘术(learned 的键须是 data/gongfa 里的真 id)。
      *
      * 与 dongfu 同一类缺口:没这一片时,修行页的功法栏、属性汇总里的功法词条、
