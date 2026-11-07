@@ -9,10 +9,12 @@
  *
  * 只从 public API 取数,不复制常量值 —— 基准该多大由各处自己决定,本条只管它们彼此相同。
  *
- * 已知局限:buildSearch.ts 的 BASE 是模块私有常量,没有 public API 能取到,故本条盖不到它。
- * 它当前与另两处同值,但要真守住需要把它导出,属于生产改动,本轮不动。
+ * buildSearch.ts 的 BASE 是模块私有常量,取不到值 —— 但取得到源码文本,
+ * 底下第三条判据就是从源码里读它,不必为一条测试把生产常量导出去。
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { toNum } from '@/utils/gnum'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
 import { SIM_REFERENCE } from './celestialSim'
@@ -34,6 +36,28 @@ describe('平衡模拟器基准三维 · 三处必须同值', () => {
     expect(toNum(SIM_REFERENCE.attack), '攻击基准不许分叉').toBeCloseTo(toNum(base.attack))
     expect(toNum(SIM_REFERENCE.defense), '防御基准不许分叉').toBeCloseTo(toNum(base.defense))
     expect(toNum(SIM_REFERENCE.maxHp), '气血基准不许分叉').toBeCloseTo(toNum(base.maxHp))
+  })
+
+  /**
+   * 第三处:buildSearch.ts 的 BASE。
+   *
+   * 原注释写「它是模块私有常量,没有 public API 能取到,故本条盖不到它;
+   * 要真守住需要把它导出,属于生产改动」—— 那个判断过于保守:
+   * 常量取不到,但**源码文本取得到**。为一条判据把模块内部常量导出去,
+   * 反而会被 deadExportAudit 判为「为测试而生的导出」,那才是错的取舍。
+   *
+   * 这里的正则只认 `const BASE = { attack: N, defense: N, maxHp: N }` 这一种写法,
+   * 改写法会先让本判据报「读不到」而不是静默放绿。
+   */
+  it('buildSearch 的 BASE 也只能是同一组基准三维', () => {
+    const src = readFileSync(resolve(__dirname, 'buildSearch.ts'), 'utf8')
+    const m = /const BASE = \{ attack: ([\d.]+), defense: ([\d.]+), maxHp: ([\d.]+) \}/.exec(src)
+    expect(m, 'buildSearch 的 BASE 写法变了,正则读不到 —— 请按新写法更新本条').not.toBeNull()
+    const [, atk, def, hp] = m!
+    const base = buildSnap(unityProfile())
+    expect(Number(atk), 'buildSearch 的攻击基准与 buildSim 分叉').toBeCloseTo(toNum(base.attack))
+    expect(Number(def), 'buildSearch 的防御基准与 buildSim 分叉').toBeCloseTo(toNum(base.defense))
+    expect(Number(hp), 'buildSearch 的气血基准与 buildSim 分叉').toBeCloseTo(toNum(base.maxHp))
   })
 
   it('基准三维都是正数(为 0 或负数会让模拟全失真)', () => {
