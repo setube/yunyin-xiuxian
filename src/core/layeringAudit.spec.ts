@@ -84,8 +84,17 @@ const STATEFUL_CORE = new Set<string>([
 const CORE_STORE_SITES = 192;
 /**
  * core 用例里需要 Pinia 的文件数基线(只许减)。
- * 119 → 120:补 playerSnap.spec 时加的 —— 该模块本身就要读四个 store,测试绕不开 Pinia。
- * 120 → 121:同理,compare.spec 的 measureOnWorld 经 currentDaoRules 读 endgame store。
+ *
+ * 每次上调都要在这里写清理由 —— 否则「只许减」会慢慢变成「跟着涨」,
+ * 而后来人看不出哪一档是有代价的让步、哪一档是随手改的数字。
+ *
+ * 117 → 119:补 playerSnap.spec 时一次加的 2(playerSnap 要读四个 store,测试绕不开)。
+ * 119 → 121:补 compare.spec 时加的 —— 同一次提交里先写 120 又改成 121,
+ *   即 compare.spec 自己就引入了 2 个,不是先后两个文件。
+ *   measureOnWorld 经 currentDaoRules 读 endgame store,该模块绕不开 Pinia。
+ *
+ * 现状 121 已顶格(121/121),即新写一个要读 store 的 core 用例就会红。
+ * 那是有意的:真需要就上调并写明理由,不需要就别把纯模块的测试拖下水。
  */
 const CORE_PINIA_SPECS = 121;
 
