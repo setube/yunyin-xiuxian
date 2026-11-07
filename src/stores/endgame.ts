@@ -402,7 +402,12 @@ export const useEndgameStore = defineStore(
         fixedRecords[id] = {
           value,
           life: Math.floor(asFiniteNumber(r.life, 0, 0)),
-          note: typeof r.note === 'string' ? r.note : ''
+          /*
+           * note 截到 NAME_MAX_LENGTH,与 updateRecord 的写入路径同一把尺。
+           * 上一轮只补了 updateRecord,读档这条仍能塞进几十万字符
+           * (实测塞 10 万字后 $state 序列化出来 100343 字节)。
+           */
+          note: typeof r.note === 'string' ? truncateCodePoints(r.note.trim(), NAME_MAX_LENGTH) : ''
         }
       }
       records.value = fixedRecords
