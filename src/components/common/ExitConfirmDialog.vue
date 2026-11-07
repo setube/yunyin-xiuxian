@@ -5,9 +5,9 @@
       <template v-else>暂无存档</template>
     </p>
     <template #footer>
-      <div class="flex gap-2">
-        <button class="btn-ghost flex-1" @click="dismiss">再想想</button>
-        <button class="btn-seal flex-1" @click="confirm">退出</button>
+      <div class="grid grid-cols-2 gap-2">
+        <button class="btn-ghost w-full" @click="dismiss">再想想</button>
+        <button class="btn-seal w-full" @click="confirm">退出</button>
       </div>
     </template>
   </BaseModal>

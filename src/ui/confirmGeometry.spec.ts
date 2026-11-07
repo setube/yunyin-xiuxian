@@ -56,8 +56,8 @@ describe('二步确认 · 两态同栏同高', () => {
 
   it('分解确认:整行换掉,不与「卸下/强化」挤同一条', () => {
     const src = read(DETAIL)
-    // 未确认态与确认态是两个互斥的 flex 行
-    expect(src, '分解确认态须另起一行').toMatch(/<div v-else class="flex gap-2">/)
+    // 未确认态与确认态是两个互斥的行;确认态用 grid 两栏(等宽见下一条用例)
+    expect(src, '分解确认态须另起一行').toMatch(/<div v-else class="grid grid-cols-2 gap-2">/)
     expect(src, '确认分解须自带一行').toMatch(/确认分解<\/button>/)
     /*
      * 反向:确认分解不许与「装 备 / 强 化」同处一条 flex。
@@ -79,7 +79,47 @@ describe('二步确认 · 两态同栏同高', () => {
     const src = read(DETAIL)
     const footer = src.slice(src.indexOf('decomposeArm !== inst?.uid'), src.indexOf('</template>', src.indexOf('确认分解')))
     expect(footer, '未确认态三颗钮都带 min-h-11').toMatch(/btn-seal min-h-11 flex-1" @click="toggleEquip"/)
-    expect(footer, '确认态两颗钮都带 min-h-11').toMatch(/btn-seal min-h-11 flex-1" @click="doDecompose"/)
+    expect(footer, '确认态两颗钮都带 min-h-11').toMatch(/btn-seal min-h-11 w-full" @click="doDecompose"/)
+  })
+
+  /**
+   * 全站:btn-ghost 与 btn-seal 并排时,两枚必须严格等宽。
+   *
+   * 两套按钮的左右内边距不同(.btn-seal 18px/.btn-ghost 16px),
+   * 而 `flex-1` 分配的是内容盒之上的空间、内容最小宽以 padding 为下界 ——
+   * 于是 flex + 双 flex-1 必然差 2px。实测:
+   *   重铸页脚 114/116、清空存档 141.5/143.5。
+   * 那 2px 就是玩家说的「点一下钮就左右各挪一点」。
+   * grid 的两栏与内容无关,故规定:这一对并排时外层用 grid-cols-2,
+   * 钮本体写 w-full 撑满格(不写 flex-1 —— grid 下它不起作用,只会误导后人)。
+   *
+   * 故障注入:把任一处的 grid 改回 flex + flex-1,本条红。
+   */
+  it('btn-ghost 与 btn-seal 并排时用 grid 两栏,不用 flex + flex-1', () => {
+    const files = [
+      'components/common/ExitConfirmDialog.vue',
+      'components/settings/SettingsSaveSection.vue',
+      'components/inventory/DismantleDialog.vue',
+      'components/equipment/EquipmentDetailDialog.vue',
+      'views/CelestialView.vue',
+      'views/WelcomeView.vue',
+      'components/equipment/EquipReforgeFooter.vue'
+    ]
+    const bad: string[] = []
+    for (const rel of files) {
+      const src = read(rel)
+      // 逐个容器块看:同一块里既有 btn-ghost 又有 btn-seal,且两个都带 flex-1
+      for (const m of src.matchAll(/<div[^>]*class="([^"]*)"[^>]*>([\s\S]{0,900}?)<\/div>/g)) {
+        const cls = m[1] ?? ''
+        const body = m[2] ?? ''
+        if (!body.includes('btn-ghost') || !body.includes('btn-seal')) continue
+        const n = (body.match(/\bflex-1\b/g) ?? []).length
+        if (n >= 2 && /\bflex\b/.test(cls) && !cls.includes('grid')) {
+          bad.push(`${rel} → «${cls.slice(0, 30)}»`)
+        }
+      }
+    }
+    expect(bad, 'ghost 与 seal 并排时 flex-1 会差 2px;改用 grid-cols-2 + w-full').toEqual([])
   })
 
   it('自动重铸预算行:读数不参与收缩,按钮段整段折行', () => {

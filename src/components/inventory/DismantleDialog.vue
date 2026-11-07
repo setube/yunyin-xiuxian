@@ -137,9 +137,9 @@
           </p>
           <p v-if="!cleanPreview.length" class="py-0.5 text-[10px] text-jade">无可化尘</p>
         </div>
-        <div class="flex gap-2">
-          <button class="btn-ghost flex-1 !text-[12px]" @click="cleanConfirm = false">再想想</button>
-          <button class="btn-seal flex-1 !text-[12px]" @click="smartClean()">清理化尘</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="btn-ghost !text-[12px] w-full" @click="cleanConfirm = false">再想想</button>
+          <button class="btn-seal !text-[12px] w-full" @click="smartClean()">清理化尘</button>
         </div>
       </template>
     </template>

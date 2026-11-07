@@ -19,8 +19,8 @@
       <button class="mt-1 block text-ink-faint underline" @click="ui.corruptedNotice = []">知道了</button>
     </p>
     <div class="grid grid-cols-2 gap-2">
-      <button class="btn-ghost !text-[12px]" @click="onExport">导出存档</button>
-      <button class="btn-ghost !text-[12px]" @click="triggerImport">导入存档</button>
+      <button class="btn-ghost !text-[12px] w-full" @click="onExport">导出存档</button>
+      <button class="btn-ghost !text-[12px] w-full" @click="triggerImport">导入存档</button>
       <!-- 安卓 MIME 表通常不认 .save:须放行通用文件类型与扩展名,安全边界由 importSaveText 校验 -->
       <input ref="fileInput" type="file" accept="application/octet-stream,.save" class="hidden" @change="onFilePicked" />
     </div>
@@ -33,9 +33,9 @@
         <span class="text-cinnabar">清空</span>本机全部存档 · 含转世收获 · 不可逆
       </p>
       <template #footer>
-        <div class="flex gap-2">
-          <button class="btn-ghost flex-1" @click="closeReset">再想想</button>
-          <button class="btn-seal flex-1 !bg-cinnabar-deep" @click="confirmReset">确认清空</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="btn-ghost w-full" @click="closeReset">再想想</button>
+          <button class="btn-seal !bg-cinnabar-deep w-full" @click="confirmReset">确认清空</button>
         </div>
       </template>
     </BaseModal>
@@ -58,14 +58,14 @@
         </p>
       </div>
       <template #footer>
-        <div class="flex gap-2">
-          <button class="btn-ghost flex-1" @click="closeImport">再想想</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="btn-ghost w-full" @click="closeImport">再想想</button>
           <!--
             不可叠 disabled:text-ink-faint:.btn-seal:disabled 本身就是「ink-faint 打底 + 92% 白字」,
             再压一层灰字色,字与底同色,实测 1.00:1 —— 而「无法导入」这四个字正是此刻最该读出来的。
           -->
           <button
-            class="btn-seal flex-1"
+            class="btn-seal w-full"
             :disabled="importInspect?.tooNew === true"
             @click="confirmImport"
           >
