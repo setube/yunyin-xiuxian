@@ -19,8 +19,8 @@
       <div class="flex items-center gap-2">
         <!--
           不写 maxlength:它按 UTF-16 码元计数,emoji 占两个 —— 玩家粘「一二三四五六七」加一个星月符号
-          会在输入阶段就被切成孤立代理项,后面再怎么按码点截也救不回来。
-          改由 @input 按码点钳制,与提交时的 truncateCodePoints 同一把尺。
+          会在输入阶段就被切成孤立代理项,后面再怎么按字素簇截也救不回来。
+          改由 @input 按字素簇钳制,与提交时的 truncateCodePoints 同一把尺。
           组合输入(拼音/日文候选)期间不钳也不回写:此时改 :value 会把候选缓冲区整个替换掉,
           未上屏的字直接输不进来。等 compositionend 再钳。
         -->
@@ -228,7 +228,7 @@
   }
 
   function doBegin(): void {
-    // 按码点截,不按码元:emoji 占两个码元,slice(0,8) 会把末尾那个符号切成半个字
+    // 按字素簇截,不按码元:emoji 占两个码元,slice(0,8) 会把末尾那个符号切成半个字
     const finalName = truncateCodePoints(name.value.trim(), 8) || '无名散修'
     player.initCharacter(finalName, profile.value)
     // 开局馈赠:入门功法 + 一柄竹剑 + 三枚聚气散

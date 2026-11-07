@@ -32,7 +32,7 @@ export const DIAG_MESSAGE_MAX = 200
 /** 任意异常值 → 一行摘要 */
 export function summarizeError(err: unknown): string {
   if (err instanceof Error) return truncateCodePoints(`${err.name}: ${err.message}`, DIAG_MESSAGE_MAX)
-  // 三条兜底同样按码点截:异常消息里常带玩家道号或装备名,emoji 会在第 200 个码元处被劈成半个
+  // 三条兜底同样按字素簇截:异常消息里常带玩家道号或装备名,emoji 会在边界处被劈成半个
   if (typeof err === 'string') return truncateCodePoints(err, DIAG_MESSAGE_MAX)
   try {
     // JSON.stringify(undefined / 函数 / symbol) 返回 undefined,得回落到 String

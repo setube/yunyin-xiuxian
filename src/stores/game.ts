@@ -83,7 +83,7 @@ export const useGameStore = defineStore(
 
     function setCreateName(name: string): void {
       if (typeof name !== 'string') return
-      // 按码点截:emoji 占两个码元,slice 会把末尾那个切成孤立代理项
+      // 按字素簇截:emoji 占两个码元,slice 会把末尾那个切成孤立代理项或劈开 ZWJ 序列
       createName.value = truncateCodePoints(name, 8)
     }
 
