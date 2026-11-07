@@ -85,6 +85,22 @@ export function lateSlices() {
       equippedArtifacts: [],
     },
     endgame: { daoPath: "sword", daoSource: 1200, souls: [], equippedSouls: [] },
+    /**
+     * 洞府:七座建筑各建到「当前洞府等级允许的上限」。
+     *
+     * 原先这一片完全没有 —— 于是 lateSlices 的「后期档」在洞府页上看到的是
+     * 七座全 0 级的未启用建筑,与「后期」名不副实(而注释只承诺「神人境 + 成套装备」,
+     * 严格说没撒谎,但依赖它的巡页脚本量到的洞府状态是初始态)。
+     *
+     * 等级取 (mansion + 1) * 5 这条与 stores/dongfu 的 buildingLevelCap 同源,
+     * 手写 4/5 级是为了让「已营 7/7」在页面上成立;洞府本身满 4 级。
+     */
+    dongfu: {
+      levels: { mansion: 4, array: 5, alchemy: 5, forge: 4, field: 5, library: 4, beast: 3 },
+      frac: { herb: 0, ore: 0, wudao: 0 },
+      veinMain: "gather",
+      veinPoints: { gather: 20, craft: 10, alchemy: 5, insight: 5 }
+    },
     settings: {
       privacyAccepted: true,
       sfxOn: false,
