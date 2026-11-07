@@ -63,7 +63,9 @@ export const useQuestsStore = defineStore(
       daily.value = {
         date: typeof d?.date === 'string' ? d.date : '',
         base: hasBase ? base : { ...counters.value },
-        done: [...new Set(asStringArray(d?.done))]
+        // 与写入路径(completeDaily 的 `DAILY_TASKS.some`)同一道闸:认不得的任务 id 清掉。
+        // 原先只去重 —— 手改存档塞 10 万条后 $state 到 1.29MB,存档顶到配额。
+        done: [...new Set(asStringArray(d?.done))].filter(id => DAILY_TASKS.some(t => t.id === id))
       }
       // 名号同为集合:去重;认不出的 id 不产生词条,只在计数上虚增
       const titleIds = new Set(TITLES.map(t => t.id))
