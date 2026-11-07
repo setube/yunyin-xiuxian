@@ -97,5 +97,19 @@ export function lateSlices() {
       smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true },
       theme: "dark",
     },
+    /**
+     * 一名开局白送的入门弟子。
+     *
+     * 字段名踩过坑:sanitize()` 只认 `archId`(且必须在 APPRENTICE_BY_ID 里),
+     * 写成 `id`/`name` 的条目会被**静默丢弃** —— 页面上还是显示 1/4(开局白送那一个),
+     * 看起来像夹具没生效,实际是自己写错了字段。另注:槽位数由 `apprenticeSlots(major)` 推,
+     * 不在分片里;`major: 14` 给 4 个槽,填满四个即「门中已满」。
+     */
+    apprentice: {
+      apprentices: [
+        { uid: "ap_geo_1", archId: "ap_lingtong", task: null, level: 1, bornAt: 0, taskEndsAt: 0 },
+      ],
+      rebirthKarma: 0,
+    },
   };
 }
