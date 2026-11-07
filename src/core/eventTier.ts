@@ -60,12 +60,13 @@ export function eventTierOf(eventId: string): EventTier {
  * spec 钉:eventTier.spec 用真引擎做蒙特卡洛对账。
  */
 export function tierChances(stagePending: boolean, anyChance = EXPLORE_EVENT_CHANCE): Record<EventTier, number> {
-  const any = anyChance
+  // 变量原名 `any` 会遮蔽 TS 内置类型名 —— 读代码时 `any * chain` 第一眼像类型运算
+  const chance = anyChance
   const chain = stagePending ? CHAIN_STAGE_CHANCE : 0
   return {
-    qiyuan: any * chain,
-    jiyuan: any * (1 - chain) * FORTUNE_CHANCE,
-    jingyu: any * (1 - chain) * (1 - FORTUNE_CHANCE)
+    qiyuan: chance * chain,
+    jiyuan: chance * (1 - chain) * FORTUNE_CHANCE,
+    jingyu: chance * (1 - chain) * (1 - FORTUNE_CHANCE)
   }
 }
 
