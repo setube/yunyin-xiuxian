@@ -195,6 +195,45 @@ describe('定价法则', () => {
     }
   })
 
+  /**
+   * 【法则 B2】同族同线内,高规格丹的药力必须严格高于低规格丹。
+   *
+   * 法则 B 写的是 `<=`,所以「完全相等」也过 —— 实测三味回满灵气丹
+   * (灵乳 2 境草 16 / 仙泉玉液 11 境草 90 / 道液 18 境草 120)在任意境界下
+   * 药力分毫不差:qiPct 三处都是 1,而 1 是当时以为的上限。
+   * 玩家花 7.5 倍灵草换到一模一样的东西 —— 这是本条的由来。
+   *
+   * 实际灵气可积到标称容量的 QI_BANK_MULT(10)倍,qiPct 并不以 1 为顶;
+   * 修法是给高阶两味 1.6 / 2.4,同境界药力就此拉开梯度。
+   *
+   * 折算境界取「两味里较高的准入境界」而非全组最大值:
+   * expFixed 入门丹只服务 0 境(法则 D 已钉),用全组最大值会把它压成 0s 而误报。
+   * 掉落线不在此列 —— 法则 A 管它,它本就该比可炼对照低。
+   */
+  it('B2 —— 可炼线内,高规格丹的药力必须严格高于低规格丹', () => {
+    // 收集全部族再断言:逐族断言会在第一个族失败时断掉,后面的族根本没被查过
+    const bad: string[] = []
+    for (const fam of TIMED_FAMILIES) {
+      const group = PILLS.filter(p => pillFamily(p) === fam && pillLine(p) === 'craft')
+      if (group.length < 2) continue
+      for (const a of group) {
+        for (const b of group) {
+          if (pillRank(a) >= pillRank(b)) continue
+          const at = Math.max(a.minRealm, b.minRealm)
+          const ga = pillGainSecAt(a, at)
+          const gb = pillGainSecAt(b, at)
+          if (gb <= ga + 1e-9) {
+            bad.push(
+              `${FAMILY_NAME[fam]}族:${a.name}(${pillQualityName(a)} 草${a.recipe?.herb}) ` +
+                `与更高规格的 ${b.name}(${pillQualityName(b)} 草${b.recipe?.herb}) 药力同为 ${ga.toFixed(0)}s(在 ${at} 境)`
+            )
+          }
+        }
+      }
+    }
+    expect(bad, '高规格丹与低规格丹药力相同,炼贵的等于白花灵草').toEqual([])
+  })
+
   /** 【法则 C】一个 buff 只许一味丹产出 */
   it('C —— 没有两味丹指向同一个增益', () => {
     const owner = new Map<string, string>()

@@ -255,8 +255,8 @@ export const PILLS: PillDef[] = [
     '仙泉玉液',
     'immortal',
     11,
-    '仙泉一盏,灵气涤尽复满',
-    { instant: { qiPct: 1 }, recipe: { herb: 90, stoneBase: 260 }, alchemyLevel: 10 },
+    '仙泉一盏,灵气涤尽,余者溢入经脉',
+    { instant: { qiPct: 1.6 }, recipe: { herb: 90, stoneBase: 260 }, alchemyLevel: 10 },
     'droplets'
   ),
   /** 增益线:每 buff 仅一味丹产出(法则 C);增益定义见 data/buffs.ts */
@@ -335,8 +335,8 @@ export const PILLS: PillDef[] = [
     '道液',
     'dao',
     18,
-    '一滴道液,浩气复满;混沌海深处方凝得成',
-    { instant: { qiPct: 1 }, recipe: { herb: 120, stoneBase: 420 }, alchemyLevel: 9 },
+    '一滴道液,浩气盈溢,几近周天自转;混沌海深处方凝得成',
+    { instant: { qiPct: 2.4 }, recipe: { herb: 120, stoneBase: 420 }, alchemyLevel: 9 },
     'droplets'
   ),
   p('p_shenyuan', '神元丹', 'divine', 16, '神元入体,周天运转更疾', {
