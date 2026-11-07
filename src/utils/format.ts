@@ -5,9 +5,21 @@ import { gn, toNum } from './gnum'
 /** 每 4 个数量级一个中文单位 */
 const UNITS = ['万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极'] as const
 
+/** 数值非法时的统一占位 */
+const NOT_AVAILABLE = '--'
+
 /** 格式化大数:1,234 → 12.35万 → 1.235亿 → 1.24e52 */
 export function formatGN(v: GNum | number): string {
   const g = typeof v === 'number' ? gn(v) : v
+  /*
+   * 坏值守卫。缺了它,几个坏输入会印出乱码而不是占位符:
+   *   gn(1, NaN)      → 「NaNundefined」
+   *   gn(1, Infinity) → 「1.00eInfinity」
+   *   gn(NaN, 0)      → 「∞」(m 为 NaN 时后续判断全落空,最后走科学计数兜底)
+   * formatPercent / formatDuration 等早已返回 `--`,只有这是漏的。
+   * 存档经 sanitize 应已修好,但界面在 sanitize 之前也可能读到(见 storeResilience)。
+   */
+  if (!Number.isFinite(g.m) || !Number.isFinite(g.e)) return NOT_AVAILABLE
   if (g.m === 0) return '0'
   if (g.m < 0) return '-' + formatGN({ m: -g.m, e: g.e })
   if (g.e < 4) {
@@ -64,6 +76,8 @@ function fixedByMag(v: number): string {
  */
 export function formatGap(v: GNum | number): string {
   const g = typeof v === 'number' ? gn(v) : v
+  // 与 formatGN 同一道守卫:对象分支不经过 gn(),坏值会一路走到 toNum/ceilTo
+  if (!Number.isFinite(g.m) || !Number.isFinite(g.e)) return NOT_AVAILABLE
   if (g.m === 0) return '0'
   // 负数没有「尚差」语义,退回原格式化
   if (g.m < 0) return formatGN(g)
@@ -114,9 +128,6 @@ export function formatNum(n: number): string {
 export function formatRate(v: GNum | number): string {
   return `${formatGN(v)}/秒`
 }
-
-/** 数值非法时的统一占位 */
-const NOT_AVAILABLE = '--'
 
 /**
  * 明细按显示精度取整并对账:先各自向下取整,差额按余数从大到小补齐,
