@@ -90,7 +90,65 @@ try {
     console.log(`  ${small.length === 0 ? '✓' : '✗'} ${r.padEnd(14)} 触控目标 ${small.length === 0 ? '全部 >=28px' : small.length + ' 处过小'}`)
   }
 
-  // 6) 每个弹窗都有可辨识名字(隐私政策在设置页)
+  /*
+   * 6) 文本框要有可访问名。
+   *
+   * 只查静态源码证明不了「它挂在了会渲染的元素上」;而真实 DOM 上量得到
+   * label 关联、aria-label、aria-labelledby 三者的实际生效情况。
+   * 隐藏的 file input 跳过:它们由旁边按钮程序化 click(),不进 Tab 序。
+   */
+  /*
+   * 这些页面上有 form 输入(含弹窗内的)。要覆盖弹窗,先点开它们 ——
+   * 只扫首屏的话,/build 与 /celestial 的输入框都在弹窗里,永远扫不到,
+   * 判据就成了空转。故障注入验过:去掉建号页的 aria-label,只扫首屏根本报不出来。
+   */
+  const FORM_ROUTES = ['/create', '/', '/build', '/celestial', '/settings']
+  for (const r of FORM_ROUTES) {
+    await page.evaluate(h => { location.hash = '#' + h }, r)
+    await page.waitForTimeout(600)
+    // 点开可能含输入框的入口(构筑保存、挑战立约),否则弹窗内的框永远扫不到
+    for (const re of [/存当前构筑/, /立\s*契|择\s*约/, /改\s*名/]) {
+      const btn = page.locator('main button').filter({ hasText: re }).first()
+      if (await btn.count()) {
+        if (!(await btn.isDisabled().catch(() => true))) {
+          await btn.click({ timeout: 2000 }).catch(() => {})
+          await page.waitForTimeout(400)
+        }
+      }
+    }
+    const scanned = await page.evaluate(() => {
+      const out = []
+      let seen = 0
+      for (const e of document.querySelectorAll('input, select, textarea')) {
+        // 隐藏元素读屏碰不到(如 file input)
+        const rc = e.getBoundingClientRect()
+        if (rc.width === 0 && rc.height === 0) continue
+        if (e.type === 'hidden') continue
+        const hasAria = Boolean(e.getAttribute('aria-label') || e.getAttribute('aria-labelledby'))
+        const hasLabel = Boolean(e.labels && e.labels.length > 0)
+        seen += 1
+        if (!hasAria && !hasLabel) {
+          out.push(`${e.tagName.toLowerCase()}[type=${e.type}] placeholder=«${e.getAttribute('placeholder') ?? ''}»`)
+        }
+      }
+      return { unnamed: out, seen }
+    })
+    if (scanned.seen === 0) {
+      /*
+       * 一页都没扫到输入框,这条判据等于没跑。
+       * 实测踩过:建号页在被首启守卫接管后不渲染输入框,而 /build 与 /celestial
+       * 的输入框都在需要点开才出现的弹窗里 —— 五个路由全部 seen=0,
+       * 判据静默报绿,而它什么都没验。
+       * 不判失败(有些路由确实可能没有输入框),但必须把「没扫到」显式说出来。
+       */
+      console.log(`  · ${r.padEnd(14)} 无可见输入框(判据在此页未覆盖)`)
+      continue
+    }
+    if (scanned.unnamed.length > 0) failures.push(`${r} 文本框缺可访问名:${scanned.unnamed.slice(0, 3).join(' | ')}`)
+    console.log(`  ${scanned.unnamed.length === 0 ? '✓' : '✗'} ${r.padEnd(14)} 文本框可访问名 ${scanned.unnamed.length === 0 ? '全部具备(' + scanned.seen + ' 个)' : scanned.unnamed.length + ' 处缺失'}`)
+  }
+
+  // 7) 每个弹窗都有可辨识名字(隐私政策在设置页)
   await page.evaluate(() => { location.hash = '#/settings' })
   await page.waitForTimeout(900)
   await page.getByRole('button', { name: /隐私政策/ }).first().click()
