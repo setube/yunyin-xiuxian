@@ -9,7 +9,7 @@
  * 首个订阅者挂载时起表、最后一个卸载时收表;同一秒里所有依赖它的组件在同一个
  * 渲染批次里更新,而不是分九批。
  */
-import { onMounted, onUnmounted, ref, type Ref } from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted, ref, type Ref } from 'vue'
 import { gameNow } from '@/core/enginePause'
 import { gameClock } from './useGameClock'
 
@@ -30,6 +30,18 @@ export function useNow(): Ref<number> {
    * 顶满/将顶这类判据会拿错时间。组件内也不亏:秒表尚未跑第一拍时读数本就是对的。
    */
   now.value = gameNow()
+
+  /*
+   * 组件外调用(纯逻辑入口、单测)没有生命周期可用。
+   *
+   * `onMounted` 在没有 active instance 时会被 Vue 静默忽略并打开发警告 ——
+   * `useBrewing` 就是个 composable,本身可能在任何上下文被调。这里先认出「不在组件里」,
+   * 那种情况下只当一名只读订阅者:不计数、不起表、不收表,
+   * 秒表由真正挂载的组件负责(没有组件挂载时秒表本就该停着)。
+   */
+  const inComponent = getCurrentInstance() !== null
+  if (!inComponent) return now
+
   onMounted(() => {
     subscribers += 1
     if (stop === undefined) {

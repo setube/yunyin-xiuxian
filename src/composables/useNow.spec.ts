@@ -167,6 +167,44 @@ describe('useNow · 读数随游戏时钟冻结且全站共表', () => {
     expect(latest!(), '全卸完还留着表在空转').toBe(after)
   })
 
+  /**
+   * 组件外调用不许打 Vue 开发警告。
+   *
+   * `useBrewing` 本身是 composable,它内部调 `useNow()`;而这个 composable 会被单测
+   * 直接调、也可能从别的非组件上下文进来。`onMounted` 在没有 active instance 时
+   * 会静默忽略并开发警告 —— 那种调用只该当一名只读订阅者。
+   *
+   * 这一条把「组件外调用不打扰控制台」钉住:实现里若把 getCurrentInstance 那道闸删掉,
+   * 警告会重新出现,本条即红。
+   */
+  it('组件外调用:不打 onMounted/onUnmounted 警告,也不占订阅名额', () => {
+    const warns: string[] = []
+    const origWarn = console.warn
+    console.warn = (...args: unknown[]) => {
+      warns.push(args.map(String).join(' '))
+    }
+    try {
+      const before = latest
+      // 组件外调用:没有 active instance
+      const ref = useNow()
+      expect(ref.value, '组件外也该读到当前读数').toBeTypeOf('number')
+      void before
+    } finally {
+      console.warn = origWarn
+    }
+    const noisy = warns.filter(w => /onMounted|onUnmounted/.test(w))
+    expect(noisy, `组件外调用打了 Vue 生命周期警告:\n${noisy.join('\n')}`).toEqual([])
+  })
+
+  it('组件外调用不占订阅名额:随后挂载组件照常起表', () => {
+    // 先来三次组件外调用
+    useNow()
+    useNow()
+    useNow()
+    mount()
+    expect(intervals, '组件外调用不该把计数弄乱,挂载时仍应起一枚表').toBe(1)
+  })
+
   it('卸载后再挂载会重新起表 —— 收表不是把秒表钉死', () => {
     const a = mount()
     a.unmount()
