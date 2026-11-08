@@ -5,6 +5,7 @@ import { rng } from '@/utils/random'
 import {
   afterWin,
   acquireArtifact,
+  acquireArtifactGain,
   acquireEquipment,
   ARTIFACT_NEAR_BONUS,
   ARTIFACT_NEAR_WINDOW,
@@ -518,5 +519,23 @@ describe('得宝仪典 · 顶档之物入手才翻开那一刻', () => {
     expect(ui.treasure!.name).not.toBe(first)
     ui.clearTreasure()
     expect(ui.treasure).toBeNull()
+  })
+})
+
+describe('法宝入囊 · 野 id', () => {
+  it('给定法宝表里没有的 id,当收入,则得 null 且不写行囊、不刷 toast', () => {
+    /*
+     * `if (!def) return null` 是真守卫:去掉后 collect('artifact', 野id) 会把这个 id
+     * 记进图鉴,而 addArtifact 也会拿到不存在的 defId —— 行囊里多出一件查无定义的器。
+     * 注释写明「null 表示野 id,调用方须停止后续抽取」,这条契约值得钉住。
+     */
+    const inv = useInventoryStore()
+    const artifactsBefore = JSON.stringify(inv.artifacts)
+    const toastsBefore = useUiStore().toasts.length
+
+    expect(() => acquireArtifactGain('no_such_artifact')).not.toThrow()
+    expect(acquireArtifactGain('no_such_artifact')).toBeNull()
+    expect(JSON.stringify(inv.artifacts), '野 id 不该进行囊').toBe(artifactsBefore)
+    expect(useUiStore().toasts.length, '野 id 不该给玩家提示').toBe(toastsBefore)
   })
 })
