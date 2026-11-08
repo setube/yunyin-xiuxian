@@ -78,6 +78,23 @@ describe('紫微 · 一世一算', () => {
     expect(fateSeed(linggen(80, 20), 1)).not.toBe(fateSeed(linggen(20, 80), 1))
   })
 
+  /**
+   * 负转世数(坏档)该退回第 0 世,不是算出另一个「新命盘」。
+   *
+   * `fateSeed` 里 `Math.max(0, Math.floor(lifeCount))` 挡的是 `reincarnation.count` 被写成负数。
+   * 去掉它,lifeCount=-1 会得到 seed=-1000002,从而排出一张**既不是第一世、也不是任何真实世**
+   * 的命盘 —— 等于坏档白送一次重掷。mulberry32 接受负种子不报错,所以这个错误是静默的。
+   * 变异扫描点名这条钳没有判据盯着。
+   */
+  it('负转世数按 0 世处理,与第一世同盘', () => {
+    const one = linggen(60, 40)
+    for (const bad of [-1, -5, -1000]) {
+      expect(fateSeed(one, bad), `转世数 ${bad} 该与 0 世同种子`).toBe(fateSeed(one, 0))
+    }
+    // 小数与 NaN 也不该算出另一张盘
+    expect(fateSeed(one, 0.5), '小数转世数该向下取整到 0').toBe(fateSeed(one, 0))
+  })
+
   it('不同命种多数会排出不同的命宫落星(不是一张盘糊弄所有人)', () => {
     const lords = new Set<string>()
     for (let count = 0; count < 12; count += 1) {
