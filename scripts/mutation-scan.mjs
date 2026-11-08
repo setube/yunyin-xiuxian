@@ -243,6 +243,20 @@ const EQUIVALENT = [
       '真要坏档也轮不到它 —— 上一步的 sanitize 已经修过 levels。'
   },
   {
+    file: 'src/core/offline.ts',
+    text: 'Math.max(0, encounters - events)',
+    why:
+      'events 由 exploreEventChance 算出,而那个函数最后一步是 capChance(...) 钳到 [0,1] —— ' +
+      '源码注释写明正是为了让 `Math.round(encounters * p)` 不超出遭遇数。p <= 1 时 round 亦 <= encounters,钳制不触发。'
+  },
+  {
+    file: 'src/core/linggenAffinity.ts',
+    text: '.length === 0)',
+    why:
+      '变异成 `.length < 0` 后,同一条 if 的 `!roots ||` 仍在兜底:空数组走 roots.map() 得到 [],' +
+      '结果不变;而 length 本就不可能为负。'
+  },
+  {
     file: 'src/core/endgameService.ts',
     text: 'if (!endgame.daoPath) return',
     why:
@@ -392,19 +406,38 @@ for (const file of files) {
  * 取样:跨文件轮流取一,而不是把前面的文件取干净。
  * 这样 limit=40 也会均匀铺到几十个不同模块,而不是挤在前三个文件里。
  */
-for (let round = 0; found.length < LIMIT; round += 1) {
+const all = []
+for (let round = 0; ; round += 1) {
   let picked = false
   for (const mine of perFile) {
-    if (found.length >= LIMIT) break
     const one = mine[round]
     if (!one) continue
-    found.push(one)
+    all.push(one)
     picked = true
   }
   if (!picked) break
 }
 
-console.log(`扫到 ${found.length} 个可变异点(上限 ${LIMIT},来自 ${new Set(found.map(f => f.file)).size} 个模块)`)
+/*
+ * 分片轮转:把全部候选点切成长度为 LIMIT 的连续块,按**日期**选一块。
+ *
+ * 定长取样有个致命问题:每次扫的都是同一批 40 个点,而全库 454 个 ——
+ * CI 天天跑,却只覆盖其中 8.8%,剩下的永远轮不到。
+ * 按日偏移后,`ceil(454 / 40) = 12` 天覆盖全部;同一天内结果稳定,便于复现。
+ *
+ * 用 `--limit=N` 显式指定时仍是「从头取 N 个」,不做日期偏移 ——
+ * 本地想复现某一段时不该被当天日期干扰。
+ */
+const explicit = process.argv.some(a => a.startsWith('--limit'))
+const shardCount = Math.max(1, Math.ceil(all.length / LIMIT))
+const dayIndex = Math.floor(Date.now() / 86_400_000)
+const shard = explicit ? 0 : dayIndex % shardCount
+found.push(...all.slice(shard * LIMIT, shard * LIMIT + LIMIT))
+
+console.log(
+  `扫到 ${found.length} 个可变异点(上限 ${LIMIT},来自 ${new Set(found.map(f => f.file)).size} 个模块)` +
+    (explicit ? `,显式 limit 故取第一段` : `,今日分片 ${shard + 1}/${shardCount}(全库 ${all.length} 个)`)
+)
 
 /**
  * 跑一次被变异文件的 spec。
