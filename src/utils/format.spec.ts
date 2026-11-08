@@ -408,3 +408,22 @@ describe('formatGap 差额向上取整', () => {
     expect(cnNumber(-3)).toBe('-3')
   })
 })
+
+describe('formatGN · 极小数不印出 -0', () => {
+  it('给定极小负数(1e-10 量级),当格式化,则印「0」而不是「-0」', () => {
+    /*
+     * 定点格式化的位数封顶 6 位,1e-10 会被抹成 0;而负数分支是先取正再前缀负号,
+     * 于是原本的「0」变成「-0」—— 玩家读到的不是「几乎没有」而是一个畸形值。
+     */
+    expect(formatGN(gn(-1e-10))).toBe('0')
+    expect(formatGN(gn(-1e-12))).toBe('0')
+    expect(formatGN(gn(-1e-10))).not.toBe('-0')
+  })
+
+  it('给定能显示出来的负数,当格式化,则负号照常保留', () => {
+    // 修 -0 不能把正常的负数一并抹平成 0
+    expect(formatGN(gn(-0.001))).toBe('-0.001')
+    expect(formatGN(gn(-1.5))).toBe('-1.5')
+    expect(formatGN(gn(-1234))).toBe('-1,234')
+  })
+})

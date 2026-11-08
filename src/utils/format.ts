@@ -21,7 +21,15 @@ export function formatGN(v: GNum | number): string {
    */
   if (!Number.isFinite(g.m) || !Number.isFinite(g.e)) return NOT_AVAILABLE
   if (g.m === 0) return '0'
-  if (g.m < 0) return '-' + formatGN({ m: -g.m, e: g.e })
+  if (g.m < 0) {
+    /*
+     * 极小负数会被下面的定点格式化抹成 0(如 1e-10 → 「0」),
+     * 加负号就成了「-0」—— 玩家读到的不是「几乎没有」而是一个显眼的畸形值。
+     * 取正后若回到 0,就直接交 0,不保留负号。
+     */
+    const pos = formatGN({ m: -g.m, e: g.e })
+    return pos === '0' ? '0' : '-' + pos
+  }
   if (g.e < 4) {
     /*
      * 千位档直接取原值,不经 toNum 回算。
