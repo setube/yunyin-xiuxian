@@ -1,19 +1,11 @@
 /** 终局世界模拟器:每个特殊世界发布前须通过六项守恒条件 */
 import type { CelestialWorldDef, CombatantSnap } from '@/types'
-import { gn } from '@/utils/gnum'
 import { mulberry32, RandomService } from '@/utils/random'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { MAX_MAJOR } from '@/data/realms'
 import { BUILD_PROFILES, buildSnap, type BuildProfile } from './buildSim'
 import { randomBuild } from './buildSearch'
-import { celestialJudgement, runGauntlet, worldFoeLineup, type ReferenceStats } from './gauntlet'
-
-/** 模拟参照属性,须与 buildSim 基准一致 */
-export const SIM_REFERENCE: ReferenceStats = {
-  attack: gn(100),
-  defense: gn(55),
-  maxHp: gn(1400)
-}
+import { celestialJudgement, runGauntlet, worldFoeLineup, SIM_REFERENCE } from './gauntlet'
 
 export function worldFoes(world: CelestialWorldDef, snap: CombatantSnap): CombatantSnap[] {
   // 参照取 SIM_REFERENCE 不走天界锚点(比的是构筑形状);判定照实战口径算,否则厚构筑胜率被高估。

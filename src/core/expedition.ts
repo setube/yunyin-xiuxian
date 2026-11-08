@@ -19,6 +19,7 @@ import {
   mergeRules,
   runGauntlet,
   worldFoeSnap,
+  SIM_REFERENCE,
   type GauntletReport
 } from './gauntlet'
 import { VOID_ANCHOR_TIER } from './worldGen'
@@ -30,7 +31,6 @@ import { currentDaoRules, endgameUnlocked, recordMark } from './endgameService'
 import { recordMilestone, trackClearRecords } from './identity'
 import { defaultHistory, generateApprovedWorld, type HistoryEntry } from './worldGen'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
-import { SIM_REFERENCE } from './celestialSim'
 import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore, type WorldRunState } from '@/stores/endgame'
 import { gateDef } from '@/data/qimen'

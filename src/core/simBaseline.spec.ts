@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { toNum } from '@/utils/gnum'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
-import { SIM_REFERENCE } from './celestialSim'
+import { SIM_REFERENCE } from './gauntlet'
 
 /** 取一个三维倍率全为 1 的 profile,其快照三维即基准三维 */
 function unityProfile(): (typeof BUILD_PROFILES)[number] {

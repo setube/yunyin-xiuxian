@@ -10,7 +10,7 @@ import { mulberry32, RandomService } from '@/utils/random'
 import { CELESTIAL_WORLDS, TRIAL_FOES } from '@/data/endgame'
 import { DAO_PATHS } from '@/data/endgame'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
-import { SIM_REFERENCE } from './celestialSim'
+import { SIM_REFERENCE } from './gauntlet'
 import { mergeRules, runGauntlet, worldFoeSnap } from './gauntlet'
 import { resolveCombat } from './combat'
 

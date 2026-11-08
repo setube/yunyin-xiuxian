@@ -11,7 +11,7 @@ import type {
   WorldFoeShape
 } from '@/types'
 import type { RandomService } from '@/utils/random'
-import { mulN } from '@/utils/gnum'
+import { gn, mulN } from '@/utils/gnum'
 import { modDepth } from './statsCalc'
 import { resolveCombat } from './combat'
 import { COMBAT_ATK_BASE, COMBAT_DEF_BASE, COMBAT_HP_BASE } from '@/data/constants'
@@ -21,6 +21,19 @@ export interface ReferenceStats {
   attack: GNum
   defense: GNum
   maxHp: GNum
+}
+
+/**
+ * 模拟参照属性,须与 buildSim 基准一致。
+ *
+ * 放在这里而不是 celestialSim:后者是平衡模拟器,会连带 buildSearch/buildSim 一大串。
+ * 而 challenge / expedition / lab 这些**生产路径**只需要这三个数 —— 从模拟器里取,
+ * 等于把整个模拟器塞进首屏(实测多出 buildSearch 与 worldSim 两个 chunk 的请求)。
+ */
+export const SIM_REFERENCE: ReferenceStats = {
+  attack: gn(100),
+  defense: gn(55),
+  maxHp: gn(1400)
 }
 
 /**

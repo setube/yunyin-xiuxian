@@ -1,8 +1,8 @@
 /* eslint-disable no-console -- 体检报告输出(test:report 依赖) */
 import { describe, expect, it } from 'vitest'
-import { SIM_REFERENCE, auditAllWorlds, crossWorldUniversals, worldFoes } from './celestialSim'
+import { auditAllWorlds, crossWorldUniversals, worldFoes } from './celestialSim'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
-import { celestialAnchor, worldFoeLineup, worldFoeSnap } from './gauntlet'
+import { celestialAnchor, SIM_REFERENCE, worldFoeLineup, worldFoeSnap } from './gauntlet'
 import { celestialJudgement } from './gauntlet'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { MAX_MAJOR } from '@/data/realms'
@@ -98,7 +98,7 @@ describe('模拟阵容 · 形状与参照口径', () => {
   })
 
   it('SIM_REFERENCE 三维仍是 buildSim 基准的三个有限数', () => {
-    for (const [k, v] of Object.entries(SIM_REFERENCE)) {
+    for (const [k, v] of Object.entries(SIM_REFERENCE) as [string, { m: number }][]) {
       expect(Number.isFinite(v.m), `${k} 的尾数不是有限数`).toBe(true)
       expect(v.m, `${k} 不该是 0`).toBeGreaterThan(0)
     }
