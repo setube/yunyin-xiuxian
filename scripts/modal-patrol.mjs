@@ -507,7 +507,13 @@ function cultivationSlices() {
       gongfaBranch: {},
       // 一条还在生效的增益:修行页才画得出状态胶囊,点开就是它的说明
       buffs: [{ defId: 'buff_juling', endsAt: Date.now() + 30 * 60 * 1000, added: 30 * 60 * 1000 }]
-    }
+    },
+    /*
+     * 丹药:夹具默认 pills 是空的,于是「丹药详情」这扇窗在本脚本里从未被量过 ——
+     * 而它里面有一颗自定义数量输入(背包连服),触控下限与 aria 名都要量。
+     * 放一味非增益丹:增益丹不摆连服钮,数量框也不出现。
+     */
+    inventory: { ...base.inventory, pills: { p_xuanyuan: 200 } }
   }
 }
 
@@ -633,6 +639,19 @@ async function clickTab(page, re) {
     await page.waitForTimeout(400)
     const toggle = page.locator('.modal-panel button', { hasText: /自动重铸/ }).first()
     if ((await toggle.count()) === 0) return false
+    return true
+  })
+  /*
+   * 丹药详情:卡片是 4 列方格,没有文字,只能按「丹药」页签 + 第一张卡片定位。
+   * 里面那颗「一次服 N 枚」输入框是本轮新加的控件,触控与可访问名都要过一遍。
+   */
+  await patrol(page, '丹药详情', async () => {
+    const tab = await clickByText(page, /丹\s*药/)
+    if (!tab) return false
+    await page.waitForTimeout(400)
+    const card = page.locator('main .grid.grid-cols-4 button').first()
+    if ((await card.count()) === 0) return false
+    await card.click({ timeout: 3000 }).catch(() => {})
     return true
   })
   await context.close()
