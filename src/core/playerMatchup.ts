@@ -31,7 +31,8 @@ export function playerMatchups(snap: CombatantSnap, n = MATCHUP_SAMPLE_RUNS, see
   return ENEMY_ARCHETYPES.map(arch => {
     let wins = 0
     for (let i = 0; i < runs; i += 1) {
-      if (resolveCombat({ ...snap }, arch.snap(), rng).win) wins += 1
+      // 只读 .win:战报构建(逐回合字符串 + formatGN)在这里纯属浪费
+      if (resolveCombat({ ...snap }, arch.snap(), rng, undefined, false).win) wins += 1
     }
     return { id: arch.id, name: arch.name, wall: WALL_IDS.includes(arch.id), winRate: wins / runs }
   })

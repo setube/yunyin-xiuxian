@@ -47,7 +47,8 @@ export function measureOnWorld(
     const startCap = carried
     let cleared = true
     for (const foe of foes) {
-      const result = resolveCombat(snap, foe, rng, { ...(rules ?? {}), playerStartHpPct: Math.min(startCap, carried) })
+      // 只读 .rounds / .stats / .win —— stats 与 buildLog 无关,战报本身不读
+      const result = resolveCombat(snap, foe, rng, { ...(rules ?? {}), playerStartHpPct: Math.min(startCap, carried) }, false)
       totalRounds += result.rounds
       fights += 1
       if (result.stats) {
