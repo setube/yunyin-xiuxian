@@ -96,6 +96,36 @@ describe('GameFormula 成长曲线', () => {
     expect(winChanceFromRatio(0)).toBe(0.05)
   })
 
+  /**
+   * 胜率夹在 [0.05, 0.95] 内。
+   *
+   * 这两条钳**是可达的**:r=0.001 时原始式算出 1/(1+(850)^4) ≈ 1e-12,r=10 时算出 0.99998 ——
+   * 不钳的话离线估算会给出「必输」或「必胜」,而后续连乘直接变成 0 或 1,
+   * 离线收益随之整块归零或爆表。变异扫描点名这两条钳没有判据盯着。
+   *
+   * 判据钉两头:极弱不许低于下限、极强不许高于上限,并且不出现 NaN。
+   */
+  it('胜率两头都夹住:极弱不低于 5%,极强不高于 95%', () => {
+    for (const r of [0.001, 0.01, 0.05, 0.1]) {
+      expect(winChanceFromRatio(r), `战力比 ${r} 的胜率低于下限`).toBe(0.05)
+    }
+    for (const r of [10, 100, 1e6]) {
+      expect(winChanceFromRatio(r), `战力比 ${r} 的胜率高于上限`).toBe(0.95)
+    }
+    // 非正与无穷也算数:函数入口对 r<=0 单独早退,Infinity 走主式
+    expect(winChanceFromRatio(-5), '负战力比该给下限').toBe(0.05)
+    expect(winChanceFromRatio(Infinity), '无穷战力比该给上限').toBe(0.95)
+  })
+
+  it('单调:战力比越高,胜率不降低', () => {
+    const rs = [0.01, 0.1, 0.3, 0.5, 1, 2, 5, 10, 100]
+    for (let i = 1; i < rs.length; i += 1) {
+      expect(winChanceFromRatio(rs[i]!), `r=${rs[i]} 的胜率低于 r=${rs[i - 1]}`).toBeGreaterThanOrEqual(
+        winChanceFromRatio(rs[i - 1]!)
+      )
+    }
+  })
+
   it('天劫伤害随波次与境界上升,御劫词条减伤', () => {
     expect(tribulationWaveDamage(3, 5, 0)).toBeGreaterThan(tribulationWaveDamage(3, 1, 0))
     expect(tribulationWaveDamage(3, 5, 0.5)).toBeLessThan(tribulationWaveDamage(3, 5, 0))
