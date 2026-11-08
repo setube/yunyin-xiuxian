@@ -182,7 +182,9 @@ def split_chunks(chars: set[str], corpus: str, per_band: int, per_cold: int) -> 
     hot = sorted([c for c in chars if weight.get(c, 0) > 0], key=lambda c: (-weight[c], c))
     cold = sorted([c for c in chars if weight.get(c, 0) == 0])
     bands: list[list[str]] = [hot[i : i + per_band] for i in range(0, len(hot), per_band)]
-    # 储备字(GB2312 里语料没用到的几千字)按码位切小片:起了生僻名字只拽一小片
+    # 储备字(GB2312 里语料没用到的几千字)按码位切小片:起了生僻名字只拽一小片。
+    # 片大小与热字片同档(各 180 字):原先储备字每片 700 字,是热字片的近四倍,
+    # 实测单片 186~233KB,输入一个生僻名字就要整份拉下来。同档后最大单片 65KB。
     bands += [cold[i : i + per_cold] for i in range(0, len(cold), per_cold)]
     return bands
 
@@ -216,7 +218,7 @@ def main() -> None:
     ap.add_argument(
         "--per-cold",
         type=int,
-        default=700,
+        default=180,
         help="储备字(语料里没出现过)每片大约几个字 —— 玩家起生僻名时才取",
     )
     args = ap.parse_args()
