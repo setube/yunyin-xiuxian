@@ -389,3 +389,27 @@ describe('效果分发表 · 种类与类型定义同步', () => {
     expect(cases, '有类型没有对应的 case(效果会静默消失),或有 case 已经不在类型里').toEqual(kinds)
   })
 })
+
+describe('事件引擎 · 法宝池为空', () => {
+  /**
+   * `if (!id) return null` 是真守卫:randomDropArtifact 在「tier 低于所有法宝 fromTier」
+   * 时返回 null(法宝池为空),此时该效果不产出任何一行 —— 去掉守卫后
+   * acquireArtifact(null) 会带着 undefined 进商店,行囊里多出查无定义的器。
+   */
+  it('给定 tier 低于所有法宝门槛,当事件发法宝,则该效果不产出行也不写行囊', () => {
+    setActivePinia(createPinia())
+    const inv = useInventoryStore()
+    const artifactsBefore = JSON.stringify(inv.artifacts)
+    const def: EventDef = {
+      id: 'ev_test_artifact_empty',
+      title: '测试',
+      text: '',
+      tags: ['general'],
+      weight: 1,
+      choices: [{ label: '拿', outcomes: [{ weight: 1, text: '得了件法宝', effects: [{ type: 'artifact' }] }] }]
+    }
+    const res = resolveEventChoice(def, 0, 0)
+    expect(res.lines.some(l => l.includes('获得')), '池空时不该报「获得 …」').toBe(false)
+    expect(JSON.stringify(inv.artifacts), '池空时不该往行囊塞东西').toBe(artifactsBefore)
+  })
+})
