@@ -87,6 +87,26 @@ describe('主动意图 · 一:由经历催生,不由阈值触发', () => {
     console.log(`\n酝酿 ${before.toFixed(2)} → 越线之后 ${after.toFixed(2)} —— 有些话说不出口了`)
   })
 
+  /**
+   * 连续越线不许把 ripeness 压成负数。
+   *
+   * `sparkDelta('crossed', ...)` 是**真的负数**(谨慎 -0.405 / 激进 -0.225),所以
+   * `sparkIntent` 里那句 `Math.max(0, cur.ripeness + sparkDelta(...))` 不是防将来的兜底 ——
+   * 它每越线一次就真的在钳。上面那条用例只测了「越线后变小」,没测「不会变负」:
+   * 从 ripeness 0 连越五次,不钳就是 -2.025,而 `willSpeak` 拿它跟门槛比、界面也有读数。
+   */
+  it('连着越线:ripeness 一路钳在 0,不会掉成负数', () => {
+    together()
+    for (let i = 0; i < 6; i += 1) {
+      sparkIntent('crossed')
+      const cur = currentBond()!.intent!.ripeness
+      expect(cur, `第 ${i + 1} 次越线后 ripeness 变成了 ${cur} —— 钳制没了`).toBeGreaterThanOrEqual(0)
+    }
+    // 同期再同行:从 0 往上累加,不该带上之前的负账
+    sparkIntent('shared')
+    expect(currentBond()!.intent!.ripeness, '负账不该拖着,同行该从 0 起算').toBeGreaterThan(0)
+  })
+
   it('sparks 只记「发生过哪些类型」:重复的同行不去重会攒出存档膨胀', () => {
     together()
     for (let i = 0; i < 3; i += 1) sparkIntent('shared')
