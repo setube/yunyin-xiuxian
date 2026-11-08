@@ -203,6 +203,28 @@ describe('法宝掉落 · 高界的池子该像高界', () => {
     }
   })
 
+  /**
+   * 层级低于法宝来源层级时,权重不该继续涨。
+   *
+   * `artifactDropWeight` 里 `Math.max(0, tier - def.fromTier)` 把层级差钳在 0 —— 没有它,
+   * tier 远低于 fromTier 时 distance 是负数,`ARTIFACT_NEAR_WINDOW - distance` 就超过窗口,
+   * 就近加成会**突破设计上限**:实测 tier=-100 时权重 41800,是正常最大值的二十倍。
+   * 现有用例都先按 `fromTier <= tier` 过滤,永远走不到这一支(变异扫描点名)。
+   *
+   * 钉法:tier 低于 fromTier 时,权重封顶在 tier == fromTier 那一档,不再增长。
+   */
+  it('层级不够时权重封顶,不因层级差为负而超过窗口上限', () => {
+    const def = ARTIFACTS.find(a => a.fromTier > 1)!
+    const atSource = artifactDropWeight(def, def.fromTier)
+    const ceiling = atSource
+    for (const tier of [def.fromTier - 1, 0, -50, -1000]) {
+      const w = artifactDropWeight(def, tier)
+      expect(w, `tier=${tier} 的权重 ${w} 超过了封顶 ${ceiling} —— 钳制没了`).toBeLessThanOrEqual(ceiling)
+      expect(w, `tier=${tier} 该与来源层级同权重`).toBeCloseTo(ceiling, 6)
+      expect(Number.isFinite(w), `tier=${tier} 的权重不是有限数`).toBe(true)
+    }
+  })
+
   it('同品质下,同层级的那件明显更重(约二十一倍)', () => {
     // 从表里取一对同品质、相隔 ≥ 就近窗口的真实法宝,不写死 id:品阶重排后判据仍成立
     const pair = ARTIFACTS.map(near => ({
