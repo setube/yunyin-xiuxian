@@ -44,6 +44,13 @@ const secs = si >= 0 ? Number(args[si + 1] ?? 3) : 3;
 const vi = args.indexOf("--view");
 const only = vi >= 0 ? args[vi + 1] : undefined;
 const gate = !args.includes("--no-gate");
+/*
+ * 满行囊档:夹具默认只放 2 件装,而玩家真实上限是 BAG_CAPACITY=120 件满词条神品。
+ * 性能门的读数因此来自一份「几乎空的行囊」—— 行囊页、构筑页、图鉴页在小档与满档下
+ * 的渲染量差一个数量级,小档过线不代表满档过线。
+ * 用法:`node scripts/perf-profile.mjs --stress`
+ */
+const stress = args.includes("--stress");
 
 /**
  * 判据上限:本机读数留数倍余量(机型/负载差异),只拦成倍回退。
@@ -86,6 +93,40 @@ function startServer() {
     });
     server.listen(0, "127.0.0.1", () => res(server));
   });
+}
+
+/**
+ * 满行囊夹具:120 件满词条神品(BAG_CAPACITY 上限),外加一堆丹药。
+ *
+ * 词条取无部位限制的通用项(atk1 / def1 / hp1 等),每件 8 条即 EQUIP_AFFIX_HARD_CAP 的量级;
+ * 这正是玩家真能堆到的上限,也是渲染量最大的一档。
+ */
+function stressSlices() {
+  const base = lateSlices();
+  const items = [];
+  for (let i = 0; i < 120; i += 1) {
+    items.push({
+      uid: `perf_stress_${i}`,
+      templateId: "w_zidian",
+      quality: "divine",
+      tier: 32,
+      level: 5,
+      affixes: [
+        { id: "atk1", roll: 1 },
+        { id: "def1", roll: 1 },
+        { id: "hp1", roll: 1 },
+        { id: "crit1", roll: 1 },
+        { id: "bs1", roll: 1 },
+        { id: "low1", roll: 1 },
+        { id: "pen1", roll: 1 },
+        { id: "res1", roll: 1 },
+      ],
+    });
+  }
+  return {
+    ...base,
+    inventory: { ...base.inventory, items, pills: { p_xuanyuan: 999 }, artifacts: [], equippedArtifacts: [] },
+  };
 }
 
 /** 欢迎页与建号页有档即被路由重定向,不列入 */
@@ -155,7 +196,7 @@ for (const view of VIEWS) {
   try {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     // 每视图注入一份后期档;缺档会落到欢迎页,门量空
-    await seedSave(context, lateSlices());
+    await seedSave(context, stress ? stressSlices() : lateSlices());
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));

@@ -85,6 +85,10 @@ bun run first-paint
 # 运行时:每个视图采几秒帧间隔,量最差帧 / 长帧有没有回来(预算见 scripts/perf-profile.mjs)
 bun run perf-profile
 
+# 同上,但换成满行囊夹具(120 件满词条神品):夹具默认只放 2 件装,
+# 行囊/构筑/图鉴页在小档与满档下渲染量差一个数量级(实测 DOM 270 → 2864)
+bun run perf-stress
+
 # 楷体分片覆盖门(单测之一,证 slices 与 @font-face 的 unicode-range 一致、无孤儿片)
 bun run test -- src/ui/kaiFontCoverage.spec.ts
 ```
