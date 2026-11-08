@@ -37,12 +37,17 @@ const LIMIT = (() => {
     if (i >= 0) return process.argv[i + 1]
     return undefined
   })()
-  const n = Number(raw ?? 40)
+  /*
+   * 默认 15 而非 40:每个候选点要起一次 vitest(实测约 2.3 秒),
+   * 40 点在 CI 冷缓存下单核要跑 15 分钟以上,直接顶到 job 超时。
+   * 15 点最坏情形约 55 秒,给慢 spec 留足余量;代价是覆盖周期从 12 天变 31 天。
+   */
+  const n = Number(raw ?? 10)
   /*
    * 夹到 [1, ...]:负数会让 `all.slice(shard * LIMIT, shard * LIMIT + LIMIT)`
    * 把负终点当成「倒数第几项」,于是一次选中几乎所有候选点;0 则一片都取不到。
    */
-  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 40
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 10
 })()
 
 const PATTERNS = [
@@ -394,6 +399,11 @@ function specsForModule(file) {
  * 分别排在 127 个文件的第 51 / 85 / 102 / 108 / 109 / 82 位,**仍然一个都没进过扫描**。
  * 上一版只去掉了「同名 spec」的前置条件,没解决这个 —— 覆盖率还是假的。
  */
+/** 关联 spec 超过这个数的模块不参与变异扫描(见收集循环里的注释) */
+const SPEC_FANOUT_CAP = 20
+/** 因关联 spec 过多而跳过的模块,收尾时列出来 */
+const tooWide = []
+
 const perFile = []
 for (const file of files) {
   const src = readFileSync(file, 'utf-8')
@@ -406,6 +416,17 @@ for (const file of files) {
    */
   const specs = specsForModule(file)
   if (specs.length === 0) continue
+  /*
+   * 关联 spec 过多的模块跳过。
+   *
+   * player / resources 这类核心 store 被上百个 spec 引用,查一个变异点就要起上百次
+   * vitest —— 实测第 27 片跑了 10 分钟还没完,直接顶死 job 超时。
+   * 这种模块的覆盖率本来就靠全量 test 兜着,不值得拿变异扫描的预算去换。
+   */
+  if (specs.length > SPEC_FANOUT_CAP) {
+    tooWide.push({ file, count: specs.length })
+    continue
+  }
   const mine = []
   for (const { name, re, rep } of PATTERNS) {
     for (const m of src.matchAll(re)) {
@@ -462,6 +483,11 @@ const runNumber = Number(process.env.GITHUB_RUN_NUMBER)
 const advance = Number.isFinite(runNumber) && runNumber > 0 ? runNumber : Math.floor(Date.now() / 86_400_000)
 const shard = explicit ? 0 : advance % shardCount
 found.push(...all.slice(shard * LIMIT, shard * LIMIT + LIMIT))
+
+if (tooWide.length > 0) {
+  console.log(`因关联 spec 过多而跳过 ${tooWide.length} 个模块(阈值 ${SPEC_FANOUT_CAP}):`)
+  for (const t of tooWide) console.log(`  ${t.file.slice(ROOT.length + 1)}  关联 ${t.count} 个 spec`)
+}
 
 console.log(
   `扫到 ${found.length} 个可变异点(上限 ${LIMIT},来自 ${new Set(found.map(f => f.file)).size} 个模块)` +

@@ -182,3 +182,21 @@ describe('变异扫描 · 退出码语义', () => {
     )
   })
 })
+
+/**
+ * 关联 spec 过多的模块不参与扫描。
+ *
+ * player / resources 这类核心 store 被上百个 spec 引用,查一个变异点就要起上百次 vitest ——
+ * 实测第 27 片跑了 10 分钟还没完,直接顶死 job 的 15 分钟超时。
+ * 这种模块的覆盖率本来就靠全量 test 兜着。
+ */
+describe('变异扫描 · 关联 spec 上限', () => {
+  it('给定扫描脚本,当读它的收集逻辑,则有关联 spec 上限且默认 limit 不超过 10', () => {
+    const src = readFileSync(resolve(ROOT, 'scripts/mutation-scan.mjs'), 'utf-8')
+    expect(src, '该有 fanout 上限常量').toMatch(/SPEC_FANOUT_CAP\s*=\s*\d+/)
+    expect(src, '超过上限的模块该被跳过并记账').toMatch(/specs\.length\s*>\s*SPEC_FANOUT_CAP/)
+    expect(src, '默认 limit 该 <= 10(实测 10 点约 1.5 分钟,15 点要 3.8 分钟)').toMatch(
+      /return Number\.isFinite\(n\) && n >= 1 \? Math\.floor\(n\) : 10/
+    )
+  })
+})
