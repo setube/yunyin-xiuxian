@@ -175,3 +175,67 @@ export function lateSlices() {
     },
   };
 }
+
+/**
+ * 满行囊夹具:120 件满词条神品,九个可穿戴槽全穿上。
+ *
+ * 这是玩家真能达到的上限,也是渲染量最大的一档:行囊页 DOM 从轻量夹具的 270
+ * 涨到 2800 上下。压测(perf-profile --stress)读它。
+ *
+ * 每一条都必须**真能进档**,否则 inventory.sanitize() 会静默剔除,
+ * 压测就变成「在七条词条的装备上量性能」而门照旧报绿。校验见
+ * src/utils/fixtureParity.spec.ts —— 它直接调用本函数,不用源码文本猜。
+ */
+export function stressSlices() {
+  const base = lateSlices();
+  /*
+   * 九个可穿戴槽,每个槽一件 32 阶神品,模板与物品同阶。
+   * 首版用 30 阶的 h_zhenling 等配 tier:32,阶数对不上。
+   */
+  const SLOT_TEMPLATES = [
+    ["weapon", "w_benyuan"],
+    ["head", "h_benyuan"],
+    ["body", "b_benyuanshen"],
+    ["wrist", "wr_benyuan"],
+    ["belt", "bl_benyuan"],
+    ["boots", "bo_benyuan"],
+    ["necklace", "n_hongmengzhu"],
+    ["ring", "r_daozu"],
+    ["talisman", "tl_daozuzhuan"],
+  ];
+  /*
+   * 九条 = 神品的词条上限(qualities 里 divine 的 affixes 是 [6, 9])。
+   * 这九条须真实存在且九个槽全兼容:首版写的 res1 不存在、low1 是 slots:A(仅护甲),
+   * 只按武器挑时护甲五槽又用不了 crit1/cdmg1/dmg1/bs1。
+   */
+  const AFFIX_IDS = ["atk1", "atk2", "atk3", "def1", "def2", "def3", "hp1", "hp2", "hp3"];
+  const ITEM_COUNT = 120;
+  const items = [];
+  for (let i = 0; i < ITEM_COUNT; i += 1) {
+    const slotPair = i < SLOT_TEMPLATES.length ? SLOT_TEMPLATES[i] : null;
+    items.push({
+      uid: `perf_stress_${i}`,
+      // 前九件按槽取模板(同阶 32),其余用 32 阶武器模板
+      templateId: slotPair ? slotPair[1] : "w_benyuan",
+      quality: "divine",
+      tier: 32,
+      level: 5,
+      affixes: AFFIX_IDS.map(id => ({ id, roll: 1 })),
+    });
+  }
+  return {
+    ...base,
+    inventory: {
+      ...base.inventory,
+      items,
+      /*
+       * equipped 必须由同一套 uid 现算。照抄 base 那张图(指向 smoke_w / smoke_a)
+       * 会让 sanitize 找不到 uid,把九个槽整个清空 —— 构筑页于是按「没装备加成」算。
+       */
+      equipped: Object.fromEntries(SLOT_TEMPLATES.map(([slot], i) => [slot, `perf_stress_${i}`])),
+      pills: { p_xuanyuan: 999 },
+      artifacts: [],
+      equippedArtifacts: [],
+    },
+  };
+}
