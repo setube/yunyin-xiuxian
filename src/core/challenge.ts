@@ -9,13 +9,13 @@ import { celestialWorldDef } from '@/data/endgame'
 import { mutatorDef } from '@/data/mutators'
 import { pactDef } from '@/data/pacts'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
-import { SIM_REFERENCE } from './celestialSim'
 import {
   celestialFoeCaliber,
   mergeRules,
   runGauntlet,
   worldFoeLineup,
   NO_JUDGEMENT,
+  SIM_REFERENCE,
   type CelestialJudgement
 } from './gauntlet'
 import { buildPlayerSnap } from './playerSnap'

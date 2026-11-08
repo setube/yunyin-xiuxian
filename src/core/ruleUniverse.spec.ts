@@ -20,8 +20,10 @@ import { budgetOfMods, budgetOfRules, ITEM_BUDGET_CAP, WORLD_BUDGET_CAP } from '
 import { fingerprintOf, riskProfileOf } from './fingerprints'
 import { searchBuilds } from './buildSearch'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
-import { SIM_REFERENCE, worldClearRate, crossWorldUniversals } from './celestialSim'
-import { worldFoeSnap } from './gauntlet'
+import { worldClearRate, crossWorldUniversals } from './celestialSim'
+import { worldFoeSnap,
+  SIM_REFERENCE
+} from './gauntlet'
 import { resolveCombat } from './combat'
 
 describe('① Meta 演化稳定性', () => {
