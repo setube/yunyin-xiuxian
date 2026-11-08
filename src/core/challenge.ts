@@ -10,7 +10,14 @@ import { mutatorDef } from '@/data/mutators'
 import { pactDef } from '@/data/pacts'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
 import { SIM_REFERENCE } from './celestialSim'
-import { celestialFoeCaliber, mergeRules, runGauntlet, worldFoeSnap, NO_JUDGEMENT, type CelestialJudgement } from './gauntlet'
+import {
+  celestialFoeCaliber,
+  mergeRules,
+  runGauntlet,
+  worldFoeLineup,
+  NO_JUDGEMENT,
+  type CelestialJudgement
+} from './gauntlet'
 import { buildPlayerSnap } from './playerSnap'
 import { currentDaoRules, endgameUnlocked, recordMark, type ExpeditionResult } from './endgameService'
 import { recordMilestone } from './identity'
@@ -58,10 +65,7 @@ function draftFoes(
 ): CombatantSnap[] {
   const world = celestialWorldDef(worldId)
   if (!world) return []
-  const foes: CombatantSnap[] = []
-  for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, ref, 1, judgement))
-  foes.push(worldFoeSnap(world.guardian, ref, 1, judgement))
-  return foes
+  return worldFoeLineup(world, ref, judgement)
 }
 
 /**

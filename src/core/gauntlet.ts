@@ -1,5 +1,15 @@
 /** 连战解算(纯函数):特殊世界与天道试炼共用,终局模拟器直接验证 */
-import type { CombatantSnap, CombatLogEntry, CombatRules, FoeOrigin, FoeOriginPart, GNum, StatMods, WorldFoeShape } from '@/types'
+import type {
+  CelestialWorldDef,
+  CombatantSnap,
+  CombatLogEntry,
+  CombatRules,
+  FoeOrigin,
+  FoeOriginPart,
+  GNum,
+  StatMods,
+  WorldFoeShape
+} from '@/types'
 import type { RandomService } from '@/utils/random'
 import { mulN } from '@/utils/gnum'
 import { modDepth } from './statsCalc'
@@ -128,6 +138,26 @@ export function celestialFoeCaliber(
     ref: celestialAnchor(anchorTier),
     judgement: celestialJudgement(playerMods, playerMajor, anchorTier)
   }
+}
+
+/**
+ * 一个天界世界的完整敌人阵容:前 `fights - 1` 场按 `foes` 循环取,末位固定守关者。
+ *
+ * 这段循环此前在 challenge / endgameService / lab 各抄了一份(逐字相同)。
+ * 抄三份的风险在于改一处漏两处:比如以后给普战加递进,某条路径忘了改,
+ * 它的通关率就会与另外两条静默分叉,而三条路径共用同一个 `runGauntlet`。
+ */
+export function worldFoeLineup(
+  world: CelestialWorldDef,
+  ref: ReferenceStats,
+  judgement: CelestialJudgement = NO_JUDGEMENT
+): CombatantSnap[] {
+  const foes: CombatantSnap[] = []
+  for (let i = 0; i < world.fights - 1; i += 1) {
+    foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, ref, 1, judgement))
+  }
+  foes.push(worldFoeSnap(world.guardian, ref, 1, judgement))
+  return foes
 }
 
 /** 按参照属性生成天界敌人;`judgement` 的加厚乘到三维,增伤减伤并入敌人词条 */
