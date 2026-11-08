@@ -236,14 +236,38 @@
           >
             服 用
           </button>
-          <!-- 增益丹每次只服 1 枚(药力顶格),不摆连服 -->
+          <!--
+            增益丹每次只服 1 枚(药力顶格),不摆连服。
+          -->
           <button
             v-if="(currentPill?.count ?? 0) >= 2 && currentPill?.def?.kind !== 'buff'"
             class="btn-ghost"
             @click="onUsePillBatch()"
           >
-            连服 ×{{ Math.min(5, currentPill?.count ?? 0) }}
+            连服 ×{{ pillBatchCount }}
           </button>
+        </div>
+        <!--
+          服用数量:非增益丹才给。上限是手上的存量,由 usePillBatch 吃到没有为止。
+
+          原先这里写死 5(见 264d1278:那次只把按钮文案从「×5」改成真数,5 本身没人论证过),
+          而洞府连升 / 灵脉连投 / 熔炉连凝都是「用尽手头可负担的量」—— 全站只有连服不遵循这一条。
+          吃丹不可逆,故不直接给「全部服下」,而是让玩家自己填:默认 5,可改到存量。
+        -->
+        <div
+          v-if="(currentPill?.count ?? 0) >= 2 && currentPill?.def?.kind !== 'buff'"
+          class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5"
+        >
+          <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint">一次服</span>
+          <input
+            v-model.number="pillBatchCount"
+            type="number"
+            :min="1"
+            :max="currentPill?.count ?? 1"
+            class="w-16 shrink-0 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
+            aria-label="服用数量"
+          />
+          <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint tabular">枚 · 存 {{ currentPill?.count ?? 0 }}</span>
         </div>
       </template>
     </BaseModal>
@@ -298,7 +322,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { useInventoryStore } from '@/stores/inventory'
   import { useResourcesStore } from '@/stores/resources'
@@ -536,6 +560,16 @@
   const currentMaterial = computed(() => materialGrid.value.find(m => m.key === materialDetail.value) ?? null)
 
   const pillDetail = ref<string | null>(null)
+  /**
+   * 一次连服几枚:默认 5,可改到手上存量。
+   *
+   * 换一种丹药或重新打开详情时回到默认值 —— 上一次填的 500 不该留给下一种丹,
+   * 那是把「这次想多吃」误带到「下次也想多吃」。
+   */
+  const pillBatchCount = ref(5)
+  watch(pillDetail, () => {
+    pillBatchCount.value = 5
+  })
   const currentPill = computed(() => (pillDetail.value ? (pillRows.value.find(r => r.def?.id === pillDetail.value) ?? null) : null))
   /** 当前查看的丹药的质感层(最上档才有);道品 rank 9 走同一入口 */
   /** 当前查看的丹药的质感层(最上档才有);行上已算好,这里直接取 */
@@ -572,7 +606,10 @@
   function onUsePillBatch(): void {
     const id = pillDetail.value
     if (!id) return
-    usePillBatch(id, 5)
+    // 数量以输入框为准,但必须在 [1, 存量] 内:输入框可被键盘改成 0、负数或超过存量
+    const owned = currentPill.value?.count ?? 0
+    const want = Math.max(1, Math.min(owned, Math.floor(pillBatchCount.value) || 1))
+    usePillBatch(id, want)
     if (!pillRows.value.some(r => r.def?.id === id)) pillDetail.value = null
   }
 
