@@ -442,10 +442,25 @@ for (let round = 0; ; round += 1) {
  * 用 `--limit=N` 显式指定时仍是「从头取 N 个」,不做日期偏移 ——
  * 本地想复现某一段时不该被当天日期干扰。
  */
-const explicit = process.argv.some(a => a.startsWith('--limit'))
+/*
+ * 与上面解析 LIMIT 时认的**同一组**格式对齐:
+ * `--limit=N` 或 独立的 `--limit`(后跟值)。
+ * 先前用 startsWith('--limit'):`--limits=5` 这种拼错也会被当成显式,
+ * 于是 LIMIT 退回默认 40、分片却固定取第 0 片 —— 反复跑都只扫第一批,还不报错。
+ */
+const explicit = process.argv.some(a => /^--limit(=|$)/.test(a))
 const shardCount = Math.max(1, Math.ceil(all.length / LIMIT))
-const dayIndex = Math.floor(Date.now() / 86_400_000)
-const shard = explicit ? 0 : dayIndex % shardCount
+/*
+ * 推进分片的依据:优先用 CI 的 run number,退回日历日。
+ *
+ * 日历日有个洞 —— **CI 不是每天都跑**。周末或无人提 PR 的那几天照样占掉分片位置,
+ * 于是一周只跑五次也可能始终落在同一批余数上。run number 是单调递增的,
+ * 每次 CI 触发都 +1,与「扫描跑了几次」同义,不需要自己持久化计数器。
+ * 本地没有该变量时退回日期:单机开发看的是「今天扫哪片」,这个语义更直观。
+ */
+const runNumber = Number(process.env.GITHUB_RUN_NUMBER)
+const advance = Number.isFinite(runNumber) && runNumber > 0 ? runNumber : Math.floor(Date.now() / 86_400_000)
+const shard = explicit ? 0 : advance % shardCount
 found.push(...all.slice(shard * LIMIT, shard * LIMIT + LIMIT))
 
 console.log(

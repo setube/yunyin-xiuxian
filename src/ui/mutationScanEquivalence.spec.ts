@@ -128,8 +128,9 @@ describe('变异扫描 · 分片轮转', () => {
   it('给定扫描脚本,当读它的分片逻辑,则确实按日期选片且显式 limit 不受日期影响', () => {
     const src = readFileSync(resolve(ROOT, 'scripts/mutation-scan.mjs'), 'utf-8')
     expect(src, '分片数该由「总数 / LIMIT」算出').toMatch(/shardCount\s*=\s*Math\.max\(1,\s*Math\.ceil\(all\.length\s*\/\s*LIMIT\)\)/)
-    expect(src, '分片下标该按日期推进').toMatch(/dayIndex\s*%\s*shardCount/)
-    expect(src, '显式 --limit 时不该被当天日期干扰').toMatch(/explicit\s*\?\s*0\s*:\s*dayIndex/)
+    expect(src, '分片下标该由 advance 取模算出').toMatch(/advance\s*%\s*shardCount/)
+    expect(src, 'CI 里有单调递增的 run number 时该优先用它').toMatch(/process\.env\.GITHUB_RUN_NUMBER/)
+    expect(src, '显式 --limit 时不该被推进依据干扰').toMatch(/explicit\s*\?\s*0\s*:\s*advance/)
   })
 
   it('给定 455 个候选点与上限 40,当用源码里的切片表达式逐片取样,则 12 片无重无漏且相邻天不重叠', () => {
