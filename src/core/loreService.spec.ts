@@ -8,7 +8,19 @@ import { PILLS } from '@/data/pills'
 import { recipeCraft } from '@/data/crafting'
 import { MAX_MAJOR } from '@/data/realms'
 import { bearableRank } from './craftability'
-import { NEW_RECIPE_COST, NEW_RECIPE_START, STUDY_MASTERY_PER_HOUR, STUDY_REACH_OVER, seedLoreIfNeeded, studiableRecipes, studyEta, studyTick } from './loreService'
+import {
+  NEW_RECIPE_COST,
+  NEW_RECIPE_START,
+  SEEN_FOR_NATURE,
+  STUDY_MASTERY_PER_HOUR,
+  STUDY_REACH_OVER,
+  discernChance,
+  natureChance,
+  seedLoreIfNeeded,
+  studiableRecipes,
+  studyEta,
+  studyTick
+} from './loreService'
 import { useLoreStore } from '@/stores/lore'
 import { useDongfuStore } from '@/stores/dongfu'
 import { usePlayerStore } from '@/stores/player'
@@ -278,5 +290,65 @@ describe('灵材照面 · 来源归类', () => {
       .sort()
     expect(granting).toEqual([...COUNTED, ...NOT_COUNTED, ...STORE].sort())
     for (const rel of COUNTED) expect(code(join(SRC, rel)), `${rel} 须经 harvestMaterials 计照面`).toContain('harvestMaterials(')
+  })
+})
+
+/**
+ * 认知检定的两道夹逼:辨识(0.04~0.9)与知性(0.02~0.75)。
+ *
+ * 两条都是**可达的**,不是防将来的兜底:
+ *  · `discernChance` 的 base 里带 `-(rank-1)*0.018`,rank≥10 时原始值就低于 0.04
+ *    (rank=20、无技艺时原始值 -0.142)
+ *  · `natureChance` 的 base 带 `-(rank-1)*0.015`,rank≥8 时原始值已为负
+ * 不钳的话,高品材料会算出**负概率** —— 比「必失败」更糟:负数喂进 `rng.chance()` 后
+ * 判定恒假,但显示层印出来是「-14%」。
+ *
+ * 这两个函数此前在 spec 里一次都没被调过(变异扫描点名)。下面把两头与中间都钉住。
+ */
+describe('认知检定 · 概率夹在合法区间', () => {
+  it('辨识:高品材料也不低于 4%,再熟也不超过 90%', () => {
+    // 高端:rank 拉满、技艺为 0、没见过 → 原始值为负,须钳在 0.04
+    for (const rank of [10, 12, 20, 99]) {
+      const v = discernChance(rank, 0, 0)
+      expect(v, `rank=${rank} 的辨识概率低于下限 —— 钳制没了`).toBeGreaterThanOrEqual(0.04)
+      expect(v, `rank=${rank} 该钳在 4%`).toBe(0.04)
+    }
+    // 低端:低品 + 高技艺 + 见过很多 → 超过上限,须钳在 0.9
+    const high = discernChance(1, 999, 999)
+    expect(high, '辨识概率超过 90%').toBeLessThanOrEqual(0.9)
+    expect(high, '该钳在 90%').toBe(0.9)
+    // 中间段不被钳坏
+    const mid = discernChance(1, 0, 0)
+    expect(mid, '一阶新材料的辨识概率该保持原本算式').toBeCloseTo(0.2, 6)
+  })
+
+  it('知性:高品材料也不低于 2%,再熟也不超过 75%', () => {
+    for (const rank of [8, 10, 20, 99]) {
+      const v = natureChance(rank, 0, 0, SEEN_FOR_NATURE)
+      expect(v, `rank=${rank} 的知性概率低于下限 —— 钳制没了`).toBeGreaterThanOrEqual(0.02)
+      expect(v, `rank=${rank} 该钳在 2%`).toBe(0.02)
+    }
+    const high = natureChance(1, 999, 999, 999)
+    expect(high, '知性概率超过 75%').toBeLessThanOrEqual(0.75)
+    expect(high, '该钳在 75%').toBe(0.75)
+  })
+
+  it('知性:照面次数不够时仍是 0(早退优先于夹逼)', () => {
+    expect(natureChance(1, 999, 999, SEEN_FOR_NATURE - 1), '没到照面门槛不该给概率').toBe(0)
+  })
+
+  it('两条概率对任意输入都不出 [0,1] 之外,也不为 NaN', () => {
+    for (const rank of [-5, 0, 1, 10, 99, 1e6]) {
+      for (const lv of [0, 50, 1e5]) {
+        const d = discernChance(rank, lv, 0)
+        expect(Number.isFinite(d), `discernChance(${rank},${lv}) = ${d}`).toBe(true)
+        expect(d, `discernChance(${rank},${lv}) 越界`).toBeGreaterThanOrEqual(0)
+        expect(d).toBeLessThanOrEqual(1)
+        const n = natureChance(rank, lv, lv, SEEN_FOR_NATURE)
+        expect(Number.isFinite(n), `natureChance(${rank},${lv}) = ${n}`).toBe(true)
+        expect(n, `natureChance(${rank},${lv}) 越界`).toBeGreaterThanOrEqual(0)
+        expect(n).toBeLessThanOrEqual(1)
+      }
+    }
   })
 })
