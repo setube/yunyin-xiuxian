@@ -121,25 +121,27 @@
         <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
           <span class="shrink-0 text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
           <span class="ml-auto flex shrink-0 items-center gap-1.5">
+            <input
+              v-if="affordable > 1"
+              v-model.number="fruitCount"
+              type="number"
+              :min="1"
+              :max="affordable"
+              class="h-7 w-14 shrink-0 rounded border border-ink/15 bg-paper/70 px-1 text-[11px] tabular"
+              aria-label="凝炼枚数"
+              :title="`最多 ${affordable} 枚`"
+            />
             <button
               class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
               :disabled="fruitShort.short.m > 0"
               :title="fruitShort.reason ?? undefined"
-              @click="doCondense()"
+              @click="doCondense(fruitEffective)"
             >
               {{
                 fruitShort.short.m > 0
-                  ? `道果 +1(道源尚差 ${daoSourceShortText(DAO_SOURCE_PER_FRUIT, endgame.daoSource)})`
-                  : `${DAO_SOURCE_PER_FRUIT} 道源 → 道果 +1`
+                  ? `道果 +${fruitEffective}(道源尚差 ${daoSourceShortText(DAO_SOURCE_PER_FRUIT * fruitEffective, endgame.daoSource)})`
+                  : `${DAO_SOURCE_PER_FRUIT * fruitEffective} 道源 → 道果 +${fruitEffective}`
               }}
-            </button>
-            <!-- 只够凝一枚时不必摆连凝:两颗钮做同一件事 -->
-            <button
-              v-if="affordable > 1"
-              class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
-              @click="doCondenseAll()"
-            >
-              连凝 {{ affordable }} 枚
             </button>
           </span>
         </div>
@@ -305,9 +307,13 @@ const curvePoints = computed(() => marginCurvePoints(fruitInfo.value.total))
 /** 一两枚时曲线是平的:没有可读的形状,不如不画 */
 const showCurve = computed(() => fruitInfo.value.total >= 4)
 
-const fruitShort = computed(() => daoSourceShortfall(DAO_SOURCE_PER_FRUIT, endgame.daoSource))
-/** 手上道源最多能凝几枚:连凝钮的可凝数,与 condenseDaoFruit 同口径 */
+/** 手上道源最多能凝几枚:输入框上限,与 condenseDaoFruit 同口径 */
 const affordable = computed(() => condenseFruitAffordable())
+/** 用户想凝几枚;钳到 [1, 可凝数] —— 手输 0/负数/超量都修回合法值 */
+const fruitCount = ref(1)
+const fruitEffective = computed(() => Math.max(1, Math.min(affordable.value || 1, Math.floor(fruitCount.value) || 1)))
+/** 当前这一次的缺口(按选中枚数算);拒因与 condenseDaoFruit 同源 */
+const fruitShort = computed(() => daoSourceShortfall(DAO_SOURCE_PER_FRUIT * fruitEffective.value, endgame.daoSource))
 /** 灵石熔铸的单价;价签与 furnaceConvertStone 同源 */
 const stoneUnit = computed(() => furnaceStoneCost())
 /** 手上灵石最多能熔几次:输入框上限,与 furnaceConvertStone 同口径 */
@@ -332,14 +338,12 @@ const fruitDialog = computed(() => daoFruitDialog())
 let fruitOpenedAt = -Infinity
 function doCondense(n = 1): void {
   const before = player.reincarnation.daoFruit
-  condenseDaoFruit(n)
+  const ok = condenseDaoFruit(n)
+  // 凝成功就把枚数复位,免得下次打开还停在上次的大数上
+  if (ok) fruitCount.value = 1
   if (player.reincarnation.daoFruit === before || !shouldShowFruitTutorial()) return
   fruitOpenedAt = performance.now()
   fruitDialogOpen.value = true
-}
-/** 连凝:一次把手上的道源凝尽;可凝数由 affordable 给,不在这里重算 */
-function doCondenseAll(): void {
-  doCondense(affordable.value)
 }
 /** 道果说明的一切关闭都走这里 */
 function closeFruitDialog(): void {
