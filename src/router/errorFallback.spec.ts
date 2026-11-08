@@ -39,4 +39,17 @@ describe('路由 · 懒加载失败的兜底', () => {
     expect(src, '没有 afterEach 记录成功路径').toMatch(/router\.afterEach\(/)
     expect(src, '没有 lastGoodPath').toMatch(/lastGoodPath/)
   })
+
+  /**
+   * 切页时清弹窗栈。
+   *
+   * 原先只在 App.vue 的 onUnmounted 里清 —— 那是「整个应用卸载」,SPA 内切页不触发。
+   * 于是浏览器/安卓返回键从背包跳回首页时,背包页那扇装备详情还挂在屏幕上,
+   * 底下已经是另一页的内容(实测:hash 变 #/ 、.modal-panel 仍是 1)。
+   */
+  it('切页清弹窗栈,连各页的详情指针一起复位', () => {
+    const hook = src.slice(src.indexOf('router.afterEach'), src.indexOf('router.onError'))
+    expect(hook, 'afterEach 里没有 resetModalStack').toMatch(/resetModalStack\(\)/)
+    expect(hook, 'afterEach 里没有 clearDetail').toMatch(/clearDetail\(\)/)
+  })
 })
