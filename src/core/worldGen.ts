@@ -5,7 +5,7 @@ import { jaccardDistance } from '@/utils/setMath'
 import { CELESTIAL_WORLDS, TRIAL_FOES } from '@/data/endgame'
 import { MUTATORS, MUTATOR_THEMES, THEME_IDENTITY, type MutatorTheme } from '@/data/mutators'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
-import { worldClearRate } from './celestialSim'
+import { worldClearRate } from './gauntlet'
 import { budgetOfRules, WORLD_BUDGET_CAP } from './ruleBudget'
 
 /** 变数天界的锚点层级:阶梯最深处(见 types 的 CelestialWorldDef.anchorTier) */
