@@ -15,6 +15,8 @@ import { readFileSync } from 'node:fs'
 import { affixDef, affixFitBlock } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
+import { BAG_CAPACITY } from '@/data/constants'
+import { lateSlices, stressSlices } from '../../scripts/lib/saveFixture.mjs'
 import { resolve } from 'node:path'
 
 const ROOT = resolve(__dirname, '../..')
@@ -100,75 +102,75 @@ describe('夹具 · 存档格式与产品代码同源', () => {
 })
 
 /**
- * 性能压测夹具的合法性。
+ * 性能压测夹具的合法性 —— **实际调用** stressSlices(),不靠源码文本猜。
  *
- * `scripts/perf-profile.mjs` 的 `--stress` 档铺 120 件满词条神品,用它代表玩家能达到的
- * 最大负载。但夹具里写的词条 id 与模板 id 若有一个不成立,`inventory.sanitize()`
- * 就会**静默剔除**那一条或那一件 —— 压测照跑,量的却是「七条词条的装备」,
- * 而门照旧报绿。装备栏同理:换掉 items 却不换 equipped,找不到 uid 就把八格全清空,
- * 构筑页于是按「没有装备加成」算,满档门漏掉真实负载。
+ * `perf-profile --stress` 铺 120 件满词条神品来代表玩家能堆到的最大负载。
+ * 夹具里任一条不成立,`inventory.sanitize()` 就会静默剔除那一件或那一条 ——
+ * 压测照跑、门照旧报绿,量的却不是声称的最大负载。
  *
- * 这不是假设:上面这些每一条都真实发生过,是审查逐条指出来的。
- * 本条把它们钉住 —— 改夹具时若写了不存在的 id 或槽位不符的词条,测试即红。
+ * 首版这条判据是源码正则:只查「id 出现在 affixes 数组里」,于是
+ * 模板阶数不符、品质被改、槽位错位、uid 重复这些全都能溜过去。
+ * 现改为调用函数读返回值 —— 一次调用能同时钉住所有这些。
  */
-describe('性能压测夹具 · 每条词条与模板都须真实有效', () => {
-  const perf = readFileSync(resolve(ROOT, 'scripts/perf-profile.mjs'), 'utf-8')
-  const stress = /function stressSlices\(\)[\s\S]*?\n\}/.exec(perf)?.[0] ?? ''
+describe('性能压测夹具 · 实际调用后每一条都成立', () => {
+  const slices = stressSlices()
+  const inv = slices.inventory
+  const items = inv.items
 
-  it('夹具函数存在,判据不空转', () => {
-    expect(stress, '找不到 stressSlices,判据会空转').not.toBe('')
-    expect(stress.length).toBeGreaterThan(400)
+  it('物品数正好是 BAG_CAPACITY', () => {
+    expect(items.length, `夹具该铺满 ${BAG_CAPACITY} 件,实际 ${items.length} 件`).toBe(BAG_CAPACITY)
   })
 
-  it('affixes 里每个 id 在 AFFIXES 里都存在', () => {
-    const block = /affixes: \[([\s\S]*?)\]/.exec(stress)?.[1] ?? ''
-    expect(block, '找不到 affixes 数组').not.toBe('')
-    const ids = [...block.matchAll(/id: "([a-z0-9]+)"/g)].map(m => m[1]!)
-    expect(ids.length, '一条词条都没扫到,判据空转').toBeGreaterThanOrEqual(9)
-    const missing = ids.filter(id => !affixDef(id))
-    expect(missing, `这些词条 id 不存在,sanitize 会静默剔除:${missing.join(', ')}`).toEqual([])
+  it('每件都是神品,且阶数与模板阶数一致', () => {
+    const cap = qualityDef('divine').affixes[1]
+    for (const it of items) {
+      expect(it.quality, `${it.uid} 不是神品`).toBe('divine')
+      const tpl = equipmentTemplate(it.templateId)
+      expect(tpl, `${it.uid} 的模板 ${it.templateId} 不存在`).toBeTruthy()
+      expect(it.tier, `${it.uid} 的 tier 与模板 ${it.templateId} 的阶数不符`).toBe(tpl!.tier)
+      expect(it.affixes.length, `${it.uid} 只有 ${it.affixes.length} 条词条,神品上限是 ${cap}`).toBe(cap)
+    }
   })
 
-  it('每条词条都与夹具用到的每个装备槽兼容', () => {
-    const block = /affixes: \[([\s\S]*?)\]/.exec(stress)?.[1] ?? ''
-    const ids = [...block.matchAll(/id: "([a-z0-9]+)"/g)].map(m => m[1]!)
-    const tplBlock = /SLOT_TEMPLATES = \[([\s\S]*?)\];/.exec(stress)?.[1] ?? ''
-    const tplIds = [...tplBlock.matchAll(/"([a-z0-9_]+)"/g)].map(m => m[1]!)
-    expect(tplIds.length, '一个模板都没扫到').toBeGreaterThanOrEqual(8)
+  it('每条词条都存在,且与该件的槽位相容', () => {
     const rank = qualityDef('divine').rank
-    const bad: string[] = []
-    for (const tplId of [...tplIds, 'w_benyuan']) {
-      const tpl = equipmentTemplate(tplId)
-      if (!tpl) {
-        bad.push(`${tplId}(模板不存在)`)
-        continue
-      }
-      for (const id of ids) {
-        const def = affixDef(id)
-        if (!def) continue
-        const fit = affixFitBlock(def, tpl.slot, rank)
-        if (fit) bad.push(`${id}@${tpl.slot}:${fit}`)
+    for (const it of items) {
+      const tpl = equipmentTemplate(it.templateId)!
+      for (const a of it.affixes) {
+        const def = affixDef(a.id)
+        expect(def, `${it.uid} 的词条 ${a.id} 不存在`).toBeTruthy()
+        expect(affixFitBlock(def!, tpl.slot, rank), `${it.uid} 的词条 ${a.id} 与 ${tpl.slot} 槽不符`).toBeNull()
       }
     }
-    expect(bad, `这些词条与该槽不符,sanitize 会剔除:${bad.join(' / ')}`).toEqual([])
   })
 
-  it('词条条数等于神品的上限(qualities 的 affixes[1])', () => {
-    const block = /affixes: \[([\s\S]*?)\]/.exec(stress)?.[1] ?? ''
-    const ids = [...block.matchAll(/id: "([a-z0-9]+)"/g)].map(m => m[1]!)
-    const cap = qualityDef('divine').affixes[1]
-    expect(ids.length, `神品上限 ${cap} 条,夹具只写了 ${ids.length} 条 —— 压测没到最高行数`).toBe(cap)
+  it('uid 唯一', () => {
+    const uids = new Set(items.map(it => it.uid))
+    expect(uids.size, `uid 有重复:${items.length} 件里只有 ${uids.size} 个不同 uid`).toBe(items.length)
   })
 
-  it('equipped 指向的 uid 与 items 用同一套 uid 前缀', () => {
-    // 换掉 items 却留旧 equipped,八格会被清空 —— 这正是上轮踩过的坑
-    const uidPrefix = /uid: `([a-z_]+)\$\{i\}`/.exec(stress)?.[1]
-    expect(uidPrefix, '找不到 items 的 uid 前缀').toBeTruthy()
-    const equipped = /equipped: ([\s\S]*?),?\n/.exec(stress.slice(stress.indexOf('equipped')))?.[1] ?? ''
-    expect(equipped, '找不到 equipped 的生成语句').not.toBe('')
-    expect(
-      equipped,
-      'equipped 该由同一套 uid 前缀现算,而不是照抄旧映射(照抄时 uid 不存在,八格会被清空)'
-    ).toContain(`${uidPrefix}$`)
+  it('九个可穿戴槽全穿上,且每个 uid 都真在 items 里', () => {
+    const byUid = new Map(items.map(it => [it.uid, it]))
+    const slots = Object.keys(inv.equipped)
+    expect(slots.sort(), '九个可穿戴槽该全穿上').toEqual(
+      ['belt', 'body', 'boots', 'head', 'necklace', 'ring', 'talisman', 'weapon', 'wrist'].sort()
+    )
+    for (const [slot, uid] of Object.entries(inv.equipped)) {
+      const it = byUid.get(uid)
+      expect(it, `槽 ${slot} 指向的 ${uid} 不在 items 里 —— sanitize 会把这格清空`).toBeTruthy()
+      const tpl = equipmentTemplate(it!.templateId)!
+      expect(tpl.slot, `槽 ${slot} 配了 ${tpl.slot} 的模板 —— sanitize 会剔掉`).toBe(slot)
+    }
+  })
+
+  it('与轻量夹具的差异就是行囊这一片', () => {
+    /*
+     * 只比键集合,不比分片内容:lateSlices() 每次都现取时间戳(lastActiveAt 等),
+     * 逐字节比对必然不等 —— 那验的是「两次调用有没有差一个毫秒」,不是夹具形状。
+     */
+    const base = lateSlices()
+    expect(Object.keys(slices).sort(), '压测夹具该只是 lateSlices 的一个覆盖').toEqual(Object.keys(base).sort())
+    // 行囊之外的分片键集合也该一致(不新增/不删)
+    expect(Object.keys(inv).sort(), '行囊分片不该增删键').toEqual(Object.keys(base.inventory).sort())
   })
 })
