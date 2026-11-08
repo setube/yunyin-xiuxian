@@ -40,15 +40,15 @@
         </p>
         <div class="mt-1.5 flex flex-wrap gap-2">
           <button
-            v-for="w in WORLDS"
+            v-for="w in redirectRows"
             :key="w.id"
             class="chip-ink min-h-[28px]"
-            :class="redirectReason(w.id)
+            :class="w.reason
               ? 'cursor-not-allowed border-ink/15 bg-ink/5 text-ink-faint'
               : w.id === effectiveWorldId ? 'text-gold-ink' : 'text-azure'"
-            :disabled="redirectReason(w.id) !== null"
-            :title="redirectReason(w.id) ?? `定向至${w.name}`"
-            :aria-label="redirectReason(w.id) ? `${w.name} · ${redirectReason(w.id)}` : `定向至${w.name}`"
+            :disabled="w.reason !== null"
+            :title="w.reason ?? `定向至${w.name}`"
+            :aria-label="w.reason ? `${w.name} · ${w.reason}` : `定向至${w.name}`"
             @click="redirectTo(w.id)"
           >{{ w.name }}{{ w.id === effectiveWorldId ? ' ·' : '' }}</button>
         </div>
@@ -211,12 +211,23 @@
   function redirectTo(id: WorldId): void {
     const ok = player.redirectFavoredWorld(id)
     const name = worldDef(id).name
-    ui.toast(ok ? `已定向至${name}` : redirectReason(id) ?? '定向未成', ok ? 'info' : 'warn')
+    // 失败时状态没变,拒因直接读上面那一份算好的行,不再重算一次
+    const reason = ok ? null : (redirectRows.value.find(r => r.id === id)?.reason ?? null)
+    ui.toast(ok ? `已定向至${name}` : reason ?? '定向未成', ok ? 'info' : 'warn')
   }
-  /** 该界此刻能否定向,不能则给原因;判据与 redirectFavoredWorld 同一套(见 player.ts) */
-  function redirectReason(w: WorldId): string | null {
-    return mansionRedirectCheck(currentGameDay(), player.mansionRedirect, w, resources.spiritStone).reason
-  }
+  /**
+   * 四枚定向钮各自能否按下、按不下时的拒因。
+   *
+   * 原先每枚钮在模板里调 `redirectReason(w.id)` 三次(类名 / disabled / title 与 aria-label),
+   * 四枚共十二次;而 `mansionRedirectCheck` 每次都要构造一个灵石成本 GNum 并比较。
+   * 现一次算齐,模板只读字段 —— 与 TrialPanel / 道痕面板那些同一种改法。
+   */
+  const redirectRows = computed(() =>
+    WORLDS.map(w => ({
+      ...w,
+      reason: mansionRedirectCheck(currentGameDay(), player.mansionRedirect, w.id, resources.spiritStone).reason
+    }))
+  )
 
   /** 从本世之界页带回来的地界:直接打开出行方式弹窗(模式选择只此一处实现) */
   onMounted(() => {
