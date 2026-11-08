@@ -172,7 +172,8 @@ try {
    * 这条检查就形同虚设。归零后各页的禁用钮才是玩家真会看到的那些。
    */
   const zero = lateSlices()
-  zero.resources = { spiritStone: { m: 0, e: 0 }, qi: 0, wudao: 0, herb: 0, ore: 0, page: 0, dust: 0 }
+  // 灵草走 herbByGrade 分账(herb 是 computed,写进去不生效);归零即五档全 0
+  zero.resources = { spiritStone: { m: 0, e: 0 }, qi: 0, wudao: 0, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 0, page: 0, dust: 0 }
   zero.inventory.items = []
   zero.inventory.equipped = {}
   zero.inventory.pills = {}

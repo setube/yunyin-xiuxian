@@ -313,17 +313,82 @@ describe('性能压测夹具 · 实际调用后每一条都成立', () => {
  * 判据从 PERSISTED_STORES 驱动,不用手写 store 名单:新增 store 自动纳入。
  */
 describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () => {
+  /**
+   * 把字符串字面量与注释抹成等长空白(保留换行与偏移),再交给结构解析。
+   *
+   * 不这样做的话,`desc: '带 { 的文案'` 与 `// 注释里的 [0]` 都会被当成真正的
+   * 结构符号 —— 前者让括号深度算错、提前收尾,后者让数组深度失衡,
+   * 之后的字段就全被漏掉。这是审查点出来的第二处漏网。
+   */
+  function stripNonCode(src: string): string {
+    const out = src.split('')
+    let i = 0
+    while (i < src.length) {
+      const ch = src[i]!
+      const next = src[i + 1]
+      if (ch === '/' && next === '/') {
+        while (i < src.length && src[i] !== '\n') {
+          out[i] = ' '
+          i += 1
+        }
+        continue
+      }
+      if (ch === '/' && next === '*') {
+        out[i] = ' '
+        out[i + 1] = ' '
+        i += 2
+        while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) {
+          if (src[i] !== '\n') out[i] = ' '
+          i += 1
+        }
+        if (i < src.length) {
+          out[i] = ' '
+          out[i + 1] = ' '
+          i += 2
+        }
+        continue
+      }
+      if (ch === '"' || ch === "'" || ch === '`') {
+        const quote = ch
+        out[i] = ' '
+        i += 1
+        while (i < src.length) {
+          if (src[i] === '\\') {
+            if (src[i] !== '\n') out[i] = ' '
+            i += 1
+            if (i < src.length) {
+              if (src[i] !== '\n') out[i] = ' '
+              i += 1
+            }
+            continue
+          }
+          if (src[i] === quote) {
+            out[i] = ' '
+            i += 1
+            break
+          }
+          if (src[i] !== '\n') out[i] = ' '
+          i += 1
+        }
+        continue
+      }
+      i += 1
+    }
+    return out.join('')
+  }
+
   /** 平衡括号取出 `store: {` 的完整体;只认行首带缩进的,避免抓到内部同名对象 */
   function sliceBodies(src: string, store: string): Array<{ pos: number; body: string }> {
+    const code = stripNonCode(src)
     const out: Array<{ pos: number; body: string }> = []
     const re = new RegExp(`^\\s+${store}:\\s*\\{`, 'gm')
-    for (const m of src.matchAll(re)) {
-      const open = src.indexOf('{', m.index!)
+    for (const m of code.matchAll(re)) {
+      const open = code.indexOf('{', m.index!)
       let depth = 0
       let close = -1
-      for (let i = open; i < src.length; i += 1) {
-        if (src[i] === '{') depth += 1
-        else if (src[i] === '}') {
+      for (let i = open; i < code.length; i += 1) {
+        if (code[i] === '{') depth += 1
+        else if (code[i] === '}') {
           depth -= 1
           if (depth === 0) {
             close = i
@@ -331,7 +396,37 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
           }
         }
       }
-      if (close > 0) out.push({ pos: m.index!, body: src.slice(open + 1, close) })
+      if (close > 0) out.push({ pos: m.index!, body: code.slice(open + 1, close) })
+    }
+    return out
+  }
+
+  /**
+   * 赋值形式的夹具:`zero.resources = { … }`。
+   *
+   * aria-check 用 `const zero = lateSlices()` 之后逐片赋值(资源归零那一档),
+   * 这种写法不是 `store: {` 属性,先前的 scan 一次都没覆盖到 —— 而它里面
+   * 恰好写着 `herb: 0` 这个不生效的字段。这是审查点出来的第三处漏网。
+   */
+  function assignedBodies(src: string, store: string): Array<{ pos: number; body: string }> {
+    const code = stripNonCode(src)
+    const out: Array<{ pos: number; body: string }> = []
+    const re = new RegExp(`\\.${store}\\s*=\\s*\\{`, 'g')
+    for (const m of code.matchAll(re)) {
+      const open = code.indexOf('{', m.index!)
+      let depth = 0
+      let close = -1
+      for (let i = open; i < code.length; i += 1) {
+        if (code[i] === '{') depth += 1
+        else if (code[i] === '}') {
+          depth -= 1
+          if (depth === 0) {
+            close = i
+            break
+          }
+        }
+      }
+      if (close > 0) out.push({ pos: m.index!, body: code.slice(open + 1, close) })
     }
     return out
   }
@@ -384,6 +479,7 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
     'scripts/layout-check.mjs',
     'scripts/detail-geometry.mjs',
     'scripts/edge-states.mjs',
+    'scripts/aria-check.mjs',
     'scripts/lib/saveFixture.mjs'
   ]
 
@@ -426,10 +522,13 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
         // 可写 = ref 声明;computed 不算(写不进去)
         const writable = new Set([...storeSrc.matchAll(/const (\w+) = ref[<(]/g)].map(m => m[1]!))
         const computedNames = new Set([...storeSrc.matchAll(/const (\w+) = computed/g)].map(m => m[1]!))
-        for (const { pos, body } of sliceBodies(src, store)) {
+        for (const { pos, body } of [...sliceBodies(src, store), ...assignedBodies(src, store)]) {
           const keys = topKeys(body)
-          // 至少有一个键命中,才认定这是该 store 的夹具分片(防止误判 UI 代码)
-          if (!keys.some(k => writable.has(k) || computedNames.has(k))) continue
+          /*
+           * 不看「有没有键命中」—— 那个守卫会让「整片字段全写错」的情况静默跳过,
+           * 而那正是最该报的。分片已由 `store: {` / `.store = {` 的行首形态定位,
+           * 足以认定它就是该 store 的夹具。
+           */
           for (const key of keys) {
             if (/^\d+$/.test(key)) continue
             if (writable.has(key)) continue
