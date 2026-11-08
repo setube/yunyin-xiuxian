@@ -36,14 +36,14 @@
             :style="seg.dash ? { strokeDasharray: seg.dash } : undefined"
           />
           <circle
-            v-for="p in view.places"
+            v-for="p in places"
             :key="p.nodeId"
             :cx="p.x"
             :cy="p.y"
             :r="p.r"
-            :class="cleared(p.nodeId) ? 'text-jade' : unlocked(p) ? 'text-azure' : 'text-ink-faint'"
+            :class="p.dotClass"
             fill="currentColor"
-            :fill-opacity="cleared(p.nodeId) ? 1 : unlocked(p) ? 0.85 : 0.75"
+            :fill-opacity="p.dotOpacity"
           />
           <circle
             v-if="focusNode"
@@ -73,11 +73,11 @@
       <SectionTitle title="本世地界" :hint="travelHint" />
       <div class="space-y-2">
         <div
-          v-for="p in view.places"
+          v-for="p in places"
           :key="p.nodeId"
           class="card-ink flex items-center gap-3 px-3 py-2.5"
           :class="{
-            'opacity-60': !unlocked(p),
+            'opacity-60': !p.unlocked,
             // .card-ink 的边框是手写(非 layer)声明,工具类在 @layer 里永远压不过它 ——
             // 加 ! 破层,这正是 CharacterView/AdventureView 盖卡片边框的同一套做法
             '!border-cinnabar/35': focusNode?.nodeId === p.nodeId
@@ -85,15 +85,15 @@
         >
           <span
             class="grid h-9 w-9 shrink-0 place-items-center rounded-md"
-            :class="unlocked(p) ? 'bg-azure/10 text-azure' : 'bg-ink/6 text-ink-faint'"
+            :class="p.unlocked ? 'bg-azure/10 text-azure' : 'bg-ink/6 text-ink-faint'"
           >
-            <GameIcon :name="unlocked(p) ? (regionDef(p.regionId)?.icon ?? 'mountain') : 'lock'" :size="16" />
+            <GameIcon :name="p.icon" :size="16" />
           </span>
           <div class="min-w-0 grow">
             <p class="flex items-baseline gap-1.5">
               <span class="truncate font-kai text-[14px] text-ink">{{ p.name }}</span>
               <span class="shrink-0 text-[11px] text-azure">{{ p.terrain }}</span>
-              <span v-if="cleared(p.nodeId)" class="shrink-0 rounded-sm border border-jade/50 px-1 py-px font-kai text-[9px] leading-none text-jade">已通</span>
+              <span v-if="p.cleared" class="shrink-0 rounded-sm border border-jade/50 px-1 py-px font-kai text-[9px] leading-none text-jade">已通</span>
               <span v-else-if="focusNode?.nodeId === p.nodeId" class="shrink-0 text-[10px] text-cinnabar">此地</span>
             </p>
             <p class="mt-0.5 flex items-center gap-2 text-[10px] text-ink-faint">
@@ -102,12 +102,12 @@
                 <span v-for="n in p.eventLevel" :key="n" class="h-1 w-1 rounded-full bg-gold-ink/80" />
               </span>
             </p>
-            <p v-if="!unlocked(p)" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar">
-              {{ blockReason(p.regionId) ?? '未解锁' }}
+            <p v-if="!p.unlocked" class="mt-0.5 text-[10px] leading-relaxed text-cinnabar">
+              {{ p.blockReason ?? '未解锁' }}
             </p>
           </div>
           <!-- 「已通」是记号,不是封路 -->
-          <button v-if="unlocked(p)" class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="depart(p.regionId)">出 发</button>
+          <button v-if="p.unlocked" class="btn-seal shrink-0 !px-3 !py-1.5 !text-[12px]" @click="depart(p.regionId)">出 发</button>
         </div>
       </div>
 
@@ -146,48 +146,59 @@
     return worldView(w, id => enemyDef(id)?.name ?? id)
   })
 
-  const focusNode = computed(() => view.value?.places.find(p => unlocked(p) && !cleared(p.nodeId)) ?? null)
-
-  /** 与下方路段卡同读 view.places + cleared,不另报口径 */
-  const travelHint = computed(() => {
+  /**
+   * 一处的全部事实算一次。
+   *
+   * `unlocked()` 内部要查地界准入(`canEnterRegion` → 缘分表 + 解锁链两次查表),
+   * `cleared()` 与 `blockReason()` 各是一次查表;原先路径图与地界卡共在一个渲染周期里
+   * 分别调 `unlocked(p)` 七次、`cleared(...)` 四次、`blockReason(...)` 一次 ——
+   * 同一处的同一件事算到八遍,而模板里也读不出「这几处说的是同一处」。
+   *
+   * 现由这一个 computed 一次算齐,模板只读字段。数据一变全变,结果与逐次调用完全一致。
+   */
+  const places = computed(() => {
     const ps = view.value?.places ?? []
+    return ps.map(p => {
+      const unlocked = canEnterRegion(p.regionId)
+      const cleared = isNodeCleared(p.nodeId)
+      return {
+        ...p,
+        unlocked,
+        cleared,
+        blockReason: unlocked ? null : entryBlockReason(p.regionId),
+        icon: unlocked ? (regionDef(p.regionId)?.icon ?? 'mountain') : 'lock',
+        /** 路径圆点:已通实心玉色,可往八成靛色,未至淡墨 */
+        dotClass: cleared ? 'text-jade' : unlocked ? 'text-azure' : 'text-ink-faint',
+        dotOpacity: cleared ? 1 : unlocked ? 0.85 : 0.75
+      }
+    })
+  })
+
+  const focusNode = computed(() => places.value.find(p => p.unlocked && !p.cleared) ?? null)
+
+  /** 与下方路段卡同读 places,不另报口径 */
+  const travelHint = computed(() => {
+    const ps = places.value
     if (ps.length === 0) return ''
-    const done = ps.filter(p => cleared(p.nodeId)).length
+    const done = ps.filter(p => p.cleared).length
     return `已通 ${done}/${ps.length} 段`
   })
 
   const segments = computed(() => {
-    const ps = view.value?.places ?? []
+    const ps = places.value
     const segs: { points: string; cls: string; dash: string }[] = []
     for (let i = 0; i + 1 < ps.length; i++) {
       const a = ps[i]!
       const b = ps[i + 1]!
-      const bCleared = cleared(b.nodeId)
-      const bUnlocked = unlocked(b)
+      const reachable = b.cleared || b.unlocked
       segs.push({
         points: `${a.x},${a.y} ${b.x},${b.y}`,
-        cls: bCleared ? 'stroke-jade/60' : bUnlocked ? 'stroke-azure/55' : 'stroke-ink/15',
-        dash: bCleared || bUnlocked ? '' : '4 3'
+        cls: b.cleared ? 'stroke-jade/60' : b.unlocked ? 'stroke-azure/55' : 'stroke-ink/15',
+        dash: reachable ? '' : '4 3'
       })
     }
     return segs
   })
-
-  /**
-   * 「可往」读地界准入唯一出口 canEnterRegion:本世路线只追加可达性,不收回旧解锁链已给的权限。
-   * canEnterNode(纯路线段序)会把历练页能出发的地域标成锁死。
-   */
-  function unlocked(node: { nodeId: string; regionId: string }): boolean {
-    return canEnterRegion(node.regionId)
-  }
-
-  function cleared(nodeId: string): boolean {
-    return isNodeCleared(nodeId)
-  }
-
-  function blockReason(regionId: string): string | null {
-    return entryBlockReason(regionId)
-  }
 
   /** 带地界回历练页选出行方式;模式弹窗只应有一处实现 */
   function depart(regionId: string): void {
