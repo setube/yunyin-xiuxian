@@ -49,6 +49,9 @@ const gate = !args.includes("--no-gate");
  * 性能门的读数因此来自一份「几乎空的行囊」—— 行囊页、构筑页、图鉴页在小档与满档下
  * 的渲染量差一个数量级,小档过线不代表满档过线。
  * 用法:`node scripts/perf-profile.mjs --stress`
+ *
+ * 两档共用 dist/:两个 perf 命令并行跑时,后启动的那个会先 `bun run build` 重写 dist,
+ * 而前者正按需从该目录取资源 —— 读数会混杂甚至 404。故须串行跑,不要同时开两个。
  */
 const stress = args.includes("--stress");
 
@@ -103,37 +106,58 @@ function startServer() {
  */
 function stressSlices() {
   const base = lateSlices();
+  /*
+   * 各槽一件 32 阶神品,让装备栏八格都满 —— 构筑页要读身上八件的加成,
+   * 空装备栏下它算的是「没有装备加成的角色」,满档性能门就漏掉了真实负载。
+   */
+  const SLOT_TEMPLATES = [
+    "w_benyuan", "h_zhenling", "b_benyuan", "wr_zhenling",
+    "bl_kaidao", "bt_shenmo", "n_hundunzhu", "r_wuji",
+  ];
+  const SLOTS = ["weapon", "head", "body", "wrist", "belt", "boots", "necklace", "ring"];
   const items = [];
   for (let i = 0; i < 120; i += 1) {
     items.push({
       uid: `perf_stress_${i}`,
-      // 32 阶武器配 32 阶物品:首版拿 9 阶的 w_zidian 配 tier:32,阶数对不上
-      templateId: "w_benyuan",
+      // 模板与物品同阶:首版拿 9 阶的 w_zidian 配 tier:32,阶数对不上
+      templateId: i < SLOT_TEMPLATES.length ? SLOT_TEMPLATES[i] : "w_benyuan",
       quality: "divine",
       tier: 32,
       level: 5,
       /*
        * 九条 = 神品的词条上限(qualities.ts 里 divine 的 affixes 是 [6, 9]),
        * 也就是玩家单件能堆到的最多行数。
-       * 每一条都须**真实存在且与武器槽相符**,否则 sanitize 会静默剔掉 ——
-       * 首版写的 res1 在 affixes 里没有、low1 是 slots:A(仅护甲),各丢一条。
+       *
+       * 这九条须**真实存在且八个槽全兼容**,否则 sanitize 会静默剔掉:
+       * 首版写的 res1 在 affixes 里没有、low1 是 slots:A(仅护甲);
+       * 只按武器挑词条时,护甲五槽又用不了 crit1/cdmg1/dmg1/bs1。
+       * 故取全槽通用的十二种里前九个,保证每件都真能进九条。
        */
       affixes: [
         { id: "atk1", roll: 1 },
-        { id: "def1", roll: 1 },
-        { id: "hp1", roll: 1 },
-        { id: "cult1", roll: 1 },
-        { id: "crit1", roll: 1 },
-        { id: "cdmg1", roll: 1 },
-        { id: "dmg1", roll: 1 },
-        { id: "bs1", roll: 1 },
         { id: "atk2", roll: 1 },
+        { id: "atk3", roll: 1 },
+        { id: "def1", roll: 1 },
+        { id: "def2", roll: 1 },
+        { id: "def3", roll: 1 },
+        { id: "hp1", roll: 1 },
+        { id: "hp2", roll: 1 },
+        { id: "hp3", roll: 1 },
       ],
     });
   }
   return {
     ...base,
-    inventory: { ...base.inventory, items, pills: { p_xuanyuan: 999 }, artifacts: [], equippedArtifacts: [] },
+    inventory: {
+      ...base.inventory,
+      items,
+      // equipped 必须指向 items 里真有的 uid:base 那张图指的是 smoke_w / smoke_a,
+      // 而这两个 uid 已被替换掉 —— sanitize 找不到就会把装备栏整个清空
+      equipped: Object.fromEntries(SLOTS.map((slot, i) => [slot, `perf_stress_${i}`])),
+      pills: { p_xuanyuan: 999 },
+      artifacts: [],
+      equippedArtifacts: [],
+    },
   };
 }
 
