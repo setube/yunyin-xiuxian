@@ -3,6 +3,7 @@
  * 界面分层审计:全屏浮层只出自 BaseModal(dialog 语义、焦点陷阱、控件尺子都挂在它上面)。
  * 故障注入:把 EnlightenmentModal 改回自己铺浮层 / 删掉某个 title / 删掉 @close,对应用例红。
  */
+import { pageTitle } from '@/ui/pageTitle'
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
@@ -720,14 +721,24 @@ describe('存档 · 退出前须刷盘', () => {
  * h1/h2 的取舍留给各页:首页是仪表盘、补的是视觉隐藏的 sr-only h1,其余页用 SectionTitle 的 h2。
  */
 describe('页面标题 · 每页都有标题元素', () => {
-  it('每个视图都有 h1/h2,或用了渲染 h2 的 SectionTitle', () => {
+  it('每个视图都有 h1/h2,或用了渲染 h2 的 SectionTitle,或由 App.vue 统一给页面名', () => {
+    /*
+     * 两条来源都算数:
+     *   · 视图自己写 h1/h2(坊市、界域页…),或用了渲染 h2 的 SectionTitle;
+     *   · 视图是纯仪表盘、视觉上没有页面标题(首页),名字由 App.vue 的 sr-only h1 统一给 ——
+     *     名表在 src/ui/pageTitle.ts,那张表里的路由项才渲染。首页的 sr-only h1 已挪去那里。
+     */
     const dir = resolve(SRC, 'views')
     const files = readdirSync(dir).filter(f => f.endsWith('.vue'))
     expect(files.length, '一个视图都没扫到,判据空转').toBeGreaterThan(10)
+    const coveredByApp = readFileSync(resolve(SRC, 'App.vue'), 'utf-8').includes('pageTitle(route.name)')
     const missing: string[] = []
     for (const f of files) {
       const src = readFileSync(resolve(dir, f), 'utf-8')
       if (/<h[12][\s>]/.test(src) || src.includes('SectionTitle')) continue
+      // App.vue 统一给名字时,只有真正进了名表的视图才豁免
+      const name = f.replace('View.vue', '').toLowerCase()
+      if (coveredByApp && pageTitle(name) !== '') continue
       missing.push(f)
     }
     expect(missing, `这些视图没有标题元素,读屏按标题跳转会跳过它们:${missing.join(', ')}`).toEqual([])
