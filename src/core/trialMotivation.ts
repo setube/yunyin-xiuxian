@@ -16,7 +16,8 @@ function winRateUnder(profile: BuildProfile, archIdx: number, rules: CombatRules
   const rng = new RandomService(mulberry32(seed))
   let wins = 0
   for (let i = 0; i < n; i += 1) {
-    if (resolveCombat(buildSnap(profile), arch.snap(), rng, rules).win) wins += 1
+    // 只读 .win,不必建战报
+    if (resolveCombat(buildSnap(profile), arch.snap(), rng, rules, false).win) wins += 1
   }
   return wins / n
 }

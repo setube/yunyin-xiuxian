@@ -32,7 +32,8 @@ function winRate(snap: CombatantSnap, foe: CombatantSnap, runs: number, seed: nu
   const rng = new RandomService(mulberry32(seed))
   let wins = 0
   for (let i = 0; i < runs; i += 1) {
-    if (resolveCombat(snap, foe, rng).win) wins += 1
+    // 只读 .win,不必建战报
+    if (resolveCombat(snap, foe, rng, undefined, false).win) wins += 1
   }
   return wins / runs
 }
