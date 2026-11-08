@@ -75,7 +75,12 @@
         n: 600,
         fightsPerArch: 16,
         seed: 20261004,
-        yieldEvery: 24,
+        /*
+         * 每评完 8 套让出一次主线程。
+         * 实测每套 16 场:让出一次要等 24 套时单块 236ms —— 远超 100ms 的卡顿阈值,
+         * 玩家点「跑一遍检索」会看到整页僵住。8 套约 79ms,总耗时不变(实测 5923 vs 5901ms)。
+         */
+        yieldEvery: 8,
         // 只挡回写不够,离页须中止模拟本身
         shouldStop: () => isUnmounted,
         onProgress: (d, t) => {

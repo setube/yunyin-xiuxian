@@ -194,7 +194,7 @@ export async function searchBuildsAsync(opts: SearchBuildsAsyncOptions = {}): Pr
   const n = opts.n ?? 1000
   const fightsPerArch = opts.fightsPerArch ?? 20
   const seed = opts.seed ?? 20260830
-  const yieldEvery = Math.max(1, opts.yieldEvery ?? 40)
+  const yieldEvery = Math.max(1, opts.yieldEvery ?? 8)
   const rng = new RandomService(mulberry32(seed))
   const scored: ScoredBuild[] = []
   for (let i = 0; i < n; i += 1) {
