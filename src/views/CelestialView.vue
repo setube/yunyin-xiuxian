@@ -149,15 +149,15 @@
     </BaseModal>
 
     <BaseModal :open="daoSourceDialogOpen" title="道源" @close="daoSourceDialogOpen = false">
-      <div class="space-y-3 text-[12px] leading-relaxed">
-        <p class="text-ink-soft">{{ daoSourceDialog().intro }}</p>
+      <div v-if="daoPanels" class="space-y-3 text-[12px] leading-relaxed">
+        <p class="text-ink-soft">{{ daoPanels.sourceText.intro }}</p>
         <div>
           <p class="font-kai text-[12px] tracking-wider text-ink">用途</p>
-          <p class="text-ink-faint">{{ daoSourceDialog().usages.join(' · ') }}</p>
+          <p class="text-ink-faint">{{ daoPanels.sourceText.usages.join(' · ') }}</p>
         </div>
         <div>
           <p class="font-kai text-[12px] tracking-wider text-ink">获取</p>
-          <p class="text-ink-faint">{{ daoSourceDialog().gains.join(' · ') }}</p>
+          <p class="text-ink-faint">{{ daoPanels.sourceText.gains.join(' · ') }}</p>
         </div>
         <!--
           生命周期:原先只是一行左边框色各写各的。roleTone 早已在数据里表达「本世 / 跨世」,
@@ -165,12 +165,12 @@
         -->
         <p
           class="flex items-start gap-2 border-l-2 pl-2 text-[11px]"
-          :class="`res-tone res-tone--${toneOf(daoSourceDialog().roleTone).tone}`"
+          :class="`res-tone res-tone--${daoPanels.sourceTone.tone}`"
         >
-          <span class="res-tone__seal shrink-0 font-kai" aria-hidden="true">{{ toneOf(daoSourceDialog().roleTone).seal }}</span>
+          <span class="res-tone__seal shrink-0 font-kai" aria-hidden="true">{{ daoPanels.sourceTone.seal }}</span>
           <span class="min-w-0">
-            <span class="block text-ink">{{ daoSourceDialog().lifecycle }}</span>
-            <span class="block text-[10px] text-ink-faint">{{ toneOf(daoSourceDialog().roleTone).note }}</span>
+            <span class="block text-ink">{{ daoPanels.sourceText.lifecycle }}</span>
+            <span class="block text-[10px] text-ink-faint">{{ daoPanels.sourceTone.note }}</span>
           </span>
         </p>
       </div>
@@ -225,6 +225,17 @@
   function goSouls(): void {
     router.push({ name: 'souls' })
   }
+
+  /**
+   * 道源说明弹窗的整块内容。
+   *
+   * 模板原先在七处调 `daoSourceDialog()`(正文 / 用途 / 获取 / 生命周期 / 形制 + 两处 toneOf),
+   * 每调一次就重新拼一遍那个纯数据对象。现算一次,模板只读字段。
+   */
+  const daoPanels = computed(() => {
+    const sourceText = daoSourceDialog()
+    return { sourceText, sourceTone: toneOf(sourceText.roleTone) }
+  })
 
   const daoSourceDialogOpen = ref(false)
   const furnaceOpen = ref(false)
