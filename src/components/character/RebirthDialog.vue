@@ -156,23 +156,23 @@
         禁用由 :disabled 表达,拒因由下面那行朱砂字承担,两者各司其职。
       -->
       <button
-        v-for="t in LIFE_TRIALS"
+        v-for="t in trialRows"
         :key="t.id"
-        :class="['card-ink w-full px-3 py-2 text-left', lifeTrialShortfall(t.id) !== null ? 'cursor-not-allowed' : '']"
-        :disabled="!canSignLifeTrial(t.id)"
-        :title="lifeTrialShortfall(t.id) !== null ? `道果尚差 ${lifeTrialShortfall(t.id)}` : undefined"
+        :class="['card-ink w-full px-3 py-2 text-left', t.short !== null ? 'cursor-not-allowed' : '']"
+        :disabled="t.blocked"
+        :title="t.short !== null ? `道果尚差 ${t.short}` : undefined"
         @click="requestTrial(t.id)"
       >
         <span class="flex items-baseline justify-between">
           <span class="font-kai text-[14px] text-ink">{{ t.seal }} · {{ t.name }}</span>
-          <span class="tabular text-[12px]" :class="player.reincarnation.daoFruit >= t.cost ? 'text-cinnabar' : 'text-ink-faint'">
+          <span class="tabular text-[12px]" :class="t.affordable ? 'text-cinnabar' : 'text-ink-faint'">
             {{ t.cost }} 道果
           </span>
         </span>
         <span class="mt-0.5 block text-[11px] leading-relaxed text-ink-soft">{{ t.desc }}</span>
         <span class="mt-0.5 block text-[10px] text-ink-faint">{{ t.ruleText }}</span>
-        <span v-if="lifeTrialShortfall(t.id) !== null" class="mt-0.5 block text-[10px] tabular text-cinnabar">
-          道果尚差 {{ lifeTrialShortfall(t.id) }}
+        <span v-if="t.short !== null" class="mt-0.5 block text-[10px] tabular text-cinnabar">
+          道果尚差 {{ t.short }}
         </span>
       </button>
     </div>
@@ -252,6 +252,24 @@ const showCurve = computed(() => fruitInfo.value.total >= 4)
         heritageOpen.value = false
       }
     }
+  )
+
+  /**
+   * 逆旅契的四张卡:缺口、能否签、道果够不够各算一次。
+   *
+   * 模板原先每张卡调 `lifeTrialShortfall(t.id)` 五次(禁用类名 / title / 卡面拒因 / 判空两处),
+   * 四张卡二十次 —— 每次都要穿一次 store 与 `lifeTrialDef` 查表。现一次算齐。
+   */
+  const trialRows = computed(() =>
+    LIFE_TRIALS.map(def => {
+      const short = lifeTrialShortfall(def.id)
+      return {
+        ...def,
+        short,
+        blocked: !canSignLifeTrial(def.id),
+        affordable: player.reincarnation.daoFruit >= def.cost
+      }
+    })
   )
 
   const trialOpen = ref(false)

@@ -77,9 +77,11 @@ describe('逆旅契 · 判据一:余额真的下降', () => {
 
   it('逆旅契卡付不起即禁用并就地列差,不再只降透明度', () => {
     const card = readFileSync(resolve(__dirname, '../components/character/RebirthDialog.vue'), 'utf8')
-    expect(card, '付不起的契必须真的禁用').toContain(':disabled="!canSignLifeTrial(t.id)"')
-    expect(card, '卡面缺口读同一份服务判据').toContain('lifeTrialShortfall(t.id)')
-    expect(card, '付不起时就地列差').toContain('道果尚差 {{ lifeTrialShortfall(t.id) }}')
+    // 落点从「模板里逐张现算」搬到 setup 的 trialRows(一次算齐),判据跟着钉新落点
+    expect(card, '付不起的契必须真的禁用').toContain(':disabled="t.blocked"')
+    expect(card, '卡面缺口读同一份服务判据').toContain('lifeTrialShortfall(def.id)')
+    expect(card, '禁用判据仍走服务,不自己比道果').toContain('canSignLifeTrial(def.id)')
+    expect(card, '付不起时就地列差').toContain('道果尚差 {{ t.short }}')
     expect(card, '不许退回笼统道果不足').not.toContain("ui.toast('道果不足'")
   })
 
