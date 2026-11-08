@@ -1,13 +1,16 @@
 /* eslint-disable no-console */
 /** 凡界生成 · 主观新颖度代理审计:把生成结果拆成玩家实际会看到的层比较表面特征,只能排除明显换皮。 */
 import { describe, expect, it } from 'vitest'
-import { generateSeries } from './mortalWorldGen'
+import { generateMortalWorld, generateSeries } from './mortalWorldGen'
 import {
   avgVisibleByDim,
   isFocused,
   noveltyGap,
+  rhythmNovelty,
   skeletonDimensions,
+  skeletonNovelty,
   skeletonOf,
+  visibleNovelty,
   skeletonRepeats,
   visibleDistance,
   visibleFeatures,
@@ -163,5 +166,42 @@ describe('可见新颖 · 本轮的边界', () => {
         '\n抓不出「文案读起来是不是同一个味道」——' +
         '\n地界名、事件文案全部沿用原素材,这一层仍需实际游玩验证'
     )
+  })
+})
+
+/**
+ * 空历史时三份新颖度都该是 1(满分),不是 Infinity。
+ *
+ * 三个函数的开头都是 `if (history.length === 0) return 1` —— 挡的是 `Math.min(...[])`。
+ * 那表达式在空数组上返回 **Infinity**,而新颖度门是 `value >= floor`:Infinity 恒过。
+ * 于是第一世(历史为空)的世界生成会跳过全部新颖度筛选,直接吃下第一个候选。
+ *
+ * 变异扫描点名这三处(231 / 344 / 350)。判据钉:空历史时是有限数 1,且能被门槛判定为过。
+ */
+describe('新颖度 · 空历史不该返回 Infinity', () => {
+  const world = generateMortalWorld(20261108)
+
+  it('三份新颖度在空历史下都是有限数 1', () => {
+    for (const [name, fn] of [
+      ['visibleNovelty', visibleNovelty],
+      ['skeletonNovelty', skeletonNovelty],
+      ['rhythmNovelty', rhythmNovelty]
+    ] as const) {
+      const v = fn(world, [])
+      expect(Number.isFinite(v), `${name}(空历史) 返回了 ${v} —— 守卫没了`).toBe(true)
+      expect(v, `${name}(空历史) 该是满分 1`).toBe(1)
+    }
+  })
+
+  it('空历史与「历史里有一个完全不同的世界」都是可过门的值', () => {
+    // 过门判据是 value >= floor;Infinity 与 1 都过,但 Infinity 会让后续任何比较失去意义
+    // 另起一次生成拿一个确定存在的 MortalWorld(注意 generateSeries 返回的不是 MortalWorld)
+    const other = generateMortalWorld(424242)
+    for (const fn of [visibleNovelty, skeletonNovelty, rhythmNovelty]) {
+      const empty = fn(world, [])
+      const nonEmpty = fn(world, [other])
+      expect(Number.isFinite(empty), '空历史结果必须是有限数').toBe(true)
+      expect(empty, '空历史该给满分').toBeGreaterThanOrEqual(nonEmpty)
+    }
   })
 })
