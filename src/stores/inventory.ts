@@ -157,11 +157,21 @@ export const useInventoryStore = defineStore(
 
     const bagFull = computed(() => bagItems.value.length >= BAG_CAPACITY)
 
+    /**
+     * 已装备件解算一次,平铺与百分比各取一半。
+     *
+     * 原先 `equipFlats` 与 `equipMods` 各自 `map(equippedItems, resolveEquipStats)` ——
+     * 同一件装备在一次响应式失效里被完整解算两遍(含词条排序、品质查表、幂缩放)。
+     * 两个 computed 又都读 `equippedItems`,换一件装备就同时失效、同时重算,两遍必挨在一起。
+     *
+     * 现合成一份 `equippedResolved`,两个派生各读它 —— 解算次数减半,读数逐位不变。
+     */
+    const equippedResolved = computed(() => equippedItems.value.map(it => resolveEquipStats(it)))
+
     /** 已装备件的平铺数值合计 */
     const equipFlats = computed(() => {
       const out = { attack: gnZero() as GNum, defense: gnZero() as GNum, maxHp: gnZero() as GNum }
-      for (const it of equippedItems.value) {
-        const r = resolveEquipStats(it)
+      for (const r of equippedResolved.value) {
         out.attack = add(out.attack, r.flats.attack)
         out.defense = add(out.defense, r.flats.defense)
         out.maxHp = add(out.maxHp, r.flats.maxHp)
@@ -171,7 +181,7 @@ export const useInventoryStore = defineStore(
 
     /** 已装备件 + 法宝被动的百分比属性合计 */
     const equipMods = computed<StatMods>(() => {
-      const sources: StatMods[] = equippedItems.value.map(it => resolveEquipStats(it).mods)
+      const sources: StatMods[] = equippedResolved.value.map(r => r.mods)
       for (const art of currentArtifacts.value) {
         const def = artifactDef(art.defId)
         if (!def) continue

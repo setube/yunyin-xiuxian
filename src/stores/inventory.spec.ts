@@ -12,11 +12,65 @@ import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactEvictedBy,
 import { artifactUpCost, upgradeArtifact } from '@/core/forge'
 import { useResourcesStore } from '@/stores/resources'
 import type { EquipmentInstance } from '@/types'
-import { gn } from '@/utils/gnum'
+import { add, gn } from '@/utils/gnum'
 
 function mk(uid: string, affixes: Array<{ id: string; roll: number }>, templateId = 'b_qingyun'): EquipmentInstance {
   return { uid, templateId, quality: 'mortal', tier: 3, level: 0, affixes }
 }
+
+/**
+ * 已装备件只解算一次。
+ *
+ * `equipFlats` 与 `equipMods` 原各 `map(equippedItems, resolveEquipStats)` ——
+ * 同一件装备在一次失效里被完整解算两遍(词条排序、品质查表、幂缩放),
+ * 而两者都读 `equippedItems`,换一件就同时失效、同时重算,两遍必挨在一起。
+ *
+ * 现在两者共读一份 `equippedResolved`。判据钉的是**同源**:两个派生量的读数
+ * 必须与「一次解算的结果」逐位一致 —— 若哪天有人把其中一路改回自己 map 一遍,
+ * 两条路径就可能算出不同结果(比如某一处漏了法宝、或漏了某件),读数会分叉。
+ * 这条不能靠数调用(ESM 的模块内绑定改不动),只能靠结果一致性守着。
+ */
+describe('已装备件 · 平铺与百分比同源', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('equipFlats 与 equipMods 的读数与各自单独解算的结果逐位一致', () => {
+    const inv = useInventoryStore()
+    const a = mk('a', [{ id: 'atk1', roll: 0.5 }])
+    const b = mk('b', [{ id: 'atk1', roll: 0.25 }], 'b_qingyun')
+    inv.items = [a, b]
+    inv.equip('a', 'body')
+    inv.equip('b', 'weapon')
+
+    // 平铺:逐件单独解算再相加,须与 store 汇总一致
+    const expectFlats = { attack: gn(0), defense: gn(0), maxHp: gn(0) }
+    for (const it of [a, b]) {
+      const r = resolveEquipStats(it)
+      expectFlats.attack = add(expectFlats.attack, r.flats.attack)
+      expectFlats.defense = add(expectFlats.defense, r.flats.defense)
+      expectFlats.maxHp = add(expectFlats.maxHp, r.flats.maxHp)
+    }
+    expect(inv.equipFlats).toEqual(expectFlats)
+    // 百分比:与 mergeMods(逐件 mods) 深等
+    expect(inv.equipMods).toEqual(mergeMods([a, b].map(it => resolveEquipStats(it).mods)))
+  })
+
+  it('换装后两个派生量一起变,读数仍互相同源', () => {
+    const inv = useInventoryStore()
+    // 两块平铺数值不同的模板:轻剑(攻 10)对重剑(攻 12,且带动百分比词条)
+    const light = mk('a', [{ id: 'atk1', roll: 0.5 }], 'w_zhuqing')
+    const heavy = mk('b', [{ id: 'atk1', roll: 1 }], 'w_xuantie')
+    inv.items = [light, heavy]
+    inv.equip('a', 'weapon')
+    const flatsLight = inv.equipFlats
+    inv.equip('b', 'weapon')
+
+    expect(inv.equipFlats, '换装后平铺该跟着变').toEqual(resolveEquipStats(heavy).flats)
+    expect(inv.equipMods, '换装后百分比该跟着变').toEqual(mergeMods([resolveEquipStats(heavy).mods]))
+    expect(inv.equipFlats, '换了把更重的剑,平铺不该原地不动').not.toEqual(flatsLight)
+  })
+})
 
 describe('装备槽属性汇总(equipMods)守卫', () => {
   beforeEach(() => {
