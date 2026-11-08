@@ -44,9 +44,15 @@ describe('夹具 · 存档格式与产品代码同源', () => {
     expect(b, '夹具的密钥与 crypto.ts 不一致 —— 夹具写出的密文游戏解不开').toBe(a)
   })
 
+  /**
+   * 算法判据认的是 `AES.encrypt` 这件事本身,不认它挂在哪个名字上。
+   * 产品侧从 `import CryptoJS from 'crypto-js'`(整包)改成子模块 `crypto-js/aes` 后
+   * 调用点写作 `AES.encrypt(...)` —— 算法没变,密文格式也没变,
+   * 但按老写法钉 `CryptoJS.AES.encrypt` 会把这次纯性能改动误判成「换了算法」。
+   */
   it('两边用同一个加密算法', () => {
-    expect(product).toContain('CryptoJS.AES.encrypt')
-    expect(fixture, '夹具换算法了?须与 crypto.ts 的 CryptoJS.AES 一致').toContain('CryptoJS.AES.encrypt')
+    expect(product, '产品侧须调 crypto-js 的 AES.encrypt').toContain('AES.encrypt(')
+    expect(fixture, '夹具换算法了?须与 crypto.ts 的 AES 一致').toContain('CryptoJS.AES.encrypt')
   })
 
   it('两边的键前缀一致', () => {
@@ -58,7 +64,7 @@ describe('夹具 · 存档格式与产品代码同源', () => {
   it('夹具的 JSON 序列化与产品一致', () => {
     // 夹具写 JSON.stringify(slice),产品读 JSON.parse(明文);直接对比两处写法
     expect(fixture).toContain('JSON.stringify(slice)')
-    expect(product).toContain('CryptoJS.AES.encrypt(plain')
+    expect(product, '产品的加密入口须仍是 AES.encrypt(plain, 密钥) 这一形态').toContain('AES.encrypt(plain')
   })
 
   /**
