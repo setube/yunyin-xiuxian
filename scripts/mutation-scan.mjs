@@ -233,6 +233,36 @@ const EQUIVALENT = [
       '而过期时 remain 至多是 0(甚至负数),cap 是四个时辰、duration 是一个时辰,' +
       '0 与任何负数都落在「none」这一侧,两种算法给出同一个答案。' +
       '玩家侧也观察不到:过期 buff 在 addBuff 之前就被剔掉了,这里读到负数只是时间边界上的防御。'
+  },
+  {
+    file: 'src/core/loadoutService.ts',
+    text: 'Math.max(0, Math.floor(dongfu.subGongfaSlots))',
+    why:
+      'subGongfaSlots 是 computed(1 + floor(library/3)),而 dongfu.sanitize 把 levels 逐项钳成' +
+      '「非有限或 <0 → 0」,故它恒 >= 1。这道 max 是深调用里的防御,正常路径不可达;' +
+      '真要坏档也轮不到它 —— 上一步的 sanitize 已经修过 levels。'
+  },
+  {
+    file: 'src/core/linggenAffinity.ts',
+    text: 'if (!element) return 1',
+    why:
+      '下一行 `if (!elements.includes(element)) return 1` 在 element 为 undefined 时同样成立 ——' +
+      'includes(undefined) 恒 false(灵根元素只会是 ElementId)。两条守卫结果相同。'
+  },
+  {
+    file: 'src/core/mentorService.ts',
+    text: 'if (!mentorId) return null',
+    why:
+      '紧跟其后的 mentorDef(mentorId) 对 null 返回 undefined,`if (!def) return null` 会兜住,' +
+      '结果同为 null。实测把这条删掉,mentorVerdict(null) 仍返回 null。'
+  },
+  {
+    file: 'src/core/eventEngine.ts',
+    text: 'if (pool.length === 0) return null',
+    why:
+      '两处(pickEventFor 的 regionEventPoolFor / randomEventPill 的 PILLS 过滤):' +
+      '空池时 rng.weighted([]) 返回 undefined,调用方一律用 `if (ev)` / `if (!id)` 判真值,' +
+      '与显式 return null 等价。'
   }
 ]
 
