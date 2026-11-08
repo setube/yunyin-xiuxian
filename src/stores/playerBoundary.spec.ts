@@ -174,3 +174,47 @@ describe('玩家区域统计与奇缘公共写入边界', () => {
     expect(player.name, '正常道号不许被改').toBe('青玄')
   })
 })
+
+/**
+ * 坏档里的负年龄必须被修正。
+ *
+ * `sanitize` 里 age 原先只挡 `!Number.isFinite`,不挡负数 —— 而同函数的 major / sub
+ * 都用了 `Math.max(0, ...)`。负年龄有三条可见后果:
+ *  · 死亡判据是 `age < lifespanMax`,负年龄永远死不了
+ *  · TopStatusBar 直接印 `Math.floor(player.age)`,会显示「寿元 -100/120」
+ *  · lifespanRatio 算出大于 1 的值,喂给寿元血色档位判断
+ *
+ * 故障注入:把 sanitize 里那行改回只判 `!Number.isFinite(age.value)`,本条红。
+ */
+describe('坏档 · 年龄下限', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('负年龄被重置为起始年龄,寿元比例回到 [0,1]', () => {
+    const player = usePlayerStore()
+    for (const bad of [-1, -100, -0.5, -1e6]) {
+      player.age = bad
+      player.sanitize()
+      expect(player.age, `年龄 ${bad} 该被重置`).toBeGreaterThanOrEqual(0)
+      expect(player.lifespanRatio, `年龄 ${bad} 的寿元比例越界`).toBeGreaterThanOrEqual(0)
+      expect(player.lifespanRatio, `年龄 ${bad} 的寿元比例越界`).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('正常年龄不被误改', () => {
+    const player = usePlayerStore()
+    player.age = 55
+    player.sanitize()
+    expect(player.age, '正常年龄被重置了').toBe(55)
+  })
+
+  it('NaN 与 Infinity 照旧被修正', () => {
+    const player = usePlayerStore()
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      player.age = bad
+      player.sanitize()
+      expect(Number.isFinite(player.age), `${bad} 该被修正成有限数`).toBe(true)
+    }
+  })
+})
