@@ -113,7 +113,7 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
      * 而拒付 —— 测试照样绿。给足之后「余额不变」才是有效断言。
      */
     const res = useResourcesStore()
-    res.spiritStone = gn(1, 9)
+    res.spiritStone = gn(1e9)
     res.dust = 100000
     const stoneBefore = res.spiritStone
     const dustBefore = res.dust
