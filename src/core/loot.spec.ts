@@ -24,6 +24,7 @@ import { shouldAutoRecycle } from './smartKeep'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useSettingsStore } from '@/stores/settings'
+import { useQuestsStore } from '@/stores/quests'
 import { qualityDef } from '@/data/qualities'
 import { DECOMPOSE_DUST } from '@/data/constants'
 import { useLoreStore } from '@/stores/lore'
@@ -523,19 +524,30 @@ describe('得宝仪典 · 顶档之物入手才翻开那一刻', () => {
 })
 
 describe('法宝入囊 · 野 id', () => {
-  it('给定法宝表里没有的 id,当收入,则得 null 且不写行囊、不刷 toast', () => {
+  // 单独 -t 跑时顶层 hook 不生效,须自己装(否则 useInventoryStore 直接抛)
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('给定法宝表里没有的 id,当收入,则得 null 且不写行囊、不记收集、不刷 toast', () => {
     /*
      * `if (!def) return null` 是真守卫:去掉后 collect('artifact', 野id) 会把这个 id
      * 记进图鉴,而 addArtifact 也会拿到不存在的 defId —— 行囊里多出一件查无定义的器。
      * 注释写明「null 表示野 id,调用方须停止后续抽取」,这条契约值得钉住。
      */
     const inv = useInventoryStore()
+    const quests = useQuestsStore()
+    const res = useResourcesStore()
     const artifactsBefore = JSON.stringify(inv.artifacts)
+    const collectionsBefore = JSON.stringify(quests.collections)
+    const wudaoBefore = res.wudao
     const toastsBefore = useUiStore().toasts.length
 
     expect(() => acquireArtifactGain('no_such_artifact')).not.toThrow()
     expect(acquireArtifactGain('no_such_artifact')).toBeNull()
     expect(JSON.stringify(inv.artifacts), '野 id 不该进行囊').toBe(artifactsBefore)
+    // collect() 会把 id 写进图鉴收集表 —— 这条是审查指出漏掉的那一项
+    expect(JSON.stringify(quests.collections), '野 id 不该被记进图鉴').toBe(collectionsBefore)
+    // 重复法宝那一支会发悟道之尘;野 id 连 def 都没有,更不该走到那
+    expect(res.wudao, '野 id 不该发任何资源').toBe(wudaoBefore)
     expect(useUiStore().toasts.length, '野 id 不该给玩家提示').toBe(toastsBefore)
   })
 })
