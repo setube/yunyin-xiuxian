@@ -3,6 +3,7 @@
  * 长度 spec 钉:affixTransferText.spec(状态 ≤8 字、按钮 2~6 字、提示 ≤12 字)。缺料写「不足」,与重铸、封存同词。
  */
 import type { AffixRoll, AnyStatKey, GNum, StatMods } from '@/types'
+import { resourceShortText } from './resourceShortText'
 import { affixDef, affixValue } from '@/data/affixes'
 import { QUALITIES } from '@/data/qualities'
 import { formatGN } from '@/utils/format'
@@ -62,13 +63,8 @@ export function transferBlockText(block: TransferBlock, affixId: string): string
 }
 
 /** 缺哪样报哪样;给了实际差额写「尚差 N」 */
-export function transferShortText(
-  short: Exclude<TransferShort, null>,
-  gap?: { stone: string; dust: number }
-): string {
-  const amount = short === 'stone' ? gap?.stone : gap?.dust
-  const missing = amount === undefined ? '不足' : `尚差 ${amount}`
-  return short === 'stone' ? `灵石${missing}` : `器灵尘${missing}`
+export function transferShortText(short: Exclude<TransferShort, null>, gap?: { stone: string; dust: number }): string {
+  return resourceShortText(short, gap)
 }
 
 export function transferDoneToast(name: string): string {

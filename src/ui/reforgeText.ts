@@ -1,16 +1,12 @@
+import { resourceShortText } from './resourceShortText'
 /** 重铸与封存提示:只报结果与差额;缺料写「不足 / 尚差 N」 */
 export function reforgeEmptyToast(): string {
   return '无可重铸词条'
 }
 
 /** 缺料提示:缺哪样只说哪样 */
-export function reforgeShortToast(
-  short: 'stone' | 'dust',
-  gap?: { stone: string; dust: number }
-): string {
-  const amount = short === 'stone' ? gap?.stone : gap?.dust
-  const missing = amount === undefined ? '不足' : `尚差 ${amount}`
-  return short === 'stone' ? `灵石${missing}` : `器灵尘${missing}`
+export function reforgeShortToast(short: 'stone' | 'dust', gap?: { stone: string; dust: number }): string {
+  return resourceShortText(short, gap)
 }
 
 export function reforgeDoneToast(countNote: string): string {
@@ -23,7 +19,8 @@ export function sealMustLeaveToast(): string {
 }
 
 export function sealShortToast(shortText?: string): string {
-  return `灵石${shortText === undefined ? '不足' : `尚差 ${shortText}`}`
+  // 封存只花灵石:同一份拼接,传尘的位随便填(不读)
+  return resourceShortText('stone', shortText === undefined ? undefined : { stone: shortText, dust: 0 })
 }
 
 export function sealDoneToast(name: string): string {
