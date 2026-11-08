@@ -423,14 +423,21 @@ export function migrateLocalSchema(): void {
     if (invRaw !== null) {
       const inv = JSON.parse(readSaveText(invRaw)) as Record<string, unknown>
       const migrated = migrateInventorySlice(inv)
-      if (migrated !== inv) localStorage.setItem(invKey, encryptSave(JSON.stringify(migrated)))
+      if (migrated !== inv) {
+        localStorage.setItem(invKey, encryptSave(JSON.stringify(migrated)))
+        // 迁移写回了新形态:扫描时缓存的那份旧明文必须作废,否则水合会把迁移原地撤销
+        preloadedPlain.delete(invKey)
+      }
     }
     const resKey = storageKey('resources')
     const resRaw = localStorage.getItem(resKey)
     if (resRaw !== null) {
       const res = JSON.parse(readSaveText(resRaw)) as Record<string, unknown>
       const migrated = migrateHerbSlice(res)
-      if (migrated !== res) localStorage.setItem(resKey, encryptSave(JSON.stringify(migrated)))
+      if (migrated !== res) {
+        localStorage.setItem(resKey, encryptSave(JSON.stringify(migrated)))
+        preloadedPlain.delete(resKey)
+      }
     }
   } catch {
     // 损坏数据交由 preflightScan 兜底
