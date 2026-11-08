@@ -23,8 +23,8 @@
     </div>
     <div v-else class="space-y-2.5">
       <button
-        v-for="m in mentorChoicesList"
-        :key="m!.id"
+        v-for="m in mentorRows"
+        :key="m.id"
         class="w-full rounded-lg border px-3 py-2.5 text-left transition-all active:scale-98"
         :class="hintMentor === m!.id ? 'border-cinnabar/60 bg-cinnabar/5' : 'border-ink/20'"
         @click="player.adoptMentor(m!.id)"
@@ -38,11 +38,11 @@
         <p class="mt-0.5 text-[11px] text-ink-faint">{{ m!.desc }}</p>
         <p class="mt-0.5 text-[11px] text-azure tabular">{{ modsText(m!.mods) }}</p>
         <p class="mt-0.5 flex items-center gap-2 text-[10px]">
-          <span class="mentor-pips shrink-0" :class="TIER_CLASS[affinityMark(m!.id).tier]" aria-hidden="true">
-            <i v-for="(on, i) in sharePips(affinityMark(m!.id).pips)" :key="i" :class="{ 'is-on': on }"></i>
+          <span class="mentor-pips shrink-0" :class="TIER_CLASS[m.mark.tier]" aria-hidden="true">
+            <i v-for="(on, i) in sharePips(m.mark.pips)" :key="i" :class="{ 'is-on': on }"></i>
           </span>
-          <span class="tabular" :class="TIER_CLASS[affinityMark(m!.id).tier]">
-            当下{{ TIER_LABEL[affinityMark(m!.id).tier] }} {{ affinityMark(m!.id).pct }}%
+          <span class="tabular" :class="TIER_CLASS[m.mark.tier]">
+            当下{{ TIER_LABEL[m.mark.tier] }} {{ m.mark.pct }}%
           </span>
         </p>
       </button>
@@ -93,10 +93,19 @@
   /** 门的数量:均分由它算,不手挑门槛 */
   const domains = mentorChoicesList.length
 
-  function affinityMark(mentorId: MentorId) {
-    const v = verdictMap.value.get(mentorId)
-    return shareMark(v?.share ?? 0, topShare.value, domains)
-  }
+  /**
+   * 备选师尊的行:每人一份契合形制,模板只读字段。
+   *
+   * 模板原先在每张卡里调 `affinityMark(m!.id)` 五次(形制类名 ×2、十格印、档名、百分比),
+   * 四张卡就是二十次 —— 每次都从 Map 取一遍 verdict、再算一遍 shareMark。
+   * 现一次算齐;`mentorChoicesList` 随之并入本行表,不另留只服务于循环的中间量。
+   */
+  const mentorRows = computed(() =>
+    mentorChoicesList.map(def => {
+      const v = verdictMap.value.get(def.id)
+      return { ...def, share: v?.share ?? 0, mark: shareMark(v?.share ?? 0, topShare.value, domains) }
+    })
+  )
   const verMark = computed(() => shareMark(mentorVer.value?.share ?? 0, topShare.value, domains))
 
   // 机缘链:机缘取/弃记忆 → 师承推荐
