@@ -5,12 +5,12 @@ import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
 import { FURNACE_RATES, DAO_SOURCE_PER_FRUIT, FURNACE_STONE_TIER_AMOUNT, FURNACE_STONE_DAO_SOURCE } from '@/data/endgame'
-import { chooseDaoPath, condenseDaoFruit, condenseFruitAffordable, currentDaoRules, endgameUnlocked, furnaceConvert, furnaceMaterialShortfall, furnaceStoneCost, furnaceConvertStone } from './endgameService'
+import { chooseDaoPath, condenseDaoFruit, condenseFruitAffordable, currentDaoRules, endgameUnlocked, furnaceConvert, furnaceMaterialShortfall, furnaceStoneAffordable, furnaceStoneCost, furnaceConvertStone } from './endgameService'
 import { stoneByTier } from './formulas'
 import { maxTierForMajor } from '@/data/regions'
 import { resolveWorld, startWorldExpedition } from './expedition'
 import { attemptBreakthrough } from './breakthrough'
-import { gn, gnZero } from '@/utils/gnum'
+import { gn, gnZero, mulN, subClamp } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
 
 /**
@@ -317,5 +317,48 @@ describe('天道熔炉 · 灵石熔铸价随层级(现役函数直测)', () => {
     expect(useUiStore().toasts.at(-1)).toEqual(
       expect.objectContaining({ text: `灵石尚差 ${formatGN(cost)}`, kind: 'warn' })
     )
+  })
+})
+
+describe('天道熔炉 · 灵石批量熔铸', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('给定够熔三次的灵石,当一次熔三次,则扣三份价、入三份道源', () => {
+    const resources = useResourcesStore()
+    const endgame = useEndgameStore()
+    const player = usePlayerStore()
+    player.major = 14
+    const unit = furnaceStoneCost()
+    resources.spiritStone = mulN(unit, 3)
+    expect(furnaceConvertStone(3)).toBe(true)
+    expect(endgame.daoSource, '入三份道源').toBe(FURNACE_STONE_DAO_SOURCE * 3)
+    expect(resources.spiritStone, '扣三份价,余额恰好归零').toEqual(gnZero())
+  })
+
+  it('给定只够熔两次的灵石,当要熔三次,则一次也不熔且分文不动(原子)', () => {
+    const resources = useResourcesStore()
+    const endgame = useEndgameStore()
+    const player = usePlayerStore()
+    player.major = 14
+    const unit = furnaceStoneCost()
+    resources.spiritStone = mulN(unit, 2)
+    const before = { ...resources.spiritStone }
+
+    expect(furnaceConvertStone(3), '整笔原子:不够就一次也不熔').toBe(false)
+    expect(endgame.daoSource).toBe(0)
+    expect(resources.spiritStone, '分文不动').toEqual(before)
+  })
+
+  it('可熔次数按单价整笔算:余额恰够 N 份时给 N,差一点就退回 N-1', () => {
+    const resources = useResourcesStore()
+    const player = usePlayerStore()
+    player.major = 14
+    const unit = furnaceStoneCost()
+    resources.spiritStone = mulN(unit, 5)
+    expect(furnaceStoneAffordable()).toBe(5)
+    resources.spiritStone = subClamp(mulN(unit, 5), gn(1))
+    expect(furnaceStoneAffordable(), '差一点就不算第 5 次').toBe(4)
+    resources.spiritStone = gnZero()
+    expect(furnaceStoneAffordable()).toBe(0)
   })
 })
