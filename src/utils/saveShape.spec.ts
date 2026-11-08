@@ -6,6 +6,8 @@ import {
   asBoundedGNum,
   asCombatSkills,
   asNonNegInt,
+  asPerRounds,
+  RULE_MULT_MAX,
   asPrice,
   SAVE_GNUM_MAX_EXP,
   truncateCodePoints
@@ -215,4 +217,31 @@ describe('saveShape · asBoundedGNum', () => {
     expect(truncateCodePoints(String.fromCodePoint(0x1f600) + 'ab', 1)).toBe(String.fromCodePoint(0x1f600))
   })
 
+})
+
+describe('saveShape · asPerRounds', () => {
+  /**
+   * 这三道钳制是「坏档不进战斗」的关键:
+   * 比例类失控会让玩家一进战斗满血变空血、开局即死;倍率类无上界则一击必杀;
+   * interval 写 0 会让 `round % 0` 恒为 NaN,整条规则静默失效。
+   */
+  it('比例类越界一律夹回 [0,1] —— 负数与大于 1 都不许穿过去', () => {
+    expect(asPerRounds({ playerHealPct: -0.5 })!.playerHealPct).toBe(0)
+    expect(asPerRounds({ playerHealPct: 3 })!.playerHealPct).toBe(1)
+    expect(asPerRounds({ playerShieldPct: -2 })!.playerShieldPct).toBe(0)
+    expect(asPerRounds({ playerShieldPct: 99 })!.playerShieldPct).toBe(1)
+    // 合法值原样保留
+    expect(asPerRounds({ playerHealPct: 0.35 })!.playerHealPct).toBe(0.35)
+  })
+
+  it('倍率类有上界 RULE_MULT_MAX —— 负值归零,超界夹到上限', () => {
+    expect(asPerRounds({ enemyAtkGrowth: -1 })!.enemyAtkGrowth).toBe(0)
+    expect(asPerRounds({ enemyAtkGrowth: 1e9 })!.enemyAtkGrowth).toBe(RULE_MULT_MAX)
+    expect(asPerRounds({ enemyAtkGrowth: 1.2 })!.enemyAtkGrowth).toBe(1.2)
+  })
+
+  it('interval 至少为 1 —— 写 0 会让 round % 0 恒为 NaN', () => {
+    expect(asPerRounds({ interval: 0 })!.interval).toBe(1)
+    expect(asPerRounds({ interval: -7 })!.interval).toBe(1)
+  })
 })

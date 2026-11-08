@@ -256,6 +256,20 @@ const EQUIVALENT = [
       '真要坏档也轮不到它 —— 上一步的 sanitize 已经修过 levels。'
   },
   {
+    file: 'src/core/craftability.ts',
+    text: 'Math.max(0, craft.rank - bearable)',
+    why:
+      'over 的下游是 overReachFactor,而它第一行就是 `if (over <= 0) return 1` ——' +
+      '负数与 0 得到同一个倍率。实测去掉钳制后 32 条 craftability 用例全绿。'
+  },
+  {
+    file: 'src/core/daoFruitCurve.ts',
+    text: 'Math.max(0, curve.effective(fruit))',
+    why:
+      'FRUIT_CURVES 的每条 effective 内部都已 `Math.max(0, f)` 兜底(共五条,逐条查过),' +
+      '故 curve.effective 恒非负,外层的 max 是第二道防线、不可达。'
+  },
+  {
     file: 'src/core/inflationAudit.ts',
     text: 'Math.max(0, fullPower - withParts({ realm: false }))',
     why:

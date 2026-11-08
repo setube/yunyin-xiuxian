@@ -680,3 +680,27 @@ describe('即时售材/售草结算精额守恒', () => {
     })
   })
 })
+
+describe('坊市 · 坏档格号', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('给定负数的格号,当 sanitize,则该格被夹回 0 号而非保留负数', () => {
+    /*
+     * `Math.max(0, Math.floor(rawIdx))` 是真守卫:去掉后负 idx 会成为货架实际格号,
+     * 而买入/寄卖都按 idx 定位格子 —— 负号会让定位落到不存在的下标上。
+     */
+    const m = useMarketStore()
+    m.$patch({ stock: [pillSlot(-3)], stockedAt: FAR })
+    m.sanitize()
+    expect(m.stock.length, '负号格不该被整格丢弃(它有合法内容)').toBe(1)
+    expect(m.stock[0]!.idx, '格号该夹回 0').toBe(0)
+    expect(m.stock[0]!.idx).toBeGreaterThanOrEqual(0)
+  })
+
+  it('给定小数的格号,当 sanitize,则取整', () => {
+    const m = useMarketStore()
+    m.$patch({ stock: [pillSlot(3.7)], stockedAt: FAR })
+    m.sanitize()
+    expect(m.stock[0]!.idx).toBe(3)
+  })
+})
