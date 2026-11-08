@@ -129,6 +129,42 @@ describe('逆旅契 · 判据二:产物不进 StatMods', () => {
     console.log(`\n伪装示例被拒:${adverseViolations({ playerExtraMods: { attackPct: 0.2 } })[0]}`)
   })
 
+  /**
+   * 第二道闸的**行为**判据:往数据里塞一份非法契约,真的签不下去。
+   *
+   * 上面那条只查源码里出现过 `isPurelyAdverse` 这个名字 —— 把三处守卫都改成
+   * `if (false) return` 而留着函数名,它照样绿。变异扫描正是这么点名这三处的。
+   * 这里改成往 `LIFE_TRIALS` 里 push 一份减难契约(数据层校验是第一道闸,
+   * 第一道闸失守时才轮到服务层),再实打实地调 canSign / shortfall / sign。
+   *
+   * 故障注入:把 lifeTrialService 任一处 `if (!isPurelyAdverse(...)) return` 删掉,本条红。
+   */
+  it('数据层失守时,服务层第二道闸仍然拦住减难契约', () => {
+    const EVIL = {
+      id: 'tr_evil_probe',
+      name: '伪契',
+      seal: '伪',
+      desc: '玩家攻击力翻倍',
+      cost: 10,
+      ruleText: '玩家攻击 +100%',
+      // 减难:直接给玩家加攻击,是 isPurelyAdverse 要拒的形状
+      rules: { playerExtraMods: { attackPct: 1 } }
+    } as (typeof LIFE_TRIALS)[number]
+    LIFE_TRIALS.push(EVIL)
+    try {
+      const player = usePlayerStore()
+      player.addDaoFruit(500)
+      expect(isPurelyAdverse(EVIL.rules), '探针契约本身该被校验器判为非法').toBe(false)
+      expect(canSignLifeTrial(EVIL.id), '非法契约不该被判成可签').toBe(false)
+      expect(lifeTrialShortfall(EVIL.id), '非法契约不该给出差额提示').toBeNull()
+      expect(signLifeTrial(EVIL.id), '非法契约不该签得下去').toBe(false)
+      expect(activeLifeTrial(), '签失败后本世不该有契约').toBeNull()
+    } finally {
+      const i = LIFE_TRIALS.indexOf(EVIL)
+      if (i >= 0) LIFE_TRIALS.splice(i, 1)
+    }
+  })
+
   it('非法契约即使被写进数据也签不下去', () => {
     const player = usePlayerStore()
     player.addDaoFruit(500)
