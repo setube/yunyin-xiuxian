@@ -107,19 +107,22 @@ function stressSlices() {
   for (let i = 0; i < 120; i += 1) {
     items.push({
       uid: `perf_stress_${i}`,
-      templateId: "w_zidian",
+      // 32 阶武器配 32 阶物品:首版拿 9 阶的 w_zidian 配 tier:32,阶数对不上
+      templateId: "w_benyuan",
       quality: "divine",
       tier: 32,
       level: 5,
+      // 八条都须**真实存在且与武器槽相符**,否则 sanitize 会静默剔掉:
+      // 首版写的 res1 在 affixes 里没有,low1 是 slots:A(仅护甲),各丢一条 → 只剩七条
       affixes: [
         { id: "atk1", roll: 1 },
         { id: "def1", roll: 1 },
         { id: "hp1", roll: 1 },
+        { id: "cult1", roll: 1 },
         { id: "crit1", roll: 1 },
+        { id: "cdmg1", roll: 1 },
+        { id: "dmg1", roll: 1 },
         { id: "bs1", roll: 1 },
-        { id: "low1", roll: 1 },
-        { id: "pen1", roll: 1 },
-        { id: "res1", roll: 1 },
       ],
     });
   }
