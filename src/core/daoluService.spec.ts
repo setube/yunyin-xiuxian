@@ -62,6 +62,46 @@ describe('道侣 · 一:不进入效率链', () => {
     console.log('\n三维各 +50 之后,player.finalStats.mods 完全不变')
   })
 
+  /**
+   * 三维关系值夹在 [0, 100] 内。
+   *
+   * `advanceBond` 里 fate/trust/accord 各过一遍 `clamp`(`Math.max(0, Math.min(CAP, Math.round(n)))`)。
+   * 这两道夹逼**是可达的**:三维各自累加,一场事件就能 +20 ~ +50,多走几阶必然顶到 100;
+   * 负面事件同样能把低值打到 0 以下。上面那条用例只加了一次 +50(0→50),碰不到边界。
+   *
+   * 不钳的后果是关系值直接越界:实测 95+50 → 145、5-50 → -45,而这三项数值是道侣面板
+   * 直接展示的读数(阶段判定也读它们)。变异扫描点名这处。
+   */
+  it('三维夹在 [0, 100]:连加越界与连减越界都被钳住', () => {
+    const player = usePlayerStore()
+    meet('dl_qingli')
+
+    // 顶到上限:每次 +50,连加三次必然越 100
+    for (let i = 0; i < 3; i += 1) advanceBond({ fate: 50, trust: 50, accord: 50 })
+    let now = player.bond!
+    expect(now.fate, '命运越上限').toBeLessThanOrEqual(100)
+    expect(now.trust, '信任越上限').toBeLessThanOrEqual(100)
+    expect(now.accord, '契合越上限').toBeLessThanOrEqual(100)
+    expect(now.fate, '顶到上限该正好是 100').toBe(100)
+
+    // 打到下限:每次 -50,连减三次必然越 0
+    for (let i = 0; i < 3; i += 1) advanceBond({ fate: -50, trust: -50, accord: -50 })
+    now = player.bond!
+    expect(now.fate, '命运为负 —— 钳制没了').toBeGreaterThanOrEqual(0)
+    expect(now.trust, '信任为负').toBeGreaterThanOrEqual(0)
+    expect(now.accord, '契合为负').toBeGreaterThanOrEqual(0)
+    expect(now.fate, '打到下限该正好是 0').toBe(0)
+  })
+
+  it('单次超大增量也不会把关系值推出区间', () => {
+    const player = usePlayerStore()
+    meet('dl_qingli')
+    advanceBond({ fate: 1e6, trust: 1e6, accord: 1e6 })
+    expect(player.bond!.fate).toBe(100)
+    advanceBond({ fate: -1e6, trust: -1e6, accord: -1e6 })
+    expect(player.bond!.fate).toBe(0)
+  })
+
   it('故障注入:若给道侣接上属性,判据必须变红', () => {
     const tampered = CODE + "\nconst evil = { cultivationSpeed: 0.2 }\n"
     expect(tampered).toMatch(/cultivationSpeed/)
