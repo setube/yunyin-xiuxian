@@ -1205,7 +1205,7 @@ for (const vp of VIEWPORTS) {
       // 在途秘境:归来卷轴说「原样保留」,历练页画「在境中」
       secretRealm: { realmId: 'sr_kurong', enteredAt: Date.now() - 600000, layer: 2, wins: 1, losses: 0, spoils: ['灵石少许'], rules: ['治疗减半'], carriedHpPct: 0.7, finished: false }
     },
-    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 900, page: 300, dust: 500 },
+    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 900, 5: 0 }, ore: 900, page: 300, dust: 500 },
     inventory: {
       items: [
         { uid: 'late_w', templateId: 'w_zidian', quality: 'heaven', tier: 20, level: 0, affixes: [{ id: 'bs3', roll: 1 }] },
@@ -1523,7 +1523,7 @@ for (const vp of VIEWPORTS) {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     // 炼气·圆满(大关);寿元已尽会被「寿元将尽」截住
     player: { major: 0, sub: 9, exp: gn(9, 30), age: 16, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 30, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'fire', aptitude: 90 }], gradeName: '单灵根', growthMult: 1.2 } },
-    resources: { spiritStone: gn(3, 6), qi: 9999999, wudao: 300, herb: 400, ore: 400, page: 90, dust: 120 },
+    resources: { spiritStone: gn(3, 6), qi: 9999999, wudao: 300, herbByGrade: { 1: 400, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 400, page: 90, dust: 120 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -1605,7 +1605,7 @@ for (const vp of VIEWPORTS) {
       reincarnation: { count: 1, daoFruit: 9, talents: [], insight: 120, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 90 }], gradeName: '单灵根', growthMult: 1.2 }
     },
-    resources: { spiritStone: gn(4, 6), qi: 4000, wudao: 500, herb: 300, ore: 300, page: 60, dust: 80 },
+    resources: { spiritStone: gn(4, 6), qi: 4000, wudao: 500, herbByGrade: { 1: 0, 2: 300, 3: 0, 4: 0, 5: 0 }, ore: 300, page: 60, dust: 80 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -1708,7 +1708,7 @@ for (const vp of VIEWPORTS) {
       reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 }
     },
-    resources: { spiritStone: gn(1, 5), qi: 1, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 5), qi: 1, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -1759,7 +1759,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '存读自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -1870,7 +1870,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '收纳自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 0 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 0 },
     inventory: {
       items: [
         // 两件该清:凡品、不带套、无词条或词条低
@@ -1969,7 +1969,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '分解自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 0 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 0 },
     inventory: {
       items: [
         { uid: 'b_1', templateId: 'b_qingyun', quality: 'excellent', tier: 3, level: 0, affixes: [] },
@@ -2077,7 +2077,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '炼化自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 7), qi: 1000, wudao: 5000, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 7), qi: 1000, wudao: 5000, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [{ defId: 'af_lihuo', level: 0 }], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -2155,7 +2155,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '营造自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 7), qi: 1000, wudao: 10, herb: 5, ore: 90000, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 7), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 90000, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -2225,7 +2225,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '音画自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: true, musicOn: true, musicVol: 60, sfxVol: 60, reduceMotion: false, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -2291,7 +2291,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '闭关自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -2358,7 +2358,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '锻造自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 5000 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 5000 },
     inventory: {
       items: [
         { uid: 'p_w', templateId: 'w_zidian', quality: 'heaven', tier: 20, level: 4, affixes: [] },
@@ -2447,7 +2447,7 @@ for (const vp of VIEWPORTS) {
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '战斗自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     // 高 Tier 武器:首战打得赢、回放短,判据不看运气
     inventory: { items: [{ uid: 'p_w', templateId: 'w_zidian', quality: 'heaven', tier: 20, level: 4, affixes: [] }], equipped: { weapon: 'p_w' }, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
@@ -2556,7 +2556,7 @@ for (const vp of VIEWPORTS) {
       reincarnation: { count: 1, daoFruit: 3, talents: [], insight: 50, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'ice', aptitude: 90 }], gradeName: '单灵根', growthMult: 1.2 }
     },
-    resources: { spiritStone: gn(8, 7), qi: 5000, wudao: 200, herb: 100, ore: 100, page: 20, dust: 40 },
+    resources: { spiritStone: gn(8, 7), qi: 5000, wudao: 200, herbByGrade: { 1: 0, 2: 0, 3: 100, 4: 0, 5: 0 }, ore: 100, page: 20, dust: 40 },
     inventory: {
       items: [{ uid: 'w1', templateId: 'w_zidian', quality: 'heaven', tier: 12, level: 2, affixes: [{ id: 'bs3', roll: 1 }, { id: 'low2', roll: 1 }] }],
       equipped: { weapon: 'w1' },
@@ -2681,7 +2681,7 @@ for (const vp of [
       reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 80 }], gradeName: '单灵根', growthMult: 1.2 }
     },
-    resources: { spiritStone: gn(3.2, 7), qi: 500, wudao: 50, herb: 2400, ore: 100, page: 10, dust: 40 },
+    resources: { spiritStone: gn(3.2, 7), qi: 500, wudao: 50, herbByGrade: { 1: 2400, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 100, page: 10, dust: 40 },
     inventory: { items: [], equipped: {}, pills: { p_jvqidan: 3 }, artifacts: [], equippedArtifacts: [] },
     lore: {
       materialLore: {},
@@ -2838,7 +2838,7 @@ for (const vp of [
       reincarnation: { count: 1, daoFruit: 3, talents: [], insight: 50, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'metal', aptitude: 90 }], gradeName: '单灵根', growthMult: 1.2 }
     },
-    resources: { spiritStone: gn(1, 40), qi: 5000, wudao: 200, herb: 100, ore: 100, page: 20, dust: 999999 },
+    resources: { spiritStone: gn(1, 40), qi: 5000, wudao: 200, herbByGrade: { 1: 0, 2: 0, 3: 100, 4: 0, 5: 0 }, ore: 100, page: 20, dust: 999999 },
     inventory: {
       items: [
         { uid: 'tf_src', templateId: 'w_hanfeng', quality: 'divine', tier: 25, level: 0, affixes: roll9(['exe2', 'bs2', 'fm2', 'lh2', 'pen3', 'dmg1', 'ac2', 'cdmg2', 'ls2']) },
@@ -3015,7 +3015,7 @@ for (const vp of [
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '落盘自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -3107,7 +3107,7 @@ for (const vp of [
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '导出自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -3155,7 +3155,7 @@ for (const vp of [
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '坏档自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
     settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -3246,7 +3246,7 @@ for (const vp of [
     Object.entries({
       game: { started: true, saveVersion: 2, createdAt: Date.now() - 40 * 86400000, lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
       player: { name: 'iOS 自检', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-      resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herb: 5, ore: 5, page: 2, dust: 2 },
+      resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 10, herbByGrade: { 1: 0, 2: 5, 3: 0, 4: 0, 5: 0 }, ore: 5, page: 2, dust: 2 },
       inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
       endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
       settings: { privacyAccepted: true, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'light' }
@@ -3352,7 +3352,7 @@ for (const vp of [
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
     player: { name: '弹窗巡逻', major: 5, sub: 3, exp: gn(1, 2), age: 40, lifespanBonusYears: 0, dead: false, reincarnation: { count: 0, daoFruit: 0, talents: [], insight: 0, lives: [], vow: null, trial: null, bonds: [] }, linggen: { roots: [{ element: 'wood', aptitude: 70 }], gradeName: '单灵根', growthMult: 1.1 } },
-    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 100, herb: 20, ore: 20, page: 5, dust: 50 },
+    resources: { spiritStone: gn(1, 6), qi: 1000, wudao: 100, herbByGrade: { 1: 0, 2: 20, 3: 0, 4: 0, 5: 0 }, ore: 20, page: 5, dust: 50 },
     inventory: {
       items: [
         { uid: 'p_1', templateId: 'w_zhuqing', quality: 'excellent', tier: 3, level: 1, affixes: [{ affixId: 'a_gongji', value: 5 }] },
