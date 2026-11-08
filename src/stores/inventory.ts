@@ -151,11 +151,28 @@ export const useInventoryStore = defineStore(
 
     const equippedUids = computed(() => new Set(Object.values(equipped.value).filter(Boolean) as string[]))
 
-    const equippedItems = computed(() => items.value.filter(it => equippedUids.value.has(it.uid)))
+    /**
+     * 行囊按「已装备 / 未装备」分成两摞,一趟走完。
+     *
+     * 原先两个 computed 各 `items.filter(...)` 一遍:满包 120 件时整表被遍历两次,
+     * 而两者读的是同一个 `items` 与 `equippedUids` —— 换装时必然同时失效、同时重扫。
+     * 现一次分区,两个视图各取一半。
+     *
+     * `bagFull` 也改读这里的计数:它只关心「满没满」,不必再等一份完整的未装备数组。
+     */
+    const partitionedItems = computed(() => {
+      const owned = equippedUids.value
+      const equipped: EquipmentInstance[] = []
+      const bag: EquipmentInstance[] = []
+      for (const it of items.value) (owned.has(it.uid) ? equipped : bag).push(it)
+      return { equipped, bag }
+    })
 
-    const bagItems = computed(() => items.value.filter(it => !equippedUids.value.has(it.uid)))
+    const equippedItems = computed(() => partitionedItems.value.equipped)
 
-    const bagFull = computed(() => bagItems.value.length >= BAG_CAPACITY)
+    const bagItems = computed(() => partitionedItems.value.bag)
+
+    const bagFull = computed(() => partitionedItems.value.bag.length >= BAG_CAPACITY)
 
     /**
      * 已装备件解算一次,平铺与百分比各取一半。
