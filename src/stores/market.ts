@@ -46,7 +46,8 @@ export const useMarketStore = defineStore(
      */
     function sanitize(): void {
       stockedAt.value = Math.max(0, asFiniteNumber(stockedAt.value, 0))
-      const validated: MarketSlot[] = []
+      // idxClean:该行的 idx 原本就是合法非负整数(没被坏档修正过)
+      const validated: (MarketSlot & { idxClean: boolean })[] = []
       const usedIdx = new Set<number>()
       for (const raw of asArray<unknown>(stock.value)) {
         if (!raw || typeof raw !== 'object' || !('kind' in raw)) continue
@@ -64,6 +65,7 @@ export const useMarketStore = defineStore(
           validated.push({
             kind,
             idx,
+            idxClean: typeof rawIdx === 'number' && Number.isFinite(rawIdx) && rawIdx >= 0,
             pillId: raw.pillId,
             count: 1,
             price,
@@ -79,6 +81,7 @@ export const useMarketStore = defineStore(
           validated.push({
             kind,
             idx,
+            idxClean: typeof rawIdx === 'number' && Number.isFinite(rawIdx) && rawIdx >= 0,
             matId,
             grade: isHerbGrade(g) ? g : undefined,
             count: MARKET_MAT_COUNT,
@@ -91,6 +94,7 @@ export const useMarketStore = defineStore(
           validated.push({
             kind,
             idx,
+            idxClean: typeof rawIdx === 'number' && Number.isFinite(rawIdx) && rawIdx >= 0,
             tier: Math.min(MAX_EQUIP_TIER, Math.max(1, Math.floor(Number('tier' in raw ? raw.tier : 1) || 1))),
             minQualityRank: Math.min(
               qualityDef('divine').rank,
@@ -102,16 +106,26 @@ export const useMarketStore = defineStore(
         }
       }
       // 两阶段认号:先让装备占住原号,再给丹/料补空位;边扫边补时重复丹格会占掉后面装备的原号
+      /*
+       * 同号冲突时,原号本来就合法的那行优先 —— 坏档里 idx 写成 -3 的行会被夹到 0,
+       * 若它排在前面就会把真正的 0 号装备挤掉,玩家看到装备凭空少一件。
+       */
+      const equipOrder = validated
+        .filter(v => v.kind === 'equipment')
+        .sort((a, b) => Number(b.idxClean) - Number(a.idxClean))
       const equipmentIdx = new Set<number>()
-      for (const slot of validated) {
-        if (slot.kind !== 'equipment') continue
+      for (const slot of equipOrder) {
         if (equipmentIdx.has(slot.idx)) continue
         equipmentIdx.add(slot.idx)
       }
       for (const idx of equipmentIdx) usedIdx.add(idx)
       const clean: MarketSlot[] = []
       const placedEquipment = new Set<number>()
-      for (const slot of validated) {
+      const orderedValidated = [
+        ...validated.filter(v => v.kind === 'equipment').sort((a, b) => Number(b.idxClean) - Number(a.idxClean)),
+        ...validated.filter(v => v.kind !== 'equipment')
+      ]
+      for (const slot of orderedValidated) {
         if (slot.kind === 'equipment') {
           if (placedEquipment.has(slot.idx)) continue
           placedEquipment.add(slot.idx)
