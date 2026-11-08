@@ -1293,8 +1293,9 @@ describe('调色板 · 同色淡底不该承载同色文字', () => {
     const view = readFileSync(resolve(ROOT, 'src/views/MortalWorldView.vue'), 'utf-8')
     expect(view, '图例的「未至」点又淡回去了').toContain('bg-ink-faint/75')
     expect(view).not.toContain('bg-ink-faint/40')
-    // SVG 里的同款点用 fill-opacity,须同步
-    expect(view, 'SVG 的「未至」点还停在 0.35').toContain('unlocked(p) ? 0.85 : 0.75')
+    // SVG 里的同款点用 fill-opacity,须同步;该值现由 places 一次算齐(模板不再逐处调用)
+    expect(view, 'SVG 的「未至」点还停在 0.35').toMatch(/dotOpacity: cleared \? 1 : unlocked \? 0\.85 : 0\.75/)
+    expect(view, '模板里的圆点须读算好的 dotOpacity,不许回来逐处 ternary').toContain(':fill-opacity="p.dotOpacity"')
     // 三色仍可区分:不能为了对比度把它们都改成同一个墨色
     for (const cls of ['bg-azure/80', 'bg-jade']) {
       expect(view, `图例少了「${cls}」那一档,三态就分不出了`).toContain(cls)
