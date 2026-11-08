@@ -17,6 +17,7 @@ import { MAX_MAJOR, WORLD_BREAK_MAJOR } from '@/data/realms'
 import { BATTLE_EXP_SECS, INSTANT_EXP_LAYER_CAP, EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
 import { herbGradeOfMajor } from '@/data/herbGrades'
 import {
+  auditCraftRate,
   DROP_CRAFT_RATIO,
   craftBattlesOf,
   craftPeerOf,
@@ -614,5 +615,19 @@ describe('道品顶档的成员不变式', () => {
       }
     }
     expect(bad, `这些修速丹与同档修为丹不成比例:\n${bad.join('\n')}`).toEqual([])
+  })
+})
+
+describe('炼丹审计 · 没有配方的丹', () => {
+  it('给定一个别处没有配方记录的丹药定义,当算基准成功率,则得 1 且不抛错', () => {
+    /*
+     * `if (!craft) return 1` 是真守卫:去掉后 bearableRank(def.minRealm) 之前
+     * 会先读 craft.rank,对 undefined 抛 TypeError。
+     * 1 的语义是「按必成算」——审计口径不给没有配方的东西编造难度。
+     */
+    // recipeCraft 看的是 def.recipe 而非 id,故要造一个「没有配方记录」的定义
+    const orphan = { ...PILLS[0]!, recipe: undefined } as never
+    expect(() => auditCraftRate(orphan)).not.toThrow()
+    expect(auditCraftRate(orphan)).toBe(1)
   })
 })
