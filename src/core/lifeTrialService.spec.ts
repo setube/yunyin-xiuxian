@@ -33,6 +33,26 @@ beforeEach(() => {
   setActivePinia(createPinia())
 })
 
+describe('逆旅契 · 坏 id 的守卫', () => {
+  /**
+   * `if (!def) return false` 不能省:去掉后 `def.cost` 会直接抛 TypeError。
+   *
+   * 这条路径真实存在 —— 契约 id 来自存档(旧版本写过、或手改档),
+   * 而 lifeTrialDef 对未知 id 返回 undefined。
+   */
+  it('未知契约 id:返回 false,不抛错、不扣道果、不刷拒因', () => {
+    const player = usePlayerStore()
+    player.addDaoFruit(100)
+    const before = player.reincarnation.daoFruit
+    const toastsBefore = useUiStore().toasts.length
+
+    expect(() => signLifeTrial('tr_不存在的契约')).not.toThrow()
+    expect(signLifeTrial('tr_不存在的契约')).toBe(false)
+    expect(player.reincarnation.daoFruit, '未签约不该扣道果').toBe(before)
+    expect(useUiStore().toasts.length, '查无此契不是玩家操作失误,不该弹拒因').toBe(toastsBefore)
+  })
+})
+
 describe('逆旅契 · 判据一:余额真的下降', () => {
   it('签约后道果减少,而不是只记一笔已花费', () => {
     const player = usePlayerStore()
