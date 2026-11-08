@@ -112,8 +112,12 @@ function stressSlices() {
       quality: "divine",
       tier: 32,
       level: 5,
-      // 八条都须**真实存在且与武器槽相符**,否则 sanitize 会静默剔掉:
-      // 首版写的 res1 在 affixes 里没有,low1 是 slots:A(仅护甲),各丢一条 → 只剩七条
+      /*
+       * 九条 = 神品的词条上限(qualities.ts 里 divine 的 affixes 是 [6, 9]),
+       * 也就是玩家单件能堆到的最多行数。
+       * 每一条都须**真实存在且与武器槽相符**,否则 sanitize 会静默剔掉 ——
+       * 首版写的 res1 在 affixes 里没有、low1 是 slots:A(仅护甲),各丢一条。
+       */
       affixes: [
         { id: "atk1", roll: 1 },
         { id: "def1", roll: 1 },
@@ -123,6 +127,7 @@ function stressSlices() {
         { id: "cdmg1", roll: 1 },
         { id: "dmg1", roll: 1 },
         { id: "bs1", roll: 1 },
+        { id: "atk2", roll: 1 },
       ],
     });
   }
