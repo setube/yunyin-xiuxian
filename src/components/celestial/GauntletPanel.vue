@@ -48,7 +48,7 @@
 
     <!-- 战报 -->
     <div ref="logBox" class="mt-2 max-h-40 overflow-y-auto rounded-md border border-ink/10 bg-paper-deep/40 px-3 py-2">
-      <p v-for="(entry, i) in displayed" :key="i" class="py-0.5 text-[11px] leading-relaxed" :class="KIND_COLOR[entry.t]">
+      <p v-for="(entry, i) in displayed" :key="i" class="py-0.5 text-[11px] leading-relaxed" :class="COMBAT_LOG_TONE[entry.t]">
         {{ entry.text }}
       </p>
       <p v-if="displayed.length === 0" class="py-2 text-center text-[11px] text-ink-faint">暂无战报</p>
@@ -67,6 +67,7 @@
 
 <script setup lang="ts">
   import { hpPercent } from '@/ui/hpReadout'
+  import { COMBAT_LOG_TONE } from '@/ui/combatLogText'
   import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
   import type { CombatLogEntry } from '@/types'
   import type { GauntletFightRow } from '@/core/gauntlet'
@@ -93,18 +94,6 @@
   const logs = computed(() => row.value?.logs ?? [])
   const finished = computed(() => displayed.value.length >= logs.value.length)
 
-  const KIND_COLOR: Record<CombatLogEntry['t'], string> = {
-    atk: 'text-ink-soft',
-    skill: 'text-azure',
-    crit: 'text-cinnabar',
-    shield: 'text-gold-ink',
-    heal: 'text-jade',
-    dodge: 'text-ink-faint',
-    proc: 'text-violet-ink',
-    info: 'text-ink-faint',
-    win: 'text-jade font-kai',
-    lose: 'text-cinnabar font-kai'
-  }
 
   function stop(): void {
     timer?.()

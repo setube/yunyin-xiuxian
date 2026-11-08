@@ -128,7 +128,7 @@
             :key="i"
             data-battle-log
             class="text-[12px] leading-relaxed"
-            :class="KIND_COLOR[entry.t]"
+            :class="COMBAT_LOG_TONE[entry.t]"
           >
             {{ entry.text }}
             <span v-if="entry.dmg" class="tabular" :class="entry.t === 'crit' ? 'text-cinnabar' : ''">{{ entry.dmg }}</span>
@@ -187,6 +187,7 @@
   import { enemyDef } from '@/data/enemies'
   import { enemyLoreView } from '@/ui/enemyLore'
   import { sessionRecordText } from '@/ui/adventureText'
+  import { COMBAT_LOG_TONE } from '@/ui/combatLogText'
   import type { CombatLogEntry } from '@/types'
   import ProgressBar from '@/components/common/ProgressBar.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -289,18 +290,6 @@
     return detectionAdaptation(build, eco, b.isBoss)
   })
 
-  const KIND_COLOR: Record<CombatLogEntry['t'], string> = {
-    atk: 'text-ink-soft',
-    skill: 'text-azure',
-    crit: 'text-cinnabar',
-    shield: 'text-gold-ink',
-    heal: 'text-jade',
-    dodge: 'text-ink-faint',
-    proc: 'text-violet-ink',
-    info: 'text-ink-faint',
-    win: 'text-jade font-kai',
-    lose: 'text-cinnabar font-kai'
-  }
 
   function stopPlayback(): void {
     playTimer?.()
