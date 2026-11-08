@@ -297,9 +297,15 @@ collectSpecs(join(ROOT, 'src'))
 function specsForModule(file) {
   const same = file.replace(/\.ts$/, '.spec.ts')
   const rel = file.slice(ROOT.length + 1)
-  // 判据可能用 `./x`、`@/core/x`、`x` 三种写法引用
+  /*
+   * 判据可能用 `./x` 或 `@/core/x` 两种写法引用。
+   *
+   * 原先前两种之外还收了**裸模块名**(`x`),那是误纳:任何 spec 里出现字符串 'forge'
+   * 都算「引用了 forge.ts」—— 实测 buildingBatch.spec.ts 与 dongfu.spec.ts 就这样被算成
+   * forge 的判据。无关 spec 一旦自己失败,变异就会被判成「抓到」,覆盖率缺口被掩盖。
+   */
   const base = rel.replace(/^src\//, '').replace(/\.ts$/, '')
-  const forms = [`./${base.split('/').pop()}`, `@/${base}`, base.split('/').pop()]
+  const forms = [`./${base.split('/').pop()}`, `@/${base}`]
   const out = new Set()
   for (const spec of allSpecs) {
     if (spec === same) { out.add(spec); continue }
@@ -309,6 +315,16 @@ function specsForModule(file) {
   return [...out]
 }
 
+/*
+ * 先**全量收集**,再按上限取样。
+ *
+ * 原先在收集时就 `if (found.length >= LIMIT) break` 一路跳出文件循环 ——
+ * 于是默认 limit=40 时只扫到遍历序靠前的少数文件就停了,
+ * 而 forge / offline / reincarnation / samsaraService / save / mortalWorldService
+ * 分别排在 127 个文件的第 51 / 85 / 102 / 108 / 109 / 82 位,**仍然一个都没进过扫描**。
+ * 上一版只去掉了「同名 spec」的前置条件,没解决这个 —— 覆盖率还是假的。
+ */
+const perFile = []
 for (const file of files) {
   const src = readFileSync(file, 'utf-8')
   /*
@@ -320,18 +336,33 @@ for (const file of files) {
    */
   const specs = specsForModule(file)
   if (specs.length === 0) continue
+  const mine = []
   for (const { name, re, rep } of PATTERNS) {
     for (const m of src.matchAll(re)) {
       const line = src.slice(0, m.index).split('\n').length
-      found.push({ file, specs, name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
-      if (found.length >= LIMIT) break
+      mine.push({ file, specs, name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
     }
-    if (found.length >= LIMIT) break
   }
-  if (found.length >= LIMIT) break
+  if (mine.length > 0) perFile.push(mine)
 }
 
-console.log(`扫到 ${found.length} 个可变异点(上限 ${LIMIT})`)
+/*
+ * 取样:跨文件轮流取一,而不是把前面的文件取干净。
+ * 这样 limit=40 也会均匀铺到几十个不同模块,而不是挤在前三个文件里。
+ */
+for (let round = 0; found.length < LIMIT; round += 1) {
+  let picked = false
+  for (const mine of perFile) {
+    if (found.length >= LIMIT) break
+    const one = mine[round]
+    if (!one) continue
+    found.push(one)
+    picked = true
+  }
+  if (!picked) break
+}
+
+console.log(`扫到 ${found.length} 个可变异点(上限 ${LIMIT},来自 ${new Set(found.map(f => f.file)).size} 个模块)`)
 
 /**
  * 跑一次被变异文件的 spec。
