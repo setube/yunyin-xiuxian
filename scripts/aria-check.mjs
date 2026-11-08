@@ -199,7 +199,12 @@ try {
         if (!t) continue
         // 可空:title / aria-label / 正文里有拒因词
         if (b.title || b.getAttribute('aria-label')) continue
-        if (/尚差|不足|未至|未满|已满|上限|在途|不可|无处|暂无|无可|闭关中|身在/.test(t)) continue
+        /*
+         * 「圆满」也是状态词,与「已满」「上限」同一类:洞府的「已圆满」、灵脉的「主脉圆满」
+         * 都在说「已到头,没得再升」。词表原先只认「已满」,于是「已圆满」被判成没给拒因 ——
+         * 这是判据的词表缺口,不是界面缺陷。
+         */
+        if (/圆满|尚差|不足|未至|未满|已满|上限|在途|不可|无处|暂无|无可|闭关中|身在/.test(t)) continue
         out.push(t.slice(0, 16))
       }
       return out
