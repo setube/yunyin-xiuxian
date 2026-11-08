@@ -101,8 +101,7 @@ function startServer() {
 /**
  * 满行囊夹具:120 件满词条神品(BAG_CAPACITY 上限),外加一堆丹药。
  *
- * 词条取无部位限制的通用项(atk1 / def1 / hp1 等),每件 8 条即 EQUIP_AFFIX_HARD_CAP 的量级;
- * 这正是玩家真能堆到的上限,也是渲染量最大的一档。
+ * 每件九条 = 神品的词条上限,八格全穿上;这正是玩家真能堆到的上限,也是渲染量最大的一档。
  */
 function stressSlices() {
   const base = lateSlices();
