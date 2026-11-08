@@ -37,3 +37,19 @@ describe('背包连服 · 数量由玩家填', () => {
     expect(VIEW, 'pillDetail 变化时该复位').toMatch(/watch\(pillDetail, \(\) => \{\s*\n\s*pillBatchCount\.value = 5/)
   })
 })
+
+/**
+ * 输入框高度不得低于全站 28px 触控下限。
+ *
+ * 首版写的是 `py-0.5`,浏览器实测盒高只有 23px —— 低于 layout-check 与 aria-check
+ * 量的那条线。要连点的数字框尤其不能偏小。改成 `h-7`(=28px)后实测三档宽度都是 28。
+ */
+describe('连服数量输入 · 触控下限', () => {
+  it('输入框带显式 28px 高度,不靠 padding 撑', () => {
+    const input = /class="[^"]*"\s*\n?\s*aria-label="服用数量"/.exec(VIEW)?.[0] ?? ''
+    const m = /v-model\.number="pillBatchCount"[\s\S]{0,400}?aria-label="服用数量"/.exec(VIEW)?.[0] ?? ''
+    expect(m, '找不到数量输入框').toBeTruthy()
+    expect(m, '输入框须用 h-7 给足 28px;py-0.5 实测只有 23px').toContain('h-7')
+    void input
+  })
+})
