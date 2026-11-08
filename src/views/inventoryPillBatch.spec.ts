@@ -24,11 +24,13 @@ describe('背包连服 · 数量由玩家填', () => {
   })
 
   it('连服按钮文案跟随输入值,不再写死 5', () => {
-    expect(VIEW, '按钮文案该读 pillBatchCount').toContain('连服 ×{{ pillBatchCount }}')
+    // 文案读的是钳制后的 pillBatchEffective(见下方「界面与行为同源」)
+    expect(VIEW, '按钮文案该跟随数量').toMatch(/连服 ×\{\{ pillBatchEffective \}\}/)
     expect(VIEW, '按钮文案里不该再出现写死的 min(5, ...)').not.toMatch(/连服 ×\{\{ Math\.min\(5/)
   })
 
   it('脚本把输入钳在 [1, 存量]:键盘可改成 0 / 负数 / 超量', () => {
+    // 钳制集中在 pillBatchEffective 一处,执行与文案共用
     expect(VIEW, '该按存量钳上限').toMatch(/Math\.min\(owned, Math\.floor\(pillBatchCount\.value\)/)
     expect(VIEW, '该保证至少服 1 枚').toMatch(/Math\.max\(1, /)
   })
@@ -51,5 +53,34 @@ describe('连服数量输入 · 触控下限', () => {
     expect(m, '找不到数量输入框').toBeTruthy()
     expect(m, '输入框须用 h-7 给足 28px;py-0.5 实测只有 23px').toContain('h-7')
     void input
+  })
+})
+
+/**
+ * 界面说的与做的必须同源。
+ *
+ * 首版只在 `onUsePillBatch` 里钳数量,按钮文案直接挂 `pillBatchCount`:
+ * 吃完一批后存量变少而输入框还留着旧值,按钮挂着「连服 ×50」而实际只吃 10 枚 ——
+ * 正是 264d1278 修过的同一类毛病。现按钮文案与执行都读 `pillBatchEffective`。
+ *
+ * 判据钉两件事:按钮文案读钳制后的值、执行处不各算一次。
+ * 故障注入:把按钮改回 `{{ pillBatchCount }}` 或让执行处重算,本条红。
+ */
+describe('连服 · 界面与行为同源', () => {
+  it('按钮文案读钳制后的 pillBatchEffective,不直挂输入值', () => {
+    expect(VIEW, '按钮文案该读 pillBatchEffective').toContain('连服 ×{{ pillBatchEffective }}')
+    expect(VIEW, '按钮文案不许直挂未钳制的输入值').not.toContain('连服 ×{{ pillBatchCount }}')
+  })
+
+  it('执行处复用同一份钳制结果,不各算一次', () => {
+    expect(VIEW, '执行处该直接用 pillBatchEffective').toMatch(/usePillBatch\(id, pillBatchEffective\.value\)/)
+    // 执行处不该再自己写一遍 Math.min(owned, ...)
+    const fn = /function onUsePillBatch[\s\S]{0,400}?\n  \}/.exec(VIEW)?.[0] ?? ''
+    expect(fn, '找不到 onUsePillBatch').toBeTruthy()
+    expect(fn, '执行处又各算一次钳制,会与文案分叉').not.toMatch(/Math\.min\(owned/)
+  })
+
+  it('存量变少时输入值被收回上限', () => {
+    expect(VIEW, '缺少存量变化的 watch').toMatch(/watch\(\s*\n?\s*\(\) => inventory\.pills\[/)
   })
 })
