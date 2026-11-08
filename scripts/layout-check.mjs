@@ -1250,7 +1250,6 @@ for (const vp of VIEWPORTS) {
     // 灵脉已投两位数:「营造」右侧入口够宽,200% 档才量得出它撑不撑破标题行
     dongfu: {
       levels: { mansion: 4, field: 5, alchemy: 5, forge: 4, library: 4 },
-      offlineCapHours: 24,
       veinPoints: { gather: 52 },
       veinMain: 'gather'
     },
@@ -3482,7 +3481,7 @@ for (const vp of [
     resources: { spiritStone: gn(1, 9), qi: 1000, wudao: 0, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 0, page: 0, dust: 0 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
-    dongfu: { levels: { mansion: 1, field: 1, alchemy: 5, forge: 1, library: 1 }, offlineCapHours: 24 },
+    dongfu: { levels: { mansion: 1, field: 1, alchemy: 5, forge: 1, library: 1 } },
     // 只给这张高耗草方子:入门三方的余量会遮掉「缺草」
     lore: { recipeLore: { p_tianyun: 0.5 } },
     market: { stock, stockedAt: now, consign: [] },
@@ -3602,7 +3601,7 @@ for (const vp of [
     resources: { spiritStone: gn(1, 9), qi: 1000, wudao: 0, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 0, page: 0, dust: 0 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: null, daoSource: 0, souls: [], equippedSouls: [] },
-    dongfu: { levels: { mansion: 1, field: 1, alchemy: 5, forge: 1, library: 1 }, offlineCapHours: 24 },
+    dongfu: { levels: { mansion: 1, field: 1, alchemy: 5, forge: 1, library: 1 } },
     lore: { recipeLore: { p_tianyun: 0.5 } },
     // 六格一件草都没有
     market: {

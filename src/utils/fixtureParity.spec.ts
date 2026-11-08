@@ -11,7 +11,7 @@
  * 这一条把两边钉在一起。
  */
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { affixDef, affixFitBlock } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
@@ -19,6 +19,7 @@ import { BAG_CAPACITY } from '@/data/constants'
 import { herbGradeOfMajor } from '@/data/herbGrades'
 import { lateSlices, stressSlices } from '../../scripts/lib/saveFixture.mjs'
 import { resolve } from 'node:path'
+import { PERSISTED_STORES } from '@/utils/storage'
 
 const ROOT = resolve(__dirname, '../..')
 const product = readFileSync(resolve(ROOT, 'src/utils/crypto.ts'), 'utf-8')
@@ -297,5 +298,151 @@ describe('性能压测夹具 · 实际调用后每一条都成立', () => {
     expect(Object.keys(slices).sort(), '压测夹具该只是 lateSlices 的一个覆盖').toEqual(Object.keys(base).sort())
     // 行囊之外的分片键集合也该一致(不新增/不删)
     expect(Object.keys(inv).sort(), '行囊分片不该增删键').toEqual(Object.keys(base.inventory).sort())
+  })
+})
+
+/**
+ * QA 脚本里每个 store 分片的字段名都必须真的存在 —— 且**不能是 computed**。
+ *
+ * 这是上一条(`resources.herb`)的推广。写进夹具的键若在 store 里不存在(或存在但只读),
+ * Vue 会当未知键**静默忽略**:脚本照跑,量的是空数据,门照旧报绿。
+ *
+ * 实测抓到 `dongfu.offlineCapHours` 三处 —— 它是 computed,由 levels.mansion 查表算出,
+ * 写进夹具不生效,而且写的 24 与 mansion 实际的 12 小时还对不上,读代码的人会被误导。
+ *
+ * 判据从 PERSISTED_STORES 驱动,不用手写 store 名单:新增 store 自动纳入。
+ */
+describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () => {
+  /** 平衡括号取出 `store: {` 的完整体;只认行首带缩进的,避免抓到内部同名对象 */
+  function sliceBodies(src: string, store: string): Array<{ pos: number; body: string }> {
+    const out: Array<{ pos: number; body: string }> = []
+    const re = new RegExp(`^\\s+${store}:\\s*\\{`, 'gm')
+    for (const m of src.matchAll(re)) {
+      const open = src.indexOf('{', m.index!)
+      let depth = 0
+      let close = -1
+      for (let i = open; i < src.length; i += 1) {
+        if (src[i] === '{') depth += 1
+        else if (src[i] === '}') {
+          depth -= 1
+          if (depth === 0) {
+            close = i
+            break
+          }
+        }
+      }
+      if (close > 0) out.push({ pos: m.index!, body: src.slice(open + 1, close) })
+    }
+    return out
+  }
+
+  /** 深度 0、且不在数组内的 `key:` */
+  function topKeys(body: string): string[] {
+    const keys: string[] = []
+    let d = 0
+    let ad = 0
+    let expect = true
+    for (let i = 0; i < body.length; i += 1) {
+      const ch = body[i]!
+      if (ch === '{') {
+        d += 1
+        expect = false
+        continue
+      }
+      if (ch === '}') {
+        d -= 1
+        continue
+      }
+      if (ch === '[') {
+        ad += 1
+        continue
+      }
+      if (ch === ']') {
+        ad -= 1
+        continue
+      }
+      if (d !== 0 || ad !== 0) continue
+      if (ch === ',') {
+        expect = true
+        continue
+      }
+      if (/\s/.test(ch)) continue
+      if (!expect) continue
+      const m = /^(\w+)\s*:/.exec(body.slice(i))
+      if (m) {
+        keys.push(m[1]!)
+        i += m[0].length - 1
+        expect = false
+      } else {
+        expect = false
+      }
+    }
+    return keys
+  }
+
+  const SCRIPTS = [
+    'scripts/layout-check.mjs',
+    'scripts/detail-geometry.mjs',
+    'scripts/edge-states.mjs',
+    'scripts/lib/saveFixture.mjs'
+  ]
+
+  it('扫到的分片与字段量足够(判据不空转)', () => {
+    let slices = 0
+    for (const rel of SCRIPTS) {
+      const src = readFileSync(resolve(ROOT, rel), 'utf-8')
+      for (const store of PERSISTED_STORES) slices += sliceBodies(src, store).filter(b => topKeys(b.body).length > 1).length
+    }
+    expect(slices, '一个 store 分片都没扫到,判据空转').toBeGreaterThan(30)
+  })
+
+  /**
+   * 分片键与 store 文件名不一定同名:`pacing` 在 pacingTelemetry.ts 里。
+   * 从各文件的 persistConfig('id') 自动建映射,不手抄。
+   */
+  const STORE_FILE = ((): Map<string, string> => {
+    const map = new Map<string, string>()
+    const dir = readdirSync(resolve(ROOT, 'src/stores'))
+    for (const f of dir) {
+      if (!f.endsWith('.ts') || f.endsWith('.spec.ts')) continue
+      const src = readFileSync(resolve(ROOT, 'src/stores', f), 'utf-8')
+      const id = /persistConfig\('([a-zA-Z]+)'\)/.exec(src)?.[1]
+      if (id) map.set(id, f)
+    }
+    return map
+  })()
+
+  it('夹具里的每个字段在对应 store 里都是可写的 ref', () => {
+    const reports: string[] = []
+    for (const rel of SCRIPTS) {
+      const src = readFileSync(resolve(ROOT, rel), 'utf-8')
+      for (const store of PERSISTED_STORES) {
+        const file = STORE_FILE.get(store)
+        if (!file) {
+          reports.push(`分片 ${store} 找不到对应的 store 文件 —— 映射表失配`)
+          continue
+        }
+        const storeSrc = readFileSync(resolve(ROOT, 'src/stores', file), 'utf-8')
+        // 可写 = ref 声明;computed 不算(写不进去)
+        const writable = new Set([...storeSrc.matchAll(/const (\w+) = ref[<(]/g)].map(m => m[1]!))
+        const computedNames = new Set([...storeSrc.matchAll(/const (\w+) = computed/g)].map(m => m[1]!))
+        for (const { pos, body } of sliceBodies(src, store)) {
+          const keys = topKeys(body)
+          // 至少有一个键命中,才认定这是该 store 的夹具分片(防止误判 UI 代码)
+          if (!keys.some(k => writable.has(k) || computedNames.has(k))) continue
+          for (const key of keys) {
+            if (/^\d+$/.test(key)) continue
+            if (writable.has(key)) continue
+            const line = src.slice(0, pos).split('\n').length
+            reports.push(
+              computedNames.has(key)
+                ? `${rel}:${line} ${store}.${key} 是 computed,写进夹具不生效`
+                : `${rel}:${line} ${store}.${key} 在 store 里不存在`
+            )
+          }
+        }
+      }
+    }
+    expect(reports, `这些夹具字段写进去会被静默忽略:\n${reports.join('\n')}`).toEqual([])
   })
 })
