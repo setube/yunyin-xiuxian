@@ -229,6 +229,51 @@ describe('连胜(Phase 28 · 曾经无调用方,接线后)', () => {
   })
 })
 
+/**
+ * 坏档里的负连胜数该被当成 0。
+ *
+ * `recordWinStreakBatch` 里 `count` 与 `start` 各钳一次。现有用例只测了从 0 起的正常累积,
+ * 走不到负值 —— 而 `player.winStreak` 是持久化字段,坏档可以写成任何数。
+ *
+ * 实测(去掉 `Math.max` 后):起点 -2 连赢 4 场,`reward.streak <= start` 恒假,
+ * **三档奖励全部漏发**,且结算后的 winStreak 是 2 而不是 4。
+ *
+ * 判据:负起点与 0 同结果(该发的档照发、计数按实际胜场走);负 wins 不倒退计数。
+ */
+describe('整批连胜 · 坏档负值当 0 处理', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('负起点连赢:奖励照发,计数按实际胜场累计', () => {
+    const player = usePlayerStore()
+    player.winStreak = -2
+    const granted = recordWinStreakBatch(4, 0)
+    expect(granted.map(r => r.streak), '负起点被当成 0 起算,跨过 3 档就该发').toEqual([3])
+    expect(player.winStreak, '连赢 4 场后该是 4,不是 2').toBe(4)
+  })
+
+  it('负起点与 0 起点结果完全一致', () => {
+    const run = (start: number): { granted: number[]; end: number } => {
+      setActivePinia(createPinia())
+      const p = usePlayerStore()
+      p.winStreak = start
+      const g = recordWinStreakBatch(6, 0)
+      return { granted: g.map(r => r.streak), end: p.winStreak }
+    }
+    expect(run(-50), '负起点该与 0 起点同结果').toEqual(run(0))
+    expect(run(-1), '负 1 也该与 0 同结果').toEqual(run(0))
+  })
+
+  it('负 wins 不倒退计数,也不发奖', () => {
+    const player = usePlayerStore()
+    player.winStreak = 5
+    const granted = recordWinStreakBatch(-100, 0)
+    expect(granted, '负数胜场不该发任何档').toEqual([])
+    expect(player.winStreak, '负数胜场不该把计数往回拉').toBe(5)
+  })
+})
+
 describe('突破准备(Phase 28 · 接线后)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
