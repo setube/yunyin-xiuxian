@@ -76,7 +76,9 @@ describe('生命周期形制 · 三、色只走既有 token', () => {
 describe('生命周期形制 · 四、两扇弹窗同用一份', () => {
   it('道源弹窗按 roleTone 挂形制,不再硬写边框色', () => {
     expect(CELESTIAL, '道源该走 ui/resourceTone').toContain("from '@/ui/resourceTone'")
-    expect(CELESTIAL, '道源该按 roleTone 取形制').toContain('toneOf(daoSourceDialog().roleTone)')
+    // 形制落点从「模板里现调」搬到 setup 的 daoPanels(一次算齐,模板只读字段)
+    expect(CELESTIAL, '道源该按 roleTone 取形制').toContain('toneOf(sourceText.roleTone)')
+    expect(CELESTIAL, '模板该读算好的形制').toContain('daoPanels.sourceTone.tone')
     expect(CELESTIAL, '道源不该再硬写边框色').not.toMatch(/class="border-l-2 border-cinnabar\/60 pl-2/)
   })
 
