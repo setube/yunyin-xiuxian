@@ -349,8 +349,13 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
         continue
       }
       if (ch === '"' || ch === "'" || ch === '`') {
+        /*
+         * 字符串首字符留一个标记 \x01:它可能是对象键(`"key": 1`)。
+         * 若整段抹成空白,`topKeys` 就找不到这个键了 —— 审查点出来的第二条漏网。
+         * 其余字符仍抹空白,里面的括号不会污染结构判定。
+         */
         const quote = ch
-        out[i] = ' '
+        out[i] = '\x01'
         i += 1
         while (i < src.length) {
           if (src[i] === '\\') {
@@ -378,9 +383,9 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
   }
 
   /** 平衡括号取出 `store: {` 的完整体;只认行首带缩进的,避免抓到内部同名对象 */
-  function sliceBodies(src: string, store: string): Array<{ pos: number; body: string }> {
+  function sliceBodies(src: string, store: string): Array<{ pos: number; body: string; code: string }> {
     const code = stripNonCode(src)
-    const out: Array<{ pos: number; body: string }> = []
+    const out: Array<{ pos: number; body: string; code: string }> = []
     const re = new RegExp(`^\\s+${store}:\\s*\\{`, 'gm')
     for (const m of code.matchAll(re)) {
       const open = code.indexOf('{', m.index!)
@@ -396,7 +401,8 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
           }
         }
       }
-      if (close > 0) out.push({ pos: m.index!, body: code.slice(open + 1, close) })
+      // 定位用抹除后的 code,取内容用原文 src —— 带引号的键名不能被抹掉
+      if (close > 0) out.push({ pos: m.index!, body: src.slice(open + 1, close), code: code.slice(open + 1, close) })
     }
     return out
   }
@@ -408,9 +414,9 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
    * 这种写法不是 `store: {` 属性,先前的 scan 一次都没覆盖到 —— 而它里面
    * 恰好写着 `herb: 0` 这个不生效的字段。这是审查点出来的第三处漏网。
    */
-  function assignedBodies(src: string, store: string): Array<{ pos: number; body: string }> {
+  function assignedBodies(src: string, store: string): Array<{ pos: number; body: string; code: string }> {
     const code = stripNonCode(src)
-    const out: Array<{ pos: number; body: string }> = []
+    const out: Array<{ pos: number; body: string; code: string }> = []
     const re = new RegExp(`\\.${store}\\s*=\\s*\\{`, 'g')
     for (const m of code.matchAll(re)) {
       const open = code.indexOf('{', m.index!)
@@ -426,19 +432,25 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
           }
         }
       }
-      if (close > 0) out.push({ pos: m.index!, body: code.slice(open + 1, close) })
+      if (close > 0) out.push({ pos: m.index!, body: src.slice(open + 1, close), code: code.slice(open + 1, close) })
     }
     return out
   }
 
-  /** 深度 0、且不在数组内的 `key:` */
-  function topKeys(body: string): string[] {
+  /**
+   * 深度 0、且不在数组内的 `key:`。
+   *
+   * @param body 原文切片 —— 键名从这里读(带引号的键在 code 里已被抹成空白)
+   * @param code 同一段抹除字符串与注释后的版本,等长 —— 结构符号只认它,
+   *             否则 `desc: '带 { 的文案'` 会让括号深度算错
+   */
+  function topKeys(body: string, code: string): string[] {
     const keys: string[] = []
     let d = 0
     let ad = 0
     let expect = true
-    for (let i = 0; i < body.length; i += 1) {
-      const ch = body[i]!
+    for (let i = 0; i < code.length; i += 1) {
+      const ch = code[i]!
       if (ch === '{') {
         d += 1
         expect = false
@@ -463,9 +475,16 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
       }
       if (/\s/.test(ch)) continue
       if (!expect) continue
-      const m = /^(\w+)\s*:/.exec(body.slice(i))
+      /*
+       * 键名可以带引号:`{ "offlineCapHours": 24 }` 与 `{ offlineCapHours: 24 }` 等价。
+       * 只认标识符的写法会让带引号的键整个溜过去(审查点出来的)。
+       */
+      // \x01 标记说明此处是字符串;作为键名时从原文取引号内内容
+      const atString = ch === '\x01'
+      const rest = body.slice(i)
+      const m = atString ? /^(?:"([^"]*)"|'([^']*)')\s*:/.exec(rest) : /^(\w+)\s*:/.exec(rest)
       if (m) {
-        keys.push(m[1]!)
+        keys.push(atString ? (m[1] ?? m[2])! : m[1]!)
         i += m[0].length - 1
         expect = false
       } else {
@@ -487,7 +506,7 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
     let slices = 0
     for (const rel of SCRIPTS) {
       const src = readFileSync(resolve(ROOT, rel), 'utf-8')
-      for (const store of PERSISTED_STORES) slices += sliceBodies(src, store).filter(b => topKeys(b.body).length > 1).length
+      for (const store of PERSISTED_STORES) slices += sliceBodies(src, store).filter(b => topKeys(b.body, b.code).length > 1).length
     }
     expect(slices, '一个 store 分片都没扫到,判据空转').toBeGreaterThan(30)
   })
@@ -522,8 +541,8 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
         // 可写 = ref 声明;computed 不算(写不进去)
         const writable = new Set([...storeSrc.matchAll(/const (\w+) = ref[<(]/g)].map(m => m[1]!))
         const computedNames = new Set([...storeSrc.matchAll(/const (\w+) = computed/g)].map(m => m[1]!))
-        for (const { pos, body } of [...sliceBodies(src, store), ...assignedBodies(src, store)]) {
-          const keys = topKeys(body)
+        for (const { pos, body, code } of [...sliceBodies(src, store), ...assignedBodies(src, store)]) {
+          const keys = topKeys(body, code)
           /*
            * 不看「有没有键命中」—— 那个守卫会让「整片字段全写错」的情况静默跳过,
            * 而那正是最该报的。分片已由 `store: {` / `.store = {` 的行首形态定位,
