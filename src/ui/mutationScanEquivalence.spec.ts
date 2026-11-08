@@ -61,6 +61,47 @@ describe('变异扫描 · 等价名单', () => {
     }
   })
 
+  /**
+   * 名单里的 text 必须是**变异扫描能产出的那个形状**。
+   *
+   * 上面那条只验「这段文字在源码里存在」—— 不够。变异扫描匹配的是正则捕获到的片段,
+   * 与源码原文未必等长:
+   *  · 守卫恒假的正则只捕到 `if (!x) return`,不含后面的返回值 ——
+   *    写 `if (!x) return null` 就永远命中不了,名单形同虚设
+   *  · 空判取反只把 `.length === 0)` 截下来,不含前面的池名
+   *
+   * 这类「文本对不上」不会报错,只会让该条静默失效 —— 正是审查点出来的第三条。
+   */
+  it('名单的 text 与变异扫描的匹配形状一致,不是源码原文的随手摘抄', () => {
+    const NORM = (t: string): string => t.replace(/\s+/g, ' ').trim()
+    /*
+     * 与 mutation-scan.mjs 的 PATTERNS 同步。脚本里那份是内部常量、测试 import 不到,
+     * 只能复刻;若将来改了正则,这里也要跟着改。
+     */
+    const PATTERNS: RegExp[] = [
+      /if \((![A-Za-z_$][\w$.]*(?:\([^)]*\))?)\) return/g,
+      /Math\.max\(0(?:\.\d+)?,\s*([^;()]+(?:\([^)]*\))?[^;()]*)\)/g,
+      /\.length === 0\)/g
+    ]
+    const produced = (src: string): Set<string> => {
+      const out = new Set<string>()
+      for (const re of PATTERNS) {
+        re.lastIndex = 0
+        for (const m of src.matchAll(re)) out.add(NORM(m[0]!))
+      }
+      return out
+    }
+    for (const e of equivalentEntries()) {
+      const src = readFileSync(resolve(ROOT, e.file), 'utf-8')
+      const shapes = produced(src)
+      expect(
+        shapes.has(NORM(e.text)),
+        `${e.file} 的条目「${e.text}」与变异扫描产出的形状对不上(扫描只会产出正则捕获的那一截),` +
+          `这条永远不会命中 —— 同一文件里可用的形状有:${[...shapes].slice(0, 4).join(' | ')}`
+      ).toBe(true)
+    }
+  })
+
   it('等价跳过不计入退出码,漏掉的必须计入', () => {
     // 退出条件只看 missed 与 infra —— 等价的是缺陷吗?不是,但它也不该掩盖漏
     const tail = SRC.slice(SRC.indexOf('if (skipped.length > 0)'))
