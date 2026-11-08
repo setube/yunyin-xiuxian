@@ -200,12 +200,13 @@ const EQUIVALENT = [
       '下方 `Math.min(MITIGATION_CAP, ...)` 才是真正管住结果的那一道。'
   },
   {
-    file: 'src/core/affixTransfer.ts',
-    text: 'Math.max(0, cost.dust - resources.dust)',
+    file: 'src/core/costShortfall.ts',
+    text: 'Math.max(0, cost.dust - dustOwn)',
     why:
-      '前置三元已经把「够付」写成 0;走到减法那支时 hasSmall("dust", cost.dust) 为假,' +
-      '即 resources.dust < cost.dust,差值必为正,钳制不改变结果。' +
-      '留着是因为这段读起来像「算差额」,钳一下能让下一个人不必回头确认前置。'
+      '前置三元已经把「够付」写成 0;走到减法那支时 dustOwn >= cost.dust 为假,' +
+      '即 dustOwn < cost.dust,差值必为正,钳制不改变结果。' +
+      '留着是因为这段读起来像「算差额」,钳一下能让下一个人不必回头确认前置。' +
+      '(算式原在 affixTransfer 与 reforge 各一份,已收进 costShortfall.twoPartShortfall)'
   },
   {
     file: 'src/core/apprenticeService.ts',

@@ -24,12 +24,14 @@ import {
 import { REFORGE_DUST_BASE, REFORGE_SEAL_LOAD, REFORGE_STONE_BASE } from '@/data/constants'
 import { AUTO_REFORGE_MAX_BUDGET, autoReforgeBudget } from './reforge'
 import { qualityDef } from '@/data/qualities'
+import { twoPartShortfall } from './costShortfall'
+import { transferShortfall } from './affixTransfer'
 import { rng } from '@/utils/random'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { useAutoReforge } from '@/composables/useAutoReforge'
-import { gn, gnZero, sub } from '@/utils/gnum'
+import { gn, gnZero, sub, toNum } from '@/utils/gnum'
 import type { EquipmentInstance } from '@/types'
 
 const stoneOf = (g: { m: number; e: number }): number => g.m * Math.pow(10, g.e)
@@ -495,5 +497,50 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     const sheet = readFileSync(resolve(__dirname, '../components/equipment/AffixInfoSheet.vue'), 'utf8')
     expect(sheet, '满位文案读 AUTO_REFORGE_MAX_TARGETS').toContain('目标已满(${AUTO_REFORGE_MAX_TARGETS})')
     expect(sheet, '不再手写目标上限').not.toContain('目标已满(3)')
+  })
+})
+
+/**
+ * 差额口径只有一份:强化与词条转移走同一个 twoPartShortfall。
+ *
+ * 这段算式原在 reforge 与 affixTransfer 里各写一遍(逐字相同)。两条路径都拿它决定
+ * 置灰、价签与拒因 —— 抄两份时若只改一处,同一种「两样都缺」会在两处给出不同的首选拒因,
+ * 而玩家看不出这是两个独立实现,只会觉得「强化说缺灵石、转移却说缺尘」。
+ */
+describe('两样差额 · 强化与词条转移同源', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('同样的余额与价格下,两个入口给出完全相同的差额', () => {
+    const resources = useResourcesStore()
+    const cases: Array<[number, number, number, number]> = [
+      // [灵石余额, 尘余额, 灵石价, 尘价]
+      [1000, 500, 100, 50],
+      [400, 500, 1000, 50],
+      [1000, 200, 100, 500],
+      [0, 0, 1000, 500],
+      [100, 50, 100, 50]
+    ]
+    for (const [stoneOwn, dustOwn, stoneCost, dustCost] of cases) {
+      resources.spiritStone = gn(stoneOwn)
+      resources.dust = dustOwn
+      const cost = { stone: gn(stoneCost), dust: dustCost }
+      const viaReforge = reforgeShortfall(cost)
+      const viaTransfer = transferShortfall({ ...cost, sealStone: null })
+      expect(toNum(viaTransfer.stone), `余额 ${stoneOwn} 时灵石差额分叉`).toBeCloseTo(toNum(viaReforge.stone), 6)
+      expect(viaTransfer.dust, `尘 ${dustOwn} 时尘差额分叉`).toBe(viaReforge.dust)
+      expect(viaTransfer.short, '首选拒因分叉').toBe(viaReforge.short)
+    }
+  })
+
+  it('两个入口都走纯函数,不各自重写一份', () => {
+    const resources = useResourcesStore()
+    resources.spiritStone = gn(300)
+    resources.dust = 100
+    const cost = { stone: gn(900), dust: 400 }
+    const pure = twoPartShortfall(cost, resources.spiritStone, resources.dust)
+    expect(toNum(reforgeShortfall(cost).stone)).toBe(toNum(pure.stone))
+    expect(toNum(transferShortfall({ ...cost, sealStone: null }).stone)).toBe(toNum(pure.stone))
   })
 })
