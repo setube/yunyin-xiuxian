@@ -22,6 +22,7 @@ import {
   celestialAnchor,
   celestialFoeCaliber,
   celestialJudgement,
+  worldFoeLineup,
   worldFoeSnap
 } from './gauntlet'
 import { CELESTIAL_WORLDS, TRIALS } from '@/data/endgame'
@@ -150,7 +151,15 @@ describe('天界口径 · 造敌只有一条路', () => {
 
     const challenge = flightSrc('./challenge.ts')
     expect(challenge, '挑战该用同一口径').toContain('celestialFoeCaliber(')
-    expect(challenge, '挑战造敌也要带判定').toMatch(/worldFoeSnap\([^\n]*judgement/)
+    /*
+     * 阵容构造已收进 gauntlet.worldFoeLineup(challenge / endgameService / lab 原先各抄一份)。
+     * 故这里改判两件事:挑战确实走那个函数,且该函数确实把 judgement 传下去 ——
+     * 只查 challenge.ts 里有没有 `worldFoeSnap(...judgement)` 已随抽取失效。
+     */
+    expect(challenge, '挑战造敌该走 worldFoeLineup').toContain('worldFoeLineup(')
+    const gauntlet = flightSrc('./gauntlet.ts')
+    expect(gauntlet, 'worldFoeLineup 必须把 judgement 传给 worldFoeSnap').toMatch(/worldFoeSnap\([^\n]*judgement/)
+    expect(gauntlet, '守关者那一行也要带 judgement').toMatch(/worldFoeSnap\(world\.guardian,[^\n]*judgement/)
 
     const endgame = flightSrc('./endgameService.ts')
     expect(endgame, '忆战/重写该用同一口径').toContain('celestialJudgement(')
@@ -184,5 +193,56 @@ describe('忆战 · 境界压制按当年大境界还原', () => {
     expect(top.suppressed, '满修不被压制').toBe(false)
     expect(low.damageBonus, '被压制的那痕,守关增伤还在').toBe(CELESTIAL_SUPPRESS_BONUS)
     expect(top.damageBonus).toBe(0)
+  })
+})
+
+/**
+ * `worldFoeLineup`:前 `fights - 1` 场按 foes 循环取、末位固定守关者。
+ *
+ * 这段循环原先在 challenge / endgameService / lab 各抄一份(逐字相同),已收进 gauntlet。
+ * 收进一处之后要钉住它的形状:场数、顺序、守关者在末位、以及全员带同一份判定。
+ * 故障注入:把末位守关者去掉、或让循环多跑一场,本条红。
+ */
+describe('天界阵容 · worldFoeLineup 的形状', () => {
+  const world = CELESTIAL_WORLDS[0]!
+  const judgement = celestialJudgement({}, MAX_MAJOR, world.anchorTier)
+  const ref = celestialAnchor(world.anchorTier)
+
+  it('场数等于 world.fights,末位是守关者', () => {
+    const foes = worldFoeLineup(world, ref, judgement)
+    expect(foes.length, '阵容长度该等于 world.fights').toBe(world.fights)
+    const expectedGuardian = worldFoeSnap(world.guardian, ref, 1, judgement)
+    expect(foes[foes.length - 1]!.name, '末位该是守关者').toBe(expectedGuardian.name)
+  })
+
+  it('前几场按 foes 循环取,与逐场构造逐个相同', () => {
+    const foes = worldFoeLineup(world, ref, judgement)
+    for (let i = 0; i < world.fights - 1; i += 1) {
+      const expected = worldFoeSnap(world.foes[i % world.foes.length]!, ref, 1, judgement)
+      expect(JSON.stringify(foes[i]), `第 ${i} 场与逐场构造不一致`).toBe(JSON.stringify(expected))
+    }
+  })
+
+  it('判定逐位都生效:被压制时每一位敌人都与无判定不同', () => {
+    const low = celestialJudgement({}, 0, world.anchorTier)
+    expect(low.suppressed, '探针前提:0 境该被压制').toBe(true)
+    const suppressed = worldFoeLineup(world, ref, low)
+    const neutral = worldFoeLineup(world, ref)
+    for (let i = 0; i < suppressed.length; i += 1) {
+      expect(
+        JSON.stringify(suppressed[i]),
+        `第 ${i} 位敌人的三维与无判定时相同 —— judgement 没传到这一位`
+      ).not.toBe(JSON.stringify(neutral[i]))
+    }
+  })
+
+  it('判定确实传到每一位敌人身上:被压制时阵容整体更强', () => {
+    const low = celestialJudgement({}, 0, world.anchorTier)
+    expect(low.suppressed, '探针前提:0 境该被压制').toBe(true)
+    const suppressed = worldFoeLineup(world, ref, low)
+    const neutral = worldFoeLineup(world, ref)
+    // 至少有一位三维不同,说明 judgement 没被吞
+    const differs = suppressed.some((f, i) => JSON.stringify(f) !== JSON.stringify(neutral[i]))
+    expect(differs, '判定完全没起作用 —— judgement 没传到敌人').toBe(true)
   })
 })

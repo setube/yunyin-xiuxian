@@ -26,7 +26,7 @@ import { buildPlayerSnap } from './playerSnap'
 import { detectBuild } from './buildDetect'
 import { SWORD_PER_WIN, SLAUGHTER_PER_WIN } from './daoDepth'
 import { recordMilestone, trackClearRecords } from './identity'
-import { celestialJudgement, mergeRules, runGauntlet, worldFoeSnap, type GauntletReport } from './gauntlet'
+import { celestialJudgement, mergeRules, runGauntlet, worldFoeLineup, worldFoeSnap, type GauntletReport } from './gauntlet'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
@@ -349,8 +349,7 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
   const judgement = celestialJudgement(stats.mods, player.major, (world ?? trial)!.anchorTier)
   const foes = []
   if (world) {
-    for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, ref, 1, judgement))
-    foes.push(worldFoeSnap(world.guardian, ref, 1, judgement))
+    foes.push(...worldFoeLineup(world, ref, judgement))
   } else if (trial) {
     for (let i = 0; i < trial.fights; i += 1)
       foes.push(worldFoeSnap(TRIAL_FOES[i % TRIAL_FOES.length]!, ref, Math.pow(trial.escalation, i), judgement))

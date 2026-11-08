@@ -11,7 +11,14 @@ import { STAT_NAMES } from '@/data/statNames'
 import { buildPlayerSnap } from './playerSnap'
 import { detectBuild, type BuildDetection } from './buildDetect'
 import { resolveEquipStats } from './equipGen'
-import { celestialAnchor, celestialFoeCaliber, mergeRules, runGauntlet, worldFoeSnap, type CelestialJudgement } from './gauntlet'
+import {
+  celestialAnchor,
+  celestialFoeCaliber,
+  mergeRules,
+  runGauntlet,
+  worldFoeLineup,
+  type CelestialJudgement
+} from './gauntlet'
 import { currentDaoRules } from './endgameService'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
@@ -50,9 +57,7 @@ function worldRate(
   seed: number
 ): number {
   const ref = celestialAnchor(world.anchorTier)
-  const foes: CombatantSnap[] = []
-  for (let i = 0; i < world.fights - 1; i += 1) foes.push(worldFoeSnap(world.foes[i % world.foes.length]!, ref, 1, judgement))
-  foes.push(worldFoeSnap(world.guardian, ref, 1, judgement))
+  const foes = worldFoeLineup(world, ref, judgement)
   const rules = mergeRules(currentDaoRules(), world.rules)
   const rng = new RandomService(mulberry32(seed))
   let clears = 0
