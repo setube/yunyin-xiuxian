@@ -49,10 +49,10 @@
           <!-- 全熔防误触:亮出整包与可得道源,再按一下才熔 -->
           <button
             class="btn-ghost !px-3 !py-2 !text-[11px] tabular"
-            :disabled="furnacePreview(row.rate) <= 0"
+            :disabled="row.gain <= 0"
             @click="furnaceConfirm = row.rate.resource"
           >
-            熔尽本包 → {{ furnacePreview(row.rate) }} 道源
+            熔尽本包 → {{ row.gain }} 道源
           </button>
         </div>
         <div
@@ -60,13 +60,9 @@
           class="mt-1.5 rounded-md bg-cinnabar/5 px-3 py-2"
         >
           <p class="text-[10px] leading-relaxed text-cinnabar">
-            <span class="tabular"
-              >{{ row.rate.name }} ×{{ formatNum(furnacePreview(row.rate) * row.rate.per) }}</span
-            >
-            → 道源 <span class="tabular">+{{ furnacePreview(row.rate) }}</span> · 余
-            <span class="tabular">{{
-              formatNum(row.have - furnacePreview(row.rate) * row.rate.per)
-            }}</span>
+            <span class="tabular">{{ row.rate.name }} ×{{ formatNum(row.spend) }}</span>
+            → 道源 <span class="tabular">+{{ row.gain }}</span> · 余
+            <span class="tabular">{{ formatNum(row.left) }}</span>
             · 不可逆
           </p>
           <div class="mt-1.5 flex justify-end gap-2">
@@ -250,9 +246,23 @@ watch(
 function haveOf(rate: FurnaceRate): number {
   return rate.resource === 'herb' ? resources.herbMeltable : (resources[rate.resource] as number)
 }
-const furnaceRows = computed(() => FURNACE_RATES.map(rate => ({ rate, have: haveOf(rate) })))
+/**
+ * 熔炉四行:存量、可熔得、整包料、余料一并算一次。
+ *
+ * 模板原先在每行里调 `furnacePreview(row.rate)` 四次(禁用判据 / 钮正文 / 确认态的
+ * 两份读数各一次),`totalMelt` 又逐行再调一遍 —— 同一个 floor 除法算到二十遍。
+ * 现随存量一起算齐,模板只读字段。
+ */
+const furnaceRows = computed(() =>
+  FURNACE_RATES.map(rate => {
+    const have = haveOf(rate)
+    const gain = Math.floor(have / rate.per)
+    const spend = gain * rate.per
+    return { rate, have, gain, spend, left: have - spend }
+  })
+)
 /** 四类全熔合计:逐类预览相加,与逐类推的是同一个函数 */
-const totalMelt = computed(() => FURNACE_RATES.reduce((sum, rate) => sum + furnacePreview(rate), 0))
+const totalMelt = computed(() => furnaceRows.value.reduce((sum, row) => sum + row.gain, 0))
 /** 全部熔尽的二次确认态 */
 const meltAllArm = ref(false)
 function furnacePreview(rate: FurnaceRate): number {
