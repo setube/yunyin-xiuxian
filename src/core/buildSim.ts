@@ -178,7 +178,8 @@ export function runMatchup(profile: BuildProfile, archetype: EnemyArchetype, n =
   let rounds = 0
   let hpLeft = 0
   for (let i = 0; i < n; i += 1) {
-    const result = resolveCombat(buildSnap(profile), archetype.snap(), rng)
+    // 只取 .win / .rounds / .playerHpPct,不读战报
+    const result = resolveCombat(buildSnap(profile), archetype.snap(), rng, undefined, false)
     if (result.win) wins += 1
     rounds += result.rounds
     hpLeft += result.playerHpPct

@@ -133,7 +133,8 @@ function scoreOne(build: RandomBuild, rng: RandomService, fightsPerArch: number)
   for (const arch of ENEMY_ARCHETYPES) {
     let wins = 0
     for (let f = 0; f < fightsPerArch; f += 1) {
-      if (resolveCombat(build.snap, arch.snap(), rng).win) wins += 1
+      // 只读 .win,不读战报:buildLog 默认构建每回合的字符串与 formatGN,这里纯属浪费
+      if (resolveCombat(build.snap, arch.snap(), rng, undefined, false).win) wins += 1
     }
     cells.push(wins / fightsPerArch)
   }
