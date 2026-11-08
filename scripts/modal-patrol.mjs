@@ -403,6 +403,51 @@ async function probeTwoStep(page, name) {
  * 一扇窗的巡逻:点开 → 量 → 关掉。
  * click 返回 false 表示入口没出现(夹具没铺到),记为「未量」而不是失败。
  */
+/**
+ * 弹窗开着时,背景不该能被滚走。
+ *
+ * 现状是「两条各自独立、但合起来刚好挡住」的结构:
+ *   1. `body { overflow: hidden }` —— 文档层永不可滚(为 iOS 双击回顶而写);
+ *   2. 遮罩是 `fixed inset-0` 且 Teleport 到 body,不是 main 的后代 ——
+ *      touchmove 的默认动作会滚「最近的可滚动祖先」,这条链上找不到 main。
+ *
+ * 两条都不是为「滚动锁定」写的,任意一条被改掉,背景就能滚进弹窗底下,
+ * 而不会有任何报错。故这里实测一次:开窗时把 main.scrollTop 推走再读回。
+ *
+ * 只量坐标不量样式 —— `main` 的 overflowY 本来就是 auto(它要给正常页面滚动用),
+ * 拿样式判会把现在的正确行为判成缺陷。
+ */
+async function checkBackdropLocked(page, name) {
+  const canScroll = await page.evaluate(() => {
+    const m = document.querySelector('main')
+    return !!m && m.scrollHeight > m.clientHeight + 1
+  })
+  if (!canScroll) return
+  const before = await page.evaluate(() => document.querySelector('main').scrollTop)
+  /*
+   * 必须用真实触摸事件,不能用 `main.scrollTop = N`。
+   * 程序直接赋值永远生效(那条路径不过浏览器的默认动作),拿它判会稳定误报。
+   * 挡得住的是「手指滑动」:touchmove 的默认动作要找最近的可滚动祖先,
+   * 而遮罩是 fixed、Teleport 到 body,不在这条链上。
+   */
+  const client = await page.context().newCDPSession(page)
+  try {
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 20, y: 380 }] })
+    for (let y = 360; y >= 120; y -= 40) {
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 20, y }] })
+      await page.waitForTimeout(20)
+    }
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  } finally {
+    await client.detach().catch(() => {})
+  }
+  await page.waitForTimeout(300)
+  const after = await page.evaluate(() => document.querySelector('main').scrollTop)
+  if (Math.abs(after - before) > 1) {
+    fail(`[${WIDTH}x${HEIGHT}] ${name}: 弹窗开着时背景仍能被手指滚走(${before} → ${after})`)
+  }
+}
+
 async function patrol(page, name, click) {
   PATROLLED += 1
   const hit = await click()
@@ -412,6 +457,7 @@ async function patrol(page, name, click) {
   }
   await page.waitForTimeout(450)
   const audit = await auditModal(page)
+  await checkBackdropLocked(page, name)
   if (SHOTS) {
     mkdirSync(SHOTS_DIR, { recursive: true })
     await page.locator('.modal-panel').last().screenshot({ path: join(SHOTS_DIR, `${name}.png`) }).catch(() => {})
