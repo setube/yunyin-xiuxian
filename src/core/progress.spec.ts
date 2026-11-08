@@ -230,6 +230,30 @@ describe('成就条件 · 每条都有判定路径', () => {
     expect(direct.length, '没有直接判定的成就,说明结构变了').toBeGreaterThan(0)
   })
 
+  /**
+   * `evalCond` 的 switch 必须覆盖 `AchvCond` 的每一种类型。
+   *
+   * 那是个没有 default 的 switch,而函数声明返回 `boolean` —— 漏一个 case 时实际返回
+   * `undefined`,于是**该类型的成就永远不解锁,且不报错**(undefined 是假值,判据静默为假)。
+   * 类型检查拦不住:给 `AchvCond` 加一条并集分支时,switch 不加 case 照样编译过。
+   *
+   * 上面几条判据查的是数据侧(哪些成就走哪条路),没有一条盯着分发表本身。
+   * 故障注入:往 AchvCond 加一条 `| { type: 'foo' }` 而不加 case,本条红。
+   */
+  it('evalCond 的分支与 AchvCond 的类型定义同步', () => {
+    const engine = readFileSync(resolve(__dirname, 'progress.ts'), 'utf-8')
+    const types = readFileSync(resolve(__dirname, '../types/index.ts'), 'utf-8')
+    const body = /switch \(cond\.type\) \{([\s\S]*?)\n  \}/.exec(engine)?.[1]
+    expect(body, '找不到 evalCond 的 switch,判据会空转').toBeTruthy()
+    const cases = [...new Set([...body!.matchAll(/case '([a-z]+)'/g)].map(m => m[1]!))].sort()
+    const kinds = [
+      ...new Set([...(/export type AchvCond =([\s\S]*?)\n\n/.exec(types)?.[1] ?? '').matchAll(/type: '([a-z]+)'/g)].map(m => m[1]!))
+    ].sort()
+    expect(cases.length, '没解析到 case,判据失去意义').toBeGreaterThan(2)
+    expect(kinds.length, '没解析到类型,判据失去意义').toBeGreaterThan(2)
+    expect(cases, '有成就类型没有对应分支(该类型成就永不解锁)').toEqual(kinds)
+  })
+
   it('三类路径合起来覆盖全部成就,没有无主条目', () => {
     const kinds = new Set(ACHIEVEMENTS.map(a => a.cond.type))
     for (const k of kinds) {
