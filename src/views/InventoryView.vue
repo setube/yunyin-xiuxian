@@ -264,7 +264,7 @@
             type="number"
             :min="1"
             :max="currentPill?.count ?? 1"
-            class="w-16 shrink-0 rounded border border-ink/15 bg-paper/70 px-1 py-0.5 text-[11px] tabular"
+            class="h-7 w-16 shrink-0 rounded border border-ink/15 bg-paper/70 px-1 text-[11px] tabular"
             aria-label="服用数量"
           />
           <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint tabular">枚 · 存 {{ currentPill?.count ?? 0 }}</span>
