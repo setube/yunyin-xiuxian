@@ -122,12 +122,13 @@
         </p>
       </div>
     </template>
+    <p v-else-if="generating" class="empty-note text-center text-[11px] text-ink-faint">凝界中</p>
     <p v-else class="empty-note text-center text-[11px] text-ink-faint">此世未成</p>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -139,11 +140,40 @@
   const adventure = useAdventureStore()
   const router = useRouter()
 
-  /** 本世之界;首次进入本页时凝成 */
+  /**
+   * 本世之界。生成**不在这里做**。
+   *
+   * 凝一界要试 3~9 个种子,每个候选跑 6 构筑 × 8 次 × 5 段的战斗审计,
+   * 实测 112~468ms —— 而这只是首页与历练页之外的一个页面的首次进入。
+   * 原先放在这个 computed 里同步跑,进页时主线程直接卡这么久(实测 task 129ms)。
+   *
+   * 现改为:挂载后单独一拍去凝,期间页面先渲染「凝界中」;
+   * 凝好之后写进 store,`computed` 依赖它自然重算。
+   */
+  const generating = ref(false)
   const view = computed(() => {
-    const w = adventure.mortalWorld ?? ensureMortalWorld()
+    const w = adventure.mortalWorld
     if (!w) return null
     return worldView(w, id => enemyDef(id)?.name ?? id)
+  })
+
+  /**
+   * 挂载后再凝界:让它离开首帧的同步路径。
+   *
+   * `nextTick` 之后跑,此时本页的骨架已经画出来了 —— 玩家看到的是「凝界中」而不是白屏。
+   * 凝界本身仍是同步的一段计算(它是纯函数链,没有可 await 的 IO),
+   * 但至少不再压在建页那一帧上。
+   */
+  onMounted(async () => {
+    if (adventure.mortalWorld) return
+    generating.value = true
+    // 先让「凝界中」真的画出来:等一帧再开始那段同步计算
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    try {
+      ensureMortalWorld()
+    } finally {
+      generating.value = false
+    }
   })
 
   /**
