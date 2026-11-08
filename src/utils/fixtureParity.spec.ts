@@ -494,11 +494,42 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
     return keys
   }
 
+  /**
+   * 解析器的边界自证:这几种写法在 QA 脚本里都真实出现过
+   * (layout-check 有 39 处 `=> ({`、305 处反引号)。
+   *
+   * 前两轮审查各抓出一处解析漏网,与其等第三轮再抓,不如把这些形态直接钉住 ——
+   * 它们一旦解析错,就会「静默少报」,而少报正是这类判据最危险的失败模式。
+   */
+  it('解析器在刁钻写法上不漏键', () => {
+    /** 拿一段「花括号内部」的文本,吐出它第一层的键 */
+    const keysOf = (inner: string): string[] => {
+      const code = stripNonCode(inner)
+      return topKeys(inner, code)
+    }
+    const cases: Array<[string, string, string[]]> = [
+      ['普通', ' a: 1, b: 2 ', ['a', 'b']],
+      ['箭头函数值', ' a: () => ({ b: 1 }), c: 2 ', ['a', 'c']],
+      ['三目两支都是对象', ' a: x ? { b: 1 } : { c: 2 }, d: 3 ', ['a', 'd']],
+      ['数组里是对象', ' a: [{ b: 1 }], c: 2 ', ['a', 'c']],
+      ['带引号的键', ' "a": 1, b: 2 ', ['a', 'b']],
+      ['单引号的键', " 'a': 1, b: 2 ", ['a', 'b']],
+      ['注释里含花括号', ' a: 1, /* x { */ b: 2 ', ['a', 'b']],
+      ['字符串里含花括号', " a: 'x { y', b: 2 ", ['a', 'b']],
+      ['模板字符串含花括号', ' a: `x { y }`, b: 2 ', ['a', 'b']],
+      ['逗号后跟注释再跟键', ' a: 1, // 说明\n b: 2 ', ['a', 'b']]
+    ]
+    for (const [name, inner, want] of cases) {
+      expect(keysOf(inner), `「${name}」解析结果不对`).toEqual(want)
+    }
+  })
+
   const SCRIPTS = [
     'scripts/layout-check.mjs',
     'scripts/detail-geometry.mjs',
     'scripts/edge-states.mjs',
     'scripts/aria-check.mjs',
+    'scripts/modal-patrol.mjs',
     'scripts/lib/saveFixture.mjs'
   ]
 
