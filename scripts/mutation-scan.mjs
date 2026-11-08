@@ -244,25 +244,10 @@ const EQUIVALENT = [
   },
   {
     file: 'src/core/linggenAffinity.ts',
-    text: 'if (!element) return 1',
+    text: 'if (!element) return',
     why:
       '下一行 `if (!elements.includes(element)) return 1` 在 element 为 undefined 时同样成立 ——' +
       'includes(undefined) 恒 false(灵根元素只会是 ElementId)。两条守卫结果相同。'
-  },
-  {
-    file: 'src/core/mentorService.ts',
-    text: 'if (!mentorId) return null',
-    why:
-      '紧跟其后的 mentorDef(mentorId) 对 null 返回 undefined,`if (!def) return null` 会兜住,' +
-      '结果同为 null。实测把这条删掉,mentorVerdict(null) 仍返回 null。'
-  },
-  {
-    file: 'src/core/eventEngine.ts',
-    text: 'if (pool.length === 0) return null',
-    why:
-      '两处(pickEventFor 的 regionEventPoolFor / randomEventPill 的 PILLS 过滤):' +
-      '空池时 rng.weighted([]) 返回 undefined,调用方一律用 `if (ev)` / `if (!id)` 判真值,' +
-      '与显式 return null 等价。'
   }
 ]
 
