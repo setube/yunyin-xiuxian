@@ -71,7 +71,21 @@ export function lateSlices() {
         growthMult: 1.4,
       },
     },
-    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 900, page: 300, dust: 500 },
+    /*
+     * herb 必须写成 herbByGrade 按品阶分账 —— store 里的 herb 是 computed(五档汇总),
+     * 不是可写字段。原先写成 `herb: 900` 会被 Vue 直接忽略,于是所有 QA 脚本里灵草都是 0:
+     * 炼丹页的「神品灵草 ×N」、背包材料页的灵草格全读 herbOf(grade),拿到的始终是空账。
+     * ore/page/dust 在 smallRefs 里,原名就对。
+     */
+    resources: {
+      spiritStone: gn(9, 12),
+      qi: 5000,
+      wudao: 800,
+      herbByGrade: { 1: 200, 2: 200, 3: 200, 4: 200, 5: 300 },
+      ore: 900,
+      page: 300,
+      dust: 500
+    },
     /** 两件「背水」词条凑成一路流派;缺了它流派页的成路界面(五维评级 / 组合技 / 成路来源)不渲染 */
     inventory: {
       items: [
