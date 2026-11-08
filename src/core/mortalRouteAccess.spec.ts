@@ -27,6 +27,21 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+describe('凡界路线 · 尚未凝出本世', () => {
+  it('mortalWorld 为 null 时问可达性:答否,不抛错', () => {
+    /*
+     * `if (!w) return false` 是真守卫:去掉后 `w.chain` 读 null 上的属性直接抛 TypeError。
+     * 这时候界面确实可能问 —— mortalWorld 由 reroll 时才凝,而路线页/按钮在凝出之前就渲染了。
+     */
+    const adventure = useAdventureStore()
+    adventure.mortalWorld = null
+    expect(() => canEnterNode('any_node')).not.toThrow()
+    expect(canEnterNode('any_node')).toBe(false)
+    expect(() => canEnterRegion('any_region')).not.toThrow()
+    expect(canEnterRegion('any_region')).toBe(false)
+  })
+})
+
 /** 从头走完整条路线,返回每一步的可达性读数 */
 function walkRoute(): { step: number; name: string; couldEnter: boolean }[] {
   const adventure = useAdventureStore()

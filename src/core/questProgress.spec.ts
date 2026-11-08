@@ -83,3 +83,25 @@ describe('主线进度读数', () => {
     expect(checked, '一条主线都没扫到,断言形同虚设').toBeGreaterThan(25)
   })
 })
+
+describe('主线进度读数 · 坏档计数', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('计数是负数(坏档):进度比例仍夹在 0~1,不呈现负进度', () => {
+    /*
+     * `Math.max(0, cur / cond.value)` 不是摆设:quests.counter 读的是存档里的计数字段,
+     * 旧档或手改档可能给出负数。去掉后 ratio 变负,进度条会往外画。
+     */
+    /*
+     * 用直接赋值而不是 inc(-5):inc 自带 `n <= 0 return`,负数进不去 ——
+     * 而坏档是绕过 inc 直接写进 counters 的,那才是这条守卫要挡的输入。
+     */
+    const quests = useQuestsStore()
+    const cond = { type: 'counter', key: 'kills', value: 10 } as const
+    quests.counters = { ...quests.counters, kills: -5 }
+    const p = questProgressOf(cond)!
+    expect(p.ratio, '负计数不该给出负比例').toBe(0)
+    expect(p.ratio).toBeGreaterThanOrEqual(0)
+    expect(p.ratio).toBeLessThanOrEqual(1)
+  })
+})
