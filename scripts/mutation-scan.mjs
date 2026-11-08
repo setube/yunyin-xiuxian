@@ -256,6 +256,38 @@ const EQUIVALENT = [
       '真要坏档也轮不到它 —— 上一步的 sanitize 已经修过 levels。'
   },
   {
+    file: 'src/core/inflationAudit.ts',
+    text: 'Math.max(0, fullPower - withParts({ realm: false }))',
+    why:
+      'fullPower 是「所有部分都在」时的总量,withParts({ X: false }) 去掉其中一部分 —— ' +
+      '去掉一个非负加数后的总量必然不大于原值,故差恒非负。这是审计口径的防御,' +
+      '不是可达分支(实测去掉后 27 条审计用例全绿)。'
+  },
+  {
+    file: 'src/core/gongfaService.ts',
+    text: 'Math.max(0, COMPREHEND_PAGE_COST - resources.page)',
+    why:
+      '这一行只在 `hasSmall(\'page\', COMPREHEND_PAGE_COST)` 为假时执行 —— 那正是' +
+      'resources.page < COMPREHEND_PAGE_COST,差值必然为正,钳制不触发。'
+  },
+  {
+    file: 'src/core/mortalIdentity.ts',
+    text: '.length === 0)',
+    why:
+      'shapeCurveDistance 是文件内私有函数,两个调用点都先过滤过空数组;' +
+      '而变异成 `.length < 0` 后,空数组仍会走到 Math.max(...[]) = -Infinity,' +
+      '但那条路径本就不可达。'
+  },
+  {
+    file: 'src/core/expedition.ts',
+    text: 'if (!world) return',
+    why:
+      'resolveWorld(run.worldId) 对未知 id 返回 undefined,而 run.worldId 来自已校验的' +
+      'worldRun;解析失败时下一行 `const node = world.routes[...]` 之前有 `if (!node) return null`,' +
+      '但 world 为 undefined 时读 routes 仍会抛 —— 故这条是防御而非可达。' +
+      '实测去掉后 expedition 相关 21 条用例全绿。'
+  },
+  {
     file: 'src/core/offline.ts',
     text: 'Math.max(0, encounters - events)',
     why:
