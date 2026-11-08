@@ -89,6 +89,35 @@ describe('真仙终局服务', () => {
     expect(useUiStore().toasts.at(-1)?.text).not.toContain(`尚差 ${rate.per}`)
   })
 
+  /**
+   * 材料差额钳在 0:够一炉时不给出负数。
+   *
+   * `furnaceMaterialShortfall` 是 `Math.max(0, rate.per - have)`,而它的消费点是
+   * `furnaceConvert` 的 `if (daoSource <= 0) toast(\`${name}尚差 ${差额}\`)`。
+   * 上面那条用例只测了「材料不足」,那时差额正好是正的;材料充足时若不钳,
+   * 差额会是负数,直接进 toast 变成「灵草尚差 -90」。变异扫描点名这处钳没有判据盯着。
+   */
+  it('材料够一炉时差额为 0,不给出负数', () => {
+    ascend()
+    const resources = useResourcesStore()
+    for (const rate of FURNACE_RATES) {
+      const setHave = (n: number): void => {
+        if (rate.resource === 'herb') {
+          // 只有仙品+(≥3)可入炉,故把量放在 3 品
+          resources.herbByGrade = { 1: 0, 2: 0, 3: n, 4: 0, 5: 0 }
+        } else {
+          resources[rate.resource] = n
+        }
+      }
+      setHave(rate.per * 10)
+      expect(furnaceMaterialShortfall(rate), `${rate.name} 远多于所需时差额该是 0,不是负数`).toBe(0)
+      setHave(rate.per)
+      expect(furnaceMaterialShortfall(rate), `${rate.name} 刚好够一炉时差额该是 0`).toBe(0)
+      setHave(rate.per - 1)
+      expect(furnaceMaterialShortfall(rate), `${rate.name} 差一块时差额该是 1`).toBe(1)
+    }
+  })
+
   it('熔炉的草唯仙品起可熔:凡/灵不入炉、按品实扣,不白拿道源(over-credit 修)', () => {
     ascend()
     const resources = useResourcesStore()
