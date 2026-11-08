@@ -87,6 +87,25 @@ describe('searchBuildsAsync · 分块异步与同源', () => {
   })
 
   /**
+   * 让出间隙要够密:一次让出之间的那点活,是玩家的**卡顿时长**。
+   *
+   * 每评一套要打 fightsPerArch 场战斗。原先那一处调用点传 24 套让出一次,
+   * 实测单块 236ms —— 玩家点「跑一遍检索」会看到整页僵住(浏览器长任务读数 343ms)。
+   * 现按 8 套让出:单块约 79ms,总耗时不变。
+   *
+   * 判据不测真实毫秒(机器差异会让它变成 flaky),测的是**让出的次数**:
+   * 同样的工作量,让出次数不该少于 n/yieldEvery —— 那是「间隙够密」的直接读数。
+   * 故障注入:把 yieldEvery 调回 24,本条红。
+   */
+  it('默认让出间隙够密(每 8 套一次),不把几百毫秒的活攒成一块', async () => {
+    const n = 200
+    let yields = 0
+    await searchBuildsAsync({ n, fightsPerArch: 1, onProgress: () => { yields += 1 } })
+    // 200 套 / 每 8 套一次 = 25 次进度回调(末批直接报满,差一次不多)
+    expect(yields, `只让出了 ${yields} 次 —— 间隙太稀,点检索会卡住整页`).toBeGreaterThanOrEqual(24)
+  })
+
+  /**
    * 离页取消须停下模拟,不只是不回写。
    * 故障注入:删掉 shouldStop 检查,本用例红(拿到完整报告、进度到 100)。
    */
