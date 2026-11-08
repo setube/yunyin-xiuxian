@@ -68,18 +68,18 @@
           这段原只写「宿慧 +40 / 共计 400 / 第四境地 / 尚差 120」——
           数都摆着,却从不说什么能力是这些宿慧换来的(见 ui/samsaraPowers)。
         -->
-        <div class="mt-2 border-t border-ink/10 pt-2">
+        <div v-if="powerPanel" class="mt-2 border-t border-ink/10 pt-2">
           <p class="flex items-baseline justify-between text-[10px]">
             <span class="text-ink-faint">宿慧所得</span>
-            <span class="tabular text-ink-faint">{{ powerTally(stageIndexOf(view.stageId)).owned }} / {{ powerTally(stageIndexOf(view.stageId)).total }}</span>
+            <span class="tabular text-ink-faint">{{ powerPanel.tally.owned }} / {{ powerPanel.tally.total }}</span>
           </p>
           <!-- 最快将至的那项单独点名:下面虚框列三行,哪一项最先到手仍要自己比阶数 -->
-          <p v-if="nextPower(stageIndexOf(view.stageId))" class="mt-0.5 text-[10px] text-ink-faint">
-            再转一世可得 <span class="text-ink-soft">{{ nextPower(stageIndexOf(view.stageId))!.name }}</span>
+          <p v-if="powerPanel.next" class="mt-0.5 text-[10px] text-ink-faint">
+            再转一世可得 <span class="text-ink-soft">{{ powerPanel.next.name }}</span>
           </p>
           <ul class="mt-1 space-y-0.5">
             <li
-              v-for="pw in samaraPowers(stageIndexOf(view.stageId)).owned"
+              v-for="pw in powerPanel.owned"
               :key="pw.id"
               class="flex items-baseline gap-1.5 text-[11px] leading-relaxed"
             >
@@ -87,7 +87,7 @@
               <span class="min-w-0 text-ink-soft">{{ pw.name }}</span>
             </li>
             <li
-              v-for="pw in upcomingPowers(stageIndexOf(view.stageId), 3)"
+              v-for="pw in powerPanel.upcoming"
               :key="pw.id"
               class="flex items-baseline gap-1.5 text-[11px] leading-relaxed text-ink-faint"
             >
@@ -333,10 +333,24 @@
 
   /** 来世灵根的倍率刻度:与建号页同一份(见 ui/growthGauge) */
   const nextGrowth = computed(() => growthGauge(view.value?.nextLinggen.growthMult ?? 1))
-  /** 阶序:view 只带 stageId(如 st_first),按 data 的阶序表反查 */
-  function stageIndexOf(stageId: string): number {
-    return SAMSARA_STAGES.find(s => s.id === stageId)?.index ?? 0
-  }
+  /**
+   * 宿慧能力面板:阶序反查一次,四样读数(已得 / 总数 / 最快将至 / 将至三行)各算一次。
+   *
+   * 原先模板里 `stageIndexOf(view.stageId)` 一个渲染周期调六次(每次都在 SAMSARA_STAGES
+   * 里 find 一遍),`powerTally` / `nextPower` / `samaraPowers` / `upcomingPowers` 各自再
+   * 调一遍 —— 每个都从同一份静态表重新筛一次。现一次算齐,模板只读字段。
+   */
+  const powerPanel = computed(() => {
+    const v = view.value
+    if (!v) return null
+    const idx = SAMSARA_STAGES.find(s => s.id === v.stageId)?.index ?? 0
+    return {
+      tally: powerTally(idx),
+      next: nextPower(idx),
+      owned: samaraPowers(idx).owned,
+      upcoming: upcomingPowers(idx, 3)
+    }
+  })
 
   /**
    * 天赋行:每枚的品阶、字色、阶点、词条文本各算一次。
