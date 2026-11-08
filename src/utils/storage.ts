@@ -140,18 +140,48 @@ export function dropPendingWrites(): void {
     flushTimer = undefined
   }
   pending.clear()
+  /*
+   * 一次性明文缓存与待落盘队列是同一类东西:都是「磁盘之外还留着的一份明文」。
+   * 清档 / 导入前不一起丢,新存档的水合就可能读到上一个存档解出来的明文 ——
+   * 那正是导入确认窗背后最不该发生的事。
+   */
+  preloadedPlain.clear()
 }
+
+/**
+ * 启动期一次性明文缓存(键 → 已解密的 JSON 文本)。
+ *
+ * `preflightScan` 为了判断坏档必须把每一片都解密一遍;而紧接着 Pinia 水合要用同一份东西,
+ * 会把每一片**再解密一遍**。满包档(108 件装备)单片解密约 3ms,17 片就是五十多毫秒,
+ * 且两份成本叠在同一个启动长任务里。
+ *
+ * 扫描时顺手把明文放进来,水合取过即删:
+ *  · 只影响「扫描之后、水合之前」这一小段,之后一切照旧走磁盘与待落盘队列;
+ *  · 用 pending 的同一把判据 —— 队列里已有更新态时以队列为准;
+ *  · 读过一次就从缓存里删掉,取不到就老老实实重解密。
+ */
+const preloadedPlain = new Map<string, string>()
 
 /** 节流存储层:变更先入队,到点批量加密落盘;getItem 须先读队列,否则刚写又读拿到磁盘旧值 */
 const THROTTLED_STORAGE = {
   getItem: (key: string): string | null => {
     const queued = pending.get(key)
     if (queued !== undefined) return queued
+    const preloaded = preloadedPlain.get(key)
+    if (preloaded !== undefined) {
+      // 取过即删:水合只读一次,留着等于多一份可能过期的明文
+      preloadedPlain.delete(key)
+      return preloaded
+    }
     try {
       return localStorage.getItem(key)
     } catch {
       return null
     }
+  },
+  /** 扫描期专用:记下已解密的明文,供水合那一次读取复用 */
+  preload(key: string, plain: string): void {
+    preloadedPlain.set(key, plain)
   },
   setItem: (key: string, value: string): void => {
     pending.set(key, value)
@@ -297,15 +327,24 @@ export function persistConfig(storeId: string): {
   return { key: storageKey(storeId), serializer: SAVE_SERIALIZER, storage: THROTTLED_STORAGE }
 }
 
-/** 启动前扫描:损坏的存档移到备份键,避免白屏;返回被隔离的 store id 列表 */
+/**
+ * 启动前扫描:损坏的存档移到备份键,避免白屏;返回被隔离的 store id 列表。
+ *
+ * 解出来的明文顺手交给一次性缓存:紧接着的 Pinia 水合要用同一份东西,
+ * 不留下就等于把每一片完整解密两遍(满包档单片约 3ms)。
+ * 只给**解析得通**的分片留明文 —— 坏档不进缓存,那条路径原样走备份与隔离。
+ */
 export function preflightScan(): string[] {
   const corrupted: string[] = []
+  preloadedPlain.clear()
   for (const id of PERSISTED_STORES) {
     const key = storageKey(id)
     try {
       const raw = localStorage.getItem(key)
       if (raw === null) continue
-      JSON.parse(readSaveText(raw))
+      const plain = readSaveText(raw)
+      JSON.parse(plain)
+      THROTTLED_STORAGE.preload(key, plain)
     } catch {
       corrupted.push(id)
       try {
