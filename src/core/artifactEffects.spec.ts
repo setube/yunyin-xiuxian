@@ -601,3 +601,32 @@ describe('法宝效果 · 削弱取强不取新,与佩带顺序无关', () => {
     ).toBeCloseTo(onlyStrong, 6)
   })
 })
+
+/**
+ * `effectValuesAt` 的分发表必须覆盖 `ArtifactEffect` 的每一种类型。
+ *
+ * 那是个 8 分支、没有 default 的 switch;漏一个 case 时返回 undefined,
+ * 下游 `artifactValue` 会把它当数值用 —— 法宝神通静默失效或算出 NaN。
+ * 类型检查拦不住:给 `ArtifactEffect` 加一条并集分支时,switch 不加 case 照样编译过。
+ *
+ * 该函数没有导出,外部只能经 `artifactValue` 走完整法宝数值流程;这里钉「种类对得上」。
+ * 故障注入:往 ArtifactEffect 加一条 `| { type: 'foo' }` 而不加 case,本条红。
+ */
+describe('法宝神通 · 分发表与类型同步', () => {
+  const SOURCE = readFileSync(resolve(__dirname, '../data/artifacts.ts'), 'utf-8')
+  const TYPES = readFileSync(resolve(__dirname, '../types/index.ts'), 'utf-8')
+
+  it('switch(eff.type) 的 case 集合与 ArtifactEffect 类型集合一致', () => {
+    const body = /switch \(eff\.type\) \{([\s\S]*?)\n  \}/.exec(SOURCE)?.[1]
+    expect(body, '找不到 effectValuesAt 的 switch,判据会空转').toBeTruthy()
+    const cases = [...new Set([...body!.matchAll(/case '([a-z][a-z0-9]*)'/g)].map(m => m[1]!))].sort()
+    const kinds = [
+      ...new Set(
+        [...(/export type ArtifactEffect =([\s\S]*?)\n\n/.exec(TYPES)?.[1] ?? '').matchAll(/type: '([a-z][a-z0-9]*)'/g)].map(m => m[1]!)
+      )
+    ].sort()
+    expect(cases.length, '没解析到 case').toBeGreaterThan(4)
+    expect(kinds.length, '没解析到类型').toBeGreaterThan(4)
+    expect(cases, '有神通类型没有对应分支(该效果会静默消失)').toEqual(kinds)
+  })
+})
