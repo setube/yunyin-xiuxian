@@ -1,5 +1,7 @@
 /** 事件结算灵石守恒:声明的灵石门槛(cond)真扣;付不起的支出被拒,不清零余额 */
 import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import type { EventDef, EventEffect } from '@/types'
 import { add, gn, gte, mulN, sub, toNum } from '@/utils/gnum'
@@ -348,5 +350,42 @@ describe('得宝仪典 · 际遇赠顶档之物', () => {
     expect(ui.treasure, '顶档功法该开仪典').not.toBeNull()
     expect(ui.treasure!.kindName).toBe('功法')
     expect(ui.treasure!.name).toBe(divine.name)
+  })
+})
+
+/**
+ * `applyEffect` 的分发表必须覆盖 `EventEffect` 的每一种类型。
+ *
+ * 那是个没有 `default` 的 `switch` —— 漏一个 case 不报错、不抛异常,只是静默返回 undefined,
+ * 效果凭空消失。类型检查也拦不住:`EventEffect` 加一条并集分支时,`switch` 不加 case 照样编译过
+ * (`applyEffect` 的返回类型是 `string | null`,不给 case 也算合法路径)。
+ *
+ * 之所以用源码扫描而不是行为:这个函数没有导出,外部只能经 `autoResolveEvent` 走完整事件流程,
+ * 构造覆盖 11 种效果的用例代价远大于收益。这里钉的是「种类对得上」这一件事。
+ *
+ * 故障注入:往 types 里加一条 `| { type: 'foo' }` 而不加 case,本条红。
+ */
+describe('效果分发表 · 种类与类型定义同步', () => {
+  const ENGINE = readFileSync(resolve(__dirname, 'eventEngine.ts'), 'utf-8')
+  const TYPES = readFileSync(resolve(__dirname, '../types/index.ts'), 'utf-8')
+
+  const switchCases = (): string[] => {
+    const body = /switch \(effect\.type\) \{([\s\S]*?)\n  \}/.exec(ENGINE)?.[1]
+    expect(body, '找不到 applyEffect 的 switch,判据会空转').toBeTruthy()
+    return [...body!.matchAll(/case '([a-z]+)'/g)].map(m => m[1]!)
+  }
+
+  const typeKinds = (): string[] => {
+    const body = /export type EventEffect =([\s\S]*?)\n\n/.exec(TYPES)?.[1]
+    expect(body, '找不到 EventEffect 类型定义,判据会空转').toBeTruthy()
+    return [...body!.matchAll(/type: '([a-z]+)'/g)].map(m => m[1]!)
+  }
+
+  it('switch 的 case 集合与 EventEffect 的类型集合完全一致', () => {
+    const cases = [...new Set(switchCases())].sort()
+    const kinds = [...new Set(typeKinds())].sort()
+    expect(cases.length, '没解析到任何 case,判据失去意义').toBeGreaterThan(5)
+    expect(kinds.length, '没解析到任何类型,判据失去意义').toBeGreaterThan(5)
+    expect(cases, '有类型没有对应的 case(效果会静默消失),或有 case 已经不在类型里').toEqual(kinds)
   })
 })
