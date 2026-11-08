@@ -5,6 +5,8 @@
  * 3. 未交手看不见敌人招式与残血变阵。
  */
 import { describe, it, expect, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import { ENEMIES, enemyDef } from '@/data/enemies'
 import { MATERIALS, LORE_MAX } from '@/data/materials'
@@ -394,5 +396,30 @@ describe('敌人认知的逐层揭示(describeEnemy)', () => {
     expect(enemyLoreProgress(2, 1, false, 3)).toMatchObject({ nextName: '' })
     // 未识照见不动
     expect(enemyLoreProgress(0, 0, false, 0)).toMatchObject({ nextName: '眼熟' })
+  })
+})
+
+/**
+ * `metricProgress` 的分发表必须覆盖 `LifeThemeMetric` 的每一种 kind。
+ *
+ * 那是个 9 分支、没有 default 的 switch,函数返回 `ThemeProgress` —— 漏一个 case 时
+ * 实际返回 undefined,`{ ...worst }` 展开会当场抛错,或让进度静默算错。
+ * 类型检查拦不住:给 LifeThemeMetric 加一条并集分支时,switch 不加 case 照样编译过。
+ *
+ * 判据钉双向:少一个 case(类型新增)或多一个 case(类型已删)都红。
+ * 故障注入:往 LifeThemeMetric 加一条 `| { kind: 'foo' }` 而不加 case,本条红。
+ */
+describe('命题判据 · 分发表与类型同步', () => {
+  const SERVICE = readFileSync(resolve(__dirname, 'samsaraService.ts'), 'utf-8')
+  const THEMES = readFileSync(resolve(__dirname, '../data/lifeThemes.ts'), 'utf-8')
+
+  it('switch(metric.kind) 的 case 集合与 LifeThemeMetric 的 kind 集合一致', () => {
+    const types = THEMES.slice(THEMES.indexOf('export type LifeThemeMetric'), THEMES.indexOf('export interface LifeThemeDef'))
+    const kinds = [...new Set([...types.matchAll(/kind: '([a-zA-Z]+)'/g)].map(m => m[1]!))].sort()
+    const body = SERVICE.slice(SERVICE.indexOf('switch (metric.kind)'), SERVICE.indexOf('function prog('))
+    const cases = [...new Set([...body.matchAll(/case '([a-zA-Z]+)'/g)].map(m => m[1]!))].sort()
+    expect(kinds.length, '没解析到 kind,判据会空转').toBeGreaterThan(5)
+    expect(cases.length, '没解析到 case,判据会空转').toBeGreaterThan(5)
+    expect(cases, '有判据类型没有对应分支(该命题永远算不出进度)').toEqual(kinds)
   })
 })
