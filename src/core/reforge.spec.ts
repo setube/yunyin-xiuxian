@@ -102,6 +102,19 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
     res.addSmall('dust', 100_000)
   }
 
+  it('uid 在行囊里找不到(已分解/旧界面残留)时不洗:不抛错、不扣账', () => {
+    /*
+     * 与上一条不同:上一条的模板块缺失,仍能 findItem 拿到实例;
+     * 这条是**实例本身不在了** —— 详情弹窗开着,装备却被别处分解掉,再来点「重铸」。
+     * 去掉 `if (!inst)` 后 reforgeCost(undefined) 会读 templateId 抛 TypeError。
+     */
+    const res = useResourcesStore()
+    const dustBefore = res.dust
+    expect(() => reforgeEquipment('早已分解的 uid', true)).not.toThrow()
+    expect(reforgeEquipment('早已分解的 uid', true)).toBe(false)
+    expect(res.dust, '找不到实例就不该扣任何账').toBe(dustBefore)
+  })
+
   it('模板缺失(坏档)不洗:没有价、不扣账 —— 抽取池要按部位过滤,不知部位就不洗', () => {
     const broken: EquipmentInstance = { ...base, uid: 'broken', templateId: 'no_such_template' }
     expect(reforgeCost(broken)).toBeNull()

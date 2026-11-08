@@ -8,7 +8,7 @@ import { useLoreStore } from '@/stores/lore'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { upgradeEquipment } from './forge'
-import { noteSmithingUsed } from './loreService'
+import { noteMaterialUsed, noteSmithingUsed } from './loreService'
 import { LORE_MAX } from '@/data/materials'
 import { gn } from '@/utils/gnum'
 
@@ -71,5 +71,23 @@ describe('炼器 · 矿石认知与锻造技艺', () => {
     const before = lore.skillLevel('smithing')
     expect(upgradeEquipment('s1'), '强化应成功(素材给足)').toBe(true)
     expect(lore.skillLevel('smithing')).toBeGreaterThan(before)
+  })
+})
+
+describe('炼器 · 未知材料 id', () => {
+  it('给不存在于材料表的 id 记账:什么也不做,不写 lore、不抛错', () => {
+    /*
+     * `if (!def) return` 是真守卫:去掉后 lore.markSeen(id) 会把一个材料表里没有的 id
+     * 写进 materialLore/materialSeen,后续读它的人拿到 undefined 定义。
+     * 这条路径来自旧档(材料表改过名)或手改存档。
+     */
+    const lore = useLoreStore()
+    const seenBefore = JSON.stringify(lore.materialSeen)
+    const loreBefore = JSON.stringify(lore.materialLore)
+
+    expect(() => noteMaterialUsed('no_such_material', true)).not.toThrow()
+
+    expect(JSON.stringify(lore.materialSeen), '未知 id 不该被记进已见表').toBe(seenBefore)
+    expect(JSON.stringify(lore.materialLore), '未知 id 不该被记进认知表').toBe(loreBefore)
   })
 })

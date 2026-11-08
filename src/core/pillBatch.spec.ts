@@ -241,3 +241,18 @@ describe('批量炼丹 · 开炉前置(方子未到手)', () => {
     expect(craftPillBatch(ID, 1)).toEqual({ rounds: 0, made: 0, failed: 0 })
   })
 })
+
+describe('丹药批量 · 未知丹药 id', () => {
+  it('给丹药表里没有的 id:返回 0,不抛错、不动行囊', () => {
+    /*
+     * 两条守卫各管一段:`count < 1` 管数量,`if (!def) return 0` 管 id。
+     * 去掉后者会让 def.buffId 读 undefined 上的属性抛 TypeError ——
+     * 旧档里改过名的丹、或别处传入的拼错 id 都会走到这里。
+     */
+    const inv = useInventoryStore()
+    const pillsBefore = JSON.stringify(inv.pills)
+    expect(() => usePillBatch('no_such_pill', 5)).not.toThrow()
+    expect(usePillBatch('no_such_pill', 5)).toBe(0)
+    expect(JSON.stringify(inv.pills), '未知丹药不该动行囊').toBe(pillsBefore)
+  })
+})
