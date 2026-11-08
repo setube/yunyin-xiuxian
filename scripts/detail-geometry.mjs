@@ -71,7 +71,7 @@ function slices({ poor = false, major = 14, theme = 'dark' } = {}) {
       reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
     },
-    resources: { spiritStone: poor ? gn(1, 0) : gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 900, page: 300, dust: poor ? 2 : 50000 },
+    resources: { spiritStone: poor ? gn(1, 0) : gn(9, 12), qi: 5000, wudao: 800, herbByGrade: { 1: 900, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 900, page: 300, dust: poor ? 2 : 50000 },
     inventory: {
       items: [{
         uid: 'geo_w', templateId: 'w_zidian', quality: 'heaven', tier: 20, level: 3,
@@ -346,7 +346,7 @@ function soulSlices() {
       reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
     },
-    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 900, page: 300, dust: 500 },
+    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 900 }, ore: 900, page: 300, dust: 500 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     // type 须是 SOUL_TYPES 的真 id,否则 sanitize 整枚丢掉、列表空着量不到
     endgame: {
@@ -458,7 +458,7 @@ function dongfuSlices() {
       reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
     },
-    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herb: 900, ore: 4000, page: 300, dust: 500 },
+    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 800, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 900, 5: 0 }, ore: 4000, page: 300, dust: 500 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: 'sword', daoSource: 100, souls: [], equippedSouls: [] },
     settings: {
@@ -614,7 +614,7 @@ function buildSlices() {
       reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
     },
-    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 8000, herb: 9000, ore: 4000, page: 300, dust: 500 },
+    resources: { spiritStone: gn(9, 12), qi: 5000, wudao: 8000, herbByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 9000 }, ore: 4000, page: 300, dust: 500 },
     inventory: { items: [], equipped: {}, pills: {}, artifacts: [], equippedArtifacts: [] },
     endgame: { daoPath: 'sword', daoSource: 100, souls: [], equippedSouls: [] },
     loadouts: {

@@ -83,11 +83,15 @@ describe('夹具 · 存档格式与产品代码同源', () => {
    */
   it('夹具写的资源字段名与 store 对得上', () => {
     const resourcesSrc = readFileSync(resolve(ROOT, 'src/stores/resources.ts'), 'utf-8')
-    // 夹具里 resources 那一段的顶层键
-    const block = /resources: \{([\s\S]*?)\n {4}\}/.exec(fixture)?.[1] ?? ''
-    expect(block, '夹具里找不到 resources 分片,判据空转').not.toBe('')
-    const keys = [...block.matchAll(/^ {6}(\w+):/gm)].map(m => m[1]!)
-    expect(keys.length, '一个字段都没扫到,判据空转').toBeGreaterThan(3)
+    /*
+     * 读**实际返回值**的键,不解析源码文本。
+     * 上一轮压测夹具的教训:文本正则看不出一层嵌套里写了什么,只认得「形似」;
+     * 实际调用 read 到的键才是真的会被写进存档的东西。
+     */
+    const slices = lateSlices()
+    const resources = (slices as unknown as { resources: Record<string, unknown> }).resources
+    const keys = Object.keys(resources ?? {})
+    expect(keys.length, '夹具的 resources 分片是空的,判据空转').toBeGreaterThan(3)
     // store 的可写字段:ref(...) 的声明 + smallRefs 的四个键
     const writable = new Set([
       ...[...resourcesSrc.matchAll(/const (\w+) = ref[<(]/g)].map(m => m[1]!),
@@ -98,6 +102,68 @@ describe('夹具 · 存档格式与产品代码同源', () => {
     expect(writable.has('spiritStone') && writable.has('herbByGrade'), '可写字段抓取失败').toBe(true)
     const unknown = keys.filter(k => !writable.has(k))
     expect(unknown, `这些字段名 store 里不存在,写进去会被静默忽略:${unknown.join(', ')}`).toEqual([])
+  })
+  /**
+   * 各 QA 脚本里内联的 resources 夹具也要过同一道。
+   *
+   * 上面那条只看 lateSlices() —— 而 layout-check / detail-geometry 里另有二十几处
+   * 自己写的 resources 字面量,一直写着 `herb: 900` 这种不生效的字段:
+   * herb 在 store 里是 computed(由 herbByGrade 求和),写进去被 Vue 当未知键静默忽略,
+   * 于是两脚本的灵草全是 0,炼丹页「灵草 ×N」与背包材料格一直在拿空数据量。
+   */
+  it('各 QA 脚本内联的资源夹具字段名同样有效', () => {
+    const resourcesSrc = readFileSync(resolve(ROOT, 'src/stores/resources.ts'), 'utf-8')
+    const writable = new Set([
+      ...[...resourcesSrc.matchAll(/const (\w+) = ref[<(]/g)].map(m => m[1]!),
+      ...[...resourcesSrc.matchAll(/smallRefs[^=]*= \{([^}]+)\}/g)].flatMap(m =>
+        (m[1] ?? '').split(',').map(x => x.trim().split(':')[0]!.trim())
+      )
+    ])
+    /*
+     * 只看真正的夹具字面量:herb 后跟数字。
+     * `herb: (() => {...})()` 是 DOM 查询结果的变量名,不是夹具字段,不在此列。
+     */
+    const reports: string[] = []
+    let scanned = 0
+    for (const rel of ['scripts/layout-check.mjs', 'scripts/detail-geometry.mjs', 'scripts/edge-states.mjs', 'scripts/lib/saveFixture.mjs']) {
+      const src = readFileSync(resolve(ROOT, rel), 'utf-8')
+      /*
+       * 只取 resources 对象的**第一层**键:块里可能嵌着 herbByGrade: { 1: .., 2: .. }
+       * 与 spiritStone: { m: .., e: .. },那两层里的键不是字段名。
+       * 故按花括号深度走一遍,只收深度为 1 时出现的 `key:`。
+       */
+      for (const m of src.matchAll(/resources:\s*\{([\s\S]*?)\n?\s*\}/g)) {
+        scanned += 1
+        const body = m[1] ?? ''
+        let depth = 0
+        for (let i = 0; i < body.length; i += 1) {
+          const ch = body[i]
+          if (ch === '{') {
+            depth += 1
+            continue
+          }
+          if (ch === '}') {
+            depth -= 1
+            continue
+          }
+          if (depth !== 0) continue
+          // 深度 0 处、位于 { 或 , 之后:读一个标识符 + 冒号
+          const atKeyStart = i === 0 || /[{,]/.test(body.slice(0, i).trimEnd().slice(-1))
+          if (!atKeyStart) continue
+          const km = /^(\w+)\s*:/.exec(body.slice(i))
+          if (!km) continue
+          const key = km[1]!
+          if (key === 'herb') {
+            reports.push(`${rel}: resources.herb 是 computed,写进去不生效 —— 该写 herbByGrade`)
+          } else if (!writable.has(key)) {
+            reports.push(`${rel}: resources.${key} 在 store 里不存在`)
+          }
+          i += km[0].length - 1
+        }
+      }
+    }
+    expect(scanned, '一处 resources 字面量都没扫到,判据空转').toBeGreaterThan(10)
+    expect(reports, `这些字段写进去会被静默忽略:\n${reports.join('\n')}`).toEqual([])
   })
 })
 
