@@ -10,12 +10,13 @@ import type {
   StatMods,
   WorldFoeShape
 } from '@/types'
-import type { RandomService } from '@/utils/random'
+import { mulberry32, RandomService } from '@/utils/random'
 import { gn, mulN } from '@/utils/gnum'
 import { modDepth } from './statsCalc'
 import { resolveCombat } from './combat'
 import { COMBAT_ATK_BASE, COMBAT_DEF_BASE, COMBAT_HP_BASE } from '@/data/constants'
 import { powerScale, tierMajor } from './formulas'
+import { MAX_MAJOR } from '@/data/realms'
 
 export interface ReferenceStats {
   attack: GNum
@@ -34,6 +35,29 @@ export const SIM_REFERENCE: ReferenceStats = {
   attack: gn(100),
   defense: gn(55),
   maxHp: gn(1400)
+}
+
+/**
+ * 终局世界的模拟敌群形状:参照取 SIM_REFERENCE(比的是构筑形状,不走天界锚点),
+ * 判定照实战口径算,否则厚构筑胜率被高估。传 MAX_MAJOR:模拟里没有境界,境界压制恒不触发。
+ *
+ * 放在 gauntlet 而不是 celestialSim:worldGen / metaSim 都要用它,
+ * 而 celestialSim 还牵着 buildSim 与 buildSearch —— 从那里取会把整条模拟链带进首屏。
+ */
+export function worldFoes(world: CelestialWorldDef, snap: CombatantSnap): CombatantSnap[] {
+  const judgement = celestialJudgement(snap.mods, MAX_MAJOR, world.anchorTier)
+  return worldFoeLineup(world, SIM_REFERENCE, judgement)
+}
+
+/** 该世界在给定参照下的通关率(跑 runs 次取频率) */
+export function worldClearRate(world: CelestialWorldDef, snap: CombatantSnap, runs: number, seed: number): number {
+  const rng = new RandomService(mulberry32(seed))
+  const foes = worldFoes(world, snap)
+  let clears = 0
+  for (let i = 0; i < runs; i += 1) {
+    if (runGauntlet(snap, foes, world.rules, world.healBetweenPct, rng, { buildLog: false }).cleared) clears += 1
+  }
+  return clears / runs
 }
 
 /**

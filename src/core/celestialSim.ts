@@ -2,27 +2,11 @@
 import type { CelestialWorldDef, CombatantSnap } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
-import { MAX_MAJOR } from '@/data/realms'
 import { BUILD_PROFILES, buildSnap, type BuildProfile } from './buildSim'
 import { randomBuild } from './buildSearch'
-import { celestialJudgement, runGauntlet, worldFoeLineup, SIM_REFERENCE } from './gauntlet'
-
-export function worldFoes(world: CelestialWorldDef, snap: CombatantSnap): CombatantSnap[] {
-  // 参照取 SIM_REFERENCE 不走天界锚点(比的是构筑形状);判定照实战口径算,否则厚构筑胜率被高估。
-  // 传 MAX_MAJOR:模拟里没有境界,境界压制恒不触发。
-  const judgement = celestialJudgement(snap.mods, MAX_MAJOR, world.anchorTier)
-  return worldFoeLineup(world, SIM_REFERENCE, judgement)
-}
-
-export function worldClearRate(world: CelestialWorldDef, snap: CombatantSnap, runs: number, seed: number): number {
-  const rng = new RandomService(mulberry32(seed))
-  const foes = worldFoes(world, snap)
-  let clears = 0
-  for (let i = 0; i < runs; i += 1) {
-    if (runGauntlet(snap, foes, world.rules, world.healBetweenPct, rng, { buildLog: false }).cleared) clears += 1
-  }
-  return clears / runs
-}
+import { worldClearRate, worldFoes } from './gauntlet'
+// 这两个已搬进 gauntlet(首屏链需要),此处 re-export 保留既有调用点
+export { worldClearRate, worldFoes }
 
 export interface WorldAuditRow {
   world: CelestialWorldDef

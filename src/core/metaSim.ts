@@ -3,7 +3,7 @@ import type { CombatantSnap, StatMods } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
-import { worldFoes } from './celestialSim'
+import { worldFoes } from './gauntlet'
 import { runGauntlet } from './gauntlet'
 
 export interface MetaRound {
