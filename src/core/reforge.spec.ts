@@ -108,11 +108,19 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
      * 这条是**实例本身不在了** —— 详情弹窗开着,装备却被别处分解掉,再来点「重铸」。
      * 去掉 `if (!inst)` 后 reforgeCost(undefined) 会读 templateId 抛 TypeError。
      */
+    /*
+     * 资源必须先给足:否则即便守卫被删、代码真去扣费,spendStone/spendDust 也会因余额不足
+     * 而拒付 —— 测试照样绿。给足之后「余额不变」才是有效断言。
+     */
     const res = useResourcesStore()
+    res.spiritStone = gn(1, 9)
+    res.dust = 100000
+    const stoneBefore = res.spiritStone
     const dustBefore = res.dust
     expect(() => reforgeEquipment('早已分解的 uid', true)).not.toThrow()
     expect(reforgeEquipment('早已分解的 uid', true)).toBe(false)
-    expect(res.dust, '找不到实例就不该扣任何账').toBe(dustBefore)
+    expect(res.spiritStone, '找不到实例就不该扣灵石').toBe(stoneBefore)
+    expect(res.dust, '找不到实例就不该扣尘埃').toBe(dustBefore)
   })
 
   it('模板缺失(坏档)不洗:没有价、不扣账 —— 抽取池要按部位过滤,不知部位就不洗', () => {
