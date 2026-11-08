@@ -25,7 +25,8 @@ export function questProgressOf(cond: AchvCond): QuestProgressView | null {
       return {
         text: done
           ? `已成(${cond.value}/${cond.value})`
-          : `已 ${Math.min(cur, cond.value)}/${cond.value}`,
+          // 计数可能是坏档写进来的负数:钳到 0,别让界面读出「已 -5/10」
+          : `已 ${Math.min(Math.max(0, cur), cond.value)}/${cond.value}`,
         done,
         ratio: cond.value > 0 ? Math.min(1, Math.max(0, cur / cond.value)) : 1
       }

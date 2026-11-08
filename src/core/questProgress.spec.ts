@@ -100,6 +100,7 @@ describe('主线进度读数 · 坏档计数', () => {
     const cond = { type: 'counter', key: 'kills', value: 10 } as const
     quests.counters = { ...quests.counters, kills: -5 }
     const p = questProgressOf(cond)!
+    expect(p.text, '文案也不该读出「已 -5/10」').toBe('已 0/10')
     expect(p.ratio, '负计数不该给出负比例').toBe(0)
     expect(p.ratio).toBeGreaterThanOrEqual(0)
     expect(p.ratio).toBeLessThanOrEqual(1)
