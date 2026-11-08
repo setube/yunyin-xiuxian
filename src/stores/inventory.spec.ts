@@ -30,6 +30,57 @@ function mk(uid: string, affixes: Array<{ id: string; roll: number }>, templateI
  * 两条路径就可能算出不同结果(比如某一处漏了法宝、或漏了某件),读数会分叉。
  * 这条不能靠数调用(ESM 的模块内绑定改不动),只能靠结果一致性守着。
  */
+/**
+ * 行囊一次分区。
+ *
+ * `equippedItems` 与 `bagItems` 原各 `items.filter(...)` 一遍:满包 120 件时整表被遍历两次,
+ * 而两者读同一个 `items` 与 `equippedUids` —— 换装时必然同时失效、同时重扫。
+ * 现一次分区,两个视图各取一半;`bagFull` 读其中那一半的长度。
+ *
+ * 判据钉的是**两者互补且不丢不重**:任一件要么在已装备、要么在行囊,且两摞加起来
+ * 恰好是整表。若哪天有人把某一路改成别的筛选口径(例如行囊按「已锁定」分),
+ * 这条会立刻红 —— 那正是「满没满」与「能不能分解」两处判据分叉的开始。
+ */
+describe('行囊 · 已装备与未装备互补不丢不重', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('两摞加起来恰好是整表,且互不重叠', () => {
+    const inv = useInventoryStore()
+    inv.items = [mk('a', []), mk('b', []), mk('c', []), mk('d', [])]
+    inv.equip('a', 'body')
+    inv.equip('c', 'weapon')
+
+    const equippedUids = inv.equippedItems.map(it => it.uid).sort()
+    const bagUids = inv.bagItems.map(it => it.uid).sort()
+    expect(equippedUids).toEqual(['a', 'c'])
+    expect(bagUids).toEqual(['b', 'd'])
+    expect([...equippedUids, ...bagUids].sort(), '两摞该覆盖整表').toEqual(['a', 'b', 'c', 'd'])
+    expect(equippedUids.filter(u => bagUids.includes(u)), '同一件不该同时出现在两摞').toEqual([])
+  })
+
+  it('换装后分区立刻跟着变,原来的已装备件落回行囊', () => {
+    const inv = useInventoryStore()
+    inv.items = [mk('a', []), mk('b', [])]
+    inv.equip('a', 'body')
+    expect(inv.bagItems.map(it => it.uid)).toEqual(['b'])
+    inv.equip('b', 'body')
+    expect(inv.equippedItems.map(it => it.uid), '换了件,已装备该只剩新的那件').toEqual(['b'])
+    expect(inv.bagItems.map(it => it.uid), '被换下的该落回行囊').toEqual(['a'])
+  })
+
+  it('bagFull 读的是未装备那一摞:装满行囊后为真,装备一件即不再是满的', () => {
+    const inv = useInventoryStore()
+    // 上限内摆满:全部未装备
+    inv.items = Array.from({ length: BAG_CAPACITY }, (_, i) => mk(`u${i}`, []))
+    expect(inv.bagFull, '行囊刚好装满该判满').toBe(true)
+    inv.equip('u0', 'body')
+    expect(inv.bagItems.length).toBe(BAG_CAPACITY - 1)
+    expect(inv.bagFull, '装备一件后行囊少一件,不该再判满').toBe(false)
+  })
+})
+
 describe('已装备件 · 平铺与百分比同源', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
