@@ -5,7 +5,14 @@ import { formatGN } from '@/utils/format'
 import { buffDef } from '@/data/buffs'
 import { CULT_BASE_SPEED, CULT_SPEED_SOFT_CAP_T, LIFESPAN_CRITICAL_RATIO } from '@/data/constants'
 import { baseCultPerSec } from './formulas'
-import { retreatGainText, retreatGainedText, checkStateAchievements, retreatMarginalSpeed, rolloverDailyIfNeeded } from './progress'
+import {
+  checkAchievements,
+  retreatGainText,
+  retreatGainedText,
+  checkStateAchievements,
+  retreatMarginalSpeed,
+  rolloverDailyIfNeeded
+} from './progress'
 import { todayStr } from '@/utils/time'
 import { DAILY_TASKS } from '@/data/quests'
 import { useQuestsStore } from '@/stores/quests'
@@ -122,6 +129,11 @@ describe('retreatMarginalSpeed 闭关边际(修炼速度软上限)', () => {
  */
 describe('成就条件 · 每条都有判定路径', () => {
   const SRC = readFileSync(resolve(__dirname, 'progress.ts'), 'utf-8')
+  // 每条用例开新 pinia:下面的行为判据会改 age / spiritStone / 已解锁集合,
+  // 共享实例会让前一条的后果污染后一条(实测:寿元那条跑了之后,灵石那条就红)
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
 
   it('custom 型的 key 只有 realm_x_y 与状态型两种,realm 型走正则,其余须在 checkStateAchievements 里出现', () => {
     const customKeys = [
@@ -150,6 +162,35 @@ describe('成就条件 · 每条都有判定路径', () => {
    * 这里走行为:造出临界内 / 外的状态,调 checkStateAchievements,看成就有没有该解锁。
    * 故障注入:把寿元条件方向改反,本条红。
    */
+  /**
+   * 职责边界:`checkAchievements` 不许越界去解锁状态型成就。
+   *
+   * 状态型(lifespanLow / lifespan10k / stone1m)只由 `checkStateAchievements` 负责 ——
+   * 它挂在那几个「状态变了」的时刻。若 `checkAchievements` 也判它们,每次 track()
+   * 都会重复扫一遍这三条,且两条路径的触发时机不一致时会出现「成就自己冒出来」。
+   * 注:第 112 行那句正则跳过去掉后本条**仍是绿的** —— 因为 `evalCond` 对非 realm_x_y 的
+   * custom 一律返回 false(第 91 行),那是第二道保护。所以那句跳过是省迭代的性能写法,
+   * 不是正确性守卫。本条钉的是「谁来解锁」这个分工,不是「删了会崩」。
+   */
+  it('checkAchievements 不碰状态型成就(只由 checkStateAchievements 负责)', () => {
+    const player = usePlayerStore()
+    const quests = useQuestsStore()
+    const resources = useResourcesStore()
+    // 把两个状态型成就的条件都造满,但不调 checkStateAchievements
+    player.age = Math.floor(player.lifespanMax * 0.95)
+    resources.spiritStone = { m: 1, e: 7 }
+    expect(player.lifespanRatio, '探针前提:寿元该已跌破一成').toBeLessThanOrEqual(LIFESPAN_CRITICAL_RATIO)
+
+    checkAchievements()
+    expect(quests.hasAchieved('a_lifelow'), 'checkAchievements 越界解锁了寿元成就').toBe(false)
+    expect(quests.hasAchieved('a_rich'), 'checkAchievements 越界解锁了灵石成就').toBe(false)
+
+    // 换成正确的入口,两条都该解锁
+    checkStateAchievements()
+    expect(quests.hasAchieved('a_lifelow'), 'checkStateAchievements 该解锁寿元成就').toBe(true)
+    expect(quests.hasAchieved('a_rich'), 'checkStateAchievements 该解锁灵石成就').toBe(true)
+  })
+
   it('寿元告急:只有真跌破一成才解锁「寿元将尽」', () => {
     const player = usePlayerStore()
     const quests = useQuestsStore()
