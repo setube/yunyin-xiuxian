@@ -2,6 +2,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { engine } from './engine'
+import { enginePaused, setEnginePaused } from './enginePause'
 import { settleOffline } from './offline'
 import type * as OfflineMod from './offline'
 import { useGameStore } from '@/stores/game'
@@ -166,6 +167,67 @@ describe('引擎心跳 · start/stop/dt 路由直测', () => {
     expect(player.divination?.expiresAt, '卦不该在确认窗背后散掉').toBe(t0 + 600_000)
     expect(player.regionEvent?.endsAt, '区域事件不该在确认窗背后翻篇').toBe(t0 + 1_200_000)
     expect(player.breakthroughPrep!.readyAt, '调息不该在确认窗背后变得过久').toBe(t0 + 480_000)
+  })
+})
+
+/**
+ * 未暂停时调用 `resume()` 什么也不该做。
+ *
+ * 调用点都在设置页的两个确认窗(重置 / 导入):关闭时无条件 `engine.resume()`。
+ * 若玩家先点了「再想想」、弹窗又被别处关掉,`resume()` 会再跑一次 —— 那时引擎并没有暂停。
+ *
+ * 守卫去掉的后果不是「少顺延几毫秒 Buff」:`lastActiveAt` 会被重戳到当前时刻,
+ * 而它是离线结算的起点 —— 重戳一段,下一次回归时这段离线收益就不算数了。
+ * 变异扫描点名这条守卫没有判据盯着。
+ */
+describe('引擎 · 未暂停时 resume 是空操作', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.useFakeTimers()
+    setEnginePaused(false)
+  })
+
+  afterEach(() => {
+    setEnginePaused(false)
+    vi.useRealTimers()
+  })
+
+  it('未暂停时调 resume:不重戳 lastActiveAt,也不动时间基准', () => {
+    const game = useGameStore()
+    const t0 = new Date(2026, 10, 8, 12, 0, 0).getTime()
+    vi.setSystemTime(t0)
+    game.stampActive(t0)
+    const stamped = game.lastActiveAt
+
+    // 挂机五分钟后再误调一次 resume
+    vi.setSystemTime(t0 + 300_000)
+    engine.resume()
+
+    expect(enginePaused.value, '本来就没暂停,调完也不该变成暂停').toBe(false)
+    expect(game.lastActiveAt, 'lastActiveAt 被重戳了 —— 这段离线收益会不算数').toBe(stamped)
+  })
+
+  it('未暂停时连调多次 resume 都无害', () => {
+    const game = useGameStore()
+    const t0 = new Date(2026, 10, 8, 12, 0, 0).getTime()
+    vi.setSystemTime(t0)
+    game.stampActive(t0)
+    const stamped = game.lastActiveAt
+    vi.setSystemTime(t0 + 60_000)
+    for (let i = 0; i < 5; i += 1) engine.resume()
+    expect(game.lastActiveAt, '连调五次也不该重戳').toBe(stamped)
+  })
+
+  it('真暂停过再 resume 才该重戳(与空操作形成对照)', () => {
+    const game = useGameStore()
+    const t0 = new Date(2026, 10, 8, 12, 0, 0).getTime()
+    vi.setSystemTime(t0)
+    game.stampActive(t0)
+    const stamped = game.lastActiveAt
+    engine.pause()
+    vi.setSystemTime(t0 + 60_000)
+    engine.resume()
+    expect(game.lastActiveAt, '暂停后恢复该重戳').toBeGreaterThan(stamped)
   })
 })
 
