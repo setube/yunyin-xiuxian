@@ -243,6 +243,48 @@ const EQUIVALENT = [
       '真要坏档也轮不到它 —— 上一步的 sanitize 已经修过 levels。'
   },
   {
+    file: 'src/core/endgameService.ts',
+    text: 'if (!endgame.daoPath) return',
+    why:
+      'daoPath 是 DaoPathId | null,为 null 时 daoPathDef(null) 走 DAO_PATHS.find 返回 undefined,' +
+      '而调用点写的是 `daoPathDef(...)?\.rules` —— 可选链同样给出 undefined,与提前返回同值。'
+  },
+  {
+    file: 'src/core/divination.ts',
+    text: 'if (!hexagram) return',
+    why:
+      'hexagramOf 查 HEXAGRAM_BY_PAIR,而 TRIGRAMS 是 8 个、HEXAGRAMS 是 8×8=64 全表 ——' +
+      '本判据实测 64 种组合零缺失,故 hexagramOf 在 trigramOfLines 的返回值上永不 undefined。'
+  },
+  {
+    file: 'src/core/goal.ts',
+    text: 'Math.max(0, info.qiCost - res.qi)',
+    why:
+      'qiShort 只被 qiShortHint 消费,而它是 `qiShort > 0 ? … : undefined` ——' +
+      '负数与 0 都走 undefined 那支,玩家侧看到的是同一个结果。'
+  },
+  {
+    file: 'src/core/fate.ts',
+    text: 'if (!exists) return',
+    why:
+      '去掉守卫后 focusStarId 为 null,循环里 star.id === focusStarId 恒 false、mult 全为 1,' +
+      'mergeMods 求出的正是 fateMods(chart) 那份逐项和 —— 与提前返回等价。'
+  },
+  {
+    file: 'src/core/fingerprints.ts',
+    text: 'Math.max(0, modOf(mods, key))',
+    why:
+      'familyStrength 的结论由调用方用 `s > 0.05` 与 `s >= 0.5` 过滤,而负值会同时让 max 与 sum' +
+      '落在阈下;实测正负三围输入得到的 Fingerprint 完全相同(都是 plain / 素身)。'
+  },
+  {
+    file: 'src/core/daoSource.ts',
+    text: 'Math.max(0, Math.floor(cost))',
+    why:
+      'need 为负时,`gte(gn(balance), gn(need))` 对任何非负余额都成立,reason 仍为 null、' +
+      'subClamp 仍给出 0 —— 实测 daoSourceShortfall(-5, 100) 与钳制后逐字段相同。'
+  },
+  {
     file: 'src/core/linggenAffinity.ts',
     text: 'if (!element) return',
     why:
