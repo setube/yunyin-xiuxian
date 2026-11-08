@@ -490,3 +490,16 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
     expect(lore.materialLore, '认知 keep').toEqual({ m_lingzhi: 2 })
   })
 })
+
+describe('轮回审计 · 坏档世数', () => {
+  it('给定负数世数(坏档),当算持有天赋数,则按 0 世算而非负数', () => {
+    /*
+     * `Math.max(0, lives)` 是真守卫:去掉后 lives 为负时乘积为负,
+     * Math.min(TALENTS.length, 负数) 会返回负数 —— 下游按「持有 N 项天赋」取用时
+     * 会拿到负的循环上界。
+     */
+    expect(talentsAfterLives(-5)).toBe(talentsAfterLives(0))
+    expect(talentsAfterLives(-5)).toBeGreaterThanOrEqual(0)
+    expect(talentsAfterLives(-1)).toBe(0)
+  })
+})
