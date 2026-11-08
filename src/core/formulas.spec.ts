@@ -8,6 +8,8 @@ import {
   buildingCost,
   expRequirement,
   powerScale,
+  tierMajor,
+  upgradeCost,
   powerScore,
   stoneByTier,
   tribulationWaveDamage,
@@ -68,6 +70,66 @@ describe('GameFormula 成长曲线', () => {
     const high = baseCombatStats(3, 5)
     expect(gte(high.attack, low.attack)).toBe(true)
     expect(ratio(high.maxHp, low.maxHp)).toBeGreaterThan(30)
+  })
+
+  /**
+   * 区域层级越界不许把 undefined 漏进算式。
+   *
+   * `tierMajor` / `powerScale` 都拿 `tier - 1` 当下标,两头各钳一次
+   * (`Math.max(0, Math.min(LEN - 1, ...))`)。这两道钳不是防负数的语义修饰 ——
+   * 去掉之后越界取值是 `undefined`,`worldOf(undefined)` 当场崩。
+   *
+   * 真实路径上 tier 来自 `maxTierForMajor(major)`(最高 32,正好等于数组长度),
+   * 边界外到不了;这条钉的是「钳还在」:将来有人把 tier 从别处喂进来时不会崩。
+   */
+  it('层级越界:两头都钳在表内,不返回 undefined', () => {
+    for (const t of [0, -1, -100]) {
+      expect(tierMajor(t), `tier=${t} 该钳到最低层`).toBe(tierMajor(1))
+    }
+    for (const t of [33, 100, 1e6]) {
+      expect(tierMajor(t), `tier=${t} 该钳到最高层`).toBe(tierMajor(32))
+    }
+    // 钳出来的都必须是个真数,不是 undefined
+    for (const t of [-5, 0, 1, 16, 32, 33, 999]) {
+      const m = tierMajor(t)
+      expect(typeof m, `tierMajor(${t}) 返回了 ${String(m)}`).toBe('number')
+      expect(Number.isFinite(m), `tierMajor(${t}) 不是有限数`).toBe(true)
+    }
+  })
+
+  it('层级越界:powerScale 不崩、仍给出有限值', () => {
+    for (const t of [-5, 0, 33, 999]) {
+      expect(() => powerScale(t), `powerScale(${t}) 崩了`).not.toThrow()
+      const p = powerScale(t)
+      expect(Number.isFinite(p.m), `powerScale(${t}) 的尾数不是有限数`).toBe(true)
+      expect(Number.isFinite(p.e), `powerScale(${t}) 的指数不是有限数`).toBe(true)
+    }
+    // 越界的两头与各自边界同结果
+    expect(powerScale(0), '低端越界该与 tier=1 同结果').toEqual(powerScale(1))
+    expect(powerScale(999), '高端越界该与 tier=32 同结果').toEqual(powerScale(32))
+  })
+
+  /**
+   * 强化成本的下限:`Math.max(0.4, 1 - discount)`。
+   *
+   * 折扣来自 forgeDiscount 词条(巧手 5~10、器道 10~20)。正常叠不满 100%,
+   * 但这条钳是**唯一**挡住「打折超过 100% 时成本变负」的东西 ——
+   * 不钳的话 discount=1.5 会让 dust 变成负数,玩家强化反而倒赚器灵尘。
+   * 变异扫描点名这条钳没有判据盯着(这个函数此前在 spec 里一次都没被调过)。
+   */
+  it('强化成本:折扣再大也不为负,且低于 60% 折扣下限后不再降', () => {
+    for (const d of [0, 0.3, 0.6, 0.99, 1, 1.5, 5, 100]) {
+      const c = upgradeCost(10, 20, 3, d)
+      expect(Number.isFinite(c.dust), `discount=${d} 的器灵尘不是有限数`).toBe(true)
+      expect(c.dust, `discount=${d} 的器灵尘是负的 —— 钳制没了`).toBeGreaterThan(0)
+      expect(Number.isFinite(c.stone.m), `discount=${d} 的灵石不是有限数`).toBe(true)
+      expect(c.stone.m, `discount=${d} 的灵石是负的`).toBeGreaterThan(0)
+    }
+    // 折扣超过 60% 后成本封底,不再继续下降
+    const floor = upgradeCost(10, 20, 3, 0.6)
+    for (const d of [0.8, 1, 2, 10]) {
+      expect(upgradeCost(10, 20, 3, d), `discount=${d} 该与 60% 同价(已触底)`).toEqual(floor)
+    }
   })
 
   it('powerScale 与区域层级同向增长', () => {
