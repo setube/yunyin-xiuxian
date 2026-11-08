@@ -79,6 +79,17 @@ export const useUiStore = defineStore('ui', () => {
   const equipDetailUid = ref<string | null>(null)
   const gongfaDetailId = ref<string | null>(null)
   const buffDetailId = ref<string | null>(null)
+
+  /**
+   * 清掉三处「详情弹窗开在哪一件」的指针。切页时调用 ——
+   * 否则返回键从背包跳回首页,背包页那扇装备详情还挂在屏幕上。
+   * 只关 `equipDetailUid` 之类还不够:弹窗栈是另一套状态,见 useModalStack.resetModalStack。
+   */
+  function clearDetail(): void {
+    equipDetailUid.value = null
+    gongfaDetailId.value = null
+    buffDetailId.value = null
+  }
   const deathDialog = ref(false)
   const reincarnation = ref<ReincarnationView | null>(null)
   /**
@@ -169,6 +180,7 @@ export const useUiStore = defineStore('ui', () => {
     toasts,
     offlineSummary,
     breakthrough,
+    clearDetail,
     equipDetailUid,
     gongfaDetailId,
     buffDetailId,

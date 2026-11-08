@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
+import { resetModalStack } from '@/composables/useModalStack'
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -44,6 +45,19 @@ let lastGoodPath = '/'
 
 router.afterEach(to => {
   lastGoodPath = to.fullPath
+  /*
+   * 切页时清掉弹窗栈。
+   *
+   * 原先只在 App.vue 的 onUnmounted 里清 —— 那是「整个应用卸载」,SPA 内切页不会触发。
+   * 于是浏览器/安卓返回键从背包跳回首页时,背包页那扇装备详情还挂在屏幕上,
+   * 底下已经是另一页的内容(实测:hash 变 #/ 、.modal-panel 仍是 1)。
+   *
+   * 只清栈顶状态不行:各页的详情弹窗读的是自己的 `xxxDetailUid`,那些也要一并复位 ——
+   * resetModalStack 只处理栈,具体开哪扇由各 store 的 ref 决定,
+   * 故这里连 ui store 的详情态一起清。
+   */
+  resetModalStack()
+  useUiStore().clearDetail()
 })
 
 router.onError((err, to) => {
