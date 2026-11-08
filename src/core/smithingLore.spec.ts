@@ -75,6 +75,9 @@ describe('炼器 · 矿石认知与锻造技艺', () => {
 })
 
 describe('炼器 · 未知材料 id', () => {
+  // 文件顶层的 beforeEach 在别的 describe 里;新开的块要自己装,否则单独 -t 跑会崩
+  beforeEach(() => setActivePinia(createPinia()))
+
   it('给不存在于材料表的 id 记账:什么也不做,不写 lore、不抛错', () => {
     /*
      * `if (!def) return` 是真守卫:去掉后 lore.markSeen(id) 会把一个材料表里没有的 id
