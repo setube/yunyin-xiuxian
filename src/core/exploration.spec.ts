@@ -241,6 +241,20 @@ describe('收尾总结 · 战绩报胜负两本账', () => {
     return toasts[toasts.length - 1]?.text ?? ''
   }
 
+  it('没有在途历练时点「停」:不抛错、不误清空、不刷 toast', () => {
+    /*
+     * 守卫 `if (!s) return` 不是可有可无的防御 —— 去掉后读 s.regionId 会直接抛
+     * TypeError。而这条路径真实存在:归来动画播完时 session 已被清空,
+     * 懒加载重渲染出的旧按钮还会触发一次 stopExploration。
+     */
+    const adventure = useAdventureStore()
+    expect(adventure.session).toBeNull()
+    const before = useUiStore().toasts.length
+    expect(() => stopExploration('manual')).not.toThrow()
+    expect(adventure.session).toBeNull()
+    expect(useUiStore().toasts.length).toBe(before)
+  })
+
   it('圆满结束:报「胜 N 场 · 负 M 场」,不再省略败场', () => {
     sessionWith(9, 4)
     stopExploration('complete')

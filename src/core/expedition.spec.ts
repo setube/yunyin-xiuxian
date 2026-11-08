@@ -321,3 +321,31 @@ describe('远征 · 放弃这一趟', () => {
     expect(endgame.worldRun).toBeNull()
   })
 })
+
+describe('远征 · 逆命契的两个坏档分支', () => {
+  /**
+   * `sealCoreMods` 的 `if (!build) return null` 不是可有可无的防御:
+   * 逆命契要封印「主流派核心词条」,而玩家若还没有成形流派(detectBuild 给 null),
+   * 去掉守卫后下一行 `build.style.core` 会直接抛 TypeError。
+   *
+   * 这是真实会走到的:裸号/极早期存档没有流派,而逆命契在界面上一直可选。
+   */
+  it('没有成形流派时选逆命契:报「无流派可封」,且不扣道源', () => {
+    const player = usePlayerStore()
+    player.initCharacter('封核自检', { roots: [{ element: 'wood', aptitude: 90 }] } as never)
+    // 只升境界、不穿装备:三维词条全 0,detectBuild 的 best.affinity 落在 0.25 以下
+    player.major = 9
+    player.sub = 9
+    const endgame = useEndgameStore()
+    endgame.daoPath = 'sword'
+    endgame.addDaoSource(5000)
+    const before = endgame.daoSource
+    const ui = useUiStore()
+
+    const outcome = startWorldExpedition(world('chiyan').id, 'ni')
+
+    expect(outcome, '没有流派可封,不该出发').toBeNull()
+    expect(ui.toasts.at(-1)?.text, '须说清为什么出发不了').toBe('无流派可封')
+    expect(endgame.daoSource, '没有出发就不该扣道源').toBe(before)
+  })
+})
