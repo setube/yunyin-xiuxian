@@ -17,6 +17,7 @@ import {
   SEAL_STONE_BASE
 } from '@/data/constants'
 import { stoneByTier } from './formulas'
+import { twoPartShortfall } from './costShortfall'
 import { track } from './progress'
 import { noteSmithingUsed } from './loreService'
 import { add, gnZero, mulN, subClamp } from '@/utils/gnum'
@@ -52,13 +53,7 @@ export interface ReforgeShortfall {
 /** 这一炉两样各差多少;界面置灰、价签与提示共用这一处判定 */
 export function reforgeShortfall(cost: ReforgeCost): ReforgeShortfall {
   const resources = useResourcesStore()
-  const stone = resources.hasStone(cost.stone) ? gnZero() : subClamp(cost.stone, resources.spiritStone)
-  const dust = resources.hasSmall('dust', cost.dust) ? 0 : Math.max(0, cost.dust - resources.dust)
-  return {
-    short: stone.m > 0 ? 'stone' : dust > 0 ? 'dust' : null,
-    stone,
-    dust
-  }
+  return twoPartShortfall(cost, resources.spiritStone, resources.dust)
 }
 
 /** 这一炉缺哪一样(付得起时为 null) */

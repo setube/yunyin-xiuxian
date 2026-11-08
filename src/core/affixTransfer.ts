@@ -17,7 +17,7 @@ import { affixDef, affixFitBlock, affixValue } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import { DIMINISH_KEYS, REFORGE_DUST_BASE, REFORGE_SEAL_LOAD, REFORGE_STONE_BASE, TRANSFER_PRICE_RATE } from '@/data/constants'
-import { add, gnZero, subClamp } from '@/utils/gnum'
+import { add } from '@/utils/gnum'
 import { formatGap } from '@/utils/format'
 import { stoneByTier } from './formulas'
 import { playSfx } from './audio'
@@ -27,6 +27,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { TRANSFER_LABELS, transferBlockText, transferDoneToast, transferShortText } from '@/ui/affixTransferText'
+import { twoPartShortfall } from './costShortfall'
 
 export type TransferBlock =
   | 'same'
@@ -206,13 +207,7 @@ export interface TransferShortfall {
 /** 两样各差多少;主按钮、页脚与服务拒因同读这一处,余额判据与 transferShort 相同 */
 export function transferShortfall(cost: TransferCost): TransferShortfall {
   const resources = useResourcesStore()
-  const stone = resources.hasStone(cost.stone) ? gnZero() : subClamp(cost.stone, resources.spiritStone)
-  const dust = resources.hasSmall('dust', cost.dust) ? 0 : Math.max(0, cost.dust - resources.dust)
-  return {
-    short: stone.m > 0 ? 'stone' : dust > 0 ? 'dust' : null,
-    stone,
-    dust
-  }
+  return twoPartShortfall(cost, resources.spiritStone, resources.dust)
 }
 
 /** 能接这一条的目标件;部位不合的不列,'dup' 与同部位的 'rank' 置灰列出 */
