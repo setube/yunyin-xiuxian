@@ -122,6 +122,41 @@ describe('共同事件 · 一:契合是行为结果,不是参数', () => {
     expect(CODE).toMatch(/resolveChoice\([^)]*playerLean\(\)/)
     console.log('\nchooseBondEvent → resolveChoice(def, ch, playerLean()) —— 链路接通')
   })
+
+  /**
+   * 玩家道途真的参与契合计算 —— 用行为验，不只查源码里有没有 `playerLean()`。
+   *
+   * 上面那条只确认 `chooseBondEvent` 的调用里出现了 `playerLean()` 这个名字。
+   * 若 `resolveChoice` 内部把 playerLean 那段删掉(或写错方向),字符串一字不差,它照样绿,
+   * 而 33.8 那个「接口存在、契合不由玩家决定」的老毛病就回来了。
+   *
+   * 判据钉三件:对齐道途 > 不对齐(至少差 6)、相冲道途最低、传 null 时退回不含玩家项那档。
+   * 故障注入:删掉 resolveChoice 里 `if (playerLean) {...}` 整段,本条红。
+   */
+  it('同一选择,不同玩家道途给出不同的契合(对齐者更高、相冲者更低)', () => {
+    const def = daoluDef(DAOLU[0]!.id)!
+    // 找一个「道侣道途 = 选项道途」的组合,这样 def 与 choice 对齐这档是 6
+    const ev = BOND_EVENTS.find(e => e.choices.some(c => c.lean === def.lean))!
+    const ch = ev.choices.find(c => c.lean === def.lean)!
+
+    // tension 表:slaughter↔longevity、sword↔alchemy。相冲者取 def.lean 的对家
+    const TENSION: Record<string, string> = { slaughter: 'longevity', longevity: 'slaughter', sword: 'alchemy', alchemy: 'sword' }
+    const aligned = resolveChoice(def, ch, def.lean).leanShift
+    // 无关者:既非对齐也非相冲,取一个真实存在的第三方道途
+    const unrelated = (Object.keys(LEAN_NAMES) as (keyof typeof LEAN_NAMES)[]).find(
+      k => k !== def.lean && k !== TENSION[def.lean]
+    )!
+    const neutral = resolveChoice(def, ch, unrelated).leanShift
+    const hostile = resolveChoice(def, ch, TENSION[def.lean] as never).leanShift
+    const noPlayer = resolveChoice(def, ch, null).leanShift
+
+    expect(noPlayer, '传 null 时该退回「不含玩家项」那一档').toBe(6)
+    expect(aligned, '玩家道途与道侣对齐时该更高').toBeGreaterThan(noPlayer)
+    expect(neutral, '玩家道途无关时该低于对齐').toBeLessThan(aligned)
+    expect(hostile, '相冲道途该是三者最低').toBeLessThan(aligned)
+    // 三档必须真有三档,否则「不同道途同一结果」的老毛病会静默回来
+    expect(new Set([aligned, neutral, hostile]).size, '三种道途算出了相同的契合 —— 玩家道途没起作用').toBe(3)
+  })
 })
 
 describe('共同事件 · 二:同一道侣,不同选择不同结果', () => {
