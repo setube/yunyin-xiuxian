@@ -202,6 +202,27 @@ describe('启动期 · 扫描与水合共用一次解密', () => {
     expect(cfg.serializer.deserialize(second)).toEqual({ x: 1 })
   })
 
+  /**
+   * 迁移写回必须作废扫描留下的明文。
+   *
+   * `migrateLocalSchema` 紧跟 `preflightScan` 跑,而它在真迁移时会**把新形态写回磁盘**。
+   * 若一次性明文缓存还是扫描时那份旧形态,水合就会把迁移结果原地撤销 ——
+   * 迁移看着跑了、回写也落了,读进去的却是旧结构。
+   * 故障注入:把 migrateLocalSchema 里那行作废删掉 → 本条红。
+   */
+  it('迁移写回的分片,水合读到的是迁移后的形态', async () => {
+    const { preflightScan, migrateLocalSchema, persistConfig } = await import('./storage')
+    // 旧形态:单数 equippedArtifact,没有 equippedArtifacts
+    put('inventory', { items: [], equippedArtifact: 'a_old' })
+    preflightScan()
+    migrateLocalSchema()
+    const cfg = persistConfig('inventory')
+    const raw = cfg.storage.getItem(cfg.key) as string
+    const seen = cfg.serializer.deserialize(raw) as Record<string, unknown>
+    expect(seen.equippedArtifacts, '水合读到的是扫描时的旧明文 —— 迁移被原地撤销了').toEqual(['a_old'])
+    expect(seen.equippedArtifact, '旧字段该已被迁移清掉').toBeUndefined()
+  })
+
   it('坏档不进缓存:解不出的分片照旧被隔离', async () => {
     const { preflightScan, persistConfig } = await import('./storage')
     probe.disk.set(storageKey('player'), '这不是存档')
