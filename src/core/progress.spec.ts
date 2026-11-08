@@ -245,9 +245,9 @@ describe('成就条件 · 每条都有判定路径', () => {
     const types = readFileSync(resolve(__dirname, '../types/index.ts'), 'utf-8')
     const body = /switch \(cond\.type\) \{([\s\S]*?)\n  \}/.exec(engine)?.[1]
     expect(body, '找不到 evalCond 的 switch,判据会空转').toBeTruthy()
-    const cases = [...new Set([...body!.matchAll(/case '([a-z]+)'/g)].map(m => m[1]!))].sort()
+    const cases = [...new Set([...body!.matchAll(/case '([a-z][a-z0-9]*)'/g)].map(m => m[1]!))].sort()
     const kinds = [
-      ...new Set([...(/export type AchvCond =([\s\S]*?)\n\n/.exec(types)?.[1] ?? '').matchAll(/type: '([a-z]+)'/g)].map(m => m[1]!))
+      ...new Set([...(/export type AchvCond =([\s\S]*?)\n\n/.exec(types)?.[1] ?? '').matchAll(/type: '([a-z][a-z0-9]*)'/g)].map(m => m[1]!))
     ].sort()
     expect(cases.length, '没解析到 case,判据失去意义').toBeGreaterThan(2)
     expect(kinds.length, '没解析到类型,判据失去意义').toBeGreaterThan(2)

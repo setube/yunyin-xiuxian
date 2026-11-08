@@ -372,13 +372,13 @@ describe('效果分发表 · 种类与类型定义同步', () => {
   const switchCases = (): string[] => {
     const body = /switch \(effect\.type\) \{([\s\S]*?)\n  \}/.exec(ENGINE)?.[1]
     expect(body, '找不到 applyEffect 的 switch,判据会空转').toBeTruthy()
-    return [...body!.matchAll(/case '([a-z]+)'/g)].map(m => m[1]!)
+    return [...body!.matchAll(/case '([a-z][a-z0-9]*)'/g)].map(m => m[1]!)
   }
 
   const typeKinds = (): string[] => {
     const body = /export type EventEffect =([\s\S]*?)\n\n/.exec(TYPES)?.[1]
     expect(body, '找不到 EventEffect 类型定义,判据会空转').toBeTruthy()
-    return [...body!.matchAll(/type: '([a-z]+)'/g)].map(m => m[1]!)
+    return [...body!.matchAll(/type: '([a-z][a-z0-9]*)'/g)].map(m => m[1]!)
   }
 
   it('switch 的 case 集合与 EventEffect 的类型集合完全一致', () => {
