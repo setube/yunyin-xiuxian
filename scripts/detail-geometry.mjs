@@ -63,6 +63,34 @@ const gn = (m, e) => ({ m, e })
  * 那正是页脚第三种几何(曾从 44px 涨到 57px)。
  * major 默认 14;触控扫描要 18 —— 悟道兑换(WUDAO_EXCHANGE_MIN_MAJOR)18 起才渲染。
  */
+/**
+ * 把 n 株灵草放在该 major 对应的品阶上。
+ *
+ * 界面读的是 resources.herb(全部品阶之和)—— 但那只是展示;
+ * 真正筛可用材料的地方按 currentHerbGrade(major) 取单档,
+ * 放错档时「灵草 ×900」写着,可用列表却是空的。
+ *
+ * 分档照抄 data/herbGrades 的 HERB_GRADE_BANDS:
+ * 脚本是 .mjs、不 import TS,故这里复述一份;
+ * fixtureParity.spec.ts 有一条判据把它与 herbGradeOfMajor 对齐。
+ */
+const HERB_GRADE_BANDS = [
+  [0, 4, 1],
+  [5, 8, 2],
+  [9, 13, 3],
+  [14, 17, 4],
+  [18, 20, 5]
+]
+function herbGradeOfMajor(major) {
+  const hit = HERB_GRADE_BANDS.find(([from, to]) => major >= from && major <= to)
+  return hit ? hit[2] : 1
+}
+function herbOn(major, n) {
+  const map = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  map[herbGradeOfMajor(major)] = n
+  return map
+}
+
 function slices({ poor = false, major = 14, theme = 'dark' } = {}) {
   return {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },
@@ -71,7 +99,8 @@ function slices({ poor = false, major = 14, theme = 'dark' } = {}) {
       reincarnation: { count: 2, daoFruit: 12, talents: [], insight: 400, lives: [], vow: null, trial: null, bonds: [] },
       linggen: { roots: [{ element: 'fire', aptitude: 88 }], gradeName: '单灵根', growthMult: 1.4 }
     },
-    resources: { spiritStone: poor ? gn(1, 0) : gn(9, 12), qi: 5000, wudao: 800, herbByGrade: { 1: 900, 2: 0, 3: 0, 4: 0, 5: 0 }, ore: 900, page: 300, dust: poor ? 2 : 50000 },
+    // 灵草须落在该 major 的品阶上:界面按 currentHerbGrade 筛,放错档等同没有
+    resources: { spiritStone: poor ? gn(1, 0) : gn(9, 12), qi: 5000, wudao: 800, herbByGrade: herbOn(major, 900), ore: 900, page: 300, dust: poor ? 2 : 50000 },
     inventory: {
       items: [{
         uid: 'geo_w', templateId: 'w_zidian', quality: 'heaven', tier: 20, level: 3,

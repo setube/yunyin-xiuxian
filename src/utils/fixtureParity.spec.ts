@@ -16,6 +16,7 @@ import { affixDef, affixFitBlock } from '@/data/affixes'
 import { equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import { BAG_CAPACITY } from '@/data/constants'
+import { herbGradeOfMajor } from '@/data/herbGrades'
 import { lateSlices, stressSlices } from '../../scripts/lib/saveFixture.mjs'
 import { resolve } from 'node:path'
 
@@ -128,42 +129,100 @@ describe('夹具 · 存档格式与产品代码同源', () => {
     for (const rel of ['scripts/layout-check.mjs', 'scripts/detail-geometry.mjs', 'scripts/edge-states.mjs', 'scripts/lib/saveFixture.mjs']) {
       const src = readFileSync(resolve(ROOT, rel), 'utf-8')
       /*
-       * 只取 resources 对象的**第一层**键:块里可能嵌着 herbByGrade: { 1: .., 2: .. }
-       * 与 spiritStone: { m: .., e: .. },那两层里的键不是字段名。
-       * 故按花括号深度走一遍,只收深度为 1 时出现的 `key:`。
+       * 用平衡括号找出每个 resources 对象的完整范围,再从**第一层**取键名。
+       * 先前用一条非贪婪正则找块,遇到嵌套对象(herbByGrade / spiritStone 的 {m,e})
+       * 就提前收尾,后面的键全被漏掉;而「第一个键之前有空白」时也会跳过去。
+       * 这两处正是审查点出来的漏网。
        */
-      for (const m of src.matchAll(/resources:\s*\{([\s\S]*?)\n?\s*\}/g)) {
-        scanned += 1
-        const body = m[1] ?? ''
-        let depth = 0
-        for (let i = 0; i < body.length; i += 1) {
-          const ch = body[i]
-          if (ch === '{') {
-            depth += 1
-            continue
+      const marker = 'resources:'
+      let at = src.indexOf(marker)
+      while (at >= 0) {
+        const open = src.indexOf('{', at + marker.length)
+        if (open >= 0) {
+          let depth = 0
+          let close = -1
+          for (let i = open; i < src.length; i += 1) {
+            if (src[i] === '{') depth += 1
+            else if (src[i] === '}') {
+              depth -= 1
+              if (depth === 0) {
+                close = i
+                break
+              }
+            }
           }
-          if (ch === '}') {
-            depth -= 1
-            continue
+          if (close > open) {
+            scanned += 1
+            const body = src.slice(open + 1, close)
+            // 再走一遍,只收深度 0 处的 `key:`
+            let cd = 0
+            let expectKey = true
+            for (let i = 0; i < body.length; i += 1) {
+              const ch = body[i]!
+              if (ch === '{') {
+                cd += 1
+                expectKey = false
+                continue
+              }
+              if (ch === '}') {
+                cd -= 1
+                continue
+              }
+              if (cd !== 0) continue
+              if (ch === ',') {
+                expectKey = true
+                continue
+              }
+              if (ch === '\n' || ch === ' ' || ch === '\t' || ch === '\r') continue
+              if (!expectKey) continue
+              const km = /^(\w+)\s*:/.exec(body.slice(i))
+              if (km) {
+                const key = km[1]!
+                if (key === 'herb') {
+                  reports.push(`${rel}: resources.herb 是 computed,写进去不生效 —— 该写 herbByGrade`)
+                } else if (!writable.has(key)) {
+                  reports.push(`${rel}: resources.${key} 在 store 里不存在`)
+                }
+                i += km[0].length - 1
+                expectKey = false
+              } else {
+                expectKey = false
+              }
+            }
           }
-          if (depth !== 0) continue
-          // 深度 0 处、位于 { 或 , 之后:读一个标识符 + 冒号
-          const atKeyStart = i === 0 || /[{,]/.test(body.slice(0, i).trimEnd().slice(-1))
-          if (!atKeyStart) continue
-          const km = /^(\w+)\s*:/.exec(body.slice(i))
-          if (!km) continue
-          const key = km[1]!
-          if (key === 'herb') {
-            reports.push(`${rel}: resources.herb 是 computed,写进去不生效 —— 该写 herbByGrade`)
-          } else if (!writable.has(key)) {
-            reports.push(`${rel}: resources.${key} 在 store 里不存在`)
-          }
-          i += km[0].length - 1
         }
+        at = src.indexOf(marker, at + marker.length)
       }
     }
     expect(scanned, '一处 resources 字面量都没扫到,判据空转').toBeGreaterThan(10)
     expect(reports, `这些字段写进去会被静默忽略:\n${reports.join('\n')}`).toEqual([])
+  })
+
+  /**
+   * 灵草落档:夹具把草放在哪个品阶,须与该夹具的 major 对应。
+   *
+   * 界面读 resources.herb 只是展示(全品阶之和);真正筛可用材料的地方按
+   * currentHerbGrade(major) 取单档。放错档时「灵草 ×900」写着,可用列表却是空的 ——
+   * 几何与文案都在空数据上量。detail-geometry 首版就是把 900 株全放品阶 1,
+   * 而它默认 major=14(品阶 4)、触控扫描用 18(品阶 5)。
+   *
+   * 脚本是 .mjs、不 import TS,故各自复述了一份分档;本条把复述与事实源对齐。
+   */
+  it('脚本里复述的灵草分档与 herbGradeOfMajor 一致', () => {
+    const src = readFileSync(resolve(ROOT, 'scripts/detail-geometry.mjs'), 'utf-8')
+    const block = /const HERB_GRADE_BANDS = \[([\s\S]*?)\n\]/.exec(src)?.[1]
+    expect(block, '脚本里找不到复述的分档表').toBeTruthy()
+    const bans = [...block!.matchAll(/\[(\d+),\s*(\d+),\s*(\d+)\]/g)].map(m => [
+      Number(m[1]),
+      Number(m[2]),
+      Number(m[3])
+    ])
+    expect(bans.length, '一条分档都没解析到').toBe(5)
+    for (let major = 0; major <= 20; major += 1) {
+      const hit = bans.find(([from, to]) => major >= from! && major <= to!)
+      expect(hit, `major=${major} 在脚本的分档里没有落点`).toBeTruthy()
+      expect(hit![2], `major=${major} 的品阶与 herbGradeOfMajor 不一致`).toBe(herbGradeOfMajor(major))
+    }
   })
 })
 
