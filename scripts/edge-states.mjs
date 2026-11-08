@@ -415,6 +415,62 @@ const SCENES = [
       if (!page.buttons.some(b => /踏\s*入|开始/.test(b.text))) out.push('建号页没有开始按钮')
       return out
     }
+  },
+  {
+    /*
+     * 单字段畸形:整片损坏已有「坏档提示」那档管,但存档能解开、只有个别字段是 NaN/Infinity/
+     * -1 的情形没有覆盖 —— 那种档 sanitize 会逐字段修,界面不该再去显示坏值。
+     *
+     * 这一档同时灌坏多个字段,然后走遍主路由,检查 main 的可见文案里有没有
+     * NaN / Infinity / undefined 漏出来。逐个路由跳完把结果攒在 window 上,
+     * 最后用 grab 取回来判。
+     */
+    name: '单字段畸形走遍主路由',
+    route: '/',
+    slices: () => {
+      const s = lateSlices()
+      s.player.age = NaN
+      s.player.major = -5
+      s.player.exp = { m: NaN, e: Infinity }
+      s.resources.spiritStone = { m: NaN, e: 0 }
+      s.resources.qi = -999
+      s.resources.wudao = NaN
+      s.inventory.items = [
+        { uid: 'bad1', templateId: 'no_such_template', quality: 'bogus', tier: NaN, level: -3, affixes: [{ id: 'nope', roll: NaN }] }
+      ]
+      s.inventory.equipped = { weapon: 'ghost_uid' }
+      return s
+    },
+    after: async page => {
+      const routes = [
+        '/', '/cultivation', '/adventure', '/inventory', '/character', '/build',
+        '/codex', '/souls', '/titles', '/collection', '/market', '/dongfu',
+        '/endgame', '/settings', '/celestial', '/world', '/apprentice', '/legacy'
+      ]
+      const hits = []
+      for (const r of routes) {
+        await page.evaluate(rt => {
+          location.hash = '#' + rt
+        }, r)
+        await page.waitForTimeout(280)
+        const leaked = await page.evaluate(() => {
+          const t = document.querySelector('main')?.innerText ?? ''
+          return (t.match(/\bNaN\b|\bInfinity\b|\bundefined\b/g) || []).slice(0, 3)
+        })
+        if (leaked.length) hits.push(`${r}:${leaked.join('/')}`)
+      }
+      await page.evaluate(h => {
+        window.__leaks = h
+      }, hits)
+    },
+    grab: () => ({ text: '', buttons: [], panel: false, leaks: window.__leaks ?? [] }),
+    judge: page => {
+      const leaks = page.leaks ?? []
+      if (!page.text && leaks.length === 0) return []
+      return leaks.length === 0
+        ? []
+        : [`${leaks.length} 个路由把坏值漏到界面上:${leaks.slice(0, 3).join(' | ')}`]
+    }
   }
 ]
 
@@ -470,4 +526,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 闭关拦截 / 未拜师 / 欢迎页 / 建号页十档都解释得清')
+console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 闭关拦截 / 未拜师 / 欢迎页 / 建号页 / 单字段畸形十一档都解释得清')
