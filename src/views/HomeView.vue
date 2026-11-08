@@ -1,10 +1,5 @@
 <template>
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
-    <!--
-      首页是仪表盘,视觉上没有页面标题;其余八页都有 h1/h2。
-      补一个视觉隐藏的 h1:读屏用户切回首页时有个可定位的页面名(与底栏同名「洞府」)。
-    -->
-    <h1 class="sr-only">洞府</h1>
     <!-- iOS 七天不打开会丢档:只在 iOS 且未安装时出现,「知道了」之后不再露(设置页另留常驻一份) -->
     <InstallToHomeNotice />
 
