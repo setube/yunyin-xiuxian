@@ -30,11 +30,19 @@ const ROOT = resolve(import.meta.dirname, '..')
  * 以为限制了条数,实际全跑。
  */
 const LIMIT = (() => {
-  const eq = process.argv.find(a => a.startsWith('--limit='))
-  if (eq) return Number(eq.split('=')[1] ?? 40)
-  const i = process.argv.indexOf('--limit')
-  if (i >= 0) return Number(process.argv[i + 1] ?? 40)
-  return 40
+  const raw = (() => {
+    const eq = process.argv.find(a => a.startsWith('--limit='))
+    if (eq) return eq.split('=')[1]
+    const i = process.argv.indexOf('--limit')
+    if (i >= 0) return process.argv[i + 1]
+    return undefined
+  })()
+  const n = Number(raw ?? 40)
+  /*
+   * 夹到 [1, ...]:负数会让 `all.slice(shard * LIMIT, shard * LIMIT + LIMIT)`
+   * 把负终点当成「倒数第几项」,于是一次选中几乎所有候选点;0 则一片都取不到。
+   */
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 40
 })()
 
 const PATTERNS = [
@@ -318,7 +326,13 @@ function equivalentOf(t) {
 }
 
 function targets(dir, out = []) {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
+  /*
+   * 必须排序:readdirSync 的顺序由文件系统决定,不同机器/不同次检出可能不同。
+   * 分片按「候选点序号」切,顺序一变,同一片在两次运行里就是不同的代码 ——
+   * 既无法复现,也会漏掉或重复某些点。
+   */
+  const entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  for (const e of entries) {
     const p = join(dir, e.name)
     if (e.isDirectory()) targets(p, out)
     else if (e.name.endsWith('.ts') && !e.name.endsWith('.spec.ts')) out.push(p)

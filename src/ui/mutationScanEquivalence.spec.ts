@@ -125,31 +125,40 @@ describe('变异扫描 · 等价名单', () => {
  * 现在按日期选分片,同一天内稳定、跨天推进,ceil(总数/LIMIT) 天覆盖全部。
  */
 describe('变异扫描 · 分片轮转', () => {
-  it('源码里确实按日期选分片', () => {
+  it('给定扫描脚本,当读它的分片逻辑,则确实按日期选片且显式 limit 不受日期影响', () => {
     const src = readFileSync(resolve(ROOT, 'scripts/mutation-scan.mjs'), 'utf-8')
     expect(src, '分片数该由「总数 / LIMIT」算出').toMatch(/shardCount\s*=\s*Math\.max\(1,\s*Math\.ceil\(all\.length\s*\/\s*LIMIT\)\)/)
     expect(src, '分片下标该按日期推进').toMatch(/dayIndex\s*%\s*shardCount/)
     expect(src, '显式 --limit 时不该被当天日期干扰').toMatch(/explicit\s*\?\s*0\s*:\s*dayIndex/)
   })
 
-  it('分片数学:相邻天各扫不同批,全部分片拼起来无重无漏', () => {
-    /** 与脚本同一算法 */
-    const shards = (total: number, limit: number): number[][] => {
-      const count = Math.max(1, Math.ceil(total / limit))
-      return Array.from({ length: count }, (_, d) =>
-        Array.from({ length: Math.min(limit, total - d * limit) }, (_, i) => d * limit + i)
-      )
-    }
-    // 取一个不能被 40 整除的总数,尾部那片会是残片
+  it('给定 455 个候选点与上限 40,当用源码里的切片表达式逐片取样,则 12 片无重无漏且相邻天不重叠', () => {
+    /*
+     * 不能在这里自己重写一遍分片算法 —— 那验的是复制品,源码里的 all.slice(...) 改了也照样绿。
+     * 改为从源码抠出那一行表达式,用 new Function 求值,验的才是真在跑的逻辑。
+     */
+    const src = readFileSync(resolve(ROOT, 'scripts/mutation-scan.mjs'), 'utf-8')
+    const sliceLine = /found\.push\(\.\.\.(all\.slice\([^)]*\))\)/.exec(src)?.[1]
+    expect(sliceLine, '源码里找不到分片取样的那一行').toBeTruthy()
+    const pick = (all: number[], LIMIT: number, shard: number): number[] =>
+      new Function('all', 'LIMIT', 'shard', `return ${sliceLine}`)(all, LIMIT, shard) as number[]
+
     const total = 455
-    const parts = shards(total, 40)
-    const flat = parts.flat()
+    const LIMIT = 40
+    const all = Array.from({ length: total }, (_, i) => i)
+    const shardCount = Math.max(1, Math.ceil(all.length / LIMIT))
+    expect(shardCount, '455 个点按 40 一片该是 12 天一轮').toBe(12)
+
+    const flat: number[] = []
+    for (let d = 0; d < shardCount; d += 1) flat.push(...pick(all, LIMIT, d))
+    expect(flat.length, '全部分片拼起来与总数不符').toBe(total)
     expect(new Set(flat).size, '分片之间有重复').toBe(total)
-    expect(flat.length, '分片拼起来与总数不符').toBe(total)
-    // 覆盖所需天数
-    expect(parts.length, '455 个点按 40 一片该是 12 天一轮').toBe(12)
-    // 相邻两片不重叠
-    const a = new Set(parts[0])
-    expect(parts[1]!.some(x => a.has(x)), '相邻两片重叠了').toBe(false)
+
+    // 相邻两片不重叠,且每片恰好 LIMIT 个(末片可以是余数)
+    for (let d = 0; d + 1 < shardCount; d += 1) {
+      const a = new Set(pick(all, LIMIT, d))
+      expect(pick(all, LIMIT, d + 1).some(x => a.has(x)), `第 ${d} 与 ${d + 1} 片重叠了`).toBe(false)
+      expect(a.size).toBe(LIMIT)
+    }
   })
 })
