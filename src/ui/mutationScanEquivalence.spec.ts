@@ -163,3 +163,22 @@ describe('变异扫描 · 分片轮转', () => {
     }
   })
 })
+
+/**
+ * 退出码的两种语义。
+ *
+ * 分片是抽样:每天换一片,每天都会碰到此前没扫过的模块。若一律以退出码阻断,
+ * 任何 PR 都可能因为「今天轮到了某片」而被卡住,而它改的代码跟那片毫无关系。
+ * 显式 --limit 是「我在复现某一批」,那时漏了必须红。设施故障一律计入。
+ */
+describe('变异扫描 · 退出码语义', () => {
+  it('给定扫描脚本,当读它的退出码判定,则只有设施故障与显式 limit 下的遗漏会阻断', () => {
+    const src = readFileSync(resolve(ROOT, 'scripts/mutation-scan.mjs'), 'utf-8')
+    const tail = src.slice(src.indexOf('if (infra.length > 0) process.exitCode = 1'))
+    expect(tail, '设施故障必须计入退出码').toContain('infra.length > 0')
+    expect(tail, '显式 limit 下的遗漏必须计入').toMatch(/explicit\s*&&\s*missed\.length\s*>\s*0/)
+    expect(tail, '默认分片模式的遗漏不该阻断(否则每天换个分片就会卡住无关 PR)').not.toMatch(
+      /^if \(missed\.length > 0 \|\| infra\.length > 0\)/m
+    )
+  })
+})

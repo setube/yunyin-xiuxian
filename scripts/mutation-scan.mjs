@@ -616,5 +616,15 @@ if (skipped.length > 0) {
   console.log('\n等价变异(改不出可见差别,不算漏 —— 每条附理由):')
   for (const m of skipped) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.text.trim().slice(0, 70)}\n      理由:${m.why}`)
 }
-// 等价变异不计入退出码:它不是缺陷。但**没写理由的等价**进不了这份名单,会照常算漏。
-if (missed.length > 0 || infra.length > 0) process.exitCode = 1
+/*
+ * 退出码:显式 --limit 时严格(本地复现,漏了就是红),默认分片模式只报告。
+ *
+ * 分片是**抽样**:每天换一片,每天都会碰到此前没扫过的模块。若一律以退出码阻断,
+ * 任何 PR 都可能因为「今天轮到了某片」而被卡住,而它改的代码跟那片毫无关系 ——
+ * 那种闸门最后只会被人绕过。
+ *
+ * 显式 limit 是「我在复现某一批」,那时漏了必须红,否则本地验证没有意义。
+ * 设施故障(inferno)一律计入:那是工具自己没跑起来,不能当成「没问题」。
+ */
+if (infra.length > 0) process.exitCode = 1
+else if (explicit && missed.length > 0) process.exitCode = 1
