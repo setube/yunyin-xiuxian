@@ -20,7 +20,7 @@
  * 用法:node scripts/mutation-scan.mjs [--limit=N]
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { join, resolve } from 'node:path'
 
 const ROOT = resolve(import.meta.dirname, '..')
@@ -345,10 +345,10 @@ console.log(`扫到 ${found.length} 个可变异点(上限 ${LIMIT})`)
 /** 跑给定的一批 spec;任一有用例失败即算抓到 */
 let lastInfra = null
 
-function runSpec(specs) {
+async function runSpec(specs) {
   lastInfra = null
   for (const spec of specs) {
-    const one = runOneSpec(spec)
+    const one = await runOneSpec(spec)
     // 先跑到的失败即可返回;infra 要继续看后面的 spec 是否真能抓到
     if (one.verdict === 'caught') return one
     if (one.verdict === 'survived') continue
@@ -360,26 +360,48 @@ function runSpec(specs) {
   return res
 }
 
+/**
+ * 跑一个 spec。**必须异步**:先前用 spawnSync,它有两大害处 ——
+ *  1. 一次 spec 跑 3.7 秒,这期间事件循环被完全堵死,信号处理器排在队列里执行不了;
+ *     于是 SIGTERM 到达时 restoreInflight 跑不到,源码就留在变异后的状态。
+ *     (实测:timeout 掐在两次 spawnSync 之间时能恢复,掐在里头就恢复不了 —— 靠运气。)
+ *  2. 子进程自身也可能迟迟不退,同步等待没有超时可言。
+ * 改用 spawn + Promise,等 spec 的同时事件循环照常响应信号。
+ */
 function runOneSpec(spec) {
   const out = join(ROOT, '.vitest', 'mutation-scan.json')
-  const res = spawnSync(
-    'bunx',
-    ['vitest', 'run', spec, '--reporter=json', `--outputFile=${out}`],
-    { cwd: ROOT, stdio: 'pipe', encoding: 'utf-8' }
-  )
-  let report
-  try {
-    report = JSON.parse(readFileSync(out, 'utf-8'))
-  } catch {
-    // stderr 前几行常是 esbuild/oxc 的固定告警,取最后一行更像真错误
-    const tail = (res.stderr ?? '').trim().split('\n').filter(Boolean).slice(-1)[0]
-    return { verdict: 'infra', detail: (tail ?? `退出码 ${res.status}`).slice(0, 160) }
-  }
+  return new Promise(resolveOne => {
+    const child = spawn('bunx', ['vitest', 'run', spec, '--reporter=json', `--outputFile=${out}`], {
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+    let stderr = ''
+    child.stderr.on('data', d => {
+      stderr += String(d)
+    })
+    child.on('error', () => resolveOne({ verdict: 'infra', detail: '子进程起不来' }))
+    child.on('close', status => {
+      let report
+      try {
+        report = JSON.parse(readFileSync(out, 'utf-8'))
+      } catch {
+        // stderr 前几行常是 esbuild/oxc 的固定告警,取最后一行更像真错误
+        const tail = stderr.trim().split('\n').filter(Boolean).slice(-1)[0]
+        resolveOne({ verdict: 'infra', detail: (tail ?? `退出码 ${status}`).slice(0, 160) })
+        return
+      }
+      resolveOne(verdictOf(report, status))
+    })
+  })
+}
+
+/** 从 vitest 的 json 报告判结论 */
+function verdictOf(report, status) {
   const failed = (report.testResults ?? []).filter(r => r.status === 'failed')
   if (failed.length > 0) return { verdict: 'caught' }
   // 一条都没跑,等同于什么都没验证
   if ((report.numTotalTests ?? 0) === 0) return { verdict: 'infra', detail: '没有用例被执行' }
-  if (res.status !== 0) return { verdict: 'infra', detail: `退出码 ${res.status} 但报告里没有失败用例` }
+  if (status !== 0) return { verdict: 'infra', detail: `退出码 ${status} 但报告里没有失败用例` }
   return { verdict: 'survived' }
 }
 
@@ -428,7 +450,7 @@ for (const t of found) {
   writeFileSync(t.file, orig.slice(0, t.index) + t.mutated + orig.slice(t.index + t.text.length))
   let verdict
   try {
-    verdict = runSpec(t.specs)
+    verdict = await runSpec(t.specs)
   } finally {
     writeFileSync(t.file, orig)
     inflight = null
