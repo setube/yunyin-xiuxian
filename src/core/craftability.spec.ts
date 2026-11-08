@@ -296,3 +296,41 @@ describe('越阶惩罚 · 非整数入参', () => {
   })
 })
 })
+
+/**
+ * 合成成功率的四个乘区各带钳制,任何一项的坏输入都不许把成功率推成负值或超 1。
+ *
+ * 实现里四个乘区都写着 `Math.max(0, Math.min(1, x))`,注释也写明「任何一项都不会把
+ * 成功率直接归零」。变异扫描发现去掉这些钳,现有用例全绿 —— 因为从没人传过越界值。
+ * 真实路径上 mastery/matLore/skill 都是非负计数派生,穿不进负数;这条钉的是「钳还在」:
+ * 将来有人给熟练度加扣减、或从外部喂一个未夹逼的读数时,成功率不会变成负的。
+ */
+describe('合成成功率 · 越界输入被钳住', () => {
+  const CASES: Array<[number, number, number, string]> = [
+    [-1, -1, -100, '全负'],
+    [-5, 0.5, 50, '熟练为负'],
+    [2, 2, 200, '三项超上限'],
+    [0, 0, 0, '全零'],
+    [1, 1, 100, '全满']
+  ]
+
+  it('任何输入下成功率都落在 (0, 1] 内,不出现负值', () => {
+    for (const [m, l, s, label] of CASES) {
+      const rate = composeSuccessRate(m, l, s, 0)
+      expect(Number.isFinite(rate), `${label} 得到了 ${rate}`).toBe(true)
+      expect(rate, `${label} 的成功率是负的 —— 钳制没了`).toBeGreaterThan(0)
+      expect(rate, `${label} 的成功率超过 1`).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('越界的负输入与 0 同结果(钳到同一边)', () => {
+    expect(composeSuccessRate(-1, 0.5, 50, 0), '熟练度负值该与 0 同结果').toBe(composeSuccessRate(0, 0.5, 50, 0))
+    expect(composeSuccessRate(0.5, -1, 50, 0), '材料见识负值该与 0 同结果').toBe(composeSuccessRate(0.5, 0, 50, 0))
+    expect(composeSuccessRate(0.5, 0.5, -10, 0), '技艺负值该与 0 同结果').toBe(composeSuccessRate(0.5, 0.5, 0, 0))
+  })
+
+  it('超上限的输入与满值同结果(钳到同一边)', () => {
+    expect(composeSuccessRate(1.5, 0.5, 50, 0), '熟练度超 1 该与 1 同结果').toBe(composeSuccessRate(1, 0.5, 50, 0))
+    expect(composeSuccessRate(0.5, 0.5, 500, 0), '技艺超 100 该与 100 同结果').toBe(composeSuccessRate(0.5, 0.5, 100, 0))
+  })
+})

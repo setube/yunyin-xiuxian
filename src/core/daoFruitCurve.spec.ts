@@ -212,3 +212,32 @@ describe('道果曲线 · 生命周期窗口(1~30 世)', () => {
     }
   })
 })
+
+/**
+ * 负道果不许穿到曲线里。
+ *
+ * 五条曲线都写着 `Math.max(0, f)` —— 那是防「负道果」的钳。`Math.pow(-1, 0.9)`
+ * 得 NaN、`Math.log(1 + -100)` 得 NaN,一旦穿进去,下游的修炼倍率会整条变成 NaN,
+ * 玩家的修为条会显示成空白。
+ *
+ * 变异扫描发现这条钳是盲区:把它去掉,现有用例全绿 —— 因为从没人传过负数。
+ * 这里补上。注:真实路径上道果是只增不减的计数,穿不进来;这条钉的是「钳还在」,
+ * 将来有人给道果加扣减时,算术不会先崩。
+ */
+describe('道果曲线 · 负输入被钳成 0', () => {
+  it('五条曲线传负道果都返回 0,不产生 NaN', () => {
+    for (const c of FRUIT_CURVES) {
+      for (const f of [-1, -100, -1e9]) {
+        const v = c.effective(f)
+        expect(Number.isFinite(v), `${c.id} 传 ${f} 得到了 ${v} —— 钳制没了`).toBe(true)
+        expect(v, `${c.id} 传负道果该钳成 0`).toBe(0)
+      }
+    }
+  })
+
+  it('负道果与 0 道果结果一致(钳到同一边)', () => {
+    for (const c of FRUIT_CURVES) {
+      expect(c.effective(-50), `${c.id} 的负输入该与 0 同结果`).toBe(c.effective(0))
+    }
+  })
+})
