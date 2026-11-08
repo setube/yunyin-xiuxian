@@ -310,14 +310,20 @@ function specsForModule(file) {
 }
 
 for (const file of files) {
-  const spec = file.replace(/\.ts$/, '.spec.ts')
-  let specSrc
-  try { specSrc = readFileSync(spec, 'utf-8') } catch { continue }
   const src = readFileSync(file, 'utf-8')
+  /*
+   * 不强求同名 spec。原先这里 `readFileSync(同名 spec) catch continue` —— 于是
+   * save / forge / offline / reincarnation / marketService / samsaraService /
+   * mortalWorldService / fingerprints 这几个没有同名 spec 的模块**从未被扫过**
+   * (实测漏掉 28 个可变异点),而它们都被别的 spec 真实引用着。
+   * specsForModule 本来就按引用关系找测试,这才是该用的判据。
+   */
+  const specs = specsForModule(file)
+  if (specs.length === 0) continue
   for (const { name, re, rep } of PATTERNS) {
     for (const m of src.matchAll(re)) {
       const line = src.slice(0, m.index).split('\n').length
-      found.push({ file, spec, specs: specsForModule(file), name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
+      found.push({ file, specs, name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
       if (found.length >= LIMIT) break
     }
     if (found.length >= LIMIT) break
@@ -381,6 +387,33 @@ const missed = []
 const infra = []
 let checked = 0
 const skipped = []
+/**
+ * 正在被改写的文件与它的原文。
+ *
+ * `finally` 只在正常/异常退出时跑到;**被 SIGTERM / SIGINT 杀掉时进程直接结束**,
+ * 源码就停在变异后的状态 —— 而扫描改的是 src 下的真实文件。
+ * 这个坑踩过两次:一次是 job_kill,一次是 `timeout` 到点。
+ * 故在信号到达时同步写回,不走任何异步路径。
+ */
+let inflight = null
+function restoreInflight() {
+  if (!inflight) return
+  try {
+    writeFileSync(inflight.file, inflight.orig)
+    console.error(`\n中断:已把 ${inflight.file.slice(ROOT.length + 1)} 写回原样`)
+  } catch {
+    console.error(`\n中断:${inflight.file.slice(ROOT.length + 1)} 写回失败,请手动 git checkout`)
+  }
+  inflight = null
+}
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(sig, () => {
+    restoreInflight()
+    process.exit(130)
+  })
+}
+process.on('exit', restoreInflight)
+
 for (const t of found) {
   // 等价变异不必真跑:省下的是一次 spec 启动(实测约 3.7 秒)
   const eq = equivalentOf(t)
@@ -391,12 +424,14 @@ for (const t of found) {
   const orig = readFileSync(t.file, 'utf-8')
   // 同一段文本可能在文件里出现多次:按记录的下标定位,否则后续几处会重复变异第一处
   if (orig.slice(t.index, t.index + t.text.length) !== t.text || t.mutated === t.text) continue
+  inflight = { file: t.file, orig }
   writeFileSync(t.file, orig.slice(0, t.index) + t.mutated + orig.slice(t.index + t.text.length))
   let verdict
   try {
     verdict = runSpec(t.specs)
   } finally {
     writeFileSync(t.file, orig)
+    inflight = null
   }
   checked += 1
   const rel = `${t.file.slice(ROOT.length + 1)}:${t.line ?? t.index}`
