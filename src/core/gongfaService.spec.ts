@@ -107,6 +107,38 @@ describe('功法到顶守卫(upgradeGongfa / gongfaUpgradeCost)', () => {
     expect(text).toContain(`残页尚差 ${cost.page} 页`)
   })
 
+  /**
+   * 差额钳在 0:持有足够时不给出负数。
+   *
+   * `gongfaUpgradeShortfall` 是 `Math.max(0, 花费 - 持有)`。这条钳**是可达的** ——
+   * 上面那条用例只测了「资源归零」,那时差额正好等于花费,钳不钳一个样;
+   * 而持有充足时(悟道 1000、需 10),不钳就是 -990,直接进 toast 变成「悟道点尚差 -990」。
+   * 变异扫描点名这处钳没有判据盯着。
+   */
+  it('持有充足时差额为 0,不给出负数', () => {
+    const res = useResourcesStore()
+    res.wudao = 1000
+    res.page = 1000
+    expect(gongfaUpgradeShortfall({ wudao: 10, page: 10 }), '持有远多于花费时差额该是 0,不是负数').toEqual({
+      wudao: 0,
+      page: 0
+    })
+    // 刚好够也是 0
+    res.wudao = 10
+    res.page = 10
+    expect(gongfaUpgradeShortfall({ wudao: 10, page: 10 }), '刚好够时差额该是 0').toEqual({ wudao: 0, page: 0 })
+  })
+
+  it('只缺一样时只报那一样,另一样为 0', () => {
+    const res = useResourcesStore()
+    res.wudao = 1000
+    res.page = 3
+    expect(gongfaUpgradeShortfall({ wudao: 10, page: 10 }), '悟道点够、残页缺 7').toEqual({ wudao: 0, page: 7 })
+    res.wudao = 4
+    res.page = 1000
+    expect(gongfaUpgradeShortfall({ wudao: 10, page: 10 }), '残页够、悟道点缺 6').toEqual({ wudao: 6, page: 0 })
+  })
+
   it('成功:返回 true、等级 +1、精确扣 gongfaUpgradeCost 的悟道点+残页', () => {
     const cul = useCultivationStore()
     const res = useResourcesStore()
