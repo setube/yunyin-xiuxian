@@ -1604,3 +1604,34 @@ describe('数据文本 · 机械体检', () => {
     expect(bad, `数据文本有机械错误:\n${bad.join('\n')}`).toEqual([])
   })
 })
+
+/**
+ * 天道熔炉的两处兑换都支持「自定义次数」。
+ *
+ * 这类能力的价值不在文案而在**输入框在不在**:只留「凝一枚 / 连凝全部」两颗钮时,
+ * 想凝 3 枚的玩家只能点三次或用掉全部道源 —— 而这两处本来都只是一次调用,
+ * 界面上却没有中间选项。判据从源码核这两个输入框与它们的可访问名。
+ */
+describe('天道熔炉 · 兑换支持自定义次数', () => {
+  const src = (from: string): string =>
+    readFileSync(resolve(__dirname, from), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+
+  it('给定熔炉界面源码,当读两处兑换控件,则灵石熔铸与道源凝炼都有数量输入框', () => {
+    const f = src('../components/celestial/FurnaceDialog.vue')
+    // 两处都要有 aria-label 的 number 输入框
+    expect(f, '灵石熔铸缺数量输入框').toContain('aria-label="熔铸次数"')
+    expect(f, '道源凝炼缺数量输入框').toContain('aria-label="凝炼枚数"')
+    // 上限按「可熔/可凝次数」给,不是写死
+    expect(f, '熔铸上限该绑可熔次数').toContain(':max="stoneAffordable"')
+    expect(f, '凝炼上限该绑可凝枚数').toContain(':max="affordable"')
+    // 钮文随选中数变化,而不是固定的「熔 铸」/「道果 +1」
+    expect(f, '熔铸钮文该随次数变').toContain('熔 铸 ×${stoneEffective}')
+    expect(f, '凝炼钮文该随枚数变').toContain('道果 +${fruitEffective}')
+    // 两处都得真的把选中数传给服务层
+    expect(f, '熔铸该把次数传下去').toContain('furnaceConvertStone(stoneEffective.value)')
+    expect(f, '凝炼该把枚数传下去').toContain('doCondense(fruitEffective)')
+  })
+})
