@@ -60,4 +60,32 @@ describe('夹具 · 存档格式与产品代码同源', () => {
     expect(fixture).toContain('JSON.stringify(slice)')
     expect(product).toContain('CryptoJS.AES.encrypt(plain')
   })
+
+  /**
+   * 分片里的**字段名**也须与 store 对得上。
+   *
+   * 上面几条只钉加密格式 —— 密钥与算法对了,字段名写错时仍然解得出、水合得上,
+   * 只是那一片被 Vue 当成未知键**静默忽略**:脚本照跑,跑的是空账。
+   * 实测 `resources: { herb: 900 }` 一直没生效过(resources 里 herb 是 computed,
+   * 可写的是 herbByGrade 按品阶分账),于是五个 QA 脚本里灵草全是 0,
+   * 炼丹页的「神品灵草 ×N」与背包材料页的灵草格一直拿空数据在测。
+   */
+  it('夹具写的资源字段名与 store 对得上', () => {
+    const resourcesSrc = readFileSync(resolve(ROOT, 'src/stores/resources.ts'), 'utf-8')
+    // 夹具里 resources 那一段的顶层键
+    const block = /resources: \{([\s\S]*?)\n {4}\}/.exec(fixture)?.[1] ?? ''
+    expect(block, '夹具里找不到 resources 分片,判据空转').not.toBe('')
+    const keys = [...block.matchAll(/^ {6}(\w+):/gm)].map(m => m[1]!)
+    expect(keys.length, '一个字段都没扫到,判据空转').toBeGreaterThan(3)
+    // store 的可写字段:ref(...) 的声明 + smallRefs 的四个键
+    const writable = new Set([
+      ...[...resourcesSrc.matchAll(/const (\w+) = ref[<(]/g)].map(m => m[1]!),
+      ...[...resourcesSrc.matchAll(/smallRefs[^=]*= \{([^}]+)\}/g)].flatMap(m =>
+        (m[1] ?? '').split(',').map(x => x.trim().split(':')[0]!.trim())
+      )
+    ])
+    expect(writable.has('spiritStone') && writable.has('herbByGrade'), '可写字段抓取失败').toBe(true)
+    const unknown = keys.filter(k => !writable.has(k))
+    expect(unknown, `这些字段名 store 里不存在,写进去会被静默忽略:${unknown.join(', ')}`).toEqual([])
+  })
 })
