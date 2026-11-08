@@ -43,7 +43,12 @@ const REASON_ELSEWHERE: readonly (readonly [string, string])[] = [
   ['src/views/RealmCodexView.vue', '{{ askLabel }}'],
   ['src/views/CreateView.vue', '{{ rerollLabel }}'],
   ['src/views/WelcomeView.vue', '同意并开始'],
-  ['src/components/equipment/AffixTransferFooter.vue', 'flow.blockLabel']
+  ['src/components/equipment/AffixTransferFooter.vue', 'flow.blockLabel'],
+  /**
+   * 熔炉的「熔尽本包」:置灰只发生在「存量不够一炉」,而存量就写在同一个卡片里
+   * (`存 900` 那一行),差额为零本身即是原因 —— 钮上再写一遍「(存量不足一炉)」是重复。
+   */
+  ['src/components/celestial/FurnaceDialog.vue', '熔尽本包']
 ]
 
 describe('禁用按钮 · 要给拒因', () => {
