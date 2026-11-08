@@ -2,7 +2,7 @@
 import type { ArtifactDef, CombatantSnap, CombatRules, DaoMark, DaoPathId } from '@/types'
 import { mulberry32, RandomService } from '@/utils/random'
 import { formatGN, formatGap } from '@/utils/format'
-import { subClamp } from '@/utils/gnum'
+import { gte, mulN, subClamp } from '@/utils/gnum'
 import { artifactDef } from '@/data/artifacts'
 import { pactDef } from '@/data/pacts'
 import { REALMS } from '@/data/realms'
@@ -110,19 +110,48 @@ export function furnaceStoneCost(): ReturnType<typeof stoneByTier> {
   return stoneByTier(maxTierForMajor(player.major), FURNACE_STONE_TIER_AMOUNT)
 }
 
-export function furnaceConvertStone(): boolean {
+/**
+ * 灵石熔道源。
+ * @param n 熔几次(默认 1);整笔原子 —— 灵石不够全额就一次也不熔,免得留下半笔零头
+ */
+export function furnaceConvertStone(n = 1): boolean {
   const resources = useResourcesStore()
   const endgame = useEndgameStore()
   const ui = useUiStore()
-  const cost = furnaceStoneCost()
+  const want = Number.isFinite(n) && n > 0 ? Math.floor(n) : 1
+  const cost = mulN(furnaceStoneCost(), want)
   if (!resources.spendStone(cost)) {
     const short = subClamp(cost, resources.spiritStone)
     ui.toast(`灵石尚差 ${formatGap(short)}`, 'warn')
     return false
   }
-  endgame.addDaoSource(FURNACE_STONE_DAO_SOURCE)
-  ui.toast(`灵石 ${formatGN(cost)} 熔作道源 +${FURNACE_STONE_DAO_SOURCE}`, 'success')
+  const gained = FURNACE_STONE_DAO_SOURCE * want
+  endgame.addDaoSource(gained)
+  ui.toast(
+    want === 1 ? `灵石 ${formatGN(cost)} 熔作道源 +${gained}` : `灵石 ${formatGN(cost)} 熔作道源 +${gained}(${want} 次)`,
+    'success'
+  )
   return true
+}
+
+/**
+ * 手上灵石最多能熔几次 —— 一次熔铸的上限。
+ * 与 furnaceConvertStone 同一口径:整次计,不算零头。
+ */
+export function furnaceStoneAffordable(cap = 999): number {
+  const resources = useResourcesStore()
+  const cost = furnaceStoneCost()
+  if (cost.m === 0) return 0
+  const have = resources.spiritStone
+  /*
+   * 从上限往下试「够不够 k 次的整价」,而不是拿余额做除法 —— 与 wudaoExchange 同一思路:
+   * GNum 只有有限有效位,连续相减会在尾数上累积误差,先乘后比只做一次比较。
+   */
+  const top = Math.max(1, Math.min(Math.floor(cap), 999))
+  for (let k = top; k > 0; k -= 1) {
+    if (gte(have, mulN(cost, k))) return k
+  }
+  return 0
 }
 
 /**

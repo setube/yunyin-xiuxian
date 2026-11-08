@@ -1222,8 +1222,12 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
      */
     expect(furnace, '灵石熔铸差额写在左侧存量行').toContain('灵石尚差 {{ formatGap(stoneShort) }}')
     expect(furnace, '灵石熔铸差额走指数感知减法').toContain('subClamp(cost, resources.spiritStone)')
-    expect(furnace, '灵石熔铸价与扣费同源').toContain('const cost = furnaceStoneCost()')
-    expect(furnace, '熔铸按钮正文只写动作词').toContain('>熔 铸</button>')
+    // 价签与扣费同源:左侧那行的缺口按「单价 × 次数」算,单价仍取自 furnaceStoneCost()
+    expect(furnace, '灵石熔铸价签取单价').toContain('furnaceStoneCost()')
+    // 按次数放大后才与 furnaceConvertStone 的扣费口径一致
+    expect(furnace, '价签按次数放大').toContain('mulN(stoneUnit.value, stoneEffective.value)')
+    // 钮文在主词后带次数(「熔 铸 ×N」),主词仍是动作词
+    expect(furnace, '熔铸按钮正文只写动作词').toMatch(/熔 铸/)
   })
 
   /** 天道熔炉材料差额由 furnaceMaterialShortfall 单源给出,两条失败路径都写实际差量 */

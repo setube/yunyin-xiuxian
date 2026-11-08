@@ -90,12 +90,26 @@
           >{{ formatGN(furnaceStoneCost()) }} → {{ FURNACE_STONE_DAO_SOURCE }} 道源</span>
           <span v-else class="tabular text-[10px] text-cinnabar">灵石尚差 {{ formatGap(stoneShort) }}</span>
         </span>
-        <button
-          class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]"
-          :disabled="stoneShort.m > 0"
-          :title="stoneShort.m > 0 ? `灵石尚差 ${formatGap(stoneShort)}` : undefined"
-          @click="furnaceConvertStone()"
-        >熔 铸</button>
+        <span class="ml-auto flex shrink-0 items-center gap-1.5">
+          <input
+            v-if="stoneAffordable > 1"
+            v-model.number="stoneCount"
+            type="number"
+            :min="1"
+            :max="stoneAffordable"
+            class="h-7 w-14 shrink-0 rounded border border-ink/15 bg-paper/70 px-1 text-[11px] tabular"
+            aria-label="熔铸次数"
+            :title="`最多 ${stoneAffordable} 次`"
+          />
+          <button
+            class="btn-ghost shrink-0 !px-3 !py-2 !text-[11px]"
+            :disabled="stoneShort.m > 0"
+            :title="stoneShort.m > 0 ? `灵石尚差 ${formatGap(stoneShort)}` : undefined"
+            @click="doConvertStone()"
+          >
+            {{ stoneEffective === 1 ? '熔 铸' : `熔 铸 ×${stoneEffective}` }}
+          </button>
+        </span>
       </div>
       <div class="py-2.5">
         <!--
@@ -209,6 +223,7 @@ import {
   condenseFruitAffordable,
   furnaceConvert,
   furnaceConvertStone,
+  furnaceStoneAffordable,
   furnaceStoneCost
 } from '@/core/endgameService'
 import {
@@ -219,7 +234,7 @@ import {
   shouldShowFruitTutorial
 } from '@/core/resourceGuidance'
 import { formatGN, formatGap, formatNum } from '@/utils/format'
-import { gnZero, subClamp } from '@/utils/gnum'
+import { gnZero, subClamp, mulN } from '@/utils/gnum'
 import { daoSourceShortfall, daoSourceShortText } from '@/core/daoSource'
 import { MARGIN_PIPS, marginCurvePoints, marginMark } from '@/ui/fruitMargin'
 import { rateMark } from '@/ui/furnaceRate'
@@ -293,11 +308,23 @@ const showCurve = computed(() => fruitInfo.value.total >= 4)
 const fruitShort = computed(() => daoSourceShortfall(DAO_SOURCE_PER_FRUIT, endgame.daoSource))
 /** 手上道源最多能凝几枚:连凝钮的可凝数,与 condenseDaoFruit 同口径 */
 const affordable = computed(() => condenseFruitAffordable())
-/** 灵石熔铸缺口;价签与 furnaceConvertStone 同源 */
+/** 灵石熔铸的单价;价签与 furnaceConvertStone 同源 */
+const stoneUnit = computed(() => furnaceStoneCost())
+/** 手上灵石最多能熔几次:输入框上限,与 furnaceConvertStone 同口径 */
+const stoneAffordable = computed(() => furnaceStoneAffordable())
+/** 用户想要的次数;钳到 [1, 可熔次数] —— 手输 0/负数/超量都修回合法值 */
+const stoneCount = ref(1)
+const stoneEffective = computed(() => Math.max(1, Math.min(stoneAffordable.value || 1, Math.floor(stoneCount.value) || 1)))
+/** 当前这一次的缺口(按选中的次数算);价签与 furnaceConvertStone 同源 */
 const stoneShort = computed(() => {
-  const cost = furnaceStoneCost()
+  const cost = mulN(stoneUnit.value, stoneEffective.value)
   return resources.hasStone(cost) ? gnZero() : subClamp(cost, resources.spiritStone)
 })
+
+function doConvertStone(): void {
+  // 熔成功就把次数复位,免得下次打开还停在上次的大数上
+  if (furnaceConvertStone(stoneEffective.value)) stoneCount.value = 1
+}
 
 /** 凝道果:道果说明关掉前,凝成即弹 */
 const fruitDialogOpen = ref(false)

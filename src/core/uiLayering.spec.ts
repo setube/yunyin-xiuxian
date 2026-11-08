@@ -554,7 +554,12 @@ describe('可访问性 · 表单控件有名字', () => {
       for (const m of f.src.matchAll(/<label\b[\s\S]*?<\/label>/g)) {
         for (const im of m[0].matchAll(/<input\b[^>]*>/g)) labeled.add(im[0])
       }
-      for (const m of f.src.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)) {
+      /*
+       * 不能用 `<[^>]*>`:属性值里本来就可能出现 `>`,比如 `v-if="stoneAffordable > 1"` ——
+       * 那样匹配会在 `>` 处截断,后面真实的 aria-label 就看不见了,误判成「没有可访问名」。
+       * 改为「一直吃到行尾的 `>`」(SFC 里一个标签不跨行),属性值里的 > 就不会截断。
+       */
+      for (const m of f.src.matchAll(/<(?:input|select|textarea)\b[^\n]*?>/g)) {
         const tag = m[0]
         if (tag.includes('type="file"')) continue
         if (/aria-label|aria-labelledby|placeholder|\bhidden\b/.test(tag)) continue
