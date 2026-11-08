@@ -26,6 +26,7 @@
     "offline-check": "bun run build && bun scripts/offline-check.mjs",
     "first-paint": "bun run build && bun scripts/first-paint.mjs",
     "perf-profile": "bun run build && bun scripts/perf-profile.mjs",
+    "perf-stress": "bun run build && node scripts/perf-profile.mjs --stress",
     "treasure-check": "bun run build && node scripts/treasure-check.mjs",
     "detail-check": "bun run build && node scripts/detail-geometry.mjs",
     "modal-check": "bun run build && node scripts/modal-patrol.mjs",
