@@ -244,7 +244,7 @@
             class="btn-ghost"
             @click="onUsePillBatch()"
           >
-            连服 ×{{ pillBatchCount }}
+            连服 ×{{ pillBatchEffective }}
           </button>
         </div>
         <!--
@@ -570,6 +570,25 @@
   watch(pillDetail, () => {
     pillBatchCount.value = 5
   })
+  /**
+   * 这一下真会吃几枚:输入值钳在 [1, 存量]。
+   *
+   * 按钮文案与执行读同一份 —— 界面说的与做的必须同源。
+   * 只钳在 onUsePillBatch 里不够:吃完一批后存量变少而输入框还留着旧值,
+   * 按钮会挂着「连服 ×50」而实际只吃 10 枚(264d1278 修的就是同类问题)。
+   */
+  const pillBatchEffective = computed(() => {
+    const owned = currentPill.value?.count ?? 0
+    return Math.max(1, Math.min(owned, Math.floor(pillBatchCount.value) || 1))
+  })
+  // 存量变少(吃过了/换了存档)时把输入值收进上限,让输入框显示的数就是会吃的数
+  watch(
+    () => inventory.pills[pillDetail.value ?? ''] ?? 0,
+    owned => {
+      if (owned > 0 && pillBatchCount.value > owned) pillBatchCount.value = owned
+    },
+    { flush: 'post' }
+  )
   const currentPill = computed(() => (pillDetail.value ? (pillRows.value.find(r => r.def?.id === pillDetail.value) ?? null) : null))
   /** 当前查看的丹药的质感层(最上档才有);道品 rank 9 走同一入口 */
   /** 当前查看的丹药的质感层(最上档才有);行上已算好,这里直接取 */
@@ -606,10 +625,8 @@
   function onUsePillBatch(): void {
     const id = pillDetail.value
     if (!id) return
-    // 数量以输入框为准,但必须在 [1, 存量] 内:输入框可被键盘改成 0、负数或超过存量
-    const owned = currentPill.value?.count ?? 0
-    const want = Math.max(1, Math.min(owned, Math.floor(pillBatchCount.value) || 1))
-    usePillBatch(id, want)
+    // 与按钮文案读同一份钳制结果,不各算一次
+    usePillBatch(id, pillBatchEffective.value)
     if (!pillRows.value.some(r => r.def?.id === id)) pillDetail.value = null
   }
 
