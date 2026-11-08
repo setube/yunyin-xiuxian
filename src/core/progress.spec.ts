@@ -3,12 +3,13 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { formatGN } from '@/utils/format'
 import { buffDef } from '@/data/buffs'
-import { CULT_BASE_SPEED, CULT_SPEED_SOFT_CAP_T } from '@/data/constants'
+import { CULT_BASE_SPEED, CULT_SPEED_SOFT_CAP_T, LIFESPAN_CRITICAL_RATIO } from '@/data/constants'
 import { baseCultPerSec } from './formulas'
 import { retreatGainText, retreatGainedText, checkStateAchievements, retreatMarginalSpeed, rolloverDailyIfNeeded } from './progress'
 import { todayStr } from '@/utils/time'
 import { DAILY_TASKS } from '@/data/quests'
 import { useQuestsStore } from '@/stores/quests'
+import { useResourcesStore } from '@/stores/resources'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -136,6 +137,44 @@ describe('成就条件 · 每条都有判定路径', () => {
         `checkCustomAchievement('${key}')`
       )
     }
+  })
+
+  /**
+   * 三个状态型自定义成就的**触发条件**本身也要钉住。
+   *
+   * 上面那条只查 `checkCustomAchievement('lifespanLow')` 这个字符串在不在源码里 ——
+   * 把条件写成反的(`<=` 改成 `>=`),字符串一字不差,那条照样绿。
+   * 实测过:改成 `lifespanRatio >= LIFESPAN_CRITICAL_RATIO` 后整个 progress.spec 全绿,
+   * 而那样「寿元将尽」会在健康角色身上解锁、真告急时反而不解锁。
+   *
+   * 这里走行为:造出临界内 / 外的状态,调 checkStateAchievements,看成就有没有该解锁。
+   * 故障注入:把寿元条件方向改反,本条红。
+   */
+  it('寿元告急:只有真跌破一成才解锁「寿元将尽」', () => {
+    const player = usePlayerStore()
+    const quests = useQuestsStore()
+    // 寿元健康:ratio 明显 > 临界值
+    player.age = 10
+    expect(player.lifespanRatio, '探针前提:健康时该远高于临界').toBeGreaterThan(LIFESPAN_CRITICAL_RATIO)
+    checkStateAchievements()
+    expect(quests.hasAchieved('a_lifelow'), '寿元健康不该解锁「寿元将尽」').toBe(false)
+
+    // 跌进临界:age 推到寿命上限的 95%
+    player.age = Math.floor(player.lifespanMax * 0.95)
+    expect(player.lifespanRatio, '探针前提:此时该低于临界').toBeLessThanOrEqual(LIFESPAN_CRITICAL_RATIO)
+    checkStateAchievements()
+    expect(quests.hasAchieved('a_lifelow'), '跌破一成该解锁「寿元将尽」').toBe(true)
+  })
+
+  it('灵石百万:只有真到一百万才解锁「富可敌国」', () => {
+    const resources = useResourcesStore()
+    const quests = useQuestsStore()
+    resources.spiritStone = { m: 9.9, e: 5 }   // 99 万,差一点
+    checkStateAchievements()
+    expect(quests.hasAchieved('a_rich'), '不到一百万不该解锁').toBe(false)
+    resources.spiritStone = { m: 1, e: 6 }     // 正好一百万
+    checkStateAchievements()
+    expect(quests.hasAchieved('a_rich'), '到一百万该解锁').toBe(true)
   })
 
   it('quality 型由 checkQualityAchievement 负责,不进 checkAchievements 的循环', () => {
