@@ -8,6 +8,8 @@ import {
   buildingCost,
   expRequirement,
   powerScale,
+  majorCombatFactor,
+  realmScale,
   tierMajor,
   upgradeCost,
   powerScore,
@@ -70,6 +72,48 @@ describe('GameFormula 成长曲线', () => {
     const high = baseCombatStats(3, 5)
     expect(gte(high.attack, low.attack)).toBe(true)
     expect(ratio(high.maxHp, low.maxHp)).toBeGreaterThan(30)
+  })
+
+  /**
+   * `majorCombatFactor` / `realmScale` 的负输入不该把战力打到 1 以下。
+   *
+   * `earlyLate` 里 `Math.min(Math.max(0, major), WORLD_BREAK_MAJOR)` 的内层 `Math.max(0, …)`
+   * 挡的是 major 为负 —— 而 `powN` **支持负指数**(实测 powN(3.8, -5) = 1.26e-3),
+   * 所以去掉它之后 majorCombatFactor(-5) 会算成 0.00126,而不是 1。
+   *
+   * 真实路径上 major 来自 tierMajor(已钳 0..20)),这层是深公式里的最后一道;
+   * 一旦有人把别处的 major 直接喂进来,战力会凭空缩到千分之一而不是退化成「最低境界」。
+   * 变异扫描点名这两处(71 / 72)。
+   */
+  it('大境界因子:负输入退化成 0 境,不掉到 1 以下', () => {
+    for (const m of [-1, -5, -100]) {
+      const f = majorCombatFactor(m)
+      expect(f.m, `majorCombatFactor(${m}) = ${f.m}e${f.e} 低于 0 境`).toBe(1)
+      expect(f.e, `majorCombatFactor(${m}) 的指数不该为负`).toBe(0)
+    }
+    // 0 境本身就是 1,负值该与它完全相同
+    expect(majorCombatFactor(-5)).toEqual(majorCombatFactor(0))
+    expect(majorCombatFactor(-1)).toEqual(majorCombatFactor(0))
+  })
+
+  it('大境界因子:随 major 单调递增,跨界后仍递增', () => {
+    let prev = majorCombatFactor(0)
+    for (let m = 1; m <= 20; m += 1) {
+      const cur = majorCombatFactor(m)
+      expect(toNum(cur), `major=${m} 的因子没有继续增长`).toBeGreaterThan(toNum(prev))
+      prev = cur
+    }
+  })
+
+  it('realmScale:负大境界同样退化成 0 境', () => {
+    // 大境界那一道钳在 majorCombatFactor 里故能照顾到 realmScale;
+    // 层数(sub)那道钳不在此处 —— 它的来源 player.sub 由 sanitize 钳在 0..SUB_LEVELS-1,
+    // 且 realmScale 的两处调用都传 sanitize 过的值,故不在此补负层数断言(那是不可达路径)。
+    for (const m of [-1, -5]) {
+      expect(realmScale(m, 0), `major=${m} 该与 0 境同尺`).toEqual(realmScale(0, 0))
+    }
+    // 正常层数照旧递增
+    expect(toNum(realmScale(0, 5)), '层数该让倍率增长').toBeGreaterThan(toNum(realmScale(0, 0)))
   })
 
   /**
