@@ -57,6 +57,32 @@ function planOf(shape: Shape, kind: TribulationKind, major = AUDIT_MAJOR, weathe
 }
 
 describe('天劫解法空间审计', () => {
+  /*
+   * 坠劫者的决策档恒为 danger —— 撑得再久也不许被算成「能过」。
+   *
+   * 这条钉的是 `failedRate` 的值域 [0.25, 0.44]:上界 0.44 卡在 danger 阈值 0.45 之下。
+   * 变异扫描把 `Math.max(0.25, ...)` 报成「改坏了不会红」,而 `tribulationDecision.ts`
+   * 那行注释还写着「spec 钉:tribulationSpace.spec.ts」—— 实测全仓 grep 零命中,
+   * 注释是错的。这里补上。
+   *
+   * 玩家看到的是决策档标签。一个已经坠劫的推演如果被标成「可渡」,
+   * 玩家会照着它冲境,然后真的死在里面。
+   */
+  it('坠劫者的决策档恒为 danger,不许因评分抬高翻成可渡', () => {
+    const bare = SHAPES.find(s => s.key === 'bare')!
+    let fallen = 0
+    for (let major = 1; major <= MAX_MAJOR; major += 1) {
+      for (const t of TRIBULATIONS) {
+        const p = buildTribulationPlan(major, bare.mods, t.id, NO_RELIEF, 1)
+        // 存活推演的档位由 minHp 决定,与 failedRate 无关,跳过
+        if (p.expectedRate >= 0.45) continue
+        fallen += 1
+        expect(p.verdict, `${REALMS[major]!.name}·${t.name}劫:评分 ${p.expectedRate.toFixed(3)} 却标成「${p.verdict}」`).toBe('danger')
+      }
+    }
+    expect(fallen, '该有若干坠劫组合,判据不能空转').toBeGreaterThan(0)
+  })
+
   /** 扩界守卫:天劫难度不得随境界失控 */
   it('四维皆优的参考构筑,在每一个需渡劫的境界都能渡任一劫型', () => {
     const maxed = SHAPES.find(s => s.key === 'maxed')!
