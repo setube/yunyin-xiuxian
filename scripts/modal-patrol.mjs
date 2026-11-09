@@ -68,7 +68,11 @@ async function auditModal(page) {
       return r.width > 0 && r.height > 0
     })
     const panel = panels[panels.length - 1] ?? null
-    if (!panel) return null
+    if (!panel) {
+      // 没开出来也得把禁令摘掉,否则这一页之后的所有过渡都不再可观测
+      st.remove()
+      return null
+    }
 
     const luma = rgb => {
       if (!rgb) return null
@@ -235,7 +239,7 @@ async function auditModal(page) {
       scroller.scrollTop = 0
     }
 
-    return {
+    const result = {
       count: rows.length,
       scrollClip,
       label: (panel.getAttribute('aria-label') || panel.querySelector('h3')?.textContent || '').trim(),
@@ -246,6 +250,15 @@ async function auditModal(page) {
       squeezed: squeezed.slice(0, 3),
       wrapped: wrapped.slice(0, 3)
     }
+    /*
+     * 量完摘掉禁令。这条是 `*{transition:none!important}`,全局生效;
+     * 留在 DOM 里会让此后任何过渡检测失效(弹窗淡出瞬间完成、FADING 类抓不到)。
+     * 本脚本目前只按固定时长等,暂时没撞上 —— 但那不等于安全:
+     * 后面谁加一句「等淡出走完」就会踩雷,且很难想到根因在这。
+     * 与 layout-check 同一处修复口径。
+     */
+    st.remove()
+    return result
   })
 }
 
