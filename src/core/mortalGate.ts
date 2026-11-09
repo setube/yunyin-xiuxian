@@ -1,5 +1,12 @@
 /** 凡界世界的验收门:四门各自设线,任何一项不达标即弃用;不可用综合分数掩盖关键维度缺失 */
-import { type MortalAudit, type MortalWorld, auditMortalWorld, generateMortalWorld, mortalNovelty } from './mortalWorldGen'
+import {
+  type MortalAudit,
+  type MortalWorld,
+  auditMortalWorld,
+  auditMortalWorldAsync,
+  generateMortalWorld,
+  mortalNovelty
+} from './mortalWorldGen'
 import { rhythmNovelty, skeletonNovelty } from './mortalIdentity'
 
 /** 各门的最低线 */
@@ -35,7 +42,15 @@ export interface GateReport {
 
 /** 逐门评估;每一门返回自己的原始读数 */
 export function evaluateGates(w: MortalWorld, history: MortalWorld[], runs = 10): GateReport {
-  const audit = auditMortalWorld(w, runs)
+  return buildGateReport(w, history, auditMortalWorld(w, runs))
+}
+
+/** 分块版:审计本身按构筑分块让出主线程,判定逻辑与同步版共用 buildGateReport */
+async function evaluateGatesAsync(w: MortalWorld, history: MortalWorld[], runs = 10): Promise<GateReport> {
+  return buildGateReport(w, history, await auditMortalWorldAsync(w, runs))
+}
+
+function buildGateReport(w: MortalWorld, history: MortalWorld[], audit: MortalAudit): GateReport {
   const gates: GateResult[] = [
     { name: '结构新颖', value: mortalNovelty(w, history), floor: GATES.structural, passed: false },
     { name: '可行构筑', value: audit.viable, floor: GATES.viable, passed: false },
@@ -78,7 +93,7 @@ export async function generateGatedMortalAsync(
   for (let t = 0; t < maxTries; t += 1) {
     if (opts.shouldStop?.()) return null
     const world = generateMortalWorld(baseSeed + t * 7919)
-    const report = evaluateGates(world, history, runs)
+    const report = await evaluateGatesAsync(world, history, runs)
     if (report.passed) return { report, rejected: t, rejectionsByGate }
     for (const f of report.failed) rejectionsByGate[f] = (rejectionsByGate[f] ?? 0) + 1
     await new Promise(res => setTimeout(res, 0))
