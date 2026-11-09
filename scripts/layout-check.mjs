@@ -42,6 +42,13 @@ const VIEWPORTS = [
   { width: 1280, height: 800, tag: '1280x800', dpr: 1 }
 ]
 /** 全量路由:漏一页即该页无守卫 */
+/*
+ * 全站可达路由。原先漏了 /market 与 /apprentice ——
+ * 前者只有「续草落点」一个专项(量的是弹窗几何,不是巡页那套尺子),
+ * 后者在本脚本里一处都没出现过。而 /apprentice 是主玩法页,有「收道童 / 派活 / 收成」,
+ * 新档下还带「(门中已满)」拒因,正是最容易挤变形的那类行内钮。
+ * 主巡页从建号流程起手(真实新档),这两页都会正常渲染,量得到。
+ */
 const ROUTES = [
   '/',
   '/cultivation',
@@ -57,7 +64,9 @@ const ROUTES = [
   '/legacy',
   '/dongfu',
   '/world',
-  '/celestial'
+  '/celestial',
+  '/market',
+  '/apprentice'
 ]
 
 /**
