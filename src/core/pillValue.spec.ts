@@ -642,7 +642,14 @@ describe('炼丹审计 · 没有配方的丹', () => {
   it('给定负境界,当算一层耗时与药力,则落在第 0 境,不落进负区间', () => {
     expect(layerSeconds(-1), '负境界的结果须等于第 0 境').toBe(layerSeconds(0))
     expect(layerSeconds(-999)).toBe(layerSeconds(0))
-    for (const def of PILLS.slice(0, 3)) {
+    /*
+     * 全 72 味都验,不抽样。
+     *
+     * 起初只取前 3 味 —— 那三味恰好都走同一条分支(instant.expSecs),
+     * 而 pillGainSecAt 内部有 5 条分支(expSecs / expFixed / qiPct / lifespanYears / wudao),
+     * 每条的钳制来源都不同。抽样等于只验了其中一条。
+     */
+    for (const def of PILLS) {
       expect(pillGainSecAt(def, -1), `${def.id} 负境界的结果须等于第 0 境`).toBe(pillGainSecAt(def, 0))
       expect(pillGainSecAt(def, -999)).toBe(pillGainSecAt(def, 0))
     }
