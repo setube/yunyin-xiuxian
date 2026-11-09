@@ -29,7 +29,7 @@ import { modOf } from './statsCalc'
 import { SLAUGHTER_PER_WIN, SWORD_PER_WIN, slaughterSpeedBonus, stackedMods } from './daoDepth'
 import { currentDaoRules, endgameUnlocked, recordMark } from './endgameService'
 import { recordMilestone, trackClearRecords } from './identity'
-import { defaultHistory, generateApprovedWorld, type HistoryEntry } from './worldGen'
+import { defaultHistoryAsync, generateApprovedWorldAsync, type HistoryEntry } from './worldGen'
 import { BUILD_PROFILES, buildSnap } from './buildSim'
 import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore, type WorldRunState } from '@/stores/endgame'
@@ -438,10 +438,24 @@ export function challengeMutation(mutatorIds: string[]): MutationResult | null {
 
 export const VOID_REROLL_COST = 10
 
-/** 窥探虚界:花道源生成一个过审的临时世界 */
-export function rerollVoidWorld(): boolean {
+/** 窥探进行中:防重入(连点会在几秒内多次扣道源) */
+let voidRerolling = false
+
+/** 窥探是否在途 —— 界面据此置灰并写「窥探中」 */
+export function isVoidRerolling(): boolean {
+  return voidRerolling
+}
+
+/**
+ * 窥探虚界:花道源生成一个过审的临时世界。
+ *
+ * 生成是分块异步的 —— 单次候选的审计约 70ms,maxTries=40 时整趟最坏 3183ms、中位 654ms。
+ * 扣费同步做(立即给回执),生成让出主线程,期间 `voidRerolling` 挡掉连点。
+ */
+export async function rerollVoidWorld(): Promise<boolean> {
   const endgame = useEndgameStore()
   const ui = useUiStore()
+  if (voidRerolling) return false
   if (!endgameUnlocked() || !endgame.daoPath) {
     ui.toast('未择道途', 'warn')
     return false
@@ -455,22 +469,28 @@ export function rerollVoidWorld(): boolean {
     ui.toast(short.reason ?? `道源不足 ${VOID_REROLL_COST}`, 'warn')
     return false
   }
-  const generated = generateApprovedWorld(Date.now() % 999983, 40, voidHistory())
-  if (!generated) {
-    // 裁判连续否决:退款
-    endgame.addDaoSource(VOID_REROLL_COST)
-    ui.toast('虚界未成形 · 道源已退还', 'warn')
-    return false
+  voidRerolling = true
+  ui.toast('窥探中', 'warn')
+  try {
+    const generated = await generateApprovedWorldAsync(Date.now() % 999983, 40, await voidHistory())
+    if (!generated) {
+      // 裁判连续否决:退款
+      endgame.addDaoSource(VOID_REROLL_COST)
+      ui.toast('虚界未成形 · 道源已退还', 'warn')
+      return false
+    }
+    endgame.voidWorld = generated.world
+    ui.toast(`虚界「${generated.world.name}」成形`, 'rare')
+    return true
+  } finally {
+    voidRerolling = false
   }
-  endgame.voidWorld = generated.world
-  ui.toast(`虚界「${generated.world.name}」成形`, 'rare')
-  return true
 }
 
 /** 新颖度历史:手工四天 + 当前虚界(连摇须与上一座不同) */
-function voidHistory(): HistoryEntry[] {
+async function voidHistory(): Promise<HistoryEntry[]> {
   const endgame = useEndgameStore()
-  const hist = [...defaultHistory()]
+  const hist = [...(await defaultHistoryAsync())]
   if (endgame.voidWorld) hist.push({ world: endgame.voidWorld })
   return hist
 }

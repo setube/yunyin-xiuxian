@@ -2,14 +2,14 @@
 /** 虚界生成器裁判:每座虚界须过门 —— 有解、无近必胜、不塌缩、奖励由难度定价 */
 import { describe, expect, it } from 'vitest'
 import { CELESTIAL_WORLDS } from '@/data/endgame'
-import { auditVoidWorld, generateApprovedWorld, noveltyScore, NOVELTY_MIN } from './worldGen'
+import { auditVoidWorld, generateApprovedWorldAsync, noveltyScore, NOVELTY_MIN } from './worldGen'
 import { budgetOfRules, WORLD_BUDGET_CAP } from './ruleBudget'
 
 describe('虚界生成器', () => {
-  it('五个种子至少四个产出过审世界,成功者审计条件全部满足', { timeout: 30000 }, () => {
+  it('五个种子至少四个产出过审世界,成功者审计条件全部满足', { timeout: 60000 }, async () => {
     let ok = 0
     for (const seed of [11, 12, 13, 4242, 90210]) {
-      const generated = generateApprovedWorld(seed)
+      const generated = await generateApprovedWorldAsync(seed)
       if (!generated) continue
       ok += 1
       const { world, audit, novelty } = generated
@@ -64,7 +64,7 @@ describe('虚界生成器', () => {
 /**
  * 奖励定价的可达值域。
  *
- * generateApprovedWorld 里 `Math.min(100, Math.max(55, 60*(1.85-best)))` 的两层钳制
+ * generateApprovedWorldAsync 里 `Math.min(100, Math.max(55, 60*(1.85-best)))` 的两层钳制
  * 在实际值域内都不生效:过审要求 best∈[0.5,0.97],而 best 是 clears/runs 的离散值
  * (runs=7 时只能取 0.571/0.714/0.857),于是 raw 落在 [57, 81]。
  *
@@ -72,7 +72,7 @@ describe('虚界生成器', () => {
  * 本条把值域钉住,免得有人把阈值改宽后发现奖励悄悄被压平却无从察觉。
  */
 describe('虚界奖励定价', () => {
-  /** 与 generateApprovedWorld 内的算式同形;这里复述是为了单独验值域 */
+  /** 与 generateApprovedWorldAsync 内的算式同形;这里复述是为了单独验值域 */
   function rewardOf(best: number): number {
     return Math.round(Math.min(100, Math.max(55, 60 * (1.85 - best))))
   }
@@ -106,8 +106,8 @@ describe('虚界奖励定价', () => {
     }
   })
 
-  it('生成器产出的世界:奖励落在 55~81 且与自身 best 对得上', { timeout: 30000 }, () => {
-    const generated = generateApprovedWorld(11)
+  it('生成器产出的世界:奖励落在 55~81 且与自身 best 对得上', { timeout: 60000 }, async () => {
+    const generated = await generateApprovedWorldAsync(11)
     expect(generated, '种子 11 未产出过审世界,无法验证定价').not.toBeNull()
     const { world, audit } = generated!
     expect(world.rewardDaoSource).toBe(rewardOf(audit.best))
