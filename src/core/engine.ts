@@ -31,8 +31,11 @@ class GameEngine {
   start(): void {
     const now = Date.now()
     const game = useGameStore()
+    // 启动分段:engine.start 里的离线结算与成就补扫是进页面那块长任务的主要来源
+    performance.mark('boot:engineStart')
     try {
       sanitizeOfflineInputs()
+      performance.mark('boot:offlineInputs')
       // 旧存档补种:丹炉等级"能炼"的方子折算成掌握度(幂等)
       if (game.started) seedLoreIfNeeded()
       // 先翻日再结算离线:跨午夜的离线收益记入"归来之日"的日课
@@ -40,6 +43,7 @@ class GameEngine {
       if (game.started && game.lastActiveAt > 0) {
         settleOffline(now)
       }
+      performance.mark('boot:offlineSettled')
       // 离线结算只加寿元、不判生死,死亡判定在此补
       if (game.started) {
         this.checkDeath()
@@ -51,6 +55,7 @@ class GameEngine {
       }
       // 补扫成就:老档/导入档未 track 过的已满足成就当场解锁
       if (game.started) checkStateAchievements()
+      performance.mark('boot:achievements')
     } catch (err) {
       console.error('[引擎] 离线结算异常', err)
     }

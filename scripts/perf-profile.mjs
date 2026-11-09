@@ -54,6 +54,19 @@ const gate = !args.includes("--no-gate");
  * 而前者正按需从该目录取资源 —— 读数会混杂甚至 404。故须串行跑,不要同时开两个。
  */
 const stress = args.includes("--stress");
+/**
+ * `--no-save`:不注入存档,走欢迎页。
+ *
+ * 用来把「启动固定开销」拆成两半:有存档时要跑 settleOffline(离线整段结算)
+ * 与 checkStateAchievements(补扫全部成就),无存档时两者都不跑。
+ * 两次读数之差就是这两件事的代价。
+ */
+const noSave = args.includes("--no-save");
+/**
+ * `--startup`:只跑一次启动,把 main.ts / engine.ts 里那几处 performance.mark
+ * 之间的间隔打出来。用来回答「进任何页面都有的那块长任务花在哪」。
+ */
+const startupOnly = args.includes("--startup");
 
 /**
  * 判据上限:本机读数留数倍余量(机型/负载差异),只拦成倍回退。
@@ -190,13 +203,55 @@ const browser = await chromium.launch({
 });
 const results = [];
 const failures = [];
+
+/*
+ * `--startup`:进一次首页,把启动那几段标记的间隔打出来。
+ *
+ * 不进这个分支时完全不影响常规巡页。
+ */
+if (startupOnly) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await seedSave(context, stress ? stressSlices() : lateSlices());
+  const page = await context.newPage();
+  await page.goto(base + "#/", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForTimeout(2500);
+  const marks = await page.evaluate(() =>
+    performance.getEntriesByType("mark").map((m) => ({ name: m.name, at: Math.round(m.startTime * 100) / 100 }))
+  );
+  const order = [
+    "boot:start",
+    "boot:preflight",
+    "boot:sanitize",
+    "boot:mounted",
+    "boot:engineStart",
+    "boot:offlineInputs",
+    "boot:offlineSettled",
+    "boot:achievements",
+  ];
+  const byName = new Map(marks.map((m) => [m.name, m.at]));
+  console.log("\n启动分段(ms,相对导航起点):");
+  let prev = null;
+  for (const name of order) {
+    if (!byName.has(name)) continue;
+    const at = byName.get(name);
+    const delta = prev === null ? at : Math.round((at - prev) * 100) / 100;
+    console.log(`  ${name.padEnd(22)} @${String(at).padStart(8)}  +${delta}`);
+    prev = at;
+  }
+  const last = byName.has("boot:achievements") ? byName.get("boot:achievements") : prev;
+  if (last !== null) console.log(`  ${"(启动合计)".padEnd(20)} ${Math.round(last * 100) / 100}ms`);
+  await context.close();
+  await browser.close();
+  server.close();
+  process.exit(0);
+}
 for (const view of VIEWS) {
   if (only && view.name !== only) continue;
   let record = null;
   try {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     // 每视图注入一份后期档;缺档会落到欢迎页,门量空
-    await seedSave(context, stress ? stressSlices() : lateSlices());
+    if (!noSave) await seedSave(context, stress ? stressSlices() : lateSlices());
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
