@@ -11,8 +11,19 @@ import { summarizeError, useDiagStore } from './stores/diag'
 import { useServiceWorkerUpdate } from './composables/useServiceWorkerUpdate'
 import './style.css'
 
+/*
+ * 启动分段计时。
+ *
+ * 实测进任何页面时都有一块约 68ms 的挂载期长任务,与页面节点数无关(158 节点的页
+ * 与 703 节点的页读数只差 3ms)—— 那是**启动固定开销**,不是页面渲染。
+ * 用 performance.mark 把它拆开,perf-profile 用 `--startup` 读这几段。
+ *
+ * 标记极廉价(仅压一条 record 进 buffer),生产开着也不影响首屏。
+ */
+performance.mark('boot:start')
 // 启动前扫描损坏存档 + 结构升级,避免白屏
 const corrupted = preflightScan()
+performance.mark('boot:preflight')
 migrateLocalSchema()
 
 const app = createApp(App)
@@ -47,8 +58,10 @@ window.addEventListener('unhandledrejection', event => {
 
 // 须在首次渲染前逐仓自愈 hydrate 进来的坏值;幂等,engine.start 在 onMounted 再调一遍
 sanitizeAllStores()
+performance.mark('boot:sanitize')
 
 app.mount('#app')
+performance.mark('boot:mounted')
 
 if (corrupted.length > 0) {
   useUiStore().corruptedNotice = corrupted
