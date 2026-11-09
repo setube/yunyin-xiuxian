@@ -5,6 +5,7 @@ import type { OwnedApprentice } from '@/core/apprenticeService'
 import { APPRENTICE_MAX_LEVEL, STARTER_APPRENTICE, APPRENTICES, apprenticeSlots, APPRENTICE_SLOT_HARD_CAP } from '@/data/apprentices'
 import { herbGradeOfMajor } from '@/data/herbGrades'
 import { gn, toNum } from '@/utils/gnum'
+import { apprenticeRecruitCost } from '@/core/apprenticeService'
 import { useApprenticeStore } from '@/stores/apprentice'
 import { useResourcesStore } from '@/stores/resources'
 import { usePlayerStore } from '@/stores/player'
@@ -152,6 +153,39 @@ describe('收徒 · 派发与收割', () => {
     res.spiritStone = gn(1e12)
     expect(a.recruit(MAX_MAJOR + 99), '超界境界夹回最高境后仍可收').toBe('ok')
     expect(a.apprentices, '只收一人,不因超界境界多开槽').toHaveLength(1)
+  })
+
+  /*
+   * 负境界也要夹回凡境 —— 这一档与 NaN / 超界不同,它**会改价格**。
+   *
+   * `clampMajor` 的下限去掉后,实测 major=-1 收到 36 石、major=0 收到 68.4 石:
+   * `apprenticeRecruitCost` 走 `stoneByTier(maxTierForMajor(major))`,而
+   * `maxTierForMajor` 对负数是「没有任何区域满足 minRealm <= -1」,退回 best=1 阶;
+   * 第 0 境则命中较后的区域。两条路径的层级不同,价签就不同。
+   *
+   * 所以这不是等价变异:漏了夹子,玩家能用一个负数(比如「上一境」算成 -1)
+   * 以半价收道童。名额那边 `apprenticeSlots` 自带 Math.max,两条尺在这里分家 ——
+   * 名额不会错,价格会错,正是最难看出来的一种。
+   */
+  it('负境界夹回凡境:价签与凡境一致,不许半价', () => {
+    const a = useApprenticeStore()
+    const res = useResourcesStore()
+    a.$patch({ apprentices: [] })
+    res.spiritStone = gn(1e12)
+    const atZero = toNum(apprenticeRecruitCost(0))
+    const beforeZero = toNum(res.spiritStone)
+    a.recruit(0)
+    const paidZero = beforeZero - toNum(res.spiritStone)
+
+    a.$patch({ apprentices: [] })
+    res.spiritStone = gn(1e12)
+    const beforeNeg = toNum(res.spiritStone)
+    a.recruit(-1)
+    const paidNeg = beforeNeg - toNum(res.spiritStone)
+
+    // GNum 走 m×10^e 再还原,比较用相对误差
+    expect(paidNeg, `负境界实收 ${paidNeg},凡境 ${paidZero} —— 夹子没了`).toBeCloseTo(paidZero, 3)
+    expect(paidNeg).toBeCloseTo(atZero, 3)
   })
 
   it('sanitize:坏弟子整位丢弃、坏任务当作闲置、坏等级/羁绊夹回', () => {
