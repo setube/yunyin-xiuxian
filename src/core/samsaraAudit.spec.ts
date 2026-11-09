@@ -40,7 +40,7 @@ import {
 } from './samsaraAudit'
 
 describe('轮回审计 · 继承清单(逐条对照代码核实)', () => {
-  it('当前继承全貌', () => {
+  it('当前继承全貌', async () => {
     const s = summarize()
     console.log(`\n完整继承 ${s.fullCount} 项 / 部分继承 ${s.partialCount} 项 / 重置 ${s.resetCount} 项`)
     for (const r of HERITAGE) {
@@ -49,7 +49,7 @@ describe('轮回审计 · 继承清单(逐条对照代码核实)', () => {
     }
   })
 
-  it('「状态」类资产已基本重建,玩家反馈的清单与代码实际有出入', () => {
+  it('「状态」类资产已基本重建,玩家反馈的清单与代码实际有出入', async () => {
     const byId = (id: string) => HERITAGE.find(r => r.id === id)!
     for (const id of ['equipment', 'pills', 'artifacts', 'materials', 'regions', 'realm']) {
       expect(byId(id).mode).toBe('reset')
@@ -58,7 +58,7 @@ describe('轮回审计 · 继承清单(逐条对照代码核实)', () => {
     expect(byId('gongfa').mode).toBe('partial')
   })
 
-  it('外物已全部归零;仍完整继承的状态类只剩荣誉/道统/世界记忆', () => {
+  it('外物已全部归零;仍完整继承的状态类只剩荣誉/道统/世界记忆', async () => {
     const s = summarize()
     const names = s.stateButFull.map(r => r.name)
     console.log(`\n属于状态却完整继承:${names.join('、')}`)
@@ -71,7 +71,7 @@ describe('轮回审计 · 继承清单(逐条对照代码核实)', () => {
 })
 
 describe('轮回审计 · 追平时间(轮回还剩多少「重新经历」)', () => {
-  it('修满真仙的耗时随世数塌缩', () => {
+  it('修满真仙的耗时随世数塌缩', async () => {
     const rows = pacePerLife([1, 2, 3, 5, 10, 20, 50, 100])
     console.log('\n第 N 世修满真仙所需:')
     for (const r of rows) {
@@ -82,7 +82,7 @@ describe('轮回审计 · 追平时间(轮回还剩多少「重新经历」)', (
     }
   })
 
-  it('第二世就砍掉近半耗时,第十世只剩一成半', () => {
+  it('第二世就砍掉近半耗时,第十世只剩一成半', async () => {
     // 实测:第2世 54.7%、第3世 39.3%、第10世 14.4%
     const [l2, l3, l10] = [2, 3, 10].map(n => hoursToPeakAt(n) / hoursToPeakAt(1))
     expect(l2!).toBeLessThan(0.6)
@@ -91,13 +91,13 @@ describe('轮回审计 · 追平时间(轮回还剩多少「重新经历」)', (
     console.log(`\n耗时占比:第2世 ${(l2! * 100).toFixed(1)}% / 第3世 ${(l3! * 100).toFixed(1)}% / 第10世 ${(l10! * 100).toFixed(1)}%`)
   })
 
-  it('百世时重修一遍只需第一世的百分之二,「重新经历」名存实亡', () => {
+  it('百世时重修一遍只需第一世的百分之二,「重新经历」名存实亡', async () => {
     const ratio = hoursToPeakAt(100) / hoursToPeakAt(1)
     expect(ratio).toBeLessThan(0.03)
     console.log(`\n第100世修满真仙仅需 ${hoursToPeakAt(100).toFixed(1)}h,为第一世的 ${(ratio * 100).toFixed(1)}%`)
   })
 
-  it('耗时单调递减且不收敛于任何下界——这是无上限累积的特征', () => {
+  it('耗时单调递减且不收敛于任何下界——这是无上限累积的特征', async () => {
     const lives = [1, 5, 10, 20, 50, 100, 200, 500]
     const hours = lives.map(hoursToPeakAt)
     for (let i = 1; i < hours.length; i += 1) {
@@ -111,7 +111,7 @@ describe('轮回审计 · 追平时间(轮回还剩多少「重新经历」)', (
 })
 
 describe('轮回审计 · 永久乘区的累积', () => {
-  it('道果是唯一无上限项:天赋会集齐封顶,道果不会', () => {
+  it('道果是唯一无上限项:天赋会集齐封顶,道果不会', async () => {
     // 天赋 33 项,约十世集齐
     expect(talentsAfterLives(10)).toBe(talentsAfterLives(100))
     expect(daoFruitAfterLives(100)).toBeGreaterThan(daoFruitAfterLives(10) * 9)
@@ -121,7 +121,7 @@ describe('轮回审计 · 永久乘区的累积', () => {
     )
   })
 
-  it('永久战力乘数随世数持续攀升,百世逾百倍', () => {
+  it('永久战力乘数随世数持续攀升,百世逾百倍', async () => {
     const m10 = permanentPowerMultAt(10)
     const m100 = permanentPowerMultAt(100)
     expect(m10).toBeGreaterThan(15)
@@ -130,7 +130,7 @@ describe('轮回审计 · 永久乘区的累积', () => {
     console.log(`\n永久战力乘数:第10世 ×${m10.toFixed(1)} → 第100世 ×${m100.toFixed(1)}`)
   })
 
-  it('道果的软化指数压不住发散:^0.9 仍是超线性累积', () => {
+  it('道果的软化指数压不住发散:^0.9 仍是超线性累积', async () => {
     const a = permanentPowerMultAt(50)
     const b = permanentPowerMultAt(500)
     expect(b).toBeGreaterThan(a * 2)
@@ -139,7 +139,7 @@ describe('轮回审计 · 永久乘区的累积', () => {
 })
 
 describe('轮回审计 · 与数值膨胀共根', () => {
-  it('压缩下一世成长空间的条目集中在永久乘区与半留资产', () => {
+  it('压缩下一世成长空间的条目集中在永久乘区与半留资产', async () => {
     const s = summarize()
     const names = s.compressing.map(r => r.name)
     console.log(`\n压缩成长空间的 ${names.length} 项:${names.join('、')}`)
@@ -150,7 +150,7 @@ describe('轮回审计 · 与数值膨胀共根', () => {
     expect(names).not.toContain('灵脉投资')
   })
 
-  it('认知与成就不压缩成长空间——它们只让人「知道得更多」', () => {
+  it('认知与成就不压缩成长空间——它们只让人「知道得更多」', async () => {
     const byId = (id: string) => HERITAGE.find(r => r.id === id)!
     expect(byId('lore').mode).toBe('full')
     expect(byId('lore').compressesGrowth).toBe(false)
@@ -160,7 +160,7 @@ describe('轮回审计 · 与数值膨胀共根', () => {
 })
 
 describe('轮回审计 · 灵脉投资', () => {
-  it('灵脉是外物:转世即清零,不再带着投满的地脉出生', () => {
+  it('灵脉是外物:转世即清零,不再带着投满的地脉出生', async () => {
     const row = HERITAGE.find(r => r.id === 'veins')!
     expect(row.mode).toBe('reset')
     expect(row.kind).toBe('state')
@@ -168,7 +168,7 @@ describe('轮回审计 · 灵脉投资', () => {
     console.log(`\n灵脉:${row.detail}`)
   })
 
-  it('跨世累积只剩有界的天赋与无界的道果两项', () => {
+  it('跨世累积只剩有界的天赋与无界的道果两项', async () => {
     expect(talentsAfterLives(10)).toBe(talentsAfterLives(1000))
     expect(daoFruitAfterLives(1000)).toBeGreaterThan(daoFruitAfterLives(10) * 90)
   })
@@ -207,7 +207,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     'linggen'
   ]
 
-  it('每一个跨世系统都在清单里有一行', () => {
+  it('每一个跨世系统都在清单里有一行', async () => {
     const ids = new Set(HERITAGE.map(r => r.id))
     const missing = REQUIRED.filter(id => !ids.has(id))
     expect(missing, `这些系统未登记跨世去留:${missing.join('、')}`).toEqual([])
@@ -257,7 +257,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     // player.$state 里暂无纯运行时且无跨世意义的字段
   }
 
-  it('存档里的每个字段都登记了跨世去留 —— 从 $state 倒推,不靠手写清单', () => {
+  it('存档里的每个字段都登记了跨世去留 —— 从 $state 倒推,不靠手写清单', async () => {
     setActivePinia(createPinia())
     const keys = Object.keys(usePlayerStore().$state).sort()
     expect(keys.length, '取不到 player 存档字段,断言形同虚设').toBeGreaterThan(20)
@@ -268,7 +268,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     ).toEqual([])
   })
 
-  it('映射指向的清单行真实存在;手写清单与倒推清单不打架', () => {
+  it('映射指向的清单行真实存在;手写清单与倒推清单不打架', async () => {
     const ids = new Set(HERITAGE.map(r => r.id))
     for (const [key, rows] of Object.entries(STATE_KEY_ROWS)) {
       expect(rows.length, `${key} 没有指向任何清单行`).toBeGreaterThan(0)
@@ -280,7 +280,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     expect(orphanRows.map(r => r.id), '这些清单行既不在手写清单,也没有字段指向').toEqual([])
   })
 
-  it('轮回结算的交割清单直接渲染这张表,不另写一份', () => {
+  it('轮回结算的交割清单直接渲染这张表,不另写一份', async () => {
     const src = readFileSync(resolve(__dirname, '../components/character/ReincarnationDialog.vue'), 'utf8')
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -288,7 +288,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     expect(src, '结算弹窗没有接上继承表,玩家看到的与代码交割会分叉').toContain('heritageGroups()')
   })
 
-  it('外物一律归零:装备/法宝/丹药/材料/灵兽/洞府/灵脉/区域/本世/秘境/事件/契约', () => {
+  it('外物一律归零:装备/法宝/丹药/材料/灵兽/洞府/灵脉/区域/本世/秘境/事件/契约', async () => {
     const byId = (id: string) => HERITAGE.find(r => r.id === id)!
     for (const id of [
       'equipment',
@@ -310,7 +310,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     }
   })
 
-  it('记忆/精神/灵魂一律留:认知/成就/道果/天赋/宿慧/称号/师承/道痕/世界记忆/机缘记忆', () => {
+  it('记忆/精神/灵魂一律留:认知/成就/道果/天赋/宿慧/称号/师承/道痕/世界记忆/机缘记忆', async () => {
     const byId = (id: string) => HERITAGE.find(r => r.id === id)!
     for (const id of ['lore', 'quests', 'daoFruit', 'talents', 'insight', 'title', 'mentor', 'fortuneMemory']) {
       expect(byId(id).mode, `${byId(id).name} 属记忆/精神/灵魂,应保留`).toBe('full')
@@ -321,7 +321,7 @@ describe('轮回审计 · 继承清单最小完备', () => {
     expect(byId('suppress').mode, `区域${byId('suppress').name} 产出不跨世、记忆跨世`).toBe('partial')
   })
 
-  it('结算界面按去留分组时,清单一行不漏、一行不重(界面与代码同源)', () => {
+  it('结算界面按去留分组时,清单一行不漏、一行不重(界面与代码同源)', async () => {
     const groups = heritageGroups()
     expect(groups.map(g => g.mode)).toEqual(['full', 'partial', 'reset'])
     const seen = groups.flatMap(g => g.rows.map(r => r.id))
@@ -423,7 +423,7 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
     return Object.keys(s)
   }
 
-  it('每个持久化分片的每个字段都登记了跨世去留 —— 从 $state 倒推,不靠手写漏网', () => {
+  it('每个持久化分片的每个字段都登记了跨世去留 —— 从 $state 倒推,不靠手写漏网', async () => {
     setActivePinia(createPinia())
     const nonPlayer = PERSISTED_STORES.filter(id => id !== 'player')
     for (const id of nonPlayer) {
@@ -439,7 +439,7 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
     }
   })
 
-  it('reset 判定在真实转世后落到初始/空,keep 判定原样保留(表不自欺)', () => {
+  it('reset 判定在真实转世后落到初始/空,keep 判定原样保留(表不自欺)', async () => {
     setActivePinia(createPinia())
     const player = usePlayerStore()
     const res = useResourcesStore()
@@ -470,7 +470,7 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
     lore.materialLore = { m_lingzhi: 2 }
 
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
 
     // reset 判据 → 初始/空;灵石/悟道与 flow spec 同裁(a_re1 会补发一小笔)
     expect(toNum(res.spiritStone), '存量灵石应清,只剩新世开局馈赠').toBeLessThan(1000)
@@ -492,7 +492,7 @@ describe('轮回审计 · 跨店持久化分片最小完备', () => {
 })
 
 describe('轮回审计 · 坏档世数', () => {
-  it('给定负数世数(坏档),当算持有天赋数,则按 0 世算而非负数', () => {
+  it('给定负数世数(坏档),当算持有天赋数,则按 0 世算而非负数', async () => {
     /*
      * `Math.max(0, lives)` 是真守卫:去掉后 lives 为负时乘积为负,
      * Math.min(TALENTS.length, 负数) 会返回负数 —— 下游按「持有 N 项天赋」取用时

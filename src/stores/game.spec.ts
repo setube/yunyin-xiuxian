@@ -19,7 +19,7 @@ describe('建号「逆天改命」不限次', () => {
     setActivePinia(createPinia())
   })
 
-  it('想刷多少次就刷多少次,额度不会被扣减', () => {
+  it('想刷多少次就刷多少次,额度不会被扣减', async () => {
     const rng = new RandomService(mulberry32(20260902))
     const game = useGameStore()
     enterCreateView(rng)
@@ -32,14 +32,14 @@ describe('建号「逆天改命」不限次', () => {
     expect(game.createRerolls, '刷多了额度被扣成数字').toBeNull()
   })
 
-  it('游玩时长累加挡住 NaN / Infinity / 负数', () => {
+  it('游玩时长累加挡住 NaN / Infinity / 负数', async () => {
     const game = useGameStore()
     game.totalPlaySec = 60
     for (const bad of [NaN, Infinity, -Infinity, -5]) game.addPlayTime(bad)
     expect(game.totalPlaySec).toBe(60)
   })
 
-  it('刷新不会背着玩家换牌:已有草稿时不重新开牌', () => {
+  it('刷新不会背着玩家换牌:已有草稿时不重新开牌', async () => {
     const rng = new RandomService(mulberry32(7))
     const game = useGameStore()
     enterCreateView(rng)
@@ -49,7 +49,7 @@ describe('建号「逆天改命」不限次', () => {
     expect(game.createProfile, '重进建号页换了一副玩家没掷过的牌').toBe(drafted)
   })
 
-  it('旧存档里遗留的有限额度归位到不限次', () => {
+  it('旧存档里遗留的有限额度归位到不限次', async () => {
     const rng = new RandomService(mulberry32(99))
     const game = useGameStore()
     enterCreateView(rng)
@@ -60,7 +60,7 @@ describe('建号「逆天改命」不限次', () => {
     expect(game.spendCreateReroll()).toBe(true)
   })
 
-  it('转世是新的一世:上一世的草稿作废,额度回到不限次', () => {
+  it('转世是新的一世:上一世的草稿作废,额度回到不限次', async () => {
     const rng = new RandomService(mulberry32(1234))
     const game = useGameStore()
     const player = usePlayerStore()
@@ -69,13 +69,13 @@ describe('建号「逆天改命」不限次', () => {
     game.setCreateProfile(rollLinggen(rng))
 
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
 
     expect(game.createRerolls, '转世后额度形态变了').toBe(CREATE_REROLL_QUOTA)
     expect(game.createProfile, '上一世的建号草稿没有作废').toBeNull()
   })
 
-  it('建号页刷新不丢道号:setCreateName 记下、超长截断、转世即清', () => {
+  it('建号页刷新不丢道号:setCreateName 记下、超长截断、转世即清', async () => {
     const game = useGameStore()
     expect(game.createName).toBe('')
     game.setCreateName('清溪剑客')
@@ -87,7 +87,7 @@ describe('建号「逆天改命」不限次', () => {
     expect(game.createName).toBe('')
   })
 
-  it('建号草稿写入只收合法形状:坏灵根拒绝、坏字段修形、坏道号不抛', () => {
+  it('建号草稿写入只收合法形状:坏灵根拒绝、坏字段修形、坏道号不抛', async () => {
     const rng = new RandomService(mulberry32(20261022))
     const game = useGameStore()
     const drafted = rollLinggen(rng)
@@ -105,7 +105,7 @@ describe('建号「逆天改命」不限次', () => {
     expect(game.createName, '坏道号不该覆盖玩家已输入的字').toBe('清溪')
   })
 
-  it('最后活跃时刻只认有限非负值,坏时钟不写进离线结算依据', () => {
+  it('最后活跃时刻只认有限非负值,坏时钟不写进离线结算依据', async () => {
     const game = useGameStore()
     game.stampActive(1000)
     for (const bad of [NaN, Infinity, -Infinity, -1]) game.stampActive(bad)
@@ -116,7 +116,7 @@ describe('建号「逆天改命」不限次', () => {
     expect(game.lastActiveAt).toBe(2000)
   })
 
-  it('开局标记只认严格布尔真:坏档字符串/数字/对象都回落到未开局', () => {
+  it('开局标记只认严格布尔真:坏档字符串/数字/对象都回落到未开局', async () => {
     const game = useGameStore()
     for (const bad of ['false', 'yes', 1, {}]) {
       game.$patch({ started: bad as never })

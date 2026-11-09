@@ -170,7 +170,8 @@
     // 先让「凝界中」真的画出来:等一帧再开始那段同步计算
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
     try {
-      ensureMortalWorld()
+      // 必须 await:ensureMortalWorld 是分块异步的,不等它返回就复位会让「凝界中」提前消失
+      await ensureMortalWorld()
     } finally {
       generating.value = false
     }
