@@ -111,9 +111,16 @@ export const useApprenticeStore = defineStore(
           const t = raw.task as { spec?: unknown; startAt?: unknown; finishAt?: unknown }
           if (isSpec(t.spec) && Number.isFinite(t.startAt) && Number.isFinite(t.finishAt)) {
             const startAt = Math.max(0, Math.floor(t.startAt as number))
-            const finishAt = Math.max(0, Math.floor(t.finishAt as number))
-            // finishAt < startAt 会开局即收割一趟,视作坏任务置闲
-            if (finishAt >= startAt) task = { spec: t.spec, startAt, finishAt }
+            const rawFinishAt = Math.floor(t.finishAt as number)
+            /*
+             * finishAt 不夹到 0,而是要求它**严格大于** startAt。
+             *
+             * 原先两处都 `Math.max(0, …)` 再判 `finishAt >= startAt`:
+             * 负的 finishAt 被夹成 0,而 startAt 也被夹成 0 时 `0 >= 0` 成立,
+             * 于是一条坏档里的任务变成**零时长任务** —— 开局即收割一趟。
+             * 改成严格大于之后,零时长与负时长一并置闲。
+             */
+            if (rawFinishAt > startAt) task = { spec: t.spec, startAt, finishAt: rawFinishAt }
           }
         }
         clean.push({ uid, archId, level, bond, task })
