@@ -13,9 +13,30 @@ export function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/** 干净重试按名定位按钮的正则;容忍 CJK 字间空格(如「战 力▸拆解」) */
+/**
+ * 干净重试按名定位按钮的正则。
+ *
+ * - 容忍 CJK 字间空格多寡(如「战 力▸拆解」)
+ * - 容忍**数字**不同:「深入探寻小险 … 一胜约 219 石」这类按钮名里嵌着当次生成的数值,
+ *   下一轮再点必然换了数。按字面精确匹配的话 `cleanRetry` 永远找不到它、一律判成
+ *   「干净态无法单独复现」—— 那条读数是假的,该按钮其实从未被单独验证过。
+ *   只把数字段松开,文字骨架仍须逐字相同。
+ */
 export function namePattern(label: string): RegExp {
-  return new RegExp('^' + escapeRe(label).replace(/\s+/g, '\\s+') + '$')
+  /*
+   * 先摘数字段再做转义。
+   *
+   * 反过来做不行:escapeRe 会把小数点写成 `\.`,之后再按 `[.,]` 找数字边界就找不到分隔符,
+   * 一段 `1.4` 会被拆成两半来匹配(实测「遇险 ×1.4」与「×1.6」之间认不出来)。
+   */
+  const NUM = '\u0000'
+  const body = label
+    .replace(/\d+(?:[.,]\d+)*[万亿]?/g, NUM)
+    .split(NUM)
+    .map(escapeRe)
+    .join('\\d+(?:[.,]\\d+)*[万亿]?')
+    .replace(/\s+/g, '\\s+')
+  return new RegExp('^' + body + '$')
 }
 
 export type SmokeDecision = { bucket: 'dead' | 'silent'; line: string }
