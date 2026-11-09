@@ -186,6 +186,26 @@ describe('膨胀治理 · 乘区来源归因', () => {
     }
   })
 
+  /*
+   * 来源结构的两条硬约束:每项非负、合计为 1。
+   *
+   * 变异扫描把其中一处 `Math.max(0, fullPower - withParts(...))` 报成「改坏了不会红」——
+   * 这一批夹子是**等价变异**:五类来源在当前配置下都是正贡献(实测丹药灵脉那项 10.7%~22.5%),
+   * 夹不夹读出来一样。故锁的是结果契约:占比是给玩家看的饼,负数或合计不为 1 就是坏读数。
+   */
+  it('每项占比非负,且五项合计为 1', () => {
+    for (const major of [2, 5, 9, MAX_MAJOR]) {
+      const rows = powerSourceAudit(major, TYPICAL)
+      expect(rows.length, `major=${major} 该有五项`).toBe(5)
+      for (const r of rows) {
+        expect(r.share, `${REALMS[major]!.name} 的「${r.name}」占比为负`).toBeGreaterThanOrEqual(0)
+        expect(Number.isFinite(r.share), `${REALMS[major]!.name} 的「${r.name}」占比非有限数`).toBe(true)
+      }
+      const sum = rows.reduce((acc, r) => acc + r.share, 0)
+      expect(sum, `${REALMS[major]!.name} 五项合计该是 1`).toBeCloseTo(1, 6)
+    }
+  })
+
   it('境界基础的占比被显著抬回,突破重新有分量', () => {
     const jindan = powerSourceAudit(2, TYPICAL).find(r => r.id === 'realm')!
     const lianxu = powerSourceAudit(5, TYPICAL).find(r => r.id === 'realm')!
