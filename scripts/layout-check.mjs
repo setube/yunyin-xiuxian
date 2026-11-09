@@ -1399,7 +1399,7 @@ for (const vp of VIEWPORTS) {
     Math.random = () => 1
   })
   await page.waitForTimeout(400)
-  for (const route of ['/', '/cultivation', '/adventure', '/inventory', '/character', '/celestial', '/souls', '/collection', '/build', '/dongfu', '/market', '/apprentice']) {
+  for (const route of ['/', '/cultivation', '/adventure', '/inventory', '/character', '/codex', '/celestial', '/souls', '/collection', '/build', '/dongfu', '/market', '/apprentice', '/titles', '/legacy', '/world', '/settings']) {
     await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
     await page.waitForTimeout(700)
     const info = await measurePage(page)
