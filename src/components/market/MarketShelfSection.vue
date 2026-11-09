@@ -56,8 +56,8 @@
           </div>
         </div>
         <div class="mt-auto flex items-center justify-between pt-2">
-          <span class="flex items-center gap-0.5 tabular text-[12px] text-gold-ink">
-            <GameIcon name="gem" :size="12" />{{ formatGN(c.price) }}
+          <span class="flex min-w-0 items-center gap-0.5 tabular text-[12px] text-gold-ink">
+            <GameIcon name="gem" :size="12" class="shrink-0" /><span class="truncate">{{ formatGN(c.price) }}</span>
           </span>
           <button
             class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"

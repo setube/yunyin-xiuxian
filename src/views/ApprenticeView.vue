@@ -2,9 +2,9 @@
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
     <div class="card-ink flex items-center justify-between px-4 py-3">
       <h2 class="font-kai text-[14px] tracking-widest text-ink font-normal">道童</h2>
-      <div class="flex items-center gap-3">
-        <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
-          <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
+      <div class="flex min-w-0 items-center gap-3">
+        <p class="flex min-w-0 items-center gap-1 truncate tabular text-[13px] text-gold-ink">
+          <GameIcon name="gem" :size="14" class="shrink-0" /><span class="truncate">{{ formatGN(resources.spiritStone) }}</span>
         </p>
         <!--
           两种拒因各写各的:门中已满 / 灵石尚差 N。原先只写后者,而 slotsFull 为真时
@@ -47,8 +47,8 @@
                 与装备、丹药、功法同一套语言(名字走品阶文字色,天品以上另有角章)。
                 层数与羁绊已各有刻度,品阶是这张卡上唯一还没有形制的量。
               -->
-              <p class="flex items-center gap-2 truncate font-kai text-[14px]">
-                <span :style="{ color: qualityTextColor(a.def.quality) }">{{ a.def.name }}</span>
+              <p class="flex min-w-0 items-center gap-2 font-kai text-[14px]">
+                <span class="min-w-0 truncate" :style="{ color: qualityTextColor(a.def.quality) }">{{ a.def.name }}</span>
                 <span class="rounded border border-gold-ink/40 bg-gold-ink/10 px-1.5 text-[10px] text-ink">第 {{ a.level }} 层</span>
                 <span class="rounded border border-jade/40 bg-jade/10 px-1.5 text-[10px] text-ink">{{ a.bondTitle }}</span>
                 <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px] leading-none" :style="{ color: qualityTextColor(a.def.quality) }">{{ qualityDef(a.def.quality).name }}</span>
@@ -71,7 +71,7 @@
               <i v-for="(on, i) in levelPips(a.mark.level.have)" :key="i" :class="{ on }" />
             </span>
             <span class="shrink-0 text-[9px] tabular text-ink-faint">{{ a.mark.level.have }}/{{ a.mark.level.total }}</span>
-            <span class="ml-auto flex shrink-0 items-center gap-1">
+            <span class="ml-auto flex min-w-0 items-center gap-1">
               <span class="bond-pips" :style="{ '--bond-tone': a.mark.bondRank >= 3 ? 'var(--color-gold-ink)' : undefined }" aria-hidden="true">
                 <i v-for="p in a.mark.bondPips" :key="p" />
               </span>
@@ -81,7 +81,7 @@
                 可右边数的是**羁绊位阶**(10/30/60/100 趟),与层数各算各的。
                 补上主语,免得两把尺混成一把。
               -->
-              <span class="text-[9px] text-ink-faint tabular">
+              <span class="min-w-0 truncate text-[9px] text-ink-faint tabular">
                 {{ a.mark.toNextBond === null ? '羁绊已至真传' : `羁绊还差 ${a.mark.toNextBond} 趟` }}
               </span>
             </span>
