@@ -239,11 +239,28 @@ if (startupOnly) {
     prev = at;
   }
   const last = byName.has("boot:achievements") ? byName.get("boot:achievements") : prev;
-  if (last !== null) console.log(`  ${"(启动合计)".padEnd(20)} ${Math.round(last * 100) / 100}ms`);
+  /*
+   * 启动合计也进判据。
+   *
+   * 两点实测:late(2KB 存档)108ms、stress(38KB 满包)161ms。
+   * 行囊上限 120 件 ≈ 36KB,stress 夹具已接近最坏情况 —— 玩家再怎么样也不会比它更差。
+   * 故 250ms 是「最坏情况再留一倍余量」,不是随手取整。
+   */
+  const STARTUP_BUDGET_MS = Number(process.env.PERF_STARTUP_MS ?? 250);
+  if (last !== null) {
+    const total = Math.round(last * 100) / 100;
+    console.log(`  ${"(启动合计)".padEnd(20)} ${total}ms`);
+    if (total > STARTUP_BUDGET_MS) {
+      console.error(`\n✗ 启动合计 ${total}ms > 预算 ${STARTUP_BUDGET_MS}ms`);
+      process.exitCode = 1;
+    } else {
+      console.log(`✓ 启动合计在预算内(≤ ${STARTUP_BUDGET_MS}ms)`);
+    }
+  }
   await context.close();
   await browser.close();
   server.close();
-  process.exit(0);
+  process.exit(process.exitCode ?? 0);
 }
 for (const view of VIEWS) {
   if (only && view.name !== only) continue;
