@@ -386,9 +386,37 @@ for (const route of ROUTES) {
     // 中心点归链接才 force 点:普通 click 在动画重页(洞府卡)上会等到超时,裸 force 会穿透浮层点错;被挡先 Esc 稍候
     let blocker = await hitClear(href)
     if (blocker !== 'clear') {
-      await page.keyboard.press('Escape').catch(() => {})
-      await page.waitForTimeout(600)
-      blocker = await hitClear(href)
+      /*
+       * 被挡时逐层收:弹窗可能是叠着的(列表 + 详情两层),一发 Esc 只收掉顶层。
+       * 原先只按一次、等 600ms 再看 —— 叠层时第二层仍在,读数照样报「被浮层挡住」。
+       * 每层都等淡出走完,免得分片还在时 elementFromPoint 仍命中它。
+       */
+      for (let layer = 0; layer < 4; layer += 1) {
+        await page.keyboard.press('Escape').catch(() => {})
+        await page.waitForTimeout(120)
+        await page.waitForFunction(sel => document.querySelector(sel) === null, FADING, { timeout: 1000 }).catch(() => {})
+        blocker = await hitClear(href)
+        if (blocker === 'clear' || blocker === 'gone') break
+        /*
+         * Esc 收不掉的那几种(closable=false):历练际遇、突破结果、轮回、登临真仙。
+         * 它们是设计如此 —— 必须做出选择才能继续,所以连关闭钮都不渲染,
+         * handleEscape 也会把 Esc 吞掉。这里替玩家按掉那一层的第一个按钮。
+         */
+        const dismissed = await page.evaluate(() => {
+          const panels = [...document.querySelectorAll('.modal-panel')]
+          const panel = panels[panels.length - 1]
+          if (!panel) return false
+          const btn = [...panel.querySelectorAll('button')].find(b => !b.disabled && b.offsetParent !== null)
+          if (!btn) return false
+          btn.click()
+          return true
+        })
+        if (dismissed) {
+          await settle()
+          blocker = await hitClear(href)
+          if (blocker === 'clear' || blocker === 'gone') break
+        }
+      }
     }
     if (blocker === 'clear') {
       await link.click({ force: true, timeout: 800 }).catch(() => {})

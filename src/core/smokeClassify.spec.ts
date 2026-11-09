@@ -48,4 +48,24 @@ describe('冒烟死按钮分类器(纯决策)', () => {
     expect(namePattern('出发').test('别处')).toBe(false)
     expect(namePattern('战 力▸拆解').test('战 力 ▸ 拆解')).toBe(false)
   })
+
+  /*
+   * 带动态数值的按钮名。
+   *
+   * 「深入探寻小险 … 一胜约 219 石」里的数值是当次生成的,下一轮再点必然换数。
+   * 按字面精确匹配的话 cleanRetry 永远找不到它,一律判成「干净态无法单独复现」
+   * —— 那条读数是假的,该按钮其实从未被单独验证过。
+   */
+  it('namePattern 容忍按钮名里的动态数字,但文字骨架仍须逐字相同', () => {
+    const a = '深入探寻小险 行程 1小时0分 · 收益 ×1.4 · 一胜约 219 石 · 36 修为'
+    const b = '深入探寻小险 行程 1小时0分 · 收益 ×1.4 · 一胜约 7.065万 石 · 36 修为'
+    expect(namePattern(a).test(b), '数值换了也该认得出是同一枚按钮').toBe(true)
+    expect(namePattern(a).test(a)).toBe(true)
+    // 文字变了不认
+    expect(namePattern(a).test(b.replace('深入', '浅出'))).toBe(false)
+    expect(namePattern(a).test(b.replace('小险', '大险'))).toBe(false)
+    // 不带数字的名字不受影响
+    expect(namePattern('出发').test('出发')).toBe(true)
+    expect(namePattern('出发').test('出发了')).toBe(false)
+  })
 })
