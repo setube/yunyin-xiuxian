@@ -328,7 +328,7 @@ export function traceTribulation(
 
 /**
  * 坠劫者的决策档输入:以撑到第几道为主、跌破深度为辅(只看深度会让多扛一波反而降分)。
- * 撑得越久分越高,spec 钉:tribulationSpace.spec.ts。值域恒 < 0.45,坠劫必为 danger 档。
+ * 撑得越久分越高。值域恒 < 0.45,坠劫必为 danger 档 —— 由 tribulationSpace.spec 的「坠劫者的决策档恒为 danger」钉住。
  */
 function failedRate(trace: TribulationTrace, waves: number): number {
   const progress = trace.fellAt / (waves + 1)
