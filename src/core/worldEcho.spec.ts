@@ -53,6 +53,22 @@ describe('区域凭吊(memorial)', () => {
     expect(memorialLine('luoxia', player)).toBeNull()
   })
 
+  /*
+   * 镇压记录里有、区域本身却查不到:安静返回 null,不抛、也不印半句话。
+   *
+   * 这一支只有**坏档**才走得到 —— `suppressedSince` 是玩家可写的存档字段,
+   * 区域表改版删掉某个 id 之后,老档里就会留下这种悬空键。
+   * 少了守卫,`region.name` 会在下一行抛 TypeError,而这句叙事是历练途中按
+   * MEMORIAL_CHANCE 抽的,玩家会看到历练整个中断。
+   */
+  it('镇压记录悬空(区域已不存在)时安静返回 null', () => {
+    const player = usePlayerStore()
+    // 绕过 suppressRegion 的合法性检查,直接塞一个悬空键
+    player.$patch({ suppressedSince: { no_such_region: Date.now() - 7_200_000 } })
+    expect(() => memorialLine('no_such_region', player), '不该抛').not.toThrow()
+    expect(memorialLine('no_such_region', player), '查不到区域就返回 null').toBeNull()
+  })
+
   it('凭吊概率低(4%)', () => {
     expect(MEMORIAL_CHANCE).toBe(0.04)
   })
