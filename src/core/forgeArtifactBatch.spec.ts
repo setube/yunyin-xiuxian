@@ -153,6 +153,43 @@ describe('祭炼连升 · 批量账', () => {
     expect(stoneOnly.stone.m).toBeGreaterThan(0)
   })
 
+  /*
+   * 两样都够时,缺口必须是 0/0、short 为 null。
+   *
+   * 变异扫描把  报成「改坏了不会红」——
+   * 实际是等价变异:资源够时  那一支已经短路成 0,减法根本不执行。
+   * 但这条**结果契约**要锁住,它是界面置灰与价签的共同依据。
+   */
+  /*
+   * hasSmall 与 Math.max 两层的分工。
+   *
+   * 单独去掉任一层,资源充足时结果都一样(实测两处都试过)——
+   * 但两层合起来才守得住「刚好够」这个边界:少一点就是 1,不多不少。
+   */
+  it('刚好够:缺口 0;少 1 点:缺口正好 1', () => {
+    seat(0)
+    const cost = costOf(0)
+    const r = useResourcesStore()
+    r.spiritStone = cost.stone
+    r.wudao = cost.wudao
+    expect(artifactShortfall(cost).wudao, '刚好够就是 0').toBe(0)
+    r.wudao = cost.wudao - 1
+    expect(artifactShortfall(cost).wudao, '少 1 点就是 1,不能多也不能少').toBe(1)
+    expect(artifactShortfall(cost).short).toBe('wudao')
+  })
+
+  it('两样都够时:缺口为 0,short 为 null', () => {
+    seat(0)
+    const cost = costOf(0)
+    const r = useResourcesStore()
+    r.wudao = cost.wudao
+    r.spiritStone = cost.stone
+    const none = artifactShortfall(cost)
+    expect(none.short, '都不缺就该是 null').toBeNull()
+    expect(none.wudao, '额度刚好够也算够').toBe(0)
+    expect(none.stone.m, '灵石缺口同理').toBe(0)
+  })
+
   it('缺悟道点时提示只报悟道点,不再说灵石也不足', () => {
     seat(0)
     const r = useResourcesStore()
