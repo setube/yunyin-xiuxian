@@ -240,4 +240,24 @@ describe('道果曲线 · 负输入被钳成 0', () => {
       expect(c.effective(-50), `${c.id} 的负输入该与 0 同结果`).toBe(c.effective(0))
     }
   })
+
+  /*
+   * E 曲线是 partialCurve() 现算的,不在静态 FRUIT_CURVES 里 ——
+   * 上面两条遍历的是 FRUIT_CURVES,自然扫不到它。变异扫描点名 :141 那处钳制,
+   * 就是因为这个函数从没被喂过负数。
+   *
+   * `Math.pow(knee * Math.log(1 + Math.max(0, f) / knee), 0.9)`:去掉钳子后
+   * f <= -knee 时 log 的参数 ≤ 0,对数取到 -Infinity/NaN,整条曲线崩。
+   */
+  it('partialCurve 生成的 E 曲线同样钳住负数', () => {
+    for (const kneeLives of [2, 3, 5, 10]) {
+      const c = partialCurve(kneeLives)
+      for (const f of [-1, -100, -1e9]) {
+        const v = c.effective(f)
+        expect(Number.isFinite(v), `${c.id} 传 ${f} 得到了 ${v} —— 钳制没了`).toBe(true)
+        expect(v, `${c.id} 传负道果该钳成 0`).toBe(0)
+      }
+      expect(c.effective(-50), `${c.id} 的负输入该与 0 同结果`).toBe(c.effective(0))
+    }
+  })
 })
