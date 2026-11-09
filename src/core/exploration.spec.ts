@@ -2,7 +2,7 @@
  * 历练 —— 战斗与中断路径
  * 含灵兽性格「败北保护」:lossReduction 须接入 runBattle,败北时低概率护住(不重伤、不计败绩、历练继续)。
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createPinia, setActivePinia, type Pinia } from 'pinia'
@@ -10,6 +10,7 @@ import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore, type LastBattleView } from '@/stores/adventure'
+import { generateMortalWorld } from './mortalWorldGen'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useLoreStore } from '@/stores/lore'
 import { gnZero, sub, toNum } from '@/utils/gnum'
@@ -37,10 +38,17 @@ import { endgameBusy } from './endgameActivity'
  * 假 rng 按此值识别败北保护那一掷,不依赖调用顺序;其余 chance 一律为否。
  */
 const CAUTIOUS_LOSS_REDUCTION = 0.04
+/**
+ * 「途中相遇」的概率,须与 exploration.ts 的 MEET_CHANCE 一致。
+ * 假 rng 按值识别那一掷,不依赖调用顺序 —— 与上面同一套做法。
+ */
+const MEET_CHANCE = 0.06
 
-const { protect, combatWin, combatHpPct, forceBuild } = vi.hoisted(() => ({
+const { protect, combatWin, combatHpPct, forceBuild, meetChance } = vi.hoisted(() => ({
   protect: { value: false },
   combatWin: { value: false },
+  /** 「途中相遇」那一掷:默认 false,要验偶遇分支时置 true */
+  meetChance: { value: false },
   // 默认身死(playerHpPct=0);遁走用例显式置值
   combatHpPct: { value: 0 },
   forceBuild: { value: false }
@@ -56,8 +64,10 @@ vi.mock('@/utils/random', async importOriginal => {
       float: (a: number, _b: number) => a,
       pick: <T,>(arr: readonly T[]): T => arr[0]!,
       weighted: <T,>(arr: readonly T[]): T => arr[0]!,
-      chance: (p: number): boolean =>
-        protect.value === true && Math.abs(p - CAUTIOUS_LOSS_REDUCTION) < 1e-9
+      chance: (p: number): boolean => {
+        if (meetChance.value && Math.abs(p - MEET_CHANCE) < 1e-9) return true
+        return protect.value === true && Math.abs(p - CAUTIOUS_LOSS_REDUCTION) < 1e-9
+      }
     }
   }
 })
@@ -777,6 +787,71 @@ describe('战斗页血条读数 · 条与数字同源', () => {
  * 三处独立相乘(EXPLORE_EVENT_CHANCE / eventLuck / 区域 eventMult),
  * 任何一处调整都可能把乘积推过 1,故用边界值钉住。
  */
+/*
+ * 「途中相遇」这一掷:6% 才推进关系,否则什么都不发生。
+ *
+ * 变异扫描报 `if (!rng.chance(MEET_CHANCE)) return` 改坏了不会红 ——
+ * 根因是本文件的假 rng「其余 chance 一律 false」,那行守卫在它面前恒为真,
+ * 去掉 `!` 也看不出差别。补一个可控开关,让两支都走到。
+ *
+ * 报这条不是因为概率数字要紧,而是因为它控制的是**关系系统的唯一入口**:
+ * 恒真 → 每走一步都撞见人;恒假 → 道侣那套玩法一整局都不会出现。
+ */
+describe('途中相遇 · 6% 的那一掷', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    protect.value = false
+    combatWin.value = false
+    meetChance.value = false
+  })
+  afterEach(() => {
+    meetChance.value = false
+  })
+
+  it('给定未相识且那一掷命中,当打完一场,则结下一段缘', () => {
+    const player = usePlayerStore()
+    player.initCharacter('偶遇测试', { roots: [] } as never)
+    const now = Date.now()
+    meetChance.value = true
+    // 须打赢:默认败北会 stopExploration 清掉会话,遇敌那一步根本走不到
+    combatWin.value = true
+    // 须先有凡界:maybeEncounter 开头 `if (!w) return`,没铺界域就什么都不会发生
+    useAdventureStore().setMortalWorld(generateMortalWorld(20260101))
+    forgeSession(now)
+    tickExploration(now)
+    expect(player.bond, '那一掷命中就该遇到一位').not.toBeNull()
+  })
+
+  it('给定未相识且那一掷落空,当打完一场,则没有缘', () => {
+    const player = usePlayerStore()
+    player.initCharacter('偶遇测试', { roots: [] } as never)
+    const now = Date.now()
+    meetChance.value = false
+    combatWin.value = true
+    useAdventureStore().setMortalWorld(generateMortalWorld(20260101))
+    forgeSession(now)
+    tickExploration(now)
+    expect(player.bond, '落空就不该凭空结缘').toBeNull()
+  })
+
+  it('给定已相识且那一掷命中,当再打一场,则羁绊推进而不是换人', () => {
+    const player = usePlayerStore()
+    player.initCharacter('偶遇测试', { roots: [] } as never)
+    const now = Date.now()
+    meetChance.value = true
+    combatWin.value = true
+    useAdventureStore().setMortalWorld(generateMortalWorld(20260101))
+    forgeSession(now)
+    tickExploration(now)
+    const first = player.bond
+    expect(first, '第一场该遇到一位').not.toBeNull()
+    const before = first!.fate + first!.trust
+    fightAgain(now + 1000)
+    expect(player.bond?.daoluId, '已相识就不该换人').toBe(first!.daoluId)
+    expect(player.bond!.fate + player.bond!.trust, '羁绊该推进').toBeGreaterThan(before)
+  })
+})
+
 describe('际遇率 · 封顶', () => {
   it('极端加成下也不超过 1', () => {
     for (const luck of [10, 100, 1000]) {
