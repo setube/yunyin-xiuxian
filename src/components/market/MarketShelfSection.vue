@@ -55,12 +55,16 @@
             <p class="truncate text-[10px] text-ink-soft" :title="c.sub" :aria-label="c.sub">{{ c.sub }}</p>
           </div>
         </div>
-        <div class="mt-auto flex items-center justify-between pt-2">
-          <span class="flex min-w-0 items-center gap-0.5 tabular text-[12px] text-gold-ink">
-            <GameIcon name="gem" :size="12" class="shrink-0" /><span class="truncate">{{ formatGN(c.price) }}</span>
+        <div class="mt-auto flex flex-wrap items-center justify-between gap-y-1 pt-2">
+          <!--
+            窄格下换行,不截数字:价签是玩家判断买不买得起的那条数,截掉等于没写。
+            200% 缩放下格内只有约 78px,「gem + 价格」和「买下」挤不进一行就上下排。
+          -->
+          <span class="flex flex-wrap items-center gap-0.5 tabular text-[12px] text-gold-ink">
+            <GameIcon name="gem" :size="12" class="shrink-0" />{{ formatGN(c.price) }}
           </span>
           <button
-            class="btn-ghost shrink-0 !px-2.5 !py-2 !text-[11px]"
+            class="btn-ghost min-w-0 whitespace-normal !px-2.5 !py-2 !text-[11px] text-center"
             :disabled="c.sold || !c.afford || (c.kind === 'equipment' && inventory.bagFull)"
             :title="c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : !c.sold && !c.afford ? `灵石尚差 ${formatGap(c.stoneShort)}` : undefined"
             @click="buyOne(c.idx)"
