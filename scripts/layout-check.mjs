@@ -1262,6 +1262,21 @@ for (const vp of VIEWPORTS) {
       veinPoints: { gather: 52 },
       veinMain: 'gather'
     },
+    /*
+     * 道童铺满四名,且刻意各带一种状态 —— 空列表时卡片整块不渲染,
+     * 名号行、层数刻度、羁绊行那些「文字 + 点阵」的组合一个都量不到。
+     * 四种:闲置新手 / 满层满羁绊 / 任务在途 / 高羁绊未满层;
+     * 羁绊 100 与 30 两档让「羁绊已至真传」与「羁绊还差 N 趟」两种文案都出现。
+     */
+    apprentice: {
+      apprentices: [
+        { uid: 'lc_ap1', archId: 'ap_xiantong', level: 1, bond: 0, task: null },
+        { uid: 'lc_ap2', archId: 'ap_daotong', level: 20, bond: 100, task: null },
+        { uid: 'lc_ap3', archId: 'ap_youxia', level: 7, bond: 30, task: { spec: 'adventure', startAt: Date.now() - 60000, finishAt: Date.now() + 1800000 } },
+        { uid: 'lc_ap4', archId: 'ap_lingtong', level: 13, bond: 60, task: null }
+      ],
+      rebirthKarma: 0
+    },
     settings: {
       privacyAccepted: true,
       sfxOn: false,
@@ -1322,7 +1337,7 @@ for (const vp of VIEWPORTS) {
     Math.random = () => 1
   })
   await page.waitForTimeout(400)
-  for (const route of ['/', '/cultivation', '/adventure', '/inventory', '/character', '/celestial', '/souls', '/collection', '/build', '/dongfu']) {
+  for (const route of ['/', '/cultivation', '/adventure', '/inventory', '/character', '/celestial', '/souls', '/collection', '/build', '/dongfu', '/market', '/apprentice']) {
     await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
     await page.waitForTimeout(700)
     const info = await measurePage(page)
