@@ -369,6 +369,24 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
     expect(useInventoryStore().findItem('seal')!.sealedAffixIds).toEqual(['atk1'])
     expect(sealAffix('seal', 'def1'), '只剩一条可重掷位,封不了').toBe(false)
   })
+
+  /*
+   * 词条根本不在件上时不该收费、也不该封。
+   *
+   * `unsealAffix` 那条有同名用例(「ghost」),`sealAffix` 这侧一直没有 ——
+   * 变异扫描把 `if (!inst.affixes.some(...)) return false` 报成「改坏了不会红」。
+   * 少了这道闸,一个手滑的 affixId 会照价扣灵石,再把一个不存在的 id 记进封存表,
+   * 之后 reforgeableAffixIds 会把整件算成「已封满」而拒绝重铸。
+   */
+  it('词条不在件上时:不封、不扣钱、不往封存表里塞', () => {
+    useInventoryStore().items = [{ ...base, uid: 'ghost-affix' }]
+    const res = useResourcesStore()
+    res.addStone(gn(1e30))
+    const before = toNum(res.spiritStone)
+    expect(sealAffix('ghost-affix', 'nope'), '件上没这条,不该封成').toBe(false)
+    expect(useInventoryStore().findItem('ghost-affix')!.sealedAffixIds ?? [], '不该记进封存表').not.toContain('nope')
+    expect(toNum(res.spiritStone), '失败就不该扣灵石').toBe(before)
+  })
 })
 
 describe('封存 ↔ 解封 · 循环可逆', () => {
