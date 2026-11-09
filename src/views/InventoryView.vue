@@ -91,8 +91,17 @@
       <div v-if="allItems.length" class="mt-4">
         <SectionTitle title="全部藏品" :hint="`${allItems.length} 件 · 行囊 ${inventory.bagItems.length}/${BAG_CAPACITY} · 满包掉落化尘`" />
         <div class="mt-2 grid grid-cols-5 gap-1.5">
-          <EquipmentCard v-for="row in allItems" :key="row.item.uid" :item="row.item" :equipped="row.equipped" @open="openDetail" />
+          <EquipmentCard v-for="row in shownItems" :key="row.item.uid" :item="row.item" :equipped="row.equipped" @open="openDetail" />
         </div>
+        <!-- 满包 120 件时全量渲染是 2286 个节点,实测进页独占主线程 276ms;先渲染一批,其余按需铺开 -->
+        <button
+          v-if="allItems.length > shownItems.length"
+          class="btn-ghost mt-2 w-full !py-1.5 !text-[12px]"
+          :aria-expanded="false"
+          @click="shownLimit += EQUIP_PAGE_STEP"
+        >
+          展开更多(还有 {{ allItems.length - shownItems.length }} 件)
+        </button>
       </div>
       <!-- 空态与名号/灵兽册同一套:哑印 + 楷体标签,不再只是一行灰字 -->
       <p v-else class="mt-12 text-center">
@@ -439,6 +448,19 @@
         return dq !== 0 ? dq : b.item.tier - a.item.tier
       })
   )
+
+  /*
+   * 藏品按批铺开,不全量渲染。
+   *
+   * 行囊上限 120 件,每张卡约 19 个节点 —— 满包时这一页是 2286 个节点,
+   * perf-profile 的 stress 档实测挂载期长任务 3 块 / 276ms(预算 250ms)。
+   * 首屏只铺前 40 件(与图鉴册那类页面同量级),其余按一下多铺 40 件。
+   *
+   * 排序未改:已装备优先,再按品质、阶数 —— 铺开顺序就是玩家想找的顺序。
+   */
+  const EQUIP_PAGE_STEP = 40
+  const shownLimit = ref(EQUIP_PAGE_STEP)
+  const shownItems = computed(() => allItems.value.slice(0, shownLimit.value))
 
   function openDetail(uid: string): void {
     ui.equipDetailUid = uid
