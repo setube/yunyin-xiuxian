@@ -208,6 +208,51 @@ describe('坏档 · 年龄下限', () => {
     player.sanitize()
     expect(player.age, '正常年龄被重置了').toBe(55)
   })
+})
+
+/*
+ * 坏档 · 寿元加算项的下限
+ *
+ * 与上面「年龄下限」同型,但漏了这一侧:`sanitize` 里 lifespanBonusYears 只挡了 NaN
+ * (`asFiniteNumber(v, 0)`),没挡负数。而它是 lifespanMax 的**加算项**:
+ *
+ *   lifespanMax = floor(基础寿元 × (1 + 灵根加成) + lifespanBonusYears)
+ *
+ * 坏档里写 -999,炼气一层的寿元上限就从 150 变成 -849 —— 界面上直接印
+ * 「寿元 -849」,而 lifespanRatio 被 `Math.max(0, …)` 压成 0,寿元条永远是空的。
+ *
+ * 注释当时只担心 NaN 让死亡判据恒假,没想到负数会把上限本身拖成负数。
+ *
+ * 故障注入:把那行改回 `asFiniteNumber(lifespanBonusYears.value, 0)`,本条红。
+ */
+describe('坏档 · 寿元加算项下限', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('负的寿元加成被夹成 0,寿元上限不出现负数', () => {
+    const player = usePlayerStore()
+    player.initCharacter('寿元探针', { roots: [] } as never)
+    const healthy = player.lifespanMax
+    expect(healthy, '前置:正常寿元该是正数').toBeGreaterThan(0)
+    for (const bad of [-1, -999, -1e9]) {
+      player.lifespanBonusYears = bad
+      player.sanitize()
+      expect(player.lifespanBonusYears, `加成 ${bad} 该夹成 0`).toBe(0)
+      expect(player.lifespanMax, `加成 ${bad} 之后寿元上限成了 ${player.lifespanMax}`).toBeGreaterThan(0)
+      expect(player.lifespanMax).toBe(healthy)
+    }
+  })
+
+  it('正常的寿元加成不被误改', () => {
+    const player = usePlayerStore()
+    player.initCharacter('寿元探针', { roots: [] } as never)
+    const base = player.lifespanMax
+    player.lifespanBonusYears = 30
+    player.sanitize()
+    expect(player.lifespanBonusYears, '正加成被夹掉了').toBe(30)
+    expect(player.lifespanMax, '正加成该抬高上限').toBe(base + 30)
+  })
 
   it('NaN 与 Infinity 照旧被修正', () => {
     const player = usePlayerStore()
