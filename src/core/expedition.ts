@@ -514,7 +514,7 @@ export function forecastExpedition(worldId: string, pactId: string | null, gateI
   // 玩家侧计入剑意 / 杀意逐胜叠层(与真打同源);
   // 流派可行性比的是标准构筑形状,与玩家道途无关,不加叠层
   const opts = { ...endHp80 }
-  const playerOpts = { ...endHp80, perWinPlayerMods: perWinMods() }
+  const playerOpts = { ...endHp80, perWinPlayerMods: perWinMods(), buildLog: false }
   const seededRng = new RandomService(mulberry32(worldId.length * 1009 + (pactId?.length ?? 0) * 97 + world.name.length * 7))
 
   const player = usePlayerStore()
