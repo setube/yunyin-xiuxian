@@ -254,7 +254,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { useEndgameStore } from '@/stores/endgame'
   import { usePlayerStore } from '@/stores/player'
   import { CELESTIAL_WORLDS, TRIALS } from '@/data/endgame'
@@ -263,7 +263,8 @@
   import { MUTATORS, mutatorDef } from '@/data/mutators'
   import { themeBreakdown, themeMark } from '@/ui/mutatorTheme'
   import { RECOVERY_LABEL, tierPosition, tierSpan, trialMark } from '@/ui/trialMark'
-  import { todayChallenge, undertakeDaily } from '@/core/dailyChallenge'
+  import { todayChallengeAsync, undertakeDaily } from '@/core/dailyChallenge'
+  import type { DailyChallenge } from '@/core/dailyChallenge'
   import { useWallNow } from '@/composables/useWallClock'
   import { localDayNum } from '@/utils/time'
   import {
@@ -302,7 +303,25 @@
   // 题面随本地午夜更替;日号 computed 只在跨日时变,daily 不会每秒重跑天道裁判
   const wallNow = useWallNow()
   const wallDay = computed(() => localDayNum(wallNow.value))
-  const daily = computed(() => (endgame.daoPath ? todayChallenge(wallDay.value) : null))
+  /*
+   * 今日天道要跑天道裁判:单次 verifyChallenge 实测 54ms(六流派 × 8 场),
+   * 候选上限 32 —— 最坏 1728ms,实测切到本页签量到 231ms 的长任务。
+   * 故改为挂载后异步算,期间 daily 为 null(界面本来就有「无今日天道」那一档)。
+   */
+  const daily = ref<DailyChallenge | null>(null)
+  watch(
+    () => [endgame.daoPath, wallDay.value] as const,
+    async ([daoPath, day]) => {
+      if (!daoPath) {
+        daily.value = null
+        return
+      }
+      const got = await todayChallengeAsync(day)
+      // 期间可能又换了一天,只认最新那次
+      if (wallDay.value === day) daily.value = got
+    },
+    { immediate: true }
+  )
   const dailyWorld = computed(() => (daily.value ? celestialWorldDefLocal(daily.value.draft.worldId) : null))
   const dailyMutators = computed(() =>
     daily.value ? daily.value.draft.mutatorIds.map(id => mutatorDef(id)).filter(m => m !== undefined) : []
@@ -344,9 +363,9 @@
     return CELESTIAL_WORLDS.find(w => w.id === id)
   }
 
-  function goDaily(): void {
+  async function goDaily(): Promise<void> {
     // 现取当日题,不用 daily.value 缓存:驻足跨午夜时它可能仍是昨天那题
-    const current = todayChallenge()
+    const current = await todayChallengeAsync()
     if (!current) return
     const result = undertakeDaily(current)
     if (result) {

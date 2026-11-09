@@ -28,20 +28,42 @@ export function todayNumber(): number {
  * 生成指定本地日的天道:日期种子确定性;裁判不受(无解/虚设)则顺延候选。
  * `day` 可注入,供界面用响应式墙钟日号驱动题面。
  */
+/** 第 t 个候选草稿(种子只取 day 与 t,故同步/异步两版逐位一致) */
+function draftForDay(day: number, t: number): ChallengeDraft {
+  const rng = new RandomService(mulberry32(day * 131 + t * 977))
+  const world = CELESTIAL_WORLDS[rng.int(0, CELESTIAL_WORLDS.length - 1)]!
+  const pool = [...MUTATORS]
+  const mutatorIds: string[] = []
+  for (let i = 0; i < 2 && pool.length; i += 1) {
+    mutatorIds.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]!.id)
+  }
+  const pactId = rng.chance(0.35) ? PACTS[rng.int(0, PACTS.length - 1)]!.id : null
+  return { worldId: world.id, mutatorIds, pactId, name: `今日天道` }
+}
+
 export function todayChallenge(day = todayNumber()): DailyChallenge | null {
   // 候选上限 32:取 16 时 2026-10-24、2027-10-17 两天全数落选(第 17、18 个才过)
   for (let t = 0; t < 32; t += 1) {
-    const rng = new RandomService(mulberry32(day * 131 + t * 977))
-    const world = CELESTIAL_WORLDS[rng.int(0, CELESTIAL_WORLDS.length - 1)]!
-    const pool = [...MUTATORS]
-    const mutatorIds: string[] = []
-    for (let i = 0; i < 2 && pool.length; i += 1) {
-      mutatorIds.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]!.id)
-    }
-    const pactId = rng.chance(0.35) ? PACTS[rng.int(0, PACTS.length - 1)]!.id : null
-    const draft: ChallengeDraft = { worldId: world.id, mutatorIds, pactId, name: `今日天道` }
+    const draft = draftForDay(day, t)
     const verdict = verifyChallenge(draft)
     if (verdict?.ok) return { day, draft, verdict }
+  }
+  return null
+}
+
+/**
+ * 分块异步版 todayChallenge:与同步版同一内核,同参结果逐位一致。
+ *
+ * 单次 verifyChallenge 实测 54ms(六流派 × 8 场),而候选上限是 32 ——
+ * 最坏 1728ms。实测玩家切到「试炼」页签量到 231ms 的长任务(超 50ms 阈值 4 倍)。
+ * 每验完一个候选让出一次主线程,页签能立刻切过去。
+ */
+export async function todayChallengeAsync(day = todayNumber()): Promise<DailyChallenge | null> {
+  for (let t = 0; t < 32; t += 1) {
+    const got = draftForDay(day, t)
+    const verdict = verifyChallenge(got)
+    if (verdict?.ok) return { day, draft: got, verdict }
+    await new Promise(res => setTimeout(res, 0))
   }
   return null
 }
