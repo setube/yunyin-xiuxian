@@ -748,3 +748,33 @@ describe('镇压复苏 · settle 级(72h 复生当拍不产石)', () => {
     expect(player.suppressedRegions, '跨线就该松开').not.toContain('qingyun')
   })
 })
+
+/*
+ * 镇压产出行:灵石/时 与 物产/时 拼成一行,兴衰系数两边都乘。
+ *
+ * 这行是玩家在区域卡上唯一能看到的「镇压能拿到什么」。变异扫描把
+ * `if (!rate.resource) return stone` 报成「改坏了不会红」—— 查下来那条是死分支:
+ * 44 个区域全部有物产(`suppressYield` 按 eventTags 命中 YIELD_BY_TAG),
+ * 一处也走不到。故这里不补那条,改锁**有物产时**的真实文案。
+ */
+describe('镇压产出行 · 玩家看到的那一行', () => {
+  it('给定有物产的区域,当读产出行,则灵石与物产两段都在', () => {
+    const line = suppressRateLine('qingyun', 'stable')
+    expect(line, '该报灵石/时').toMatch(/灵石\/时/)
+    expect(line, '该报物产/时(青云山麓有玄铁)').toContain('玄铁')
+    expect(line, '两段用 · 分隔').toContain(' · ')
+  })
+
+  it('给定兴衰不同,当读产出行,则灵石那段跟着走', () => {
+    const num = (t: string): number => Number((t.match(/([\d.]+)灵石/) ?? [])[1] ?? 0)
+    const boom = num(suppressRateLine('qingyun', 'flourish'))
+    const peace = num(suppressRateLine('qingyun', 'stable'))
+    const ruin = num(suppressRateLine('qingyun', 'chaos'))
+    expect(boom, '兴盛该比平常高').toBeGreaterThan(peace)
+    expect(ruin, '荒芜该比平常低').toBeLessThan(peace)
+  })
+
+  it('给定不存在的区域,当读产出行,则报占位符而不是空串', () => {
+    expect(suppressRateLine('no-such-region', 'stable'), '查不到要给占位符').toBe('—')
+  })
+})
