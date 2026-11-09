@@ -347,4 +347,31 @@ describe('迁移 · 档内版本号跟着升,且坏值修得掉', () => {
     const clean = { herbByGrade: { 1: 5, 2: 0, 3: 0, 4: 0, 5: 0 } }
     expect(migrateHerbSlice(clean), '干净分账不该被判成需要迁移').toBe(clean)
   })
+
+  /**
+   * 法宝位列表的脏形态同样要被修好。
+   *
+   * 与灵草分账同一类:早先只要 equippedArtifacts 这个键在、且没有旧字段,就原样返回同一引用。
+   * null / 字符串 / 含垃圾项的数组因此永远躺在 localStorage 里(下游 sanitize 兜得住数值,
+   * 但 migrateLocalSchema 判不出变化就不回写)。
+   * 故障注入:去掉 artifactIdsClean 判断 → 前四条红。
+   */
+  it('给定脏法宝位,当跑迁移,则收成干净的 id 数组并返回新引用', () => {
+    const dirty: [string, Record<string, unknown>, string[]][] = [
+      ['null', { equippedArtifacts: null }, []],
+      ['字符串', { equippedArtifacts: 'af_c' }, ['af_c']],
+      ['含垃圾项', { equippedArtifacts: [null, 42, 'af_d'] }, ['af_d']],
+      ['含空串', { equippedArtifacts: ['', 'af_e'] }, ['af_e']]
+    ]
+    for (const [label, input, want] of dirty) {
+      const out = migrateInventorySlice(input)
+      expect(out, `${label}: 脏法宝位该被重写,不能原样返回`).not.toBe(input)
+      expect(out.equippedArtifacts, `${label}: 该收成干净的 id 数组`).toEqual(want)
+    }
+    // 干净形态保持同引用,否则每次启动都白写一遍
+    const clean = { equippedArtifacts: ['af_a'] }
+    expect(migrateInventorySlice(clean), '干净法宝位不该被判成需要迁移').toBe(clean)
+    const empty = { equippedArtifacts: [] as string[] }
+    expect(migrateInventorySlice(empty), '空数组也是干净形态').toBe(empty)
+  })
 })
