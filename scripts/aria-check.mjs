@@ -79,9 +79,23 @@ try {
      */
   ]
   for (const r of ROUTES) {
-    await page.evaluate(h => { location.hash = '#' + h }, r)
-    await page.waitForTimeout(600)
-    const n = await page.evaluate(() => document.querySelectorAll('h1,h2,h3').length)
+    if (!(await gotoRoute(page, r))) {
+      failures.push(`${r} 导航没落到目标页(hash 或过渡超时),本页标题判据未生效`)
+      console.log(`  ✗ ${r.padEnd(14)} 导航未落地`)
+      continue
+    }
+    /*
+     * 等标题出现,而不是量一次就走。
+     *
+     * /world 的界域是挂载后才异步凝出来的,标题包在 `v-if="view"` 里 ——
+     * 偶尔会超过 600ms,于是那一次量到 0 个标题,报成「没有标题元素」。
+     * 实测三次跑里冒过一次。这类「加载中的瞬间」不是缺陷,但用固定等待去量它,
+     * 结果就变成看运气;反过来若真把标题删了,这里也仍会超时,一样报得出来。
+     */
+    const n = await page
+      .waitForFunction(() => document.querySelectorAll('h1,h2,h3').length > 0, null, { timeout: 3000 })
+      .then(() => page.evaluate(() => document.querySelectorAll('h1,h2,h3').length))
+      .catch(() => page.evaluate(() => document.querySelectorAll('h1,h2,h3').length))
     if (n === 0) failures.push(`${r} 没有任何标题元素(h1/h2/h3),读屏用户无法按标题定位`)
     console.log(`  ${n > 0 ? '✓' : '✗'} ${r.padEnd(14)} 标题 ${n} 个`)
   }
@@ -95,8 +109,11 @@ try {
    */
   const TOUCH_ROUTES = ROUTES
   for (const r of TOUCH_ROUTES) {
-    await page.evaluate(h => { location.hash = '#' + h }, r)
-    await page.waitForTimeout(600)
+    if (!(await gotoRoute(page, r))) {
+      failures.push(`${r} 导航没落到目标页(hash 或过渡超时),本页触控判据未生效`)
+      console.log(`  ✗ ${r.padEnd(14)} 导航未落地`)
+      continue
+    }
     const small = await page.evaluate(() => {
       const out = []
       for (const e of document.querySelectorAll('button, a[href], input, select, textarea')) {
@@ -259,3 +276,29 @@ if (failures.length > 0) {
 } else {
   console.log('\n✓ 关键读屏属性在真实 DOM 上都成立(不只是源码里写了)')
 }
+/**
+ * 跳到某条路由并**确认真的落到了那里**。
+ *
+ * 原先 `location.hash = ...` 之后固定等 600ms 就开量 —— 懒加载视图慢、导航被守卫弹走、
+ * 或过渡还没走完时,量到的是上一页(常常是首页),而结果看起来完全正常:
+ * 首页有标题、首页的控件也够大。它把「没量过」写成了「查过了」。
+ * 这里等到 hash 对上、并且 FADING 过渡类消失,才认为落地;落不了直接算失败。
+ */
+async function gotoRoute(page, r) {
+  await page.evaluate(h => { location.hash = '#' + h }, r)
+  try {
+    await page.waitForFunction(h => location.hash === '#' + h, r, { timeout: 3000 })
+    // 视图是懒加载的:hash 变了之后还要等 chunk 到位、过渡走完
+    await page.waitForTimeout(250)
+    await page.waitForFunction(
+      () => document.querySelector('.page-fade-enter-active, .page-fade-leave-active') === null,
+      null,
+      { timeout: 3000 }
+    )
+  } catch {
+    return false
+  }
+  return (await page.evaluate(h => location.hash === '#' + h, r)) === true
+}
+
+

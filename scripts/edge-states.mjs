@@ -100,6 +100,23 @@ const GRAB_PAGE = () => {
   return {
     text: document.querySelector('main')?.innerText ?? '',
     buttons: btns,
+    /** 页面标题数(读屏靠它跳转);欢迎页与建号页只有本脚本进得来,别的脚本量不到 */
+    headings: document.querySelectorAll('h1,h2,h3').length,
+    /**
+     * 没有可访问名的表单元素。
+     * 「输入框有没有名字」只能在这一层验 —— aria-check 铺的是有存档的夹具,
+     * 进不了 /welcome 与 /create,那两页的输入框从未被量过。
+     */
+    unnamedInputs: [...document.querySelectorAll('input, select, textarea')]
+      .filter(e => {
+        const rc = e.getBoundingClientRect()
+        if (rc.width === 0 && rc.height === 0) return false
+        if (e.type === 'hidden') return false
+        const hasAria = Boolean(e.getAttribute('aria-label') || e.getAttribute('aria-labelledby'))
+        const hasLabel = Boolean(e.labels && e.labels.length > 0)
+        return !hasAria && !hasLabel
+      })
+      .map(e => `${e.tagName.toLowerCase()}[type=${e.type}] placeholder=«${e.getAttribute('placeholder') ?? ''}»`),
     panel: Boolean(panel),
     panelText: panel ? panel.innerText : '',
     panelButtons: panel
@@ -358,6 +375,9 @@ const SCENES = [
       for (const label of [/开\s*始\s*游\s*戏/, /隐私政策/, /导入存档/]) {
         if (!page.buttons.some(b => label.test(b.text))) out.push(`欢迎页缺「${label.source}」入口`)
       }
+      // 读屏:aria-check 进不来这页(它铺有存档),标题与字段名只能在这里验
+      if (page.headings === 0) out.push('欢迎页没有任何标题元素(h1/h2/h3),读屏无法按标题定位')
+      if (page.unnamedInputs.length > 0) out.push(`欢迎页有 ${page.unnamedInputs.length} 个无名字段:${page.unnamedInputs.join(' | ')}`)
       /*
        * 触控下限:这三颗是首屏唯一可点的东西。
        * 只说高度 —— 首页那颗「隐私政策」是文字链宽度够高不够(30px),
@@ -413,6 +433,9 @@ const SCENES = [
       if (!/道\s*号/.test(page.text)) out.push('建号页缺「道 号」输入区')
       if (!/灵\s*根/.test(page.text)) out.push('建号页缺灵根一栏')
       if (!page.buttons.some(b => /踏\s*入|开始/.test(b.text))) out.push('建号页没有开始按钮')
+      // 读屏两条:aria-check 进不来这页(它铺有存档),只能在这里验
+      if (page.headings === 0) out.push('建号页没有任何标题元素(h1/h2/h3),读屏无法按标题定位')
+      if (page.unnamedInputs.length > 0) out.push(`建号页有 ${page.unnamedInputs.length} 个无名字段:${page.unnamedInputs.join(' | ')}`)
       return out
     }
   },
