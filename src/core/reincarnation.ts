@@ -157,7 +157,7 @@ export function carryGongfa(
  * @param chosenTalentId 三选一的先天之姿
  * @param chosenThemeId 这一世立下的题(null 为不立题)
  */
-export function confirmReincarnation(chosenTalentId: string | null, chosenThemeId: string | null = null): void {
+export async function confirmReincarnation(chosenTalentId: string | null, chosenThemeId: string | null = null): Promise<void> {
   const player = usePlayerStore()
   const resources = useResourcesStore()
   const inventory = useInventoryStore()
@@ -220,7 +220,8 @@ export function confirmReincarnation(chosenTalentId: string | null, chosenThemeI
   adventure.setSession(null)
   adventure.setPendingEvent(null, 0)
   adventure.unlocked = ['qingyun']
-  rerollMortalWorld()
+  // 分块异步:必等待,否则转世后几秒内凡界是空的
+  await rerollMortalWorld()
   // 关系归档:只写一条记录,不产出任何资源
   const bondRec = archiveBond()
   if (bondRec) player.recordBond(bondRec)

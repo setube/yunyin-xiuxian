@@ -90,7 +90,7 @@ describe('转世交割 · confirmReincarnation', () => {
 
   afterEach(() => vi.restoreAllMocks())
 
-  it('准备来世灵根不提前落账,确认后得到的就是预览那副牌', () => {
+  it('准备来世灵根不提前落账,确认后得到的就是预览那副牌', async () => {
     const player = usePlayerStore()
     const before = JSON.stringify(player.$state)
     const loreBefore = JSON.stringify(useLoreStore().$state)
@@ -100,11 +100,11 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(view.nextLinggen?.roots.length).toBeGreaterThan(0)
     expect(view.nextLinggen?.growthMult).toBeGreaterThan(0)
 
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
     expect(player.linggen).toEqual(view.nextLinggen)
   })
 
-  it('连续重刷五十次只换灵根,不重抽天赋或重复发奖,确认采用最后一副牌', () => {
+  it('连续重刷五十次只换灵根,不重抽天赋或重复发奖,确认采用最后一副牌', async () => {
     const player = usePlayerStore()
     prepareReincarnation()
     const ui = useUiStore()
@@ -121,13 +121,13 @@ describe('转世交割 · confirmReincarnation', () => {
       expect(JSON.stringify(player.$state)).toBe(before)
     }
     const selected = ui.reincarnation!.nextLinggen
-    confirmReincarnation(ui.reincarnation!.talentChoices[0] ?? null)
+    await confirmReincarnation(ui.reincarnation!.talentChoices[0] ?? null)
     expect(player.linggen).toEqual(selected)
     expect(player.reincarnation.count).toBe(1)
     expect(player.reincarnation.daoFruit).toBe(100 + review.daoFruitGained)
   })
 
-  it('受控掷点产生完整的新灵根,连续抽中相同结果也有效', () => {
+  it('受控掷点产生完整的新灵根,连续抽中相同结果也有效', async () => {
     prepareReincarnation()
     const view = useUiStore().reincarnation!
     view.nextLinggen = { roots: [{ element: 'wood', aptitude: 60 }], gradeName: '异灵根', growthMult: 1.6 }
@@ -150,7 +150,7 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(view.nextLinggen).toEqual(capped)
   })
 
-  it.each([0, 9])('境界 %i 的灵根草稿计入本次宿慧与新认知,资质保底与旧结算一致', major => {
+  it.each([0, 9])('境界 %i 的灵根草稿计入本次宿慧与新认知,资质保底与旧结算一致', async major => {
     const player = usePlayerStore()
     player.major = major
     player.reincarnation.insight = 590
@@ -161,7 +161,7 @@ describe('转世交割 · confirmReincarnation', () => {
     const selected = useUiStore().reincarnation!.nextLinggen
     expect(selected).toBeDefined()
     vi.restoreAllMocks()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
     // 590 + 本世所得 + 新认得的灵材每味 3 宿慧,次数保底仍按转世前的 0+1 计。
     const gained = player.reincarnation.lives[0]!.insight
     const insight = 590 + gained + Object.values(useLoreStore().materialLore).filter(v => v >= 1).length * 3
@@ -170,7 +170,7 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(player.linggen).toEqual(selected)
   })
 
-  it('没有转生窗口时重刷为空操作', () => {
+  it('没有转生窗口时重刷为空操作', async () => {
     const player = usePlayerStore()
     const before = JSON.stringify(player.$state)
     expect(() => reincarnationService.rerollReincarnationLinggen()).not.toThrow()
@@ -178,7 +178,7 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(useUiStore().reincarnation).toBeNull()
   })
 
-  it('放下「我拥有多少」:境界/资源/装备/法宝/丹药/灵兽/洞府/灵脉/区域全部归零', () => {
+  it('放下「我拥有多少」:境界/资源/装备/法宝/丹药/灵兽/洞府/灵脉/区域全部归零', async () => {
     const player = usePlayerStore()
     const res = useResourcesStore()
     const inv = useInventoryStore()
@@ -188,7 +188,7 @@ describe('转世交割 · confirmReincarnation', () => {
     const appr = useApprenticeStore()
 
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
 
     expect(player.major).toBe(0)
     expect(player.sub).toBe(0)
@@ -214,18 +214,18 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(appr.rebirthKarma, 'seedLife 的 bond:20 未达真传,不凝缘').toBe(0)
   })
 
-  it('真传道童转世:道童本体散去,但一丝缘(rebirthKarma)随世带走', () => {
+  it('真传道童转世:道童本体散去,但一丝缘(rebirthKarma)随世带走', async () => {
     const appr = useApprenticeStore()
     useApprenticeStore().$patch({
       apprentices: [{ uid: 'apt2', archId: STARTER_APPRENTICE, level: 9, bond: 150, task: null }] as never
     })
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
     expect(appr.apprentices, '道童本体仍随世散去').toHaveLength(0)
     expect(appr.rebirthKarma, '真传之缘随世带走,封顶到真传位阶').toBe(100)
   })
 
-  it('带走「我是谁」:道果/天赋/宿慧/称号/认知/道源道痕/世界记忆全部保留', () => {
+  it('带走「我是谁」:道果/天赋/宿慧/称号/认知/道源道痕/世界记忆全部保留', async () => {
     const player = usePlayerStore()
     const lore = useLoreStore()
     const endgame = useEndgameStore()
@@ -233,7 +233,7 @@ describe('转世交割 · confirmReincarnation', () => {
     const fruitBefore = player.reincarnation.daoFruit
 
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
 
     expect(player.reincarnation.daoFruit).toBeGreaterThan(fruitBefore)
     expect(player.reincarnation.talents).toContain('t_xian')
@@ -249,55 +249,74 @@ describe('转世交割 · confirmReincarnation', () => {
     expect(quests.counters.kills).toBe(99)
   })
 
-  it('新的皮囊换新的道号:转世重掷姓名,不沿用旧名', () => {
+  it('新的皮囊换新的道号:转世重掷姓名,不沿用旧名', async () => {
     const player = usePlayerStore()
     const before = player.name
 
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
 
     expect(player.name).not.toBe(before)
     expect(player.name.length).toBeGreaterThan(0)
   })
 
-  it('功法半留:门类记得,层数回到一层', () => {
+  it('功法半留:门类记得,层数回到一层', async () => {
     const cult = useCultivationStore()
 
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
 
     expect(cult.learned.m_taixuan).toBeGreaterThanOrEqual(1)
     expect(cult.learned.m_jinlian).toBeGreaterThanOrEqual(1)
     expect(Math.max(cult.learned.m_taixuan!, cult.learned.m_jinlian!)).toBeLessThan(5)
   })
 
-  it('归档一世履历、结算一遍即止:再次 confirm 应为空操作(防重复发放)', () => {
+  it('归档一世履历、结算一遍即止:再次 confirm 应为空操作(防重复发放)', async () => {
     const player = usePlayerStore()
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
     const lives = player.reincarnation.lives.length
     const fruit = player.reincarnation.daoFruit
 
     // 界面已关(view 置 null),守卫挡下
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
     expect(player.reincarnation.lives).toHaveLength(lives)
     expect(player.reincarnation.daoFruit).toBe(fruit)
     expect(useUiStore().reincarnation).toBeNull()
   })
 
-  it('逆旅契随世交割:归档进履历、本世契清空、下世不再受契约束', () => {
+  it('逆旅契随世交割:归档进履历、本世契清空、下世不再受契约束', async () => {
     const player = usePlayerStore()
     // seedLife 给 daoFruit=100,tr_gu 需 24
     expect(signLifeTrial('tr_gu')).toBe(true)
     expect(lifeTrialRules()).toBeDefined()
 
     prepareReincarnation()
-    confirmReincarnation(null)
+    await confirmReincarnation(null)
 
     // 先归档、后清空 —— 顺序错了会丢奖励或跨世泄漏
     const last = player.reincarnation.lives[player.reincarnation.lives.length - 1]
     expect(last?.trialId, '履历应记为这世所立之契').toBe('tr_gu')
     expect(player.reincarnation.trial, '本世契应随转世清空,不泄漏进下一世').toBeNull()
     expect(lifeTrialRules()).toBeUndefined()
+  })
+
+  /**
+   * 转世交割里换了本世之界,而换界是分块异步的。
+   *
+   * 曾经它没被 await:confirmReincarnation 是同步函数,调用完立刻返回,
+   * 此时 adventure.mortalWorld 已被清空、新世界还没生成好 —— 转世后落地到 /
+   * 看到的是「此世未成」,几秒后草忽然出来。
+   * 故障注入:去掉 confirmReincarnation 里的 await → 本条红。
+   */
+  it('给定转世交割,当确认转世后,则本世之界已换好而不是空的', async () => {
+    const adventure = useAdventureStore()
+    const before = adventure.mortalWorld
+    prepareReincarnation()
+    await confirmReincarnation(null)
+    expect(adventure.mortalWorld, '转世后该有一方新天地,不该是空的').not.toBeNull()
+    if (before) {
+      expect(adventure.mortalWorld?.seed, '该换一方天地').not.toBe(before.seed)
+    }
   })
 })

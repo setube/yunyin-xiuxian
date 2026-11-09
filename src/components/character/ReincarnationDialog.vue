@@ -402,8 +402,9 @@
     prepareReincarnation()
   }
 
-  function confirm(): void {
-    confirmReincarnation(chosen.value, theme.value)
+  async function confirm(): Promise<void> {
+    // 转世里要等凡界重新凝出来(分块异步);不等就跳转,落地时会看到「此世未成」
+    await confirmReincarnation(chosen.value, theme.value)
     chosen.value = null
     theme.value = null
     engine.resetDeathFlag()
