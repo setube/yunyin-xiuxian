@@ -24,12 +24,15 @@ vi.mock('@/core/worldGen', async importOriginal => {
   const mod = await importOriginal<typeof import('@/core/worldGen')>()
   // vi.mock 工厂被提升到静态 import 之前(TDZ),只能 await import
   const { celestialWorldDef } = await import('@/data/endgame')
+  const stub = (): GeneratedWorld | null =>
+    h.genResult === 'world'
+      ? ({ world: celestialWorldDef('chiyan')!, audit: {} as never, novelty: 0.5, rejected: 3 } as unknown as GeneratedWorld)
+      : null
   return {
     ...mod,
-    generateApprovedWorld: (): GeneratedWorld | null =>
-      h.genResult === 'world'
-        ? ({ world: celestialWorldDef('chiyan')!, audit: {} as never, novelty: 0.5, rejected: 3 } as unknown as GeneratedWorld)
-        : null
+    generateApprovedWorld: stub,
+    // rerollVoidWorld 走的是分块异步版,一并桩掉
+    generateApprovedWorldAsync: async () => stub()
   }
 })
 
@@ -220,36 +223,36 @@ describe('混元界重掷代价 · rerollVoidWorld 扣/退与失效分支', () =
     usePlayerStore().major = 9 // 达到飞升门槛,终局解锁
   })
 
-  it('虚界远征在途时不可重摇:worldId=void 拒绝,道源分文不动', () => {
+  it('虚界远征在途时不可重摇:worldId=void 拒绝,道源分文不动', async () => {
     const endgame = useEndgameStore()
     endgame.$patch({ daoPath: 'sword', daoSource: 50 })
     endgame.$patch({ worldRun: { worldId: 'void' } as unknown as WorldRunState })
-    expect(rerollVoidWorld()).toBe(false)
+    expect(await rerollVoidWorld()).toBe(false)
     expect(endgame.daoSource).toBe(50)
     expect(endgame.voidWorld).toBeNull()
   })
 
-  it('道源不足拒绝重摇,不扣账', () => {
+  it('道源不足拒绝重摇,不扣账', async () => {
     const endgame = useEndgameStore()
     endgame.$patch({ daoPath: 'sword', daoSource: VOID_REROLL_COST - 1 })
-    expect(rerollVoidWorld()).toBe(false)
+    expect(await rerollVoidWorld()).toBe(false)
     expect(endgame.daoSource).toBe(VOID_REROLL_COST - 1)
   })
 
-  it('重摇成功扣 VOID_REROLL_COST,虚界成形', () => {
+  it('重摇成功扣 VOID_REROLL_COST,虚界成形', async () => {
     h.genResult = 'world'
     const endgame = useEndgameStore()
     endgame.$patch({ daoPath: 'sword', daoSource: 50 })
-    expect(rerollVoidWorld()).toBe(true)
+    expect(await rerollVoidWorld()).toBe(true)
     expect(endgame.daoSource).toBe(50 - VOID_REROLL_COST)
     expect(endgame.voidWorld?.id).toBe('chiyan')
   })
 
-  it('裁判否决生成失败:扣了又退,道源无损、虚界不变', () => {
+  it('裁判否决生成失败:扣了又退,道源无损、虚界不变', async () => {
     h.genResult = 'null'
     const endgame = useEndgameStore()
     endgame.$patch({ daoPath: 'sword', daoSource: 50 })
-    expect(rerollVoidWorld()).toBe(false)
+    expect(await rerollVoidWorld()).toBe(false)
     expect(endgame.daoSource).toBe(50) // 先扣 10 又退 10
     expect(endgame.voidWorld).toBeNull()
   })

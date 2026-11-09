@@ -167,20 +167,20 @@
             </button>
             <button
               class="btn-ghost !px-3 !text-[12px]"
-              :disabled="busy !== null || endgame.daoSource < VOID_REROLL_COST"
+              :disabled="busy !== null || rerolling || endgame.daoSource < VOID_REROLL_COST"
               :title="busy?.reason ?? (endgame.daoSource < VOID_REROLL_COST ? `道源尚差 ${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)}` : undefined)"
-              @click="rerollVoidWorld()"
-            >{{ endgame.daoSource < VOID_REROLL_COST ? `再窥(尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `再窥(${VOID_REROLL_COST})` }}</button>
+              @click="onRerollVoid()"
+            >{{ rerolling ? '窥探中' : endgame.daoSource < VOID_REROLL_COST ? `再窥(尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `再窥(${VOID_REROLL_COST})` }}</button>
           </div>
         </template>
         <template v-else>
           <button
             class="btn-ghost mt-2.5 w-full !py-2 !text-[12px]"
-            :disabled="busy !== null || endgame.daoSource < VOID_REROLL_COST"
+            :disabled="busy !== null || rerolling || endgame.daoSource < VOID_REROLL_COST"
             :title="busy?.reason ?? (endgame.daoSource < VOID_REROLL_COST ? `道源尚差 ${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)}` : undefined)"
-            @click="rerollVoidWorld()"
+            @click="onRerollVoid()"
           >
-            {{ endgame.daoSource < VOID_REROLL_COST ? `窥探虚界(尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `窥探虚界(道源 ${VOID_REROLL_COST})` }}
+            {{ rerolling ? '窥探中' : endgame.daoSource < VOID_REROLL_COST ? `窥探虚界(尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `窥探虚界(道源 ${VOID_REROLL_COST})` }}
           </button>
         </template>
       </div>
@@ -331,6 +331,7 @@
     chooseRouteNode,
     forecastExpedition,
     previewFight,
+    isVoidRerolling,
     rerollVoidWorld,
     resolveWorld,
     startWorldExpedition,
@@ -354,6 +355,20 @@
   const endgame = useEndgameStore()
   const adventure = useAdventureStore()
   const busy = computed(() => endgameBusy(endgame.worldRun, player.secretRealm, adventure.session))
+  /**
+   * 窥探虚界是分块异步的(单次候选审计约 70ms,整趟中位 654ms、最坏 3183ms),
+   * 期间要置灰两颗钮并写「窥探中」。core 不引 Vue 响应式,故这里用本地 ref 跟着走。
+   */
+  const rerolling = ref(false)
+  async function onRerollVoid(): Promise<void> {
+    if (rerolling.value || isVoidRerolling()) return
+    rerolling.value = true
+    try {
+      await rerollVoidWorld()
+    } finally {
+      rerolling.value = false
+    }
+  }
 
   /**
    * 择契行的形制:契重与契纹各算一次。
