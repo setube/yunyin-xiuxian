@@ -7,14 +7,40 @@ import { describe, expect, it } from 'vitest'
 import {
   BIAS_POOL,
   NOVELTY_MIN,
+  auditMortalWorld,
   generateMortalWorld,
-  generateSeries,
   materialCapacity,
   mortalNovelty,
-  shuffleOnlyWorld
+  shuffleOnlyWorld,
+  type MortalAudit,
+  type MortalWorld
 } from './mortalWorldGen'
 
-const SERIES = generateSeries(5, 20260904, 10)
+/**
+ * 连续五世:每世都相对**全部**已生成的历史过新颖度门。
+ * 这不是生产路径(mortalWorldService 逐世生成、历史取自存档),只是 spec 要一批多样本,
+ * 故内联在这里 —— 原先的 generateSeries 只为 spec 存在,已被删除。
+ */
+const SERIES = (() => {
+  const out: { world: MortalWorld; audit: MortalAudit; novelty: number; rejected: number }[] = []
+  const history: MortalWorld[] = []
+  for (let i = 0; i < 5; i += 1) {
+    let found: { world: MortalWorld; audit: MortalAudit; novelty: number; rejected: number } | null = null
+    for (let t = 0; t < 120; t += 1) {
+      const w = generateMortalWorld(20260904 + i * 104729 + t * 7919)
+      const audit = auditMortalWorld(w, 10)
+      if (!audit.passed) continue
+      const novelty = mortalNovelty(w, history)
+      if (novelty < NOVELTY_MIN) continue
+      found = { world: w, audit, novelty, rejected: t }
+      break
+    }
+    if (!found) break
+    out.push(found)
+    history.push(found.world)
+  }
+  return out
+})()
 
 describe('凡界生成 · 素材容量', () => {
   it('现有素材的组合空间', () => {

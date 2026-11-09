@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /** 凡界生成 · 主观新颖度代理审计:把生成结果拆成玩家实际会看到的层比较表面特征,只能排除明显换皮。 */
 import { describe, expect, it } from 'vitest'
-import { generateMortalWorld, generateSeries } from './mortalWorldGen'
+import { auditMortalWorld, generateMortalWorld, mortalNovelty, NOVELTY_MIN, type MortalAudit, type MortalWorld } from './mortalWorldGen'
 import {
   avgVisibleByDim,
   isFocused,
@@ -17,7 +17,31 @@ import {
   worldIdentity
 } from './mortalIdentity'
 
-const SERIES = generateSeries(6, 20260904, 10)
+/**
+ * 连续六世:每世都相对**全部**已生成的历史过新颖度门。
+ * 生产路径是逐世生成(mortalWorldService)、历史取自存档;这里只是要一批多样本,
+ * 故内联 —— 原先的 generateSeries 只为 spec 存在,已被删除。
+ */
+const SERIES = (() => {
+  const out: { world: MortalWorld; audit: MortalAudit; novelty: number; rejected: number }[] = []
+  const history: MortalWorld[] = []
+  for (let i = 0; i < 6; i += 1) {
+    let found: { world: MortalWorld; audit: MortalAudit; novelty: number; rejected: number } | null = null
+    for (let t = 0; t < 120; t += 1) {
+      const w = generateMortalWorld(20260904 + i * 104729 + t * 7919)
+      const audit = auditMortalWorld(w, 10)
+      if (!audit.passed) continue
+      const novelty = mortalNovelty(w, history)
+      if (novelty < NOVELTY_MIN) continue
+      found = { world: w, audit, novelty, rejected: t }
+      break
+    }
+    if (!found) break
+    out.push(found)
+    history.push(found.world)
+  }
+  return out
+})()
 const WORLDS = SERIES.map(s => s.world)
 
 describe('可见新颖 · 世界身份', () => {
