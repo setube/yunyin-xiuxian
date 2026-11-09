@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { lateSlices, seedSave, stressSlices } from "./lib/saveFixture.mjs";
+import { lateSlices, seedSave, stressSlices, withActiveRun } from "./lib/saveFixture.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
@@ -78,6 +78,13 @@ const startupOnly = args.includes("--startup");
  * 采样前必须 gc():不回收的话量到的是待回收垃圾,任何页面看起来都在涨。
  */
 const memoryOnly = args.includes("--memory");
+/**
+ * `--active`:给内存档挂一场在途历练,让引擎每 tick 真的打一场。
+ *
+ * 不加这个开关时页面是空闲的 —— 空闲心跳几乎不分配,量出来必然平,
+ * 那样「没有泄漏」证明不了什么。加了才有真实负载(战斗、掉落、事件、战报)。
+ */
+const activeLoad = args.includes("--active");
 /** 内存采样点数与间隔:`--memory-rounds=N --memory-gap=MS`,长时档调大两者 */
 const roundsArg = args.find((a) => /^--memory-rounds=/.test(a));
 const gapArg = args.find((a) => /^--memory-gap=/.test(a));
@@ -239,9 +246,10 @@ const failures = [];
  */
 if (memoryOnly) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  await seedSave(context, stress ? stressSlices(itemCount) : lateSlices());
+  const baseSlices = stress ? stressSlices(itemCount) : lateSlices();
+  await seedSave(context, activeLoad ? withActiveRun(baseSlices) : baseSlices);
   const page = await context.newPage();
-  const route = only ? (VIEWS.find((v) => v.name === only)?.route ?? "/") : "/";
+  const route = only ? (VIEWS.find((v) => v.name === only)?.route ?? "/") : activeLoad ? "/adventure" : "/";
   await page.goto(base + `#${route}`, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
 
