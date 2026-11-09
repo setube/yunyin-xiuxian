@@ -16,7 +16,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
 import { useAdventureStore } from '@/stores/adventure'
 import { todayWeather } from './weather'
-import { gn, mulN, toNum } from '@/utils/gnum'
+import { gn, gnZero, mulN, toNum } from '@/utils/gnum'
 import { OFFLINE_EFFICIENCY } from '@/data/constants'
 
 const GAP_HOURS = 60
@@ -428,4 +428,52 @@ describe('离线归来卷轴 · 镇压账目', () => {
       vi.useRealTimers()
     }
   })
+})
+
+/*
+ * 离线时历练仍在途:卷轴上要写明还剩多久。
+ *
+ * 注意这条只在「离线结算没把它跑完」时出现 —— 会话若在离线窗口内到点,
+ * 结算会照常打完并报「历练完成」,根本走不到这里。所以夹具要让 endsAt 落在
+ * 本次离线的终点之后。
+ *
+ * 变异扫描把 `Math.max(0, (adventure.session.endsAt - nowMs) / 1000)` 报成
+ * 「改坏了不会红」—— 这条提示此前零覆盖。夹 0 防的是「会话早已该结束、
+ * 而离线期间没被推进」那种残留:不夹就会算出负数,formatDuration 拿去印出
+ * 一段负时长。
+ */
+describe('离线 · 历练仍在途的提示', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('给定会话还没到点,当离线,则卷轴写明尚余时长', () => {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    game.markStarted()
+    const now = Date.now()
+    game.lastActiveAt = now - 30 * 60 * 1000
+    player.major = 3
+    adventure.setSession({
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: now - 10 * 60 * 1000,
+      // 还剩 20 分钟 —— 离线 30 分钟之后它本来也该到点了,这里刻意让它比 now 晚
+      endsAt: now + 20 * 60 * 1000,
+      nextBattleAt: now + 60 * 1000,
+      wins: 0,
+      losses: 0,
+      events: 0,
+      stoneGain: gnZero(),
+      expGain: gnZero(),
+      itemGain: 0
+    })
+    settleOffline(now)
+    const line = useUiStore().offlineSummary?.notes.find(n => n.includes('历练在途'))
+    expect(line, '在途会话该报一句').toBeDefined()
+    expect(line, '该写明尚余多久').toMatch(/尚余/)
+  })
+
+
 })
