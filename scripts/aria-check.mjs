@@ -59,7 +59,25 @@ try {
   console.log(`  ${mainFocusable ? '✓' : '✗'} main 可编程聚焦`)
 
   // 4) 每页都要有可定位的页面标题(读屏用户靠标题跳转)
-  const ROUTES = ['/', '/cultivation', '/adventure', '/inventory', '/character', '/dongfu', '/market', '/settings']
+  /*
+   * 全站 18 条路由都要有标题。
+   *
+   * 原先只列 8 条,codex / world / celestial / souls / collection / build /
+   * apprentice / titles / legacy 这 9 页的读屏属性从未被验过 —— 而它们拿同一份
+   * lateSlices 夹具都进得去、也都画得出标题,没有理由漏在外面。
+   * 「一条路由没被列进来」和「查过且没问题」在输出上长得一模一样,这是最危险的那种缺口。
+   */
+  const ROUTES = [
+    '/', '/cultivation', '/codex', '/adventure', '/world', '/inventory', '/character',
+    '/celestial', '/souls', '/dongfu', '/collection', '/build', '/market', '/apprentice',
+    '/titles', '/legacy', '/settings'
+    /*
+     * 不含 /welcome 与 /create:本脚本铺 lateSlices(已有存档),路由守卫
+     * `if (game.started) { if (to.name === 'welcome' || to.name === 'create') return { name: 'home' } }`
+     * 会把它们弹回首页 —— 那样量到的「标题 1 个」其实是首页的,是假绿。
+     * 这两页由 edge-check 的无存档场景覆盖。
+     */
+  ]
   for (const r of ROUTES) {
     await page.evaluate(h => { location.hash = '#' + h }, r)
     await page.waitForTimeout(600)
@@ -70,7 +88,12 @@ try {
 
   // 5) 触控目标不小于 28px:能点的盒子要够手指按
   //    复选框之类被 <label> 包住时,可点区域是 label 整体,量它而不是 input 本体
-  const TOUCH_ROUTES = ['/', '/cultivation', '/inventory', '/settings', '/dongfu', '/market']
+  /*
+   * 触控下限同覆盖 17 条路由。原先只列 6 条,codex / world / celestial / souls /
+   * collection / build / apprentice / titles / legacy 九页的点按面积从未量过。
+   * (layout-check 另有 190 个页面×视口的全量扫描,那条线更宽;此处是读屏脚本里的快速档。)
+   */
+  const TOUCH_ROUTES = ROUTES
   for (const r of TOUCH_ROUTES) {
     await page.evaluate(h => { location.hash = '#' + h }, r)
     await page.waitForTimeout(600)
@@ -102,7 +125,15 @@ try {
    * 只扫首屏的话,/build 与 /celestial 的输入框都在弹窗里,永远扫不到,
    * 判据就成了空转。故障注入验过:去掉建号页的 aria-label,只扫首屏根本报不出来。
    */
-  const FORM_ROUTES = ['/create', '/', '/build', '/celestial', '/settings']
+  /*
+   * 不含 /create:本脚本铺有存档,路由守卫会把它弹回首页 ——
+   * 那一行「无可见输入框(判据在此页未覆盖)」其实是首页的结果,不是建号页的。
+   * 建号页的输入框由 edge-check 的无存档场景覆盖(它真的进得去)。
+   *
+   * /cultivation 的悟道兑换次数框要 major 够高且「兑得起 >1 次」才渲染,
+   * /market 的购买数量框要选中某件才出 —— 本夹具下两页都量不到,留着做将来的兜底。
+   */
+  const FORM_ROUTES = ['/', '/cultivation', '/build', '/celestial', '/market', '/settings']
   for (const r of FORM_ROUTES) {
     await page.evaluate(h => { location.hash = '#' + h }, r)
     await page.waitForTimeout(600)
