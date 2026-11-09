@@ -487,6 +487,31 @@ describe('坊市 · 买卖', () => {
     )
   })
 
+  /*
+   * 坏档里的负 finishAt 必须整条丢掉,不能被夹成 0 留下来。
+   *
+   * 原文是 `Math.max(0, Math.floor(raw.finishAt))`,紧跟着 `if (finishAt < 0) continue`
+   * ——夹到 0 之后那个 continue 永远不会触发。而 finishAt=0 意味着「已在过去到期」,
+   * 玩家一进游戏就被迫结算一笔本不该有的寄卖,钱和货都凭空产生。
+   *
+   * 变异扫描把这一处的 Math.max 报成「改坏了不会红」,因为既有用例只喂过正常时间戳。
+   */
+  it('sanitize:负 finishAt 的寄卖整条丢弃,不夹成「立即到期」', () => {
+    const market = useMarketStore()
+    const now = Date.now()
+    market.$patch({
+      consign: [
+        { slot: 0, tier: 3, qualityRank: 1, price: { m: 5, e: 0 }, finishAt: -1, name: '坏' },
+        { slot: 1, tier: 3, qualityRank: 1, price: { m: 5, e: 0 }, finishAt: -1e12, name: '坏' },
+        { slot: 2, tier: 3, qualityRank: 1, price: { m: 5, e: 0 }, finishAt: now + 60_000, name: '好' }
+      ] as never
+    })
+    market.sanitize()
+    expect(market.consign, '两条坏的该丢掉,只留一条好的').toHaveLength(1)
+    expect(market.consign[0]!.name).toBe('好')
+    expect(market.consign.every(p => p.finishAt > 0), '留下来的都得是未来时刻').toBe(true)
+  })
+
   it('sanitize:寄卖格号重复只理顺号,一件都不丢、各自内容不串', () => {
     const market = useMarketStore()
     const now = Date.now()

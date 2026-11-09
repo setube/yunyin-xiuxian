@@ -142,8 +142,16 @@ export const useMarketStore = defineStore(
       const posts: ConsignPost[] = []
       for (const raw of asArray<unknown>(consign.value)) {
         if (!raw || typeof raw !== 'object' || !('finishAt' in raw)) continue
-        const finishAt = Number.isFinite(raw.finishAt) ? Math.max(0, Math.floor(raw.finishAt as number)) : -1
-        if (finishAt < 0) continue
+        /*
+         * 坏档里的负 finishAt 整条丢弃,不夹成 0。
+         *
+         * 原先是 `Math.max(0, Math.floor(raw.finishAt))`,紧跟着 `if (finishAt < 0) continue`
+         * ——夹到 0 之后那个 continue 永远不会触发。而 finishAt=0 意味着「已在过去到期」,
+         * 玩家一进游戏就被迫结算一笔本不该有的寄卖,钱和货凭空产生。
+         */
+        const rawFinishAt = Math.floor(Number(raw.finishAt))
+        if (!Number.isFinite(rawFinishAt) || rawFinishAt <= 0) continue
+        const finishAt = rawFinishAt
         const rawTier = Number('tier' in raw ? raw.tier : 1)
         const rawQualityRank = Number('qualityRank' in raw ? raw.qualityRank : 0)
         const tier = Math.min(MAX_EQUIP_TIER, Math.max(1, Math.floor(rawTier || 1)))
