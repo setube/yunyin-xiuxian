@@ -311,4 +311,40 @@ describe('迁移 · 档内版本号跟着升,且坏值修得掉', () => {
     const view = readFileSync(new URL('../components/settings/SettingsSaveSection.vue', import.meta.url), 'utf-8')
     expect(view, '版本应读 game.saveVersion').toContain('game.saveVersion')
   })
+
+  /**
+   * 分账已是脏形态时,迁移不能原样放行。
+   *
+   * 曾经有一条提前返回只看「有没有分账 + 标量是否 ≤0」,不看分账本身干不干净:
+   * 数组 / null / 越界键 / 小数 / 负数都会原样返回**同一个引用** —— 而
+   * migrateLocalSchema 只在引用变了才回写,脏数据于是永远躺在 localStorage 里,
+   * 每次启动重走一遍 sanitize。数值上没错(sanitize 兜得住),坏的是迁移层的契约。
+   *
+   * 数组那条更险:按 Object.entries 读,下标 1/2/3 会被当成品阶,`[1,2,3]` 变成 `{1:2,2:3}`。
+   * 故障注入:去掉 herbMapClean 判断 → 前五条红。
+   */
+  it('给定脏分账,当跑迁移,则一律修成干净形态并返回新引用', () => {
+    const dirty: [string, Record<string, unknown>][] = [
+      ['越界键', { herbByGrade: { 1: 5, 9: 3 } }],
+      ['小数', { herbByGrade: { 1: 1.7 } }],
+      ['负数', { herbByGrade: { 1: -5 } }],
+      ['数组', { herbByGrade: [1, 2, 3] as unknown as Record<string, unknown> }],
+      ['null', { herbByGrade: null }]
+    ]
+    for (const [label, input] of dirty) {
+      const out = migrateHerbSlice(input)
+      expect(out, `${label}: 脏分账该被重写,不能原样返回`).not.toBe(input)
+      const map = out.herbByGrade as Record<number, number>
+      // 键集合必须是完整五品;越界键(如 9)被丢掉,合法键的值按规则保留或归零
+      expect(Object.keys(map).sort(), `${label}: 该重建为完整五品映射`).toEqual(['1', '2', '3', '4', '5'])
+      for (const g of [1, 2, 3, 4, 5]) {
+        expect(Number.isInteger(map[g]) && map[g]! >= 0, `${label}: 品 ${g} 该是非负整数`).toBe(true)
+      }
+    }
+    // 越界键丢掉、合法键的值留住
+    expect(migrateHerbSlice({ herbByGrade: { 1: 5, 9: 3 } }).herbByGrade, '合法键的值该留住').toMatchObject({ 1: 5 })
+    // 干净分账保持同引用,否则每次启动都白写一遍 localStorage
+    const clean = { herbByGrade: { 1: 5, 2: 0, 3: 0, 4: 0, 5: 0 } }
+    expect(migrateHerbSlice(clean), '干净分账不该被判成需要迁移').toBe(clean)
+  })
 })
