@@ -68,12 +68,24 @@ if (!Number.isFinite(cpuRate) || cpuRate < 1 || cpuRate > 20) {
   process.exit(1);
 }
 
-/** 按 --cpu 给页面装限速;不限速时原样返回,不留 CDP 会话开销 */
-async function throttle(context, page) {
-  if (cpuRate <= 1) return null;
-  const cdp = await context.newCDPSession(page);
-  await cdp.send("Emulation.setCPUThrottlingRate", { rate: cpuRate });
-  return cdp;
+/**
+ * 开一页,并按 `--cpu` 装好限速。
+ *
+ * **所有取页面的地方都必须走这里,不要直接 `context.newPage()`。**
+ * 上一轮加限速时,三个分支(巡页 / --memory / --startup)各写一遍 `throttle()`,
+ * 结果漏了 `--startup` 那处 —— 4x 限速下启动分段读出来和未限速一模一样,
+ * 而同一轮的挂载期长任务是 340ms,两个数对不上才发现。
+ *
+ * 收成一个入口之后,再加新分支也不会漏。
+ */
+async function openPage(context) {
+  const page = await context.newPage();
+  if (cpuRate > 1) {
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: cpuRate });
+    page.__cdp = cdp;
+  }
+  return page;
 }
 /**
  * `--no-save`:不注入存档,走欢迎页。
@@ -280,8 +292,7 @@ if (memoryOnly) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const baseSlices = stress ? stressSlices(itemCount) : lateSlices();
   await seedSave(context, activeLoad ? withActiveRun(baseSlices) : baseSlices);
-  const page = await context.newPage();
-  await throttle(context, page);
+  const page = await openPage(context);
   const route = only ? (VIEWS.find((v) => v.name === only)?.route ?? "/") : activeLoad ? "/adventure" : "/";
   await page.goto(base + `#${route}`, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
@@ -378,9 +389,7 @@ if (memoryOnly) {
 if (startupOnly) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await seedSave(context, stress ? stressSlices(itemCount) : lateSlices());
-  const page = await context.newPage();
-  // 限速须在导航前装,否则这一段量到的是未限速的启动
-  await throttle(context, page);
+  const page = await openPage(context);
   await page.goto(base + "#/", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
   const marks = await page.evaluate(() =>
@@ -443,8 +452,7 @@ for (const view of VIEWS) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     // 每视图注入一份后期档;缺档会落到欢迎页,门量空
     if (!noSave) await seedSave(context, stress ? stressSlices() : lateSlices());
-    const page = await context.newPage();
-    await throttle(context, page);
+    const page = await openPage(context);
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
     page.on("crash", () => errors.push("RENDERER_CRASH"));
