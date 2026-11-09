@@ -9,8 +9,12 @@
       <div class="min-w-0">
         <p class="text-[11px] text-ink">灵石 → 悟道</p>
         <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
-          每次 {{ formatGN(player.wudaoExchangeState.cost) }} 灵石得 {{ WUDAO_EXCHANGE_GAIN }} 点 · 今日
-          {{ player.wudaoExchangeToday }}/{{ WUDAO_EXCHANGE_PER_DAY }}
+          <template v-if="exchangeEffective > 1">
+            {{ formatGN(mulN(player.wudaoExchangeState.cost, exchangeEffective)) }} 灵石得
+            {{ WUDAO_EXCHANGE_GAIN * exchangeEffective }} 点(每份 {{ formatGN(player.wudaoExchangeState.cost) }})
+          </template>
+          <template v-else>每次 {{ formatGN(player.wudaoExchangeState.cost) }} 灵石得 {{ WUDAO_EXCHANGE_GAIN }} 点</template>
+          · 今日 {{ player.wudaoExchangeToday }}/{{ WUDAO_EXCHANGE_PER_DAY }}
         </p>
       </div>
       <!-- 每日限 10 次而灵石常够几十次:一枚一枚点十次没有意义,故给一次连兑 -->
@@ -217,6 +221,7 @@
     WUDAO_EXCHANGE_MIN_MAJOR, WUDAO_EXCHANGE_PER_DAY, WUDAO_EXCHANGE_GAIN
   } from '@/data/constants'
   import { formatGN, formatGap } from '@/utils/format'
+  import { mulN } from '@/utils/gnum'
   import { gongfaAllLearnedToast } from '@/ui/gongfaText'
   import { exchangeOkToast, exchangeFailText } from '@/ui/cultivationText'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
