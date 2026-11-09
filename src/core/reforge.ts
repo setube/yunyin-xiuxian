@@ -216,9 +216,24 @@ export function unsealAffix(uid: string, affixId: string): boolean {
   const ui = useUiStore()
   const inst = inventory.findItem(uid)
   if (!inst) return false
-  if (!inst.affixes.some(a => a.id === affixId)) return false
-  if (!(inst.sealedAffixIds ?? []).includes(affixId)) return false
-  inventory.replaceItem({ ...inst, sealedAffixIds: (inst.sealedAffixIds ?? []).filter(id => id !== affixId) })
+  const sealed = inst.sealedAffixIds ?? []
+  /*
+   * 封存表里的幽灵 id:记着、但件上并没有这条,顺手清掉。
+   *
+   * 这种矛盾存档怎么来:洗练把词条换掉时若漏清封存表,或者玩家手改存档。
+   * 不清的后果不是「解封不了」这么轻 —— `reforgeableAffixIds` 会把幽灵算进
+   * 「已封满」,玩家从此**整件都不能重铸**,而界面上又看不到那条已封的词条,
+   * 完全无从下手。所以哪怕这次解封不成功,也要把表理干净。
+   */
+  if (!inst.affixes.some(a => a.id === affixId)) {
+    const cleaned = sealed.filter(id => id !== affixId)
+    if (cleaned.length !== sealed.length) {
+      inventory.replaceItem({ ...inst, sealedAffixIds: cleaned })
+    }
+    return false
+  }
+  if (!sealed.includes(affixId)) return false
+  inventory.replaceItem({ ...inst, sealedAffixIds: sealed.filter(id => id !== affixId) })
   const name = affixDef(affixId)?.name ?? '词条'
   playSfx('success')
   ui.toast(unsealDoneToast(name), 'success')
