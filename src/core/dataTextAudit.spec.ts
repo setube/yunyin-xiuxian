@@ -378,7 +378,10 @@ describe('文案数值对账 · 视图不手抄数字', () => {
     const trial = src('../components/celestial/TrialPanel.vue')
     expect(trial, '试炼册要读墙钟日号').toContain('useWallNow()')
     expect(trial, '日号要从墙钟读数派生').toContain('localDayNum(wallNow.value)')
-    expect(trial, '天道裁判要接收响应式日号').toContain('todayChallenge(wallDay.value)')
+    // 裁判是分块异步的(单次 54ms × 最多 32 候选,同步跑会卡住页签);仍须接收响应式日号
+    expect(trial, '天道裁判要接收响应式日号').toContain('todayChallengeAsync(day)')
+    // 日号变化要能触发重算 —— 挂在 watch 上而不是只算一次
+    expect(trial, '日号变化须触发重算').toMatch(/watch\([\s\S]{0,200}wallDay\.value/)
     expect(trial, '不许退回无参 todayChallenge(),否则跨午夜不会重算').not.toMatch(
       /const daily = computed\(\(\) => \(endgame\.daoPath \? todayChallenge\(\) : null\)\)/
     )
