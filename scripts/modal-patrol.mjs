@@ -666,6 +666,34 @@ async function clickTab(page, re) {
     return clickByText(page, /天道熔炉/)
   })
   /*
+   * 熔炉里两颗「自定义次数」输入框(灵石熔铸 / 道源凝炼)是新加的控件:
+   * 触控下限与可访问名都要量 —— 它们与钮并排,320 宽下最容易挤到边界外。
+   * 只在可次数 > 1 时才渲染,故这里先确认夹具够兑,再逐颗量。
+   */
+  {
+    await clickTab(page, /道途/)
+    await page.waitForTimeout(400)
+    const opened = await clickByText(page, /天道熔炉/)
+    if (opened) {
+      await page.waitForTimeout(700)
+      for (const label of ['熔铸次数', '凝炼枚数']) {
+        const box = page.locator(`.modal-panel input[aria-label="${label}"]`).first()
+        if ((await box.count()) === 0) {
+          // 夹具的可兑次数不足时该输入框本就不渲染,不算失败
+          continue
+        }
+        const g = await box.evaluate(el => {
+          const r = el.getBoundingClientRect()
+          return { h: r.height, w: r.width, right: r.right, vw: window.innerWidth }
+        })
+        if (g.h < 27.5) fail(`[${WIDTH}x${HEIGHT}] 熔炉「${label}」高 ${g.h.toFixed(1)}px,低于 28px 触控下限`)
+        if (g.right > g.vw - 4) fail(`[${WIDTH}x${HEIGHT}] 熔炉「${label}」越过右边界(${Math.round(g.right)} > ${g.vw - 4})`)
+      }
+    }
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+  }
+  /*
    * 道果说明:凝一枚才弹(道源够 + 还没看过说明)。
    * 这里不能走 patrol 的通用流程 —— 它要在「凝果之后」判开没开,而凝果前已有一层熔炉。
    * 故单独写:先开熔炉 → 点凝果 → 判层数从 1 变 2。
@@ -679,8 +707,8 @@ async function clickTab(page, re) {
       await page.waitForTimeout(600)
       layersBefore = await page.locator('.modal-panel').count()
     }
-    // 钮面写的是「200 道源 → 道果 +1」,连凝钮写「连凝 6 枚」
-    const condense = page.locator('.modal-panel button', { hasText: /道果 \+1|连凝/ }).first()
+    // 钮面写「200 道源 → 道果 +N」,N 随数量输入框变(默认 1)
+    const condense = page.locator('.modal-panel button', { hasText: /道果 \+\d/ }).first()
     const can = (await condense.count()) > 0 && !(await condense.isDisabled().catch(() => true))
     if (!can) {
       notOpened.push('道果')
