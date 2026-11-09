@@ -60,7 +60,8 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run perf-profile` / `perf-stress` — 构建 + `scripts/perf-profile.mjs`：15 个视图的帧间隔、**挂载期长任务**（导航→稳定的 PerformanceObserver 读数）、DOM 节点数。`--stress` 走 120 件满包夹具（行囊上限即 120，已是最坏情况）；`--no-save` 不注入存档走欢迎页，用来把启动开销与页面渲染分开。另有两个读数开关：`--startup` 打启动分段（`main.ts` / `engine.ts` 里的 `performance.mark`），`--shard` 仅 mutation-scan 有
   - **帧间隔列分不出页面贵贱**：浏览器稳定 60fps 时每帧都是 17ms，158 节点与 703 节点的页读数相同。要比开销看 `挂载期长任务` 那一列
   - **启动开销与存档大小成正比**：用 `--items=N` 扫过 0/15/30/45/60/90/120 件，每 30 件约 +12ms（合计 112→162ms），近似线性。三段（preflightScan / sanitizeAllStores / app.mount）同比例增长 —— 都在处理同一份数据。其中 sanitizeAllStores 的 95% 是 Pinia 水合（解密+解析），sanitize 本身只 0.9ms。**这部分没有可省的重复工作**：不解密读不出存档，不自愈会把坏值渲给玩家。行囊上限锁死 120 件（≈36KB），故 162ms 就是天花板
-  - 判据：最差帧 ≤100ms · 长帧 ≤2 · 挂载期长任务 ≤250ms · 启动合计 ≤250ms · DOM ≥20
+  - `--memory` 量长会话驻留内存(配合 `--memory-rounds=N --memory-gap=MS`)。**必须走 CDP 的 `Runtime.getHeapUsage`**:`performance.memory.usedJSHeapSize` 在本机 chromium 里是固定值,持有 40×20 万个元素的数组读数纹丝不动,拿它当判据等于空转。采样前强制 `gc()`,判据取首末差 >15MB 或斜率 >1.5MB/点(后者抓「匀速小涨但总量没到阈值」);12 点 66s 实测首页斜率 0.03MB/点,阈值是噪声的五十倍
+  - 判据：最差帧 ≤100ms · 长帧 ≤2 · 挂载期长任务 ≤250ms · 启动合计 ≤250ms · DOM ≥20 · 驻留内存首末差 ≤15MB 且斜率 ≤1.5MB/点
 - `bun run offline-check` — 构建 + SW 离线自检
 - `bun run treasure-check` / `world-check` / `orb-check` — 构建 + 真浏览器验形制（得宝仪典 / 界域印与飞升跃升 / 法球界域形态）；三者都走后期存档夹具，前期档看不到顶档之物、四界与四态
 - `bun run detail-check` — `scripts/detail-geometry.mjs`：二步确认的几何实测，五处场景逐一点前后量真实宽高（宽度档 320/340/360/375/390/414/430 七档 + **亮色主题两档**，不只测端点 —— 「重铸钮忽大忽小」本就是宽度敏感问题）—— 装备详情页脚（重铸/分解，含付不起档）、器魂散置行（含 390）、洞府「连升至」段（含 390）、构筑快照行（含 390）、灵脉连投段（弹窗内）；钮、行、段都不许变形，底行也不许折行。另挂**后期档**（大境界 18）扫十页的触控下限 ≥28px —— `aria-check` 挂默认前期档，悟道兑换/洞府灵脉/道童那些整块不渲染，量不到；再量两处**异常路径**的 UI：坏档提示里那颗「知道了」（塞非法分片触发 preflightScan）与名额满时的「收道童」拒因（填满四个道童，量钮面写没写「门中已满」、两态钮高是否一致）—— 巡页与 aria-check 拿好人存档，这两处永远不出现

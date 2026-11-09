@@ -68,6 +68,22 @@ const noSave = args.includes("--no-save");
  */
 const startupOnly = args.includes("--startup");
 /**
+ * `--memory`:长会话内存那档。
+ *
+ * 进首页后每隔一段时间强制 GC 再读堆,看驻留内存是否持续爬升。
+ * 三个时间点足够分出「一次性初始化」与「每 tick 泄漏」:
+ *   · 三次数值持平 → 没有累积
+ *   · 单调上升     → 每次采样之间都在攒东西
+ *
+ * 采样前必须 gc():不回收的话量到的是待回收垃圾,任何页面看起来都在涨。
+ */
+const memoryOnly = args.includes("--memory");
+/** 内存采样点数与间隔:`--memory-rounds=N --memory-gap=MS`,长时档调大两者 */
+const roundsArg = args.find((a) => /^--memory-rounds=/.test(a));
+const gapArg = args.find((a) => /^--memory-gap=/.test(a));
+const memoryRounds = roundsArg === undefined ? 4 : Number(roundsArg.slice(16));
+const memoryGapMs = gapArg === undefined ? 3000 : Number(gapArg.slice(13));
+/**
  * `--items=N`:stress 夹具的行囊件数(默认 120 = BAG_CAPACITY)。
  * 配合 `--startup` 可以画出「启动开销 × 存档大小」的增长曲线。
  */
@@ -209,10 +225,109 @@ const server = await startServer();
 const base = `http://127.0.0.1:${server.address().port}/`;
 
 const browser = await chromium.launch({
-  args: ["--disable-dev-shm-usage", "--no-sandbox"],
+  // --expose-gc:长会话内存那档要在采样前强制回收,否则量到的是待回收垃圾而非驻留
+  args: ["--disable-dev-shm-usage", "--no-sandbox", "--js-flags=--expose-gc"],
 });
 const results = [];
 const failures = [];
+
+/*
+ * `--memory`:长会话驻留内存。
+ *
+ * 每轮先 gc() 再读 performance.memory.usedJSHeapSize —— 不回收读到的是待回收垃圾,
+ * 任何页面都会看起来在涨。四个采样点跨约 9 秒,足以分出「一次性初始化」与「每 tick 累积」。
+ */
+if (memoryOnly) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await seedSave(context, stress ? stressSlices(itemCount) : lateSlices());
+  const page = await context.newPage();
+  const route = only ? (VIEWS.find((v) => v.name === only)?.route ?? "/") : "/";
+  await page.goto(base + `#${route}`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForTimeout(2500);
+
+  /*
+   * 走 CDP 的 Runtime.getHeapUsage,不用 performance.memory。
+   *
+   * 实测 `performance.memory.usedJSHeapSize` 在本机 chromium 里是**fixed 值**:
+   * 连续持有 40×20 万个元素的数组,读数纹丝不动(9.54MB → 9.54MB),
+   * 而同一时刻 CDP 报 0.9 → 31.4MB。用它当判据等于空转。
+   */
+  const cdp = await context.newCDPSession(page);
+  const sample = async () => {
+    await page.evaluate(() => globalThis.gc?.());
+    await page.waitForTimeout(120);
+    const { usedSize } = await cdp.send("Runtime.getHeapUsage");
+    return Math.round((usedSize / 1048576) * 10) / 10;
+  };
+
+  const points = [];
+  for (let i = 0; i < memoryRounds; i += 1) {
+    if (i > 0) await page.waitForTimeout(memoryGapMs);
+    points.push(await sample());
+  }
+
+  console.log(`\n长会话内存(#${route},${memoryRounds} 点 × 间隔 ${memoryGapMs / 1000}s,采样前强制 GC):`);
+  console.log(`  ${points.map((v) => `${v}MB`).join(" → ")}`);
+
+  const known = points.filter((v) => Number.isFinite(v));
+  if (known.length < 2 || known.every((v) => v === known[0])) {
+    console.log("  ✗ 堆读数全程不变 —— 度量手段失效,这一档等于空转");
+    process.exitCode = 1;
+  } else {
+    /*
+     * 判据:最后一次相对第一次的涨幅。
+     *
+     * 15MB 是「明显在漏」的门槛 —— 一个 tick 只漏几 KB 的量级在 9 秒里看不出来,
+     * 但真漏(定时器没清、监听没解绑)通常每轮几十 KB 到几 MB,9 秒足够跨过这个数。
+     * 取绝对值而非百分比:基线 10MB 时百分比会放大正常波动。
+     */
+    const first = known[0];
+    const last = known[known.length - 1];
+    const delta = Math.round((last - first) * 10) / 10;
+    /*
+     * 除首末差,再看**斜率**。
+     *
+     * 只看首末差会漏两种形态:先涨后降(GC 时点差异)与「匀速小涨但总量没到阈值」。
+     * 斜率把整串点都算进去,能分出「收敛到平台」(实测首页 5.1→5.5 后停住)
+     * 与「一路向上」(真泄漏)。
+     */
+    const n = known.length;
+    const meanX = (n - 1) / 2;
+    const meanY = known.reduce((a, b) => a + b, 0) / n;
+    let num = 0;
+    let den = 0;
+    for (let i = 0; i < n; i += 1) {
+      num += (i - meanX) * (known[i] - meanY);
+      den += (i - meanX) ** 2;
+    }
+    const slopePerPoint = den === 0 ? 0 : num / den;
+    const totalSec = ((n - 1) * memoryGapMs) / 1000;
+    console.log(
+      `  首末差 ${delta >= 0 ? "+" : ""}${delta}MB,斜率 ${slopePerPoint.toFixed(2)}MB/点(约 ${totalSec}s 跨度)`
+    );
+    /*
+     * 判据取两条之较:
+     *  · 首末差 > 15MB —— 已经漏到肉眼可见
+     *  · 斜率 > 1.5MB/点 —— 还在匀速往上爬,哪怕总量还没到 15MB
+     * 1.5MB/点是实测噪声的十倍(首页 12 点串的斜率约 0.03),不会把波动判成泄漏。
+     */
+    const overDelta = delta > 15;
+    const overSlope = slopePerPoint > 1.5;
+    if (overDelta || overSlope) {
+      console.error(
+        `✗ 驻留内存在累积(首末差 ${delta}MB,斜率 ${slopePerPoint.toFixed(2)}MB/点)` +
+          (overDelta ? " —— 总量已过阈值" : " —— 总量未过阈值但仍在匀速上涨")
+      );
+      process.exitCode = 1;
+    } else {
+      console.log("✓ 驻留内存没有持续累积");
+    }
+  }
+  await context.close();
+  await browser.close();
+  server.close();
+  process.exit(process.exitCode ?? 0);
+}
 
 /*
  * `--startup`:进一次首页,把启动那几段标记的间隔打出来。
