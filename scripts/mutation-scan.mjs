@@ -527,7 +527,21 @@ const shardCount = Math.max(1, Math.ceil(all.length / LIMIT))
  */
 const runNumber = Number(process.env.GITHUB_RUN_NUMBER)
 const advance = Number.isFinite(runNumber) && runNumber > 0 ? runNumber : Math.floor(Date.now() / 86_400_000)
-const shard = explicit ? 0 : advance % shardCount
+/*
+ * `--shard=N`:本地指定扫哪一片。
+ *
+ * 按日期取片时,同一天反复跑都落在同一片 —— 想把剩下的分片也过一遍,
+ * 只能硬造 GITHUB_RUN_NUMBER 或改系统日期,两种都不好用。
+ * 加一个显式入口,便于「今天这一片查完了,接着看下一片」。
+ * 与 `--limit` 互斥规则同:显式指定分片时不再做日期偏移。
+ */
+const shardArg = process.argv.find(a => /^--shard=/.test(a))
+const explicitShard = shardArg === undefined ? null : Number(shardArg.slice(8))
+if (explicitShard !== null && (!Number.isInteger(explicitShard) || explicitShard < 1 || explicitShard > shardCount)) {
+  console.error(`--shard 须是 1~${shardCount} 的整数(共 ${shardCount} 片)`)
+  process.exit(1)
+}
+const shard = explicitShard !== null ? explicitShard - 1 : explicit ? 0 : advance % shardCount
 found.push(...all.slice(shard * LIMIT, shard * LIMIT + LIMIT))
 
 if (tooWide.length > 0) {
@@ -537,7 +551,7 @@ if (tooWide.length > 0) {
 
 console.log(
   `扫到 ${found.length} 个可变异点(上限 ${LIMIT},来自 ${new Set(found.map(f => f.file)).size} 个模块)` +
-    (explicit ? `,显式 limit 故取第一段` : `,今日分片 ${shard + 1}/${shardCount}(全库 ${all.length} 个)`)
+    (explicitShard !== null ? `,显式分片 ${shard + 1}/${shardCount}(全库 ${all.length} 个)` : explicit ? `,显式 limit 故取第一段` : `,今日分片 ${shard + 1}/${shardCount}(全库 ${all.length} 个)`)
 )
 
 /**
