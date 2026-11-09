@@ -3742,6 +3742,19 @@ html[data-theme='light'] .mastery-bar {
   transition: opacity 0.2s ease;
 }
 
+/*
+ * 淡出期间不许吃点击。
+ *
+ * 遮罩是 `fixed inset-0`,离场动画要跑 0.2 秒;这 0.2 秒里它仍在最上层,
+ * 玩家关掉弹窗后立刻点底下的导航/按钮会被它吞掉 —— 实测冒烟盘上偶发
+ * 「点 #/character 被浮层挡住、仍停在 #/」。离场那一段本就点不动任何东西,
+ * 直接把指针事件关掉,让点击落到下面那层。
+ * 进场不关:那 0.2 秒里玩家确实是在跟这扇窗打交道。
+ */
+.modal-fade-leave-active {
+  pointer-events: none;
+}
+
 .modal-fade-enter-active .modal-panel,
 .modal-fade-leave-active .modal-panel {
   transition:
