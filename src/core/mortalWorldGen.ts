@@ -388,44 +388,6 @@ export function auditMortalWorld(w: MortalWorld, runs = 12): MortalAudit {
 
 // ============ 四、过审生成 ============
 
-export interface ApprovedMortalWorld {
-  world: MortalWorld
-  audit: MortalAudit
-  novelty: number
-  /** 被弃用的候选数 */
-  rejected: number
-}
-
-/** 生成一个过审的凡界:候选 → 可玩性审计 → 新颖度门 → 不合格换种子重来(同天界 generateApprovedWorld) */
-export function generateApprovedMortal(
-  baseSeed: number,
-  history: MortalWorld[] = [],
-  maxTries = 120,
-  runs = 12
-): ApprovedMortalWorld | null {
-  for (let t = 0; t < maxTries; t += 1) {
-    const world = generateMortalWorld(baseSeed + t * 7919)
-    const audit = auditMortalWorld(world, runs)
-    if (!audit.passed) continue
-    const novelty = mortalNovelty(world, history)
-    if (novelty < NOVELTY_MIN) continue
-    return { world, audit, novelty, rejected: t }
-  }
-  return null
-}
-
-/** 连续生成 n 个互不重复的凡界,返回实际拿到的序列 */
-export function generateSeries(n: number, baseSeed = 20260904, runs = 10): ApprovedMortalWorld[] {
-  const out: ApprovedMortalWorld[] = []
-  const history: MortalWorld[] = []
-  for (let i = 0; i < n; i += 1) {
-    const got = generateApprovedMortal(baseSeed + i * 104729, history, 120, runs)
-    if (!got) break
-    out.push(got)
-    history.push(got.world)
-  }
-  return out
-}
 
 // ============ 五、素材容量 ============
 
