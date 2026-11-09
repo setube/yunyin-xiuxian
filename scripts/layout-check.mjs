@@ -2014,7 +2014,7 @@ for (const vp of VIEWPORTS) {
       [...document.querySelectorAll('[role=status] > div')].map(d => (d.textContent || '').replace(/\s*×\s*$/, '').trim()).join('|')
     )
   const opened = await page
-    .locator('main button', { hasText: /^分解$/ })
+    .locator('main button', { hasText: /^\s*分\s*解\s*$/ })
     .first()
     .click({ timeout: 3000 })
     .then(() => true)
@@ -3408,13 +3408,13 @@ for (const vp of [
   }
 
   await patrol('分解', async () => {
-    const btn = page.locator('main button', { hasText: /^分\s*解$/ }).first()
+    const btn = page.locator('main button', { hasText: /^\s*分\s*解\s*$/ }).first()
     if ((await btn.count()) === 0) return false
     await btn.click({ timeout: 3000 }).catch(() => {})
     return true
   })
   await patrol('收纳', async () => {
-    const btn = page.locator('main button', { hasText: /^收\s*纳/ }).first()
+    const btn = page.locator('main button', { hasText: /^\s*收\s*纳/ }).first()
     if ((await btn.count()) === 0) return false
     await btn.click({ timeout: 3000 }).catch(() => {})
     return true
@@ -3426,6 +3426,20 @@ for (const vp of [
     return true
   })
   await patrol('开炉炼丹', async () => {
+    /*
+     * 这一格只在「丹药」页签下渲染(v-else-if="tab === 'pill'"),而巡逻进来时停在「装备」。
+     * 原先直接找按钮,永远 count=0,被当成「夹具未铺前置」放过了 —— 其实这扇窗从未被量过。
+     */
+    // 页签按钮的 textContent 带前导/尾随空白,且「丹药」签可能还挂一个圆点;按包含匹配
+    const pillTab = page.locator('main button', { hasText: /丹\s*药/ }).first()
+    if ((await pillTab.count()) > 0) {
+      await pillTab.click({ timeout: 3000 }).catch(() => {})
+      await page.waitForTimeout(500)
+    }
+    /*
+     * 这格按钮的 textContent 是「炉开炉炼丹已知丹方 N 种…」—— 开头那个「炉」是印章图标里的字。
+     * 故不能用 ^ 锚定到「开」,按包含匹配即可(整页只此一处含「开炉炼丹」)。
+     */
     const btn = page.locator('main button', { hasText: /开\s*炉\s*炼\s*丹/ }).first()
     if ((await btn.count()) === 0) return false
     await btn.click({ timeout: 3000 }).catch(() => {})

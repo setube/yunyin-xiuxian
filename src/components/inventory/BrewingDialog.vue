@@ -81,7 +81,7 @@
               <RouterLink
                 v-if="r.plan.reason === 'herb' || r.plan.reason === 'both'"
                 :to="{ name: 'market', query: { focus: 'herb', grade: String(r.cost.grade) } }"
-                class="whitespace-nowrap rounded border border-jade/50 px-2 py-1 text-[10px] text-jade active:opacity-60"
+                class="-my-1 inline-flex min-h-[28px] items-center whitespace-nowrap rounded border border-jade/50 px-2 text-[10px] text-jade active:opacity-60"
               >
                 去坊市续草 →
               </RouterLink>
@@ -89,7 +89,7 @@
               <RouterLink
                 v-else-if="r.plan.reason === 'stone'"
                 :to="{ name: 'adventure' }"
-                class="whitespace-nowrap rounded border border-azure/50 px-2 py-1 text-[10px] text-azure active:opacity-60"
+                class="-my-1 inline-flex min-h-[28px] items-center whitespace-nowrap rounded border border-azure/50 px-2 text-[10px] text-azure active:opacity-60"
               >
                 去历练攒石 →
               </RouterLink>
