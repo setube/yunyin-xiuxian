@@ -17,6 +17,9 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { maxTierForMajor } from '@/data/regions'
 import { MAX_MAJOR } from '@/data/realms'
+import { STONE_DROP_BASE, STONE_TIER_GROWTH } from '@/data/constants'
+import { stoneByTier } from './formulas'
+import { toNum } from '@/utils/gnum'
 
 function coreFiles(): string[] {
   const out: string[] = []
@@ -76,5 +79,40 @@ describe('层级地雷 · stoneByTier 的 tier 来源', () => {
     expect(secret, 'tierOfMajor 不再委托 maxTierForMajor').toMatch(
       /export function tierOfMajor\(major: number\): number \{\s*return maxTierForMajor\(major\)/
     )
+  })
+})
+
+
+/**
+ * 阶梯的**增长速率**也是地雷:1.3 / 1.9 / 2.5 在 32 阶上差出 9 个数量级
+ * (3.4e3 / 4.4e8 / 2.2e12)。而 STONE_DROP_BASE 与 STONE_TIER_GROWTH 此前没有任何判据钉着 ——
+ * 既有两处 spec 用它们算期望值(跟随常量变),改成 1.3 也照样全绿。
+ *
+ * 1.9 是**收入增长率的镜像**(见 endgameService 的「灵石收入按 1.9^层级 涨」):
+ * 报价曲线与收入曲线同一条,玩家跨一层时购买力才不会塌或暴涨。
+ */
+describe('层级地雷 · stoneByTier 的增长速率', () => {
+  it('给定层级阶梯,当算相邻两层的价,则每层恒乘 STONE_TIER_GROWTH', () => {
+    for (const tier of [2, 10, 20, 32]) {
+      const cur = toNum(stoneByTier(tier, 10))
+      const prev = toNum(stoneByTier(tier - 1, 10))
+      expect(cur / prev, `第 ${tier} 层相对第 ${tier - 1} 层该乘 ${STONE_TIER_GROWTH}`).toBeCloseTo(
+        STONE_TIER_GROWTH,
+        6
+      )
+    }
+  })
+
+  it('给定增长系数,当读常量,则仍是与收入同步的 1.9', () => {
+    // 改这个数要先核收入侧:economySim / 掉落 / 悬赏都读同一条曲线
+    expect(STONE_TIER_GROWTH, '灵石收入与报价共用这条增长率,改它等于重定整条经济').toBe(1.9)
+    expect(STONE_DROP_BASE, '掉落基准同理,改动会整体平移所有价签').toBe(12)
+  })
+
+  it('给定 1→32 阶,当算总倍数,则落在「亿级」而不是「千级」或「万亿级」', () => {
+    const total = toNum(stoneByTier(32, 10)) / toNum(stoneByTier(1, 10))
+    // 1.9^31 ≈ 4.4e8。宽区间只验数量级 —— 钉死具体值会让「改增长率」变成必须解方程
+    expect(total, '1→32 阶的总倍数该是亿级').toBeGreaterThan(1e7)
+    expect(total, '也不该到万亿级').toBeLessThan(1e10)
   })
 })
