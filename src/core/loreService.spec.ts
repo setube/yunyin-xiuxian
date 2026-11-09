@@ -6,6 +6,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { PILLS } from '@/data/pills'
 import { MATERIALS } from '@/data/materials'
+import { ENEMIES } from '@/data/enemies'
 import { rng } from '@/utils/random'
 import { recipeCraft } from '@/data/crafting'
 import { MAX_MAJOR } from '@/data/realms'
@@ -18,6 +19,7 @@ import {
   STUDY_REACH_OVER,
   discernChance,
   encounterMaterial,
+  noteEnemyMany,
   natureChance,
   seedLoreIfNeeded,
   studiableRecipes,
@@ -415,5 +417,41 @@ describe('灵材照面 · encounterMaterial', () => {
     } finally {
       vi.restoreAllMocks()
     }
+  })
+})
+
+/*
+ * 敌人照面记账:负数胜/败场不许把照面数记账记成负的,也不许反过来多记。
+ *
+ * `noteEnemyMany` 此前零覆盖。它唯一的生产调用点在离线结算:
+ * `noteEnemyMany(mobId, wins, battles - wins)` —— 正常情况下 battles >= wins,
+ * 两个入参都非负;但 battles 与 wins 都是存档可写字段,坏档里能出现 wins > battles,
+ * 于是 losses 为负。
+ *
+ * 少了 `Math.max(0, …)`,`wins=3, losses=-5` 算出 0.5 —— 一个**正数**,
+ * `seen <= 0` 拦不住它,`markEnemySeen` 也收下了(它只拒 <= 0),玩家于是被判
+ * 「与这只妖照面半次」。钳制后该格回到 3,与「只赢 3 场」一致。
+ */
+describe('敌人照面 · 负数场次的钳制', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('给定负数败场,当记账,则按 0 计而不是扣掉胜场的权重', () => {
+    const lore = useLoreStore()
+    const id = ENEMIES[0]!.id
+    noteEnemyMany(id, 3, -5)
+    // 只赢 3 场 = 照面 3 次;不钳制则 losses 的 -5 会抵掉一部分
+    expect(lore.enemySeenOf(id), '负败场该按 0 计,照面数就是 3').toBe(3)
+  })
+
+  it('给定全负场次,当记账,则不记、返回 false', () => {
+    const lore = useLoreStore()
+    const id = ENEMIES[0]!.id
+    expect(noteEnemyMany(id, -5, -5), '一次都没遇到就该返回 false').toBe(false)
+    expect(lore.enemySeenOf(id), '什么都不该记').toBe(0)
+  })
+
+  it('给定查不到的妖 id,当记账,则安静返回 false', () => {
+    expect(() => noteEnemyMany('no_such_enemy', 3, 2), '不该抛').not.toThrow()
+    expect(noteEnemyMany('no_such_enemy', 3, 2)).toBe(false)
   })
 })
