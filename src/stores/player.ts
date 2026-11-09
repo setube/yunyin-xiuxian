@@ -701,8 +701,13 @@ export const usePlayerStore = defineStore(
       if (petId.value !== null && !petDef(petId.value)) petId.value = null
       // 师承一经拜定不再更改:认不出的 id 占住 mentor 会永久挡回拜师
       if (mentor.value !== null && !mentorDef(mentor.value)) mentor.value = null
-      // lifespanMax 加算项:NaN 使引擎死亡判据 `age < lifespanMax` 恒假,下一拍即「大限已至」
-      lifespanBonusYears.value = asFiniteNumber(lifespanBonusYears.value, 0)
+      /*
+       * lifespanMax 加算项:NaN 使引擎死亡判据 `age < lifespanMax` 恒假,下一拍即「大限已至」。
+       * 负数同样要夹 —— 原先只挡 NaN,坏档里 `lifespanBonusYears = -999` 会让
+       * lifespanMax 算出负数(实测炼气一层 150 → -849),玩家看到「寿元上限 -849 岁」,
+       * 而 lifespanRatio 恒为 0,寿元条永远是空的。
+       */
+      lifespanBonusYears.value = asFiniteNumber(lifespanBonusYears.value, 0, 0)
       // 旧存档缺宿慧/履历/命题三项:按转世次数折算补齐
       const r = reincarnation.value
       const count = Number.isFinite(r?.count) ? Math.max(0, r.count) : 0
