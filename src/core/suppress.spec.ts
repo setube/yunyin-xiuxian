@@ -498,6 +498,22 @@ describe('镇压资格进度', () => {
     expect(p.qualified).toBe(false)
   })
 
+  /*
+   * 坏档里的负总场次按 0 算,不许拿负数去比「胜场够不够」。
+   *
+   * `Math.max(0, src?.totalFights ?? 0)` 这一夹制此前没喂过负数。
+   * totalFights 是存档可写字段;不夹的话 `wins >= minWins` 判假(这侧还好),
+   * 但界面上「已胜 -5 场」会直接印给玩家看 —— 镇守资格面板上出现负数胜场。
+   */
+  it('负总场次按 0 算:不显示负数胜场', () => {
+    for (const bad of [-1, -50, -1e9]) {
+      const p = suppressionProgress(stats({ totalFights: bad, avgRounds: 2, avgDamageTakenPct: 0.02 }))
+      expect(p.wins, `总场次 ${bad} 该按 0 算`).toBe(0)
+      expect(p.hasStats, '负场次不算有战绩').toBe(false)
+      expect(p.winsOk).toBe(false)
+    }
+  })
+
   it('胜场够但打得久:只有回合项不合格,玩家能看出卡在哪', () => {
     const p = suppressionProgress(stats({ totalFights: 25, avgRounds: 4, avgDamageTakenPct: 0.05 }))
     expect(p.winsOk).toBe(true)
