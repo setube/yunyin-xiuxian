@@ -59,35 +59,33 @@ export interface GatedWorld {
   rejectionsByGate: Record<string, number>
 }
 
-/** 生成一个过四门的凡界,附各门否决统计 */
-export function generateGatedMortal(
+
+/**
+ * 分块异步版:与 generateGatedMortal 同一内核,同参结果逐位一致。
+ *
+ * 每验完一个候选就让出一次主线程。实测单个候选(五门审计)约 15~50ms,
+ * 而 maxTries 到 200 时整趟最坏 151ms、实测玩家首次进「界域志」时量到 230ms 的长任务。
+ * 同步跑等于切页那一帧整页僵住。
+ */
+export async function generateGatedMortalAsync(
   baseSeed: number,
   history: MortalWorld[] = [],
   maxTries = 300,
-  runs = 10
-): GatedWorld | null {
+  runs = 10,
+  opts: { shouldStop?: () => boolean } = {}
+): Promise<GatedWorld | null> {
   const rejectionsByGate: Record<string, number> = {}
   for (let t = 0; t < maxTries; t += 1) {
+    if (opts.shouldStop?.()) return null
     const world = generateMortalWorld(baseSeed + t * 7919)
     const report = evaluateGates(world, history, runs)
     if (report.passed) return { report, rejected: t, rejectionsByGate }
     for (const f of report.failed) rejectionsByGate[f] = (rejectionsByGate[f] ?? 0) + 1
+    await new Promise(res => setTimeout(res, 0))
   }
   return null
 }
 
-/** 连续生成 n 个过四门的凡界 */
-export function generateGatedSeries(n: number, baseSeed = 20260904, runs = 10): GatedWorld[] {
-  const out: GatedWorld[] = []
-  const history: MortalWorld[] = []
-  for (let i = 0; i < n; i += 1) {
-    const got = generateGatedMortal(baseSeed + i * 104729, history, 300, runs)
-    if (!got) break
-    out.push(got)
-    history.push(got.report.world)
-  }
-  return out
-}
 
 /** 反例检验:若把新颖各门平均成一个总分,它会不会通过 */
 export function wouldPassWithAverage(report: GateReport): boolean {

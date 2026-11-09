@@ -1,11 +1,32 @@
 /* eslint-disable no-console */
 /** 凡界世界验收门:四门独立,不可用综合分数掩盖关键维度缺失。 */
 import { describe, expect, it } from 'vitest'
-import { GATES, evaluateGates, generateGatedSeries, wouldPassWithAverage } from './mortalGate'
-import { ROUTE_SHAPES, RHYTHM_ARCHETYPES, generateMortalWorld, shuffleOnlyWorld } from './mortalWorldGen'
+import { GATES, evaluateGates, wouldPassWithAverage, type GatedWorld } from './mortalGate'
+import { ROUTE_SHAPES, RHYTHM_ARCHETYPES, generateMortalWorld, shuffleOnlyWorld, type MortalWorld } from './mortalWorldGen'
 import { avgVisibleByDim, visibleFeatures } from './mortalIdentity'
 
-const SERIES = generateGatedSeries(6, 20260904, 10)
+/**
+ * 连续六世:每世都相对全部已生成的历史过门。
+ * 生产路径逐世生成(mortalWorldService 调 generateGatedMortalAsync),这里只是要一批样本,
+ * 故内联 —— 原先的 generateGatedSeries 只为 spec 存在,已随同步版一起删除。
+ */
+const SERIES = (() => {
+  const out: GatedWorld[] = []
+  const history: MortalWorld[] = []
+  for (let i = 0; i < 6; i += 1) {
+    const base = 20260904 + i * 104729
+    let found: GatedWorld | null = null
+    for (let t = 0; t < 300; t += 1) {
+      const world = generateMortalWorld(base + t * 7919)
+      const report = evaluateGates(world, history, 10)
+      if (report.passed) { found = { report, rejected: t, rejectionsByGate: {} }; break }
+    }
+    if (!found) break
+    out.push(found)
+    history.push(found.report.world)
+  }
+  return out
+})()
 const WORLDS = SERIES.map(s => s.report.world)
 
 describe('验收门 · 路线骨架与事件节奏是否活了', () => {
