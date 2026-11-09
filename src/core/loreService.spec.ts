@@ -1,10 +1,12 @@
 /* eslint-disable no-console */
 /** 藏经阁求索回归:每一张写进 PILLS 的可炼丹方,都须有一条走得通的到手路径。 */
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { PILLS } from '@/data/pills'
+import { MATERIALS } from '@/data/materials'
+import { rng } from '@/utils/random'
 import { recipeCraft } from '@/data/crafting'
 import { MAX_MAJOR } from '@/data/realms'
 import { bearableRank } from './craftability'
@@ -15,6 +17,7 @@ import {
   STUDY_MASTERY_PER_HOUR,
   STUDY_REACH_OVER,
   discernChance,
+  encounterMaterial,
   natureChance,
   seedLoreIfNeeded,
   studiableRecipes,
@@ -349,6 +352,68 @@ describe('认知检定 · 概率夹在合法区间', () => {
         expect(n, `natureChance(${rank},${lv}) 越界`).toBeGreaterThanOrEqual(0)
         expect(n).toBeLessThanOrEqual(1)
       }
+    }
+  })
+})
+
+/*
+ * 与灵材照面:认知层推进的唯一入口。
+ *
+ * `encounterMaterial` 此前零行为测试(只在源码扫描里被提到名字),
+ * 变异扫描因此把开头那道 `if (!def) return false` 报成「改坏了不会红」。
+ *
+ * 这条闸防的是喂进不存在的 id:少了它,`markSeen('nope')` 会先在
+ * `materialSeen` 里记下一个假键,再一路走到 `discernChance(def.rank, ...)` ——
+ * `def` 是 undefined,当场抛。
+ */
+describe('灵材照面 · encounterMaterial', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('给定不存在的灵材 id,当照面,则返回 false 且不抛', () => {
+    const lore = useLoreStore()
+    expect(encounterMaterial('no-such-material'), '查不到就该安静返回').toBe(false)
+    expect(lore.seenOf('no-such-material'), '不该往照面表里塞假键').toBe(0)
+  })
+
+  it('给定真灵材且判定命中,当照面,则认知层推进一格', () => {
+    const lore = useLoreStore()
+    const def = MATERIALS[0]!
+    vi.spyOn(rng, 'chance').mockReturnValue(true)
+    try {
+      expect(lore.loreOf(def.id), '起手是第 0 层').toBe(0)
+      expect(encounterMaterial(def.id, true), '命中就该推进').toBe(true)
+      expect(lore.loreOf(def.id), '推进到第 1 层').toBe(1)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('给定真灵材且判定落空,当照面,则认知层不动但照面数 +1', () => {
+    const lore = useLoreStore()
+    const def = MATERIALS[0]!
+    vi.spyOn(rng, 'chance').mockReturnValue(false)
+    try {
+      const seenBefore = lore.seenOf(def.id)
+      expect(encounterMaterial(def.id, true), '没命中就返回 false').toBe(false)
+      expect(lore.loreOf(def.id), '认知层不动').toBe(0)
+      expect(lore.seenOf(def.id), '照面数还是要记 —— 熟识度是另一条尺').toBe(seenBefore + 1)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('给定已到第 2 层,当再照面,则不再推进(封顶)', () => {
+    const lore = useLoreStore()
+    const def = MATERIALS[0]!
+    vi.spyOn(rng, 'chance').mockReturnValue(true)
+    try {
+      encounterMaterial(def.id, true)
+      encounterMaterial(def.id, true)
+      expect(lore.loreOf(def.id), '两次命中到第 2 层').toBe(2)
+      expect(encounterMaterial(def.id, true), '第 2 层就封顶了').toBe(false)
+      expect(lore.loreOf(def.id)).toBe(2)
+    } finally {
+      vi.restoreAllMocks()
     }
   })
 })
