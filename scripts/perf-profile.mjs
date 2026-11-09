@@ -55,6 +55,27 @@ const gate = !args.includes("--no-gate");
  */
 const stress = args.includes("--stress");
 /**
+ * `--cpu=N`:把 CPU 限速到 1/N。
+ *
+ * 此前所有读数都是**未限速的桌面 CPU**,而玩家很可能在低端手机上跑。
+ * 4x 大致对应中低端安卓机,6x 更接近入门机 —— 限速之后留白会放大,
+ * 从这里能看出「桌面看着过关、手机上会不会卡」。
+ */
+const cpuArg = args.find((a) => /^--cpu=/.test(a));
+const cpuRate = cpuArg === undefined ? 1 : Number(cpuArg.slice(6));
+if (!Number.isFinite(cpuRate) || cpuRate < 1 || cpuRate > 20) {
+  console.error("--cpu 须是 1~20 的数(1 为不限速)");
+  process.exit(1);
+}
+
+/** 按 --cpu 给页面装限速;不限速时原样返回,不留 CDP 会话开销 */
+async function throttle(context, page) {
+  if (cpuRate <= 1) return null;
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: cpuRate });
+  return cdp;
+}
+/**
  * `--no-save`:不注入存档,走欢迎页。
  *
  * 用来把「启动固定开销」拆成两半:有存档时要跑 settleOffline(离线整段结算)
@@ -121,7 +142,18 @@ const BUDGET = {
    *
    * 定 250ms:比当前最贵的 /world(120ms) 留一倍余量,又不至于放到「随便卡都过」。
    */
-  mountLongTaskMs: Number(process.env.PERF_MOUNT_LONG_TASK_MS ?? 250),
+  /*
+   * 挂载期长任务预算。
+   *
+   * 250ms 是给**不限速**基线定的(实测最贵 66ms,留近四倍)。`--cpu=N` 限速时
+   * 同一条链路会按 N 倍放大 —— 2x 下实测 129~206ms,偶发一次 GC 抖动就到 347ms。
+   * 故限速档按倍数放宽:不是把绝对阈值改大,而是让它在各自基准上保留同样的余量。
+   * 上限封 1000ms,再高就没有约束意义了。
+   */
+  mountLongTaskMs: Math.min(
+    1000,
+    Number(process.env.PERF_MOUNT_LONG_TASK_MS ?? 250) * Math.max(1, Math.min(cpuRate, 4))
+  ),
   /**
    * 单视图采样帧数下限:防「页面被长任务卡死,几乎采不到帧」被判成通过。
    *
@@ -249,6 +281,7 @@ if (memoryOnly) {
   const baseSlices = stress ? stressSlices(itemCount) : lateSlices();
   await seedSave(context, activeLoad ? withActiveRun(baseSlices) : baseSlices);
   const page = await context.newPage();
+  await throttle(context, page);
   const route = only ? (VIEWS.find((v) => v.name === only)?.route ?? "/") : activeLoad ? "/adventure" : "/";
   await page.goto(base + `#${route}`, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
@@ -403,6 +436,7 @@ for (const view of VIEWS) {
     // 每视图注入一份后期档;缺档会落到欢迎页,门量空
     if (!noSave) await seedSave(context, stress ? stressSlices() : lateSlices());
     const page = await context.newPage();
+    await throttle(context, page);
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
     page.on("crash", () => errors.push("RENDERER_CRASH"));
