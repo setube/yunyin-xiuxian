@@ -19,6 +19,8 @@ import {
   gameDay
 } from './formulas'
 import { powerBreakdownRows, powerExplainText } from '@/ui/powerText'
+import { COMBAT_MAJOR_GROWTH, COMBAT_SUB_GROWTH, LATE_COMBAT_GROWTH } from '@/data/constants'
+import { WORLD_BREAK_MAJOR, MAX_MAJOR } from '@/data/realms'
 
 describe('GameFormula 成长曲线', () => {
   it('战力：算式 = 攻×3 + 防×2 + 血×0.15，权重与释义同源，不许改一处漏一处', () => {
@@ -276,4 +278,49 @@ describe('游戏日换算 · gameDay', () => {
     expect(gameDay(86400) - gameDay(0)).toBe(1)
   })
 })
+})
+
+
+/**
+ * 战斗乘区的三个增长系数此前**零判据**:1.09 / 3.8 / 4.6 决定全游戏战力跨度,
+ * 却没有任何断言钉着 —— 改任一个,既有测试只是拿着新常量重算,照样全绿。
+ *
+ * 实测跨度:小层 1.09^9 ≈ 2.17×,人间九境 3.8^9 ≈ 1.65e5,界外十一境 4.6^11 ≈ 1.95e7,
+ * 0→20 境合计约 3.2e12。
+ *
+ * 分段点是 WORLD_BREAK_MAJOR(飞升门槛):人间界不外推,界外另起一套倍率。
+ */
+describe('GameFormula · 战斗乘区的增长系数', () => {
+  it('给定小层递进,当读 realmScale,则每小层恒乘 COMBAT_SUB_GROWTH', () => {
+    for (const sub of [1, 5, 9]) {
+      const cur = toNum(realmScale(0, sub))
+      const prev = toNum(realmScale(0, sub - 1))
+      expect(cur / prev, `第 ${sub} 小层该乘 ${COMBAT_SUB_GROWTH}`).toBeCloseTo(COMBAT_SUB_GROWTH, 6)
+    }
+  })
+
+  it('给定大境界递进,当读 majorCombatFactor,则飞升前乘 COMBAT_MAJOR_GROWTH、之后乘 LATE_COMBAT_GROWTH', () => {
+    for (let m = 1; m <= WORLD_BREAK_MAJOR; m += 1) {
+      const r = toNum(majorCombatFactor(m)) / toNum(majorCombatFactor(m - 1))
+      expect(r, `第 ${m} 境(人间界)该乘 ${COMBAT_MAJOR_GROWTH}`).toBeCloseTo(COMBAT_MAJOR_GROWTH, 4)
+    }
+    for (let m = WORLD_BREAK_MAJOR + 1; m <= MAX_MAJOR; m += 1) {
+      const r = toNum(majorCombatFactor(m)) / toNum(majorCombatFactor(m - 1))
+      expect(r, `第 ${m} 境(界外)该乘 ${LATE_COMBAT_GROWTH}`).toBeCloseTo(LATE_COMBAT_GROWTH, 4)
+    }
+  })
+
+  it('给定三个系数,当读常量,则仍是 1.09 / 3.8 / 4.6', () => {
+    // 改任一个都等于重定全部战斗数值(玩家与敌人共用这条曲线)
+    expect(COMBAT_SUB_GROWTH, '小层递进率').toBe(1.09)
+    expect(COMBAT_MAJOR_GROWTH, '人间界每境倍率').toBe(3.8)
+    expect(LATE_COMBAT_GROWTH, '界外每境倍率').toBe(4.6)
+  })
+
+  it('给定 0→最高境,当算战力跨度,则落在万亿级 —— 与灵石阶梯同一个量级感', () => {
+    const span = toNum(majorCombatFactor(MAX_MAJOR))
+    // 3.8^9 × 4.6^11 ≈ 3.2e12。只验数量级:钉死具体值会让「调倍率」变成解方程
+    expect(span, '0→最高境的战力跨度该是万亿级').toBeGreaterThan(1e11)
+    expect(span, '也不该到千万亿级').toBeLessThan(1e14)
+  })
 })
