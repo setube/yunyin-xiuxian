@@ -111,6 +111,20 @@ describe('自动结算不替玩家祭法宝', () => {
     setActivePinia(createPinia())
   })
 
+  /*
+   * 事件 id 查不到时安静返回 null —— 不抛、也不给玩家任何回执。
+   *
+   * `autoResolveEvent` 的 eventId 有三个来源,其中两个直接读存档:
+   * `adventure.pendingEventId`(玩家可写)与离线结算里那条。
+   * 事件表改版删掉某个 id 之后,老档里就会留下悬空值;少了判空,
+   * 下一行 `def.choices.findIndex` 当场抛,而离线结算是整段跑的,
+   * 一抛就整卷轴全丢。
+   */
+  it('事件 id 查不到时返回 null,不抛', () => {
+    expect(() => autoResolveEvent('no_such_event', 3), '不该抛').not.toThrow()
+    expect(autoResolveEvent('no_such_event', 3), '查不到就返回 null').toBeNull()
+  })
+
   it('autoResolveEvent 掉出法宝时只入囊,不占空着的随身位', () => {
     const inventory = useInventoryStore()
     const player = usePlayerStore()
