@@ -233,6 +233,6 @@
 
   /** 带地界回历练页选出行方式;模式弹窗只应有一处实现 */
   function depart(regionId: string): void {
-    router.push({ path: '/adventure', query: { go: regionId } })
+    void router.push({ path: '/adventure', query: { go: regionId } })
   }
 </script>
