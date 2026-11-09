@@ -67,6 +67,16 @@ const noSave = args.includes("--no-save");
  * 之间的间隔打出来。用来回答「进任何页面都有的那块长任务花在哪」。
  */
 const startupOnly = args.includes("--startup");
+/**
+ * `--items=N`:stress 夹具的行囊件数(默认 120 = BAG_CAPACITY)。
+ * 配合 `--startup` 可以画出「启动开销 × 存档大小」的增长曲线。
+ */
+const itemsArg = args.find((a) => /^--items=/.test(a));
+const itemCount = itemsArg === undefined ? 120 : Number(itemsArg.slice(8));
+if (!Number.isInteger(itemCount) || itemCount < 0 || itemCount > 120) {
+  console.error("--items 须是 0~120 的整数(行囊上限 120)");
+  process.exit(1);
+}
 
 /**
  * 判据上限:本机读数留数倍余量(机型/负载差异),只拦成倍回退。
@@ -211,7 +221,7 @@ const failures = [];
  */
 if (startupOnly) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  await seedSave(context, stress ? stressSlices() : lateSlices());
+  await seedSave(context, stress ? stressSlices(itemCount) : lateSlices());
   const page = await context.newPage();
   await page.goto(base + "#/", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
