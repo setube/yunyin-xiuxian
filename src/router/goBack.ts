@@ -7,6 +7,6 @@ import type { RouteLocationRaw, Router } from 'vue-router'
  */
 export function goBack(router: Router, fallback: RouteLocationRaw): void {
   const state = window.history.state as { back?: string | null } | null
-  if (state?.back) router.back()
+  if (state?.back) void router.back()
   else void router.push(fallback)
 }

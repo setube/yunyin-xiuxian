@@ -235,7 +235,7 @@
     if (typeof go !== 'string') return
     const r = regionDef(go)
     if (r) modeTarget.value = r
-    router.replace({ path: '/adventure' })
+    void router.replace({ path: '/adventure' })
   })
 
   function chooseMode(region: RegionDef): void {

@@ -223,7 +223,7 @@
 
   const router = useRouter()
   function goSouls(): void {
-    router.push({ name: 'souls' })
+    void router.push({ name: 'souls' })
   }
 
   /**
