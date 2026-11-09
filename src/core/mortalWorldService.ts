@@ -5,7 +5,7 @@
  */
 import type { MortalWorld } from './mortalWorldGen'
 import { generateMortalWorld } from './mortalWorldGen'
-import { generateGatedMortal } from './mortalGate'
+import { generateGatedMortalAsync } from './mortalGate'
 import { terrainOf, worldIdentity } from './mortalIdentity'
 import { REGIONS } from '@/data/regions'
 import { useAdventureStore } from '@/stores/adventure'
@@ -56,24 +56,45 @@ function historyOf(cur: MortalWorld | null): MortalWorld[] {
 }
 
 /** 取本世之界,没有就生成;四门验收失败返回 null,调用方须容忍「暂无世界」 */
-export function ensureMortalWorld(): MortalWorld | null {
+/** 正在凝界:防重入(切页来回会连开两次) */
+let generating = false
+
+/**
+ * 保证本世之界存在;没有就现凝一个。
+ *
+ * 生成是分块异步的:实测单候选 15~50ms,maxTries=200 时整趟最坏 151ms、
+ * 玩家首次进「界域志」量到过 230ms 的长任务。同步跑等于切页那一帧整页僵住。
+ */
+export async function ensureMortalWorld(): Promise<MortalWorld | null> {
   const adventure = useAdventureStore()
   if (adventure.mortalWorld) return adventure.mortalWorld
-  const got = generateGatedMortal(nextSeed(), historyOf(adventure.mortalWorld), 200, 8)
-  if (!got) return null
-  ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
-  adventure.setMortalWorld(got.report.world)
-  return got.report.world
+  if (generating) return null
+  generating = true
+  try {
+    const got = await generateGatedMortalAsync(nextSeed(), historyOf(adventure.mortalWorld), 200, 8)
+    if (!got) return null
+    ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
+    adventure.setMortalWorld(got.report.world)
+    return got.report.world
+  } finally {
+    generating = false
+  }
 }
 
 /** 换一个本世之界(转世时调用) */
-export function rerollMortalWorld(): MortalWorld | null {
+export async function rerollMortalWorld(): Promise<MortalWorld | null> {
   const adventure = useAdventureStore()
   const prev = adventure.mortalWorld
-  const got = generateGatedMortal(nextSeed(), historyOf(prev), 200, 8)
-  if (got) ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
-  adventure.setMortalWorld(got?.report.world ?? null)
-  return got?.report.world ?? null
+  if (generating) return prev
+  generating = true
+  try {
+    const got = await generateGatedMortalAsync(nextSeed(), historyOf(prev), 200, 8)
+    if (got) ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
+    adventure.setMortalWorld(got?.report.world ?? null)
+    return got?.report.world ?? null
+  } finally {
+    generating = false
+  }
 }
 
 // ============ 本世路线的可达性 ============
