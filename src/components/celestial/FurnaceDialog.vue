@@ -8,7 +8,9 @@
       <div v-if="totalMelt > 0" class="flex items-center justify-between gap-2 py-2.5">
         <span class="min-w-0 flex-1 text-[12px] text-ink-soft">
           四类合计
-          <span class="block text-[10px] leading-tight text-ink-faint tabular">可熔得 {{ totalMelt }} 道源</span>
+          <span class="block text-[10px] leading-tight text-ink-faint tabular">
+            可熔得 {{ totalMelt }} 道源<template v-if="meltableFruits > 0"> · 够凝 {{ meltableFruits }} 枚</template>
+          </span>
         </span>
         <template v-if="meltAllArm">
           <!--
@@ -87,7 +89,7 @@
           <span
             v-if="stoneShort.m <= 0"
             class="tabular text-[10px] text-ink-faint"
-          >{{ formatGN(furnaceStoneCost()) }} → {{ FURNACE_STONE_DAO_SOURCE }} 道源</span>
+          >{{ formatGN(mulN(furnaceStoneCost(), stoneEffective)) }} → {{ FURNACE_STONE_DAO_SOURCE * stoneEffective }} 道源</span>
           <span v-else class="tabular text-[10px] text-cinnabar">灵石尚差 {{ formatGap(stoneShort) }}</span>
         </span>
         <span class="ml-auto flex shrink-0 items-center gap-1.5">
@@ -119,7 +121,11 @@
         -->
         <!-- 标签与钮分两行:窄屏下并排会把「道源凝道果(跨世保留)」挤成竖排 -->
         <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
-          <span class="shrink-0 text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
+          <span class="shrink-0 text-[12px] text-ink-soft">
+            道源凝道果(跨世保留)
+            <!-- 道源余额原先整个弹窗都没有:只在不足时写「尚差」,玩家无从知道手上多少 -->
+            <span class="block text-[10px] leading-tight text-ink-faint tabular">存 {{ formatGN(endgame.daoSource) }}</span>
+          </span>
           <span class="ml-auto flex shrink-0 items-center gap-1.5">
             <input
               v-if="affordable > 1"
@@ -280,6 +286,11 @@ const furnaceRows = computed(() =>
 )
 /** 四类全熔合计:逐类预览相加,与逐类推的是同一个函数 */
 const totalMelt = computed(() => furnaceRows.value.reduce((sum, row) => sum + row.gain, 0))
+/**
+ * 把手上道源与这批材料全熔了,够凝几枚道果。
+ * 玩家真正想知道的换算 —— 原先只有「可熔得 N 道源」,还得自己去除一枚道果的价。
+ */
+const meltableFruits = computed(() => Math.floor((endgame.daoSource + totalMelt.value) / DAO_SOURCE_PER_FRUIT))
 /** 全部熔尽的二次确认态 */
 const meltAllArm = ref(false)
 function furnacePreview(rate: FurnaceRate): number {
@@ -300,10 +311,15 @@ function doMeltAll(): void {
   if (gained > 0) furnaceUi.toast(`四类熔作道源 +${gained}`, 'success')
 }
 
-const fruitInfo = computed(() => fruitMarginalInfo())
-/** 下一枚(凝后那一枚)的边际形制:刻度与折线都从它起算 */
-const nextMargin = computed(() => marginMark(fruitInfo.value.total + 1))
-const curvePoints = computed(() => marginCurvePoints(fruitInfo.value.total))
+/** 按选中的枚数算 —— 凝 10 枚与凝 1 枚的有效收益差 10 倍,读数要跟着走 */
+const fruitInfo = computed(() => fruitMarginalInfo(fruitEffective.value))
+/**
+ * 选中这批凝完时「最后一枚」的边际形制。
+ * 凝 1 枚看第 N+1 枚,凝 10 枚就该看第 N+10 枚 —— 那才是这批的收尾形制。
+ */
+const nextMargin = computed(() => marginMark(fruitInfo.value.total + fruitEffective.value))
+/** 折线从选中批次的收尾那枚起画,呼应刻度 */
+const curvePoints = computed(() => marginCurvePoints(fruitInfo.value.total + fruitEffective.value - 1))
 /** 一两枚时曲线是平的:没有可读的形状,不如不画 */
 const showCurve = computed(() => fruitInfo.value.total >= 4)
 

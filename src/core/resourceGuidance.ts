@@ -63,11 +63,17 @@ export function fruitCountLabel(n: number): string {
 }
 
 /** 凝聚一枚道果后有效道果的边际收益 */
-export function fruitMarginalInfo(): { total: number; effective: number; nextEffective: number; deltaPct: string } {
+export function fruitMarginalInfo(want = 1): {
+  total: number
+  effective: number
+  nextEffective: number
+  deltaPct: string
+} {
   const player = usePlayerStore()
   const fruit = player.reincarnation.daoFruit
+  const n = Number.isFinite(want) && want > 0 ? Math.floor(want) : 1
   const eff = effectiveDaoFruit(fruit)
-  const nextEff = effectiveDaoFruit(fruit + 1)
+  const nextEff = effectiveDaoFruit(fruit + n)
   const delta = ((nextEff - eff) / Math.max(1, eff)) * 100
   return { total: fruit, effective: eff, nextEffective: nextEff, deltaPct: delta.toFixed(2) }
 }
