@@ -78,7 +78,8 @@ export function verifyChallenge(draft: ChallengeDraft): ChallengeVerdict | null 
   const rules = draftRules(draft)
   const foes = draftFoes(draft.worldId, SIM_REFERENCE)
   const pact = draft.pactId ? pactDef(draft.pactId) : undefined
-  const opts = pact?.special === 'endHp80' ? { minHpAfterFight: 0.8 } : {}
+  // 循环内只读 .cleared,不读战报
+  const opts = { ...(pact?.special === 'endHp80' ? { minHpAfterFight: 0.8 } : {}), buildLog: false }
   const rates = BUILD_PROFILES.map((p, i) => {
     const seeded = new RandomService(mulberry32(510000 + i * 61 + draft.mutatorIds.length * 7 + (draft.pactId?.length ?? 0)))
     let clears = 0
