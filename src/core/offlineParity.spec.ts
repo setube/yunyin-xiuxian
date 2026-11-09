@@ -10,7 +10,8 @@ import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import { gnZero } from '@/utils/gnum'
 import { explorationRules } from './exploration'
-import { settleOffline } from './offline'
+import { EVENTS } from '@/data/events'
+import { isOfflineSafeEvent, OFFLINE_SAFE_EFFECTS, settleOffline } from './offline'
 import { usePlayerStore } from '@/stores/player'
 import { useGameStore } from '@/stores/game'
 import { useAdventureStore } from '@/stores/adventure'
@@ -63,6 +64,40 @@ describe('离线历练 · 溢出装备折尘与在线化尘口径同源(单一�
     // 同层平均分解尘取 economySim 采样口径,与在线 salvageOf 同族
     expect(offline).toContain('overflowDust = Math.round((equipCount - realCount) * avgDustPerDrop(region.tier))')
     expect(offline).not.toMatch(/realCount\) \* 4/)
+  })
+})
+
+/*
+ * 离线只自动结算「不替玩家拍板」的事件 —— 这条是行为判据,不是源码扫描。
+ *
+ * 上面那条全是 `expect(offline).toContain(...)`,只能证明源码里写了这些函数,
+ * 不能证明它们拦对了。变异扫描把 `offline.ts:392` 的兜底报成「改坏了不会红」——
+ * 那个兜底本身是死分支(实测 44 个区的安全池全非空),但它守的语义值得钉:
+ * 身份/永久构筑类效果(pet / gongfa / artifact / lifespan)不许离线替玩家拿。
+ */
+describe('离线事件安全闸 · 拦的是身份与永久构筑类', () => {
+  it('放行:只含 stone/exp/material/equipment/pill/buff/nothing 的事件', () => {
+    const safe = EVENTS.find(e =>
+      e.choices.every(c => c.outcomes.every(o => o.effects.every(ef => OFFLINE_SAFE_EFFECTS.has(ef.type))))
+    )
+    expect(safe, '事件表里该有安全事件').toBeDefined()
+    expect(isOfflineSafeEvent(safe!), '只含安全效果的事件该放行').toBe(true)
+  })
+
+  it('拦下:带 pet / gongfa 的事件不替玩家拿', () => {
+    for (const kind of ['pet', 'gongfa', 'artifact', 'lifespan'] as const) {
+      const ev = EVENTS.find(e => e.choices.some(c => c.outcomes.some(o => o.effects.some(ef => ef.type === kind))))
+      if (!ev) continue
+      expect(isOfflineSafeEvent(ev), `带 ${kind} 的事件不该离线放行`).toBe(false)
+    }
+  })
+
+  it('一个选择里只要有一条不安全结果,整件事就不放行', () => {
+    // 玉简:①拾取 的第 1 条结果是 gongfa,②观察 全安全 —— 整件仍须拦下
+    const ev = EVENTS.find(e => e.id === 'ev_jade_slip')!
+    const hasUnsafe = ev.choices.some(c => c.outcomes.some(o => o.effects.some(ef => !OFFLINE_SAFE_EFFECTS.has(ef.type))))
+    expect(hasUnsafe, '夹具要真的含不安全结果').toBe(true)
+    expect(isOfflineSafeEvent(ev), '任一条结果不安全,整件事都不许离线自动结算').toBe(false)
   })
 })
 

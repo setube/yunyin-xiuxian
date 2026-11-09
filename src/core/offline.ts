@@ -74,8 +74,8 @@ import { apprenticeReturnText } from '@/ui/apprenticeText'
 const DEFAULT_OFFLINE_EVENT_IDS = ['ev_spring', 'ev_herb_garden', 'ev_night_talk', 'ev_falling_star', 'ev_old_man']
 
 /** 离线自动结算放行的事件效果;身份/永久构筑类(pet、gongfa、artifact、lifespan)不替玩家拍板 */
-const OFFLINE_SAFE_EFFECTS = new Set(['stone', 'exp', 'material', 'equipment', 'pill', 'buff', 'nothing'])
-function isOfflineSafeEvent(ev: EventDef): boolean {
+export const OFFLINE_SAFE_EFFECTS = new Set(['stone', 'exp', 'material', 'equipment', 'pill', 'buff', 'nothing'])
+export function isOfflineSafeEvent(ev: EventDef): boolean {
   return ev.choices.every(c => c.outcomes.every(o => o.effects.every(e => OFFLINE_SAFE_EFFECTS.has(e.type))))
 }
 
