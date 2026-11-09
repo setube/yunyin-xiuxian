@@ -67,6 +67,16 @@ const BUDGET = {
   /** 单视图 DOM 节点下限:防量到空白/被重定向的页而空转 */
   minNodes: Number(process.env.PERF_MIN_NODES ?? 20),
   /**
+   * 挂载期长任务总耗时上限,单位 ms。
+   *
+   * 帧间隔那一列在所有页面恒为 17ms(浏览器稳定 60fps),158 个节点的页与 703 个
+   * 节点的页读出来一模一样,分不出谁更贵。挂载期长任务才有区分度:
+   * 实测其余页面各 1 块 ~68ms,而 /world 是 2 块 120ms —— 它要现场凝界。
+   *
+   * 定 250ms:比当前最贵的 /world(120ms) 留一倍余量,又不至于放到「随便卡都过」。
+   */
+  mountLongTaskMs: Number(process.env.PERF_MOUNT_LONG_TASK_MS ?? 250),
+  /**
    * 单视图采样帧数下限:防「页面被长任务卡死,几乎采不到帧」被判成通过。
    *
    * 实测踩过:在 App.vue 里注入一个每 100ms 占 80ms 的忙循环后,
@@ -131,8 +141,25 @@ const SAMPLER = `
       raf = requestAnimationFrame(step);
     }
     raf = requestAnimationFrame(step);
+    /*
+     * 长任务只统计「主线程被独占 50ms 以上」的块 —— 这是渲染开销的直接量度。
+     *
+     * 帧间隔读数在所有页面都相同(浏览器稳定 60fps 时恒为 17ms),158 个节点的页
+     * 与 703 个节点的页读出来一模一样,分不出谁更贵。长任务才能分出高低。
+     */
+    const longTasks = [];
+    let ltObserver = null;
+    try {
+      ltObserver = new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) longTasks.push(e.duration);
+      });
+      ltObserver.observe({ entryTypes: ['longtask'] });
+    } catch {
+      // 浏览器不支持 longtask(旧 WebKit / 未开启实验标志):留空数组,报告里标 n/a
+    }
     window.__perfStop = () => {
       cancelAnimationFrame(raf);
+      if (ltObserver) ltObserver.disconnect();
       const n = frames.length;
       const s = [...frames].sort((a, b) => a - b);
       const p = (q) => s[Math.min(n - 1, Math.floor(q * n))];
@@ -145,6 +172,10 @@ const SAMPLER = `
         over50ms: long,
         nodes: document.querySelectorAll('*').length,
         title: document.title,
+        // 长任务:块数 / 总耗时 / 最久一块。不支持 longtask 时为 null,与「零长任务」区分开
+        longTaskCount: ltObserver ? longTasks.length : null,
+        longTaskTotalMs: ltObserver ? Math.round(longTasks.reduce((a, b) => a + b, 0)) : null,
+        longTaskMaxMs: ltObserver && longTasks.length > 0 ? Math.round(Math.max(...longTasks)) : 0,
       });
       return window.__perf;
     };
@@ -170,13 +201,39 @@ for (const view of VIEWS) {
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
     page.on("crash", () => errors.push("RENDERER_CRASH"));
+    /*
+     * 长任务观测器必须在**导航前**装上。
+     *
+     * 采样器是导航 + 2.5s 之后才 evaluate 的,那时首屏已经渲染完、主线程闲着,
+     * 长任务恒为 0 —— 量不到真正贵的那一段(挂载、首帧、首屏数据拉取)。
+     */
+    await page.addInitScript(() => {
+      window.__mountLongTasks = [];
+      try {
+        new PerformanceObserver((list) => {
+          for (const e of list.getEntries()) window.__mountLongTasks.push(e.duration);
+        }).observe({ entryTypes: ['longtask'] });
+      } catch {
+        window.__mountLongTasks = null;
+      }
+    });
     const url = base + `#${view.route}`;
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(2500);
+    const mountTasks = await page.evaluate(() => window.__mountLongTasks);
     await page.evaluate(SAMPLER);
     await page.waitForTimeout(secs * 1000);
     const data = await page.evaluate("window.__perfStop()");
-    record = { name: view.name, route: view.route, ...data, errors };
+    record = {
+      name: view.name,
+      route: view.route,
+      ...data,
+      // 挂载期长任务(导航 → 稳定):首屏到底贵不贵就看这一段
+      mountLongTaskCount: Array.isArray(mountTasks) ? mountTasks.length : null,
+      mountLongTaskTotalMs: Array.isArray(mountTasks) ? Math.round(mountTasks.reduce((a, b) => a + b, 0)) : null,
+      mountLongTaskMaxMs: Array.isArray(mountTasks) && mountTasks.length > 0 ? Math.round(Math.max(...mountTasks)) : 0,
+      errors
+    };
     await context.close();
   } catch (err) {
     record = { name: view.name, route: view.route, crashed: String(err).slice(0, 160) };
@@ -190,7 +247,8 @@ server.close();
 for (const r of results) {
   const state = r.crashed
     ? `✗ ${r.name} CRASHED: ${r.crashed}`
-    : `✓ ${r.name.padEnd(11)} frames=${r.frames} max=${r.max}ms p95=${r.p95}ms med=${r.median}ms >50ms=${r.over50ms} dom=${r.nodes}${
+    : `✓ ${r.name.padEnd(11)} frames=${r.frames} max=${r.max}ms p95=${r.p95}ms med=${r.median}ms >50ms=${r.over50ms} ` +
+      `挂载期=${r.mountLongTaskCount === null ? "n/a" : `${r.mountLongTaskCount}块/${r.mountLongTaskTotalMs}ms(最久 ${r.mountLongTaskMaxMs}ms)`} dom=${r.nodes}${
         r.errors.length ? ` errors=${r.errors.join("|").slice(0, 60)}` : ""
       }`;
   console.log(state);
@@ -208,10 +266,15 @@ for (const r of results) {
     failures.push(`${r.name}: 最差帧 ${r.max}ms > ${BUDGET.maxFrameMs}ms`);
   else if (gate && r.over50ms > BUDGET.longFramesMax)
     failures.push(`${r.name}: ${r.over50ms} 帧 >50ms 长帧 > ${BUDGET.longFramesMax}`);
+  else if (gate && r.mountLongTaskTotalMs !== null && r.mountLongTaskTotalMs > BUDGET.mountLongTaskMs)
+    failures.push(
+      `${r.name}: 挂载期长任务共 ${r.mountLongTaskTotalMs}ms(最久一块 ${r.mountLongTaskMaxMs}ms)> ${BUDGET.mountLongTaskMs}ms —— 进页时主线程被独占了这么久`
+    );
 }
 
 console.log(
-  `\n判据:最差帧 ≤ ${BUDGET.maxFrameMs}ms · 长帧 ≤ ${BUDGET.longFramesMax} · DOM ≥ ${BUDGET.minNodes} · 无崩溃/异常`,
+  `\n判据:最差帧 ≤ ${BUDGET.maxFrameMs}ms · 长帧 ≤ ${BUDGET.longFramesMax} · ` +
+    `挂载期长任务 ≤ ${BUDGET.mountLongTaskMs}ms · DOM ≥ ${BUDGET.minNodes} · 无崩溃/异常`,
 );
 if (failures.length > 0) {
   console.log(`✗ 有 ${failures.length} 处超限:`);
