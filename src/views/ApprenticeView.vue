@@ -1,17 +1,24 @@
 <template>
   <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
-    <div class="card-ink flex items-center justify-between px-4 py-3">
+    <!--
+      标题行在窄屏下换行,而不是把数字截断。
+      200% 缩放下视口等效 195px,卡片内容只剩约 131px ——
+      「收道童(门中已满)」+ 灵石数字无论如何排不进一行。
+      截掉灵石或差额是错的:那是玩家要读到才能决定下一步的数。
+      故用 flex-wrap:挤不下就整块落到下一行,每个字都还在。
+    -->
+    <div class="card-ink flex flex-wrap items-center justify-between gap-y-2 px-4 py-3">
       <h2 class="font-kai text-[14px] tracking-widest text-ink font-normal">道童</h2>
-      <div class="flex min-w-0 items-center gap-3">
-        <p class="flex min-w-0 items-center gap-1 truncate tabular text-[13px] text-gold-ink">
-          <GameIcon name="gem" :size="14" class="shrink-0" /><span class="truncate">{{ formatGN(resources.spiritStone) }}</span>
+      <div class="flex items-center gap-3">
+        <p class="flex items-center gap-1 tabular text-[13px] text-gold-ink">
+          <GameIcon name="gem" :size="14" />{{ formatGN(resources.spiritStone) }}
         </p>
         <!--
           两种拒因各写各的:门中已满 / 灵石尚差 N。原先只写后者,而 slotsFull 为真时
           正文里的代价 span 被整段抽掉 —— 只剩「收道童」三个字,按下才知道满员。
         -->
         <button
-          class="btn-seal shrink-0 !px-2.5 !py-2 !text-[11px]"
+          class="btn-seal min-w-0 whitespace-normal !px-2.5 !py-2 !text-[11px]"
           :disabled="slotsFull || !canAffordRecruit"
           :title="slotsFull ? '门中已满' : !canAffordRecruit ? `灵石尚差 ${formatGap(recruitShort)}` : undefined"
           @click="doRecruit"
@@ -61,6 +68,12 @@
             层数刻度与羁绊阶点:第 7 层离满还有多远、道徒与记名弟子哪个近,
             本来是拿文字去比数(见 ui/apprenticeMark)。门槛全取自 data/apprentices。
           -->
+          <!--
+            层数刻度单独一行,羁绊状态另起一行。
+            200% 缩放下卡片内宽约 131px,20 颗层数点 + 计数已占掉 142px ——
+            同行的羁绊文字会被挤没,玩家看不到「还差几趟」。
+            两把尺本来就各算各的(层数 1/20、羁绊位阶 10/30/60/100 趟),分行反而更清楚。
+          -->
           <div class="mt-1.5 flex items-center gap-2">
             <span
               class="appr-pips shrink-0"
@@ -71,19 +84,18 @@
               <i v-for="(on, i) in levelPips(a.mark.level.have)" :key="i" :class="{ on }" />
             </span>
             <span class="shrink-0 text-[9px] tabular text-ink-faint">{{ a.mark.level.have }}/{{ a.mark.level.total }}</span>
-            <span class="ml-auto flex min-w-0 items-center gap-1">
-              <span class="bond-pips" :style="{ '--bond-tone': a.mark.bondRank >= 3 ? 'var(--color-gold-ink)' : undefined }" aria-hidden="true">
-                <i v-for="p in a.mark.bondPips" :key="p" />
-              </span>
-              <!--
-                这一行左边是「层数 1/20」,右边原写「还差 10 趟」——
-                两个数挨在一行,读者会把它读成「还差 19 趟升满 20 层」。
-                可右边数的是**羁绊位阶**(10/30/60/100 趟),与层数各算各的。
-                补上主语,免得两把尺混成一把。
-              -->
-              <span class="min-w-0 truncate text-[9px] text-ink-faint tabular">
-                {{ a.mark.toNextBond === null ? '羁绊已至真传' : `羁绊还差 ${a.mark.toNextBond} 趟` }}
-              </span>
+          </div>
+          <div class="mt-1 flex flex-wrap items-center gap-x-1 gap-y-0.5">
+            <span class="bond-pips shrink-0" :style="{ '--bond-tone': a.mark.bondRank >= 3 ? 'var(--color-gold-ink)' : undefined }" aria-hidden="true">
+              <i v-for="p in a.mark.bondPips" :key="p" />
+            </span>
+            <!--
+              这一行原本和「层数 1/20」挤在一起,读者会把右边的数读成「还差 N 趟升满层数」。
+              可它数的是**羁绊位阶**(10/30/60/100 趟),与层数各算各的。补上主语,并单独一行。
+              文字不截断:趟数是玩家判断还要不要派活的那条数,截掉就只剩一半信息。
+            -->
+            <span class="text-[9px] text-ink-faint tabular">
+              {{ a.mark.toNextBond === null ? '羁绊已至真传' : `羁绊还差 ${a.mark.toNextBond} 趟` }}
             </span>
           </div>
 
