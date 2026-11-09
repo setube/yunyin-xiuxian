@@ -31,6 +31,29 @@ export default defineConfig({
       '@': resolve(import.meta.dirname, 'src')
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        /*
+         * 框架与业务分开成 chunk。
+         *
+         * rolldown 默认把 Vue 运行时与业务代码并进一个 442KB 的公共 chunk,
+         * 名字还被取成了 player —— 每次发版业务一改,玩家就要重下整块(gzip 166KB)。
+         *
+         * 拆开之后框架那块 hash 长期不变,发版只需重下业务。**这不改善首次加载**,
+         * 改善的是二次访问:按 gzip 算每版少下约 60KB。
+         */
+        advancedChunks: {
+          groups: [
+            {
+              name: 'vendor-vue',
+              test: /[\\/]node_modules[\\/](@vue|vue|vue-router|pinia|@vueuse)[\\/]/
+            }
+          ]
+        }
+      }
+    }
+  },
   test: {
     environment: 'node',
     include: ['src/**/*.spec.ts'],
