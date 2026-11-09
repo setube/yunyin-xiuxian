@@ -1638,5 +1638,14 @@ describe('天道熔炉 · 兑换支持自定义次数', () => {
     // 两处都得真的把选中数传给服务层
     expect(f, '熔铸该把次数传下去').toContain('furnaceConvertStone(stoneEffective.value)')
     expect(f, '凝炼该把枚数传下去').toContain('doCondense(fruitEffective)')
+    /*
+     * 光有输入框不够:读数也得跟着选中数走。
+     * 曾经的缺陷 —— 输入框加了,但价签固定写「单价 → 5 道源」、「凝后 +X%」按下一枚算,
+     * 选 10 枚看到的是凝 1 枚的收益(边际递减下差 10 倍,20 枚时 +4.49% vs +44.04%)。
+     */
+    expect(f, '灵石价签该按选中次数算总价').toContain('mulN(furnaceStoneCost(), stoneEffective)')
+    expect(f, '凝炼收益该按选中枚数算').toContain('fruitMarginalInfo(fruitEffective.value)')
+    expect(f, '边际刻度该看这批的收尾那枚').toContain('marginMark(fruitInfo.value.total + fruitEffective.value)')
+    expect(f, '曲线起点该与刻度同一枚').toContain('marginCurvePoints(fruitInfo.value.total + fruitEffective.value - 1)')
   })
 })
