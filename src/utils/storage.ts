@@ -227,17 +227,63 @@ export function subscribeOtherTabSave(handler: OtherTabHandler): () => void {
   }
 }
 
-/** 本页活着的心跳键;别的标签页靠它知道对面还开着 */
-const LIVE_KEY = SAVE_PREFIX + '__live'
+/**
+ * 现在是否有另一页在同一份存档上。
+ *
+ * 状态翻转只在订阅里播一次 —— toast 五秒就散,错过那一下的玩家不会再被提醒,
+ * 而两页各写各的会静默丢进度。界面需要一个「随时能问」的入口:
+ * 退出确认框与设置页据此常驻显示,不必依赖玩家恰好看到那条 toast。
+ */
+export function isOtherTabSaving(): boolean {
+  return otherTabActive
+}
+
+/**
+ * 心跳键:**每页一个**,靠随机后缀区分。
+ *
+ * 原先两页共用一个 `yunyin.__live` 键,于是谁都读到「刚被自己刷新的时间戳」——
+ * 对面关掉之后,自己的 ping 每 4 秒把那个键写成新的,过期判据永远不成立,
+ * 警告一旦挂上就再也不消失(实测开两页再关一页,13 秒后仍在)。
+ * 每页写自己的键,扫全部键就能知道有几个活着的页面。
+ */
+const LIVE_PREFIX = SAVE_PREFIX + '__live.'
 const LIVE_PING_MS = 4000
 const LIVE_STALE_MS = LIVE_PING_MS * 3
+/**
+ * 本页专属的心跳键;模块级唯一。
+ *
+ * 用「时间戳 + 进程内递增」而不是 Math.random():模块顶层调 Math.random 会占掉
+ * 那些用 mockReturnValueOnce 精确控制随机序列的测试的一次配额,把整条序列往后挪
+ * —— 实测 earlyGameBuffs 的「灵机一动」用例因此崩掉。
+ * 时间戳保证跨刷新不撞,递增值保证同一毫秒内多次加载也不撞。
+ */
+let liveSeq = 0
+const MY_LIVE_KEY = LIVE_PREFIX + Date.now().toString(36) + '.' + (liveSeq += 1).toString(36)
 
 function markAlive(): void {
   try {
-    localStorage.setItem(LIVE_KEY, String(Date.now()))
+    localStorage.setItem(MY_LIVE_KEY, String(Date.now()))
   } catch {
     // 存储不可用时忽略
   }
+}
+
+/** 除本页之外还有几页活着 */
+function livePeerCount(): number {
+  const now = Date.now()
+  let peers = 0
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i)
+      if (key === null || !key.startsWith(LIVE_PREFIX) || key === MY_LIVE_KEY) continue
+      const at = Number(localStorage.getItem(key))
+      if (!Number.isFinite(at) || now - at > LIVE_STALE_MS) continue
+      peers += 1
+    }
+  } catch {
+    // 存储不可用时当作没有别人
+  }
+  return peers
 }
 
 function setOtherTab(active: boolean): void {
@@ -260,9 +306,8 @@ const SAVE_SLICE_KEYS = new Set(PERSISTED_STORES.map(id => SAVE_PREFIX + id))
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', e => {
     if (e.key === null) return
-    if (e.key === LIVE_KEY) {
-      const at = Number(e.newValue)
-      setOtherTab(Number.isFinite(at) && Date.now() - at < LIVE_STALE_MS)
+    if (e.key.startsWith(LIVE_PREFIX)) {
+      setOtherTab(livePeerCount() > 0)
       return
     }
     if (SAVE_SLICE_KEYS.has(e.key)) setOtherTab(true)
@@ -291,7 +336,7 @@ export function watchOtherTabSave(enabled: boolean): void {
       pingOnVisible = undefined
     }
     try {
-      localStorage.removeItem(LIVE_KEY)
+      localStorage.removeItem(MY_LIVE_KEY)
     } catch {
       // 存储不可用时忽略
     }
@@ -300,7 +345,16 @@ export function watchOtherTabSave(enabled: boolean): void {
   }
   if (pingTimer !== undefined) return
   const ping = (): void => {
-    if (document.visibilityState === 'visible') markAlive()
+    if (document.visibilityState !== 'visible') return
+    markAlive()
+    /*
+     * 顺带扫一遍别页的心跳。
+     *
+     * setOtherTab(false) 原先只在「收到对面心跳且已过期」时发生 —— 而对面**关掉之后
+     * 就不再发心跳**,本页收不到任何 storage 事件,otherTabActive 便永远挂着。
+     * 实测:开两页再关掉一页,13 秒后警告仍在。每 4 秒扫一次全部心跳键即可复位。
+     */
+    setOtherTab(livePeerCount() > 0)
   }
   pingOnVisible = ping
   // 切回前台立刻补一次,避免判定滞后

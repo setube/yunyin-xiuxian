@@ -26,13 +26,30 @@ describe('另一页在写档 · 判定范围', () => {
     expect(SRC, '判重没有走分片键集合').toContain('if (SAVE_SLICE_KEYS.has(e.key)) setOtherTab(true)')
   })
 
-  it('心跳键仍单独处理(按时间戳判新鲜度)', () => {
-    expect(SRC).toContain('if (e.key === LIVE_KEY)')
-    expect(SRC).toContain('Date.now() - at < LIVE_STALE_MS')
+  it('心跳单独处理:每页一个键,靠扫全部键判活页数', () => {
+    /*
+     * 原先两页共用一个 yunyin.__live 键 —— 谁都读到「刚被自己刷新」的时间戳,
+     * 对面关掉之后自己的 ping 每 4 秒把那个键写成新的,过期判据永远不成立,
+     * 警告一旦挂上就再也不消失(实测开两页再关一页,13 秒后仍在)。
+     * 故改成一页一个键:扫全部心跳键、排掉自己,才知道还有几页活着。
+     */
+    expect(SRC, '心跳前缀要能匹配多页').toContain('const LIVE_PREFIX = SAVE_PREFIX + \'__live.\'')
+    expect(SRC, '本页的键要独立').toContain('const MY_LIVE_KEY = LIVE_PREFIX +')
+    expect(SRC, '判活页数要排掉自己').toContain('key === MY_LIVE_KEY')
+    expect(SRC, '心跳事件要扫全部键').toContain('if (e.key.startsWith(LIVE_PREFIX))')
     // 心跳必须在分片判定之前 return,否则会落到分片分支
-    const liveIdx = SRC.indexOf('if (e.key === LIVE_KEY)')
+    const liveIdx = SRC.indexOf('if (e.key.startsWith(LIVE_PREFIX))')
     const sliceIdx = SRC.indexOf('if (SAVE_SLICE_KEYS.has(e.key))')
     expect(liveIdx, '心跳判定应排在分片判定之前').toBeLessThan(sliceIdx)
+  })
+
+  it('本页心跳键不用 Math.random —— 会吃掉测试的 mockReturnValueOnce 配额', () => {
+    // 实测:模块顶层调一次 Math.random,earlyGameBuffs 的「灵机一动」用例整条序列错位
+    expect(SRC, '本页键该用时间戳+递增,不用 Math.random').not.toMatch(/MY_LIVE_KEY = [\s\S]{0,40}Math\.random/)
+  })
+
+  it('heartbeat 停用时删的是自己的键', () => {
+    expect(SRC, '该删本页的键,不是删公共键').toContain('localStorage.removeItem(MY_LIVE_KEY)')
   })
 
   it('首帧主题键不在分片清单里(否则判定又把它算进来)', () => {
