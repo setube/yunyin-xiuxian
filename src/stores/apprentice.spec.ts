@@ -188,6 +188,28 @@ describe('收徒 · 派发与收割', () => {
     expect(paidNeg).toBeCloseTo(atZero, 3)
   })
 
+  /*
+   * 坏档里的负 startAt 夹成 0 —— 与 market 的 finishAt 不同,这里**保留**是对的。
+   *
+   * 任务合法性由紧随其后的 `finishAt >= startAt` 判:startAt 夹成 0 之后,
+   * 只要 finishAt 也是非负,任务就是「从此刻起算、到 finishAt 结束」,语义自洽。
+   * 而 market 那处夹成 0 等于「已在过去到期」,会把寄卖立刻结算掉 —— 两者相反。
+   */
+  it('sanitize:负 startAt 夹成 0,任务本身保留(与寄卖的负 finishAt 相反)', () => {
+    const a = useApprenticeStore()
+    const now = Date.now()
+    a.$patch({
+      apprentices: [
+        make('ap_luanniao', { task: { spec: 'herb', startAt: -1e9, finishAt: now + 60_000 } })
+      ] as never
+    })
+    a.sanitize()
+    const t = a.apprentices[0]!.task
+    expect(t, '任务该保留 —— startAt 夹成 0 后语义仍自洽').not.toBeNull()
+    expect(t!.startAt, '负的开始时刻夹成 0').toBe(0)
+    expect(t!.finishAt).toBe(now + 60_000)
+  })
+
   it('sanitize:坏弟子整位丢弃、坏任务当作闲置、坏等级/羁绊夹回', () => {
     const a = useApprenticeStore()
     a.$patch({
