@@ -34,6 +34,25 @@ describe('dongfu store · sanitize', () => {
     expect(Number.isFinite(dongfu.offlineCapHours)).toBe(true)
   })
 
+  /*
+   * 产出余数的负数也要收敛 —— 上面那条只测了等级那一侧。
+   *
+   * `frac` 是「不足一件的余数」累加器,语义上恒在 [0, 1)。坏档里写 -999 之后,
+   * `produce()` 每次往上加,要加满 999 才跨过 0 —— 玩家把灵田升到满级,
+   * 余数仍卡在负数区间,产出再也凑不出一件。
+   */
+  it('负的产出余数收敛回 0,随后能正常累出产出', () => {
+    const dongfu = useDongfuStore()
+    dongfu.frac = { herb: -999, ore: -1e9, wudao: -0.5 }
+    dongfu.sanitize()
+    expect(dongfu.frac, '三个余数都该回到 0').toEqual({ herb: 0, ore: 0, wudao: 0 })
+    // 反证:归零之后产出能真的发出来(不再是负数卡住)
+    dongfu.setLevel('field', 1)
+    const before = useResourcesStore().herb
+    dongfu.produce(3600 * 10)
+    expect(useResourcesStore().herb, '十小时该有灵草入账').toBeGreaterThan(before)
+  })
+
   it('炼器台每 FORGE_LEVEL_PER_CAP 级提升强化上限 1(常数真的接线,不是写死的 2)', () => {
     const dongfu = useDongfuStore()
     dongfu.setLevel('forge', FORGE_LEVEL_PER_CAP * 3)
