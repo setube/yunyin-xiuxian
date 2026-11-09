@@ -186,7 +186,12 @@ export function lateSlices() {
  * 压测就变成「在七条词条的装备上量性能」而门照旧报绿。校验见
  * src/utils/fixtureParity.spec.ts —— 它直接调用本函数,不用源码文本猜。
  */
-export function stressSlices() {
+/**
+ * @param {number} [itemCount] 行囊件数,默认 120(即 BAG_CAPACITY 上限)。
+ *   供性能实验用:调小它可以看启动开销随件数的增长曲线,
+ *   从而分清哪一段是「与存档大小成正比」、哪一段是固定成本。
+ */
+export function stressSlices(itemCount = 120) {
   const base = lateSlices();
   /*
    * 九个可穿戴槽,每个槽一件 32 阶神品,模板与物品同阶。
@@ -209,7 +214,7 @@ export function stressSlices() {
    * 只按武器挑时护甲五槽又用不了 crit1/cdmg1/dmg1/bs1。
    */
   const AFFIX_IDS = ["atk1", "atk2", "atk3", "def1", "def2", "def3", "hp1", "hp2", "hp3"];
-  const ITEM_COUNT = 120;
+  const ITEM_COUNT = itemCount;
   const items = [];
   for (let i = 0; i < ITEM_COUNT; i += 1) {
     const slotPair = i < SLOT_TEMPLATES.length ? SLOT_TEMPLATES[i] : null;
