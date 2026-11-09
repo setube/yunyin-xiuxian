@@ -726,4 +726,34 @@ describe('坊市 · 坏档格号挤掉好货', () => {
     expect(equip.some(e => e.tier === 5), '原号合法的 5 阶装备不该被挤掉').toBe(true)
     expect(equip.every(e => e.idx >= 0), '格号都该是非负').toBe(true)
   })
+
+  /*
+   * minQualityRank 的**下限**同样要夹 —— 上限那条已有用例(999 → divine)。
+   *
+   * 它决定货架上那件最低能出什么品质:负的 rank 会让 qualityDef 取到不存在的档,
+   * 而 `buy` 时按它生成装备,玩家买到的是件没品质的物件。
+   * 变异扫描报这处夹子「改坏了不会红」——既有用例只喂过 0 与 999,没喂过负数。
+   */
+  it('给定负的 minQualityRank,当 sanitize,则夹回最低品质', () => {
+    const m = useMarketStore()
+    m.$patch({
+      stock: [
+        { kind: 'equipment', idx: 0, tier: 3, minQualityRank: -7, price: { m: 50, e: 0 }, sold: false },
+        { kind: 'equipment', idx: 1, tier: 3, minQualityRank: -1e9, price: { m: 50, e: 0 }, sold: false }
+      ],
+      stockedAt: FAR
+    })
+    m.sanitize()
+    for (const slot of m.stock) {
+      if (slot.kind !== 'equipment') continue
+      expect(slot.minQualityRank, '负的 minQualityRank 该夹回 0').toBe(0)
+    }
+    // 夹回之后仍须买得动,且拿到的品质是合法的
+    const res = useResourcesStore()
+    const inventory = useInventoryStore()
+    res.spiritStone = gn(1e6)
+    expect(m.buy(0), '夹回后该能正常买入').toBe('ok')
+    expect(inventory.items, '该入账一件').toHaveLength(1)
+    expect(() => qualityDef(inventory.items[0]!.quality), '品质须是合法档').not.toThrow()
+  })
 })
