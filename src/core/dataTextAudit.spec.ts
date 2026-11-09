@@ -1352,7 +1352,9 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     const service = src('./earlyGameService.ts')
     const exchange = src('./wudaoExchange.ts')
     expect(gongfa, '兑换钮读同源判据').toContain(':disabled="!player.canExchangeWudao"')
-    expect(gongfa, '兑换钮就地写拒因').toContain("{{ player.canExchangeWudao ? '兑换' : exchangeBlockedText }}")
+    // 可兑时写「兑换(×N)」,不可兑时就地写拒因 —— 两种形态都要在
+    expect(gongfa, '兑换钮可兑时写动作词').toContain('兑换${exchangeEffective > 1')
+    expect(gongfa, '兑换钮不可兑时就地写拒因').toContain('exchangeBlockedText')
     expect(exchange, '灵石余额进入兑换判据').toContain('stoneShort')
     expect(card, '备药钮按石差置灰').toContain(':disabled="!prepCanPill"')
     expect(card, '备药钮写实际石差').toContain('prepPillDisabledLabel(formatGap(prepPillShort))')
