@@ -33,6 +33,34 @@ export async function seedSave(context, slices, guard = "__fixtureSeeded") {
 const gn = (m, e) => ({ m, e });
 
 /** 后期档:神人境 + 成套装备 */
+/**
+ * 给一份存档挂上「历练在途」的会话,让引擎每 tick 真的打一场。
+ *
+ * 内存那一档需要真实负载:空闲心跳不分配,量出来必然是平的。
+ * `nextBattleAt` 取过去时刻,进页面就立刻开打。
+ */
+export function withActiveRun(slices, regionId = "qingyun") {
+  const now = Date.now();
+  return {
+    ...slices,
+    adventure: {
+      session: {
+        regionId,
+        mode: "normal",
+        startedAt: now - 60_000,
+        endsAt: now + 3600_000,
+        nextBattleAt: now - 1,
+        wins: 0,
+        losses: 0,
+        events: 0,
+        stoneGain: { m: 0, e: 0 },
+        expGain: { m: 0, e: 0 },
+        itemGain: 0,
+      },
+    },
+  };
+}
+
 export function lateSlices() {
   return {
     /** 时间戳须取当前时刻:写 1970 会补算半个世纪的离线收益,冒烟每翻一页重算一次 */

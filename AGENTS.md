@@ -60,7 +60,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run perf-profile` / `perf-stress` — 构建 + `scripts/perf-profile.mjs`：15 个视图的帧间隔、**挂载期长任务**（导航→稳定的 PerformanceObserver 读数）、DOM 节点数。`--stress` 走 120 件满包夹具（行囊上限即 120，已是最坏情况）；`--no-save` 不注入存档走欢迎页，用来把启动开销与页面渲染分开。另有两个读数开关：`--startup` 打启动分段（`main.ts` / `engine.ts` 里的 `performance.mark`），`--shard` 仅 mutation-scan 有
   - **帧间隔列分不出页面贵贱**：浏览器稳定 60fps 时每帧都是 17ms，158 节点与 703 节点的页读数相同。要比开销看 `挂载期长任务` 那一列
   - **启动开销与存档大小成正比**：用 `--items=N` 扫过 0/15/30/45/60/90/120 件，每 30 件约 +12ms（合计 112→162ms），近似线性。三段（preflightScan / sanitizeAllStores / app.mount）同比例增长 —— 都在处理同一份数据。其中 sanitizeAllStores 的 95% 是 Pinia 水合（解密+解析），sanitize 本身只 0.9ms。**这部分没有可省的重复工作**：不解密读不出存档，不自愈会把坏值渲给玩家。行囊上限锁死 120 件（≈36KB），故 162ms 就是天花板
-  - `--memory` 量长会话驻留内存(配合 `--memory-rounds=N --memory-gap=MS`)。**必须走 CDP 的 `Runtime.getHeapUsage`**:`performance.memory.usedJSHeapSize` 在本机 chromium 里是固定值,持有 40×20 万个元素的数组读数纹丝不动,拿它当判据等于空转。采样前强制 `gc()`,判据取首末差 >15MB 或斜率 >1.5MB/点(后者抓「匀速小涨但总量没到阈值」);12 点 66s 实测首页斜率 0.03MB/点,阈值是噪声的五十倍
+  - `--memory` 量长会话驻留内存(配合 `--memory-rounds=N --memory-gap=MS --active`)。**必须加 `--active`**:不加时页面空闲,空闲心跳几乎不分配、量出来必然平,「没有泄漏」证明不了什么;加了才有真实负载(在途历练每 tick 打一场,战斗/掉落/战报都走)。**必须走 CDP 的 `Runtime.getHeapUsage`**:`performance.memory.usedJSHeapSize` 在本机 chromium 里是固定值,持有 40×20 万个元素的数组读数纹丝不动,拿它当判据等于空转。采样前强制 `gc()`,判据取首末差 >15MB 或斜率 >1.5MB/点(后者抓「匀速小涨但总量没到阈值」);12 点 66s 实测首页斜率 0.03MB/点,阈值是噪声的五十倍
   - 判据：最差帧 ≤100ms · 长帧 ≤2 · 挂载期长任务 ≤250ms · 启动合计 ≤250ms · DOM ≥20 · 驻留内存首末差 ≤15MB 且斜率 ≤1.5MB/点
 - `bun run offline-check` — 构建 + SW 离线自检
 - `bun run treasure-check` / `world-check` / `orb-check` — 构建 + 真浏览器验形制（得宝仪典 / 界域印与飞升跃升 / 法球界域形态）；三者都走后期存档夹具，前期档看不到顶档之物、四界与四态

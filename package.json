@@ -27,7 +27,7 @@
     "first-paint": "bun run build && bun scripts/first-paint.mjs",
     "perf-profile": "bun run build && bun scripts/perf-profile.mjs",
     "perf-stress": "bun run build && node scripts/perf-profile.mjs --stress",
-    "perf-memory": "bun run build && node scripts/perf-profile.mjs --memory --memory-rounds=8 --memory-gap=5000",
+    "perf-memory": "bun run build && node scripts/perf-profile.mjs --memory --active --memory-rounds=10 --memory-gap=5000",
     "treasure-check": "bun run build && node scripts/treasure-check.mjs",
     "detail-check": "bun run build && node scripts/detail-geometry.mjs",
     "modal-check": "bun run build && node scripts/modal-patrol.mjs",
