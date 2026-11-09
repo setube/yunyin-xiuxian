@@ -115,4 +115,22 @@ describe('虚界奖励定价', () => {
     expect(world.rewardDaoSource, '合法区间内的奖励不会触到 100 上限').toBeLessThanOrEqual(81)
   })
 })
+
+/**
+ * 新颖度历史的采样数不能随手调低。
+ *
+ * defaultHistoryAsync 为了不卡住玩家(那段原本落在「窥探虚界」的同步路径上)
+ * 把采样从 auditVoidWorld 默认的 200 降到了 HISTORY_AUDIT_RUNS。
+ * 这个降法只有在「top2 集合不变」时才成立 —— 实测 30 满足,7 会让赤炎天/无相天漂。
+ * 判据:全 4 座手工世界,runs=30 与 runs=200 的 top2 集合必须逐座一致。
+ */
+describe('虚界历史采样数', () => {
+  it('给定四座手工世界,当用 30 次采样,则 top2 与 200 次采样逐座一致', { timeout: 60000 }, () => {
+    for (const w of CELESTIAL_WORLDS) {
+      const full = auditVoidWorld(w, 200).rates.slice(0, 2).map(r => r.name).sort()
+      const slim = auditVoidWorld(w, 30).rates.slice(0, 2).map(r => r.name).sort()
+      expect(slim, `${w.name} 的 top2 在 30 次采样下漂了(历史新颖度会跟着算错)`).toEqual(full)
+    }
+  })
+})
 })
