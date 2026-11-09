@@ -1,6 +1,7 @@
 // 在线/离线的装备入包前都先过回收裁决,命中回收规则即化尘。
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { PILLS } from '@/data/pills'
 import { rng } from '@/utils/random'
 import {
   afterWin,
@@ -11,7 +12,8 @@ import {
   ARTIFACT_NEAR_WINDOW,
   artifactDropWeight,
   expectedWinReward,
-  randomDropArtifact
+  randomDropArtifact,
+  randomDropPill
 } from './loot'
 import { upgradeEquipment } from './forge'
 import { ARTIFACTS, artifactDef, artifactValue } from '@/data/artifacts'
@@ -549,5 +551,36 @@ describe('法宝入囊 · 野 id', () => {
     // 重复法宝那一支会发悟道之尘;野 id 连 def 都没有,更不该走到那
     expect(res.wudao, '野 id 不该发任何资源').toBe(wudaoBefore)
     expect(useUiStore().toasts.length, '野 id 不该给玩家提示').toBe(toastsBefore)
+  })
+})
+
+/*
+ * 掉落丹药:池子只装「当前境界用得上、且没有配方」的那几味。
+ *
+ * `randomDropPill` 此前零覆盖,变异扫描因此把 `if (pool.length === 0) return null`
+ * 报成「改坏了不会红」。查下来那是**死分支**:无配方的丹有 20 味、minRealm 落在
+ * 0~19,连 major=0 都摸得到一味,池子永远不会空。
+ * 所以不补那条,改锁真正会影响玩家的两条:池子的**成分**与**边界**。
+ */
+describe('掉落丹药 · 池子装的是哪些', () => {
+  it('给定境界,当抽掉落丹,则只在「用得上且无配方」的那几味里出', () => {
+    for (const major of [0, 3, 9, 14, 20]) {
+      const allowed = PILLS.filter(p => p.minRealm <= major && !p.recipe).map(p => p.id)
+      expect(allowed.length, `major=${major} 的池子不该是空的(那是死分支的前提)`).toBeGreaterThan(0)
+      for (let i = 0; i < 20; i += 1) {
+        const id = randomDropPill(major)
+        expect(id, `major=${major} 抽到了空`).not.toBeNull()
+        expect(allowed, `major=${major} 抽到了池子外的 ${id}`).toContain(id!)
+      }
+    }
+  })
+
+  it('给定高于所有配方丹的境界,当抽掉落丹,则不会给出需要配方的那几味', () => {
+    // 配方丹是玩家自己炼的,不该凭空掉 —— 这一条是 `!p.recipe` 那半个条件的行为面
+    const recipeIds = new Set(PILLS.filter(p => p.recipe).map(p => p.id))
+    for (let i = 0; i < 30; i += 1) {
+      const id = randomDropPill(20)
+      expect(recipeIds.has(id!), `抽到了配方丹 ${id}`).toBe(false)
+    }
   })
 })
