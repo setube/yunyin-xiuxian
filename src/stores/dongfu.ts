@@ -111,9 +111,17 @@ export const useDongfuStore = defineStore(
         else nextLevels[def.id] = Math.min(Math.floor(cur), def.maxLevel)
       }
       levels.value = nextLevels
+      /*
+       * 产出余数只挡了 NaN,没挡负数 —— 而同函数上一段的 levels 是 `cur < 0` 一并处理的。
+       *
+       * frac 是「不足一件的余数」累加器,语义上恒在 [0, 1)。坏档里写 -999 之后,
+       * `produce()` 每次往上加,要加满 999 才跨过 0 —— 换个说法:玩家把洞府灵田
+       * 升到满级,余数仍然卡在负数区间里,产出**再也凑不出一件**。
+       */
       const nextFrac = { ...frac.value }
       for (const key of Object.keys(nextFrac) as (keyof typeof frac.value)[]) {
-        if (!Number.isFinite(nextFrac[key])) nextFrac[key] = 0
+        const v = nextFrac[key]
+        if (!Number.isFinite(v) || v < 0) nextFrac[key] = 0
       }
       frac.value = nextFrac
       /**
