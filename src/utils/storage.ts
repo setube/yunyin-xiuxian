@@ -427,14 +427,29 @@ export function migrateHerbSlice(resources: Record<string, unknown>): Record<str
 export function migrateInventorySlice(data: Record<string, unknown>): Record<string, unknown> {
   const hasNew = 'equippedArtifacts' in data
   const hasLegacy = 'equippedArtifact' in data
-  if (hasNew && !hasLegacy) return data
+  /*
+   * 新字段已在、且本身干净,才允许原样返回。
+   * 与灵草分账同一类问题:早先只看「有没有这个键」,于是 null / 字符串 / 含垃圾项的数组
+   * 都原样放行、返回同一引用 —— migrateLocalSchema 判不出变化就不回写,
+   * 脏数据永远躺在 localStorage 里。下游 sanitize 兜得住数值,但迁移层的契约是交进来就修好。
+   */
+  if (hasNew && !hasLegacy && artifactIdsClean(data.equippedArtifacts)) return data
   const next = { ...data }
-  if (!hasNew) {
-    const legacy = data.equippedArtifact
-    next.equippedArtifacts = typeof legacy === 'string' && legacy ? [legacy] : []
-  }
+  const raw = hasNew ? data.equippedArtifacts : data.equippedArtifact
+  next.equippedArtifacts = normalizeArtifactIds(raw)
   delete next.equippedArtifact
   return next
+}
+
+/** 法宝 id 列表是否已是干净形态:数组、且每一项都是非空字符串 */
+function artifactIdsClean(raw: unknown): boolean {
+  return Array.isArray(raw) && raw.every(x => typeof x === 'string' && x.length > 0)
+}
+
+/** 把任意形状的法宝 id 来源收成 string[]:旧档是单个字符串,新档是数组 */
+function normalizeArtifactIds(raw: unknown): string[] {
+  const list = Array.isArray(raw) ? raw : typeof raw === 'string' ? [raw] : []
+  return list.filter((x): x is string => typeof x === 'string' && x.length > 0)
 }
 
 /** 本地存档结构升级(在 Pinia 水合之前执行);只有真发生了迁移才回写 */
