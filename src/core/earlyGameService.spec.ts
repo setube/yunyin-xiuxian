@@ -265,6 +265,26 @@ describe('整批连胜 · 坏档负值当 0 处理', () => {
     expect(run(-1), '负 1 也该与 0 同结果').toEqual(run(0))
   })
 
+  /*
+   * 负 losses 必须当成「有败场」处理 —— 连胜归零,不许继续累加。
+   *
+   * 这一侧的钳制此前没测过。上面几条都传 losses=0,走不到负值;
+   * 而 `Math.max(0, Math.floor(losses)) > 0` 在 losses 为负时判假,
+   * 于是连胜**当成没输过**继续往上加。
+   *
+   * 生产路径:离线结算 `recordWinStreakBatch(wins, battles - wins)` ——
+   * battles 与 wins 都是存档可写字段,坏档里 wins > battles 就得到负 losses。
+   * 实测 wins=3/losses=-5 时连胜从 7 涨到 10,玩家白拿连胜奖励。
+   */
+  it('负 losses 当作有败场:连胜归零,不继续累加', () => {
+    const player = usePlayerStore()
+    player.winStreak = 7
+    const granted = recordWinStreakBatch(3, -5)
+    expect(player.winStreak, '有败场就该归零,不该涨到 10').toBe(0)
+    // 这 3 场确实是赢的,该发的档照发:7→10 跨过 10 档
+    expect(granted.map(r => r.streak), '赢的那几场该发的档照发').toEqual([10])
+  })
+
   it('负 wins 不倒退计数,也不发奖', () => {
     const player = usePlayerStore()
     player.winStreak = 5

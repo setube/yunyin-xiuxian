@@ -270,7 +270,16 @@ export function recordWinStreakBatch(wins: number, losses: number): StreakBatchR
     resources.addSmall('wudao', reward.wudao)
     granted.push({ ...reward })
   }
-  player.winStreak = Math.max(0, Math.floor(losses)) > 0 ? 0 : end
+  /*
+   * 有败场就归零 —— 判「是否输过」不能看夹制后的值。
+   *
+   * 原先是 `Math.max(0, Math.floor(losses)) > 0`:负 losses 夹成 0 之后
+   * 判假,连胜**当成没输过**继续往上加。生产路径是离线结算
+   * `recordWinStreakBatch(wins, battles - wins)`,而 battles 与 wins 都是
+   * 存档可写字段,坏档里 wins > battles 就得到负 losses ——
+   * 实测 wins=3/losses=-5 时连胜从 7 涨到 10,玩家白拿连胜奖励。
+   */
+  player.winStreak = Number.isFinite(losses) && Math.floor(losses) !== 0 ? 0 : end
   return granted
 }
 
