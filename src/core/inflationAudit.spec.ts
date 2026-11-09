@@ -15,6 +15,7 @@ import {
   GEAR_PROFILES,
   modDepth,
   modelPlayer,
+  gongfaModsAt,
   powerSourceAudit,
   realmLeapAudit,
   reachableTiers
@@ -336,5 +337,28 @@ describe('膨胀审计 · 建模自洽性', () => {
     const optimized = toNum(modelPlayer(5, 9, gearProfile('optimized')).stats.power)
     expect(typical).toBeGreaterThan(casual)
     expect(optimized).toBeGreaterThan(typical)
+  })
+})
+
+/*
+ * 功法乘区在「查不到可用功法」时返回空对象,而不是抛。
+ *
+ * `gongfaModsAt` 里 `if (usable.length === 0) return {}` 这一支,
+ * 正境界下永远走不到(实测 major=0 就有 4 条主修、3 条辅修),
+ * 但**负境界会走到** —— 那里 `g.minRealm <= -1` 一条也不满足,usable 为空。
+ *
+ * 少了守卫,下一行 `usable.reduce(...)` 会对空数组无初值归并,当场抛
+ * TypeError。而 gongfaModsAt 是战力归因的取数口径,调用方假定它总能返回一个对象。
+ */
+describe('功法乘区 · 查不到可用功法时返回空对象', () => {
+  it('给定负境界(一条功法都够不到),则返回 {} 而不是抛', () => {
+    expect(() => gongfaModsAt(-1), '不该抛').not.toThrow()
+    expect(gongfaModsAt(-1), '查不到就返回空对象').toEqual({})
+    expect(gongfaModsAt(-999)).toEqual({})
+  })
+
+  it('给定凡境,则确有功法可用(证明上一支是边界而非常态)', () => {
+    const at0 = gongfaModsAt(0)
+    expect(Object.keys(at0).length, '凡境该有可用的功法乘区').toBeGreaterThan(0)
   })
 })
