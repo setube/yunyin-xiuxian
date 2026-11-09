@@ -381,3 +381,77 @@ describe('坏档韧性 · 新增持久化分片已挂进读档兜底清单', () 
     expect(market.stock, '坏 pillId 的货格应被修掉,renderSlot 才不致 undefined.name').toEqual([])
   })
 })
+
+/*
+ * 坏档韧性 · 毒化之后不许残留负数
+ *
+ * 上两类用例分别在验「不炸」与「单个字段修回来」。它们漏掉的是**跨字段的口径不一致**:
+ * 同一个 sanitize 里,几个同类字段都写了下限,只有某一个漏了 —— 逐个读很难看出来。
+ *
+ * 这条把每个持久化 store 的全部数值字段一次性毒化成 -999,过一遍 sanitize,
+ * 再扫残留的负数。两个真实缺陷就是这么抓到的(player.lifespanBonusYears 与
+ * dongfu.frac:前者让寿元上限算出 -849,后者让灵田余数要加满 999 才产出)。
+ *
+ * 排除项:少数字段的负数是**有意义**的,列在 NEGATIVE_OK 里并写明理由 ——
+ * 不做白名单就会逼着把哨兵值改掉。
+ */
+const NEGATIVE_OK: Record<string, string[]> = {
+  // 哨兵:-1 表示「尚未镇压过任何区域」,suppressionProgress 靠它区分「老档无此字段」与「真没镇压过」
+  player: ['suppressLife']
+}
+
+/** 把一份 state 里的所有有限数字改成 -999(保留字符串/布尔/结构形状) */
+function poisonNumbers(v: unknown, depth = 0): unknown {
+  if (depth > 6) return v
+  if (typeof v === 'number') return -999
+  if (Array.isArray(v)) return v.map(x => poisonNumbers(x, depth + 1))
+  if (v && typeof v === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, x] of Object.entries(v)) out[k] = poisonNumbers(x, depth + 1)
+    return out
+  }
+  return v
+}
+
+/**
+ * 递归收集负的有限数字,路径写成 a.b[0].c。
+ *
+ * GNum(`{m,e}`)整块跳过:它的 m/e 可以为负(表示极小的量),`toNum` 会算出 0 附近的值,
+ * 那不是「玩家看到的负数」。毒化后 exp 会规范化成 `{m:-9.99, e:-997}` 就是这种情形。
+ */
+function isGNum(v: unknown): v is { m: number; e: number } {
+  return !!v && typeof v === 'object' && !Array.isArray(v) && 'm' in v && 'e' in v &&
+    typeof (v as { m: unknown }).m === 'number' && typeof (v as { e: unknown }).e === 'number'
+}
+
+function collectNegatives(v: unknown, path: string, out: string[], depth = 0): void {
+  if (depth > 6) return
+  if (typeof v === 'number') {
+    if (Number.isFinite(v) && v < 0) out.push(path)
+    return
+  }
+  if (Array.isArray(v)) {
+    v.forEach((x, i) => collectNegatives(x, `${path}[${i}]`, out, depth + 1))
+    return
+  }
+  if (v && typeof v === 'object') {
+    if (isGNum(v)) return
+    for (const [k, x] of Object.entries(v)) collectNegatives(x, `${path}.${k}`, out, depth + 1)
+  }
+}
+
+describe('坏档韧性 · 毒化之后不许残留负数', () => {
+  for (const { name, use } of STORES) {
+    it(`${name}:全部数字灌成 -999 后,sanitize 不许留下负值`, () => {
+      setActivePinia(createPinia())
+      const store = use()
+      store.$patch(poisonNumbers(JSON.parse(JSON.stringify(store.$state ?? {}))) as never)
+      store.sanitize()
+      const negatives: string[] = []
+      collectNegatives(store, '', negatives)
+      const allowed = NEGATIVE_OK[name] ?? []
+      const bad = negatives.filter(path => !allowed.some(a => path.split('.').includes(a)))
+      expect(bad, `${name} 在毒化之后残留了负值(界面会把它印给玩家看):\n${bad.join('\n')}`).toEqual([])
+    })
+  }
+})
