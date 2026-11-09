@@ -630,4 +630,21 @@ describe('炼丹审计 · 没有配方的丹', () => {
     expect(() => auditCraftRate(orphan)).not.toThrow()
     expect(auditCraftRate(orphan)).toBe(1)
   })
+
+  /*
+   * 负境界喂进来也落在第 0 境,不落进负区间。
+   *
+   * 变异扫描把 `Math.max(0, major)` 报成「改坏了不会红」,但那是**等价变异**:
+   * expRequirement / qiCap / baseCultPerSec 各自都在 earlyLate() 里夹到 0,
+   * 上层的夹子去掉后输出逐位相同(实测三个丹 × 负数输入全部一致)。
+   * 本用例锁的是**结果**,不是那个夹子 —— 将来谁把下游的夹子动了,这里会红。
+   */
+  it('给定负境界,当算一层耗时与药力,则落在第 0 境,不落进负区间', () => {
+    expect(layerSeconds(-1), '负境界的结果须等于第 0 境').toBe(layerSeconds(0))
+    expect(layerSeconds(-999)).toBe(layerSeconds(0))
+    for (const def of PILLS.slice(0, 3)) {
+      expect(pillGainSecAt(def, -1), `${def.id} 负境界的结果须等于第 0 境`).toBe(pillGainSecAt(def, 0))
+      expect(pillGainSecAt(def, -999)).toBe(pillGainSecAt(def, 0))
+    }
+  })
 })
