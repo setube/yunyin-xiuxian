@@ -360,6 +360,19 @@ export function preflightScan(): string[] {
 }
 
 /**
+ * 分账是否已经是「干净的最终形态」:纯对象、键都是合法品阶、值都是非负整数。
+ * 只用来决定迁移能否提前返回;不合格的交给下面的规范化重写。
+ */
+function herbMapClean(raw: unknown): boolean {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isHerbGrade(Number(k))) return false
+    if (typeof v !== 'number' || !Number.isFinite(v) || !Number.isInteger(v) || v < 0) return false
+  }
+  return true
+}
+
+/**
  * 灵草五品迁移:旧档单标量 `herb` → 一律落凡品(品 1)分账(不丢草,幂等)。
  * 不按当前境界折算;凡品有出口(凡品方子、坊市按品出售),不会成死货。
  */
@@ -377,7 +390,15 @@ export function migrateHerbSlice(resources: Record<string, unknown>): Record<str
    * 下游 sanitize 会丢弃它,可迁移层的契约是「清掉旧字段」,
    * 留着它,下次迁移又会看见这个负标量。实测探针打到过这条。
    */
-  if (hasMap && scalar <= 0) {
+  /*
+   * 提前返回只对「分账本身已经干净」成立。
+   * 下面是脏档:数组 / null / 越界键 / 小数 / 负数。它们下游 sanitize 能兜住数值,
+   * 但迁移层的契约是「交进来就修好」—— 原样返回同一个引用意味着 migrateLocalSchema
+   * 判不出变化、不回写,脏数据会一直躺在 localStorage 里,每次启动重走一遍。
+   * 实测 `{ herbByGrade: [1,2,3] }`、`{ herbByGrade: { 1: 1.7 } }`、`{ herbByGrade: { 9: 3 } }`
+   * 都曾原样通过。
+   */
+  if (hasMap && scalar <= 0 && herbMapClean(resources.herbByGrade)) {
     if (!('herb' in resources)) return resources
     const trailing = { ...resources }
     delete trailing.herb
@@ -385,7 +406,8 @@ export function migrateHerbSlice(resources: Record<string, unknown>): Record<str
   }
   const next = { ...resources }
   const rawMap =
-    hasMap && resources.herbByGrade && typeof resources.herbByGrade === 'object'
+    // 数组不是合法分账:若按 Object.entries 读,下标 1/2/3 会被当成品阶,数据彻底变形
+    hasMap && resources.herbByGrade && typeof resources.herbByGrade === 'object' && !Array.isArray(resources.herbByGrade)
       ? (resources.herbByGrade as Record<string, unknown>)
       : {}
   const clean: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
