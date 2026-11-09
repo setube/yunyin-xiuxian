@@ -379,6 +379,8 @@ if (startupOnly) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await seedSave(context, stress ? stressSlices(itemCount) : lateSlices());
   const page = await context.newPage();
+  // 限速须在导航前装,否则这一段量到的是未限速的启动
+  await throttle(context, page);
   await page.goto(base + "#/", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
   const marks = await page.evaluate(() =>
@@ -412,7 +414,13 @@ if (startupOnly) {
    * 行囊上限 120 件 ≈ 36KB,stress 夹具已接近最坏情况 —— 玩家再怎么样也不会比它更差。
    * 故 250ms 是「最坏情况再留一倍余量」,不是随手取整。
    */
-  const STARTUP_BUDGET_MS = Number(process.env.PERF_STARTUP_MS ?? 250);
+  /*
+   * 启动预算同样按限速倍数放宽。
+   *
+   * 250ms 是给不限速基线(实测 108ms)定的;4x 下实测 346ms,各段都按 4 倍放大
+   * (模块加载 57→144、sanitize 17→68、mount 27→109)。拿绝对 250ms 卡限速档只会误报。
+   */
+  const STARTUP_BUDGET_MS = Number(process.env.PERF_STARTUP_MS ?? 250) * Math.max(1, Math.min(cpuRate, 4));
   if (last !== null) {
     const total = Math.round(last * 100) / 100;
     console.log(`  ${"(启动合计)".padEnd(20)} ${total}ms`);
