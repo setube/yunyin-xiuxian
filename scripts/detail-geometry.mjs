@@ -824,14 +824,47 @@ async function runTouchTargets() {
     if (/^(file|data|blob):/.test(url)) return r.continue()
     return r.abort()
   })
-  // major 18:悟道兑换(18 起)、洞府灵脉、道童这些整块才渲染 —— 用默认前期档量等于没量
-  await seedSave(context, slices({ major: 18 }))
+  /*
+   * major 18:悟道兑换(18 起)、洞府灵脉、道童这些整块才渲染 —— 用默认前期档量等于没量。
+   *
+   * 另补两块「有存档才长出来的按钮」:
+   *  - loadouts:构筑快照行的读档/删除钮,/build 里没有快照就只剩「存当前构筑」一颗;
+   *  - apprentice:道童卡上的派遣/收成钮,门中没有道童时整块不渲染。
+   * 缺这两块时,那几颗钮在后期档里永远量不到,触控下限也就无从验起。
+   */
+  const touchSeed = slices({ major: 18 })
+  touchSeed.loadouts = {
+    list: [
+      { id: 'tg_lo1', name: '青云剑修', seal: '剑', mainGongfa: null, subGongfa: [], artifactIds: [], equipment: {}, savedAt: 1 },
+      { id: 'tg_lo2', name: '丹道长生', seal: '丹', mainGongfa: null, subGongfa: [], artifactIds: [], equipment: {}, savedAt: 2 }
+    ]
+  }
+  touchSeed.apprentice = {
+    apprentices: [
+      { uid: 'tg_ap1', archId: 'ap_lingtong', task: null, level: 1, bornAt: 0, taskEndsAt: 0 },
+      { uid: 'tg_ap2', archId: 'ap_lingtong', task: null, level: 1, bornAt: 0, taskEndsAt: 0 }
+    ],
+    rebirthKarma: 0
+  }
+  await seedSave(context, touchSeed)
   const page = await context.newPage()
   page.on('pageerror', e => fail(`[触控] 运行时异常:${e.message}`))
 
   for (const route of TOUCH_ROUTES) {
     await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
     await page.waitForTimeout(1200)
+    /*
+     * 先确认真的落到了这一页。
+     *
+     * 原先 goto 之后等 1200ms 就量 —— 懒加载慢、被守卫弹走、或视图整块没渲染时,
+     * 量到的是上一页(或首页)的控件,而上一页的控件也是达标的,
+     * 于是「这一页查过了」写进输出,实际一次也没量。与 aria-check 同一个毛病。
+     */
+    const landed = await page.evaluate(h => location.hash === '#' + h, route)
+    if (!landed) {
+      fail(`[触控] ${route} 导航没落到目标页(hash=${await page.evaluate(() => location.hash)}),本页未量`)
+      continue
+    }
     await page.evaluate(() => {
       for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
       Math.random = () => 1
@@ -877,19 +910,34 @@ async function runTouchTargets() {
      * 页面整体没渲染出来就必然报红。改了页面密度时这张表要跟着核。
      */
     /*
-     * 「量到几个控件」是防空跑的自检,只对原有十页设数量线 ——
-     * 它们的控件数是稳定的(行囊 25、名号 23、战力 29 这类),塌掉一半也还够 5。
+     * 防空跑自检:每页都要量到「该页应有的控件数」。
      *
-     * 新并入的七页不设线:它们的内容随前序路由累积的状态浮动。
-     * 实测 /build 单独打开有 349 字、7 颗钮,但在这个脚本里(先走过十页、
-     * Math.random 已被固定成 1)只剩 49 字、2 颗钮 —— 给它定任何数量线,
-     * 报出来的红都是「夹具不合」而非「页面坏了」,最后只能把判据关掉。
-     * 这几页真正要验的是「每个可见控件都不小于 28px」,而空集合天然通过:
-     * 页面若整块没渲染,这条会静默通过,但触控这一项对它本就没有意义。
+     * 一刀切 ≥5 会误报 world(1)/souls(3)/collection(2)/legacy(0)——它们本来就稀疏。
+     * 故按本脚本实测的基线(顺序走完十七页、Math.random 已固定成 1)取六成下限:
+     * 塌掉一小半仍能过,整块没渲染必然报红。
+     * legacy 那页确实没有控件,给它留 0,改由下面的正文长度兜底。
      */
-    const STABLE = new Set(['/', '/cultivation', '/adventure', '/inventory', '/character', '/market', '/celestial', '/titles', '/dongfu', '/settings'])
-    if (STABLE.has(route) && measured.seen < 5) {
-      fail(`[触控] ${route} 只量到 ${measured.seen} 个控件(应 ≥5),判据没跑到东西`)
+    const BASE_SEEN = {
+      '/': 6, '/cultivation': 12, '/adventure': 6, '/inventory': 23, '/character': 24,
+      '/celestial': 7, '/market': 9, '/titles': 23, '/dongfu': 16, '/settings': 13,
+      '/codex': 7, '/build': 8, '/apprentice': 12
+    }
+    /*
+     * 只对控件数不随夹具浮动的那几页设线。
+     *
+     * /build 与 /apprentice 原先也在「浮动」之列 —— 根因是夹具没铺 loadouts 与 apprentice,
+     * 那几颗条件按钮根本不渲染。补上后控件数稳定(/build 8、/apprentice 12),故一并纳入。
+     * 仍不设线的只有 world(1)/souls(3)/collection(2)/legacy(0):它们本来就稀疏,
+     * 没有「漏渲染的按钮」可言,给数字线只会误报。这几页改验正文长度。
+     * 落点已在上方单独验过,这里只补「页面确实渲染了东西」这一道。
+     */
+    const base = BASE_SEEN[route]
+    if (base !== undefined && measured.seen < Math.floor(base * 0.6)) {
+      fail(`[触控] ${route} 只量到 ${measured.seen} 个控件(基线 ${base}),判据没跑到东西`)
+    }
+    if (base === undefined) {
+      const len = await page.evaluate(() => (document.querySelector('main')?.innerText || '').length)
+      if (len < 40) fail(`[触控] ${route} 正文只有 ${len} 字,页面可能没渲染`)
     }
     if (measured.small.length) fail(`[触控] ${route} 有控件低于 28px:${measured.small.slice(0, 4).join(' | ')}`)
   }
