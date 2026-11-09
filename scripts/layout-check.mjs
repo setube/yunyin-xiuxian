@@ -1399,7 +1399,16 @@ for (const vp of VIEWPORTS) {
     Math.random = () => 1
   })
   await page.waitForTimeout(400)
-  for (const route of ['/', '/cultivation', '/adventure', '/inventory', '/character', '/codex', '/celestial', '/souls', '/collection', '/build', '/dongfu', '/market', '/apprentice', '/titles', '/legacy', '/world', '/settings']) {
+  /*
+   * 吃主清单 ROUTES,不另写一份。
+   *
+   * 这里原先是一行内联的 17 条,与上面的 ROUTES 各写各的 ——
+   * 加路由时容易只改一处,而漏掉的那一份不会有任何提示:
+   * /codex /titles /settings /legacy /world 五页就因此在后期档下从没量过,
+   * 而 /codex 有九处读 player.major,正是后期档最该覆盖的。
+   * 两条线跑的是同一套尺子(measurePage + measureTabRail + 200% 缩放),没有理由分家。
+   */
+  for (const route of ROUTES) {
     await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
     await page.waitForTimeout(700)
     const info = await measurePage(page)
