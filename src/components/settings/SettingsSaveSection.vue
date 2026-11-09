@@ -22,6 +22,16 @@
       -->
       <button class="-my-1 mt-1 block min-h-[28px] py-1 text-ink-faint underline active:text-ink-soft" @click="ui.corruptedNotice = []">知道了</button>
     </p>
+    <!--
+      与坏档提示同一个理由:启动 toast 只有几秒,错过那一下的玩家不会再被提醒,
+      而两页各写各的会静默丢进度。故常驻一条,状态翻转时由订阅驱动。
+    -->
+    <p
+      v-if="otherTabSaving"
+      class="rounded-md border border-amber-ink/40 px-2 py-1.5 text-[11px] leading-relaxed text-amber-ink"
+    >
+      存档已在另一页打开 · 两页会互相覆盖
+    </p>
     <div class="grid grid-cols-2 gap-2">
       <button class="btn-ghost !text-[12px] w-full" @click="onExport">导出存档</button>
       <button class="btn-ghost !text-[12px] w-full" @click="triggerImport">导入存档</button>
@@ -92,7 +102,14 @@
   import { exportSaveToDevice } from '@/core/savePlatform'
   import { formatLastExport, shouldPromptBackup } from '@/core/saveBackup'
   import { formatDuration, formatStamp } from '@/utils/format'
-  import { SAVE_VERSION, STORE_NAMES, saveWriteFailure, subscribeSaveWriteFailure } from '@/utils/storage'
+  import {
+    SAVE_VERSION,
+    STORE_NAMES,
+    isOtherTabSaving,
+    saveWriteFailure,
+    subscribeOtherTabSave,
+    subscribeSaveWriteFailure
+  } from '@/utils/storage'
   import BaseModal from '@/components/common/BaseModal.vue'
 
   const settings = useSettingsStore()
@@ -100,6 +117,8 @@
   const ui = useUiStore()
 
   const saveFailed = ref(saveWriteFailure() !== null)
+  /** 另一页是否也开着:常驻指示,不靠会消失的 toast */
+  const otherTabSaving = ref(isOtherTabSaving())
   /** 被隔离的分片(启动时 preflightScan 记下) */
   const corruptedNotice = computed<string[]>(() => ui.corruptedNotice)
 
@@ -125,10 +144,19 @@
     saveFailed.value = failure !== null
   })
 
+  /*
+   * 另一页开合时跟着翻。订阅只在状态翻转时回调,而组件可能晚于翻转才挂载,
+   * 故初值取 isOtherTabSaving(),订阅只负责后续变化。
+   */
+  const unsubscribeOtherTab = subscribeOtherTabSave(active => {
+    otherTabSaving.value = active
+  })
+
   // 弹窗开着就离页时兜底恢复引擎
   onUnmounted(() => {
     unmounted = true
     unsubscribeSaveFailure()
+    unsubscribeOtherTab()
     saveRead?.abort()
     saveRead = null
     if (resetConfirm.value || importConfirm.value) engine.resume()
