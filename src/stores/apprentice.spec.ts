@@ -210,6 +210,27 @@ describe('收徒 · 派发与收割', () => {
     expect(t!.finishAt).toBe(now + 60_000)
   })
 
+  /*
+   * 负 finishAt 的任务整条置闲 —— 与负 startAt 的处理不同。
+   *
+   * finishAt 夹成 0 之后,`finishAt >= startAt`(startAt 已被夹到 >= 0)
+   * 只在 startAt 也为 0 时才成立;两个都为 0 意味着「零时长任务」,
+   * 开局即收割。所以这里的 Math.max 只是把「负」和「0」并成一档,
+   * 真正拦下它的是随后的 finishAt >= startAt。
+   */
+  it('sanitize:负 finishAt 的任务置闲,不会变成零时长任务', () => {
+    const a = useApprenticeStore()
+    a.$patch({
+      apprentices: [
+        make('ap_luanniao', { task: { spec: 'herb', startAt: 0, finishAt: -1 } }),
+        make('ap_daotong', { task: { spec: 'ore', startAt: 100, finishAt: -1e9 } })
+      ] as never
+    })
+    a.sanitize()
+    expect(a.apprentices[0]!.task, '零时长的任务该置闲').toBeNull()
+    expect(a.apprentices[1]!.task, '结束早于开始的任务该置闲').toBeNull()
+  })
+
   it('sanitize:坏弟子整位丢弃、坏任务当作闲置、坏等级/羁绊夹回', () => {
     const a = useApprenticeStore()
     a.$patch({
