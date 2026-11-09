@@ -27,6 +27,8 @@ import { usePacingTelemetry } from '@/stores/pacingTelemetry'
 import { PERSISTED_STORES } from '@/utils/storage'
 import { prepareReincarnation, confirmReincarnation } from './reincarnation'
 import { gn, toNum } from '@/utils/gnum'
+import { daoFruitGain } from './formulas'
+import { MAX_MAJOR, REBIRTH_REFERENCE_MAJOR, WORLD_BREAK_MAJOR } from '@/data/realms'
 import {
   daoFruitAfterLives,
   FRUIT_PER_LIFE,
@@ -502,4 +504,28 @@ describe('轮回审计 · 坏档世数', () => {
     expect(talentsAfterLives(-5)).toBeGreaterThanOrEqual(0)
     expect(talentsAfterLives(-1)).toBe(0)
   })
+
+/** 每世道果的参照终点,被 daoFruitCurve / rebirthRoi 一族当基线;它漂了所有曲线对拍照样"通过" */
+describe('轮回审计 · 每世道果的口径', () => {
+  it('给定参照终点,当算每世道果,则等于飞升真仙那一档而不是满级', () => {
+    expect(REBIRTH_REFERENCE_MAJOR, '轮回经济的参照终点是飞升门槛,不是满级').toBe(WORLD_BREAK_MAJOR)
+    expect(FRUIT_PER_LIFE).toBe(daoFruitGain(REBIRTH_REFERENCE_MAJOR, 9))
+    /*
+     * 钉住 168 这个数本身。daoFruitGain 是 (i+1)*DAO_FRUIT_PER_MAJOR 的前缀和 ——
+     * 任一常量一改,曲线审计里的「第 N 世」全部跟着漂,而它内部只做横向对照、
+     * 不做绝对量校验,所以漂了也不会红。
+     */
+    expect(FRUIT_PER_LIFE, '每世道果口径变了(改常量请同步核 daoFruitCurve 的对照基准)').toBe(168)
+  })
+
+  it('给定满级,当算每世道果,则明显高于飞升档 —— 仙界以上是另一套经济', () => {
+    /*
+     * 实测 4.14 倍(696 vs 168)。判据只验「显著高于」,不钉具体倍数 ——
+     * 仙界以上还有十一境,这个比值随境界表长度自然变,钉死会变成每次加境界都要改。
+     */
+    const top = daoFruitGain(MAX_MAJOR, 9)
+    expect(top, '满级该远高于飞升档,否则「另一套经济」无从谈起').toBeGreaterThan(FRUIT_PER_LIFE * 3)
+    expect(top / FRUIT_PER_LIFE, '也不该高到让飞升档显得毫无意义').toBeLessThan(FRUIT_PER_LIFE)
+  })
+})
 })
