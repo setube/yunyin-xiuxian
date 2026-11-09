@@ -369,9 +369,34 @@ function bossEcologyFits(w: MortalWorld): boolean {
 }
 
 export function auditMortalWorld(w: MortalWorld, runs = 12): MortalAudit {
-  const rates = BUILD_PROFILES.map((p, i) => ({ name: p.name, rate: runChain(i, w, runs, w.seed + i * 977) })).sort(
-    (a, b) => b.rate - a.rate
+  return auditMortalWorldFrom(
+    BUILD_PROFILES.map((p, i) => ({ name: p.name, rate: runChain(i, w, runs, w.seed + i * 977) })),
+    w
   )
+}
+
+/**
+ * 分块版:每算完一个构筑让出主线程一拍。
+ *
+ * 同步版一次跑完 6 构筑 × runs 次 × 链长段战斗,实测单次审计 42ms ——
+ * 凝界在观众面前连试几个种子,主线程被反复独占,进页面时玩家看到的是卡住。
+ *
+ * 分块后每块的量级降到 1/6(约 7ms),浏览器有机会在两块之间渲染与响应输入。
+ * **判定结果与同步版逐位相同**:只是把同一个 map 拆开跨界等,没有改任何算式。
+ */
+export async function auditMortalWorldAsync(w: MortalWorld, runs = 12): Promise<MortalAudit> {
+  const rates: { name: string; rate: number }[] = []
+  for (let i = 0; i < BUILD_PROFILES.length; i += 1) {
+    const p = BUILD_PROFILES[i]!
+    rates.push({ name: p.name, rate: runChain(i, w, runs, w.seed + i * 977) })
+    await new Promise(res => setTimeout(res, 0))
+  }
+  return auditMortalWorldFrom(rates, w)
+}
+
+/** 由已算好的各构筑胜率收尾(同步与分块两条路共用,避免判定逻辑分叉) */
+function auditMortalWorldFrom(raw: { name: string; rate: number }[], w: MortalWorld): MortalAudit {
+  const rates = [...raw].sort((a, b) => b.rate - a.rate)
   const viable = rates.filter(r => r.rate >= VIABLE_MIN).length
   const top = rates[0]!.rate
   const runnerRatio = top > 0 ? rates[1]!.rate / top : 0
