@@ -19,7 +19,16 @@ import {
   gameDay
 } from './formulas'
 import { powerBreakdownRows, powerExplainText } from '@/ui/powerText'
-import { COMBAT_MAJOR_GROWTH, COMBAT_SUB_GROWTH, LATE_COMBAT_GROWTH } from '@/data/constants'
+import {
+  COMBAT_MAJOR_GROWTH,
+  COMBAT_SUB_GROWTH,
+  CULT_MAJOR_SPEED_GROWTH,
+  CULT_SUB_SPEED_GROWTH,
+  EXP_MAJOR_GROWTH,
+  LATE_COMBAT_GROWTH,
+  LATE_CULT_SPEED_GROWTH,
+  LATE_EXP_GROWTH
+} from '@/data/constants'
 import { WORLD_BREAK_MAJOR, MAX_MAJOR } from '@/data/realms'
 
 describe('GameFormula 成长曲线', () => {
@@ -322,5 +331,50 @@ describe('GameFormula · 战斗乘区的增长系数', () => {
     // 3.8^9 × 4.6^11 ≈ 3.2e12。只验数量级:钉死具体值会让「调倍率」变成解方程
     expect(span, '0→最高境的战力跨度该是万亿级').toBeGreaterThan(1e11)
     expect(span, '也不该到千万亿级').toBeLessThan(1e14)
+  })
+})
+
+
+/**
+ * 修为需求与修炼速度是**一对配套曲线**,单看任一条都没意义。
+ *
+ * constants.ts 的注释写着:每境净耗时 ≈ 需求倍率 / 基础速度倍率 = 19 / 5.2 ≈ ×3.65,
+ * 「只动一边会改曲线形状(前期秒过、后期陡崖)」。
+ * 而这四个常量此前零判据 —— 既有测试拿它们当工具算别的东西,改了照样绿。
+ */
+describe('GameFormula · 修为需求与修炼速度的配套', () => {
+  it('给定人间界每境,当算净耗时,则每境恒定乘 EXP_MAJOR_GROWTH / CULT_MAJOR_SPEED_GROWTH', () => {
+    const want = EXP_MAJOR_GROWTH / CULT_MAJOR_SPEED_GROWTH
+    for (let m = 1; m <= WORLD_BREAK_MAJOR; m += 1) {
+      const cur = toNum(expRequirement(m, 0)) / baseCultPerSec(m, 0)
+      const prev = toNum(expRequirement(m - 1, 0)) / baseCultPerSec(m - 1, 0)
+      expect(cur / prev, `第 ${m} 境的净耗时应乘 ${want.toFixed(2)}`).toBeCloseTo(want, 4)
+    }
+  })
+
+  it('给定界外每境,当算净耗时,则改用 LATE_EXP_GROWTH / LATE_CULT_SPEED_GROWTH', () => {
+    const want = LATE_EXP_GROWTH / LATE_CULT_SPEED_GROWTH
+    for (let m = WORLD_BREAK_MAJOR + 1; m <= MAX_MAJOR; m += 1) {
+      const cur = toNum(expRequirement(m, 0)) / baseCultPerSec(m, 0)
+      const prev = toNum(expRequirement(m - 1, 0)) / baseCultPerSec(m - 1, 0)
+      expect(cur / prev, `第 ${m} 境的净耗时应乘 ${want.toFixed(2)}`).toBeCloseTo(want, 4)
+    }
+  })
+
+  it('给定四个系数,当读常量,则仍是配套的 19/5.2 与 4.6/3.2', () => {
+    expect(EXP_MAJOR_GROWTH, '人间界需求倍率').toBe(19)
+    expect(CULT_MAJOR_SPEED_GROWTH, '人间界速度倍率 —— 与 19 配套,单改会改曲线形状').toBe(5.2)
+    expect(LATE_EXP_GROWTH, '界外需求倍率').toBe(4.6)
+    expect(LATE_CULT_SPEED_GROWTH, '界外速度倍率 —— 与 4.6 配套').toBe(3.2)
+    expect(CULT_SUB_SPEED_GROWTH, '小层速度递进').toBe(1.06)
+  })
+
+  it('给定 0→最高境,当算净耗时跨度,则落在「年」的量级而不是「世纪」', () => {
+    const span =
+      toNum(expRequirement(MAX_MAJOR, 0)) / baseCultPerSec(MAX_MAJOR, 0) /
+      (toNum(expRequirement(0, 0)) / baseCultPerSec(0, 0))
+    // 实测约 6.3e6 倍。只验数量级:钉死会让「调节奏」变成解方程
+    expect(span, '0→最高境的净耗时跨度该在百万级').toBeGreaterThan(1e5)
+    expect(span, '也不该到十亿级').toBeLessThan(1e9)
   })
 })
