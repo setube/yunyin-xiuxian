@@ -364,6 +364,19 @@ for (const route of ROUTES) {
     // 每根链接前回到本路由:上一根可能已跳走
     await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
     await page.waitForTimeout(300)
+    /*
+     * 先收掉残留弹窗再点导航。
+     *
+     * 引擎每秒有 8% 概率弹「悟道顿悟」(5 分钟冷却),而这里每根链接都要回本路由重等 300ms ——
+     * 恰好撞上那次弹出时,遮罩会挡住链接。实测连跑六次有一次复现五条
+     * 「导航被浮层挡住,仍停在 #/」,挡路元素的类名正是顿悟弹窗里的文字。
+     * 那不是缺陷(弹窗有「忽略」按钮,玩家点得掉),只是本脚本没先收拾干净。
+     */
+    for (let layer = 0; layer < 4 && (await page.locator('.modal-panel').count()) > 0; layer += 1) {
+      await page.keyboard.press('Escape').catch(() => {})
+      await page.waitForTimeout(80)
+      await page.waitForFunction(sel => document.querySelector(sel) === null, FADING, { timeout: 1000 }).catch(() => {})
+    }
     const link = page.locator(`a[href="${href}"]`).first()
     if (!(await link.isVisible().catch(() => false))) continue
     const before = errors.length
