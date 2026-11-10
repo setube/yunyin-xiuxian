@@ -47,7 +47,12 @@ export function bearableRank(major: number): number {
 
 /** 超规格惩罚:不禁止,只陡峭 */
 export function overReachFactor(over: number): number {
-  if (over <= 0) return 1
+  /*
+   * `over <= 0` 挡不住 NaN(与任何数比较都是 false),而 NaN 会一路走到
+   * `TABLE[NaN]` → undefined → 再进 pow 变成 NaN,把整条成功率算式污染掉。
+   * 签名收的是 number,这里是防接口误用 —— 那就把误用挡全。
+   */
+  if (!Number.isFinite(over) || over <= 0) return 1
   // 先取整再查表:签名收的是 number,而 TABLE 只认整数下标 ——
   // 传 1.5 时 `TABLE[1.5]` 是 undefined,`!` 会把它当有效值一路传进成功率算式。
   // 生产路径上 over = craft.rank - bearableRank(major) 恒为整数,这里是防接口误用。
@@ -76,10 +81,23 @@ export function weightedSkill(craft: RecipeCraft, levelOf: (id: SkillId) => numb
 }
 
 /** 合成成功率:四个乘区各有下限,任何一项都不会把成功率直接归零 */
+/**
+ * 夹到 [0,1];坏值(NaN/Infinity)按 0 计。
+ *
+ * `Math.max(0, Math.min(1, NaN))` 仍是 NaN,而这三个乘区任一进 NaN,
+ * 整条成功率就变 NaN —— 下游 `rate >= roll` 恒 false,炼丹必失败、买入失败。
+ * 入参当前由 lore.sanitize 的 clampMap(Number.isFinite 过滤)保证,
+ * 但这个函数是导出的,不该依赖调用方替它守。
+ */
+function fraction(v: number): number {
+  if (!Number.isFinite(v)) return 0
+  return Math.max(0, Math.min(1, v))
+}
+
 export function composeSuccessRate(mastery: number, matLore: number, skill: number, over: number): number {
-  const masteryFactor = 0.22 + 0.78 * Math.max(0, Math.min(1, mastery))
-  const loreFactor = 0.42 + 0.58 * Math.max(0, Math.min(1, matLore))
-  const skillFactor = 0.3 + 0.7 * Math.max(0, Math.min(1, skill / 100))
+  const masteryFactor = 0.22 + 0.78 * fraction(mastery)
+  const loreFactor = 0.42 + 0.58 * fraction(matLore)
+  const skillFactor = 0.3 + 0.7 * fraction(skill / 100)
   return CRAFT_BASE_RATE * masteryFactor * loreFactor * skillFactor * overReachFactor(over)
 }
 
