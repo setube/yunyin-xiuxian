@@ -51,3 +51,89 @@ describe('edge-states · 坏值扫描的口径', () => {
     expect(SCENE, '寿元加算项也要灌巨值').toContain('lifespanBonusYears = Number.MAX_VALUE')
   })
 })
+
+/**
+ * 两个脚本要同一套口径。
+ *
+ * `ui-smoke` 用**好人存档**走 22 页并点击交互,`edge-states` 用**坏档**走 18 个路由 ——
+ * 覆盖面互补,缺一处就漏一半。两个脚本各写各的模式表,历史上就是
+ * `ui-smoke` 停在 `['NaN','Infinity','undefined']` 而 `edge-states` 已经认五类。
+ *
+ * 这里不比对字面量(两份代码形态不同:一个用正则、一个原本用 includes),只比**行为**:
+ * 同一批样本喂给两边的模式表,结论必须一致。
+ */
+describe('坏值扫描 · 两个脚本同口径', () => {
+  const SMOKE = readFileSync(resolve(__dirname, '../../scripts/ui-smoke.mjs'), 'utf-8')
+
+  /**
+   * 从 ui-smoke 源码里取出 NUMERIC_LEAK 那一组正则。
+   *
+   * 按**行**取,不按 `]` 截断:`/[0-9]e\+?[0-9]{2,}/g` 这种模式里带 `]`,
+   * 按字符找右括号会把它截断(实测只取到 4 条而不是 6 条)。
+   * 每条模式都独占一行,形如 `  /.../g,` 或 `  /.../g`。
+   */
+  function smokePatterns(): RegExp[] {
+    const at = SMOKE.indexOf('const NUMERIC_LEAK = [')
+    const end = SMOKE.indexOf('\n]', at)
+    const block = SMOKE.slice(at, end)
+    const out: RegExp[] = []
+    for (const line of block.split('\n')) {
+      const s = line.trim()
+      if (!s.startsWith('/')) continue
+      // 取最后一个 `/g` 作为结束定界符(`/` 在模式正文里不会以 /g 结尾的形式出现)
+      const close = s.lastIndexOf('/g')
+      if (close < 0) continue
+      out.push(new RegExp(s.slice(1, close), 'g'))
+    }
+    return out
+  }
+
+  /** edge-states 里那条扫描正则(整行一条,末尾是 /g) */
+  function edgePatterns(): RegExp {
+    const at = SRC.indexOf('const re = /')
+    const line = SRC.slice(at, SRC.indexOf('\n', at))
+    const close = line.lastIndexOf('/g')
+    return new RegExp(line.slice(line.indexOf('/') + 1, close), 'g')
+  }
+
+  const HIT = [
+    '1.7976931348623157e+308', // 裸插值的有限巨值
+    '1.80e308',               // formatGN 兜底
+    'Invalid Date',           // 超范围时间戳的英文输出
+    'NaN',
+    'Infinity',
+    'undefined',
+    '[object Object]'
+  ]
+  const CLEAN = [
+    '寿元 3000/1000亿 载',
+    '2026/11/10 21:09 收录',
+    '9.038兆 · 1,200 道源',
+    '异界 · 器魂 · 秘境'
+  ]
+
+  it('ui-smoke 的模式表认得全部七类坏值', () => {
+    const pats = smokePatterns()
+    expect(pats.length, '没从 ui-smoke 里取到模式表').toBeGreaterThanOrEqual(6)
+    for (const s of HIT) {
+      expect(pats.some(p => new RegExp(p.source, 'g').test(s)), `ui-smoke 漏了「${s}」`).toBe(true)
+    }
+  })
+
+  it('ui-smoke 的模式表对正常文案零误报', () => {
+    const pats = smokePatterns()
+    for (const s of CLEAN) {
+      expect(pats.some(p => new RegExp(p.source, 'g').test(s)), `ui-smoke 误报「${s}」`).toBe(false)
+    }
+  })
+
+  it('edge-states 的正则也认得全部七类', () => {
+    const re = edgePatterns()
+    for (const s of HIT) {
+      expect(new RegExp(re.source, 'g').test(s), `edge-states 漏了「${s}」`).toBe(true)
+    }
+    for (const s of CLEAN) {
+      expect(new RegExp(re.source, 'g').test(s), `edge-states 误报「${s}」`).toBe(false)
+    }
+  })
+})
