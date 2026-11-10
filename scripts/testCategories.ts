@@ -11,7 +11,7 @@ export interface TestCategory {
 export const TEST_CATEGORIES: readonly TestCategory[] = [
   {
     name: 'Unit        数值纯函数',
-    match: ['gnum', 'format', 'setMath', 'saveShape', 'savePlaintext', 'useNativeInsets', 'formulas', 'forgeUpgrade', 'forgeArtifactBatch', 'linggenGen', 'linggenShape', 'inventoryShape', 'equipGen', 'equipmentIcon', 'crypto', 'quests', 'craftability', 'reforge.spec', 'reforgeAuto', 'theme', 'savePersistence', 'dongfu.spec', 'inventory.spec', 'ui.spec', 'inventoryNote', 'affixTransfer.spec', 'affixes', 'appVersion', 'timeUnits', 'random.spec', 'colorToken', 'otherTabDetection', 'truncateCodePoints', 'nameTruncate', 'codePointTruncateAudit', 'fixtureParity', 'utils/id.spec']
+    match: ['gnum', 'format', 'setMath', 'saveShape', 'savePlaintext', 'useNativeInsets', 'formulas', 'forgeUpgrade', 'forgeArtifactBatch', 'linggenGen', 'linggenShape', 'inventoryShape', 'equipGen', 'equipmentIcon', 'crypto', 'quests', 'craftability', 'reforge.spec', 'reforgeAuto', 'theme', 'savePersistence', 'dongfu.spec', 'inventory.spec', 'ui.spec', 'inventoryNote', 'affixTransfer.spec', 'affixes', 'appVersion', 'timeUnits', 'random.spec', 'colorToken', 'otherTabDetection', 'truncateCodePoints', 'nameTruncate', 'codePointTruncateAudit', 'fixtureParity', 'utils/id.spec', 'edgeStatesShape']
   },
   {
     name: 'Combat      战斗规则',
