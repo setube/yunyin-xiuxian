@@ -25,6 +25,23 @@ describe('备份账目', () => {
     expect(formatLastExport(0, NOW)).toBe('从未导出')
   })
 
+  /*
+   * `now` 非有限值时要整块作废,不能让 NaN 流到分档上。
+   *
+   * 变异扫描报 `if (!Number.isFinite(now)) return null` 改坏不红。
+   * 去掉后 (NaN - lastExportAt)/DAY 得 NaN,Math.floor/max 都保留 NaN,
+   * 于是 daysSinceExport 返回 NaN 而不是 null —— backupAdvice 里
+   * `days === null` 不成立,再判 `NaN >= BACKUP_STALE_DAYS` 得 false,
+   * 结果是「三天没导出」被误报成 fresh,备份提醒就此哑掉。
+   */
+  it('now 坏掉时按「从未导出」处理,不许把 NaN 当天数', () => {
+    const threeDaysAgo = daysAgo(3)
+    expect(daysSinceExport(threeDaysAgo, NaN)).toBeNull()
+    expect(daysSinceExport(threeDaysAgo, Infinity)).toBeNull()
+    expect(backupAdvice(threeDaysAgo, NaN), '坏 now 不该被判成 fresh').toBe('never')
+    expect(formatLastExport(threeDaysAgo, NaN)).toBe('从未导出')
+  })
+
   it('刚导出 / 隔了几天 / 过了阈值:分档与文案', () => {
     expect(formatLastExport(NOW - 1000, NOW)).toBe('今天')
     expect(formatLastExport(daysAgo(1), NOW)).toBe('1 天前')
