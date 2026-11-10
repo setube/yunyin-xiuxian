@@ -26,6 +26,13 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      # 依赖缓存:setup-bun 的缓存只覆盖 bun 可执行文件,不覆盖包本体
+      - name: 缓存依赖
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
       - name: 安装依赖
         run: bun install --frozen-lockfile
       - name: 校验本分支全部提交 (conventional)
@@ -56,6 +63,13 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      # 依赖缓存:setup-bun 的缓存只覆盖 bun 可执行文件,不覆盖包本体
+      - name: 缓存依赖
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
       - name: 安装依赖
         run: bun install --frozen-lockfile
       - name: 类型检查 + ESLint
@@ -80,6 +94,13 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      # 依赖缓存:setup-bun 的缓存只覆盖 bun 可执行文件,不覆盖包本体
+      - name: 缓存依赖
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
       - name: 安装依赖
         run: bun install --frozen-lockfile
       - name: 改坏守卫验证判据
