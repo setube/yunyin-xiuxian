@@ -17,7 +17,10 @@ jobs:
   commit-lint:
     name: 提交信息与标题校验
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 10 分钟本是「装依赖 + 跑几十条 commitlint」的估计。registry 单请求实测 12.5 秒时,
+    # 光装依赖就能吃满 10 分钟,这个 job 会因超时被判红 —— 而它要判的是提交信息,
+    # 跟装依赖快慢无关。抬到 20 让它在慢网下也能把结论跑出来。
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
