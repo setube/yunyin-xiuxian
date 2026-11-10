@@ -213,7 +213,13 @@ export const useLoreStore = defineStore(
         }
       }
       equipLore.value = seenFixed
-      studyFrac.value = Number.isFinite(studyFrac.value) ? Math.max(0, studyFrac.value) : 0
+      /*
+       * 研读进度是 [0,1) 的余数,上界同样要夹:MAX_VALUE 是有限数,过得了 isFinite,
+       * 之后每拍只涨一点点,要读满那个值才研读完一条 —— 藏经阁从此不再出新方。
+       */
+      studyFrac.value = Number.isFinite(studyFrac.value) && studyFrac.value >= 0 && studyFrac.value < 1
+        ? studyFrac.value
+        : 0
       seeded.value = seeded.value === true
     }
 

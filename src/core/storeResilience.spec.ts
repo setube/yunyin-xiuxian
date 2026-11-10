@@ -455,3 +455,93 @@ describe('坏档韧性 · 毒化之后不许残留负数', () => {
     })
   }
 })
+
+/**
+ * 坏档韧性 · 毒成「有限的巨大值」之后不许残留天文数字
+ *
+ * 上一条毒的是 -999,它只压到「下界」那一侧。而 `Number.isFinite` 挡不住**上界**:
+ * 坏档写 `age: 1e300` / `createdAt: 8640000000000001` 都是有限数,一路通过
+ * `asFiniteNumber`,再被渲染成 `1.00e300 载`、`NaN月NaN日`、`Invalid Date`。
+ *
+ * 这一条把每个持久化 store 的全部数值字段一次毒成 `Number.MAX_VALUE`,过 sanitize,
+ * 再扫「仍然天文数字」的残留。判据的阈值放过 GNum(它本来就按指数存大数)
+ * 与少数**合法**的大数值字段(列在 HUGE_OK 里并写明理由)。
+ */
+const HUGE_LIMIT = 1e15
+
+/**
+ * 这些字段本来就允许很大,列出来并写明理由 —— 不做白名单会逼着把真实设计改掉。
+ *
+ * 资源类(qi / ore / page / dust / wudao / daoSource)与修为:它们是玩家的存量,
+ * 走 `formatGN` 渲染,而 formatGN 对超出单位表的量级有**有意的**科学计数兜底
+ * (`1.80e308`),AGENTS.md 记着这一条。喂给它们的坏值不会崩、不会印 NaN,
+ * 只是显示成科学计数 —— 与「时间戳坏成不了日期」不是一回事。
+ * 上一段毒化以外的东西(refund/rounds 之类计数)由各自的 spec 负责。
+ */
+const HUGE_OK: Record<string, string[]> = {
+  /*
+   * lifespanBonusYears / age:上界是 lifespanOf(MAX_MAJOR) × 10 ≈ 1.01e16,
+   * 这个数**本身就是设计上限**(最高境界寿元的一万倍),不是残留 —— 判据要放过它。
+   * 真实游玩到不了,但它是被 sanitize 明确夹到这里的,不是漏网。
+   */
+  player: ['exp', 'lifespanBonusYears', 'age'],
+  resources: ['qi', 'ore', 'page', 'dust', 'wudao', 'spiritStone', 'herbByGrade'],
+  endgame: ['daoSource'],
+  game: [],
+  lore: ['skillExp'],
+  // 极端值下 age/lifespanBonusYears 会被夹回开局值,这里不该再剩
+  dongfu: [],
+  settings: []
+}
+
+/** 把一份 state 里的所有有限数字改成 Number.MAX_VALUE(保留字符串/布尔/结构形状) */
+function inflateNumbers(v: unknown, depth = 0): unknown {
+  if (depth > 6) return v
+  if (typeof v === 'number') return Number.MAX_VALUE
+  if (Array.isArray(v)) return v.map(x => inflateNumbers(x, depth + 1))
+  if (v && typeof v === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, x] of Object.entries(v)) out[k] = inflateNumbers(x, depth + 1)
+    return out
+  }
+  return v
+}
+
+/** 递归收集「仍然大得不像话」的有限数字 */
+function collectHuge(v: unknown, path: string, out: string[], depth = 0): void {
+  if (depth > 6) return
+  if (typeof v === 'number') {
+    if (Number.isFinite(v) && Math.abs(v) > HUGE_LIMIT) out.push(`${path}=${v}`)
+    return
+  }
+  if (Array.isArray(v)) {
+    v.forEach((x, i) => collectHuge(x, `${path}[${i}]`, out, depth + 1))
+    return
+  }
+  if (v && typeof v === 'object') {
+    if (isGNum(v)) return
+    for (const [k, x] of Object.entries(v)) collectHuge(x, `${path}.${k}`, out, depth + 1)
+  }
+}
+
+describe('坏档韧性 · 毒成有限巨值之后不留天文数字', () => {
+  for (const { name, use } of STORES) {
+    it(`${name}:全部数字灌成 MAX_VALUE 后,sanitize 不许留下天文数字`, () => {
+      setActivePinia(createPinia())
+      const store = use()
+      store.$patch(inflateNumbers(JSON.parse(JSON.stringify(store.$state ?? {}))) as never)
+      store.sanitize()
+      const huge: string[] = []
+      /*
+       * 只扫 `$state`,不扫整个 store —— 后者会走进 Pinia 内部的 `_p` / `_hmrPayload`,
+       * 那里装着 **computed getter 的缓存**(realm.lifespanYears、qiCapValue、finalStats…)。
+       * 那些是从坏输入算出来的派生值,不是持久化状态;把它们算进来等于要求「坏输入也别把算式算大」,
+       * 而真正的判据是「存下来的字段有没有被修好」。
+       */
+      collectHuge(JSON.parse(JSON.stringify(store.$state ?? {})), '', huge)
+      const allowed = HUGE_OK[name] ?? []
+      const bad = huge.filter(p => !allowed.some(a => p.split('=')[0]!.split('.').includes(a)))
+      expect(bad, `${name} 在灌成巨值之后残留了天文数字(界面会把它印给玩家看):\n${bad.join('\n')}`).toEqual([])
+    })
+  }
+})

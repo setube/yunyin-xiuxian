@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import type { FinalStats, GNum, LinggenProfile, StatMods, WorldId } from '@/types'
 import { gn, gnZero, add, gte, mulN, progress, subClamp } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
-import { realmDef, realmLabel, worldOf, WORLDS, SUB_NAMES, MAX_MAJOR } from '@/data/realms'
+import { realmDef, realmLabel, worldOf, WORLDS, SUB_NAMES, MAX_MAJOR, lifespanOf } from '@/data/realms'
 import { NAME_MAX_LENGTH, SUB_LEVELS, START_AGE } from '@/data/constants'
 import { QI_BANK_MULT, QI_RICH_RATIO } from '@/data/constants'
 import {
@@ -693,7 +693,17 @@ export const usePlayerStore = defineStore(
       // 负年龄与 NaN 一并修正:死亡判据是 age < lifespanMax,负年龄永远死不了,
       // 而 TopStatusBar 直接印 Math.floor(age),坏档会显示「寿元 -100/120」;
       // lifespanRatio 也会算出 >1 的值喂给血色档位判断
-      if (!Number.isFinite(age.value) || age.value < 0) age.value = START_AGE
+      /*
+       * 岁数只修「非有限 / 负数」还不够:坏档写 `age: 1e300` 是有限正数,照样过。
+       * 那会让寿元那一格印出 `1.00e300 载`(formatYears 的兜底),而死亡判据
+       * `age < lifespanMax` 恒假 —— 玩家永远死不了,也永远看不出档坏了。
+       * 上界取「最高境界寿元的 10 倍」:混沌道祖约 1.01e15 载(实测 lifespanOf(20),
+       * 不是我一开始估的 386 亿 —— 那个数漏了境界表里的分世界阶梯),
+       * 真实游玩再延寿也到不了它的十倍,超出的必定是坏档,按开局年龄重来。
+       * 上界本身要能被当数字读:再乘 1000 就成 1e18,和坏档没什么区别了。
+       */
+      const MAX_AGE_YEARS = lifespanOf(MAX_MAJOR) * 10
+      if (!Number.isFinite(age.value) || age.value < 0 || age.value > MAX_AGE_YEARS) age.value = START_AGE
       // 大阶是境界表下标、层数直接进公式
       major.value = Math.min(MAX_MAJOR, Math.max(0, Math.floor(asFiniteNumber(major.value, 0))))
       sub.value = Math.min(SUB_LEVELS - 1, Math.max(0, Math.floor(asFiniteNumber(sub.value, 0))))
@@ -707,10 +717,24 @@ export const usePlayerStore = defineStore(
        * lifespanMax 算出负数(实测炼气一层 150 → -849),玩家看到「寿元上限 -849 岁」,
        * 而 lifespanRatio 恒为 0,寿元条永远是空的。
        */
-      lifespanBonusYears.value = asFiniteNumber(lifespanBonusYears.value, 0, 0)
+      /*
+       * 加算项同样要有上界:它直接进 `base * (1+pct) + bonus`,负档已挡住,
+       * 但 1e300 这种有限巨值会让寿元上限变成天文数字 —— 界面印 `1.00e300 载`,
+       * 而 `age < lifespanMax` 永远成立,人物从此不老了。
+       */
+      lifespanBonusYears.value = Math.min(
+        lifespanOf(MAX_MAJOR) * 10,
+        asFiniteNumber(lifespanBonusYears.value, 0, 0)
+      )
       // 旧存档缺宿慧/履历/命题三项:按转世次数折算补齐
       const r = reincarnation.value
-      const count = Number.isFinite(r?.count) ? Math.max(0, r.count) : 0
+      /*
+       * 这里的 count 早于下面那次 `reincarnation.value = {...}` 的钳位,故须自带同样的上界 ——
+       * 它直接赋给 suppressLife,而 suppressLife 与「当前世号」比等号;
+       * 坏档写 MAX_VALUE 时两边都被写成它,镇压权益整块判定永远对不上。
+       */
+      const LIFE_COUNTER_CAP = 1_000_000
+      const count = Number.isFinite(r?.count) ? Math.min(LIFE_COUNTER_CAP, Math.max(0, Math.floor(r.count))) : 0
       // 旧存档无卦象一栏
       if (divination.value) {
         const d = divination.value
@@ -728,8 +752,8 @@ export const usePlayerStore = defineStore(
         const ok = Number.isFinite(p.bonus) && Number.isFinite(p.readyAt) && (p.kind === 'meditate' || p.kind === 'pill')
         if (!ok) breakthroughPrep.value = null
       }
-      // 旧存档无顿悟冷却一栏;0 = 从未顿悟
-      if (!Number.isFinite(enlightenmentAt.value) || enlightenmentAt.value < 0) enlightenmentAt.value = 0
+      // 旧存档无顿悟冷却一栏;0 = 从未顿悟。它是个时间戳,故与别处同一把尺(asTimestamp 挡超范围)
+      enlightenmentAt.value = Math.max(0, asTimestamp(enlightenmentAt.value, 0))
       if (fateFocus.value !== null && !STARS.some(s => s.id === fateFocus.value)) {
         fateFocus.value = null
       }
@@ -893,7 +917,8 @@ export const usePlayerStore = defineStore(
       }
       regionStats.value = fixedRegionStats
       // 巡游日期为 NaN 时「今日已抽」恒假,每 30 秒重掷一次
-      winStreak.value = Math.floor(asFiniteNumber(winStreak.value, 0, 0))
+      // 上界:连胜是计数,坏档写 MAX_VALUE 会让它永远涨不到头(界面印 1.79e308)
+      winStreak.value = Math.min(1_000_000, Math.floor(asFiniteNumber(winStreak.value, 0, 0)))
       /*
        * 日记号不许落在今天之后:闸门写的是 `lastCaveEventDay === today`,
        * 时钟调快过留下的未来日会让等号永不成立,每日巡游就此停摆(实测一年后的日期能一路通过)。
@@ -958,15 +983,23 @@ export const usePlayerStore = defineStore(
       // 槽数上限同 toggleArtifact/applyLoadout;截断保留先祭炼的,与「槽满时替换最早」顺序一致
       // sanitizeAll 里 player 先于 inventory:此处读到原始分片,形状须自兜
       inventory.equippedArtifacts = asStringArray(inventory.equippedArtifacts).slice(0, artifactSlotsFor(major.value))
+      /*
+       * 上界:计数与货币都只挡了下界(负数),而 `Number.isFinite` 挡不住 MAX_VALUE 这类**有限巨值**。
+       * `count` 决定本世号(suppressLife 用它与「当前世」比等号),写坏之后镇压权益整块判定永远对不上;
+       * `daoFruit` / `insight` 是可直接花掉的货币,界面会照 formatGN 印成 `1.80e308`。
+       * 1e6 远高于任何真实游玩量级(转世几百次、道果累计几千)。
+       */
+      const cappedInt = (v: unknown, fallback = 0): number =>
+        Math.min(LIFE_COUNTER_CAP, Math.max(0, Math.floor(Number.isFinite(v) ? (v as number) : fallback)))
       reincarnation.value = {
-        count,
-        daoFruit: Number.isFinite(r?.daoFruit) ? Math.max(0, r.daoFruit) : 0,
+        count: cappedInt(count),
+        daoFruit: cappedInt(r?.daoFruit),
         // 集合须去重:重复天赋会被 talentMods 算两次
         // 天赋保留认不出的 id(改名/下线的旧档);传承须清:参与「是否持有」判定,会挡住发放路径
         talents: [...new Set(asStringArray(r?.talents))],
         heritage: [...new Set(asStringArray(r?.heritage).filter(id => !!heritageDef(id)))],
         heritageUses: sanitizeHeritageUses(r?.heritageUses),
-        insight: Number.isFinite(r?.insight) ? Math.max(0, r.insight) : legacyInsightOf(count),
+        insight: Number.isFinite(r?.insight) ? cappedInt(r.insight) : cappedInt(legacyInsightOf(count)),
         lives: sanitizeLives(r?.lives),
         vow: sanitizeVow(r?.vow),
         trial: sanitizeTrial(r?.trial),

@@ -4,7 +4,7 @@
     <div class="text-center">
       <p class="mt-2 font-kai text-2xl tracking-[0.4em] text-ink">寿元将尽</p>
       <p class="mt-3 text-[13px] leading-relaxed text-ink-soft">
-        {{ player.name }} · {{ Math.floor(player.age) }} 载 · {{ player.realmName }}
+        {{ player.name }} · {{ formatYears(player.age) }} · {{ player.realmName }}
       </p>
     </div>
     <template #footer>
@@ -297,6 +297,7 @@
   import { modsText } from '@/data/statNames'
   import { lifeThemeDef, TABOO_NAMES } from '@/data/lifeThemes'
   import { heritageGroups } from '@/core/samsaraAudit'
+  import { formatYears } from '@/utils/format'
   import { engine } from '@/core/engine'
   import BaseModal from '@/components/common/BaseModal.vue'
 

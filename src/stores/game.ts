@@ -46,7 +46,12 @@ export const useGameStore = defineStore(
       // 时间戳也要钳非负:asTimestamp 只挡「坏成不了日期」,负数仍是合法时间戳(1969 年)
       createdAt.value = Math.max(0, asTimestamp(createdAt.value, 0))
       lastActiveAt.value = Math.max(0, asTimestamp(lastActiveAt.value, 0))
-      totalPlaySec.value = asFiniteNumber(totalPlaySec.value, 0, 0)
+      /*
+       * 上界:这是「累计游玩秒数」,只挡了下界。坏档写 MAX_VALUE 时它仍是有限数,
+       * 过得了 asFiniteNumber,而界面照 formatDuration 印成「1.80e308 载」。
+       * 上限取「一百年的秒数」:真实游玩不可能超过,坏档必被夹回。
+       */
+      totalPlaySec.value = Math.min(100 * 365 * 86400, asFiniteNumber(totalPlaySec.value, 0, 0))
       // 不限次时旧档遗留的数字额度一律归位
       createRerolls.value =
         CREATE_REROLL_QUOTA === null
