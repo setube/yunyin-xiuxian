@@ -114,12 +114,12 @@
             <span v-if="l.replaceId === null" class="font-kai text-ink">{{ TRANSFER_LABELS.append }}</span>
             <template v-else>
               <span class="text-ink-faint">{{ TRANSFER_LABELS.replace }}</span>
-              <span class="whitespace-nowrap font-kai" :style="{ color: rarityColor(l.replaceId) }">「{{ targetLine(l.replaceId)?.name }}」</span>
+              <span class="whitespace-nowrap font-kai" :style="{ color: rarityColor(l.replaceId) }">「{{ l.target?.name }}」</span>
               <span v-if="flow.targetSealed.has(l.replaceId)" class="text-jade" role="img" :aria-label="TRANSFER_LABELS.sealed"><GameIcon name="lock" :size="11" /></span>
             </template>
           </span>
-          <span v-if="l.replaceId !== null && targetLine(l.replaceId)" class="mt-0.5 block text-[11px] leading-snug text-ink-soft">
-            {{ targetLine(l.replaceId)!.before }}<span class="tabular font-medium text-ink">{{ targetLine(l.replaceId)!.value }}</span>{{ targetLine(l.replaceId)!.after }}
+          <span v-if="l.target" class="mt-0.5 block text-[11px] leading-snug text-ink-soft">
+            {{ l.target.before }}<span class="tabular font-medium text-ink">{{ l.target.value }}</span>{{ l.target.after }}
           </span>
           <span v-if="l.check.ok" class="mt-0.5 block text-[10px] tabular text-ink-faint">
             <span class="whitespace-nowrap">{{ transferStoneText(l.check.plan.cost.stone) }}</span> ·
@@ -219,10 +219,6 @@
   function slotName(templateId: string): string {
     const slot = equipmentTemplate(templateId)?.slot
     return slot ? EQUIP_SLOT_NAMES[slot] : ''
-  }
-
-  function targetLine(id: string) {
-    return props.flow.targetLines.find(l => l.id === id)
   }
 
   function rarityColor(id: string): string {

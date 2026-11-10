@@ -7,7 +7,7 @@ import { computed, reactive, toRefs, toValue, watch, type MaybeRefOrGetter } fro
 import type { EquipmentInstance } from '@/types'
 import { qualityDef } from '@/data/qualities'
 import { equipmentTemplate } from '@/data/equipment'
-import { resolveEquipStats } from '@/core/equipGen'
+import { resolveEquipStats, type ResolvedEquipStats } from '@/core/equipGen'
 import {
   planTransfer,
   targetBlock,
@@ -28,6 +28,9 @@ import {
   transferShortText
 } from '@/ui/affixTransferText'
 import { formatGap } from '@/utils/format'
+
+/** 目标件上的一条词条展示行(landings 直接带上,模板不再逐处 find) */
+type AffixLine = ResolvedEquipStats['affixLines'][number]
 
 /** 候选目标默认列几件;其余由「全部 N 件」展开 */
 const PREVIEW_LIMIT = 8
@@ -78,9 +81,21 @@ export function useAffixTransfer(sourceUid: MaybeRefOrGetter<string | null>) {
   const targetLines = computed(() => (target.value ? resolveEquipStats(target.value).affixLines : []))
   const targetSealed = computed(() => new Set(target.value?.sealedAffixIds ?? []))
 
-  const landings = computed<TransferLanding[]>(() =>
-    source.value && target.value && state.affixId ? transferLandings(source.value, target.value, state.affixId) : []
-  )
+  /**
+   * 落位行 + 该落位对应目标件上那一行的形制。
+   *
+   * 模板里原先逐处调 `targetLine(l.replaceId)` —— 同一颗钮里 5 次、每行都重算,
+   * 而它只是 `targetLines.find(...)`。与 TrialPanel 的 pactRows / MarksPanel 的 markRows 同法:
+   * 纯查表在 setup 里算一次,模板只读字段。
+   */
+  const landings = computed<(TransferLanding & { target?: AffixLine })[]>(() => {
+    if (!source.value || !target.value || !state.affixId) return []
+    const lines = targetLines.value
+    return transferLandings(source.value, target.value, state.affixId).map(l => ({
+      ...l,
+      target: l.replaceId === null ? undefined : lines.find(x => x.id === l.replaceId)
+    }))
+  })
 
   /** 不封存口径的计划;落位未选完为 null */
   const basePlan = computed<TransferCheck | null>(() => {
@@ -222,7 +237,6 @@ export function useAffixTransfer(sourceUid: MaybeRefOrGetter<string | null>) {
     hiddenCount,
     targetName,
     targetCap,
-    targetLines,
     targetSealed,
     landings,
     check,
