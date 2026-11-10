@@ -12,6 +12,7 @@
  * · 相邻两帧间隔 >50ms 计长帧(Long Task 口径);headless 无 vsync,按 ~60fps 节流。
  */
 import { createServer } from "node:http";
+import { gzipSync } from "node:zlib";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -208,7 +209,23 @@ function startServer() {
       if (rel.includes("..")) return r.writeHead(400).end("bad");
       try {
         const body = readFileSync(join(DIST, rel));
-        r.writeHead(200, { "content-type": MIME[extOf(rel)] ?? "application/octet-stream" });
+        const type = MIME[extOf(rel)] ?? "application/octet-stream";
+        /*
+         * 按真实部署的行为压缩。
+         *
+         * 不压缩时首屏要传 918KB(未压缩的 28 个 JS 模块),而 Pages/Nginx 上只有
+         * 343KB —— 差了 2.7 倍。之前模拟弱网测出的 6.2s 就是这个失真放大出来的:
+         * 918KB / 200KBps = 4.6s,而真实该是 1.7s。
+         * 只压文本类,woff2/png 本身就是压缩格式,再压反而变大。
+         */
+        const compressible = /\.(js|css|html|json|svg|txt)$/i.test(rel);
+        if (compressible && /gzip/.test(req.headers["accept-encoding"] ?? "")) {
+          const gz = gzipSync(body);
+          r.writeHead(200, { "content-type": type, "content-encoding": "gzip", "content-length": gz.length });
+          r.end(gz);
+          return;
+        }
+        r.writeHead(200, { "content-type": type, "content-length": body.length });
         r.end(body);
       } catch {
         r.writeHead(404).end("nf");
