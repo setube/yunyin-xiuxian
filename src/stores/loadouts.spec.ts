@@ -139,6 +139,20 @@ describe('构筑 · 换装接线(applyLoadout)', () => {
     expect(inv.equipped['weapon'], '切换后武器槽应穿上 sword1').toBe('sword1')
   })
 
+  /*
+   * 构筑 id 不存在 —— 与「构筑存在但件缺失」是两个守卫。
+   * 变异扫描报 `if (!loadout) return false` 改坏不红:去掉后 `loadout.equipment`
+   * 直接抛 TypeError。入参 id 可能来自存档字符串或过期 UI 快照。
+   */
+  it('换装:构筑 id 不存在时返回 false,不抛也不动任何槽', () => {
+    const inv = useInventoryStore()
+    inv.$patch({ items: [{ uid: 'sword1', templateId: 'w_zhuqing', quality: 'fine', tier: 1, level: 0, affixes: [] }] })
+    const before = JSON.parse(JSON.stringify(inv.equipped))
+    expect(() => applyLoadout('no_such_loadout'), '过期构筑 id 不该抛').not.toThrow()
+    expect(applyLoadout('no_such_loadout')).toBe(false)
+    expect(inv.equipped, '没换成就一个槽都不许动').toEqual(before)
+  })
+
   it('换装缺件的槽不乱穿:uid 对应的件不存在时不抛、不脏穿', () => {
     const inv = useInventoryStore()
     const l = useLoadoutsStore()
