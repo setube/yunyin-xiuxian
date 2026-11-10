@@ -155,3 +155,29 @@ describe('启动预算 · 按限速倍数放宽', () => {
     expect(RAW, '注释还留着与 computeMs 口径不符的旧数').not.toContain('4x 下实测 346ms')
   })
 })
+
+describe('启动开销曲线 · 存档变大的代价', () => {
+  /**
+   * `--items` 长期只是个手动开关,没有任何判据消费它 ——
+   * 存档变大在启动路径上多花多少,此前只能人工读数,回归了没人拦。
+   *
+   * `--curve` 在**同一进程**里各量一次空包与满包:跨进程跑两次会把两次之间的
+   * 机器负载差异也算进来,比不出「存档变大的代价」。
+   *
+   * 阈值 75ms 的推导见脚本注释(四次实测增量均值 54.3、最大 56.0,取均值 × 1.4)。
+   * 先按 60 定过一版,余量只剩 4ms —— 那是误报源,不是判据。
+   */
+  it('--curve 存在,且在同一进程里跑空包与满包两档', () => {
+    expect(SCRIPT, '缺 --curve 模式').toContain('const curveOnly = args.includes("--curve")')
+    // 两档都得走同一个 measureStartup,才谈得上「只差存档大小」
+    expect(SCRIPT, '该把启动测量抽成一处共用').toContain('async function measureStartup(')
+    expect(SCRIPT, '空包档').toContain('measureStartup(viewport, stressSlices(0))')
+    expect(SCRIPT, '满包档').toContain('measureStartup(viewport, stressSlices(120))')
+  })
+
+  it('判据比的是**增量**,不是绝对值 —— 机器快慢会整体平移', () => {
+    expect(SCRIPT, '该比 right grew 增量').toContain('const grow = Math.round((full.computeMs - empty.computeMs)')
+    expect(SCRIPT, '超标要红').toContain('if (grow > CURVE_BUDGET_MS)')
+    expect(SCRIPT, '阈值该是 75 而不是 60').toContain('process.env.PERF_CURVE_MS ?? 75')
+  })
+})
