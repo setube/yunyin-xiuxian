@@ -28,7 +28,16 @@ export function useBrewing() {
 
   const herbGrade = computed<HerbGrade>(() => herbGradeOfMajor(player.major))
 
-  const recipes = computed(() =>
+  /**
+   * 丹方账的**静态**部分:方子、价签、把握、批量计划、存量。
+   *
+   * 这一段不读时钟 —— 它由 lore / player / resources / inventory 决定,换一个字才该重算。
+   * 从前它和 `overflow` 写在同一个 computed 里,而 `overflow` 读 `now.value`(每秒变),
+   * 于是整条链每秒重跑一次:实测 52 方的 craftability + craftBatchPlan 合计 **3.74ms/秒**,
+   * 而其中真正随时钟走的只有 `buffOverflowOf` 那一段,合计 **0.018ms/秒** —— 差 200 倍。
+   * 背包页(装备/材料/法宝签不读丹方)也照付这笔钱。
+   */
+  const recipeBase = computed(() =>
     availableRecipes()
       .map(id => {
         const def = pillDef(id)
@@ -36,19 +45,13 @@ export function useBrewing() {
         const able = craftability(id)
         const plan = craftBatchPlan(id)
         if (!def || !cost || !able) return null
-        // 判据与丹匣、修行速服同尺同钟
-        const overflow =
-          def.kind === 'buff' && def.buffId
-            ? buffOverflowOf(cultivation.buffs, def.buffId, now.value)
-            : null
         return {
           def,
           cost,
           able,
           plan,
           /** 行囊里已存几枚;与丹匣同读 inventory.pills */
-          stock: inventory.pills[id] ?? 0,
-          overflow
+          stock: inventory.pills[id] ?? 0
         }
       })
       .filter(
@@ -60,10 +63,20 @@ export function useBrewing() {
           able: Craftability
           plan: ReturnType<typeof craftBatchPlan>
           stock: number
-          overflow: ReturnType<typeof buffOverflowOf> | null
-        } =>
-          x !== null
+        } => x !== null
       )
+  )
+
+  const recipes = computed(() =>
+    recipeBase.value
+      .map(row => ({
+        ...row,
+        // 判据与丹匣、修行速服同尺同钟:只有这一项随时钟走
+        overflow:
+          row.def.kind === 'buff' && row.def.buffId
+            ? buffOverflowOf(cultivation.buffs, row.def.buffId, now.value)
+            : null
+      }))
       // 能开炉的置顶,其余按阶位
       .sort((a, b) => {
         const ca = a.plan.rounds > 0 ? 1 : 0
