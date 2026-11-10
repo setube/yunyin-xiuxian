@@ -444,15 +444,37 @@ const SCENES = [
      * 单字段畸形:整片损坏已有「坏档提示」那档管,但存档能解开、只有个别字段是 NaN/Infinity/
      * -1 的情形没有覆盖 —— 那种档 sanitize 会逐字段修,界面不该再去显示坏值。
      *
-     * 这一档同时灌坏多个字段,然后走遍主路由,检查 main 的可见文案里有没有
-     * NaN / Infinity / undefined 漏出来。逐个路由跳完把结果攒在 window 上,
-     * 最后用 grab 取回来判。
+     * 这一档同时灌坏多个字段,然后走遍主路由,检查可见文案里有没有坏值漏出来。
+     * 逐个路由跳完把结果攒在 window 上,最后用 grab 取回来判。
+     *
+     * **扫整页而不只是 main**(2026-11 修):寿元/灵石那几格在顶栏,不在 main 里 ——
+     * 而 `1.7976931348623157e+308/1.013京 载` 正是只在顶栏露出来的。
+     *
+     * **五类坏值,不只是 NaN/Infinity/undefined**:
+     *   · 有限的巨值:`age: MAX_VALUE` 过得了 `Number.isFinite`/`asFiniteNumber`,
+     *     裸插值印成 `1.7976931348623157e+308`、经 formatGN 印成 `1.80e308`;
+     *   · 超范围时间戳:`8640000000000001` 让 toLocaleString 吐出**英文** `Invalid Date`,
+     *     `getMonth()` 返回 NaN 于是印成 `NaN月NaN日`;
+     *   · `[object Object]`:字段被灌成对象而不是数字。
      */
     name: '单字段畸形走遍主路由',
     route: '/',
     slices: () => {
       const s = lateSlices()
-      s.player.age = NaN
+      /*
+       * age 用**有限巨值**而不是 NaN:NaN 被 `isFinite` 挡下,MAX_VALUE 不会 ——
+       * 后者才是「过得了守卫、印得出来」的那一类。原先这里灌的是 NaN,
+       * 于是新加的正则永远没有输入可抓(实测:拆掉上界+换回裸插值后仍然全绿)。
+       */
+      s.player.age = Number.MAX_VALUE
+      s.player.lifespanBonusYears = Number.MAX_VALUE
+      s.player.reincarnation = { ...(s.player.reincarnation ?? {}), count: Number.MAX_VALUE, daoFruit: Number.MAX_VALUE }
+      s.settings.lastExportAt = 8_640_000_000_000_001
+      s.game = { ...(s.game ?? {}), totalPlaySec: Number.MAX_VALUE }
+      s.adventure = {
+        ...(s.adventure ?? {}),
+        eventMemories: { ev_spring: { eventId: 'ev_spring', times: 3, lastAt: 8_640_000_000_000_001, lastChoiceIdx: 0 } }
+      }
       s.player.major = -5
       s.player.exp = { m: NaN, e: Infinity }
       s.resources.spiritStone = { m: NaN, e: 0 }
@@ -477,8 +499,16 @@ const SCENES = [
         }, r)
         await page.waitForTimeout(280)
         const leaked = await page.evaluate(() => {
-          const t = document.querySelector('main')?.innerText ?? ''
-          return (t.match(/\bNaN\b|\bInfinity\b|\bundefined\b/g) || []).slice(0, 3)
+          const t = document.body?.innerText ?? ''
+          /*
+           * 科学计数那一段要盖住两种写法:
+           *   `1e+300` 来自 JS 的 Number→String(裸插值);
+           *   `1.7976931348623157e+308` 同样是裸插值,指数三位;
+           *   `1.80e308` 来自 formatGN 的兜底(mantissa 两位 + `e` + 无符号指数)。
+           * 只写 `e\+` 会漏掉最后一种 —— 那正是「经 formatGN 渲染」的形态。
+           */
+          const re = /\bNaN\b|\bInfinity\b|\bundefined\b|\bInvalid Date\b|[0-9]e\+?[0-9]{2,}|\[object Object\]/g
+          return (t.match(re) || []).slice(0, 3)
         })
         if (leaked.length) hits.push(`${r}:${leaked.join('/')}`)
       }
