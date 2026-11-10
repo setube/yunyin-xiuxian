@@ -45,7 +45,15 @@ const ROUTES = [
   '/celestial'
 ]
 /** 正文里不该出现的数字/占位泄漏 */
-const NUMERIC_LEAK = ['NaN', 'Infinity', 'undefined']
+const NUMERIC_LEAK = [
+  /\bNaN\b/g,
+  /\bInfinity\b/g,
+  /\bundefined\b/g,
+  /\bInvalid Date\b/g,
+  /\[object Object\]/g,
+  /* 指数符号可选:裸插值 `1.7976931348623157e+308` 带 +,formatGN 兜底 `1.80e308` 不带 —— 只写 e\+ 会漏掉后者 */
+  /[0-9]e\+?[0-9]{2,}/g
+]
 /** 进行中的页面/弹窗过渡 */
 const FADING = '.page-fade-enter-active, .page-fade-leave-active, .modal-fade-enter-active, .modal-fade-leave-active'
 /** 破坏性/离开型按钮:冒烟盘上不点 */
@@ -149,17 +157,24 @@ async function fingerprint() {
     return `${text.length}:${full.length}:${hash}|${theme}|${pressed}|${document.querySelectorAll('.modal-panel').length}|${document.querySelectorAll('[class*=toast]').length}`
   })
 }
-/** 正文 NaN / Infinity / undefined 泄漏点;本页与导航落地页共用 */
+/** 正文坏值泄漏点;本页与导航落地页共用 */
 async function numericLeak() {
   return page.evaluate((patterns) => {
     const text = document.body.innerText
-    return patterns.filter(p => text.includes(p)).map(p => {
-      const i = text.indexOf(p)
-      return `${p}@…${text.slice(Math.max(0, i - 24), i + 24).replace(/\n/g, '↵')}…`
-    })
-  }, NUMERIC_LEAK)
+    const out = []
+    for (const src of patterns) {
+      // 每次重建:带 g 的正则在多个字符串上复用会因 lastIndex 残留而漏匹配
+      const hits = text.match(new RegExp(src.source, 'g')) ?? []
+      // 同类只报第一处,免得一屏坏值把输出刷满
+      if (hits.length) {
+        const i = text.indexOf(hits[0])
+        out.push(`${hits[0]}@…${text.slice(Math.max(0, i - 24), i + 24).replace(/\n/g, '↵')}…`)
+      }
+    }
+    return out
+  }, NUMERIC_LEAK.map(r => ({ source: r.source })))
 }
-/** 点击后再量一次泄漏:弹窗/交互后才渲染的 NaN/Infinity 不抛异常,pageerror 逮不到 */
+/** 点击后再量一次泄漏:弹窗/交互后才渲染的坏值不抛异常,pageerror 逮不到 */
 async function scanNumericLeaks(where) {
   for (const l of await numericLeak()) errors.push({ where, msg: l })
 }
