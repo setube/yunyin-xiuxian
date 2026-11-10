@@ -375,7 +375,8 @@
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
   // 与开炉弹窗(BrewingDialog)同读一份丹方账
-  const { herbGrade, recipes } = useBrewing()
+  // 圆点只读静态段(anyCraftable):装备/材料/法宝三签不该随时钟重算丹方账
+  const { herbGrade, recipes, anyCraftable } = useBrewing()
   const ui = useUiStore()
   const settings = useSettingsStore()
   const lore = useLoreStore()
@@ -508,7 +509,7 @@
 
   // 丹药签圆点:有一味能开炉(与结算同源)
   const tabs = computed<readonly { id: Tab; label: string; dot?: boolean }[]>(() =>
-    TABS.map(t => (t.id === 'pill' ? { ...t, dot: recipes.value.some(r => r.plan.rounds > 0) } : t))
+    TABS.map(t => (t.id === 'pill' ? { ...t, dot: anyCraftable.value } : t))
   )
   /** 逐品灵草存量,不报总和 */
   const herbStash = computed(() => herbStashText(g => resources.herbOf(g), formatNum))

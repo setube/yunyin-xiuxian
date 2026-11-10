@@ -152,3 +152,25 @@ describe('丹方账 · 静态段不随时钟重算', () => {
     }
   })
 })
+
+describe('丹药签圆点只读静态段', () => {
+  /**
+   * 背包页四个签共用同一个 `useBrewing()`,而圆点只需要「有没有能开炉的方子」——
+   * 那由价签与批量计划决定(静态段)。从前它读 `recipes`(含每秒变的药力状态),
+   * 于是装备/材料/法宝三签也陪着时钟把 52 方的整条链重算一遍。
+   */
+  it('anyCraftable 从 recipeBase 派生,不碰 recipes', () => {
+    const composable = readFileSync(join(__dirname, 'useBrewing.ts'), 'utf8')
+    expect(composable, '要单独给一个静态圆点判据').toContain('const anyCraftable = computed(')
+    const start = composable.indexOf('const anyCraftable = computed(')
+    const body = composable.slice(start, start + 200)
+    expect(body, 'anyCraftable 该读静态段').toContain('recipeBase.value')
+    expect(body, 'anyCraftable 不该读时钟段').not.toContain('recipes.value')
+  })
+
+  it('背包页的页签圆点读 anyCraftable,不自己重算一遍', () => {
+    const view = readFileSync(join(__dirname, '../views/InventoryView.vue'), 'utf8')
+    expect(view, '圆点该读 anyCraftable').toContain('dot: anyCraftable.value')
+    expect(view, '别再在模板算一遍 plan.rounds').not.toContain('recipes.value.some(r => r.plan.rounds > 0)')
+  })
+})

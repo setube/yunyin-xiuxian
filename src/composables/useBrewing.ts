@@ -123,5 +123,24 @@ export function useBrewing() {
     craftPillBatch(id, rounds)
   }
 
-  return { resources, herbGrade, recipes, craftGuarantee, skillRows, studyLine, rateClass, pillFullId, runCraftFull }
+  /**
+   * 丹药签的圆点:「有一味能开炉」。
+   *
+   * 它只读 `plan.rounds`(静态段),不读药力状态 —— 背包页的四个签都在挂载时算一次,
+   * 走 `recipes` 会让装备/材料/法宝三个签也陪着时钟一起重算。
+   */
+  const anyCraftable = computed(() => recipeBase.value.some(r => r.plan.rounds > 0))
+
+  return {
+    resources,
+    herbGrade,
+    recipes,
+    anyCraftable,
+    craftGuarantee,
+    skillRows,
+    studyLine,
+    rateClass,
+    pillFullId,
+    runCraftFull
+  }
 }
