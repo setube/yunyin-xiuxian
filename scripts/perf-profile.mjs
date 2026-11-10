@@ -331,7 +331,20 @@ if (memoryOnly) {
   await seedSave(context, activeLoad ? withActiveRun(baseSlices) : baseSlices);
   const page = await openPage(context);
   const route = only ? (VIEWS.find((v) => v.name === only)?.route ?? "/") : activeLoad ? "/adventure" : "/";
-  await page.goto(base + `#${route}`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  /*
+   * 导航失败要说清楚是哪一步,别把 node 的栈甩给读报告的人。
+   * 实测 `--memory --active --view inventory` 偶发 `goto` 30s 超时(同一配置连跑 5 次都过,
+   * 撞上时是一整段未捕获异常,连浏览器都没关)。
+   */
+  try {
+    await page.goto(base + `#${route}`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  } catch (err) {
+    console.error(`✗ 内存档打不开 #${route}:${String(err).split("\n")[0]}`);
+    await context.close().catch(() => {});
+    await browser.close();
+    server.close();
+    process.exit(1);
+  }
   await page.waitForTimeout(2500);
 
   /*
@@ -342,24 +355,38 @@ if (memoryOnly) {
    * 而同一时刻 CDP 报 0.9 → 31.4MB。用它当判据等于空转。
    */
   const cdp = await context.newCDPSession(page);
+  /*
+   * 采样返回**原始字节**与展示用的 MB 两样。
+   *
+   * 「读数全程不变 = 度量失效」这条守卫必须看原始字节:显示值取整到 0.1MB,
+   * 而 GC 后的驻留本身在几十 KB 量级随机游走(实测 4 点:5883664 → 5861740 → 5857920 → 5861580),
+   * 取整后四点全成 5.6MB —— 于是一次正常的平坦测量被误判成「测量手段坏了」。
+   */
   const sample = async () => {
     await page.evaluate(() => globalThis.gc?.());
     await page.waitForTimeout(120);
     const { usedSize } = await cdp.send("Runtime.getHeapUsage");
-    return Math.round((usedSize / 1048576) * 10) / 10;
+    return { bytes: usedSize, mb: Math.round((usedSize / 1048576) * 10) / 10 };
   };
 
-  const points = [];
+  const samples = [];
   for (let i = 0; i < memoryRounds; i += 1) {
     if (i > 0) await page.waitForTimeout(memoryGapMs);
-    points.push(await sample());
+    samples.push(await sample());
   }
+  const points = samples.map((s) => s.mb);
 
   console.log(`\n长会话内存(#${route},${memoryRounds} 点 × 间隔 ${memoryGapMs / 1000}s,采样前强制 GC):`);
   console.log(`  ${points.map((v) => `${v}MB`).join(" → ")}`);
 
   const known = points.filter((v) => Number.isFinite(v));
-  if (known.length < 2 || known.every((v) => v === known[0])) {
+  /*
+   * 守卫看**原始字节**是否一个字都没变 —— 那才是「度量手段失效」(例如退回 performance.memory)。
+   * 显示值全同不算:0.1MB 的取整分辨率挡不住几十 KB 的正常抖动。
+   */
+  const rawBytes = samples.map((s) => s.bytes).filter((v) => Number.isFinite(v));
+  const rawFrozen = rawBytes.length >= 2 && rawBytes.every((v) => v === rawBytes[0]);
+  if (known.length < 2 || rawFrozen) {
     console.log("  ✗ 堆读数全程不变 —— 度量手段失效,这一档等于空转");
     process.exitCode = 1;
   } else {
