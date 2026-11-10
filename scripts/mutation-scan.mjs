@@ -445,6 +445,21 @@ function specsForModule(file) {
  * 分别排在 127 个文件的第 51 / 85 / 102 / 108 / 109 / 82 位,**仍然一个都没进过扫描**。
  * 上一版只去掉了「同名 spec」的前置条件,没解决这个 —— 覆盖率还是假的。
  */
+/**
+ * 把 `//` 与 `/* *\/` 注释抹成等长空白,保留换行 —— 行号与列偏移都不动。
+ *
+ * 不能简单删掉:候选的 line 是从这个字符串算的,删了会错位。
+ * 也不能只处理行首:行尾注释(`foo() // 原先是 bar()`)同样会把旧代码带进来。
+ * 字符串字面量里的 `//`(如 URL)会误伤,但本仓源码里没有这种写法,
+ * 真出现了也只会让那一条候选漏扫,不会产生假候选。
+ */
+function stripComments(src) {
+  const blank = (m) => m.replace(/[^\n]/g, ' ')
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, blank)
+    .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, (m, lead) => lead + blank(m.slice(lead.length)))
+}
+
 /** 关联 spec 超过这个数的模块不参与变异扫描(见收集循环里的注释) */
 const SPEC_FANOUT_CAP = 20
 /** 因关联 spec 过多而跳过的模块,收尾时列出来 */
@@ -473,10 +488,20 @@ for (const file of files) {
     tooWide.push({ file, count: specs.length })
     continue
   }
+  /*
+   * 只扫**代码**,不扫注释。
+   *
+   * 原先直接在 src 上 matchAll,于是注释里复述的旧写法(`Math.max(0, Math.floor(raw.finishAt))`
+   * 这类「原先是……紧跟着……」的说明)也会被当成候选。市场那处早就修好了,
+   * 扫描却仍在报「漏掉的」—— 白花一轮排查,还容易让人误以为那里没测试覆盖。
+   *
+   * 抹注释时保持换行与长度不变,行号才不会错位。
+   */
+  const code = stripComments(src)
   const mine = []
   for (const { name, re, rep } of PATTERNS) {
-    for (const m of src.matchAll(re)) {
-      const line = src.slice(0, m.index).split('\n').length
+    for (const m of code.matchAll(re)) {
+      const line = code.slice(0, m.index).split('\n').length
       mine.push({ file, specs, name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
     }
   }
