@@ -43,6 +43,7 @@ describe('坊市悬赏板 · 交货', () => {
     expect(toNum(res.spiritStone)).toBe(toNum(herbBountyReward(1, 10, 30))) // claim 以当前境界 10 折算
     expect(b.orders[0]!.claimed).toBe(true)
     expect(b.claim(0), '已交不可再交').toBe('claimed')
+
   })
 
   it('募草只剩道品够:交道品即得高品价', () => {
@@ -56,6 +57,30 @@ describe('坊市悬赏板 · 交货', () => {
     expect(res.herb).toBe(0)
     expect(toNum(res.spiritStone)).toBe(toNum(herbBountyReward(5, 10, 30)))
   })
+
+  /*
+   * 矿石那条分支单独测:它走 hasSmall('ore') 而不是草药的多品挑选。
+   * 变异扫描报那处 `if (!resources.hasSmall('ore', slot.target)) return` 改坏不红 ——
+   * 因为 spendSmall 不足时**返回 false 但不扣费**,而调用点没接返回值,
+   * 故此检查一旦没了,就会「没交矿石也照样发灵石」。
+   */
+  it('募矿:矿石不足则不成,不扣费也不发奖', () => {
+    const b = useBountyStore()
+    const res = useResourcesStore()
+    seedSlots([mat('ore')])
+    res.ore = 29 // target 是 30
+    res.spiritStone = { m: 0, e: 0 }
+    expect(b.claim(0), '少一块也不成').toBe('insufficient')
+    expect(res.ore, '不足时不扣').toBe(29)
+    expect(toNum(res.spiritStone), '不足时不发奖').toBe(0)
+    expect(b.orders[0]!.claimed).toBe(false)
+
+    res.ore = 30
+    expect(b.claim(0)).toBe('ok')
+    expect(res.ore).toBe(0)
+    expect(toNum(res.spiritStone)).toBeGreaterThan(0)
+  })
+
 
   it('募丹:扣足枚、入账灵石并附悟道', () => {
     const b = useBountyStore()
