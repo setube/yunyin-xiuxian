@@ -65,6 +65,16 @@ describe('逆旅契 · 判据一:余额真的下降', () => {
     console.log(`\n签「${def.name}」:道果 ${before} → ${after}(-${def.cost})`)
   })
 
+  /*
+   * 认不出的契约 id —— 卡面与服务的入参都可能来自存档字符串(旧档/改档/将来删掉的契约)。
+   * 变异扫描报 `if (!def) return false` 改坏不红:去掉后 `def.rules` 直接抛 TypeError。
+   */
+  it('认不出的契约 id:不可签、无缺口,都不抛', () => {
+    expect(() => canSignLifeTrial('no_such_trial'), '坏 id 不该抛').not.toThrow()
+    expect(canSignLifeTrial('no_such_trial')).toBe(false)
+    expect(lifeTrialShortfall('no_such_trial')).toBeNull()
+  })
+
   it('余额不足时拒签,且不产生任何扣减', () => {
     const player = usePlayerStore()
     player.addDaoFruit(10)

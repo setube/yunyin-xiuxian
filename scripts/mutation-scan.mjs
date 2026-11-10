@@ -67,6 +67,16 @@ const PATTERNS = [
  */
 const EQUIVALENT = [
   {
+    file: 'src/core/identity.ts',
+    text: 'if (!daoId) return',
+    why: 'daoNarrative 的 `if (!daoId) return null`:去掉后 switch(null) 不匹配任何 case,落到函数末尾的 `return null` —— 两条路径同值。它的返回值只进 v-if,Vue 里 null 与 undefined 同判'
+  },
+  {
+    file: 'src/core/worldGen.ts',
+    text: '.length === 0)',
+    why: 'noveltyScore 的 `if (history.length === 0) return 1`:去掉后 for 循环一次不执行,nearest 保持初值 1 原样返回 —— 与提前返回同值'
+  },
+  {
     file: 'src/core/pillValue.ts',
     text: 'Math.max(0, speed + regen)',
     why: 'tempoRateOf 的返回值只有两个使用点,都是 `> 0` 判断(分型 tempo/state、算 durationSec)。负值与 0 在这两处同判,钳不钳结果一样'
