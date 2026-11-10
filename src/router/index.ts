@@ -31,16 +31,11 @@ export const router = createRouter({
 })
 
 /**
- * 视图是懒加载的(`() => import(...)`),断网且该页的 chunk 不在缓存里时,import 会 reject。
+ * 最近一次**成功**渲染的路径:失败时退回去。
  *
- * 现状:hash 已经变了、页面还是旧的那一页,只有控制台报
- * `Failed to fetch dynamically imported module`,玩家看到的只是「点底栏没反应」——
- * 不知道自己点了、也不知道为什么没动。
- *
- * 这里把它变成一句可读的状态,并把 hash 退回上一页:
- * 留着新 hash 更糟 —— 再点一次同一个入口不会触发导航,玩家会以为整个应用卡死了。
+ * vue-router 的 history.state.back 在这里拿不到 —— hash 变更走的是 replace,back 恒为 null。
+ * 所以只能自己记一份。语义是「上次渲染成功」,不是「上次导航」:重定向、守卫拦下的那次不算。
  */
-/** 最近一次**成功**渲染的路径:失败时退回去。vue-router 的 history.state.back 在这里拿不到 —— hash 变更走的是 replace,back 恒为 null */
 let lastGoodPath = '/'
 
 router.afterEach(to => {
@@ -60,13 +55,17 @@ router.afterEach(to => {
   useUiStore().clearDetail()
 })
 
+/**
+ * 懒加载的 chunk 取不到时(断网且该页不在缓存里),自己退回上一页并说一句话。
+ *
+ * 视图都是 `() => import(...)`。取不到时 hash 已经变了、页面还是旧的那一页,
+ * 只有控制台报 `Failed to fetch dynamically imported module`,玩家看到的只是「点底栏没反应」——
+ * 不知道自己点了、也不知道为什么没动。这里把它变成一句可读的状态,并把 hash 退回上一页:
+ * 留着新 hash 更糟 —— 再点一次同一个入口不会触发导航,玩家会以为整个应用卡死了。
+ */
 router.onError((err, to) => {
   const msg = String((err as Error)?.message ?? err)
   if (!/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(msg)) return
-  /*
-   * 退回最近一次成功的页面。留着新 hash 更糟 —— 再点一次同一个入口不会触发导航
-   * (vue-router 认为已经在那一页了),玩家会以为整个应用卡死了。
-   */
   /*
    * 回退不能用 router.replace —— 它本身也要重新解析那条路由的组件,
    * 断网时同样走懒加载、同样会失败,于是原地不动(实测 hash 停在失败的 /titles)。

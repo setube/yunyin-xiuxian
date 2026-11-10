@@ -152,17 +152,6 @@ describe('成就条件 · 每条都有判定路径', () => {
   })
 
   /**
-   * 三个状态型自定义成就的**触发条件**本身也要钉住。
-   *
-   * 上面那条只查 `checkCustomAchievement('lifespanLow')` 这个字符串在不在源码里 ——
-   * 把条件写成反的(`<=` 改成 `>=`),字符串一字不差,那条照样绿。
-   * 实测过:改成 `lifespanRatio >= LIFESPAN_CRITICAL_RATIO` 后整个 progress.spec 全绿,
-   * 而那样「寿元将尽」会在健康角色身上解锁、真告急时反而不解锁。
-   *
-   * 这里走行为:造出临界内 / 外的状态,调 checkStateAchievements,看成就有没有该解锁。
-   * 故障注入:把寿元条件方向改反,本条红。
-   */
-  /**
    * 职责边界:`checkAchievements` 不许越界去解锁状态型成就。
    *
    * 状态型(lifespanLow / lifespan10k / stone1m)只由 `checkStateAchievements` 负责 ——
@@ -191,6 +180,17 @@ describe('成就条件 · 每条都有判定路径', () => {
     expect(quests.hasAchieved('a_rich'), 'checkStateAchievements 该解锁灵石成就').toBe(true)
   })
 
+  /**
+   * 三个状态型自定义成就的**触发条件**本身也要钉住。
+   *
+   * 上面那条只查 `checkCustomAchievement('lifespanLow')` 这个字符串在不在源码里 ——
+   * 把条件写成反的(`<=` 改成 `>=`),字符串一字不差,那条照样绿。
+   * 实测过:改成 `lifespanRatio >= LIFESPAN_CRITICAL_RATIO` 后整个 progress.spec 全绿,
+   * 而那样「寿元将尽」会在健康角色身上解锁、真告急时反而不解锁。
+   *
+   * 这里走行为:造出临界内 / 外的状态,调 checkStateAchievements,看成就有没有该解锁。
+   * 故障注入:把寿元条件方向改反,本条红。
+   */
   it('寿元告急:只有真跌破一成才解锁「寿元将尽」', () => {
     const player = usePlayerStore()
     const quests = useQuestsStore()

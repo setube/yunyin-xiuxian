@@ -335,8 +335,7 @@
   const upGap = computed(() => (upCost.value ? upgradeShortfall(upCost.value) : null))
   const salvage = computed(() => (inst.value ? salvageOf(inst.value) : null))
 
-  /** 共鸣件数只数已佩戴的(看挂载,不看行囊) */
-  /** 共鸣形制:六套各一枚线纹(见 ui/setMark);与格子那枚同源 */
+  /** 共鸣形制:六套各一枚线纹(见 ui/setMark);件数只数已佩戴的(看挂载,不看行囊),与格子那枚同源 */
   const setMark = computed(() => setMarkOf(template.value?.set ?? ''))
   const setInfo = computed(() => {
     const setId = template.value?.set
@@ -347,10 +346,8 @@
     return { def, count, active: count >= def.required }
   })
 
-  /** 词条条数上限:取品质表,不在界面另写 */
-  /** 词条位形制:上限与词条生成同源(见 ui/affixSlots) */
   /**
-   * 词条上限:与词条生成同源(品阶表)。模板直读这一处,
+   * 词条上限:与词条生成同源(品阶表),不在界面另写。模板直读这一处,
    * spec 钉着「上限不在模板里写死数字」,故不在 ui 层再藏一份。
    */
   const affixCap = computed(() => (inst.value ? qualityDef(inst.value.quality).affixes[1] : 0))

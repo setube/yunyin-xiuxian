@@ -158,10 +158,6 @@ function goReplay(mark: (typeof endgame.marks)[number]): void {
 
 // ---- 重写此痕 ----
 /**
- * 重写确认态:记道痕对象引用,不记行号(新痕插头部,重写本身也补一条新痕)。
- * 列表重建则自动回落未武装。
- */
-/**
  * 道痕行:道途符纹、道名各算一次。
  *
  * 同一个行里 `daoMark(mark.daoPathId)` 被调 4 次(有无判断、符纹类名、色 ×2),
@@ -178,6 +174,10 @@ const markRows = computed(() =>
   })
 )
 
+/**
+ * 重写确认态:记道痕对象引用,不记行号(新痕插头部,重写本身也补一条新痕)。
+ * 列表重建则自动回落未武装。
+ */
 const rewriteConfirm = ref<(typeof endgame.marks)[number] | null>(null)
 function goRewrite(mark: (typeof endgame.marks)[number]): void {
   const result = rewriteMark(mark)

@@ -128,10 +128,10 @@
   const props = withDefaults(defineProps<{ gate?: 'mortal' | 'celestial' }>(), { gate: 'mortal' })
 
   const unlocked = computed(() => realmUnlock(props.gate))
-  /** 在境中(仅认本册):`currentRealm` 全局单份不分册,须按 gate 过滤,与 `availableRealms` 同口径 */
   /** 秘境进度形制:层数与剩余败场(见 ui/realmProgress) */
   const progress = computed(() => realmProgress(state.value?.layer ?? 0, state.value?.losses ?? 0))
 
+  /** 在境中(仅认本册):`currentRealm` 全局单份不分册,须按 gate 过滤,与 `availableRealms` 同口径 */
   const state = computed(() => {
     const s = currentRealm()
     if (!s) return null

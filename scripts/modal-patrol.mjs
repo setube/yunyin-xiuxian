@@ -33,9 +33,9 @@ const SHOTS_DIR = '/tmp/modal-patrol'
 
 const failures = []
 const fail = msg => failures.push(msg)
-/** 入口没出现的场景:不判失败,但逐条列出 */
 /** 巡逻次数(每调用一次 patrol 记一笔),用于覆盖率下限 */
 let PATROLLED = 0
+/** 入口没出现的场景:不判失败,但逐条列出 */
 const notOpened = []
 /** 有两步确认但本轮没探到(前置状态没铺出来)的场景:同样逐条列出,不静默吞掉 */
 const twoStepMissed = []
@@ -428,10 +428,6 @@ async function probeTwoStep(page, name) {
 }
 
 /**
- * 一扇窗的巡逻:点开 → 量 → 关掉。
- * click 返回 false 表示入口没出现(夹具没铺到),记为「未量」而不是失败。
- */
-/**
  * 弹窗开着时,背景不该能被滚走。
  *
  * 现状是「两条各自独立、但合起来刚好挡住」的结构:
@@ -476,6 +472,10 @@ async function checkBackdropLocked(page, name) {
   }
 }
 
+/**
+ * 一扇窗的巡逻:点开 → 量 → 关掉。
+ * click 返回 false 表示入口没出现(夹具没铺到),记为「未量」而不是失败。
+ */
 async function patrol(page, name, click) {
   PATROLLED += 1
   const hit = await click()
@@ -515,7 +515,6 @@ async function patrol(page, name, click) {
   console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} ${name} · ${audit.count} 控件`)
 }
 
-/** 新开一页并落到某路由,等后期档那串成就 toast 散尽 */
 /**
  * 后期档 + 修行分片。
  *
@@ -581,6 +580,7 @@ const THEME = /^--theme=(light|dark)$/.test(process.argv.find(a => /^--theme=/.t
 /** 当前档位标签,进每一条输出 */
 const TIER = `${WIDTH}x${HEIGHT}${THEME === 'dark' ? '' : ` · ${THEME}`}`
 
+/** 新开一页并落到某路由,等后期档那串成就 toast 散尽(4.2s:5 条 toast × 2.6s 之后) */
 async function open(route) {
   const context = await browser.newContext({ viewport: { width: WIDTH, height: HEIGHT } })
   await context.route('**/*', r => {

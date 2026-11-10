@@ -58,12 +58,6 @@ const browser = await chromium.launch({
 const gn = (m, e) => ({ m, e })
 
 /**
- * 后期档:一件天品武器,四条词条、已封一条 —— 重铸与封存两个价签同时在。
- * poor = true 时把器灵尘压到 2:强化付不起,底行进「禁用 + 拒因」那一态 ——
- * 那正是页脚第三种几何(曾从 44px 涨到 57px)。
- * major 默认 14;触控扫描要 18 —— 悟道兑换(WUDAO_EXCHANGE_MIN_MAJOR)18 起才渲染。
- */
-/**
  * 把 n 株灵草放在该 major 对应的品阶上。
  *
  * 界面读的是 resources.herb(全部品阶之和)—— 但那只是展示;
@@ -91,6 +85,12 @@ function herbOn(major, n) {
   return map
 }
 
+/**
+ * 后期档:一件天品武器,四条词条、已封一条 —— 重铸与封存两个价签同时在。
+ * poor = true 时把器灵尘压到 2:强化付不起,底行进「禁用 + 拒因」那一态 ——
+ * 那正是页脚第三种几何(曾从 44px 涨到 57px)。
+ * major 默认 14;触控扫描要 18 —— 悟道兑换(WUDAO_EXCHANGE_MIN_MAJOR)18 起才渲染。
+ */
 function slices({ poor = false, major = 14, theme = 'dark' } = {}) {
   return {
     game: { started: true, saveVersion: 2, createdAt: Date.now(), lastActiveAt: Date.now(), totalPlaySec: 0, createRerolls: 8, createProfile: null },

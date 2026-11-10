@@ -446,19 +446,12 @@ describe('终局公共写入 · 只认目录 id 与合法值', () => {
   })
 
   /**
-   * 纪录 note 要截到 NAME_MAX_LENGTH。
-   *
-   * 它有两个来源:自建挑战的书名(输入框写了 maxlength=8,但那只是输入侧约束)
-   * 与读档(手改存档能塞进几十万字符 —— 存档爆量、纪录行还要渲染那一整段)。
-   * 与 player.name / loadouts.name 同一把尺,见 data/constants 里 NAME_MAX_LENGTH 的注释。
-   * 补之前实测:5000 字的 note 被原样存进 records。
-   */
-  /**
    * 读档侧也要截。
    *
-   * 上一轮补的是 updateRecord 的**写入**路径,而 sanitize 那条仍原样收
+   * 上一轮补的是 updateRecord 的**写入**路径(自建挑战的书名),而 sanitize 那条仍原样收
    * —— 手改存档塞 10 万字,$state 序列化出来 100343 字节,纪录行还要渲染那一整段。
-   * 写入与读档是两条独立路径,都得截。
+   * 写入与读档是两条独立路径,都得截;与 player.name / loadouts.name 同一把尺,
+   * 见 data/constants 里 NAME_MAX_LENGTH 的注释。
    */
   it('sanitize 也把纪录 note 截到 NAME_MAX_LENGTH', () => {
     const e = useEndgameStore()
@@ -472,6 +465,14 @@ describe('终局公共写入 · 只认目录 id 与合法值', () => {
     expect(JSON.stringify(e.$state).length, '坏档把 state 撑爆了').toBeLessThan(2000)
   })
 
+  /**
+   * 纪录 note 要截到 NAME_MAX_LENGTH(写入路径)。
+   *
+   * 它有两个来源:自建挑战的书名(输入框写了 maxlength=8,但那只是输入侧约束)
+   * 与读档(手改存档能塞进几十万字符 —— 存档爆量、纪录行还要渲染那一整段)。
+   * 与 player.name / loadouts.name 同一把尺,见 data/constants 里 NAME_MAX_LENGTH 的注释。
+   * 补之前实测:5000 字的 note 被原样存进 records。
+   */
   it('纪录 note 截到 NAME_MAX_LENGTH,超长不落库', () => {
     const e = useEndgameStore()
     e.updateRecord('best_custom', 100, 1, '甲'.repeat(5000), 'max')

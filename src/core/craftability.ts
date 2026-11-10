@@ -80,7 +80,6 @@ export function weightedSkill(craft: RecipeCraft, levelOf: (id: SkillId) => numb
   return weight > 0 ? total / weight : 0
 }
 
-/** 合成成功率:四个乘区各有下限,任何一项都不会把成功率直接归零 */
 /**
  * 夹到 [0,1];坏值(NaN/Infinity)按 0 计。
  *
@@ -94,6 +93,7 @@ function fraction(v: number): number {
   return Math.max(0, Math.min(1, v))
 }
 
+/** 合成成功率:四个乘区各有下限,任何一项都不会把成功率直接归零 */
 export function composeSuccessRate(mastery: number, matLore: number, skill: number, over: number): number {
   const masteryFactor = 0.22 + 0.78 * fraction(mastery)
   const loreFactor = 0.42 + 0.58 * fraction(matLore)

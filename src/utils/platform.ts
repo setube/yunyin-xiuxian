@@ -44,7 +44,6 @@ export function isInstalledApp(env: EnvProbe): boolean {
   return env.standalone === true || env.displayModeStandalone === true
 }
 
-/** 要不要劝安装:在 iOS 上且未安装 */
 /** 要不要劝安装:在 iOS 上、未安装,且不是原生壳里 */
 export function shouldSuggestInstall(env: EnvProbe): boolean {
   if (env.nativeApp === true) return false

@@ -50,7 +50,6 @@ export interface SecretRealmState {
   finished: boolean
 }
 
-/** 玩家当前地界层级(入口代价按它折算);与装备来源上限同源于数据层,不另筛区域表 */
 /** 层间携带气血的下限;低于它下一场几乎必败 */
 export const SECRET_MIN_CARRIED_HP = 0.05
 
@@ -63,6 +62,7 @@ export function carriedHpAfter(prevHpPct: number, healPct: number): number {
   return Math.max(SECRET_MIN_CARRIED_HP, Math.min(1, prevHpPct + healPct))
 }
 
+/** 玩家当前地界层级(入口代价按它折算);与装备来源上限同源于数据层,不另筛区域表 */
 export function tierOfMajor(major: number): number {
   return maxTierForMajor(major)
 }

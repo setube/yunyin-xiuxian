@@ -104,16 +104,6 @@ describe('满级标记 · 玩家挣来的状态要有形状', () => {
   })
 
   /**
-   * 满级不许让控件消失 —— 236 轮连续踩了三次同一个坑。
-   *
-   * `equipUpgradeCost` / `artifactUpCost` 在满级/满重时返回 null,而按钮原先写
-   * `v-if="cost"`。代价算不出来就把整颗钮拿掉,玩家看到的只是「强化」「炼化」凭空不见,
-   * 既不知道是不是满了,也看不出是不是坏了;并排的两颗钮还会因此重排。
-   *
-   * 判据不是「不能出现 v-if」,而是「代价为 null 时仍有一句话」。
-   * 故障注入:把任一处改回 `v-if="upCost"` / `v-if="row.upCost"`,本条红。
-   */
-  /**
    * 强化刻度的两处在 setup 里各算一次。
    *
    * 每块里 `mark(...)` 被调 2 次、`equipLevelCap()` 被调 2 次,
@@ -133,6 +123,16 @@ describe('满级标记 · 玩家挣来的状态要有形状', () => {
     expect(tpl, '满级那块读 currentMark').toContain('currentMark.mark.maxed')
   })
 
+  /**
+   * 满级不许让控件消失 —— 236 轮连续踩了三次同一个坑。
+   *
+   * `equipUpgradeCost` / `artifactUpCost` 在满级/满重时返回 null,而按钮原先写
+   * `v-if="cost"`。代价算不出来就把整颗钮拿掉,玩家看到的只是「强化」「炼化」凭空不见,
+   * 既不知道是不是满了,也看不出是不是坏了;并排的两颗钮还会因此重排。
+   *
+   * 判据不是「不能出现 v-if」,而是「代价为 null 时仍有一句话」。
+   * 故障注入:把任一处改回 `v-if="upCost"` / `v-if="row.upCost"`,本条红。
+   */
   it('代价算不出来时,控件不消失而是禁用并写原因', () => {
     const DETAIL = readFileSync(resolve(ROOT, 'src/components/equipment/EquipmentDetailDialog.vue'), 'utf-8')
     const PANEL = readFileSync(resolve(ROOT, 'src/components/equipment/UpgradePanel.vue'), 'utf-8')

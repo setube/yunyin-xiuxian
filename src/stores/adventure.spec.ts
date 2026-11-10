@@ -116,17 +116,6 @@ describe('历练公共写入边界', () => {
     expect(a.mortalCleared).toEqual([])
   })
 
-/**
- * 本世之界的读档自愈。
- *
- * sanitizeMortalWorld 对结构错误一律返回 null(整条链丢弃),而不是逐个节点剔除 ——
- * 只要一个节点缺字段,玩家的本世之界就整个没了。这条链路此前没有测试。
- *
- * 丢弃之后不是死局:mortalWorldService.ensureMortalWorld 见 mortalWorld 为空会重新生成,
- * 所以后果是「换了一个世界」而非「卡死」。本条把两条都钉住:
- *   1. 坏结构被整条丢弃(不留下半截世界)
- *   2. 丢弃后 mortalCleared 仍在(那是玩家已通关的记录,不该随世界一起消失)
- */
 /** 造一个结构合法的本世之界 */
 function mortalWorld(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -156,6 +145,17 @@ function mortalWorld(over: Record<string, unknown> = {}): Record<string, unknown
   }
 }
 
+/**
+ * 本世之界的读档自愈。
+ *
+ * sanitizeMortalWorld 对结构错误一律返回 null(整条链丢弃),而不是逐个节点剔除 ——
+ * 只要一个节点缺字段,玩家的本世之界就整个没了。这条链路此前没有测试。
+ *
+ * 丢弃之后不是死局:mortalWorldService.ensureMortalWorld 见 mortalWorld 为空会重新生成,
+ * 所以后果是「换了一个世界」而非「卡死」。本条把两条都钉住:
+ *   1. 坏结构被整条丢弃(不留下半截世界)
+ *   2. 丢弃后 mortalCleared 仍在(那是玩家已通关的记录,不该随世界一起消失)
+ */
 describe('本世之界 · 读档自愈', () => {
   beforeEach(() => setActivePinia(createPinia()))
 

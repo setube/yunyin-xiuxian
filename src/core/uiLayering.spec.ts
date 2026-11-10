@@ -469,23 +469,13 @@ describe('可访问性 · 状态播报', () => {
     expect(host, 'toast 按钮不该进 Tab 序:键盘焦点会落到一条即将消失的元素上').toMatch(/tabindex="-1"/)
   })
 
-  /**
-   * PWA 更新横幅的触控尺子。
-   *
-   * 它只在 Service Worker 装上新版本后出现 —— `layout-check` 的巡页摸不到,
-   * `ui-smoke` 也不会触发,是唯一一块「没人量过」的界面。
-   * 实测修前「重新加载」盒高 24.5px、关闭钮 21.4×32px,都低于 28px 触控线。
-   * 判据取静态类名(py / h-w),不依赖运行时。
-   */
-  /**
-   * 横幅不能变成遮罩。
-   *
-   * 外层是 `inset-0` 的 flex,`align-items` 缺省为 `stretch` —— 内层卡片会被拉满整屏。
-   * 实测修前 390×844 下卡片 788px 高、`pointer-events-auto`,整页点不动;
-   * 它却只在 SW 更新后出现,巡页与 layout-check 都永远看不到。
-   * 判据:外层必须写 `items-start`,且内层不得再写 `h-full` 之类的拉伸。
-   */
   it('PWA 更新横幅只占一行,不铺满整屏吞掉点击', () => {
+    /*
+     * 外层是 `inset-0` 的 flex,`align-items` 缺省为 `stretch` —— 内层卡片会被拉满整屏。
+     * 实测修前 390×844 下卡片 788px 高、`pointer-events-auto`,整页点不动;
+     * 它却只在 SW 更新后出现,巡页与 layout-check 都永远看不到。
+     * 判据:外层必须写 `items-start`,且内层不得再写 `h-full` 之类的拉伸。
+     */
     const src = readFileSync(resolve(SRC, 'components/common/UpdatePrompt.vue'), 'utf-8')
     const outer = /<div v-if="ui\.pwaUpdatePending"[^>]*class="([^"]*)"/.exec(src)?.[1] ?? ''
     expect(outer, '找不到横幅外层').not.toBe('')
@@ -514,6 +504,12 @@ describe('可访问性 · 状态播报', () => {
   })
 
   it('PWA 更新横幅的两颗钮都过 28px 触控线', () => {
+    /*
+     * 它只在 Service Worker 装上新版本后出现 —— `layout-check` 的巡页摸不到,
+     * `ui-smoke` 也不会触发,是唯一一块「没人量过」的界面。
+     * 实测修前「重新加载」盒高 24.5px、关闭钮 21.4×32px,都低于 28px 触控线。
+     * 判据取静态类名(py / h-w),不依赖运行时。
+     */
     const src = readFileSync(resolve(SRC, 'components/common/UpdatePrompt.vue'), 'utf-8')
     // 只看按钮标签本身:注释里写着「不可降回 !py-1」,整文件正则会把那句也算进来
     const reload = /<button\b[^>]*>\s*重新加载/.exec(src)?.[0] ?? ''

@@ -24,10 +24,6 @@ export function todayNumber(): number {
   return todayLocalNum()
 }
 
-/**
- * 生成指定本地日的天道:日期种子确定性;裁判不受(无解/虚设)则顺延候选。
- * `day` 可注入,供界面用响应式墙钟日号驱动题面。
- */
 /** 第 t 个候选草稿(种子只取 day 与 t,故同步/异步两版逐位一致) */
 function draftForDay(day: number, t: number): ChallengeDraft {
   const rng = new RandomService(mulberry32(day * 131 + t * 977))
@@ -41,6 +37,10 @@ function draftForDay(day: number, t: number): ChallengeDraft {
   return { worldId: world.id, mutatorIds, pactId, name: `今日天道` }
 }
 
+/**
+ * 生成指定本地日的天道:日期种子确定性;裁判不受(无解/虚设)则顺延候选。
+ * `day` 可注入,供界面用响应式墙钟日号驱动题面。
+ */
 export function todayChallenge(day = todayNumber()): DailyChallenge | null {
   // 候选上限 32:取 16 时 2026-10-24、2027-10-17 两天全数落选(第 17、18 个才过)
   for (let t = 0; t < 32; t += 1) {
