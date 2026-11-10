@@ -31,7 +31,7 @@ jobs:
           bun-version: latest
       # 依赖缓存:setup-bun 的缓存只覆盖 bun 可执行文件,不覆盖包本体
       - name: 缓存依赖
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
@@ -68,7 +68,7 @@ jobs:
           bun-version: latest
       # 依赖缓存:setup-bun 的缓存只覆盖 bun 可执行文件,不覆盖包本体
       - name: 缓存依赖
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
@@ -99,7 +99,7 @@ jobs:
           bun-version: latest
       # 依赖缓存:setup-bun 的缓存只覆盖 bun 可执行文件,不覆盖包本体
       - name: 缓存依赖
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
