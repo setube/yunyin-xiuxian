@@ -56,4 +56,21 @@ describe('性能剖面的量法', () => {
     const scales = SCRIPT.match(/Math\.max\(1, Math\.min\(cpuRate, 4\)\)/g) ?? []
     expect(scales.length, '挂载期与启动合计两条预算都要按倍数放宽').toBeGreaterThanOrEqual(2)
   })
+
+  it('巡页的 context 在 finally 里收 —— 一页崩了不许把后面几页一起拖红', () => {
+    /*
+     * 踩过:4x 限速下 goto 偶发超时,那一页的 context 带着渲染进程留着;
+     * 后面几页接着开新 context,越堆越多,于是同一轮里 codex 与 dongfu 先后超时,
+     * 而单独跑这两个都过 —— 一个假崩溃拖红了两页,读数全不可信。
+     *
+     * 实测(真 chromium,5 轮其中 1 轮抛异常):旧写法跑完剩 5 个 context 没关,
+     * finally 写法剩 0 个。
+     */
+    expect(SCRIPT, '巡页循环里要有 context 变量在 try 外声明').toMatch(/let context = null/)
+    expect(SCRIPT, 'context 必须在 finally 里关').toMatch(/finally \{[\s\S]{0,200}context\?\.close\(\)/)
+    // 阴性对照:try 块里不许再单独收 context(那是「只有成功才收」的老写法)
+    const loop = SCRIPT.slice(SCRIPT.indexOf('for (const view of VIEWS)'))
+    const tryBody = loop.slice(loop.indexOf('try {'), loop.indexOf('} catch (err)'))
+    expect(tryBody, '成功路径不再单独关 —— 收到 finally 里统一处理').not.toMatch(/await context\.close\(\)/)
+  })
 })
