@@ -169,12 +169,6 @@ describe('Phase 30.6: Boss 生态审计', () => {
 })
 
 /**
- * 数量对得上 ≠ 每阶都有首领。
- *
- * 上一条断言 `ALL_BOSSES.length === REGIONS.length`,但两个首领挤在同一阶时
- * 这条照样绿 —— 而另一阶就没首领可打了。玩家会卡在那个境界推不动。
- */
-/**
  * 期望阶梯**写死在判据里**,不从观测数据现推。
  *
  * 原先写 `const maxTier = Math.max(...byTier.keys())`:数据把最高那一阶整个删掉后,
@@ -183,6 +177,12 @@ describe('Phase 30.6: Boss 生态审计', () => {
  */
 const TIER_TOP = maxTierForMajor(MAX_MAJOR)
 
+/**
+ * 数量对得上 ≠ 每阶都有首领。
+ *
+ * 上一条断言 `ALL_BOSSES.length === REGIONS.length`,但两个首领挤在同一阶时
+ * 这条照样绿 —— 而另一阶就没首领可打了。玩家会卡在那个境界推不动。
+ */
 describe('Boss 覆盖 · 每个 tier 都要有首领', () => {
   it('1..32 阶一个不缺,且每阶至少一位', () => {
     expect(TIER_TOP, '区域阶梯的上限变了,下面的期望范围要跟着改').toBe(32)

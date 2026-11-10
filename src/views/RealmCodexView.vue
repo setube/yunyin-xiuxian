@@ -618,10 +618,10 @@
     return MANSIONS.filter(m => m.image === image)
   }
 
-  /** 洛书九宫排布句:从 GATES 表推出,不手写;中五无门由循环补出 */
-  /** 图鉴的九宫盘:与远征择门同读一份排布 */
+  /** 图鉴的九宫盘:与远征择门同读一份排布(palaceBoard) */
   const codexBoard = palaceBoard()
 
+  /** 洛书九宫排布句:从 GATES 表推出,不手写;中五无门由循环补出 */
   const luoshuGatesText = computed(() =>
     Array.from({ length: 9 }, (_, i) => {
       const palace = i + 1

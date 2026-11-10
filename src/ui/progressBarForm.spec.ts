@@ -66,14 +66,6 @@ describe('进度条 · 二、$attrs 落到外壳', () => {
   })
 
   /**
-   * 单条成就的进度也要有条。
-   *
-   * 同一页里,成就分组与收藏类目都有条,唯独单条成就只写「已 3 / 目标 10」——
-   * 而这三处回答的是同一个问题(「走到哪了」),不该只有一处要玩家自己算比例。
-   * 条与读数同处一行:条说走到哪,数字说还差几次。
-   * 故障注入:删掉那行 ProgressBar,本条红。
-   */
-  /**
    * 修行志的两处进度也接上了条。
    *
    * 誓愿是本世的核心目标,修行节点是本世的里程碑 —— 两处此前都只有「(已 / 需)」的读数,
@@ -103,6 +95,14 @@ describe('进度条 · 二、$attrs 落到外壳', () => {
     expect(view, '走同一个组件').toMatch(/import ProgressBar from '@\/components\/common\/ProgressBar\.vue'/)
   })
 
+  /**
+   * 单条成就的进度也要有条。
+   *
+   * 同一页里,成就分组与收藏类目都有条,唯独单条成就只写「已 3 / 目标 10」——
+   * 而这三处回答的是同一个问题(「走到哪了」),不该只有一处要玩家自己算比例。
+   * 条与读数同处一行:条说走到哪,数字说还差几次。
+   * 故障注入:删掉那行 ProgressBar,本条红。
+   */
   it('单条成就的进度接上了条,与分组/类目同一套组件', () => {
     const view = readFileSync(resolve(ROOT, 'src/views/CollectionView.vue'), 'utf-8')
     expect(view, '单条成就该有条').toContain(':value="row.progress.current / row.progress.target"')

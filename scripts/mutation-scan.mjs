@@ -584,18 +584,13 @@ console.log(
     (explicitShard !== null ? `,显式分片 ${shard + 1}/${shardCount}(全库 ${all.length} 个)` : explicit ? `,显式 limit 故取第一段` : `,今日分片 ${shard + 1}/${shardCount}(全库 ${all.length} 个)`)
 )
 
-/**
- * 跑一次被变异文件的 spec。
- *
- * 退出码不能直接当「抓到了」用:启动失败、语法错误、setup 崩掉都会非零退出,
- * 把设施故障记成「这条守卫有牙」等于给自己发一张假绿灯。故按 vitest 的 JSON
- * 报告区分三态 —— 只有「跑完了且有用例失败」才算抓到。
- *
- * @returns {'caught' | 'survived' | 'infra'}
- */
-/** 跑给定的一批 spec;任一有用例失败即算抓到 */
+/** 上一次陷入 infra 的读数;`runSpec` 每批开始时清空,批末据此决定「没抓到」还是「设施坏了」 */
 let lastInfra = null
 
+/**
+ * 跑给定的一批 spec;任一有用例失败即算抓到。
+ * 三态里只有 `caught` 能让变异扫描判定「这条守卫有牙」。
+ */
 async function runSpec(specs) {
   lastInfra = null
   for (const spec of specs) {
@@ -612,12 +607,20 @@ async function runSpec(specs) {
 }
 
 /**
- * 跑一个 spec。**必须异步**:先前用 spawnSync,它有两大害处 ——
+ * 跑一次被变异文件的 spec。
+ *
+ * **必须异步**:先前用 spawnSync,它有两大害处 ——
  *  1. 一次 spec 跑 3.7 秒,这期间事件循环被完全堵死,信号处理器排在队列里执行不了;
  *     于是 SIGTERM 到达时 restoreInflight 跑不到,源码就留在变异后的状态。
  *     (实测:timeout 掐在两次 spawnSync 之间时能恢复,掐在里头就恢复不了 —— 靠运气。)
  *  2. 子进程自身也可能迟迟不退,同步等待没有超时可言。
  * 改用 spawn + Promise,等 spec 的同时事件循环照常响应信号。
+ *
+ * 退出码不能直接当「抓到了」用:启动失败、语法错误、setup 崩掉都会非零退出,
+ * 把设施故障记成「这条守卫有牙」等于给自己发一张假绿灯。故按 vitest 的 JSON
+ * 报告区分三态 —— 只有「跑完了且有用例失败」才算抓到。
+ *
+ * @returns {'caught' | 'survived' | 'infra'}
  */
 function runOneSpec(spec) {
   const out = join(ROOT, '.vitest', 'mutation-scan.json')

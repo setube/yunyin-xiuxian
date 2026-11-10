@@ -32,7 +32,6 @@ export async function seedSave(context, slices, guard = "__fixtureSeeded") {
 
 const gn = (m, e) => ({ m, e });
 
-/** 后期档:神人境 + 成套装备 */
 /**
  * 给一份存档挂上「历练在途」的会话,让引擎每 tick 真的打一场。
  *
@@ -61,6 +60,7 @@ export function withActiveRun(slices, regionId = "qingyun") {
   };
 }
 
+/** 后期档:神人境 + 成套装备。巡页与形制自检共用这一份,任何一片缺口都会让它们量到初始态 */
 export function lateSlices() {
   return {
     /** 时间戳须取当前时刻:写 1970 会补算半个世纪的离线收益,冒烟每翻一页重算一次 */
@@ -128,16 +128,6 @@ export function lateSlices() {
     },
     endgame: { daoPath: "sword", daoSource: 1200, souls: [], equippedSouls: [] },
     /**
-     * 洞府:七座建筑各建到「当前洞府等级允许的上限」。
-     *
-     * 原先这一片完全没有 —— 于是 lateSlices 的「后期档」在洞府页上看到的是
-     * 七座全 0 级的未启用建筑,与「后期」名不副实(而注释只承诺「神人境 + 成套装备」,
-     * 严格说没撒谎,但依赖它的巡页脚本量到的洞府状态是初始态)。
-     *
-     * 等级取 (mansion + 1) * 5 这条与 stores/dongfu 的 buildingLevelCap 同源,
-     * 手写 4/5 级是为了让「已营 7/7」在页面上成立;洞府本身满 4 级。
-     */
-    /**
      * 图鉴:材料与敌人各铺几条见闻,让图鉴页/敌情面板不再全空。
      *
      * 与 dongfu / cultivation 同一类缺口 —— 没有这一片时,图鉴页是空的、
@@ -169,6 +159,16 @@ export function lateSlices() {
       buffs: [],
       gongfaBranch: {}
     },
+    /**
+     * 洞府:七座建筑各建到「当前洞府等级允许的上限」。
+     *
+     * 原先这一片完全没有 —— 于是 lateSlices 的「后期档」在洞府页上看到的是
+     * 七座全 0 级的未启用建筑,与「后期」名不副实(而注释只承诺「神人境 + 成套装备」,
+     * 严格说没撒谎,但依赖它的巡页脚本量到的洞府状态是初始态)。
+     *
+     * 等级取 (mansion + 1) * 5 这条与 stores/dongfu 的 buildingLevelCap 同源,
+     * 手写 4/5 级是为了让「已营 7/7」在页面上成立;洞府本身满 4 级。
+     */
     dongfu: {
       levels: { mansion: 4, array: 5, alchemy: 5, forge: 4, field: 5, library: 4, beast: 3 },
       frac: { herb: 0, ore: 0, wudao: 0 },
@@ -213,8 +213,7 @@ export function lateSlices() {
  * 每一条都必须**真能进档**,否则 inventory.sanitize() 会静默剔除,
  * 压测就变成「在七条词条的装备上量性能」而门照旧报绿。校验见
  * src/utils/fixtureParity.spec.ts —— 它直接调用本函数,不用源码文本猜。
- */
-/**
+ *
  * @param {number} [itemCount] 行囊件数,默认 120(即 BAG_CAPACITY 上限)。
  *   供性能实验用:调小它可以看启动开销随件数的增长曲线,
  *   从而分清哪一段是「与存档大小成正比」、哪一段是固定成本。

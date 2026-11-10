@@ -214,7 +214,6 @@ describe('sanitizeAllStores 修「按 id 认对象」的坏账', () => {
     expect(a.pendingEventSince).toBe(0)
   })
 
-  /** 坏档写成 null 时,identityService 的 Object.entries、师承推荐与遗产回声三处一起抛错 */
   /**
    * 日记号不许落在今天之后。
    *
@@ -253,6 +252,7 @@ describe('sanitizeAllStores 修「按 id 认对象」的坏账', () => {
     expect(endgame.dailyDoneDay, '今天的挑战日应原样保留').toBe(todayLocalNum())
   })
 
+  /** 坏档写成 null 时,identityService 的 Object.entries、师承推荐与遗产回声三处一起抛错 */
   it('机缘选择记忆坏掉时回落空表:身份/师承推荐/回声都不再抛错', () => {
     const p = usePlayerStore()
     useCultivationStore()

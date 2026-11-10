@@ -347,7 +347,6 @@ function onVisibilityChange(): void {
   else startBgm()
 }
 
-/** 同步偏好(设置页开关/音量变化时调用) */
 /**
  * 音量钳到 [0,1],且**必须挡住 NaN**。
  *
@@ -363,6 +362,7 @@ export function clampVolume(v: number, fallback: number): number {
   return Math.max(0, Math.min(1, v))
 }
 
+/** 同步偏好(设置页开关/音量变化时调用) */
 export function configureAudio(p: AudioPrefs): void {
   prefs.musicOn = p.musicOn
   prefs.sfxOn = p.sfxOn

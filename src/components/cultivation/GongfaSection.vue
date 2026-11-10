@@ -291,7 +291,6 @@
     () => gongfaCategories.value.find(g => g.type === gongfaCat.value)?.items ?? []
   )
 
-  /** 门类印章配色(非激活态) */
   /**
    * 未选中门类的方印底色。字色走墨色(见上一条判据:彩色字压同色淡底过不了 4.5),
    * 门类的区分交给色块与描边。

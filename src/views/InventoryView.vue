@@ -612,7 +612,6 @@
     { flush: 'post' }
   )
   const currentPill = computed(() => (pillDetail.value ? (pillRows.value.find(r => r.def?.id === pillDetail.value) ?? null) : null))
-  /** 当前查看的丹药的质感层(最上档才有);道品 rank 9 走同一入口 */
   /** 当前查看的丹药的质感层(最上档才有);行上已算好,这里直接取 */
   const pillLuster = computed(() => currentPill.value?.luster ?? null)
 

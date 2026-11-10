@@ -291,10 +291,10 @@ export function resolveEventChoice(def: EventDef, choiceIdx: number, tier: numbe
   return { outcomeText: outcome.text, lines }
 }
 
-/** 离线/超时/勿扰按默认选项自动结算(三者共用出口);玩家不在场,不自动祭法宝 */
 /**
  * 按默认选项自动结算(离线 / 遇事勿扰 / 超时)。
  * 玩家不在场时传 silent(offline 是真不在场;勿扰与超时那一刻玩家可能正看着,由调用点决定)。
+ * 三者共用这一个出口,且都不自动祭法宝 —— 玩家不在场,替他把法宝用掉就是替他做决定。
  */
 export function autoResolveEvent(eventId: string, tier: number, silent = false): EventResolution | null {
   const def = eventDef(eventId)
