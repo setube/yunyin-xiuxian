@@ -10,6 +10,7 @@ import {
   RULE_MULT_MAX,
   asPrice,
   SAVE_GNUM_MAX_EXP,
+  asFiniteNumber,
   asTimestamp,
   truncateCodePoints
 } from './saveShape'
@@ -270,5 +271,62 @@ describe('asTimestamp · 有限但超出 Date 范围的数', () => {
 
   it('可注入兜底值', () => {
     expect(asTimestamp(1e300, 42)).toBe(42)
+  })
+})
+
+/**
+ * `asFiniteNumber` 的第四档:`max`。
+ *
+ * AGENTS.md 从很早以前就写着 `asFiniteNumber(v, fallback, min, max)`,而实现只有 `min`。
+ * 后果不只是一句文档不同步:两轮下来凡是「上界」都只能各自手写
+ * `Math.min(CAP, asFiniteNumber(...))`,写漏一处不报错、也没有判据 ——
+ * `age: Number.MAX_VALUE` / `totalPlaySec: MAX_VALUE` 两个缺陷都是这么漏的。
+ */
+describe('saveShape · asFiniteNumber 的上下限', () => {
+  it('只给 fallback:有限值原样,非有限取兜底', () => {
+    expect(asFiniteNumber(42, 0)).toBe(42)
+    expect(asFiniteNumber(Number.NaN, 7)).toBe(7)
+    expect(asFiniteNumber(undefined, 7)).toBe(7)
+    expect(asFiniteNumber('42' as never, 7)).toBe(7)
+  })
+
+  it('给 min:低于下限夹回', () => {
+    expect(asFiniteNumber(-5, 0, 0)).toBe(0)
+    /*
+     * 兜底值**也会**被下限夹 —— 这是既有行为,不是本轮引入的:
+     * `Math.max(min, fallback)`。调用方从没依赖过「兜底原样返回」,
+     * 而给它加上限时也得守同一条(否则兜底能绕过 max)。
+     */
+    expect(asFiniteNumber(Number.NaN, -3, 0)).toBe(0)
+  })
+
+  it('给 max:高于上限夹回 —— 这正是 isFinite 挡不住的那一类', () => {
+    expect(asFiniteNumber(Number.MAX_VALUE, 0, 0, 1_000_000), '有限巨值该被夹住').toBe(1_000_000)
+    expect(asFiniteNumber(1e300, 0, undefined, 100)).toBe(100)
+    expect(asFiniteNumber(50, 0, 0, 100), '范围内的值不该被动').toBe(50)
+  })
+
+  it('同时给 min 与 max:先夹下限再夹上限', () => {
+    expect(asFiniteNumber(-5, 0, 0, 100)).toBe(0)
+    expect(asFiniteNumber(500, 0, 0, 100)).toBe(100)
+    expect(asFiniteNumber(50, 0, 0, 100)).toBe(50)
+  })
+
+  it('min > max 时以 max 为准(后夹的赢),与既有手写写法一致', () => {
+    /*
+     * 既有手写形态是 `Math.min(max, Math.max(min, n))` —— 先下限、后上限,
+     * 所以 max 最后生效。这里照抄那个次序,现有调用点的语义不变。
+     */
+    expect(asFiniteNumber(50, 0, 100, 10)).toBe(10)
+  })
+
+  it('判据抓得住:去掉 max 分支即红', () => {
+    // 阴性对照:只写 min 的旧实现会把 MAX_VALUE 原样放出去
+    const oldStyle = (v: number, fallback: number, min?: number): number => {
+      const n = Number.isFinite(v) ? v : fallback
+      return min === undefined ? n : Math.max(min, n)
+    }
+    expect(oldStyle(Number.MAX_VALUE, 0, 0)).toBe(Number.MAX_VALUE)
+    expect(asFiniteNumber(Number.MAX_VALUE, 0, 0, 1_000_000)).not.toBe(Number.MAX_VALUE)
   })
 })

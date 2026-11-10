@@ -815,7 +815,7 @@ export const usePlayerStore = defineStore(
         if (!known) {
           bond.value = null
         } else {
-          const clamp100 = (v: unknown, fallback = 0): number => Math.min(100, asFiniteNumber(v, fallback, 0))
+          const clamp100 = (v: unknown, fallback = 0): number => asFiniteNumber(v, fallback, 0, 100)
           bond.value = {
             ...b,
             stage: STAGE_ORDER.includes(b.stage) ? b.stage : 'met',
@@ -908,7 +908,7 @@ export const usePlayerStore = defineStore(
           totalFights: Math.floor(asFiniteNumber(st.totalFights, 0, 0)),
           avgRounds: asFiniteNumber(st.avgRounds, 0, 0),
           // 受伤占比 0~1(界面乘 100)
-          avgDamageTakenPct: Math.min(1, asFiniteNumber(st.avgDamageTakenPct, 0, 0)),
+          avgDamageTakenPct: asFiniteNumber(st.avgDamageTakenPct, 0, 0, 1),
           consecutiveWins: Math.floor(asFiniteNumber(st.consecutiveWins, 0, 0)),
           lastUpdateAt: asFiniteNumber(st.lastUpdateAt, 0, 0),
           // 有世号原样留(旧世的不参与判据);老档无世号按当前世认,不追溯没收
