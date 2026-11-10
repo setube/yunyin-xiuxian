@@ -175,3 +175,21 @@ describe('edge-states · 首启全流程', () => {
     expect(SCENE, '该验建号页真渲染出了道号/灵根/踏入仙途').toContain('道\\s*号|灵\\s*根|踏\\s*入\\s*仙\\s*途')
   })
 })
+
+/**
+ * 收尾那行别手写档数。
+ *
+ * 实测过的坑:结尾写着「十一档」,而加了「首启全流程」之后实际跑十二档 ——
+ * 手写的计数会一直这么说下去,读报告的人无从发现少算了一档。
+ * 改成由 `SCENES.length` 数出来,顺带把每档名字列出来,漏写哪档一眼可见。
+ */
+describe('edge-states · 收尾报数', () => {
+  it('档数由 SCENES.length 数出,不再手写', () => {
+    expect(SRC, '又把手写的档数写回去了').not.toMatch(/单字段畸形十一档|单字段畸形十档/)
+    expect(SRC, '收尾该数 SCENES.length').toContain('${SCENES.length} 档')
+  })
+
+  it('收尾把每档名字列出来 —— 漏写哪档一眼可见', () => {
+    expect(SRC, '该列出档名').toContain('${SCENES.map(s => s.name).join')
+  })
+})

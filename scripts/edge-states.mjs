@@ -652,4 +652,9 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('\n异常路径通过:坏档 / 满员 / 归零 / 满包 / 写盘失败 / 导入过新 / 闭关拦截 / 未拜师 / 欢迎页 / 建号页 / 单字段畸形十一档都解释得清')
+/*
+ * 档数由 SCENES.length 数出来,不手写 ——
+ * 上一版写死「十一档」,加了「首启全流程」之后仍印十一,而实际跑了十二档。
+ * 手写的计数会一直这么说下去,读的人无从发现少算了一档。
+ */
+console.log(`\n异常路径通过:${SCENES.length} 档(${SCENES.map(s => s.name).join(' / ')})都解释得清`)
