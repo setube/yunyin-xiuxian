@@ -129,6 +129,22 @@ describe('坊市悬赏板 · 交货', () => {
     expect(b.claimEquip(0, 'keep'), '已交不可再交').toBe('claimed')
   })
 
+  /*
+   * 点选的 uid 不在行囊里 —— 界面上的行可能来自过期快照(另一页把装备卖了/分解了)。
+   * 变异扫描报 `if (!eq) return 'missing'` 改坏不红:去掉它 deliverEquip(undefined)
+   * 会去读 eq.tier 直接抛 TypeError,而这份 spec 原先只测「在行囊但阶不够」。
+   */
+  it('贡器点选:uid 不在行囊里则拒绝,不扣不交也不抛', () => {
+    const b = useBountyStore()
+    const inv = useInventoryStore()
+    seedSlots([{ idx: 0, kind: 'equip', kindId: '', target: 1, tier: 3, reward: { m: 0, e: 0 }, extra: 0, claimed: false }])
+    inv.$patch({ items: [{ uid: 'only', templateId: 'x', quality: 'fine', tier: 4, level: 0, affixes: [] }] })
+    expect(() => b.claimEquip(0, 'ghost'), '过期快照点交不该抛').not.toThrow()
+    expect(b.claimEquip(0, 'ghost')).toBe('missing')
+    expect(inv.items, '别人的装备不动').toHaveLength(1)
+    expect(b.orders[0]!.claimed, '没交成不盖已交').toBe(false)
+  })
+
   it('sanitize:烂订单逐纸修形、垃圾丢弃、时刻夹回非负', () => {
     const b = useBountyStore()
     b.$patch({
