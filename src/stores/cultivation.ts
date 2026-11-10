@@ -9,7 +9,7 @@ import { branchEffective, gongfaBranchDef } from '@/data/gongfaBranches'
 import { mergeMods } from '@/core/statsCalc'
 import { buffCapSec } from '@/core/buffCap'
 import { useDongfuStore } from '@/stores/dongfu'
-import { asArray, asNumberRecord, asRecord, asStringArray, asFiniteNumber } from '@/utils/saveShape'
+import { asArray, asNumberRecord, asRecord, asStringArray, asTimestamp } from '@/utils/saveShape'
 
 /** 功法在某等级下的属性 */
 export function gongfaModsAt(id: string, level: number): StatMods {
@@ -66,7 +66,7 @@ export const useCultivationStore = defineStore(
         [],
         x => !!x && typeof (x as BuffInstance).defId === 'string' && buffDef((x as BuffInstance).defId) !== undefined
       )) {
-        const cur = { ...b, endsAt: asFiniteNumber(b.endsAt, now, 0) }
+        const cur = { ...b, endsAt: asTimestamp(b.endsAt, now) }
         const prev = surviving.get(b.defId)
         if (!prev || cur.endsAt > prev.endsAt) surviving.set(b.defId, cur)
       }

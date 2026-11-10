@@ -11,7 +11,8 @@ import {
   asNumberRecord,
   asObjectOrNull,
   asRecord,
-  asStringArray
+  asStringArray,
+  asTimestamp,
 } from '@/utils/saveShape'
 import { EVENTS, FORTUNE_EVENTS, eventDef } from '@/data/events'
 import { exploreModeOf } from '@/core/exploreModes'
@@ -173,7 +174,7 @@ function sanitizeLastBattle(raw: unknown): LastBattleView | null {
       foeOrigin: sanitizeFoeOrigin(r.foeOrigin),
       firstMove: sanitizeFirstMove(r.firstMove)
     },
-    at: asFiniteNumber(b.at, 0),
+    at: asTimestamp(b.at, 0),
     loot: b.loot === undefined ? undefined : asStringArray(b.loot),
     enemyPower: b.enemyPower === undefined ? undefined : gnStrict(b.enemyPower),
     playerPower: b.playerPower === undefined ? undefined : gnStrict(b.playerPower),
@@ -254,16 +255,16 @@ export const useAdventureStore = defineStore(
       if (session.value) {
         const s = session.value
         const regionOk = !!regionDef(s.regionId)
-        const endsAt = asFiniteNumber(s.endsAt, 0, 0)
+        const endsAt = asTimestamp(s.endsAt, 0)
         if (!regionOk || endsAt <= 0) {
           session.value = null
         } else {
           session.value = {
             ...s,
             mode: exploreModeOf(s.mode),
-            startedAt: asFiniteNumber(s.startedAt, 0, 0),
+            startedAt: asTimestamp(s.startedAt, 0),
             endsAt,
-            nextBattleAt: asFiniteNumber(s.nextBattleAt, 0, 0),
+            nextBattleAt: asTimestamp(s.nextBattleAt, 0),
             wins: Math.floor(asFiniteNumber(s.wins, 0, 0)),
             losses: Math.floor(asFiniteNumber(s.losses, 0, 0)),
             events: Math.floor(asFiniteNumber(s.events, 0, 0)),
@@ -297,7 +298,7 @@ export const useAdventureStore = defineStore(
         const m = raw as Partial<import('@/types').EventMemory>
         const times = Math.floor(asFiniteNumber(m.times, 0, 0))
         if (times <= 0) continue
-        const lastAt = asFiniteNumber(m.lastAt, 0, 0)
+        const lastAt = asTimestamp(m.lastAt, 0)
         const choiceCount = eventDef(id)?.choices.length ?? 0
         const rawIdx = Math.floor(asFiniteNumber(m.lastChoiceIdx, 0, 0))
         const lastChoiceIdx = choiceCount > 0 ? Math.min(choiceCount - 1, rawIdx) : 0

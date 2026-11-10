@@ -6,7 +6,7 @@
  * - 相邻同条只加计数:连发会刷满格子,挤掉第一条
  */
 import { defineStore } from 'pinia'
-import { truncateCodePoints } from '@/utils/saveShape'
+import { truncateCodePoints, asTimestamp } from '@/utils/saveShape'
 import { ref } from 'vue'
 import { persistConfig } from '@/utils/storage'
 import { asArray, asFiniteNumber } from '@/utils/saveShape'
@@ -53,7 +53,7 @@ export const useDiagStore = defineStore(
     function sanitize(): void {
       errors.value = asArray<DiagEntry>(errors.value, [], e => !!e && typeof (e as DiagEntry).message === 'string')
         .map(e => ({
-          at: asFiniteNumber(e.at, 0, 0),
+          at: asTimestamp(e.at, 0),
           info: typeof e.info === 'string' ? e.info : '',
           message: truncateCodePoints(String(e.message), DIAG_MESSAGE_MAX),
           route: typeof e.route === 'string' ? e.route : '',

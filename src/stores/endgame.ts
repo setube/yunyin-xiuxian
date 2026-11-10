@@ -35,7 +35,8 @@ import {
   asRecord,
   asRecordOf,
   asStringArray,
-  truncateCodePoints
+  truncateCodePoints,
+  asTimestamp,
 } from '@/utils/saveShape'
 
 interface TrialRecord {
@@ -244,7 +245,7 @@ function sanitizeMarks(raw: unknown): DaoMark[] {
       rounds: Math.floor(asFiniteNumber(m.rounds, 0, 0)),
       buildName: typeof m.buildName === 'string' && m.buildName ? m.buildName : '杂学',
       powerText: typeof m.powerText === 'string' ? m.powerText : '',
-      at: Math.floor(asFiniteNumber(m.at, 0, 0)),
+      at: Math.floor(asTimestamp(m.at, 0)),
       ...(typeof m.ruleset === 'string' ? { ruleset: m.ruleset } : {}),
       ...(fixedContext ? { context: fixedContext } : {}),
       ...(replay ? { replay } : {})
@@ -381,7 +382,7 @@ export const useEndgameStore = defineStore(
       ).map(m => ({
         id: m.id,
         life: Math.floor(asFiniteNumber(m.life, 0, 0)),
-        at: Math.floor(asFiniteNumber(m.at, 0, 0))
+        at: Math.floor(asTimestamp(m.at, 0))
       }))
       // 「首次」语义(同 addMilestone):同 id 只留先出现的那条
       const seenMilestone = new Set<string>()

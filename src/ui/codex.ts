@@ -493,17 +493,25 @@ export function pillCodex(): CodexCat {
   }
 }
 
-/** 收录时刻文案;旧档里已收录的条目没有记录,给「未记录」而非 1970 */
+/**
+ * 收录时刻文案;旧档里已收录的条目没有记录,给「未记录」而非 1970。
+ *
+ * 三种「不是真日期」都要挡,且都不能印成日期:
+ *   一 `undefined` / `NaN` / `Infinity` —— 字段缺失或坏档。
+ *   二 `<= 0` —— sanitize 用 asNumberRecord(v, 0) 把负值钳成 0,于是坏档(或手改存档)写个
+ *      -1000 会变成 0,再被 `new Date(0)` 渲染成「1970/01/01 08:00」:一个看着完全正常的
+ *      日期,玩家不会想到它是坏档。宁可写「未记录」。
+ *   三 **有限的超范围数** —— `Number.isFinite` 挡不住这一类。`new Date(8.64e15 + 1)`
+ *      是 Invalid Date,而 `toLocaleString` 原样吐出英文 `Invalid Date`(真浏览器实测
+ *      `8640000000000001` / `1e300` / `Number.MAX_SAFE_INTEGER` 三种都是如此)。
+ *      印在中文界面上既不是日期也不像系统状态。判据:先 `getTime()` 是否 NaN,再格式化。
+ */
 export function collectedTimeText(ts: number | undefined): string {
-  /*
-   * 0 与负数都算「没有记录」。
-   *
-   * sanitize 用 asNumberRecord(v, 0) 把负值钳成 0,于是坏档(或手改存档)写个
-   * -1000 会变成 0,再被 new Date(0) 渲染成「1970/01/01 08:00」——
-   * 一个看着完全正常的日期,玩家不会想到它是坏档。宁可写「未记录」。
-   */
   if (ts === undefined || !Number.isFinite(ts) || ts <= 0) return '未记录'
-  return new Date(ts).toLocaleString('zh-CN', {
+  const d = new Date(ts)
+  // 超出 Date 可表示范围(±8.64e15)时 getTime() 是 NaN —— toLocaleString 会吐出英文
+  if (Number.isNaN(d.getTime())) return '未记录'
+  return d.toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

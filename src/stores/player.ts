@@ -29,7 +29,7 @@ import { computeFinalStats, mergeMods, modOf } from '@/core/statsCalc'
 import { todayWeather } from '@/core/weather'
 import { divinationActiveAt, readingFromState, readingMods } from '@/core/divination'
 import { gameNow } from '@/core/enginePause'
-import { asArray, asBoundedGNum, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asStringArray, truncateCodePoints } from '@/utils/saveShape'
+import { asArray, asBoundedGNum, asCarriedHpPct, asFiniteNumber, asNumberRecord, asRecord, asStringArray, truncateCodePoints, asTimestamp } from '@/utils/saveShape'
 import { SECRET_LAYERS, SECRET_MAX_LOSSES, SECRET_REALMS, secretRuleByText } from '@/data/secretRealms'
 import { DAOLU, ENDING_NAMES, STAGE_NAMES, STAGE_ORDER, type BondEnding, type BondStage } from '@/data/daolu'
 import { lifeThemeDef } from '@/data/lifeThemes'
@@ -512,7 +512,7 @@ export const usePlayerStore = defineStore(
                 ending: typeof bond.ending === 'string' && bond.ending in ENDING_NAMES ? bond.ending : ''
               }
             : null,
-          at: Math.max(0, Math.floor(asFiniteNumber(l.at, 0, 0)))
+          at: Math.max(0, Math.floor(asTimestamp(l.at, 0)))
         })
       }
       return out
@@ -548,7 +548,7 @@ export const usePlayerStore = defineStore(
       if (typeof v.themeId !== 'string' || !lifeThemeDef(v.themeId)) return null
       return {
         themeId: v.themeId,
-        at: Math.max(0, asFiniteNumber(v.at, 0, 0)),
+        at: Math.max(0, asTimestamp(v.at, 0)),
         base: asNumberRecord(v.base, 0),
         baseBranches: Math.max(0, Math.floor(asFiniteNumber(v.baseBranches, 0, 0))),
         baseAvenged: Math.max(0, Math.floor(asFiniteNumber(v.baseAvenged, 0, 0))),
@@ -818,7 +818,7 @@ export const usePlayerStore = defineStore(
       if (regionEvent.value) {
         const ev = regionEvent.value
         const regionOk = !!regionDef(ev.regionId) && !!regionEventDef(ev.eventId)
-        const endsAt = asFiniteNumber(ev.endsAt, 0, 0)
+        const endsAt = asTimestamp(ev.endsAt, 0)
         if (!regionOk || endsAt <= 0) regionEvent.value = null
         else regionEvent.value = { ...ev, endsAt }
       }

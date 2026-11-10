@@ -518,3 +518,32 @@ describe('收录时间读数', () => {
     expect(collectedTimeText(Date.now())).toMatch(/\d{4}\/\d{2}\/\d{2}/)
   })
 })
+
+describe('收录时间读数 · 超范围的有限数', () => {
+  /**
+   * `Number.isFinite` 挡不住这一类:坏档写 `collectedAt: 1e300` 或 `8640000000000001`
+   * 都是有限数,`new Date()` 却判成 Invalid Date —— `toLocaleString` 原样吐出**英文**
+   * `Invalid Date`(真浏览器实测三种:8640000000000001 / 1e300 / Number.MAX_SAFE_INTEGER)。
+   * 印在中文界面上既不是日期也不像系统状态。
+   */
+  it('超出 Date 表示范围的有限数写「未记录」,不吐英文 Invalid Date', () => {
+    for (const ts of [8_640_000_000_000_001, 1e300, Number.MAX_SAFE_INTEGER]) {
+      const text = collectedTimeText(ts)
+      expect(text, `ts=${ts} 吐出了英文 Invalid Date`).not.toContain('Invalid')
+      expect(text).toBe('未记录')
+    }
+  })
+
+  it('范围内的正常值照旧格式化成中文日期时刻', () => {
+    const text = collectedTimeText(new Date(2026, 9, 5, 14, 32).getTime())
+    expect(text).toContain('2026')
+    expect(text).toContain('10')
+    expect(text).toMatch(/\d{2}:\d{2}/)
+  })
+
+  it('判据抓得住:未守卫的 toLocaleString 确实会吐出 Invalid Date', () => {
+    // 阴性对照:证明上面那条断言有约束力
+    const raw = new Date(1e300).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit' })
+    expect(raw).toBe('Invalid Date')
+  })
+})
