@@ -390,6 +390,79 @@ const SCENES = [
   },
   {
     /*
+     * 首启全流程:欢迎页 → 勾同意 → 「同意并开始」→ 传送动画 → 建号页。
+     *
+     * 上面两档只验**静态渲染**(页面画出来对不对);这条验**流程能不能走通**。
+     * 差别在于:动画、定时器、路由守卫三者串起来才决定玩家到底走不走得下去,
+     * 而它们只在真实点击序列里才一起生效。
+     *
+     * 实测踩过:第一次量时点完「同意并开始」只等 2 秒就看路由,停在 #/welcome ——
+     * 差一点当成「点了没反应」去修。查 `confirmStart()` 才看到中间有 2500ms 的传送动画
+     * (`enterTimer`),3 秒后才 router.push('/create')。**那不是缺陷,是我的等待太短。**
+     * 该等待时长写死在这里,免得后人重踩。
+     */
+    name: '首启全流程走到建号页',
+    route: '/welcome',
+    slices: () => ({
+      game: {
+        started: false,
+        saveVersion: 2,
+        createdAt: Date.now(),
+        lastActiveAt: Date.now(),
+        totalPlaySec: 0,
+        createRerolls: null,
+        createProfile: null
+      },
+      settings: { privacyAccepted: false, sfxOn: false, musicOn: false, musicVol: 0, sfxVol: 0, reduceMotion: true, battleSpeed: 4, decomposeRanks: [], smartKeep: { enabled: true, minQuality: 3, keepCoreAffix: true, keepComboPiece: true }, theme: 'dark' }
+    }),
+    after: async page => {
+      // 一、点「开始游戏」应弹出隐私确认,不是直接跳走
+      await page.evaluate(() => {
+        const b = [...document.querySelectorAll('button')].find(x => /开\s*始\s*游\s*戏/.test(x.textContent || ''))
+        b?.click()
+      })
+      await page.waitForTimeout(900)
+      const asked = await page.evaluate(() => !!document.querySelector('.modal-panel'))
+      // 二、不勾同意时确认钮必须置灰
+      const blockedBefore = await page.evaluate(() => {
+        const b = [...document.querySelectorAll('.modal-panel button')].find(x => /同意并开始/.test(x.textContent || ''))
+        return b ? b.disabled : null
+      })
+      // 三、勾上同意再确认
+      await page.evaluate(() => {
+        const cb = document.querySelector('.modal-panel input[type=checkbox]')
+        if (cb && !cb.checked) cb.click()
+      })
+      await page.waitForTimeout(300)
+      await page.evaluate(() => {
+        const b = [...document.querySelectorAll('.modal-panel button')].find(x => /同意并开始/.test(x.textContent || ''))
+        b?.click()
+      })
+      // 传送动画 2500ms,等 3.2s 留余量
+      await page.waitForTimeout(3200)
+      const landed = await page.evaluate(() => location.hash)
+      const onCreate = await page.evaluate(() => /道\s*号|灵\s*根|踏\s*入\s*仙\s*途/.test(document.body.innerText))
+      await page.evaluate(
+        r => {
+          window.__firstRun = r
+        },
+        { asked, blockedBefore, landed, onCreate }
+      )
+    },
+    grab: () => ({ text: '', buttons: [], panel: false, firstRun: window.__firstRun }),
+    judge: page => {
+      const r = page.firstRun
+      if (!r) return ['首启流程没跑起来(场景 after 未执行)']
+      const out = []
+      if (!r.asked) out.push('点「开始游戏」没弹隐私确认窗 —— 没同意就放行?')
+      if (r.blockedBefore !== true) out.push('没勾同意时「同意并开始」不是置灰的')
+      if (r.landed !== '#/create') out.push(`同意后落在 ${r.landed},不是 #/create(传送动画约 2.5s,本判据等 3.2s)`)
+      if (!r.onCreate) out.push('落在建号页但没渲染出道号/灵根/踏入仙途')
+      return out
+    }
+  },
+  {
+    /*
      * 建号页。
      *
      * 这是玩家必经的首屏流程,却一直不在任何真浏览器检查里:

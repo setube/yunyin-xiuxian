@@ -137,3 +137,41 @@ describe('坏值扫描 · 两个脚本同口径', () => {
     }
   })
 })
+
+/**
+ * 首启全流程那一档(欢迎页 → 同意 → 传送动画 → 建号页)。
+ *
+ * 上面几条钉的是「单字段畸形走遍主路由」那一档;这一档是后加的,
+ * 验的是**流程能不能走通**,而不只是页面画出来对不对。
+ *
+ * 它存在的直接原因是一次误判:第一次量时点完「同意并开始」只等 2 秒就看路由,
+ * 停在 `#/welcome` —— 差一点当成「点了没反应」去修。查 `confirmStart()` 才看到
+ * 中间有 2500ms 的传送动画。**那不是缺陷,是等待太短。**
+ * 所以判据要把「等多久」与「等到之后该在哪」一起钉住。
+ */
+describe('edge-states · 首启全流程', () => {
+  const SCENE_START = SRC.indexOf("name: '首启全流程走到建号页'")
+  const SCENE = SCENE_START < 0 ? '' : SRC.slice(SCENE_START, SRC.indexOf("\n  {\n", SCENE_START))
+
+  it('这一档还在,且夹得住(锚点没漂)', () => {
+    expect(SCENE_START, '找不到「首启全流程走到建号页」这一档').toBeGreaterThan(-1)
+    expect(SCENE.length, '切片太短,判据会空转').toBeGreaterThan(600)
+  })
+
+  it('三步都验:弹窗、置灰、落地', () => {
+    expect(SCENE, '该验点了「开始游戏」会不会弹隐私确认').toContain('asked')
+    expect(SCENE, '该验没勾同意时确认钮置灰').toContain('blockedBefore')
+    expect(SCENE, '该验最终落在哪个路由').toContain("landed !== '#/create'")
+  })
+
+  it('等待要盖过 2500ms 的传送动画 —— 等短了会误判成「点了没反应」', () => {
+    // 传送动画 2500ms;判据等 3200ms 留 700ms 余量
+    expect(SCENE, '等待时长丢了').toContain('waitForTimeout(3200)')
+    const shortWait = /waitForTimeout\(1[0-9]{3}\)[\s\S]{0,80}location\.hash/.test(SCENE)
+    expect(shortWait, '又退回 1.x 秒的等待 —— 那样会落在 #/welcome 上误报').toBe(false)
+  })
+
+  it('落在建号页还要验内容,不只验路由', () => {
+    expect(SCENE, '该验建号页真渲染出了道号/灵根/踏入仙途').toContain('道\\s*号|灵\\s*根|踏\\s*入\\s*仙\\s*途')
+  })
+})
