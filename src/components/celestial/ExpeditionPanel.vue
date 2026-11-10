@@ -170,7 +170,7 @@
               :disabled="busy !== null || rerolling || endgame.daoSource < VOID_REROLL_COST"
               :title="busy?.reason ?? (endgame.daoSource < VOID_REROLL_COST ? `道源尚差 ${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)}` : undefined)"
               @click="onRerollVoid()"
-            >{{ rerolling ? '窥探中' : endgame.daoSource < VOID_REROLL_COST ? `再窥(尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `再窥(${VOID_REROLL_COST})` }}</button>
+            >{{ rerolling ? '窥探中' : endgame.daoSource < VOID_REROLL_COST ? `再窥(道源尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `再窥(${VOID_REROLL_COST})` }}</button>
           </div>
         </template>
         <template v-else>
@@ -180,7 +180,7 @@
             :title="busy?.reason ?? (endgame.daoSource < VOID_REROLL_COST ? `道源尚差 ${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)}` : undefined)"
             @click="onRerollVoid()"
           >
-            {{ rerolling ? '窥探中' : endgame.daoSource < VOID_REROLL_COST ? `窥探虚界(尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `窥探虚界(道源 ${VOID_REROLL_COST})` }}
+            {{ rerolling ? '窥探中' : endgame.daoSource < VOID_REROLL_COST ? `窥探虚界(道源尚差${daoSourceShortText(VOID_REROLL_COST, endgame.daoSource)})` : `窥探虚界(道源 ${VOID_REROLL_COST})` }}
           </button>
         </template>
       </div>

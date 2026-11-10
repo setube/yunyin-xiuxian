@@ -69,7 +69,7 @@
             :title="c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : !c.sold && !c.afford ? `灵石尚差 ${formatGap(c.stoneShort)}` : undefined"
             @click="buyOne(c.idx)"
           >
-            {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : c.afford ? '买下' : `尚差 ${formatGap(c.stoneShort)}` }}
+            {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : c.afford ? '买下' : `灵石尚差 ${formatGap(c.stoneShort)}` }}
           </button>
         </div>
       </div>
