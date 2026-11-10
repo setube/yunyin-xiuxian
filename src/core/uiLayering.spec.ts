@@ -745,3 +745,25 @@ describe('页面标题 · 每页都有标题元素', () => {
     expect(missing, `这些视图没有标题元素,读屏按标题跳转会跳过它们:${missing.join(', ')}`).toEqual([])
   })
 })
+
+/**
+ * 寿元那一格:可见文字与读屏说法必须同一把尺。
+ *
+ * 原写法左边是裸 `Math.floor(player.age)`,右边是 `formatYears(lifespanMax)` —— 同一处两套口径。
+ * 3000 岁印成「3000」而上限印成「1000亿」还只是难看;坏档把 age 写成 1e300 时
+ * 左边直接吐出 JS 的「1e+300」(真浏览器实测),而 aria-label 用的是 formatYears(age),
+ * **屏幕上与读屏念的不是同一个数**。JSDoc 也记着 old:注释里写着「TopStatusBar 直接印 Math.floor(age)」。
+ */
+describe('可访问性 · 寿元可见文字与读屏同源', () => {
+  it('TopStatusBar 的岁数走 formatYears,不再裸印 Math.floor(age)', () => {
+    const bar = readFileSync(resolve(SRC, 'components/common/TopStatusBar.vue'), 'utf-8')
+    expect(bar, '可见文字还在裸印 age').not.toContain('Math.floor(player.age)')
+    expect(bar, '岁数与上限该同用 formatYears').toMatch(/\{\{ formatYears\(player\.age\) \}\}/)
+  })
+
+  it('转世弹窗的岁数同样走 formatYears', () => {
+    const dlg = readFileSync(resolve(SRC, 'components/character/ReincarnationDialog.vue'), 'utf-8')
+    expect(dlg, '弹窗里还在裸印 age').not.toContain('Math.floor(player.age)')
+    expect(dlg, '岁数该带单位出来').toContain('formatYears(player.age)')
+  })
+})

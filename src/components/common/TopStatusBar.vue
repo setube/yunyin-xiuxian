@@ -24,7 +24,13 @@
             :class="player.lifespanRatio < LIFESPAN_WARN_RATIO ? 'text-cinnabar' : ''"
             :aria-label="`寿元 ${formatYears(player.age)} / ${formatYears(player.lifespanMax)}`"
           >
-            {{ Math.floor(player.age) }}/{{ formatYears(player.lifespanMax) }}
+            <!--
+              两段都走 formatYears:此前左边是裸 `Math.floor(age)`,右边是 formatYears ——
+              同一行两套口径。3000 岁印成「3000」而上限印成「1000亿」尚可忍,
+              坏档把 age 写成 1e300 时左边直接吐出 JS 的「1e+300」(实测),
+              而 aria-label 用的又是 formatYears(age),屏幕上与读屏念的还不是同一个数。
+            -->
+            {{ formatYears(player.age) }}/{{ formatYears(player.lifespanMax) }}
           </span>
           <!-- 轮回次数:最闲的一格,340px 以下隐藏,不挤灵石 -->
           <span v-if="player.reincarnation.count > 0" class="hidden shrink-0 text-violet-ink min-[340px]:inline">

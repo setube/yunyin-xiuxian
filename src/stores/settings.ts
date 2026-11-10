@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { persistConfig } from '@/utils/storage'
-import { asArray, asFiniteNumber, asRecord } from '@/utils/saveShape'
+import { asArray, asFiniteNumber, asRecord, asTimestamp } from '@/utils/saveShape'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
 import { QUALITIES } from '@/data/qualities'
 import { APP_VERSION, compareVersions } from '@/utils/appVersion'
@@ -73,7 +73,7 @@ export const useSettingsStore = defineStore(
       musicOn.value = musicOn.value === true
       reduceMotion.value = reduceMotion.value === true
       privacyAccepted.value = privacyAccepted.value === true
-      lastExportAt.value = asFiniteNumber(lastExportAt.value, 0, 0)
+      lastExportAt.value = Math.max(0, asTimestamp(lastExportAt.value, 0))
       installNoticeDismissed.value = installNoticeDismissed.value === true
       lastSeenVersion.value = typeof lastSeenVersion.value === 'string' ? lastSeenVersion.value : ''
       decomposeRanks.value = [

@@ -121,7 +121,18 @@ export const useDongfuStore = defineStore(
       const nextFrac = { ...frac.value }
       for (const key of Object.keys(nextFrac) as (keyof typeof frac.value)[]) {
         const v = nextFrac[key]
-        if (!Number.isFinite(v) || v < 0) nextFrac[key] = 0
+        /*
+         * 上下界都要夹,但**上界不是 1**。
+         *
+         * frac 是「攒着还没发出去的件数」:`produce()` 只在 `whole >= 1` 时发一次并减去整数部分,
+         * 所以 3 是自洽的(下一次产出一次发 3 件)。上界若写 1 会误伤这种合法状态
+         * —— dongfu.spec 的「非法产出小数与灵脉点数归零」就钉着 `frac.wudao = 3` 必须原样保留。
+         *
+         * 但 MAX_VALUE 这类坏档要挡:它过得了 `Number.isFinite`,而 `whole = 1.79e308`
+         * 会让下一拍把资源一次性灌成天文数字。真实上限取「最长离线上限 × 满级产出」再留三个数量级:
+         * 72 小时 × 6/小时 ≈ 432,取 1e6 已足够宽,坏档碰不到。
+         */
+        if (!Number.isFinite(v) || v < 0 || v > 1_000_000) nextFrac[key] = 0
       }
       frac.value = nextFrac
       /**
