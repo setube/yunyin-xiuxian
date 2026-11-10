@@ -58,6 +58,22 @@ describe('重铸成本 · 只看阶数与封存数', () => {
     expect(late.dust).toBe(first.dust)
   })
 
+  /*
+   * 变异扫描报「这条 .length === 0 改坏了不会红」—— 它不只是少个提示:
+   * 词条全被封存时返回非 null,界面会报出价格并允许点「重铸」,
+   * 点下去才发现没得洗。故锁住返回值本身。
+   */
+  it('词条全被封存时没有可洗的位,reforgeCost 返回 null', () => {
+    const sealedAll = { ...base, sealedAffixIds: base.affixes.map(a => a.id) }
+    expect(reforgeCost(sealedAll), '全封存还给价 = 界面骗玩家可以洗').toBeNull()
+  })
+
+  it('只封存一部分时仍可重铸:容量至少留一个可掷位', () => {
+    const partial = { ...base, sealedAffixIds: [base.affixes[0]!.id] }
+    expect(reforgeCost(partial), '还剩一条可洗,不该判成没得洗').not.toBeNull()
+    expect(sealCapacity({ ...base, sealedAffixIds: [] }), '两条词条上限是 1').toBe(1)
+  })
+
   it('品质不进公式:凡品与神品洗一次同价(贵贱由阶数与封存数说)', () => {
     const mortal = reforgeCost({ ...base, quality: 'mortal' })!
     const divine = reforgeCost({ ...base, quality: 'divine' })!
