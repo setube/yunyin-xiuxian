@@ -37,7 +37,8 @@
     "build:electron": "vue-tsc -b && vite build && esbuild electron/main.js --bundle --platform=node --format=esm --outfile=dist-electron/main.js --external:electron && esbuild electron/preload.js --bundle --platform=node --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never",
     "build:android": "bun run build && bunx cap sync android",
     "build:apk": "bun run build:android && cd android && ./gradlew assembleRelease",
-    "mutation-scan": "node scripts/mutation-scan.mjs"
+    "mutation-scan": "node scripts/mutation-scan.mjs",
+    "perf-curve": "bun run build && node scripts/perf-profile.mjs --curve"
   },
   "dependencies": {
     "@capacitor/android": "^8.1.0",

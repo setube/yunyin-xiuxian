@@ -132,6 +132,8 @@ const startupOnly = args.includes("--startup");
  * 采样前必须 gc():不回收的话量到的是待回收垃圾,任何页面看起来都在涨。
  */
 const memoryOnly = args.includes("--memory");
+/** `--curve`:空包 vs 满包的启动增量(存档变大的代价),判据见下方 curveOnly 分支 */
+const curveOnly = args.includes("--curve");
 /**
  * `--active`:给内存档挂一场在途历练,让引擎每 tick 真的打一场。
  *
@@ -450,6 +452,86 @@ if (memoryOnly) {
  *
  * 不进这个分支时完全不影响常规巡页。
  */
+/**
+ * 量一次启动:返回 `{ computeMs, segments }`,`computeMs` 是「扣掉 boot:start 之前网络等待」的主线程那一截。
+ *
+ * 抽成函数是为了 `--curve`:它要在同一进程里各量一次空包与满包,
+ * 跨进程跑两次会带上机器负载差异,比不出「存档变大到底多花了多少」。
+ */
+async function measureStartup(viewport, slices) {
+  const context = await browser.newContext({ viewport });
+  await seedSave(context, slices);
+  const page = await openPage(context);
+  await page.goto(base + "#/", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForTimeout(2500);
+  const marks = await page.evaluate(() =>
+    performance.getEntriesByType("mark").map((m) => ({ name: m.name, at: Math.round(m.startTime * 100) / 100 }))
+  );
+  const byName = new Map(marks.map((m) => [m.name, m.at]));
+  const order = [
+    "boot:start",
+    "boot:preflight",
+    "boot:sanitize",
+    "boot:engineStart",
+    "boot:offlineInputs",
+    "boot:offlineSettled",
+    "boot:achievements",
+    "boot:mounted",
+  ];
+  let prev = null;
+  const segments = [];
+  for (const name of order) {
+    if (!byName.has(name)) continue;
+    const at = byName.get(name);
+    segments.push({ name, at, delta: prev === null ? at : Math.round((at - prev) * 100) / 100 });
+    prev = at;
+  }
+  const last = prev;
+  const computeMs =
+    last !== null && byName.has("boot:start") ? Math.round((last - byName.get("boot:start")) * 100) / 100 : last;
+  await context.close();
+  return { computeMs, total: last, segments };
+}
+
+/*
+ * `--curve`:同一进程里量「空包 → 满包」的启动增量。
+ *
+ * 为什么要它:`--items` 一直只是个手动开关,没有任何判据消费它 ——
+ * 存档变大到底多花了多少主线程时间,此前只有人工读数,回归了没人拦。
+ *
+ * 不跨进程各跑一次的理由:那会带上两次之间的机器负载差异,比不出「存档变大的代价」。
+ * 同进程连着量,空包与满包吃的是同一份机器状态。
+ *
+ * 判据定「满包 ≤ 空包 + 75ms」。推导:
+ *   · 四次同进程实测增量 54.3 / 56.0 / 53.3 / 53.7ms,均值 54.3、最大 56.0;
+ *   · 先按 60ms 定过一版,余量只剩 4ms(7%)—— 噪声就能顶过线,那是误报源不是判据;
+ *   · 取均值 × 1.4 ≈ 76,取整 75:既容得下噪声,又能在「每件多花半毫秒」这种量级回归时翻红
+ *     (120 件 × 0.5ms = 60ms,叠加到现基础上必然越线)。
+ *
+ * 不卡绝对值的理由 —— 机器快慢会整体平移,而**增量**才是「存档变大」的代价。
+ */
+if (curveOnly) {
+  const viewport = { width: 390, height: 844 };
+  const empty = await measureStartup(viewport, stressSlices(0));
+  // 120 = src/data/constants.ts 的 BAG_CAPACITY;.mjs 读不了 TS,与 --items 的默认值同源
+  const full = await measureStartup(viewport, stressSlices(120));
+  const grow = Math.round((full.computeMs - empty.computeMs) * 10) / 10;
+  const CURVE_BUDGET_MS = Number(process.env.PERF_CURVE_MS ?? 75);
+  console.log(`\n启动开销曲线(主线程,空包 → 满包 120 件):`);
+  console.log(`  空包   ${empty.computeMs}ms`);
+  console.log(`  满包   ${full.computeMs}ms`);
+  console.log(`  增量   +${grow}ms —— 判据 ≤ ${CURVE_BUDGET_MS}ms`);
+  if (grow > CURVE_BUDGET_MS) {
+    console.error(`\n✗ 满包启动比空包多 ${grow}ms,超过 ${CURVE_BUDGET_MS}ms —— 存档变大在启动路径上变贵了`);
+    process.exitCode = 1;
+  } else {
+    console.log("✓ 存档变大带来的启动增量在预算内");
+  }
+  await browser.close();
+  server.close();
+  process.exit(process.exitCode ?? 0);
+}
+
 if (startupOnly) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await seedSave(context, stress ? stressSlices(itemCount) : lateSlices());
