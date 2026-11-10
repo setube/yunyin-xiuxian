@@ -348,11 +348,26 @@ function onVisibilityChange(): void {
 }
 
 /** 同步偏好(设置页开关/音量变化时调用) */
+/**
+ * 音量钳到 [0,1],且**必须挡住 NaN**。
+ *
+ * `Math.max(0, Math.min(1, NaN))` 得 NaN —— 两道钳制都留不住它。
+ * NaN 一路传到 applyPrefs 的 `gain.rampTo(NaN)`,把 gain 参数污染成 NaN,
+ * 表现是整块音频静音或 Tone 抛错。
+ *
+ * 入参当前由 settings.sanitize 用 asFiniteNumber 兜着,但音频模块不该
+ * 依赖调用方替它保证入参 —— 一个直接调 configureAudio 的地方就能踩到。
+ */
+export function clampVolume(v: number, fallback: number): number {
+  if (!Number.isFinite(v)) return fallback
+  return Math.max(0, Math.min(1, v))
+}
+
 export function configureAudio(p: AudioPrefs): void {
   prefs.musicOn = p.musicOn
   prefs.sfxOn = p.sfxOn
-  prefs.musicVol = Math.max(0, Math.min(1, p.musicVol))
-  prefs.sfxVol = Math.max(0, Math.min(1, p.sfxVol))
+  prefs.musicVol = clampVolume(p.musicVol, 0.5)
+  prefs.sfxVol = clampVolume(p.sfxVol, 0.7)
   applyPrefs()
 }
 

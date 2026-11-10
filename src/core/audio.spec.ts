@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  clampVolume,
   configureAudio,
   disposeAudio,
   playSfx,
@@ -24,6 +25,26 @@ describe('音频引擎 · 无音频环境下免疫(no-op 不抛错)', () => {
   it('sfx 关闭后,playSfx 仍不抛(守卫先于采样,不会碰不存在的引擎)', () => {
     configureAudio({ musicOn: true, sfxOn: false, musicVol: 1, sfxVol: 1 })
     for (const n of ALL_SFX) expect(() => playSfx(n)).not.toThrow()
+  })
+
+  /*
+   * 音量坏值必须回落到默认,不许留 NaN。
+   *
+   * `Math.max(0, Math.min(1, NaN))` 仍是 NaN —— 两道钳制都留不住它。
+   * NaN 一路传到 applyPrefs 的 `gain.rampTo(NaN)`,把 gain 参数污染成 NaN,
+   * 表现是整块音频静音或 Tone 抛错。入参当前由 settings.sanitize 兜着,
+   * 但音频模块不该依赖调用方替它保证。
+   */
+  it('音量坏值(NaN/Infinity)回落到默认,不把 NaN 传下去', () => {
+    // 直接钉住钳制函数本身:无音频环境下 applyPrefs 会提前 return,
+    // 经 configureAudio 测不到 NaN 是否被挡住(实测:换回旧写法用例仍绿)
+    expect(clampVolume(NaN, 0.5), 'NaN 不许漏过 —— max/min 都留不住它').toBe(0.5)
+    expect(clampVolume(Infinity, 0.5)).toBe(0.5)
+    expect(clampVolume(-Infinity, 0.7)).toBe(0.7)
+    expect(clampVolume(2, 0.5), '超上界钳到 1').toBe(1)
+    expect(clampVolume(-1, 0.5), '负值钳到 0').toBe(0)
+    expect(clampVolume(0.25, 0.5), '正常值原样通过').toBe(0.25)
+    expect(() => configureAudio({ musicOn: true, sfxOn: true, musicVol: NaN, sfxVol: NaN })).not.toThrow()
   })
 
   it('start/stop/unlock 在无音频环境全为 no-op,不抛、不夹回执', () => {

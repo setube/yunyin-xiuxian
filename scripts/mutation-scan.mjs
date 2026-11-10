@@ -181,21 +181,6 @@ const EQUIVALENT = [
       '那条路直方图化,一个越界的 1.02 会让进度条画到框外。'
   },
   {
-    file: 'src/core/audio.ts',
-    text: 'Math.max(0, Math.min(1, p.musicVol))',
-    why:
-      '音量夹逼。取值路径是 App.vue 传 musicVol/100,正常档位本就在 [0,1];' +
-      '平时观察不到,只有存档被外部改成 200 或 -5 才起作用。' +
-      '判据不可达的原因是那两条钳制写在 prefs 模块私域里:不导出读不到,导出又会被' +
-      'deadExportAudit 判为「骨架空转」;而要让 applyPrefs 真正跑一次还得完整模拟 Tone.js。' +
-      '现有用例只钉「畸形输入不抛错」,是这条边界上能验到的最远处。'
-  },
-  {
-    file: 'src/core/audio.ts',
-    text: 'Math.max(0, Math.min(1, p.sfxVol))',
-    why: '同 musicVol:音效音量夹逼,理由一致。'
-  },
-  {
     file: 'src/core/combat.ts',
     text: 'Math.max(0.02, factor)',
     why:
