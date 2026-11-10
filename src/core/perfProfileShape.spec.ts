@@ -129,3 +129,29 @@ describe('启动分段 · 顺序按真实打点', () => {
     expect(SCRIPT, '合计该取遍历后的 prev(即末项)').toContain('const last = prev;')
   })
 })
+
+describe('启动预算 · 按限速倍数放宽', () => {
+  /**
+   * 「预算按倍数放宽」本身由上面那条 `Math.max(1, Math.min(cpuRate, 4))` 计数判据覆盖
+   * (它要求两处预算都放宽),这里不再重复钉同一条源码。
+   *
+   * 这一组只补两件上面没覆盖的事:
+   *   一 判据比的是**主线程那一段**,不是含网络等待的合计;
+   *   二 注释里的实测数字要与 `computeMs` 的口径一致。
+   */
+  it('判据比的是主线程那一段,不是含网络等待的合计', () => {
+    // computeMs = last - boot:start;含导航等待的合计在弱网下会被网络时间撑爆
+    expect(SCRIPT, '该扣掉 boot:start 之前的网络等待').toContain('byName.get("boot:start")')
+    expect(SCRIPT, '超标时要比 computeMs 而不是 total').toContain('computeMs > STARTUP_BUDGET_MS')
+  })
+
+  it('注释里的实测数字与 computeMs 口径一致,不写含导航等待的旧数', () => {
+    /*
+     * **要看 RAW 而不是 SCRIPT**:SCRIPT 是 `stripComments(RAW)` 的结果,
+     * 拿它去断言「注释里没有某个字符串」恒真 —— 判据空转。
+     * 这一条是我自己写出来又自己抓到的(正向塞回旧注释,判据仍然绿)。
+     */
+    expect(RAW, '注释还留着与 computeMs 口径不符的旧数').not.toContain('late(2KB 存档)108ms')
+    expect(RAW, '注释还留着与 computeMs 口径不符的旧数').not.toContain('4x 下实测 346ms')
+  })
+})
