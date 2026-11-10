@@ -496,10 +496,24 @@ if (startupOnly) {
 for (const view of VIEWS) {
   if (only && view.name !== only) continue;
   let record = null;
+  /*
+   * context 必须在外层声明并在 finally 里收 —— 记在 try 里的话,视图一抛异常就永远关不掉。
+   *
+   * 踩过:4x 限速下 goto 偶发超时,那一页的 context 带着整个渲染进程留着;
+   * 后面几个视图接着开新 context,内存与句柄越堆越多,于是**崩的页一个比一个多**
+   * (实测同一轮里 codex 与 dongfu 先后超时,单独跑这两个都过)。
+   * 一个假崩溃会把后面几页一起拖红,读数就全不可信了。
+   */
+  let context = null;
   try {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     // 每视图注入一份后期档;缺档会落到欢迎页,门量空
-    if (!noSave) await seedSave(context, stress ? stressSlices() : lateSlices());
+    if (!noSave) {
+      const base = stress ? stressSlices() : lateSlices();
+      // `--active` 让引擎每 tick 真打一场:本档原先只量静置页面,而放置游戏的时间
+      // 大多花在「历练在途」这种持续产生战斗与战报的状态上
+      await seedSave(context, activeLoad ? withActiveRun(base) : base);
+    }
     const page = await openPage(context);
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
@@ -537,9 +551,11 @@ for (const view of VIEWS) {
       mountLongTaskMaxMs: Array.isArray(mountTasks) && mountTasks.length > 0 ? Math.round(Math.max(...mountTasks)) : 0,
       errors
     };
-    await context.close();
   } catch (err) {
     record = { name: view.name, route: view.route, crashed: String(err).slice(0, 160) };
+  } finally {
+    // 成功与失败都要收:失败的 context 留着,后面几页会被它拖崩(见外层注释)
+    await context?.close().catch(() => {});
   }
   results.push(record);
 }
