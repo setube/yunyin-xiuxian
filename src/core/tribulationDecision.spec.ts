@@ -126,6 +126,23 @@ describe('⑥ 三维折算(防御→抗性 / 气血→开劫水位)', () => {
     expect(statGuardOf({ defense: bareDef, maxHp: bareHp, major: MAJOR, sub: SUB })).toEqual({ resist: 0, guard: 0 })
   })
 
+  /*
+   * 属性**低于**裸修为时不许倒扣。
+   *
+   * 变异扫描报 `Math.max(0, normalized)` 改坏不红。去掉它,ratio < 1 时
+   * normalized = ratio - 1 是负数,resist/guard 跟着变负 —— 而这两个值在
+   * 结算里是**减伤**,负数等于加伤,玩家会因为这层「折算」被打得更疼。
+   * 何时会低于裸值:老档、改过装备、或 realmScale 随境界变化后的中间态。
+   */
+  it('属性低于裸修为时记 0,不倒扣成加伤', () => {
+    const lowDef = bareDef * 0.6
+    const lowHp = bareHp * 0.6
+    const g = statGuardOf({ defense: lowDef, maxHp: lowHp, major: MAJOR, sub: SUB })
+    expect(g.resist, '抗性不许为负').toBe(0)
+    expect(g.guard, '护持不许为负').toBe(0)
+    expect(statGuardOf({ defense: 0, maxHp: 0, major: MAJOR, sub: SUB })).toEqual({ resist: 0, guard: 0 })
+  })
+
   it('坏档三维 Infinity/境界爆表时整块作废,不再靠封顶兜底(见 utils/gnum toNum)', () => {
     // toNum 在 e>308 返回 Infinity:按 0 折算,不经 Math.min(CAP,…) 折成满抗
     expect(statGuardOf({ defense: Infinity, maxHp: Infinity, major: MAJOR, sub: SUB })).toEqual({ resist: 0, guard: 0 })
