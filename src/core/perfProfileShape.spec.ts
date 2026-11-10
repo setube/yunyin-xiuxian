@@ -74,3 +74,31 @@ describe('性能剖面的量法', () => {
     expect(tryBody, '成功路径不再单独关 —— 收到 finally 里统一处理').not.toMatch(/await context\.close\(\)/)
   })
 })
+
+describe('内存档 · 「读数不变」守卫看原始字节', () => {
+  /**
+   * 这条守卫原来看**显示值**是否全同,而显示值取整到 0.1MB。
+   *
+   * GC 后的驻留本身在几十 KB 量级随机游走 —— 实测 4 点原始字节
+   * 5883664 → 5861740 → 5857920 → 5861580,取整后全成 5.6MB,
+   * 于是一次**正常的平坦测量**被误判成「度量手段失效,这一档等于空转」。
+   * 同一配置连跑两次,两次都误报。
+   *
+   * 守卫要看的是原始字节是否一个字都没变 —— 那才是真·度量失效
+   * (比如退回 performance.memory:它的 usedJSHeapSize 在本机是固定值)。
+   */
+  it('采样同时留原始字节,守卫比 rawBytes 而不是 mb', () => {
+    expect(SCRIPT, '采样要同时返回原始字节').toMatch(/return \{ bytes: usedSize, mb: /)
+    expect(SCRIPT, '守卫该比原始字节').toContain('rawBytes.every((v) => v === rawBytes[0])')
+    // 阴性对照:拿显示值判「全同」的老写法不许回来
+    expect(SCRIPT, '别再用显示值判全同').not.toContain('known.every((v) => v === known[0])')
+  })
+
+  it('判据抓得住:把守卫改回比显示值即红', () => {
+    // 只钉语义边界:0.1MB 分辨率下,几十 KB 的真实差会被抹平
+    const raw = [5883664, 5861740, 5857920, 5861580]
+    const mb = raw.map((b) => Math.round((b / 1048576) * 10) / 10)
+    expect(new Set(mb).size, '取整后确实全同').toBe(1)
+    expect(new Set(raw).size, '原始字节并不同').toBe(4)
+  })
+})
