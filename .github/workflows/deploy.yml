@@ -27,6 +27,13 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      # 依赖缓存:setup-bun 的缓存只覆盖 bun 可执行文件,不覆盖包本体
+      - name: 缓存依赖
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
       - name: 安装依赖
         run: bun install --frozen-lockfile
       - name: 静态检查 + 单元测试
