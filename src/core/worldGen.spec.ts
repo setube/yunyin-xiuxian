@@ -61,6 +61,26 @@ describe('虚界生成器', () => {
     expect(selfNovelty).toBeLessThan(NOVELTY_MIN)
   })
 
+  /*
+   * 老档历史条目没有 topStyles(该字段是后加的,HistoryEntry 里是可选)。
+   *
+   * 变异扫描报 `if (!entry.topStyles) return 0.5` 改坏不红 —— 去掉它会在
+   * `entry.topStyles!.includes(...)` 上抛 TypeError。0.5 是中性值(完全没信息),
+   * 不是 0(完全重合)也不是 1(完全不同)。
+   */
+  it('历史条目缺 topStyles 时按中性 0.5 计,不抛', () => {
+    const chiyan = CELESTIAL_WORLDS[0]!
+    const audit = auditVoidWorld(chiyan)
+    expect(
+      () => noveltyScore(chiyan, audit, [{ world: chiyan }]),
+      '老档条目没有 topStyles,不该抛'
+    ).not.toThrow()
+    // 缺信息时既不该判成「与自身重合」(<NOVELTY_MIN),也不该判成「毫无重合」(1)
+    const n = noveltyScore(chiyan, audit, [{ world: chiyan }])
+    expect(n).toBeGreaterThan(0)
+    expect(n).toBeLessThan(1)
+  })
+
 /**
  * 奖励定价的可达值域。
  *
