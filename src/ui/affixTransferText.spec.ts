@@ -3,6 +3,8 @@
  * 故障注入:把任一标签改成「请选择目标」,禁用措辞那条红。
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { AFFIXES } from '@/data/affixes'
 import { gn } from '@/utils/gnum'
 import {
@@ -74,5 +76,32 @@ describe('词条转移文案 · 长度与措辞', () => {
     // 两个不同词条同 roll 时文案必须不同(效果句各不相同);词条名本身已保证唯一,见 dataTextAudit
     expect(transferAffixText({ id: 'dmg1', roll: 0 })).not.toBe(transferAffixText({ id: 'ac2', roll: 0 }))
     expect(transferDeltaText({ attackPct: 0.05, defensePct: 0.03 }, { attackPct: 0.1, defensePct: 0.03 })).toBe('攻击 +5%')
+  })
+})
+
+describe('词条转移面板 · 落位行只查一次表', () => {
+  /**
+   * 模板里原来一颗钮就调 5 次 `targetLine(l.replaceId)`,而它只是
+   * `props.flow.targetLines.find(...)` —— 每个落位行都重算,且列表本身还会重建。
+   *
+   * 这与 TrialPanel 的 pactRows、MarksPanel 的 markRows、EquipmentDetailDialog 的 setMark
+   * 是同一类:纯查表在 setup 里算一次,模板只读字段。
+   */
+  it('landings 自带匹配到的目标行,模板不再按 id 回查', () => {
+    const panel = readFileSync(join(__dirname, '../components/equipment/AffixTransferPanel.vue'), 'utf8')
+    const tpl = panel.slice(0, panel.indexOf('<script'))
+    expect(tpl, '模板里还在按 id 回查目标行').not.toContain('targetLine(')
+    expect(tpl, '模板该直读落位行自带的字段').toContain('l.target')
+
+    const flow = readFileSync(join(__dirname, '../composables/useAffixTransfer.ts'), 'utf8')
+    expect(flow, 'landings 该在 setup 里把目标行配上').toMatch(/transferLandings\([^)]*\)\.map\(/)
+    expect(flow, '该用 find 配一次').toContain('lines.find(x => x.id === l.replaceId)')
+  })
+
+  it('targetLines 不再对外暴露 —— 没人读了就别留第二个入口', () => {
+    const flow = readFileSync(join(__dirname, '../composables/useAffixTransfer.ts'), 'utf8')
+    // 只许出现在内部 computed 与 landings 里,不许出现在 return 的对象上
+    const ret = flow.slice(flow.lastIndexOf('return {'))
+    expect(ret, 'targetLines 已无外部读者,不该再导出').not.toContain('targetLines,')
   })
 })
