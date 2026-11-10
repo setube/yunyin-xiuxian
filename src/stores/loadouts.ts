@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { EquipSlot } from '@/types'
 import { persistConfig } from '@/utils/storage'
-import { asArray, asFiniteNumber, asRecord, asStringArray, truncateCodePoints } from '@/utils/saveShape'
+import { asArray, asRecord, asStringArray, truncateCodePoints, asTimestamp } from '@/utils/saveShape'
 import { uid } from '@/utils/id'
 import { EQUIP_SLOTS } from '@/data/equipment'
 import { NAME_MAX_LENGTH, SUB_GONGFA_SLOT_HARD_CAP } from '@/data/constants'
@@ -54,7 +54,7 @@ export const useLoadoutsStore = defineStore(
             subGongfa: [...new Set(asStringArray(l.subGongfa))].slice(0, SUB_GONGFA_SLOT_HARD_CAP),
             artifactIds: [...new Set(asStringArray(l.artifactIds))].slice(0, ARTIFACT_MAX_SLOTS),
             equipment,
-            savedAt: asFiniteNumber(l.savedAt, 0, 0)
+            savedAt: asTimestamp(l.savedAt, 0)
           }
         })
       // id 是 apply/rename/remove 的唯一凭据:同号时从第二套起换新 id,不丢弃

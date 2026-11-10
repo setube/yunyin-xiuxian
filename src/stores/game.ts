@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { persistConfig, SAVE_VERSION } from '@/utils/storage'
-import { truncateCodePoints } from '@/utils/saveShape'
+import { truncateCodePoints, asTimestamp } from '@/utils/saveShape'
 import { CREATE_REROLL_QUOTA } from '@/data/constants'
 import type { LinggenProfile } from '@/types'
 import { asFiniteNumber } from '@/utils/saveShape'
@@ -43,8 +43,9 @@ export const useGameStore = defineStore(
       saveVersion.value = Number.isFinite(asNumber)
         ? Math.max(0, Math.min(SAVE_VERSION, Math.floor(asNumber)))
         : SAVE_VERSION
-      createdAt.value = asFiniteNumber(createdAt.value, 0, 0)
-      lastActiveAt.value = asFiniteNumber(lastActiveAt.value, 0, 0)
+      // 时间戳也要钳非负:asTimestamp 只挡「坏成不了日期」,负数仍是合法时间戳(1969 年)
+      createdAt.value = Math.max(0, asTimestamp(createdAt.value, 0))
+      lastActiveAt.value = Math.max(0, asTimestamp(lastActiveAt.value, 0))
       totalPlaySec.value = asFiniteNumber(totalPlaySec.value, 0, 0)
       // 不限次时旧档遗留的数字额度一律归位
       createRerolls.value =

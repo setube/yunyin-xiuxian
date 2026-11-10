@@ -10,6 +10,7 @@ import {
   RULE_MULT_MAX,
   asPrice,
   SAVE_GNUM_MAX_EXP,
+  asTimestamp,
   truncateCodePoints
 } from './saveShape'
 import { formatGN } from '@/utils/format'
@@ -243,5 +244,31 @@ describe('saveShape · asPerRounds', () => {
   it('给定 interval 写成 0 或负数,当读回战斗规则,则至少为 1(否则 round % 0 恒为 NaN)', () => {
     expect(asPerRounds({ interval: 0 })!.interval).toBe(1)
     expect(asPerRounds({ interval: -7 })!.interval).toBe(1)
+  })
+})
+
+describe('asTimestamp · 有限但超出 Date 范围的数', () => {
+  /**
+   * `asFiniteNumber` 只挡非有限数。坏档写 `lastAt: 1e300` 它照样放行,
+   * 之后 `new Date()` 判成 Invalid Date,渲染出「NaN月NaN日」/「Invalid Date」,不报任何错。
+   * 自愈路径正是该在这一层挡掉 —— 那才是 sanitize 的职责。
+   */
+  it('范围内照收,超范围/非有限一律兜底', () => {
+    expect(asTimestamp(1_700_000_000_000), '正常时间戳该原样保留').toBe(1_700_000_000_000)
+    expect(asTimestamp(0)).toBe(0)
+    for (const bad of [8_640_000_000_000_001, 1e300, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(asTimestamp(bad), `ts=${bad} 不该通过`).toBe(0)
+    }
+    expect(asTimestamp('1700000000000' as never), '字符串不是时间戳').toBe(0)
+    expect(asTimestamp(undefined)).toBe(0)
+  })
+
+  it('边界值本身要通过(±8.64e15 是 Date 的合法端点)', () => {
+    expect(asTimestamp(8_640_000_000_000_000)).toBe(8_640_000_000_000_000)
+    expect(asTimestamp(-8_640_000_000_000_000)).toBe(-8_640_000_000_000_000)
+  })
+
+  it('可注入兜底值', () => {
+    expect(asTimestamp(1e300, 42)).toBe(42)
   })
 })

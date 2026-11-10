@@ -25,7 +25,7 @@ import {
 import { consignPrice, generateMarketStock, herbSellBatch, marketEquipInstance, materialSellPrice, pillSellPrice } from '@/core/marketService'
 import type { HerbGrade } from '@/data/herbGrades'
 import { herbGradeOfMajor, isHerbGrade } from '@/data/herbGrades'
-import { asArray, asFiniteNumber, asPrice } from '@/utils/saveShape'
+import { asArray, asPrice, asTimestamp } from '@/utils/saveShape'
 import { gnZero, mulN } from '@/utils/gnum'
 import type { GNum } from '@/types'
 
@@ -45,7 +45,7 @@ export const useMarketStore = defineStore(
      * 先完整校验、再按序认号:坏格不会抢走后面好货的号。
      */
     function sanitize(): void {
-      stockedAt.value = Math.max(0, asFiniteNumber(stockedAt.value, 0))
+      stockedAt.value = Math.max(0, asTimestamp(stockedAt.value, 0))
       // idxClean:该行的 idx 原本就是合法非负整数(没被坏档修正过)
       const validated: (MarketSlot & { idxClean: boolean })[] = []
       const usedIdx = new Set<number>()

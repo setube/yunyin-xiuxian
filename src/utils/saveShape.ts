@@ -32,10 +32,30 @@ export function asRecordOf<T>(v: unknown, isValid: (x: unknown) => boolean): Rec
   return out
 }
 
+/**
+ * `Date` 能表示的时间戳上下界(±8.64e15 毫秒)。
+ *
+ * `Number.isFinite` 挡不住「有限的超范围数」:坏档写 `lastAt: 1e300` 它照样是有限数,
+ * 过了 `asFiniteNumber` 这一关,然后被 `new Date()` 变成 Invalid Date ——
+ * 渲染出来是「NaN月NaN日」或英文「Invalid Date」,不报任何错。
+ * 时间戳字段的守卫用它当上界。
+ */
+export const MAX_TIMESTAMP_MS = 8_640_000_000_000_000
+
 /** 有限数字就用它,否则兜底;可选下限 */
 export function asFiniteNumber(v: unknown, fallback: number, min?: number): number {
   const n = typeof v === 'number' && Number.isFinite(v) ? v : fallback
   return min === undefined ? n : Math.max(min, n)
+}
+
+/**
+ * 时间戳:有限且在 `Date` 能表示的范围内,否则兜底(默认 0 =「没有记录」)。
+ *
+ * 比 `asFiniteNumber` 多挡一类:有限但超出范围的数(`1e300`)。这类值不会抛错,
+ * 只会在渲染期变成「NaN月NaN日」/「Invalid Date」,自愈路径正是该把它在这里挡掉。
+ */
+export function asTimestamp(v: unknown, fallback = 0): number {
+  return typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= MAX_TIMESTAMP_MS ? v : fallback
 }
 
 /** 残余生命占比:夹到 [0.05, 1],非有限数兜底 1;天界/凡界远征共用 */

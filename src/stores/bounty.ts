@@ -16,7 +16,7 @@ import { pillDef } from '@/data/pills'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
 import { equipBountyReward, generateBounty, herbBountyReward } from '@/core/bountyService'
 import { HERB_GRADES, type HerbGrade } from '@/data/herbGrades'
-import { asArray, asFiniteNumber, asNonNegInt, asPrice } from '@/utils/saveShape'
+import { asArray, asFiniteNumber, asNonNegInt, asPrice, asTimestamp } from '@/utils/saveShape'
 
 /** 募草交货挑品:自低品起取第一档够 target 的(高阶留给方子) */
 function pickHerbDeliverGrade(resources: { herbOf(g: HerbGrade): number }, target: number): HerbGrade | null {
@@ -51,7 +51,7 @@ export const useBountyStore = defineStore(
     const bountyMajor = ref<number | null>(null)
     /** 存档修复:订单逐纸修形,烂纸丢弃;时刻夹回非负(归零会即时换新) */
     function sanitize(): void {
-      bountyAt.value = Math.max(0, asFiniteNumber(bountyAt.value, 0))
+      bountyAt.value = Math.max(0, asTimestamp(bountyAt.value, 0))
       const bm = asFiniteNumber(bountyMajor.value, -1)
       bountyMajor.value = bm >= 0 ? Math.min(MAX_MAJOR, Math.floor(bm)) : null
       const clean: BountySlot[] = []
