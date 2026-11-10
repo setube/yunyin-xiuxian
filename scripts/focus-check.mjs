@@ -107,6 +107,50 @@ try {
       }
     }
   }
+
+  /*
+   * 键盘可达性:main 里所有「能点」的元素,要么能 Tab 到,要么是**规矩的 roving tabindex**。
+   *
+   * 为什么单独量:切页焦点与弹窗焦点陷阱都只管「焦点在哪」,不管「能不能到」。
+   * 此前 17 个可点元素扫出来 Tab 不到,查下来全是 `role="tab"` 的 roving 模式
+   * (整个 tablist 只留一个 tabindex=0,靠左右键走)—— 那是 WAI-ARIA 的正确做法,不是缺陷。
+   * 所以判据不能只数 tabindex<0,要**排除规矩的 roving**,否则报的全是假阳性。
+   *
+   * 规矩的 roving 判据:元素在 role=tablist 里、自己是 role=tab、
+   * 且同一父级里另有一个 tabindex=0 的兄弟(说明整组确实留了入口)。
+   * 缺任一条都算「Tab 到不了」。
+   */
+  {
+    const ROUTES = [
+      '/', '/cultivation', '/adventure', '/inventory', '/character', '/codex', '/souls', '/titles',
+      '/settings', '/build', '/collection', '/legacy', '/dongfu', '/world', '/celestial', '/market', '/apprentice'
+    ]
+    const unreachable = []
+    for (const route of ROUTES) {
+      await page.evaluate(r => {
+        location.hash = '#' + r
+      }, route)
+      await page.waitForTimeout(500)
+      const found = await page.evaluate(() => {
+        const main = document.querySelector('main')
+        if (!main) return []
+        const out = []
+        for (const el of main.querySelectorAll('button, a[href], [role=button]')) {
+          if (el.tabIndex >= 0 || el.disabled || el.offsetParent === null) continue
+          const inTablist = !!el.closest('[role=tablist]') && el.getAttribute('role') === 'tab'
+          const group = el.parentElement
+          const hasRoving = group && group.querySelector(':scope > [tabindex="0"]')
+          if (inTablist && hasRoving) continue
+          out.push((el.textContent || '').trim().slice(0, 20) || el.tagName)
+        }
+        return out
+      })
+      for (const f of found) unreachable.push(`${route} 「${f}」`)
+    }
+    const ok = unreachable.length === 0
+    console.log(`  ${ok ? '✓' : '✗'} ${ROUTES.length} 页可点元素都能 Tab 到(${ok ? '含规矩的 roving tabindex' : `${unreachable.length} 处到不了`})`)
+    if (!ok) failures.push(`这些可点元素 Tab 到不了:${unreachable.slice(0, 5).join(' | ')}`)
+  }
 } finally {
   await browser?.close()
   await server.httpServer.close()
