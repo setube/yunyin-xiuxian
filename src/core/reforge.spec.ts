@@ -387,6 +387,22 @@ describe('重铸动作 · 条数与数值一起重掷', () => {
   })
 
   /*
+   * 装备本身不存在(uid 过期:详情页开着,另一处把装备分解了)。
+   *
+   * 与上面「词条不在件上」是两个守卫:`if (!inst) return false` 在前,
+   * `if (!inst.affixes.some(...))` 在后。少了第一道会直接
+   * `TypeError: Cannot read properties of undefined (reading 'affixes')`。
+   */
+  it('封存:uid 找不到这件装备时返回 false,不抛也不扣费', () => {
+    const res = useResourcesStore()
+    res.addStone(gn(1e30))
+    const before = toNum(res.spiritStone)
+    expect(() => sealAffix('ghost-uid', 'atk1'), '过期 uid 不该抛').not.toThrow()
+    expect(sealAffix('ghost-uid', 'atk1')).toBe(false)
+    expect(toNum(res.spiritStone), '没封成不扣费').toBe(before)
+  })
+
+  /*
    * 词条根本不在件上时不该收费、也不该封。
    *
    * `unsealAffix` 那条有同名用例(「ghost」),`sealAffix` 这侧一直没有 ——
