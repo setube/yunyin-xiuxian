@@ -52,7 +52,11 @@
           />
           {{ m!.name }}:{{ m!.text }}
         </p>
-        <div class="mt-2 flex gap-2">
+        <!-- 收益归卡面:按钮只写代价与余量(同 ExpeditionPanel,见 dataTextAudit 的同一条判据) -->
+        <p class="mt-2 text-[10px] text-ink-faint tabular">
+          入界 {{ MUTATION_ENTRY_COST }} 道源 · 破解得 {{ MUTATION_BASE_REWARD }}
+        </p>
+        <div class="mt-1 flex gap-2">
           <button
             class="btn-seal flex-1 !py-2 !text-[12px]"
             :disabled="busy !== null || endgame.daoSource < MUTATION_ENTRY_COST"
@@ -64,7 +68,7 @@
                 ? `应 战(${busy.reason})`
                 : endgame.daoSource < MUTATION_ENTRY_COST
                   ? `应 战(道源尚差 ${daoSourceShortText(MUTATION_ENTRY_COST, endgame.daoSource)} · 需 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
-                  : `应 战(道源 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)} · 破解得 ${MUTATION_BASE_REWARD})`
+                  : `应 战(道源 ${MUTATION_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
             }}
           </button>
           <button class="btn-ghost !px-3 !text-[12px]" @click="mutationDraw = rollMutators()">再探</button>
@@ -126,8 +130,12 @@
         <p class="mt-1 flex flex-wrap gap-x-3 text-[10px] text-violet-ink">
           <span v-for="(r, i) in row.def.ruleText" :key="i">{{ r }}</span>
         </p>
+        <!-- 收益归卡面:按钮只写代价与余量(同 ExpeditionPanel,见 dataTextAudit 的同一条判据) -->
+        <p class="mt-1.5 text-[10px] text-ink-faint tabular">
+          入界 {{ row.def.entryCost }} 道源 · 功成得 {{ row.def.rewardDaoSource }}
+        </p>
         <button
-          class="btn-ghost mt-2.5 w-full !py-2 !text-[13px]"
+          class="btn-ghost mt-1.5 w-full !py-2 !text-[13px]"
           :disabled="busy !== null || endgame.daoSource < row.def.entryCost"
           :title="busy?.reason ?? (endgame.daoSource < row.def.entryCost ? `道源尚差 ${daoSourceShortText(row.def.entryCost, endgame.daoSource)}` : undefined)"
           @click="goTrial(row.def.id)"
@@ -137,7 +145,7 @@
               ? `应 试(${busy.reason})`
               : endgame.daoSource < row.def.entryCost
                 ? `应 试(道源尚差 ${daoSourceShortText(row.def.entryCost, endgame.daoSource)} · 需 ${row.def.entryCost} · 余 ${formatNum(endgame.daoSource)})`
-                : `应 试(道源 ${row.def.entryCost} · 余 ${formatNum(endgame.daoSource)} · 功成得 ${row.def.rewardDaoSource})`
+                : `应 试(道源 ${row.def.entryCost} · 余 ${formatNum(endgame.daoSource)})`
           }}
         </button>
       </div>

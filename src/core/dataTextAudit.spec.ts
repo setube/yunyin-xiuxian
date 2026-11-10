@@ -650,11 +650,14 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     expect(hits, '一处 busy.reason 都没读到,断言形同虚设').toBeGreaterThanOrEqual(5)
   })
 
-  it('启程按钮只写代价与余量 —— 收益归卡面,不塞进主词后面把自己撑成两行', () => {
+  it('入口按钮只写代价与余量 —— 收益归卡面,不塞进主词后面把自己撑成两行', () => {
     /*
      * 实测:390 宽下「启 程(道源 20 · 余 1,200 · 破界底赏 60)」折成两行,
      * 括号里断在「破界底赏 / 60」处。三样里面「破界底赏」是**收益**,
      * 按本站文案纪律(按钮写代价或拒因,收益归卡面)不该在按钮里。
+     *
+     * 远征改掉之后,天道变数与天道试炼还留着同一个写法(「破解得 55」「功成得 45」),
+     * 同屏对比「启 程(道源 20 · 余 1,200)」一眼就看出两套 —— 故三处一并扫。
      */
     const expedition = src('../components/celestial/ExpeditionPanel.vue')
     expect(expedition, '卡面要摊出入界代价与破界底赏').toMatch(/入界 \{\{ world\.entryCost \}\} 道源 · 破界底赏/)
@@ -662,6 +665,21 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     // 按钮里的文案不许再出现收益:它只报代价与余量
     for (const m of expedition.matchAll(/启 程\(([^`]*?)`/g)) {
       expect(m[1] ?? '', `启程按钮里不该夹收益:${(m[1] ?? '').slice(0, 60)}`).not.toContain('破界底赏')
+    }
+
+    const trial = src('../components/celestial/TrialPanel.vue')
+    expect(trial, '变数卡面要摊出入界代价与破解所得').toMatch(
+      /入界 \{\{ MUTATION_ENTRY_COST \}\} 道源 · 破解得 \{\{ MUTATION_BASE_REWARD \}\}/
+    )
+    expect(trial, '试炼卡面要摊出入界代价与功成所得').toMatch(
+      /入界 \{\{ row\.def\.entryCost \}\} 道源 · 功成得 \{\{ row\.def\.rewardDaoSource \}\}/
+    )
+    // 按钮里同样只报代价与余量;两种主词(应 战 / 应 试)都扫
+    for (const m of trial.matchAll(/应 [战试]\(([^`]*?)`/g)) {
+      const inner = m[1] ?? ''
+      for (const word of ['破解得', '功成得', 'rewardDaoSource', 'MUTATION_BASE_REWARD']) {
+        expect(inner, `天道变数/试炼按钮里不该夹收益(${word}):${inner.slice(0, 60)}`).not.toContain(word)
+      }
     }
   })
 
