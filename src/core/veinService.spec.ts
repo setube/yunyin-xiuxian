@@ -87,6 +87,24 @@ describe('灵脉投资(Phase 30.3)', () => {
     expect(investVeinBatch('craft')).toBe(0)
   })
 
+  /*
+   * 未解锁(金丹之前)那一档之前没有用例 —— 变异扫描报 veinInvestPlan 的
+   * `if (!veinsUnlocked()) return zero(null)` 改坏不红。
+   *
+   * 去掉守卫时,dongfu.veinTotal 是 0、主脉未定,按主脉档 70 算,灵石又管够,
+   * 于是计划里 points 变成一个正数 —— 界面会报「可投 N 点」并让按钮可点,
+   * 而 investVein/investVeinBatch 自己还有守卫,点下去一注也投不成。
+   */
+  it('未解锁时计划给不出点数,且 investVein 也一注投不成', () => {
+    usePlayerStore().major = 1 // 筑基,未到金丹
+    const plan = veinInvestPlan('gather')
+    expect(plan.points, '未解锁不该报出可投点数').toBe(0)
+    expect(plan.blocked, '未解锁不是「有原因受阻」,是压根没开放').toBeNull()
+    expect(investVein('gather'), '单点同样投不成').toBe(false)
+    expect(investVeinBatch('gather'), '批量同样投不成').toBe(0)
+    expect(useDongfuStore().veinPoints.gather ?? 0, '一注都没落地').toBe(0)
+  })
+
   it('计划按灵石取 floor(灵石/单价),不四舍五入', () => {
     const cost = toNum(veinPointCost())
     useResourcesStore().spiritStone = gn(2.5 * cost) // 2.5 倍单价:floor 2 / round 3

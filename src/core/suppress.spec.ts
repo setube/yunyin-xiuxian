@@ -55,6 +55,18 @@ describe('区域镇压系统', () => {
       expect(suppressYield('guzhanchang')?.id).toBe('page') // 古战场遗迹:ruin
     })
 
+    /*
+     * 变异扫描报 `if (!region) return null` 改坏不红。
+     *
+     * 区域 id 可能来自存档里的字符串(旧档/手改档/将来删掉的地界),
+     * 去掉守卫后 `region.eventTags` 直接抛 TypeError。
+     */
+    it('认不出的地界 id 返回 null,不抛', () => {
+      expect(() => suppressYield('no_such_region'), '坏 id 不该抛').not.toThrow()
+      expect(suppressYield('no_such_region')).toBeNull()
+      expect(suppressYield('')).toBeNull()
+    })
+
     it('层级越高,同一物产产出越丰(线性,不随灵石做指数)', () => {
       // 同为林区:黑风林 tier 3 vs 迷雾沼泽 tier 9
       const low = suppressYield('heifeng')!
