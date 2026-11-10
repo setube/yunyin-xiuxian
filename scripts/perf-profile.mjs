@@ -459,15 +459,24 @@ if (startupOnly) {
   const marks = await page.evaluate(() =>
     performance.getEntriesByType("mark").map((m) => ({ name: m.name, at: Math.round(m.startTime * 100) / 100 }))
   );
+  /*
+   * 顺序必须按**真实**打点次序,不是按「直觉上该在哪个阶段」。
+   *
+   * `boot:engineStart` 系那一串是 App.vue 的 `onMounted` 里跑的,
+   * 而 `onMounted` 在 `app.mount()` **返回之前**就同步执行完了 ——
+   * 于是 engineStart 比 main.ts 里紧随 `app.mount()` 之后的 `boot:mounted` 还要早。
+   * 原先把它排在 mounted 之后,实测每次都算出负增量(+-5.3ms),
+   * 报表上看起来像「有一段花了 -5 毫秒」,而那只是顺序写错了。
+   */
   const order = [
     "boot:start",
     "boot:preflight",
     "boot:sanitize",
-    "boot:mounted",
     "boot:engineStart",
     "boot:offlineInputs",
     "boot:offlineSettled",
     "boot:achievements",
+    "boot:mounted",
   ];
   const byName = new Map(marks.map((m) => [m.name, m.at]));
   console.log("\n启动分段(ms,相对导航起点):");
@@ -479,7 +488,13 @@ if (startupOnly) {
     console.log(`  ${name.padEnd(22)} @${String(at).padStart(8)}  +${delta}`);
     prev = at;
   }
-  const last = byName.has("boot:achievements") ? byName.get("boot:achievements") : prev;
+  /*
+   * 末尾取**序列里最后一个实际存在的标记**,不写死某个名字。
+   * 写死 `boot:achievements` 时,它在 engineStart 之后、mounted 之前,
+   * 于是「启动合计」漏掉 mounted 那一段(实测 142.2 vs 142.3 —— 这次差 0.1ms,
+   * 但顺序一改就可能差出整段)。
+   */
+  const last = prev;
   /*
    * 启动合计也进判据。
    *

@@ -102,3 +102,30 @@ describe('内存档 · 「读数不变」守卫看原始字节', () => {
     expect(new Set(raw).size, '原始字节并不同').toBe(4)
   })
 })
+
+describe('启动分段 · 顺序按真实打点', () => {
+  /**
+   * `boot:engineStart` 系那一串跑在 App.vue 的 `onMounted` 里,而 `onMounted`
+   * 在 `app.mount()` **返回之前**就同步执行完了 —— 所以 engineStart 比 main.ts 里
+   * 紧随 `app.mount()` 之后的 `boot:mounted` 还要**早**。
+   *
+   * 原先 order 数组把 mounted 排在 engineStart 前面,实测每次都算出负增量
+   * (`+-5.3ms`),报表上像「有一段花了 -5 毫秒」。实测三次:engineStart 恒比 mounted 早约 5.3ms。
+   */
+  it('order 里 engineStart 排在 mounted 之前', () => {
+    const start = SCRIPT.indexOf('const order = [')
+    const order = SCRIPT.slice(start, SCRIPT.indexOf('];', start))
+    const atEngine = order.indexOf('boot:engineStart')
+    const atMounted = order.indexOf('boot:mounted')
+    expect(atEngine, 'order 里找不到 engineStart').toBeGreaterThan(-1)
+    expect(atMounted, 'order 里找不到 mounted').toBeGreaterThan(-1)
+    expect(atEngine, 'engineStart 在 onMounted 里跑,比 mounted 打点更早').toBeLessThan(atMounted)
+  })
+
+  it('「启动合计」取序列末项,不写死某个标记名', () => {
+    expect(SCRIPT, '写死 boot:achievements 会漏掉 mounted 那一段').not.toContain(
+      'const last = byName.has("boot:achievements")'
+    )
+    expect(SCRIPT, '合计该取遍历后的 prev(即末项)').toContain('const last = prev;')
+  })
+})
