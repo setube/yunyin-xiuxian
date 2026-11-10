@@ -17,7 +17,13 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-const ROOTS = ['src/components', 'src/views']
+/*
+ * 两类落点都扫:模板(.vue)与文案层(.ts 的 *Text 模块)。
+ * `upgradeShortToast` 那种在 .ts 里拼「灵石尚差 N」的写法同样面向玩家 ——
+ * 只扫 .vue 会漏掉半个文案层。
+ */
+const VUE_ROOTS = ['src/components', 'src/views']
+const TS_FILES = ['src/ui/buildingText.ts', 'src/ui/cultivationText.ts', 'src/ui/forgeText.ts', 'src/ui/gongfaText.ts', 'src/ui/pillText.ts', 'src/ui/reforgeText.ts', 'src/ui/resourceShortText.ts', 'src/ui/affixTransferText.ts']
 /** 能出现在「尚差」前面的资源名。缺一样就报一样,不写「资源尚差」这种统称 */
 const RESOURCES = ['灵石', '道源', '道果', '宿慧', '器灵尘', '灵草', '玄铁', '残页', '悟道点', '灵气']
 
@@ -30,7 +36,7 @@ function vueFiles(): string[] {
       else if (ent.name.endsWith('.vue')) out.push(full.replace(/\\/g, '/'))
     }
   }
-  for (const r of ROOTS) walk(r)
+  for (const r of VUE_ROOTS) walk(r)
   return out
 }
 
@@ -81,6 +87,22 @@ export function findBareShortfalls(text: string, file: string): Bare[] {
     if (/^\s*(\{\{[^}]*\}\}|\$\{[^}]*\})[^`}]*(场|页|部|缕|块|枚|次|件|层|点)/.test(after)) continue
     // 差额针对的是「同一张卡已经点名的东西」时不算
     if (SAME_ITEM_CARDS.some(c => file.endsWith(c.file) && before.includes(c.marker))) continue
+    /*
+     * 拼装型:先算出「尚差 N / 不足」这半句,下一行再拼主语
+     * (`const missing = amount ? `尚差 ${amount}` : '不足'; return `灵石${missing}``)。
+     * 主语在**下一行**,不在 before 窗口里 —— 这类与「灵石尚差 N」等价,不算缺主语。
+     */
+    /*
+     * 拼装型:把「尚差 N / 不足」当成一个片段算出来,下一句再拼主语。
+     * 两种三元写法都算:
+     *   `amount ? `尚差 ${amount}` : '不足'`      (判别式在前)
+     *   `amount === undefined ? '不足' : `尚差 ${amount}``  (判别式取反)
+     * 主语在**下一句**,不在 before 窗口里 —— 与「灵石尚差 N」等价。
+     */
+    const ahead = text.slice(at, at + 300)
+    const pieceInFront = /^\s?\$\{[^}]+\}`?\s*:\s*'不足'/.test(after)
+    const pieceBehind = /'不足'\s*:\s*`$/.test(before)
+    if ((pieceInFront || pieceBehind) && RESOURCES.some(r => ahead.includes(r))) continue
     out.push({ file, line: text.slice(0, at).split('\n').length, snippet: '…' + before.slice(-40).trim() + '尚差' + after.slice(0, 30).replace(/\s+/g, ' ') })
   }
   return out
@@ -90,12 +112,12 @@ describe('差额报出缺的是哪一样', () => {
   it('模板里的「尚差」前面都有资源名', () => {
     const bad: Bare[] = []
     let scanned = 0
-    for (const f of vueFiles()) {
+    for (const f of [...vueFiles(), ...TS_FILES]) {
       const text = stripComments(readFileSync(resolve(__dirname, '../..', f), 'utf-8'))
       scanned += 1
       bad.push(...findBareShortfalls(text, f))
     }
-    expect(scanned, '一个 .vue 都没扫到,判据空转').toBeGreaterThan(50)
+    expect(scanned, '扫到的文件太少,判据空转').toBeGreaterThan(50)
     const report = bad.map(b => `${b.file}:${b.line} 「${b.snippet}」`).join('\n')
     expect(bad.length, `这些地方只写「尚差 N」,没说缺的是哪一样:\n${report}`).toBe(0)
   })
