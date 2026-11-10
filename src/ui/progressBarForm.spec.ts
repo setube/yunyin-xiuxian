@@ -118,3 +118,35 @@ describe('进度条 · 三、样式与组件同源', () => {
     expect(BAR).toContain('bar-fill')
   })
 })
+
+describe('进度条 · 四、坏值不许把槽画满', () => {
+  /**
+   * `Math.max(0, Math.min(1, NaN))` 仍是 NaN(AGENTS.md 记过这一类,音频与成功率都踩过)。
+   * 拼出来的是 `width: NaN%` —— 一个 CSS **语法不合法**的值,整条声明被丢弃。
+   *
+   * 真浏览器实测(300px 的槽)两种情形:
+   *   · 首帧就在(NaN% 走 HTML 解析 / Vue 首次 patch 内联 style)→ 等于没写 → `width: auto`
+   *     → 画出 **300px**,把槽画满;而 `width:0%` 画 0px。
+   *   · 运行中才赋值 → 声明被丢弃 → 元素**保持上一个值**(实测 90px 赋值后仍是 90px)。
+   *
+   * 本组件每次重渲染都会 patch 内联 style,两种情形都可能撞上;共同点是**不报错、也不是 0**。
+   */
+  it('width 计算先过 Number.isFinite,坏值按 0 画', () => {
+    expect(BAR, 'ProgressBar 的 width 要挡住坏值').toContain('Number.isFinite(props.value)')
+    expect(BAR, '坏值该画成 0%,不是 NaN%').toContain("return '0%'")
+  })
+
+  it('判据抓得住:把 isFinite 去掉即红', () => {
+    // 阴性对照:旧写法(裸 max/min 钳制)不该再出现在 width 计算里
+    expect(BAR, 'width 仍是「钳制后直接拼百分数」的老写法').not.toMatch(
+      /const width = computed\(\(\) => `\$\{Math\.max\(0, Math\.min\(1, props\.value\)\) \* 100\}%`\)/
+    )
+  })
+
+  it('NaN 拼出来的是不合法的 CSS 值,不能指望它画成 0', () => {
+    // 只钉住「这是要被挡在门外的那个串」:NaN% 会被浏览器丢弃,不是 0%
+    const illegal = `${Math.max(0, Math.min(1, Number.NaN)) * 100}%`
+    expect(illegal, '这是要被挡在门外的那个串').toBe('NaN%')
+    expect(illegal, '它显然不是 0%').not.toBe('0%')
+  })
+})
