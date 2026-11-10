@@ -67,6 +67,11 @@ const PATTERNS = [
  */
 const EQUIVALENT = [
   {
+    file: 'src/core/pillValue.ts',
+    text: 'Math.max(0, speed + regen)',
+    why: 'tempoRateOf 的返回值只有两个使用点,都是 `> 0` 判断(分型 tempo/state、算 durationSec)。负值与 0 在这两处同判,钳不钳结果一样'
+  },
+  {
     file: 'src/core/combat.ts',
     text: 'Math.max(0.2, 1 - target.defSunder)',
     why: 'ARTIFACT_SUNDER_CAP 是 0.5,defSunder 封顶 0.5,1-0.5=0.5 远高于 0.2 的下限,这道钳制永不触发'
@@ -715,17 +720,27 @@ for (const t of found) {
 console.log(
   `\n检查 ${checked} 处 | 漏 ${missed.length} 处 | 等价跳过 ${skipped.length} 处 | 设施故障 ${infra.length} 处`
 )
+/**
+ * 摘要里**必须带行号**。
+ *
+ * 原先只打「文件 + 文本」,同一个模块里两处同形守卫在摘要里长得一模一样 ——
+ * bounty.ts 的 `if (!eq) return` 有 claim 与 claimEquip 两处,前者有测试、
+ * 后者没有,摘要里分不出来。我按摘要去核实,手动注入的是有测试那处,
+ * 于是把真缺口误判成「扫描误报」,差点写进等价名单放过。
+ * 逐条日志本来就有行号(`rel`),摘要漏了它。
+ */
+const where = (m) => `${m.file.slice(ROOT.length + 1)}:${m.line ?? m.index}`
 if (missed.length > 0) {
   console.log('\n漏掉的(改坏了不会红):')
-  for (const m of missed) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.text.trim().slice(0, 70)}`)
+  for (const m of missed) console.log(`  ${where(m)}  ${m.text.trim().slice(0, 70)}`)
 }
 if (infra.length > 0) {
   console.log('\n设施故障(没测成,不算抓到也不算漏):')
-  for (const m of infra) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.detail}`)
+  for (const m of infra) console.log(`  ${where(m)}  ${m.detail}`)
 }
 if (skipped.length > 0) {
   console.log('\n等价变异(改不出可见差别,不算漏 —— 每条附理由):')
-  for (const m of skipped) console.log(`  ${m.file.slice(ROOT.length + 1)}  ${m.text.trim().slice(0, 70)}\n      理由:${m.why}`)
+  for (const m of skipped) console.log(`  ${where(m)}  ${m.text.trim().slice(0, 70)}\n      理由:${m.why}`)
 }
 /*
  * 退出码:显式 --limit 时严格(本地复现,漏了就是红),默认分片模式只报告。
