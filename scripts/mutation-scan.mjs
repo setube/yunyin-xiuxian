@@ -67,6 +67,11 @@ const PATTERNS = [
  */
 const EQUIVALENT = [
   {
+    file: 'src/core/ruleBudget.ts',
+    text: 'if (!mods) return',
+    why: 'budgetOfMods 开头的 `if (!mods) return 0`:去掉后 `for (const k in undefined)` 在 JS 里合法、一次不迭代,sum 保持 0,同样返回 0'
+  },
+  {
     file: 'src/core/identity.ts',
     text: 'if (!daoId) return',
     why: 'daoNarrative 的 `if (!daoId) return null`:去掉后 switch(null) 不匹配任何 case,落到函数末尾的 `return null` —— 两条路径同值。它的返回值只进 v-if,Vue 里 null 与 undefined 同判'

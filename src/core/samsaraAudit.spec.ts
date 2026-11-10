@@ -117,6 +117,13 @@ describe('轮回审计 · 永久乘区的累积', () => {
     // 天赋 33 项,约十世集齐
     expect(talentsAfterLives(10)).toBe(talentsAfterLives(100))
     expect(daoFruitAfterLives(100)).toBeGreaterThan(daoFruitAfterLives(10) * 9)
+    /*
+     * 负数世数按 0 计 —— hourToPeakUnder 里传的是 `lives - 1`,第 1 世会落到 0,
+     * 而畸形输入(坏档/外部调用)可能给更小的数。变异扫描报 `Math.max(0, lives)`
+     * 改坏不红:去掉后负世数会算出**负道果**,再进 equivalentFruit 的 pow 里。
+     */
+    expect(daoFruitAfterLives(-5), '负世数不许算出负道果').toBe(0)
+    expect(daoFruitAfterLives(0)).toBe(0)
     console.log(
       `\n天赋:第10世 ${talentsAfterLives(10)} 项 = 第100世 ${talentsAfterLives(100)} 项(已封顶)\n` +
         `道果:第10世 ${daoFruitAfterLives(10)} 枚 → 第100世 ${daoFruitAfterLives(100)} 枚(每世 +${FRUIT_PER_LIFE},无顶)`
