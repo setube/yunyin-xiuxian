@@ -1189,7 +1189,8 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     const market = src('../components/market/MarketShelfSection.vue')
     expect(market, '卡面要有实际缺口字段').toContain('stoneShort:')
     expect(market, '卡面缺口用指数感知减法').toContain('subClamp(slot.price, resources.spiritStone)')
-    expect(market, '按钮直接写出尚差多少').toContain('`尚差 ${formatGap(c.stoneShort)}`')
+    // 主语要与 title 一致:光写「尚差 8」时同屏还挂着道源/器灵尘,玩家得回头猜是哪一种
+    expect(market, '按钮直接写出尚差多少(带资源名)').toContain('`灵石尚差 ${formatGap(c.stoneShort)}`')
     expect(market, '扣款瞬时失败也报实际差额').toContain('灵石尚差 ${formatGap(renderSlot(slot).stoneShort)}')
     expect(market, '不再用笼统的灵石不足作按钮文案').not.toContain("? '灵石不足'")
   })

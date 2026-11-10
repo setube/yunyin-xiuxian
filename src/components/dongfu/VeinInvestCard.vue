@@ -88,7 +88,8 @@
               @click="switchArm = row.def.id"
             >
               <span class="whitespace-nowrap">改立主脉 ·</span>
-              <span v-if="switchShort" class="whitespace-nowrap">尚差 {{ formatGap(switchGap) }}</span>
+              <!-- 拒因要报出缺的是哪一样:本行光看「尚差 N」不知道是灵石还是别的(同 ExpeditionPanel 虚界那两枚钮) -->
+              <span v-if="switchShort" class="whitespace-nowrap">灵石尚差 {{ formatGap(switchGap) }}</span>
               <span v-else class="whitespace-nowrap">{{ formatGN(switchCost) }} 石</span>
             </button>
           </div>
