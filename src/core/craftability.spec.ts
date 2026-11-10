@@ -24,6 +24,37 @@ describe('Phase 32.3:成功率四乘区', () => {
     console.log(`\n  一无所知开炉:${(worst * 100).toFixed(2)}%`)
   })
 
+  /*
+   * 坏值(NaN/Infinity)不许把成功率污染成 NaN。
+   *
+   * `Math.max(0, Math.min(1, NaN))` 仍是 NaN —— 三个乘区任一进 NaN,
+   * 整条算式就是 NaN,下游 `rate >= roll` 恒 false:炼丹必失败、买入失败。
+   * 入参当前由 lore.sanitize 的 clampMap 过滤,但这两个函数是导出的,
+   * 不该依赖调用方替它守。
+   */
+  it('四乘区遇到 NaN/Infinity 时按最弱计,结果仍是有限数', () => {
+    const points: [number, number, number, number][] = [
+      [NaN, 0.5, 50, 0],
+      [0.5, NaN, 50, 0],
+      [0.5, 0.5, NaN, 0],
+      [0.5, 0.5, 50, NaN],
+      [Infinity, Infinity, Infinity, Infinity]
+    ]
+    for (const [m, l, sk, ov] of points) {
+      const r = composeSuccessRate(m, l, sk, ov)
+      expect(Number.isFinite(r), `入参 ${[m, l, sk, ov]} 得出了 ${r}`).toBe(true)
+      expect(r).toBeGreaterThan(0)
+      expect(r).toBeLessThan(1)
+    }
+  })
+
+  it('overReachFactor 拿坏值当「不越阶」,不给 NaN', () => {
+    expect(overReachFactor(NaN), 'NaN 不该走越阶惩罚').toBe(1)
+    expect(overReachFactor(Infinity), '无穷越阶也不该给 NaN').toBe(1)
+    expect(overReachFactor(0)).toBe(1)
+    expect(overReachFactor(1)).toBe(0.6)
+  })
+
   it('每个乘区都单调:任一项变强,成功率必然不降', () => {
     const axes: [string, (t: number) => number][] = [
       ['掌握度', t => composeSuccessRate(t, 0.5, 50, 0)],
