@@ -51,7 +51,7 @@ export const useGameStore = defineStore(
        * 过得了 asFiniteNumber,而界面照 formatDuration 印成「1.80e308 载」。
        * 上限取「一百年的秒数」:真实游玩不可能超过,坏档必被夹回。
        */
-      totalPlaySec.value = Math.min(100 * 365 * 86400, asFiniteNumber(totalPlaySec.value, 0, 0))
+      totalPlaySec.value = asFiniteNumber(totalPlaySec.value, 0, 0, 100 * 365 * 86400)
       // 不限次时旧档遗留的数字额度一律归位
       createRerolls.value =
         CREATE_REROLL_QUOTA === null

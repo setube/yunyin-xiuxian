@@ -168,7 +168,7 @@ function sanitizeLastBattle(raw: unknown): LastBattleView | null {
       win: r.win,
       log: r.log.filter(x => !!x && typeof x === 'object' && typeof x.text === 'string'),
       rounds: Math.max(0, Math.floor(asFiniteNumber(r.rounds, 0))),
-      playerHpPct: Math.min(1, asFiniteNumber(r.playerHpPct, 0, 0)),
+      playerHpPct: asFiniteNumber(r.playerHpPct, 0, 0, 1),
       // 两侧都补得回来才留遥测:只有一侧可读是坏档,分析面板按「无遥测」不渲染更安全
       stats: stats && stats.player && stats.enemy ? { player: stats.player, enemy: stats.enemy } : undefined,
       foeOrigin: sanitizeFoeOrigin(r.foeOrigin),

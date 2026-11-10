@@ -51,7 +51,7 @@ export const useInventoryStore = defineStore(
           .map(a => ({
             id: a.id,
             // 负 roll 会被 affixValue 当 0 却按满值显示,>1 则超上限
-            roll: Math.min(1, asFiniteNumber(a.roll, 0, 0))
+            roll: asFiniteNumber(a.roll, 0, 0, 1)
           }))
           // 条数也要设界:品质表最高 8 条、洗练只换不增,坏档却能让一件带几千条
           .slice(0, EQUIP_AFFIX_HARD_CAP)

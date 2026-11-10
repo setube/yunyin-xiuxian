@@ -42,10 +42,24 @@ export function asRecordOf<T>(v: unknown, isValid: (x: unknown) => boolean): Rec
  */
 export const MAX_TIMESTAMP_MS = 8_640_000_000_000_000
 
-/** 有限数字就用它,否则兜底;可选下限 */
-export function asFiniteNumber(v: unknown, fallback: number, min?: number): number {
-  const n = typeof v === 'number' && Number.isFinite(v) ? v : fallback
-  return min === undefined ? n : Math.max(min, n)
+/**
+ * 有限数字就用它,否则兜底;可选上下限。
+ *
+ * `max` 这一档是后补的:AGENTS.md 一直写着 `asFiniteNumber(v, fallback, min, max)`,
+ * 而实现只有 `min`。于是两轮下来凡是「上界」都只能各处手写
+ * (`Math.min(CAP, asFiniteNumber(...))`),写漏了不报错、也没有判据。
+ *
+ * 上界挡的是 `Number.isFinite` 拦不住的那一类:坏档写 `age: Number.MAX_VALUE` 仍是有限数,
+ * 过了 `isFinite` 就被渲染成 `1.80e308`。给了 `max` 就一并夹住。
+ *
+ * `min > max` 时以 `min` 为准 —— 与分别写 `Math.min(max, Math.max(min, n))` 的既有写法一致
+ * (先夹下限再夹上限),不静默反转参数。
+ */
+export function asFiniteNumber(v: unknown, fallback: number, min?: number, max?: number): number {
+  let n = typeof v === 'number' && Number.isFinite(v) ? v : fallback
+  if (min !== undefined) n = Math.max(min, n)
+  if (max !== undefined) n = Math.min(max, n)
+  return n
 }
 
 /**

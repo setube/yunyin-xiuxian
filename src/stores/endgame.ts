@@ -331,7 +331,7 @@ export const useEndgameStore = defineStore(
             foeName: r.foeName,
             win: r.win === true,
             rounds: Math.floor(asFiniteNumber(r.rounds, 0, 0)),
-            hpLeftPct: Math.min(1, asFiniteNumber(r.hpLeftPct, 0, 0))
+            hpLeftPct: asFiniteNumber(r.hpLeftPct, 0, 0, 1)
           }))
           worldRun.value = {
             ...run,
