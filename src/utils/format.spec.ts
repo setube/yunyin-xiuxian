@@ -427,3 +427,36 @@ describe('formatGN · 极小数不印出 -0', () => {
     expect(formatGN(gn(-1234))).toBe('-1,234')
   })
 })
+
+/**
+ * `formatYears` 的分辨率下限 —— 这是一个**已知的、有意的**精度取舍,不是缺陷。
+ *
+ * 它按全局中文单位走 `formatNum`(每 4 个数量级一档),于是大数上相邻年份会撞到同一个显示值:
+ * 最高境界 major=20 的寿元上限是 1.0125e15,而 `formatYears(上限 - 1)` 与 `formatYears(上限)`
+ * 都是「1012兆 载」—— 相差 2749 亿年仍显示成同一个数。
+ *
+ * 真要精确到个位就得放弃单位缩写,而那是全站列宽与阅读密度的口径(formatGN 的注里写着)。
+ * 寿元那一格已经在用 `lifespanRatio < LIFESPAN_WARN_RATIO` 转朱砂做「接近上限」的提示,
+ * 数字本身不承担这件事。
+ *
+ * **这条判据把它钉成事实**:将来若有人以为「显示撞了 = bug」而改精度,
+ * 会在全站列宽上看到代价,而不是在这里悄悄改掉。
+ */
+describe('formatYears · 大数上的分辨率(有意取舍)', () => {
+  it('接近上限时与上限同显示 —— 单位缩写的固有结果', () => {
+    const LIFE = 1_012_500_000_000_000 // lifespanOf(20)
+    const cap = formatYears(LIFE)
+    expect(cap).toBe('1012兆 载')
+    // 相差几十亿年仍同显示:这是单位分辨率,不是算错
+    expect(formatYears(LIFE - 1)).toBe(cap)
+    expect(formatYears(LIFE - 1_000_000_000)).toBe(cap)
+  })
+
+  it('小数值上分辨率足够 —— 早期玩家看到的是逐位精确', () => {
+    expect(formatYears(0)).toBe('0 载')
+    expect(formatYears(16)).toBe('16 载')
+    expect(formatYears(9999)).toBe('9999 载')
+    // 一万起才进单位档
+    expect(formatYears(10_000)).toBe('1万 载')
+  })
+})
