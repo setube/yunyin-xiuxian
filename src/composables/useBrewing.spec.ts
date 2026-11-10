@@ -100,8 +100,55 @@ describe('炉前药力账(已顶 · 将顶)', () => {
     expect(dialog).toContain("r.overflow === 'partial'")
     expect(dialog).toContain('将顶')
     const composable = readFileSync(join(__dirname, 'useBrewing.ts'), 'utf8')
+    // 药力判据仍读游戏钟(读的是每一行自己的 buffId),药效到期后状态自己复位
     expect(composable, '药力判据读游戏钟,药效到期后状态自己复位').toContain(
-      'buffOverflowOf(cultivation.buffs, def.buffId, now.value)'
+      'buffOverflowOf(cultivation.buffs, row.def.buffId, now.value)'
     )
+    /*
+     * 静态段与时钟段必须分开 —— 两者合一的话,整条链每秒重跑一次。
+     * 实测 52 方的 craftability + craftBatchPlan 合计 3.74ms/秒,
+     * 而真正随时钟走的 buffOverflowOf 只有 0.018ms/秒,差 200 倍。
+     */
+    expect(composable, '丹方账的静态段要单独一个 computed').toContain('const recipeBase = computed(')
+    expect(composable, '时钟段须从静态段派生,不重算价签与把握').toContain('recipeBase.value')
+    const baseBody = composable.slice(composable.indexOf('const recipeBase = computed('), composable.indexOf('const recipes = computed('))
+    expect(baseBody, '静态段里不该读 now').not.toContain('now.value')
+    for (const call of ['craftability(id)', 'craftBatchPlan(id)', 'pillCraftCost(id)']) {
+      expect(baseBody, `${call} 属于静态段`).toContain(call)
+    }
+  })
+})
+
+describe('丹方账 · 静态段不随时钟重算', () => {
+  /**
+   * 从前 `overflow`(读 now)与 `craftability` / `craftBatchPlan` 写在同一个 computed 里,
+   * 于是时钟每跳一秒,52 方的整条链就重跑一遍 —— 实测 craftability + craftBatchPlan
+   * 合计 **3.74ms/秒**,而其中真正随时钟走的只有 buffOverflowOf 的 **0.018ms/秒**,差 200 倍。
+   * 背包页(装备/材料/法宝签根本不读丹方)也照付这笔钱。
+   *
+   * 判据落在**源码分层**,不落在读数:两边读数一模一样,重算与否读不出来。
+   * 试过用引用身份判(推进系统时间再比 `able` 是不是同一份)——**判据无效**:
+   * computed 只在响应式依赖变化时才重算,而推系统时间并不 tick `now` 这个 ref,
+   * 合回同一个 computed 后那条照样绿。故只留能红的两条。
+   *
+   * 故障注入:把两段合回一个 computed,下面两条当场红(实测)。
+   */
+  it('静态段自己是一个 computed,起止可辨', () => {
+    const composable = readFileSync(join(__dirname, 'useBrewing.ts'), 'utf8')
+    expect(composable, '丹方账的静态段要单独一个 computed').toContain('const recipeBase = computed(')
+    expect(composable, '时钟段从静态段派生').toContain('recipeBase.value')
+  })
+
+  it('静态段不读 now,也不让时钟段重算价签与把握', () => {
+    const composable = readFileSync(join(__dirname, 'useBrewing.ts'), 'utf8')
+    const baseBody = composable.slice(
+      composable.indexOf('const recipeBase = computed('),
+      composable.indexOf('const recipes = computed(')
+    )
+    expect(baseBody, '静态段的起止没找到,判据空转').not.toBe('')
+    expect(baseBody, '静态段里不该读 now —— 读了就每秒重算整条链').not.toContain('now.value')
+    for (const call of ['craftability(id)', 'craftBatchPlan(id)', 'pillCraftCost(id)']) {
+      expect(baseBody, `${call} 属于静态段`).toContain(call)
+    }
   })
 })
