@@ -159,8 +159,30 @@ describe('坏档韧性 · 每个字段被抹掉后 sanitize 都要跑得完', ()
   }
 })
 
-/** 恶意值:形状对、内容是垃圾 */
-const HOSTILE: unknown[] = [null, 0, -1, NaN, '', 'x', [], {}, [null], { a: null }, true, [{ uid: null }]]
+/**
+ * 恶意值:形状对、内容是垃圾。
+ *
+ * **有限极大值同样算恶意**:`1e300` 与 `Number.MAX_VALUE` 都能过
+ * `Number.isFinite`,于是「只挡非有限」的守卫对它们一路放行,
+ * 界面再经 formatNum 印成「1.00e300」。实测 resources.qi/wudao 与
+ * endgame.daoSource 三条就是这样原样通过的 —— 补进这一组后当场暴露。
+ */
+const HOSTILE: unknown[] = [
+  null,
+  0,
+  -1,
+  NaN,
+  '',
+  'x',
+  [],
+  {},
+  [null],
+  { a: null },
+  true,
+  [{ uid: null }],
+  1e300,
+  Number.MAX_VALUE
+]
 
 describe('坏档韧性 · 恶意值也不该炸', () => {
   for (const { name, use } of STORES) {
@@ -195,6 +217,57 @@ describe('坏档韧性 · 恶意值也不该炸', () => {
   }
 })
 
+/**
+ * 第二条:被修回来的值还得是「有限且不离谱」。
+ *
+ * 上面那条只要求「不抛」——`1e300` 原样躺在 state 里同样不抛,
+ * 于是 `resources.qi` / `resources.wudao` / `endgame.daoSource` 三条
+ * 一直没被发现。它们的界面读数会印成「1.00e300」。
+ *
+ * 判据:灌一遍恶意值后,store.$state 里**每个数字**都必须是有限数;
+ * 若某个字段原本是资源读数,还要求它不超过一个宽到不可能误伤的上界。
+ * 这里只查数字类型 —— 字符串/数组/对象的合法性由各 store 自己的用例管。
+ */
+describe('坏档韧性 · 修回来的数字不许是有限巨值', () => {
+  /**
+   * 宽到不可能误伤。取 1e17 是因为 `player.lifespanBonusYears` 的**正当上界**
+   * 就是 1.0125e16(一千万年),首版取 1e16 把它误判成超量级 —— 那是一个
+   * 健康的封顶值,不是坏档。仍然远低于 `1e300` 那个量级,拦得住真正的巨值。
+   */
+  const SANE_NUMBER = 1e17
+
+  for (const { name, use } of STORES) {
+    it(`${name}:灌恶意值后,state 里的数字都有限且不离谱`, () => {
+      setActivePinia(createPinia())
+      const keys = Object.keys(use().$state)
+      const bad: string[] = []
+      /*
+       * 只查**原本就是数字**的字段。
+       *
+       * 灌 `NaN` 给一个对象字段(regionEvent / secretRealm 等)时,
+       * `store.$state` 里那个键会整个变成 NaN —— 那不是「没修回来」,
+       * 是这条判据在拿对象字段当数字量。对象的合法性由各 store 自己的用例管。
+       */
+      setActivePinia(createPinia())
+      const numericKeys = keys.filter(k => typeof (use().$state as unknown as Record<string, unknown>)[k] === 'number')
+      for (const key of numericKeys) {
+        for (const hostile of HOSTILE) {
+          setActivePinia(createPinia())
+          const store = use()
+          store.$patch({ [key]: hostile } as never)
+          store.sanitize()
+          const after = (store.$state as unknown as Record<string, unknown>)[key]
+          if (typeof after !== 'number') continue
+          if (!Number.isFinite(after)) bad.push(`${key} = ${String(hostile)} → ${after}`)
+          else if (Math.abs(after) > SANE_NUMBER) bad.push(`${key} = ${String(hostile)} → ${after}(超量级)`)
+        }
+      }
+      expect(bad, `${name} 有字段没被修回来:\n${[...new Set(bad)].slice(0, 6).join('\n')}`).toEqual([])
+    })
+  }
+})
+
+/** 小数资源与道源这几条有明确上界,单独钉死 */
 describe('坏档韧性 · 复杂状态的值也要修回来(不只是"不炸")', () => {
   it('道侣:三维夹回 0~100、坏 id 作废、坏意图整块丢掉', () => {
     setActivePinia(createPinia())

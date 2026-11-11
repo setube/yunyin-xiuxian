@@ -31,6 +31,15 @@ export const useResourcesStore = defineStore(
   'resources',
   () => {
     const spiritStone = ref<GNum>(gnZero())
+    /*
+     * 小数资源的上界,只为拦坏档。
+     *
+     * 这四项都是低速产出(悟道 1.5/时、玄铁 2.4/时),离线封顶 72 时,
+     * 长年游玩也到不了一兆;而 1e12 仍在 formatNum 的中文单位区间内(印「1兆」)。
+     */
+    const SMALL_RESOURCE_MAX = 1e12
+    /** 灵气的兜底上界:同样只为拦坏档,真实上限由气海容量决定 */
+    const QI_SANITY_MAX = 1e15
     const qi = ref(0)
     const wudao = ref(0)
     /** 灵草按品阶分账:key = HerbGrade(1 凡品 → 5 道品) */
@@ -190,14 +199,29 @@ export const useResourcesStore = defineStore(
         }
       }
       herbByGrade.value = clean
+      /*
+       * 小数资源的上界。
+       *
+       * 原先只挡 `!Number.isFinite` —— 而 `1e300` 是**有限数**,原样通过。
+       * 它不崩,但界面会印出「1.00e300」(经 formatNum),而这类读数本应是
+       * 「1234」这种能一眼读出多少的数。实测灌 1e300 后 sanitize 不修。
+       *
+       * 上界取一兆:这四项都是低速产出(悟道 1.5/时、玄铁 2.4/时),
+       * 离线封顶 72 时,长年游玩也到不了;而 1e12 仍在 formatNum 的
+       * 中文单位区间内(印「1兆」),不会变成科学计数。
+       * 越界的只可能来自坏档,按 0 处理 —— 与「非有限」同一条退路。
+       */
       for (const key of Object.keys(smallRefs) as Exclude<SmallResourceId, 'herb'>[]) {
         const r = smallRef(key)
         if (!r) continue
-        if (!Number.isFinite(r.value)) r.value = 0
+        if (!Number.isFinite(r.value) || r.value > SMALL_RESOURCE_MAX) r.value = 0
         r.value = Math.max(0, r.value)
       }
       if (!Number.isFinite(qi.value)) qi.value = 0
       qi.value = Math.max(0, qi.value)
+      // 灵气另有一条天然上界(气海上限的若干倍),但那要到 engine 起来才知道;
+      // 这里只拦「明显不是这局能攒到的」量级,免得 1e300 印成科学计数。
+      if (qi.value > QI_SANITY_MAX) qi.value = 0
     }
 
     return {
