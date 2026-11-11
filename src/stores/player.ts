@@ -24,6 +24,14 @@ const LIFE_COUNTER_CAP = 1_000_000
 const WIN_STREAK_CAP = 1_000_000
 
 /**
+ * 单个区域的胜场上限。
+ *
+ * `worldMemory` 的兴衰判据是 `totalWins >= 80`,坏档写 1e300 会让该区域永久「兴盛」;
+ * 胜场数本身也印在区域卡上。一局里在同一区域打几百场已是极值。
+ */
+const REGION_WINS_MAX = 10_000
+
+/**
  * 区域战绩里两个计数的读档上界。
  *
  * `totalFights` 只用于显示,夹到上界即可。
@@ -650,7 +658,8 @@ export const usePlayerStore = defineStore(
       const previousLife = reincarnation.value.count
       reincarnation.value = {
         ...reincarnation.value,
-        count: reincarnation.value.count + 1,
+        // 自增要饱和:sanitize 只在开场跑一次,不封顶的话转世几百次后重启会被夹回来
+        count: Math.min(LIFE_COUNTER_CAP, reincarnation.value.count + 1),
         heritageUses: {}
       }
       linggen.value = newLinggen
@@ -965,8 +974,18 @@ export const usePlayerStore = defineStore(
        */
       lastCaveEventDay.value = Math.floor(asFiniteNumber(lastCaveEventDay.value, 0, 0))
       if (lastCaveEventDay.value > todayLocalNum()) lastCaveEventDay.value = 0
+      /*
+       * 区域胜场要封顶 —— 它同时是**判定依据**与**显示值**。
+       *
+       * `worldMemory` 的兴衰判据是 `totalWins >= FLOURISH_WINS`(=80),
+       * 坏档写 1e300 时该区域永久「兴盛」;胜场数本身也会印在区域卡上。
+       * 上界取一万:一局里在同一区域打几百场已是极值,到不了这个数。
+       */
       regionWins.value = Object.fromEntries(
-        Object.entries(asNumberRecord(regionWins.value, 0)).map(([id, n]) => [id, Math.floor(n)])
+        Object.entries(asNumberRecord(regionWins.value, 0)).map(([id, n]) => [
+          id,
+          Math.floor(asFiniteNumber(n, 0, 0, REGION_WINS_MAX))
+        ])
       )
       // 老档无世号按当前世认,同 regionStats.life 口径
       const rawWinsLife = asNumberRecord(regionWinsLife.value, Number.NaN)

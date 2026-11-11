@@ -1246,3 +1246,65 @@ describe('坏档韧性 · 界域与试炼战绩的上界', () => {
     expect((e.worldClears as Record<string, number>).chiyan, '正常自增被误伤').toBe(2)
   })
 })
+
+/**
+ * 区域胜场要封顶 —— 它同时是**判定依据**与**显示值**。
+ *
+ * `worldMemory` 的兴衰判据是 `totalWins >= FLOURISH_WINS`(=80):
+ * 坏档写 1e300 时该区域**永久兴盛**,而胜场数本身也会印在区域卡上。
+ *
+ * 这是「有上界不等于行为正确」的正向例子:封顶之后判定恢复正常,
+ * 因为一万仍大于 80 —— 但这不代表该归零(归零会让真实战绩消失)。
+ */
+describe('坏档韧性 · 区域胜场的上界', () => {
+  const patchWins = (v: unknown): number | undefined => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({ regionWins: { qingyun: v } } as never)
+    p.sanitize()
+    return (p.regionWins as Record<string, number> | undefined)?.qingyun
+  }
+
+  it('巨值被夹住,不再让该区域永久兴盛', () => {
+    for (const v of [1e300, Number.MAX_VALUE, 1e9]) {
+      const got = patchWins(v)
+      expect(got, `regionWins ${v} 没被夹住`).toBeLessThanOrEqual(10_000)
+    }
+  })
+
+  it('真实胜场原样保留', () => {
+    for (const v of [0, 5, 30, 80, 500]) {
+      expect(patchWins(v), `真实胜场 ${v} 被误改`).toBe(v)
+    }
+  })
+
+  it('上界须远高于兴衰判据的两个阈值', () => {
+    // STABLE_WINS=30 / FLOURISH_WINS=80;上界必须大于它们,否则正常档判不出兴衰
+    expect(10_000, '上界低于兴衰阈值,正常档会被误判').toBeGreaterThan(80)
+  })
+})
+
+/**
+ * 转世次数的**写入端**也要饱和 —— 与战绩计数同一条理。
+ *
+ * `sanitize` 用 `LIFE_COUNTER_CAP` 封顶,但 `rebirth()` 每次转世都 +1 且不饱和:
+ * 转世次数越过上限后重启会被夹回来,玩家看到「第 N 世」变小。
+ * 这个数还进 `suppressLife` 的等号判定,差一位就对不上。
+ */
+describe('坏档韧性 · 转世次数自增要饱和', () => {
+  it('已到上限时再转世一次,计数停在上限', () => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({ reincarnation: { ...p.reincarnation, count: 1_000_000 } } as never)
+    p.rebirth({ roots: [] } as never)
+    expect(p.reincarnation.count, '转世次数自增越过了上限').toBe(1_000_000)
+  })
+
+  it('未到上限时正常自增', () => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({ reincarnation: { ...p.reincarnation, count: 5 } } as never)
+    p.rebirth({ roots: [] } as never)
+    expect(p.reincarnation.count, '正常自增被误伤').toBe(6)
+  })
+})
