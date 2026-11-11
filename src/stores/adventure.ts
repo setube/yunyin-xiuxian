@@ -4,6 +4,14 @@ import { computed, ref } from 'vue'
 import type { AdventureSession, CombatResult, CombatSideStats, FoeOrigin, FoeOriginPart, GNum } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { regionDef, unlockClosure } from '@/data/regions'
+
+/**
+ * 一场历练里各项计数的读档上界。
+ *
+ * 四个计数只用于显示(「胜 N 场 · 际遇 M 次 · 拾获 K 件」)。
+ * 一场历练的胜场不可能过亿 —— 上界宽到不误伤正常档,窄到拦得住 `1e300` 那种坏档。
+ */
+const SESSION_COUNT_MAX = 1e8
 import {
   asBoundedGNum,
   asCombatRules,
@@ -265,10 +273,15 @@ export const useAdventureStore = defineStore(
             startedAt: asTimestamp(s.startedAt, 0),
             endsAt,
             nextBattleAt: asTimestamp(s.nextBattleAt, 0),
-            wins: Math.floor(asFiniteNumber(s.wins, 0, 0)),
-            losses: Math.floor(asFiniteNumber(s.losses, 0, 0)),
-            events: Math.floor(asFiniteNumber(s.events, 0, 0)),
-            itemGain: Math.floor(asFiniteNumber(s.itemGain, 0, 0)),
+            /*
+             * 四个计数都加上界。它们只用于显示(「胜 N 场 · 际遇 M 次 · 拾获 K 件」),
+             * 而 `sessionRecordText` 虽已改走 formatNum,单位表之外仍会印成 `1.00e300`。
+             * 一场历练的胜场不可能过亿 —— 上界按「宽到不误伤、窄到拦坏档」取。
+             */
+            wins: Math.min(SESSION_COUNT_MAX, Math.floor(asFiniteNumber(s.wins, 0, 0))),
+            losses: Math.min(SESSION_COUNT_MAX, Math.floor(asFiniteNumber(s.losses, 0, 0))),
+            events: Math.min(SESSION_COUNT_MAX, Math.floor(asFiniteNumber(s.events, 0, 0))),
+            itemGain: Math.min(SESSION_COUNT_MAX, Math.floor(asFiniteNumber(s.itemGain, 0, 0))),
             // 须经 asBoundedGNum 归一:坏 GNum 会让 exploration 的 add() 每场胜利都抛,历练永久卡死;
             // 它同时带指数上界,裸 gn() 不设界会让本世收益印出「1.00e1000000000」
             stoneGain: asBoundedGNum(s.stoneGain),
