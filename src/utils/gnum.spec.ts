@@ -129,6 +129,36 @@ describe('GameNumber 大数运算', () => {
  * 它只查 m 不查 e,于是 e 为 NaN/Infinity 时坏值一路传下去。
  * add / neg / cmp 各有绕过 normalize 的路径,得单独挡。
  */
+describe('GameNumber · 非正规数(denormal)不许产出 Infinity 尾数', () => {
+  /*
+   * `Math.pow(10, -324)` 下溢成 0,`5e-324 / 0` 得 Infinity —— 于是
+   * `gn(5e-324)` 会产出 `{ m: Infinity }`。
+   *
+   * 后果不止「印个占位符」:`add` 的 `usable()` 见到非有限 m 就整份回 gnZero(),
+   * **加法的另一半被一起吞掉**(修复前 `add(gn(5e-324), gn(1))` 得 0)。
+   */
+  it('非正规数的尾数仍是有限数', () => {
+    for (const v of [5e-324, 1e-320, 1e-310]) {
+      const g = gn(v)
+      expect(Number.isFinite(g.m), `${v} 的尾数成了 ${g.m}`).toBe(true)
+      expect(g.m, `${v} 的尾数该落在 [1,10)`).toBeGreaterThanOrEqual(1)
+      expect(g.m).toBeLessThan(10)
+    }
+  })
+
+  it('与非正规数相加,另一侧不被吞掉', () => {
+    // 修复前这里是 0:`usable({m:Infinity})` 为假 → add 整份回 gnZero()
+    expect(add(gn(5e-324), gn(1))).toEqual({ m: 1, e: 0 })
+    expect(add(gn(1), gn(5e-324))).toEqual({ m: 1, e: 0 })
+  })
+
+  it('正规数一位不动:对数路径只在除法真会下溢时才走', () => {
+    // 首版无条件走对数路径,0.5 的尾数变成 4.999999999999999e-1,全量测试红 29 条
+    expect(gn(0.5)).toEqual({ m: 5, e: -1 })
+    expect(gn(9.99999).m).toBeCloseTo(9.99999, 10)
+  })
+})
+
 describe('GameNumber 的坏值守卫', () => {
   const BAD = [
     { m: 1, e: Number.NaN },
