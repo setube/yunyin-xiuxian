@@ -286,8 +286,19 @@ export const useAdventureStore = defineStore(
       mortalCleared.value = [...new Set(asStringArray(mortalCleared.value))]
       cleared.value = [...new Set(asStringArray(cleared.value))].filter(id => !!regionDef(id))
       revived.value = asStringArray(revived.value).filter(id => !!regionDef(id) && !cleared.value.includes(id))
+      /*
+       * 通关时刻要按**时间戳**修形,不能只保底。
+       *
+       * 它不只用来显示:`worldMemory.regionTouchedAt` 拿它当「妖气复聚钟」的候选,
+       * 而 `isRegionRevived` 判的是 `(now - touchedAt) / 3600_000 > 72`。
+       * 坏档写 `1e300` 时这个减法恒为极大负数 —— **该地界永不复苏**
+       * (实测复聚钟停在 1e300,isRegionRevived 恒假)。
+       * `asTimestamp` 把超出 Date 可表示范围的值回落到 0,复聚钟随之退回其余候选。
+       */
       clearedAt.value = Object.fromEntries(
-        Object.entries(asNumberRecord(clearedAt.value, 0)).filter(([id, at]) => at > 0 && !!regionDef(id))
+        Object.entries(asNumberRecord(clearedAt.value, 0))
+          .map(([id, at]) => [id, asTimestamp(at, 0)] as const)
+          .filter(([id, at]) => at > 0 && !!regionDef(id))
       )
       // 旧档补票「前置已靖 → 此地已开」:解锁只在击败时发生,数据表新增的下游区域旧档开不了。幂等。
       unlocked.value = unlockClosure(unlocked.value, cleared.value)

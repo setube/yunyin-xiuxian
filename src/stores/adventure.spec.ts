@@ -103,6 +103,27 @@ describe('历练公共写入边界', () => {
    * 手改存档塞 10 万条假 id 后 $state 到 1.98MB / 989KB。
    * 这里可以安全过滤(不像事件记忆要兼容下线内容):区域 id 认得才能用。
    */
+  it('读档时通关时刻按时间戳修形,巨值不再让地界永不复苏', () => {
+    /*
+     * `clearedAt` 不只用来显示:`worldMemory.regionTouchedAt` 拿它当「妖气复聚钟」的候选,
+     * 而 `isRegionRevived` 判的是 `(now - touchedAt) / 3600_000 > 72`。
+     * 坏档写 `1e300` 时那个减法恒为极大负数 —— **该地界永不复苏**
+     * (修复前复聚钟停在 1e300,isRegionRevived 恒假)。
+     */
+    const ad = useAdventureStore()
+    ad.$patch({ clearedAt: { qingyun: 1e300 } } as never)
+    ad.sanitize()
+    expect(ad.clearedAt.qingyun, '巨值通关时刻没被清 —— 复聚钟会停在它上面').toBeUndefined()
+  })
+
+  it('读档时正常通关时刻原样保留', () => {
+    const ad = useAdventureStore()
+    const at = Date.now() - 1000
+    ad.$patch({ clearedAt: { qingyun: at } } as never)
+    ad.sanitize()
+    expect(ad.clearedAt.qingyun, '正常时间戳被误删了').toBe(at)
+  })
+
   it('读档时把认不得的区域 id 从 unlocked / cleared 里清掉', () => {
     const a = useAdventureStore()
     const fake = Array.from({ length: 100000 }, (_, i) => `fake_${i}`)
