@@ -658,8 +658,17 @@ export const usePlayerStore = defineStore(
       const previousLife = reincarnation.value.count
       reincarnation.value = {
         ...reincarnation.value,
-        // 自增要饱和:sanitize 只在开场跑一次,不封顶的话转世几百次后重启会被夹回来
-        count: Math.min(LIFE_COUNTER_CAP, reincarnation.value.count + 1),
+        /*
+         * 这里**不能**饱和。
+         *
+         * `count` 不只是个计数,它是「本世」的标识:`suppressLife` 与它比等号,
+         * 相等才算本世的镇压权益。饱和之后两世的世号会相同 ——
+         * 旧世残留的权益会在新世生效(审查意见里那条「高」)。
+         *
+         * `LIFE_COUNTER_CAP` 是**读档守卫**,防的是坏档写 MAX_VALUE;
+         * 正常游玩几百年也转不了几万次,不需要也不该在写入端夹。
+         */
+        count: reincarnation.value.count + 1,
         heritageUses: {}
       }
       linggen.value = newLinggen
@@ -1168,7 +1177,12 @@ export const usePlayerStore = defineStore(
       const winsBase = taggedLife === undefined || taggedLife < 0 || taggedLife === life
         ? (regionWins.value[regionId] ?? 0)
         : 0
-      regionWins.value = { ...regionWins.value, [regionId]: winsBase + count }
+      /*
+       * 自增要饱和。`sanitize` 只在开场跑一次,而批量结算一次可加几十场;
+       * 不封顶的话,越过上限后重启会被夹回来,玩家看到该区域胜场变小。
+       * 与 `recordWorldClear` / `diag.record` 同一条理。
+       */
+      regionWins.value = { ...regionWins.value, [regionId]: Math.min(REGION_WINS_MAX, winsBase + count) }
       regionWinsLife.value = { ...regionWinsLife.value, [regionId]: life }
     }
 
@@ -1241,7 +1255,11 @@ export const usePlayerStore = defineStore(
       // 换世后胜场从 1 重新起算;与 updateRegionStats 的判据账同一口径
       const tagged = regionWinsLife.value[regionId]
       const sameLife = tagged === undefined || tagged < 0 || tagged === life
-      regionWins.value = { ...regionWins.value, [regionId]: sameLife ? (regionWins.value[regionId] ?? 0) + 1 : 1 }
+      regionWins.value = {
+        ...regionWins.value,
+        // 同 applyRegionWinBatch:自增要饱和
+        [regionId]: sameLife ? Math.min(REGION_WINS_MAX, (regionWins.value[regionId] ?? 0) + 1) : 1
+      }
       regionWinsLife.value = { ...regionWinsLife.value, [regionId]: life }
     }
 
