@@ -262,6 +262,14 @@ export const useEndgameStore = defineStore(
     const daoPath = ref<DaoPathId | null>(null)
     // 道源的上界,只为拦坏档;真实累积到不了百万
     const DAO_SOURCE_MAX = 1e9
+/**
+ * 一趟远征里的计数上界(逐胜叠层 / 沿途道源)。
+ *
+ * 一趟远征是「入界 + 每层择路 + 界主」共 `EXPEDITION_ROUTE_LAYERS + 2` 战,
+ * 故叠层不可能超过这个数。留一档余量到 16 —— 正常到不了,越过的必定是坏档。
+ */
+    const WORLD_RUN_COUNT_MAX = 16
+
     /** 道源(跨世保留) */
     const daoSource = ref(0)
     const worldClears = ref<Record<string, number>>({})
@@ -351,7 +359,13 @@ export const useEndgameStore = defineStore(
             pactId: typeof run.pactId === 'string' && pactDef(run.pactId) ? run.pactId : null,
             gateId: typeof run.gateId === 'string' && gateDef(run.gateId) ? run.gateId : null,
             layer: Math.min(EXPEDITION_GUARDIAN_LAYER, Math.max(0, Math.floor(asFiniteNumber(run.layer, 0, 0)))),
-            bonus: Math.floor(asFiniteNumber(run.bonus, 0, 0)),
+            /*
+             * 上界按「一趟远征最多几战」推:入界 + 每层择路 + 界主 = ROUTE_LAYERS+2 = 5 战,
+             * 故逐胜叠层不可能超过 5。`bonus`(沿途道源)同量级。
+             * 这两个数会**乘进战斗属性**(见 expedition 的 stackedMods),
+             * 坏档写 1e300 会让玩家攻击瞬间无限大。原先只有下限,实测原样保留。
+             */
+            bonus: Math.min(WORLD_RUN_COUNT_MAX, Math.floor(asFiniteNumber(run.bonus, 0, 0))),
             rows,
             carriedHpPct: asCarriedHpPct(run.carriedHpPct),
             // 总回合以逐行战报回合和为准,不一致会让杀伐速战赏与道痕多给;无 rows 的旧档保留原值
@@ -359,7 +373,7 @@ export const useEndgameStore = defineStore(
               rows.length > 0
                 ? rows.reduce((sum, row) => sum + row.rounds, 0)
                 : Math.floor(asFiniteNumber(run.totalRounds, 0, 0)),
-            winStacks: Math.floor(asFiniteNumber(run.winStacks, 0, 0)),
+            winStacks: Math.min(WORLD_RUN_COUNT_MAX, Math.floor(asFiniteNumber(run.winStacks, 0, 0))),
             // 逆命契封印每场并入玩家属性;整份不可用视为无封印
             sealedMods: sanitizeMods(run.sealedMods) ?? undefined
           }
