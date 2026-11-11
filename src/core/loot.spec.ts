@@ -305,6 +305,18 @@ describe('法宝品阶 · 稀缺标签', () => {
 
 /** lore.equipLore 唯一写入点是 acquireEquipment。守三条:拾得即记、只记更好的一件、被化尘的那件也算见过。 */
 describe('装备见闻 · 入账那一刻就记下成色', () => {
+  /*
+   * 新 pinia = 新 lore 分片。
+   *
+   * 这个块原先**一条 beforeEach 都没有** —— `useLoreStore()` 会复用上一条用例的 store,
+   * 见闻记录跨用例残留。原代码靠「每条换个模板」绕开(w_qingshuang / w_hanfeng 轮着用),
+   * 治标不治本:实测 `--sequence.shuffle` 下同模板的两条用例撞在一起,
+   * 「拾得一件就记下成色」拿到的是别处写下的 { q: 8, t: 20 },判据红。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   function mkItem(uid: string, quality: QualityId, tier: number, templateId = 'w_xuantie'): EquipmentInstance {
     return { uid, templateId, quality, tier, level: 0, affixes: [] }
   }

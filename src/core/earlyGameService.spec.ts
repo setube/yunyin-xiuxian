@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -30,6 +30,23 @@ import { expFromSecs } from './formulas'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
 
+/*
+ * spy 清理放 afterEach,不放每条用例的末尾。
+ *
+ * 原先 10 处 `vi.restoreAllMocks()` 各写在用例最后一行 —— 用例中途断言失败就直接跳出,
+ * 那一行永远跑不到,`Math.random` 的 spy 留给下一条:实测 `--sequence.shuffle` 下
+ * 本文件单独跑就有 3 条红(`expected null not to be null`),乱序前只是碰巧顺序对。
+ */
+afterEach(() => {
+  vi.restoreAllMocks()
+  /*
+   * 计时器也兜一层。用例里 `useFakeTimers` 都写在 try / finally 里,
+   * 正常路径下不会漏 —— 但漏一次就污染整个文件(后续用例的 Date.now() 冻在别处),
+   * 而 `restoreAllMocks` 不负责计时器。
+   */
+  vi.useRealTimers()
+})
+
 describe('洞府巡游(Phase 28)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -49,7 +66,6 @@ describe('洞府巡游(Phase 28)', () => {
 
     chooseCaveOption(0)
     expect(getCurrentCaveEvent()).toBeNull()
-    vi.restoreAllMocks()
   })
 
   it('当日已巡游后不再触发', () => {
@@ -61,6 +77,12 @@ describe('洞府巡游(Phase 28)', () => {
 
   it('触发后 getCurrentCaveEvent 能取到,离开则清除并占用今日', () => {
     const player = usePlayerStore()
+    /*
+     * 必须钉住随机数:mayTriggerCaveEvent 按 presence 掷签(`Math.random() > presence` 就记今日返回 null),
+     * 低境界 presence 远小于 1。这条用例原先不钉,实测十次乱序红一次 ——
+     * 掷败时 ev 为 null,失败信息还是「expected null not to be null」,看不出是随机数。
+     */
+    vi.spyOn(Math, 'random').mockReturnValue(0.01)
     const ev = mayTriggerCaveEvent()
     expect(ev).not.toBeNull()
     expect(getCurrentCaveEvent()).not.toBeNull()
@@ -103,7 +125,6 @@ describe('洞府巡游(Phase 28)', () => {
     expect(gained, '即时修为不得填满当前这一层').toBeLessThanOrEqual(
       toNum(req) * INSTANT_EXP_LAYER_CAP + 1e-9
     )
-    vi.restoreAllMocks()
   })
 })
 
@@ -127,7 +148,6 @@ describe('悟道顿悟(Phase 28)', () => {
 
     chooseEnlightenment(0)
     expect(getCurrentEnlightenment()).toBeNull()
-    vi.restoreAllMocks()
   })
 
   it('忽略后模块态清空,getCurrentEnlightenment 取不到', () => {
@@ -139,7 +159,6 @@ describe('悟道顿悟(Phase 28)', () => {
 
     dismissEnlightenment()
     expect(getCurrentEnlightenment()).toBeNull()
-    vi.restoreAllMocks()
   })
 
   it('冷却随档:重开页面刷不出顿悟(Phase 34.6)', () => {
@@ -161,7 +180,6 @@ describe('悟道顿悟(Phase 28)', () => {
     mayTriggerEnlightenment()
     expect(getCurrentEnlightenment(), '刷新后冷却被清掉了,可以刷顿悟').toBeNull()
     expect(reloaded.enlightenmentAt).toBe(firstAt)
-    vi.restoreAllMocks()
   })
 })
 
@@ -452,6 +470,17 @@ describe('突破准备数据源(BREAKTHROUGH_PREP_OPTIONS · 接线后)', () => 
 describe('前期事件衰减(EARLY_EVENT_DECAY · 接线后)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // 顿悟冷却随档(新 pinia 即隔离),但 enlightenmentEvent / 巡游窗都是模块态 ——
+    // 不清掉会从上一条用例借道:实测乱序下「真仙后衰减 0」与「元婴后巡游退出」
+    // 各自拿到上一条留下的事件,两条判据都红
+    dismissEnlightenment()
+    /*
+     * 巡游窗是模块态。dismissCaveEvent() 会顺手把「今日已巡游」记进 player,
+     * 所以清完必须把今日标记归零,否则下一条用例开局就被占掉今日。
+     * 顺序不能反:先 dismiss 清模块窗,再归零 —— 反过来 dismiss 又会把它写回去。
+     */
+    dismissCaveEvent()
+    usePlayerStore().lastCaveEventDay = 0
   })
 
   // 顿悟冷却存 player store(随档),每个用例新 pinia 即隔离;enlightenmentEvent 仍是模块态
@@ -465,7 +494,6 @@ describe('前期事件衰减(EARLY_EVENT_DECAY · 接线后)', () => {
       vi.spyOn(Math, 'random').mockReturnValue(0.001) // 即使随机数最小也不该触发
       mayTriggerEnlightenment()
       expect(getCurrentEnlightenment()).toBeNull()
-      vi.restoreAllMocks()
     } finally {
       vi.useRealTimers()
     }
@@ -481,7 +509,6 @@ describe('前期事件衰减(EARLY_EVENT_DECAY · 接线后)', () => {
       vi.spyOn(Math, 'random').mockReturnValue(0.9) // 0.9 > 0.08×0.35
       mayTriggerEnlightenment()
       expect(getCurrentEnlightenment()).toBeNull()
-      vi.restoreAllMocks()
     } finally {
       vi.useRealTimers()
     }
@@ -501,7 +528,6 @@ describe('前期事件衰减(EARLY_EVENT_DECAY · 接线后)', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.9) // 0.9 > 0.25 → 今日让位
     expect(mayTriggerCaveEvent()).toBeNull()
     expect(player.lastCaveEventDay).toBe(today)
-    vi.restoreAllMocks()
   })
 
   // 触发会写入 store 的顿悟冷却
@@ -515,7 +541,6 @@ describe('前期事件衰减(EARLY_EVENT_DECAY · 接线后)', () => {
       vi.spyOn(Math, 'random').mockReturnValue(0.001) // 0.001 ≤ 0.028 → 触发
       mayTriggerEnlightenment()
       expect(getCurrentEnlightenment()).not.toBeNull()
-      vi.restoreAllMocks()
     } finally {
       vi.useRealTimers()
     }
@@ -526,7 +551,6 @@ describe('前期事件衰减(EARLY_EVENT_DECAY · 接线后)', () => {
     player.major = 2
     vi.spyOn(Math, 'random').mockReturnValue(0.1) // 0.1 ≤ 0.25 → 触发
     expect(mayTriggerCaveEvent()).not.toBeNull()
-    vi.restoreAllMocks()
   })
 })
 
