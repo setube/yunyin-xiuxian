@@ -492,3 +492,48 @@ describe('formatYears · 大数上的分辨率(有意取舍)', () => {
     expect(formatYears(10_000)).toBe('1万 载')
   })
 })
+
+/**
+ * formatPercent 的大值兜底。
+ *
+ * 原先那条路径有两道守卫(输入 `isFinite`、`×100` 后仍 `isFinite`),
+ * 但 `1e22` 两道都过 —— 它既有限、×100 后也有限,而 `Number.isInteger` 为真
+ * 于是走 `String(v)` 分支,印出 **`1e+22%`**(实测从 1e20 起就开始了)。
+ *
+ * 兜底须与 formatGN 同形:`1.00e22`(尾数两位、指数不带 + 号),
+ * 而不是 JS 默认的 `1e+22` —— 全站只该有一种科学计数写法。
+ */
+describe('formatPercent · 大值不进 JS 默认科学计数', () => {
+  it('1e21 起改用 formatGN 同形的写法', () => {
+    // ×100 之后才与门槛比:1e19 → 1e21 恰好到门槛,1e18 → 1e20 还没到
+    expect(formatPercent(1e18), '1e18 ×100 后还没到门槛,该是定点写法').not.toMatch(/e/)
+    for (const x of [1e21, 1e28, 1e300]) {
+      const got = formatPercent(x)
+      expect(got, `${x} 印出了 JS 默认的 1e+N:${got}`).not.toMatch(/e\+/)
+      expect(got, `${x} 该用 formatGN 同形的 eN:${got}`).toMatch(/^\d+\.\d{2}e\d+%$/)
+    }
+  })
+
+  it('负值保留符号', () => {
+    expect(formatPercent(-1e22)).toMatch(/^-1\.00e24%$/)
+  })
+
+  it('与小面积写法一致:e 后面不带 + 号', () => {
+    // formatGN 的兜底是 `1.00e408`;两处形状要一致
+    expect(formatPercent(1e300)).toMatch(/e\d+%$/)
+    expect(formatPercent(1e300)).not.toMatch(/e\+\d+/)
+  })
+
+  it('门槛之下的行为不变', () => {
+    expect(formatPercent(0.5)).toBe('50%')
+    expect(formatPercent(1)).toBe('100%')
+    expect(formatPercent(0.1234, 2)).toBe('12.34%')
+    expect(formatPercent(0)).toBe('0%')
+  })
+
+  it('非有限值仍是占位符', () => {
+    for (const bad of [NaN, Infinity, -Infinity]) {
+      expect(formatPercent(bad)).toBe('--')
+    }
+  })
+})
