@@ -132,4 +132,28 @@ describe('应战今日天道 · 跨午夜落闸(防一天双份赏)', () => {
     expect(undertakeDaily(stale), '时钟回拨后天道赏又能领了').toBe(null)
     expect(undertakeChallenge, '闸门漏了,挑战被真的发起了').not.toHaveBeenCalled()
   })
+
+  it('回拨后**重载**(sanitize)仍挡得住 —— 归 null 会让闸门失效', () => {
+    /*
+     * 只把闸门改 `>=` 不够:`endgame.sanitize` 原先把未来日**归 null**,
+     * 而归 null 的语义正是「今天还没挑战」。今天领过 → 回拨 → 重载,
+     * 这条被归 null,`dailyDoneDay >= day` 恒假,天道赏又能领。
+     * 现改为**夹到今天**(与第 54 轮洞府巡游的 lastCaveEventDay 同一条处理)。
+     */
+    vi.useFakeTimers()
+    vi.setSystemTime(1_760_000_000_000)
+    setActivePinia(createPinia())
+    const endgame = useEndgameStore()
+    vi.mocked(undertakeChallenge).mockClear()
+    endgame.dailyDoneDay = todayLocalNum()
+
+    // 时钟回拨一天后重载
+    vi.setSystemTime(Date.now() - 86_400_000)
+    endgame.sanitize()
+
+    expect(endgame.dailyDoneDay, 'sanitize 把「今天领过」的语义弄丢了').toBe(todayLocalNum())
+    const stale: DailyChallenge = { day: todayLocalNum(), draft: todayChallenge()!.draft, verdict: todayChallenge()!.verdict }
+    expect(undertakeDaily(stale), '回拨后重载,天道赏又能领了').toBe(null)
+    expect(undertakeChallenge).not.toHaveBeenCalled()
+  })
 })

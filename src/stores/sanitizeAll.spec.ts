@@ -246,11 +246,17 @@ describe('sanitizeAllStores 修「按 id 认对象」的坏账', () => {
     expect(player.lastCaveEventDay, '今天的巡游日应原样保留').toBe(today)
   })
 
-  it('天道每日的日记号落在未来时清空,不会变成可重复挑战', () => {
+  it('天道每日的日记号落在未来时夹到今天,不会变成可重复挑战', () => {
+    /*
+     * 早先这里归 null —— 而归 null 的语义是「今天还没挑战」,
+     * 恰好是坏档该被挡住的方向。更麻烦的是它与闸门的 `>=` 判据互相抵消:
+     * 今天领过 → 时钟回拨 → 重载,这条被归 null,闸门恒假,天道赏又能领一次。
+     * 现改为**夹到今天**(与洞府巡游的 lastCaveEventDay 同一条处理)。
+     */
     const endgame = useEndgameStore()
     endgame.dailyDoneDay = todayLocalNum() + 10000
     endgame.sanitize()
-    expect(endgame.dailyDoneDay, '未来的天道日会让「今日已挑战」恒假').toBeNull()
+    expect(endgame.dailyDoneDay, '未来的天道日没被夹住 —— 「今日已挑战」会恒假').toBe(todayLocalNum())
     // 健康的今天不该被清
     endgame.dailyDoneDay = todayLocalNum()
     endgame.sanitize()
