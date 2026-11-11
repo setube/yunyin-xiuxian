@@ -346,6 +346,7 @@
   import { herbStashText } from '@/ui/herbText'
   import { herbQualityLuster, herbQualityRank, herbQualityTextColor, herbQualityTier, herbQualityTone } from '@/ui/herbQuality'
   import { pillFuncText } from '@/ui/itemText'
+  import { recipeMasteryText } from '@/ui/pillText'
   import { EQUIP_SLOT_NAMES, EQUIP_SLOTS, equipmentTemplate } from '@/data/equipment'
   import { BAG_CAPACITY } from '@/data/constants'
   import { usePill, usePillBatch } from '@/core/pillService'
@@ -687,14 +688,14 @@
     ui.toast(changed > 0 ? `已换上 ${changed} 件` : '无可换', changed > 0 ? 'success' : 'info')
   }
 
-  /** 丹方读到几分熟,与图鉴「已得方/通晓」同源(lore.recipeLore);只报读数,不列熟练来路 */
+  /**
+   * 丹方读到几分熟,与图鉴「已得方/通晓」同源(lore.recipeLore);只报读数,不列熟练来路。
+   * 三态说法取 ui/pillText.recipeMasteryText —— 可炼性判据那里也要同一句。
+   */
   function pillMasteryText(id: string): string {
     const def = pillDef(id)
     if (!def?.recipe) return ''
-    const m = lore.recipeMastery(id)
-    if (m <= 0) return '未得方'
-    if (m >= 1) return '已通晓'
-    return `熟练 ${Math.round(m * 100)}%`
+    return recipeMasteryText(lore.recipeMastery(id))
   }
 
 </script>

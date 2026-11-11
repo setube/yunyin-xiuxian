@@ -7,6 +7,7 @@ import { LORE_MAX, materialDef } from '@/data/materials'
 import { recipeCraft, skillDef, type RecipeCraft, type SkillId } from '@/data/crafting'
 import { pillDef, PILLS } from '@/data/pills'
 import { PILL_SECOND_CAP } from '@/data/constants'
+import { RECIPE_MASTERY_TEXT } from '@/ui/pillText'
 import { modOf } from './statsCalc'
 import { useLoreStore } from '@/stores/lore'
 import { usePlayerStore } from '@/stores/player'
@@ -179,7 +180,7 @@ export function craftability(id: string, opts?: { omitWeakness?: boolean }): Cra
   const over = Math.max(0, craft.rank - bearable)
 
   const blockers: string[] = []
-  if (mastery <= 0) blockers.push('未得方')
+  if (mastery <= 0) blockers.push(RECIPE_MASTERY_TEXT.none)
 
   return {
     recipeId: id,
