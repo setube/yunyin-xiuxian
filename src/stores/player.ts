@@ -1021,12 +1021,17 @@ export const usePlayerStore = defineStore(
       // 上界:连胜是计数,坏档写 MAX_VALUE 会让它永远涨不到头(界面印 1.79e308)
       winStreak.value = Math.floor(asFiniteNumber(winStreak.value, 0, 0, WIN_STREAK_CAP))
       /*
-       * 日记号不许落在今天之后:闸门写的是 `lastCaveEventDay === today`,
-       * 时钟调快过留下的未来日会让等号永不成立,每日巡游就此停摆(实测一年后的日期能一路通过)。
-       * 归零等于「今日未做」,与坏档该有的行为一致。
+       * 日记号不许落在今天之后。闸门写的是 `lastCaveEventDay >= today`,
+       * 未来日会让它恒真、每日巡游永久停摆(实测一年后的日期能一路通过)。
+       *
+       * **夹到「今天」而不是归零**:归零的语义是「从未巡游过」,
+       * 而时钟调快再调回、或时钟回拨后重载时,那条记录的语义其实是
+       * 「刚巡游过」—— 归零会把它变成「可以再抽一次」(审查意见指出的)。
+       * 夹到今天既挡住未来日,也保住「今日已做」。
        */
       lastCaveEventDay.value = Math.floor(asFiniteNumber(lastCaveEventDay.value, 0, 0))
-      if (lastCaveEventDay.value > todayLocalNum()) lastCaveEventDay.value = 0
+      const todayNum = todayLocalNum()
+      if (lastCaveEventDay.value > todayNum) lastCaveEventDay.value = todayNum
       /*
        * 区域胜场要封顶 —— 它同时是**判定依据**与**显示值**。
        *

@@ -87,6 +87,30 @@ describe('洞府巡游 · 每日一巡(跨天再触发)', () => {
     }
   })
 
+  it('今天巡游过 → 时钟回拨 → 重载,仍然抽不了', () => {
+    /*
+     * 审查意见指出的第二层:`player.sanitize` 原先把未来日**归零**,
+     * 而归零的语义是「从未巡游过」—— 时钟回拨后重载,今天巡游过的记录
+     * 反而变成了「可以再抽」。现改为**夹到今天**:既挡住未来日,也保住「今日已做」。
+     */
+    setActivePinia(createPinia())
+    dismissCaveEvent()
+    const player = usePlayerStore()
+    player.major = 1
+    player.markCaveEventToday(todayLocalNum())
+
+    const back = vi.spyOn(Date, 'now').mockReturnValue(Date.now() - 86_400_000)
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    try {
+      player.sanitize() // 重载时的自愈入口
+      expect(player.lastCaveEventDay, 'sanitize 把「今天巡游过」的语义弄丢了').toBe(todayLocalNum())
+      expect(mayTriggerCaveEvent(), '回拨后重载,巡游又能抽了').toBeNull()
+    } finally {
+      back.mockRestore()
+      vi.restoreAllMocks()
+    }
+  })
+
   it('落点只发生在盖了对应建筑的地方:纯新人一座没盖,回落到灵田而非丹炉/灵兽园', () => {
     // Math.random→0.6:不按已建建筑过滤时会取到数组中部(如 array/丹炉)
     vi.spyOn(Math, 'random').mockReturnValue(0.6)
