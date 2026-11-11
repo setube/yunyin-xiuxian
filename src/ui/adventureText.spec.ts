@@ -38,7 +38,8 @@ describe('出发按钮与结算同一套数', () => {
 
   it('按钮文案带上四个结算数', () => {
     const line = departButtonText({ durationSec: 1800, rewardMult: 1.4, dangerMult: 1.45, battleGapSec: 12 })
-    expect(line).toContain('30分0秒')
+    // 整分钟不写「0秒」:中文时长没有「30分0秒」这种说法(formatDuration 与 formatChoiceSpan 同一口径)
+    expect(line).toContain('行程 30分')
     expect(line).toContain('收益 ×1.4')
     expect(line).toContain('遇险 ×1.45')
     expect(line).toContain('遇敌约 12秒')
