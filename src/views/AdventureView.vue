@@ -36,7 +36,7 @@
       </p>
       <div v-if="mansionRedirectOpen" class="mt-1.5 rounded border border-ink/10 bg-ink/4 p-2">
         <p class="text-[9px] leading-relaxed text-ink-faint">
-          每次 {{ redirectCostText }} 灵石 · 今日限 {{ mansionRedirectMax }} 次
+          每次 灵石 {{ redirectCostText }} · 今日限 {{ mansionRedirectMax }} 次
         </p>
         <div class="mt-1.5 flex flex-wrap gap-2">
           <button

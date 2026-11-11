@@ -73,7 +73,7 @@ export const BREAKTHROUGH_PREP_OPTIONS: BreakthroughPrepOption[] = [
   {
     id: 'pill',
     label: '服用聚气丹',
-    desc: '消耗80灵石,进阶成功率 +5%',
+    desc: '消耗灵石 80,进阶成功率 +5%',
     cost: { stone: 80 },
     bonusRate: 0.05,
     duration: 0

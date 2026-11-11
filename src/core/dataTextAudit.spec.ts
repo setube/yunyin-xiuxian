@@ -17,7 +17,7 @@ import { SECRET_RULES } from '@/data/secretRealms'
 import { BUFFS, buffDef } from '@/data/buffs'
 import { PACTS } from '@/data/pacts'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, join } from 'node:path'
 import { cnNumber } from '@/utils/format'
 import { REALMS, WORLDS, ascensionLeap } from '@/data/realms'
 import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY } from '@/data/constants'
@@ -1693,5 +1693,48 @@ describe('天道熔炉 · 兑换支持自定义次数', () => {
     expect(f, '凝炼收益该按选中枚数算').toContain('fruitMarginalInfo(fruitEffective.value)')
     expect(f, '边际刻度该看这批的收尾那枚').toContain('marginMark(fruitInfo.value.total + fruitEffective.value)')
     expect(f, '曲线起点该与刻度同一枚').toContain('marginCurvePoints(fruitInfo.value.total + fruitEffective.value - 1)')
+  })
+})
+
+
+/**
+ * 灵石数额的词序只有一种:「灵石 N」。
+ *
+ * 全仓绝大多数地方写「灵石 6509万」「共耗 灵石 12」,而修行页的兑换行、
+ * 突破準備按钮、天界改向成本、道童招募成本曾写成「80 灵石」「4.468亿 灵石」——
+ * 同一个量在相邻两页一个词序,读起来像是两个不同的东西。
+ *
+ * 只扫 .vue 与 data 里**面向玩家**的模板串,跳过注释与 spec 自身的样例。
+ */
+describe('文案用词 · 灵石数额的词序一致', () => {
+  it('界面与数据表里不再出现「数字 灵石」', () => {
+    const SRC = resolve(__dirname, '..')
+    const offenders: string[] = []
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name)
+        if (e.isDirectory()) {
+          walk(p)
+          continue
+        }
+        if (!/\.(vue|ts)$/.test(e.name) || /\.spec\.ts$/.test(e.name)) continue
+        const text = readFileSync(p, 'utf8')
+        for (const [i, line] of text.split('\n').entries()) {
+          // 跳过注释行:注释里写「80 灵石」是说明,不是界面文案
+          if (/^\s*(\*|\/\/|<!--)/.test(line)) continue
+          /*
+           * 数字(含 formatGN 调用结果)紧跟「灵石」= 反序。
+           *
+           * 排除「灵石/时」这类**单位**写法:``${n}灵石/时` 是「每小时多少灵石」,
+           * 单位在后本来就对,与「80 灵石」那种量词反序不是一回事。
+           */
+          if (/\}\}\s*灵石|\$\{[^}]+\}\s*灵石/.test(line) && !/\$\{[^}]+\}\s*灵石\s*\//.test(line)) {
+            offenders.push(`${p.replace(SRC, 'src')}:${i + 1}`)
+          }
+        }
+      }
+    }
+    walk(SRC)
+    expect(offenders, `这些地方把数额写在「灵石」前面了:\n${offenders.join('\n')}`).toEqual([])
   })
 })

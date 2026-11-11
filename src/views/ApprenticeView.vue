@@ -174,7 +174,7 @@
   const recruitCost = computed(() => apprenticeRecruitCost(player.major))
   const canAffordRecruit = computed(() => resources.hasStone(recruitCost.value))
   const recruitShort = computed(() => apprenticeRecruitShortfall(player.major, resources.spiritStone))
-  const recruitCostLine = computed(() => `${formatGN(recruitCost.value)} 灵石`)
+  const recruitCostLine = computed(() => `灵石 ${formatGN(recruitCost.value)}`)
 
   const apprenticesList = computed(() =>
     appr.apprentices.map(a => {
