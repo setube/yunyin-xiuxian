@@ -13,6 +13,7 @@ import {
   SWORD_LAYER_MODS,
   SWORD_PER_WIN,
   SWORD_PURITY_MAX_LAYERS,
+  perWinModsOf,
   stackedMods,
   swordPurity
 } from './daoDepth'
@@ -130,5 +131,41 @@ describe('逐胜叠层', () => {
 
   it('剑意每层与剑道逐胜是同一组数值(同源常量)', () => {
     expect(SWORD_LAYER_MODS).toEqual(SWORD_PER_WIN)
+  })
+})
+
+/**
+ * 「哪几道有逐胜叠层」只有一个出处。
+ *
+ * 那条三元式原先在四处各写一遍:expedition 的 perWinMods、endgameService 两处、
+ * challenge 一处。四处都跑得对,但必须永远一致 —— 加第三条道途有逐胜叠层时,
+ * 漏改任一处就是「远征叠了、试炼没叠」这种只有对局才看得出的分叉。
+ *
+ * 判据分两层:纯函数本身的三支行为;以及那四个调用点确实都读它(不再各写三元)。
+ */
+describe('逐胜叠层 · 道途选择只有一处', () => {
+  it('剑/杀各自取自己那份,其余道途没有', () => {
+    expect(perWinModsOf('sword')).toEqual(SWORD_PER_WIN)
+    expect(perWinModsOf('slaughter')).toEqual(SLAUGHTER_PER_WIN)
+    expect(perWinModsOf(null), '未立道途不该有逐胜叠层').toBeUndefined()
+    expect(perWinModsOf('alchemy')).toBeUndefined()
+    expect(perWinModsOf('bogus'), '野 id 不该造出叠层').toBeUndefined()
+  })
+
+  it('两份叠层不是同一对象 —— 取错道途会看得出来', () => {
+    expect(perWinModsOf('sword')).not.toBe(perWinModsOf('slaughter'))
+    expect(perWinModsOf('sword')).toEqual({ damageBonus: 0.04, critRate: 0.02 })
+    expect(perWinModsOf('slaughter')).toEqual({ damageBonus: 0.05 })
+  })
+
+  it('四个调用点都读 perWinModsOf,不再各写三元', () => {
+    const root = resolve(__dirname, '..')
+    for (const rel of ['core/expedition.ts', 'core/endgameService.ts', 'core/challenge.ts']) {
+      const src = readFileSync(resolve(root, rel), 'utf-8')
+      expect(src, `${rel} 该读 perWinModsOf`).toContain('perWinModsOf(')
+      // 未剥注释也够:三元式里必带 SWORD_PER_WIN 标识符,而转调后该文件不再引它
+      expect(src, `${rel} 又自己写了一遍道途三元`).not.toContain('SWORD_PER_WIN')
+      expect(src, `${rel} 又自己写了一遍道途三元`).not.toContain('SLAUGHTER_PER_WIN')
+    }
   })
 })

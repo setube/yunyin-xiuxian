@@ -24,7 +24,7 @@ import { maxTierForMajor } from '@/data/regions'
 import { stoneByTier } from './formulas'
 import { buildPlayerSnap } from './playerSnap'
 import { detectBuild } from './buildDetect'
-import { SWORD_PER_WIN, SLAUGHTER_PER_WIN } from './daoDepth'
+import { perWinModsOf } from './daoDepth'
 import { recordMilestone, trackClearRecords } from './identity'
 import { celestialJudgement, mergeRules, runGauntlet, worldFoeLineup, worldFoeSnap, type GauntletReport } from './gauntlet'
 import { usePlayerStore } from '@/stores/player'
@@ -386,7 +386,7 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
   const target = (world ?? trial)!
   // 环境按当年,道途取今世
   const rules = mergeRules(currentDaoRules(), markRules({ ...mark, daoPathId: null }, world, trial))
-  const perWin = endgame.daoPath === 'sword' ? SWORD_PER_WIN : endgame.daoPath === 'slaughter' ? SLAUGHTER_PER_WIN : undefined
+  const perWin = perWinModsOf(endgame.daoPath)
   const markRng = new RandomService(mulberry32(seedOf(mark.targetId, mark.life)))
   const report = runGauntlet(buildPlayerSnap(true), foes, rules, 'healBetweenPct' in target ? target.healBetweenPct : 0.5, markRng, {
     perWinPlayerMods: perWin
@@ -443,7 +443,7 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
     foes.push(worldFoeSnap(TRIAL_FOES[i % TRIAL_FOES.length]!, ref, Math.pow(trial.escalation, i), judgement))
   }
   const rules = mergeRules(currentDaoRules(), trial.rules)
-  const perWin = endgame.daoPath === 'sword' ? SWORD_PER_WIN : endgame.daoPath === 'slaughter' ? SLAUGHTER_PER_WIN : undefined
+  const perWin = perWinModsOf(endgame.daoPath)
   const trialRng = new RandomService(mulberry32(seedOf(trial.id, 0)))
   const report = runGauntlet(buildPlayerSnap(true), foes, rules, trial.healBetweenPct, trialRng, { perWinPlayerMods: perWin })
 

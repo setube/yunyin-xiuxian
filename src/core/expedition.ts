@@ -26,7 +26,7 @@ import { VOID_ANCHOR_TIER } from './worldGen'
 import { MAX_MAJOR } from '@/data/realms'
 import { resolveCombat, sampleWinRate } from './combat'
 import { modOf } from './statsCalc'
-import { SLAUGHTER_PER_WIN, SWORD_PER_WIN, slaughterSpeedBonus, stackedMods } from './daoDepth'
+import { perWinModsOf, slaughterSpeedBonus, stackedMods } from './daoDepth'
 import { currentDaoRules, endgameUnlocked, recordMark } from './endgameService'
 import { recordMilestone, trackClearRecords } from './identity'
 import { defaultHistoryAsync, generateApprovedWorldAsync, type HistoryEntry } from './worldGen'
@@ -65,12 +65,9 @@ export function resolveWorld(id: string): CelestialWorldDef | undefined {
   return celestialWorldDef(id)
 }
 
-/** 道途逐胜叠层词条 */
+/** 道途逐胜叠层词条(选择逻辑收在 daoDepth.perWinModsOf,与 tryChallenge 等共用) */
 function perWinMods(): StatMods | undefined {
-  const dao = useEndgameStore().daoPath
-  if (dao === 'sword') return SWORD_PER_WIN
-  if (dao === 'slaughter') return SLAUGHTER_PER_WIN
-  return undefined
+  return perWinModsOf(useEndgameStore().daoPath)
 }
 
 /** 逆命契:封印当前主流派核心词条(生成负向词条快照) */

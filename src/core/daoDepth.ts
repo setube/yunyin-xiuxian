@@ -10,6 +10,23 @@ export const SWORD_PER_WIN: StatMods = { damageBonus: 0.04, critRate: 0.02 }
 /** 杀伐远征逐胜叠层 */
 export const SLAUGHTER_PER_WIN: StatMods = { damageBonus: 0.05 }
 
+/**
+ * 按当前道途取「逐胜叠层」那一份词条;非剑/杀两道返回 undefined。
+ *
+ * 同一个三元式原先在四处各写一遍(expedition 的 perWinMods、endgameService 两处、
+ * challenge 一处)。两处能各自跑对,但它们必须永远一致 ——
+ * 加第三条道途有逐胜叠层时,漏改任一处就是「远征叠了、试炼没叠」这种只有对局才看得出的分叉。
+ *
+ * 只读传入的 dao id,不碰 store:core 里已有几处传它的是本地快照而非 store。
+ *
+ * @param dao 当前道途 id;未立道途为 null
+ */
+export function perWinModsOf(dao: string | null): StatMods | undefined {
+  if (dao === 'sword') return SWORD_PER_WIN
+  if (dao === 'slaughter') return SLAUGHTER_PER_WIN
+  return undefined
+}
+
 export interface SwordPurity {
   layers: number
   /** 各项纯度判定(供 UI 解释层数) */
