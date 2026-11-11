@@ -782,20 +782,36 @@ describe('坏档韧性 · 远征运行态的计数上界', () => {
     for (const v of [1e300, 1e12]) {
       const r = patchRun(v)
       expect(r?.winStacks, `winStacks ${v} 没被夹住`).toBeLessThanOrEqual(16)
-      expect(r?.bonus, `bonus ${v} 没被夹住`).toBeLessThanOrEqual(16)
+      expect(r?.bonus, `bonus ${v} 没被夹住`).toBeLessThanOrEqual(256)
     }
   })
 
-  it('正常战绩不被误夹', () => {
+  it('正常叠层不被误夹', () => {
     // 一趟远征最多 5 战,叠层 0..5 都是正常值
     for (const v of [0, 3, 5]) {
       const r = patchRun(v)
-      expect(r?.winStacks, `正常值 ${v} 被误夹`).toBe(v)
+      expect(r?.winStacks, `正常叠层 ${v} 被误夹`).toBe(v)
     }
   })
 
-  it('上界覆盖得住「一趟远征最多几战」', () => {
-    // 入界 1 + 每层 1 × ROUTE_LAYERS + 界主 1
-    expect(16, '上界小于一趟远征的场数,正常叠层会被夹').toBeGreaterThanOrEqual(5)
+  it('正常路线奖励不被误夹 —— bonus 会并入最终结算', () => {
+    /*
+     * 这一条是审查意见指出的高危处:`run.bonus` 是**累计的路线奖励**,
+     * `reward = world.rewardDaoSource + run.bonus` 直接把它算进道源。
+     * 首版让它与叠层共用 16 的上界,会吞掉玩家已经挣到的奖励。
+     *
+     * 节点 bonus 实测 8/10/12/14/16,三层各取一个 → 正常上限 48。
+     */
+    for (const v of [0, 16, 32, 48]) {
+      const r = patchRun(v)
+      expect(r?.bonus, `正常路线奖励 ${v} 被误夹`).toBe(v)
+    }
+  })
+
+  it('两条上界各按自己的真实范围定,不共用', () => {
+    // 叠层与道源是两个量级的数,共用上界必有一方被误夹
+    const r = patchRun(48)
+    expect(r?.bonus, 'bonus 的正常上限 48 被叠层那条上界误夹').toBe(48)
+    expect(r?.winStacks, '叠层仍该夹到 16').toBe(16)
   })
 })
