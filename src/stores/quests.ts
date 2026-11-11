@@ -40,7 +40,21 @@ export const useQuestsStore = defineStore(
 
     /** 存档修复:计数/图鉴表写坏会让成就判定与图鉴页在渲染期抛错 */
     function sanitize(): void {
-      counters.value = asNumberRecord(counters.value, 0)
+      /*
+       * 计数器是**成就/任务/日课三处的判定依据**,不只是显示值。
+       *
+       * `asNumberRecord` 只挡非有限值与负数,不管上界 —— 坏档写 `kills: 1e300`
+       * 会原样留下,而 `evalCond` 的判据是 `counter(key) >= cond.value`,
+       * 于是**一次解锁全部计数类成就**(实测 5 个),日课也一并判为达成。
+       * 上界取一亿,超出**归零而不是夹到上界**:夹到一亿仍然是「远超所有成就阈值」的
+       * 合法读数,判据照样全过 —— 归零才表达「这条读数不可信」。
+       * (同理见 `inventory` 的 `investedDust`;与「夹到边界」那种修法区分开:
+       * 夹的值本身可信、只是越界,归零的是值本身不可信。)
+       */
+      const COUNTER_MAX = 100_000_000
+      counters.value = Object.fromEntries(
+        Object.entries(asNumberRecord(counters.value, 0)).map(([k, v]) => [k, v > COUNTER_MAX ? 0 : v])
+      )
       // 成就是集合语义:与 unlockAchievement 同口径去重;只留认得的 id(野 id 画不出来却照样计数)
       const achievementIds = new Set(ACHIEVEMENTS.map(a => a.id))
       achieved.value = [...new Set(asStringArray(achieved.value))].filter(id => achievementIds.has(id))
