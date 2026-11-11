@@ -1166,9 +1166,14 @@ describe('坏档韧性 · 虚界配置数的上界', () => {
     e.sanitize()
     const got = e.voidWorld
     expect(got, '夹具在坏值下也整座作废了,判据测不到东西').toBeTruthy()
-    expect(got?.rewardDaoSource, '赏格没封住 —— 白得天文数字道源').toBeLessThanOrEqual(200)
-    expect(got?.entryCost, '入场费没封住 —— 永远付不起').toBeLessThanOrEqual(500)
-    expect(got?.fights, '场数没封住 —— 远征永远打不完').toBeLessThanOrEqual(20)
-    expect(got?.anchorTier, '锚点层级没封住').toBeLessThanOrEqual(64)
+    /*
+     * 这里的断言要**精确**,不能只写「小于等于上界」——
+     * 那样「把坏值换成兜底默认值 0」也能过,而 0 赏格意味着打赢也拿不到道源。
+     * 故先钉住「确实是夹到上界」,再钉住「不是归零」。
+     */
+    expect(got?.rewardDaoSource, '赏格没被夹到上界(归零也不对:打赢拿不到道源)').toBe(200)
+    expect(got?.entryCost, '入场费没被夹到上界').toBe(500)
+    expect(got?.fights, '场数没被夹到上界').toBe(20)
+    expect(got?.anchorTier, '锚点层级没被夹到上界').toBe(64)
   })
 })

@@ -302,6 +302,12 @@ export const useEndgameStore = defineStore(
      * 取 256:宽到任何真实路线都够,窄到拦得住 1e300。
      */
     const WORLD_RUN_STACKS_MAX = 16
+    /*
+     * 沿途道源:`run.bonus` 在每次**择路**后累加当层节点的 bonus,
+     * 而择路只发生在 `layer 0..EXPEDITION_ROUTE_LAYERS-1` —— 即最多
+     * `EXPEDITION_ROUTE_LAYERS`(3)次。节点 bonus 实测最大 16,故一趟最多 48。
+     * 取 256 留五倍余量:正常到不了,越过的必定是坏档。
+     */
     const WORLD_RUN_BONUS_MAX = 256
     // 两处都走 asFiniteNumber 的第四个参数,不再手写 Math.min(统一钳制规则)
 
