@@ -1,4 +1,5 @@
 import { gongfaMaxLevel } from '@/data/gongfa'
+import { peakLabel } from './peakLabel'
 import type { GongfaDef } from '@/types'
 
 /**
@@ -41,7 +42,7 @@ export function gongfaMark(def: GongfaDef | undefined, level: number): GongfaMar
     max,
     maxed,
     toMax: max - lv,
-    peakLabel: maxed ? '已圆满' : null
+    peakLabel: maxed ? peakLabel() : null
   }
 }
 

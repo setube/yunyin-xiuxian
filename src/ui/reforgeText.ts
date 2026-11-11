@@ -1,4 +1,5 @@
 import { resourceShortText } from './resourceShortText'
+import { TRANSFER_LABELS } from './affixTransferText'
 /** 重铸与封存提示:只报结果与差额;缺料写「不足 / 尚差 N」 */
 export function reforgeEmptyToast(): string {
   return '无可重铸词条'
@@ -13,9 +14,14 @@ export function reforgeDoneToast(countNote: string): string {
   return `已重铸 · 词条 ${countNote}`
 }
 
-/** 封存已满(每件须留一个可重掷位);与词条转移的 sealFull 同说法 */
+/**
+ * 封存已满(每件须留一个可重掷位)。
+ *
+ * 说法转调词条转移的 sealFull —— 两处说的是同一条规矩(每件必须留一个可重掷位),
+ * 原先各自写一遍字面量,注释里写着「同说法」而代码是抄的。
+ */
 export function sealMustLeaveToast(): string {
-  return '不可封存'
+  return TRANSFER_LABELS.sealFull
 }
 
 export function sealShortToast(shortText?: string): string {

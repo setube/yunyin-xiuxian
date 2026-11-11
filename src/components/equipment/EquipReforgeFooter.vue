@@ -89,7 +89,7 @@
   </template>
   <template v-else-if="inst">
     <p class="text-center text-[10px] leading-relaxed text-ink-faint">
-      {{ inst.affixes.length === 0 ? '暂无词条' : '无可重铸词条' }}
+      {{ inst.affixes.length === 0 ? TRANSFER_LABELS.noAffix : reforgeEmptyToast() }}
     </p>
     <!-- 全封存的旧档件也能把词条转出去 -->
     <button v-if="canTransferOut" class="btn-ghost w-full !py-2 !text-[11px]" @click="emit('transfer')">{{ TRANSFER_LABELS.entry }}</button>
@@ -103,6 +103,7 @@
   import { reforgeEquipment, reforgeCost, reforgeShortfall, sealCapacity, sealCost, sealShortfall } from '@/core/reforge'
   import { formatGN, formatGap } from '@/utils/format'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
+  import { reforgeEmptyToast } from '@/ui/reforgeText'
 
   /**
    * 价签与动作全读 core/reforge,不在界面另写。

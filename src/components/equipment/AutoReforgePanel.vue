@@ -81,7 +81,7 @@
         <button
           class="btn-seal ml-auto shrink-0 !px-3 !py-1.5 !text-[11px]"
           :disabled="!autoTargets.length"
-          :title="autoTargets.length ? undefined : '未选目标'"
+          :title="autoTargets.length ? undefined : TRANSFER_LABELS.pendingTarget"
           @click="autoArm = true"
         >
           开 洗
@@ -132,6 +132,7 @@
   import { AUTO_REFORGE_MAX_BUDGET, AUTO_REFORGE_MAX_TARGETS } from '@/core/reforge'
   import { formatGN, formatGap } from '@/utils/format'
   import { useAutoReforge } from '@/composables/useAutoReforge'
+  import { TRANSFER_LABELS } from '@/ui/affixTransferText'
   import AffixInfoSheet from './AffixInfoSheet.vue'
 
   /**

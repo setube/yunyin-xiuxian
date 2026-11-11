@@ -13,6 +13,7 @@ import {
   AUTO_REFORGE_MAX_TARGETS,
   type ReforgeTarget
 } from '@/core/reforge'
+import { TRANSFER_LABELS } from '@/ui/affixTransferText'
 import { formatGN, formatGap } from '@/utils/format'
 import { mulN } from '@/utils/gnum'
 import { playSfx } from '@/core/audio'
@@ -118,7 +119,7 @@ export function useAutoReforge() {
       // 装备不在行囊时它已经是 undefined,再拿它反查永远得不出「已不在」——
       // 那个分支原先恒不成立,玩家只会看到「无可重铸」,看不到「未找到装备」。
       const gone = !!ui.equipDetailUid && !inventory.findItem(ui.equipDetailUid)
-      ui.toast(gone ? '未找到装备' : reforgeEmptyToast(), 'info')
+      ui.toast(gone ? TRANSFER_LABELS.gone : reforgeEmptyToast(), 'info')
     }
     // 结账即收板(由面板通知宿主收起)
   }

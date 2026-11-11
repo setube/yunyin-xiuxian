@@ -70,7 +70,7 @@
       <template v-else>
         <!-- 圆满/辖限头部已有彩签,按钮只给短态 -->
         <span v-if="locked" class="inline-flex items-center gap-1.5"><GameIcon name="lock" :size="11" />{{ info.reason }}</span>
-        <template v-else>{{ atMax ? '已圆满' : atGateCap ? '辖于洞府' : info.reason }}</template>
+        <template v-else>{{ atMax ? peakLabel() : atGateCap ? '辖于洞府' : info.reason }}</template>
       </template>
     </button>
     <!--
@@ -129,6 +129,7 @@
   import { studyEta } from '@/core/loreService'
   import { modsText } from '@/data/statNames'
   import { buildingActLabel, buildingGateRealmName } from '@/ui/buildingText'
+  import { peakLabel } from '@/ui/peakLabel'
   import { formatDuration, formatGN } from '@/utils/format'
 
   const props = withDefaults(defineProps<{ def: BuildingDef; featured?: boolean }>(), { featured: false })
