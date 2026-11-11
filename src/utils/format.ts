@@ -174,6 +174,19 @@ export function formatPercent(x: number, dp = 1): string {
   if (!Number.isFinite(v)) return NOT_AVAILABLE
   // 极小值显示 0%,不出「-0%」
   if (Math.abs(v) < Math.pow(10, -dp)) return '0%'
+  /*
+   * 大值须自己兜底:`String(1e22)` 是 `1e+22`,而这条路径既过了 `isFinite`
+   * (1e22 是有限数)也过了上面的上溢检查(×100 后仍是有限数)——
+   * 于是 percent 会印出「1e+22%」这种非法数字。实测从 1e20 起就开始了。
+   *
+   * 兜底与 formatGN 同形:`1.00e22`(尾数两位、指数不带 + 号),
+   * 而不是 JS 的 `1e+22` —— 全站只该有一种科学计数写法。
+   */
+  if (Math.abs(v) >= 1e21) {
+    const exp = Math.floor(Math.log10(Math.abs(v)))
+    const mant = v / Math.pow(10, exp)
+    return `${mant.toFixed(2)}e${exp}%`
+  }
   const s = Number.isInteger(v) ? String(v) : v.toFixed(dp)
   return `${trimZero(s)}%`
 }
