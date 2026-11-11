@@ -60,11 +60,12 @@
           而卡片里那句「尚差 N 灵石」正是拒因本身。改为只换底色,字色不动。
         -->
         <!--
-          可访问名 = 形制读数 + 拒因。
+          可访问名 = 形制读数 + 入场代价 + 拒因。
           原先只有 `realmMark(r).label`(秘境名 · 回血档 · 战利倍率):置灰时屏幕上明明写着
-          「灵石尚差 N」,读屏却只念得到形制读数,听不出为什么进不去。
-          全仓的既有做法是「拒因走 aria-label / title、不写进按钮正文之外」
-          (见 EquipmentDetailDialog 的强 化钮),这里补齐同一条。
+          「灵石尚差 N」,读屏却只念得到形制读数,听不出为什么进不去;而卡面左侧的
+          「灵石 4.468亿」同样没有进名字 —— 要付多少钱,读屏用户听不到。
+          全仓的既有做法是「拒因走 aria-label / title」(见 EquipmentDetailDialog 的强 化钮),
+          这里补齐同一条,代价一并带上。拼法收在 ui/realmMark.realmEntryLabel,可单测。
         -->
         <button
           v-for="r in list"
@@ -72,7 +73,7 @@
           class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98 disabled:cursor-not-allowed disabled:bg-ink/4"
           :class="{ 'realm-top-gain': isTopGain(realmMark(r)) }"
           :disabled="!canPay(r)"
-          :aria-label="entryBlockText(r) ? `${r.name} · 入 境 · ${entryBlockText(r)} · ${realmMark(r).label}` : `${r.name} · 入 境 · ${realmMark(r).label}`"
+          :aria-label="realmEntryLabel(realmMark(r), entryCostText(r, player.major), entryBlockText(r))"
           :title="entryBlockText(r) ?? undefined"
           @click="enter(r.id)"
         >
@@ -111,7 +112,7 @@
   import { useEndgameStore } from '@/stores/endgame'
   import { useUiStore } from '@/stores/ui'
   import { secretRealmDef, type SecretRealmDef } from '@/data/secretRealms'
-  import { isTopGain, realmMark } from '@/ui/realmMark'
+  import { isTopGain, realmEntryLabel, realmMark } from '@/ui/realmMark'
   import { realmLayerPips, realmLifePips, realmProgress, SECRET_MAX_LOSSES } from '@/ui/realmProgress'
   import { cnNumber } from '@/utils/format'
   import {
