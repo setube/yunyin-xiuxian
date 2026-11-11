@@ -71,6 +71,21 @@ describe('封顶 · 时钟回拨不缩短合法 buff', () => {
     }
   })
 
+  it('added 本身是坏值时,不把合法 buff 误判成过期', () => {
+    /*
+     * 起点由 `endsAt - added` 推出。若 `added` 写坏成十年,起点会落到极早的过去,
+     * 上界随之落到过去 —— 一条合法 buff 被判为已过期(审查意见指出的)。
+     * 修法:先把 `added` 钳到上限,再由它推起点。
+     */
+    const cultivation = useCultivationStore()
+    const now = Date.now()
+    cultivation.$patch({
+      buffs: [{ defId: 'buff_wudao', endsAt: now + 3600_000, added: 10 * 365 * 24 * 3600_000 }]
+    } as never)
+    cultivation.sanitize()
+    expect(cultivation.buffs[0]?.endsAt ?? 0, '合法 buff 被坏 added 拖成过期了').toBeGreaterThan(now)
+  })
+
   it('服丹封顶:回拨后再服一颗,不缩短已有 buff', () => {
     const cultivation = useCultivationStore()
     const now = Date.now()
