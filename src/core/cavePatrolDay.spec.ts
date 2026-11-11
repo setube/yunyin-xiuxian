@@ -22,6 +22,15 @@ describe('洞府巡游 · 每日一巡(跨天再触发)', () => {
      * 无论日期怎么设都「触发」——实测两条日期判据就是这么假红的。
      */
     dismissCaveEvent()
+    /*
+     * `dismissCaveEvent()` 会顺手把「今日已巡游」记进 player ——
+     * 那是它生产环境的语义(玩家主动关掉弹窗也算用掉今日一次)。
+     * 但在这个 beforeEach 里它只是用来清模块窗的,记下的今日标记会把
+     * 「本该触发」的用例全挡掉:实测 `--sequence.shuffle` 下
+     * 「纯新人也该有巡游可触」红,报 `expected null not to be null`。
+     * 顺序不能反:先 dismiss 清模块窗,再归零 —— 反过来 dismiss 又会写回去。
+     */
+    usePlayerStore().lastCaveEventDay = 0
   })
 
   it('当日已巡游后不再触发(同日守卫先于掷签)', () => {
@@ -113,8 +122,16 @@ describe('洞府巡游 · 每日一巡(跨天再触发)', () => {
   })
 
   it('落点只发生在盖了对应建筑的地方:纯新人一座没盖,回落到灵田而非丹炉/灵兽园', () => {
-    // Math.random→0.6:不按已建建筑过滤时会取到数组中部(如 array/丹炉)
-    vi.spyOn(Math, 'random').mockReturnValue(0.6)
+    /*
+     * Math.random→0.1。
+     *
+     * 原先写 0.6,而 `earlyEventDecay('cavePatrol', 1)` 恰好也返回 0.6 ——
+     * `mayTriggerCaveEvent` 的判据是 `if (Math.random() > presence) return null`,
+     * 两边相等时虽不返回 null,但**任何一点精度差异都会翻面**,
+     * 而 `Math.random` 还被后续的落点/选池两处消费(0.6 落数组中部)。
+     * 取 0.1 一并解决两件事:稳定命中 presence,且落点仍在首项(灵田)。
+     */
+    vi.spyOn(Math, 'random').mockReturnValue(0.1)
     try {
       const player = usePlayerStore()
       player.major = 1 // 炼气:存在感 1,必触发

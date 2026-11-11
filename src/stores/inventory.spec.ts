@@ -603,6 +603,17 @@ describe('装备 · 词条数上限', () => {
  * 而现有判据只覆盖了「坏档截断」,没覆盖「满时拒收」—— 实测变异后全绿。
  */
 describe('背包 · 满了就拒收新装备', () => {
+  /*
+   * 新 pinia = 干净的行囊。
+   *
+   * 原先没有 beforeEach:`useInventoryStore()` 在 `--sequence.shuffle` 把本组排到最前时
+   * 直接抛 `[🍍] there was no active Pinia`;排到后面又会复用上一条用例的实例,
+   * 件数起点不是 0。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   function mkItems(n: number) {
     return Array.from({ length: n }, (_, i) => ({
       uid: `u${i}`,

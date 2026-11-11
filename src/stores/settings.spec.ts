@@ -103,6 +103,16 @@ describe('设置 · 布尔开关坏档清洗', () => {
 })
 
 describe('设置 · 智能收纳品质线坏档清洗', () => {
+  /*
+   * 新 pinia = 干净的 settings 分片。
+   *
+   * 本组把 `smartKeep` 改坏再 sanitize,复用上一条用例的实例时输入就不是这条想要的:
+   * 乱序下两条都红,报的是「只留真实存在的品质 rank」这种像真回归的话。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('认不出的品质线回落灵品:99 不再让所有掉落静默化尘', () => {
     const s = useSettingsStore()
     s.smartKeep = { ...s.smartKeep, enabled: true, minQuality: 99, keepMinTier: 0 }

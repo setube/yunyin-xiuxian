@@ -124,8 +124,19 @@ function fightAgain(now: number): void {
 describe('灵兽性格 · 败北保护(lossReduction 接入 runBattle)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    /*
+     * 五个桩开关全部归位,不只本组用到的两个。
+     *
+     * `protect` / `combatWin` 之外还有 `meetChance` / `combatHpPct` / `forceBuild` ——
+     * 它们都是模块级可变状态,前面某条用例设成 true 后没归位就带进本组:
+     * 实测 `--sequence.shuffle` 下「谨慎灵兽败北时护住」红,
+     * 报的是 `expected null not to be null`(session 已经被别的分支提前结束了)。
+     */
     protect.value = false
     combatWin.value = false
+    meetChance.value = false
+    combatHpPct.value = 0
+    forceBuild.value = false
   })
 
   it('谨慎灵兽败北时护住:不加重伤、不计败绩、历练继续', () => {
@@ -182,8 +193,12 @@ describe('灵兽性格 · 败北保护(lossReduction 接入 runBattle)', () => {
 describe('连胜(接线 · runBattle 胜负驱动 player.winStreak)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // 五个桩开关全部归位:它们是模块级可变状态,漏一个就会被前面的用例带进来
     protect.value = false
     combatWin.value = false
+    meetChance.value = false
+    combatHpPct.value = 0
+    forceBuild.value = false
   })
 
   it('战场得胜让连胜 +1', () => {
@@ -366,8 +381,12 @@ describe('镇压资格首次自动、此后自由', () => {
 describe('闭关禁令:闭关期间不得进入历练(Phase 28 接线后)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // 五个桩开关全部归位:它们是模块级可变状态,漏一个就会被前面的用例带进来
     protect.value = false
     combatWin.value = false
+    meetChance.value = false
+    combatHpPct.value = 0
+    forceBuild.value = false
   })
 
   it('startExploration 在闭关中被拒,不产生会话(拒绝原因显式而非静默)', () => {
@@ -384,8 +403,12 @@ describe('闭关禁令:闭关期间不得进入历练(Phase 28 接线后)', () =
 describe('在途互斥 · 远征途中不得再开一程历练', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // 五个桩开关全部归位:它们是模块级可变状态,漏一个就会被前面的用例带进来
     protect.value = false
     combatWin.value = false
+    meetChance.value = false
+    combatHpPct.value = 0
+    forceBuild.value = false
   })
 
   it('远征在途:起程被拒、不落会话,并指名统一判据的拒因', () => {
@@ -485,6 +508,17 @@ describe('会话账目 · 与真实入账同源', () => {
 })
 
 describe('首领门槛 · 界面提示与战斗判定同源', () => {
+  /*
+   * 新 pinia = 干净的 adventure 分片。
+   *
+   * 本组两条「界面提示按本世路线判」的用例都 `useAdventureStore()` 再 `$patch` 前提,
+   * 而块内没有一个 beforeEach:`--sequence.shuffle` 把本组排到最前时,
+   * `getActivePinia()` 还没有人设过,直接抛 `[🍍] there was no active Pinia`(实测)。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('未靖地界:差多少胜一目了然,满门槛即为 0', () => {
     expect(winsUntilRegionBoss(0, false)).toBe(EXPLORE_BOSS_AFTER_WINS)
     expect(winsUntilRegionBoss(3, false)).toBe(EXPLORE_BOSS_AFTER_WINS - 3)
@@ -528,8 +562,12 @@ describe('首领门槛 · 界面提示与战斗判定同源', () => {
 describe('历练 · 待决事件超时自动结算', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // 五个桩开关全部归位:它们是模块级可变状态,漏一个就会被前面的用例带进来
     protect.value = false
     combatWin.value = false
+    meetChance.value = false
+    combatHpPct.value = 0
+    forceBuild.value = false
   })
 
   it('未超时(now − since ≤ 120s):仍挂着待决,不自动了结、事件数不动', () => {
@@ -570,6 +608,10 @@ describe('历练 · 待决事件超时自动结算', () => {
 })
 
 describe('区域事件 eventMult 真算进际遇率', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('古墓 eventMult=1.5 真抬高际遇率,不只写在 desc', () => {
     const player = usePlayerStore()
     const base = exploreEventChance('qingyun', {})

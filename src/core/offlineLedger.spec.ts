@@ -350,6 +350,17 @@ describe('离线总结 · 宿敌行报实际败北次数', () => {
  * 故障注入:删掉 settleOffline 里对未来时间戳的钳制,本条红。
  */
 describe('离线结算 · 时间戳在未来时自愈', () => {
+  /*
+   * 新 pinia = 干净的 game / player 分片。
+   *
+   * 原先没有 beforeEach:本组只把 `player.major` 设成 0,而灵气上限等仍取自
+   * 前面某条用例留下的状态 —— 乱序下 `settleOffline` 算出的 qi 变成负数
+   * (`expected -1295000 to be greater than 0`),看着像结算真出了问题。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('lastActiveAt 在未来:重锚到当下,下一次离线照常结算', () => {
     const now = Date.now()
     const game = useGameStore()
