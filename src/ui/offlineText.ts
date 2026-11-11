@@ -26,6 +26,6 @@ export function offlineAgeNote(ageYears: number): string {
  * 排序按首次拾得的顺序(前端的 Map 保序),不是按字母。
  */
 export function offlineArtifactNote(entries: { name: string; count: number; wudao: number }[]): string {
-  const list = entries.map(e => (e.count > 1 ? `${e.name}×${e.count}(${e.wudao} 悟道点)` : e.name))
+  const list = entries.map(e => (e.count > 1 ? `${e.name}×${e.count}(悟道点 ${e.wudao})` : e.name))
   return `拾得法宝 ${list.join('、')}`
 }

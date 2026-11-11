@@ -1738,7 +1738,13 @@ describe('文案用词 · 灵石数额的词序一致', () => {
           const reversed =
             /\}\}\s*灵石|\$\{[^}]+\}\s*灵石|\d\s*灵石/.test(line) &&
             !/(\}\}|\$\{[^}]+\}|\d)\s*灵石\s*\//.test(line)
-          if (reversed) {
+          /*
+           * 悟道点同理:全仓统一「悟道点 N」。`石` 那种简称不在此列 ——
+           * 它是有意的紧凑写法(按钮里用),`format.ts` 的注释把它当既有模式举例。
+           */
+          const reversedWudao =
+            /\}\}\s*悟道点|\$\{[^}]+\}\s*悟道点|\d\s*悟道点/.test(line)
+          if (reversed || reversedWudao) {
             offenders.push(`${p.replace(SRC, 'src')}:${i + 1}`)
           }
         }
