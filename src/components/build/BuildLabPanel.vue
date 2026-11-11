@@ -35,7 +35,12 @@
         <div class="ink-divider my-1.5" />
         <p class="flex items-baseline justify-between gap-2 text-[11px]">
           <span class="text-ink-faint">战力 × 胜率相关</span>
-          <span class="tabular text-ink-soft">{{ Math.round(report.powerCorrelation * 100) }}%</span>
+          <!--
+            走 formatPercent 而不是 `Math.round(x * 100)`:相关系数在样本没有离散度时
+            无定义(core/buildSearch 的 pearson 返回 NaN),裸算式会印成「NaN%」。
+            formatPercent 对非有限值给「--」,与全仓其余读数同一口径。
+          -->
+          <span class="tabular text-ink-soft">{{ formatPercent(report.powerCorrelation) }}</span>
         </p>
         <button class="btn-ghost mt-2 w-full !py-2 !text-[11px]" @click="run">再检索一次</button>
       </div>
@@ -48,6 +53,7 @@
   import { searchBuildsAsync } from '@/core/buildSearch'
   import type { SearchReport } from '@/core/buildSearch'
   import SectionTitle from '@/components/common/SectionTitle.vue'
+  import { formatPercent } from '@/utils/format'
 
   const running = ref(false)
   const progress = ref(0)

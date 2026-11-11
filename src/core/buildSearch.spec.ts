@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 import { ENEMY_ARCHETYPES } from './buildSim'
 import { searchBuilds, searchBuildsAsync } from './buildSearch'
 import { fingerprintOf, FINGERPRINT_NAMES } from './fingerprints'
+import { formatPercent } from '@/utils/format'
 
 describe('随机构筑搜索与异常检测(Phase 19)', () => {
   // 1000 构筑 × 7 原型 × 20 场 = 140,000 场
@@ -143,5 +144,43 @@ describe('searchBuildsAsync · 分块异步与同源', () => {
     const src = readFileSync(resolve(__dirname, '../components/build/BuildLabPanel.vue'), 'utf8')
     expect(src, '检索调用要带协作取消').toContain('shouldStop: () => isUnmounted')
     expect(src, '取消结果是 null,不能冒充检索失败').toContain('result === null')
+  })
+})
+
+/**
+ * 相关系数在样本没有离散度时无定义 —— 不许印成「NaN%」。
+ *
+ * `pearson` 的分母是两列标准差之积:任一列全相同(方差 0)时它是 0,`0/0` 得 NaN。
+ * core 这边本来就返回 NaN(实测 n=1 即如此,故 core 无需改动);
+ * 缺陷在面板 —— 它原先拿 NaN 去 `Math.round(x * 100)` 直接印,屏幕上就是「NaN%」。
+ *
+ * 判据分两层:core 的返回值语义是「算不出」(NaN,而非 0 —— 0 是「确实不相关」,
+ * 两件事不能混);界面必须走 formatPercent 把非有限值印成「--」。
+ */
+describe('构筑实验 · 相关系数算不出时不印 NaN', () => {
+  it('样本没有离散度时返回 NaN 而不是 0', () => {
+    // n=1:只有一套构筑,两列各只有一个值 → 方差都为 0
+    const one = searchBuilds(1, 4, 20260101)
+    expect(Number.isNaN(one.powerCorrelation), `n=1 该是 NaN,实得 ${one.powerCorrelation}`).toBe(true)
+    expect(one.powerCorrelation, '不许把「算不出」说成「不相关」').not.toBe(0)
+  })
+
+  it('正常样本仍算得出真数', () => {
+    const rep = searchBuilds(30, 4, 20260101)
+    expect(Number.isFinite(rep.powerCorrelation), '正常样本该算得出相关系数').toBe(true)
+    expect(Math.abs(rep.powerCorrelation)).toBeLessThanOrEqual(1)
+  })
+
+  it('formatPercent 把 NaN 印成 --,不印 NaN%', () => {
+    expect(formatPercent(NaN)).toBe('--')
+    expect(formatPercent(Infinity)).toBe('--')
+    // 阴性对照:这正是修复前屏幕上会出现的东西
+    expect(`${Math.round(NaN * 100)}%`, '裸算式确实会印出 NaN%').toBe('NaN%')
+  })
+
+  it('面板走 formatPercent,不裸算 Math.round(x * 100)', () => {
+    const panel = readFileSync(resolve(__dirname, '../components/build/BuildLabPanel.vue'), 'utf-8')
+    expect(panel, '相关系数该走 formatPercent').toContain('formatPercent(report.powerCorrelation)')
+    expect(panel, '又退回裸算式了').not.toContain('Math.round(report.powerCorrelation * 100)')
   })
 })
