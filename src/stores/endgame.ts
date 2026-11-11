@@ -490,11 +490,19 @@ export const useEndgameStore = defineStore(
        * 坏档(时钟调快过)正好给的是后者 —— 实测一年后的日期能一路通过 sanitize。
        * 超出今天的归 null,即「今日未挑战」。
        */
+      /*
+       * 未来日**夹到今天**,不归 null。
+       *
+       * 归 null 的语义是「今天还没挑战」—— 那正是坏档/时钟调快该被挡住的方向。
+       * 更麻烦的是它与闸门的 `>=` 判据互相抵消:今天领过 → 时钟回拨 → 重载,
+       * 这条被归 null,`dailyDoneDay >= day` 恒假,天道赏又能领一次。
+       * 夹到今天既挡住未来日,也保住「今日已领」的语义。
+       * (与第 54 轮洞府巡游的 `lastCaveEventDay` 同一条处理。)
+       */
+      const todayNum = localDayNum(Date.now())
       dailyDoneDay.value =
         typeof dailyDoneDay.value === 'number' && Number.isFinite(dailyDoneDay.value) && dailyDoneDay.value >= 0
-          ? Math.floor(dailyDoneDay.value) > localDayNum(Date.now())
-            ? null
-            : Math.floor(dailyDoneDay.value)
+          ? Math.min(Math.floor(dailyDoneDay.value), todayNum)
           : null
       // 修行节点只认 MILESTONE_DEFS 里的 id:野 id 会把「修行节点 N/总数」顶破
       milestones.value = asArray<{ id: string; life: number; at: number }>(
