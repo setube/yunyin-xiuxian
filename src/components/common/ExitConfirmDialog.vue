@@ -20,6 +20,7 @@
   import { Capacitor, type PluginListenerHandle } from '@capacitor/core'
   import { App as CapacitorApp } from '@capacitor/app'
   import { useGameStore } from '@/stores/game'
+  import { decideBackAction } from '@/composables/backButton'
   import { handleEscape } from '@/composables/useModalStack'
   import { flushSaveWrites } from '@/utils/storage'
   import BaseModal from './BaseModal.vue'
@@ -43,10 +44,11 @@
    * webView.goBack()(AppPlugin.java:49),退不出游戏。
    */
   function onBackButton(): void {
-    // 与 Esc 同一规则:先关栈顶弹窗(含本确认框),栈顶不可关时不动
-    if (handleEscape()) return
-    // 不在根页先回根页:各页是并列标签页,不逐条回溯历史
-    if (route.name !== rootName()) {
+    // 三支的先后收在 composables/backButton.decideBackAction(那里有判据):
+    // 弹窗栈优先 → 不在根页先回根页 → 在根页才开退出确认
+    const action = decideBackAction(handleEscape(), route.name === rootName())
+    if (action === 'close-overlay') return
+    if (action === 'go-root') {
       void router.push({ name: rootName() })
       return
     }
