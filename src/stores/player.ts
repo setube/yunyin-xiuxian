@@ -102,7 +102,7 @@ import { lifeThemeDef } from '@/data/lifeThemes'
 import { bondEventDef } from '@/data/bondEvents'
 import { regionDef } from '@/data/regions'
 // 事件表从 data/ 引:core/regionEvent 依赖本 store,反向 import 会成环
-import { regionEventDef } from '@/data/regionEvents'
+import { REGION_EVENT_MAX_MINUTES, regionEventDef } from '@/data/regionEvents'
 import { artifactSlotsFor } from '@/data/artifacts'
 import { lifeTrialDef, type LifeTrialState } from '@/data/lifeTrials'
 import { STARS } from '@/data/ziwei'
@@ -1008,12 +1008,18 @@ export const usePlayerStore = defineStore(
         const ev = regionEvent.value
         const regionOk = !!regionDef(ev.regionId) && !!regionEventDef(ev.eventId)
         /*
-         * 到期时刻落在未来同样要挡 —— `rollRegionEvent` 判的是 `cur.endsAt > now`,
-         * 未来值恒真,于是**整片地界再也掷不出新事件**(实测 500 次掷签 0 次)。
-         * 夹到此刻:该事件当场过期,下一拍即可掷新的。
-         * 与 `pendingEventSince`、`suppressedSince` 同一条:`asTimestamp` 不管方向。
+         * 到期时刻**落在正常时长之外**才算坏档。
+         *
+         * 「endsAt 在未来」本身是**正常状态** —— 事件持续 30~120 分钟,
+         * 一上来就夹到此刻会把玩家正在享受的事件清掉(审查意见里那条「高」)。
+         *
+         * 真正的问题是坏档/时钟调快留下的远期值:`rollRegionEvent` 判
+         * `cur.endsAt > now`,那种值会让**整片地界再也掷不出新事件**
+         * (实测远期值下 500 次掷签 0 次)。
+         * 判据取「最长时长」:超出它即不可能是正常事件,直接作废。
          */
-        const endsAt = Math.min(asTimestamp(ev.endsAt, 0), Date.now())
+        const endsRaw = asTimestamp(ev.endsAt, 0)
+        const endsAt = endsRaw > Date.now() + REGION_EVENT_MAX_MINUTES * 60_000 ? 0 : endsRaw
         if (!regionOk || endsAt <= 0) regionEvent.value = null
         else regionEvent.value = { ...ev, endsAt }
       }

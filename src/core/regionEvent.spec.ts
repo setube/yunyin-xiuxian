@@ -27,11 +27,13 @@ describe('区域动态事件(regionEvent)', () => {
     expect(player.regionEvent).toBeNull()
   })
 
-  it('到期时刻落在未来时夹到此刻,不再永久占住事件槽', () => {
+  it('远期的到期时刻作废,事件槽不再被永久占住', () => {
     /*
-     * `rollRegionEvent` 判的是 `cur.endsAt > now` —— 未来值恒真,
-     * 于是**整片地界再也掷不出新事件**(实测 500 次掷签 0 次)。
-     * 读档修形的 `asTimestamp` 只挡「超出 Date 可表示范围」,不挡方向。
+     * `rollRegionEvent` 判的是 `cur.endsAt > now` —— 远期值恒真,
+     * 于是**整片地界再也掷不出新事件**(实测远期值下 500 次掷签 0 次)。
+     *
+     * 判据取「最长时长」而不是「不得晚于此刻」:事件持续 30~120 分钟,
+     * 「endsAt 在未来」本身是**正常状态**,一律夹到此刻会把玩家正在享受的事件清掉。
      */
     setActivePinia(createPinia())
     const player = usePlayerStore()
@@ -39,10 +41,21 @@ describe('区域动态事件(regionEvent)', () => {
       regionEvent: { regionId: 'qingyun', eventId: 'yaochao', endsAt: Date.now() + 365 * 24 * 3600_000 }
     } as never)
     player.sanitize()
-    expect(
-      player.regionEvent?.endsAt ?? 0,
-      '未来的到期时刻没被夹住 —— 事件槽会被永久占住'
-    ).toBeLessThanOrEqual(Date.now())
+    expect(player.regionEvent, '远期值该整条作废').toBeNull()
+  })
+
+  it('正常进行中的事件重载后要保留', () => {
+    /*
+     * 这是上一版修法的反面:把「未来到期时刻」一律夹到此刻,
+     * 会让每个正在生效的区域事件在重载时被清掉(审查意见里那条「高」)。
+     */
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    const endsAt = Date.now() + 60 * 60_000 // 还剩 60 分钟,正常档位
+    player.$patch({ regionEvent: { regionId: 'qingyun', eventId: 'yaochao', endsAt } } as never)
+    player.sanitize()
+    expect(player.regionEvent?.endsAt, '进行中的事件被误清了').toBe(endsAt)
+    expect(currentRegionEvent('qingyun'), '进行中的事件该能被读到').not.toBeNull()
   })
 
   it('妖潮更险更多掉落,灵脉无额外危险', () => {
