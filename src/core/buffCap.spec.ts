@@ -41,6 +41,48 @@ describe('前置:服用增益的弹药是真实存在的', () => {
   })
 })
 
+/**
+ * 时钟回拨不许缩短合法 buff。
+ *
+ * 封顶的上界原写 `now + capMs`,而 `now` 是「读档 / 服丹那一刻」——
+ * 时钟往回拨过之后它会早于 buff 的真实起点,上界随之缩到 `endsAt` 之前,
+ * 一条合法 buff 被当场砍短(实测回拨 1 小时、剩 7h50m 的 buff 被砍 50 分钟)。
+ * 参照点应取 buff 自己的起点(`endsAt - added`),它不随墙钟漂移。
+ */
+describe('封顶 · 时钟回拨不缩短合法 buff', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('读档复钳:回拨后合法 buff 原样保留', () => {
+    vi.useFakeTimers()
+    try {
+      const cultivation = useCultivationStore()
+      const now = Date.now()
+      const capMs = CONSUMABLE_BUFF_CAP_SEC * 1000
+      const endsAt = now + capMs - 600_000 // 还剩 7h50m,合法
+      cultivation.$patch({ buffs: [{ defId: 'buff_wudao', endsAt, added: capMs }] } as never)
+
+      vi.setSystemTime(now - 3600_000) // 回拨 1 小时
+      cultivation.sanitize()
+      expect(cultivation.buffs[0]?.endsAt, '回拨把合法 buff 砍短了').toBe(endsAt)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('服丹封顶:回拨后再服一颗,不缩短已有 buff', () => {
+    const cultivation = useCultivationStore()
+    const now = Date.now()
+    const capMs = CONSUMABLE_BUFF_CAP_SEC * 1000
+    const endsAt = now + capMs - 600_000
+    cultivation.$patch({ buffs: [{ defId: 'buff_wudao', endsAt, added: capMs }] } as never)
+
+    cultivation.addBuff('buff_wudao', now - 3600_000) // 回拨后服丹
+    expect(cultivation.buffs[0]?.endsAt ?? 0, '服一颗丹反而把 buff 砍短了').toBeGreaterThanOrEqual(endsAt)
+  })
+})
+
 describe('封顶口径(buffCapSec / isConsumableBuff)', () => {
   it('丹药增益的上限 = 四个时辰,不随单颗时长缩放(口径写在装配层)', () => {
     expect(CONSUMABLE_BUFF_CAP_SEC).toBe(4 * SHICHEN_SEC)
