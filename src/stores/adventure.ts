@@ -12,6 +12,19 @@ import { regionDef, unlockClosure } from '@/data/regions'
  * 一场历练的胜场不可能过亿 —— 上界宽到不误伤正常档,窄到拦得住 `1e300` 那种坏档。
  */
 const SESSION_COUNT_MAX = 1e8
+
+/**
+ * 敌人加成来源的读档上界(三维倍率 / 增伤减伤)。
+ *
+ * 正常值都有硬顶:厚化受构筑软上限约束,增伤减伤由判定的两个常量管着
+ * (`CELESTIAL_JUDGE_CAP` 0.35 与 `CELESTIAL_SUPPRESS_BONUS` 0.25)。
+ * 上界取「远高于真实值」—— 倍率 1000、增减伤 10,越过的必定是坏档。
+ */
+const FOE_ORIGIN_RATIO_MAX = 1000
+const FOE_ORIGIN_EXTRA_MAX = 10
+
+/** 一场战斗的回合数上界:真实是两位到三位数,取一万已极宽 */
+const BATTLE_ROUNDS_MAX = 10_000
 import {
   asBoundedGNum,
   asCombatRules,
@@ -128,12 +141,22 @@ function sanitizeFoeOrigin(raw: unknown): FoeOrigin | undefined {
           !!p && typeof p === 'object' && typeof p.label === 'string' && Number.isFinite(p.ratio)
       )
     : []
+  /*
+   * 三个倍率都要有上界 —— 它们进战报文案(「三维 ×1.90 · 增伤 +35%」)。
+   *
+   * 正常值都有硬顶:`厚化` 受构筑软上限约束(实测量级在个位到几十),
+   * `增伤/减伤` 由 `celestialJudgement` 算:judge 有 `CELESTIAL_JUDGE_CAP`(0.35)、
+   * suppress 只可能是 0 或 0.25。故上界按「远高于真实值」取:
+   * 倍率 1000、增减伤 10 —— 越过的必定是坏档。
+   *
+   * 不封顶的后果:坏档写 1e300 时战报印出「三维 ×1e+300 · 增伤 +1e+302%」。
+   */
   return {
     label: o.label,
-    ratio: asFiniteNumber(o.ratio, 1, 1),
-    damageBonus: asFiniteNumber(o.damageBonus, 0, 0),
-    damageReduction: asFiniteNumber(o.damageReduction, 0, 0),
-    parts,
+    ratio: asFiniteNumber(o.ratio, 1, 1, FOE_ORIGIN_RATIO_MAX),
+    damageBonus: asFiniteNumber(o.damageBonus, 0, 0, FOE_ORIGIN_EXTRA_MAX),
+    damageReduction: asFiniteNumber(o.damageReduction, 0, 0, FOE_ORIGIN_EXTRA_MAX),
+    parts: parts.map(p => ({ label: p.label, ratio: asFiniteNumber(p.ratio, 1, 1, FOE_ORIGIN_RATIO_MAX) })),
     note: typeof o.note === 'string' ? o.note : ''
   }
 }
@@ -175,7 +198,8 @@ function sanitizeLastBattle(raw: unknown): LastBattleView | null {
       ...r,
       win: r.win,
       log: r.log.filter(x => !!x && typeof x === 'object' && typeof x.text === 'string'),
-      rounds: Math.max(0, Math.floor(asFiniteNumber(r.rounds, 0))),
+      // 战报会印「胜于第 N 回合」「鏖战 N 回合」;坏档写 1e300 会印出巨大数字
+      rounds: Math.floor(asFiniteNumber(r.rounds, 0, 0, BATTLE_ROUNDS_MAX)),
       playerHpPct: asFiniteNumber(r.playerHpPct, 0, 0, 1),
       // 两侧都补得回来才留遥测:只有一侧可读是坏档,分析面板按「无遥测」不渲染更安全
       stats: stats && stats.player && stats.enemy ? { player: stats.player, enemy: stats.enemy } : undefined,
