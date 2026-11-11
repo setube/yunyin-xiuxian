@@ -8,6 +8,19 @@ const UNITS = ['万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '�
 /** 数值非法时的统一占位 */
 const NOT_AVAILABLE = '--'
 
+/**
+ * 天数到这个量级就改用 formatGN 的中文单位,不再印裸数字。
+ *
+ * 门槛按**存档能塞进来的最大时间戳**反推:`MAX_TIMESTAMP_MS`(8.64e15 毫秒)
+ * 减去当前时刻再折算成天,约 1 亿天(实测 99,979,231 天)。
+ * 也就是坏档只要写一个「合法范围内」的极大时间戳,裸数字就会有八位 ——
+ * 故门槛必须落在它之下,取一千万天(约 2.7 万年)。
+ *
+ * 真实游玩到不了这里:最高境界的寿元约 1e15 载,而这里量的是**倒计时与时长**,
+ * 后者由界面上限(离线上限 72 时、丹药增益 8 时)收着。
+ */
+const DURATION_DAY_UNIT_CAP = 1e7
+
 /** 格式化大数:1,234 → 12.35万 → 1.235亿 → 1.24e52 */
 export function formatGN(v: GNum | number): string {
   const g = typeof v === 'number' ? gn(v) : v
@@ -216,6 +229,16 @@ export function formatDuration(totalSec: number): string {
   const h = Math.floor((sec % 86400) / 3600)
   const m = Math.floor((sec % 3600) / 60)
   const s = sec % 60
+  /*
+   * 天数过大时退回中文单位,不印裸数字。
+   *
+   * `Math.floor(1e300 / 86400)` 是有限值,能过上面的守卫,但拼出来是
+   * 「1.1574074074074075e+295天17小时」—— 十七位小数的科学计数法。
+   * 本作其余地方(灵石、修为)都用 UNITS 那套万进单位,时间这条也该一致:
+   * 超过一亿天(≈27 万年)就交给 formatGN,写「1157万天」而不是一串浮点。
+   * 真实游玩到不了这个量级(混沌道祖寿元约 1e15 载),它只拦坏档。
+   */
+  if (d >= DURATION_DAY_UNIT_CAP) return `${formatGN(d)}天${h > 0 ? `${h}小时` : ''}`
   if (d > 0) return h > 0 ? `${d}天${h}小时` : `${d}天`
   if (h > 0) return m > 0 ? `${h}小时${m}分` : `${h}小时`
   if (m > 0) return s > 0 ? `${m}分${s}秒` : `${m}分`
@@ -242,6 +265,14 @@ export function formatCountdown(totalSec: number): string {
   const h = Math.floor((sec % 86400) / 3600)
   const m = Math.floor((sec % 3600) / 60)
   const s = sec % 60
+  /*
+   * 与 formatDuration 同一条门槛。
+   *
+   * 「逐位定宽」是为了状态胶囊 nowrap 时宽度不抖 —— 那是在**正常量级**内的诉求。
+   * 天数到八位(坏档塞一个 MAX_TIMESTAMP_MS 内的极大时间戳就能到)时,
+   * 定宽已无从谈起,裸数字反而读不出来,故一并改用中文单位。
+   */
+  if (d >= DURATION_DAY_UNIT_CAP) return `${formatGN(d)}天${pad2(h)}时`
   if (d > 0) return `${d}天${pad2(h)}时`
   if (h > 0) return `${pad2(h)}时${pad2(m)}分`
   return `${pad2(m)}分${pad2(s)}秒`
