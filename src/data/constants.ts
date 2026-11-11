@@ -278,6 +278,15 @@ export const QUALITY_OUT_OF_BAND = 0.1
 /** 每强化一级基础属性 +12% */
 export const EQUIP_LEVEL_BONUS = 0.12
 export const EQUIP_MAX_LEVEL_BASE = 10
+
+/**
+ * 装备「已重铸 / 已转移」计数的读档上界。
+ *
+ * 这两个数只用于界面显示(「已重铸 N 次」),而那两处是裸插值、没有格式化兜底 ——
+ * 坏档写 `1e300` 会印成「已重铸 1e+300 次」。取一万:一次游戏里重铸几千次已极罕见,
+ * 到不了的必定是坏档。与 `EQUIP_LEVEL_SANITIZE_CAP` 同一条思路(上界只为拦坏档)。
+ */
+export const EQUIP_COUNTER_MAX = 10_000
 /** 炼器台每 2 级提高强化上限 1 */
 export const FORGE_LEVEL_PER_CAP = 2
 /** 强化成本:灵尘 */

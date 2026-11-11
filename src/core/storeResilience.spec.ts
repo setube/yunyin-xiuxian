@@ -8,6 +8,7 @@ import { useLoreStore } from '@/stores/lore'
 import { useResourcesStore } from '@/stores/resources'
 import { useMarketStore } from '@/stores/market'
 import { useEndgameStore } from '@/stores/endgame'
+import { useInventoryStore } from '@/stores/inventory'
 import { useApprenticeStore } from '@/stores/apprentice'
 import { sanitizeOfflineInputs } from './offline'
 
@@ -678,5 +679,48 @@ describe('坏档韧性 · 三条上界的取值与退路', () => {
     r.sanitize()
     expect(r.herbOf(1), '巨量灵草没被清').toBe(0)
     expect(r.herbOf(2), '正常灵草被误清').toBe(500)
+  })
+})
+
+/**
+ * 装备的两个计数器也要有上界。
+ *
+ * `reforgeCount` / `transferCount` 只用于显示(「已重铸 N 次」),
+ * 而那一处是**裸插值**、没有格式化兜底 —— 坏档写 `1e300` 会印成
+ * 「已重铸 1e+300 次」。实测 sanitize 原先原样保留。
+ *
+ * 这与上一轮那批上界是同一条思路:只用于展示的字段同样需要守卫,
+ * 因为展示路径不一定经过格式化函数。
+ */
+describe('坏档韧性 · 装备计数器的上界', () => {
+  const patchWith = (v: unknown): ReturnType<typeof useInventoryStore> => {
+    setActivePinia(createPinia())
+    const inv = useInventoryStore()
+    inv.$patch({
+      items: [
+        { uid: 'x', templateId: 'w_zidian', quality: 'mortal', tier: 1, level: 0, affixes: [], reforgeCount: v, transferCount: v }
+      ]
+    } as never)
+    inv.sanitize()
+    return inv
+  }
+
+  it('巨值被夹到上界,不再原样保留', () => {
+    for (const v of [1e300, 1e20, 20000]) {
+      const it = patchWith(v).items[0]
+      expect(it?.reforgeCount, `reforgeCount ${v} 没被夹住`).toBeLessThanOrEqual(10000)
+      expect(it?.transferCount, `transferCount ${v} 没被夹住`).toBeLessThanOrEqual(10000)
+    }
+  })
+
+  it('正常计数原样保留', () => {
+    const it = patchWith(5000).items[0]
+    expect(it?.reforgeCount).toBe(5000)
+    expect(it?.transferCount).toBe(5000)
+  })
+
+  it('上界本身能正常显示,不会进科学计数', () => {
+    // 10000 是裸插值也能读出来的数字;若上界取到 1e21 就会印成 1e+21
+    expect(String(10000)).not.toMatch(/e\+/)
   })
 })

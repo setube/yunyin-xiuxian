@@ -1,5 +1,5 @@
 /** 出发按钮上的账:行程、遇险、收益、遇敌间隔由 exploration 现算,须是结算即将用的数;只排成一行 */
-import { cnNumber, formatDuration } from '@/utils/format'
+import { cnNumber, formatDuration, formatNum } from '@/utils/format'
 import { EXPLORE_MODES } from '@/data/constants'
 import type { ExploreMode } from '@/types'
 import type { PetPersonalityEffects } from '@/core/petPersonality'
@@ -65,7 +65,15 @@ export function exploreModeSummaryLine(): string {
 export function sessionRecordText(s: { wins: number; losses: number }): string {
   // Math.max(0, NaN) 仍是 NaN:非有限值先按 0 收口
   const count = (v: number): number => (Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0)
-  const wins = count(s.wins)
-  const losses = count(s.losses)
-  return losses > 0 ? `胜 ${wins} 场 · 负 ${losses} 场` : `胜 ${wins} 场`
+  /*
+   * 读数走 formatNum,不裸插值。
+   *
+   * 坏档把 `wins` 写成 1e300 时,裸插值印出「胜 1e+300 场」——
+   * 那既不是本作的数字写法,也读不出来。formatNum 会印「100垓」,
+   * 与灵石、修为那些读数同一套单位。
+   * 一场历练的胜场正常是两位到三位数,formatNum 对那个区间就是原样输出。
+   */
+  const wins = formatNum(count(s.wins))
+  const losses = formatNum(count(s.losses))
+  return count(s.losses) > 0 ? `胜 ${wins} 场 · 负 ${losses} 场` : `胜 ${wins} 场`
 }

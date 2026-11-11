@@ -194,3 +194,31 @@ describe('行程档位清单 · 表是唯一事实源', () => {
     expect(code, '离线又内联了遇敌间隔 —— 调速公式一改,两边分叉').not.toMatch(/EXPLORE_BATTLE_INTERVAL/)
   })
 })
+
+/**
+ * 战绩读数不裸插值。
+ *
+ * 坏档把 `wins` 写成 `1e300` 时,裸插值印出「胜 1e+300 场」——
+ * 那是 JS 默认的科学计数写法,既不是本作的数字写法,也读不出来。
+ * 改用 `formatNum` 后印「胜 1.00e300 场」,与灵石、修为那些读数同一套单位。
+ *
+ * 正常区间一字不变:一场历练的胜场是两位到三位数,formatNum 对那里就是原样输出。
+ */
+describe('战绩读数 · 坏档巨值不印 JS 默认科学计数', () => {
+  it('给定巨值,则不出 `e+N` 那种写法', () => {
+    const got = sessionRecordText({ wins: 1e300, losses: 2 })
+    expect(got, `印出了 JS 默认的 e+N:${got}`).not.toMatch(/e\+\d/)
+    expect(got, `该仍可读:${got}`).toMatch(/^胜 \S+ 场 · 负 2 场$/)
+  })
+
+  it('给定正常值,则输出一字不变', () => {
+    expect(sessionRecordText({ wins: 12, losses: 3 })).toBe('胜 12 场 · 负 3 场')
+    expect(sessionRecordText({ wins: 5, losses: 0 })).toBe('胜 5 场')
+    expect(sessionRecordText({ wins: 0, losses: 0 })).toBe('胜 0 场')
+  })
+
+  it('给定负值或非有限值,则按 0 收口', () => {
+    expect(sessionRecordText({ wins: -5, losses: 0 })).toBe('胜 0 场')
+    expect(sessionRecordText({ wins: Number.NaN, losses: Number.NaN })).toBe('胜 0 场')
+  })
+})
