@@ -45,7 +45,15 @@ export const useMarketStore = defineStore(
      * 先完整校验、再按序认号:坏格不会抢走后面好货的号。
      */
     function sanitize(): void {
-      stockedAt.value = Math.max(0, asTimestamp(stockedAt.value, 0))
+      /*
+       * 货架起钟要**夹到此刻**,不能只保底。
+       *
+       * `sync()` 的判据是 `now < stockedAt + MARKET_REFRESH_SECONDS * 1000` ——
+       * 起钟落在未来时该条件恒真,**货架永不刷新**(坏档/时钟调快)。
+       * `asTimestamp` 只挡「超出 Date 可表示范围」,不挡方向,故这里补 `Math.min`。
+       * 与 `player.suppressedSince`(第 76 轮)、洞府巡游 `lastCaveEventDay`(第 54 轮)同一处理。
+       */
+      stockedAt.value = Math.min(Math.max(0, asTimestamp(stockedAt.value, 0)), Date.now())
       // idxClean:该行的 idx 原本就是合法非负整数(没被坏档修正过)
       const validated: (MarketSlot & { idxClean: boolean })[] = []
       const usedIdx = new Set<number>()

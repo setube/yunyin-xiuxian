@@ -51,7 +51,11 @@ export const useBountyStore = defineStore(
     const bountyMajor = ref<number | null>(null)
     /** 存档修复:订单逐纸修形,烂纸丢弃;时刻夹回非负(归零会即时换新) */
     function sanitize(): void {
-      bountyAt.value = Math.max(0, asTimestamp(bountyAt.value, 0))
+      /*
+       * 与 `market.stockedAt` 同一条:`sync()` 判 `now < bountyAt + BOUNTY_REFRESH_SECONDS * 1000`,
+       * 起钟落在未来时悬赏**永不换版**。夹到此刻,`asTimestamp` 不管方向。
+       */
+      bountyAt.value = Math.min(Math.max(0, asTimestamp(bountyAt.value, 0)), Date.now())
       const bm = asFiniteNumber(bountyMajor.value, -1)
       bountyMajor.value = bm >= 0 ? Math.min(MAX_MAJOR, Math.floor(bm)) : null
       const clean: BountySlot[] = []
