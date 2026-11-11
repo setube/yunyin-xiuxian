@@ -260,6 +260,8 @@ export const useEndgameStore = defineStore(
   () => {
     /** 本世道途(转世后重选) */
     const daoPath = ref<DaoPathId | null>(null)
+    // 道源的上界,只为拦坏档;真实累积到不了百万
+    const DAO_SOURCE_MAX = 1e9
     /** 道源(跨世保留) */
     const daoSource = ref(0)
     const worldClears = ref<Record<string, number>>({})
@@ -291,7 +293,12 @@ export const useEndgameStore = defineStore(
     function sanitize(): void {
       // 认不出的道途回落 null(同转世后未择道);否则选道被「此生道途已定」挡回
       daoPath.value = typeof daoPath.value === 'string' && daoPathDef(daoPath.value) ? (daoPath.value as DaoPathId) : null
-      daoSource.value = asFiniteNumber(daoSource.value, 0, 0)
+      /*
+       * 上界只为拦坏档:道源按「道果 ×200」这类速率累积,真实游玩到不了百万。
+       * 原先 `asFiniteNumber(v, 0, 0)` 只给了下限 —— 而 `1e300` 是有限数,
+       * 原样通过,界面经 formatNum 印成「1.00e300」。实测灌 1e300 后 sanitize 不修。
+       */
+      daoSource.value = asFiniteNumber(daoSource.value, 0, 0, DAO_SOURCE_MAX)
       // 一次性引导标记:与 settings 的布尔开关同一套清洗纪律
       endgameTutorialSeen.value = endgameTutorialSeen.value === true
       daoFruitTutorialSeen.value = daoFruitTutorialSeen.value === true
