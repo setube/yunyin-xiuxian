@@ -10,10 +10,10 @@
         <p class="text-[11px] text-ink">灵石 → 悟道</p>
         <p class="mt-0.5 text-[10px] leading-relaxed text-ink-faint">
           <template v-if="exchangeEffective > 1">
-            {{ formatGN(mulN(player.wudaoExchangeState.cost, exchangeEffective)) }} 灵石得
+            灵石 {{ formatGN(mulN(player.wudaoExchangeState.cost, exchangeEffective)) }} 得
             {{ WUDAO_EXCHANGE_GAIN * exchangeEffective }} 点(每份 {{ formatGN(player.wudaoExchangeState.cost) }})
           </template>
-          <template v-else>每次 {{ formatGN(player.wudaoExchangeState.cost) }} 灵石得 {{ WUDAO_EXCHANGE_GAIN }} 点</template>
+          <template v-else>每次 灵石 {{ formatGN(player.wudaoExchangeState.cost) }} 得 {{ WUDAO_EXCHANGE_GAIN }} 点</template>
           · 今日 {{ player.wudaoExchangeToday }}/{{ WUDAO_EXCHANGE_PER_DAY }}
         </p>
       </div>

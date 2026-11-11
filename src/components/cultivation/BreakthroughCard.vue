@@ -39,7 +39,7 @@
           +{{ Math.round(prepMeditate.bonusRate * 100) }}%
         </button>
         <button type="button" class="chip-ink chip-ink-wrap !py-1.5 text-[10px]" :disabled="!prepCanPill" @click="startPrep('pill')">
-          {{ prepPill.label }} · {{ prepPillCost }} 灵石 +{{ Math.round(prepPill.bonusRate * 100) }}%
+          {{ prepPill.label }} · 灵石 {{ prepPillCost }} +{{ Math.round(prepPill.bonusRate * 100) }}%
           <!-- 拒因用朱砂:.chip-ink:disabled 已把整枚胶囊压成 ink-faint,拒因再写同色就等于没写 -->
           <span v-if="!prepCanPill" class="text-cinnabar">({{ prepPillDisabledLabel(formatGap(prepPillShort)) }})</span>
         </button>
