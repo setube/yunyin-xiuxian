@@ -837,8 +837,17 @@ export const usePlayerStore = defineStore(
         ) {
           mansionRedirect.value = null
         } else {
+          /*
+           * 日记号同样不许落在「今天」之后 —— 判定是
+           * `current.gameDay === day`(`mansionRedirectCheck`),
+           * 未来日会让等号恒不成立、`count >= MANSION_REDIRECT_MAX` 那道
+           * 每日上限**永远不生效**,坏档就能无限定向。
+           * 与上面 wudaoExchange 同一条处理。
+           */
+          const todayGameDay = gameDay(useGameStore().totalPlaySec)
+          const mrDay = Math.max(0, Math.floor(mr.gameDay))
           mansionRedirect.value = {
-            gameDay: Math.max(0, Math.floor(mr.gameDay)),
+            gameDay: mrDay > todayGameDay ? 0 : mrDay,
             worldId: mr.worldId,
             count: Math.min(MANSION_REDIRECT_MAX, Math.max(0, Math.floor(mr.count)))
           }

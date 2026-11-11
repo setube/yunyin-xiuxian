@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
+import { useGameStore } from '@/stores/game'
 import { todayLocalNum } from '@/utils/time'
 import { dismissCaveEvent, getCurrentCaveEvent, mayTriggerCaveEvent } from './earlyGameService'
 
@@ -122,5 +123,39 @@ describe('洞府巡游 · 每日一巡(跨天再触发)', () => {
     } finally {
       vi.restoreAllMocks()
     }
+  })
+})
+
+
+/**
+ * 星象定向的日记号也要挡住「未来日」。
+ *
+ * 判定是 `current.gameDay === day`(`mansionRedirectCheck`):
+ * 未来日会让等号恒不成立,`count >= MANSION_REDIRECT_MAX` 那道每日上限
+ * **永远不生效** —— 坏档就能无限定向。与 `wudaoExchange` 同一条处理。
+ *
+ * 这里的日号来自 `gameDay(totalPlaySec)`(游玩时长折算),不像巡游那样受系统时钟影响;
+ * 但坏档可以直接写一个未来值,故仍需读档守卫。
+ */
+describe('星象定向 · 未来日记号会让每日上限失效', () => {
+  it('日记号落在今天之后时归零', () => {
+    setActivePinia(createPinia())
+    const game = useGameStore()
+    game.totalPlaySec = 100 // gameDay = 0
+    const player = usePlayerStore()
+    player.$patch({ mansionRedirect: { gameDay: 999_999, worldId: 'mortal', count: 1 } } as never)
+    player.sanitize()
+    expect((player.mansionRedirect as { gameDay?: number } | null)?.gameDay, '未来日记号没被归零 —— 每日上限会失效').toBe(0)
+  })
+
+  it('正常日记号原样保留', () => {
+    setActivePinia(createPinia())
+    const game = useGameStore()
+    game.totalPlaySec = 0
+    const player = usePlayerStore()
+    player.$patch({ mansionRedirect: { gameDay: 0, worldId: 'mortal', count: 1 } } as never)
+    player.sanitize()
+    expect((player.mansionRedirect as { gameDay?: number } | null)?.gameDay).toBe(0)
+    expect((player.mansionRedirect as { count?: number } | null)?.count).toBe(1)
   })
 })
