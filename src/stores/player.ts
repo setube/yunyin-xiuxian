@@ -1054,8 +1054,16 @@ export const usePlayerStore = defineStore(
       const keepsTenure = new Set([...suppressedRegions.value, ...suppressQualified.value])
       for (const id of keepsTenure) {
         const at = rawSince[id]
-        const bounded = at === undefined ? 0 : asTimestamp(at, 0)
-        fixedSince[id] = bounded > 0 ? bounded : Date.now()
+        /*
+         * `asTimestamp` 只挡「超出 Date 可表示范围」,不挡**未来的**时间戳:
+         * 一个合法但晚于此刻的值照样通过,而复聚钟取 max 之后同样停在未来 ——
+         * 该地界要等到「真实时间追上那个未来时刻」才可能复苏(审查意见指出的)。
+         * 未来值**夹到此刻**:既挡住坏档,也保住「正在镇压」的语义
+         * (与第 54 轮洞府巡游的 lastCaveEventDay、第 64 轮天道日号同一处理)。
+         */
+        const nowMs = Date.now()
+        const bounded = at === undefined ? 0 : Math.min(asTimestamp(at, 0), nowMs)
+        fixedSince[id] = bounded > 0 ? bounded : nowMs
       }
       suppressedSince.value = fixedSince
       // 零头取值 [0,1),只认镇压表内地界(松开镇压时已清)
