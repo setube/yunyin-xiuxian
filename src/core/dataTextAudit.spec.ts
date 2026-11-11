@@ -1189,8 +1189,9 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
 
   it('丹方熟练度只报读数 —— 不列半截来路冒充全部', () => {
     // 熟练来路:成功开炉 +0.01、炸炉 +0.02、藏经阁被动钻研
+    // 三态读数(未得方 / 熟练 N% / 已通晓)取 ui/pillText.recipeMasteryText —— 可炼性判据那里也要同一句
     const view = src('../views/InventoryView.vue')
-    expect(view, '熟练度读数取自 recipeMastery 的现值').toContain('`熟练 ${Math.round(m * 100)}%`')
+    expect(view, '熟练度读数取自 recipeMastery 的现值').toContain('recipeMasteryText(lore.recipeMastery(id))')
     expect(view, '来路说明已删,不该残留半句').not.toContain('长记性')
   })
 
