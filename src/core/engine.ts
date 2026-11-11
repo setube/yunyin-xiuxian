@@ -123,7 +123,16 @@ class GameEngine {
      * `start()` 与 `offline` 都有同一处理(`lastActiveAt > now` 时重锚),
      * tick 这里先前漏了。
      */
+    /*
+     * 时钟回拨:两个基准都要重锚。
+     *
+     * `lastTickAt` 不重锚 → 引擎停摆到真实时间追平(前一处);
+     * `lastStampAt` 不重锚 → `now - lastStampAt` 恒为负,
+     * `>= ACTIVE_STAMP_MS` 永不成立,**游玩时长不再累计**(审查意见指出的)。
+     * 两者是同一件事的两半,漏一个就只修好一半。
+     */
     if (now < this.lastTickAt) this.lastTickAt = now
+    if (now < this.lastStampAt) this.lastStampAt = now
     const dt = (now - this.lastTickAt) / 1000
     if (dt <= 0) return
 

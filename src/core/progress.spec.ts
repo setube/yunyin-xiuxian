@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { formatGN } from '@/utils/format'
@@ -268,7 +268,12 @@ describe('成就条件 · 每条都有判定路径', () => {
  *
  * `rolloverDaily(date)` 会整块替换 `daily` —— 连 `done` 一起清空。
  * 而 `rolloverDailyIfNeeded` 被 engine 在每次启动与换日时调用,
- * 守卫(`daily.date !== today`)一旦失效,玩家同一天里反复丢日课进度,且没有任何报错。
+ * 守卫一旦失效,玩家同一天里反复丢日课进度,且没有任何报错。
+ *
+ * 守卫原写 `daily.date !== today`:日期**不同**就重开。系统时钟回拨时
+ * `today` 会退到旧日期,`!==` 仍然成立 —— 玩家的日课又被重置一遍。
+ * 现改为「只允许向前翻」,用日号整数比较(字符串 `2026-11-1` 与 `2026-11-10`
+ * 的字典序会出错)。
  */
 describe('日课 · 换日守卫', () => {
   beforeEach(() => {
@@ -286,6 +291,33 @@ describe('日课 · 换日守卫', () => {
 
     expect(quests.daily.done, '同一天不该重置日课').toEqual(doneBefore)
     expect(quests.daily.date).toBe(today)
+  })
+
+  it('时钟回拨不该重置日课 —— `!==` 判据会漏这一侧', () => {
+    /*
+     * 回拨时 `today` 退到旧日期,而 `daily.date` 还是「今天」——
+     * 用 `!==` 比就会重开,玩家已完成项被清空。
+     */
+    const quests = useQuestsStore()
+    const today = todayStr()
+    quests.rolloverDaily(today)
+    quests.markDailyDone(DAILY_TASKS[0]!.id)
+    const doneBefore = [...quests.daily.done]
+    expect(doneBefore, '夹具没生效:日课一项都没标记成完成').toHaveLength(1)
+
+    /*
+     * 必须用 `vi.setSystemTime` —— `todayStr()` 内部走 `new Date()`,
+     * 而 `vi.spyOn(Date, 'now')` 只改 `Date.now()`,`new Date()` 不读它,回拨不生效(实测)。
+     */
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(Date.now() - 86_400_000)
+      rolloverDailyIfNeeded()
+      expect(quests.daily.done, '时钟回拨后日课被重置了').toEqual(doneBefore)
+      expect(quests.daily.date, '时钟回拨后日期被改写了').toBe(today)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('日期变了才重置,且新的 base 取当下计数', () => {

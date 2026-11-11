@@ -10,7 +10,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
-import { TICK_MS, OFFLINE_MIN_SECONDS } from '@/data/constants'
+import { TICK_MS, OFFLINE_MIN_SECONDS, ACTIVE_STAMP_MS } from '@/data/constants'
 
 vi.mock('./offline', async importOriginal => {
   const actual = await importOriginal<typeof OfflineMod>()
@@ -130,6 +130,33 @@ describe('引擎心跳 · start/stop/dt 路由直测', () => {
     vi.setSystemTime(t0 + TICK_MS - 300_000 + TICK_MS)
     capturedTick!()
     expect(gainExpSpy, '回拨后引擎没恢复 —— lastTickAt 停在未来时刻没被重锚').toHaveBeenCalled()
+  })
+
+  it('时钟回拨后活跃时长仍要累计 —— lastStampAt 也要重锚', () => {
+    /*
+     * `lastStampAt` 是上一次记游玩时长的时刻。回拨后它停在「未来」,
+     * 于是 `now - lastStampAt` 恒为负、`>= ACTIVE_STAMP_MS` 永不成立 ——
+     * **游玩时长不再累计**,`game.totalPlaySec` 停住。
+     * 与 lastTickAt 是同一件事的两半:只重锚一个就只修好一半。
+     */
+    const { t0 } = startStarted()
+    const game = useGameStore()
+    const addPlayTimeSpy = vi.spyOn(game, 'addPlayTime')
+
+    // 正常跑到一个盖章周期之后
+    vi.setSystemTime(t0 + ACTIVE_STAMP_MS + TICK_MS)
+    capturedTick!()
+    expect(addPlayTimeSpy, '正常拍该记游玩时长').toHaveBeenCalled()
+    addPlayTimeSpy.mockClear()
+
+    // 时钟往回拨 5 分钟
+    vi.setSystemTime(t0 + ACTIVE_STAMP_MS + TICK_MS - 300_000)
+    capturedTick!()
+
+    // 回拨后再走一个盖章周期:若 lastStampAt 未重锚,这里仍不会记
+    vi.setSystemTime(t0 + ACTIVE_STAMP_MS + TICK_MS - 300_000 + ACTIVE_STAMP_MS + TICK_MS)
+    capturedTick!()
+    expect(addPlayTimeSpy, 'lastStampAt 停在未来时刻没被重锚 —— 游玩时长不再累计').toHaveBeenCalled()
   })
 
   it('小 dt → 走 advance(在线推进:玩家修为增长)', () => {
