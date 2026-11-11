@@ -1220,4 +1220,29 @@ describe('坏档韧性 · 界域与试炼战绩的上界', () => {
     // 一局里破一界几百次、一场打几百回合都已是极值
     expect(10_000, '上界低于真实可能值').toBeGreaterThan(1000)
   })
+
+  it('写入端自增也饱和 —— 否则重启后计数会变小', () => {
+    /*
+     * 审查意见指出的:`sanitize` 只在开场跑一次,而 `recordWorldClear` / `recordTrial`
+     * 每次通关都 +1 —— 不饱和的话,拖到上限之后重启会被夹回来,玩家看到数字变小。
+     * 与 `diag.record` 的自增封顶同一条理。
+     */
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    e.$patch({ worldClears: { chiyan: 10_000 }, trialRecords: { qisha: { clears: 10_000, bestRounds: 50 } } } as never)
+    e.recordWorldClear('chiyan')
+    e.recordTrial('qisha', 1e300)
+    expect((e.worldClears as Record<string, number>).chiyan, '破界次数自增越过了上限').toBe(10_000)
+    expect((e.trialRecords as Record<string, { clears: number }>).qisha?.clears, '试炼次数自增越过了上限').toBe(10_000)
+    // 回合数入参也要封顶,否则「最佳 N 回合」会跳成科学计数
+    expect((e.trialRecords as Record<string, { bestRounds: number }>).qisha?.bestRounds, '坏入参的回合数没被封住').toBeLessThanOrEqual(10_000)
+  })
+
+  it('未到上限时正常自增', () => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    e.recordWorldClear('chiyan')
+    e.recordWorldClear('chiyan')
+    expect((e.worldClears as Record<string, number>).chiyan, '正常自增被误伤').toBe(2)
+  })
 })

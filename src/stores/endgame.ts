@@ -629,18 +629,32 @@ export const useEndgameStore = defineStore(
     function recordWorldClear(worldId: string): void {
       if (worldId !== 'void' && !celestialWorldDef(worldId)) return
       const clears = asNumberRecord(worldClears.value, 0)
-      worldClears.value = { ...clears, [worldId]: Math.floor(clears[worldId] ?? 0) + 1 }
+      /*
+       * 自增要饱和。`sanitize` 只在开场跑一次,而这里每次通关都 +1 ——
+       * 不封顶的话,拖到上限之后重启会被夹回来,玩家看到「已破 ×N」变小。
+       * 与 `diag.record` 的自增封顶同一条理:两处用同一个常量。
+       */
+      worldClears.value = {
+        ...clears,
+        [worldId]: Math.min(WORLD_CLEARS_MAX, Math.floor(clears[worldId] ?? 0) + 1)
+      }
     }
 
     function recordTrial(trialId: string, rounds: number): void {
       if (!trialDef(trialId) || !Number.isFinite(rounds) || rounds <= 0) return
-      const fixedRounds = Math.max(1, Math.floor(rounds))
+      /*
+       * 回合数也要封顶 —— 它与 `bestRounds` 出自同一处,
+       * 而读档守卫已按 `BATTLE_ROUNDS_CAP` 夹过;这里不夹的话,
+       * 一次坏入参(比如别处传了个 1e300)就能让「最佳 N 回合」当场变成科学计数。
+       */
+      const fixedRounds = Math.min(BATTLE_ROUNDS_CAP, Math.max(1, Math.floor(rounds)))
       const records = asRecordOf<TrialRecord>(trialRecords.value, r => !!r && typeof r === 'object')
       const prev = records[trialId]
       trialRecords.value = {
         ...records,
         [trialId]: {
-          clears: Math.floor(asFiniteNumber(prev?.clears, 0, 0)) + 1,
+          // 同 recordWorldClear:自增要饱和,否则重启后计数会变小
+          clears: Math.min(TRIAL_CLEARS_MAX, Math.floor(asFiniteNumber(prev?.clears, 0, 0)) + 1),
           bestRounds: prev ? Math.min(Math.max(1, Math.floor(asFiniteNumber(prev.bestRounds, fixedRounds, 1))), fixedRounds) : fixedRounds
         }
       }
