@@ -9,6 +9,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useInventoryStore } from '@/stores/inventory'
 import type { SecretRealmState } from '@/core/secretRealm'
+import { DAOLU } from '@/data/daolu'
 
 function seedPlayer(p: ReturnType<typeof usePlayerStore>): void {
   p.winStreak = 7
@@ -52,6 +53,37 @@ describe('player.rebirth 转世状态重置', () => {
     expect(Object.keys(p.suppressedSince)).toHaveLength(0)
     // 镇压资格同样随世散去:否则新世可一键切回高阶收益
     expect(p.suppressQualified).toHaveLength(0)
+  })
+
+  it('本世的关系与本世的契要清空 —— 它们的字段注释一直这么写,而实现漏了', () => {
+    /*
+     * 三处字段的注释都写着「这一世…转世时清空」,而 `rebirth` 里漏清。
+     * 后果不是文案问题,是**功能被永久锁死**:
+     *   `daoluService` 用 `if (player.bond) return false` 挡「这一世只能遇一位」;
+     *   `lifeTrialService` 用 `if (trial) return false` 挡「再签一张」;
+     * 新世带着旧值就再也遇不到道侣、签不了逆旅契。
+     * 历世履历(`reincarnation.bonds`)与跨世追求(`vow` 之外的历史)仍应保留。
+     */
+    const p = usePlayerStore()
+    p.initCharacter('测试道友', { roots: [] } as never)
+    p.bond = {
+      daoluId: DAOLU[0]!.id, stage: 'met', fate: 50, trust: 50, accord: 50, shared: 3, metAt: 1,
+      fallen: false, departed: false, doneEvents: [], opportunities: 0, nextEventAt: 6,
+      pendingEventId: null, intentPending: false, intent: null
+    } as never
+    p.reincarnation = {
+      ...p.reincarnation,
+      trial: { themeId: 't_a', stages: [], done: false } as never,
+      vow: { themeId: 'v_a', broken: false } as never
+    }
+
+    p.rebirth({ roots: [] } as never)
+
+    expect(p.bond, '本世道侣没清 —— 新世再也遇不到新的一位').toBeNull()
+    expect(p.reincarnation.trial, '本世逆旅契没清 —— 新世再也签不了新的').toBeNull()
+    expect(p.reincarnation.vow, '本世命题没清 —— 新世立不了新题').toBeNull()
+    // 跨世保留项:世号前进、履历不动
+    expect(p.reincarnation.count, '世号该前进').toBe(1)
   })
 
   it('跨世累加接口挡住 NaN / Infinity / 负数:寿元、道果与宿慧不被污染', () => {
