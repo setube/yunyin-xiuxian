@@ -252,6 +252,15 @@ if (LATE) {
 
 let clicked = 0
 /**
+ * 每页各自点到了几次 —— 只打印进摘要,不设下限。
+ *
+ * 不设下限是有原因的:这条脚本会真的点各种按钮,前序页面的点击会改变后续页的状态。
+ * 实测 /souls 与 /celestial 跑到时已经显示「需真仙境」的锁定形态(main 里只剩 13 个字、
+ * 一个按钮都没有)——那是**脚本自己改出来的状态**,不是页面缺陷,给它们设下限只会误报。
+ * 留着这份读数是为了排查:某页长期 0 次时,人一眼能看出冒烟在那里是空跑的。
+ */
+const clickedPerRoute = new Map()
+/**
  * 只点最上层弹窗:每轮重取 z 最高的可见弹窗,走完再 Esc 回下层;按钮打一次性标记,重排/替换不重复点。
  * 固定取第一扇会点到被详情盖住的底层按钮,误报死按钮。
  */
@@ -335,18 +344,62 @@ async function clickInsideModal(route) {
 }
 
 for (const route of ROUTES) {
+  const beforeRouteClicks = clicked
   await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
+  /*
+   * 等这一页**真的挂上**,不是固定等 600ms。
+   *
+   * `file://` + hash 变化时 `page.goto` 不会重载文档,`waitUntil: 'load'` 立刻返回 ——
+   * 而路由视图是 `() => import(...)` 懒加载的,那一刻 `main` 里还什么都没有。
+   * 固定 600ms 在多数页够用,但前面十几页点过之后页面状态不同,
+   * 实测 /souls 与 /celestial 两页取到 **0 个句柄**:整页冒烟直接空跑。
+   *
+   * 判据:等 h1/h2 出现(每页都有标题,见 aria-check 的同一口径),再留一小段给交互挂载。
+   */
+  await page
+    .waitForFunction(() => !!document.querySelector('main h1, main h2'), null, { timeout: 4000 })
+    .catch(() => {})
   await page.waitForTimeout(600)
   const leaked = await numericLeak()
   for (const l of leaked) errors.push({ where: `${route} 正文泄漏`, msg: l })
-  // 用元素句柄不用 .all():nth 序号定位器在 toast/弹窗/跳页后指向空号,自动等待空耗 30s 超时
-  const buttons = await page.getByRole('button').elementHandles()
+  /*
+   * 取 button **与 role=tab**。
+   *
+   * 只用 getByRole('button') 会漏掉标签组:InkTabs 渲染的是 `role="tab"`,
+   * 那是 WAI-ARIA 的正确写法(整组只留一个 tabindex=0,靠左右键走)。
+   * 实测 /codex 与 /collection 两页的按钮全是 tab,于是它们在此脚本里
+   * 一次都没被点过 —— 而全局累计的总数仍够,看不出来。
+   * /souls 的入口卡倒是 button,但它当时只取到 toast 的关闭钮。
+   */
+  const allHandles = [
+    ...(await page.getByRole('button').elementHandles()),
+    ...(await page.getByRole('tab').elementHandles())
+  ]
+  /*
+   * **先筛再切片**,不是先切再筛。
+   *
+   * 先前写 `buttons.slice(0, DEPTH)` 再在循环里 continue —— 提示条那四个「×」
+   * 占掉了名额,真正的入口卡被挤到切片之外。实测 /souls 与 /celestial 两页
+   * 因此一次都没点到(它们明明有可见可点的入口卡)。
+   */
+  const buttons = []
+  for (const b of allHandles) {
+    const label = ((await b.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
+    if (!label || SKIP.test(label)) continue
+    if (label === '×' || label === '✕') continue
+    if (!(await b.isVisible().catch(() => false))) continue
+    if (await b.isDisabled().catch(() => false)) continue
+    buttons.push(b)
+    if (buttons.length >= DEPTH) break
+  }
   const startHash = await page.evaluate(() => location.hash)
-  for (const b of buttons.slice(0, DEPTH)) {
+  for (const b of buttons) {
     // 离页守卫:跳页后旧页按钮已无从点起
     if ((await page.evaluate(() => location.hash)) !== startHash) break
     const label = ((await b.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
     if (!label || SKIP.test(label)) continue
+    // 提示条右上角的「×」不属于页面交互:点它只是关掉一条提示,不验任何页面逻辑
+    if (label === '×' || label === '✕') continue
     if (!(await b.isVisible().catch(() => false))) continue
     if (await b.isDisabled().catch(() => false)) continue
     const before = errors.length
@@ -365,6 +418,13 @@ for (const route of ROUTES) {
       await page.waitForFunction(sel => document.querySelector(sel) === null, FADING, { timeout: 1000 }).catch(() => {})
     }
   }
+
+  /*
+   * 记下本页点到了几次。**必须在导航链接那段之前** ——
+   * 导航链接的落地点击记在 `clicked` 上,但那验的是「跳过去没炸」,
+   * 不是「这一页自己的钮点得到」。混在一起就回到全局累计的老问题。
+   */
+  clickedPerRoute.set(route, clicked - beforeRouteClicks)
 
   // 站内导航链接(<a>)逐根真点,落地页同做泄漏体检
   const linkHrefs = await page.evaluate(() =>
@@ -460,6 +520,15 @@ for (const route of ROUTES) {
 
 await browser.close()
 console.log(`\n界面冒烟:${ROUTES.length} 页,点击 ${clicked} 次(导航 ${navClicked.size} 条边;按钮每页上限 ${DEPTH})`)
+/*
+ * 逐页读数:某页 0 次时人一眼看得出来(不判失败,理由见 clickedPerRoute 的注释)。
+ * 只列比中位数少的页,免得每次刷十七行。
+ */
+{
+  const counts = ROUTES.map(r => clickedPerRoute.get(r) ?? 0)
+  const low = ROUTES.filter((r, i) => (counts[i] ?? 0) <= 1)
+  if (low.length) console.log(`  点到 ≤1 次的页:${low.join(' · ')}`)
+}
 if (knownAnalyticsBlocked) {
   console.log(`  已拦下第三方统计脚本 ${knownAnalyticsBlocked} 次(唯一允许的外域,拦掉只为不随它超时)`)
 }
@@ -488,6 +557,7 @@ if (clicked < MIN_CLICKS) {
   console.log(`✗ 只点到 ${clicked} 个按钮(应 ≥ ${MIN_CLICKS},即每页至少 1 个)—— 冒烟没验到东西`)
   process.exitCode = 1
 }
+
 if (errors.length === 0) {
   console.log('✓ 无运行时异常')
 } else {
