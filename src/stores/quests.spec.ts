@@ -61,6 +61,34 @@ describe('成就达成时刻', () => {
 })
 
 /** 成就/名号/图鉴是集合语义:坏档同一条写两遍时,界面按 Set 只画一枚,计数按 `.length` 会多报 */
+describe('sanitize:计数器巨值要归零,不能白送成就', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  /*
+   * 计数器是**成就/任务/日课三处的判定依据**,不只是显示值。
+   * `asNumberRecord` 只挡非有限值与负数,不管上界 —— 坏档写 `kills: 1e300`
+   * 会原样留下,而 `evalCond` 的判据是 `counter(key) >= cond.value`,
+   * 于是**一次解锁全部计数类成就**(实测 5 个),日课也一并判为达成。
+   *
+   * 超出上界归零而不是夹到上界:夹到一亿仍是「远超所有成就阈值」的合法读数,
+   * 判据照样全过。归零才表达「这条读数不可信」。
+   */
+  it('巨值归零,不再解锁计数类成就', () => {
+    const quests = useQuestsStore()
+    quests.$patch({ counters: { kills: 1e300 } } as never)
+    quests.sanitize()
+    expect(quests.counters.kills, '巨值没被归零 —— 成就判据会全过').toBe(0)
+  })
+
+  it('正常计数原样保留', () => {
+    const quests = useQuestsStore()
+    quests.$patch({ counters: { kills: 500, battles: 12 } } as never)
+    quests.sanitize()
+    expect(quests.counters.kills).toBe(500)
+    expect(quests.counters.battles).toBe(12)
+  })
+})
+
 describe('sanitize:重复条目不再把计数撑破', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
