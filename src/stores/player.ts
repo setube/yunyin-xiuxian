@@ -1042,12 +1042,20 @@ export const usePlayerStore = defineStore(
       suppressLife.value = count
       // NaN 起钟永不复苏、≤0 当场复聚:均按此刻重起
       // 仍在镇压或仍持有资格即保留:unsuppressRegion 摘镇压表时起点照留,切回时复聚钟接着走
+      /*
+       * 起钟值不只要「> 0」,还要按**时间戳**收口 ——
+       * 它同样是 `worldMemory.regionTouchedAt` 的候选(三者取 max),
+       * 而 `isRegionRevived` 判 `(now - touchedAt) / 3600_000 > 72`。
+       * 坏档写 `1e300` 时那个减法恒为极大负数,**该地界永不复苏**
+       * (与 `adventure.clearedAt` 同一条,上一轮修的就是那边)。
+       */
       const rawSince = asNumberRecord(suppressedSince.value)
       const fixedSince: Record<string, number> = {}
       const keepsTenure = new Set([...suppressedRegions.value, ...suppressQualified.value])
       for (const id of keepsTenure) {
         const at = rawSince[id]
-        fixedSince[id] = at !== undefined && at > 0 ? at : Date.now()
+        const bounded = at === undefined ? 0 : asTimestamp(at, 0)
+        fixedSince[id] = bounded > 0 ? bounded : Date.now()
       }
       suppressedSince.value = fixedSince
       // 零头取值 [0,1),只认镇压表内地界(松开镇压时已清)
