@@ -135,7 +135,17 @@ try {
         const main = document.querySelector('main')
         if (!main) return []
         const out = []
-        for (const el of main.querySelectorAll('button, a[href], [role=button]')) {
+        /*
+         * 三类 + 表单控件。
+         *
+         * 原先只有 `button, a[href], [role=button]` —— 设置页那四个 checkbox
+         * 不在其中,而它们是真能 Tab 到、也能用空格切的控件。
+         * 判据扫不到它们,就等于「能不能到」这个问题在那四个控件上从未被问过。
+         * (当前它们都正常,补的是覆盖面,不是修缺陷。)
+         */
+        for (const el of main.querySelectorAll(
+          'button, a[href], [role=button], input:not([type=hidden]), select, textarea'
+        )) {
           if (el.tabIndex >= 0 || el.disabled || el.offsetParent === null) continue
           const inTablist = !!el.closest('[role=tablist]') && el.getAttribute('role') === 'tab'
           const group = el.parentElement
@@ -176,7 +186,17 @@ try {
         const main = document.querySelector('main')
         if (!main) return ['<main> 不存在']
         const out = []
-        for (const el of main.querySelectorAll('button, a[href], [role=button]')) {
+        /*
+         * 三类 + 表单控件。
+         *
+         * 原先只有 `button, a[href], [role=button]` —— 设置页那四个 checkbox
+         * 不在其中,而它们是真能 Tab 到、也能用空格切的控件。
+         * 判据扫不到它们,就等于「能不能到」这个问题在那四个控件上从未被问过。
+         * (当前它们都正常,补的是覆盖面,不是修缺陷。)
+         */
+        for (const el of main.querySelectorAll(
+          'button, a[href], [role=button], input:not([type=hidden]), select, textarea'
+        )) {
           if (el.tabIndex >= 0 || el.disabled || el.offsetParent === null) continue
           const inTablist = !!el.closest('[role=tablist]') && el.getAttribute('role') === 'tab'
           const group = el.parentElement
