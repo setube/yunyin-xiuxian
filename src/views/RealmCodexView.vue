@@ -71,12 +71,13 @@
             class="mt-1 text-[11px] leading-relaxed"
             :class="cell.index === player.major ? 'text-ink-soft' : 'text-ink-faint'"
           >{{ cell.def.lore }}</p>
+          <!-- 所据哪几部书在 worldRows 里一次算齐,模板只读字段 -->
           <p
-            v-if="classicsOf(cell.def.id).length"
+            v-if="cell.classics"
             class="mt-1 text-[10px]"
             :class="cell.index === player.major ? 'text-ink-soft' : 'text-ink-faint'"
           >
-            所据:{{ classicsOf(cell.def.id).map(c => `《${c.title}》`).join(' ') }}
+            所据:{{ cell.classics }}
           </p>
         </div>
       </div>
@@ -97,8 +98,9 @@
             {{ row.school }}
           </span>
           <span class="text-[10px] text-ink-faint">{{ schoolNote(row.school) }}</span>
+          <!-- 一脉的境界并集与已过几境:算进 schoolSpans,模板不再一处调三次 -->
           <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">
-            {{ row.count }} 部 · 涉 {{ schoolSpan(row.school).total }} 境<template v-if="schoolSpan(row.school).past > 0"> · 已过 {{ schoolSpan(row.school).past }}</template>
+            {{ row.count }} 部 · 涉 {{ schoolSpans.get(row.school)?.total ?? 0 }} 境<template v-if="(schoolSpans.get(row.school)?.past ?? 0) > 0"> · 已过 {{ schoolSpans.get(row.school)?.past }}</template>
           </span>
         </p>
         <div class="mt-1.5 divide-y divide-ink/6">
@@ -448,7 +450,7 @@
   import { worldPips, worldProgress } from '@/ui/worldProgress'
   import WorldSeal from '@/components/common/WorldSeal.vue'
   import { mansionGroups, mansionOrdinal } from '@/ui/mansionBoard'
-  import { CLASSICS, PLANNED_SCHOOLS, classicsForRealm, type ClassicSchool } from '@/data/classics'
+  import { CLASSICS, PLANNED_SCHOOLS, type ClassicSchool } from '@/data/classics'
   import { classicRealmMarks, schoolRealmSpan } from '@/ui/classicRealm'
   import { classicsBySchool, schoolNote } from '@/ui/classicBoard'
   import { HEXAGRAMS, TRIGRAMS, trigramDef } from '@/data/yijing'
@@ -632,22 +634,49 @@
 
   const imageWorldMap = computed(() => IMAGES.map(i => `${i.direction}配${worldName(i.world)}`).join('、'))
 
+  /**
+   * 境界卡与典籍册共读同一份「这一境所据哪几部书」。
+   *
+   * 原先模板里对同一个境界调了三次「这一境所据哪几部书」的查表函数
+   * (v-if 判一次、正文取一次,正文里还再取一次做拼接),而每次都是一遍全表过滤;
+   * 21 境铺下来就是四十多遍扫描,且模板里读不出「这几处说的是同一件事」。
+   *
+   * 现一次算齐成 境界 id → 书名串。**只按 id 建表**:书是静态数据,
+   * 而这页会随玩家境界重渲染,没必要每次重扫。
+   */
+  const classicsByRealm = (() => {
+    const map = new Map<string, string>()
+    for (const c of CLASSICS) {
+      for (const id of c.realms) {
+        const prev = map.get(id)
+        map.set(id, prev === undefined ? `《${c.title}》` : `${prev} 《${c.title}》`)
+      }
+    }
+    return map
+  })()
+
   const worldRows = computed(() => {
     // 界域进度算一次:模板里按 row.prog 取(见 ui/worldProgress)
     const prog = worldProgress(player.major)
     return WORLDS.map((w, i) => ({
       world: w,
       prog: prog[i]!,
-      realms: REALMS.map((def, index) => ({ def, index })).filter(c => c.index >= w.start && c.index <= w.end)
+      realms: REALMS.map((def, index) => ({ def, index }))
+        .filter(c => c.index >= w.start && c.index <= w.end)
+        .map(c => ({ ...c, classics: classicsByRealm.get(c.def.id) ?? '' }))
     }))
   })
 
-  function classicsOf(realmId: string) {
-    return classicsForRealm(realmId)
-  }
-
-  /** 一脉的境界并集与其中已过几境(见 ui/classicRealm) */
-  function schoolSpan(school: ClassicSchool) {
-    return schoolRealmSpan(CLASSICS.filter(c => c.school === school), player.major)
-  }
+  /**
+   * 一脉的境界并集与其中已过几境(见 ui/classicRealm)。
+   * 一并算进 classicRows:模板里原先一处就调了三次(total / past / 条件),
+   * 每次都要把这一脉的书过滤一遍。
+   */
+  const schoolSpans = computed(() => {
+    const out = new Map<ClassicSchool, { total: number; past: number }>()
+    for (const c of CLASSICS) {
+      if (!out.has(c.school)) out.set(c.school, schoolRealmSpan(CLASSICS.filter(x => x.school === c.school), player.major))
+    }
+    return out
+  })
 </script>

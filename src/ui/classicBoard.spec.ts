@@ -127,3 +127,45 @@ describe('典籍谱 · 五、界面接上了', () => {
     expect(schoolNote('杂家')).toBe('')
   })
 })
+
+describe('典籍谱 · 六、境界卡与一脉计数各算一次', () => {
+  /*
+   * 界域卡的「所据:…」原先在模板里调三次 `classicsOf(cell.def.id)`:
+   * v-if 判一次、正文 `map` 又一次(还是自己再 filter 一遍全表),21 境铺下来四十多遍扫描。
+   * 典籍册的「涉 N 境 · 已过 M」同样一处调三次 `schoolSpan(row.school)`,
+   * 每次都要把这一脉的书重新过滤一遍。
+   *
+   * 现两处都改成「一次算齐、模板只读字段」—— 判据盯的是**模板里不再有函数调用**,
+   * 与既有那批「同一种算法到八遍」的修法同规(见 MortalWorldView 的 places)。
+   */
+  it('境界卡读预先算好的字段,不再在模板里调 classicsOf', () => {
+    expect(VIEW, '境界卡该读 cell.classics').toContain('cell.classics')
+    expect(VIEW, 'classicsOf 还在模板里被调 —— 每次都是一遍全表扫描').not.toContain('classicsOf(')
+  })
+
+  it('一脉的计数读预先算好的表,不再在模板里按脉过滤全表', () => {
+    // 只看模板段:脚本里那张 computed 本来就要过滤一次,那是唯一该有的那一次
+    const tpl = VIEW.slice(0, VIEW.indexOf('<script setup'))
+    expect(tpl, '典籍册该读 schoolSpans').toContain('schoolSpans.get(row.school)')
+    expect(tpl, '又把「这一脉的书」过滤挪回模板了').not.toMatch(/CLASSICS\.filter\(/)
+    expect(tpl, 'schoolSpan 函数还在模板里被调 —— 一处三遍').not.toContain('schoolSpan(row.school)')
+  })
+
+  it('预计算的境界→书名串与逐次过滤的结论逐字相同', () => {
+    // 复刻视图里那段 IOC:同一份 CLASSICS,按 realm 归并书名
+    const map = new Map<string, string>()
+    for (const c of CLASSICS) {
+      for (const id of c.realms) {
+        const prev = map.get(id)
+        map.set(id, prev === undefined ? `《${c.title}》` : `${prev} 《${c.title}》`)
+      }
+    }
+    const realms = [...new Set(CLASSICS.flatMap(c => c.realms))]
+    // 防空转:确实有境界挂着书
+    expect(realms.length).toBeGreaterThan(0)
+    for (const id of realms) {
+      const want = CLASSICS.filter(c => c.realms.includes(id)).map(c => `《${c.title}》`).join(' ')
+      expect(map.get(id), `${id} 的所据书串与逐次过滤不一致`).toBe(want)
+    }
+  })
+})
