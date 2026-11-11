@@ -397,7 +397,7 @@ export function rewriteMark(mark: DaoMark): ExpeditionResult | null {
     trackClearRecords(mark.targetName, report.totalRounds, mark.replay.pactId, 0)
     ui.toast(`【胜于旧我】${mark.targetName}:${mark.rounds} 回合 → ${report.totalRounds} 回合`, 'rare')
   } else if (report.cleared) {
-    ui.toast(`重写功成 · 未破纪录(${report.totalRounds} vs ${mark.rounds} 回合)`, 'info')
+    ui.toast(`功成 · 未破纪录(${report.totalRounds} vs ${mark.rounds} 回合)`, 'info')
   } else {
     ui.toast('重写未竟', 'warn')
   }
