@@ -1476,3 +1476,29 @@ describe('形制 · 不吃指针事件', () => {
     expect(hit.length, '扫到的形制基类太少,正则可能写歪了').toBeGreaterThan(20)
   })
 })
+
+/**
+ * 货架卡的名字被截断时要留一条退路。
+ *
+ * 名字是这张卡第一样要读的东西(「这一件到底是什么」),而两列窄格在 320 宽下
+ * 格内只有约 78px —— 六个字的装备名必定截断。截断了却只给悬停之外无路可走,
+ * 玩家读不到全文。判据沿「副标题同法」既有那一条,补到名字上。
+ */
+describe('调色板 · 货架卡的名字被截断时给全文', () => {
+  const SHOP2 = readFileSync(resolve(ROOT, 'src/components/market/MarketShelfSection.vue'), 'utf-8')
+
+  it('名字那一行带 title,且仍是 truncate(窄格放不下)', () => {
+    // 名字那一段:p 开标签 + 插值。用插值定位,再回看同一段里有没有 truncate 与 title
+    const at = SHOP2.indexOf('{{ c.name }}')
+    expect(at, '找不到名字那一段').toBeGreaterThan(0)
+    const seg = SHOP2.slice(Math.max(0, at - 400), at)
+    expect(seg, '名字行应有 :title="c.name"').toContain(':title="c.name"')
+    // 同一段里还得有 truncate:加 title 不该顺手把截断去掉(去掉会撑破两列窄卡)
+    const tagStart = seg.lastIndexOf('<p')
+    expect(seg.slice(tagStart), '名字行仍是 truncate').toContain('truncate')
+  })
+
+  it('副标题仍保留它自己的 title(别把两处混成一处)', () => {
+    expect(SHOP2, '副标题那行也要有自己的 title').toContain(':title="c.sub"')
+  })
+})

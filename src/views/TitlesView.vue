@@ -48,11 +48,11 @@
               {{ row.def.name }}
               <span v-if="row.worn" class="ml-1 text-[9px] tracking-normal text-cinnabar">佩</span>
             </p>
-            <p class="truncate text-[10px] text-ink-faint">{{ row.def.desc }}</p>
+            <p class="truncate text-[10px] text-ink-faint" :title="row.def.desc">{{ row.def.desc }}</p>
             <p v-if="row.mark.kind === 'realm'" class="text-[9px] text-ink-faint tabular">
               {{ row.mark.worldName }} · 第 {{ row.mark.step }}/{{ TITLE_LADDER_STEPS }} 境
             </p>
-            <p v-if="!row.owned && row.source" class="truncate text-[10px] text-ink-faint">来历:{{ row.source }}</p>
+            <p v-if="!row.owned && row.source" class="truncate text-[10px] text-ink-faint" :title="`来历:${row.source}`">来历:{{ row.source }}</p>
             <!--
               不截断:modsText 的括号里是这条加成的限定条件(「只入小境界」「只减天劫之伤」),
               截掉后玩家只看得到幅度、看不到何时生效。灵兽卡同一份数据本就不截断,这里与它一致。
@@ -106,7 +106,7 @@
               <span class="shrink-0 rounded bg-ink/6 px-1.5 py-0.5 text-[10px]" :style="{ color: qualityTextColor(row.def.quality) }">{{ qualityDef(row.def.quality).name }}</span>
               <span v-if="row.active" class="shrink-0 rounded border border-jade/40 bg-jade/15 px-1.5 py-0.5 text-[10px] text-ink">相伴</span>
             </p>
-            <p class="truncate text-[10px] text-ink-faint">{{ row.def.desc }}</p>
+            <p class="truncate text-[10px] text-ink-faint" :title="row.def.desc">{{ row.def.desc }}</p>
             <p v-if="row.modText" class="text-[10px] text-azure tabular">{{ row.modText }}</p>
             <!--
               灵兽加成是两步放大出来的:灵兽园等级 × 安抚 buff。

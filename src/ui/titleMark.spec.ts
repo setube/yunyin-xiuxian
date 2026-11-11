@@ -142,3 +142,34 @@ describe('名号形制 · 四、界域刻度与界面', () => {
     }
   })
 })
+
+/**
+ * 被截断的行要留一条退路。
+ *
+ * 名号的「达成条件」(`row.def.desc`)与「来历」都是 `truncate` 的 —— 它们在 320 宽下确实
+ * 放不下(条件最长 34 字)。可截掉的恰恰是「怎么得这一顶」这件事本身,
+ * 而它是玩家读这一行的唯一理由。悬停给全文,是这一类的既有做法(见货架副标题)。
+ *
+ * 判据只查「行上有 truncate、行内是动态文本」的那种行必须有 title ——
+ * 静态标签被截是设计好的排版,不在此列。
+ */
+describe('名号页 · 被截断的条件与来历给全文', () => {
+  const TRUNCATED = [...VIEW.matchAll(/<p[^>]*\bclass="[^"]*\btruncate\b[^"]*"[^>]*>([\s\S]*?)<\/p>/g)].map(m => ({
+    tag: m[0],
+    body: m[1]!
+  }))
+
+  it('扫到了被截断的行(防空转)', () => {
+    expect(TRUNCATED.length, '一条 truncate 行都没扫到').toBeGreaterThan(0)
+  })
+
+  it('行内是动态文本的,都带 title', () => {
+    const bad = TRUNCATED.filter(t => /\{\{/.test(t.body) && !/title=/.test(t.tag))
+    expect(bad.map(b => b.tag.slice(0, 90)), '被截断了却没给全文').toEqual([])
+  })
+
+  it('抓得住:动态行去掉 title 即报', () => {
+    const fake = { tag: '<p class="truncate">{{ x }}</p>', body: '{{ x }}' }
+    expect(!/title=/.test(fake.tag) && /\{\{/.test(fake.body), '这条该判违规').toBe(true)
+  })
+})
