@@ -57,6 +57,17 @@ describe('astral 共鸣进战斗(开战护盾+5%)', () => {
 
 /** 妖庭三件套:项链+戒指+灵符各一件 → 吸血被动(造成伤害的 8% 转化为生命) */
 describe('饰品三件套共鸣进战斗(妖庭 trio → 吸血)', () => {
+  /*
+   * 新 pinia = 干净的行囊/人物分片。
+   *
+   * 本组四条都靠 `wearYaoTing()` 重写 `inv.items` / `inv.equipped`,
+   * 而块内没有 beforeEach —— 上一条用例的装备残留会与本条写的三件混在一起,
+   * 共鸣判定自然不同:实测全量乱序下本组四条全红。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   function wearYaoTing(): void {
     const inv = useInventoryStore()
     inv.items = [inst('n-shuan', 'n_yaoting'), inst('r-huan', 'r_yaoting'), inst('tl-fu', 'tl_yaoting')]

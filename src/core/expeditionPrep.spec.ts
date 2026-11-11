@@ -46,6 +46,17 @@ describe('远征 · 天机透视出发前', () => {
  * 任一环被拆,必有断言红。
  */
 describe('远征 · 天机携带气血预报边界', () => {
+  /*
+   * 新 pinia = 干净的终局/人物分片。
+   *
+   * 本组最后一条「天机预览确定性」要 `useEndgameStore()` 再 `previewFight(...)`,
+   * 而块内一个 beforeEach 都没有:乱序把本组排到最前时,
+   * `previewFight` 拿不到玩家快照,直接返回 null(`expected null not to be null`)。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('withCarriedHp 把携带气血精确写进入界起手(playerStartHpPct,含上限夹逼)', () => {
     const run = (hp: number): WorldRunState =>
       ({ worldId: 'x', layer: 1, gateId: null, pactId: null, carriedHpPct: hp, cleared: [], history: [] }) as unknown as WorldRunState
@@ -72,6 +83,12 @@ describe('远征 · 天机携带气血预报边界', () => {
   it('天机预览确定性:同输入必同预报', () => {
     const endgame = useEndgameStore()
     const world = celestialWorldDef('chiyan')!
+    /*
+     * `previewFight` 头一句是 `if (endgame.daoPath !== 'fate') return null` ——
+     * 原先本组没有 beforeEach,那份 daoPath 是**前面某条用例留下的**,
+     * 于是先把 beforeEach 补上,就得在这里显式立起来(否则预览恒为 null)。
+     */
+    endgame.$patch({ daoPath: 'fate' })
     endgame.$patch({ worldRun: { worldId: 'chiyan', layer: 1, gateId: null, pactId: null, carriedHpPct: 1, cleared: [], history: [] } as unknown as WorldRunState })
     const a = previewFight(world.foes[0]!, undefined, rng, { worldId: 'chiyan', pactId: null, gateId: null })
     const b = previewFight(world.foes[0]!, undefined, rng, { worldId: 'chiyan', pactId: null, gateId: null })
