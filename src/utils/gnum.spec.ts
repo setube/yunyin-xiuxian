@@ -183,3 +183,34 @@ describe('GameNumber 的坏值守卫', () => {
     expect(cmp(gn(1), gn(1))).toBe(0)
   })
 })
+
+/**
+ * progress 挡得住坏 GNum。
+ *
+ * `ratio` 对 `{ m: NaN }` 这类结构合法、数值非法的值返回 NaN,而
+ * `Math.max(0, Math.min(1, NaN))` 仍是 NaN —— 两道钳制串起来也留不住它
+ * (AGENTS.md 明文点过这个坑)。坏值一路穿到界面就是「进度 NaN%」。
+ *
+ * 实测写法:界面读 progress 的地方是 `Math.round(x * 100)`,NaN 直接印成 NaN%。
+ */
+describe('进度 · 坏值不得穿成 NaN', () => {
+  it('NaN 尾数给出合法下限,而不是 NaN', () => {
+    const bad = { m: NaN, e: 0 }
+    const out = progress(bad, gn(100))
+    expect(Number.isNaN(out), 'NaN 漏出来了').toBe(false)
+    expect(out).toBe(0)
+    // 阴性对照:这正是修复前的算式
+    expect(Math.max(0, Math.min(1, NaN)), 'Math.max/min 确实挡不住 NaN').toBeNaN()
+  })
+
+  it('Infinity 按上限算', () => {
+    // 目标为 0(除零)时 ratio 给 Infinity
+    expect(progress(gn(5), gn(0))).toBe(1)
+  })
+
+  it('正常值仍是线性的', () => {
+    expect(progress(gn(25), gn(100))).toBeCloseTo(0.25, 10)
+    expect(progress(gn(0), gn(100))).toBe(0)
+    expect(progress(gn(200), gn(100))).toBe(1)
+  })
+})
