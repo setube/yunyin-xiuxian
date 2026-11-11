@@ -7,7 +7,7 @@
  */
 import { chromium } from 'playwright'
 import { preview } from 'vite'
-import { seedSave, lateSlices } from './lib/saveFixture.mjs'
+import { seedSave, lateSlices, midSlices } from './lib/saveFixture.mjs'
 import { requireDist } from './lib/requireDist.mjs'
 
 const PORT = 4235
@@ -226,6 +226,49 @@ try {
   zero.inventory.equipped = {}
   zero.inventory.pills = {}
   zero.inventory.artifacts = []
+
+  /*
+   * 中期档:同一个浏览器上下文只种一份存档,故单开一个 ctx。
+   *
+   * 为什么要有这一档:本脚本与另外五个 QA 脚本原先全都只用 `lateSlices`(major 14,终局全开)。
+   * 中期玩家(major 7,洞府已起造、终局未开)那一屏的读屏结构从没被量过 ——
+   * 而「天界/器魂显示需真仙境」「洞府三项产出有值」「灵脉已投点」这些只在中期成立。
+   * 判据与主档同一套:标题、纯图标钮的名字、禁用钮的拒因。
+   */
+  {
+    const midCtx = await browser.newContext({ viewport: { width: 390, height: 844 } })
+    await midCtx.route('**/*', r => (/^https?:\/\/localhost:/.test(r.request().url()) ? r.continue() : r.abort()))
+    await seedSave(midCtx, midSlices())
+    const midPage = await midCtx.newPage()
+    await midPage.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
+    await midPage.waitForTimeout(1500)
+
+    const MID_ROUTES = ['/celestial', '/souls', '/dongfu', '/legacy']
+    const midBad = []
+    for (const r of MID_ROUTES) {
+      if (!(await gotoRoute(midPage, r))) {
+        midBad.push(`${r}: 没落到位`)
+        continue
+      }
+      const issues = await midPage.evaluate(() => {
+        const out = []
+        // 页面要有 h1 或 h2,否则读屏按标题跳转会落空
+        if (!document.querySelector('main h1, main h2')) out.push('无标题元素')
+        // 纯图标钮(可见文字 ≤1 字)必须有可访问名
+        for (const b of document.querySelectorAll('main button')) {
+          const t = (b.textContent || '').trim()
+          if (t.length > 1) continue
+          const named = b.getAttribute('aria-label') || b.getAttribute('aria-labelledby')
+          if (!named) out.push(`图标钮无名:「${t}」`)
+        }
+        return out
+      })
+      if (issues.length) midBad.push(`${r}: ${issues.slice(0, 3).join(' / ')}`)
+    }
+    await midCtx.close()
+    if (midBad.length > 0) failures.push(`中期档读屏属性不全:${midBad.join('; ')}`)
+    console.log(`  ${midBad.length === 0 ? '✓' : '✗'} 中期档(洞府已启 / 终局未开)四页结构完整`)
+  }
 
   const zeroCtx = await browser.newContext({ viewport: { width: 390, height: 844 } })
   await zeroCtx.route('**/*', r => (/^https?:\/\/localhost:/.test(r.request().url()) ? r.continue() : r.abort()))

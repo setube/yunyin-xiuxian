@@ -271,3 +271,65 @@ export function stressSlices(itemCount = 120) {
     },
   };
 }
+
+/**
+ * 中期存档:内容已展开、终局未开。
+ *
+ * `lateSlices` 是 major 14(已在界外),`stressSlices` 基于它 —— 六个 QA 脚本
+ * (aria-check / ui-smoke / focus-check / modal-patrol / edge-states / detail-geometry)
+ * 全都只用这两档。于是 **介于两者之间的界面状态从来没被扫过**:
+ *   · 天界 / 器魂页显示「需真仙境」而尚未进入(major < WORLD_BREAK_MAJOR = 9);
+ *   · 转世系统已开(宿慧、先天之姿有读数)但道途未立;
+ *   · 洞府已起造、灵脉已投点,而终局的凝道果/器魂仍是空的;
+ *   · 画像是「本世未立题」,轮回录有历史但未至下一境地。
+ * 这些状态在前期档(几乎全空)与后期档(几乎全开)之间,是 patch 覆盖面最薄的一段。
+ *
+ * @param major 大境界,默认 7(结丹前后);须 < WORLD_BREAK_MAJOR(9) 才停在「未至天界」
+ */
+export function midSlices(major = 7) {
+  const base = lateSlices();
+  return {
+    ...base,
+    player: {
+      ...base.player,
+      major,
+      sub: 3,
+      age: 420,
+      // 灵根与天赋保留:中期玩家已经转世过、有先天之姿与灵根
+      linggen: {
+        roots: [
+          { element: "fire", aptitude: 72 },
+          { element: "wood", aptitude: 64 },
+        ],
+        gradeName: "双灵根",
+        growthMult: 1.3,
+      },
+      reincarnation: {
+        ...base.player.reincarnation,
+        count: 1,
+        // 中期:宿慧够读出「下一境地尚差多少」,但不足以升阶
+        insight: 120,
+        daoFruit: 3,
+      },
+    },
+    // 洞府已起造(不是空壳),但未满级
+    dongfu: {
+      // id 须与 data/buildings 对齐:mansion / array / alchemy / forge / field / library / beast
+      // (首版写成 garden / furnace,页上于是三项产出全显示「—」)
+      levels: { mansion: 2, array: 3, alchemy: 2, forge: 2, field: 3, library: 2, beast: 1 },
+      veinPoints: { gather: 6, craft: 3, alchemy: 2, insight: 1 },
+      veinMain: "gather",
+    },
+    // 终局系统一个都还没开
+    endgame: {
+      daoPath: null,
+      daoSource: 0,
+      marks: [],
+      // souls 即可;activeSouls 是 store 的 computed,写进夹具不生效(判据抓到过一次)
+      souls: [],
+      worldClears: {},
+      worldRun: null,
+      voidWorld: null,
+    },
+  };
+}
