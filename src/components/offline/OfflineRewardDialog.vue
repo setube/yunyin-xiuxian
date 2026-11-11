@@ -98,7 +98,17 @@
 
     const road: GRow[] = []
     if (s.battles > 0) road.push({ icon: 'swords', label: '历练战斗', value: `${s.wins} 胜 / ${s.battles} 战` })
-    if (s.events > 0) road.push({ icon: 'star', label: '途中际遇', value: `${s.events} 次` })
+    /*
+     * 行标签不能与分组标题同字。
+     *
+     * 这一组的标题就是「途中际遇」,行标签原先也写「途中际遇」——
+     * 同屏两行一字不差,玩家读到的是:
+     *     途 中 际 遇        ← 分组
+     *       ★ 途中际遇  2 次  ← 行
+     * 而下一条行是「回收化尘」,那显然不是际遇,标题更说不通。
+     * 改行标签为「遇事」:短、且与同组的「历练战斗」「回收化尘」并列得起来。
+     */
+    if (s.events > 0) road.push({ icon: 'star', label: '遇事', value: `${s.events} 次` })
     // 自动回收件不入行囊、只化器灵尘,单独成行
     if (s.recycledDust > 0) {
       // 件数须含腾位化掉的旧件,否则与尘数对不上

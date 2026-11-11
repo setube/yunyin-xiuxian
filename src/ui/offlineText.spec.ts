@@ -59,3 +59,46 @@ describe('离线归来 ≠ 闭关', () => {
     expect(COUNTER_DIRECTIONS.offlineClaims).not.toContain('闭关')
   })
 })
+
+/**
+ * 归来卷轴的「分组标题」与「行标签」不许同字。
+ *
+ * 那三组的标题是「修行所得 / 家业收成 / 途中际遇」,行标签是更细的具体项。
+ * 「途中际遇」这一组原先把行标签也写成「途中际遇」—— 同屏两行一字不差:
+ *
+ *     途 中 际 遇          ← 分组标题
+ *       ⚔ 历练战斗  3 胜 / 5 战
+ *       ★ 途中际遇  2 次     ← 行标签,与上面标题相同
+ *       ✦ 回收化尘  1 件 · …
+ *
+ * 而「回收化尘」显然不是际遇,那个标题更说不通。
+ *
+ * 判据:从组件源码里抽出每个 `out.push({ label: '…', list })` 的组标题,
+ * 与同一组内 `label: '…'` 的行标签比对,两组不许有交集。
+ */
+describe('归来卷轴 · 组标题不与行标签同字', () => {
+  const SRC = readFileSync(new URL('../components/offline/OfflineRewardDialog.vue', import.meta.url), 'utf-8')
+
+  it('三组标题与组内行标签无重复', () => {
+    // 组标题:out.push({ label: 'X', list: 变量 })
+    const groups = [...SRC.matchAll(/out\.push\(\{\s*label:\s*'([^']+)',\s*list:\s*(\w+)/g)]
+    expect(groups.length, '一组都没抽到 —— 判据要跟着改名').toBeGreaterThanOrEqual(3)
+
+    const bad: string[] = []
+    for (const [, title, varName] of groups) {
+      // 该组的行:往 <varName>.push 里写的 label
+      const rows = [...SRC.matchAll(new RegExp(`${varName}!\\.push\\(\\{[^}]*label:\\s*'([^']+)'`, 'g'))]
+        .concat([...SRC.matchAll(new RegExp(`${varName}\\.push\\(\\{[^}]*label:\\s*'([^']+)'`, 'g'))])
+        .map(m => m[1]!)
+      if (rows.includes(title!)) bad.push(`组「${title}」里有一行的标签与组标题同字`)
+    }
+    expect(bad, bad.join('; ')).toEqual([])
+  })
+
+  it('「途中际遇」那一组的行标签是短词,不是句子', () => {
+    const m = /if \(s\.events > 0\) road\.push\(\{ icon: 'star', label: '([^']+)'/.exec(SRC)
+    expect(m, '找不到际遇那一行 —— 判据要跟着改名').toBeTruthy()
+    expect(m![1], '行标签该短(≤4 字),与「历练战斗」「回收化尘」并列').toMatch(/^[\u4e00-\u9fa5]{2,4}$/)
+    expect(m![1], '又写回「途中际遇」,与分组标题同字').not.toBe('途中际遇')
+  })
+})
