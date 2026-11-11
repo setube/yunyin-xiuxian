@@ -1356,11 +1356,27 @@ export const usePlayerStore = defineStore(
       suppressLife.value = reincarnation.value.count
       if (!suppressedRegions.value.includes(regionId)) {
         suppressedRegions.value = [...suppressedRegions.value, regionId]
-        /**
-         * 起点只在缺失时补(首次镇压 / 坏档被清掉)。
-         * 切回收益态时重写会让守时归零:兴衰掉回混乱、装备气运清零、72 小时复聚钟从头再走。
+        /*
+         * 起点「缺失」或「已越过复聚线」时才重锚,两者之间保留原起点。
+         *
+         * 两个职责压在同一字段上,只能这样分:
+         *   · 兴衰守时(`heldHours`)要求切回收益态时**保留**起点 —— 停取只是关产出,
+         *     不是「没守过」,重置会让守了两天的兴衰、气运白丢
+         *     (`suppressRebirth.spec` 的「停取收益再切回,守土起点不重置」钉着这条)
+         *   · 复聚判定要求切回时**重置** —— 否则旧起点早已越过 72 小时线,
+         *     下一次 tick 立刻判「镇压松开」,按钮点了等于没点(玩家实报)
+         *
+         * 分界就取复聚线:还没到线的,守时继续算;已经过线的,那份起点对复聚已无意义,
+         * 重锚进新的一轮。48 小时停取再切回 → 守时保住;73 小时停取再切回 → 不会当场松开。
          */
-        if (!(suppressedSince.value[regionId]! > 0)) {
+        const since = suppressedSince.value[regionId]
+        /*
+         * 72 小时与 `core/worldMemory` 的 `REVIVE_AFTER_HOURS` 同值。
+         * 不 import 那个常量:worldMemory 已经 import 本 store,反向引会成环。
+         * 两处对不上时 `suppressRebirth.spec` 的「停取收益再切回」那条会红。
+         */
+        const REVIVE_LINE_MS = 72 * 3_600_000
+        if (!(since! > 0) || Date.now() - since! > REVIVE_LINE_MS) {
           suppressedSince.value = { ...suppressedSince.value, [regionId]: Date.now() }
         }
       }

@@ -6,6 +6,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { DECOMPOSE_DUST } from '@/data/constants'
+import { regionReviveClock, isRegionRevived } from './worldMemory'
 import { REGIONS, regionDef } from '@/data/regions'
 import { herbGradeOfMajor, HERB_GRADE_SHORT } from '@/data/herbGrades'
 import { qualityDef } from '@/data/qualities'
@@ -141,6 +142,33 @@ describe('区域镇压系统', () => {
 
       player.suppressRegion('qingyun')
       expect(player.suppressedRegions).toContain('qingyun')
+    })
+
+    /**
+     * 玩家实报:先「停取收益」、隔一阵再点「转为镇压收益」,立刻弹「某地已松开」。
+     *
+     * 根因是 `suppressRegion` 的起点「只在缺失时补」:停取(`unsuppressRegion`)
+     * 故意留着 `suppressedSince`,切回时那份旧起点早已越过 72 小时复聚线,
+     * 下一次 tick 就被 `isRegionRevived` 判为够钟 —— 按钮点了等于没点。
+     *
+     * 修法不能一刀切「每次切回都重锚」:`suppressRebirth.spec` 另有一条
+     * 「停取收益再切回,守土起点不重置」,要求 48 小时未越线时保住守时。
+     * 故分界取复聚线本身 —— 越线的重锚,未越线的保留。
+     */
+    it('停取超过复聚线再切回,起点重锚,不会立刻被判松开', () => {
+      const player = usePlayerStore()
+      const now = Date.now()
+      player.markSuppressQualified('qingyun')
+      player.suppressRegion('qingyun')
+      // 模拟「已镇压 73 小时」→ 停取 → 再切回
+      player.suppressedSince = { qingyun: now - 73 * 3_600_000 }
+      player.unsuppressRegion('qingyun')
+      player.suppressRegion('qingyun')
+      const clock = regionReviveClock('qingyun')
+      expect(
+        isRegionRevived(clock, now),
+        `切回后起点距今 ${((now - clock) / 3_600_000).toFixed(1)} 小时 —— 又是那份旧起点`
+      ).toBe(false)
     })
 
     it('收益可多处同时收取,资格各自独立', () => {
