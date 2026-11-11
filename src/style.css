@@ -3840,6 +3840,15 @@ html[data-theme='light'] .mastery-bar {
   .card-charged::before {
     opacity: 0.6 !important;
   }
+  /*
+   * 同类第三处:得宝仪典的全屏金光。终态 opacity:0 且 forwards,压成 0.01ms 后
+   * 停在最后一帧 —— 那层光整个看不见。而它是「顶档之物到手」唯一的视觉信号
+   * (音效另有,视障以外的玩家靠这一闪辨认),停成透明等于把这个信号删了。
+   * 只压 opacity 到一个静态值:光仍在,只是不闪。
+   */
+  .rare-flash {
+    opacity: 0.55 !important;
+  }
 }
 
 /* 设置项:减少动效 */
@@ -3868,4 +3877,8 @@ html[data-theme='light'] .mastery-bar {
 }
 .reduce-motion .card-charged::before {
   opacity: 0.6 !important;
+}
+/* 同 @media 那处第三例:得宝全屏金光停在终态会整层看不见 */
+.reduce-motion .rare-flash {
+  opacity: 0.55 !important;
 }

@@ -67,7 +67,7 @@ describe('减少动效 · 两个块都要在,且保留 animationend 的前提', 
      * 首版写成 card-glow-halo(那是 @keyframes 的名字,没有任何元素带这个类),
      * 判据照样绿 —— 它只检查「文中出现过这个选择器」，而那段文字根本不该被匹配。
      */
-    const need = ['node-focus', 'card-charged::before']
+    const need = ['node-focus', 'card-charged::before', 'rare-flash']
     /*
      * 必须精确到「选择器 → 紧接着的块里有 opacity」。
      * 首版写成 `@media...[\s\S]*?\.${sel}[^{]*\{[^}]*opacity`,那个 [\s\S]*? 会一路
