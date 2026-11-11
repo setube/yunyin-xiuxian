@@ -1,4 +1,14 @@
 import { readFileSync } from 'node:fs'
+
+/**
+ * 去掉 HTML 与 TS 注释再断文本。
+ *
+ * 断言原料是源码文本时,注释里的旧写法会两头骗:`toContain` 被注释满足、
+ * `not.toContain` 被注释误伤。此文件两条都在查 `HomeView.vue`,
+ * 而注释里正可能出现「原先写『达成后自动领赏』,现改 rewardPreview(...)」这种说明。
+ */
+const stripComments = (s: string): string =>
+  s.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1')
 import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -28,13 +38,13 @@ describe('rewardPreview', () => {
     track('pillsUsed', herb.target)
     const toast = useUiStore().toasts.find(t => t.text.includes(herb.name))
     expect(toast?.text).toContain(rewardPreview(herb.reward))
-    const home = readFileSync(resolve(__dirname, '../views/HomeView.vue'), 'utf8')
+    const home = stripComments(readFileSync(resolve(__dirname, '../views/HomeView.vue'), 'utf8'))
     expect(home).toContain('rewardPreview(')
     expect(home).not.toContain('达成后自动领赏')
   })
 
   it('主页主线进度只读 questProgress 投影,不再自己只处理计数型', () => {
-    const home = readFileSync(resolve(__dirname, '../views/HomeView.vue'), 'utf8')
+    const home = stripComments(readFileSync(resolve(__dirname, '../views/HomeView.vue'), 'utf8'))
     expect(home, '境界与层数里程碑也要有进度读数').toContain('currentMainQuestProgress(')
     expect(home, '自己再判一次 cond.type 就等于第二份进度口径').not.toContain(
       "c?.type !== 'counter'",
