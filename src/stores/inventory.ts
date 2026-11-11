@@ -10,6 +10,7 @@ import { useLoreStore } from '@/stores/lore'
 import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } from '@/data/artifacts'
 import { BAG_CAPACITY, EQUIP_AFFIX_HARD_CAP } from '@/data/constants'
 import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
+import { EQUIP_COUNTER_MAX } from '@/data/constants'
 import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { pillDef } from '@/data/pills'
 import { QUALITIES } from '@/data/qualities'
@@ -67,9 +68,14 @@ export const useInventoryStore = defineStore(
           level: Math.min(EQUIP_LEVEL_SANITIZE_CAP, Math.max(0, Math.floor(asFiniteNumber(it.level, 0, 0)))),
           affixes,
           locked: it.locked === true,
-          reforgeCount: Math.floor(asFiniteNumber(it.reforgeCount, 0, 0)),
+          /*
+           * 两个计数器只用于显示(「已重铸 N 次」),但那一处是裸插值,
+           * 没有格式化兜底 —— 坏档写 1e300 会印成「已重铸 1e+300 次」。
+           * 上界取一万:一次游戏里重铸几千次已极罕见,到不了的必定是坏档。
+           */
+          reforgeCount: Math.min(EQUIP_COUNTER_MAX, Math.floor(asFiniteNumber(it.reforgeCount, 0, 0))),
           sealedAffixIds: [...new Set(asStringArray(it.sealedAffixIds))].filter(id => affixes.some(a => a.id === id)),
-          transferCount: Math.floor(asFiniteNumber(it.transferCount, 0, 0)),
+          transferCount: Math.min(EQUIP_COUNTER_MAX, Math.floor(asFiniteNumber(it.transferCount, 0, 0))),
           note: typeof it.note === 'string' && it.note ? truncateCodePoints(it.note, 4) : undefined,
           ...(it.invested && typeof it.invested === 'object'
             ? {
