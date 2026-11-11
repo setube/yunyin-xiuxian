@@ -1007,7 +1007,13 @@ export const usePlayerStore = defineStore(
       if (regionEvent.value) {
         const ev = regionEvent.value
         const regionOk = !!regionDef(ev.regionId) && !!regionEventDef(ev.eventId)
-        const endsAt = asTimestamp(ev.endsAt, 0)
+        /*
+         * 到期时刻落在未来同样要挡 —— `rollRegionEvent` 判的是 `cur.endsAt > now`,
+         * 未来值恒真,于是**整片地界再也掷不出新事件**(实测 500 次掷签 0 次)。
+         * 夹到此刻:该事件当场过期,下一拍即可掷新的。
+         * 与 `pendingEventSince`、`suppressedSince` 同一条:`asTimestamp` 不管方向。
+         */
+        const endsAt = Math.min(asTimestamp(ev.endsAt, 0), Date.now())
         if (!regionOk || endsAt <= 0) regionEvent.value = null
         else regionEvent.value = { ...ev, endsAt }
       }

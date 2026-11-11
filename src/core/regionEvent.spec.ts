@@ -27,6 +27,24 @@ describe('区域动态事件(regionEvent)', () => {
     expect(player.regionEvent).toBeNull()
   })
 
+  it('到期时刻落在未来时夹到此刻,不再永久占住事件槽', () => {
+    /*
+     * `rollRegionEvent` 判的是 `cur.endsAt > now` —— 未来值恒真,
+     * 于是**整片地界再也掷不出新事件**(实测 500 次掷签 0 次)。
+     * 读档修形的 `asTimestamp` 只挡「超出 Date 可表示范围」,不挡方向。
+     */
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    player.$patch({
+      regionEvent: { regionId: 'qingyun', eventId: 'yaochao', endsAt: Date.now() + 365 * 24 * 3600_000 }
+    } as never)
+    player.sanitize()
+    expect(
+      player.regionEvent?.endsAt ?? 0,
+      '未来的到期时刻没被夹住 —— 事件槽会被永久占住'
+    ).toBeLessThanOrEqual(Date.now())
+  })
+
   it('妖潮更险更多掉落,灵脉无额外危险', () => {
     const yaochao = regionEventDef('yaochao')!
     expect(yaochao.dangerMult).toBeGreaterThan(1)
