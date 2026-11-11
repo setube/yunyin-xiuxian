@@ -9,6 +9,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useMarketStore } from '@/stores/market'
 import { useEndgameStore } from '@/stores/endgame'
 import { useInventoryStore } from '@/stores/inventory'
+import { useDiagStore } from '@/stores/diag'
 import { upgradeCost } from '@/core/formulas'
 import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
@@ -1022,5 +1023,41 @@ describe('坏档韧性 · 器灵尘上界与真实可达的最大累计', () => 
     expect(maxDust, '真实累计投入已超过读档上界 —— 正常档会被误清').toBeLessThan(20_000)
     // 也不能低得离谱:至少要有几千,否则说明算错了
     expect(maxDust, '算出来的最大累计小得不像话,判据没跑到东西').toBeGreaterThan(1000)
+  })
+})
+
+/**
+ * 诊断条目的「出现次数」要有上界 —— 面板上那处是裸插值。
+ *
+ * `SettingsDiagnosticsSection` 印的是 `×{{ latestError.count }}`,
+ * 没有走格式化函数,坏档写 `1e300` 就直接印出「×1e+300」。
+ *
+ * 这是「只用于展示的字段同样需要守卫」的又一个例子:
+ * 该字段不参与任何计算,所以「不影响判定」不等于「不需要守」。
+ */
+describe('坏档韧性 · 诊断条目出现次数的上界', () => {
+  const patchCount = (v: unknown): number | undefined => {
+    setActivePinia(createPinia())
+    const d = useDiagStore()
+    d.$patch({ errors: [{ at: 1, info: '', message: 'x', route: '', count: v }] } as never)
+    d.sanitize()
+    return (d.errors as { count?: number }[] | undefined)?.[0]?.count
+  }
+
+  it('巨值被夹住,不再印出科学计数', () => {
+    for (const v of [1e300, Number.MAX_VALUE, 1e9]) {
+      expect(patchCount(v), `count ${v} 没被夹住`).toBeLessThanOrEqual(10_000)
+    }
+  })
+
+  it('正常次数原样保留', () => {
+    for (const v of [1, 3, 500]) {
+      expect(patchCount(v), `正常次数 ${v} 被误改`).toBe(v)
+    }
+  })
+
+  it('下限仍是 1(0 次不算出现过)', () => {
+    expect(patchCount(0), '0 次该被抬到 1').toBe(1)
+    expect(patchCount(-5), '负数该被抬到 1').toBe(1)
   })
 })

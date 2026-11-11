@@ -29,6 +29,12 @@ export const DIAG_MAX = 20
 /** 单条摘要长度上限 */
 export const DIAG_MESSAGE_MAX = 200
 
+/**
+ * 单条诊断的「出现次数」读档上界 —— 面板会印「×N」,而那处是裸插值。
+ * 同一条错误在一局里重复几十上百次已极罕见,取一万已极宽;越过的必定是坏档。
+ */
+export const DIAG_COUNT_MAX = 10_000
+
 /** 任意异常值 → 一行摘要 */
 export function summarizeError(err: unknown): string {
   if (err instanceof Error) return truncateCodePoints(`${err.name}: ${err.message}`, DIAG_MESSAGE_MAX)
@@ -57,7 +63,12 @@ export const useDiagStore = defineStore(
           info: typeof e.info === 'string' ? e.info : '',
           message: truncateCodePoints(String(e.message), DIAG_MESSAGE_MAX),
           route: typeof e.route === 'string' ? e.route : '',
-          count: Math.max(1, Math.floor(asFiniteNumber(e.count, 1, 1)))
+          /*
+           * 上界:诊断面板会印「×N」,而那处是**裸插值**、没有格式化兜底 ——
+           * 坏档写 1e300 会印出「×1e+300」。同一条错误在一局里重复几十上百次已极罕见,
+           * 取一万已极宽;越过的必定是坏档。
+           */
+          count: Math.floor(asFiniteNumber(e.count, 1, 1, DIAG_COUNT_MAX))
         }))
         .slice(-DIAG_MAX)
     }
