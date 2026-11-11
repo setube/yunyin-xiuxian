@@ -138,6 +138,19 @@ for (const rel of docFiles) {
       const known = ["### 修复", "### 调整与优化", "### 新增"];
       if (!known.includes(h.trim())) failures.push(`CHANGELOG.md 的 [Unreleased] 段有未知小节「${h.trim()}」`);
     }
+    /*
+     * 同名小节只许出现一次。
+     *
+     * 追加新条目时顺手写一行「### 调整与优化」是最省事的写法,于是这个段落
+     * 长到过 11 个同名小节、256 条散在里面。发版时它就是玩家看到的更新日志,
+     * 同一节的条目被切成十几块,读的人分不清层次。
+     * 上面的判据只查小节名合法、以及有没有平铺,查不出重复 —— 实测全绿。
+     */
+    const seen = new Map();
+    for (const h of heads) seen.set(h.trim(), (seen.get(h.trim()) ?? 0) + 1);
+    for (const [name, count] of seen) {
+      if (count > 1) failures.push(`CHANGELOG.md 的 [Unreleased] 段有 ${count} 个「${name}」小节 —— 同名小节该并成一个`);
+    }
   }
 }
 
