@@ -1557,4 +1557,20 @@ describe('坏档韧性 · 忆战速度与回合数的上界', () => {
   it('速度上界须远高于真实量级(玩家侧是 1 + 词缀之和)', () => {
     expect(100, '速度上界低于真实量级,正常档会被误夹').toBeGreaterThan(10)
   })
+
+  it('totalRounds 的**累加路径**也要封顶', () => {
+    /*
+     * 审查意见指出的:首版只封了「rows 为空时取存档原值」那条,
+     * 而 rows 非空时是逐行累加 —— 每行本身已夹到 BATTLE_ROUNDS_CAP,
+     * 五行相加就能到五倍。
+     */
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    const rows = Array.from({ length: 5 }, () => ({ foeName: '甲', win: true, rounds: 10_000, hpLeftPct: 0.5 }))
+    e.$patch({
+      worldRun: { worldId: 'chiyan', pactId: null, gateId: null, layer: 1, bonus: 0, rows, carriedHpPct: 1, totalRounds: 0, winStacks: 0 }
+    } as never)
+    e.sanitize()
+    expect((e.worldRun as { totalRounds?: number } | null)?.totalRounds, '累加后越过了上界').toBeLessThanOrEqual(10_000)
+  })
 })

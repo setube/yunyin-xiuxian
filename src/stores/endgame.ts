@@ -458,10 +458,17 @@ export const useEndgameStore = defineStore(
             rows,
             carriedHpPct: asCarriedHpPct(run.carriedHpPct),
             // 总回合以逐行战报回合和为准,不一致会让杀伐速战赏与道痕多给;无 rows 的旧档保留原值
-            totalRounds:
+            /*
+             * 两条路都要封顶:rows 非空时是**逐行累加**,空时取存档原值。
+             * 首版只封了后者 —— 而逐行求和同样会越过上限(每行本身已夹到
+             * BATTLE_ROUNDS_CAP,五行相加就能到五倍)。
+             */
+            totalRounds: Math.min(
+              WORLD_RUN_ROUNDS_MAX,
               rows.length > 0
                 ? rows.reduce((sum, row) => sum + row.rounds, 0)
-                : Math.floor(asFiniteNumber(run.totalRounds, 0, 0, WORLD_RUN_ROUNDS_MAX)),
+                : Math.floor(asFiniteNumber(run.totalRounds, 0, 0))
+            ),
             winStacks: Math.floor(asFiniteNumber(run.winStacks, 0, 0, WORLD_RUN_STACKS_MAX)),
             // 逆命契封印每场并入玩家属性;整份不可用视为无封印
             sealedMods: sanitizeMods(run.sealedMods) ?? undefined
