@@ -167,7 +167,7 @@
   import { usePlayerStore } from '@/stores/player'
   import { useResourcesStore } from '@/stores/resources'
   import { VEINS, veinDef, type VeinId } from '@/data/veins'
-  import { veinEffectText } from '@/ui/veinText'
+  import { veinEffectText, veinFullToast, veinPeakToast } from '@/ui/veinText'
   import { axisPct, veinBudget } from '@/ui/veinShape'
   import { investVein, investVeinBatch, veinCap, veinInvestPlan, veinPointCost, veinPointShortfall, veinSwitchCost, veinSwitchShortfall, switchMainVein, type VeinInvestPlan } from '@/core/veinService'
   import { VEIN_MAIN_CAPACITY, VEIN_SIDE_CAP, VEIN_TOTAL_CAPACITY, VEIN_UNLOCK_MAJOR } from '@/data/constants'
@@ -239,9 +239,17 @@
     return resources.hasStone(investCost.value)
   }
 
+  /**
+   * 这一脉此刻为什么投不动。
+   *
+   * 前三句取 ui/veinText 的共享说法 —— 「主脉圆满 / 副脉已至上限」与「容量已尽」
+   * 在 core 的拒绝回执里也用同一句;这里手抄一份时,改一处就会出现
+   * 「卡面说副脉已至上限、点了却回执主脉圆满」这类对不上的状态。
+   * 后两句是这张卡自己的读数(未解锁、灵石尚差),core 里没有对应回执。
+   */
   function investedStateLabel(veinId: VeinId): string {
-    if (currentLevel(veinId) >= cap(veinId)) return isMain(veinId) ? '主脉圆满' : '副脉已至上限'
-    if (veinTotal.value >= VEIN_TOTAL_CAPACITY) return '容量已尽'
+    if (currentLevel(veinId) >= cap(veinId)) return veinPeakToast(isMain(veinId))
+    if (veinTotal.value >= VEIN_TOTAL_CAPACITY) return veinFullToast()
     if (!veinsUnlocked.value) return '未解锁'
     if (!resources.hasStone(investCost.value)) return `灵石尚差 ${formatGap(investGap.value)}`
     return '不可投'
