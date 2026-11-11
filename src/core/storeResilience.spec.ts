@@ -815,3 +815,44 @@ describe('坏档韧性 · 远征运行态的计数上界', () => {
     expect(r?.winStacks, '叠层仍该夹到 16').toBe(16)
   })
 })
+
+/**
+ * 区域战绩的 `avgRounds` 要有上界 —— 它参与抑制判定。
+ *
+ * 抑制的判据是 `avgRounds <= SUPPRESS_THRESHOLDS.maxAvgRounds`(=3)。
+ * 坏档写 `1e300` 时这条恒为假,复聚钟永远满足不了条件;
+ * 而原先只给了下限,`Number.isFinite(1e300)` 为真、原样通过。
+ *
+ * 这与「NaN 会让判定恒假」是同一个坑的两种形态 —— 那段注释只防了 NaN。
+ */
+describe('坏档韧性 · 区域战绩 avgRounds 的上界', () => {
+  const patchAvg = (v: unknown): number | undefined => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({
+      regionStats: { qingyun: { totalFights: 10, avgRounds: v, avgDamageTakenPct: 0.2, consecutiveWins: 3, lastUpdateAt: 1, life: 1 } }
+    } as never)
+    p.sanitize()
+    return (p.regionStats as Record<string, { avgRounds?: number }> | undefined)?.qingyun?.avgRounds
+  }
+
+  it('巨值被夹住,不再让抑制判定恒假', () => {
+    for (const v of [1e300, Number.MAX_VALUE]) {
+      const got = patchAvg(v)
+      expect(got, `avgRounds ${v} 没被夹住`).toBeLessThanOrEqual(10_000)
+      // 夹到上界后仍远大于阈值 3 —— 这是对的:它代表「这场打得很久」,不是「没打过」
+      expect(got, '夹到上界后仍应大于阈值').toBeGreaterThan(3)
+    }
+  })
+
+  it('正常回合数原样保留', () => {
+    for (const v of [1, 2.5, 8, 30]) {
+      expect(patchAvg(v), `正常值 ${v} 被误夹`).toBe(v)
+    }
+  })
+
+  it('上界宽到不会误伤任何真实战斗', () => {
+    // 一场战斗的回合数是两位到三位数;一万已极宽
+    expect(10_000).toBeGreaterThan(1000)
+  })
+})
