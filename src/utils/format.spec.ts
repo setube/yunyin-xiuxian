@@ -567,19 +567,36 @@ describe('时长格式化 · 天数上界改中文单位', () => {
   const MAX_SECONDS = (8_640_000_000_000_000 - Date.now()) / 1000
 
   it('给定坏档最大合法时间戳,则两条都印中文单位而非裸数字', () => {
-    for (const [name, fn] of [
-      ['formatDuration', formatDuration],
-      ['formatCountdown', formatCountdown]
+    /*
+     * 只查「含万/亿/兆」是不够的:若把天数算错、或者把 1e7 当成 1 亿,
+     * 照样印出「1万天」这种带单位的错值,判据仍会绿。
+     * 故连**数值本身**一起核:期望值由天数独立算一遍,再要求输出里出现它。
+     */
+    const maxDays = Math.floor(MAX_SECONDS / 86400)
+    const wantMantissa = formatGN(maxDays) // 与实现无关的期望:交给 formatGN 算
+    expect(wantMantissa, '坏档上界该落在万进单位区间').toMatch(/[万亿兆]/)
+    for (const [name, fn, tail] of [
+      ['formatDuration', formatDuration, '天(\\d+小时)?'],
+      ['formatCountdown', formatCountdown, '天\\d{2}时']
     ] as const) {
       const got = fn(MAX_SECONDS)
       expect(got, `${name} 印出了八位裸数字:${got}`).not.toMatch(/^\d{7,}天/)
-      expect(got, `${name} 该用万进单位:${got}`).toMatch(/万天|亿天|兆天/)
       expect(got, `${name} 不该出现科学计数:${got}`).not.toMatch(/e\+/)
+      // 值与 formatGN(maxDays) 一致 —— 不能被换成别的数量级
+      expect(got, `${name} 的数量级不对(期望 ${wantMantissa}天):${got}`).toMatch(
+        new RegExp(`^${wantMantissa.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${tail}$`)
+      )
     }
   })
 
-  it('给定 1e300 秒,则不再印十七位小数的科学计数', () => {
+  it('给定 1e300 秒,则给出可读结果,不是占位符也不是浮点尾巴', () => {
+    /*
+     * 原先只断言「不含 `\d.\d{5,}e`」—— 那样 `--` 也能过。
+     * 现在要求:有内容、有「天」、且不带十七位小数的浮点尾巴。
+     */
     const got = formatDuration(1e300)
+    expect(got, '落到了占位符 —— 那不是格式化,是放弃了').not.toBe('--')
+    expect(got, `该仍是时长读数:${got}`).toContain('天')
     expect(got, `印出了浮点尾巴:${got}`).not.toMatch(/\d\.\d{5,}e/)
   })
 
