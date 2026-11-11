@@ -561,9 +561,13 @@ const SCENES = [
     },
     after: async page => {
       const routes = [
+        // 须与 src/router/index.ts 的真实路由逐项对齐。首启两页(/welcome /create)不在其列:
+        // 这一档铺的是坏档夹具,路由守卫会把它们弹回首页。
+        // 原写 `/endgame` —— 路由表里没有这条,通配兜底把它重定向到 `/`,
+        // 于是首页被扫了两遍,而那一项看着像在扫一个终局页(实测 hash 落到 `#/`)。
         '/', '/cultivation', '/adventure', '/inventory', '/character', '/build',
         '/codex', '/souls', '/titles', '/collection', '/market', '/dongfu',
-        '/endgame', '/settings', '/celestial', '/world', '/apprentice', '/legacy'
+        '/settings', '/celestial', '/world', '/apprentice', '/legacy'
       ]
       const hits = []
       for (const r of routes) {
