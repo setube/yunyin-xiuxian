@@ -57,11 +57,19 @@ export function generateCurrentGoal(player: ReturnType<typeof usePlayerStore>): 
     // 分母取流派真实核心词条数(2 或 3),写死 4 则满筑也到不了 100%
     const core = build.coreValues.length
     const coreTotal = Object.keys(build.style.core).length
-    return {
-      type: 'build',
-      text: `完善「${style}」流派`,
-      progress: Math.min(1, core / coreTotal),
-      hint: `核心词条 ${core}/${coreTotal}`
+    /*
+     * 核心词条已满就**不再报「完善」** —— 那不是待办,是已完成。
+     * 原先这里无条件返回,于是满筑玩家的首页写着「完善「背水流」流派 · 进度 100% ·
+     * 核心词条 2/2」:一条 100% 的待办,看着像该做点什么的空转提醒(实测前期档撞到)。
+     * 满筑时让位给后面的目标(历练 → 采草 → 配装),与「本世之界已成就跳过」同一条理。
+     */
+    if (core < coreTotal) {
+      return {
+        type: 'build',
+        text: `完善「${style}」流派`,
+        progress: Math.min(1, core / coreTotal),
+        hint: `核心词条 ${core}/${coreTotal}`
+      }
     }
   }
 

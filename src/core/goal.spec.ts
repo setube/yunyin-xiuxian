@@ -80,18 +80,41 @@ describe('修行目标(Phase 29)', () => {
     expect(goal.hint).toBeUndefined()
   })
 
-  it('无临近突破且已有 Build → build 目标,进度 = 已凑核心/流派核心数(2 键满筑即满,不再卡在 2/4)', () => {
+  it('无临近突破且流派未满 → build 目标,进度分母取流派真实核心数(不写死 4)', () => {
+    const player = usePlayerStore()
+    player.initCharacter('目标', { roots: [] } as never)
+    setBuild.value = {
+      style: { name: '天龙', core: { critChance: 0.35, critDamage: 0.5 } },
+      // 只凑到一个核心键:2 键流派 → 1/2,而不是 1/4
+      coreValues: [{ key: 'critChance' }]
+    }
+    const goal = generateCurrentGoal(player)!
+    expect(goal.type).toBe('build')
+    expect(goal.text).toContain('天龙')
+    expect(goal.progress, '分母该是 2(流派核心数),不是写死的 4').toBe(0.5)
+    expect(goal.hint).toContain('1/2')
+  })
+
+  /**
+   * 核心词条满了就不再是待办。
+   *
+   * 原先无条件返回 build 目标,满筑玩家的首页写着
+   * 「完善「天龙」流派 · 进度 100% · 核心词条 2/2」——
+   * 一条 100% 的待办,看着像该做点什么的空转提醒(前期档实测撞到)。
+   * 满筑后应让位给后面的目标(历练 → 采草 → 配装)。
+   */
+  it('流派核心已满 → 不再报「完善」,让位给后续目标', () => {
     const player = usePlayerStore()
     player.initCharacter('目标', { roots: [] } as never)
     setBuild.value = {
       style: { name: '天龙', core: { critChance: 0.35, critDamage: 0.5 } },
       coreValues: [{ key: 'critChance' }, { key: 'critDamage' }]
     }
-    const goal = generateCurrentGoal(player)!
-    expect(goal.type).toBe('build')
-    expect(goal.text).toContain('天龙')
-    expect(goal.progress).toBe(1)
-    expect(goal.hint).toContain('2/2')
+    const goal = generateCurrentGoal(player)
+    expect(goal?.type, '满筑不该再返回 build 目标').not.toBe('build')
+    expect(goal?.text ?? '', '文本里不该再出现「完善」').not.toContain('完善')
+    // 进度若还在,也不该是「100% 的待办」
+    if (goal?.progress !== undefined) expect(goal.progress).toBeLessThan(1)
   })
 
   it('近突破优先于 build(breakthrough 检查在最前)', () => {
