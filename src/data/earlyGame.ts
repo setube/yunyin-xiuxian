@@ -66,7 +66,7 @@ export const BREAKTHROUGH_PREP_OPTIONS: BreakthroughPrepOption[] = [
   {
     id: 'meditate',
     label: '静坐调息',
-    desc: '耗时3分钟,进阶成功率 +8%',
+    desc: '耗时 3 分钟,进阶成功率 +8%',
     bonusRate: 0.08,
     duration: 180
   },

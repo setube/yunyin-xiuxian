@@ -1705,7 +1705,33 @@ describe('天道熔炉 · 兑换支持自定义次数', () => {
  * 同一个量在相邻两页一个词序,读起来像是两个不同的东西。
  *
  * 只扫 .vue 与 data 里**面向玩家**的模板串,跳过注释与 spec 自身的样例。
+ *
+ * 另一条同源:数字与中文单位之间要留一个空格。全仓 19 处写成「耗时 3 分钟」
+ * 「一炷香(30 分钟)」,只有 `data/earlyGame` 的静坐调息写成「耗时3分钟」——
+ * 它与同表下一条「消耗灵石 80」并排显示,一个有一格一个没有,读起来像两种排版。
+ * 那条只扫 `desc` / `effect` / `label` 这类面向玩家的字段。
  */
+describe('文案排版 · 数字与中文单位之间留空格', () => {
+  it('数据表的说明文本里没有「3分钟」这种连写', () => {
+    const SRC = resolve(__dirname, '..', 'data')
+    const UNITS = '分钟|小时|秒钟|时辰'
+    const offenders: string[] = []
+    for (const name of readdirSync(SRC)) {
+      if (!name.endsWith('.ts')) continue
+      const text = readFileSync(join(SRC, name), 'utf8')
+      for (const [i, line] of text.split('\n').entries()) {
+        if (/^\s*(\*|\/\/)/.test(line)) continue
+        // 只认面向玩家的字段:desc / effect / label
+        if (!/(desc|effect|label)\s*:/.test(line)) continue
+        if (new RegExp(`\\d(${UNITS})`).test(line)) {
+          offenders.push(`src/data/${name}:${i + 1}`)
+        }
+      }
+    }
+    expect(offenders, `这些地方数字与单位连写了:\n${offenders.join('\n')}`).toEqual([])
+  })
+})
+
 describe('文案用词 · 灵石数额的词序一致', () => {
   it('界面与数据表里不再出现「数字 灵石」', () => {
     const SRC = resolve(__dirname, '..')
