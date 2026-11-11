@@ -52,10 +52,11 @@ export const useBountyStore = defineStore(
     /** 存档修复:订单逐纸修形,烂纸丢弃;时刻夹回非负(归零会即时换新) */
     function sanitize(): void {
       /*
-       * 与 `market.stockedAt` 同一条:`sync()` 判 `now < bountyAt + BOUNTY_REFRESH_SECONDS * 1000`,
-       * 起钟落在未来时悬赏**永不换版**。夹到此刻,`asTimestamp` 不管方向。
+       * 起钟**不在 sanitize 里夹到今天** —— 与 `market.stockedAt` 同一条取舍:
+       * 未来起钟的死锁在 `sync` 里解(那里有「现在」,且不必改持久化字段)。
+       * `asTimestamp` 只挡「超出 Date 可表示范围」,不挡方向,故 sync 侧要处理方向。
        */
-      bountyAt.value = Math.min(Math.max(0, asTimestamp(bountyAt.value, 0)), Date.now())
+      bountyAt.value = Math.max(0, asTimestamp(bountyAt.value, 0))
       const bm = asFiniteNumber(bountyMajor.value, -1)
       bountyMajor.value = bm >= 0 ? Math.min(MAX_MAJOR, Math.floor(bm)) : null
       const clean: BountySlot[] = []
@@ -100,7 +101,12 @@ export const useBountyStore = defineStore(
 
     /** 订单空或已过刷新窗口则换新一版 */
     function sync(now: number): void {
-      if (orders.value.length > 0 && now < bountyAt.value + BOUNTY_REFRESH_SECONDS * 1000) return
+      /*
+       * 起钟落在未来时判据恒真、悬赏永不换版。与 `market.sync` 同一条:
+       * **不写 bountyAt**,只把未来起钟按「此刻刚换版」来算窗口。
+       */
+      const clockAt = bountyAt.value > now ? now : bountyAt.value
+      if (orders.value.length > 0 && now < clockAt + BOUNTY_REFRESH_SECONDS * 1000) return
       const player = usePlayerStore()
       orders.value = generateBounty(player.major, now)
       bountyAt.value = now

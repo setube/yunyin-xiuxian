@@ -199,6 +199,19 @@ describe('坊市 · 买卖', () => {
     expect(toNum(resources.spiritStone), '两格都按各自标价扣款').toBe(60)
   })
 
+  it('未来起钟不解死锁,但起钟(装备种子)一位不动', () => {
+    /*
+     * 货架起钟同时是**装备实例的确定性种子**(`marketEquipInstance` 用 `(stockedAt, idx)` 再生)。
+     * 夹到此刻或归零都会让同一格变成另一件:预览 A、买到 B。
+     * 修法是在 `sync` 里用一个局部「窗口起点」,持久化字段一律不动。
+     */
+    const market = useMarketStore()
+    const future = Date.now() + 365 * 24 * 3600_000
+    market.$patch({ stockedAt: future } as never)
+    market.sanitize()
+    expect(market.stockedAt, 'sanitize 改了装备种子 —— 同格会变成另一件').toBe(future)
+  })
+
   it('sanitize:装备层级与品质下限夹回合法域,越界坏格买下也不崩', () => {
     const market = useMarketStore()
     const resources = useResourcesStore()
