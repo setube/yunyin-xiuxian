@@ -45,10 +45,17 @@ async function exportSaveOnAndroid(
       receipt(`已导出「${file}」`)
       return null
     }
-    // 返回值留真实原因(只判成败、不显示);toast 只报状态
-    const reason = result?.saved === false ? '已取消导出' : '存档导出失败:原生桥返回了无法识别的结果'
-    useUiStore().toast(result?.saved === false ? '已取消导出' : '导出失败', 'warn')
-    return reason
+    /*
+     * 返回值留真实原因(只判成败、不显示);toast 只报状态。
+     *
+     * 「已取消」走 info 不走 warn:取消是玩家自己按的,不是失败 ——
+     * 报警色一级会让一次主动取消看起来像是出了岔子。整仓的非失败回执都走 info
+     * (「今日已完成」「历练结束」等)。真正的协议不会回包才留 warn。
+     */
+    const cancelled = result?.saved === false
+    if (cancelled) useUiStore().toast('已取消导出', 'info')
+    else useUiStore().toast('导出失败', 'warn')
+    return cancelled ? '已取消导出' : '存档导出失败:原生桥返回了无法识别的结果'
   } catch (error) {
     const detail = error instanceof Error && error.message ? `:${error.message}` : ''
     const reason = `存档导出失败${detail}`

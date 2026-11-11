@@ -5,6 +5,8 @@
  */
 import { createPinia, setActivePinia } from 'pinia'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 /** node 环境无 localStorage,buildExportPayload 要读它 */
 class MemStorage {
@@ -151,7 +153,12 @@ describe('savePlatform(Web 分支)', () => {
     const result = await exportSaveToDevice()
 
     expect(result, '取消不是持久备份,必须返回非 null').toBe('已取消导出')
-    expect(useUiStore().toasts).toContainEqual(expect.objectContaining({ text: '已取消导出', kind: 'warn' }))
+    /*
+     * 取消走 info 不走 warn:取消是玩家自己按的,不是失败。
+     * 报警色会让一次主动取消看起来像出了岔子;整仓非失败回执都走 info。
+     * 本条真正要钉的还是「不伪装成功 + 不记上次导出」,级别只是顺带。
+     */
+    expect(useUiStore().toasts).toContainEqual(expect.objectContaining({ text: '已取消导出', kind: 'info' }))
     expect(mocks.writeFile).not.toHaveBeenCalled()
   })
 
@@ -246,5 +253,27 @@ describe('savePlatform(Web 分支)', () => {
         recursive: true
       })
     )
+  })
+})
+
+/**
+ * 「已取消」与「失败」不是同一件事。
+ *
+ * 玩家在系统保存面板按了返回，是一次主动放弃，不是出错 —— 报警色（warn）
+ * 会让它看起来像出了岔子。整仓的非失败回执都走 info（「今日已完成」「历练结束」）。
+ * 真正的协议异常（桥回包认不出）才留 warn。
+ *
+ * 判据钉两条:取消走 info、协议异常仍走 warn —— 别把两者一起改成中性。
+ */
+describe('存档导出 · 取消与失败分开报', () => {
+  it('取消走 info,协议异常仍走 warn', async () => {
+    const { useUiStore } = await import('@/stores/ui')
+    const src = readFileSync(resolve(__dirname, './savePlatform.ts'), 'utf-8')
+
+    expect(src, '取消该走 info').toMatch(/if \(cancelled\) useUiStore\(\)\.toast\('已取消导出', 'info'\)/)
+    expect(src, '协议异常该留 warn').toMatch(/else useUiStore\(\)\.toast\('导出失败', 'warn'\)/)
+    // 阴性对照:两者被合并成同一个级别时,这条文案就分不出轻重了
+    expect(src, '取消不该用 warn').not.toContain("toast('已取消导出', 'warn')")
+    void useUiStore
   })
 })
