@@ -96,6 +96,17 @@ const VOID_FIGHTS_MAX = 20
 const VOID_NODE_BONUS_MAX = 100
 
 /**
+ * 界域/试炼战绩的上界 —— 两处都是**裸插值**,没有格式化兜底。
+ *
+ * 「已破 ×N」与「最佳 N 回合」直接印数字:坏档写 1e300 就成了「已破 ×1e+300」。
+ * 一局里破一界几百次、一场打几百回合都已是极值,上界各留一档余量。
+ */
+const WORLD_CLEARS_MAX = 10_000
+const TRIAL_CLEARS_MAX = 10_000
+const BATTLE_ROUNDS_CAP = 10_000
+
+
+/**
  * 虚界敌方形态修形:远征每战都读 `shape.skills.map` 与 `atkR/hpR`,缺一样即白屏。
  * 比例须为正有限数,0 或负数会算出负血/秒杀。
  */
@@ -358,11 +369,17 @@ export const useEndgameStore = defineStore(
       daoFruitTutorialSeen.value = daoFruitTutorialSeen.value === true
       resourceDialogSeen.value = resourceDialogSeen.value === true
       soulTutorialSeen.value = soulTutorialSeen.value === true
-      // 「已破 ×N」只留认得的天界/虚界,次数收口为非负整数
+      /*
+       * 「已破 ×N」只留认得的天界/虚界,次数收口为非负整数**且封顶**。
+       *
+       * 界面上那处是裸插值(`已破 ×{{ endgame.worldClears[world.id] }}`),
+       * 而 `asNumberRecord` 只判 `Number.isFinite` —— 坏档写 1e300 会印成「已破 ×1e+300」。
+       * 一局里破一界几百次已经极多,取一万已极宽。
+       */
       const fixedClears: Record<string, number> = {}
       for (const [id, n] of Object.entries(asNumberRecord(worldClears.value, 0))) {
         if (id !== 'void' && !celestialWorldDef(id)) continue
-        fixedClears[id] = Math.floor(n)
+        fixedClears[id] = Math.floor(asFiniteNumber(n, 0, 0, WORLD_CLEARS_MAX))
       }
       worldClears.value = fixedClears
       // 试炼纪录同理;bestRounds 的 NaN 经 `Math.min(NaN, x)` 再也好不了
@@ -370,9 +387,13 @@ export const useEndgameStore = defineStore(
       for (const [id, raw] of Object.entries(asRecordOf<TrialRecord>(trialRecords.value, r => !!r && typeof r === 'object'))) {
         if (!trialDef(id)) continue
         const r = raw as Partial<TrialRecord>
-        const clears = Math.floor(asFiniteNumber(r.clears, 0, 0))
+        const clears = Math.floor(asFiniteNumber(r.clears, 0, 0, TRIAL_CLEARS_MAX))
         if (clears <= 0) continue
-        fixedTrials[id] = { clears, bestRounds: Math.floor(asFiniteNumber(r.bestRounds, 0, 0)) }
+        // 「最佳 N 回合」同样是裸插值;回合数真实是两位到三位数
+        fixedTrials[id] = {
+          clears,
+          bestRounds: Math.floor(asFiniteNumber(r.bestRounds, 0, 0, BATTLE_ROUNDS_CAP))
+        }
       }
       trialRecords.value = fixedTrials
       marks.value = sanitizeMarks(marks.value)
@@ -391,7 +412,8 @@ export const useEndgameStore = defineStore(
           ).map(r => ({
             foeName: r.foeName,
             win: r.win === true,
-            rounds: Math.floor(asFiniteNumber(r.rounds, 0, 0)),
+            // 战报行里的回合数也是裸插值
+            rounds: Math.floor(asFiniteNumber(r.rounds, 0, 0, BATTLE_ROUNDS_CAP)),
             hpLeftPct: asFiniteNumber(r.hpLeftPct, 0, 0, 1)
           }))
           worldRun.value = {

@@ -1177,3 +1177,47 @@ describe('坏档韧性 · 虚界配置数的上界', () => {
     expect(got?.anchorTier, '锚点层级没被夹到上界').toBe(64)
   })
 })
+
+/**
+ * 界域/试炼战绩的三处数字要有上界 —— 它们都是**裸插值**。
+ *
+ * 界面上直接印「已破 ×N」「最佳 N 回合」,没有格式化兜底;
+ * 而读档守卫只判了 `Number.isFinite`,坏档写 1e300 就印成「已破 ×1e+300」。
+ *
+ * 同一条线在第 40-47 轮反复出现:展示路径不一定经过格式化函数,
+ * 所以「只给人看的字段」同样要守。
+ */
+describe('坏档韧性 · 界域与试炼战绩的上界', () => {
+  const patchAll = (v: unknown): { clears?: number; trialClears?: number; bestRounds?: number } => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    e.$patch({ trialRecords: { qisha: { clears: v, bestRounds: v } }, worldClears: { chiyan: v } } as never)
+    e.sanitize()
+    return {
+      clears: (e.worldClears as Record<string, number> | undefined)?.chiyan,
+      trialClears: (e.trialRecords as Record<string, { clears?: number }> | undefined)?.qisha?.clears,
+      bestRounds: (e.trialRecords as Record<string, { bestRounds?: number }> | undefined)?.qisha?.bestRounds
+    }
+  }
+
+  it('三处巨值都被夹住', () => {
+    for (const v of [1e300, Number.MAX_VALUE, 1e9]) {
+      const got = patchAll(v)
+      expect(got.clears, `worldClears ${v} 没被夹住`).toBeLessThanOrEqual(10_000)
+      expect(got.trialClears, `trialRecords.clears ${v} 没被夹住`).toBeLessThanOrEqual(10_000)
+      expect(got.bestRounds, `bestRounds ${v} 没被夹住`).toBeLessThanOrEqual(10_000)
+    }
+  })
+
+  it('真实战绩原样保留', () => {
+    const got = patchAll(500)
+    expect(got.clears, '真实破界次数被误改').toBe(500)
+    expect(got.trialClears, '真实试炼通关数被误改').toBe(500)
+    expect(got.bestRounds, '真实最佳回合数被误改').toBe(500)
+  })
+
+  it('上界宽到不会误伤任何真实对局', () => {
+    // 一局里破一界几百次、一场打几百回合都已是极值
+    expect(10_000, '上界低于真实可能值').toBeGreaterThan(1000)
+  })
+})
