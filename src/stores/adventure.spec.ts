@@ -3,6 +3,7 @@ import { EVENTS, FORTUNE_EVENTS } from '@/data/events'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdventureStore } from '@/stores/adventure'
+import { tickExploration } from '@/core/exploration'
 import type { AdventureSession } from '@/types'
 import { gnZero } from '@/utils/gnum'
 import { formatGN } from '@/utils/format'
@@ -115,6 +116,28 @@ describe('历练公共写入边界', () => {
     ad.sanitize()
     expect(ad.pendingEventId, '夹具前提:事件 id 该被认出来').toBe('ev_jade_slip')
     expect(ad.pendingEventSince, '未来的起钟没被夹住 —— 历练会永久堵塞').toBeLessThanOrEqual(Date.now())
+  })
+
+  it('运行期时钟回拨:起钟重锚到此刻,超时窗口重新起算', () => {
+    /*
+     * 读档那道夹到此刻**管不到运行期**。游戏跑着的时候把系统时间往回拨,
+     * `now - since` 恒为负,事件一直挂着 —— 玩家要等真实时间追平才能脱身。
+     * `tickExploration` 见到「起钟晚于此刻」就重锚,超时窗口从这一刻再起算。
+     */
+    setActivePinia(createPinia())
+    const ad = useAdventureStore()
+    ad.$patch({
+      session: {
+        regionId: 'qingyun', endsAt: Date.now() + 3600_000, events: 0, battles: 0,
+        wins: 0, losses: 0, nextBattleAt: 0, lastAt: 0, itemGain: 0,
+        stoneGain: { m: 0, e: 0 }, expGain: { m: 0, e: 0 }
+      },
+      pendingEventId: 'ev_jade_slip',
+      pendingEventSince: Date.now()
+    } as never)
+    const backNow = Date.now() - 300_000
+    tickExploration(backNow)
+    expect(ad.pendingEventSince, '回拨后起钟没被重锚 —— 事件永不超时').toBeLessThanOrEqual(backNow)
   })
 
   it('待处理事件的正常起钟原样保留', () => {

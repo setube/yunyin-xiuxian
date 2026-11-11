@@ -465,6 +465,13 @@ export function tickExploration(now: number): void {
 
   // 待处理事件:阻塞战斗;超时自动按默认选项处理
   if (adventure.pendingEventId) {
+    /*
+     * 起钟晚于此刻 = 系统时钟被往回拨过(或坏档写了未来值;读档那道夹到此刻
+     * 管不到运行期)。此时 `now - since` 恒为负,超时判据永不成立 ——
+     * 事件一直挂着、战斗一直停着,玩家要等到真实时间追平才能脱身。
+     * 运行期遇到就把起钟重锚到此刻,让超时窗口从这一刻重新起算。
+     */
+    if (adventure.pendingEventSince > now) adventure.setPendingEvent(adventure.pendingEventId, now)
     if (now - adventure.pendingEventSince > EVENT_AUTO_RESOLVE_SECONDS * 1000) {
       const region = regionDef(s.regionId)
       const res = autoResolveEvent(adventure.pendingEventId, region?.tier ?? 1)
