@@ -427,3 +427,33 @@ describe('事件引擎 · 法宝池为空', () => {
     expect(JSON.stringify(inv.artifacts), '池空时不该往行囊塞东西').toBe(artifactsBefore)
   })
 })
+
+
+/**
+ * 坏数据兜底:`buff` effect 写了不存在的 id。
+ *
+ * 这条是 `mutation-scan` 找出来的盲区 —— 把 `if (!def) return null` 整行删掉,
+ * 全量测试照样全绿,而实测会崩在 `def.kind`(Cannot read properties of undefined)。
+ * 换存档格式、手改存档、或将来某条事件引用了被删的增益,都会走到这条路上。
+ */
+describe('事件效果 · 增益 id 不存在', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('不抛错、不报行,静默跳过这一条效果', () => {
+    const def: EventDef = {
+      id: 'ev_test_buff_missing',
+      title: '测试',
+      text: '',
+      tags: ['general'],
+      weight: 1,
+      choices: [
+        { label: '拿', outcomes: [{ weight: 1, text: '得了加持', effects: [{ type: 'buff', id: 'no_such_buff_at_all' }] }] }
+      ]
+    }
+    expect(() => resolveEventChoice(def, 0, 1), '坏 id 不该让事件结算整条崩掉').not.toThrow()
+    const res = resolveEventChoice(def, 0, 1)
+    expect(res.lines, '认不出的增益不该报「获得 …」').toEqual([])
+  })
+})
