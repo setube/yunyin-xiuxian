@@ -232,7 +232,12 @@ describe('sanitizeAllStores 修「按 id 认对象」的坏账', () => {
     player.lastCaveEventDay = future
     player.wudaoExchange = { gameDay: 999999, count: 1 }
     player.sanitize()
-    expect(player.lastCaveEventDay, '未来的巡游日会让每日巡游永久停摆').toBe(0)
+    /*
+     * 夹到「今天」而不是归零:归零的语义是「从未巡游过」,而时钟回拨后重载时
+     * 那条记录的语义是「刚巡游过」—— 归零会把它变成「可以再抽一次」。
+     * 夹到今天既挡住未来日,也保住「今日已做」。
+     */
+    expect(player.lastCaveEventDay, '未来的巡游日会让每日巡游永久停摆').toBe(today)
     expect(player.wudaoExchange?.gameDay, '未来的兑换日会让每日兑换永久停摆').toBe(0)
 
     // 健康值不该被动
