@@ -11,6 +11,27 @@ import {
   STAR_FOCUS_COST_BASE, MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX,
   WUDAO_EXCHANGE_GAIN, WUDAO_EXCHANGE_PER_DAY
 } from '@/data/constants'
+/**
+ * 转世计数/货币的读档上界。
+ *
+ * `count` 决定本世号(`suppressLife` 用它和「当前世」比等号),坏档写 `MAX_VALUE`
+ * 会让镇压权益整块判定永远对不上;`daoFruit` / `insight` 是可直接花掉的货币,
+ * 界面会照 formatGN 印成 `1.80e308`。1e6 远高于任何真实游玩量级(转世几百次、道果累计几千)。
+ */
+const LIFE_COUNTER_CAP = 1_000_000
+
+/** 连胜计数的读档上界:坏档写 MAX_VALUE 会让它永远涨不到头(界面印 1.79e308) */
+const WIN_STREAK_CAP = 1_000_000
+
+/**
+ * 区域战绩里两个计数的读档上界。
+ *
+ * `avgRounds` 参与抑制判定(`avgRounds <= 3`),坏档写 1e300 会让它恒假、复聚钟停摆;
+ * 一场战斗的回合数是两位到三位数,取一万已极宽。`totalFights` 同理。
+ */
+const AVG_ROUNDS_CAP = 10_000
+const TOTAL_FIGHTS_CAP = 10_000_000
+
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
 import { petDef } from '@/data/pets'
@@ -733,8 +754,9 @@ export const usePlayerStore = defineStore(
        * 它直接赋给 suppressLife,而 suppressLife 与「当前世号」比等号;
        * 坏档写 MAX_VALUE 时两边都被写成它,镇压权益整块判定永远对不上。
        */
-      const LIFE_COUNTER_CAP = 1_000_000
-      const count = Number.isFinite(r?.count) ? Math.min(LIFE_COUNTER_CAP, Math.max(0, Math.floor(r.count))) : 0
+      const count = Math.floor(
+        asFiniteNumber(r?.count, 0, 0, LIFE_COUNTER_CAP)
+      )
       // 旧存档无卦象一栏
       if (divination.value) {
         const d = divination.value
@@ -905,11 +927,12 @@ export const usePlayerStore = defineStore(
         const st = raw as Partial<import('@/core/suppress').RegionStats>
         const rawLife = asFiniteNumber(st.life, Number.NaN, 0)
         fixedRegionStats[id] = {
-          totalFights: Math.floor(asFiniteNumber(st.totalFights, 0, 0)),
-          avgRounds: asFiniteNumber(st.avgRounds, 0, 0),
+          totalFights: Math.floor(asFiniteNumber(st.totalFights, 0, 0, TOTAL_FIGHTS_CAP)),
+          // 上界:判定是 `avgRounds <= 3`,坏档写 1e300 会让它永远为假、复聚钟停摆
+          avgRounds: asFiniteNumber(st.avgRounds, 0, 0, AVG_ROUNDS_CAP),
           // 受伤占比 0~1(界面乘 100)
           avgDamageTakenPct: asFiniteNumber(st.avgDamageTakenPct, 0, 0, 1),
-          consecutiveWins: Math.floor(asFiniteNumber(st.consecutiveWins, 0, 0)),
+          consecutiveWins: Math.floor(asFiniteNumber(st.consecutiveWins, 0, 0, WIN_STREAK_CAP)),
           lastUpdateAt: asFiniteNumber(st.lastUpdateAt, 0, 0),
           // 有世号原样留(旧世的不参与判据);老档无世号按当前世认,不追溯没收
           life: Number.isFinite(rawLife) ? Math.floor(rawLife) : statsLife
@@ -918,7 +941,7 @@ export const usePlayerStore = defineStore(
       regionStats.value = fixedRegionStats
       // 巡游日期为 NaN 时「今日已抽」恒假,每 30 秒重掷一次
       // 上界:连胜是计数,坏档写 MAX_VALUE 会让它永远涨不到头(界面印 1.79e308)
-      winStreak.value = Math.min(1_000_000, Math.floor(asFiniteNumber(winStreak.value, 0, 0)))
+      winStreak.value = Math.floor(asFiniteNumber(winStreak.value, 0, 0, WIN_STREAK_CAP))
       /*
        * 日记号不许落在今天之后:闸门写的是 `lastCaveEventDay === today`,
        * 时钟调快过留下的未来日会让等号永不成立,每日巡游就此停摆(实测一年后的日期能一路通过)。
@@ -990,7 +1013,7 @@ export const usePlayerStore = defineStore(
        * 1e6 远高于任何真实游玩量级(转世几百次、道果累计几千)。
        */
       const cappedInt = (v: unknown, fallback = 0): number =>
-        Math.min(LIFE_COUNTER_CAP, Math.max(0, Math.floor(Number.isFinite(v) ? (v as number) : fallback)))
+        Math.floor(asFiniteNumber(v, fallback, 0, LIFE_COUNTER_CAP))
       reincarnation.value = {
         count: cappedInt(count),
         daoFruit: cappedInt(r?.daoFruit),
