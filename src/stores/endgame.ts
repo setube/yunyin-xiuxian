@@ -70,6 +70,7 @@ const MAX_MARKS = 60
  * 词条表修形:只留属性目录里的键与有限非零值;一条不剩返回 null(= 无加成)。
  * 野键会被 `modDepth` 算进构筑厚度,坏值经 `stackedMods` 把攻防染成 NaN。
  */
+
 function sanitizeMods(raw: unknown): StatMods | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const out: StatMods = {}
@@ -79,6 +80,20 @@ function sanitizeMods(raw: unknown): StatMods | null {
   }
   return Object.keys(out).length > 0 ? out : null
 }
+
+/**
+ * 虚界(程序化生成)四个配置数的读档上界。
+ *
+ * 这些不是「只给人看的」字段,而是直接进结算的:
+ * `rewardDaoSource` 决定道源到账、`entryCost` 是入场费、`fights` 是全程场数。
+ * 上界按 `worldGen` 的真实产出来定,各留一档余量:
+ * 赏格被夹在 55–100、入场费恒 20、场数恒 6、锚点层级恒 32。
+ */
+const VOID_ANCHOR_TIER_MAX = 64
+const VOID_REWARD_MAX = 200
+const VOID_ENTRY_COST_MAX = 500
+const VOID_FIGHTS_MAX = 20
+const VOID_NODE_BONUS_MAX = 100
 
 /**
  * 虚界敌方形态修形:远征每战都读 `shape.skills.map` 与 `atkR/hpR`,缺一样即白屏。
@@ -111,6 +126,7 @@ function sanitizeFoeShape(raw: unknown): import('@/types').WorldFoeShape | null 
  * 不修局部:CelestialView 读 `foes`/`ruleText`,远征读 `routes[layer][choice]` 与 `guardian`;
  * 半份世界的入场费/赏格/规则也已不对应。
  */
+
 function sanitizeVoidWorld(raw: unknown): CelestialWorldDef | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const w = raw as Partial<CelestialWorldDef>
@@ -135,7 +151,7 @@ function sanitizeVoidWorld(raw: unknown): CelestialWorldDef | null {
         desc: typeof node.desc === 'string' ? node.desc : '',
         foe,
         ...(hasCombatRules(node.rules) ? { rules: asCombatRules(node.rules) } : {}),
-        bonus: Math.floor(asFiniteNumber(node.bonus, 0, 0)),
+        bonus: Math.floor(asFiniteNumber(node.bonus, 0, 0, VOID_NODE_BONUS_MAX)),
         riskText: typeof node.riskText === 'string' ? node.riskText : ''
       }
     })
@@ -146,16 +162,27 @@ function sanitizeVoidWorld(raw: unknown): CelestialWorldDef | null {
     id: 'void',
     name: w.name,
     seal: w.seal,
-    anchorTier: asFiniteNumber(w.anchorTier, 0, 0),
+    /*
+     * 四个配置数都要封顶 —— 它们不是「只给人看的」,而是**直接进结算**:
+     * `rewardDaoSource` 进 `reward = world.rewardDaoSource + run.bonus`(道源到账),
+     * `entryCost` 是入场费,`fights` 是全程场数,`anchorTier` 决定该界锚点境界。
+     * 坏档写 1e300 时:白得 1e300 道源、入场费永远付不起、远征永远打不完。
+     *
+     * 上界按生成器的真实产出来定(`worldGen`):
+     * `rewardDaoSource` 被 `Math.min(100, Math.max(55, ...))` 夹在 55–100;
+     * `entryCost` 恒为 20、`fights` 恒为 6、`anchorTier` 恒为 `VOID_ANCHOR_TIER`(32)。
+     * 各留一档余量。
+     */
+    anchorTier: Math.floor(asFiniteNumber(w.anchorTier, 0, 0, VOID_ANCHOR_TIER_MAX)),
     desc: typeof w.desc === 'string' ? w.desc : '',
     ruleText: asStringArray(w.ruleText),
     rules: asCombatRules(w.rules),
-    entryCost: Math.floor(asFiniteNumber(w.entryCost, 0, 0)),
-    fights: Math.max(1, Math.floor(asFiniteNumber(w.fights, 1, 1))),
-    healBetweenPct: asFiniteNumber(w.healBetweenPct, 0.5, 0),
+    entryCost: Math.floor(asFiniteNumber(w.entryCost, 0, 0, VOID_ENTRY_COST_MAX)),
+    fights: Math.floor(asFiniteNumber(w.fights, 1, 1, VOID_FIGHTS_MAX)),
+    healBetweenPct: asFiniteNumber(w.healBetweenPct, 0.5, 0, 1),
     foes: foes as import('@/types').WorldFoeShape[],
     guardian,
-    rewardDaoSource: Math.floor(asFiniteNumber(w.rewardDaoSource, 0, 0)),
+    rewardDaoSource: Math.floor(asFiniteNumber(w.rewardDaoSource, 0, 0, VOID_REWARD_MAX)),
     routes
   }
 }

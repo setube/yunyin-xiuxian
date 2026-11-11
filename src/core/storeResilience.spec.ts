@@ -1093,3 +1093,82 @@ describe('坏档韧性 · 诊断计数的运行期与读档口径一致', () => 
     expect((d.errors as { count: number }[])[0]?.count, '正常自增被误伤').toBe(3)
   })
 })
+
+/**
+ * 虚界的四个配置数要有上界 —— 它们**直接进结算**,不是只给人看的。
+ *
+ * `rewardDaoSource` 进 `reward = world.rewardDaoSource + run.bonus`(道源到账)、
+ * `entryCost` 是入场费、`fights` 是全程场数、`anchorTier` 决定该界锚点境界。
+ * 坏档写 `1e300` 时分别对应:白得天文数字道源、入场费永远付不起、远征永远打不完。
+ *
+ * 上界按 `worldGen` 的真实产出来定:赏格被 `Math.min(100, Math.max(55, ...))` 夹在 55–100、
+ * 入场费恒 20、场数恒 6、锚点层级恒 `VOID_ANCHOR_TIER`(32)。各留一档余量。
+ */
+describe('坏档韧性 · 虚界配置数的上界', () => {
+  /*
+   * 夹具**手写**,不调生成器。
+   *
+   * `generateApprovedWorldAsync` 在本文件里产出的 id 是 `chiyan`(天界世界),
+   * 而 `sanitizeVoidWorld` 要求 `w.id === 'void'` —— 拿生成器当夹具会让整座
+   * 世界按「形状坏」作废,判据静默空转(实测)。单独跑那份 spec 时它又确实产出
+   * `id: 'void'`,说明它依赖全局状态,不适合当夹具。
+   */
+  const world = {
+    id: 'void',
+    name: '试界',
+    seal: '幻',
+    anchorTier: 32,
+    desc: '',
+    ruleText: ['规则一', '规则二'],
+    rules: {},
+    entryCost: 20,
+    fights: 6,
+    healBetweenPct: 0.5,
+    rewardDaoSource: 60,
+    foes: [
+      { name: '甲', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} },
+      { name: '乙', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} }
+    ],
+    guardian: { name: '主', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} },
+    routes: [
+      [
+        { id: 'a1', name: '甲路', desc: '', foe: { name: '甲', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} }, bonus: 8, riskText: '' },
+        { id: 'a2', name: '乙路', desc: '', foe: { name: '乙', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} }, bonus: 10, riskText: '' }
+      ],
+      [
+        { id: 'b1', name: '丙路', desc: '', foe: { name: '甲', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} }, bonus: 12, riskText: '' },
+        { id: 'b2', name: '丁路', desc: '', foe: { name: '乙', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} }, bonus: 14, riskText: '' }
+      ],
+      [
+        { id: 'c1', name: '戊路', desc: '', foe: { name: '甲', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} }, bonus: 8, riskText: '' },
+        { id: 'c2', name: '己路', desc: '', foe: { name: '乙', icon: 'user', atkR: 1, defR: 1, hpR: 1, speed: 1, skills: [], mods: {} }, bonus: 12, riskText: '' }
+      ]
+    ]
+  } as const
+
+  it('真实产出原样通过', () => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    e.$patch({ voidWorld: JSON.parse(JSON.stringify(world)) } as never)
+    e.sanitize()
+    const kept = e.voidWorld
+    expect(kept, '手写夹具没通过 sanitize —— 夹具形状要与 sanitizeVoidWorld 对齐(否则判据空转)').toBeTruthy()
+    expect(kept?.rewardDaoSource, '真实赏格被误改').toBe(60)
+    expect(kept?.entryCost, '真实入场费被误改').toBe(20)
+    expect(kept?.fights, '真实场数被误改').toBe(6)
+    expect(kept?.anchorTier, '真实锚点层级被误改').toBe(32)
+  })
+
+  it('坏的巨值必须封住 —— 这四个数直接进结算', () => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    e.$patch({ voidWorld: { ...JSON.parse(JSON.stringify(world)), rewardDaoSource: 1e300, entryCost: 1e300, fights: 1e300, anchorTier: 1e300 } } as never)
+    e.sanitize()
+    const got = e.voidWorld
+    expect(got, '夹具在坏值下也整座作废了,判据测不到东西').toBeTruthy()
+    expect(got?.rewardDaoSource, '赏格没封住 —— 白得天文数字道源').toBeLessThanOrEqual(200)
+    expect(got?.entryCost, '入场费没封住 —— 永远付不起').toBeLessThanOrEqual(500)
+    expect(got?.fights, '场数没封住 —— 远征永远打不完').toBeLessThanOrEqual(20)
+    expect(got?.anchorTier, '锚点层级没封住').toBeLessThanOrEqual(64)
+  })
+})
