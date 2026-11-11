@@ -36,3 +36,15 @@ export function endgameBusy(worldRun: unknown, secretRealm: unknown, adventureSe
   }
   return null
 }
+
+/**
+ * 终局入口的前置拒因(不是「在途」,而是「还没资格」)。
+ *
+ * 「未择道途」这一句在四处守卫里各手抄了一遍:远征、天道试炼、天道变数、虚界窥探
+ * 都要先有 daoPath 才能开。与 BUSY_REASON 同一种毛病 —— 改词得全仓搜,
+ * 漏一处就是两套说法。真仙已至却还没去道途页选道,是本作最容易被撞上的一道门。
+ */
+export const ENTRY_REASON = {
+  /** 真仙已至、但还没在道途页选定一条道 */
+  noDaoPath: '未择道途'
+} as const

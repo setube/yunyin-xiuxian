@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { artifactMastery, equipMastery } from './masteryMark'
 import { ARTIFACT_MAX_LEVEL } from '@/data/artifacts'
-import { upgradeCapToast } from './forgeText'
+import { artifactCapToast, upgradeCapToast } from './forgeText'
 import { gongfaPeakLabel } from './gongfaText'
 import { buildingPeakToast } from './buildingText'
 
@@ -173,5 +173,33 @@ describe('满级标记 · 玩家挣来的状态要有形状', () => {
     // 地界卡与功法卡都写「圆满 / 已圆满」;这里与地界卡同词,不新造「进修至顶」之类
     expect(gongfaPeakLabel()).toBe('已圆满')
     expect(buildingPeakToast(), '地与功法同一句,不各写一套').toBe(gongfaPeakLabel())
+  })
+})
+
+/**
+ * 同一句状态词只写一处。
+ *
+ * 「祭炼已至上限」原先在 forgeText(core 的 toast 用)、masteryMark(格上的标记用)、
+ * ArtifactPanel(禁用钮的 title 用)各写一遍 —— 改词得记得三个地方。
+ * equipMastery 早就是转调 `upgradeCapToast()` 的写法,法宝这一支当时没跟上。
+ *
+ * 判据两条:两处都说得出同一句、且源码里不再各自写一遍字面量。
+ */
+describe('满级标记 · 状态词只有一份出处', () => {
+  const FORGE = readFileSync(resolve(__dirname, './forgeText.ts'), 'utf-8')
+  const PANEL = readFileSync(resolve(__dirname, '../components/inventory/ArtifactPanel.vue'), 'utf-8')
+
+  it('法宝满重的说法转调 forgeText', () => {
+    expect(artifactMastery(ARTIFACT_MAX_LEVEL)?.label, '该与 core 的 toast 同句').toBe(artifactCapToast())
+    expect(artifactMastery(ARTIFACT_MAX_LEVEL)?.label).toBe('祭炼已至上限')
+    expect(artifactMastery(ARTIFACT_MAX_LEVEL - 1), '未满不挂标记').toBeNull()
+  })
+
+  it('字样只在 forgeText 写一次', () => {
+    expect(FORGE, 'forgeText 该定义它').toContain("return '祭炼已至上限'")
+    const MASTERY = readFileSync(resolve(__dirname, './masteryMark.ts'), 'utf-8')
+    expect(MASTERY, 'masteryMark 又手写了一遍').not.toContain("label: '祭炼已至上限'")
+    expect(PANEL, '法宝面板又手写了一遍').not.toContain("'祭炼已至上限'")
+    expect(PANEL, 'title 该读 artifactCapToast()').toContain('artifactCapToast()')
   })
 })

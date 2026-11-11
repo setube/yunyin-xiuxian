@@ -1,5 +1,5 @@
 import { ARTIFACT_MAX_LEVEL } from '@/data/artifacts'
-import { upgradeCapToast } from './forgeText'
+import { artifactCapToast, upgradeCapToast } from './forgeText'
 
 /**
  * 满级标记:装备强化到顶、法宝祭炼满重,都是玩家投入后才有的一次「到底了」。
@@ -65,7 +65,12 @@ export function equipMastery(level: number, cap: number): MasteryMark | null {
   return level >= cap ? { label: upgradeCapToast() } : null
 }
 
-/** 法宝是否祭炼满重 */
+/**
+ * 法宝是否祭炼满重。
+ *
+ * 说法转调 `artifactCapToast()` —— 同一句话在 forgeText 与这里各写一遍时,
+ * 改词就得记得两个地方(equipMastery 早就是转调 `upgradeCapToast()` 的写法)。
+ */
 export function artifactMastery(level: number): MasteryMark | null {
-  return Number.isFinite(level) && level >= ARTIFACT_MAX_LEVEL ? { label: '祭炼已至上限' } : null
+  return Number.isFinite(level) && level >= ARTIFACT_MAX_LEVEL ? { label: artifactCapToast() } : null
 }

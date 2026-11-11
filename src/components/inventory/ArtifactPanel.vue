@@ -121,7 +121,7 @@
         <button
           class="btn-ghost w-full !py-1.5 !text-[12px] tabular"
           :disabled="!row.upCost || row.short?.short != null"
-          :title="row.upCost ? undefined : '祭炼已至上限'"
+          :title="row.upCost ? undefined : artifactCapToast()"
           @click="upgradeArtifact(row.def.id)"
         >
           <!-- 两种代价都须写出:炼化扣悟道点与灵石(见 forge.artifactUpCost) -->
@@ -186,6 +186,7 @@ import {
 import { artifactBatchPlan, artifactShortfall, artifactUpCost, upgradeArtifact, upgradeArtifactBatch } from '@/core/forge'
 import { STAT_NAMES, statCaveat, statModPhrase } from '@/data/statNames'
 import { artifactSlotReplacedToast, artifactToggleToast } from '@/ui/inventoryText'
+import { artifactCapToast } from '@/ui/forgeText'
 import { cnNumber, formatGN, formatGap, formatPercent } from '@/utils/format'
 import { tint } from '@/utils/colorToken'
 import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'

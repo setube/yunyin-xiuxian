@@ -568,6 +568,25 @@ describe('文案数值对账 · 视图不手抄数量', () => {
   })
 
   /**
+   * 入口前置拒因同规:一句话只写一处。
+   *
+   * 「未择道途」拦的是真仙已至却还没去道途页选道 —— 远征 / 天道试炼 / 天道变数 /
+   * 虚界窥探四个入口各抄了一遍。与在途那四个词同一种毛病:改词得全仓搜。
+   */
+  it('入口前置拒因也只有一份出处', () => {
+    const SITES = [
+      ['../core/expedition.ts', '远征与虚界'],
+      ['../core/endgameService.ts', '试炼与变数']
+    ] as const
+    for (const [path, name] of SITES) {
+      expect(src(path), `${name}又手抄了「未择道途」`).not.toContain("'未择道途'")
+      expect(src(path), `${name}该读 ENTRY_REASON`).toContain('ENTRY_REASON.noDaoPath')
+    }
+    const hub = src('../core/endgameActivity.ts')
+    expect(hub, 'ENTRY_REASON 缺「未择道途」').toContain("noDaoPath: '未择道途'")
+  })
+
+  /**
    * 紫微十二宫各有「所给之路」:data/ziwei 的 channel(修行/同道/因缘/灵兽…)。
    * 原先界面只写「所主 · 管什么」,说不到它落在哪一路 —— 而十二宫各管一路正是这张盘的骨架。
    *
