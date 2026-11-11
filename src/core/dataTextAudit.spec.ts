@@ -531,16 +531,23 @@ describe('文案数值对账 · 视图不手抄数量', () => {
   /**
    * 四个在途状态词以 endgameActivity 的 BUSY_REASON 为准(AGENTS.md 明文)。
    *
-   * 有四处拒绝路径并不经过 endgameBusy(闭关与历练互斥的另一半、秘境入口自己那道门、
-   * 首页状态行),从前各自手抄一份字面量 —— 改词就得全仓搜,漏一处就出现两套说法。
+   * 有六处拒绝路径并不经过 endgameBusy(闭关与历练互斥的两端、秘境入口自己那道门、
+   * 首页状态行、以及历练页开模式窗前的闭关拦截),从前各自手抄一份字面量 ——
+   * 改词就得全仓搜,漏一处就出现两套说法。
+   *
+   * 闭关与历练互斥是**一对**:startRetreat 拦「历练在途」、chooseMode 与 startExploration
+   * 拦「闭关中」。前四处早改成了常量,这一对的两处一直手抄着 ——
+   * 于是「改词」这件事在互斥关系的两端只剩一边有人管。
    *
    * 故障注入:把任一处改回字面量,本条红。
    */
   it('四个在途状态词只有一份出处,各处取 BUSY_REASON', () => {
     const SITES = [
       ['../core/exploration.ts', 'startExploration'],
+      ['../core/earlyGameService.ts', 'startRetreat'],
       ['../core/secretRealm.ts', '秘境入口'],
       ['../ui/homeStatus.ts', '首页状态行'],
+      ['../views/AdventureView.vue', '历练页的闭关拦截'],
       ['../core/endgameActivity.ts', '判据本体']
     ] as const
     const WORDS = ['闭关中', '远征在途', '身在秘境', '历练在途']

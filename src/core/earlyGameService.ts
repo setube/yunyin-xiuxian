@@ -18,6 +18,7 @@ import {
   earlyEventDecay
 } from '@/data/earlyGame'
 import { gn, gnZero, gte, subClamp } from '@/utils/gnum'
+import { BUSY_REASON } from './endgameActivity'
 import { expFromSecs } from '@/core/formulas'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { enlightenmentOptionText } from '@/ui/enlightenmentText'
@@ -131,7 +132,8 @@ export function startRetreat(): boolean {
 
   const adventure = useAdventureStore()
   if (adventure.session) {
-    useUiStore().toast('历练在途', 'warn')
+    // 与 startExploration 的拒因同词:取 BUSY_REASON,不另抄一份字面量
+    useUiStore().toast(BUSY_REASON.exploration, 'warn')
     return false
   }
 
