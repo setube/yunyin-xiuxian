@@ -116,7 +116,15 @@ async function cleanRetry(route, label) {
    * 但若指纹恰好采在 toast 入队之前,就会把「有回执的拒绝」误判成死按钮。
    * 故点完立刻轮询一次 toast 数量,出现过就当有反应。
    */
-  await b.click({ timeout: 800 }).catch(() => {})
+  /*
+   * 点不中就返回 null(判不了),不要往下比指纹 ——
+   * 没点到的按钮指纹当然不变,那会被当成「真死控件」。
+   */
+  const ok = await b
+    .click({ timeout: 800 })
+    .then(() => true)
+    .catch(() => false)
+  if (!ok) return null
   let sawToast = false
   for (let i = 0; i < 12 && !sawToast; i += 1) {
     sawToast = await page.evaluate(() => document.querySelectorAll('[class*=toast]').length > 0)
@@ -333,7 +341,17 @@ async function clickInsideModal(route) {
     await target.evaluate(el => (el.dataset.smokeClicked = '1')).catch(() => {})
     const before = errors.length
     const beforeFp = await fingerprint()
-    await target.click({ timeout: 800 }).catch(() => {})
+    /*
+     * 与主循环同一条口径:点不中就不计数、也不判「点了没反应」。
+     *
+     * 这里原先也是 `.catch(() => {})` 之后无条件 `clicked += 1` ——
+     * 主循环修了、这一处没修,超时仍会被当成「有反应」(计数加了、指纹没变再判死按钮)。
+     */
+    const modalClickOk = await target
+      .click({ timeout: 800 })
+      .then(() => true)
+      .catch(() => false)
+    if (!modalClickOk) continue
     clicked += 1
     steps += 1
     await settle()
@@ -399,7 +417,27 @@ for (const route of ROUTES) {
     const inView = await b
       .evaluate(el => {
         const r = el.getBoundingClientRect()
-        return r.top >= 0 && r.bottom <= innerHeight && r.height > 0
+        if (r.width <= 0 || r.height <= 0) return false
+        /*
+         * 两个方向都要判,且要认**容器裁切**。
+         *
+         * 只比 `r.top >= 0 && r.bottom <= innerHeight` 不够:
+         *   · 横向在视口外(侧栏滑出、横向滚动)同样点不着,却没被拦;
+         *   · `main` 自己可能是滚动容器,元素在 window 里"可见"但在 main 的可视区之外。
+         * 故用「元素中心是否同时落在视口与各层滚动容器的可视区内」,
+         * 这与 Playwright 点击时的实际命中判据更接近。
+         */
+        const cx = r.left + r.width / 2
+        const cy = r.top + r.height / 2
+        if (cx < 0 || cx > innerWidth || cy < 0 || cy > innerHeight) return false
+        for (let p = el.parentElement; p; p = p.parentElement) {
+          const st = getComputedStyle(p)
+          const scrollable = /(auto|scroll)/.test(st.overflowY) || /(auto|scroll)/.test(st.overflowX)
+          if (!scrollable) continue
+          const pr = p.getBoundingClientRect()
+          if (cy < pr.top || cy > pr.bottom || cx < pr.left || cx > pr.right) return false
+        }
+        return true
       })
       .catch(() => false)
     if (!inView) continue
