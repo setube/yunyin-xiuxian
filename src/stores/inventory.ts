@@ -11,6 +11,16 @@ import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactValue } fr
 import { BAG_CAPACITY, EQUIP_AFFIX_HARD_CAP } from '@/data/constants'
 import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
 import { EQUIP_COUNTER_MAX } from '@/data/constants'
+
+/**
+ * 单件装备「累计投入器灵尘」的读档上界。
+ *
+ * 这个字段会被 `enhanceInvested` **原样退还给玩家**(分解/回收时),
+ * 坏档写 `1e300` 就等于让玩家白得 1e300 器灵尘。
+ * 上界按真实最大投入算:满强化(15 级、最高层级、最高品质)累计实测 8743,
+ * 取两万留余量 —— 正常到不了,越过的必定是坏档。
+ */
+const INVESTED_DUST_MAX = 20_000
 import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { pillDef } from '@/data/pills'
 import { QUALITIES } from '@/data/qualities'
@@ -62,10 +72,10 @@ export const useInventoryStore = defineStore(
           uid: it.uid,
           templateId: typeof it.templateId === 'string' ? it.templateId : '',
           quality: typeof rawQuality === 'string' && qualityIds.has(rawQuality as never) ? (rawQuality as EquipmentInstance['quality']) : 'mortal',
-          tier: Math.min(MAX_EQUIP_TIER, Math.max(1, Math.floor(asFiniteNumber(it.tier, 1, 1)))),
+          tier: Math.floor(asFiniteNumber(it.tier, 1, 1, MAX_EQUIP_TIER)),
           // 只夹到「基础上限 + 满建筑加成」量级;实际上限由执行侧 equipLevelCap() 把关。
           // 上界取自建筑表推导,不写死数字:炼器台上限一改,这里跟着走。
-          level: Math.min(EQUIP_LEVEL_SANITIZE_CAP, Math.max(0, Math.floor(asFiniteNumber(it.level, 0, 0)))),
+          level: Math.floor(asFiniteNumber(it.level, 0, 0, EQUIP_LEVEL_SANITIZE_CAP)),
           affixes,
           locked: it.locked === true,
           /*
@@ -73,14 +83,26 @@ export const useInventoryStore = defineStore(
            * 没有格式化兜底 —— 坏档写 1e300 会印成「已重铸 1e+300 次」。
            * 上界取一万:一次游戏里重铸几千次已极罕见,到不了的必定是坏档。
            */
-          reforgeCount: Math.min(EQUIP_COUNTER_MAX, Math.floor(asFiniteNumber(it.reforgeCount, 0, 0))),
+          reforgeCount: Math.floor(asFiniteNumber(it.reforgeCount, 0, 0, EQUIP_COUNTER_MAX)),
           sealedAffixIds: [...new Set(asStringArray(it.sealedAffixIds))].filter(id => affixes.some(a => a.id === id)),
-          transferCount: Math.min(EQUIP_COUNTER_MAX, Math.floor(asFiniteNumber(it.transferCount, 0, 0))),
+          transferCount: Math.floor(asFiniteNumber(it.transferCount, 0, 0, EQUIP_COUNTER_MAX)),
           note: typeof it.note === 'string' && it.note ? truncateCodePoints(it.note, 4) : undefined,
           ...(it.invested && typeof it.invested === 'object'
             ? {
                 invested: {
-                  dust: Math.floor(asFiniteNumber((it.invested as { dust?: unknown }).dust, 0, 0)),
+                  /*
+                   * 累计投入的器灵尘 —— 它会经 `enhanceInvested` **原样退还给玩家**
+                   * (分解/回收时),坏档写 1e300 就等于让玩家白得 1e300 器灵尘。
+                   *
+                   * 上界按真实最大投入算:满强化(15 级、最高层级、最高品质)累计实测 8743,
+                   * 取两万留余量。越界**归零**而不是夹到上界 —— 夹到两万仍是白送两万,
+                   * 与「道源越界归零」同一条理:坏值本就没有可信来源,
+                   * 归零的语义是「这件装备没投入过」。
+                   */
+                  dust: (() => {
+                    const v = Math.floor(asFiniteNumber((it.invested as { dust?: unknown }).dust, 0, 0))
+                    return v > INVESTED_DUST_MAX ? 0 : v
+                  })(),
                   stone: asBoundedGNum((it.invested as { stone?: unknown }).stone)
                 }
               }
@@ -146,7 +168,7 @@ export const useInventoryStore = defineStore(
         // 坏重数会绕过满重判断,把祭炼价与悟道点算成 NaN
         .map(a => ({
           defId: a.defId,
-          level: Math.min(ARTIFACT_MAX_LEVEL, Math.max(0, Math.floor(asFiniteNumber(a.level, 0, 0))))
+          level: Math.floor(asFiniteNumber(a.level, 0, 0, ARTIFACT_MAX_LEVEL))
         }))
       // 祭炼位:去重、只留在库的、裁到 ARTIFACT_MAX_SLOTS(与 toggleArtifact/applyLoadout 同尺)
       const ownedArtifactIds = new Set(artifacts.value.map(a => a.defId))

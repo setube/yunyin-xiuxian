@@ -952,3 +952,44 @@ describe('坏档韧性 · 战报倍率与回合数的上界', () => {
     expect(got?.bonus, 'damageBonus 没被夹').toBeLessThanOrEqual(10)
   })
 })
+
+/**
+ * 装备「累计投入」的器灵尘要有守卫 —— 它会被**原样退还**。
+ *
+ * `enhanceInvested` 在分解/回收时直接返回 `item.invested.dust`,
+ * 坏档写 `1e300` 就等于让玩家白得 1e300 器灵尘。
+ *
+ * 上界按真实最大投入算:满强化(15 级、最高层级、最高品质)累计实测 8743。
+ * 越界**归零**而不是夹到上界 —— 夹到两万仍是白送两万,
+ * 与「道源越界归零」同一条理。
+ */
+describe('坏档韧性 · 装备投入的器灵尘不许凭空退还', () => {
+  const patchInvested = (v: unknown): { dust?: number } | undefined => {
+    setActivePinia(createPinia())
+    const inv = useInventoryStore()
+    inv.$patch({
+      items: [{ uid: 'x', templateId: 'w_zidian', quality: 'mortal', tier: 1, level: 0, affixes: [], invested: { dust: v, stone: { m: 0, e: 0 } } }]
+    } as never)
+    inv.sanitize()
+    return inv.items[0]?.invested
+  }
+
+  it('巨值归零,分解时不退还', () => {
+    for (const v of [1e300, Number.MAX_VALUE, 1e9]) {
+      const got = patchInvested(v)
+      expect(got?.dust, `invested.dust ${v} 该归零`).toBe(0)
+    }
+  })
+
+  it('真实投入原样保留', () => {
+    // 满强化累计实测 8743;几百到几千都是正常档
+    for (const v of [0, 500, 1000, 8743]) {
+      expect(patchInvested(v)?.dust, `真实投入 ${v} 被误清`).toBe(v)
+    }
+  })
+
+  it('上界须覆盖得住满强化的真实累计', () => {
+    // 15 级满强化 + 最高层级 + 最高品质,实测 8743;上界两万留一档余量
+    expect(20_000, '上界低于满强化的真实累计').toBeGreaterThan(8743)
+  })
+})
