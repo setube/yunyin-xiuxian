@@ -114,6 +114,16 @@ class GameEngine {
       this.lastTickAt = now
       return
     }
+    /*
+     * 时钟回拨要**重锚**,不能直接 return。
+     *
+     * `lastTickAt` 是上一次 tick 的时刻;系统时钟往回拨之后,它会停在「未来」,
+     * 于是 `dt <= 0` 每一拍都成立、`lastTickAt` 永不更新 ——
+     * 引擎会一直停摆到真实时间追平那个未来时刻(回拨 5 分钟就停 5 分钟)。
+     * `start()` 与 `offline` 都有同一处理(`lastActiveAt > now` 时重锚),
+     * tick 这里先前漏了。
+     */
+    if (now < this.lastTickAt) this.lastTickAt = now
     const dt = (now - this.lastTickAt) / 1000
     if (dt <= 0) return
 
