@@ -76,3 +76,41 @@ describe('弹窗巡逻 · 引擎自动弹的两扇', () => {
     expect(block, '没弹出时该进 notOpened,否则「没量到」会被当成「通过」').toContain('notOpened.push')
   })
 })
+
+/**
+ * 覆盖率下限。
+ *
+ * `notOpened` / `twoStepMissed` 这两份清单只打印、不参与判定(各有合理原因:
+ * 夹具没铺到前置、有些窗本就没有不可逆操作)。正因如此,**入口大面积失效时脚本照样报绿** ——
+ * 量到的扇数趋近零,「开出来的每一扇都量过」就成了空话。
+ *
+ * 故脚本末尾给两个下限。这里钉住它们:下限被顺手删掉或调成 0,
+ * 这道兜底就没了,而脚本的其他部分看不出任何异常。
+ */
+describe('modal-patrol · 覆盖率下限', () => {
+  it('两个下限都存在且非零', () => {
+    const opened = /const MIN_OPENED = (\d+)/.exec(SRC)
+    const twoStep = /const MIN_TWO_STEP = (\d+)/.exec(SRC)
+    expect(opened, '找不到 MIN_OPENED —— 下限被删了,量到零扇也会报绿').toBeTruthy()
+    expect(twoStep, '找不到 MIN_TWO_STEP —— 两步确认一扇没探到也会报绿').toBeTruthy()
+    expect(Number(opened![1]), 'MIN_OPENED 是 0 等于没有下限').toBeGreaterThan(6)
+    expect(Number(twoStep![1]), 'MIN_TWO_STEP 是 0 等于没有下限').toBeGreaterThan(1)
+  })
+
+  it('两个下限各自都要 exit(1)', () => {
+    /*
+     * 必须**分段**判。两个 if 块里各有一个 `process.exit(1)`,
+     * 整段一起判时删掉任一个,另一个仍能让 toContain 成立 —— 实测漏过一次。
+     */
+    const at = SRC.indexOf('const MIN_OPENED')
+    const twoStepAt = SRC.indexOf('MIN_TWO_STEP)', at)
+    expect(at, '找不到下限块').toBeGreaterThan(-1)
+    expect(twoStepAt, '找不到两步确认那条判定').toBeGreaterThan(at)
+    const openedBlock = SRC.slice(at, twoStepAt)
+    const twoStepBlock = SRC.slice(twoStepAt, twoStepAt + 400)
+
+    expect(openedBlock, '开了几扇没判据').toContain('openedCount < MIN_OPENED')
+    expect(openedBlock, '「开到几扇」那条低于下限时没有 exit(1) —— 只打印等于没判').toContain('process.exit(1)')
+    expect(twoStepBlock, '两步确认那条低于下限时没有 exit(1)').toContain('process.exit(1)')
+  })
+})

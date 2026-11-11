@@ -30,11 +30,16 @@ function realRoutes(): string[] {
   return [...new Set(paths)]
 }
 
-/** 某脚本里 `const ROUTES = [...]` 的条目 */
-function scriptRoutes(file: string): string[] {
+/**
+ * 某脚本里 `const <name> = [...]` 的条目。
+ *
+ * 清单的变量名各script 不同(ROUTES / TOUCH_ROUTES),故名字由调用方给 ——
+ * 写死 ROUTES 会让 detail-geometry 那一条静默读空、永远通过。
+ */
+function scriptRoutes(file: string, constName = 'ROUTES'): string[] {
   const src = readFileSync(resolve(ROOT, 'scripts', file), 'utf-8')
-  const at = src.indexOf('const ROUTES = [')
-  expect(at, `${file} 里找不到 const ROUTES = [`).toBeGreaterThan(-1)
+  const at = src.indexOf(`const ${constName} = [`)
+  expect(at, `${file} 里找不到 const ${constName} = [`).toBeGreaterThan(-1)
   const end = src.indexOf(']', at)
   expect(end, `${file} 的 ROUTES 没有收尾`).toBeGreaterThan(at)
   const block = src.slice(at, end)
@@ -55,22 +60,33 @@ describe('QA 脚本的页面清单与路由表一致', () => {
   })
 
   it.each([
-    ['ui-smoke.mjs'],
-    ['focus-check.mjs'],
-    ['aria-check.mjs'],
-    ['layout-check.mjs']
-  ])('%s 覆盖的正是「路由表减去首启两页」', file => {
-    const mine = scriptRoutes(file).sort()
+    ['ui-smoke.mjs', 'ROUTES'],
+    ['focus-check.mjs', 'ROUTES'],
+    ['aria-check.mjs', 'ROUTES'],
+    ['layout-check.mjs', 'ROUTES'],
+    /*
+     * detail-geometry 的清单叫 TOUCH_ROUTES —— 它是「后期档扫触控下限」那一档的页面集。
+     * 漏一页不会报错:那一页的触控就是把 20px 的钮也测不出来。
+     */
+    ['detail-geometry.mjs', 'TOUCH_ROUTES']
+  ])('%s 覆盖的正是「路由表减去首启两页」', (file, constName) => {
+    const mine = scriptRoutes(file, constName).sort()
     const missing = expected.filter(p => !mine.includes(p))
     const extra = mine.filter(p => !expected.includes(p))
     expect(missing, `${file} 漏了这些页,它们在该脚本里永远不会被扫:${missing.join(', ')}`).toEqual([])
     expect(extra, `${file} 里有路由表没有的页:${extra.join(', ')}`).toEqual([])
   })
 
-  it('四份清单彼此一致', () => {
-    const lists = ['ui-smoke.mjs', 'focus-check.mjs', 'aria-check.mjs', 'layout-check.mjs'].map(f => ({
-      file: f,
-      routes: scriptRoutes(f).sort()
+  it('五份清单彼此一致', () => {
+    const lists = [
+      ['ui-smoke.mjs', 'ROUTES'],
+      ['focus-check.mjs', 'ROUTES'],
+      ['aria-check.mjs', 'ROUTES'],
+      ['layout-check.mjs', 'ROUTES'],
+      ['detail-geometry.mjs', 'TOUCH_ROUTES']
+    ].map(([f, n]) => ({
+      file: f!,
+      routes: scriptRoutes(f!, n).sort()
     }))
     const base = lists[0]!
     for (const l of lists.slice(1)) {
