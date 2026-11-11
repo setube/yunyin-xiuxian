@@ -75,7 +75,14 @@ export function undertakeDaily(daily: DailyChallenge): ExpeditionResult | null {
   // 判闸用当下本地日号,不信 daily.day:驻足跨本地午夜时 daily 仍可能是昨天的考题,
   // 按传参判会让同一会话连领两份天道赏。
   const day = todayLocalNum()
-  if (endgame.dailyDoneDay === day) {
+  /*
+   * 用 `>=` 而不是 `===` —— **时钟回拨也要挡住**。
+   *
+   * 等号只挡「今天已领」;把系统时间调回昨天,day 变小、
+   * dailyDoneDay 仍是那个较大的值,等号不成立 → 天道赏可以再领一次。
+   * 与洞府巡游(第 54 轮)、日课翻日(第 63 轮)是同一类:日期判据要认「更晚」,不能只认「相等」。
+   */
+  if (typeof endgame.dailyDoneDay === 'number' && endgame.dailyDoneDay >= day) {
     ui.toast('今日已完成', 'info')
     return null
   }
