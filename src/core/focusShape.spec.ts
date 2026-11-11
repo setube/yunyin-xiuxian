@@ -100,3 +100,35 @@ describe('focus-check · 首启两页的键盘可达性', () => {
     expect(BLOCK, '没验落位到 #/create').toContain("'#/create'")
   })
 })
+
+
+/**
+ * 扫描面必须包含表单控件。
+ *
+ * 原先只扫 `button, a[href], [role=button]` —— 设置页那四个 checkbox
+ * 不在其中,而它们真能 Tab 到、也能用空格切。判据扫不到它们,
+ * 「能不能到」这个问题在那四个控件上就从未被问过。
+ *
+ * 实测(后期档 17 页):只有 /settings 的四个 checkbox 落在扫描面之外,
+ * 其余页面没有可聚焦但漏扫的元素。
+ */
+describe('focus-check · 扫描面含表单控件', () => {
+  const at = SRC.indexOf('const ROUTES = [')
+  const block = SRC.slice(at, at + 6000)
+
+  it('选择器含 input / select / textarea', () => {
+    expect(block, '又漏了表单控件 —— 设置页那四个 checkbox 会落到扫描面外').toContain('input:not([type=hidden])')
+    expect(block, '该含 select').toContain('select')
+    expect(block, '该含 textarea').toContain('textarea')
+  })
+
+  it('仍保留原有的三类', () => {
+    for (const sel of ['button', 'a[href]', '[role=button]']) {
+      expect(block, `扫描面丢了 ${sel}`).toContain(sel)
+    }
+  })
+
+  it('隐藏输入不算(取不到的看不见,报出来是噪音)', () => {
+    expect(block, '该排除 type=hidden').toContain(':not([type=hidden])')
+  })
+})
