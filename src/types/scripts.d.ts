@@ -21,6 +21,27 @@ declare module '*/scripts/lib/saveFixture.mjs' {
 
   /** 后期档:五个 QA 脚本共用的基准 */
   export function lateSlices(): FixtureSlices
+  /**
+   * 中期档:内容已展开、终局未开(major < WORLD_BREAK_MAJOR)。
+   * 补的是 lateSlices(终局全开)与前不久那档之间从没被扫过的一段。
+   *
+   * `dq` 等深层字段由判据逐条读,故这里给的是「夹具用到的形状」而非完整存档类型;
+   * `dongfu.levels` / `veinPoints` 只声明成索引签名,判据自己按 data 表核 key。
+   */
+  export interface FixturePlayer {
+    major: number
+    sub: number
+    age: number
+    linggen: { roots: { element: string; aptitude: number }[]; gradeName: string; growthMult: number } | null
+    reincarnation: { count: number; insight: number; daoFruit: number; [k: string]: unknown }
+    [k: string]: unknown
+  }
+  export interface FixtureMidSlices extends FixtureSlices {
+    player: FixturePlayer
+    dongfu: { levels: Record<string, number>; veinPoints: Record<string, number>; veinMain: string | null }
+    endgame: { daoPath: string | null; daoSource: number; [k: string]: unknown }
+  }
+  export function midSlices(major?: number): FixtureMidSlices
   /** 满行囊档:120 件九词条神品,九个可穿戴槽全穿上(压测用) */
   export function stressSlices(): FixtureSlices
   /** 把分片加密写进浏览器 localStorage */
