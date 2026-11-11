@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { VEINS } from '@/data/veins'
 import { INSIGHT_DISCOUNT_CAP, INSIGHT_DISCOUNT_PER_POINT, INSIGHT_EFFECT_NAME } from '@/data/veins'
 import { formatPercent } from '@/utils/format'
@@ -56,3 +58,43 @@ describe('灵脉投点提示 · 文言仍报清主副与灵石', () => {
     expect(veinSwitchDoneToast('聚灵')).toBe('主脉改立「聚灵」')
   })
 })
+
+/**
+ * 卡面状态词只能从 veinText 取。
+ *
+ * `VeinInvestCard.investedStateLabel` 原先把「主脉圆满 / 副脉已至上限」与「容量已尽」
+ * 三句又手写了一遍 —— 而 core 的拒绝回执用的是上两个函数。
+ * 两份字面量改一处就会对不上:卡面说「副脉已至上限」,点了却回执「主脉圆满」。
+ *
+ * 判据:组件读那两个函数,且模板与脚本里不再出现那三句的字面量。
+ */
+describe('灵脉卡面 · 状态词只从 veinText 取', () => {
+  const CARD = stripComments(readFileSync(resolve(__dirname, '../components/dongfu/VeinInvestCard.vue'), 'utf-8'))
+
+  it('读共享实现,不自己写', () => {
+    expect(CARD, '卡面该读 veinPeakToast').toContain('veinPeakToast(isMain(veinId))')
+    expect(CARD, '卡面该读 veinFullToast').toContain('veinFullToast()')
+  })
+
+  it('那三句的字面量不再出现在组件里', () => {
+    for (const word of ['主脉圆满', '副脉已至上限', '容量已尽']) {
+      expect(CARD, `组件又手写了一遍「${word}」`).not.toContain(`'${word}'`)
+    }
+  })
+
+  it('两种说法确实由共享函数产出一致', () => {
+    expect(veinPeakToast(true)).toBe('主脉圆满')
+    expect(veinPeakToast(false)).toBe('副脉已至上限')
+    expect(veinFullToast()).toBe('容量已尽')
+  })
+})
+
+/** 剥掉注释:注释里提到这些词不算玩家可见文案 */
+function stripComments(src: string): string {
+  return src
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .map(line => line.replace(/(^|[^:])\/\/.*$/, '$1'))
+    .join('\n')
+}
