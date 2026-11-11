@@ -378,4 +378,27 @@ describe('内容可达性 · 洞府惩罚 buff 的命名约定', () => {
       expect(buffDef(`cave_penalty_${t}`), `惩罚类型 ${t} 拼出的 cave_penalty_${t} 在 BUFFS 里不存在 —— 惩罚会静默失效`).toBeDefined()
     }
   })
+
+  /**
+   * 奖励侧的 buff 引用同样要查。
+   *
+   * 上一条只用 `penalty.type` 拼名字,不碰 `reward.value`。而奖励也可以是一条增益
+   * (「吸纳药气」给 cave_furnace_cult),写错 id 时走的是同一个 `if (!def) return`,
+   * 一样静默失效 —— 玩家选了那个选项,什么都没发生,也没有回执。
+   * 实测:把那条 value 改成不存在的 id,上一条判据照样绿。
+   */
+  it('reward 指向的 buff id 都真实存在', () => {
+    const ids = new Set<string>()
+    for (const pool of Object.values(CAVE_EVENT_POOL)) {
+      for (const ev of pool as { options: { reward?: { type?: string; value?: unknown } }[] }[]) {
+        for (const opt of ev.options ?? []) {
+          if (opt.reward?.type === 'buff' && typeof opt.reward.value === 'string') ids.add(opt.reward.value)
+        }
+      }
+    }
+    expect(ids.size, '没扫到任何奖励 buff,守卫空转').toBeGreaterThan(0)
+    for (const id of ids) {
+      expect(buffDef(id), `奖励 buff ${id} 在 BUFFS 里不存在 —— 选了那个选项会静默失效`).toBeDefined()
+    }
+  })
 })
