@@ -700,7 +700,15 @@ export const usePlayerStore = defineStore(
          * 正常游玩几百年也转不了几万次,不需要也不该在写入端夹。
          */
         count: reincarnation.value.count + 1,
-        heritageUses: {}
+        heritageUses: {},
+        /*
+         * 本世立下的题与签下的契都要清 —— 它们的字段注释一直写着「转世时清空」,
+         * 而这个 `...reincarnation.value` 展开会把它们原样带过来。
+         * 后果不是摆设:`lifeTrialService` 用 `if (trial) return false` 挡「再签一张」,
+         * 新世带着旧契就永远签不了新的。
+         */
+        trial: null,
+        vow: null
       }
       linggen.value = newLinggen
       major.value = birthMajorFloor(reincarnation.value.heritage)
@@ -736,6 +744,13 @@ export const usePlayerStore = defineStore(
       // 世号当场同步,不等下一次 sanitize
       suppressLife.value = reincarnation.value.count
       petId.value = null
+      /*
+       * 本世道侣关系要清 —— 注释写着「转世时清空」,而先前漏了它。
+       * `daoluService` 用 `if (player.bond) return false` 挡「这一世只能遇一位」,
+       * 新世带着旧道侣就再也遇不到新的一位。
+       * 历世履历在 `reincarnation.bonds` 里,那份保留(宿缘重逢的依据)。
+       */
+      bond.value = null
       dongfu.resetForRebirth()
       apprentices.resetForRebirth()
       // 每世重掷道号,不与上世撞名(见 samsaraAudit 的姓名一行)
