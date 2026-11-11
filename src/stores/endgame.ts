@@ -99,11 +99,15 @@ const VOID_NODE_BONUS_MAX = 100
  * 界域/试炼战绩与世号的读档上界 —— 这几处都是**裸插值**,没有格式化兜底。
  *
  * 「已破 ×N」「最佳 N 回合」「第N世」直接印数字:坏档写 1e300 就成了科学计数。
- * 一局里破一界几百次、一场打几百回合都已是极值;世号与 `player.ts` 的
- * `LIFE_COUNTER_CAP` 是同一个量,它还兼任筛选依据(`m.life === currentLife`)
- * 与随机种子成分(`seedOf(targetId, life)`)。
+ * 一局里破一界几百次、一场打几百回合都已是极值。
+ *
+ * **世号的上界必须比写入端高一档**:多个写入点记的是
+ * `player.reincarnation.count + 1`(道痕、里程碑、试炼记录),而
+ * `player.ts` 里 `count` 的读档守卫是 1e6。若这里取同一个数,
+ * `count` 正好等于上限时写入端会写 `cap + 1`,读回来却被夹成 `cap` ——
+ * 本世道痕/里程碑的世号对不上,整块记录消失(审查意见指出的)。
  */
-const LIFE_COUNTER_CAP = 1_000_000
+const LIFE_COUNTER_CAP = 10_000_000
 
 const WORLD_CLEARS_MAX = 10_000
 const TRIAL_CLEARS_MAX = 10_000
