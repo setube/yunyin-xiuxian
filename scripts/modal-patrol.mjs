@@ -495,13 +495,24 @@ async function patrol(page, name, click) {
   await page.keyboard.press('Escape').catch(() => {})
   await page.waitForTimeout(300)
 
+  if (!judge(name, audit)) return
+  console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} ${name} · ${audit.count} 控件`)
+}
+
+/**
+ * 一扇弹窗的判据集 —— 点开的十九扇与引擎自动弹的两扇**共用这一份**。
+ *
+ * 抽出来的理由:两处若各写一份,以后加一条判据只改一处,另一处悄悄不查。
+ * 返回 false 表示这扇窗判不了(没量到面板 / 控件数为零),调用方据此跳过打印。
+ */
+function judge(name, audit) {
   if (!audit) {
-    fail(`[${WIDTH}x${HEIGHT}] ${name}: 点开了但量不到 .modal-panel`)
-    return
+    fail(`[${WIDTH}x${HEIGHT}] ${name}: 量不到 .modal-panel`)
+    return false
   }
   if (audit.count === 0) {
     fail(`[${WIDTH}x${HEIGHT}] ${name}: 面板里一个控件都没数到(判据没跑到东西)`)
-    return
+    return false
   }
   if (!audit.label) fail(`[${WIDTH}x${HEIGHT}] ${name}: 没有可访问名(读屏只会念「对话框」)`)
   if (audit.unnamed.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 有 ${audit.unnamed.length} 个无名控件`)
@@ -511,8 +522,7 @@ async function patrol(page, name, click) {
   if (audit.squeezed.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 有块被挤成竖排:${audit.squeezed.join(' | ')}`)
   if (audit.wrapped.length) fail(`[${WIDTH}x${HEIGHT}] ${name}: 有按钮正文折了行:${audit.wrapped.join(' | ')}`)
   if (audit.scrollClip) fail(`[${WIDTH}x${HEIGHT}] ${name}: 滚到底后最后一块内容被裁:${audit.scrollClip}`)
-
-  console.log(`  ${audit.small.length || audit.dimDisabled.length ? '✗' : '✓'} ${name} · ${audit.count} 控件`)
+  return true
 }
 
 /**
@@ -857,6 +867,68 @@ async function clickTab(page, re) {
   const { page, context } = await open('/build')
   await patrol(page, '构筑保存', () => clickByText(page, /存当前构筑|快照已满/))
   await context.close()
+}
+
+/*
+ * 引擎自动弹的两扇窗:悟道顿悟 / 洞府巡游。
+ *
+ * 十九扇窗都是「点一下就开」,这两扇不是 —— 它们由引擎每 30s 轮询、按
+ * `EARLY_EVENT_DECAY` 的概率自己浮上来,而且**只在前期档出现**:
+ * cavePatrol 在元婴期起衰减到 0(`yuanying: 0`, `later: 0`),
+ * 而其余脚本都用后期档( major 14),于是它们从未在真实 DOM 里被量过。
+ *
+ * 这里单开一个炼气期上下文、把 Math.random 还原成真随机,等它自己弹。
+ * 判据与其余十九扇同一套(auditModal:触控下限 / 可访问名 / 禁用态对比度 / 面板名)。
+ */
+{
+  const base = lateSlices()
+  const context = await browser.newContext({ viewport: { width: WIDTH, height: HEIGHT } })
+  await context.route('**/*', r => {
+    const url = r.request().url()
+    if (/^(file|data|blob):/.test(url)) return r.continue()
+    return r.abort()
+  })
+  await seedSave(context, {
+    ...base,
+    settings: { ...base.settings, theme: THEME },
+    // 炼气期 + 今日未巡游:两扇窗的触发概率都是 1.0
+    player: { ...base.player, major: 0, sub: 3, age: 20, lastCaveEventDay: 0, enlightenmentAt: 0 },
+    dongfu: { levels: { mansion: 1, array: 1, alchemy: 1, forge: 1, field: 2, library: 1, beast: 1 }, veinPoints: {}, veinMain: null },
+    endgame: { ...base.endgame, daoPath: null, daoSource: 0 }
+  })
+  const page = await context.newPage()
+  page.on('pageerror', e => fail(`运行时异常:${String(e.message).slice(0, 120)}`))
+  await page.goto(`${INDEX}#/`, { waitUntil: 'load' })
+  await page.waitForTimeout(4200)
+  // 收掉开场提示条;**不**钉死 Math.random(那正是这两扇窗的触发源)
+  await page.evaluate(() => {
+    for (const b of document.querySelectorAll('.pointer-events-none.fixed button')) b.click()
+  })
+
+  const want = ['悟道顿悟', '洞府巡游']
+  const got = new Set()
+  for (let i = 0; i < 70 && got.size < want.length; i += 1) {
+    await page.waitForTimeout(1000)
+    const title = await page.evaluate(() => {
+      const d = document.querySelector('[role="dialog"]')
+      return d ? (d.getAttribute('aria-label') || d.querySelector('h2,h3')?.textContent?.trim() || '') : ''
+    })
+    if (!title || !want.includes(title) || got.has(title)) continue
+    got.add(title)
+    PATROLLED += 1
+    const audit = await auditModal(page)
+    if (judge(title, audit)) console.log(`  ✓ ${title} · ${audit.count} 控件(引擎自动弹出,前期档)`)
+    // 关掉:两扇窗都有「忽略 / 离开」类按钮
+    await page.evaluate(() => {
+      const d = document.querySelector('[role="dialog"]')
+      const b = d && [...d.querySelectorAll('button')].find(x => /忽\s*略|离\s*开|知道了/.test(x.textContent || ''))
+      if (b) b.click()
+    })
+    await page.waitForTimeout(600)
+  }
+  await context.close()
+  const missed = want.filter(w => !got.has(w))
+  if (missed.length) notOpened.push(...missed)
 }
 
 await browser.close()
