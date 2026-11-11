@@ -178,7 +178,14 @@ export function formatPercent(x: number, dp = 1): string {
   return `${trimZero(s)}%`
 }
 
-/** 时长:秒 → 中文可读;非法值(NaN/Infinity)显示 -- */
+/**
+ * 时长:秒 → 中文可读;非法值(NaN/Infinity)显示 --。
+ *
+ * 末位为零的单位不写:整小时写「1小时」,不写「1小时0分」。
+ * 这条与 formatChoiceSpan 的「整分钟写 10分钟」同一口径,是对同一种缺口的补齐 ——
+ * 修行页的「修为圆满约 100天0小时」、历练页的「行程 1小时0分」都印着那个没信息的 0,
+ * 而中文时长本就没有「1天0小时」这种说法。
+ */
 export function formatDuration(totalSec: number): string {
   if (!Number.isFinite(totalSec)) return NOT_AVAILABLE
   const sec = Math.max(0, Math.floor(totalSec))
@@ -186,9 +193,9 @@ export function formatDuration(totalSec: number): string {
   const h = Math.floor((sec % 86400) / 3600)
   const m = Math.floor((sec % 3600) / 60)
   const s = sec % 60
-  if (d > 0) return `${d}天${h}小时`
-  if (h > 0) return `${h}小时${m}分`
-  if (m > 0) return `${m}分${s}秒`
+  if (d > 0) return h > 0 ? `${d}天${h}小时` : `${d}天`
+  if (h > 0) return m > 0 ? `${h}小时${m}分` : `${h}小时`
+  if (m > 0) return s > 0 ? `${m}分${s}秒` : `${m}分`
   return `${s}秒`
 }
 

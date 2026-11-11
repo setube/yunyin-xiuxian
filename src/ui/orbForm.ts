@@ -74,3 +74,22 @@ export function orbParticleIndexes(form: OrbForm): number[] {
   return Array.from({ length: Math.max(0, Math.floor(form.particles)) }, (_, i) => i)
 }
 
+/** 进度环的半径与周长(与组件里的 <circle r="54"> 同一份) */
+export const ORB_PROGRESS_RADIUS = 54
+export const ORB_PROGRESS_CIRCUMFERENCE = 2 * Math.PI * ORB_PROGRESS_RADIUS
+
+/**
+ * 进度环的 dashoffset:0 表示画满一圈,周长表示一圈都不画。
+ *
+ * 与 ProgressBar 的 width 同一种缺陷:`Math.min(1, NaN)` 仍是 NaN,
+ * 拼出来的 `stroke-dashoffset: NaN` 属 CSS 语法错误,整条声明被丢弃 ——
+ * 首帧就有时等于没写,环按 `stroke-dasharray` 的默认偏移画成满圈;
+ * 运行中才赋值时元素保持上一个读数。两条都会让「修为才一两成」显示成满环,且不报错。
+ *
+ * 坏值按 0 画:与 ProgressBar 的「坏值按 0%」同一处置,不为一颗装饰环另立一套。
+ */
+export function orbDashOffset(progress: number): number {
+  if (!Number.isFinite(progress)) return ORB_PROGRESS_CIRCUMFERENCE
+  return ORB_PROGRESS_CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, progress)))
+}
+

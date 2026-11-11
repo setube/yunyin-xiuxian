@@ -44,8 +44,20 @@
           <stop offset="100%" stop-color="var(--color-jade)" />
         </linearGradient>
       </defs>
-      <circle class="prog-bg" cx="60" cy="60" r="54" />
-      <circle class="prog-bar" :class="{ full }" cx="60" cy="60" r="54" :style="{ strokeDashoffset: dashOffset }" />
+      <!--
+        半径取 ui/orbForm 的常量:周长(dasharray 与 dashoffset)由它算出,
+        而 CSS 里的 stroke-dasharray 是同一个数的手写副本 —— 两处各写一遍时,
+        改半径只改一处就会让环停在半圈上(不报错,只是画错)。
+      -->
+      <circle class="prog-bg" :cx="ORB_CENTER" :cy="ORB_CENTER" :r="ORB_PROGRESS_RADIUS" />
+      <circle
+        class="prog-bar"
+        :class="{ full }"
+        :cx="ORB_CENTER"
+        :cy="ORB_CENTER"
+        :r="ORB_PROGRESS_RADIUS"
+        :style="{ strokeDashoffset: dashOffset }"
+      />
     </svg>
 
     <!--
@@ -60,7 +72,16 @@
 
 <script setup lang="ts">
   import { computed } from 'vue'
-  import { orbForm, orbParticleIndexes, orbRingIndexes } from '@/ui/orbForm'
+  import {
+    ORB_PROGRESS_RADIUS,
+    orbDashOffset,
+    orbForm,
+    orbParticleIndexes,
+    orbRingIndexes
+  } from '@/ui/orbForm'
+
+  /** 进度环的圆心:viewBox 是 120×120、半径 54,圆心必然是正中 60 */
+  const ORB_CENTER = 60
 
   const props = withDefaults(
     defineProps<{
@@ -94,9 +115,9 @@
   const particleCount = computed(() => orbParticleIndexes(form.value).length)
 
   const BAGUA = ['☰', '☱', '☲', '☳', '☴', '☵', '☶', '☷']
-  const CIRCUMFERENCE = 2 * Math.PI * 54 // r=54
 
-  const dashOffset = computed(() => CIRCUMFERENCE * (1 - Math.min(1, props.progress)))
+  /** 进度环读数走 ui/orbForm 的纯函数:周长只写一处,坏值按空环画(见 orbDashOffset) */
+  const dashOffset = computed(() => orbDashOffset(props.progress))
 
   function particleStyle(index: number): Record<string, string> {
     // 角度按实际粒数均分:粒数随界域变,写死 /12 会让仙界之后挤成一侧
@@ -385,6 +406,11 @@
     stroke: url(#orbGrad);
     stroke-width: 4;
     stroke-linecap: round;
+    /*
+     * 与 TS 侧的 ORB_PROGRESS_CIRCUMFERENCE 是同一个数。手写副本留着是有意的:
+     * CSS 里没有函数能读 TS 常量,而把 dasharray 挪到内联 style 会让每次重渲染
+     * 都改一条不变的声明。判据(orbProgressRing.spec)钉住两处数值必须一致。
+     */
     stroke-dasharray: 339.292;
     transition: stroke-dashoffset 0.5s ease;
     filter: drop-shadow(0 0 3px rgb(var(--color-jade-rgb) / 0.40));
