@@ -10,6 +10,8 @@ import { useDongfuStore } from '@/stores/dongfu'
 import { useInventoryStore } from '@/stores/inventory'
 import type { SecretRealmState } from '@/core/secretRealm'
 import { DAOLU } from '@/data/daolu'
+import { LIFE_THEMES } from '@/data/lifeThemes'
+import { LIFE_TRIALS } from '@/data/lifeTrials'
 
 function seedPlayer(p: ReturnType<typeof usePlayerStore>): void {
   p.winStreak = 7
@@ -84,6 +86,61 @@ describe('player.rebirth 转世状态重置', () => {
     expect(p.reincarnation.vow, '本世命题没清 —— 新世立不了新题').toBeNull()
     // 跨世保留项:世号前进、履历不动
     expect(p.reincarnation.count, '世号该前进').toBe(1)
+  })
+
+  it('修复前转世过的旧档:残留的本世关系/契/题要在读档时剔掉', () => {
+    /*
+     * 光修 `rebirth` 只对新档生效 —— 已经转世过的存档里,旧值仍在。
+     * 它们的闸门都是「已有即不许再立」,那些档会被永久锁死。
+     *
+     * 判据:履历最后一条的 `at` 是本世开始时刻,记录自身的 `at` 早于它即旧世残留。
+     */
+    const p = usePlayerStore()
+    p.initCharacter('测试道友', { roots: [] } as never)
+    const LIFE_END = 1_000_000
+    const themeId = LIFE_THEMES[0]!.id
+    const trialId = LIFE_TRIALS[0]!.id
+    p.$patch({
+      bond: {
+        daoluId: DAOLU[0]!.id, stage: 'met', fate: 50, trust: 50, accord: 50, shared: 3,
+        metAt: LIFE_END - 1000, fallen: false, departed: false, doneEvents: [],
+        opportunities: 0, nextEventAt: 6, pendingEventId: null, intentPending: false, intent: null
+      },
+      reincarnation: {
+        ...p.reincarnation, count: 1,
+        lives: [{ index: 1, major: 1, realmLabel: '炼气', age: 50, themeId: null, themeResult: null, insight: 0, at: LIFE_END }],
+        trial: { trialId, at: LIFE_END - 500, paid: 1 },
+        vow: { themeId, at: LIFE_END - 600, base: {}, baseBranches: 0 }
+      }
+    } as never)
+
+    p.sanitize()
+
+    expect(p.bond, '旧世道侣没剔 —— 旧档再也遇不到新的').toBeNull()
+    expect(p.reincarnation.trial, '旧世逆旅契没剔 —— 旧档再也签不了新的').toBeNull()
+    expect(p.reincarnation.vow, '旧世命题没剔 —— 旧档立不了新题').toBeNull()
+  })
+
+  it('本世新立的关系/契/题不能被误删', () => {
+    // 判据是 `at < 本世开始`;本世记录的时刻必然晚于它
+    const p = usePlayerStore()
+    p.initCharacter('测试道友', { roots: [] } as never)
+    const LIFE_END = 1_000_000
+    const themeId = LIFE_THEMES[0]!.id
+    const trialId = LIFE_TRIALS[0]!.id
+    p.$patch({
+      reincarnation: {
+        ...p.reincarnation, count: 1,
+        lives: [{ index: 1, major: 1, realmLabel: '炼气', age: 50, themeId: null, themeResult: null, insight: 0, at: LIFE_END }],
+        trial: { trialId, at: LIFE_END + 500, paid: 1 },
+        vow: { themeId, at: LIFE_END + 600, base: {}, baseBranches: 0 }
+      }
+    } as never)
+
+    p.sanitize()
+
+    expect(p.reincarnation.trial, '本世的逆旅契被误删了').not.toBeNull()
+    expect(p.reincarnation.vow, '本世的命题被误删了').not.toBeNull()
   })
 
   it('跨世累加接口挡住 NaN / Infinity / 负数:寿元、道果与宿慧不被污染', () => {
