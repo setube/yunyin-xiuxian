@@ -503,9 +503,15 @@ describe('文案数值对账 · 视图不手抄数量', () => {
     expect(card).toContain('cnNumber(SECRET_LAYERS)')
     expect(card).not.toContain('三层 · 出则散')
     expect(card, '秘境入口该读统一在途判据').toContain('endgameBusy(endgame.worldRun, player.secretRealm, useAdventureStore().session)')
-    expect(card, '在途原因要显示到卡面').toContain('entryBlockText(')
-    expect(card, '入口 disabled 必须走合判据').toContain(':disabled="!canPay(r)"')
-    expect(card, 'canPay 必须同时拒绝在途活动').toContain('return !busy.value && entryShortfallOf(r, player.major) === null')
+    /*
+     * 一行的事实收在 realmRow 里一次算齐(原先模板对同一处反复调用十二次),
+     * 故这三条按**字段**认,不再按模板里的函数调用认 —— 语义不变:
+     * 在途原因要显示、disabled 要同时拒绝在途、拒因取自统一判据。
+     */
+    expect(card, '在途原因要显示到卡面').toContain(':title="row.block ?? undefined"')
+    expect(card, '卡面也要把拒因写出来').toContain('{{ row.block }}')
+    expect(card, '入口 disabled 必须走合判据').toContain(':disabled="!row.payable"')
+    expect(card, 'canPay 必须同时拒绝在途活动').toContain("const block = busy.value ? busy.value.reason : (short?.reason ?? null)")
   })
 
   /**

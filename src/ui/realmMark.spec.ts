@@ -82,6 +82,10 @@ describe('秘境形制 · 三、原值照写,坏值不抛错', () => {
     const guixu = SECRET_REALMS.find(r => r.id === 'sr_guixu')!
     expect(realmMark(guixu).label).toContain(`×${guixu.rewardMult}`)
     expect(realmMark(guixu).label).toContain('层间少回')
+    // 两根轴在卡面上各有名字(「回血」「战利」),label 里也要带轴名 ——
+    // 只写「层间少回」是没有主语的形容词,读屏听不出它在说哪一根
+    expect(realmMark(guixu).label, '回血轴要带轴名').toContain('回血层间少回')
+    expect(realmMark(guixu).label, '战利轴要带轴名').toContain('战利 ×')
   })
 
   it('倒扣的秘境说「每层倒扣」', () => {
@@ -103,9 +107,27 @@ describe('秘境形制 · 三、原值照写,坏值不抛错', () => {
 describe('秘境形制 · 四、界面接上了', () => {
   it('清单卡挂双轴与说法', () => {
     expect(CARD, '应挂双轴').toContain('realm-axes')
-    expect(CARD, '回血轴位置应现算').toContain('realmMark(r).heal * 100')
-    expect(CARD, '战利轴位置应现算').toContain('realmMark(r).gain * 100')
-    expect(CARD, '卡片应有可访问名').toContain('realmMark(r).label')
+    // 一行的全部事实由 realmRow 一次算齐,模板只读字段
+    expect(CARD, '回血轴位置读算好的字段').toContain("'--axis-pos': row.healPct")
+    expect(CARD, '战利轴位置读算好的字段').toContain("'--axis-pos': row.gainPct")
+    expect(CARD, '卡片应有可访问名').toContain(':aria-label="row.label"')
+  })
+
+  /**
+   * 同一处秘境,一行只算一次。
+   *
+   * 原先模板对每一处要算:realmMark 五次(每次都遍历 SECRET_REALMS 求两级端点)、
+   * canPay 两次、entryBlockText 三次、entryCostText 两次 —— 合计十二次,全是同一次纯函数重算,
+   * 而模板里读不出「这几处说的是同一处」。现按既有的「一次算齐、模板只读字段」收进 realmRow。
+   */
+  it('模板不再逐格重算同一处的纯函数', () => {
+    // 剥掉 HTML 注释:那段注释里正好写着旧写法 `realmMark(r).label`,不剥会把注释当成代码
+    const tpl = CARD.slice(CARD.indexOf('<template>'), CARD.indexOf('<script')).replace(/<!--[\s\S]*?-->/g, '')
+    for (const fn of ['realmMark(', 'isTopGain(', 'entryCostText(', 'entryShortfallOf(']) {
+      expect(tpl, `模板里还在调 ${fn}`).not.toContain(fn)
+    }
+    expect(CARD, '一行的事实该由 realmRow 算').toContain('function realmRow(')
+    expect(CARD, 'list 该映射成算好的行').toContain('availableRealms(props.gate).map(realmRow)')
   })
 
   /**
@@ -117,9 +139,11 @@ describe('秘境形制 · 四、界面接上了', () => {
    * (见 EquipmentDetailDialog 的强 化钮),本条把这条规矩钉到秘境卡上。
    */
   it('拒因与代价都进可访问名,不只画在屏幕上', () => {
-    expect(CARD, '可访问名该走 realmEntryLabel').toContain('realmEntryLabel(realmMark(r),')
-    expect(CARD, '代价要进可访问名').toMatch(/realmEntryLabel\(realmMark\(r\), entryCostText\(r, player\.major\)/)
-    expect(CARD, '拒因也要给 title(悬停同样读得到)').toContain(':title="entryBlockText(r) ?? undefined"')
+    // 名字由 realmRow 一次算齐(label = realmEntryLabel(mark, cost, block));模板读 row.label
+    expect(CARD, '可访问名该走 realmEntryLabel').toContain('label: realmEntryLabel(mark, cost, block)')
+    expect(CARD, '代价要进可访问名').toContain('const cost = entryCostText(r, player.major)')
+    expect(CARD, '模板读算好的 label').toContain(':aria-label="row.label"')
+    expect(CARD, '拒因也要给 title(悬停同样读得到)').toContain(':title="row.block ?? undefined"')
   })
 
   /**
@@ -147,7 +171,7 @@ describe('秘境形制 · 四、界面接上了', () => {
   })
 
   it('只给战利最丰的那一处多一层形制', () => {
-    expect(CARD, '最丰应走 isTopGain').toContain('isTopGain(realmMark(r))')
+    expect(CARD, '最丰应走 isTopGain').toContain('topGain: isTopGain(mark)')
     expect(block('.realm-top-gain'), '缺最丰样式').not.toBe('')
   })
 

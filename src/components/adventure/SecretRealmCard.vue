@@ -66,37 +66,40 @@
           「灵石 4.468亿」同样没有进名字 —— 要付多少钱,读屏用户听不到。
           全仓的既有做法是「拒因走 aria-label / title」(见 EquipmentDetailDialog 的强 化钮),
           这里补齐同一条,代价一并带上。拼法收在 ui/realmMark.realmEntryLabel,可单测。
+
+          一行里读的每一格都是 realmRow 预先算好的字段:模板不再对同一处反复调用
+          realmMark / canPay / entryBlockText / entryCostText(原先合计十二次)。
         -->
         <button
-          v-for="r in list"
-          :key="r.id"
+          v-for="row in list"
+          :key="row.def.id"
           class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98 disabled:cursor-not-allowed disabled:bg-ink/4"
-          :class="{ 'realm-top-gain': isTopGain(realmMark(r)) }"
-          :disabled="!canPay(r)"
-          :aria-label="realmEntryLabel(realmMark(r), entryCostText(r, player.major), entryBlockText(r))"
-          :title="entryBlockText(r) ?? undefined"
-          @click="enter(r.id)"
+          :class="{ 'realm-top-gain': row.topGain }"
+          :disabled="!row.payable"
+          :aria-label="row.label"
+          :title="row.block ?? undefined"
+          @click="enter(row.def.id)"
         >
           <span class="flex items-baseline gap-2">
-            <span class="font-kai text-[13px] text-ink">{{ r.name }}</span>
-            <span class="text-[10px] tabular" :class="canPay(r) ? 'text-ink-faint' : 'text-cinnabar'">
-              {{ entryCostText(r, player.major) }}
+            <span class="font-kai text-[13px] text-ink">{{ row.def.name }}</span>
+            <span class="text-[10px] tabular" :class="row.payable ? 'text-ink-faint' : 'text-cinnabar'">
+              {{ row.cost }}
             </span>
             <span class="ml-auto text-[10px] text-azure">入 境 →</span>
           </span>
-          <span v-if="entryBlockText(r)" class="mt-0.5 block text-[10px] tabular text-cinnabar">
-            {{ entryBlockText(r) }}
+          <span v-if="row.block" class="mt-0.5 block text-[10px] tabular text-cinnabar">
+            {{ row.block }}
           </span>
           <!-- 险利双轴:上一轴有多伤、下一轴值不值。两轴共用五处秘境的最小与最大,可横向比 -->
           <span class="mt-1 flex items-center gap-1.5">
             <span class="w-5 shrink-0 text-[9px] leading-none text-jade">回血</span>
             <span class="realm-axes min-w-0 flex-1" aria-hidden="true">
-              <span class="realm-axis realm-axis--heal" :style="{ '--axis-pos': `${realmMark(r).heal * 100}%` }" />
-              <span class="realm-axis realm-axis--gain" :style="{ '--axis-pos': `${realmMark(r).gain * 100}%` }" />
+              <span class="realm-axis realm-axis--heal" :style="{ '--axis-pos': row.healPct }" />
+              <span class="realm-axis realm-axis--gain" :style="{ '--axis-pos': row.gainPct }" />
             </span>
             <span class="w-5 shrink-0 text-right text-[9px] leading-none text-gold-ink">战利</span>
           </span>
-          <span class="mt-0.5 block text-[10px] leading-relaxed text-ink-faint">{{ r.desc }}</span>
+          <span class="mt-0.5 block text-[10px] leading-relaxed text-ink-faint">{{ row.def.desc }}</span>
         </button>
         <p v-if="list.length === 0" class="empty-note text-center text-[11px] text-ink-faint">
           暂无秘境
@@ -153,22 +156,39 @@
     const d = secretRealmDef(s.realmId)
     return d && d.gate !== props.gate ? d : null
   })
-  const list = computed(() => availableRealms(props.gate))
   const def = computed<SecretRealmDef | undefined>(() => (state.value ? secretRealmDef(state.value.realmId) : undefined))
   const busy = computed(() => endgameBusy(endgame.worldRun, player.secretRealm, useAdventureStore().session))
 
-  function canPay(r: SecretRealmDef): boolean {
-    return !busy.value && entryShortfallOf(r, player.major) === null
+  /**
+   * 一处秘境的一整行事实,一次算齐。
+   *
+   * 原先模板对同一处要算:realmMark 五次(每次都去遍历 SECRET_REALMS 求两级端点)、
+   * canPay 两次、entryBlockText 三次、entryCostText 两次 —— 每一处都是重算,
+   * 而模板里读不出「这几处说的是同一处」。
+   * 现按「一次算齐、模板只读字段」的既有做法(见 MortalWorldView 的 places)收进来。
+   *
+   * @param r 这一处秘境
+   */
+  function realmRow(r: SecretRealmDef) {
+    const mark = realmMark(r)
+    const short = entryShortfallOf(r, player.major)
+    const block = busy.value ? busy.value.reason : (short?.reason ?? null)
+    const cost = entryCostText(r, player.major)
+    const payable = block === null
+    return {
+      def: r,
+      mark,
+      cost,
+      block,
+      payable,
+      topGain: isTopGain(mark),
+      label: realmEntryLabel(mark, cost, block),
+      healPct: `${mark.heal * 100}%`,
+      gainPct: `${mark.gain * 100}%`
+    }
   }
 
-  function entryShort(r: SecretRealmDef): ReturnType<typeof entryShortfallOf> {
-    return entryShortfallOf(r, player.major)
-  }
-
-  function entryBlockText(r: SecretRealmDef): string | null {
-    if (busy.value) return busy.value.reason
-    return entryShort(r)?.reason ?? null
-  }
+  const list = computed(() => availableRealms(props.gate).map(realmRow))
 
   function enter(id: string): void {
     const out = enterSecretRealm(id)
