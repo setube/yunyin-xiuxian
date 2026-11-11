@@ -39,6 +39,16 @@ describe('引擎心跳 · start/stop/dt 路由直测', () => {
       setInterval: () => 0,
       clearInterval: () => {}
     })
+    /*
+     * 先停一次再装 spy。
+     *
+     * engine 是模块单例,`start()` 里那句 `if (this.timer === undefined)` 是防重复的 ——
+     * 若上一条用例因断言失败提前退出、`afterEach` 里 restore 掉 spy 之后
+     * 那个 interval id 仍留在 `engine.timer` 上,本条 start() 就直接跳过 setInterval,
+     * `capturedTick` 一直是 null,报出来是 `capturedTick is not a function`(实测乱序下偶发)。
+     * 这里在装新 spy 之前用真的 clearInterval 停干净。
+     */
+    engine.stop()
     capturedTick = null
     setIntervalSpy = vi.spyOn(window, 'setInterval').mockImplementation((cb: () => void) => {
       capturedTick = cb
