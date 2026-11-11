@@ -1,5 +1,7 @@
 /** dead → 冒烟判失败(exitCode 1) */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { classifySmoke, namePattern, SMOKE_ALLOWLIST } from '../../scripts/smoke-classify'
 
 describe('冒烟死按钮分类器(纯决策)', () => {
@@ -67,5 +69,50 @@ describe('冒烟死按钮分类器(纯决策)', () => {
     // 不带数字的名字不受影响
     expect(namePattern('出发').test('出发')).toBe(true)
     expect(namePattern('出发').test('出发了')).toBe(false)
+  })
+})
+
+/**
+ * 冒烟取按钮的口径 —— 两处都曾经让整页空跑。
+ *
+ *  一 **只取 getByRole('button') 会漏掉标签组**。`InkTabs` 渲染的是 `role="tab"`,
+ *    那是 WAI-ARIA 的正确写法(整组只留一个 tabindex=0,靠左右键走)——
+ *    /codex 与 /collection 两页的按钮全是 tab,于是它们在此脚本里一次都没被点过。
+ *  二 **先切再筛会把名额让给提示条的「×」**。`slice(0, DEPTH)` 之后在循环里 continue,
+ *    那几个关闭钮占掉了 12 个名额,真正的入口卡被挤到切片之外。
+ *
+ * 两处都不报错:全局点击数仍然够,只是那几页空跑。
+ */
+describe('冒烟取按钮 · 两处口径', () => {
+  const RAW = readFileSync(resolve(__dirname, '../../scripts/ui-smoke.mjs'), 'utf-8')
+  /**
+   * 剥掉整行注释再判。
+   *
+   * 解释「先前写成 buttons.slice(0, DEPTH)」的那段注释本身含有那个片段,
+   * 直接扫原文会把注释当成回退的证据(实测就是这么红了一次)。
+   * 只剥整行注释,不动行内 —— 脚本里有 `file://` 与正则,行内截断会误伤。
+   */
+  const SRC = RAW.replace(/^\s*(\*|\/\/).*$/gm, '')
+
+  it('button 与 role=tab 都取', () => {
+    expect(SRC, '没取 role=tab —— /codex 与 /collection 会整页空跑').toContain("getByRole('tab')")
+    expect(SRC, '没取 button').toContain("getByRole('button')")
+  })
+
+  it('先筛再切片,不是先切再筛', () => {
+    // 筛选循环必须在 slice 之前完成;写成 buttons.slice(0, DEPTH) 再筛就是回退
+    expect(SRC, '又回到「先切再筛」—— 提示条的关闭钮会占掉名额').not.toMatch(/buttons\.slice\(0,\s*DEPTH\)/)
+    expect(SRC, '该在筛完后再按 DEPTH 截断').toContain('buttons.length >= DEPTH')
+  })
+
+  it('提示条的关闭钮不算页面交互', () => {
+    expect(SRC, '该排除「×」这类关闭钮').toMatch(/label === '×'/)
+  })
+
+  it('逐页读数只打印、不设下限', () => {
+    // 页面状态会被前序点击改变(实测 /souls 跑到时已锁成「需真仙境」),
+    // 设下限必误报 —— 故只保留读数
+    expect(SRC, '逐页读数该保留').toContain('clickedPerRoute')
+    expect(SRC, '逐页下限会误报,不该有').not.toContain('idlePages')
   })
 })
