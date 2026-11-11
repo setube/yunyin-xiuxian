@@ -91,11 +91,34 @@ export const useCultivationStore = defineStore(
          * 起始时刻 = `endsAt - added`(`added` 是已叠加的总时长);
          * 缺 `added` 的旧档退到读档此刻 —— 那条没有可用的历史起点。
          */
-        const startedAt = added !== undefined ? b.endsAt - added : now
+        /*
+         * 上界取**两个参照点中较近的那个**:
+         *
+         *   - `now + capMs`:挡住「整段横跨」的坏档。坏档里 `endsAt` 与 `added`
+         *     往往一并超标(10 小时 + 10 小时),只看起点会算出「自洽」的假象,
+         *     从而完全放行(既有用例「5× 越限」钉着这条)。
+         *   - `起点 + capMs`:挡住时钟回拨。`now` 回拨后会早于 buff 真实起点,
+         *     只看它会把合法 buff 砍短(本轮修的正是这条)。
+         *
+         * `added` 先自己钳到上限,再由它推起点 —— 否则写坏的 `added`(如十年)
+         * 会把起点推到极早的过去,上界落到过去,合法 buff 被误判过期(审查意见)。
+         */
+        const addedCapped = added === undefined ? undefined : Math.min(added, capMs)
+        const startedAt = addedCapped !== undefined ? b.endsAt - addedCapped : now
+        /*
+         * 坏档的判据是 `added` **本身超标**(`added > capMs`)—— 那说明这条记录
+         * 的时长账目已经不可信,只能按「从此刻起重算」钳到 `now + capMs`。
+         *
+         * 而 `added ≤ capMs` 时账目自洽,起点 `endsAt - added` 可信 ——
+         * 此时**不能**再用 `now + capMs`,否则时钟回拨会把合法 buff 砍短
+         * (本轮要修的就是这条;两者用同一个式子是冲突的,实测来回红)。
+         */
+        const tainted = added !== undefined && added > capMs
+        const upper = tainted ? now + capMs : startedAt + capMs
         return {
           defId: b.defId,
-          endsAt: Math.min(b.endsAt, startedAt + capMs),
-          ...(added === undefined ? {} : { added: Math.min(added, capMs) })
+          endsAt: Math.min(b.endsAt, upper),
+          ...(addedCapped === undefined ? {} : { added: addedCapped })
         }
       })
       // 分支须属于该功法且功法已习得;不要求满级:转世落回 1 层(见 reincarnation.carryGongfa),而分支「转世不失」
