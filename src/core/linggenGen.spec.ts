@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { mulberry32, RandomService } from '@/utils/random'
-import { rollLinggen } from './linggenGen'
+import { rollLinggen, sanitizeLinggen, GROWTH_MULT_MAX } from './linggenGen'
 
 describe('灵根生成', () => {
   it('灵根数量与资质范围合法', () => {
@@ -93,5 +93,49 @@ describe('灵根鉴定动画 · 品阶名与生成器一致', () => {
 
   it('集合对得上(不是靠一边空集蒙混)', () => {
     expect([...producedNames()].sort()).toEqual([...revealedNames()].sort())
+  })
+})
+
+/**
+ * 读档守卫:修行倍率必须有上界。
+ *
+ * `toFixed(2)` 在 1e21 起改用**科学计数法** —— 坏档写 `growthMult: 1e300` 时,
+ * 角色页那一格印出「×1e+300」(真浏览器实测),而它不是 NaN/Infinity,
+ * 原来的 `Number.isFinite(v) && v > 0` 拦不住它。
+ *
+ * 上界取生成器的理论最大:混沌灵根 1.6 ×(100/60)× 1.5 = 4.0;
+ * 普通单根带特殊 (100/60)× 1.6 × 1.2 = 3.2。留一档余量到 5。
+ */
+describe('灵根读档 · 修行倍率的上界', () => {
+  const withMult = (v: unknown) =>
+    sanitizeLinggen({ roots: [{ element: 'fire', aptitude: 80 }], gradeName: '天灵根', growthMult: v })
+
+  it('大于上界的有限值被夹到上界', () => {
+    for (const v of [1e300, 1e21, 5.0001, 1e9]) {
+      expect(withMult(v)?.growthMult, `${v} 没被夹住`).toBe(GROWTH_MULT_MAX)
+    }
+  })
+
+  it('上界之内原样保留', () => {
+    for (const v of [1, 2.5, 3.2, 4, GROWTH_MULT_MAX]) {
+      expect(withMult(v)?.growthMult, `${v} 被误改`).toBe(v)
+    }
+  })
+
+  it('非有限 / 非正仍归 1', () => {
+    for (const v of [NaN, Infinity, -5, 0, null, undefined, 'x']) {
+      expect(withMult(v)?.growthMult, `${String(v)} 没归 1`).toBe(1)
+    }
+  })
+
+  it('上界本身要能被 toFixed 正常显示,不能进科学计数法', () => {
+    // 1e21 是 toFixed 改用科学计数法的门槛 —— 上界必须远低于它
+    expect(GROWTH_MULT_MAX, '上界太高,toFixed(2) 会印出 1e+21 这种').toBeLessThan(1e21)
+    expect(GROWTH_MULT_MAX.toFixed(2)).toBe('5.00')
+  })
+
+  it('上界覆盖得住生成器真实掷出的最大值', () => {
+    // 混沌灵根:1.6 ×(100/60)× 1.5 = 4.0;普通单根特殊:3.2
+    expect(GROWTH_MULT_MAX, '上界小于混沌灵根的 4.0,正常档会被夹').toBeGreaterThanOrEqual(4)
   })
 })

@@ -15,6 +15,16 @@ const COUNT_FACTOR: Record<number, number> = { 1: 1.6, 2: 1.35, 3: 1.15, 4: 1.0,
 
 /** 特殊灵根替换概率 */
 const SPECIAL_CHANCE = 0.1
+
+/**
+ * 修行倍率上界(读档守卫用)。
+ *
+ * 生成器的理论最大是混沌灵根:1.6 ×(100/60)× 1.5 = 4.0;
+ * 普通灵根单根带特殊是 (100/60)× 1.6 × 1.2 = 3.2。
+ * 取 5 留一档余量 —— 正常掷值到不了,越过的必定是坏档。
+ * 不设上界时 `toFixed(2)` 在 1e21 起改用科学计数法,角色页会印出「×1e+300」。
+ */
+export const GROWTH_MULT_MAX = 5
 const CHAOS_CHANCE = 0.008
 
 export function rollLinggen(rng: RandomService, aptitudeFloor = 0): LinggenProfile {
@@ -91,7 +101,17 @@ export function sanitizeLinggen(raw: unknown): LinggenProfile | null {
     })
   }
   if (roots.length === 0) return null
-  const growthMult = Number.isFinite(p.growthMult) && (p.growthMult as number) > 0 ? (p.growthMult as number) : 1
+  /*
+   * 上界不是「够大就行」:`toFixed(2)` 在 1e21 起改用科学计数法 ——
+   * 坏档写 `growthMult: 1e300` 时角色页会印出「×1e+300」(实测)。
+   *
+   * 上界取生成器的理论最大:混沌灵根 1.6 ×(100/60)× 1.5 = 4.0;
+   * 普通灵根 (100/60)× 1.6(单根)× 1.2(特殊)= 3.2。
+   * 留一档余量到 5,正常掷值绝无可能越过,越过的必定是坏档。
+   */
+  const rawMult = p.growthMult
+  const growthMult =
+    Number.isFinite(rawMult) && (rawMult as number) > 0 ? Math.min(GROWTH_MULT_MAX, rawMult as number) : 1
   return {
     roots,
     gradeName: typeof p.gradeName === 'string' && p.gradeName ? p.gradeName : '灵根',
