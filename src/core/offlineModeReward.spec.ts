@@ -391,7 +391,8 @@ describe('离线法宝掉落不刷屏(同一件只报一行)', () => {
     expect(artLines, '法宝这一路只该报一行').toHaveLength(1)
     if (artLines[0]!.includes('悟道点')) {
       expect(artLines[0], '件数要报').toMatch(/×\d+/)
-      expect(artLines[0], '折算的悟道点要报').toMatch(/\d+ 悟道点/)
+      // 两种词序都认:全仓统一「悟道点 N」,历史写法是「N 悟道点」
+      expect(artLines[0], '折算的悟道点要报').toMatch(/悟道点\s*\d+|\d+\s*悟道点/)
     }
     expect(inventory.artifacts.length, '入囊的法宝一件都不能少').toBeGreaterThan(0)
     expect(summary.notes.length, '卷轴其余内容没被挤掉').toBeGreaterThan(3)

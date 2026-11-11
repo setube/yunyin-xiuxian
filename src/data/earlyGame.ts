@@ -49,7 +49,7 @@ export const ENLIGHTENMENT_OPTIONS: EnlightenmentOption[] = [
   {
     type: 'insight',
     label: '灵机一动',
-    desc: '立即获得 5 悟道点',
+    desc: '立即获得悟道点 5',
     duration: 0,
     reward: { type: 'wudao', value: 5 }
   }
@@ -102,7 +102,7 @@ export const CAVE_EVENT_POOL = {
       options: [
         { label: '提炼残渣', effect: '获得少量灵石', reward: { type: 'stone' as const, value: 30 } },
         { label: '吸纳药气', effect: '获得临时修炼加速', reward: { type: 'buff' as const, value: 'cave_furnace_cult' } },
-        { label: '清理炉体', effect: '获得 2 悟道点', reward: { type: 'wudao' as const, value: 2 } }
+        { label: '清理炉体', effect: '获得悟道点 2', reward: { type: 'wudao' as const, value: 2 } }
       ]
     }
   ],

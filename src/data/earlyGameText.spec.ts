@@ -52,10 +52,10 @@ describe('顿悟选项 · 文案与实发一致', () => {
     let checked = 0
     for (const opt of ENLIGHTENMENT_OPTIONS) {
       if (!opt.reward) continue
-      // 「立即获得 5 悟道点」
-      const m = /(\d+)\s*悟道点/.exec(opt.desc)
+      // 两种词序都认:全仓统一「悟道点 N」,历史写法是「N 悟道点」
+      const m = /悟道点\s*(\d+)|(\d+)\s*悟道点/.exec(opt.desc)
       expect(m, `「${opt.label}」的文案里没写点数`).not.toBeNull()
-      expect(Number(m![1]), `「${opt.label}」文案点数与实发不符`).toBe(opt.reward.value)
+      expect(Number(m![1] ?? m![2]), `「${opt.label}」文案点数与实发不符`).toBe(opt.reward.value)
       expect(opt.buffId, '即时奖励不该同时挂 buff').toBeUndefined()
       expect(opt.duration, '即时奖励不该有持续时间').toBe(0)
       checked += 1
