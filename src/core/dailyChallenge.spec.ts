@@ -111,4 +111,25 @@ describe('应战今日天道 · 跨午夜落闸(防一天双份赏)', () => {
     expect(undertakeChallenge, '落闸只认当下日号,今日已了就该直接拒,不去打昨日考题').not.toHaveBeenCalled()
     expect(endgame.dailyDoneDay).toBe(today)
   })
+
+  it('时钟回拨时,今天的闸仍然关着 —— 等号判据会漏这一侧', () => {
+    /*
+     * 闸门原写 `dailyDoneDay === day`:把系统时间调回昨天,`day` 变小、
+     * `dailyDoneDay` 仍是那个较大的值,等号不成立 → 天道赏可以再领一次。
+     * 与洞府巡游、日课翻日是同一类:**日期判据要认「更晚」,不能只认「相等」**。
+     */
+    vi.useFakeTimers()
+    vi.setSystemTime(1_760_000_000_000)
+    setActivePinia(createPinia())
+    const endgame = useEndgameStore()
+    vi.mocked(undertakeChallenge).mockClear()
+    endgame.dailyDoneDay = todayLocalNum()
+
+    // 时钟往回拨一天
+    vi.setSystemTime(Date.now() - 86_400_000)
+    const stale: DailyChallenge = { day: todayLocalNum(), draft: todayChallenge()!.draft, verdict: todayChallenge()!.verdict }
+
+    expect(undertakeDaily(stale), '时钟回拨后天道赏又能领了').toBe(null)
+    expect(undertakeChallenge, '闸门漏了,挑战被真的发起了').not.toHaveBeenCalled()
+  })
 })
