@@ -28,3 +28,14 @@ const BY_ID = new Map(REGION_EVENTS.map(e => [e.id, e]))
 export function regionEventDef(id: string): RegionEventDef | undefined {
   return BY_ID.get(id as RegionEventId)
 }
+
+
+/**
+ * 区域事件的最长持续时长(分钟)。
+ *
+ * `core/regionEvent.ts` 的 `DURATION_MIN` 是候选档位;`player.sanitize` 读这个上界
+ * 判「到期时刻是否离谱」—— 事件持续 30~120 分钟,「endsAt 在未来」本身是正常状态,
+ * 只有远超最长时长的值才是坏档(那种值会让 `rollRegionEvent` 的 `endsAt > now` 恒真,
+ * 整片地界再也掷不出新事件)。
+ */
+export const REGION_EVENT_MAX_MINUTES = 120
