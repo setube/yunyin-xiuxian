@@ -483,6 +483,17 @@ describe('灵田产草品阶 · 等级表唯一事实源', () => {
  * 与「行囊已满恒真」是同一类坏档后果,本条把容量压回上限。
  */
 describe('灵脉总量 · 坏档压回容量', () => {
+  /*
+   * 新 pinia = 干净的 dongfu 分片。
+   *
+   * 这个块原先没有 beforeEach,而它整组都在「先写 veinPoints 再 sanitize」——
+   * 上一条用例 sanitize 后的状态会带进下一条:实测全量乱序下本组 7 条全红,
+   * 报的是「总量不得越过上限」这类看似真缺陷的话,其实是前面某条留下的点数在作祟。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   function fullVeins(n: number) {
     return { gather: n, craft: n, alchemy: n, insight: n }
   }
