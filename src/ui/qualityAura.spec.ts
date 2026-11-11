@@ -127,13 +127,29 @@ describe('品阶光环 · 样式与可访问性', () => {
     expect(sheen, '流光只该动 transform/opacity').not.toContain('box-shadow')
   })
 
-  it('减少动效的两个块管住光环(通配符覆盖,不需要额外声明)', () => {
-    // 光环没有自己的 reduce 分支:全局通配符已经盖住,这里只钉住那两个块仍在
+  it('减少动效的两个块管住光环,掠光另有静态替代', () => {
     expect(CSS).toContain('@media (prefers-reduced-motion: reduce)')
     expect(CSS).toContain('.reduce-motion *')
     // 特别确认光环的动画没有被写成 !important 绕过通配符
     const haloBlock = /\.q-aura-halo--radiant \{([\s\S]*?)\n\}/.exec(CSS)?.[1] ?? ''
     expect(haloBlock, '光环呼吸不该用 !important 绕过减少动效').not.toContain('!important')
+
+    /*
+     * 但掠光**不能**只靠通配符 —— 这条原先写着「不需要额外声明」,是错的:
+     * q-aura-sheen 是 infinite 循环,压成 0.01ms 后**停在起始帧**
+     * (实测 opacity 1、transform 无位移),于是那 26% 宽的白色高光条
+     * 僵直钉在左上角,看起来像渲染坏了一块。
+     *
+     * 两处各自要给静态高光(与 .luster-sheen 同一处置)。
+     */
+    for (const [label, block] of [
+      ['@media', /@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/.exec(CSS)?.[1] ?? ''],
+      ['.reduce-motion', /\.reduce-motion[\s\S]*$/.exec(CSS)?.[0] ?? '']
+    ] as const) {
+      expect(block, `${label} 块没读到`).not.toBe('')
+      expect(block, `${label} 缺 .q-aura-sheen::after 的静态替代`).toContain('.q-aura-sheen::after')
+      expect(block, `${label} 的静态替代该把 transform 归零`).toMatch(/\.q-aura-sheen::after \{[^}]*transform: none/)
+    }
   })
 
   it('紧凑格只画左上那一枚角:底边与右上都被角标占着,再画会压字', () => {

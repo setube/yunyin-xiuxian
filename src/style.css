@@ -3849,6 +3849,21 @@ html[data-theme='light'] .mastery-bar {
   .rare-flash {
     opacity: 0.55 !important;
   }
+  /*
+   * 同类第四处:高级物外圈那道掠光。它是 infinite 循环,压成 0.01ms 后**停在起始帧**
+   * ——实测算出 opacity 1 且 transform 无位移,也就是一条 26% 宽的白色高光条
+   * 静止钉在左上角,看起来像渲染坏了一块。
+   * 与 .luster-sheen 同一处置:给一段静态高光,形制仍在,只是不掠。
+   */
+  .q-aura-sheen::after {
+    transform: none;
+    top: 0;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    height: 42%;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.16), transparent);
+  }
 }
 
 /* 设置项:减少动效 */
@@ -3881,4 +3896,14 @@ html[data-theme='light'] .mastery-bar {
 /* 同 @media 那处第三例:得宝全屏金光停在终态会整层看不见 */
 .reduce-motion .rare-flash {
   opacity: 0.55 !important;
+}
+/* 同 @media 那处第四例:高级物掠光停在起始帧会留一道僵直白光 */
+.reduce-motion .q-aura-sheen::after {
+  transform: none;
+  top: 0;
+  bottom: auto;
+  left: 0;
+  width: 100%;
+  height: 42%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.16), transparent);
 }
