@@ -6,7 +6,11 @@
       <span class="text-[12px] text-ink-soft">界域志</span>
     </div>
 
-    <SectionTitle title="界域志" />
+    <!--
+      这一页不再单独放 SectionTitle:上面那行面包屑已经写明「界域志」,
+      下面紧接标签栏(界域 / 典籍 / 周易 / 紫微 / 星象)——
+      再插一个同名标题就是同屏两句一样的话。别的页没有面包屑,故仍用 SectionTitle。
+    -->
     <InkTabs v-model="codexTab" :tabs="CODEX_TABS" />
 
     <template v-if="codexTab === 'realm'">
