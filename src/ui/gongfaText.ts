@@ -1,3 +1,5 @@
+import { peakLabel } from './peakLabel'
+
 /** 功法参悟提示:残卷、精进。残页、悟道点、层数报清 */
 export function gongfaPageShortToast(pageShort?: number): string {
   return pageShort === undefined ? '残页不足' : `残页尚差 ${pageShort} 页`
@@ -33,7 +35,7 @@ export function gongfaUpDoneToast(name: string, level: number): string {
  * 用既有状态词「圆满」—— 功法卡与地界卡都这么写,不再新造一个。
  */
 export function gongfaPeakLabel(): string {
-  return '已圆满'
+  return peakLabel()
 }
 
 export function gongfaSubFullToast(slots: number): string {

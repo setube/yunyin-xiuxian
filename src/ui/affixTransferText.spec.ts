@@ -105,3 +105,55 @@ describe('词条转移面板 · 落位行只查一次表', () => {
     expect(ret, 'targetLines 已无外部读者,不该再导出').not.toContain('targetLines,')
   })
 })
+
+/**
+ * 状态词只许从 TRANSFER_LABELS 取,不许在界面里另写一份。
+ *
+ * 这四句原先各有旁路:
+ *   「不可封存」  reforgeText.sealMustLeaveToast 手写一遍(注释还写着「与词条转移同说法」)
+ *   「暂无词条」  EquipReforgeFooter 的模板里手写一遍
+ *   「未选目标」  AutoReforgePanel 的 title 里手写一遍
+ *   「未找到装备」useAutoReforge 的 toast 里手写一遍
+ * 表里本来就都有对应键 —— 旁路一多,改词就得全仓搜,漏一处就是两套说法。
+ *
+ * 判据:四处调用点都读表,且这些文件里不许再出现字面量。
+ */
+describe('词条转移 · 状态词只有表里那一份', () => {
+  const read = (p: string): string => readFileSync(join(__dirname, p), 'utf8')
+  const SITES = [
+    { file: '../ui/reforgeText.ts', key: 'sealFull', word: '不可封存' },
+    { file: '../components/equipment/EquipReforgeFooter.vue', key: 'noAffix', word: '暂无词条' },
+    { file: '../components/equipment/AutoReforgePanel.vue', key: 'pendingTarget', word: '未选目标' },
+    { file: '../composables/useAutoReforge.ts', key: 'gone', word: '未找到装备' }
+  ] as const
+
+  it('四处都读表里的键', () => {
+    for (const s of SITES) {
+      const src = read(s.file)
+      expect(src, `${s.file} 该读 TRANSFER_LABELS.${s.key}`).toContain(`TRANSFER_LABELS.${s.key}`)
+    }
+  })
+
+  it('这些文件里不许再出现同一句的字面量', () => {
+    for (const s of SITES) {
+      const src = stripComments(read(s.file))
+      expect(src, `${s.file} 又手写了一遍「${s.word}」`).not.toContain(`'${s.word}'`)
+    }
+  })
+
+  it('表里那些键确实还在', () => {
+    for (const s of SITES) {
+      expect(TRANSFER_LABELS[s.key], `TRANSFER_LABELS 缺 ${s.key}`).toBe(s.word)
+    }
+  })
+})
+
+/** 剥掉注释:注释里提到这个词不算玩家可见文案 */
+function stripComments(src: string): string {
+  return src
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .map(line => line.replace(/(^|[^:])\/\/.*$/, '$1'))
+    .join('\n')
+}

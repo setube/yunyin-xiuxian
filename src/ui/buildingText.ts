@@ -3,6 +3,7 @@
  * 不写「升至 N 级」;境界、层数、灵石玄铁照实报。
  */
 import { REALMS } from '@/data/realms'
+import { peakLabel } from './peakLabel'
 
 export function buildingRealmGate(realmName: string): string {
   return `需${realmName}境`
@@ -13,8 +14,12 @@ export function buildingGateRealmName(unlockRealm: number): string {
   return REALMS[unlockRealm]?.name ?? '更高'
 }
 
+/**
+ * 建筑满级。说法取 ui/peakLabel —— 与功法满级、功法行标签同一句,
+ * 改词时只改那一处(AGENTS.md:一个状态只说一个事实)。
+ */
 export function buildingPeakToast(): string {
-  return '已圆满'
+  return peakLabel()
 }
 
 export function buildingMansionGateToast(): string {
