@@ -1,5 +1,7 @@
 /** 坊市货架生成与定价:数据层不变量 */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mulberry32, RandomService } from '@/utils/random'
 import { toNum } from '@/utils/gnum'
 import { pillDef } from '@/data/pills'
@@ -18,6 +20,8 @@ import { equipBountyReward } from '@/core/bountyService'
 import { qualityDef } from '@/data/qualities'
 import { rollQuality } from '@/core/equipGen'
 
+const ROOT = resolve(__dirname, '../..')
+
 function rng(seed = 0x5eed): RandomService {
   return new RandomService(mulberry32(seed))
 }
@@ -27,6 +31,24 @@ describe('坊市 · 货架生成', () => {
   it('寄卖渲染上限存在且不低于正常格数,也不至于铺出长列表', () => {
     expect(MARKET_CONSIGN_RENDER_MAX).toBeGreaterThanOrEqual(MARKET_CONSIGN_SLOTS)
     expect(MARKET_CONSIGN_RENDER_MAX).toBeLessThanOrEqual(10)
+  })
+
+  /**
+   * 货层与定价必须同层。
+   *
+   * 原先生成单格时 `marketTier(major)` 被调四次(材料价、品质下限、装备生成、货层与装备价),
+   * 而 maxTierForMajor 要扫一遍全部地界 —— 一架子六格就是二十四遍全表扫。
+   * 现算一次提出去。本条钉住两件事:装备的 tier 与它按哪个层级定价是同一次算出来的,
+   * 且跨 major 逐档扫下来没有哪一档分叉。
+   */
+  it('装备的货层与定价同层(同一个市场层级只算一次)', () => {
+    for (let major = 0; major <= MAX_MAJOR; major += 1) {
+      const tier = marketTier(major)
+      for (const slot of generateMarketStock(major, rng(major + 7), 1700000000000).goods) {
+        if (slot.kind !== 'equipment') continue
+        expect(slot.tier, `major ${major} 的装备货层不是市场层级`).toBe(tier)
+      }
+    }
   })
 
   it('一满架六格,每格有货、有价、未售,索引 0 起不重样', () => {
@@ -142,5 +164,39 @@ describe('坊市 · 购入 vs 悬赏贡器 无套利', () => {
         expect(toNum(slot.price), '坊价须高于贡器所得(同件)').toBeGreaterThan(toNum(reward.stone))
       }
     }
+  })
+})
+
+/**
+ * 市场层级只能算一次。
+ *
+ * `marketTier(major)` 走 `maxTierForMajor`,那是把全部地界扫一遍。
+ * 单格生成原先调四次(材料价 / 品质下限 / 装备生成 / 货层与装备价),
+ * 一架子六格二十四遍 —— 而结果只由 major 决定,算一次就够。
+ *
+ * 判据读源码:生成函数里 `marketTier(major)` 只许出现一次(提出来的那一处),
+ * 且确实提成了 `const tier`。故障注入:把任何一处改回 `marketTier(major)`,本条红。
+ */
+describe('坊市 · 市场层级只算一次', () => {
+  const SERVICE = readFileSync(resolve(ROOT, 'src/core/marketService.ts'), 'utf-8')
+  /** 单格生成函数的正文;按函数名切,不按行号 */
+  const SLOT_FN = (() => {
+    const start = SERVICE.indexOf('function buildSlot')
+    expect(start, '找不到单格生成函数 —— 判据要跟着改名').toBeGreaterThan(-1)
+    const next = SERVICE.indexOf('\nfunction ', start + 1)
+    return SERVICE.slice(start, next > 0 ? next : undefined)
+  })()
+
+  it('生成函数里 marketTier(major) 只出现一次,且提成了常量', () => {
+    const calls = SLOT_FN.match(/marketTier\(major\)/g) ?? []
+    expect(calls.length, `单格生成里调了 ${calls.length} 次 marketTier(major)`).toBe(1)
+    expect(SLOT_FN, '该提成 const tier').toMatch(/const tier = marketTier\(major\)/)
+  })
+
+  it('提出来之后各处读同一份 tier,不另算', () => {
+    expect(SLOT_FN, '材料价该读 tier').toContain('stoneByTier(tier, MARKET_MAT_STONE_UNITS)')
+    expect(SLOT_FN, '品质下限该读 tier').toContain('rollQuality(tier, rng)')
+    expect(SLOT_FN, '装备生成该读 tier').toContain('generateEquipment(tier,')
+    expect(SLOT_FN, '装备价该读 tier').toContain('stoneByTier(tier, MARKET_EQUIP_STONE_BASE')
   })
 })

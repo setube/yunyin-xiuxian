@@ -78,6 +78,12 @@ function buildSlot(
     // 可炼丹已全在架上:落回材料格,不摆同味重复丹
     kind = 'material'
   }
+  /*
+   * 市场层级只由 major 决定,而 maxTierForMajor 要扫一遍全部地界。
+   * 原先这一格里调了四次(材料价、品质下限、装备生成、货层与装备价里的两次),
+   * 一架子六格就是二十四遍全表扫。算一次即可 —— 结果逐字不变。
+   */
+  const tier = marketTier(major)
   if (kind === 'material') {
     const matId: 'herb' | 'ore' = rng.chance(0.5) ? 'herb' : 'ore'
     // 品阶钉死在上货时刻:否则货架期内跨品阶/转世,标价是旧品、入账却按当下品
@@ -86,20 +92,20 @@ function buildSlot(
     const price =
       matId === 'herb'
         ? mulN(gn(herbBuyPrice(grade, major)), MARKET_MAT_COUNT)
-        : mulN(stoneByTier(marketTier(major), MARKET_MAT_STONE_UNITS), MARKET_MAT_COUNT)
+        : mulN(stoneByTier(tier, MARKET_MAT_STONE_UNITS), MARKET_MAT_COUNT)
     return { kind: 'material', idx, matId, grade, count: MARKET_MAT_COUNT, price, sold: false }
   }
   // 品质下限同样骑市场层级:major 是 0~20 的境界下标,当 tier 喂给 rollQuality 会让高价货架兑现低品质
-  const minQualityRank = rollQuality(marketTier(major), rng).rank
+  const minQualityRank = rollQuality(tier, rng).rank
   // 按预览即购得那件的真实品质档标价;按下限标价会被「坊市买入 → 悬赏贡器」套利(见 data/bounty 的单位档比对)
-  const rank = qualityDef(generateEquipment(marketTier(major), new RandomService(mulberry32(equipSeed(now, idx))), { minQualityRank }).quality).rank
+  const rank = qualityDef(generateEquipment(tier, new RandomService(mulberry32(equipSeed(now, idx))), { minQualityRank }).quality).rank
   return {
     kind: 'equipment',
     idx,
     // 货与定价同一层级(marketTier),否则买来的比掉落次一层
-    tier: marketTier(major),
+    tier,
     minQualityRank,
-    price: stoneByTier(marketTier(major), MARKET_EQUIP_STONE_BASE + rank * MARKET_EQUIP_STONE_PER_RANK),
+    price: stoneByTier(tier, MARKET_EQUIP_STONE_BASE + rank * MARKET_EQUIP_STONE_PER_RANK),
     sold: false
   }
 }
