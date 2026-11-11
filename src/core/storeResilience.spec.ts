@@ -1509,3 +1509,52 @@ describe('坏档韧性 · 世号上界须容得下 count + 1', () => {
     expect(kept?.life, `本世道痕的世号 ${thisLife} 被读档守卫夹掉了,整整一世的记录会消失`).toBe(thisLife)
   })
 })
+
+/**
+ * 忆战快照的速度、道痕回合数、远征总回合数要有上界。
+ *
+ * 三处各有后果:
+ *   · `r.speed` 进 `CombatantSnap.speed`,参与先手判定(`pSpeed >= eSpeed`)——
+ *     坏档写 1e300 时忆战重演里玩家永远后手,「往世之你 vs 今世之你」不再是当年那场;
+ *   · `m.rounds` 进道痕面板的「{{ mark.rounds }} 回合」,是裸插值;
+ *   · `run.totalRounds` 进 `slaughterSpeedBonus` 与道痕记录的回合数。
+ */
+describe('坏档韧性 · 忆战速度与回合数的上界', () => {
+  const patch = (v: number): { markRounds?: number; replaySpeed?: number; totalRounds?: number } => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    e.$patch({
+      marks: [{
+        targetId: 'chiyan', targetName: '赤炎', life: 1, daoPathId: null, at: 1, cleared: false,
+        rounds: v, buildName: 't', powerText: '1',
+        replay: { attack: { m: 1, e: 2 }, defense: { m: 1, e: 2 }, maxHp: { m: 1, e: 2 }, speed: v, skills: [], artifacts: [] }
+      }],
+      worldRun: { worldId: 'chiyan', pactId: null, gateId: null, layer: 1, bonus: 0, rows: [], carriedHpPct: 1, totalRounds: v, winStacks: 0 }
+    } as never)
+    e.sanitize()
+    const mark = (e.marks as { rounds?: number; replay?: { speed?: number } }[] | undefined)?.[0]
+    return {
+      markRounds: mark?.rounds,
+      replaySpeed: mark?.replay?.speed,
+      totalRounds: (e.worldRun as { totalRounds?: number } | null)?.totalRounds
+    }
+  }
+
+  it('三处巨值都被夹住', () => {
+    const got = patch(1e300)
+    expect(got.markRounds, '道痕回合数没被夹住').toBeLessThanOrEqual(10_000)
+    expect(got.replaySpeed, '忆战速度没被夹住 —— 玩家会永远后手').toBeLessThanOrEqual(100)
+    expect(got.totalRounds, '远征总回合数没被夹住').toBeLessThanOrEqual(10_000)
+  })
+
+  it('真实值原样保留', () => {
+    const got = patch(5)
+    expect(got.markRounds).toBe(5)
+    expect(got.replaySpeed).toBe(5)
+    expect(got.totalRounds).toBe(5)
+  })
+
+  it('速度上界须远高于真实量级(玩家侧是 1 + 词缀之和)', () => {
+    expect(100, '速度上界低于真实量级,正常档会被误夹').toBeGreaterThan(10)
+  })
+})

@@ -109,6 +109,17 @@ const VOID_NODE_BONUS_MAX = 100
  */
 const LIFE_COUNTER_CAP = 10_000_000
 
+/** 忆战快照的速度上界:真实量级在 1~3,取一百已极宽 */
+const REPLAY_SPEED_MAX = 100
+
+/**
+ * 一趟远征的总回合上界(仅用于无战报行的旧档兜底)。
+ *
+ * 它进 `slaughterSpeedBonus` 与道痕记录的回合数 —— 后者会印在道痕面板上。
+ * 一趟五战、每战至多数百回合,取一万已极宽。
+ */
+const WORLD_RUN_ROUNDS_MAX = 10_000
+
 const WORLD_CLEARS_MAX = 10_000
 const TRIAL_CLEARS_MAX = 10_000
 const BATTLE_ROUNDS_CAP = 10_000
@@ -221,7 +232,13 @@ function sanitizeMarkReplay(raw: unknown): DaoMark['replay'] | undefined {
   const attack = gnumOf(r.attack)
   const defense = gnumOf(r.defense)
   const maxHp = gnumOf(r.maxHp)
-  const speed = asFiniteNumber(r.speed, 0, 0)
+  /*
+   * 速度要有上界 —— 它直接进 `CombatantSnap.speed`,参与先手判定
+   * (`pFirst = pSpeed >= eSpeed`)。坏档写 1e300 时,**忆战重演里玩家永远后手**,
+   * 「往世之你 vs 今世之你」的对比就不再是当年那一场。
+   * 正常量级:玩家侧是 `1 + modOf(speed)`,词缀与法宝各加零点几,到不了两位数。
+   */
+  const speed = asFiniteNumber(r.speed, 0, 0, REPLAY_SPEED_MAX)
   if (attack.m === 0 || defense.m === 0 || maxHp.m === 0 || speed <= 0) return undefined
   const mods = sanitizeMods(r.mods) ?? {}
   const skills = asCombatSkills(r.skills)
@@ -288,7 +305,8 @@ function sanitizeMarks(raw: unknown): DaoMark[] {
       targetId: m.targetId,
       targetName: typeof m.targetName === 'string' && m.targetName ? m.targetName : m.targetId,
       cleared: m.cleared === true,
-      rounds: Math.floor(asFiniteNumber(m.rounds, 0, 0)),
+      // 道痕面板印「{{ mark.rounds }} 回合」,是裸插值;坏档巨值会印成科学计数
+      rounds: Math.floor(asFiniteNumber(m.rounds, 0, 0, BATTLE_ROUNDS_CAP)),
       buildName: typeof m.buildName === 'string' && m.buildName ? m.buildName : '杂学',
       powerText: typeof m.powerText === 'string' ? m.powerText : '',
       at: Math.floor(asTimestamp(m.at, 0)),
@@ -443,7 +461,7 @@ export const useEndgameStore = defineStore(
             totalRounds:
               rows.length > 0
                 ? rows.reduce((sum, row) => sum + row.rounds, 0)
-                : Math.floor(asFiniteNumber(run.totalRounds, 0, 0)),
+                : Math.floor(asFiniteNumber(run.totalRounds, 0, 0, WORLD_RUN_ROUNDS_MAX)),
             winStacks: Math.floor(asFiniteNumber(run.winStacks, 0, 0, WORLD_RUN_STACKS_MAX)),
             // 逆命契封印每场并入玩家属性;整份不可用视为无封印
             sealedMods: sanitizeMods(run.sealedMods) ?? undefined
