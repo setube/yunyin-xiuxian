@@ -31,6 +31,28 @@ const WIN_STREAK_CAP = 1_000_000
  */
 const REGION_WINS_MAX = 10_000
 
+/** 秘境内胜负场数的读档上界:一层只有几场,取一万已极宽 */
+const SECRET_FIGHT_CAP = 10_000
+
+/**
+ * 道侣机缘计数的读档上界。
+ *
+ * 触发判据是 `opportunities < nextEventAt`,而 `nextEventAt` 由
+ * `opportunities + EVENT_GAP`(=6)推出来 —— 正常值域是 0..6。
+ * 坏档写 1e300 时两边一起极大,判据恒假,那位道侣的机缘再也不来。
+ */
+const BOND_EVENT_CAP = 100
+/** 道侣机缘的间隔次数,与 `daoluService` 的 EVENT_GAP 同值(那边是私有常量,不便导出) */
+const BOND_EVENT_GAP = 6
+
+/**
+ * 宿敌「败我 N 次」的读档上界。
+ *
+ * 那处是裸插值(`败我 {{ lossCount }} 次`),且参与 `>= 3` 的筛选;
+ * 坏档写 1e300 会印出巨大数字并永远满足筛选。正常量级是几次到几十次。
+ */
+const NEMESIS_LOSS_CAP = 10_000
+
 /**
  * 区域战绩里两个计数的读档上界。
  *
@@ -844,7 +866,8 @@ export const usePlayerStore = defineStore(
             realmId: sr.realmId,
             enteredAt: asFiniteNumber(sr.enteredAt, Date.now(), 0),
             layer: Math.min(SECRET_LAYERS, Math.max(1, Math.floor(asFiniteNumber(sr.layer, 1, 1)))),
-            wins: Math.floor(asFiniteNumber(sr.wins, 0, 0)),
+            // 秘境内胜场;不进判定也不显示,但同样不该是坏档的巨值
+            wins: Math.floor(asFiniteNumber(sr.wins, 0, 0, SECRET_FIGHT_CAP)),
             losses: Math.min(SECRET_MAX_LOSSES, Math.floor(asFiniteNumber(sr.losses, 0, 0))),
             spoils: asStringArray(sr.spoils),
             // 旧说法归一为现行说法并去重
@@ -873,8 +896,21 @@ export const usePlayerStore = defineStore(
             fallen: b.fallen === true,
             departed: b.departed === true,
             doneEvents: asStringArray(b.doneEvents),
-            opportunities: Math.floor(asFiniteNumber(b.opportunities, 0, 0)),
-            nextEventAt: Math.floor(asFiniteNumber(b.nextEventAt, 0, 0)),
+            /*
+             * 道侣机缘的触发判据是 `b.opportunities < b.nextEventAt`,
+             * 而 `nextEventAt` 由 `opportunities + EVENT_GAP` 推出来(每 6 次重排一次)。
+             * 坏档把 opportunities 写成 1e300 时,两边一起极大 → 判据**恒假**,
+             * 那位道侣的机缘再也不来。正常值域是 0..EVENT_GAP,取一百已极宽。
+             */
+            /*
+             * 越界**归零**,不是夹到上界。
+             *
+             * 夹到同一个上界时两者相等,`opportunities < nextEventAt` 仍为假 ——
+             * 虽然那次会触发事件,但两个值都停在 100,语义上是「攒了 100 次还没触发」。
+             * 归零的语义是「刚触发过、从头攒」,与坏档该有的行为一致。
+             */
+            opportunities: b.opportunities > BOND_EVENT_CAP ? 0 : Math.floor(asFiniteNumber(b.opportunities, 0, 0)),
+            nextEventAt: b.nextEventAt > BOND_EVENT_CAP ? BOND_EVENT_GAP : Math.floor(asFiniteNumber(b.nextEventAt, 0, 0)),
             // offerBondEvent 见非空 pendingEventId 即不出新事件:认不出的 id 会永久堵死道侣线
             pendingEventId:
               typeof b.pendingEventId === 'string' && bondEventDef(b.pendingEventId) ? b.pendingEventId : null,
@@ -1018,7 +1054,12 @@ export const usePlayerStore = defineStore(
         [],
         x => !!x && typeof (x as import('@/types').NemesisRecord).enemyId === 'string'
       )) {
-        const lossCount = Math.max(0, Math.floor(asFiniteNumber(n.lossCount, 0, 0)))
+        /*
+         * 宿敌的「败我 N 次」是**裸插值**,还参与 `>= 3` 的筛选;
+         * 坏档写 1e300 会印出巨大数字,并且永远满足筛选。
+         * 正常量级是几次到几十次,取一万已极宽。
+         */
+        const lossCount = Math.floor(asFiniteNumber(n.lossCount, 0, 0, NEMESIS_LOSS_CAP))
         const lastLossAt = asFiniteNumber(n.lastLossAt, 0, 0)
         const avengedAt = typeof n.avengedAt === 'number' && Number.isFinite(n.avengedAt) ? n.avengedAt : undefined
         const enemyName = typeof n.enemyName === 'string' && n.enemyName ? n.enemyName : n.enemyId
