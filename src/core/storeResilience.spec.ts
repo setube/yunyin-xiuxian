@@ -1382,12 +1382,44 @@ describe('坏档韧性 · 道侣机缘计数越界归零', () => {
     return p.bond as { opportunities?: number; nextEventAt?: number } | null
   }
 
+  const patchBondPair = (opp: unknown, next: unknown): { opportunities?: number; nextEventAt?: number } | null => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    const id = (DAOLU[0] as { id: string } | undefined)?.id ?? ''
+    p.$patch({
+      bond: {
+        daoluId: id, stage: 'met', fate: 50, trust: 50, accord: 50, shared: 3, metAt: 1,
+        fallen: false, departed: false, doneEvents: [], opportunities: opp, nextEventAt: next,
+        pendingEventId: null, intentPending: false, intent: null
+      }
+    } as never)
+    p.sanitize()
+    return p.bond as { opportunities?: number; nextEventAt?: number } | null
+  }
+
   it('巨值归零,并让下一次机缘重新可期', () => {
     const got = patchBond(1e300)
     expect(got?.opportunities, '机会计数没归零').toBe(0)
     expect(got?.nextEventAt, '下一次机缘的门槛没复位').toBe(6)
     // 判据 `opportunities < nextEventAt` 必须重新成立
     expect((got?.opportunities ?? 0) < (got?.nextEventAt ?? 0), '机缘判据仍是恒假').toBe(true)
+  })
+
+  it('只坏一个时,两个一起复位 —— 它们是一对', () => {
+    /*
+     * 审查意见指出的:分别处理这两个字段会让时序错乱 ——
+     * 单独把 nextEventAt 复位成 6、opportunities 仍是一百多,判据恒假;
+     * 反过来则每次调用都触发事件。
+     */
+    for (const [opp, next] of [
+      [1e300, 3],
+      [3, 1e300]
+    ] as const) {
+      const got = patchBondPair(opp, next)
+      expect(got?.opportunities, `只坏一方 (${opp},${next}) 时机会计数没复位`).toBe(0)
+      expect(got?.nextEventAt, `只坏一方 (${opp},${next}) 时门槛没复位`).toBe(6)
+      expect((got?.opportunities ?? 0) < (got?.nextEventAt ?? 0), '复位后判据仍不成立').toBe(true)
+    }
   })
 
   it('正常计数原样保留', () => {
@@ -1416,7 +1448,12 @@ describe('坏档韧性 · 道痕世号与宿敌败绩的上界', () => {
     } as never)
     e.sanitize()
     const m = (e.marks as { life?: number }[] | undefined)?.[0]
-    expect(m?.life, '道痕世号没被夹住').toBeLessThanOrEqual(1_000_000)
+    /*
+     * 上界不再写死:它必须比 `reincarnation.count` 的守卫高一档
+     * (写入端记的是 count+1,同值会让世号对不上),故断言「明显小于坏值」即可。
+     */
+    expect(m?.life, '道痕世号没被夹住').toBeLessThan(1e9)
+    expect(m?.life, '道痕世号被夹得太狠,正常档会被误伤').toBeGreaterThan(1e5)
   })
 
   it('宿敌败绩被夹住,不再永远满足「败我 ≥ 3」的筛选', () => {
@@ -1438,5 +1475,37 @@ describe('坏档韧性 · 道痕世号与宿敌败绩的上界', () => {
     } as never)
     p.sanitize()
     expect((p.nemeses as { lossCount?: number }[] | undefined)?.[0]?.lossCount).toBe(5)
+  })
+})
+
+/**
+ * 世号的上界必须**比写入端高一档**。
+ *
+ * 多个写入点记的是 `player.reincarnation.count + 1`(道痕、里程碑、试炼记录),
+ * 而 `count` 的读档守卫是 1e6。若道痕世号的上界取同一个数,
+ * `count` 正好等于上限时写入端写 `1e6 + 1`,读回来却被夹成 `1e6` ——
+ * 本世道痕/里程碑的世号对不上,整块记录消失(审查意见指出的)。
+ *
+ * 这条判据不复制常量,而是**实测**两者的关系:把 count 顶到它的守卫上限,
+ * 再写一条世号为 `count + 1` 的道痕,要求它读回来仍是那个值。
+ */
+describe('坏档韧性 · 世号上界须容得下 count + 1', () => {
+  it('count 顶到上限时,本世道痕的世号仍能对上', () => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({ reincarnation: { ...p.reincarnation, count: 1_000_000 } } as never)
+    p.sanitize()
+    const thisLife = p.reincarnation.count + 1
+
+    const e = useEndgameStore()
+    e.$patch({
+      marks: [{
+        targetId: 'chiyan', targetName: '赤炎界', life: thisLife, daoPathId: null, at: 1,
+        cleared: false, rounds: 10, buildName: '测试', powerText: '1'
+      }]
+    } as never)
+    e.sanitize()
+    const kept = (e.marks as { life?: number }[] | undefined)?.[0]
+    expect(kept?.life, `本世道痕的世号 ${thisLife} 被读档守卫夹掉了,整整一世的记录会消失`).toBe(thisLife)
   })
 })

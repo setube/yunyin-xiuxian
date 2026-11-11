@@ -903,14 +903,22 @@ export const usePlayerStore = defineStore(
              * 那位道侣的机缘再也不来。正常值域是 0..EVENT_GAP,取一百已极宽。
              */
             /*
-             * 越界**归零**,不是夹到上界。
+             * 这两个数是**一对**,必须一起复位。
              *
-             * 夹到同一个上界时两者相等,`opportunities < nextEventAt` 仍为假 ——
-             * 虽然那次会触发事件,但两个值都停在 100,语义上是「攒了 100 次还没触发」。
-             * 归零的语义是「刚触发过、从头攒」,与坏档该有的行为一致。
+             * 判据是 `opportunities < nextEventAt`,而 nextEventAt 由
+             * `opportunities + EVENT_GAP`(=6)推出来 —— 只修其中一个会让时序错乱:
+             * 单独把 nextEventAt 复位成 6、opportunities 仍是一百多,判据恒假;
+             * 反过来则每次调用都触发事件。
+             *
+             * 任一方越界就把**两边一起**重置成「刚触发过」的初态
+             * (opportunities=0、nextEventAt=EVENT_GAP),与 `createBond` 的初值一致。
              */
-            opportunities: b.opportunities > BOND_EVENT_CAP ? 0 : Math.floor(asFiniteNumber(b.opportunities, 0, 0)),
-            nextEventAt: b.nextEventAt > BOND_EVENT_CAP ? BOND_EVENT_GAP : Math.floor(asFiniteNumber(b.nextEventAt, 0, 0)),
+            ...(b.opportunities > BOND_EVENT_CAP || b.nextEventAt > BOND_EVENT_CAP
+              ? { opportunities: 0, nextEventAt: BOND_EVENT_GAP }
+              : {
+                  opportunities: Math.floor(asFiniteNumber(b.opportunities, 0, 0)),
+                  nextEventAt: Math.floor(asFiniteNumber(b.nextEventAt, 0, 0))
+                }),
             // offerBondEvent 见非空 pendingEventId 即不出新事件:认不出的 id 会永久堵死道侣线
             pendingEventId:
               typeof b.pendingEventId === 'string' && bondEventDef(b.pendingEventId) ? b.pendingEventId : null,
