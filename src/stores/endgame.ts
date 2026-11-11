@@ -297,8 +297,13 @@ export const useEndgameStore = defineStore(
        * 上界只为拦坏档:道源按「道果 ×200」这类速率累积,真实游玩到不了百万。
        * 原先 `asFiniteNumber(v, 0, 0)` 只给了下限 —— 而 `1e300` 是有限数,
        * 原样通过,界面经 formatNum 印成「1.00e300」。实测灌 1e300 后 sanitize 不修。
+       *
+       * **越界要归零,不是夹到上界**:夹到 1e9 等于凭空送给玩家十亿道源,
+       * 而道源是可以直接花掉的(熔炉、器魂)。坏值本来就没有可信来源,
+       * 与「非有限」同一条退路 —— 归 0。
        */
-      daoSource.value = asFiniteNumber(daoSource.value, 0, 0, DAO_SOURCE_MAX)
+      const rawDaoSource = asFiniteNumber(daoSource.value, 0, 0)
+      daoSource.value = rawDaoSource > DAO_SOURCE_MAX ? 0 : rawDaoSource
       // 一次性引导标记:与 settings 的布尔开关同一套清洗纪律
       endgameTutorialSeen.value = endgameTutorialSeen.value === true
       daoFruitTutorialSeen.value = daoFruitTutorialSeen.value === true

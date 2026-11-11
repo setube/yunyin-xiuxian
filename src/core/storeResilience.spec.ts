@@ -7,6 +7,7 @@ import { usePacingTelemetry } from '@/stores/pacingTelemetry'
 import { useLoreStore } from '@/stores/lore'
 import { useResourcesStore } from '@/stores/resources'
 import { useMarketStore } from '@/stores/market'
+import { useEndgameStore } from '@/stores/endgame'
 import { useApprenticeStore } from '@/stores/apprentice'
 import { sanitizeOfflineInputs } from './offline'
 
@@ -617,4 +618,65 @@ describe('坏档韧性 · 毒成有限巨值之后不留天文数字', () => {
       expect(bad, `${name} 在灌成巨值之后残留了天文数字(界面会把它印给玩家看):\n${bad.join('\n')}`).toEqual([])
     })
   }
+})
+
+/**
+ * 三条具体字段的上界 —— 都是审查意见指出的,而且**首版的修法各错一处**。
+ *
+ * 一 **灵气上界不能凭感觉取**。最高境界的气海实测 `qiCap(MAX_MAJOR, maxSub) = 1.172e16`,
+ *    乘 `QI_BANK_MULT = 10` 的积余是 **1.172e17** —— 正常存档能到这么高。
+ *    首版取 1e15,会把后期玩家的有效灵气清零。
+ * 二 **道源越界要归零,不是夹到上界**。夹到 1e9 等于凭空送十亿道源,
+ *    而道源可以直接花掉(熔炉、器魂)。
+ * 三 **灵草分账同样要上界**。首版只改了小数资源,漏了 `herbByGrade`。
+ */
+describe('坏档韧性 · 三条上界的取值与退路', () => {
+  /** 正常档不该被这些守卫误伤 */
+  it('灵气:真实上限以内原样保留', () => {
+    setActivePinia(createPinia())
+    const r = useResourcesStore()
+    // 1.172e17 是「最高境界气海 × 积余倍率」,正常存档能到这里
+    for (const v of [0, 1e6, 1.17e17]) {
+      r.$patch({ qi: v } as never)
+      r.sanitize()
+      expect(r.qi, `正常档的灵气 ${v} 被误清`).toBe(v)
+    }
+  })
+
+  it('灵气:坏档巨值归零', () => {
+    setActivePinia(createPinia())
+    const r = useResourcesStore()
+    r.$patch({ qi: 1e300 } as never)
+    r.sanitize()
+    expect(r.qi, '1e300 没被清').toBe(0)
+  })
+
+  it('道源:越界归零,不是夹到上界(否则等于送钱)', () => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    for (const v of [1e300, 1e12]) {
+      e.$patch({ daoSource: v } as never)
+      e.sanitize()
+      expect(e.daoSource, `${v} 被夹成了 ${e.daoSource} —— 应该归零`).toBe(0)
+    }
+  })
+
+  it('道源:上限以内原样保留', () => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    for (const v of [0, 1234, 1e8]) {
+      e.$patch({ daoSource: v } as never)
+      e.sanitize()
+      expect(e.daoSource, `正常值 ${v} 被改`).toBe(v)
+    }
+  })
+
+  it('灵草分账:巨值归零,正常值保留', () => {
+    setActivePinia(createPinia())
+    const r = useResourcesStore()
+    r.$patch({ herbByGrade: { 1: 1e300, 2: 500, 3: 0, 4: 0, 5: 0 } } as never)
+    r.sanitize()
+    expect(r.herbOf(1), '巨量灵草没被清').toBe(0)
+    expect(r.herbOf(2), '正常灵草被误清').toBe(500)
+  })
 })

@@ -38,8 +38,15 @@ export const useResourcesStore = defineStore(
      * 长年游玩也到不了一兆;而 1e12 仍在 formatNum 的中文单位区间内(印「1兆」)。
      */
     const SMALL_RESOURCE_MAX = 1e12
-    /** 灵气的兜底上界:同样只为拦坏档,真实上限由气海容量决定 */
-    const QI_SANITY_MAX = 1e15
+    /*
+     * 灵气的兜底上界。
+     *
+     * **不能凭感觉取**:最高境界的气海实测是 `qiCap(MAX_MAJOR, maxSub) = 1.172e16`,
+     * 加上 `QI_BANK_MULT = 10` 的积余就是 **1.172e17** —— 正常存档能到这么高。
+     * 首版取 1e15,会把后期玩家的有效灵气直接清零(审查意见里那条「高」)。
+     * 现取真实上限的十倍,既拦得住 1e300 那种坏档,又不可能误伤。
+     */
+    const QI_SANITY_MAX = 1e18
     const qi = ref(0)
     const wudao = ref(0)
     /** 灵草按品阶分账:key = HerbGrade(1 凡品 → 5 道品) */
@@ -194,8 +201,12 @@ export const useResourcesStore = defineStore(
         for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
           const grade = Number(k)
           if (!isHerbGrade(grade)) continue
-          const n = typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : 0
-          clean[grade] = Math.max(0, n)
+          /*
+           * 上界与小数资源同一条:灵草也是低速产出(灵田 18 株/时),
+           * 一兆已远超任何真实档;1e300 那种有限巨值会印成「1.00e300」。
+           */
+          const raw = typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : 0
+          clean[grade] = raw > SMALL_RESOURCE_MAX ? 0 : Math.max(0, raw)
         }
       }
       herbByGrade.value = clean
