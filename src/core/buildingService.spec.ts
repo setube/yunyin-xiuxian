@@ -4,7 +4,8 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { buildingShortfall, buildingUpgradeInfo, upgradeBuilding } from './buildingService'
+import { buildingBatchPlan, buildingShortfall, buildingUpgradeInfo, upgradeBuilding } from './buildingService'
+import { buildingDef } from '@/data/buildings'
 import { useResourcesStore } from '@/stores/resources'
 import { usePlayerStore } from '@/stores/player'
 import { useDongfuStore } from '@/stores/dongfu'
@@ -91,5 +92,89 @@ describe('buildingUpgradeInfo · 资源检查与列差', () => {
     expect(toast?.text).toContain('尚差')
     expect(toast?.text).toContain('玄铁')
     expect(toast?.text).not.toContain('或')
+  })
+})
+
+/**
+ * 连升计划与单级升级必须给出同一个「能不能建」。
+ *
+ * `buildingBatchPlan` 的注释写着「门槛/上限须与 buildingUpgradeInfo 同步」,
+ * 但**没有任何判据** —— 两个函数各自写一遍境界闸 / 满级 / 洞府辖限三道门。
+ * 分叉的后果是玩家看到一正一反:单级钮说「已圆满」而连升钮说「尚差灵石」,
+ * 或者反过来(卡里明明能升,连升段却是灰的)。
+ *
+ * 判据用**行为对账**,不比源码 —— 比字符串只能证明写法像,不证明结论一致。
+ * 逐一造出四道门各自触发的状态,看两边的 canUpgrade / blocked 是否同真同假。
+ */
+describe('建筑连升 · 门槛与单级升级同源', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    fund(0)
+  })
+
+  /** 两边对「这一格现在能不能建」的结论 */
+  function both(id: Parameters<typeof buildingUpgradeInfo>[0]): { single: boolean; batch: boolean } {
+    return { single: buildingUpgradeInfo(id).canUpgrade, batch: buildingBatchPlan(id).blocked === null }
+  }
+
+  it('境界闸未开:两边都拦,且说同一句话', () => {
+    // 洞府(mansion)门槛最高;把境界压到 0 保证未开
+    usePlayerStore().major = 0
+    fund(1e12, 9999)
+    const info = buildingUpgradeInfo('mansion')
+    if (!info.canUpgrade && /境/.test(info.reason)) {
+      const plan = buildingBatchPlan('mansion')
+      expect(plan.blocked, '单级拦下了、连升没拦').toBe(info.reason)
+    }
+  })
+
+  it('已至满级:两边都说「已圆满」', () => {
+    const dongfu = useDongfuStore()
+    const def = buildingDef('array')!
+    usePlayerStore().major = def.unlockRealm
+    fund(1e12, 99999)
+    dongfu.setLevel('array', def.maxLevel)
+    expect(both('array').single, '满级后单级仍可建?').toBe(false)
+    expect(both('array').batch, '满级后连升仍可建?').toBe(false)
+    expect(buildingBatchPlan('array').blocked, '两边的满级说法不一致').toBe(buildingUpgradeInfo('array').reason)
+    expect(buildingBatchPlan('array').atMax, '满级该标 atMax').toBe(true)
+  })
+
+  it('洞府辖限:两边都拦,且说同一句话', () => {
+    const dongfu = useDongfuStore()
+    const def = buildingDef('array')!
+    usePlayerStore().major = def.unlockRealm
+    fund(1e12, 99999)
+    // 建到辖限之上一点(仍低于品类满级)
+    const cap = dongfu.buildingLevelCap
+    if (cap < def.maxLevel) {
+      dongfu.setLevel('array', cap)
+      expect(both('array').single).toBe(false)
+      expect(both('array').batch).toBe(false)
+      expect(buildingBatchPlan('array').blocked).toBe(buildingUpgradeInfo('array').reason)
+    }
+  })
+
+  it('资源充足时两边都放行', () => {
+    const def = buildingDef('array')!
+    usePlayerStore().major = def.unlockRealm
+    fund(1e12, 99999)
+    useDongfuStore().setLevel('array', 0)
+    const b = both('array')
+    expect(b.single, '单级说不能建').toBe(true)
+    expect(b.batch, '连升说不能建').toBe(true)
+    expect(buildingBatchPlan('array').blocked).toBeNull()
+  })
+
+  it('资源不足时两边都拦,且列同一笔差额', () => {
+    const def = buildingDef('array')!
+    usePlayerStore().major = def.unlockRealm
+    useDongfuStore().setLevel('array', 0)
+    fund(0, 0)
+    const info = buildingUpgradeInfo('array')
+    const plan = buildingBatchPlan('array')
+    expect(info.canUpgrade).toBe(false)
+    expect(plan.blocked).not.toBeNull()
+    expect(plan.blocked, '两边的缺料说法不一致').toBe(info.reason)
   })
 })
