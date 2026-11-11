@@ -31,6 +31,17 @@ describe('affixRollText', () => {
     expect(affixRollHint).toContain('100% 上限')
   })
 
+  it('坏值不许印成「浮 NaN%」', () => {
+    /*
+     * `Math.max(0, Math.min(1, NaN))` 仍是 NaN —— 只靠钳制收不住(AGENTS.md 点过这个坑)。
+     * 当前调用点都安全(`rng.next()` 恒 0~1、`rollMark` 已先夹一次),
+     * 但这是公开导出,新调用点误传坏值就直接脏到界面上。
+     */
+    expect(affixRollText(Number.NaN)).toBe('浮 0%')
+    expect(affixRollText(Number.POSITIVE_INFINITY)).toBe('浮 0%')
+    expect(affixRollText(Number.NEGATIVE_INFINITY)).toBe('浮 0%')
+  })
+
   /**
    * 详情页按词条行渲染浮动与悬停说明,不手抄「浮」字与「%」。
    *

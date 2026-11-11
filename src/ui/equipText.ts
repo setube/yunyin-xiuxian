@@ -9,7 +9,14 @@ export function equipNextLevelText(level: number): string {
 
 /** 词条随机浮动,取实例上存的 roll(0~1) */
 export function affixRollText(roll: number): string {
-  return `浮 ${Math.round(Math.max(0, Math.min(1, roll)) * 100)}%`
+  /*
+   * `Math.max/min` 挡不住 NaN —— `Math.max(0, Math.min(1, NaN))` 仍是 NaN,
+   * 会印成「浮 NaN%」(AGENTS.md 明文点过这个坑)。
+   * 当前的调用点都是安全的(rng.next() 恒 0~1、rollMark 已先夹一次),
+   * 但这是公开导出,新调用点误传坏值就直接脏到界面上。判不出按 0(下限)处理。
+   */
+  const raw = Number.isFinite(roll) ? roll : 0
+  return `浮 ${Math.round(Math.max(0, Math.min(1, raw)) * 100)}%`
 }
 
 /** 「浮 X%」的悬停说明 */
