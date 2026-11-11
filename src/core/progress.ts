@@ -1,7 +1,7 @@
 /** 进度服务:计数器 / 成就 / 主线任务 / 每日任务 / 奖励发放;各系统经 track() 上报行为。 */
 import type { AchvCond, CounterKey, RewardBundle } from '@/types'
 import { gte, sub, toNum } from '@/utils/gnum'
-import { todayStr } from '@/utils/time'
+import { localDayNum, todayStr } from '@/utils/time'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
 import { LIFESPAN_CRITICAL_RATIO, QI_RICH_RATIO, CULT_SPEED_SOFT_CAP_T, CULT_SPEED_SOFT_CAP_DIMINISH } from '@/data/constants'
@@ -270,9 +270,31 @@ export function qiBankEtaSec(): number {
 export function rolloverDailyIfNeeded(): void {
   const quests = useQuestsStore()
   const today = todayStr()
-  if (quests.daily.date !== today) {
+  /*
+   * 只允许**向前**翻日:日期不同不等于该重开日课。
+   *
+   * 系统时钟回拨时 `today` 会退到旧日期,`!==` 成立 → `rolloverDaily` 清空 `done`,
+   * 玩家当日已完成的日课被重置、可以再做一遍(审查意见里那条「回拨会重置日课进度」)。
+   * 这与第 54 轮洞府巡游那处同型:那里从 `===` 改成 `>=`,这里从 `!==` 改成「更大才翻」。
+   *
+   * 判据用日号(YYYYMMDD 整数)而非字符串:`2026-11-1` 与 `2026-11-10` 的字典序会出错。
+   */
+  const todayNum = localDayNum(Date.now())
+  const storedNum = dayStrToNum(quests.daily.date)
+  if (storedNum === null || todayNum > storedNum) {
     quests.rolloverDaily(today)
   }
+}
+
+/** 「YYYY-M-D」→ 日号整数;认不出返回 null(按「没有记录」处理,允许翻日) */
+function dayStrToNum(s: string): number | null {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s)
+  if (!m) return null
+  const y = Number(m[1])
+  const mo = Number(m[2])
+  const d = Number(m[3])
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null
+  return y * 10000 + mo * 100 + d
 }
 
 /** 统一行为汇报入口 */
