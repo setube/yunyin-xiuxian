@@ -757,3 +757,45 @@ describe('坏档韧性 · 历练会话计数的上界', () => {
     expect(patch(500), '正常值被误夹').toBe(500)
   })
 })
+
+/**
+ * 远征运行态的计数要封顶 —— 它们会**乘进战斗属性**。
+ *
+ * `run.winStacks` 经 `stackedMods(mods, perWin, run.winStacks)` 直接乘进攻防,
+ * 坏档写 `1e300` 会让玩家攻击瞬间无限大;而原先只有下限、原样保留。
+ *
+ * 上界不是随手取的:一趟远征是「入界 + 每层择路 + 界主」共
+ * `EXPEDITION_ROUTE_LAYERS + 2 = 5` 战,故叠层不可能超过 5;留一档余量到 16。
+ */
+describe('坏档韧性 · 远征运行态的计数上界', () => {
+  const patchRun = (v: unknown): { winStacks?: number; bonus?: number } | undefined => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    e.$patch({
+      worldRun: { worldId: 'chiyan', pactId: null, gateId: null, layer: 1, bonus: v, rows: [], carriedHpPct: 1, totalRounds: 0, winStacks: v }
+    } as never)
+    e.sanitize()
+    return e.worldRun as { winStacks?: number; bonus?: number } | undefined
+  }
+
+  it('巨值被夹住', () => {
+    for (const v of [1e300, 1e12]) {
+      const r = patchRun(v)
+      expect(r?.winStacks, `winStacks ${v} 没被夹住`).toBeLessThanOrEqual(16)
+      expect(r?.bonus, `bonus ${v} 没被夹住`).toBeLessThanOrEqual(16)
+    }
+  })
+
+  it('正常战绩不被误夹', () => {
+    // 一趟远征最多 5 战,叠层 0..5 都是正常值
+    for (const v of [0, 3, 5]) {
+      const r = patchRun(v)
+      expect(r?.winStacks, `正常值 ${v} 被误夹`).toBe(v)
+    }
+  })
+
+  it('上界覆盖得住「一趟远征最多几战」', () => {
+    // 入界 1 + 每层 1 × ROUTE_LAYERS + 界主 1
+    expect(16, '上界小于一趟远征的场数,正常叠层会被夹').toBeGreaterThanOrEqual(5)
+  })
+})
