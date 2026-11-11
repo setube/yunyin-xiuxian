@@ -80,6 +80,34 @@ describe('sanitize:计数器巨值要归零,不能白送成就', () => {
     expect(quests.counters.kills, '巨值没被归零 —— 成就判据会全过').toBe(0)
   })
 
+  it('日课基线是巨值时回落当前累计,delta 不会是负数', () => {
+    /*
+     * 基线与计数器是同一类判定依据:`dailyDelta = counters - base`。
+     * 坏档写 `base.kills: 1e300` 时 delta 恒为极大负数,日课**永远做不完**。
+     * 巨值按「基线缺失」处理(回落当前累计,今天从此刻开始算)——
+     * 归零反而会让 delta 变成历史累计,那是另一条已知的白送路径。
+     */
+    const quests = useQuestsStore()
+    quests.$patch({
+      counters: { kills: 500 },
+      daily: { date: todayStr(), base: { kills: 1e300 }, done: [] }
+    } as never)
+    quests.sanitize()
+    expect(quests.daily.base.kills, '巨值基线没被处理').toBe(500)
+    expect(quests.dailyDelta('kills'), 'delta 成了负数,日课永远做不完').toBe(0)
+  })
+
+  it('健康的日课基线原样保留', () => {
+    const quests = useQuestsStore()
+    quests.$patch({
+      counters: { kills: 510 },
+      daily: { date: todayStr(), base: { kills: 500 }, done: [] }
+    } as never)
+    quests.sanitize()
+    expect(quests.daily.base.kills).toBe(500)
+    expect(quests.dailyDelta('kills')).toBe(10)
+  })
+
   it('正常计数原样保留', () => {
     const quests = useQuestsStore()
     quests.$patch({ counters: { kills: 500, battles: 12 } } as never)

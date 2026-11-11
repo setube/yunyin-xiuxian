@@ -8,6 +8,14 @@ import { ACHIEVEMENTS } from '@/data/achievements'
 import { TITLES } from '@/data/titles'
 import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray } from '@/utils/saveShape'
 
+/**
+ * 计数器与日课基线的读档上界。
+ *
+ * 这两处都是**判定依据**(成就 `counter >= value`、日课 `counters - base`),
+ * 不只是显示值。单局几千场已是长线,真实可达到的计数远低于一亿。
+ */
+const COUNTER_MAX = 100_000_000
+
 export type CollectionCategory = 'equip' | 'gongfa' | 'pill' | 'artifact' | 'pet' | 'event' | 'talent' | 'daolu'
 
 export const useQuestsStore = defineStore(
@@ -51,7 +59,6 @@ export const useQuestsStore = defineStore(
        * (同理见 `inventory` 的 `investedDust`;与「夹到边界」那种修法区分开:
        * 夹的值本身可信、只是越界,归零的是值本身不可信。)
        */
-      const COUNTER_MAX = 100_000_000
       counters.value = Object.fromEntries(
         Object.entries(asNumberRecord(counters.value, 0)).map(([k, v]) => [k, v > COUNTER_MAX ? 0 : v])
       )
@@ -73,7 +80,16 @@ export const useQuestsStore = defineStore(
        * 归零(delta=0)与抄成当前累计是同一个效果,但后备语义更清楚:
        * 「今天从此刻开始算」,而不是「从 0 起算」。
        */
-      const hasBase = Object.keys(base).length > 0
+      /*
+       * 基线也要设上界 —— 它与 `counters` 是同一类**判定依据**(`dailyDelta = counters - base`)。
+       *
+       * 只看「有没有键」不够:坏档写 `base.kills: 1e300` 时,delta 恒为极大的负数,
+       * 日课**永远做不完**(实测 `dailyDelta` 得 -1e300)。
+       * 巨值按「基线缺失」处理 —— 回落到当前累计,即「今天从此刻开始算」,
+       * 这与上面那条兜底同一个语义;归零反而会让 delta 变成历史累计,正是要避免的白送。
+       */
+      const hasBase =
+        Object.keys(base).length > 0 && !Object.values(base).some(v => v > COUNTER_MAX)
       daily.value = {
         date: typeof d?.date === 'string' ? d.date : '',
         base: hasBase ? base : { ...counters.value },
