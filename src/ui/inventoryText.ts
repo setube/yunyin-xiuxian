@@ -63,3 +63,23 @@ export function loadoutApplyToast(
   }
   return head
 }
+
+/**
+ * 装备槽卡的可访问名。
+ *
+ * 卡面上印着三样:槽位名(武器/衣袍…)、已经戴着的那件(**名字 + 强化数 + 自定标记**)、
+ * 以及有没有可换的。可访问名原先只有「武器」或「武器,可换」——
+ * 玩家从读屏里听不出这个格子现在是空的还是戴了什么。
+ *
+ * 空与有由正文自己表达,不靠透明度(见槽位卡的注释);名字里也照这条:
+ * 空的就说「未装备」,有的就说那一件的名字。
+ *
+ * @param slotName 槽位名(取 data/equipment 的 EQUIP_SLOT_NAMES)
+ * @param equipped 现戴着的那件的说法;空槽为 null
+ * @param canSwap  有没有更优的件可换
+ */
+export function equipSlotLabel(slotName: string, equipped: string | null, canSwap: boolean): string {
+  const parts = [slotName, equipped ?? '未装备']
+  if (canSwap) parts.push('可换')
+  return parts.join(' · ')
+}
