@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia, type Store } from 'pinia'
 import type { BondState } from '@/core/daoluService'
 import { usePlayerStore } from '@/stores/player'
+import { DAOLU } from '@/data/daolu'
 import { useAdventureStore } from '@/stores/adventure'
 import { usePacingTelemetry } from '@/stores/pacingTelemetry'
 import { useLoreStore } from '@/stores/lore'
@@ -1352,5 +1353,90 @@ describe('坏档韧性 · 转世次数不能饱和', () => {
     p.$patch({ reincarnation: { ...p.reincarnation, count: Number.MAX_VALUE } } as never)
     p.sanitize()
     expect(p.reincarnation.count, '坏档的转世次数没被读档守卫夹住').toBeLessThanOrEqual(1_000_000)
+  })
+})
+
+/**
+ * 道侣机缘的计数要归零,不是夹到上界。
+ *
+ * 触发判据是 `b.opportunities < b.nextEventAt`,而 `nextEventAt` 由
+ * `opportunities + EVENT_GAP`(=6)推出来 —— 正常值域是 0..6。
+ * 坏档写 1e300 时两边一起极大,**判据恒假,那位道侣的机缘再也不来**。
+ *
+ * 夹到同一个上界不算解决:两值相等虽会触发一次,但语义上仍是「攒了 100 次」。
+ * 归零表示「刚触发过、从头攒」,与坏档该有的行为一致。
+ */
+describe('坏档韧性 · 道侣机缘计数越界归零', () => {
+  const patchBond = (v: unknown): { opportunities?: number; nextEventAt?: number } | null => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    const id = (DAOLU[0] as { id: string } | undefined)?.id ?? ''
+    p.$patch({
+      bond: {
+        daoluId: id, stage: 'met', fate: 50, trust: 50, accord: 50, shared: 3, metAt: 1,
+        fallen: false, departed: false, doneEvents: [], opportunities: v, nextEventAt: v,
+        pendingEventId: null, intentPending: false, intent: null
+      }
+    } as never)
+    p.sanitize()
+    return p.bond as { opportunities?: number; nextEventAt?: number } | null
+  }
+
+  it('巨值归零,并让下一次机缘重新可期', () => {
+    const got = patchBond(1e300)
+    expect(got?.opportunities, '机会计数没归零').toBe(0)
+    expect(got?.nextEventAt, '下一次机缘的门槛没复位').toBe(6)
+    // 判据 `opportunities < nextEventAt` 必须重新成立
+    expect((got?.opportunities ?? 0) < (got?.nextEventAt ?? 0), '机缘判据仍是恒假').toBe(true)
+  })
+
+  it('正常计数原样保留', () => {
+    const got = patchBond(5)
+    expect(got?.opportunities).toBe(5)
+    expect(got?.nextEventAt).toBe(5)
+  })
+})
+
+/**
+ * 道痕的世号与宿敌的败绩数要有上界。
+ *
+ * 道痕世号同时是**筛选依据**(`m.life === currentLife` 筛本世)、
+ * **随机种子成分**(`seedOf(targetId, life)`)与**显示值**(「第N世」);
+ * 宿敌的「败我 N 次」是裸插值且参与 `>= 3` 筛选。
+ */
+describe('坏档韧性 · 道痕世号与宿敌败绩的上界', () => {
+  it('道痕世号被夹住,不会印出「第1e+300世」', () => {
+    setActivePinia(createPinia())
+    const e = useEndgameStore()
+    e.$patch({
+      marks: [{
+        targetId: 'chiyan', targetName: '赤炎界', life: 1e300, daoPathId: null, at: 1,
+        cleared: false, rounds: 10, buildName: '测试', powerText: '1'
+      }]
+    } as never)
+    e.sanitize()
+    const m = (e.marks as { life?: number }[] | undefined)?.[0]
+    expect(m?.life, '道痕世号没被夹住').toBeLessThanOrEqual(1_000_000)
+  })
+
+  it('宿敌败绩被夹住,不再永远满足「败我 ≥ 3」的筛选', () => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({
+      nemeses: [{ enemyId: 'e1', enemyName: '狼', regionId: 'qingyun', lossCount: 1e300, lastLossAt: 1 }]
+    } as never)
+    p.sanitize()
+    const n = (p.nemeses as { lossCount?: number }[] | undefined)?.[0]
+    expect(n?.lossCount, '宿敌败绩没被夹住').toBeLessThanOrEqual(10_000)
+  })
+
+  it('真实值原样保留', () => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({
+      nemeses: [{ enemyId: 'e2', enemyName: '虎', regionId: 'qingyun', lossCount: 5, lastLossAt: 1 }]
+    } as never)
+    p.sanitize()
+    expect((p.nemeses as { lossCount?: number }[] | undefined)?.[0]?.lossCount).toBe(5)
   })
 })

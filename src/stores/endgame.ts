@@ -96,11 +96,15 @@ const VOID_FIGHTS_MAX = 20
 const VOID_NODE_BONUS_MAX = 100
 
 /**
- * 界域/试炼战绩的上界 —— 两处都是**裸插值**,没有格式化兜底。
+ * 界域/试炼战绩与世号的读档上界 —— 这几处都是**裸插值**,没有格式化兜底。
  *
- * 「已破 ×N」与「最佳 N 回合」直接印数字:坏档写 1e300 就成了「已破 ×1e+300」。
- * 一局里破一界几百次、一场打几百回合都已是极值,上界各留一档余量。
+ * 「已破 ×N」「最佳 N 回合」「第N世」直接印数字:坏档写 1e300 就成了科学计数。
+ * 一局里破一界几百次、一场打几百回合都已是极值;世号与 `player.ts` 的
+ * `LIFE_COUNTER_CAP` 是同一个量,它还兼任筛选依据(`m.life === currentLife`)
+ * 与随机种子成分(`seedOf(targetId, life)`)。
  */
+const LIFE_COUNTER_CAP = 1_000_000
+
 const WORLD_CLEARS_MAX = 10_000
 const TRIAL_CLEARS_MAX = 10_000
 const BATTLE_ROUNDS_CAP = 10_000
@@ -274,7 +278,7 @@ function sanitizeMarks(raw: unknown): DaoMark[] {
       }
     }
     out.push({
-      life: Math.max(1, Math.floor(asFiniteNumber(m.life, 1, 1))),
+      life: Math.floor(asFiniteNumber(m.life, 1, 1, LIFE_COUNTER_CAP)),
       daoPathId: typeof m.daoPathId === 'string' && daoPathDef(m.daoPathId) ? (m.daoPathId as DaoPathId) : null,
       ...(Number.isFinite(m.major) ? { major: Math.min(MAX_MAJOR, Math.floor(major)) } : {}),
       targetId: m.targetId,
@@ -470,7 +474,7 @@ export const useEndgameStore = defineStore(
         m => !!m && typeof (m as { id?: unknown }).id === 'string' && !!milestoneDef((m as { id: string }).id)
       ).map(m => ({
         id: m.id,
-        life: Math.floor(asFiniteNumber(m.life, 0, 0)),
+        life: Math.floor(asFiniteNumber(m.life, 0, 0, LIFE_COUNTER_CAP)),
         at: Math.floor(asTimestamp(m.at, 0))
       }))
       // 「首次」语义(同 addMilestone):同 id 只留先出现的那条
@@ -491,7 +495,7 @@ export const useEndgameStore = defineStore(
         if (value <= 0) continue
         fixedRecords[id] = {
           value,
-          life: Math.floor(asFiniteNumber(r.life, 0, 0)),
+          life: Math.floor(asFiniteNumber(r.life, 0, 0, LIFE_COUNTER_CAP)),
           /*
            * note 截到 NAME_MAX_LENGTH,与 updateRecord 的写入路径同一把尺。
            * 上一轮只补了 updateRecord,读档这条仍能塞进几十万字符
