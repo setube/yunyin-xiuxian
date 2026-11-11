@@ -336,7 +336,15 @@ export const useAdventureStore = defineStore(
       // 认不出的待处理事件 id 须清:EventDialog 打不开,历练却被堵到 120 秒超时
       const pendingId = typeof pendingEventId.value === 'string' ? pendingEventId.value : null
       pendingEventId.value = pendingId && eventDef(pendingId) ? pendingId : null
-      pendingEventSince.value = pendingEventId.value ? asFiniteNumber(pendingEventSince.value, 0, 0) : 0
+      /*
+       * 起钟落在未来会让 `now - pendingEventSince > 超时` 恒假 ——
+       * **事件永不超时,历练永久堵塞**(`exploration.ts` 的自动结算那条分支进不去)。
+       * 夹到此刻:最坏是让玩家多等一个超时窗口,而不是整局卡死。
+       * `asFiniteNumber` 只管下限,不管方向。
+       */
+      pendingEventSince.value = pendingEventId.value
+        ? Math.min(asFiniteNumber(pendingEventSince.value, 0, 0), Date.now())
+        : 0
       // 事件记忆:times / lastAt 为 NaN 会让 LegacyView 乱序、写出「NaN 次际遇」。
       // 认不出的事件 id 不清:可能是改名 / 下线的旧档内容。
       /*

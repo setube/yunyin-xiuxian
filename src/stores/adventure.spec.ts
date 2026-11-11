@@ -103,6 +103,28 @@ describe('历练公共写入边界', () => {
    * 手改存档塞 10 万条假 id 后 $state 到 1.98MB / 989KB。
    * 这里可以安全过滤(不像事件记忆要兼容下线内容):区域 id 认得才能用。
    */
+  it('待处理事件的起钟落在未来时夹到此刻,历练不会被永久堵塞', () => {
+    /*
+     * `exploration.ts` 的自动结算判 `now - pendingEventSince > 超时`，
+     * 起钟在未来时该条件恒假 —— 事件**永不超时**,而待处理事件会阻塞战斗,
+     * 整段历练就此卡死。`asFiniteNumber` 只管下限,不管方向。
+     */
+    const ad = useAdventureStore()
+    const future = Date.now() + 365 * 24 * 3600_000
+    ad.$patch({ pendingEventId: 'ev_jade_slip', pendingEventSince: future } as never)
+    ad.sanitize()
+    expect(ad.pendingEventId, '夹具前提:事件 id 该被认出来').toBe('ev_jade_slip')
+    expect(ad.pendingEventSince, '未来的起钟没被夹住 —— 历练会永久堵塞').toBeLessThanOrEqual(Date.now())
+  })
+
+  it('待处理事件的正常起钟原样保留', () => {
+    const ad = useAdventureStore()
+    const at = Date.now() - 30_000
+    ad.$patch({ pendingEventId: 'ev_jade_slip', pendingEventSince: at } as never)
+    ad.sanitize()
+    expect(ad.pendingEventSince, '正常起钟被误改了').toBe(at)
+  })
+
   it('读档时通关时刻按时间戳修形,巨值不再让地界永不复苏', () => {
     /*
      * `clearedAt` 不只用来显示:`worldMemory.regionTouchedAt` 拿它当「妖气复聚钟」的候选,
