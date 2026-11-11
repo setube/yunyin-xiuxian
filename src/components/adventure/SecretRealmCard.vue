@@ -59,13 +59,21 @@
           禁用态不压整块透明度:那会把正文一起压到 1.74~3.02:1(实测),
           而卡片里那句「尚差 N 灵石」正是拒因本身。改为只换底色,字色不动。
         -->
+        <!--
+          可访问名 = 形制读数 + 拒因。
+          原先只有 `realmMark(r).label`(秘境名 · 回血档 · 战利倍率):置灰时屏幕上明明写着
+          「灵石尚差 N」,读屏却只念得到形制读数,听不出为什么进不去。
+          全仓的既有做法是「拒因走 aria-label / title、不写进按钮正文之外」
+          (见 EquipmentDetailDialog 的强 化钮),这里补齐同一条。
+        -->
         <button
           v-for="r in list"
           :key="r.id"
           class="w-full rounded-md bg-paper-deep/60 px-3 py-2 text-left active:scale-98 disabled:cursor-not-allowed disabled:bg-ink/4"
           :class="{ 'realm-top-gain': isTopGain(realmMark(r)) }"
           :disabled="!canPay(r)"
-          :aria-label="realmMark(r).label"
+          :aria-label="entryBlockText(r) ? `${r.name} · 入 境 · ${entryBlockText(r)} · ${realmMark(r).label}` : `${r.name} · 入 境 · ${realmMark(r).label}`"
+          :title="entryBlockText(r) ?? undefined"
           @click="enter(r.id)"
         >
           <span class="flex items-baseline gap-2">
