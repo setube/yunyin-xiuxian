@@ -51,3 +51,48 @@ describe('同帧多条 toast · 各有其声', () => {
     expect(flashes).toEqual([1, 2])
   })
 })
+
+/**
+ * 去重重排后不许漏播。
+ *
+ * store 的同文案去重分支是 `[...toasts.filter(id≠dup), dup]` —— 把旧条挪到末尾,
+ * 数组随之变成 `[5, 4]` 这种次序。原实现边遍历边把「已播最大 id」推到 5,
+ * 轮到 4 时 `4 <= 5` 被判成播过了而跳过:那条 rare 仍在屏幕上,却既不出声也不点金光。
+ *
+ * 判据:乱序输入下,每一条新增都要播到,顺序按 id 升序。
+ */
+describe('同帧多条 toast · 乱序输入不漏播', () => {
+  it('去重重排成 [5, 4] 时,4 的那声照样出', () => {
+    const sounds: string[] = []
+    const flashes: number[] = []
+    const announcer = createToastAnnouncer(
+      (kind, id) => sounds.push(`${id}:${kind}`),
+      id => flashes.push(id)
+    )
+    // 先播过 1..3
+    announcer.announce([
+      { id: 1, kind: 'info' },
+      { id: 2, kind: 'info' },
+      { id: 3, kind: 'info' }
+    ])
+    sounds.length = 0
+
+    // 同帧新增 4(rare) 与 5(info),随后去重把 4 挪到末尾 → [5, 4]
+    announcer.announce([
+      { id: 5, kind: 'info' },
+      { id: 4, kind: 'rare' }
+    ])
+    expect(sounds, '两条新增都要播,且按 id 升序').toEqual(['4:rare', '5:info'])
+    expect(flashes, 'rare 的金光不许丢').toEqual([4])
+  })
+
+  it('完全没有新增时不重复播报', () => {
+    const sounds: string[] = []
+    const announcer = createToastAnnouncer(kind => sounds.push(kind), () => {})
+    announcer.announce([{ id: 1, kind: 'rare' }])
+    sounds.length = 0
+    // 同一条被挪位置、但没有新 id
+    announcer.announce([{ id: 1, kind: 'rare' }])
+    expect(sounds, '旧条重排不该重播').toEqual([])
+  })
+})
