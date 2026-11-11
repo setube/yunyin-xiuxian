@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { resourceShortText } from './resourceShortText'
 import { reforgeShortToast } from './reforgeText'
 import { transferShortText } from './affixTransferText'
+import { artifactShortToast, upgradeShortToast } from './forgeText'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -54,25 +55,40 @@ describe('缺资源文案 · 纯函数', () => {
 })
 
 describe('缺资源文案 · 两个入口同源', () => {
-  it('强化与词条转移在同样输入下逐字相同', () => {
+  it('强化、重铸、词条转移三处在同样输入下逐字相同', () => {
     const cases: Array<[('stone' | 'dust'), { stone: string; dust: number } | undefined]> = [
       ['stone', undefined],
       ['dust', undefined],
       ['stone', { stone: '7', dust: 0 }],
       ['dust', { stone: '0', dust: 2 }],
       ['stone', { stone: '1234', dust: 5678 }],
-      ['dust', { stone: '0', dust: 1 }]
+      ['dust', { stone: '0', dust: 1 }],
+      // 差额恰为 0 是**分叉过的那个输入**:强化原先按 falsy 报「不足」,
+      // 共享实现照实报「尚差 0」。这条留着防它再分叉
+      ['dust', { stone: '0', dust: 0 }],
+      ['stone', { stone: '0', dust: 0 }]
     ]
     for (const [short, gap] of cases) {
-      expect(reforgeShortToast(short, gap), `${short}/${JSON.stringify(gap)} 两处说法不一致`).toBe(
-        transferShortText(short, gap)
-      )
+      const want = resourceShortText(short, gap)
+      expect(reforgeShortToast(short, gap), `${short}/${JSON.stringify(gap)} 重铸与共享实现不一致`).toBe(want)
+      expect(transferShortText(short, gap), `${short}/${JSON.stringify(gap)} 词条转移与共享实现不一致`).toBe(want)
+      expect(upgradeShortToast(short, gap), `${short}/${JSON.stringify(gap)} 强化与共享实现不一致`).toBe(want)
     }
   })
 
-  it('两个入口都不自己拼句子,只转调共享实现', () => {
+  it('祭炼的两样差额也走同一句话', () => {
+    // 祭炼缺的是悟道点 / 灵石(不是尘),故按 shortageText 比
+    expect(artifactShortToast('wudao'), '拿不到差额说不足').toBe('悟道点不足')
+    expect(artifactShortToast('stone'), '拿不到差额说不足').toBe('灵石不足')
+    expect(artifactShortToast('wudao', { wudao: 6, stone: '0' })).toBe('悟道点尚差 6')
+    expect(artifactShortToast('stone', { wudao: 0, stone: '91.2' })).toBe('灵石尚差 91.2')
+    // 差额为 0 照实报,与另三处同一口径
+    expect(artifactShortToast('wudao', { wudao: 0, stone: '0' })).toBe('悟道点尚差 0')
+  })
+
+  it('三个入口都不自己拼句子,只转调共享实现', () => {
     const src = (p: string): string => readFileSync(resolve(__dirname, p), 'utf-8')
-    for (const f of ['./reforgeText.ts', './affixTransferText.ts']) {
+    for (const f of ['./reforgeText.ts', './affixTransferText.ts', './forgeText.ts']) {
       const body = src(f)
       expect(body, `${f} 该调用 resourceShortText`).toContain('resourceShortText(')
       // 不许再出现各自拼「尚差」的字样

@@ -24,6 +24,14 @@ import { join, resolve } from 'node:path'
  */
 const VUE_ROOTS = ['src/components', 'src/views']
 const TS_FILES = ['src/ui/buildingText.ts', 'src/ui/cultivationText.ts', 'src/ui/forgeText.ts', 'src/ui/gongfaText.ts', 'src/ui/pillText.ts', 'src/ui/reforgeText.ts', 'src/ui/resourceShortText.ts', 'src/ui/affixTransferText.ts']
+/**
+ * 通用差额句的唯一实现:第一条判据在这里不适用。
+ *
+ * `shortageText(name, amount)` 把资源名当**参数**收,句中自然没有字面量资源名 ——
+ * 它正是「灵石尚差 N / 器灵尘尚差 N / 悟道点尚差 N」这一族的共同出口。
+ * 于是把「缺的是哪一样」的检查挪到**调用点**:见下一节那条。
+ */
+const GENERIC_HELPER = 'src/ui/resourceShortText.ts'
 /** 能出现在「尚差」前面的资源名。缺一样就报一样,不写「资源尚差」这种统称 */
 const RESOURCES = ['灵石', '道源', '道果', '宿慧', '器灵尘', '灵草', '玄铁', '残页', '悟道点', '灵气']
 
@@ -113,6 +121,7 @@ describe('差额报出缺的是哪一样', () => {
     const bad: Bare[] = []
     let scanned = 0
     for (const f of [...vueFiles(), ...TS_FILES]) {
+      if (f === GENERIC_HELPER) continue
       const text = stripComments(readFileSync(resolve(__dirname, '../..', f), 'utf-8'))
       scanned += 1
       bad.push(...findBareShortfalls(text, f))
@@ -135,5 +144,50 @@ describe('差额报出缺的是哪一样', () => {
     expect(findBareShortfalls('>{{ `灵石尚差 ${x}` }}', 'ok2.vue')).toHaveLength(0)
     expect(findBareShortfalls('<span>· 尚差 {{ pageShort }} 页</span>', 'ok3.vue')).toHaveLength(0)
     expect(findBareShortfalls('<span>距 {{ n }} 连胜尚差 {{ m }} 场</span>', 'ok4.vue')).toHaveLength(0)
+  })
+
+  /**
+   * 通用差额句的调用点必须传字面量资源名。
+   *
+   * `shortageText(name, amount)` 是「X尚差 N / X不足」这一族的唯一出口,
+   * 于是「缺的是哪一样」这件事落到了调用方的第一个实参上 ——
+   * 传字面量「灵石」是玩家读到的,传一个变量名就会拼出「undefined尚差 5」这类东西,
+   * 而第一条判据(按字面量资源名查)扫不到它。
+   */
+  it('通用差额句的调用点都传字面量资源名', () => {
+    const files = [...vueFiles(), ...TS_FILES]
+    const bad: string[] = []
+    let calls = 0
+    for (const f of files) {
+      const text = stripComments(readFileSync(resolve(__dirname, '../..', f), 'utf-8'))
+      for (const m of text.matchAll(/\bshortageText\(/g)) {
+        // 声明那一处不是调用
+        if (/function\s+$/.test(text.slice(Math.max(0, m.index! - 12), m.index!))) continue
+        calls += 1
+        const arg = /shortageText\(\s*([^,)]+)/.exec(text.slice(m.index!))?.[1]?.trim() ?? ''
+        /*
+         * 两种合法形态:
+         *   一 整个实参就是一个字面量资源名 —— `shortageText('灵石', gap)`
+         *   二 三元里两支都是字面量资源名 —— `shortageText(short === 'stone' ? '灵石' : '器灵尘', …)`
+         *      (resourceShortText 自己就这么写:它把「缺哪一样」翻译成名字,两支都已点名)
+         * 变量名、模板串、函数调用一律算「没说缺的是哪一样」。
+         */
+        const LITERAL = /['"`]([^'"`$]+)['"`]/g
+        // 只看会印到屏幕上的那几支:资源名是中文;三元里的判别值(如 'stone')是键,不印出来
+        const shown = [...arg.matchAll(LITERAL)].map(x => x[1]!).filter(n => /[\u4e00-\u9fa5]/.test(n))
+        const allNamed = shown.length > 0 && shown.every(n => RESOURCES.includes(n))
+        if (!allNamed) bad.push(`${f}: 第一实参是 ${arg || '(空)'}`)
+      }
+    }
+    expect(calls, '一处调用都没扫到 —— 判据空转').toBeGreaterThan(0)
+    expect(bad, `短差句的调用点没说缺的是哪一样:\n${bad.join('\n')}`).toEqual([])
+  })
+
+  it('判据抓得住:第一实参写成变量即报', () => {
+    // 直接按上面的规则判:变量名不是 RESOURCES 里的字面量
+    const arg = 'name'
+    const literal = /^['"`]([^'"`$]+)['"`]$/.exec(arg)?.[1]
+    expect(literal === undefined || !RESOURCES.includes(literal), '这条该判违规').toBe(true)
+    expect(RESOURCES.includes('灵石')).toBe(true)
   })
 })

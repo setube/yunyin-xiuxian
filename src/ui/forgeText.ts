@@ -1,13 +1,20 @@
+import { resourceShortText, shortageText } from './resourceShortText'
+
 /** 炼器提示:强化、分解、祭炼。只报结果与差额,数字与材料不省;缺料写「不足 / 尚差 N」,与重铸同一说法 */
 export function upgradeCapToast(): string {
   return '强化已至上限'
 }
 
-/** 强化缺料:缺哪一样就说哪一样,不用一句「或」 */
+/**
+ * 强化缺料:缺哪一样就说哪一样,不用一句「或」。
+ *
+ * 句子本身转调 ui/resourceShortText —— 那里是「灵石/器灵尘 尚差 N」的唯一实现
+ * (重铸与词条转移早已并过去)。本处原先另写一份,判据还差一点分叉:
+ * 差额算出来是 0 时,这里按 falsy 报「不足」,而共享实现照实报「尚差 0」——
+ * 同一种缺料在两处说成两种样子,正是那个模块当初要解决的问题。
+ */
 export function upgradeShortToast(short: 'stone' | 'dust', gap?: { stone: string; dust: number }): string {
-  const amount = short === 'stone' ? gap?.stone : gap?.dust
-  const missing = amount ? `尚差 ${amount}` : '不足'
-  return short === 'stone' ? `灵石${missing}` : `器灵尘${missing}`
+  return resourceShortText(short, gap)
 }
 
 export function upgradeDoneToast(name: string, level: number): string {
@@ -37,14 +44,17 @@ export function artifactCapToast(): string {
   return '祭炼已至上限'
 }
 
-/** 祭炼缺料:悟道点与灵石分开报 */
+/**
+ * 祭炼缺料:悟道点与灵石分开报。
+ *
+ * 与强化、重铸、词条转移同走 resourceShortText 的 shortageText ——
+ * 「X尚差 N / X不足」这一句只该有一处实现。
+ */
 export function artifactShortToast(
   short: 'wudao' | 'stone',
   gap?: { wudao: number; stone: string }
 ): string {
-  const amount = short === 'wudao' ? gap?.wudao : gap?.stone
-  const missing = amount === undefined ? '不足' : `尚差 ${amount}`
-  return short === 'wudao' ? `悟道点${missing}` : `灵石${missing}`
+  return short === 'wudao' ? shortageText('悟道点', gap?.wudao) : shortageText('灵石', gap?.stone)
 }
 
 export function artifactDoneToast(name: string): string {
