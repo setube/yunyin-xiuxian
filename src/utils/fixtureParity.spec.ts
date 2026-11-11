@@ -19,7 +19,7 @@ import { BAG_CAPACITY } from '@/data/constants'
 import { herbGradeOfMajor } from '@/data/herbGrades'
 import { lateSlices, stressSlices } from '../../scripts/lib/saveFixture.mjs'
 import { resolve } from 'node:path'
-import { PERSISTED_STORES } from '@/utils/storage'
+import { PERSISTED_STORES, STORE_NAMES } from '@/utils/storage'
 
 const ROOT = resolve(__dirname, '../..')
 const product = readFileSync(resolve(ROOT, 'src/utils/crypto.ts'), 'utf-8')
@@ -593,5 +593,41 @@ describe('QA 脚本夹具 · 每个 store 分片的字段都真实可写', () =>
       }
     }
     expect(reports, `这些夹具字段写进去会被静默忽略:\n${reports.join('\n')}`).toEqual([])
+  })
+})
+
+/**
+ * 分片中文名表与分片清单必须同步。
+ *
+ * `STORE_NAMES` 的注释写着「须与 PERSISTED_STORES 同步」,但没有任何判据。
+ * 它喂的是**玩家看得见的两处回执**:
+ *   - 坏档提示「存档损坏:{名字} · 原档留在本机」
+ *   - 导出无回执时的「导出不全 · 缺{名字}」
+ * 两处都写 `STORE_NAMES[id] ?? id` —— 漏一条时界面直接把内部 id(如 `apprentice`)
+ * 印给玩家看,而不是「道童」。
+ *
+ * 判据:两张表的键集合完全相等(不是「不少于」:多出来的名字永远用不到,也是死数据)。
+ */
+describe('存档分片 · 中文名表与清单同步', () => {
+  it('键集合完全相等', () => {
+    const ids = PERSISTED_STORES as readonly string[]
+    const named = Object.keys(STORE_NAMES)
+    expect(ids.length, '分片清单读空了').toBeGreaterThan(5)
+    expect(named.length, '中文名表读空了').toBeGreaterThan(5)
+
+    const missing = ids.filter(id => !named.includes(id))
+    expect(missing, `这些分片没有中文名,坏档时会印出内部 id:${missing.join('、')}`).toEqual([])
+
+    const extra = named.filter(id => !ids.includes(id))
+    expect(extra, `中文名表里有清单外的键(死数据):${extra.join('、')}`).toEqual([])
+  })
+
+  it('每个名字都是非空中文,不是占位符', () => {
+    for (const id of PERSISTED_STORES as readonly string[]) {
+      const name = STORE_NAMES[id]
+      expect(name, `${id} 没有中文名`).toBeTruthy()
+      expect(name, `${id} 的名字里没有汉字`).toMatch(/[\u4e00-\u9fa5]/)
+      expect(name, `${id} 的名字就是 id 本身 —— 等于没起名`).not.toBe(id)
+    }
   })
 })
