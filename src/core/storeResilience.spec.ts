@@ -866,3 +866,58 @@ describe('坏档韧性 · 区域战绩 avgRounds 的上界', () => {
     expect(patchAvg(1e300), '巨值没被清').toBe(0)
   })
 })
+
+/**
+ * 战报里的倍率与回合数要有上界 —— 它们直接进文案。
+ *
+ * `foeOrigin` 的三个倍率进「三维 ×1.90 · 增伤 +35%」;`rounds` 进
+ * 「胜于第 N 回合」「鏖战 N 回合」。坏档写 1e300 时分别印出
+ * 「三维 ×1e+300 · 增伤 +1e+302%」与一个读不出来的回合数。
+ *
+ * 正常值都有硬顶:厚化受构筑软上限约束,增伤减伤由判定的两个常量管着
+ * (`CELESTIAL_JUDGE_CAP` 0.35 与 `CELESTIAL_SUPPRESS_BONUS` 0.25)。
+ * 故上界按「远高于真实值」取,不会误伤。
+ */
+describe('坏档韧性 · 战报倍率与回合数的上界', () => {
+  const patch = (v: number): { ratio?: number; bonus?: number; rounds?: number; partRatio?: number } | undefined => {
+    setActivePinia(createPinia())
+    const a = useAdventureStore()
+    a.$patch({
+      lastBattle: {
+        enemyName: '狼', enemyIcon: 'wolf', at: 1,
+        result: {
+          win: true, log: [], rounds: v, playerHpPct: 1,
+          foeOrigin: { label: '层级补偿', ratio: v, damageBonus: v, damageReduction: v, parts: [{ label: '危地', ratio: v }], note: '' }
+        }
+      }
+    } as never)
+    a.sanitize()
+    const r = (a.lastBattle as { result?: { rounds?: number; foeOrigin?: { ratio?: number; damageBonus?: number; parts?: { ratio?: number }[] } } } | null)?.result
+    return { ratio: r?.foeOrigin?.ratio, bonus: r?.foeOrigin?.damageBonus, rounds: r?.rounds, partRatio: r?.foeOrigin?.parts?.[0]?.ratio }
+  }
+
+  it('给定巨值,则三处倍率与 rounds 都封得住', () => {
+    const got = patch(1e300)
+    expect(got?.ratio, 'foeOrigin.ratio 没被夹').toBeLessThanOrEqual(1000)
+    expect(got?.bonus, 'damageBonus 没被夹').toBeLessThanOrEqual(10)
+    expect(got?.rounds, 'rounds 没被夹').toBeLessThanOrEqual(10000)
+    // parts 里那一层也要夹 —— 它进「(危地 ×N)」那一段
+    expect(got?.partRatio, 'parts[].ratio 没被夹').toBeLessThanOrEqual(1000)
+  })
+
+  it('给定正常值,则一字不改', () => {
+    const got = patch(2.5)
+    expect(got?.ratio).toBe(2.5)
+    expect(got?.bonus).toBe(2.5)
+    // rounds 走 Math.floor(整数回合数),2.5 → 2
+    expect(got?.rounds).toBe(2)
+    expect(got?.partRatio).toBe(2.5)
+  })
+
+  it('上界须覆盖得住真实量级', () => {
+    // 回合数真实是两位到三位数;倍率真实在个位到几十;增减伤至多 0.6(=0.35+0.25)
+    expect(10_000, '回合数上界低于真实值').toBeGreaterThan(1000)
+    expect(1000, '倍率上界低于真实值').toBeGreaterThan(100)
+    expect(10, '增减伤上界低于真实上限 0.6').toBeGreaterThan(1)
+  })
+})
