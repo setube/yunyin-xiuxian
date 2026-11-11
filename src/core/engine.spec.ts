@@ -107,6 +107,31 @@ describe('引擎心跳 · start/stop/dt 路由直测', () => {
     expect(settle, 'dt=0 不应离线结算').not.toHaveBeenCalled()
   })
 
+  it('时钟回拨后引擎要立刻恢复,而不是停摆到真实时间追平', () => {
+    /*
+     * `lastTickAt` 是上一拍的时刻。系统时钟往回拨之后它停在「未来」,
+     * 于是 `dt <= 0` 每一拍都成立、`lastTickAt` 永不更新 ——
+     * 引擎会一直停摆到真实时间追平那个未来时刻(回拨 5 分钟就停 5 分钟)。
+     * `start()` 与 `offline` 早就有同一处理,`tick` 这一处先前漏了。
+     */
+    const { t0, gainExpSpy } = startStarted()
+
+    // 先正常走一拍,把 lastTickAt 推到 t0 + TICK_MS
+    vi.setSystemTime(t0 + TICK_MS)
+    capturedTick!()
+    gainExpSpy.mockClear()
+
+    // 时钟往回拨 5 分钟:这一拍不该推进,但必须重锚
+    vi.setSystemTime(t0 + TICK_MS - 300_000)
+    capturedTick!()
+    expect(gainExpSpy, '回拨那一拍不该推进(dt 为负)').not.toHaveBeenCalled()
+
+    // 再走一拍(回拨后的下一秒):若未重锚,此刻 dt 仍是负的、不会推进
+    vi.setSystemTime(t0 + TICK_MS - 300_000 + TICK_MS)
+    capturedTick!()
+    expect(gainExpSpy, '回拨后引擎没恢复 —— lastTickAt 停在未来时刻没被重锚').toHaveBeenCalled()
+  })
+
   it('小 dt → 走 advance(在线推进:玩家修为增长)', () => {
     const { t0, gainExpSpy } = startStarted()
     vi.setSystemTime(t0 + TICK_MS) // TICK_MS 已是毫秒,远小于离线阈值
