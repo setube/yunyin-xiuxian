@@ -45,12 +45,24 @@ export function createToastAnnouncer(
       if (toasts.length === 0) return
       const newest = Math.max(...toasts.map(t => t.id))
       if (newest <= lastAnnouncedId) return
-      for (const t of toasts) {
-        if (t.id <= lastAnnouncedId) continue
+      /*
+       * **不能假定 toasts 按 id 升序**。
+       *
+       * store 的同文案去重分支是 `[...toasts.filter(id≠dup), dup]` —— 把旧条挪到末尾,
+       * 数组随之变成 `[5, 4]` 这种次序。原实现边遍历边把 `lastAnnouncedId` 推到 5,
+       * 轮到 4 时 `4 <= 5` 被判成「已播过」而跳过:那条 rare 仍在屏幕上,
+       * 却既不出声也不点金光(实测复现)。
+       *
+       * 故先筛出真正新增的那些(**按 id 升序**再播,保证同一帧的先后稳定),
+       * 遍历结束后才推进 `lastAnnouncedId`。
+       */
+      const fresh = toasts.filter(t => t.id > lastAnnouncedId).sort((a, b) => a.id - b.id)
+      if (fresh.length === 0) return
+      for (const t of fresh) {
         onNew(t.kind, t.id)
         if (t.kind === 'rare') onRare(t.id)
-        lastAnnouncedId = t.id
       }
+      lastAnnouncedId = fresh[fresh.length - 1]!.id
     }
   }
 }
