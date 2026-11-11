@@ -139,3 +139,35 @@ describe('灵根读档 · 修行倍率的上界', () => {
     expect(GROWTH_MULT_MAX, '上界小于混沌灵根的 4.0,正常档会被夹').toBeGreaterThanOrEqual(4)
   })
 })
+
+/**
+ * 资质下限(转世宿慧带来)再大也越不过 growthMult 的上界。
+ *
+ * `aptitudeFloorNow` 是 `Math.max(byCount, byInsight)` —— **没有上界**,
+ * 坏档把宿慧写成极大值时它也跟着极大,直接喂进 `rollLinggen`。
+ *
+ * 这里钉住:生成器内部对资质做了 `Math.min(100, …)` 的钳制,
+ * 所以不论下限多大,掷出来的生长倍率都不会越过 GROWTH_MULT_MAX。
+ * 这条不是「顺手加的」—— 它证明了**只有读档那条路**需要上界,
+ * 生成路径本身是收得住的。
+ */
+describe('灵根生成 · 极大资质下限也越不过上界', () => {
+  it('资质下限被钳到 100,倍率封顶在 4.0', () => {
+    const rng = new RandomService(mulberry32(7))
+    let max = 0
+    for (let i = 0; i < 500; i += 1) {
+      // 正常掷值里的最小下限也是 40;这里直接给一个荒谬的下限
+      const p = rollLinggen(rng, 1e6)
+      max = Math.max(max, p.growthMult)
+    }
+    expect(max, '极大下限掷出的倍率越过了生成器的理论上限').toBeLessThanOrEqual(4)
+    expect(max, '一次都没掷到高位,判据没跑到东西').toBeGreaterThan(2)
+  })
+
+  it('该值仍在 GROWTH_MULT_MAX 之内 —— 生成路径不需要读档守卫兜', () => {
+    const rng = new RandomService(mulberry32(11))
+    for (let i = 0; i < 200; i += 1) {
+      expect(rollLinggen(rng, 1e6).growthMult).toBeLessThanOrEqual(GROWTH_MULT_MAX)
+    }
+  })
+})
