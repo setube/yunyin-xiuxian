@@ -32,7 +32,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
 import { daoSourceShortfall } from './daoSource'
-import { endgameBusy } from './endgameActivity'
+import { endgameBusy, ENTRY_REASON } from './endgameActivity'
 
 /** 真仙(WORLD_BREAK_MAJOR)方可踏足天界;借 MAX_MAJOR 会让终局随加境漂移 */
 export function endgameUnlocked(): boolean {
@@ -422,7 +422,7 @@ export function challengeTrial(trialId: string): ExpeditionResult | null {
   const trial = trialDef(trialId)
   if (!trial || !endgameUnlocked()) return null
   if (!endgame.daoPath) {
-    ui.toast('未择道途', 'warn')
+    ui.toast(ENTRY_REASON.noDaoPath, 'warn')
     return null
   }
   const busy = endgameBusy(useEndgameStore().worldRun, usePlayerStore().secretRealm, useEndgameStore().adventureSession)

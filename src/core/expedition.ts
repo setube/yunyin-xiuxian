@@ -36,7 +36,7 @@ import { useEndgameStore, type WorldRunState } from '@/stores/endgame'
 import { gateDef } from '@/data/qimen'
 import { useUiStore } from '@/stores/ui'
 import { daoSourceShortfall } from './daoSource'
-import { endgameBusy } from './endgameActivity'
+import { endgameBusy, ENTRY_REASON } from './endgameActivity'
 
 /** 单场战果 */
 export interface StepOutcome {
@@ -226,7 +226,7 @@ export function startWorldExpedition(worldId: string, pactId: string | null, gat
   const world = resolveWorld(worldId)
   if (!world || !endgameUnlocked()) return null
   if (!endgame.daoPath) {
-    ui.toast('未择道途', 'warn')
+    ui.toast(ENTRY_REASON.noDaoPath, 'warn')
     return null
   }
   const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, endgame.adventureSession)
@@ -399,7 +399,7 @@ export function challengeMutation(mutatorIds: string[]): MutationResult | null {
   const endgame = useEndgameStore()
   const ui = useUiStore()
   if (!endgameUnlocked() || !endgame.daoPath) {
-    ui.toast('未择道途', 'warn')
+    ui.toast(ENTRY_REASON.noDaoPath, 'warn')
     return null
   }
   const busy = endgameBusy(endgame.worldRun, usePlayerStore().secretRealm, endgame.adventureSession)
@@ -457,7 +457,7 @@ export async function rerollVoidWorld(): Promise<boolean> {
   const ui = useUiStore()
   if (voidRerolling) return false
   if (!endgameUnlocked() || !endgame.daoPath) {
-    ui.toast('未择道途', 'warn')
+    ui.toast(ENTRY_REASON.noDaoPath, 'warn')
     return false
   }
   if (endgame.worldRun?.worldId === 'void') {
