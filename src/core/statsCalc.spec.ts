@@ -100,6 +100,23 @@ describe('工具函数', () => {
     expect(capChance(2)).toBe(1)
   })
 
+  /**
+   * NaN 不得穿过。
+   *
+   * 调用点全是 `rng.chance(capChance(...))`,判据是 `rand() < p`:
+   * p 为 NaN 时恒为 false,该效果从此永远不触发 —— 不崩不报,只是玩家那一身词条静默失效。
+   * 这是「Math.max/min 挡不住 NaN」那条坑在玩法上的真实后果,不只是显示问题。
+   */
+  it('capChance 挡住 NaN,不让效果静默失效', () => {
+    expect(capChance(NaN), 'NaN 该归 0(不触发),而不是原样漏出去').toBe(0)
+    expect(capChance(Infinity)).toBe(1)
+    expect(capChance(-Infinity)).toBe(0)
+    // 阴性对照:这正是修复前的算式 —— NaN 会原样穿过两道钳制
+    expect(Math.min(1, Math.max(0, NaN)), 'Math.min/max 确实挡不住 NaN').toBeNaN()
+    // 而 rand() < NaN 恒为 false:词条静默失效
+    expect(0.99 < NaN, 'NaN 概率永不触发').toBe(false)
+  })
+
   it('effectiveDaoFruit:0 与负数都归零,正数按幂次衰减', () => {
     expect(effectiveDaoFruit(0)).toBe(0)
     expect(effectiveDaoFruit(-5)).toBe(0)

@@ -118,8 +118,20 @@ export function modOf(mods: StatMods, key: AnyStatKey): number {
   return mods[key] ?? 0
 }
 
-/** 概率进判定前夹到 [0,1] */
+/**
+ * 概率进判定前夹到 [0,1]。
+ *
+ * **不能只靠 Math.min/max**:它们挡不住 NaN —— NaN 会原样穿过两道钳制
+ * (AGENTS.md 明文点过,反复踩)。而它的调用点全是 `rng.chance(capChance(...))`,
+ * 判据是 `rand() < p`:`p` 为 NaN 时恒为 false,该效果从此**永远不触发** ——
+ * 不崩、不报、屏上也看不出异常,只是玩家那一身词条静默失效。
+ *
+ * 算不出就按 0 处理(不触发):概率本该是有限数,拿不到数时保守地不让它生效,
+ * 与「夹到 0」同义。
+ */
 export function capChance(p: number): number {
+  // 只有 NaN 是「算不出」;±Infinity 仍有大小关系,按端点夹
+  if (Number.isNaN(p)) return 0
   return Math.min(1, Math.max(0, p))
 }
 
