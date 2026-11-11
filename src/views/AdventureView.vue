@@ -141,7 +141,7 @@
   import WorldSeal from '@/components/common/WorldSeal.vue'
   import { worldView } from '@/core/mortalWorldService'
   import { isRetreating } from '@/core/earlyGameService'
-  import { endgameBusy } from '@/core/endgameActivity'
+  import { BUSY_REASON, endgameBusy } from '@/core/endgameActivity'
   import { useEndgameStore } from '@/stores/endgame'
   import { MANSION_REDIRECT_COST, MANSION_REDIRECT_MAX } from '@/data/constants'
   import { exploreEventChance, startExploration } from '@/core/exploration'
@@ -239,9 +239,10 @@
   })
 
   function chooseMode(region: RegionDef): void {
-    // 闭关期间不许外出历练:开模式窗前就拒,startExploration 只兜底
+    // 闭关期间不许外出历练:开模式窗前就拒,startExploration 只兜底。
+    // 拒因取 BUSY_REASON 的常量,不再手抄字面量(AGENTS.md 明文:四个在途状态词以此为准)
     if (isRetreating()) {
-      ui.toast('闭关中', 'warn')
+      ui.toast(BUSY_REASON.retreat, 'warn')
       return
     }
     // 在途远征/秘境:与 core 同一判据 endgameBusy,拒因不另抄。
