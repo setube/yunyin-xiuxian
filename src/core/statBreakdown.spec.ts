@@ -3,6 +3,8 @@
  * 故障注入:去掉 mergeModsDetailed 的软阈值折算,或删掉 computeFinalStats 的「道果(修炼)」一条,本文件红。
  */
 import { describe, expect, it, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import type { AnyStatKey, StatMods } from '@/types'
 import { mergeMods, mergeModsDetailed, computeFinalStats, modOf, effectiveDaoFruit } from './statsCalc'
@@ -176,5 +178,77 @@ describe('修炼速度软阈值(computeFinalStats 那道防线)', () => {
     expect(row.mods.cultivationSpeed!).toBeCloseTo(eff * DAO_FRUIT_CULT_BONUS * stats.cultSpeedFactor, 8)
     // 对照:未折算的式子会虚报
     expect(eff * DAO_FRUIT_CULT_BONUS).toBeGreaterThan(row.mods.cultivationSpeed!)
+  })
+})
+
+/**
+ * 「来源明细」的名字与 mod 源必须一一对应。
+ *
+ * `computeFinalStats` 按索引配对:`input.modSources.map((_, i) => name: sourceNames?.[i] ?? '来源 N')`。
+ * player store 里有两处 `modSources` / `sourceNames` 并列数组(凡界一套、天界一套),
+ * 注释写着「须与上面一一对应」,但没有任何判据。
+ *
+ * 错位的后果不是崩,而是**把数值归到错误的名字下**:面板照常显示,
+ * 玩家看到「灵脉 +12%」实际那是「称号」给的 —— 这类错误没有任何报错,也难靠肉眼发现。
+ * 少一条则印出占位符「来源 12」。
+ *
+ * 判据:两处数组的**固定项**条数相等(天赋那一段是展开的,两边都用同一个 spread,天然对齐)。
+ */
+describe('属性来源明细 · 名字与 mod 源一一对应', () => {
+  const SRC = readFileSync(resolve(__dirname, '../stores/player.ts'), 'utf-8')
+
+  /** 取出某个键的数组字面量正文(到配对的 ] 为止) */
+  function arrayBody(key: string, from = 0): string {
+    const at = SRC.indexOf(`${key}: [`, from)
+    expect(at, `找不到 ${key}: [`).toBeGreaterThan(-1)
+    const open = SRC.indexOf('[', at)
+    let depth = 0
+    for (let i = open; i < SRC.length; i += 1) {
+      if (SRC[i] === '[') depth += 1
+      else if (SRC[i] === ']') {
+        depth -= 1
+        if (depth === 0) return SRC.slice(open + 1, i)
+      }
+    }
+    return ''
+  }
+
+  /**
+   * 数「顶层项」:去掉嵌套括号后按逗号切。
+   *
+   * **必须先剥注释** —— modSources 第一项上方挂着一整段块注释,
+   * 里面的逗号会被当成项分隔符(实测把 13 项数成 14 项,判据当场误报)。
+   */
+  function topLevelCount(body: string): number {
+    const code = body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+    let depth = 0
+    let count = 0
+    for (const ch of code) {
+      if ('([{'.includes(ch)) depth += 1
+      else if (')]}'.includes(ch)) depth -= 1
+      else if (ch === ',' && depth === 0) count += 1
+    }
+    return count + (code.trim() ? 1 : 0)
+  }
+
+  it('凡界那套:modSources 与 sourceNames 条数相等', () => {
+    const sources = topLevelCount(arrayBody('modSources'))
+    const names = topLevelCount(arrayBody('sourceNames'))
+    expect(sources, 'modSources 一项都没数到').toBeGreaterThan(5)
+    expect(names, `modSources ${sources} 条、sourceNames ${names} 条 —— 明细会错位`).toBe(sources)
+  })
+
+  it('天界那套:modSources 与 sourceNames 条数相等', () => {
+    const second = SRC.indexOf('modSources: [', SRC.indexOf('modSources: [') + 1)
+    expect(second, '找不到第二处 modSources —— 判据要跟着改名').toBeGreaterThan(-1)
+    const sources = topLevelCount(arrayBody('modSources', second))
+    const names = topLevelCount(arrayBody('sourceNames', second))
+    expect(names, `天界:modSources ${sources} 条、sourceNames ${names} 条 —— 明细会错位`).toBe(sources)
+  })
+
+  it('两处都用同一个 spread 处理天赋,不会各自错位', () => {
+    const spreads = [...SRC.matchAll(/\.\.\.(\w*[Tt]alent\w*)/g)].map(m => m[1])
+    expect(spreads.length, '天赋 spread 不见了').toBeGreaterThanOrEqual(2)
+    expect(new Set(spreads).size, '两处用了不同的天赋来源').toBe(1)
   })
 })
