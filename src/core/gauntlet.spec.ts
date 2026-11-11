@@ -43,7 +43,15 @@ describe('度劫机关 · 波次环(runGauntlet)', () => {
   })
 
   it('首场即败:fightsWon=0、rows 只记败的那一场', () => {
-    const r = runGauntlet(WEAK, [foe('a', 1e9, 100)], undefined, 0, rng)
+    /*
+     * 独立种子,不复用模块级 `rng`。
+     *
+     * 模块级 `rng`(seed 999)被全组按顺序消费:上面几条用例已经把它推到某个位置,
+     * 而 seed 999 的**第一个**随机值恰好让纸糊玩家赢下这一场 ——
+     * 实测把本组打乱后,这条就红(`cleared` 该为 false 却为 true)。
+     * 这条要验的是「必败时的记录形状」,与骰子无关,故给它自己的必输种子。
+     */
+    const r = runGauntlet(WEAK, [foe('a', 1e9, 100)], undefined, 0, new RandomService(mulberry32(1)))
     expect(r.cleared).toBe(false)
     expect(r.fightsWon).toBe(0)
     expect(r.rows).toHaveLength(1)

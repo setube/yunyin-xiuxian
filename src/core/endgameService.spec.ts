@@ -259,6 +259,17 @@ describe('真仙终局服务', () => {
  * 熔铸价冻在真仙那层会让混沌海道果相对收入塌 1.9^12。
  */
 describe('天道熔炉 · 灵石熔铸价随层级(现役函数直测)', () => {
+  /*
+   * 新 pinia = 干净的 resources / endgame / player。
+   *
+   * 这个块原先一条 beforeEach 都没有,而块内第一条用例顺手把 `player.major` 改成 20、
+   * 后一条又自己设成 14 并读 `furnaceStoneCost()` —— 前者跑在前时后者没事,
+   * 乱序把顺序调过来就红:实测 `expected false to be true`(灵石按 20 境价算,给 14 境的量付不起)。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   function toN(g: { m: number; e: number }): number {
     return g.m * Math.pow(10, g.e)
   }
