@@ -118,3 +118,36 @@ describe('提示条 · 自检量的必须是布局尺寸', () => {
     expect(SCRIPT, '不该再拿缩放后的 rect.height 直接比 28').not.toMatch(/rect?\.height >= 28/)
   })
 })
+
+/**
+ * 离场时长只有一处事实源。
+ *
+ * `TOAST_ANIM_MS = 250`(组件)与 style.css 里 `.toast-slide-*-active` 的 `0.25s` 是两处手写,
+ * 靠注释里一句「须与 CSS 对齐」约定着,没有任何判据。改一处忘了另一处,
+ * 后果是元素提前被移除(动画截断,看着突然消失)或移除晚于动画(留一帧僵住的空位)。
+ *
+ * 判据:两边算出的毫秒数必须相等。
+ */
+describe('提示条 · 离场时长两处对齐', () => {
+  const CSS = readFileSync(resolve(__dirname, '../style.css'), 'utf-8')
+
+  it('组件里的 TOAST_ANIM_MS 等于 CSS 过渡时长', () => {
+    const msMatch = /const TOAST_ANIM_MS = (\d+)/.exec(SRC)
+    expect(msMatch, 'TOAST_ANIM_MS 不见了或不再是字面量').toBeTruthy()
+    const ms = Number(msMatch![1])
+
+    // 取 .toast-slide-enter-active / .toast-slide-leave-active 那条 transition 里的秒数
+    const block = /\.toast-slide-enter-active,\s*\n?\.toast-slide-leave-active \{([\s\S]*?)\}/.exec(CSS)?.[1] ?? ''
+    expect(block, '找不到 .toast-slide 的过渡块').not.toBe('')
+    const sec = /opacity ([\d.]+)s/.exec(block)?.[1]
+    expect(sec, '过渡块里读不到 opacity 的时长').toBeTruthy()
+
+    expect(ms, `TOAST_ANIM_MS(${ms}ms) 与 CSS(${sec}s) 不一致 —— 动画会被截断或留空位`).toBe(Math.round(Number(sec) * 1000))
+  })
+
+  it('duration 是显式写死的,不交给自动探测', () => {
+    // 稀有提示的 animate-glow-pulse 是 2.4s 无限动画,自动探测会把它当成离场时长
+    expect(SRC, '不该去掉 :duration —— 自动探测会被无限动画带偏').toContain(':duration="TOAST_ANIM_MS"')
+    expect(SRC, '稀有提示确实带无限动画,这条前提仍成立').toContain('animate-glow-pulse')
+  })
+})
