@@ -21,7 +21,7 @@ import {
 import { buildPlayerSnap } from './playerSnap'
 import { currentDaoRules, endgameUnlocked, recordMark, type ExpeditionResult } from './endgameService'
 import { recordMilestone } from './identity'
-import { SLAUGHTER_PER_WIN, SWORD_PER_WIN } from './daoDepth'
+import { perWinModsOf } from './daoDepth'
 import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore } from '@/stores/endgame'
 import { useUiStore } from '@/stores/ui'
@@ -136,7 +136,7 @@ export function undertakeChallenge(draft: ChallengeDraft, verdict: ChallengeVerd
   const pact = draft.pactId ? pactDef(draft.pactId) : undefined
   const opts = {
     ...(pact?.special === 'endHp80' ? { minHpAfterFight: 0.8 } : {}),
-    perWinPlayerMods: endgame.daoPath === 'sword' ? SWORD_PER_WIN : endgame.daoPath === 'slaughter' ? SLAUGHTER_PER_WIN : undefined
+    perWinPlayerMods: perWinModsOf(endgame.daoPath)
   }
   const name = draft.name.trim() || '无名之约'
   const report = runGauntlet(buildPlayerSnap(true), draftFoes(draft.worldId, ref, judgement), rules, world.healBetweenPct, rng, opts)
