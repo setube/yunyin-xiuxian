@@ -105,7 +105,20 @@ describe('秘境形制 · 四、界面接上了', () => {
     expect(CARD, '应挂双轴').toContain('realm-axes')
     expect(CARD, '回血轴位置应现算').toContain('realmMark(r).heal * 100')
     expect(CARD, '战利轴位置应现算').toContain('realmMark(r).gain * 100')
-    expect(CARD, '卡片应有可访问名').toContain(':aria-label="realmMark(r).label"')
+    expect(CARD, '卡片应有可访问名').toContain('realmMark(r).label')
+  })
+
+  /**
+   * 置灰时读屏也得听得出为什么进不去。
+   *
+   * 卡面上「灵石尚差 N」是可见的拒因文字,而可访问名原先只有形制读数
+   * (秘境名 · 回血档 · 战利倍率)—— 读屏用户拿到的信息比眼睛少一条。
+   * 全仓既有做法是「拒因走 aria-label / title」(见 EquipmentDetailDialog 的强 化钮),
+   * 本条把这条规矩钉到秘境卡上。
+   */
+  it('拒因进 aria-label 与 title,不只画在屏幕上', () => {
+    expect(CARD, '拒因要接进可访问名').toMatch(/:aria-label="entryBlockText\(r\) \?/)
+    expect(CARD, '拒因也要给 title(悬停同样读得到)').toContain(':title="entryBlockText(r) ?? undefined"')
   })
 
   it('只给战利最丰的那一处多一层形制', () => {
