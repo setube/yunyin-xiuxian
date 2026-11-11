@@ -549,3 +549,53 @@ describe('formatPercent · 大值不进 JS 默认科学计数', () => {
     }
   })
 })
+
+/**
+ * 时长类格式化的天数上界。
+ *
+ * `formatDuration(1e300)` 原先印出「1.1574074074074075e+295天17小时」——
+ * 十七位小数的科学计数法。它过了 `isFinite` 守卫,因为 `1e300/86400` 仍是有限数。
+ *
+ * 门槛不能随便定:存档里**合法范围内**的最大时间戳是 `MAX_TIMESTAMP_MS`(8.64e15 毫秒),
+ * 减当前时刻再折算成天约 **1 亿天**(实测 99,979,231 天)。首版把门槛写成 1e8,
+ * 恰好被这个值擦过去 —— 于是坏档仍然印出八位裸数字。现取一千万天。
+ *
+ * 两条格式化函数共用这条门槛:`formatCountdown` 的「逐位定宽」只在正常量级内有意义,
+ * 到了八位天数,定宽已无从谈起。
+ */
+describe('时长格式化 · 天数上界改中文单位', () => {
+  const MAX_SECONDS = (8_640_000_000_000_000 - Date.now()) / 1000
+
+  it('给定坏档最大合法时间戳,则两条都印中文单位而非裸数字', () => {
+    for (const [name, fn] of [
+      ['formatDuration', formatDuration],
+      ['formatCountdown', formatCountdown]
+    ] as const) {
+      const got = fn(MAX_SECONDS)
+      expect(got, `${name} 印出了八位裸数字:${got}`).not.toMatch(/^\d{7,}天/)
+      expect(got, `${name} 该用万进单位:${got}`).toMatch(/万天|亿天|兆天/)
+      expect(got, `${name} 不该出现科学计数:${got}`).not.toMatch(/e\+/)
+    }
+  })
+
+  it('给定 1e300 秒,则不再印十七位小数的科学计数', () => {
+    const got = formatDuration(1e300)
+    expect(got, `印出了浮点尾巴:${got}`).not.toMatch(/\d\.\d{5,}e/)
+  })
+
+  it('给定正常量级,则行为一字不变', () => {
+    expect(formatDuration(1e6)).toBe('11天13小时')
+    expect(formatDuration(86400)).toBe('1天')
+    expect(formatDuration(3600)).toBe('1小时')
+    expect(formatCountdown(1e6)).toBe('11天13时')
+    expect(formatCountdown(86400)).toBe('1天00时')
+    expect(formatCountdown(90)).toBe('01分30秒')
+  })
+
+  it('门槛落在「坏档可达的最大天数」之下', () => {
+    const maxDays = Math.floor(MAX_SECONDS / 86400)
+    expect(maxDays, '这条判据假设坏档上界约一亿天,若 MAX_TIMESTAMP_MS 变了要重新核').toBeGreaterThan(9e7)
+    // 首版门槛 1e8 会被 99,979,231 天擦过去,故必须更低
+    expect(maxDays, '门槛又抬回一亿天以上了').toBeGreaterThan(1e7)
+  })
+})
