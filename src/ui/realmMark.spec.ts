@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { SECRET_REALMS } from '@/data/secretRealms'
-import { gainOf, healPosOf, isTopGain, realmMark, realmMarks } from './realmMark'
+import { gainOf, healPosOf, isTopGain, realmEntryLabel, realmMark, realmMarks } from './realmMark'
 
 const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
@@ -109,16 +109,41 @@ describe('秘境形制 · 四、界面接上了', () => {
   })
 
   /**
-   * 置灰时读屏也得听得出为什么进不去。
+   * 置灰时读屏也得听得出为什么进不去,并听得到「要付多少」。
    *
-   * 卡面上「灵石尚差 N」是可见的拒因文字,而可访问名原先只有形制读数
-   * (秘境名 · 回血档 · 战利倍率)—— 读屏用户拿到的信息比眼睛少一条。
-   * 全仓既有做法是「拒因走 aria-label / title」(见 EquipmentDetailDialog 的强 化钮),
-   * 本条把这条规矩钉到秘境卡上。
+   * 卡面上「灵石尚差 N」是可见的拒因文字、左边还有「灵石 4.468亿」的代价,
+   * 而可访问名原先只有形制读数(秘境名 · 回血档 · 战利倍率)——
+   * 读屏用户拿到的信息比眼睛少两条。全仓既有做法是「拒因走 aria-label / title」
+   * (见 EquipmentDetailDialog 的强 化钮),本条把这条规矩钉到秘境卡上。
    */
-  it('拒因进 aria-label 与 title,不只画在屏幕上', () => {
-    expect(CARD, '拒因要接进可访问名').toMatch(/:aria-label="entryBlockText\(r\) \?/)
+  it('拒因与代价都进可访问名,不只画在屏幕上', () => {
+    expect(CARD, '可访问名该走 realmEntryLabel').toContain('realmEntryLabel(realmMark(r),')
+    expect(CARD, '代价要进可访问名').toMatch(/realmEntryLabel\(realmMark\(r\), entryCostText\(r, player\.major\)/)
     expect(CARD, '拒因也要给 title(悬停同样读得到)').toContain(':title="entryBlockText(r) ?? undefined"')
+  })
+
+  /**
+   * 可访问名里名字只出现一次。
+   *
+   * 曾经把拒因前插到 label 前面(名字 + 「入 境」+ 拒因 + label),
+   * 而 label 本就以名字起头 —— 读出来是「枯荣古境 · 入 境 · 枯荣古境 · 每层倒扣 …」。
+   * 眼睛看不出来(读屏才念),所以得靠判据。
+   */
+  it('可访问名里秘境名只念一次', () => {
+    const mark = realmMark(SECRET_REALMS[0]!)
+    const line = realmEntryLabel(mark, '灵石 100', '灵石尚差 7')
+    const name = mark.label.split(' · ')[0]!
+    const occurrences = line.split(name).length - 1
+    expect(occurrences, `名字念了 ${occurrences} 遍:${line}`).toBe(1)
+    expect(line, '代价要在名字里').toContain('灵石 100')
+    expect(line, '拒因要在名字里').toContain('灵石尚差 7')
+  })
+
+  it('可进入时名字里不带拒因,代价照报', () => {
+    const line = realmEntryLabel(realmMark(SECRET_REALMS[0]!), '道源 15', null)
+    expect(line).toContain('道源 15')
+    expect(line).not.toContain('尚差')
+    expect(line).not.toContain('不足')
   })
 
   it('只给战利最丰的那一处多一层形制', () => {

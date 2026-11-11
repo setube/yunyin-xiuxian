@@ -81,3 +81,24 @@ export function isTopGain(mark: RealmMark): boolean {
 }
 
 export { healWord }
+
+/**
+ * 秘境入口卡的可访问名。
+ *
+ * `realmMark().label` 只报形制(名字 · 回血档 · 战利倍率),而同一张卡上还印着两样东西:
+ * **入场所需的代价**(灵石 / 道源)与**此刻为什么进不去**。眼睛看得到,读屏读不到 ——
+ * 一件「要付 4.468 亿灵石」的事,读屏用户听不到价钱就做了决定。
+ *
+ * 名字只出现一次:`label` 本就以名字起头,拒因与代价往后接。
+ * (原先直接把拒因前插到 label 前面,读出来是「枯荣古境 · 入 境 · 枯荣古境 · 每层倒扣…」——
+ *  名字念了两遍,代价仍然缺席。)
+ *
+ * @param mark  这一处的形制(label 里已含名字)
+ * @param cost  入场代价的现成读数(「灵石 4.468亿」/「道源 15」),由 core 算好传进来
+ * @param block 拒因;可进入时为 null
+ */
+export function realmEntryLabel(mark: RealmMark, cost: string, block: string | null): string {
+  const parts = [mark.label, `入 境 · ${cost}`]
+  if (block) parts.push(block)
+  return parts.join(' · ')
+}
