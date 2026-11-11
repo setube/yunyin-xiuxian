@@ -1,5 +1,4 @@
-/** 收徒 store —— 派发/收割/收徒与坏档韧性 */
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { OwnedApprentice } from '@/core/apprenticeService'
 import { APPRENTICE_MAX_LEVEL, STARTER_APPRENTICE, APPRENTICES, apprenticeSlots, APPRENTICE_SLOT_HARD_CAP } from '@/data/apprentices'
@@ -214,11 +213,15 @@ describe('收徒 · 派发与收割', () => {
     expect(a.apprentices[0]!.task, '远期完工时刻没被作废 —— 道童会干等').toBeNull()
   })
 
-  it('sanitize:上界按读档此刻算,不按 finishAt - startAt', () => {
+  it('sanitize:上界以派发时刻为参照,startAt 坏掉时退到读档此刻', () => {
     /*
-     * startAt 被夹成 0(坏档的负值)之后,`finishAt - startAt` 恒为几十年的量级 ——
-     * 拿差值当上界会把本来合法的任务一并丢掉。这条与上面那条配合,
-     * 钉住「上界取绝对时刻」这个选择。
+     * 参照点不能只用「读档此刻」:任务进行中把时钟往回拨,
+     * `Date.now() + 最长时长` 会缩到 finishAt 之前,**合法任务被误删**
+     * (审查意见指出的,与 regionEvent 同一个坑)。
+     * 故正常档用 `startAt`(派发时刻),它不受后来回拨影响。
+     *
+     * 而 `startAt` 被夹成 0 时它不代表真实派发时刻,退到读档此刻为参照 ——
+     * 这条钉住那个退化分支,别让它把任务一起丢掉。
      */
     const a = useApprenticeStore()
     const now = Date.now()
@@ -229,6 +232,30 @@ describe('收徒 · 派发与收割', () => {
     })
     a.sanitize()
     expect(a.apprentices[0]!.task, '合法任务被差值判据误删了').not.toBeNull()
+  })
+
+  it('sanitize:任务进行中把时钟往回拨,合法任务不被误删', () => {
+    /*
+     * 派发时刻 `startAt` 不受后来回拨影响 —— 上界以它为参照,
+     * 而「读档此刻」在回拨后会缩到 finishAt 之前。用后者当参照就会误删。
+     */
+    const a = useApprenticeStore()
+    const now = Date.now()
+    // 派发 10 分钟前、30 分钟任务:finishAt 在 20 分钟后
+    const startAt = now - 10 * 60_000
+    const finishAt = now + 20 * 60_000
+    a.$patch({
+      apprentices: [make('ap_luanniao', { task: { spec: 'herb', startAt, finishAt } })] as never
+    })
+    // 时钟往回拨 1 小时(超过一个任务时长)
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(now - 60 * 60_000)
+      a.sanitize()
+      expect(a.apprentices[0]!.task, '时钟回拨把进行中的任务误删了').not.toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('sanitize:负 startAt 夹成 0,任务本身保留(与寄卖的负 finishAt 相反)', () => {
