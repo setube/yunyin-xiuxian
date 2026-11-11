@@ -124,6 +124,14 @@ export function buildIdentity(): CultivatorIdentity {
   }
 }
 
+/**
+ * 尚无来历时的状态词。
+ *
+ * 画像面板在同一位置还有一处兜底三元(`identity?.narrative ?? '暂无记录'`)——
+ * 两处各写一遍时,身份还没算出来与身份算出来但没来由,会显示成两个词。
+ */
+export const IDENTITY_EMPTY = '暂无记录'
+
 function buildNarrative(
   roots: {
     fortunes: { title: string }[]
@@ -144,7 +152,7 @@ function buildNarrative(
   if (riskBias === 'gamble') parts.push('偏好以险求胜')
   if (riskBias === 'steady') parts.push('稳扎稳打,不贪冒进')
   // 空态只报状态词;此时 adjectives 必为空(每一项都伴随一条 parts)
-  if (parts.length === 0) return '暂无记录'
+  if (parts.length === 0) return IDENTITY_EMPTY
   const core = parts.join(',')
   return adjectives.length > 0
     ? `${core}。诸事观之,此修士${adjectives.join('与')}之相已现。`

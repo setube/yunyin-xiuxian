@@ -1,8 +1,10 @@
 /* eslint-disable no-console */
 /** 修行身份:历史行为的归纳,非职业标签。审计:无数值加成 / 无新资源 / 描述随历史变化 */
 import { describe, it, expect, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
-import { buildIdentity } from './identityService'
+import { buildIdentity, IDENTITY_EMPTY } from './identityService'
 import { DAO_PATHS } from '@/data/endgame'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
@@ -100,5 +102,38 @@ describe('修行画像文案', () => {
     const id = buildIdentity()
     expect(id.roots.daoPath).toBeNull()
     expect(id.narrative).not.toContain('行')
+  })
+})
+
+/**
+ * 空态词只有一份出处。
+ *
+ * `buildNarrative` 在没任何来由时返回「暂无记录」,而画像面板在同一位置
+ * 还有一处兜底三元 `identity?.narrative ?? '暂无记录'` —— 两处各写一遍时,
+ * 「身份还没算出来」与「身份算出来了但没来由」会显示成两个词。
+ *
+ * 判据:常量值钉住 + 两处调用点都读它 + 面板里不再有字面量。
+ */
+describe('身份画像 · 空态词一份出处', () => {
+  const read = (p: string): string => readFileSync(resolve(__dirname, p), 'utf-8')
+  const strip = (src: string): string =>
+    src
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('\n')
+      .map(l => l.replace(/(^|[^:])\/\/.*$/, '$1'))
+      .join('\n')
+
+  it('空来由时返回那个常量', () => {
+    setActivePinia(createPinia())
+    const id = buildIdentity()
+    expect(id.narrative).toBe(IDENTITY_EMPTY)
+    expect(IDENTITY_EMPTY, '空态词被改过?').toBe('暂无记录')
+  })
+
+  it('画像面板读常量,不再自己写一份', () => {
+    const view = strip(read('../views/CharacterView.vue'))
+    expect(view, '面板该读 IDENTITY_EMPTY').toContain('identity?.narrative ?? IDENTITY_EMPTY')
+    expect(view, '面板又手写了「暂无记录」').not.toContain("'暂无记录'")
   })
 })
