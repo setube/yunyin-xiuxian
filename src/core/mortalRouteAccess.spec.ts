@@ -446,6 +446,25 @@ describe('本世之界 · 同一秒内的两次生成不能是同一方天地', 
     const src = readFileSync(new URL('./mortalWorldService.ts', import.meta.url), 'utf8')
     expect(src, '同秒步进必须与验收门的候选步长(7919)错开').toMatch(/SEED_STEP = 104729/)
   })
+
+  /**
+   * 两条候选遍历必须用同一个步长。
+   *
+   * 上面那条把 7919 当成已知前提,却只验了 `SEED_STEP = 104729` 一侧 ——
+   * 而 7919 本身在两处各写一份:`mortalGate.generateGatedMortal` 与
+   * `worldGen.generateApprovedWorld`,形状完全一样(`baseSeed + t * 7919`)。
+   * 实测把其中一处改成 7913,全量用例照样绿,两条链从此错开却无人发现。
+   */
+  it('验收门与世界生成两条候选链用同一个步长', () => {
+    const gate = readFileSync(new URL('./mortalGate.ts', import.meta.url), 'utf8')
+    const world = readFileSync(new URL('./worldGen.ts', import.meta.url), 'utf8')
+    const steps = (src: string): string[] => [...src.matchAll(/baseSeed \+ t \* (\d+)/g)].map(m => m[1]!)
+    const gateSteps = steps(gate)
+    const worldSteps = steps(world)
+    expect(gateSteps, '验收门那条候选链的形状变了?').toHaveLength(1)
+    expect(worldSteps, '世界生成那条候选链的形状变了?').toHaveLength(1)
+    expect(gateSteps[0], '两条候选链的步长必须一致,否则同一 seed 走不到同一批候选').toBe(worldSteps[0])
+  })
 })
 
 describe('本世之界 · 跨世去重真的接上了历史', () => {
