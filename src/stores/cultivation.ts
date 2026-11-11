@@ -79,10 +79,22 @@ export const useCultivationStore = defineStore(
           // 无丹药上限的状态(闭关 / 重伤 / 祝福):不另加上限
           return { defId: b.defId, endsAt: b.endsAt, ...(added === undefined ? {} : { added }) }
         }
-        // 丹药 buff 读档复钳到四个时辰上限(与 addBuff 同口径);旧档较短的合法时长不补长
+        /*
+         * 丹药 buff 读档复钳到四个时辰上限(与 addBuff 同口径);旧档较短的合法时长不补长。
+         *
+         * 上界以「这条 buff 的**起始时刻**」为参照,不以读档此刻:
+         * 任务进行中把时钟往回拨,`now + capMs` 会缩到 endsAt 之前,
+         * 一条**合法 buff 被当场缩短**(实测回拨 1 小时、原本还剩 7h50m 的 buff
+         * 被砍掉 50 分钟)。这与 `apprentice.finishAt`(上一轮)、
+         * `regionEvent.endsAt` 是同一类:**参照点不能用「现在」**。
+         *
+         * 起始时刻 = `endsAt - added`(`added` 是已叠加的总时长);
+         * 缺 `added` 的旧档退到读档此刻 —— 那条没有可用的历史起点。
+         */
+        const startedAt = added !== undefined ? b.endsAt - added : now
         return {
           defId: b.defId,
-          endsAt: Math.min(b.endsAt, now + capMs),
+          endsAt: Math.min(b.endsAt, startedAt + capMs),
           ...(added === undefined ? {} : { added: Math.min(added, capMs) })
         }
       })
@@ -195,8 +207,29 @@ export const useCultivationStore = defineStore(
         // added:UI 报叠 N 的凭据;旧档缺 added 时按已有一份起算
         let added = (existing.added ?? add) + add
         if (capMs !== undefined) {
-          // 到顶后钳住;白吃的一枚由服丹文案报出
-          endsAt = Math.min(endsAt, now + capMs)
+          /*
+           * 到顶后钳住;白吃的一枚由服丹文案报出。
+           *
+           * 上界以**这条 buff 的起始时刻**为参照,不以传入的 `now`:
+           * `now` 是「服丹那一刻」,时钟往回拨过后它会早于 buff 的真实起点,
+           * `now + capMs` 随之缩到 `existing.endsAt` 之前 ——
+           * 一颗丹下去反而把原本合法的 buff **缩短**了
+           * (实测回拨 1 小时、剩 7h50m 的 buff 被砍 50 分钟)。
+           *
+           * 起点 = `existing.endsAt - existing.added`;旧档缺 `added` 时
+           * 按「已有一份」起算,与上面 `added` 的取值口径一致。
+           */
+          const existingAdded = existing.added ?? add
+          const startedAt = existing.endsAt - existingAdded
+          /*
+           * 只在 `now` **早于** buff 起点(即时钟回拨)时才退到起点参照。
+           *
+           * 正常叠加时 `now` 就是「这一次服丹的时刻」,上限从它起算才对 ——
+           * 一律用起点会让叠加永远撞在同一个天花板(既有用例
+           * 「连服:足额 → 只延续到顶 → 完全白费」当场红了)。
+           */
+          const anchor = now < startedAt ? startedAt : now
+          endsAt = Math.min(endsAt, anchor + capMs)
           added = Math.min(added, capMs)
         }
         buffs.value = buffs.value.map(b => (b.defId === defId ? { ...b, endsAt, added } : b))
