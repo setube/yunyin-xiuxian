@@ -1282,6 +1282,27 @@ describe('坏档韧性 · 区域胜场的上界', () => {
     // STABLE_WINS=30 / FLOURISH_WINS=80;上界必须大于它们,否则正常档判不出兴衰
     expect(10_000, '上界低于兴衰阈值,正常档会被误判').toBeGreaterThan(80)
   })
+
+  it('写入端自增也饱和 —— 否则重启后胜场会变小', () => {
+    /*
+     * 审查意见指出的:`sanitize` 只在开场跑一次,而 `recordRegionWin` /
+     * `applyRegionWinBatch` 直接 `+n` —— 不饱和的话,越过上限后重启会被夹回来,
+     * 玩家看到该区域胜场变小。与 `recordWorldClear` / `diag.record` 同一条理。
+     */
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({ regionWins: { qingyun: 10_000 } } as never)
+    p.recordRegionWin('qingyun')
+    expect((p.regionWins as Record<string, number>).qingyun, '单次自增越过了上限').toBe(10_000)
+  })
+
+  it('未到上限时正常自增', () => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.recordRegionWin('qingyun')
+    p.recordRegionWin('qingyun')
+    expect((p.regionWins as Record<string, number>).qingyun, '正常自增被误伤').toBe(2)
+  })
 })
 
 /**
@@ -1291,20 +1312,45 @@ describe('坏档韧性 · 区域胜场的上界', () => {
  * 转世次数越过上限后重启会被夹回来,玩家看到「第 N 世」变小。
  * 这个数还进 `suppressLife` 的等号判定,差一位就对不上。
  */
-describe('坏档韧性 · 转世次数自增要饱和', () => {
-  it('已到上限时再转世一次,计数停在上限', () => {
-    setActivePinia(createPinia())
-    const p = usePlayerStore()
-    p.$patch({ reincarnation: { ...p.reincarnation, count: 1_000_000 } } as never)
-    p.rebirth({ roots: [] } as never)
-    expect(p.reincarnation.count, '转世次数自增越过了上限').toBe(1_000_000)
-  })
-
-  it('未到上限时正常自增', () => {
+describe('坏档韧性 · 转世次数不能饱和', () => {
+  /*
+   * 这一条被审查意见纠正过一次,而且**方向是反的**。
+   *
+   * `count` 不只是个计数,它是「本世」的标识:`suppressLife` 与它比等号,
+   * 相等才算本世的镇压权益。给自增加饱和后,两世的世号会相同 ——
+   * 旧世残留的权益会在新世生效(审查意见里那条「高」)。
+   *
+   * `LIFE_COUNTER_CAP` 是**读档守卫**,防的是坏档写 MAX_VALUE;
+   * 正常游玩几百年也转不了几万次,不需要也不该在写入端夹。
+   */
+  it('转世后世号必须递增 —— 它是本世标识,不能停在同一个值上', () => {
     setActivePinia(createPinia())
     const p = usePlayerStore()
     p.$patch({ reincarnation: { ...p.reincarnation, count: 5 } } as never)
     p.rebirth({ roots: [] } as never)
     expect(p.reincarnation.count, '正常自增被误伤').toBe(6)
+    p.rebirth({ roots: [] } as never)
+    expect(p.reincarnation.count, '两次转世后应到 7;停住会让两世共用一个世号').toBe(7)
+  })
+
+  it('即使起点已在上限,转世后世号仍须变化', () => {
+    /*
+     * 这条专防「把饱和加回来」。起点取上限值:若写入端夹住,
+     * 转世后 count 仍是 1000000,与上一世共用一个世号 ——
+     * `suppressLife` 的等号判定就会把旧世残留认成本世。
+     */
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({ reincarnation: { ...p.reincarnation, count: 1_000_000 } } as never)
+    p.rebirth({ roots: [] } as never)
+    expect(p.reincarnation.count, '转世后世号没变 —— 两世共用一个标识').toBe(1_000_001)
+  })
+
+  it('读档守卫仍在 —— 坏档的 MAX_VALUE 会被夹', () => {
+    setActivePinia(createPinia())
+    const p = usePlayerStore()
+    p.$patch({ reincarnation: { ...p.reincarnation, count: Number.MAX_VALUE } } as never)
+    p.sanitize()
+    expect(p.reincarnation.count, '坏档的转世次数没被读档守卫夹住').toBeLessThanOrEqual(1_000_000)
   })
 })
