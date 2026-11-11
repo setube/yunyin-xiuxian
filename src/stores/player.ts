@@ -54,6 +54,15 @@ const BOND_EVENT_GAP = 6
 const NEMESIS_LOSS_CAP = 10_000
 
 /**
+ * 游玩日号(`gameDay(totalPlaySec)`)的读档上界。
+ *
+ * `totalPlaySec` 自身在 `game.sanitize` 里封顶 100 年(36500 天),取一万天留足余量。
+ * 这里用**固定值**而不是实时读 `game.totalPlaySec` —— `sanitizeAllStores` 里
+ * player 先于 game 跑,那个值此刻还可能是坏的。
+ */
+const GAME_DAY_MAX = 10_000
+
+/**
  * 区域战绩里两个计数的读档上界。
  *
  * `totalFights` 只用于显示,夹到上界即可。
@@ -838,16 +847,20 @@ export const usePlayerStore = defineStore(
           mansionRedirect.value = null
         } else {
           /*
-           * 日记号同样不许落在「今天」之后 —— 判定是
-           * `current.gameDay === day`(`mansionRedirectCheck`),
-           * 未来日会让等号恒不成立、`count >= MANSION_REDIRECT_MAX` 那道
-           * 每日上限**永远不生效**,坏档就能无限定向。
-           * 与上面 wudaoExchange 同一条处理。
+           * 日记号不许大得离谱 —— 判定是 `current.gameDay === day`
+           * (`mansionRedirectCheck`),未来日会让等号恒不成立、
+           * `count >= MANSION_REDIRECT_MAX` 那道每日上限**永远不生效**。
+           *
+           * 上界用**固定值**而不是读 `game.totalPlaySec`:
+           * `sanitizeAllStores` 里 player 先于 game 跑(见那里的顺序),
+           * 此刻的 totalPlaySec 可能还是坏值 —— 实测 `MAX_VALUE` 会让
+           * 「今天」变成 2e303,任何记录都不再越界,守卫形同虚设。
+           * `totalPlaySec` 自身封顶 100 年(见 game.sanitize),
+           * 折算成日就是 36500 天;取一万天留足余量。
            */
-          const todayGameDay = gameDay(useGameStore().totalPlaySec)
           const mrDay = Math.max(0, Math.floor(mr.gameDay))
           mansionRedirect.value = {
-            gameDay: mrDay > todayGameDay ? 0 : mrDay,
+            gameDay: mrDay > GAME_DAY_MAX ? 0 : mrDay,
             worldId: mr.worldId,
             count: Math.min(MANSION_REDIRECT_MAX, Math.max(0, Math.floor(mr.count)))
           }
@@ -857,10 +870,17 @@ export const usePlayerStore = defineStore(
       if (!we || !Number.isFinite(we.gameDay) || !Number.isFinite(we.count)) {
         wudaoExchange.value = { gameDay: 0, count: 0 }
       } else {
-        // 同理:gameDay 落在今天之后会让「今日已兑」的等号恒不成立,每日兑换停摆
+        /*
+         * 日记号不许大得离谱:判定是 `cur.gameDay === day`,未来日会让
+         * 「今日已兑」的等号恒不成立、每日兑换停摆 —— 但**两个方向都要防**:
+         * 归零的语义是「今天还没兑」,而坏档的巨值恰恰会被归零成可兑。
+         *
+         * 与 mansionRedirect 同一条:上界用**固定值**,不实时读 `game.totalPlaySec`
+         * (player 先于 game 跑,那个值此刻还可能是坏的)。
+         */
         const day = Math.max(0, Math.floor(we.gameDay))
         wudaoExchange.value = {
-          gameDay: day > gameDay(useGameStore().totalPlaySec) ? 0 : day,
+          gameDay: day > GAME_DAY_MAX ? 0 : day,
           count: Math.min(WUDAO_EXCHANGE_PER_DAY, Math.max(0, Math.floor(we.count)))
         }
       }

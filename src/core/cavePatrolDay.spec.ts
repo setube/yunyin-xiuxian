@@ -159,3 +159,34 @@ describe('星象定向 · 未来日记号会让每日上限失效', () => {
     expect((player.mansionRedirect as { count?: number } | null)?.count).toBe(1)
   })
 })
+
+
+/**
+ * 两个日号守卫不能依赖 `game.totalPlaySec` 的**当下值**。
+ *
+ * `sanitizeAllStores` 里 player 先于 game 跑,那一刻 totalPlaySec 可能还是坏值。
+ * 首版实时读它算「今天」:坏值 MAX_VALUE 折算成 2e303 天,
+ * 任何记录都不再越界,守卫形同虚设(审查意见指出的)。
+ * 现改用固定上界(36500 天来自 totalPlaySec 自身的 100 年封顶,取一万留余量)。
+ */
+describe('日号守卫 · 不依赖尚未修复的 game.totalPlaySec', () => {
+  it('totalPlaySec 是坏值时,未来日号仍然被归零', () => {
+    setActivePinia(createPinia())
+    const game = useGameStore()
+    game.totalPlaySec = Number.MAX_VALUE // 尚未被 game.sanitize 修过的坏值
+    const player = usePlayerStore()
+    player.$patch({
+      mansionRedirect: { gameDay: 999_999, worldId: 'mortal', count: 1 },
+      wudaoExchange: { gameDay: 999_999, count: 1 }
+    } as never)
+    player.sanitize()
+    expect(
+      (player.mansionRedirect as { gameDay?: number } | null)?.gameDay,
+      '坏 totalPlaySec 让守卫失效了 —— 定向的每日上限会被绕过'
+    ).toBe(0)
+    expect(
+      (player.wudaoExchange as { gameDay?: number } | null)?.gameDay,
+      '坏 totalPlaySec 让守卫失效了 —— 每日兑换额度会被绕过'
+    ).toBe(0)
+  })
+})
