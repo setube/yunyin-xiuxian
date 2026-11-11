@@ -388,6 +388,21 @@ for (const route of ROUTES) {
     if (!label || SKIP.test(label)) continue
     if (label === '×' || label === '✕') continue
     if (!(await b.isVisible().catch(() => false))) continue
+    /*
+     * 视口外的钮先跳过。
+     *
+     * `isVisible()` 只问「CSS 上可不可见」,不管在不在当前视口里 ——
+     * 实测 /adventure 的「出发」在 y=833(视口高 812),筛得到、点不着:
+     * Playwright 会先滚动过去,滚动又会把别的元素移位,800ms 内点不中即超时。
+     * 代价是长页面下半部分的钮这一轮不点 —— 比误报「死按钮」好。
+     */
+    const inView = await b
+      .evaluate(el => {
+        const r = el.getBoundingClientRect()
+        return r.top >= 0 && r.bottom <= innerHeight && r.height > 0
+      })
+      .catch(() => false)
+    if (!inView) continue
     if (await b.isDisabled().catch(() => false)) continue
     buttons.push(b)
     if (buttons.length >= DEPTH) break
@@ -404,7 +419,17 @@ for (const route of ROUTES) {
     if (await b.isDisabled().catch(() => false)) continue
     const before = errors.length
     const beforeFp = await fingerprint()
-    await b.click({ timeout: 800 }).catch(() => {})
+    /*
+     * 点不中就不计数,也不判「点了没反应」。
+     *
+     * 原先无条件 `clicked += 1`:点击超时了也照算一次,于是
+     * ① 逐页读数虚高;② 指纹没变就被当成「死按钮」——而它其实一下都没点到。
+     */
+    const clickedOk = await b
+      .click({ timeout: 800 })
+      .then(() => true)
+      .catch(() => false)
+    if (!clickedOk) continue
     clicked += 1
     await settle()
     if (errors.length > before) errors[errors.length - 1].where = `${route} 点「${label}」`

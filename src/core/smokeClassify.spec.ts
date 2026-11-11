@@ -116,3 +116,34 @@ describe('冒烟取按钮 · 两处口径', () => {
     expect(SRC, '逐页下限会误报,不该有').not.toContain('idlePages')
   })
 })
+
+/**
+ * 视口外的钮不点,点不中不计数。
+ *
+ * 两处都是「点击」这一步本身的问题,不修就会以「死按钮」的形态误报:
+ *
+ *  一 **`isVisible()` 只问 CSS 可见性,不管在不在视口里**。
+ *     /adventure 的「出发」在 y=833(视口高 812)——筛得到、点不着;
+ *     Playwright 会先滚动过去,滚动又把别的元素移位,800ms 内点不中即超时。
+ *  二 **点击超时也照样 `clicked += 1`**。于是 ① 读数虚高;
+ *     ② 指纹没变就被判成「死按钮」,而它其实一下都没点到。
+ *
+ * 实测这两条合起来让 /adventure 的「出发」在合入后被报成死按钮,
+ * 而那按钮点下去是正常弹窗的。
+ */
+describe('冒烟点击 · 视口与计数', () => {
+  const RAW = readFileSync(resolve(__dirname, '../../scripts/ui-smoke.mjs'), 'utf-8')
+  const SRC = RAW.replace(/^\s*(\*|\/\/).*$/gm, '')
+
+  it('筛选时排除视口外的钮', () => {
+    expect(SRC, '该判断元素在不在视口内').toContain('getBoundingClientRect()')
+    expect(SRC, '该与 innerHeight 比').toContain('innerHeight')
+  })
+
+  it('点不中不计数,也不进「没反应」分支', () => {
+    expect(SRC, '该接住点击失败').toMatch(/clickedOk/)
+    expect(SRC, '点失败该 continue').toMatch(/if \(!clickedOk\) continue/)
+    // 反例:无条件加一
+    expect(SRC, '又变成无条件 clicked += 1 了').not.toMatch(/await b\.click\(\{ timeout: 800 \}\)\.catch\(\(\) => \{\}\)\n\s*clicked \+= 1/)
+  })
+})
