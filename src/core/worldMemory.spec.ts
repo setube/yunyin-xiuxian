@@ -458,6 +458,21 @@ describe('复聚钟 · 坏档巨值不许让地界永不复苏', () => {
     expect(clock, '重起钟该落在「此刻」附近').toBeGreaterThan(Date.now() - 5000)
   })
 
+  it('未来的镇压起钟要夹到此刻 —— asTimestamp 只挡超范围,不挡未来', () => {
+    /*
+     * 一个**合法但晚于此刻**的时间戳照样通过 `asTimestamp`(它只判 Date 可表示范围),
+     * 而复聚钟取 max 之后同样停在未来 —— 该地界要等到真实时间追上那个时刻才可能复苏。
+     */
+    const player = usePlayerStore()
+    const future = Date.now() + 365 * 24 * 3600_000
+    player.$patch({ suppressedRegions: ['qingyun'], suppressedSince: { qingyun: future } } as never)
+    player.sanitize()
+    expect(
+      player.suppressedSince.qingyun,
+      '未来的起钟没被夹住 —— 复聚钟会停在未来'
+    ).toBeLessThanOrEqual(Date.now())
+  })
+
   it('正常镇压起钟原样保留', () => {
     const player = usePlayerStore()
     const at = Date.now() - 50 * 3600_000
