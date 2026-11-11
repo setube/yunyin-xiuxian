@@ -122,17 +122,30 @@ export const useApprenticeStore = defineStore(
              * 改成严格大于之后,零时长与负时长一并置闲。
              */
             /*
-             * 完工时刻还要有**上界**:任务最长 1 小时(见 data/apprentices 的 seconds),
+             * 完工时刻要有**上界**:任务最长 1 小时(见 data/apprentices 的 seconds),
              * 坏档写个一年后的 finishAt 会让这名道童**干等一年**
              * (`apprenticeService.isTaskDone` 判 `now >= finishAt`)。
              *
-             * 上界按**读档此刻**算,不按 `finishAt - startAt` ——
-             * startAt 被夹成 0(坏档的负值)时那个差值恒为几十年的量级,
-             * 用它当判据会把本来合法的任务一并丢掉(既有用例钉着这条)。
-             * 「finishAt 在未来」本身是正常状态,只有超出最长时长才是坏档。
+             * 上界以 `startAt`(任务**派发时刻**)为参照,不以「读档此刻」为参照:
+             * 任务进行中把时钟往回拨,`Date.now() + 最长时长` 会缩到 finishAt 之前,
+             * 那条**合法任务**就被误删了(审查意见指出的,与 regionEvent 同一个坑)。
+             *
+             * `startAt` 被夹成 0(坏档的负值)时它在极早的过去 —— 那时
+             * `maxFinishAt` 同样极早,任务会被丢掉。那是既有用例钉住的反面,
+             * 故这里给一个兜底:参照点取 `startAt` 与「读档此刻往前一个最长时长」
+             * 二者的**较晚者**,既不受回拨影响,也不会因 startAt=0 而误删。
              */
-            const maxFinishAt = Date.now() + (taskDef(t.spec as ApprenticeSpec).seconds + 60) * 1000
-            if (rawFinishAt > startAt && rawFinishAt <= maxFinishAt) {
+            /*
+             * 参照点的取法:
+             *   - 正常档:用 `startAt`(派发时刻)。它不受后来回拨影响,
+             *     上界即「派发 + 最长时长」—— 回拨不会把合法任务判掉。
+             *   - `startAt` 被夹成 0(坏档的负值):它不代表真实派发时刻,
+             *     退到「读档此刻」为参照。这条与既有用例「负 startAt 夹成 0,
+             *     任务本身保留」配合 —— 坏开始时刻不该连任务一起丢。
+             */
+            const spanMs = (taskDef(t.spec as ApprenticeSpec).seconds + 60) * 1000
+            const anchor = startAt > 0 ? startAt : Date.now()
+            if (rawFinishAt > startAt && rawFinishAt <= anchor + spanMs) {
               task = { spec: t.spec, startAt, finishAt: rawFinishAt }
             }
           }
