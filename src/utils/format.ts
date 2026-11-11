@@ -38,6 +38,16 @@ export function formatGN(v: GNum | number): string {
    * 存档经 sanitize 应已修好,但界面在 sanitize 之前也可能读到(见 storeResilience)。
    */
   if (!Number.isFinite(g.m) || !Number.isFinite(g.e)) return NOT_AVAILABLE
+  /*
+   * 指数**本身**也得是「小整数」,不只是有限。
+   *
+   * 兜底那条路是 `` `${m}e${g.e}` `` —— 直接拼 `g.e`。若 `g.e` 是 1e22,
+   * 拼出来就是「1.00e1e+22」:科学计数里套了一层科学计数,读都读不出来。
+   * `asBoundedGNum` 读档时已把 |e| 夹到 999,但这里是**公共函数**,
+   * 不能假定每个调用方都先过那道关(界面上、审计脚本里都直接调)。
+   * 与 SAVE_GNUM_MAX_EXP 同一把尺:超过它的指数只可能来自坏档。
+   */
+  if (Math.abs(g.e) > 999) return NOT_AVAILABLE
   if (g.m === 0) return '0'
   if (g.m < 0) {
     /*
@@ -104,6 +114,16 @@ export function formatGap(v: GNum | number): string {
   const g = typeof v === 'number' ? gn(v) : v
   // 与 formatGN 同一道守卫:对象分支不经过 gn(),坏值会一路走到 toNum/ceilTo
   if (!Number.isFinite(g.m) || !Number.isFinite(g.e)) return NOT_AVAILABLE
+  /*
+   * 指数**本身**也得是「小整数」,不只是有限。
+   *
+   * 兜底那条路是 `` `${m}e${g.e}` `` —— 直接拼 `g.e`。若 `g.e` 是 1e22,
+   * 拼出来就是「1.00e1e+22」:科学计数里套了一层科学计数,读都读不出来。
+   * `asBoundedGNum` 读档时已把 |e| 夹到 999,但这里是**公共函数**,
+   * 不能假定每个调用方都先过那道关(界面上、审计脚本里都直接调)。
+   * 与 SAVE_GNUM_MAX_EXP 同一把尺:超过它的指数只可能来自坏档。
+   */
+  if (Math.abs(g.e) > 999) return NOT_AVAILABLE
   if (g.m === 0) return '0'
   // 负数没有「尚差」语义,退回原格式化
   if (g.m < 0) return formatGN(g)
@@ -171,8 +191,17 @@ export function roundToSum(values: readonly number[], unit: number): number[] {
   if (values.length === 0) return []
   if (!values.every(v => Number.isFinite(v))) return values.map(() => 0)
   // 先抹浮点尾差:0.8599999999999999 / 0.001 不该落到 859
+  /*
+   * 缩放**过程**本身也会上溢:unit 极小(1e-300)配 values 极大(1e300)时,
+   * `v / unit` 得 Infinity,`Math.round(Infinity)` 仍是 Infinity ——
+   * 上面三段守卫都过了(unit 有限且 > 0、每项都有限),可返回的却是一串 null。
+   * 故缩放完再验一遍:任一项非有限,与「没有可分配的份额」同样处理。
+   */
   const scaled = values.map(v => Math.round((v / unit) * 1e6) / 1e6)
+  if (!scaled.every(v => Number.isFinite(v))) return values.map(() => 0)
   const target = Math.round(scaled.reduce((a, b) => a + b, 0))
+  // 合计也可能上溢(单项都有限、加起来却成了 Infinity)
+  if (!Number.isFinite(target)) return values.map(() => 0)
   const out = scaled.map(v => Math.floor(v))
   let short = target - out.reduce((a, b) => a + b, 0)
   const byRemainder = scaled.map((v, i) => ({ i, r: v - Math.floor(v) })).sort((a, b) => b.r - a.r)
@@ -328,7 +357,15 @@ export function formatStamp(ts: number, now = Date.now()): string {
 export function formatYears(y: number): string {
   // 坏值守卫:缺了它 Math.floor(NaN) 会印出「NaN 载」,Math.floor(-Infinity) 印「-Infinity 载」
   if (!Number.isFinite(y)) return NOT_AVAILABLE
-  if (y >= 10000) return `${formatNum(Math.floor(y))} 载`
+  /*
+   * 负值走 formatNum 那条,不走裸数字。
+   *
+   * 下面那句 `${Math.floor(y)} 载` 只适合小正数;`-1e22` 会被 JS 转成
+   * 「-1e+22」,于是印出「-1e+22 载」。而负寿元本身就只可能来自坏档
+   * (player.sanitize 把 age 拉回 START_AGE),这里不必保留「-」的语义,
+   * 但也不该印脏串 —— 交给 formatNum,与正值同一条格式化路径。
+   */
+  if (Math.abs(y) >= 10000) return `${formatNum(Math.floor(y))} 载`
   return `${Math.floor(y)} 载`
 }
 
