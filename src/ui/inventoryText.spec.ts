@@ -4,6 +4,7 @@ import {
   artifactSlotReplacedToast,
   artifactToggleToast,
   decomposeEmptyToast,
+  equipSlotLabel,
   loadoutApplyToast,
   loadoutFullToast,
   loadoutSavedToast,
@@ -70,5 +71,36 @@ describe('法宝面板 · 一个词不指两个动作', () => {
     expect(PANEL, '按钮里还有「祭炼随身」').not.toContain('祭炼随身')
     expect(PANEL, '携带按钮应写「随身携带」').toContain('随身携带')
     expect(artifactToggleToast('神魔镜', true), '携带回执不该用「祭炼」').not.toContain('祭炼')
+  })
+})
+
+/**
+ * 装备槽卡的可访问名。
+ *
+ * 卡面上印着槽位名、戴着的那件(名字 + 强化数 + 自定标记)、以及有没有可换,
+ * 而可访问名原先只有「武器」/「武器,可换」—— 读屏听不出这格是空的还是戴了什么。
+ * 判据钉三件事:空槽说「未装备」、有件报件名、可换才报「可换」。
+ */
+describe('装备槽的可访问名', () => {
+  const VIEW = readFileSync(new URL('../views/InventoryView.vue', import.meta.url), 'utf8')
+
+  it('空槽说未装备,有件报件名', () => {
+    expect(equipSlotLabel('武器', null, false)).toBe('武器 · 未装备')
+    expect(equipSlotLabel('武器', '雾隐长剑', false)).toBe('武器 · 雾隐长剑')
+    // 强化数与自定标记由调用方拼进第二参,本函数原样转发
+    expect(equipSlotLabel('衣袍', '桃木簪 · +3 · 常用', false)).toBe('衣袍 · 桃木簪 · +3 · 常用')
+  })
+
+  it('只有真有可换件时才说「可换」', () => {
+    expect(equipSlotLabel('武器', null, true)).toBe('武器 · 未装备 · 可换')
+    expect(equipSlotLabel('武器', '雾隐长剑', true)).toBe('武器 · 雾隐长剑 · 可换')
+    expect(equipSlotLabel('武器', '雾隐长剑', false)).not.toContain('可换')
+  })
+
+  it('背包页的槽卡读它,不再自己拼「槽名,可换」', () => {
+    expect(VIEW, '槽卡该读算好的 label').toContain(':aria-label="row.label"')
+    expect(VIEW, 'slotRows 该走 equipSlotLabel').toContain('equipSlotLabel(EQUIP_SLOT_NAMES[slot], equippedText, upgradeable)')
+    // 阴性对照:旧写法(只拼槽名和可换)不许回来
+    expect(VIEW).not.toMatch(/:aria-label="`\$\{row\.name\}\$\{row\.upgradeable \? ',可换' : ''\}`"/)
   })
 })
