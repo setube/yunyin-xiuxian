@@ -9,6 +9,9 @@ import { useResourcesStore } from '@/stores/resources'
 import { useMarketStore } from '@/stores/market'
 import { useEndgameStore } from '@/stores/endgame'
 import { useInventoryStore } from '@/stores/inventory'
+import { upgradeCost } from '@/core/formulas'
+import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
+import { MAX_EQUIP_TIER } from '@/data/equipment'
 import { EQUIP_COUNTER_MAX } from '@/data/constants'
 import { useApprenticeStore } from '@/stores/apprentice'
 import { sanitizeOfflineInputs } from './offline'
@@ -991,5 +994,33 @@ describe('坏档韧性 · 装备投入的器灵尘不许凭空退还', () => {
   it('上界须覆盖得住满强化的真实累计', () => {
     // 15 级满强化 + 最高层级 + 最高品质,实测 8743;上界两万留一档余量
     expect(20_000, '上界低于满强化的真实累计').toBeGreaterThan(8743)
+  })
+})
+
+/**
+ * 器灵尘上界须**覆盖得住真实可达的最大累计** —— 不能只凭一个手算的数字。
+ *
+ * 首版的依据是「满强化 15 级累计 8743」,而审查意见提醒:
+ * 若哪天出现「等级重置但投入保留」的路径,累计就会超过它。
+ * 这条判据把那个前提**算出来钉住**:遍历全部等级与层级,
+ * 断言累计投入的上确界确实低于我们设的 20000。
+ *
+ * 若将来真出现重置路径,这条会红 —— 那时该做的是重新算上界,
+ * 而不是把门槛抬高蒙混过去。
+ */
+describe('坏档韧性 · 器灵尘上界与真实可达的最大累计', () => {
+  it('满强化的累计投入确实远低于上界', () => {
+    let maxDust = 0
+    // 每一档层级与品质都算一遍,取最大
+    for (let tier = 1; tier <= MAX_EQUIP_TIER; tier += 1) {
+      for (let rank = 0; rank <= 4; rank += 1) {
+        let dust = 0
+        for (let lv = 0; lv < EQUIP_LEVEL_SANITIZE_CAP; lv += 1) dust += upgradeCost(lv, tier, rank, 0).dust
+        maxDust = Math.max(maxDust, dust)
+      }
+    }
+    expect(maxDust, '真实累计投入已超过读档上界 —— 正常档会被误清').toBeLessThan(20_000)
+    // 也不能低得离谱:至少要有几千,否则说明算错了
+    expect(maxDust, '算出来的最大累计小得不像话,判据没跑到东西').toBeGreaterThan(1000)
   })
 })
