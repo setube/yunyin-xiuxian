@@ -52,3 +52,51 @@ describe('focus-check · 键盘可达性', () => {
     expect(routes.length, `只覆盖了 ${routes.length} 个路由,该是全部主路由`).toBeGreaterThanOrEqual(17)
   })
 })
+
+/**
+ * 首启那两页的键盘判据(`/welcome` 与 `/create`)。
+ *
+ * 它们**不能进上面那份 17 页清单**:那份清单铺了 lateSlices,而路由守卫
+ * `if (game.started) return { name: 'home' }` 会把带存档的访问弹回首页 ——
+ * 两页从来不在清单里,可点元素也从未验过能不能 Tab 到。
+ * 且 `edge-states` 虽能进这两页,它只验状态解释与触控尺寸,不验键盘。
+ *
+ * 这里钉四件事(每一条都对应一种会静默失效的写法):
+ *  一 用**新上下文**、不注入存档(注入了就落到首页,整段白跑);
+ *  二 等够 3500ms —— 传送动画 `enterTimer` 是 2500ms,等短了会停在 /welcome
+ *    而「建号页 Tab 到不了」那一行根本不会执行;
+ *  三 欢迎页的 Tab 首落点必须是同意勾选(不是底部的「开始游戏」);
+ *  四 按下空格后勾选真的变了 —— 只验 tabIndex 不验行为,勾选逻辑坏了照样绿。
+ */
+describe('focus-check · 首启两页的键盘可达性', () => {
+  const AUTO_AT = SRC.indexOf('首启的两页:**必须是没存档的上下文**')
+  const BLOCK = AUTO_AT >= 0 ? SRC.slice(AUTO_AT, AUTO_AT + 6000) : ''
+
+  it('那一段存在', () => {
+    expect(AUTO_AT, '找不到首启两页那一段 —— 判据要跟着改名').toBeGreaterThan(-1)
+  })
+
+  it('用新上下文且不注入存档', () => {
+    expect(BLOCK, '该新开一个上下文').toMatch(/browser\.newContext\(/)
+    expect(BLOCK, '这一段里不该 seedSave —— 注入了就落到首页').not.toContain('seedSave(')
+    expect(BLOCK, '该进 /welcome').toContain("#/welcome")
+  })
+
+  it('等够传送动画', () => {
+    const waits = [...BLOCK.matchAll(/waitForTimeout\((\d+)\)/g)].map(m => Number(m[1]))
+    expect(waits.some(w => w >= 3500), `最长只等了 ${Math.max(...waits, 0)}ms,不够跨过 2500ms 的传送动画`).toBe(true)
+  })
+
+  it('验的不只是 tabIndex,还有「空格能勾上」这个行为', () => {
+    expect(BLOCK, '该验 Tab 首落点').toContain("'checkbox'")
+    expect(BLOCK, '该按空格').toMatch(/keyboard\.press\('Space'\)/)
+    expect(BLOCK, '该回读勾选状态').toContain('.checked')
+    expect(BLOCK, '勾不上该报失败').toMatch(/勾不上同意/)
+  })
+
+  it('两页都要查,且建号页落位失败要报出来', () => {
+    expect(BLOCK, '没查 /welcome 的可点元素').toContain('/welcome 可点元素')
+    expect(BLOCK, '没查 /create 的可点元素').toContain('/create 可点元素')
+    expect(BLOCK, '没验落位到 #/create').toContain("'#/create'")
+  })
+})
