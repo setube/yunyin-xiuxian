@@ -9,6 +9,7 @@ import { useResourcesStore } from '@/stores/resources'
 import { useMarketStore } from '@/stores/market'
 import { useEndgameStore } from '@/stores/endgame'
 import { useInventoryStore } from '@/stores/inventory'
+import { EQUIP_COUNTER_MAX } from '@/data/constants'
 import { useApprenticeStore } from '@/stores/apprentice'
 import { sanitizeOfflineInputs } from './offline'
 
@@ -706,21 +707,53 @@ describe('坏档韧性 · 装备计数器的上界', () => {
   }
 
   it('巨值被夹到上界,不再原样保留', () => {
-    for (const v of [1e300, 1e20, 20000]) {
+    for (const v of [1e300, 1e20, 1e10]) {
       const it = patchWith(v).items[0]
-      expect(it?.reforgeCount, `reforgeCount ${v} 没被夹住`).toBeLessThanOrEqual(10000)
-      expect(it?.transferCount, `transferCount ${v} 没被夹住`).toBeLessThanOrEqual(10000)
+      expect(it?.reforgeCount, `reforgeCount ${v} 没被夹住`).toBeLessThanOrEqual(EQUIP_COUNTER_MAX)
+      expect(it?.transferCount, `transferCount ${v} 没被夹住`).toBeLessThanOrEqual(EQUIP_COUNTER_MAX)
     }
   })
 
-  it('正常计数原样保留', () => {
-    const it = patchWith(5000).items[0]
-    expect(it?.reforgeCount).toBe(5000)
-    expect(it?.transferCount).toBe(5000)
+  it('真实累计不该被夹 —— 两项操作本身没有上限', () => {
+    /*
+     * 首版把上界取成一万,而每次重铸都会 +1、几世累计可以越过一万 ——
+     * 那样读档时会把真实历史夹掉(审查意见指出的)。上界只为拦坏档,
+     * 不该卡在「常见量级」。
+     */
+    for (const v of [5000, 50000, 5_000_000]) {
+      const it = patchWith(v).items[0]
+      expect(it?.reforgeCount, `真实累计 ${v} 被误夹`).toBe(v)
+      expect(it?.transferCount, `真实累计 ${v} 被误夹`).toBe(v)
+    }
   })
 
-  it('上界本身能正常显示,不会进科学计数', () => {
-    // 10000 是裸插值也能读出来的数字;若上界取到 1e21 就会印成 1e+21
-    expect(String(10000)).not.toMatch(/e\+/)
+  it('上界本身仍在裸插值可读的范围内', () => {
+    // 裸插值在 1e21 起改用科学计数法;上界必须远低于它
+    expect(EQUIP_COUNTER_MAX, '上界太高,裸插值会印出 1e+N').toBeLessThan(1e21)
+    expect(String(EQUIP_COUNTER_MAX)).not.toMatch(/e\+/)
+  })
+})
+
+/**
+ * 历练会话的四个计数也要有上界。
+ *
+ * 它们只用于显示(「胜 N 场 · 际遇 M 次 · 拾获 K 件」),
+ * 而 `formatNum` 在单位表之外仍会印成 `1.00e300`。
+ * 与装备计数器同一条思路:展示字段同样需要守卫。
+ */
+describe('坏档韧性 · 历练会话计数的上界', () => {
+  it('巨值被夹住,真实累计不误伤', () => {
+    const patch = (v: unknown): number | undefined => {
+      setActivePinia(createPinia())
+      const a = useAdventureStore()
+      a.$patch({
+        session: { regionId: 'qingyun', startedAt: 1, endsAt: 2, nextBattleAt: 3, wins: v, losses: v, events: v, itemGain: v }
+      } as never)
+      a.sanitize()
+      return a.session?.wins
+    }
+    expect(patch(1e300), '巨值没被夹住').toBeLessThanOrEqual(1e8)
+    // 一场历练的正常量级不该被夹
+    expect(patch(500), '正常值被误夹').toBe(500)
   })
 })
