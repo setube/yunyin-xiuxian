@@ -78,7 +78,7 @@
               :key="row.def.id"
               class="branch-card flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 pl-3.5 text-left active:scale-98"
               :style="row.style"
-              :aria-label="row.mark?.label ?? row.def.name"
+              :aria-label="row.label"
               @click="branchConfirm = row.def.id"
             >
               <span class="flex min-w-0 items-start gap-2">
@@ -280,7 +280,16 @@ import { branchDirectionMark } from '@/ui/branchDirection'
               '--branch-tone': mark.tone
             }
           : undefined
-      return { def: b, mark, style, direction: branchDirectionMark(b.mods) }
+      const direction = branchDirectionMark(b.mods)
+      /*
+       * 可访问名 = 分支名(第几道) + 方向 + 这个动作。
+       *
+       * 卡面上一共有五样可读的东西(名字、方向签、说明、词条、末的「择此道 →」),
+       * 而可访问名原先只有 `mark.label`(名字(第 N 道))—— 读屏听到的是一张没有动作的卡。
+       * WAI 的 label-in-name 还要求名字里含可见文字,卡上最大的那颗字就是「择此道」。
+       */
+      const label = [mark?.label ?? b.name, direction.label, '择此道'].filter(Boolean).join(' · ')
+      return { def: b, mark, style, direction, label }
     })
   })
   const branchPicked = computed(() => {

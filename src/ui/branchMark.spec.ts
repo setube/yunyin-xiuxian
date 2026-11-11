@@ -123,7 +123,8 @@ describe('分支形制 · 四、对话框真的接上了', () => {
     expect(DIALOG, '选卡应挂道纹').toContain('branch-glyph--${row.mark.glyph}')
     expect(DIALOG, '已择卡也应挂道纹').toContain('branch-glyph--${pickedMark.glyph}')
     expect(DIALOG, '分支卡应带品阶淡底').toContain('const mark = branchMarkOf(b.id)')
-    expect(DIALOG, '道纹是装饰,读屏靠 aria-label').toContain('row.mark?.label')
+    expect(DIALOG, '道纹是装饰,读屏靠 aria-label').toContain('const label = [mark?.label ?? b.name, direction.label, ')
+    expect(DIALOG, '可访问名要接进模板').toContain(':aria-label="row.label"')
     // 阳性:模板里不许再逐行调纯函数
     const tpl = DIALOG.slice(0, DIALOG.indexOf('<script'))
     expect(tpl, '模板不该再调 branchMarkOf').not.toContain('branchMarkOf(')
@@ -133,5 +134,25 @@ describe('分支形制 · 四、对话框真的接上了', () => {
     expect(block('.branch-glyph::before'), '道纹须 pointer-events: none').toContain('pointer-events: none')
     expect(block('.branch-card::before'), '左内沿色条须 pointer-events: none').toContain('pointer-events: none')
     expect(CSS, '分支样式里不该出现裸 hex').not.toMatch(/\.branch-(glyph|card)[^{]*\{[^}]*#[0-9a-fA-F]{6}/)
+  })
+})
+
+/**
+ * 分支卡的可访问名要说得出「这个动作是什么」。
+ *
+ * 卡面上一共有五样可读的东西(名字、方向签、说明、词条、末的「择此道 →」),
+ * 而可访问名原先只有 `mark.label`(名字(第 N 道))—— 读屏听到的是一张没有动作的卡。
+ * W3C 的 label-in-name 还要求名字里含可见文字:这张卡上最大的那颗字就是「择此道」。
+ *
+ * 判据两条:名字由「形制 + 方向 + 动作」拼、且模板读它而不是另拼一份。
+ */
+describe('悟道分支 · 可访问名要说清动作', () => {
+  it('名字由「形制 + 方向 + 择此道」拼成', () => {
+    expect(DIALOG, '名字该把三样拼起来').toContain("const label = [mark?.label ?? b.name, direction.label, '择此道']")
+    expect(DIALOG, '模板读算好的 label').toContain(':aria-label="row.label"')
+  })
+
+  it('negative:不许退回只有形制的那一份', () => {
+    expect(DIALOG, '可访问名又只剩形制了').not.toContain(':aria-label="row.mark?.label ?? row.def.name"')
   })
 })

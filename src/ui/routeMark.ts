@@ -80,3 +80,22 @@ export function routeMark(node: Pick<WorldRouteNode, 'foe' | 'bonus' | 'riskText
 export function perilGlyph(peril: PerilKind): string {
   return PERIL_GLYPH[peril]
 }
+
+/**
+ * 远征「两径择一」那张卡的可访问名。
+ *
+ * 卡面上印着四样:径名、险在何处(「险:…」)、代价(「道源 +N」)、以及与敌交手的天机读数
+ * (「天机:…」)。可访问名原先只拼了前三样,**天机读数缺席** —— 而那正是决定选哪一径的那一条。
+ * 同时 W3C 的 label-in-name 要求名字里含可见文字:卡上有「险:」「天机:」这两个词,
+ * 名字里就该有。
+ *
+ * @param nodeName 径名
+ * @param mark     这一径的险纹读数(label = 险在何处)
+ * @param bonus    道源加给
+ * @param winText  天机读数;算不出(无预览)时为 null
+ */
+export function expeditionRouteLabel(nodeName: string, mark: RouteMark, bonus: number, winText: string | null): string {
+  const parts = [nodeName, `险:${mark.label}`, `道源 +${bonus}`]
+  if (winText) parts.push(`天机:${winText}`)
+  return parts.join(' · ')
+}
