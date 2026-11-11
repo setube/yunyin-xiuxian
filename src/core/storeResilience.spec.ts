@@ -836,23 +836,33 @@ describe('坏档韧性 · 区域战绩 avgRounds 的上界', () => {
     return (p.regionStats as Record<string, { avgRounds?: number }> | undefined)?.qingyun?.avgRounds
   }
 
-  it('巨值被夹住,不再让抑制判定恒假', () => {
-    for (const v of [1e300, Number.MAX_VALUE]) {
-      const got = patchAvg(v)
-      expect(got, `avgRounds ${v} 没被夹住`).toBeLessThanOrEqual(10_000)
-      // 夹到上界后仍远大于阈值 3 —— 这是对的:它代表「这场打得很久」,不是「没打过」
-      expect(got, '夹到上界后仍应大于阈值').toBeGreaterThan(3)
+  it('巨值归零 —— 不是夹到上界', () => {
+    /*
+     * 这一条被审查意见纠正过一次。首版把巨值夹到 10000,
+     * 而抑制判定是 `avgRounds <= 3` —— 10000 仍大于 3,复聚钟照样不响,
+     * 等于把「永远不满足」从 1e300 换成了 10000,问题没解决。
+     * 归零的语义是「没有记录」,这才是坏档该有的样子。
+     */
+    for (const v of [1e300, Number.MAX_VALUE, 5000]) {
+      expect(patchAvg(v), `avgRounds ${v} 该归零`).toBe(0)
     }
   })
 
   it('正常回合数原样保留', () => {
-    for (const v of [1, 2.5, 8, 30]) {
-      expect(patchAvg(v), `正常值 ${v} 被误夹`).toBe(v)
+    // 一场战斗的回合数是两位到三位数;1/2.5/8/30/500 都在合理范围
+    for (const v of [1, 2.5, 8, 30, 500]) {
+      expect(patchAvg(v), `正常值 ${v} 被误清`).toBe(v)
     }
   })
 
-  it('上界宽到不会误伤任何真实战斗', () => {
-    // 一场战斗的回合数是两位到三位数;一万已极宽
-    expect(10_000).toBeGreaterThan(1000)
+  it('阈值必须远高于一场真实战斗的回合数', () => {
+    /*
+     * 这条钉的是「阈值不能太低」:若哪天把门槛调到 5,
+     * 一场打了 30 回合的硬仗记录就会被当成坏档清零。
+     * 真实回合数是两位到三位数,门槛取一千 —— 高出两个量级。
+     */
+    const REAL_BATTLE_ROUNDS = 500
+    expect(patchAvg(REAL_BATTLE_ROUNDS), '真实的硬仗记录被清了').toBe(REAL_BATTLE_ROUNDS)
+    expect(patchAvg(1e300), '巨值没被清').toBe(0)
   })
 })

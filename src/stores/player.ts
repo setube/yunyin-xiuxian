@@ -26,11 +26,17 @@ const WIN_STREAK_CAP = 1_000_000
 /**
  * 区域战绩里两个计数的读档上界。
  *
- * `avgRounds` 参与抑制判定(`avgRounds <= 3`),坏档写 1e300 会让它恒假、复聚钟停摆;
- * 一场战斗的回合数是两位到三位数,取一万已极宽。`totalFights` 同理。
+ * `totalFights` 只用于显示,夹到上界即可。
+ *
+ * `avgRounds` 另有讲究:它参与抑制判定(`avgRounds <= 3`)。
+ * 夹到上界**解决不了问题** —— 10000 仍大于 3,复聚钟照样不响。
+ * 故越界的值归零(语义是「没有记录」),见调用处的说明。
+ * `SUPPRESS_AVG_ROUNDS_LIMIT` 是「一场战斗算打得久」的门槛,与判定同源。
  */
 const AVG_ROUNDS_CAP = 10_000
 const TOTAL_FIGHTS_CAP = 10_000_000
+/** 平均回合数的「久」门槛:超过它就该当作异常记录处理(与 suppress 的判据同量级) */
+const SUPPRESS_AVG_ROUNDS_LIMIT = 1000
 
 import { legacyInsightOf } from '@/data/samsara'
 import { titleDef } from '@/data/titles'
@@ -928,8 +934,18 @@ export const usePlayerStore = defineStore(
         const rawLife = asFiniteNumber(st.life, Number.NaN, 0)
         fixedRegionStats[id] = {
           totalFights: Math.floor(asFiniteNumber(st.totalFights, 0, 0, TOTAL_FIGHTS_CAP)),
-          // 上界:判定是 `avgRounds <= 3`,坏档写 1e300 会让它永远为假、复聚钟停摆
-          avgRounds: asFiniteNumber(st.avgRounds, 0, 0, AVG_ROUNDS_CAP),
+          /*
+           * 越界要**归零**,不是夹到上界。
+           *
+           * 判定是 `avgRounds <= 3`。夹到 10000 后它仍大于 3,复聚钟照样不响 ——
+           * 等于把「永远不满足」从 1e300 换成了 10000,问题没解决。
+           * 归零的语义是「没有记录」,这正是坏档该有的样子。
+           * (`Number.isFinite` 之前的注释只防了 NaN,而 1e300 是有限数。)
+           */
+          avgRounds: (() => {
+            const v = asFiniteNumber(st.avgRounds, 0, 0, AVG_ROUNDS_CAP)
+            return v > SUPPRESS_AVG_ROUNDS_LIMIT ? 0 : v
+          })(),
           // 受伤占比 0~1(界面乘 100)
           avgDamageTakenPct: asFiniteNumber(st.avgDamageTakenPct, 0, 0, 1),
           consecutiveWins: Math.floor(asFiniteNumber(st.consecutiveWins, 0, 0, WIN_STREAK_CAP)),
