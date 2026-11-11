@@ -637,8 +637,23 @@ describe('format · 有限极大值也不许印脏串', () => {
   /** 存档能塞进来的最大时间戳量级,以及远超它的值 */
   const HUGE = [8.64e15, 1e18, 1e22, 1e300] as const
 
-  /** 「脏」的两种形态:JS 默认科学计数、五位数以上的浮点尾巴 */
-  const DIRTY = /e\+\d|\d\.\d{5,}e|NaN|undefined|Infinity|Invalid/
+  /**
+   * 「脏」的四种形态 —— 比首版多认两种:
+   *
+   *   一 JS 默认的科学计数 `1e+22`(指数带 + 号);
+   *   二 **嵌套**的科学计数 `1.00e1e+22`(formatGN 直接拼 `g.e` 的产物);
+   *   三 **定点**的五位以上浮点尾巴 `1.1574074074074075`(不一定带指数);
+   *   四 老四样 NaN / undefined / Infinity / Invalid。
+   *
+   * 首版只认「长小数**后面必须跟 e**、且 e 后必须带 +」——
+   * 于是 `1.1574074074074075天`(不带 e)与 `1.00e1e+22`(e 后不带 +)都漏了。
+   */
+  const DIRTY = [/e\+\d/, /e\d+e/, /\d\.\d{5,}/, /NaN|undefined|Infinity|Invalid/]
+
+  const dirtyOf = (label: string, out: string): string | null => {
+    const hit = DIRTY.find(re => re.test(out))
+    return hit ? `${label} → ${out.slice(0, 40)}` : null
+  }
 
   it('除 cnNumber 外,全部导出对有限极大值都不出脏串', () => {
     const dirty: string[] = []
@@ -654,25 +669,62 @@ describe('format · 有限极大值也不许印脏串', () => {
         ['formatCountdown', formatCountdown(v)],
         ['formatClock', formatClock(v)],
         ['formatStamp', formatStamp(v)],
-        ['formatYears', formatYears(v)]
+        ['formatYears', formatYears(v)],
+        // 负值同样扫:formatYears(-1e22) 曾印出「-1e+22 载」
+        ['formatGN(-v)', formatGN(-v)],
+        ['formatNum(-v)', formatNum(-v)],
+        ['formatGap(-v)', formatGap(-v)],
+        ['formatYears(-v)', formatYears(-v)],
+        ['formatPercent(-v)', formatPercent(-v)],
+        ['formatDuration(-v)', formatDuration(-v)]
       ]
       for (const [name, out] of calls) {
-        if (DIRTY.test(out)) dirty.push(`${name}(${v.toExponential(1)}) → ${out.slice(0, 40)}`)
+        const d = dirtyOf(`${name}(${v.toExponential(1)})`, out)
+        if (d) dirty.push(d)
       }
     }
     expect(dirty, `这些导出在有限极大值上印了脏串:\n${dirty.join('\n')}`).toEqual([])
   })
 
-  it('cnNumber 的范围外契约:原样返回,不试图格式化', () => {
+  it('GNum 输入同样扫 —— 不只是裸 number', () => {
     /*
-     * 这条钉的是**契约**而不是「好看」:它只做 0–9999 的汉字化,
-     * 范围外原样返回阿拉伯数字。判据在此确认这条契约没被悄悄改掉 ——
-     * 若哪天有人给它加了大数格式化,这里的 `String(n)` 断言会红,
-     * 那时该做的是同步改调用点与注释,而不是让两个行为并存。
+     * 首版只喂裸 `number`,漏掉了 GNum 这条入口。而 `formatGN({ m: 1, e: 1e22 })`
+     * 曾印出「1.00e1e+22」:兜底那句直接拼 `g.e`,科学计数套了一层科学计数。
      */
+    const dirty: string[] = []
+    for (const e of [1e22, 1e6, 5000, 1000]) {
+      for (const [name, out] of [
+        ['formatGN', formatGN({ m: 1, e })],
+        ['formatGap', formatGap({ m: 1, e })],
+        ['formatRate', formatRate({ m: 1, e })]
+        // formatNum / formatYears 只收 number,不吃 GNum —— 它们在上面那条裸 number 的扫描里
+      ] as const) {
+        const d = dirtyOf(`${name}({m:1,e:${e}})`, out)
+        if (d) dirty.push(d)
+      }
+    }
+    expect(dirty, `这些 GNum 入口印了脏串:\n${dirty.join('\n')}`).toEqual([])
+  })
+
+  it('roundToSum 的缩放过程也不许溢出成非有限值', () => {
+    /*
+     * 三段守卫(unit 有限且 >0、每项都有限、非空)之外还有一段**过程**:
+     * unit 极小配 values 极大时,`v / unit` 得上溢。
+     * 实测 roundToSum([1e300, 1e300], 1e-3) 曾返回 [null, null]。
+     */
+    for (const [vals, unit] of [
+      [[1e300, 1e300], 1e-3],
+      [[1e300, 1], 1e-300],
+      [[1e308, 1e308, 1e308], 1e-308]
+    ] as const) {
+      const out = roundToSum([...vals], unit)
+      expect(out.every(Number.isFinite), `roundToSum 返回了非有限值:${JSON.stringify(out)}`).toBe(true)
+    }
+  })
+
+  it('cnNumber 的范围外契约:原样返回,不试图格式化', () => {
     expect(cnNumber(10000), '范围外该原样返回').toBe('10000')
     expect(cnNumber(1e21), '范围外该原样返回').toBe(String(1e21))
-    // 边界内必须是汉字
     expect(cnNumber(9999)).toMatch(/^[零一二三四五六七八九十百千]+$/)
     expect(cnNumber(10000)).not.toMatch(/[零一二三四五六七八九十百千]/)
   })
