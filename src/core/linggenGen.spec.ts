@@ -152,11 +152,36 @@ describe('灵根读档 · 修行倍率的上界', () => {
  * 生成路径本身是收得住的。
  */
 describe('灵根生成 · 极大资质下限也越不过上界', () => {
+  /*
+   * 判据必须先证明「下限确实被用上了」,再证明「用上了也越不过上限」。
+   *
+   * 只断言「倍率 ≤ 4」是不够的:若哪天 `rollLinggen` 干脆**忽略** aptitudeFloor,
+   * 倍率同样 ≤ 4,判据照样绿 —— 而那时「下行给资质兜底」这个功能已经坏了。
+   * 故用同一个种子跑两遍(下限 0 与下限 1e6),要求后者掷出的资质**整体更高**。
+   */
+  it('资质下限真的抬高资质(否则下面的上限判据是空转)', () => {
+    const floor0 = Array.from({ length: 200 }, () => 0)
+    const rngA = new RandomService(mulberry32(7))
+    const rngB = new RandomService(mulberry32(7))
+    const aptOf = (rng: RandomService, floor: number): number[] =>
+      floor0.map(() => {
+        const p = rollLinggen(rng, floor)
+        return p.roots.reduce((sum, r) => sum + r.aptitude, 0) / p.roots.length
+      })
+    const low = aptOf(rngA, 0)
+    const high = aptOf(rngB, 1e6)
+    const avg = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
+    expect(avg(high), '极大下限没把资质抬高 —— 下限被忽略了,下面那条上限判据就证明不了任何事').toBeGreaterThan(
+      avg(low) + 10
+    )
+    // 且一条都不许越过 100 的钳制
+    expect(Math.max(...high), '资质越过了 100').toBeLessThanOrEqual(100)
+  })
+
   it('资质下限被钳到 100,倍率封顶在 4.0', () => {
     const rng = new RandomService(mulberry32(7))
     let max = 0
     for (let i = 0; i < 500; i += 1) {
-      // 正常掷值里的最小下限也是 40;这里直接给一个荒谬的下限
       const p = rollLinggen(rng, 1e6)
       max = Math.max(max, p.growthMult)
     }
