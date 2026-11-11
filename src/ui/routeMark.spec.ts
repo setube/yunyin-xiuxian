@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { WorldFoeShape } from '@/types'
 import { CELESTIAL_WORLDS, TRIAL_FOES } from '@/data/endgame'
-import { perilGlyph, perilOf, routeMark, routeWeightOf, type PerilKind } from './routeMark'
+import { expeditionRouteLabel, perilGlyph, perilOf, routeMark, routeWeightOf, type PerilKind } from './routeMark'
 
 const ROOT = resolve(__dirname, '../..')
 const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
@@ -116,9 +116,32 @@ describe('路线形制 · 四、界面接上了', () => {
     expect(EXPED, '应挂份量条').toContain('route-weight--${routeMark(node).weight}')
   })
 
-  it('读屏靠 aria-label 报「节点 · 险情 · 道源」,不念纹样', () => {
-    expect(EXPED, '节点卡应有可访问名').toContain(':aria-label="`${node.name} · ${routeMark(node).label} · 道源 +${node.bonus}`"')
+  it('读屏靠 aria-label 报「节点 · 险情 · 道源 · 天机」,不念纹样', () => {
+    expect(EXPED, '节点卡应有可访问名').toContain('expeditionRouteLabel(node.name, routeMark(node), node.bonus,')
     expect(EXPED, '险纹应 aria-hidden').toMatch(/route-peril[\s\S]{0,200}aria-hidden="true"/)
+  })
+
+  /**
+   * 卡面四样都要进可访问名。
+   *
+   * 原先只拼了三样(径名 · 险情 · 道源),**天机读数缺席** —— 而那正是「选哪一径」的判据。
+   * label-in-name 还要求名字里含可见文字:卡面上「险:」「天机:」这两个词也该在名字里。
+   */
+  it('可访问名含卡上四样:径名、险、道源、天机', () => {
+    const node = { name: '石径', foe: undefined as unknown as WorldFoeShape, bonus: 7, riskText: '寻常之敌' }
+    const line = expeditionRouteLabel(node.name, routeMark(node), node.bonus, '可胜')
+    expect(line).toContain('石径')
+    expect(line, '险情要带「险:」').toContain('险:寻常之敌')
+    expect(line, '代价要在').toContain('道源 +7')
+    expect(line, '天机读数要在').toContain('天机:可胜')
+  })
+
+  it('天机算不出来时不硬塞一句', () => {
+    const node = { name: '石径', foe: undefined as unknown as WorldFoeShape, bonus: 7, riskText: '寻常之敌' }
+    const line = expeditionRouteLabel(node.name, routeMark(node), node.bonus, null)
+    expect(line).not.toContain('天机')
+    expect(line).not.toContain('null')
+    expect(line).toContain('道源 +7')
   })
 
   it('险纹与份量条都不吃指针事件', () => {

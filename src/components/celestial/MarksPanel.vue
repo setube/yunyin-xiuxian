@@ -45,11 +45,16 @@
           {{ row.mark.targetName }}{{ row.mark.cleared ? '·破' : '·殁' }}
         </span>
         <span class="ml-auto shrink-0 tabular text-[10px] text-ink-faint">{{ row.mark.rounds }} 回合 · {{ row.mark.buildName }}</span>
+        <!--
+          这枚「变」的印面只有一个字,读屏原先只念「旧纪 v2」—— 听不出点下去会发生什么。
+          它开的是「天道已变」那扇弹窗(记着这一条道痕录于哪一版规则、之后改过什么),
+          故名字按「按这个字会看到什么」写:沿革 + 旧纪 + 现在。
+        -->
         <button
           v-if="isStaleRuleset(row.mark.ruleset)"
           class="shrink-0 min-h-[28px] rounded border border-cinnabar/50 bg-cinnabar/10 px-1 py-0.5 font-kai text-[9px] text-ink active:scale-90"
-          :aria-label="`旧纪 ${row.mark.ruleset}`"
-          :title="`旧纪 ${row.mark.ruleset}`"
+          :aria-label="`变 · 旧纪 ${row.mark.ruleset} · 今为 ${RULESET_VERSION}`"
+          :title="`旧纪 ${row.mark.ruleset} · 今为 ${RULESET_VERSION}`"
           @click="openEra(row.mark)"
         >
           变
