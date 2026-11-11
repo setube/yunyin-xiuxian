@@ -183,8 +183,18 @@ export function formatPercent(x: number, dp = 1): string {
    * 而不是 JS 的 `1e+22` —— 全站只该有一种科学计数写法。
    */
   if (Math.abs(v) >= 1e21) {
-    const exp = Math.floor(Math.log10(Math.abs(v)))
-    const mant = v / Math.pow(10, exp)
+    let exp = Math.floor(Math.log10(Math.abs(v)))
+    let mant = v / Math.pow(10, exp)
+    /*
+     * 尾数进位:`mant` 可能四舍五入成 10.00(如 v = 9.9999e21 → 9.9999 → 10.00),
+     * 那时须把指数抬一位、尾数回到 1.00 —— 否则输出 `10.00e21%`,
+     * 它既不是规范写法,读起来也比真值小一个数量级。
+     * formatGN 的兜底早有这一步(注释:`9.99…e407 → 1.00e408`),这里沿用同一条。
+     */
+    if (Math.abs(mant).toFixed(2) === '10.00') {
+      exp += 1
+      mant = v / Math.pow(10, exp)
+    }
     return `${mant.toFixed(2)}e${exp}%`
   }
   const s = Number.isInteger(v) ? String(v) : v.toFixed(dp)

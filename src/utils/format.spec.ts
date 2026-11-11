@@ -504,9 +504,7 @@ describe('formatYears · 大数上的分辨率(有意取舍)', () => {
  * 而不是 JS 默认的 `1e+22` —— 全站只该有一种科学计数写法。
  */
 describe('formatPercent · 大值不进 JS 默认科学计数', () => {
-  it('1e21 起改用 formatGN 同形的写法', () => {
-    // ×100 之后才与门槛比:1e19 → 1e21 恰好到门槛,1e18 → 1e20 还没到
-    expect(formatPercent(1e18), '1e18 ×100 后还没到门槛,该是定点写法').not.toMatch(/e/)
+  it('给定 1e21 至 1e300 的正数,则用 formatGN 同形的写法', () => {
     for (const x of [1e21, 1e28, 1e300]) {
       const got = formatPercent(x)
       expect(got, `${x} 印出了 JS 默认的 1e+N:${got}`).not.toMatch(/e\+/)
@@ -514,24 +512,38 @@ describe('formatPercent · 大值不进 JS 默认科学计数', () => {
     }
   })
 
-  it('负值保留符号', () => {
+  it('给定 1e18(×100 后未到门槛),则仍是定点写法', () => {
+    // 门槛按「×100 之后」比,故 1e18 → 1e20 还没到,1e19 → 1e21 恰好到
+    expect(formatPercent(1e18), '1e18 ×100 后还没到门槛').not.toMatch(/e/)
+    expect(formatPercent(1e19), '1e19 ×100 后恰好到门槛').toMatch(/e\d+%$/)
+  })
+
+  it('给定尾数会四舍五入成 10.00 的临界值,则指数抬一位', () => {
+    /*
+     * 这是本轮修的第二处:`mant.toFixed(2)` 可能得 `10.00`(如 v = 9.9999e21),
+     * 那时须把指数抬一位、尾数回到 1.00 —— 否则输出 `10.00e21%`,
+     * 既不是规范写法,读起来也比真值小一个数量级。
+     * formatGN 的兜底早有这一步(`9.99…e407 → 1.00e408`),这里沿用同一条。
+     */
+    for (const x of [9.999e19, 9.9999e19]) {
+      const got = formatPercent(x)
+      expect(got, `${x} 尾数没进位:${got}`).not.toMatch(/^10\.00e/)
+      expect(got, `${x} 该进位成 1.00e22%:${got}`).toBe('1.00e22%')
+    }
+  })
+
+  it('给定负数大值,则保留符号', () => {
     expect(formatPercent(-1e22)).toMatch(/^-1\.00e24%$/)
   })
 
-  it('与小面积写法一致:e 后面不带 + 号', () => {
-    // formatGN 的兜底是 `1.00e408`;两处形状要一致
-    expect(formatPercent(1e300)).toMatch(/e\d+%$/)
-    expect(formatPercent(1e300)).not.toMatch(/e\+\d+/)
-  })
-
-  it('门槛之下的行为不变', () => {
+  it('给定门槛之下的常规值,则行为不变', () => {
     expect(formatPercent(0.5)).toBe('50%')
     expect(formatPercent(1)).toBe('100%')
     expect(formatPercent(0.1234, 2)).toBe('12.34%')
     expect(formatPercent(0)).toBe('0%')
   })
 
-  it('非有限值仍是占位符', () => {
+  it('给定非有限值,则返回占位符', () => {
     for (const bad of [NaN, Infinity, -Infinity]) {
       expect(formatPercent(bad)).toBe('--')
     }
