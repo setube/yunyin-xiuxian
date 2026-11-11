@@ -66,7 +66,12 @@ export function realmMark(def: SecretRealmDef): RealmMark {
   return {
     heal,
     gain,
-    label: `${def.name} · ${healWord(def.healBetweenPct)} · 战利 ×${def.rewardMult}`
+    /*
+     * 两轴在卡面上各有名字:「回血」「战利」。label 里只写「每层倒扣」是没有主语的 ——
+     * 读屏听到的是一个形容词,不知道它在说哪一根轴。带上轴名,与卡面文字对得上
+     * (WAI label-in-name:可访问名须含可见文本)。
+     */
+    label: `${def.name} · 回血${healWord(def.healBetweenPct)} · 战利 ×${def.rewardMult}`
   }
 }
 

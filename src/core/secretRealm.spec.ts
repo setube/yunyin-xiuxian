@@ -404,9 +404,14 @@ describe('秘境 · 两阶(凡境灵石 / 天界道源)', () => {
     useResourcesStore().spiritStone = gn(1_000_000_000)
     expect(entryShortfallOf(SECRET_REALMS[0]!, 3)).toBeNull()
     const card = readFileSync(resolve(__dirname, '../components/adventure/SecretRealmCard.vue'), 'utf8')
-    expect(card, '付不起的入口必须真的禁用,不能只降透明度').toContain(':disabled="!canPay(r)"')
-    expect(card, '卡面缺口读同一份 core 判据').toContain('entryShortfallOf(r, player.major)')
-    expect(card, '付不起时就地列差').toContain('entryShort(r)?.reason')
+    /*
+     * 一行的事实收在 realmRow 里一次算齐,故判据按字段认(语义不变):
+     * 付不起要真的禁用(payable=false)、缺口读 core 的同一份判据、付不起时就地列差。
+     */
+    expect(card, '付不起的入口必须真的禁用,不能只降透明度').toContain(':disabled="!row.payable"')
+    expect(card, 'payable 由统一的缺口语义决定').toContain('const payable = block === null')
+    expect(card, '卡面缺口读同一份 core 判据').toContain('const short = entryShortfallOf(r, player.major)')
+    expect(card, '付不起时就地列差').toContain('{{ row.block }}')
   })
 
   it('判据通过后扣款瞬间失败:仍点名实际缺口,不退回「灵石或道源」', () => {
