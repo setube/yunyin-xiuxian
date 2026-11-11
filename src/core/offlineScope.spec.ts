@@ -17,6 +17,8 @@ import { useAdventureStore } from '@/stores/adventure'
 import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useDongfuStore } from '@/stores/dongfu'
+import { useUiStore } from '@/stores/ui'
+import { OFFLINE_MODAL_MIN_SECONDS } from '@/data/constants'
 import { gnZero, sub, toNum } from '@/utils/gnum'
 
 const HOUR = 3600 * 1000
@@ -236,5 +238,43 @@ describe('离线的作用域 · 在途的东西一律不动', () => {
     const notes = summary.notes.join('\n')
     expect(notes).not.toContain('身在秘境')
     expect(notes).not.toContain('远征在途')
+  })
+})
+
+/**
+ * 离线窗的弹出门槛(300 秒)。
+ *
+ * 这条是补的:`OFFLINE_MODAL_MIN_SECONDS` 此前**没有任何判据** ——
+ * 实测把它从 300 改成 30,全量 6500 用例照样绿。
+ * 而它决定的是「玩家回来时要不要看到那份结算窗」:
+ * 门槛被调小,随手切个后台再回来也会弹一整屏收益;调大则真挂机了也看不到。
+ */
+describe('离线结算 · 弹窗门槛', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  /** 构造一段离线时长,返回 ui.offlineSummary 是否被填 */
+  const settleAfter = (seconds: number): boolean => {
+    setActivePinia(createPinia())
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    const now = Date.now()
+    game.markStarted()
+    player.initCharacter('门槛探针', { roots: [] } as never)
+    game.lastActiveAt = now - seconds * 1000
+    ui.offlineSummary = null
+    settleOffline(now)
+    return ui.offlineSummary !== null
+  }
+
+  it('门槛是 300 秒:到 299 不弹,到 300 弹', () => {
+    /*
+     * 数字写死不取 `OFFLINE_MODAL_MIN_SECONDS - 1` ——
+     * 那样门槛被改成 30,这里跟着变 29,判据一起漂,永远绿(实测踩过)。
+     * 300 是产品定的:挂机五分钟以上才值得打断玩家看一屏收益。
+     */
+    expect(OFFLINE_MODAL_MIN_SECONDS, '门槛被改了 —— 要改请连同这条判据一起决定').toBe(300)
+    expect(settleAfter(299), '299 秒不该弹').toBe(false)
+    expect(settleAfter(300), '300 秒该弹').toBe(true)
   })
 })
