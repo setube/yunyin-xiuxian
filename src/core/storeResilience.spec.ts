@@ -1061,3 +1061,35 @@ describe('坏档韧性 · 诊断条目出现次数的上界', () => {
     expect(patchCount(-5), '负数该被抬到 1').toBe(1)
   })
 })
+
+/**
+ * 诊断计数在**运行期**也要封顶,不只是读档时。
+ *
+ * `sanitize()` 只在场次开始时跑一次,而一条反复触发的诊断会经 `record()`
+ * 一路涨上去;重启后被夹回上限,玩家看到计数突然变小(审查意见指出的)。
+ *
+ * 这条钉的是「两处用同一个口径」:直接构造一个已到上限的条目,
+ * 再触发一次同文案的 record,断言计数停在上限、不越过。
+ */
+describe('坏档韧性 · 诊断计数的运行期与读档口径一致', () => {
+  it('已到上限时再触发一次,计数停在上限', () => {
+    setActivePinia(createPinia())
+    const d = useDiagStore()
+    // 先灌一条已顶到上限的条目
+    d.$patch({ errors: [{ at: 1, info: '', message: '同一条', route: '', count: 10_000 }] } as never)
+    d.sanitize()
+    expect((d.errors as { count: number }[])[0]?.count, '读档后应停在上限').toBe(10_000)
+    // 运行期再触发同一条
+    d.record({ info: '', message: '同一条' })
+    expect((d.errors as { count: number }[])[0]?.count, '运行期自增越过了上限').toBe(10_000)
+  })
+
+  it('未到上限时正常自增', () => {
+    setActivePinia(createPinia())
+    const d = useDiagStore()
+    d.record({ info: '', message: '同一条' })
+    d.record({ info: '', message: '同一条' })
+    d.record({ info: '', message: '同一条' })
+    expect((d.errors as { count: number }[])[0]?.count, '正常自增被误伤').toBe(3)
+  })
+})

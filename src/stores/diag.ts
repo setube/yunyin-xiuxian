@@ -87,7 +87,13 @@ export const useDiagStore = defineStore(
       const route = typeof raw?.route === 'string' ? raw.route : ''
       const last = errors.value[errors.value.length - 1]
       if (last && last.message === message && last.info === info) {
-        errors.value = [...errors.value.slice(0, -1), { ...last, at, route, count: last.count + 1 }]
+        /*
+         * 自增同样要有上界 —— `sanitize` 只在场次开始时跑一次,
+         * 而一条反复触发的诊断会在运行期一路涨上去;重启后被夹回上限,
+         * 玩家看到计数突然变小(审查意见指出的)。
+         * 两处用同一个常量,读档与运行期口径一致。
+         */
+        errors.value = [...errors.value.slice(0, -1), { ...last, at, route, count: Math.min(DIAG_COUNT_MAX, last.count + 1) }]
         return
       }
       const next = [...errors.value, { at, info, message, route, count: 1 }]
