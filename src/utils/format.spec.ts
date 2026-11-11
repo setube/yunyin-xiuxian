@@ -616,3 +616,64 @@ describe('时长格式化 · 天数上界改中文单位', () => {
     expect(maxDays, '门槛又抬回一亿天以上了').toBeGreaterThan(1e7)
   })
 })
+
+/**
+ * 「喂坏值」总闸的第二档:有限但极大。
+ *
+ * 上面那道总闸只喂 `NaN` —— 而 `NaN` 最容易被守卫挡住。
+ * 本轮与上一轮修的两处都不是 `NaN`:
+ *   · `formatPercent(1e22)` 印 `1e+22%`(过了 isFinite、过了上溢检查);
+ *   · `formatDuration(1e300)` 印 `1.1574074074074075e+295天`。
+ * 两者都是**有限数**,原先那道总闸从没喂过它们,自然也从没红过。
+ *
+ * 故补这一档:全部导出再喂一遍「有限但极大」的值,判据照旧——不许出脏串
+ * (JS 默认的 `e+N`、五位数以上的浮点尾巴)。
+ *
+ * `cnNumber` 单独说明:它按契约只处理 0–9999,范围外原样返回是**有意**行为
+ * (见其函数注释);调用点全是数组长度与常量,不可能到大数。
+ * 但它同样该给出「不是脏串」的结果 —— 这里把它一起纳入,用同一条尺子量。
+ */
+describe('format · 有限极大值也不许印脏串', () => {
+  /** 存档能塞进来的最大时间戳量级,以及远超它的值 */
+  const HUGE = [8.64e15, 1e18, 1e22, 1e300] as const
+
+  /** 「脏」的两种形态:JS 默认科学计数、五位数以上的浮点尾巴 */
+  const DIRTY = /e\+\d|\d\.\d{5,}e|NaN|undefined|Infinity|Invalid/
+
+  it('除 cnNumber 外,全部导出对有限极大值都不出脏串', () => {
+    const dirty: string[] = []
+    for (const v of HUGE) {
+      const calls: readonly (readonly [string, string])[] = [
+        ['formatGN', formatGN(v)],
+        ['formatGap', formatGap(v)],
+        ['formatNum', formatNum(v)],
+        ['formatRate', formatRate(v)],
+        ['formatPercent', formatPercent(v)],
+        ['formatDuration', formatDuration(v)],
+        ['formatChoiceSpan', formatChoiceSpan(v)],
+        ['formatCountdown', formatCountdown(v)],
+        ['formatClock', formatClock(v)],
+        ['formatStamp', formatStamp(v)],
+        ['formatYears', formatYears(v)]
+      ]
+      for (const [name, out] of calls) {
+        if (DIRTY.test(out)) dirty.push(`${name}(${v.toExponential(1)}) → ${out.slice(0, 40)}`)
+      }
+    }
+    expect(dirty, `这些导出在有限极大值上印了脏串:\n${dirty.join('\n')}`).toEqual([])
+  })
+
+  it('cnNumber 的范围外契约:原样返回,不试图格式化', () => {
+    /*
+     * 这条钉的是**契约**而不是「好看」:它只做 0–9999 的汉字化,
+     * 范围外原样返回阿拉伯数字。判据在此确认这条契约没被悄悄改掉 ——
+     * 若哪天有人给它加了大数格式化,这里的 `String(n)` 断言会红,
+     * 那时该做的是同步改调用点与注释,而不是让两个行为并存。
+     */
+    expect(cnNumber(10000), '范围外该原样返回').toBe('10000')
+    expect(cnNumber(1e21), '范围外该原样返回').toBe(String(1e21))
+    // 边界内必须是汉字
+    expect(cnNumber(9999)).toMatch(/^[零一二三四五六七八九十百千]+$/)
+    expect(cnNumber(10000)).not.toMatch(/[零一二三四五六七八九十百千]/)
+  })
+})
