@@ -14,7 +14,7 @@
  * 此前 lootSim 只钉了 DECOMPOSE_DUST.length === QUALITIES.length,没钉权重表。
  */
 import { describe, expect, it } from 'vitest'
-import { QUALITIES } from '@/data/qualities'
+import { QUALITIES, isRareQuality } from '@/data/qualities'
 import { QUALITY_WEIGHTS } from '@/data/constants'
 
 describe('品质权重表 · 与品质表同长', () => {
@@ -48,5 +48,29 @@ describe('品质权重表 · 与品质表同长', () => {
   it('没有两档用同一个权重(同权会让高品与低品一样常见)', () => {
     const w = QUALITIES.map(q => q.weight)
     expect(new Set(w).size, '有两档品质权重相同').toBe(w.length)
+  })
+})
+
+/**
+ * 两个 `isRareQuality` 分居两处,阈值不同 —— 这条钉住各自的语义,免得谁改错。
+ *
+ *   data/qualities  : rank >= 3(灵品起),掉落与气运加成用
+ *   ui/qualityTier  : rank >= 6(天品起),盖品阶角章用
+ *
+ * 同名不同阈值本身是隐患:import 错一行不会报错,只会静默按另一条线判。
+ * 两处各自的门槛都在,这里补的是「数据侧那一条」—— 此前它一条判据都没有。
+ */
+describe('品质 · 数据侧的稀有线(与角章那条分开)', () => {
+  it('灵品起算稀有:凡品/良品/精品不算,灵品及以上算', () => {
+    const rare = QUALITIES.filter(q => isRareQuality(q)).map(q => q.id)
+    expect(rare, '数据侧的稀有线该从灵品起').toEqual([
+      'spirit', 'profound', 'earth', 'heaven', 'immortal', 'divine'
+    ])
+  })
+
+  it('与 ui/qualityTier 的角章线不是同一条', () => {
+    // 角章那条从 rank 6 起(天/仙/神);若两处被改成同一条,这里变红
+    const dataRare = QUALITIES.filter(q => isRareQuality(q))
+    expect(dataRare.length, '两条稀有线不该重合').toBeGreaterThan(3)
   })
 })
