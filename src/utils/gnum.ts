@@ -181,8 +181,19 @@ export function ratio(a: GNum, b: GNum): number {
   return (a.m / b.m) * Math.pow(10, diff)
 }
 
-/** 进度百分比(0~1) */
+/**
+ * 进度百分比(0~1)。
+ *
+ * **不能只靠 `Math.max/min` 收口**:它们挡不住 NaN —— `Math.max(0, Math.min(1, NaN))`
+ * 仍是 NaN(AGENTS.md 明文点过这个坑,反复踩)。输入是 GNum,`{ m: NaN }` 这类
+ * 结构上合法、数值上非法的值能一路穿到界面上,印成「进度 NaN%」。
+ * 这里先判非有限:算不出就给 0(进度条的合法下限),并夹回 0~1。
+ *
+ * @param cur    当前值
+ * @param target 目标值
+ */
 export function progress(cur: GNum, target: GNum): number {
   const r = ratio(cur, target)
+  if (!Number.isFinite(r)) return r > 0 ? 1 : 0
   return Math.max(0, Math.min(1, r))
 }
