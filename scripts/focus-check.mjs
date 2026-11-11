@@ -151,6 +151,77 @@ try {
     console.log(`  ${ok ? '✓' : '✗'} ${ROUTES.length} 页可点元素都能 Tab 到(${ok ? '含规矩的 roving tabindex' : `${unreachable.length} 处到不了`})`)
     if (!ok) failures.push(`这些可点元素 Tab 到不了:${unreachable.slice(0, 5).join(' | ')}`)
   }
+
+  /*
+   * 首启的两页:**必须是没存档的上下文**。
+   *
+   * 上面那 17 页都铺了 lateSlices,而路由守卫 `if (game.started) return { name: 'home' }`
+   * 会把带存档的访问弹回首页 —— 所以 /welcome 与 /create 从来不在那份清单里,
+   * 它们的可点元素(同意勾选、随机道号、逆天改命、踏入仙途)也从未验过能不能 Tab 到。
+   * `edge-states` 能进这两页,但它只验「状态解释得清」与触控尺寸,不验键盘。
+   *
+   * 建号页用「点开始 → 勾同意 → 同意并开始 → 等传送动画」走进去,
+   * 传送动画 2500ms(`confirmStart` 的 enterTimer),等 3.5s 留余量。
+   */
+  {
+    const freshCtx = await browser.newContext({ viewport: { width: 390, height: 844 } })
+    await freshCtx.route('**/*', r => (/^https?:\/\/localhost:/.test(r.request().url()) ? r.continue() : r.abort()))
+    const freshPage = await freshCtx.newPage()
+    await freshPage.goto(BASE + '#/welcome', { waitUntil: 'domcontentloaded' })
+    await freshPage.waitForTimeout(2200)
+
+    /** 同上一条判据,抽成小函数以便两页复用 */
+    const unreachableOn = async () =>
+      freshPage.evaluate(() => {
+        const main = document.querySelector('main')
+        if (!main) return ['<main> 不存在']
+        const out = []
+        for (const el of main.querySelectorAll('button, a[href], [role=button]')) {
+          if (el.tabIndex >= 0 || el.disabled || el.offsetParent === null) continue
+          const inTablist = !!el.closest('[role=tablist]') && el.getAttribute('role') === 'tab'
+          const group = el.parentElement
+          const hasRoving = group && group.querySelector(':scope > [tabindex="0"]')
+          if (inTablist && hasRoving) continue
+          out.push((el.textContent || '').trim().slice(0, 20) || el.tagName)
+        }
+        return out
+      })
+
+    const welcomeBad = await unreachableOn()
+    if (welcomeBad.length) failures.push(`/welcome 这些可点元素 Tab 到不了:${welcomeBad.slice(0, 5).join(' | ')}`)
+    console.log(`  ${welcomeBad.length === 0 ? '✓' : '✗'} /welcome 可点元素都能 Tab 到`)
+
+    // 键盘走完首启:点开始(鼠标) → 空格勾同意 → 键盘触发「同意并开始」
+    await freshPage.evaluate(() => {
+      const b = [...document.querySelectorAll('button')].find(x => /开\s*始\s*游\s*戏/.test(x.textContent || ''))
+      b?.click()
+    })
+    await freshPage.waitForTimeout(1200)
+    await freshPage.keyboard.press('Tab')
+    const firstStop = await freshPage.evaluate(() => document.activeElement?.getAttribute('type') ?? '')
+    if (firstStop !== 'checkbox') failures.push(`/welcome 第一个 Tab 落点不是同意勾选(是 ${firstStop || '空'})`)
+    await freshPage.keyboard.press('Space')
+    const agreed = await freshPage.evaluate(() => {
+      const c = document.querySelector('input[type=checkbox]')
+      return c?.checked === true
+    })
+    if (!agreed) failures.push('/welcome 用空格勾不上同意 —— 键盘用户走不到建号页')
+    console.log(`  ${firstStop === 'checkbox' && agreed ? '✓' : '✗'} /welcome 首落点是同意勾选,空格能勾上`)
+    await freshPage.evaluate(() => {
+      const b = [...document.querySelectorAll('button')].find(x => /同意并开始/.test(x.textContent || ''))
+      b?.click()
+    })
+    await freshPage.waitForTimeout(3500)
+    const landed = await freshPage.evaluate(() => location.hash)
+    if (landed !== '#/create') {
+      failures.push(`首启没走到建号页(停在 ${landed})—— 传送动画 2500ms,等短了会误判`)
+    } else {
+      const createBad = await unreachableOn()
+      if (createBad.length) failures.push(`/create 这些可点元素 Tab 到不了:${createBad.slice(0, 5).join(' | ')}`)
+      console.log(`  ${createBad.length === 0 ? '✓' : '✗'} /create 可点元素都能 Tab 到`)
+    }
+    await freshCtx.close()
+  }
 } finally {
   await browser?.close()
   await server.httpServer.close()
