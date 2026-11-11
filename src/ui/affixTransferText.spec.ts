@@ -148,6 +148,34 @@ describe('词条转移 · 状态词只有表里那一份', () => {
   })
 })
 
+/**
+ * 自动重铸的目标词条钮:被截断的名字要有一条全文退路。
+ *
+ * 那颗钮固定 w-10(40px),而词条名最长五个字 —— 实测「装备掉落率」
+ * scrollWidth 50 / clientWidth 40,屏上只剩「装备掉…」。玩家正是要按名字
+ * 对照「在给哪一条设阈值」;触屏没有 hover,title 帮不上,读屏读到的又是截断后的可见文字。
+ *
+ * 判据:那颗钮必须带 aria-label(与货架副标题同一做法),且 title 不许删。
+ */
+describe('自动重铸 · 截断的词条名有全文退路', () => {
+  const PANEL = readFileSync(join(__dirname, '../components/equipment/AutoReforgePanel.vue'), 'utf8')
+  /**
+   * 那颗钮的可访问名。
+   *
+   * 判据直接锚在「查看「」这个动作词上:它只在这颗钮上出现,
+   * 所以缺了就是钮缺可访问名,不是切片没锚上。
+   */
+  const ARIA = /:aria-label="`查看「\$\{affixDef\(t\.affixId\)\?\.name \?\? t\.affixId\}」词条`"/
+
+  it('钮带可访问名,名字完整(不是截断后的那几个字)', () => {
+    expect(PANEL, '截断的词条钮缺完整可访问名').toMatch(ARIA)
+  })
+
+  it('title 仍留着(桌面端悬停照旧)', () => {
+    expect(PANEL, 'title 被换掉了').toContain(':title="`查看「${affixDef(t.affixId)?.name ?? t.affixId}」`"')
+  })
+})
+
 /** 剥掉注释:注释里提到这个词不算玩家可见文案 */
 function stripComments(src: string): string {
   return src
