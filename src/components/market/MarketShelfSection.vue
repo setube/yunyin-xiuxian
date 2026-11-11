@@ -228,7 +228,16 @@
         sub: `${herbGradeBandLabel(grade)} · ×${slot.count}`,
         herbGrade: grade,
         luster: herbQualityLuster(grade),
-        tierStyle: { borderColor: tint(herbQualityTone(grade), herbTier.border), background: tint(herbQualityTone(grade), herbTier.bg) },
+        /*
+         * 底色封到 6%,与装备卡同规 —— 品阶浓淡交给边框与角章。
+         *
+         * 原先这里直接用 herbTier.bg(神品那档 13%):13% 的朱叠在卡片底上,
+         * 价签的 gold-ink 压上去只剩 4.39:1(实测,跌破正文 AA)。而价签是
+         * 「买不买得起」唯一的那条读数,不能为了一层色感牺牲它。
+         * 隔壁装备卡早就是这个口径(「密卡底色固定弱晕染」),灵草格当时漏了。
+         * 判据见 palette.spec「货架价签在品阶淡底上也要过线」。
+         */
+        tierStyle: { borderColor: tint(herbQualityTone(grade), herbTier.border), background: tint(herbQualityTone(grade), 0.06) },
         price: slot.price
       }
     }
