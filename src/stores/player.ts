@@ -761,6 +761,22 @@ export const usePlayerStore = defineStore(
       name.value = fresh
     }
 
+    /**
+     * 剔掉「属于旧世」的本世记录。
+     *
+     * 修复前的 `rebirth` 没有清 `vow` / `trial` / `bond`,那些存档转世后会带着旧值,
+     * 而各自的闸门都是「已有即不许再立」—— 新世被永久挡在门外。
+     * 判据:履历最后一条的 `at` 是本世开始时刻,记录自身的 `at` 早于它即旧世残留。
+     * 无履历(从未转世过)时返回原值,不误删。
+     */
+    function staleThisLife<T extends { at: number }>(record: T | null): T | null {
+      if (!record) return record
+      const lives = reincarnation.value.lives
+      const lastLifeAt = lives[lives.length - 1]?.at
+      if (typeof lastLifeAt !== 'number' || !Number.isFinite(lastLifeAt)) return record
+      return record.at < lastLifeAt ? null : record
+    }
+
     /** 存档修复 */
     function sanitize(): void {
       // 修为是存档里的 GNum:裸 gn() 不限指数,坏档会让修为条印出「1.00e1000000000」
@@ -919,6 +935,21 @@ export const usePlayerStore = defineStore(
             carriedHpPct: asCarriedHpPct(sr.carriedHpPct),
             finished: sr.finished === true
           }
+        }
+      }
+      /*
+       * 旧世残留的道侣要清掉 —— **修复前转世过的存档**会带着上一位道侣,
+       * 而 `daoluService.meet()` 用 `if (player.bond) return false` 挡「这一世只能遇一位」,
+       * 那些档就再也遇不到新的一位(审查意见指出的)。
+       *
+       * 判据用履历里的归档时刻:`reincarnation.lives` 最后一条的 `at` 就是本世开始时刻,
+       * 而 `bond.metAt` 是初遇时刻 —— 早于本世开始即旧世残留。
+       * 旧档若无履历(从未转世),判据不成立,道侣照常保留。
+       */
+      if (bond.value) {
+        const lastLifeAt = reincarnation.value.lives[reincarnation.value.lives.length - 1]?.at
+        if (typeof lastLifeAt === 'number' && Number.isFinite(lastLifeAt) && bond.value.metAt < lastLifeAt) {
+          bond.value = null
         }
       }
       // 三维是 0~100 的钳制量(同 advanceBond)
@@ -1166,8 +1197,16 @@ export const usePlayerStore = defineStore(
         heritageUses: sanitizeHeritageUses(r?.heritageUses),
         insight: Number.isFinite(r?.insight) ? cappedInt(r.insight) : cappedInt(legacyInsightOf(count)),
         lives: sanitizeLives(r?.lives),
-        vow: sanitizeVow(r?.vow),
-        trial: sanitizeTrial(r?.trial),
+        /*
+         * 本世的题与契要按履历剔旧 —— **修复前转世过的存档**会把它们带过来,
+         * 而 `lifeTrialService` 用 `if (trial) return false` 挡「再签一张」,
+         * 那些档就再也签不了新的(与道侣同一条问题)。
+         *
+         * 判据:履历最后一条的 `at` 是本世开始时刻,而两者的 `at` 都是「本世开世时刻」——
+         * 早于本世开始的即旧世残留。无履历(从未转世)时判据不成立,照常保留。
+         */
+        vow: staleThisLife(sanitizeVow(r?.vow)),
+        trial: staleThisLife(sanitizeTrial(r?.trial)),
         bonds: sanitizeBonds(r?.bonds)
       }
     }
