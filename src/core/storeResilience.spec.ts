@@ -920,4 +920,35 @@ describe('坏档韧性 · 战报倍率与回合数的上界', () => {
     expect(1000, '倍率上界低于真实值').toBeGreaterThan(100)
     expect(10, '增减伤上界低于真实上限 0.6').toBeGreaterThan(1)
   })
+
+  it('减益倍率(<1)必须原样保留 —— 别把它抬成 1', () => {
+    /*
+     * 这一条是审查意见指出的、我引入过的 bug:
+     * `parts` 里的 ratio 既有增益也有减益(「危地 ×0.98」「弱于本层 ×0.9」),
+     * 而 `foeOriginPartsText` 靠 `filter(p => p.ratio !== 1)` 决定显示哪几项 ——
+     * 给这一层加 `min: 1` 会把减益抬成 1,那条来源就从战报里整条消失。
+     *
+     * 原来那处只判了 `Number.isFinite`,是对的;只该补上界。
+     */
+    setActivePinia(createPinia())
+    const a = useAdventureStore()
+    a.$patch({
+      lastBattle: {
+        enemyName: '狼', enemyIcon: 'wolf', at: 1,
+        result: {
+          win: true, log: [], rounds: 5, playerHpPct: 1,
+          foeOrigin: { label: '层级补偿', ratio: 1, damageBonus: 0, damageReduction: 0, parts: [{ label: '危地', ratio: 0.98 }], note: '' }
+        }
+      }
+    } as never)
+    a.sanitize()
+    const parts = (a.lastBattle as { result?: { foeOrigin?: { parts?: { ratio?: number }[] } } } | null)?.result?.foeOrigin?.parts
+    expect(parts?.[0]?.ratio, '减益倍率 0.98 被抬成了 1,战报会漏掉这条来源').toBeCloseTo(0.98, 5)
+  })
+
+  it('极大的增减伤也被夹住', () => {
+    // 真实至多 0.6(judge 0.35 + suppress 0.25);坏档写 1e300 要封得住
+    const got = patch(1e300)
+    expect(got?.bonus, 'damageBonus 没被夹').toBeLessThanOrEqual(10)
+  })
 })

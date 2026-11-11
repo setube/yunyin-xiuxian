@@ -156,7 +156,16 @@ function sanitizeFoeOrigin(raw: unknown): FoeOrigin | undefined {
     ratio: asFiniteNumber(o.ratio, 1, 1, FOE_ORIGIN_RATIO_MAX),
     damageBonus: asFiniteNumber(o.damageBonus, 0, 0, FOE_ORIGIN_EXTRA_MAX),
     damageReduction: asFiniteNumber(o.damageReduction, 0, 0, FOE_ORIGIN_EXTRA_MAX),
-    parts: parts.map(p => ({ label: p.label, ratio: asFiniteNumber(p.ratio, 1, 1, FOE_ORIGIN_RATIO_MAX) })),
+    /*
+     * parts 的 ratio **不能设下限 1**。
+     *
+     * 这一层记录的是「各件事各乘了多少」——既有增益也有减益:
+     * 「危地 ×0.98」「弱于本层 ×0.9」都小于 1,而 `foeOriginPartsText`
+     * 靠 `filter(p => p.ratio !== 1)` 决定显示哪几项 —— 把 0.98 抬成 1
+     * 会让那条减益整条消失,战报的账就成了错的(审查意见指出的)。
+     * 只封上界:倍数再大也不该超过 1000,而小于 1 是正常业务值。
+     */
+    parts: parts.map(p => ({ label: p.label, ratio: asFiniteNumber(p.ratio, 1, 0.01, FOE_ORIGIN_RATIO_MAX) })),
     note: typeof o.note === 'string' ? o.note : ''
   }
 }
