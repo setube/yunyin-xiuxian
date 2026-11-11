@@ -195,6 +195,42 @@ describe('收徒 · 派发与收割', () => {
    * 只要 finishAt 也是非负,任务就是「从此刻起算、到 finishAt 结束」,语义自洽。
    * 而 market 那处夹成 0 等于「已在过去到期」,会把寄卖立刻结算掉 —— 两者相反。
    */
+  it('sanitize:远期的 finishAt 作废,道童不会干等一年', () => {
+    /*
+     * `apprenticeService.isTaskDone` 判 `now >= finishAt` —— finishAt 远得离谱时,
+     * 这名道童就一直占着工位等下去。任务最长 1 小时(见 data/apprentices 的 seconds)。
+     *
+     * 注意「finishAt 在未来」本身是**正常状态**(任务就该跑一会儿),
+     * 只有超出最长时长才是坏档 —— 与 `regionEvent.endsAt` 同一判据口径。
+     */
+    const a = useApprenticeStore()
+    const now = Date.now()
+    a.$patch({
+      apprentices: [
+        make('ap_luanniao', { task: { spec: 'herb', startAt: now, finishAt: now + 365 * 24 * 3600_000 } })
+      ] as never
+    })
+    a.sanitize()
+    expect(a.apprentices[0]!.task, '远期完工时刻没被作废 —— 道童会干等').toBeNull()
+  })
+
+  it('sanitize:上界按读档此刻算,不按 finishAt - startAt', () => {
+    /*
+     * startAt 被夹成 0(坏档的负值)之后,`finishAt - startAt` 恒为几十年的量级 ——
+     * 拿差值当上界会把本来合法的任务一并丢掉。这条与上面那条配合,
+     * 钉住「上界取绝对时刻」这个选择。
+     */
+    const a = useApprenticeStore()
+    const now = Date.now()
+    a.$patch({
+      apprentices: [
+        make('ap_luanniao', { task: { spec: 'herb', startAt: -1e9, finishAt: now + 60_000 } })
+      ] as never
+    })
+    a.sanitize()
+    expect(a.apprentices[0]!.task, '合法任务被差值判据误删了').not.toBeNull()
+  })
+
   it('sanitize:负 startAt 夹成 0,任务本身保留(与寄卖的负 finishAt 相反)', () => {
     const a = useApprenticeStore()
     const now = Date.now()

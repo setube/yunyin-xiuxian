@@ -19,6 +19,7 @@ import {
   apprenticeDef,
   apprenticeSlots,
   APPRENTICE_SLOT_HARD_CAP,
+  taskDef,
   type ApprenticeSpec
 } from '@/data/apprentices'
 import {
@@ -120,7 +121,20 @@ export const useApprenticeStore = defineStore(
              * 于是一条坏档里的任务变成**零时长任务** —— 开局即收割一趟。
              * 改成严格大于之后,零时长与负时长一并置闲。
              */
-            if (rawFinishAt > startAt) task = { spec: t.spec, startAt, finishAt: rawFinishAt }
+            /*
+             * 完工时刻还要有**上界**:任务最长 1 小时(见 data/apprentices 的 seconds),
+             * 坏档写个一年后的 finishAt 会让这名道童**干等一年**
+             * (`apprenticeService.isTaskDone` 判 `now >= finishAt`)。
+             *
+             * 上界按**读档此刻**算,不按 `finishAt - startAt` ——
+             * startAt 被夹成 0(坏档的负值)时那个差值恒为几十年的量级,
+             * 用它当判据会把本来合法的任务一并丢掉(既有用例钉着这条)。
+             * 「finishAt 在未来」本身是正常状态,只有超出最长时长才是坏档。
+             */
+            const maxFinishAt = Date.now() + (taskDef(t.spec as ApprenticeSpec).seconds + 60) * 1000
+            if (rawFinishAt > startAt && rawFinishAt <= maxFinishAt) {
+              task = { spec: t.spec, startAt, finishAt: rawFinishAt }
+            }
           }
         }
         clean.push({ uid, archId, level, bond, task })
