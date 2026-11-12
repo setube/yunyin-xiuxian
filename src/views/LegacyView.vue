@@ -67,9 +67,13 @@
 
     <SectionTitle title="轮回录" :hint="`宿慧 ${insight}`" />
     <div class="card-ink px-4 py-3">
-      <p class="flex items-center gap-2">
-        <span class="font-kai text-[14px] tracking-widest text-ink">{{ stage.name }}</span>
-        <!-- nowrap + shrink-0:同行里 stage.name 与右侧「宿慧尚差」都可伸缩,挤压时它会折成两行(实测 300 宽、999 世时 h=30) -->
+      <!--
+        整行允许换行(flex-wrap):三块内容抢同一行 —— 境界名(带字距)、世号、「宿慧尚差」。
+        窄屏时把世号 nowrap 了,压力就会转到境界名上把它挤成三行(实测 300 宽、999 世时 h=42)。
+        让整块折行才对:每块内部不折,块与块之间可以换行。
+      -->
+      <p class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <span class="whitespace-nowrap font-kai text-[14px] tracking-widest text-ink">{{ stage.name }}</span>
         <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint tabular">第 {{ player.reincarnation.count + 1 }} 世</span>
         <span v-if="toNextStage !== null" class="ml-auto shrink-0 text-[10px] text-ink-faint tabular">
           下一境地 · 宿慧尚差 {{ toNextStage }}
@@ -131,17 +135,22 @@
 
     <div class="card-ink divide-y divide-ink/6 px-4">
       <template v-if="lifeRows.length">
-        <p v-for="l in lifeRows" :key="l.index" class="flex items-center gap-2 py-2 text-[12px]">
+        <!--
+          整行允许换行:这一行最多挤六块(世号 / 境界 / 寿元 / 命格 / 立契 / 宿慧)。
+          窄屏时硬排会把「混沌道祖」这种四字境界名压成三行(实测 280 宽、999 世时 h=36);
+          让整块换行才对,块内部各自 nowrap。
+        -->
+        <p v-for="l in lifeRows" :key="l.index" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 py-2 text-[12px]">
           <!--
             不给空格:这一格要装下「第一百二十世」,加空格只会更早折行。
             w-13 是量出来的 —— w-11(44px)装三位数世号就折成两行(实测 375 宽下 21 条
             「第1xx世」全部 h=36,而两位数的 90 条都是 h=18),放宽到 52px 才够。
           -->
           <span class="w-13 shrink-0 whitespace-nowrap font-kai text-ink-faint tabular">第{{ l.index }}世</span>
-          <span class="text-ink-soft">{{ l.realmLabel }}</span>
-          <span class="text-[10px] text-ink-faint tabular">寿 {{ l.age }} 载</span>
-          <span v-if="l.themeName" class="text-[10px]" :class="l.resultColor">{{ l.themeName }}·{{ l.resultText }}</span>
-          <span v-if="l.trialName" class="text-[10px] text-cinnabar">·立契{{ l.trialName }}</span>
+          <span class="whitespace-nowrap text-ink-soft">{{ l.realmLabel }}</span>
+          <span class="whitespace-nowrap text-[10px] text-ink-faint tabular">寿 {{ l.age }} 载</span>
+          <span v-if="l.themeName" class="whitespace-nowrap text-[10px]" :class="l.resultColor">{{ l.themeName }}·{{ l.resultText }}</span>
+          <span v-if="l.trialName" class="whitespace-nowrap text-[10px] text-cinnabar">·立契{{ l.trialName }}</span>
           <span class="ml-auto shrink-0 tabular text-[10px] text-gold-ink">宿慧 +{{ l.insight }}</span>
         </p>
       </template>
