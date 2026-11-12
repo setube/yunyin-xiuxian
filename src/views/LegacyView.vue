@@ -69,7 +69,8 @@
     <div class="card-ink px-4 py-3">
       <p class="flex items-center gap-2">
         <span class="font-kai text-[14px] tracking-widest text-ink">{{ stage.name }}</span>
-        <span class="text-[10px] text-ink-faint tabular">第 {{ player.reincarnation.count + 1 }} 世</span>
+        <!-- nowrap + shrink-0:同行里 stage.name 与右侧「宿慧尚差」都可伸缩,挤压时它会折成两行(实测 300 宽、999 世时 h=30) -->
+        <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint tabular">第 {{ player.reincarnation.count + 1 }} 世</span>
         <span v-if="toNextStage !== null" class="ml-auto shrink-0 text-[10px] text-ink-faint tabular">
           下一境地 · 宿慧尚差 {{ toNextStage }}
         </span>
@@ -227,7 +228,8 @@
         <p v-for="r in recordRows" :key="r.id" class="flex items-center gap-2 py-2 text-[12px]">
           <span class="text-ink-faint">{{ r.name }}</span>
           <span class="ml-auto tabular font-kai text-[13px] text-gold-ink">{{ r.valueText }}</span>
-          <span class="shrink-0 text-[10px] text-ink-faint">第 {{ r.life }} 世 · {{ r.note }}</span>
+          <!-- nowrap:同一行里的 r.name 与 valueText 都可伸缩,挤压时这一段会折成两行(实测 300 宽、第 1000 世时 h=30) -->
+          <span class="shrink-0 whitespace-nowrap text-[10px] text-ink-faint">第 {{ r.life }} 世 · {{ r.note }}</span>
         </p>
       </template>
       <p v-else class="py-5 text-center">

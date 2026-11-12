@@ -105,6 +105,19 @@ describe('AGENTS.md 固定写法 · 状态词要在代码里', () => {
 describe('轮回录 · 世号列装得下三位数', () => {
   const legacy = readFileSync(resolve(__dirname, '../views/LegacyView.vue'), 'utf-8')
 
+  it('页面上每一处世号都带 whitespace-nowrap', () => {
+    /*
+     * 上一条只盯列表里那一列。实测发现**另外两处**世号也会折:
+     * 顶部状态条「第 {{ count + 1 }} 世」与纪录行的「第 {{ r.life }} 世 · note」——
+     * 它们都在 flex 行里与可伸缩的兄弟挤,300 宽、999 世时都折成两行(h=30)。
+     * 这里按「出现 `世` 且带插值」的 span 逐一要求 nowrap,免得下次又只修一处。
+     */
+    const lines = legacy.split('\n').filter(l => l.includes('<span') && /第\s*\{\{[^}]*\}\}\s*世/.test(l))
+    expect(lines.length, '轮回录里该有多处世号').toBeGreaterThanOrEqual(2)
+    const missing = lines.filter(l => !l.includes('whitespace-nowrap'))
+    expect(missing.map(l => l.trim().slice(0, 80)), '这些世号没带 whitespace-nowrap,拥挤时会折行').toEqual([])
+  })
+
   it('世号列不再是 w-11,且带 whitespace-nowrap', () => {
     const line = legacy.split('\n').find(l => l.includes('第{{ l.index }}世'))
     expect(line, '轮回录里没找到世号列').toBeTruthy()
