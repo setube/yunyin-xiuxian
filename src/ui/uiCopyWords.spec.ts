@@ -46,7 +46,16 @@ const REQUIRED: readonly (readonly [string, string])[] = [
   ['修为未至圆满', 'src/ui/cultivationText.ts'],
   ['应 战', 'src/components/celestial/TrialPanel.vue'],
   ['分解(已上锁)', 'src/components/equipment/EquipmentDetailDialog.vue'],
-  ['分解(已装备)', 'src/components/equipment/EquipmentDetailDialog.vue']
+  ['分解(已装备)', 'src/components/equipment/EquipmentDetailDialog.vue'],
+  /*
+   * 下面五条是查漏补的:它们在文档「固定写法」里被点名、代码里也一直存在,
+   * 却从没进过这份清单 —— 有人照文档反例改回去,不会有任何东西拦他。
+   */
+  ['存档写入失败', 'src/App.vue'],
+  ['导出失败', 'src/components/settings/SettingsSaveSection.vue'],
+  ['强化已至上限', 'src/ui/forgeText.ts'],
+  ['历练在途', 'src/ui/homeStatus.ts'],
+  ['已装备', 'src/ui/affixTransferText.ts']
 ]
 
 /** 文档里当反例批评过的长句,源码里不许出现 */
