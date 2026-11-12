@@ -131,7 +131,12 @@
     <div class="card-ink divide-y divide-ink/6 px-4">
       <template v-if="lifeRows.length">
         <p v-for="l in lifeRows" :key="l.index" class="flex items-center gap-2 py-2 text-[12px]">
-          <span class="w-11 shrink-0 font-kai text-ink-faint tabular">第{{ l.index }}世</span>
+          <!--
+            不给空格:这一格要装下「第一百二十世」,加空格只会更早折行。
+            w-13 是量出来的 —— w-11(44px)装三位数世号就折成两行(实测 375 宽下 21 条
+            「第1xx世」全部 h=36,而两位数的 90 条都是 h=18),放宽到 52px 才够。
+          -->
+          <span class="w-13 shrink-0 whitespace-nowrap font-kai text-ink-faint tabular">第{{ l.index }}世</span>
           <span class="text-ink-soft">{{ l.realmLabel }}</span>
           <span class="text-[10px] text-ink-faint tabular">寿 {{ l.age }} 载</span>
           <span v-if="l.themeName" class="text-[10px]" :class="l.resultColor">{{ l.themeName }}·{{ l.resultText }}</span>
@@ -222,7 +227,7 @@
         <p v-for="r in recordRows" :key="r.id" class="flex items-center gap-2 py-2 text-[12px]">
           <span class="text-ink-faint">{{ r.name }}</span>
           <span class="ml-auto tabular font-kai text-[13px] text-gold-ink">{{ r.valueText }}</span>
-          <span class="shrink-0 text-[10px] text-ink-faint">第{{ r.life }}世 · {{ r.note }}</span>
+          <span class="shrink-0 text-[10px] text-ink-faint">第 {{ r.life }} 世 · {{ r.note }}</span>
         </p>
       </template>
       <p v-else class="py-5 text-center">
