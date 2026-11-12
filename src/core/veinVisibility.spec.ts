@@ -107,6 +107,8 @@ describe('灵脉可见性 · 展示层覆盖全部通道', () => {
       '改立入口与确认钮付不起时都应置灰'
     ).toBe(2)
     expect(CARD_SRC, '确认钮付不起时也应置灰').toMatch(/:disabled="switchShort"[\s\S]*?改 立/)
-    expect(CARD_SRC, '付不起时应就地写出石差').toContain('灵石尚差 {{ formatGap(switchGap) }}')
+    // 缺料句收成一个 computed(模板四处共用),正文与 title 取同一份
+    expect(CARD_SRC, '付不起时应就地写出石差').toContain('switchShortText')
+    expect(CARD_SRC, '缺料句只拼一次').toContain("const switchShortText = computed(() => `灵石尚差 ${formatGap(switchGap.value)}`)")
   })
 })
