@@ -137,9 +137,10 @@
   import { affixDef } from '@/data/affixes'
   import { AFFIX_RARITY_META } from '@/data/statNames'
   import { AUTO_REFORGE_MAX_BUDGET, AUTO_REFORGE_MAX_TARGETS } from '@/core/reforge'
-  import { formatGN, formatGap } from '@/utils/format'
+  import { formatGN } from '@/utils/format'
   import { useAutoReforge } from '@/composables/useAutoReforge'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
+  import { reforgeGapText } from '@/ui/reforgeText'
   import AffixInfoSheet from './AffixInfoSheet.vue'
 
   /**
@@ -175,9 +176,6 @@
   const autoMaxShortText = computed(() => {
     const gap = autoMaxGap.value
     if (!gap?.short) return undefined
-    const parts: string[] = []
-    if (gap.stone.m > 0) parts.push(`灵石尚差 ${formatGap(gap.stone)}`)
-    if (gap.dust > 0) parts.push(`器灵尘尚差 ${gap.dust}`)
-    return parts.join(' · ')
+    return reforgeGapText(gap.stone, gap.dust)
   })
 </script>
