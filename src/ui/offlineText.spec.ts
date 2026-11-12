@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { COUNTER_DIRECTIONS } from '@/ui/achievementHint'
 import { OFFLINE_BOSS_REWARD_MULT } from '@/data/constants'
-import { offlineAgeNote, offlineAwayPhrase, offlineBossNoteText } from '@/ui/offlineText'
+import { offlineAgeNote, offlineArtifactNote, offlineAwayPhrase, offlineBossNoteText } from '@/ui/offlineText'
 
 function src(from: string): string {
   return readFileSync(resolve(__dirname, from), 'utf8')
@@ -100,5 +100,34 @@ describe('归来卷轴 · 组标题不与行标签同字', () => {
     expect(m, '找不到际遇那一行 —— 判据要跟着改名').toBeTruthy()
     expect(m![1], '行标签该短(≤4 字),与「历练战斗」「回收化尘」并列').toMatch(/^[\u4e00-\u9fa5]{2,4}$/)
     expect(m![1], '又写回「途中际遇」,与分组标题同字').not.toBe('途中际遇')
+  })
+})
+
+/**
+ * 法宝拾得行的两种形态:单件只报名,重复件折成「名×N(悟道点 X)」。
+ *
+ * 这条此前没有判据 —— `offlineText.spec` 的七条都在验时长/口径/措辞,
+ * 而这个函数是唯一带分支的(`count > 1`),改坏了不会有东西红:
+ * 比如把 `e.count > 1` 写成 `>= 1`,单件也会带「×1」;
+ * 或把悟道点折进去的那段删掉,重复件的补偿就无声消失。
+ */
+describe('离线法宝行 · 单件与重复件分写', () => {
+  it('单件只报名,不带 ×1', () => {
+    expect(offlineArtifactNote([{ name: '青玉葫芦', count: 1, wudao: 0 }])).toBe('拾得法宝 青玉葫芦')
+  })
+
+  it('重复件折成「名×N(悟道点 X)」', () => {
+    expect(offlineArtifactNote([{ name: '青玉葫芦', count: 3, wudao: 45 }])).toBe(
+      '拾得法宝 青玉葫芦×3(悟道点 45)'
+    )
+  })
+
+  it('多件按入参顺序并列,不重排', () => {
+    expect(
+      offlineArtifactNote([
+        { name: '甲', count: 1, wudao: 0 },
+        { name: '乙', count: 2, wudao: 10 }
+      ])
+    ).toBe('拾得法宝 甲、乙×2(悟道点 10)')
   })
 })
