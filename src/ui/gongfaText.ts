@@ -1,8 +1,9 @@
 import { peakLabel } from './peakLabel'
+import { shortageText } from './resourceShortText'
 
 /** 功法参悟提示:残卷、精进。残页、悟道点、层数报清 */
 export function gongfaPageShortToast(pageShort?: number): string {
-  return pageShort === undefined ? '残页不足' : `残页尚差 ${pageShort} 页`
+  return shortageText('残页', pageShort, '页')
 }
 
 export function gongfaAllLearnedToast(): string {
@@ -19,8 +20,8 @@ export interface GongfaUpShortGap {
 }
 
 export function gongfaUpShortToast(short: 'wudao' | 'page' | 'both', gap?: GongfaUpShortGap): string {
-  const wudao = gap?.wudao === undefined ? '悟道点不足' : `悟道点尚差 ${gap.wudao}`
-  const page = gap?.page === undefined ? '残页不足' : `残页尚差 ${gap.page} 页`
+  const wudao = shortageText('悟道点', gap?.wudao)
+  const page = shortageText('残页', gap?.page, '页')
   if (short === 'both') return `${wudao} · ${page}`
   return short === 'wudao' ? wudao : page
 }

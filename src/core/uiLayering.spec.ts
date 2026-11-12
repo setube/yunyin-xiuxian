@@ -126,7 +126,7 @@ describe('界面分层 · 浮层只有一个出处', () => {
     expect(codex, 'RealmCodexView 不见了').toBeDefined()
     expect(codex!.src, '问卦置灰要合成「卦在身或不足」').toContain(':disabled="askDisabled"')
     expect(codex!.src, '问卦差额与置灰同源').toContain('const askShort = computed(')
-    expect(codex!.src, '问卦按钮要直说差几枚悟道').toContain('悟道点尚差 ${askShort.value}')
+    expect(codex!.src, '问卦按钮要直说差几枚悟道').toContain("shortageText('悟道点', askShort.value)")
     expect(codex!.src, '点化付不起要置灰(已显化那枚仍保留)').toContain(
       ':disabled="player.fateFocus !== s.id && focusShort > 0"'
     )

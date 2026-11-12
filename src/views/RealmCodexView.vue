@@ -451,6 +451,7 @@
   import { useUiStore } from '@/stores/ui'
   import { useResourcesStore } from '@/stores/resources'
   import { REALMS, WORLDS } from '@/data/realms'
+  import { shortageText } from '@/ui/resourceShortText'
   import { worldPips, worldProgress } from '@/ui/worldProgress'
   import WorldSeal from '@/components/common/WorldSeal.vue'
   import { mansionGroups, mansionOrdinal } from '@/ui/mansionBoard'
@@ -561,7 +562,7 @@
   const askDisabled = computed(() => !!currentState.value || askShort.value > 0)
   const askLabel = computed(() => {
     if (currentState.value) return '卦在身'
-    if (askShort.value > 0) return `问卦 · 悟道点尚差 ${askShort.value}`
+    if (askShort.value > 0) return `问卦 · ${shortageText('悟道点', askShort.value)}`
     return `问 卦(悟道点 ${DIVINATION_COST})`
   })
 
