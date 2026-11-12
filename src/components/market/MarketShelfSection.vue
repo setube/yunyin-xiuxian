@@ -102,6 +102,7 @@
   import { equipmentTemplate } from '@/data/equipment'
   import { qualityDef, qualityTextColor } from '@/data/qualities'
   import { isRareQuality, qualityTierStyle } from '@/ui/qualityTier'
+  import { shortageText } from '@/ui/resourceShortText'
   import { qualityAura } from '@/ui/qualityAura'
   import { lusterByRank, lusterOf } from '@/ui/luster'
   import { herbQualityLuster, herbQualityRank, herbQualityTextColor, herbQualityTier, herbQualityTone } from '@/ui/herbQuality'
@@ -277,7 +278,10 @@
       ui.toast(`购得「${name}」`, 'success')
       // 顶档之物另办仪典:与拾得同一份判定(见 ui/treasureCeremony)
       if (slot) celebratePurchase(slot)
-    } else if (result === 'poor') ui.toast(slot ? `灵石尚差 ${formatGap(renderSlot(slot).stoneShort)}` : '灵石不足', 'warn')
+    } else if (result === 'poor') {
+      // 与强化/词条转移/灵脉同一句:共用 shortageText,不各写一份
+      ui.toast(shortageText('灵石', slot ? formatGap(renderSlot(slot).stoneShort) : undefined), 'warn')
+    }
     else if (result === 'bagfull') ui.toast('行囊已满', 'warn')
     else if (result === 'expired') ui.toast('货架已刷新', 'warn')
   }

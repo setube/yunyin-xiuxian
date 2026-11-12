@@ -2,6 +2,7 @@
 import { formatPercent } from '@/utils/format'
 import { INSIGHT_DISCOUNT_CAP, INSIGHT_DISCOUNT_PER_POINT, INSIGHT_EFFECT_NAME, type VeinDef } from '@/data/veins'
 import { modsText } from '@/data/statNames'
+import { shortageText } from './resourceShortText'
 
 export function veinEffectText(def: VeinDef, points: number): string {
   const scaled: Record<string, number> = {}
@@ -28,11 +29,12 @@ export function veinPeakToast(isMain: boolean): string {
 }
 
 export function veinShortToast(stoneText?: string): string {
-  return stoneText === undefined ? '灵石不足' : `灵石尚差 ${stoneText}`
+  // 与强化/词条转移同一句:共用 shortageText,不各写一份「灵石不足 / 尚差 N」
+  return shortageText('灵石', stoneText)
 }
 
 export function veinSwitchShortToast(stoneText?: string): string {
-  return stoneText === undefined ? '灵石不足' : `灵石尚差 ${stoneText}`
+  return shortageText('灵石', stoneText)
 }
 
 export function veinSwitchDoneToast(name: string): string {
