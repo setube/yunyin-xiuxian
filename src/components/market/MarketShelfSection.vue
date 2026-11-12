@@ -75,10 +75,10 @@
           <button
             class="btn-ghost min-w-0 whitespace-normal !px-2.5 !py-2 !text-[11px] text-center"
             :disabled="c.sold || !c.afford || (c.kind === 'equipment' && inventory.bagFull)"
-            :title="c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : !c.sold && !c.afford ? `灵石尚差 ${formatGap(c.stoneShort)}` : undefined"
+            :title="c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : !c.sold && !c.afford ? c.shortText : undefined"
             @click="buyOne(c.idx)"
           >
-            {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : c.afford ? '买下' : `灵石尚差 ${formatGap(c.stoneShort)}` }}
+            {{ c.sold ? '已售' : c.kind === 'equipment' && inventory.bagFull ? '行囊已满' : c.afford ? '买下' : c.shortText }}
           </button>
         </div>
       </div>
@@ -142,6 +142,8 @@
     afford: boolean
     /** 灵石尚差；买得起时为 0 */
     stoneShort: GNum
+    /** 卡面正文与 title 共用的缺料句，买得起时无意义 */
+    shortText: string
   }
 
   const MAT_META: Record<'herb' | 'ore', { name: string; icon: string }> = {
@@ -202,7 +204,9 @@
       plaque: false,
       // 丹药格走 rank 入口(道品 rank 9 在这里也要享有质感层)
       luster: slot.kind === 'pill' ? lusterByRank(pillRank(pillDef(slot.pillId)!)) : null,
-      stoneShort: afford ? gnZero() : subClamp(slot.price, resources.spiritStone)
+      stoneShort: afford ? gnZero() : subClamp(slot.price, resources.spiritStone),
+      // 卡面正文与 title 各写一遍同一个表达式,改词时容易只改一处;这里算一次
+      shortText: shortageText('灵石', formatGap(afford ? gnZero() : subClamp(slot.price, resources.spiritStone)))
     }
     if (slot.kind === 'pill') {
       const def = pillDef(slot.pillId)!
