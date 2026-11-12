@@ -410,7 +410,12 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
           const bossDanger = dangerFactorFor(modeDef.dangerMult, region.danger, petDangerMult, regionEventDanger)
           const bossResult = resolveCombat(buildPlayerSnap(), makeEnemySnap(bossDef, region.tier, bossDanger), rng, explorationRules(), false)
           noteEnemy(bossDef.id, bossResult.win)
-          // 首领战计一场(与在线 runBattle 同一本账,不论胜败);须在奖励结算之后,不重复放大奖励
+          /*
+           * 首领战计一场(与在线 runBattle 同一本账,不论胜败)。
+           * 这一行在 `afterWin` 之前 —— 它动的是 `battles`(这趟打过几场),不是 `wins`;
+           * 奖励按 `wins`(普通战期望值)折出,两者互不干扰。
+           * 加 `wins` 的那一句在胜利分支**末尾**,所以才不会把首领自己再乘进奖励里。
+           */
           track('battles')
           battles += 1
           if (bossResult.win) {
