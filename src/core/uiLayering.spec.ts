@@ -151,7 +151,8 @@ describe('界面分层 · 浮层只有一个出处', () => {
   })
 
   it('存档导入读取失败要当场回执 —— 两处入口同一条退路', () => {
-    const RECEIPT = "ui.toast('文件无法读取', 'warn')"
+    // 回执词收在 ui/saveFileText,两处入口引用同一个常量
+    const RECEIPT = "ui.toast(SAVE_FILE_TEXT.unreadable, 'warn')"
     for (const path of ['views/WelcomeView.vue', 'components/settings/SettingsSaveSection.vue']) {
       const f = FILES.find(x => x.path === path)
       expect(f, `${path} 不见了`).toBeDefined()
@@ -175,7 +176,7 @@ describe('界面分层 · 浮层只有一个出处', () => {
    * 空就是空,别报成「解析不了」。
    */
   it('空文件在导入前就判出来,两处入口同一句话', () => {
-    const EMPTY = "ui.toast('文件为空', 'warn')"
+    const EMPTY = "ui.toast(SAVE_FILE_TEXT.empty, 'warn')"
     for (const path of ['views/WelcomeView.vue', 'components/settings/SettingsSaveSection.vue']) {
       const f = FILES.find(x => x.path === path)
       expect(f, `${path} 不见了`).toBeDefined()

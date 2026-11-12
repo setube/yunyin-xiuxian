@@ -40,7 +40,8 @@ const REQUIRED: readonly (readonly [string, string])[] = [
   ['暂无藏品', 'src/views/InventoryView.vue'],
   ['暂无纪录', 'src/views/LegacyView.vue'],
   ['货架已刷新', 'src/components/market/MarketShelfSection.vue'],
-  ['文件为空', 'src/components/settings/SettingsSaveSection.vue'],
+  // 五个文件回执已收进 ui/saveFileText(两个导入入口共用一份),故落点改到常量文件
+  ['文件为空', 'src/ui/saveFileText.ts'],
   ['复制失败', 'src/components/settings/SettingsDiagnosticsSection.vue'],
   ['导出存档', 'src/components/settings/SettingsDiagnosticsSection.vue'],
   ['修为未至圆满', 'src/ui/cultivationText.ts'],
@@ -52,7 +53,7 @@ const REQUIRED: readonly (readonly [string, string])[] = [
    * 却从没进过这份清单 —— 有人照文档反例改回去,不会有任何东西拦他。
    */
   ['存档写入失败', 'src/App.vue'],
-  ['导出失败', 'src/components/settings/SettingsSaveSection.vue'],
+  ['导出失败', 'src/ui/saveFileText.ts'],
   ['强化已至上限', 'src/ui/forgeText.ts'],
   ['历练在途', 'src/ui/homeStatus.ts'],
   ['已装备', 'src/ui/affixTransferText.ts']
@@ -79,6 +80,17 @@ describe('AGENTS.md 固定写法 · 状态词要在代码里', () => {
   it.each(REQUIRED)('「%s」仍按文档写法出现在 %s', (word, file) => {
     const text = readFileSync(file, 'utf-8')
     expect(text, `${file} 里找不到文档规定的「${word}」`).toContain(word)
+  })
+
+  it('两个导入入口都引用 saveFileText,不各写一份回执', () => {
+    for (const file of [
+      'src/components/settings/SettingsSaveSection.vue',
+      'src/views/WelcomeView.vue'
+    ]) {
+      const text = readFileSync(file, 'utf-8')
+      expect(text, `${file} 又手写了文件回执`).not.toContain("'文件为空'")
+      expect(text, `${file} 该引用 SAVE_FILE_TEXT`).toContain('SAVE_FILE_TEXT.')
+    }
   })
 
   it('文档点名批评过的反例,源码里一处都不许有', () => {

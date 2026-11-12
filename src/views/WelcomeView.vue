@@ -56,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+  import { SAVE_FILE_TEXT } from '@/ui/saveFileText'
   import { onUnmounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { useSettingsStore } from '@/stores/settings'
@@ -116,7 +117,7 @@
       // 空文件与设置页同一个判据:空档走到 importSaveText 会被报成「文件无法解析」,
       // 两处入口对同一种坏文件说两种话
       if (!text.trim()) {
-        ui.toast('文件为空', 'warn')
+        ui.toast(SAVE_FILE_TEXT.empty, 'warn')
         return
       }
       engine.pause()
@@ -126,20 +127,20 @@
         engine.resume()
         return
       }
-      ui.toast('导入成功', 'success')
+      ui.toast(SAVE_FILE_TEXT.importOk, 'success')
       // 立即封存,阻止 persist 插件把欢迎页旧内存(started=false)回写覆盖
       sealStorageWrites()
       setTimeout(reloadGame, 800)
     }, () => {
       if (unmounted) return
       saveRead = null
-      ui.toast('文件无法读取', 'warn')
+      ui.toast(SAVE_FILE_TEXT.unreadable, 'warn')
     }, {
       // 超大文件当场回执:读进内存才是伤害所在,与「读不出」分开报
       onTooLarge: () => {
         if (unmounted) return
         saveRead = null
-        ui.toast('文件过大', 'warn')
+        ui.toast(SAVE_FILE_TEXT.tooLarge, 'warn')
       }
     })
     if (fileInput.value) fileInput.value.value = ''

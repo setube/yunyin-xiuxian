@@ -271,7 +271,7 @@ describe('存档导出 · 取消与失败分开报', () => {
     const src = readFileSync(resolve(__dirname, './savePlatform.ts'), 'utf-8')
 
     expect(src, '取消该走 info').toMatch(/if \(cancelled\) useUiStore\(\)\.toast\('已取消导出', 'info'\)/)
-    expect(src, '协议异常该留 warn').toMatch(/else useUiStore\(\)\.toast\('导出失败', 'warn'\)/)
+    expect(src, '协议异常该留 warn').toMatch(/else useUiStore\(\)\.toast\(SAVE_FILE_TEXT\.exportFailed, 'warn'\)/)
     // 阴性对照:两者被合并成同一个级别时,这条文案就分不出轻重了
     expect(src, '取消不该用 warn').not.toContain("toast('已取消导出', 'warn')")
     void useUiStore

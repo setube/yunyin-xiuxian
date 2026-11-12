@@ -4,6 +4,7 @@
  * Android 不写公共 Documents(Android 10 legacy storage 与 11+ 分区存储下公共目录权限不可靠):
  * SaveTransfer 原生插件开 ACTION_CREATE_DOCUMENT,ContentResolver 写入,无需存储权限且能确认落盘。
  */
+import { SAVE_FILE_TEXT } from '@/ui/saveFileText'
 import { Capacitor } from '@capacitor/core'
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
 import { saveAs } from 'file-saver'
@@ -54,12 +55,12 @@ async function exportSaveOnAndroid(
      */
     const cancelled = result?.saved === false
     if (cancelled) useUiStore().toast('已取消导出', 'info')
-    else useUiStore().toast('导出失败', 'warn')
+    else useUiStore().toast(SAVE_FILE_TEXT.exportFailed, 'warn')
     return cancelled ? '已取消导出' : '存档导出失败:原生桥返回了无法识别的结果'
   } catch (error) {
     const detail = error instanceof Error && error.message ? `:${error.message}` : ''
     const reason = `存档导出失败${detail}`
-    useUiStore().toast('导出失败', 'warn')
+    useUiStore().toast(SAVE_FILE_TEXT.exportFailed, 'warn')
     return reason
   }
 }
@@ -112,7 +113,7 @@ export async function exportSaveToDevice(): Promise<string | null> {
       receipt(`已导出到「文档/Export/${file}」`)
       return incomplete
     } catch {
-      useUiStore().toast('导出失败', 'warn')
+      useUiStore().toast(SAVE_FILE_TEXT.exportFailed, 'warn')
       return '导出失败'
     }
   }
