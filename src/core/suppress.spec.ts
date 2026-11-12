@@ -6,7 +6,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { DECOMPOSE_DUST } from '@/data/constants'
-import { regionReviveClock, isRegionRevived } from './worldMemory'
+import { regionReviveClock, isRegionRevived, REVIVE_AFTER_HOURS } from './worldMemory'
 import { REGIONS, regionDef } from '@/data/regions'
 import { herbGradeOfMajor, HERB_GRADE_SHORT } from '@/data/herbGrades'
 import { qualityDef } from '@/data/qualities'
@@ -864,5 +864,31 @@ describe('区域战绩 · consecutiveWins 只写不读', () => {
     }
     walk(srcRoot)
     expect(reads, `consecutiveWins 出现了读取点,该更新 RegionStats 的说明:\n${reads.join('\n')}`).toEqual([])
+  })
+})
+
+/**
+ * `player.ts` 里的复聚线必须与 `worldMemory.REVIVE_AFTER_HOURS` 同值。
+ *
+ * 两处各写一个 72:`worldMemory` 拿它判「妖气复聚够钟」,
+ * `player.suppressRegion` 拿它判「切回收益时该不该重锚起点」。
+ * 之所以不 import,是因为 `worldMemory` 已经 import 了 `stores/player`,反向引会成环。
+ *
+ * 代价是这两个数只能靠人记着同步 —— 注释里写了「同值」,但没有东西在管。
+ * 若哪天有人把 REVIVE_AFTER_HOURS 调成 96,复聚会按 96 判、而重锚仍按 72,
+ * 于是「停取 80 小时再切回」会既被判够钟、又不重锚,按钮当场失效(就是上一轮修的那个 bug 的另一种形态)。
+ *
+ * 故障注入:把任一处改成不同的值,本条红。
+ */
+describe('镇压复聚线 · 两处常量同值', () => {
+  it('player.ts 的 REVIVE_LINE_MS 与 REVIVE_AFTER_HOURS 相等', () => {
+    const src = readFileSync(resolve(__dirname, '../stores/player.ts'), 'utf-8')
+    const m = src.match(/const REVIVE_LINE_MS = (\d+) \* 3_600_000/)
+    expect(m, 'player.ts 里找不到 `const REVIVE_LINE_MS = N * 3_600_000`').toBeTruthy()
+    const hours = Number(m![1])
+    expect(
+      hours,
+      `player.ts 的复聚线是 ${hours} 小时,而 worldMemory 的 REVIVE_AFTER_HOURS 是 ${REVIVE_AFTER_HOURS} —— 两处必须同值`
+    ).toBe(REVIVE_AFTER_HOURS)
   })
 })
