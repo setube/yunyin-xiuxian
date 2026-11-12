@@ -1,4 +1,6 @@
-import { resourceShortText } from './resourceShortText'
+import type { GNum } from '@/types'
+import { formatGap } from '@/utils/format'
+import { resourceShortText, shortageText } from './resourceShortText'
 import { TRANSFER_LABELS } from './affixTransferText'
 /** 重铸与封存提示:只报结果与差额;缺料写「不足 / 尚差 N」 */
 export function reforgeEmptyToast(): string {
@@ -8,6 +10,20 @@ export function reforgeEmptyToast(): string {
 /** 缺料提示:缺哪样只说哪样 */
 export function reforgeShortToast(short: 'stone' | 'dust', gap?: { stone: string; dust: number }): string {
   return resourceShortText(short, gap)
+}
+
+/**
+ * 重铸/自动重铸的缺料句(灵石与器灵尘两样并列)。
+ *
+ * 两处调用各写了一遍完全相同的五行(AutoReforgePanel 的 autoMaxShortText 与
+ * EquipReforgeFooter 的 benchShortText),连 push 的顺序都一样。
+ * `reforgeShortToast` 只管单样,并列这种单独一个入口。
+ */
+export function reforgeGapText(stone: GNum, dust: number): string {
+  const parts: string[] = []
+  if (stone.m > 0) parts.push(shortageText('灵石', formatGap(stone)))
+  if (dust > 0) parts.push(shortageText('器灵尘', dust))
+  return parts.join(' · ')
 }
 
 export function reforgeDoneToast(countNote: string): string {

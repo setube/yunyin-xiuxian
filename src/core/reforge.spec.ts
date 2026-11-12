@@ -507,8 +507,8 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     const footer = readFileSync(resolve(__dirname, '../components/equipment/EquipReforgeFooter.vue'), 'utf8')
     expect(footer, '入口钮按缺口置灰').toMatch(/v-if="reforgeCostVal"[\s\S]*?:disabled="reforgeShortVal\?\.short != null"/)
     expect(footer, '确认钮同样按缺口置灰').toMatch(/:disabled="reforgeShortVal\?\.short != null"[\s\S]*?@click="doReforge"/)
-    expect(footer, '缺口就地写出来').toContain('灵石尚差 ${formatGap(s.stone)}')
-    expect(footer, '缺尘也单独报数').toContain('器灵尘尚差 ${s.dust}')
+    // 缺口句转调 reforgeGapText(灵石与器灵尘并列的唯一实现)
+    expect(footer, '缺口就地写出来').toContain('reforgeGapText(s.stone, s.dust)')
     expect(footer, '提示与结算同源').toContain('reforgeShortfall(reforgeCostVal.value)')
     expect(footer, '缺口行只列差额,不再拼 toast 那一句(同一笔差额写两遍)').not.toContain('reforgeShortToast(')
   })
@@ -562,8 +562,7 @@ describe('界面与判定同源 · 条数上限不写死', () => {
     const flow = readFileSync(resolve(__dirname, '../composables/useAutoReforge.ts'), 'utf8')
     expect(flow, '整批缺口走 reforgePlanShortfall').toContain('reforgePlanShortfall(r, autoBudget.value)')
     expect(panel, '确认钮按整批缺口置灰').toContain(':disabled="autoMaxGap?.short != null"')
-    expect(panel, '缺口就地写灵石').toContain('灵石尚差 ${formatGap(gap.stone)}')
-    expect(panel, '缺口就地写器灵尘').toContain('器灵尘尚差 ${gap.dust}')
+    expect(panel, '缺口就地写灵石').toContain('reforgeGapText(gap.stone, gap.dust)')
   })
 
   it('reforgePlanShortfall 按归一预算整批算缺口,不只看一炉', () => {

@@ -103,7 +103,7 @@
   import { reforgeEquipment, reforgeCost, reforgeShortfall, sealCapacity, sealCost, sealShortfall } from '@/core/reforge'
   import { formatGN, formatGap } from '@/utils/format'
   import { TRANSFER_LABELS } from '@/ui/affixTransferText'
-  import { reforgeEmptyToast } from '@/ui/reforgeText'
+  import { reforgeEmptyToast, reforgeGapText } from '@/ui/reforgeText'
 
   /**
    * 价签与动作全读 core/reforge,不在界面另写。
@@ -124,10 +124,7 @@
   const reforgeShortText = computed(() => {
     const s = reforgeShortVal.value
     if (!s) return ''
-    const parts: string[] = []
-    if (s.stone.m > 0) parts.push(`灵石尚差 ${formatGap(s.stone)}`)
-    if (s.dust > 0) parts.push(`器灵尘尚差 ${s.dust}`)
-    return parts.join(' · ')
+    return reforgeGapText(s.stone, s.dust)
   })
   const sealCostVal = computed(() => (inst.value ? sealCost(inst.value) : null))
   /** 封存石差:封满为 null,付得起为 0;与封存钮、服务拒因同源 */
