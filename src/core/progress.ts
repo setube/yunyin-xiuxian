@@ -38,10 +38,20 @@ function resourceParts(bundle: RewardBundle): string[] {
   return lines
 }
 
-/** 领赏前的清单(含称号);数字与 grantReward 入账同一套折算 */
+/**
+ * 领赏前的清单(含称号);数字与 grantReward 入账同一套折算。
+ *
+ * 称号这一项要与 `grantReward` 同判:**已拥有时两边都不列**。
+ * 从前这里只看 `titleDef` 存在与否,而发赏那侧先过 `quests.ownTitle()`
+ * (已拥有返回 false 且不重复入账)—— 于是同一件奖励在预览里写着「称号 X」、
+ * 领完的 toast 里却没有它。预览承诺了不会发生的事。
+ */
 export function rewardPreview(bundle: RewardBundle): string {
   const lines = resourceParts(bundle)
-  if (bundle.titleId && titleDef(bundle.titleId)) lines.push(`称号「${titleDef(bundle.titleId)!.name}」`)
+  const alreadyOwned = bundle.titleId ? useQuestsStore().titlesOwned.includes(bundle.titleId) : false
+  if (bundle.titleId && titleDef(bundle.titleId) && !alreadyOwned) {
+    lines.push(`称号「${titleDef(bundle.titleId)!.name}」`)
+  }
   return lines.join(' · ')
 }
 

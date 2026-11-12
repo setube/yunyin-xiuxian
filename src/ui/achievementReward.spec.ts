@@ -7,6 +7,8 @@ import { stoneByTier } from '@/core/formulas'
 import { playerTier, rewardPreview } from '@/core/progress'
 import { maxTierForMajor } from '@/data/regions'
 import { usePlayerStore } from '@/stores/player'
+import { useQuestsStore } from '@/stores/quests'
+import { TITLES } from '@/data/titles'
 import { formatGN } from '@/utils/format'
 
 describe('已达成成就展示实发奖励', () => {
@@ -46,5 +48,25 @@ describe('已达成成就展示实发奖励', () => {
     const titles = readFileSync(resolve(__dirname, '../views/TitlesView.vue'), 'utf8')
     expect(titles, '名号册进度条').toContain(':value="TITLES.length > 0 ? ownedCount / TITLES.length : 0"')
     expect(titles, '灵兽册进度条').toContain(':value="PETS.length > 0 ? petRows.length / PETS.length : 0"')
+  })
+})
+
+/**
+ * 称号已拥有时,预览与发赏两边都不列它。
+ *
+ * `grantReward` 先过 `quests.ownTitle()`(已拥有返回 false 且不重复入账),
+ * 而 `rewardPreview` 从前只看 `titleDef` 存在与否 —— 于是同一件奖励在成就页写着
+ * 「称号 X」、领完的 toast 里却没有它。预览承诺了不会发生的事。
+ *
+ * 故障注入:把 rewardPreview 的 `alreadyOwned` 判断去掉,本条红。
+ */
+describe('称号预览 · 已拥有时不再许诺', () => {
+  it('未拥有时列出,已拥有时省去,其余奖励照旧', () => {
+    const quests = useQuestsStore()
+    const title = TITLES[0]!
+    expect(rewardPreview({ titleId: title.id }), '未拥有时该列出称号').toBe(`称号「${title.name}」`)
+    quests.ownTitle(title.id)
+    expect(rewardPreview({ titleId: title.id }), '已拥有时不该再列出').toBe('')
+    expect(rewardPreview({ titleId: title.id, wudao: 100 }), '别的奖励不受影响').toBe('悟道点 +100')
   })
 })
