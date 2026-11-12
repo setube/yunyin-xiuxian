@@ -1223,7 +1223,9 @@ describe('文案数值对账 · 用具三类的界面读同源函数', () => {
     expect(market, '卡面要有实际缺口字段').toContain('stoneShort:')
     expect(market, '卡面缺口用指数感知减法').toContain('subClamp(slot.price, resources.spiritStone)')
     // 主语要与 title 一致:光写「尚差 8」时同屏还挂着道源/器灵尘,玩家得回头猜是哪一种
-    expect(market, '按钮直接写出尚差多少(带资源名)').toContain('`灵石尚差 ${formatGap(c.stoneShort)}`')
+    // 卡面正文与 title 共用一个字段(shortText),不再各拼一遍模板
+    expect(market, '按钮直接写出尚差多少(带资源名)').toContain("shortageText('灵石', formatGap(")
+    expect(market, '正文与 title 共用同一个字段').toContain('c.shortText')
     // 瞬时失败那一支与其余缺料句共用 shortageText(灵石),仍须带实际差额
     expect(market, '扣款瞬时失败也报实际差额').toContain("shortageText('灵石', slot ? formatGap(renderSlot(slot).stoneShort) : undefined)")
     expect(market, '不再用笼统的灵石不足作按钮文案').not.toContain("? '灵石不足'")
