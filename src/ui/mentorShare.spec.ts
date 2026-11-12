@@ -20,6 +20,7 @@ import { MENTORS, type MentorId } from '@/data/mentors'
 import { mentorVerdict } from '@/core/mentorService'
 import { useQuestsStore } from '@/stores/quests'
 import { shareMark, sharePips, SHARE_PIPS } from './mentorShare'
+import { mentorTierOf } from '@/core/mentorService'
 import { UNALIGNED_RATIO } from '@/core/mentorService'
 
 const ROOT = resolve(__dirname, '../..')
@@ -107,6 +108,24 @@ describe('师承契合 · 二、三档都可达', () => {
       expect(v.tier).toBe('neutral')
       expect(v.line).toContain('不语')
     }
+  })
+
+  /**
+   * `mentorTierOf` 头一句是 `if (!(topShare > 0) || !Number.isFinite(share) || share <= 0)` ——
+   * 三道守卫共用一个返回:有 topShare 时给 `unaligned`,没有时给 `neutral`。
+   *
+   * 上面三条只验过「还没有任何作为」那一种(topShare=0 → neutral);
+   * 坏值那两条(`NaN` / 负份额)从未被断言过。它们在生产里应该走不到
+   * (share 由 domainStrength 算,不会是负数),但守卫立在那儿就该有判据锁住意图 ——
+   * 哪天有人在算式里加了个减法又没夹零,这里必须仍然不判档。
+   *
+   * 故障注入:把 `!Number.isFinite(share) || share <= 0` 一段删掉,本条红。
+   */
+  it('坏份额(NaN / 负数)不判档:有 topShare 时归未纯,没有时归中性', () => {
+    expect(mentorTierOf(Number.NaN, 0.5, 4), 'NaN 份额不该被当成可比数').toBe('unaligned')
+    expect(mentorTierOf(-1, 0.5, 4), '负份额不该被当成可比数').toBe('unaligned')
+    expect(mentorTierOf(Number.NaN, 0, 4), '无从谈起时仍归中性,不因坏值翻成未纯').toBe('neutral')
+    expect(mentorTierOf(0, 0.5, 4), '零份额等同「没有」').toBe('unaligned')
   })
 
   it('数据表里四段未纯叙事如今都真的会被念出来', () => {
