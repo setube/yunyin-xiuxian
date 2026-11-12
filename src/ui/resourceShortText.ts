@@ -1,9 +1,13 @@
 /**
- * 「X 尚差 N」「X 不足」这一句的唯一实现。
+ * 「灵石/器灵尘 尚差 N」「… 不足」这一句的唯一实现。
  *
- * 这段文案原先在 ui/reforgeText.reforgeShortToast 与 ui/affixTransferText.transferShortText
+ * 这段文案原先在 ui/forgeText.reforgeShortToast 与 ui/affixTransferText.transferShortText
  * 里各写一遍,逐字相同(只有第一参数的类型名不同)。两处都是把差额说给玩家听:
  * 抄两份时若只改一处,同一种「灵石缺了 7 点」会在强化与词条转移里说成两种样子。
+ *
+ * **只收这两种资源**(`GapAmounts` 的字段就是 stone / dust)。悟道点、残页、玄铁
+ * 各有自己的差额句(gongfaText、buildingText),句型一致但参数与单位不同,
+ * 不必也不该硬塞进来 —— 别把这里读成「全仓所有尚差句的唯一出口」。
  *
  * 固定写法见 AGENTS.md「缺资源」:知道差额写「X尚差 N」,拿不到差额才写「X不足」。
  */
