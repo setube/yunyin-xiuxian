@@ -84,12 +84,12 @@
               class="btn-ghost flex-wrap !px-2.5 !py-2 !text-[11px]"
               :disabled="switchShort"
               :aria-label="switchLabel(row.def.id)"
-              :title="switchShort ? `灵石尚差 ${formatGap(switchGap)}` : undefined"
+              :title="switchShort ? switchShortText : undefined"
               @click="switchArm = row.def.id"
             >
               <span class="whitespace-nowrap">改立主脉 ·</span>
               <!-- 拒因要报出缺的是哪一样:本行光看「尚差 N」不知道是灵石还是别的(同 ExpeditionPanel 虚界那两枚钮) -->
-              <span v-if="switchShort" class="whitespace-nowrap">灵石尚差 {{ formatGap(switchGap) }}</span>
+              <span v-if="switchShort" class="whitespace-nowrap">{{ switchShortText }}</span>
               <span v-else class="whitespace-nowrap">{{ formatGN(switchCost) }} 石</span>
             </button>
           </div>
@@ -125,7 +125,7 @@
             改立「<span class="font-kai text-[11px] text-cinnabar">{{ row.def.name }}</span>」为主脉 · 耗灵石
             <span class="tabular text-ink">{{ formatGN(switchCost) }}</span>
             <span v-if="switchShort" class="mt-0.5 block text-[9px] leading-relaxed text-cinnabar tabular">
-              灵石尚差 {{ formatGap(switchGap) }}
+              {{ switchShortText }}
             </span>
             <span v-if="switchLoss" class="mt-0.5 block text-[9px] leading-relaxed text-gold-ink">
               「{{ switchLoss.oldName }}」转副脉<template v-if="switchLoss.lost > 0"> · 超额 {{ switchLoss.lost }} 点 · 效果保留</template>
@@ -136,7 +136,7 @@
             <button
               class="btn-seal !px-2.5 !py-2 !text-[11px]"
               :disabled="switchShort"
-              :title="switchShort ? `灵石尚差 ${formatGap(switchGap)}` : undefined"
+              :title="switchShort ? switchShortText : undefined"
               @click="confirmSwitch(row.def.id)"
             >
               改 立
@@ -196,6 +196,11 @@
   /** 改立石差(付得起为 0):入口、确认钮与服务拒因同源 */
   const switchGap = computed(() => veinSwitchShortfall())
   const switchShort = computed(() => switchGap.value.m > 0)
+  /**
+   * 改立缺料句:模板里四处各拼一遍(按钮 title 两处、正文两处),改词容易只改一处。
+   * 与 ui/resourceShortText 同一份措辞(「灵石尚差 N」),这里只是把 formatGap 的结果接上。
+   */
+  const switchShortText = computed(() => `灵石尚差 ${formatGap(switchGap.value)}`)
   const veinsUnlocked = computed(() => player.major >= VEIN_UNLOCK_MAJOR)
   const veinTotal = computed(() => dongfu.veinTotal)
 
@@ -263,7 +268,7 @@
 
   function switchLabel(veinId: VeinId): string {
     const base = `改立${veinDef(veinId).name}为主脉`
-    return switchShort.value ? `${base},灵石尚差 ${formatGap(switchGap.value)}` : base
+    return switchShort.value ? `${base},${switchShortText.value}` : base
   }
 
   /** 四脉连投计划;行只读量,不另算价 */
