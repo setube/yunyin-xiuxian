@@ -3,8 +3,9 @@ import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ACHIEVEMENTS } from '@/data/achievements'
+import { MAIN_QUESTS } from '@/data/quests'
 import { stoneByTier } from '@/core/formulas'
-import { playerTier, rewardPreview } from '@/core/progress'
+import { grantReward, playerTier, rewardPreview } from '@/core/progress'
 import { maxTierForMajor } from '@/data/regions'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
@@ -68,5 +69,37 @@ describe('称号预览 · 已拥有时不再许诺', () => {
     quests.ownTitle(title.id)
     expect(rewardPreview({ titleId: title.id }), '已拥有时不该再列出').toBe('')
     expect(rewardPreview({ titleId: title.id, wudao: 100 }), '别的奖励不受影响').toBe('悟道点 +100')
+  })
+})
+
+/**
+ * 预览与实发逐条对拍:同一份 `RewardBundle`,两个函数说出的清单必须一致。
+ *
+ * 上一轮修的是称号那一项(预览列出已拥有的称号、发赏那侧不给)。
+ * 那次缺陷能在仓库里活下来,是因为**没有任何判据把这两侧放在一起比过** ——
+ * 预览的判据只看它自己写着什么,发赏的判据只看入账,两者各测各的。
+ *
+ * 这条把全表跑一遍:成就与主轴任务各 32 条,逐条比 `rewardPreview` 与
+ * `grantReward(..., quiet).join(' · ')` 的字符串。任一侧改了折算法、少列一项、
+ * 或多判一个条件,本条立刻红。
+ *
+ * 每个 bundle 用独立的 pinia:`grantReward` 会改存档(发钱、记称号、入行囊),
+ * 先发赏再预览会让「已拥有称号」那类差异假性消失。
+ */
+describe('奖励预览 · 与实发逐条对拍', () => {
+  const pairs: { id: string; reward: NonNullable<(typeof ACHIEVEMENTS)[number]['reward']> }[] = [
+    ...ACHIEVEMENTS.filter(a => a.reward).map(a => ({ id: `成就/${a.id}`, reward: a.reward! })),
+    ...MAIN_QUESTS.filter(q => q.reward).map(q => ({ id: `主线/${q.id}`, reward: q.reward! }))
+  ]
+
+  it('全表逐条一致', () => {
+    expect(pairs.length, '奖励表不该是空的').toBeGreaterThan(0)
+    for (const { id, reward } of pairs) {
+      setActivePinia(createPinia())
+      const preview = rewardPreview(reward)
+      setActivePinia(createPinia())
+      const granted = grantReward(reward, true).join(' · ')
+      expect(preview, `${id} 的预览与实发对不上`).toBe(granted)
+    }
   })
 })
