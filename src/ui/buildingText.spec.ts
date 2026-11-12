@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { REALMS } from '@/data/realms'
 import { BUILDINGS } from '@/data/buildings'
-import { buildingGateRealmName, buildingRealmGate } from './buildingText'
+import { buildingBatchDoneToast, buildingGateRealmName, buildingRealmGate } from './buildingText'
 
 /** 境界闸境名 = REALMS[unlockRealm].name,不复抄 */
 describe('建筑境界闸文案 · buildingText', () => {
@@ -30,5 +30,31 @@ describe('建筑境界闸文案 · buildingText', () => {
     expect(service).toContain('buildingGateRealmName(')
     expect(card, '卡片不应再内联境界名表').not.toMatch(/\[['"]炼气['"],\s*['"]筑基['"],\s*['"]金丹['"]\]/)
     expect(service, '服务不应再内联境界名表').not.toMatch(/\[['"]炼气['"],\s*['"]筑基['"],\s*['"]金丹['"]\]/)
+  })
+})
+
+/**
+ * 连升提示的静态汉字数守着规范的 12 字上限。
+ *
+ * 原句「「X」连升 N 级至 M 级 · 共耗灵石 S · 玄铁 O 块」静态 15 字 ——
+ * 而单次完成那句只有 6 字,同族相差一倍多。数值与单位照旧一个不少,
+ * 去掉的只是「共耗」「块」这类可省的词。
+ *
+ * 故障注入:把任一处省掉的词加回去,本条红。
+ */
+describe('建筑连升提示 · 长度', () => {
+  const longestName = [...BUILDINGS].sort((a, b) => b.name.length - a.name.length)[0]!.name
+
+  it('用最长建筑名量,静态汉字 ≤ 12', () => {
+    const text = buildingBatchDoneToast(longestName, 3, 5, '1.2万', 30)
+    const cn = (text.match(/[\u4e00-\u9fa5]/g) || []).length
+    expect(cn, `「${text}」静态 ${cn} 字,超过 12 字上限`).toBeLessThanOrEqual(12)
+  })
+
+  it('数值与单位一个不少', () => {
+    const text = buildingBatchDoneToast('丹房', 3, 5, '1.2万', 30)
+    for (const part of ['丹房', '3', '5', '1.2万', '30']) {
+      expect(text, `连升提示漏了「${part}」`).toContain(part)
+    }
   })
 })
