@@ -39,7 +39,16 @@ describe('不可逆确认的两次点击各写什么', () => {
     ['components/celestial/FurnaceDialog.vue', ['确认熔尽']],
     // 确认词随第一步的动词(重铸词条 → 确认重铸 / 开 洗 → 确认开洗)
     ['components/equipment/EquipReforgeFooter.vue', ['确认重铸']],
-    ['components/equipment/AutoReforgePanel.vue', ['确认开洗']]
+    ['components/equipment/AutoReforgePanel.vue', ['确认开洗']],
+    /*
+     * 下面三个也是两步确认的不可逆操作,原先漏在这份清单外 ——
+     * 补登记之前,谁把它们的确认词改成「取消 / 算了」都不会有判据红。
+     * 排除项:ExitConfirmDialog(退出游戏不是不可逆:进度已保存、离线照常),
+     * WelcomeView 的导入弹窗(取消词合规但确认钮是「选择存档文件」,属选择而非确认)。
+     */
+    ['components/character/RebirthDialog.vue', ['确认立契']],
+    ['components/market/MarketSellSection.vue', ['确认售尽']],
+    ['components/settings/SettingsSaveSection.vue', ['确认清空']]
   ]
   const CANCEL_BANNED = ['确 散', '凝 炼', '分解?', '确信删除', '>算了<', '>取 消<', '>取消<']
 
