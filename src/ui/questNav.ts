@@ -14,6 +14,8 @@ function navForCond(cond: AchvCond): QuestNav {
     case 'kills':
     case 'bossKills':
     case 'explores':
+    // 获得装备靠历练掉落(不是行囊 —— 那儿只能看与拆)
+    case 'equipsGained':
       return { name: 'adventure' }
     case 'pillsUsed':
     case 'pillsCrafted':
