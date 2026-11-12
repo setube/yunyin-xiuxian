@@ -1,5 +1,5 @@
 <template>
-  <BaseModal :open="open" :title="`修行画像 · 「${identity?.epithet ?? '云隐散人'}」`" @close="emit('close')">
+  <BaseModal :open="open" :title="`修行画像 · 「${identity?.epithet ?? IDENTITY_DEFAULT_EPITHET}」`" @close="emit('close')">
     <div v-if="identity" class="space-y-2.5">
       <p class="text-[12px] leading-relaxed text-ink-soft">{{ identity.narrative }}</p>
       <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
   import { computed } from 'vue'
-  import { buildIdentity } from '@/core/identityService'
+  import { buildIdentity, IDENTITY_DEFAULT_EPITHET } from '@/core/identityService'
   import { hasTraitRecord, traitBars, traitRecord } from '@/ui/traitRecord'
   import { formatNum } from '@/utils/format'
   import BaseModal from '@/components/common/BaseModal.vue'

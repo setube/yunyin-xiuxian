@@ -101,7 +101,7 @@ export function buildIdentity(): CultivatorIdentity {
   const daoName = daoKey ? (daoPathDef(daoKey)?.name ?? null) : null
   const daoEpi = daoKey ? (DAO_EPITHETS[daoKey] ?? '问道') : null
   const mentorEpi = mentor ? MENTOR_EPITHETS[mentor.id] : null
-  const epithet = [daoEpi, mentorEpi].filter(Boolean).slice(0, 2).join('') || '云隐散人'
+  const epithet = [daoEpi, mentorEpi].filter(Boolean).slice(0, 2).join('') || IDENTITY_DEFAULT_EPITHET
 
   const narrative = buildNarrative(
     { fortunes, mentor, daoPath: daoName, build: build?.displayName ?? null, branches },
@@ -131,6 +131,14 @@ export function buildIdentity(): CultivatorIdentity {
  * 两处各写一遍时,身份还没算出来与身份算出来但没来由,会显示成两个词。
  */
 export const IDENTITY_EMPTY = '暂无记录'
+
+/**
+ * 称号未算出时的兜底,与 `IDENTITY_EMPTY` 同一个道理。
+ *
+ * 「云隐散人」原先在三个文件里各写一遍(`buildIdentity` 的兜底、画像面板那行、
+ * 画像弹窗的标题),改一处另两处不跟 —— 与 `IDENTITY_EMPTY` 当初收口前是同一个毛病。
+ */
+export const IDENTITY_DEFAULT_EPITHET = '云隐散人'
 
 function buildNarrative(
   roots: {

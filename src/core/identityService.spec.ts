@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
-import { buildIdentity, IDENTITY_EMPTY } from './identityService'
+import { buildIdentity, IDENTITY_DEFAULT_EPITHET, IDENTITY_EMPTY } from './identityService'
 import { DAO_PATHS } from '@/data/endgame'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
@@ -135,5 +135,29 @@ describe('身份画像 · 空态词一份出处', () => {
     const view = strip(read('../views/CharacterView.vue'))
     expect(view, '面板该读 IDENTITY_EMPTY').toContain('identity?.narrative ?? IDENTITY_EMPTY')
     expect(view, '面板又手写了「暂无记录」').not.toContain("'暂无记录'")
+  })
+})
+
+/**
+ * 兜底词各只写一份:称号「云隐散人」与空态「暂无记录」。
+ *
+ * 这两个词原先都散在多个文件里各写一遍 —— `IDENTITY_EMPTY` 早先已收口,
+ * 而称号那处一直没收,三处各写(`buildIdentity` 兜底、画像面板那行、画像弹窗标题)。
+ * 改一处另两处不跟,玩家会在同一件事上看到两个称号。
+ *
+ * 故障注入:把任一处改回字面量,本条红。
+ */
+describe('画像兜底词 · 单一来源', () => {
+  const read = (rel: string): string => readFileSync(resolve(__dirname, '..', rel), 'utf8')
+
+  it('两个兜底词都只在 identityService 里定义一次', () => {
+    expect(IDENTITY_DEFAULT_EPITHET).toBe('云隐散人')
+    expect(IDENTITY_EMPTY).toBe('暂无记录')
+    for (const rel of ['views/CharacterView.vue', 'components/character/IdentityDialog.vue']) {
+      const src = read(rel)
+      expect(src, `${rel} 又手写了一份称号兜底`).not.toContain("'云隐散人'")
+      expect(src, `${rel} 又手写了一份空态词`).not.toContain("'暂无记录'")
+      expect(src, `${rel} 该引用 IDENTITY_DEFAULT_EPITHET`).toContain('IDENTITY_DEFAULT_EPITHET')
+    }
   })
 })

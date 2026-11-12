@@ -144,7 +144,7 @@
           <span class="min-w-0 grow">
             <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">修行画像</span>
             <!-- 叙述给两行:一行截断会拦腰断句 -->
-            <span class="line-clamp-2 text-[10px] leading-relaxed text-ink-faint">「{{ identity?.epithet ?? '云隐散人' }}」 · {{ identity?.narrative ?? IDENTITY_EMPTY }}</span>
+            <span class="line-clamp-2 text-[10px] leading-relaxed text-ink-faint">「{{ identity?.epithet ?? IDENTITY_DEFAULT_EPITHET }}」 · {{ identity?.narrative ?? IDENTITY_EMPTY }}</span>
           </span>
           <span class="shrink-0 text-[11px] text-ink-soft">展卷 →</span>
         </button>
@@ -333,7 +333,7 @@
   import { SOFT_CAPS, CULT_SPEED_SOFT_CAP_DIMINISH } from '@/data/constants'
   import { branchCodex, materialCodex, codexOwnedCount } from '@/ui/codex'
   import { mentorVerdict } from '@/core/mentorService'
-  import { buildIdentity, IDENTITY_EMPTY } from '@/core/identityService'
+  import { buildIdentity, IDENTITY_DEFAULT_EPITHET, IDENTITY_EMPTY } from '@/core/identityService'
   import { rootElements, tendencyLines } from '@/core/linggenAffinity'
   import { rootMarks, rootPips } from '@/ui/rootMark'
   import { cnNumber, formatGN } from '@/utils/format'
