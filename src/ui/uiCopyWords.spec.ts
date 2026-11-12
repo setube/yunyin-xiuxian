@@ -14,7 +14,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 
 const ROOTS = ['src/components', 'src/views', 'src/ui', 'src/core']
 
@@ -89,5 +89,26 @@ describe('AGENTS.md 固定写法 · 状态词要在代码里', () => {
       const main = (word.split('(')[0] ?? word).replace(/[^\u4e00-\u9fa5]/g, '')
       expect(main.length, `「${word}」主词 ${main.length} 字,超过 8 字`).toBeLessThanOrEqual(8)
     }
+  })
+})
+
+/**
+ * 固定宽度的数值标签要装得下三位数。
+ *
+ * 轮回录的世号列原先写 `w-11`(44px),两位数时正好,到「第118世」就折成两行 ——
+ * 实测 375 宽下 21 条三位数世号全部 h=36,而 90 条两位数都是 h=18。
+ * 这类宽度写死在模板里、没有任何判据管,只有真到三位数才显形。
+ *
+ * 这里钉两条:世号列不得再用 w-11(挡回退),且必须带 whitespace-nowrap
+ * (宽度再不够时宁可溢出被看见,也不许悄悄折行)。
+ */
+describe('轮回录 · 世号列装得下三位数', () => {
+  const legacy = readFileSync(resolve(__dirname, '../views/LegacyView.vue'), 'utf-8')
+
+  it('世号列不再是 w-11,且带 whitespace-nowrap', () => {
+    const line = legacy.split('\n').find(l => l.includes('第{{ l.index }}世'))
+    expect(line, '轮回录里没找到世号列').toBeTruthy()
+    expect(line!.includes('w-11'), 'w-11(44px)装三位数世号会折行,已放宽到 w-13').toBe(false)
+    expect(line!.includes('whitespace-nowrap'), '世号列须带 whitespace-nowrap,不许悄悄折行').toBe(true)
   })
 })
