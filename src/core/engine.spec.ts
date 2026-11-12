@@ -1,6 +1,8 @@
 /** 引擎心跳 start/stop/dt 路由直测:双开只开一个、停就净、dt 大/小/0 各走各的路 */
 import { beforeEach, afterEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { engine } from './engine'
 import { enginePaused, setEnginePaused } from './enginePause'
 import { settleOffline } from './offline'
@@ -329,5 +331,30 @@ describe('引擎 · 死亡边界', () => {
     engine.start()
     // ui.deathDialog 不持久化,死者的 checkDeath 提前 return;start() 不重开则低境界软锁
     expect(ui.deathDialog, '读档已死应重新打开轮回入口').toBe(true)
+  })
+})
+
+/**
+ * 启动时「先翻日、再结算离线」这个顺序不能反。
+ *
+ * 离线结算里有六处 `track()`(kills / battles / bossKills / explores / offlineClaims),
+ * 而 `rolloverDailyIfNeeded` 会把当日日课计数清零。顺序反过来的话:
+ * 跨午夜的离线收益先记进**前一天**的日课,随后翻日又把它们清空 ——
+ * 玩家挂机一夜,归来却看到日课一动没动。
+ *
+ * 这条只钉 engine.ts 里这两句的先后(行为层很难造出「跨午夜 + 离线 + 日课」的完整夹具,
+ * 而代价最贵的正是那个顺序本身)。故障注入:把两句对调,本条红。
+ */
+describe('引擎启动 · 先翻日再结算离线', () => {
+  it('settleOffline 在 rolloverDailyIfNeeded 之后', () => {
+    const src = readFileSync(resolve(__dirname, './engine.ts'), 'utf-8')
+    const rollIdx = src.indexOf('rolloverDailyIfNeeded()')
+    const settleIdx = src.indexOf('settleOffline(now)')
+    expect(rollIdx, 'engine.ts 里找不到 rolloverDailyIfNeeded()').toBeGreaterThan(0)
+    expect(settleIdx, 'engine.ts 里找不到 settleOffline(now)').toBeGreaterThan(0)
+    expect(
+      rollIdx,
+      '启动顺序反了:离线收益会先记进昨天再被翻日清掉,跨午夜挂机一夜等于白挂'
+    ).toBeLessThan(settleIdx)
   })
 })
