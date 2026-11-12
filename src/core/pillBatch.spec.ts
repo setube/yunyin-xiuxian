@@ -243,6 +243,16 @@ describe('批量炼丹 · 开炉前置(方子未到手)', () => {
 })
 
 describe('丹药批量 · 未知丹药 id', () => {
+  /*
+   * 新 pinia = 干净的行囊。
+   *
+   * 原先没有 beforeEach:`--sequence.shuffle` 把本组排到最前时,
+   * 头一句 `useInventoryStore()` 就抛 `[🍍] there was no active Pinia`。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('给丹药表里没有的 id:返回 0,不抛错、不动行囊', () => {
     /*
      * 两条守卫各管一段:`count < 1` 管数量,`if (!def) return 0` 管 id。
