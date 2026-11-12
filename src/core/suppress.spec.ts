@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join, relative, resolve } from 'node:path'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
@@ -832,5 +832,37 @@ describe('镇压产出行 · 玩家看到的那一行', () => {
 
   it('给定不存在的区域,当读产出行,则报占位符而不是空串', () => {
     expect(suppressRateLine('no-such-region', 'stable'), '查不到要给占位符').toBe('—')
+  })
+})
+
+/**
+ * `consecutiveWins` 的现状:**只写不读**。
+ *
+ * 它不是死字段(写入点有语义、也有断言锁着写入逻辑),但没有任何生产代码读它 ——
+ * 镇压判据只用 totalFights / avgRounds / avgDamageTakenPct 三条。
+ * 这条判据把现状钉住:哪天有人在生产代码里读了它,或者干脆删了这个字段,都会红,
+ * 提醒到那时把 `RegionStats` 上的那段说明一起改掉。
+ */
+describe('区域战绩 · consecutiveWins 只写不读', () => {
+  it('生产代码里没有读取 consecutiveWins 的地方', () => {
+    const srcRoot = resolve(__dirname, '..')
+    const reads: string[] = []
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name)
+        if (e.isDirectory()) walk(p)
+        else if (/\.(ts|vue)$/.test(e.name) && !e.name.endsWith('.spec.ts')) {
+          const lines = readFileSync(p, 'utf-8').split('\n')
+          lines.forEach((line, i) => {
+            if (!line.includes('consecutiveWins')) return
+            // 写入形态:`字段: 值` 或 `...obj, consecutiveWins: 值`(都算写)
+            if (/consecutiveWins\s*:/.test(line)) return
+            reads.push(`${relative(srcRoot, p)}:${i + 1} ${line.trim().slice(0, 60)}`)
+          })
+        }
+      }
+    }
+    walk(srcRoot)
+    expect(reads, `consecutiveWins 出现了读取点,该更新 RegionStats 的说明:\n${reads.join('\n')}`).toEqual([])
   })
 })
