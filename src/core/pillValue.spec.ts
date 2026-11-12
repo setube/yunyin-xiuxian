@@ -27,6 +27,7 @@ import {
   pillGainSecAt,
   pillLine,
   pillValueTable,
+  pillValueRow,
   layerSeconds,
   type PillFamily
 } from './pillValue'
@@ -652,6 +653,45 @@ describe('炼丹审计 · 没有配方的丹', () => {
     for (const def of PILLS) {
       expect(pillGainSecAt(def, -1), `${def.id} 负境界的结果须等于第 0 境`).toBe(pillGainSecAt(def, 0))
       expect(pillGainSecAt(def, -999)).toBe(pillGainSecAt(def, 0))
+    }
+  })
+})
+
+/**
+ * `pillValueRow` 的四条分支取值:可炼线与掉落线各自只填自己那一半。
+ *
+ * 这四个字段(`craftRate` / `dropBattles` / `dropShare` / `ratio`)此前**只在审计报告里
+ * 被 console.log 打印过,一次断言都没有** —— 把 `line === 'craft'` 写成 `line === 'drop'`,
+ * 或把 `costSec > 0` 的反面写错,审计表会显示成「—」而没有任何东西红。
+ *
+ * 判据钉两件事:两条线互斥(对方那一半必须是 0)、以及比值与它的两个原料自洽。
+ */
+describe('丹药价值行 · 两条线互斥', () => {
+  it('可炼线只填 craftRate;掉落线只填 dropBattles 与 dropShare', () => {
+    for (const def of PILLS) {
+      const r = pillValueRow(def)
+      if (r.line === 'craft') {
+        expect(r.craftRate, `${def.id} 是可炼线,成功率不该为 0`).toBeGreaterThan(0)
+        expect(r.dropBattles, `${def.id} 是可炼线,掉落场次应为 0`).toBe(0)
+        expect(r.dropShare, `${def.id} 是可炼线,池占应为 0`).toBe(0)
+      } else {
+        expect(r.craftRate, `${def.id} 是掉落线,成功率应为 0`).toBe(0)
+        expect(r.dropBattles, `${def.id} 是掉落线,掉落场次该为正`).toBeGreaterThan(0)
+        expect(r.dropShare, `${def.id} 是掉落线,池占该为正`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('性价比 = 药力 / 炼制代价,代价为 0 时给 0 而不是 Infinity', () => {
+    for (const def of PILLS) {
+      const r = pillValueRow(def)
+      expect(Number.isFinite(r.ratio), `${def.id} 的性价比是无穷或 NaN`).toBe(true)
+      if (r.craftBattles > 0) {
+        const cost = r.craftBattles * EXPLORE_BATTLE_INTERVAL
+        expect(r.ratio, `${def.id} 的性价比不该与「药力/代价」分家`).toBeCloseTo(r.gainSec / cost, 9)
+      } else {
+        expect(r.ratio, `${def.id} 没有炼制代价,性价比该给 0`).toBe(0)
+      }
     }
   })
 })
