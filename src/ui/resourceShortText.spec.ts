@@ -9,7 +9,7 @@
  * 纯函数在各输入下的句子、两个入口逐字一致、文案不含禁用措辞。
  */
 import { describe, expect, it } from 'vitest'
-import { resourceShortText } from './resourceShortText'
+import { resourceShortText, shortageText } from './resourceShortText'
 import { reforgeShortToast } from './reforgeText'
 import { transferShortText } from './affixTransferText'
 import { artifactShortToast, upgradeShortToast } from './forgeText'
@@ -94,5 +94,27 @@ describe('缺资源文案 · 两个入口同源', () => {
       // 不许再出现各自拼「尚差」的字样
       expect(body, `${f} 仍在自己拼句子`).not.toMatch(/尚差 \$\{/)
     }
+  })
+})
+
+/**
+ * 第三参 unit:带量词的资源写成「残页尚差 5 页」。
+ *
+ * 灵石这类本身即单位的资源**不传**第三参,否则会出现「灵石尚差 20 灵石」。
+ * 判据把两种都钉住:带量词加空格分隔,不带量词时句尾就是数字。
+ */
+describe('缺料句 · 量词', () => {
+  it('给了量词就缀在数字后,且数字与量词之间一个空格', () => {
+    expect(shortageText('残页', 5, '页')).toBe('残页尚差 5 页')
+    expect(shortageText('灵草', 3, '株')).toBe('灵草尚差 3 株')
+  })
+
+  it('不给量词时句尾就是数字(灵石本身即单位,不该出现「灵石尚差 20 灵石」)', () => {
+    expect(shortageText('灵石', 20)).toBe('灵石尚差 20')
+    expect(shortageText('悟道点', 12)).toBe('悟道点尚差 12')
+  })
+
+  it('拿不到差额时量词不生效', () => {
+    expect(shortageText('残页', undefined, '页')).toBe('残页不足')
   })
 })

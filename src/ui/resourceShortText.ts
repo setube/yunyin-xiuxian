@@ -25,11 +25,14 @@ export interface GapAmounts {
  * 写成 falsy 判断的话,差额算出 0 会被说成「不足」,而别处照实报「尚差 0」,
  * 同一种缺料就有了两种说法(强化原先正是这么分的,现已并过来)。
  *
- * @param name   资源名(灵石 / 悟道点 / …)
+ * @param name   资源名(灵石 / 悟道点 / 灵草 / …)
  * @param amount 差额读数;`undefined` 表示拿不到
+ * @param unit   量词(页 / 株 / 块)。给的时候写成「残页尚差 5 页」;
+ *               灵石这类本身即单位的资源不给,避免「灵石尚差 20 灵石」
  */
-export function shortageText(name: string, amount: string | number | undefined): string {
-  return amount === undefined ? `${name}不足` : `${name}尚差 ${amount}`
+export function shortageText(name: string, amount: string | number | undefined, unit?: string): string {
+  if (amount === undefined) return `${name}不足`
+  return `${name}尚差 ${amount}${unit ? ` ${unit}` : ''}`
 }
 
 /**

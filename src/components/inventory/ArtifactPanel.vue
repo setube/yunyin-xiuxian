@@ -168,6 +168,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { useUiStore } from '@/stores/ui'
 import { qualityDef, qualityTextColor } from '@/data/qualities'
+import { shortageText } from '@/ui/resourceShortText'
 import { REALMS } from '@/data/realms'
 import {
   artifactActiveText,
@@ -274,8 +275,8 @@ function runArtifactBatch(defId: string): void {
 
 function artifactShortText(short: NonNullable<(typeof artifactRows.value)[number]['short']>): string {
   const parts: string[] = []
-  if (short.wudao > 0) parts.push(`悟道点尚差 ${short.wudao}`)
-  if (short.stone.m > 0) parts.push(`灵石尚差 ${formatGap(short.stone)}`)
+  if (short.wudao > 0) parts.push(shortageText('悟道点', short.wudao))
+  if (short.stone.m > 0) parts.push(shortageText('灵石', formatGap(short.stone)))
   return parts.join(' · ')
 }
 
