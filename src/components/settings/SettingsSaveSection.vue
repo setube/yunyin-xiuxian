@@ -92,6 +92,7 @@
 </template>
 
 <script setup lang="ts">
+  import { SAVE_FILE_TEXT } from '@/ui/saveFileText'
   import { computed, onUnmounted, ref } from 'vue'
   import { useGameStore } from '@/stores/game'
   import { useSettingsStore } from '@/stores/settings'
@@ -198,7 +199,7 @@
       if (unmounted) return
       saveRead = null
       if (!text.trim()) {
-        ui.toast('文件为空', 'warn')
+        ui.toast(SAVE_FILE_TEXT.empty, 'warn')
         return
       }
       importText.value = text
@@ -209,13 +210,13 @@
     }, () => {
       if (unmounted) return
       saveRead = null
-      ui.toast('文件无法读取', 'warn')
+      ui.toast(SAVE_FILE_TEXT.unreadable, 'warn')
     }, {
       // 超大文件当场回执:读进内存才是伤害所在,与「读不出」分开报
       onTooLarge: () => {
         if (unmounted) return
         saveRead = null
-        ui.toast('文件过大', 'warn')
+        ui.toast(SAVE_FILE_TEXT.tooLarge, 'warn')
       }
     })
     // 清空 input,允许重复选择同一文件
@@ -244,7 +245,7 @@
       engine.resume()
       return
     }
-    ui.toast('导入成功', 'success')
+    ui.toast(SAVE_FILE_TEXT.importOk, 'success')
     // 已写盘,立即封存:阻止 persist 插件把旧内存回写覆盖
     sealStorageWrites()
     setTimeout(reloadGame, 800)
