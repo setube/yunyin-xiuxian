@@ -82,6 +82,16 @@ describe('事件结算 · 灵石代价守恒', () => {
 })
 
 describe('际遇 haul(事件所得并入会话账目)', () => {
+  /*
+   * 新 pinia = 干净的 adventure / player 分片。
+   *
+   * 原先没有 beforeEach:`--sequence.shuffle` 把本组排到最前时,
+   * `useAdventureStore()` 直接抛 `[🍍] there was no active Pinia`。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('历练途中事件修为并入 session.expGain(总结「修为 +」不再漏计际遇)', () => {
     const adventure = useAdventureStore()
     const player = usePlayerStore()

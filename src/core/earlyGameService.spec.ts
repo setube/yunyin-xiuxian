@@ -50,8 +50,17 @@ afterEach(() => {
 describe('洞府巡游(Phase 28)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    // 清掉上一条用例留下的模块级巡游窗,不跨用例借道
+    /*
+     * 清掉上一条用例留下的模块级巡游窗,不跨用例借道。
+     *
+     * 但 `dismissCaveEvent()` 会顺手 `markCaveEventToday()` —— 那是它的生产语义
+     * (玩家主动关掉弹窗也算用掉今日一次),在这里只是副作用。
+     * 不清掉那个今日标记,「坏下标不结算」那条的
+     * `expect(player.lastCaveEventDay).toBe(0)` 就会偶发红
+     * (全量乱序六轮里中一次)。顺序不能反:先 dismiss 清模块窗,再归零。
+     */
     dismissCaveEvent()
+    usePlayerStore().lastCaveEventDay = 0
   })
 
   it('坏下标不结算也不清掉巡游事件', () => {

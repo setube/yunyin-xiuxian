@@ -155,6 +155,17 @@ describe('一键换装 —— 「最强」按真实战力', () => {
 })
 
 describe('betterEquip —— 同战力下的稳定裁决', () => {
+  /*
+   * 新 pinia = 干净的行囊。
+   *
+   * 「同战力时靠粗排稳定裁决」那条要 `useInventoryStore()` 再 `bestEquipFor('head')`,
+   * 而块内没有 beforeEach:`--sequence.shuffle` 把本组排到最前时,
+   * 六个用例里只有它依赖 store,于是单独抛 `[🍍] no active Pinia`。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('按「品质 → 层级 → 强化 → 词条成色」分先后', () => {
     const a = item('weapon', 'heaven', 3)
     const b = item('weapon', 'spirit', 8)

@@ -259,6 +259,16 @@ describe('大关不食突破准备(渡劫背面是颗天劫骰,不是这颗 rate
 })
 
 describe('巅峰(大道尽头)', () => {
+  /*
+   * 新 pinia = 干净的人物分片。
+   *
+   * 原先没有 beforeEach:`--sequence.shuffle` 把本组排到最前时,
+   * `usePlayerStore()` 直接抛 `[🍍] there was no active Pinia`。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('已达大道尽头时,「下一步」不再 clamp 回自己的重名境界,而是如实说已至尽头', () => {
     const player = usePlayerStore()
     player.major = MAX_MAJOR
