@@ -373,6 +373,19 @@ export const useEndgameStore = defineStore(
     /** 器魂:持有池 + 已装配(至多 SOUL_SLOTS 枚) */
     const souls = ref<SoulInstance[]>([])
     const equippedSouls = ref<string[]>([])
+    /*
+     * 器魂首次教学标记,**只写不读**。
+     *
+     * 同组的另外两个教程标记都接上了线:`endgameTutorialSeen` 由
+     * `resourceGuidance.shouldShowEndgameTutorial()` 读、`daoFruitTutorialSeen`
+     * 由 `shouldShowFruitTutorial()` 读。唯独这一个没有对应的 `shouldShowSoulTutorial()` ——
+     * 器魂页(SoulsView)也没有任何首次教学弹窗,是 `5a46bc62` 那次「引导口径归一」里
+     * 一起加进来但没接线的那一半。
+     *
+     * 留着不删的理由:它已经写进所有老存档,`sanitize` 有布尔归位、
+     * 转世审计也断言它跨世保留,删字段要连带改两处判据。
+     * 真要接上时,照 `shouldShowFruitTutorial` 那份写,记得把这段说明一起删掉。
+     */
     const soulTutorialSeen = ref(false)
 
     /** 存档修复:道痕/器魂/纪录表坏形会让天界页渲染期抛错。 */

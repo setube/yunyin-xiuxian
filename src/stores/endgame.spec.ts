@@ -5,6 +5,8 @@ import { NAME_MAX_LENGTH } from '@/data/constants'
  * 规则来源:endgame.ts sanitize;saveShape.ts asCarriedHpPct;EXPEDITION_GUARDIAN_LAYER = EXPEDITION_ROUTE_LAYERS = 3。
  */
 import { createPinia, setActivePinia } from 'pinia'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join, relative, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useEndgameStore, type WorldRunState } from './endgame'
 import { EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS, celestialWorldDef } from '@/data/endgame'
@@ -550,6 +552,42 @@ describe('终局一次性引导标记 sanitize', () => {
     expect(e.daoFruitTutorialSeen, '数字 1 不再永久压掉道果引导').toBe(false)
     expect(e.resourceDialogSeen, '"true"不再永久压掉资源弹窗').toBe(false)
     expect(e.soulTutorialSeen, '0 → false').toBe(false)
+  })
+
+  /**
+   * `soulTutorialSeen` 的现状:**只写不读**。
+   *
+   * 同组另外两个教程标记都接了线(endgameTutorialSeen → shouldShowEndgameTutorial,
+   * daoFruitTutorialSeen → shouldShowFruitTutorial),唯独这个没有对应的
+   * shouldShowSoulTutorial,器魂页也没有首次教学弹窗 —— 是加进来但没接线的那一半。
+   *
+   * 它仍在 sanitize 里做布尔归位、转世审计也断言它跨世保留,所以不删。
+   * 这条把现状钉住:哪天有人真读了它(或删了字段),就会红,提醒同步改
+   * `endgame.ts` 里那段说明。
+   */
+  it('soulTutorialSeen 生产代码里没有读取点', () => {
+    const srcRoot = resolve(__dirname, '..')
+    const reads: string[] = []
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name)
+        if (e.isDirectory()) walk(p)
+        else if (/\.(ts|vue)$/.test(e.name) && !e.name.endsWith('.spec.ts')) {
+          const lines = readFileSync(p, 'utf-8').split('\n')
+          lines.forEach((line, i) => {
+            if (!line.includes('soulTutorialSeen')) return
+            // 声明与导出不算读取
+            if (/const soulTutorialSeen\s*=/.test(line)) return
+            if (/^\s*soulTutorialSeen,?\s*$/.test(line)) return
+            if (/soulTutorialSeen\s*:/.test(line)) return
+            if (/soulTutorialSeen\.value\s*=[^=]/.test(line)) return
+            reads.push(`${relative(srcRoot, p)}:${i + 1} ${line.trim().slice(0, 70)}`)
+          })
+        }
+      }
+    }
+    walk(srcRoot)
+    expect(reads, `soulTutorialSeen 出现了读取点,该更新 endgame.ts 的说明:\n${reads.join('\n')}`).toEqual([])
   })
 
   it('sanitize:器魂 uid 与装配位都去重,同一枚不重复计词条', () => {
