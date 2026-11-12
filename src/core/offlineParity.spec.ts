@@ -297,3 +297,28 @@ describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压
     expect(offline, '首领败也要计入会话败场').toMatch(/sessionLosses \+= 1/)
   })
 })
+
+/**
+ * 离线首领战的两本账各归各位:`battles` 在 `afterWin` 之前加,`wins` 在之后。
+ *
+ * 原先这段注释写的是「须在奖励结算之后,不重复放大奖励」—— 但它挂在 `track('battles')` 上,
+ * 而那一行恰恰在 `afterWin` **之前**。原意(git 历史里那版)说的是加 `wins` 的那一句:
+ * 奖励按 `wins`(普通战期望值)折出,事后再补一场不会把奖励再乘一遍。
+ * 注释写错位置很危险 —— 后来者照着「须在之后」把 `track('battles')` 挪下去,
+ * 或者照着挪 `wins`,都会让账目对不上而没人发现。
+ *
+ * 判据只钉顺序:这两句相对 `afterWin(...)` 的位置。故障注入:把任一句挪到另一侧,本条红。
+ */
+describe('离线首领战 · battles 与 wins 相对 afterWin 的位置', () => {
+  it('track(battles) 在前,wins += 1 在后', () => {
+    const src = readFileSync(resolve(__dirname, './offline.ts'), 'utf-8')
+    const bossAt = src.indexOf('OFFLINE_BOSS_REWARD_MULT * regionEventReward, true, false)')
+    expect(bossAt, 'offline.ts 里找不到首领战的 afterWin 调用').toBeGreaterThan(0)
+    const battlesAt = src.lastIndexOf("track('battles')", bossAt)
+    const winsAt = src.indexOf('wins += 1', bossAt)
+    expect(battlesAt, 'battles 记账不在 afterWin 之前').toBeGreaterThan(0)
+    expect(winsAt, 'wins += 1 不在 afterWin 之后').toBeGreaterThan(0)
+    expect(battlesAt, 'battles 该在 afterWin 之前(它动的是场次,不是奖励用的胜场)').toBeLessThan(bossAt)
+    expect(winsAt, 'wins += 1 该在 afterWin 之后,否则首领自己会被再乘一遍奖励').toBeGreaterThan(bossAt)
+  })
+})
