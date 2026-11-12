@@ -126,3 +126,25 @@ describe('道侣关系值 · 四、界面接上了', () => {
     expect(STAGE_NAMES.together).toBeTruthy()
   })
 })
+
+/**
+ * 关系值上限两处同值:`ui/bondMeter` 导出 `BOND_METER_CAP = 100`(画条用),
+ * `core/daoluService` 里私有 `const CAP = 100`(夹值用)。
+ *
+ * 后者没导出,所以只能从源码抠值来比对。两处分叉的后果很具体:
+ * 条子按一个上限画、实际数值按另一个上限夹,玩家会看到条子停在 90% 永不圆满,
+ * 或者早早画满而数字还在涨。
+ *
+ * 故障注入:把任一处改成别的值,本条红。
+ */
+describe('关系值上限 · 两处常量同值', () => {
+  it('BOND_METER_CAP 与 daoluService 的 CAP 相等', () => {
+    const src = readFileSync(resolve(__dirname, '../core/daoluService.ts'), 'utf-8')
+    const m = src.match(/^const CAP = (\d+)$/m)
+    expect(m, 'daoluService.ts 里找不到 `const CAP = N`').toBeTruthy()
+    expect(
+      BOND_METER_CAP,
+      `bondMeter 的上限是 ${BOND_METER_CAP},而 daoluService 的 CAP 是 ${m![1]} —— 两处必须同值`
+    ).toBe(Number(m![1]))
+  })
+})
