@@ -125,3 +125,40 @@ describe('轮回录 · 世号列装得下三位数', () => {
     expect(line!.includes('whitespace-nowrap'), '世号列须带 whitespace-nowrap,不许悄悄折行').toBe(true)
   })
 })
+
+/**
+ * 多块挤在一行时,整行要能换行、每块内部不折。
+ *
+ * 轮回录与属性页都踩过同一个坑:把某一处 nowrap 之后,压力转移到旁边的块上,
+ * 把它从一行挤成两三行(属性页「伤害减免」+「软」标记在 300 宽下 h 从 15 涨到 33;
+ * 轮回录境界名在 280 宽下 h 到 36)。正确做法是容器 `flex-wrap`,
+ * 块与块之间换行、块内部 nowrap。
+ *
+ * 这里按文件钉住这两个容器的写法,挡回「只给其中一块加 nowrap」的半修。
+ */
+describe('多块行 · 容器可换行、块内不折', () => {
+  it('轮回录的两处多块行都带 flex-wrap', () => {
+    const legacy = readFileSync(resolve(__dirname, '../views/LegacyView.vue'), 'utf-8')
+    /*
+     * 只钉这两行,不搞「所有 flex 行都要 flex-wrap」——
+     * 实测记住行(nemesisRows)/ 情缘行(chainRows)在 300~375 宽下都不折:
+     * 它们的中间块带 `min-w-0 truncate` 或 `ml-auto`,空间不够时先压缩那里,
+     * 不会把别的块挤断。判据写宽了会逼人给不需要的行也加 flex-wrap。
+     */
+    const anchors = ['第 {{ player.reincarnation.count + 1 }} 世', '第{{ l.index }}世']
+    for (const anchor of anchors) {
+      const idx = legacy.indexOf(anchor)
+      expect(idx, `轮回录里没找到「${anchor}」所在行`).toBeGreaterThan(0)
+      // 往回找该行的 <p ...>
+      const lineStart = legacy.lastIndexOf('<p ', idx)
+      const line = legacy.slice(lineStart, legacy.indexOf('>', lineStart) + 1)
+      expect(line, `「${anchor}」那一行该带 flex-wrap`).toContain('flex-wrap')
+    }
+  })
+
+  it('属性页词条行的三段都带 nowrap', () => {
+    const view = readFileSync(resolve(__dirname, '../views/CharacterView.vue'), 'utf-8')
+    const block = view.slice(view.indexOf('v-for="row in modRows"'), view.indexOf('v-for="row in modRows"') + 800)
+    expect(block.match(/whitespace-nowrap/g)?.length ?? 0, '词条名、软标记、百分比三段都要 nowrap').toBeGreaterThanOrEqual(3)
+  })
+})

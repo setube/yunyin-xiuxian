@@ -101,11 +101,15 @@
             class="-my-1 flex justify-between py-1.5 text-left text-[11px] active:opacity-60"
             @click="openBreakdown(row.key)"
           >
-            <span class="text-ink-faint">
+            <!--
+              nowrap 三处都要:这是两列 grid,300 宽时每列只有 ~130px。
+              「伤害减免」加「软」标记正好把左格挤到折行,整行 h 从 15 涨到 33。
+            -->
+            <span class="whitespace-nowrap text-ink-faint">
               {{ row.label }}
-              <span v-if="row.capped" class="ml-0.5 text-[9px] text-cinnabar">软</span>
+              <span v-if="row.capped" class="ml-0.5 whitespace-nowrap text-[9px] text-cinnabar">软</span>
             </span>
-            <span class="tabular" :class="row.value > 0 ? 'text-azure' : 'text-cinnabar'">
+            <span class="whitespace-nowrap tabular" :class="row.value > 0 ? 'text-azure' : 'text-cinnabar'">
               {{ signedPercent(row.value) }}
             </span>
           </button>
