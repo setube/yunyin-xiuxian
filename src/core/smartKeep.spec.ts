@@ -10,7 +10,7 @@ import { BAG_CAPACITY } from '@/data/constants'
 import { useSettingsStore } from '@/stores/settings'
 import { useInventoryStore } from '@/stores/inventory'
 import { acquireEquipment } from './loot'
-import { compareEvictable, hasInvestment, keepVerdict, perfectRolls, shouldAutoRecycle, sweepTargets } from './smartKeep'
+import { autoRecycleReason, compareEvictable, hasInvestment, keepVerdict, perfectRolls, shouldAutoRecycle, sweepTargets } from './smartKeep'
 
 /** 夹具用不带套的青云道袍,隔开套件规则 */
 function mk(uid: string, quality: QualityId = 'mortal', opts: Partial<EquipmentInstance> = {}): EquipmentInstance {
@@ -158,6 +158,26 @@ describe('智能收纳 · 自动裁决的边界', () => {
     expect(shouldAutoRecycle(invested)).toBe(false)
     // 无缘件仍归智能收纳自己裁决
     expect(shouldAutoRecycle(mk('plain'))).toBe(true)
+  })
+
+  /**
+   * `autoRecycleReason` 的头一句是 `if (item.locked) return null` —— 上锁即豁免。
+   *
+   * 这条分支在生产路径上其实走不到(`generateEquipment` 不设 locked,
+   * 而 `sweepTargets` 自己先 `if (it.locked) continue`、根本不进这个函数),
+   * 但它是一道真实的防御:哪天有人改了 `sweepTargets` 那行 continue,
+   * 或让生成的装备带上 locked,这里必须仍然豁免。
+   * 此前三个提前返回里只有「总闸未启用」被断言过,locked 这一支没有。
+   */
+  it('上锁的件在自动裁决里直接豁免,连理由都不给', () => {
+    const settings = useSettingsStore()
+    settings.smartKeep.enabled = true
+    settings.decomposeRanks = [0, 1]
+    const lockedPlain = mk('lk', 'mortal', { locked: true })
+    // 先确认这件本身「该被回收」:同参数去掉 locked 时应判无缘
+    expect(keepVerdict(mk('unlk', 'mortal')).keep).toBe(false)
+    expect(autoRecycleReason(lockedPlain), '上锁件不该给出回收理由').toBeNull()
+    expect(shouldAutoRecycle(lockedPlain), '上锁件不该被自动回收').toBe(false)
   })
 
   it('总闸:智能收纳未启用时,什么都不会被自动回收(手动勾选档也无从借道)', () => {
