@@ -23,26 +23,85 @@ import { useLoadoutsStore } from './loadouts'
 import { useCultivationStore } from './cultivation'
 import { useEndgameStore } from './endgame'
 import { useAdventureStore } from './adventure'
+import { useGameStore } from './game'
+import { useQuestsStore } from './quests'
+import { useSettingsStore } from './settings'
+import { useLoreStore } from './lore'
+import { useMarketStore } from './market'
+import { useBountyStore } from './bounty'
+import { usePacingTelemetry } from './pacingTelemetry'
+import { useDiagStore } from './diag'
+import { PERSISTED_STORES } from '@/utils/storage'
 import { gn } from '@/utils/gnum'
 
-/** 取九个大 store 的状态快照(排除时间戳类字段后比较) */
+/**
+ * 取**全部十七个**持久化 store 的状态快照。
+ *
+ * 原先只收九个(漏了 game / quests / settings / lore / market / bounty / pacing / diag),
+ * 理由大概是「那几个是遥测与设置,不是游戏进度」—— 但幂等的判据是「读两次会不会改写存档」,
+ * 与是不是进度无关:这八个同样落盘,同样每启动跑一遍 sanitize。
+ * 下面 `PERSISTED_STORES` 与列表比对,少一个或多一个都会红,防止以后新增分片时又漏掉。
+ *
+ * 列表单独拎出来是为了让那条判据能数个数;`snapshot()` 只负责拼状态。
+ */
+const snapshotStores = [
+  useGameStore,
+  usePlayerStore,
+  useResourcesStore,
+  useInventoryStore,
+  useCultivationStore,
+  useDongfuStore,
+  useAdventureStore,
+  useQuestsStore,
+  useSettingsStore,
+  useLoadoutsStore,
+  useEndgameStore,
+  useLoreStore,
+  useMarketStore,
+  useApprenticeStore,
+  useBountyStore,
+  usePacingTelemetry,
+  useDiagStore
+] as const
+
 function snapshot(): string {
   const parts = [
+    useGameStore().$state,
     usePlayerStore().$state,
     useResourcesStore().$state,
     useInventoryStore().$state,
-    useDongfuStore().$state,
-    useApprenticeStore().$state,
-    useLoadoutsStore().$state,
     useCultivationStore().$state,
+    useDongfuStore().$state,
+    useAdventureStore().$state,
+    useQuestsStore().$state,
+    useSettingsStore().$state,
+    useLoadoutsStore().$state,
     useEndgameStore().$state,
-    useAdventureStore().$state
+    useLoreStore().$state,
+    useMarketStore().$state,
+    useApprenticeStore().$state,
+    useBountyStore().$state,
+    usePacingTelemetry().$state,
+    useDiagStore().$state
   ]
   return JSON.stringify(parts)
 }
 
 describe('sanitizeAllStores · 幂等', () => {
   beforeEach(() => setActivePinia(createPinia()))
+
+  /**
+   * 快照必须盖住每一个持久化分片。
+   *
+   * 故障注入:把 `snapshot()` 里任意一个 store 删掉,本条即红 ——
+   * 原先只收九个,漏掉的八个(遥测/设置/坊市/悬赏…)整整一年没有幂等判据。
+   */
+  it('快照覆盖全部持久化分片', () => {
+    const covered = snapshotStores.length
+    expect(covered, `快照收了 ${covered} 个,持久化分片有 ${PERSISTED_STORES.length} 个`).toBe(
+      PERSISTED_STORES.length
+    )
+  })
 
   it('空档:连跑两遍状态完全相同', () => {
     sanitizeAllStores()
