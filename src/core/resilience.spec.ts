@@ -3,9 +3,10 @@
  * 两处易被改坏:封核只删核心词条(其他一律不动)、保持度在「本来打不赢」时按 0 记而非 NaN。
  */
 import { describe, expect, it } from 'vitest'
-import type { StatMods } from '@/types'
+import type { CombatantSnap, StatMods } from '@/types'
 import type { BuildStyleDef } from './buildDetect'
-import { RESILIENCE_SAMPLE_RUNS, resilienceText, sealStyleMods, type ResilienceReport } from './resilience'
+import { RESILIENCE_SAMPLE_RUNS, measureResilience, resilienceText, sealStyleMods, type ResilienceReport } from './resilience'
+import { gn } from '@/utils/gnum'
 
 const style = (core: Partial<StatMods>): BuildStyleDef =>
   ({ id: 'test', name: '测试流派', seal: '测', desc: '', core }) as BuildStyleDef
@@ -67,5 +68,31 @@ describe('采样场次', () => {
   it('是有限的正整数(靠它把随机抖动压下去)', () => {
     expect(Number.isInteger(RESILIENCE_SAMPLE_RUNS)).toBe(true)
     expect(RESILIENCE_SAMPLE_RUNS).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * 没有流派可测时返回 null,不是硬算一份。
+ *
+ * `detectBuild` 在主导亲和低于 0.25 时给 null —— 这是**开局玩家**的真实状态
+ * (还没攒出任何一套流派词条),不是边角输入。
+ * 变异扫描报 `if (!build) return null` 改坏不红:去掉它下一句 `build.style`
+ * 会直接抛 TypeError,而这份 spec 原先一次都没调过 measureResilience。
+ */
+describe('无流派可测', () => {
+  it('词条凑不出流派时返回 null,不抛', () => {
+    const snap: CombatantSnap = {
+      name: '无名散修',
+      icon: 'sword',
+      isPlayer: true,
+      attack: gn(100),
+      defense: gn(50),
+      maxHp: gn(1000),
+      speed: 1,
+      mods: {},
+      skills: []
+    }
+    expect(() => measureResilience(snap), '开局无流派不该抛').not.toThrow()
+    expect(measureResilience(snap), '凑不出流派就没有可测的构筑韧性').toBeNull()
   })
 })

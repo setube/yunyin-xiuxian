@@ -145,6 +145,21 @@ describe('坊市悬赏板 · 交货', () => {
     expect(b.orders[0]!.claimed, '没交成不盖已交').toBe(false)
   })
 
+  /*
+   * 同上一条,但走的是 `claim`(草/矿那一路)。
+   *
+   * 变异扫描报 `if (!slot) return 'missing'` 改坏不红:去掉它下一句 `slot.claimed`
+   * 会直接抛 TypeError。这条通道与 claimEquip 一样会被过期快照撞上 ——
+   * 悬赏单会到期刷新,界面上的行可能来自刷新前那份。
+   */
+  it('悬赏点交:序号不在单上则拒绝,不扣不交也不抛', () => {
+    const b = useBountyStore()
+    seedSlots([{ idx: 0, kind: 'herb', kindId: '', target: 2, tier: 1, reward: { m: 0, e: 0 }, extra: 0, claimed: false }])
+    expect(() => b.claim(9), '过期快照点交不该抛').not.toThrow()
+    expect(b.claim(9)).toBe('missing')
+    expect(b.orders[0]!.claimed, '没交成不盖已交').toBe(false)
+  })
+
   it('sanitize:烂订单逐纸修形、垃圾丢弃、时刻夹回非负', () => {
     const b = useBountyStore()
     b.$patch({
