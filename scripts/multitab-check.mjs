@@ -106,7 +106,46 @@ try {
   const soloWarned = await solo.evaluate(w => window.__toasts.some(t => t.includes(w)), WARN)
   if (soloWarned) failures.push('只开一页也报了「存档已在另一页打开」—— 误报')
   console.log(`  ${soloWarned ? '✗' : '✓'} 单页无误报`)
+
+  /*
+   * 同一个页面刷新一次:上一份页面留下的心跳键在 12 秒过期窗口内仍会被算成另一个活页,
+   * 于是刷新后新页面开局 4 秒就对自己报「存档已在另一页打开」,设置页那条常驻提示跟着亮 12 秒。
+   * 关掉页签再 12 秒内重开同样中招。判据走 toast,是因为它由状态翻转触发 ——
+   * 常驻提示读的是同一个状态,toast 报了就说明状态置真了。
+   */
+  await solo.evaluate(() => {
+    window.__toasts.length = 0
+  })
+  await solo.reload({ waitUntil: 'domcontentloaded' })
+  await watchToasts(solo)
+  await solo.waitForSelector('nav', { timeout: 15000 })
+  await solo.waitForTimeout(9000)
+  const reloadWarned = await solo.evaluate(w => window.__toasts.some(t => t.includes(w)), WARN)
+  if (reloadWarned) failures.push('单页刷新后报了「存档已在另一页打开」—— 上一份页面的心跳被当成了对面')
+  console.log(`  ${reloadWarned ? '✗' : '✓'} 单页刷新无误报`)
   await solo.close()
+
+  /*
+   * 关掉页签再 12 秒内重开:同上一条,只是这次上一份页面连卸载都没有 ——
+   * 页面被直接丢弃,只能靠 pagehide 删掉自己的心跳键。
+   */
+  {
+    const gone = await ctx.newPage()
+    await gone.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
+    await gone.waitForSelector('nav', { timeout: 15000 })
+    await gone.waitForTimeout(500)
+    await gone.close()
+    await new Promise(r => setTimeout(r, 2000))
+    const reopened = await ctx.newPage()
+    await reopened.goto(BASE + '#/', { waitUntil: 'domcontentloaded' })
+    await watchToasts(reopened)
+    await reopened.waitForSelector('nav', { timeout: 15000 })
+    await reopened.waitForTimeout(9000)
+    const reopenWarned = await reopened.evaluate(w => window.__toasts.some(t => t.includes(w)), WARN)
+    if (reopenWarned) failures.push('关掉页签再重开报了「存档已在另一页打开」—— 已关掉的那份心跳还被算成活页')
+    console.log(`  ${reopenWarned ? '✗' : '✓'} 关页签重开无误报`)
+    await reopened.close()
+  }
 
   // 两页:第二页起来后第一页须收到
   const first = await ctx.newPage()
