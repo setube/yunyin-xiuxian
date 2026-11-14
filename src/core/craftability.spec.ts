@@ -4,7 +4,7 @@
  * 不得加回「够级必成」的硬门槛,越阶不得做成随便炼。
  */
 import { describe, expect, it } from 'vitest'
-import { bearableRank, composeSuccessRate, CRAFT_BASE_RATE, materialLoreOf, overReachFactor, weightedSkill } from './craftability'
+import { bearableRank, composeSuccessRate, craftability, CRAFT_BASE_RATE, materialLoreOf, overReachFactor, weightedSkill } from './craftability'
 import { discernChance, natureChance, SEEN_FOR_NATURE } from './loreService'
 import { LORE_MAX, LORE_STAGE_NAMES, MATERIALS } from '@/data/materials'
 import { PILLS } from '@/data/pills'
@@ -364,4 +364,12 @@ describe('合成成功率 · 越界输入被钳住', () => {
     expect(composeSuccessRate(1.5, 0.5, 50, 0), '熟练度超 1 该与 1 同结果').toBe(composeSuccessRate(1, 0.5, 50, 0))
     expect(composeSuccessRate(0.5, 0.5, 500, 0), '技艺超 100 该与 100 同结果').toBe(composeSuccessRate(0.5, 0.5, 100, 0))
   })
+  /*
+   * `recipeCraft(def)` 对没有 craft 字段的丹方返回 undefined。
+   * 缺了 `if (!craft) return null`,下面 `craft.materials` 会抛 TypeError。
+   */
+  it('丹方没有 recipe 定义:返回 null,不抛', () => {
+    expect(craftability('p_yaoxue')).toBeNull()
+  })
+
 })
