@@ -263,3 +263,29 @@ describe('坏档 · 寿元加算项下限', () => {
     }
   })
 })
+
+/*
+ * sanitize 自己不许抛 —— 它是坏档唯一的自愈入口。
+ *
+ * `reincarnation` 的整体修形在 player.sanitize 靠后那段(统一重建对象、顺带 sanitizeLives),
+ * 而「清旧世残留道侣」那一句在它之前执行。坏档里 `reincarnation.lives` 是 undefined/null 时,
+ * 原先的 `lives[lives.length - 1]` 会当场抛 TypeError,整条自愈路径断在这里 ——
+ * 玩家看到的是启动即崩,而不是被修好的档。
+ *
+ * 实测修复前:lives 为 undefined 或 null 且身上有道侣时必抛。
+ */
+describe('player.sanitize · 履历缺失时不许抛', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('给定 lives 是 undefined/null 且身上有道侣,当 sanitize 时,则照常修完且不抛', () => {
+    for (const bad of [undefined, null]) {
+      setActivePinia(createPinia())
+      const player = usePlayerStore()
+      player.$patch({ bond: { daoluId: 'dl_muyan', metAt: 1000, stage: 'met' } } as never)
+      player.$patch({ reincarnation: { ...player.reincarnation, lives: bad } } as never)
+      expect(() => player.sanitize(), `lives = ${String(bad)} 时 sanitize 抛了`).not.toThrow()
+      // 无履历时判据不成立:道侣照常保留(与「从未转世的旧档」同义)
+      expect(player.bond?.daoluId, '没有履历就不该把道侣当成旧世残留清掉').toBe('dl_muyan')
+    }
+  })
+})
