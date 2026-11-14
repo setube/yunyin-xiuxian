@@ -562,6 +562,44 @@ const EQUIVALENT = [
       '这条分支撞不到。'
   },
   {
+    file: 'src/core/expedition.ts',
+    text: 'if (!world) return',
+    why:
+      'resolveWorld 的三处判空(chooseRouteNode / 另外两处)。worldRun.worldId 在 endgame 的 sanitize 里' +
+      '已过 `worldOk = !!celestialWorldDef(run.worldId) || run.worldId === \'void\'` 这道关,不合格的 run 直接置 null,' +
+      '故运行期 resolveWorld 取不到 undefined。'
+  },
+  {
+    file: 'src/core/exploration.ts',
+    text: 'if (!eDef) return',
+    why:
+      'runBattle 的 enemyDef 判空。enemyId 取自 placeContent(region.id) 的 boss/enemies,' +
+      '而这一行前面已确认 region 有效(placeContent 对有效区域恒给出非空 id);' +
+      '实测把 session.regionId 写成不存在的值再 tick,tickExploration 上游另有门,战斗根本不发生。'
+  },
+  {
+    file: 'src/core/suppress.ts',
+    text: 'if (!hit) return',
+    why:
+      'suppressYield 的 YIELD_BY_TAG 查表判空。每个区域的 eventTags 都在 YIELD_BY_TAG 里配了物产' +
+      '(data 侧有覆盖普查);查不到时下一句 `hit.perHour` 会抛,但这条分支构造不出来。'
+  },
+  {
+    file: 'src/core/battleAnalysis.ts',
+    text: 'Math.max(0, Math.round((enemySpeed - playerSpeed) * 100)',
+    why:
+      'firstMoveReadout 的先手差额。它唯一的消费点是 firstMoveFinding,而那个函数在' +
+      '`!f || f.playerFirst` 时已提前返回 —— 走到用 gap 的地方必然是被抢先,即 enemySpeed > playerSpeed,' +
+      '差值恒正,钳制不触发。'
+  },
+  {
+    file: 'src/core/pillValue.ts',
+    text: 'if (!def.recipe) return',
+    why:
+      'auditYield / craftBattlesOf 等审计口径的「无方子」早退。它们只服务平衡审计,' +
+      '而入参是审计自己从 PILLS 里取出的有条目;无方子的丹药在数据层就不该出现在这些遍历里。'
+  },
+  {
     file: 'src/core/tribulationDecision.ts',
     text: 'if (!Number.isFinite(scale)) return',
     why:
