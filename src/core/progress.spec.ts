@@ -332,4 +332,19 @@ describe('日课 · 换日守卫', () => {
     expect(quests.daily.done, '换日后已完成项该清空').toEqual([])
     expect(quests.daily.base.battles ?? 0, '新的 base 要取当下计数(增量从零开始)').toBe(5)
   })
+  it('daily.date 是坏字符串:按「没有记录」处理,允许翻日', () => {
+    /*
+     * `dayStrToNum` 的正则认不出就返回 null(它是私有函数,经公开入口验)。
+     * 缺了 `if (!m) return null`,`m[1]` 会在 null 上取值抛 TypeError ——
+     * 而坏档里 daily.date 可以是任意字符串。
+     */
+    const quests = useQuestsStore()
+    quests.rolloverDaily('不是日期')
+    quests.markDailyDone(DAILY_TASKS[0]!.id)
+    expect(quests.daily.done).toHaveLength(1)
+
+    expect(() => rolloverDailyIfNeeded()).not.toThrow()
+    expect(quests.daily.date, '坏日期应被当成没有记录,重新翻日').toBe(todayStr())
+  })
+
 })
