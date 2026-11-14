@@ -130,4 +130,16 @@ describe('机缘回响 · 没有文本的事件', () => {
     expect(() => echoFor('no_such_event')).not.toThrow()
     expect(echoFor('no_such_event')).toBeNull()
   })
+  /*
+   * 回声文本表是稀疏的:`fortuneChoices` 的键来自存档(坏档可写任意事件 id),
+   * 而 `FORTUNE_ECHO_TEXTS` 只覆盖有回声词条的那几个。缺了 `if (!data) return null`,
+   * 这里会把 `data.form` 读成 TypeError —— 玩家在事件里点过「离开」的每个 id 都会踩到。
+   */
+  it('留过 leave 但没有回声词条的事件:返回 null,不抛', () => {
+    const player = usePlayerStore()
+    player.setFortuneChoices({ ev_no_echo_text: 'leave' })
+    expect(echoEligible('ev_no_echo_text')).toBe(true)
+    expect(echoFor('ev_no_echo_text')).toBeNull()
+  })
+
 })
