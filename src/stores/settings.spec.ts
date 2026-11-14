@@ -148,4 +148,16 @@ describe('设置 · reduceMotion 系统偏好播种', () => {
     setActivePinia(createPinia())
     expect(useSettingsStore().reduceMotion).toBe(false)
   })
+  /*
+   * `asTimestamp` 只挡「非有限」与「超出 Date 范围」,**放行负数**(实测 -100 原样返回)。
+   * 缺了 `Math.max(0, ...)`,坏档把 lastExportAt 写成负数就会存活,
+   * 于是「距上次导出 N 天」那类界面算出超过 int32 的间隔。
+   */
+  it('负的时间戳被钳到 0', () => {
+    const s = useSettingsStore()
+    ;(s as unknown as { lastExportAt: unknown }).lastExportAt = -100
+    s.sanitize()
+    expect(s.lastExportAt, '负时间戳该归零').toBe(0)
+  })
+
 })
