@@ -81,6 +81,21 @@ describe('强化连升 · 批量账', () => {
     expect(plan.stone).toEqual(gn(0))
   })
 
+  /*
+   * uid 不在行囊里 —— 界面上的行可能来自过期快照(另一页把装备卖了 / 分解了)。
+   * 变异扫描报 `if (!inst) return {...}` 改坏不红:去掉它下一句 `inst.level`
+   * 会直接抛 TypeError。同型的判据在 bounty / market 那两路都已经有了。
+   */
+  it('计划:uid 不在行囊里则给中性计划,不抛也不报「已至上限」', () => {
+    seat(mk('only', 0))
+    expect(() => upgradeBatchPlan('ghost'), '过期快照算计划不该抛').not.toThrow()
+    const plan = upgradeBatchPlan('ghost')
+    expect(plan.levels).toBe(0)
+    expect(plan.atCap, '不在行囊不是「已至上限」').toBe(false)
+    expect(plan.dust).toBe(0)
+    expect(plan.stone).toEqual(gn(0))
+  })
+
   it('已至上限:levels=0 且 atCap=true(不是钱不够)', () => {
     seat(mk('d', equipLevelCap()))
     rich()

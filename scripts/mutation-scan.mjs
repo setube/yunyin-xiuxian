@@ -496,6 +496,72 @@ const EQUIVALENT = [
       '判空防的是有人新增一味丹却忘了登记增益。'
   },
   {
+    file: 'src/core/inflationAudit.ts',
+    text: 'Math.max(0, fullPower - withParts({ equipFlat: false }))',
+    why:
+      '与同文件 realm 那条同型:fullPower 是「所有部分都在」时的总量,withParts({ X: false }) 去掉一个非负加数,' +
+      '差值恒非负。审计口径的防御,不是可达分支。'
+  },
+  {
+    file: 'src/core/inflationAudit.ts',
+    text: 'Math.max(0, fullPower - withParts({ equipMod: false }))',
+    why: '同上,equipMod 那条:去掉一个非负加数后的总量必然不大于原值。'
+  },
+  {
+    file: 'src/core/loreService.ts',
+    text: 'if (!rng.chance(chance)) return',
+    why:
+      'noteMaterialUsed 的领悟概率门(成 22% / 败 34%)。去掉它等于「用一次就通晓」,' +
+      '判据要抓得靠固定随机序列比整条时间线,而那等于把概率本身写死进用例。' +
+      '与 regionEvent 那条同型。'
+  },
+  {
+    file: 'src/core/gauntlet.ts',
+    text: 'if (!a) return',
+    why:
+      'mergeRules 的空入参早退。去掉后 `{...x}` 展开 undefined 在 JS 里合法、得到空对象,' +
+      '而两个入参都没有的字段会走 `?? 1` / `?? Infinity` 那一套,结果与原样返回另一侧逐字段相同 ——' +
+      '实测 mergeRules(undefined, b) 现在返回 b 本身,去守卫后返回一个新对象但字段值全等,' +
+      '而全部 7 个调用点都只读字段、不比较引用。'
+  },
+  {
+    file: 'src/core/gauntlet.ts',
+    text: 'if (!b) return',
+    why: '同上,mergeRules 的另一侧;两处对称。'
+  },
+  {
+    file: 'src/core/gauntlet.ts',
+    text: 'if (!x) return',
+    why:
+      'mergeRules 内层 mods() 的一侧。与上面两条同一个道理:并集展开 undefined 得空对象,' +
+      '缺字段走 `?? 0`,结果与直接返回另一侧逐字段相同;调用方只读字段。'
+  },
+  {
+    file: 'src/core/endgameService.ts',
+    text: 'if (!def) return',
+    why:
+      'chooseDaoPath 的 `daoPathDef(id)` 判空。这条分支要求 endgameUnlocked() 为真且 id 非法 ——' +
+      '实测 endgameUnlocked() 为假时上一行就返回了,真仙前撞不到;真仙后 id 只来自 UI 上的枚举钮,' +
+      '构造不出来。判据要覆盖它得先解锁终局再塞一个非法 id,而那已经不是在验这条守卫。'
+  },
+  {
+    file: 'src/core/expedition.ts',
+    text: 'if (!node) return',
+    why:
+      'chooseRouteNode 的节点判空。上一步已把 run.layer 夹在 [0, EXPEDITION_ROUTE_LAYERS),' +
+      '而 data.spec 钉着「每界 routes.length === EXPEDITION_ROUTE_LAYERS」;choice 的类型是 0|1,' +
+      '实测四个界每层都恰好 2 个节点,故 `routes[layer]?.[choice]` 取不到值是构造不出来的。' +
+      '这句防的是将来某个界少配一半节点。'
+  },
+  {
+    file: 'src/core/exploration.ts',
+    text: 'if (!region) return',
+    why:
+      'runBattle 的 `regionDef(s.regionId)` 判空。实测把 session.regionId 写成 no_such_region 再跑' +
+      ' tickExploration,战斗根本不发生(tickExploration 上游另有一道按区域查表的门),' +
+      '这条分支撞不到。'
+  },
+  {
     file: 'src/core/tribulationDecision.ts',
     text: 'if (!Number.isFinite(scale)) return',
     why:
