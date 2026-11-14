@@ -100,6 +100,23 @@ describe('坊市 · 买卖', () => {
     expect(market.stock[0]!.sold).toBe(false)
   })
 
+  /*
+   * 格号不在货架上 —— 界面上的行可能来自过期快照(换货窗口刚过、另一页已买走)。
+   * 变异扫描报 `if (!slot) return 'missing'` 改坏不红:去掉它下一句 `slot.sold`
+   * 会直接抛 TypeError。`claimEquip` 那一路早就有同型判据,buy 这一路此前没有。
+   */
+  it('买下:格号不在货架上则拒绝,不扣钱也不抛', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    seedStock([pillSlot(0)])
+    resources.spiritStone = gn(1e6)
+
+    expect(() => market.buy(9), '过期快照点买不该抛').not.toThrow()
+    expect(market.buy(9)).toBe('missing')
+    expect(toNum(resources.spiritStone), '没成交不扣钱').toBe(1e6)
+    expect(market.stock[0]!.sold, '别的格不动').toBe(false)
+  })
+
   it('行囊满:装不下兵刃就不收钱(先验满、再扣款)', () => {
     const market = useMarketStore()
     const resources = useResourcesStore()

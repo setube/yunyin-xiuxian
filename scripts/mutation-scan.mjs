@@ -368,6 +368,140 @@ const EQUIVALENT = [
     why:
       '下一行 `if (!elements.includes(element)) return 1` 在 element 为 undefined 时同样成立 ——' +
       'includes(undefined) 恒 false(灵根元素只会是 ElementId)。两条守卫结果相同。'
+  },
+  {
+    file: 'src/core/offline.ts',
+    text: 'Math.max(0, (nowMs - game.lastActiveAt) / 1000)',
+    why:
+      '上一行刚做过 `if (game.lastActiveAt > nowMs) game.lastActiveAt = nowMs` 的重锚,' +
+      '走到这里 lastActiveAt 必 <= nowMs,差值恒非负。钳制防的是「有人删掉重锚那句」,' +
+      '不是可达分支(实测去掉后离线上限那组用例全绿)。'
+  },
+  {
+    file: 'src/core/mentorService.ts',
+    text: 'if (!mentorId) return',
+    why:
+      '下一行 `const def = mentorDef(mentorId)` 对 null 同样给出 undefined,紧跟着的 ' +
+      '`if (!def) return null` 兜住同一个结果。实测 mentorVerdict(null) 在去掉本条后仍返回 null。'
+  },
+  {
+    file: 'src/core/pillService.ts',
+    text: 'if (!def) return',
+    why:
+      '去掉后直接走 `inventory.spendPill(id)`,而未登记的丹药 id 不在丹匣里、spendPill 返回 false,' +
+      '同样落到 `return false`。实测 usePill(不存在的 id) 在去掉本条后仍返回 false 且不扣任何资源。'
+  },
+  {
+    file: 'src/core/petPersonality.ts',
+    text: 'if (!petId) return',
+    why:
+      '去掉后 `petDef(null)` 返回 undefined,紧跟着的 `if (!def) return` 给出同一份中性效果。' +
+      '两条守卫的返回值逐字段相同。'
+  },
+  {
+    file: 'src/core/mortalWorldGen.ts',
+    text: '.length === 0)',
+    why:
+      'mortalNovelty 的 `if (history.length === 0) return 1`:去掉后 for 循环一次不执行,' +
+      'nearest 保持初值 1 原样返回 —— 与提前返回同值(与 worldGen 那条同型)。'
+  },
+  {
+    file: 'src/core/inflationAudit.ts',
+    text: 'Math.max(0, Math.min(10, Math.round(major * profile.levelPerMajor))',
+    why:
+      'modelPlayer 的强化等级。major 是审计自己传的境界号(0..MAX_MAJOR 的遍历值),' +
+      '不存在负数;`Math.round(major * levelPerMajor)` 因此恒非负,下限钳制不触发。' +
+      '这是审计口径的纯函数防御,不是可达分支(实测去掉后 54 条审计用例全绿)。'
+  },
+  {
+    file: 'src/core/loot.ts',
+    text: 'if (!mark) return',
+    why:
+      'celebrateTreasure 的返回值在全部 6 个调用点都被忽略(MarketShelfSection / eventEngine 三处 /' +
+      'gongfaService / loot 自身),故 true/false 之差玩家看不到;剩下的差别只是 treasure.value 被赋 null,' +
+      '而 null 与「上一件已演完清空」在下一次 showTreasure 之前渲染同一份空态。' +
+      '要抓住它得先让一件仪典演到一半再触发一次非顶档得宝,宇宙里没有这种时序。'
+  },
+  {
+    file: 'src/core/mortalWorldService.ts',
+    text: 'if (!got) return',
+    why:
+      'ensureMortalWorld 的生成失败分支。去掉后下一行 `got.report.world.seed` 会抛 TypeError ——' +
+      '但 `generateGatedMortalAsync` 要真返回 null 得连续 200 次生成都过不了三道审计门,' +
+      '那种参数空间当前不存在(它是 `for` 重试 200 次、每次都换种子,实测固定种子下恒有一次成功)。' +
+      '判据要覆盖它只能把生成器整个 mock 成恒 null,而那已经不是在验这条守卫了。'
+  },
+  {
+    file: 'src/core/herbPrice.ts',
+    text: 'Math.max(0, Math.floor(raw / 4))',
+    why:
+      '入参 major 只用来取 `maxTierForMajor(major)`,而那个函数先把 major 夹进有效境界区间 ——' +
+      '实测 major 取 -1 / -5 / NaN 都得到同一个价 76,取 Infinity 与 1e9 都得到 3.37e10,' +
+      'base 因此恒非负,下限钳制不触发。钳它防的是石粮表将来出现负值。'
+  },
+  {
+    file: 'src/core/impactSurface.ts',
+    text: 'Math.max(0, legacyInsightOf(p.rebirths) - p.insightField)',
+    why:
+      'migrationGap 是审计诊断口径的纯函数,全仓只有 impactSurface.spec 调它,不进任何玩家可见路径;' +
+      '而它的语义本就是「欠账」,负值即「已折得比应折的多」,审计报告读它时也是按数值展示,' +
+      '钳到 0 只是把「多折了」说成「不欠」—— 两种说法在报告里都不触发任何分支。'
+  },
+  {
+    file: 'src/core/progress.ts',
+    text: 'if (!def) return',
+    why:
+      'retreatGainPerSec 读 `buffDef(\'retreat\')`。retreat 是 BUFFS 表里的静态条目,' +
+      '编译期就存在,这个判空只在表被改名时才有意义;届时 buffMods 与 UI 一并失效,' +
+      '不是这一处能兜住的。'
+  },
+  {
+    file: 'src/core/powerRating.ts',
+    text: 'Math.max(0, modOf(m, k))',
+    why:
+      '五维评级的每维得分最后落成 1~5 星,而星级下限就是 1 —— 实测全负词条与全零词条' +
+      '给出同一组星级(critRate/attack/defense 取 -100 与 0 都得 1 星)。钳到 0 只影响明细里的 raw,' +
+      '而 raw 不进任何判定。'
+  },
+  {
+    file: 'src/core/wudaoExchange.ts',
+    text: 'Math.max(0, WUDAO_EXCHANGE_PER_DAY - todayCount)',
+    why:
+      'todayCount 由 player 的 `wudaoExchangeToday` 算,而 sanitize 已把它夹进 ' +
+      '[0, WUDAO_EXCHANGE_PER_DAY](见 stores/player.ts 的 wudaoExchange 修形段)。' +
+      '运行期取不到负数,额度不会被绕过;钳制防的是「有人删掉那段 sanitize」。'
+  },
+  {
+    file: 'src/core/worldGen.ts',
+    text: 'if (!sk) return',
+    why:
+      'shapeRisk 的 `s.skills[0]` 判空。当前 CELESTIAL_WORLDS 与 TRIAL_FOES 里没有一个敌人' +
+      '的 skills 为空数组(实测 0 条),故这条分支不可达;它防的是将来加一个无技能敌人。' +
+      '要覆盖它得先往数据里塞一个 `skills: []`,而那会同时改变世界生成的审计口径。'
+  },
+  {
+    file: 'src/core/regionEvent.ts',
+    text: 'if (!rng.chance(0.0085)) return',
+    why:
+      '每小时约一次的触发门。去掉它等于把「约每 450 个检查周期一次」变成「每周期必触发」,' +
+      '判据要抓得靠固定随机序列比整条时间线,而那等于把这条概率本身写死进用例 ——' +
+      '改概率时用例会红在其他地方,抓不到这句。'
+  },
+  {
+    file: 'src/core/pillValue.ts',
+    text: 'if (!mods) return',
+    why:
+      'tempoRateOf 读 `buffDef(def.buffId)?.mods`。pillValue.spec 已有一条普查:' +
+      '「buff 类丹药的 buffId 都能在 buds 表里查到」,故运行期这里取不到 undefined。' +
+      '判空防的是有人新增一味丹却忘了登记增益。'
+  },
+  {
+    file: 'src/core/tribulationDecision.ts',
+    text: 'if (!Number.isFinite(scale)) return',
+    why:
+      'realmScale 的返回值来自境界表查表乘常数,major 取 1e9 / MAX_VALUE / NaN 都仍得有限值' +
+      '(实测三者均走不到这条分支,全部给出 { resist: 0, guard: 0 })。' +
+      '这句防的是 realmScale 将来改用 toNum(gn) 之类可能溢出的实现。'
   }
 ]
 
