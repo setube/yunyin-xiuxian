@@ -16,6 +16,7 @@ import { useApprenticeStore } from '@/stores/apprentice'
 import { useLoreStore } from '@/stores/lore'
 import { useQuestsStore } from '@/stores/quests'
 import { STARTER_APPRENTICE } from '@/data/apprentices'
+import { TALENTS } from '@/data/talents'
 import { prepareReincarnation, confirmReincarnation } from '@/core/reincarnation'
 import * as reincarnationService from '@/core/reincarnation'
 import { rng } from '@/utils/random'
@@ -353,5 +354,23 @@ describe('转世交割 · 连点不许领两次', () => {
 
     const added = player.reincarnation.daoFruit - before
     expect(added, `本次应得 ${gained},实际加了 ${added} —— 连点把永久收获领了两遍`).toBe(gained)
+  })
+})
+
+describe('转世 · 天赋抽尽', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  /*
+   * `drawTalents` 的 `if (pool.length === 0) break` 是真守卫:
+   * 33 个天赋全已拥有时池子为空,去掉它 `rng.weighted([])` 返回 undefined,
+   * 下一行 `.id` 抛 TypeError。变异形式是 `.length < 0`(恒假),等价于删掉。
+   */
+  it('天赋全部拥有:抽空,不抛', () => {
+    const p = usePlayerStore()
+    p.reincarnation = { ...p.reincarnation, talents: TALENTS.map(t => t.id) } as never
+    let v: ReturnType<typeof prepareReincarnation> | null = null
+    expect(() => { v = prepareReincarnation() }).not.toThrow()
+    expect(v!.talentChoices, '池子空了,选项应为空').toEqual([])
+    expect(v!.extraTalents, '池子空了,额外天赋应为空').toEqual([])
   })
 })
