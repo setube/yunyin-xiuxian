@@ -67,6 +67,42 @@ const PATTERNS = [
  */
 const EQUIVALENT = [
   {
+    file: 'src/core/loreService.ts',
+    text: 'Math.max(0, Math.floor(wins))',
+    why:
+      'noteEnemyMany 的胜场下限钳制。唯一调用方是 offline.ts:342 的 `noteEnemyMany(mobId, wins, battles - wins)` —— ' +
+      'wins 来自离线结算的战果计数,恒满足 0 <= wins <= battles,传不出负数。去掉钳制后同一组参数仍得 seen > 0,' +
+      '实测(wins=-5/losses=1 这种构不出来的输入下才有差异)不影响真实路径。'
+  },
+  {
+    file: 'src/core/reforge.ts',
+    text: 'if (!after) return',
+    why:
+      'reforgeEquipment 开头的 `if (!inst) return false` 已经挡住了不存在的装备,而它整段只调 replaceItem 改字段、' +
+      '从不删件 —— 返回 true 之后 findItem(uid) 必然还找得到。after 为 null 的路径构造不出来。'
+  },
+  {
+    file: 'src/stores/apprentice.ts',
+    text: '.length === 0)',
+    why:
+      'recruit 的空池保护。APPRENTICES 共 6 个、排除 STARTER 后可招 5 个,而槽位硬上界 APPRENTICE_SLOT_HARD_CAP = 5 —— ' +
+      '`apprentices.length >= apprenticeSlots()` 那行永远先返回 full,pool 里至少剩一个。实测:6 个原型、5 个可招、上限 5。'
+  },
+  {
+    file: 'src/core/eventEngine.ts',
+    text: '.length === 0)',
+    why:
+      'rollRegionEvent 的空池保护。regionEventPoolFor 按区域 eventTags 过滤 EVENTS,实测 44 个区域在 major=20 下空池 0 个;' +
+      '最坏情况(major=0 + 所有 once 事件都看过了)仍是 0 个 —— 池子构造不出空。'
+  },
+  {
+    file: 'src/core/exploration.ts',
+    text: '.length === 0)',
+    why:
+      'tryMeet 的空池保护。candidatesFor 的筛选是 `d.terrains.length === 0 || d.terrains.some(...)`,而 DAOLU 里 dl_muyan 的 ' +
+      'terrains 为空数组,它对任何地貌都命中 —— 实测 DAOLU 10 个中 1 个 terrains 为空,池子恒非空。'
+  },
+  {
     file: 'src/core/ruleBudget.ts',
     text: 'if (!mods) return',
     why: 'budgetOfMods 开头的 `if (!mods) return 0`:去掉后 `for (const k in undefined)` 在 JS 里合法、一次不迭代,sum 保持 0,同样返回 0'
