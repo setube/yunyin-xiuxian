@@ -320,3 +320,38 @@ describe('转世交割 · confirmReincarnation', () => {
     }
   })
 })
+
+/**
+ * 交割单只能被取走一次。
+ *
+ * confirmReincarnation 是 async,中段有一处 `await rerollMortalWorld()`(凡界须重新凝出来);
+ * 而永久收获(道果 / 天赋 / 传承)全在 await **之前**就已入账。
+ *
+ * 原先「清空 ui.reincarnation」写在函数末尾 —— 于是那段 await 期间,第二次点「确认转世」
+ * 仍能过掉开头的判空,把同一份收获再加一遍。实测并发两次:本次应得 63 道果,实际加了 126。
+ *
+ * 玩家侧的复现路径就是连点两下确认钮:转世要等凡界凝成,这段时间按钮看起来还能点。
+ */
+describe('转世交割 · 连点不许领两次', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    seedLife()
+  })
+
+  it('并发两次确认,当只结算一次时,则道果只加一份', async () => {
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    prepareReincarnation()
+    const view = ui.reincarnation
+    expect(view, '没有备好转世视图,这条判据无从谈起').not.toBeNull()
+
+    const gained = view!.daoFruitGained
+    expect(gained, '本次应得 0 道果时这条判据证明不了什么').toBeGreaterThan(0)
+    const before = player.reincarnation.daoFruit
+
+    await Promise.all([confirmReincarnation(null), confirmReincarnation(null)])
+
+    const added = player.reincarnation.daoFruit - before
+    expect(added, `本次应得 ${gained},实际加了 ${added} —— 连点把永久收获领了两遍`).toBe(gained)
+  })
+})

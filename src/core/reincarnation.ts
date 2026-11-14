@@ -166,6 +166,18 @@ export async function confirmReincarnation(chosenTalentId: string | null, chosen
   const ui = useUiStore()
   const view = ui.reincarnation
   if (!view) return
+  /*
+   * 立刻取走交割单,不能等到函数末尾再清。
+   *
+   * 这个函数是 async,中段有一处 `await rerollMortalWorld()`(凡界须重新凝出来),
+   * 而永久收获(道果 / 天赋 / 传承)全在 await **之前**就已入账。
+   * 原先 `ui.reincarnation = null` 写在最后 —— 于是那段 await 期间第二次点「确认转世」
+   * 仍能过掉上面的判空,把同一份收获再加一遍。
+   * 实测并发调两次:本次应得 63 道果,实际加了 126。
+   *
+   * 清在这里的语义正好:交割单一旦被取走就不该被第二个人取走第二次。
+   */
+  ui.reincarnation = null
 
   // 永久收获
   player.addDaoFruit(view.daoFruitGained)
