@@ -268,6 +268,36 @@ function markAlive(): void {
   }
 }
 
+/**
+ * 丢掉本页的心跳键。
+ *
+ * 心跳只记「最后写下的时刻」,分不出「还开着但没来得及再写」与「这一份页面已经没了」:
+ * 两者都表现为一个越来越旧的时间戳。过期窗口是 12 秒,于是**单页刷新**之后,
+ * 上一份页面留下的那个键在窗口内仍被算成另一个活页 —— 新页面开局 4 秒就报
+ * 「存档已在另一页打开」。实测:刷新一次即误报,设置页那条常驻提示跟着亮 12 秒;
+ * 关掉页签再 12 秒内重开同样中招。
+ *
+ * 卸载时自己把键删掉,对面收到 storage 事件即刻重算,不必等过期窗口走完。
+ * 进程被杀/断电这类没能卸载的情形仍由过期窗口兜底。
+ */
+function dropAlive(): void {
+  try {
+    localStorage.removeItem(MY_LIVE_KEY)
+  } catch {
+    // 存储不可用时忽略
+  }
+}
+
+/*
+ * 卸载时删键:pagehide 在手机上更可靠,桌面上 beforeunload 也发 —— 两个都挂,幂等。
+ * 注册在模块内而非 watchOtherTabSave 里:心跳是否在跑由调用方按「是否在玩」开关,
+ * 而「本页已经没了」这件事与开局状态无关。
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', dropAlive)
+  window.addEventListener('beforeunload', dropAlive)
+}
+
 /** 除本页之外还有几页活着 */
 function livePeerCount(): number {
   const now = Date.now()
@@ -335,11 +365,7 @@ export function watchOtherTabSave(enabled: boolean): void {
       document.removeEventListener('visibilitychange', pingOnVisible)
       pingOnVisible = undefined
     }
-    try {
-      localStorage.removeItem(MY_LIVE_KEY)
-    } catch {
-      // 存储不可用时忽略
-    }
+    dropAlive()
     setOtherTab(false)
     return
   }
