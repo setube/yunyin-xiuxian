@@ -24,6 +24,7 @@ import {
 import { DAOLU_STAGE_MAX, DAOLU_STAGE_NAMES, daoluCodex, daoluDepthOf, describeDaolu } from '@/ui/codex'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
+import type { BondRecord } from './daoluService'
 
 const SRC = readFileSync(resolve(__dirname, 'daoluService.ts'), 'utf-8')
 /** 只看代码,不看注释:注释里写着这些名字 */
@@ -577,4 +578,20 @@ describe('人缘册 · 深度从关系现算', () => {
     expect(cat.done).toBe(cat.entries.filter(e => e.stage >= 1).length)
     expect(cat.source).toMatch(/^来源:/)
   })
+  /*
+   * `pick.daoluId` 来自存档里的 BondRecord,而 `sanitizeBonds` 只查它是不是字符串、
+   * 不查它在不在 DAOLU 里 —— 坏档写个已下线的 id 就能一路走到 `daoluDef` 返回 undefined。
+   * 缺了 `if (!def) return null`,下一行的 `def.id` 会抛 TypeError。
+   * 命中与否由 rng 决定,故这里循环若干次把两条分支都走到。
+   */
+  it('履历里的道侣 id 已不存在:返回 null,不抛', () => {
+    const history: BondRecord[] = [
+      { daoluId: 'no_such_daolu', name: '旧人', stage: 'pledged', ending: 'missed', shared: 1 }
+    ]
+    for (let i = 0; i < 40; i += 1) {
+      expect(() => destinedCandidate(history, ['林泽', '山岳', '幽谷'])).not.toThrow()
+    }
+    expect(destinedCandidate(history, ['林泽', '山岳', '幽谷'])).toBeNull()
+  })
+
 })
