@@ -69,4 +69,13 @@ describe('师承(mentor)', () => {
     expect(verdict!.tier).toBe('aligned')
     expect(other!.tier).toBe('unaligned')
   })
+  /*
+   * `mentorDef` 查的是 MENTORS 常量表。调用方传进的 id 若不在表里(如坏档里的
+   * mentorId、或将来删掉某个师父后的旧存档),缺了 `if (!def) return null`,
+   * 下面的 `def.xxx` 会抛 TypeError。这里钉住「查不到就返回 null」。
+   */
+  it('师父 id 不在表里:返回 null,不抛', () => {
+    expect(mentorVerdict('no_such_mentor' as never)).toBeNull()
+  })
+
 })
