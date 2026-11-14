@@ -641,4 +641,20 @@ describe('得宝仪典 · 开炉出顶档那一炉', () => {
     expect(out.ok, '前置:静默也照常成丹').toBe(true)
     expect(ui.treasure, '静默开炉不该翻开仪典').toBeNull()
   })
+
+})
+
+describe('炼丹 · 材料差额钳制', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  /*
+   * 差额必须钳到 0:玩家灵草多过配方所需时,差值是负的会一路传到界面
+   * (「灵草尚差 -20」)。去掉 Math.max(0, ...) 就会这样。
+   */
+  it('灵草多于所需:差额为 0,不出负数', () => {
+    const r = useResourcesStore()
+    r.herbByGrade = { 1: 30, 2: 0, 3: 0, 4: 0, 5: 0 } as never
+    expect(craftShortfall({ herb: 10, stone: { m: 1, e: 0 }, grade: 1 }).herb, '多于所需应为 0').toBe(0)
+    expect(craftShortfall({ herb: 40, stone: { m: 1, e: 0 }, grade: 1 }).herb, '少于所需应为差值').toBe(10)
+  })
 })

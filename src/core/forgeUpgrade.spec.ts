@@ -222,3 +222,17 @@ describe('炼器 · 单步强化(upgradeEquipment)边界', () => {
     expect(useUiStore().toasts.at(-1)?.text).toContain('尚差 1')
   })
 })
+
+describe('强化 · 材料差额钳制', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  /*
+   * 差额必须钳到 0:器灵尘多过所需时,负差额会一路印成「器灵尘尚差 -900」。
+   */
+  it('器灵尘多于所需:差额为 0,不出负数', () => {
+    const r = useResourcesStore()
+    r.dust = 100
+    expect(upgradeShortfall({ dust: 50, stone: { m: 1, e: 0 } }).dust, '多于所需应为 0').toBe(0)
+    expect(upgradeShortfall({ dust: 500, stone: { m: 1, e: 0 } }).dust, '少于所需应为差值').toBe(400)
+  })
+})
