@@ -129,8 +129,15 @@ export const useUiStore = defineStore('ui', () => {
     // 挤掉最旧那条时一并撤掉它的收起计时器(否则超时后对已下架的空转一趟 removeToast)
     const evicted = toasts.value[toasts.value.length - 5]
     if (evicted) {
+      /*
+       * 撤计时器时**必须连 Map 里的条目一起删**:只 clearTimeout 的话,
+       * 那个键还留在 timers 里,而它的到期回调已被撤销 —— 再没有谁会删它。
+       * 实测连发 2000 条提示(战斗结算、成就、主线都是逐条弹的),屏幕上最多 5 条,
+       * timers 却攒了 2000 个失效条目,且此后只增不减。
+       */
       const t = timers.get(evicted.id)
       if (t) clearTimeout(t)
+      timers.delete(evicted.id)
     }
     toasts.value = [...toasts.value.slice(-4), { id, text, kind }]
     timers.set(id, setTimeout(() => removeToast(id), ttl))

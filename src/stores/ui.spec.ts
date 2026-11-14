@@ -128,3 +128,44 @@ describe('ui store · 没有只声明不使用的字段', () => {
     expect(dead, `ui store 这些字段声明了却无人读写:${dead.join('、')}`).toEqual([])
   })
 })
+
+/**
+ * 被挤出队列的提示,它的收起计时器要从 Map 里删掉,不能只 clearTimeout。
+ *
+ * clearTimeout 只让回调不再跑,那个键还留在 timers 里 —— 而删它的唯一路径
+ * 是「到期回调里 removeToast」,回调已被撤销,于是再没有人会删它。
+ * 实测连发 2000 条(战斗结算 / 成就 / 主线都是逐条弹的),屏幕上最多 5 条,
+ * timers 却攒了 2000 个失效条目,且此后只增不减。
+ *
+ * 判据数的是**真的从 Map 上删了几次**:toast 的 id 是数字,而这条路径上其余
+ * Map 用的都是字符串键,故按数字键计数不会串味。只 clear 不删的实现会掉到个位数。
+ */
+describe('ui store · 挤出的提示不留下失效计时器', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('连发 200 条:每个被挤出的条目都要从 timers 里删掉', () => {
+    const deletedNumberKeys: number[] = []
+    const realDelete = Map.prototype.delete
+    Map.prototype.delete = function (k: unknown) {
+      if (typeof k === 'number') deletedNumberKeys.push(k)
+      return realDelete.call(this, k)
+    }
+    try {
+      const ui = useUiStore()
+      for (let i = 0; i < 200; i += 1) ui.toast(`提示 ${i}`)
+      expect(ui.toasts, '队列本身该封顶在 5 条').toHaveLength(5)
+      /*
+       * 200 条里 195 条是被挤出的,它们的计时器都该撤回。
+       * 只 clearTimeout 的实现在这里只剩 5 次(全靠自然到期),差两个数量级。
+       */
+      expect(
+        deletedNumberKeys.length,
+        `只回收了 ${deletedNumberKeys.length} 个计时器 —— 被挤出的那些只 clear 没删,一直堆在 Map 里`
+      ).toBeGreaterThanOrEqual(195)
+    } finally {
+      Map.prototype.delete = realDelete
+    }
+  })
+})
