@@ -62,6 +62,20 @@ describe('存档导入校验 · 拒因逐条', () => {
     expect(validateImportPayload(p), '版本号是字符串也算缺').toBe('存档缺少版本号')
   })
 
+  /*
+   * `typeof x === 'number'` 挡不住 NaN —— NaN 比出来恒 false,`NaN > SAVE_VERSION` 是 false,
+   * 于是一份说不清年代的档能过闸门。实测修复前 NaN / -Infinity / 1.5 / -1 全部放行。
+   * 版本号是「这份档来自哪一代」的唯一凭据,放进来一个来历不明的档,
+   * 玩家看到的是进度被覆盖,而事后无从判断它该走哪条升级链。
+   */
+  it('版本号是坏数字:NaN / 无穷 / 小数 / 负数一律按「缺少版本号」拒', () => {
+    for (const v of [NaN, Infinity, -Infinity, 1.5, -1, 2.0000001]) {
+      const p = good()
+      p.version = v
+      expect(validateImportPayload(p), `version = ${String(v)} 不该放行`).toBe('存档缺少版本号')
+    }
+  })
+
   it('版本高于当前:明确拒绝,不尝试向下兼容', () => {
     const p = good()
     p.version = SAVE_VERSION + 1

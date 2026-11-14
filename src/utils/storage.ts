@@ -704,7 +704,18 @@ export function validateImportPayload(obj: unknown): string | null {
   if (typeof obj !== 'object' || obj === null) return '存档格式无效'
   const p = obj as Partial<ExportPayload>
   if (p.game !== 'yunyin-xiuxian') return '非本游戏存档'
-  if (typeof p.version !== 'number') return '存档缺少版本号'
+  /*
+   * `typeof === 'number'` 挡不住 NaN —— 而 NaN 比出来恒 false:
+   * `NaN > SAVE_VERSION` 是 false,于是它一路通过闸门。实测 `version: NaN` 与
+   * `version: -Infinity` 都能进来,`1.5` / `-1` 这种非整数、负数的版本号同样放行。
+   *
+   * 版本号是「这份档来自哪一代」的唯一凭据:放进来一个说不清年代的档,玩家看到的是
+   * 自己的进度被一份来历不明的东西覆盖,而事后无从判断它本该走哪条升级链。
+   * 与同文件其余数字守卫(asFiniteNumber / Number.isFinite)一道,这里也要求有限正整数。
+   */
+  if (typeof p.version !== 'number' || !Number.isFinite(p.version) || !Number.isInteger(p.version) || p.version < 0) {
+    return '存档缺少版本号'
+  }
   if (p.version > SAVE_VERSION) return '存档版本过高'
   if (typeof p.data !== 'object' || p.data === null) return '存档数据段缺失'
   const data = p.data as Record<string, unknown>
