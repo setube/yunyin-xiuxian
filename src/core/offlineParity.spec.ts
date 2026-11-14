@@ -321,4 +321,35 @@ describe('离线首领战 · battles 与 wins 相对 afterWin 的位置', () => 
     expect(battlesAt, 'battles 该在 afterWin 之前(它动的是场次,不是奖励用的胜场)').toBeLessThan(bossAt)
     expect(winsAt, 'wins += 1 该在 afterWin 之后,否则首领自己会被再乘一遍奖励').toBeGreaterThan(bossAt)
   })
+
+})
+
+describe('离线历练 · 剩余时长钳制', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  /*
+   * `remainSec` 是「本次离线还能算多少秒历练」。session.endsAt 早已过去而离线时长很短时,
+   * 它算出来是负数 —— 去掉 `Math.max(0, ...)`,`events` 会变成负值(实测 -53),
+   * 而 `battles` 有自己那道 `Math.max(0, ...)` 兜底,所以只有 events 露馅。
+   */
+  it('历练在离线期间早已结束:events 不得为负', () => {
+    const g = useGameStore()
+    const adv = useAdventureStore()
+    g.markStarted()
+    const now = Date.now()
+    g.lastActiveAt = now - 5_000            // 只离线 5 秒
+    adv.setSession({
+      regionId: 'qingyun',
+      mode: 'normal',
+      startedAt: now - 7_200_000,
+      endsAt: now - 3_600_000,              // 一小时前就结束了
+      nextBattleAt: now - 3_600_000,
+      wins: 0, losses: 0, events: 0,
+      stoneGain: gnZero(), expGain: gnZero(), itemGain: 0
+    } as never)
+    const out = settleOffline(now)
+    expect(out, '夹具没进离线结算').not.toBeNull()
+    expect(out!.battles, '场次不得为负').toBeGreaterThanOrEqual(0)
+    expect(out!.events, '事件数不得为负').toBeGreaterThanOrEqual(0)
+  })
 })
