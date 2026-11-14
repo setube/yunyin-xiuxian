@@ -947,7 +947,18 @@ export const usePlayerStore = defineStore(
        * 旧档若无履历(从未转世),判据不成立,道侣照常保留。
        */
       if (bond.value) {
-        const lastLifeAt = reincarnation.value.lives[reincarnation.value.lives.length - 1]?.at
+        /*
+         * 这里必须容忍 `lives` 缺失 —— **sanitize 自己不许抛**。
+         *
+         * `reincarnation` 的整体修形在本函数靠后的位置(统一重建对象、顺带 sanitizeLives),
+         * 而这一句在它之前执行。坏档里 `reincarnation.lives` 是 undefined/null 时,
+         * 原先的 `lives[lives.length - 1]` 会当场抛 TypeError,整条自愈路径中断 ——
+         * 玩家看到的是启动即崩,而不是被修好的档。
+         * 实测:`lives: undefined` 或 `null` 且身上有道侣时必抛。
+         * 用 asArray 兜一下:非数组一律当「无履历」,判据不成立、道侣照常保留(与旧档同义)。
+         */
+        const lives = asArray<{ at?: unknown }>(reincarnation.value.lives)
+        const lastLifeAt = lives[lives.length - 1]?.at
         if (typeof lastLifeAt === 'number' && Number.isFinite(lastLifeAt) && bond.value.metAt < lastLifeAt) {
           bond.value = null
         }
