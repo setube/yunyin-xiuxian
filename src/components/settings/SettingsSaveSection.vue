@@ -33,7 +33,9 @@
       存档已在另一页打开 · 两页会互相覆盖
     </p>
     <div class="grid grid-cols-2 gap-2">
-      <button class="btn-ghost !text-[12px] w-full" @click="onExport">导出存档</button>
+      <button class="btn-ghost !text-[12px] w-full" :disabled="exporting" @click="onExport">
+        {{ exporting ? '正在导出' : '导出存档' }}
+      </button>
       <button class="btn-ghost !text-[12px] w-full" @click="triggerImport">导入存档</button>
       <!-- 安卓 MIME 表通常不认 .save:须放行通用文件类型与扩展名,安全边界由 importSaveText 校验 -->
       <input ref="fileInput" type="file" accept="application/octet-stream,.save" class="hidden" @change="onFilePicked" />
@@ -130,6 +132,8 @@
   const backupPrompt = computed(() => shouldPromptBackup(settings.lastExportAt, game.createdAt, now.value))
 
   const resetConfirm = ref(false)
+  /** 导出进行中:防连点重复导出,按钮同时转成状态词 */
+  const exporting = ref(false)
   /** 导入二步确认:选完文件只读进内存,确认后才覆盖(与「清空存档」同级破坏) */
   const importConfirm = ref(false)
   const importText = ref<string | null>(null)
@@ -165,12 +169,24 @@
 
   /** Web/Electron 走浏览器下载,Android 走系统保存面板(见 savePlatform) */
   function onExport(): void {
+    /*
+     * 重入保护:导出是异步的,而按钮在结果回来之前一直可点。
+     *
+     * 实测连点三次会下载三个同名文件(浏览器自行加 (1)/(2) 后缀),玩家得到三份重复备份;
+     * 安卓那一路更明显 —— 每次点击都拉起一次系统的 SAF 保存面板。
+     * 导入那一路早有 `saveRead?.abort()` 防重入,导出这侧此前一条都没有。
+     */
+    if (exporting.value) return
+    exporting.value = true
     // 平台各自 toast 结果,此处只兜未捕获异常;返回 null 即已落盘,落盘才记时间戳
     void exportSaveToDevice()
       .then(err => {
         if (!err) settings.lastExportAt = Date.now()
       })
       .catch(() => ui.toast('导出失败', 'warn'))
+      .finally(() => {
+        exporting.value = false
+      })
   }
 
   function openReset(): void {
