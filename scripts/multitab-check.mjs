@@ -176,6 +176,44 @@ try {
   const warned = await first.evaluate(w => window.__toasts.some(t => t.includes(w)), WARN)
   if (!warned) failures.push('开了第二页,第一页没收到「存档已在另一页打开」')
   console.log(`  ${warned ? '✓' : '✗'} 两页同开时提示已给出`)
+
+  /*
+   * 第二页切到后台:提示不许闪。
+   *
+   * 心跳只在本页可见时才发,后台那页心跳就停了 —— 但它仍在按 5 秒一次的节奏写档,
+   * 写的正是同一份存档。只认心跳的话,第一页 12 秒后判定「对面没了」把提示熄掉,
+   * 下一次写档事件又点亮,4 秒后再熄:玩家看到的是提示条不停闪、toast 不停重弹。
+   * 实测(第二页钉在 hidden 且持续写档 40 秒):提示 true/false 交替 9 次、toast 14 条。
+   *
+   * 判据落在**常驻提示**上而不是 toast:toast 会去重、会自己散,数它不稳;
+   * 常驻那条直接读的是状态,翻转一次就是一次闪。
+   */
+  {
+    await first.evaluate(() => {
+      location.hash = '#/settings'
+    })
+    await first.waitForTimeout(600)
+    const bannerOn = () => first.evaluate(w => document.body.innerText.includes(w), WARN)
+    if (!(await bannerOn())) failures.push('第二页还开着,第一页设置页却没有常驻提示')
+
+    await second.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { get: () => 'hidden', configurable: true })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    const samples = []
+    // 30 秒 ≈ 7 个心跳周期:够跨过旧的 12 秒过期窗口两轮以上
+    for (let i = 0; i < 15; i += 1) {
+      await first.waitForTimeout(2000)
+      samples.push(await bannerOn())
+    }
+    const flips = samples.filter((v, i) => i > 0 && v !== samples[i - 1]).length
+    if (flips > 0) failures.push(`第二页切到后台后,第一页的提示翻转了 ${flips} 次(采样 ${JSON.stringify(samples)})`)
+    console.log(`  ${flips === 0 ? '✓' : '✗'} 对面在后台时提示不闪(采样 30 秒,翻转 ${flips} 次)`)
+    await first.evaluate(() => {
+      location.hash = '#/'
+    })
+    await first.waitForTimeout(300)
+  }
 } finally {
   await browser?.close()
   await server.httpServer.close()
