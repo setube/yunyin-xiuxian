@@ -200,6 +200,26 @@ describe('道侣 · 三:改变的是关系,不是战力', () => {
     )
   })
 
+  /*
+   * 已到最高阶段时没有「下一阶」。
+   *
+   * 变异扫描报 `if (!next) return null` 改坏不红:去掉它 `next.fate` 会直接抛
+   * TypeError。而这不是边角 —— 结为道侣之后它一直是 null,而 BondDialog 每开一次
+   * 就要读一遍 nextGateHint()(见第 158 行的 computed)。玩家结契之后再点开道侣面板即撞上。
+   */
+  it('已结为道侣(最高阶)时不再有下一步提示,也不抛', () => {
+    meet('dl_qingli')
+    // 一级一推:每调一次最多进一阶,推到没有下一阶为止
+    for (let i = 0; i < 6; i += 1) {
+      advanceBond({ fate: 100, trust: 100, accord: 100, shared: true })
+      if (currentBond()!.stage === 'daolv') break
+    }
+    const b = currentBond()!
+    expect(b.stage, '这一组数值应当推到最高阶').toBe('daolv')
+    expect(() => nextGateHint(), '最高阶不该抛').not.toThrow()
+    expect(nextGateHint(), '没有下一阶就没有提示').toBeNull()
+  })
+
   it('契合够了才结得成契', () => {
     meet('dl_qingli')
     advanceBond({ fate: 100, trust: 100, accord: 100, shared: true })
