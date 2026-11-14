@@ -78,6 +78,22 @@ describe('自动战斗', () => {
     expect(result.log[result.log.length - 1]!.t).toBe('win')
   })
 
+  /*
+   * buildLog=false 是「只读 .win 的抽样/审计」走的省事路:战报不构建。
+   *
+   * 变异扫描报 `if (!buildLog) return` 改坏不红 —— 去掉它每一次抽样战斗都会照常
+   * 拼一遍战报(每回合一条,含 formatGN 与两侧 HP 百分比)。远征与扫荡的胜率预估
+   * 一次要跑几百上千场,这条守卫就是那笔开销的唯一闸门。
+   */
+  it('buildLog=false 时战报为空,战果本身不变', () => {
+    const enemy = makeEnemySnap(wolf, 1, 1)
+    const quiet = resolveCombat(playerSnap(100), enemy, seeded(3), undefined, false)
+    expect(quiet.log, '关掉战报却仍在拼').toHaveLength(0)
+    expect(quiet.win, '关的只是战报,胜负判定照旧').toBe(true)
+    const loud = resolveCombat(playerSnap(100), enemy, seeded(3), undefined, true)
+    expect(loud.log.length, '开着时应当有战报 —— 否则上一条是空转').toBeGreaterThan(0)
+  })
+
   /**
    * 先手判定随战斗结果带出,供战后分析讲清「差多少」。
    * 阈值语义:1 + 先手判定修正 ≥ 对手速度才算抢先;写成连续收益会让词条文案与分析面板失实。

@@ -46,6 +46,20 @@ describe('道侣 · 一:不进入效率链', () => {
     console.log('\n服务层无属性写入、无资源发放、无道果宿慧 —— 五条通路一条都没开')
   })
 
+  /*
+   * 未知 id 不许落库。
+   *
+   * 变异扫描报 `if (!def) return false` 改坏不红:去掉它 `setBond({ daoluId: 'bogus_id', ... })`
+   * 会先把一个数据表里没有的道侣写进存档,再在下一句 `def.name` 上抛 TypeError ——
+   * 存档已被污染,而这一步是「相遇」,玩家并没有做错什么。实测破守卫后 bond 里确实多出 bogus_id。
+   */
+  it('相遇:未知 id 不落库、不抛,也不占掉道侣位', () => {
+    const player = usePlayerStore()
+    expect(() => meet('bogus_id'), '未知 id 不该抛').not.toThrow()
+    expect(meet('bogus_id')).toBe(false)
+    expect(player.bond, '没相遇成功不该写出道侣').toBeFalsy()
+  })
+
   it('数据层结构上就不给属性留位置', () => {
     expect(DATA).not.toMatch(/mods\s*[?:]/)
     expect(DATA).not.toMatch(/StatMods/)
