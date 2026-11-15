@@ -80,15 +80,55 @@ describe('变异扫描 · 等价名单', () => {
      */
     const PATTERNS: RegExp[] = [
       /if \((![A-Za-z_$][\w$.]*(?:\([^)]*\))?)\) return/g,
-      /Math\.max\(0(?:\.\d+)?,\s*([^;()]+(?:\([^)]*\))?[^;()]*)\)/g,
       /\.length === 0\)/g
     ]
+    /*
+     * 钳制下限那一条**不再用正则**,改按括号深度配对(见 mutation-scan.mjs 的 maxZeroSites)。
+     * 老正则只吃得下一层嵌套,遇到两层就提前收尾、留下不配对的括号 ——
+     * 那处本来有判据(offlineParity「events 不得为负」实测能抓),却因为变异把文件改成
+     * 语法错误而被判成「漏」。
+     *
+     * 这里必须跟脚本同一套算法,否则名单的形状对拍会失效:
+     * 脚本产出 `Math.max(0, (a - (b * c)) / d)` 这样的整段,而本文件若仍按老正则
+     * 只截到 `Math.max(0, (a - (b * c))`,名单里那些正确条目会被判成「对不上」。
+     */
+    const maxZeroShapes = (src: string): string[] => {
+      const out: string[] = []
+      const open = /Math\.max\(/g
+      let m
+      while ((m = open.exec(src))) {
+        const start = m.index
+        let i = start + m[0].length
+        let depth = 1
+        while (i < src.length && depth > 0) {
+          const c = src[i]
+          if (c === '(') depth += 1
+          else if (c === ')') depth -= 1
+          i += 1
+        }
+        if (depth !== 0) continue
+        const argsText = src.slice(start + m[0].length, i - 1)
+        let d = 0
+        let comma = -1
+        for (let k = 0; k < argsText.length; k += 1) {
+          const c = argsText[k]
+          if (c === '(') d += 1
+          else if (c === ')') d -= 1
+          else if (c === ',' && d === 0) { comma = k; break }
+        }
+        if (comma < 0) continue
+        if (!/^0(?:\.\d+)?$/.test(argsText.slice(0, comma).trim())) continue
+        out.push(src.slice(start, i))
+      }
+      return out
+    }
     const produced = (src: string): Set<string> => {
       const out = new Set<string>()
       for (const re of PATTERNS) {
         re.lastIndex = 0
         for (const m of src.matchAll(re)) out.add(NORM(m[0]!))
       }
+      for (const shape of maxZeroShapes(src)) out.add(NORM(shape))
       return out
     }
     for (const e of equivalentEntries()) {
@@ -198,5 +238,78 @@ describe('变异扫描 · 关联 spec 上限', () => {
     expect(src, '默认 limit 该 <= 10(实测 10 点约 1.5 分钟,15 点要 3.8 分钟)').toMatch(
       /return Number\.isFinite\(n\) && n >= 1 \? Math\.floor\(n\) : 10/
     )
+  })
+})
+
+/**
+ * 钳制下限的变异必须是**语法合法**的改写。
+ *
+ * 原先那一条是正则:`/Math\.max\(0(?:\.\d+)?,\s*([^;()]+(?:\([^)]*\))?[^;()]*)\)/`。
+ * 它的 `(?:\([^)]*\))?` 只吃得下**一层**嵌套,而真实写法常有两层:
+ *   `Math.max(0, (session.endsAt - (nowMs - dtSec * 1000)) / 1000)`
+ * 正则在那里提前收尾,捕到 `Math.max(0, (… - (nowMs - dtSec * 1000))` ——
+ * 去掉外壳后留下 `(… - (nowMs - dtSec * 1000)`,左括号多一个,整个文件语法错误。
+ *
+ * 后果是**假盲区**:那处本来有判据(offlineParity 的「events 不得为负」,故障注入
+ * 实测变红),却因为变异把文件改成编译不过而被判成「漏」。
+ * 假盲区比真盲区更贵 —— 它会让人去补一条已经存在的判据。
+ *
+ * 判据:对每一处产出的变异,括号必须配平、且`Math.max(0, …)` 的外壳真的被摘掉。
+ */
+describe('变异扫描 · 钳制下限的变异是合法改写', () => {
+  /** 从脚本源码里抠出 maxZeroSites(它是内部函数,测试 import 不到) */
+  const maxZeroSitesOf = (): ((src: string) => { text: string; mutated: string }[]) => {
+    const src = readFileSync(resolve(ROOT, 'scripts/mutation-scan.mjs'), 'utf-8')
+    const start = src.indexOf('function maxZeroSites')
+    expect(start, '找不到 maxZeroSites —— 判据要跟着改名').toBeGreaterThan(-1)
+    const end = src.indexOf('/** 归一化', start)
+    expect(end, '找不到 maxZeroSites 的结尾').toBeGreaterThan(start)
+    return new Function(`${src.slice(start, end)}; return maxZeroSites;`)() as (s: string) => {
+      text: string
+      mutated: string
+    }[]
+  }
+
+  it('给定两层嵌套的 Math.max,则变异摘掉外壳且括号配平', () => {
+    const sites = maxZeroSitesOf()('      const r = Math.max(0, (a.endsAt - (now - dt * 1000)) / 1000)')
+    expect(sites, '两层嵌套没扫到').toHaveLength(1)
+    expect(sites[0]!.mutated, '外壳没摘干净').toBe('(a.endsAt - (now - dt * 1000)) / 1000')
+    /*
+     * 配平:左括号数必须等于右括号数。老正则产出的 `(… - (now - dt * 1000)`
+     * 在这里是 2 : 1 —— 这就是那个语法错误的形状。
+     */
+    const l = (sites[0]!.mutated.match(/\(/g) ?? []).length
+    const r = (sites[0]!.mutated.match(/\)/g) ?? []).length
+    expect(l, `变异后括号不配平(${l} 左 : ${r} 右),整个文件会语法错误`).toBe(r)
+  })
+
+  it('给定实参里含逗号的调用,则按括号深度切,不在函数参数处截断', () => {
+    const sites = maxZeroSitesOf()('  const x = Math.max(0, fn(a, b))')
+    expect(sites, '含逗号的实参没扫到').toHaveLength(1)
+    expect(sites[0]!.mutated, '在第一层逗号处截断了').toBe('fn(a, b)')
+  })
+
+  it('给定首参不是字面量 0,则不当成钳制下限', () => {
+    expect(maxZeroSitesOf()('  const y = Math.max(base, other)')).toEqual([])
+    expect(maxZeroSitesOf()('  const z = Math.max(1, other)')).toEqual([])
+    // 0.5 这种「下限 0.5」也算钳制,但那是另一条语义;此处只认 0 与 0.x
+    expect(maxZeroSitesOf()('  const w = Math.max(0.02, factor)')).toHaveLength(1)
+  })
+
+  it('给定脚本源码,则每一处产出的变异都不会让括号失衡', () => {
+    const sites = maxZeroSitesOf()
+    const files = ['src/core/offline.ts', 'src/core/combat.ts', 'src/core/battleAnalysis.ts']
+    let checked = 0
+    for (const rel of files) {
+      const src = readFileSync(resolve(ROOT, rel), 'utf-8')
+      for (const s of sites(src)) {
+        expect(s.mutated.trim().length, `${rel} 的「${s.text}」变异成空串`).toBeGreaterThan(0)
+        const l = (s.mutated.match(/\(/g) ?? []).length
+        const r = (s.mutated.match(/\)/g) ?? []).length
+        expect(l, `${rel} 的「${s.text}」变异后括号不配平(${l}:${r})`).toBe(r)
+        checked += 1
+      }
+    }
+    expect(checked, '一个 Math.max 都没扫到,判据空转').toBeGreaterThan(3)
   })
 })
