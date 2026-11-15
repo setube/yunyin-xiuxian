@@ -23,6 +23,7 @@ import { STAT_KEYS } from '@/data/statNames'
 import { MAX_MAJOR } from '@/data/realms'
 import { useAdventureStore } from '@/stores/adventure'
 import { useBountyStore } from '@/stores/bounty'
+import { cmp, gn } from '@/utils/gnum'
 import {
   asArray,
   asCarriedHpPct,
@@ -115,6 +116,8 @@ const LIFE_COUNTER_CAP = 10_000_000
 
 /** 忆战快照的速度上界:真实量级在 1~3,取一百已极宽 */
 const REPLAY_SPEED_MAX = 100
+/** 道痕重演三维的读档上界:最高境界实测 atk 4.45e13 / def 2.37e13 / hp 5.08e14 */
+const REPLAY_STAT_MAX = gn(1e18)
 
 /**
  * 一趟远征的总回合上界(仅用于无战报行的旧档兜底)。
@@ -249,6 +252,20 @@ function sanitizeMarkReplay(raw: unknown): DaoMark['replay'] | undefined {
    * 正常量级:玩家侧是 `1 + modOf(speed)`,词缀与法宝各加零点几,到不了两位数。
    */
   const speed = asFiniteNumber(r.speed, 0, 0, REPLAY_SPEED_MAX)
+  /*
+   * 三维也要有上界 —— 原先只查非零(`attack.m === 0` 即丢弃)。
+   *
+   * 它们与 `speed` 是同一条路径:快照直接进 `compareSnaps` 重演,
+   * 坏档写 `1e900` 会让「彼时之你」永远赢,「往世 vs 今世」的对比失去意义
+   * (与上面 speed 那段同一个理由,只是 speed 早补了界)。
+   *
+   * 上界按真实最大境界算:最高境界实测 atk 4.45e13 / def 2.37e13 / hp 5.08e14,
+   * 装备与法宝再乘几倍也已包含在内。取 `REPLAY_STAT_MAX`(1e18)——
+   * 与 `POWER_SANITY_MAX` 同一把尺,比真实值宽三到四个数量级。
+   */
+  if (cmp(attack, REPLAY_STAT_MAX) > 0 || cmp(defense, REPLAY_STAT_MAX) > 0 || cmp(maxHp, REPLAY_STAT_MAX) > 0) {
+    return undefined
+  }
   if (attack.m === 0 || defense.m === 0 || maxHp.m === 0 || speed <= 0) return undefined
   const mods = sanitizeMods(r.mods) ?? {}
   const skills = asCombatSkills(r.skills)
