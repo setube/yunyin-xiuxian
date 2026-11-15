@@ -536,9 +536,17 @@ function cultivationSlices() {
   const base = lateSlices()
   return {
     ...base,
-    // 已习得一部主修:修行页才画得出主修卡,点开就是功法详情
+    /*
+     * 已习得一部主修,且**练到满级**。
+     *
+     * 修行页的主修卡只要有一部就画得出来,但功法详情里的「悟道分支」那一块
+     * 是 `v-if="fullLevel && branches.length"` —— 3 级时整块不渲染,于是那扇窗里
+     * 唯一的不可逆两步确认(择道:选完不可更改、转世不失)从来没被几何量过。
+     * 满级是它的前置状态,与「状态胶囊要一条未过期的增益」同一类,故直接铺在该分片里。
+     * 实测 3 级时 3 控件、两步确认探不到;9 级(m_taixuan 的 maxLevel)时 6 控件且探到。
+     */
     cultivation: {
-      learned: { m_taixuan: 3 },
+      learned: { m_taixuan: 9 },
       mainGongfa: 'm_taixuan',
       subGongfa: [],
       gongfaBranch: {},
