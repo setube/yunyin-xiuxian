@@ -756,6 +756,45 @@ const EQUIVALENT = [
       '页脚走的是「无可重铸词条」那一支,分母印不出来。'
   },
   {
+    file: 'src/core/exploration.ts',
+    text: 'if (!s) return',
+    why:
+      'runBattle 的「会话已结束」早退是第二道。它只有一个调用点(tickExploration 末尾),' +
+      '而那个函数开头 `const s = adventure.session; if (!s || player.dead) return` 已经挡过;' +
+      '中间到 runBattle 之间全是同步代码(实测整段 0 处 await),没有任何让会话变 null 的窗口。' +
+      '去掉本处 guard 后,`regionDef(s.regionId)` 在 s 为 null 时会抛 —— 但那条路径构造不出来。' +
+      '留着防的是「将来有人给 tickExploration 中间加 await」。'
+  },
+  {
+    file: 'src/core/secretRealm.ts',
+    text: 'if (!def) return',
+    why:
+      'fightSecretLayer 的秘境定义判空是第二道。`state.realmId` 的来源只有两处:' +
+      '`enterSecretRealm`(开头就 `if (!def) return` 挡掉未知 id)与读档 —— 而 player.sanitize 里' +
+      '`SECRET_REALMS.some(r => r.id === sr.realmId)` 不认识的直接 `secretRealm.value = null`。' +
+      '实测往 store 硬写一个不存在的 realmId 再调 sanitize,secretRealm 变 null、fightSecretLayer 返回 null;' +
+      '不跑 sanitize 直接调才会抛(def 为 undefined 时读 rewardMult)。' +
+      '留着防的是「将来放宽 sanitize 或新增一条不校验的入口」。'
+  },
+  {
+    file: 'src/core/reforge.ts',
+    text: 'if (!template) return',
+    why:
+      'reforgeEquipment 里的模板判空是第二道。同一个函数开头调的 reforgeCost 第一行就是 ' +
+      '`if (!equipmentTemplate(inst.templateId)) return null`,而 cost 为 null 时上面已经 return false ——' +
+      '走到这一行时模板必然存在。留着防的是「将来有人把 reforgeCost 那道判空删掉」。' +
+      '实测把这句改成恒假后 5 个 reforge 相关 spec 全绿。'
+  },
+  {
+    file: 'src/core/reforge.ts',
+    text: '.length === 0)',
+    why:
+      '重铸抽取池的空判。池子是 AFFIXES 按「部位 + 品质档」过滤出来的,实测 5 个部位 × 9 档品质' +
+      '(共 45 组,加上基础品质共 81 组)= 池子最小也有十余条,而 wantCount - kept.length 至多等于该品质的' +
+      '最大词条数(神品 9)、kept 又全是池外 —— 抽不到空。留着防的是将来把某个部位的可配词条删光。' +
+      '注:本条是 `pool.length === 0)` 这个形状在 reforge.ts 里的一处;闪烁扫描按「文件 + 归一化原文」匹配。'
+  },
+  {
     file: 'src/core/suppress.ts',
     text: 'Math.max(0, Math.min(dt, remain))',
     why:
