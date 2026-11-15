@@ -9,6 +9,7 @@ import { consignPrice, focusHerbSlot, marketRemainingSec, herbSellBatch, materia
 import { MAX_EQUIP_TIER } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import { useMarketStore } from '@/stores/market'
+import { MARKET_SLOTS } from '@/data/market'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
@@ -828,4 +829,29 @@ describe('坊市 · 坏档格号挤掉好货', () => {
     expect(post!.slot, '槽位不得为负').toBeGreaterThanOrEqual(0)
   })
 
+})
+
+/**
+ * 货架条数封顶。
+ *
+ * `MARKET_SLOTS`(6)是上货时的格数,而 `sanitize` 原先按存档条数原样收 ——
+ * 坏档塞 500 条合法货品会被全吃下,而 `MarketShelfSection` 的 `cards` 是对
+ * 全量 `market.stock` 直接 `map`,页面就渲 500 张卡。
+ *
+ * 故障注入:去掉 `clean.slice(0, MARKET_SLOTS)` → 本条红。
+ */
+describe('坊市 · 货架条数封顶', () => {
+  it('坏档塞 500 条合法货品,读档后只留 6 格', () => {
+    const m = useMarketStore()
+    m.stock = Array.from({ length: 500 }, (_, i) => ({
+      idx: i,
+      kind: 'material',
+      matId: 'ore',
+      count: 5,
+      price: { m: 1, e: 3 },
+      sold: false
+    })) as never
+    m.sanitize()
+    expect(m.stock.length, '货架没封顶 —— MarketShelfSection 会渲 500 张卡').toBeLessThanOrEqual(MARKET_SLOTS)
+  })
 })

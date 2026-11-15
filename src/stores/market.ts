@@ -19,6 +19,7 @@ import {
   MARKET_CONSIGN_SLOTS,
   MARKET_CONSIGN_SECONDS,
   MARKET_MAT_COUNT,
+  MARKET_SLOTS,
   type ConsignPost,
   type MarketSlot
 } from '@/data/market'
@@ -146,7 +147,17 @@ export const useMarketStore = defineStore(
         usedIdx.add(idx)
         clean.push(idx === slot.idx ? slot : { ...slot, idx })
       }
-      stock.value = clean
+      /*
+       * 货架条数封顶。
+       *
+       * `MARKET_SLOTS`(6)是 `marketService` 上货时的格数,而 `clean` 按存档里的条数
+       * 原样收 —— 坏档塞 500 条合法货品会被全吃下,而 `MarketShelfSection` 的
+       * `cards` 是对全量 `market.stock` 直接 `map`,页面就渲 500 张卡。
+       *
+       * 上界取 `MARKET_SLOTS`:货架本来只有 6 格,多出来的必然是坏档。按原顺序保留前
+       * `MARKET_SLOTS` 条,与「idx 从小到大」的摆放顺序一致。
+       */
+      stock.value = clean.slice(0, MARKET_SLOTS)
 
       const posts: ConsignPost[] = []
       for (const raw of asArray<unknown>(consign.value)) {
