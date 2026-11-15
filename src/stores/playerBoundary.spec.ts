@@ -379,3 +379,39 @@ describe('区域胜场 · 读档只认真实地界', () => {
     expect(p.regionWins.qingyun, '真实胜场被误伤').toBe(7)
   })
 })
+
+/**
+ * 道侣的「已完成事件」是集合，读档要去重。
+ *
+ * 消费方都按集合用（`daoluService` 的 `new Set(b.doneEvents)` 判「是否已走过」、
+ * `includes(ev.id)` 挡重播），故重复项不影响玩法，只白白撑大存档 ——
+ * 坏档塞五千条同一 id 实测全留。
+ *
+ * 写入侧（`pickBondEvent`）有 `includes` 闸，重复只可能来自坏档。
+ *
+ * 故障注入：去掉 `[...new Set(...)]` → 本条红。
+ */
+describe('道侣 · 已完成事件去重', () => {
+  it('重复项只留一条,顺序与唯一性保持', () => {
+    const p = usePlayerStore()
+    p.bond = {
+      daoluId: 'dl_qingli',
+      stage: 'met',
+      fate: 0,
+      trust: 0,
+      accord: 0,
+      shared: 0,
+      metAt: 1,
+      fallen: false,
+      departed: false,
+      doneEvents: ['ev_a', 'ev_b', 'ev_a', 'ev_a'],
+      opportunities: 0,
+      nextEventAt: 6,
+      pendingEventId: null,
+      lastKind: null
+    } as never
+    p.sanitize()
+    const b = p.bond as unknown as { doneEvents: string[] } | null
+    expect(b?.doneEvents, '重复项没去重').toEqual(['ev_a', 'ev_b'])
+  })
+})
