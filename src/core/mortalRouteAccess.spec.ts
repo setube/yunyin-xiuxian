@@ -577,4 +577,18 @@ describe('凝界 · 分块异步', () => {
   it('给定凝界函数,当连开两次,则第二次被防重入挡掉而不是重复生成', async () => {
     expect(SERVICE, '凝界该有防重入').toContain('if (generating)')
   })
+  /*
+   * `regionId` 不在本世路线里时 `chain.find` 返回 undefined。
+   * 去掉 `if (!node) return null`,下一行 `node.nodeId` 抛 TypeError。
+   * 界面可能拿着上一世的区域 id 调进来。
+   */
+  it('区域不在本世路线里:返回 null,不抛', async () => {
+    const w = (await rerollMortalWorld())!
+    const known = new Set(w.chain.map(p => p.fromId))
+    // 先证明这个 id 确实不在链里,否则测的是另一条分支
+    expect(known.has('no_such_region_xyz'), '夹具失效:id 恰好在本世链里').toBe(false)
+    expect(() => advanceRoute('no_such_region_xyz')).not.toThrow()
+    expect(advanceRoute('no_such_region_xyz')).toBeNull()
+  })
+
 })
