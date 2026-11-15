@@ -15,6 +15,10 @@ import { regionDef, unlockClosure } from '@/data/regions'
 const SESSION_COUNT_MAX = 1e8
 /** 战报累加器(灵石/修为)的读档上界:单场实测约 5.25e10,真实累计到不了 1e20 */
 const SESSION_GAIN_MAX = gn(1e20)
+
+/** 际遇记忆的「遇到次数」上界:fortuneEcho 只按 >=2 / >=3 分档,取一千不影响分档 */
+const EVENT_MEMORY_TIMES_MAX = 1000
+
 const clampGain = (v: unknown): GNum => {
   const g = asBoundedGNum(v)
   return cmp(g, SESSION_GAIN_MAX) > 0 ? gnZero() : g
@@ -391,11 +395,22 @@ export const useAdventureStore = defineStore(
        */
       const SEEN_ONCE_CAP = (EVENTS.length + FORTUNE_EVENTS.length) * 2
       seenOnceEvents.value = [...new Set(asStringArray(seenOnceEvents.value))].slice(0, SEEN_ONCE_CAP)
+      /*
+       * 际遇记忆三条守卫。
+       *
+       * ① 认不出的 `eventId` 清掉:`recordEvent` 的 key 一律是 `def.id`(真实事件),
+       *    野 id 只可能来自坏档;而它会被 `lossRows` 原样印成「际遇 N 次」。
+       * ② `times` 封顶:`recordEvent` 每次 +1,而 `fortuneEcho` 只按 `>= 2` / `>= 3`
+       *    分档,上界取一千既不影响分档,又拦得住坏档的 `1e300`(会印成科学计数)。
+       * ③ 条数兜底:事件总数有限(见 EVENTS 与 FORTUNE_EVENTS),但坏档能塞任意多 key,
+       *    而 `lossRows` 是 `v-for` 逐条渲。
+       */
       const fixedMemories: Record<string, import('@/types').EventMemory> = {}
       for (const [id, raw] of Object.entries(asRecord<unknown>(eventMemories.value))) {
         if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue
+        if (!eventDef(id)) continue
         const m = raw as Partial<import('@/types').EventMemory>
-        const times = Math.floor(asFiniteNumber(m.times, 0, 0))
+        const times = Math.floor(asFiniteNumber(m.times, 0, 0, EVENT_MEMORY_TIMES_MAX))
         if (times <= 0) continue
         const lastAt = asTimestamp(m.lastAt, 0)
         const choiceCount = eventDef(id)?.choices.length ?? 0
