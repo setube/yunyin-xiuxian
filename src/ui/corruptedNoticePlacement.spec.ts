@@ -61,6 +61,28 @@ describe('坏档 · 欢迎页也要说一句', () => {
     expect('存档损坏').toHaveLength(4)
   })
 
+  it('启动 toast 要点名坏了哪一片,不能只说「损坏」', () => {
+    /*
+     * 原先 main.ts 只报「存档损坏,已隔离修复」—— 2.6 秒后这条就散了,
+     * 而玩家真正需要的那条事实(哪一片坏了)只留在设置页里。
+     * 实测坏 `player` 分片后,首页与顶栏一个字都不提,玩家看到的是
+     * 「神人境」悄悄变回「炼气一层」,除这条几秒的提示外没有任何解释。
+     */
+    const main = readFileSync(resolve(ROOT, 'src/main.ts'), 'utf-8')
+    expect(main, '启动 toast 没走 STORE_NAMES —— 会印内部 id').toContain('STORE_NAMES')
+    expect(main, '启动 toast 里没有拼接分片名').toMatch(/NAMES\.join\('、'\)/)
+    // 不许退回到不带名字的那句话
+    expect(main, 'toast 又变回不带分片名的「存档损坏,已隔离修复」').not.toContain(
+      "toast('存档损坏,已隔离修复'"
+    )
+  })
+
+  it('坏得多时只报个数,不把提示挤成五行', () => {
+    const main = readFileSync(resolve(ROOT, 'src/main.ts'), 'utf-8')
+    expect(main, '没有截上限 —— 15 片全坏会把一条提示挤爆').toMatch(/corrupted\.slice\(0, 3\)/)
+    expect(main, '截断后没报总数').toMatch(/等 \$\{corrupted\.length\} 处/)
+  })
+
   it('「导入存档」入口就在同一页 —— 状态与找回的路不隔页', () => {
     /*
      * 提示只说事实、不给建议,前提是**找回的动作已经在眼前**。

@@ -24,7 +24,16 @@ const SRC = join(ROOT, 'src')
 const ARRAYISH = new Set([
   'names', 'list', 'arr', 'rows', 'row', 'items', 'item', 'entries', 'shallow', 'ranked',
   'reasons', 'candidates', 'subGongfa', 'errors', 'owned', 'equip', 'loadouts', 'tabs',
-  'deltas', 'risks', 'rates', 'chips', 'stars', 'results', 'cells', 'lines', 'parts'
+  'deltas', 'risks', 'rates', 'chips', 'stars', 'results', 'cells', 'lines', 'parts',
+  /*
+   * `corrupted`:main.ts 里 `const corrupted = preflightScan()`,而那个函数签名是
+   * `preflightScan(): string[]` —— 切的是**坏分片 id 的数组**,不是字符串。
+   *
+   * 加名字白名单是这套判据唯一的办法:它拿不到类型信息,只能按接收者名字猜。
+   * 代价是「名字对了就放行」—— 所以真加新条目时先回去看那个变量到底是什么类型,
+   * 别为了让判据变绿而加(那正是本判据注释里警告过的自我失效)。
+   */
+  'corrupted'
 ])
 /** 取接收者最后一段(`a.b.c` 取 `c`),按整词判是不是数组 */
 function looksArray(recv: string): boolean {
