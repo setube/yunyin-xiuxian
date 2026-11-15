@@ -551,11 +551,13 @@ const EQUIVALENT = [
   },
   {
     file: 'src/core/powerRating.ts',
-    text: 'Math.max(0, modOf(m, k))',
+    text: 'Math.max(0, raw)',
     why:
       '五维评级的每维得分最后落成 1~5 星,而星级下限就是 1 —— 实测全负词条与全零词条' +
       '给出同一组星级(critRate/attack/defense 取 -100 与 0 都得 1 星)。钳到 0 只影响明细里的 raw,' +
-      '而 raw 不进任何判定。'
+      '而 raw 不进任何判定。' +
+      '注:`raw` 是上面那句 `Number.isFinite(raw) ? Math.max(0, raw) : 0` 里的局部量;' +
+      '非有限值已被三元的前一支拦掉,故 NaN 走不到这一处。'
   },
   {
     file: 'src/core/wudaoExchange.ts',
