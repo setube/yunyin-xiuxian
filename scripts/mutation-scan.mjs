@@ -677,6 +677,14 @@ const EQUIVALENT = [
     why:
       'clean[g] 由上一行 `clean[g] = Math.max(0, n)` 赋值,恒 >= 0;scalar 是 v1 迁移旧字段,同样经钳制。' +
       '两项都非负,和的钳制不可达。'
+  },
+  {
+    file: 'src/core/tribulationDecision.ts',
+    text: 'Math.max(0, 1 + trace.hpLeft)',
+    why:
+      'failedRate 的坠劫深度补数。hpLeft 深负(如 -3)时 1+hpLeft 为负,看似需要钳制,' +
+      '但返回值外层已有 `Math.max(0.25, ...)` 兜底 —— 负 shortfall 只会把 rate 拉低到 0.25 以下、再被抬回 0.25。' +
+      '实测八档境界 × 五档护持共 40 组参数,去掉本处钳制后 expectedRate 逐位相同。'
   }
 ]
 
