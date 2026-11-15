@@ -274,6 +274,18 @@ export async function confirmReincarnation(chosenTalentId: string | null, chosen
    */
   ui.breakthrough = null
   ui.treasure = null
+  /*
+   * 离线归来卷轴也一并收掉。
+   *
+   * 它的读数(灵石/修为/历练场次)是**上一世那一段离线**的账,而这笔账在
+   * `settleOffline` 里就已经入过了(卷轴只展示、不再入账,见 OfflineRewardDialog
+   * 没有任何 add/spend)。转世后新世从 0 起步,再摊着旧世那份卷轴只会对不上。
+   *
+   * 触发路径与突破弹窗同一条:两个都不可关,而「寿元将尽」从 App.vue 全局压上来,
+   * 带着自己的「兵解转世」钮。实测三扇能叠在一起:
+   * 离线归来结算 / 寿元将尽 / 此生已矣。
+   */
+  ui.offlineSummary = null
   ui.toast(`已转世 · 道号「${player.name}」`, 'rare')
   if (view.stageAdvanced) ui.toast(`境地已迁「${view.stageName}」`, 'rare')
   if (recognized > 0) ui.toast(`新认得 ${recognized} 味灵材`, 'info')

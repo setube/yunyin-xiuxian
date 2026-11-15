@@ -400,11 +400,32 @@ describe('转世 · 一次性弹窗随本世清空', () => {
       message: '破境'
     }
     ui.treasure = { templateId: 'w_zhuqing', name: '测试之器' } as never
+    ui.offlineSummary = {
+      seconds: 3600,
+      cappedSeconds: 3600,
+      capped: false,
+      exp: { m: 1, e: 2 },
+      stone: { m: 5, e: 2 },
+      qi: 10,
+      herb: 2,
+      herbByGrade: [],
+      ore: 1,
+      wudao: 3,
+      ageYears: 0,
+      battles: 10,
+      wins: 8,
+      events: 2,
+      equipment: [],
+      recycledDust: 0,
+      evicted: 0,
+      notes: []
+    } as never
 
     ui.reincarnation = prepareReincarnation()
     await confirmReincarnation(null)
 
     expect(ui.breakthrough, '突破弹窗跨世了 —— 新世第一屏还写着上辈子的境界').toBeNull()
     expect(ui.treasure, '得宝仪典跨世了').toBeNull()
+    expect(ui.offlineSummary, '离线归来卷轴跨世了 —— 那笔账已经入过了,新世再摊旧世那份对不上').toBeNull()
   }, 60000)
 })
