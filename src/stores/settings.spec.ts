@@ -169,3 +169,25 @@ describe('设置 · reduceMotion 系统偏好播种', () => {
   })
 
 })
+
+/**
+ * 版本号要截。
+ *
+ * 合法形是 `1.46.0` 这种（最长十来个字符），它不渲染，只进
+ * `compareVersions(APP_VERSION, lastSeenVersion)` —— 而那函数是 `split('.')`
+ * 后逐段 `parseInt`。坏档塞二十万字符会在**启动路径**上切出二十万个分段再逐个解析。
+ *
+ * 故障注入：去掉 `truncateCodePoints` → 第一条红。
+ */
+describe('设置 · 版本号长度上界', () => {
+  it('超长版本号截断,正常语义化版本原样', () => {
+    const s = useSettingsStore()
+    s.lastSeenVersion = '1.'.repeat(100_000)
+    s.sanitize()
+    expect(s.lastSeenVersion.length, '版本号没截 —— 启动路径会切出二十万个分段').toBeLessThanOrEqual(32)
+
+    s.lastSeenVersion = '1.46.0'
+    s.sanitize()
+    expect(s.lastSeenVersion, '正常版本号被误伤').toBe('1.46.0')
+  })
+})

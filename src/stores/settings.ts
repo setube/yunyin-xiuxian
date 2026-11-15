@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { persistConfig } from '@/utils/storage'
-import { asArray, asFiniteNumber, asRecord, asTimestamp } from '@/utils/saveShape'
+import { asArray, asFiniteNumber, asRecord, asTimestamp, truncateCodePoints } from '@/utils/saveShape'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
 import { QUALITIES } from '@/data/qualities'
 import { APP_VERSION, compareVersions } from '@/utils/appVersion'
@@ -75,7 +75,14 @@ export const useSettingsStore = defineStore(
       privacyAccepted.value = privacyAccepted.value === true
       lastExportAt.value = Math.max(0, asTimestamp(lastExportAt.value, 0))
       installNoticeDismissed.value = installNoticeDismissed.value === true
-      lastSeenVersion.value = typeof lastSeenVersion.value === 'string' ? lastSeenVersion.value : ''
+      /*
+       * 版本号要截。合法形是 `1.46.0` 这种(最长十来个字符),它不渲染,
+       * 只进 `compareVersions(APP_VERSION, lastSeenVersion)`,而那函数是
+       * `split('.')` 后逐段 `parseInt` —— 坏档塞二十万字符会在**启动路径**上
+       * 切出二十万个分段再逐个解析。截到 32 已宽到容得下任何语义化版本号。
+       */
+      lastSeenVersion.value =
+        typeof lastSeenVersion.value === 'string' ? truncateCodePoints(lastSeenVersion.value, 32) : ''
       decomposeRanks.value = [
         ...new Set(
           asArray<number>(decomposeRanks.value).filter(
