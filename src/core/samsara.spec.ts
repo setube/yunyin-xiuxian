@@ -410,6 +410,22 @@ describe('敌人认知的逐层揭示(describeEnemy)', () => {
  * 故障注入:往 LifeThemeMetric 加一条 `| { kind: 'foo' }` 而不加 case,本条红。
  */
 describe('命题判据 · 分发表与类型同步', () => {
+  /*
+   * 这里必须自己建 pinia。
+   *
+   * 本块后半段几条用例都读 store(`usePlayerStore` / `useQuestsStore` / `vowProgress`),
+   * 而原先它们靠**前面 describe 的 beforeEach 遗留下来的那个 pinia** 跑。
+   * 全量跑时前块先执行过,看起来一直是绿的;但
+   *   `vitest run src/core/samsara.spec.ts -t "基线高过现值"`
+   * 只跑本块时立刻炸 `getActivePinia() was called but there was no active Pinia`,
+   * 而 `--sequence.shuffle` 若把本块排到最前,同样是这个错 —— 实测三次乱序两次红。
+   *
+   * 判据不该依赖「别的块恰好先跑过」这种执行顺序。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   const SERVICE = readFileSync(resolve(__dirname, 'samsaraService.ts'), 'utf-8')
   const THEMES = readFileSync(resolve(__dirname, '../data/lifeThemes.ts'), 'utf-8')
 

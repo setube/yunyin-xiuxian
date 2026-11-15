@@ -131,21 +131,29 @@ describe('设置 · 智能收纳品质线坏档清洗', () => {
 })
 
 describe('设置 · reduceMotion 系统偏好播种', () => {
+  /*
+   * 本块四条用例原先各自在内部建 pinia,只有最后那条「负的时间戳被钳到 0」漏了一句 ——
+   * 它靠前一条用完的 pinia 跑。全量跑时一直是绿的,但
+   *   `vitest run src/stores/settings.spec.ts -t "负的时间戳被钳到 0"`
+   * 单跑立刻炸 `getActivePinia() was called but there was no active Pinia`。
+   * 统一提到 beforeEach:四条都读 store,没有理由让最后一条依赖别人。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('系统开了减少动效:首次创建的应用内默认值随之打开', () => {
     stubMatchMedia(true)
-    setActivePinia(createPinia())
     expect(useSettingsStore().reduceMotion).toBe(true)
   })
 
   it('系统没开:维持 false,行为不变', () => {
     stubMatchMedia(false)
-    setActivePinia(createPinia())
     expect(useSettingsStore().reduceMotion).toBe(false)
   })
 
   it('环境没有 window(node / 未来宿主):不抛,回落 false', () => {
     vi.stubGlobal('window', undefined)
-    setActivePinia(createPinia())
     expect(useSettingsStore().reduceMotion).toBe(false)
   })
   /*

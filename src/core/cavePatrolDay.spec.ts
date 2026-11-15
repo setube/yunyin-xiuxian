@@ -187,8 +187,19 @@ describe('星象定向 · 未来日记号会让每日上限失效', () => {
  * 现改用固定上界(36500 天来自 totalPlaySec 自身的 100 年封顶,取一万留余量)。
  */
 describe('日号守卫 · 不依赖尚未修复的 game.totalPlaySec', () => {
-  it('totalPlaySec 是坏值时,未来日号仍然被归零', () => {
+  /*
+   * 本块的用例原先各自在内部建 pinia,只有最后那条「没有在途洞府事件时离开」
+   * 漏了一句 —— 它靠前一条用完的 pinia 跑。全量跑时一直是绿的,但
+   *   `vitest run src/core/cavePatrolDay.spec.ts -t "没有在途洞府事件时离开"`
+   * 单跑立刻炸 `getActivePinia() was called but there was no active Pinia`,
+   * `--sequence.shuffle` 把它排前时同样红(实测三次乱序一次红)。
+   * 统一提到 beforeEach:本块每条都读 store,没有理由只让其中一条依赖别人。
+   */
+  beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  it('totalPlaySec 是坏值时,未来日号仍然被归零', () => {
     const game = useGameStore()
     game.totalPlaySec = Number.MAX_VALUE // 尚未被 game.sanitize 修过的坏值
     const player = usePlayerStore()
