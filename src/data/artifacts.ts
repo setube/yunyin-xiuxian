@@ -987,14 +987,22 @@ export function artifactSlotViews(
 ): (ArtifactSlotView | undefined)[] {
   const count = Math.max(0, Math.min(ARTIFACT_MAX_SLOTS, Math.floor(slots) || 0))
   const byId = new Map(owned.map(a => [a.defId, a]))
-  const views: (ArtifactSlotView | undefined)[] = []
-  for (const id of equipped) {
-    if (views.length >= count) break
-    const def = artifactDef(id)
-    const entry = byId.get(id)
-    if (!def || !entry) continue
-    views.push({ def, level: entry.level })
-  }
+  /*
+   * 只认得出、且在库里的那些;超编时留**尾部**。
+   *
+   * 这一侧必须与 `inventory.currentArtifacts` 的生效判据同向。此前按 `equipped`
+   * 原序取前 count 件 —— 列表超编(境界跌落、未经 sanitize)时,界面画的是最早祭炼的,
+   * 而真正生效的是最晚的那几件,玩家看到的格子与身上作数的法宝对不上。
+   */
+  const live = equipped
+    .map(id => {
+      const def = artifactDef(id)
+      const entry = byId.get(id)
+      return def && entry ? { def, level: entry.level } : undefined
+    })
+    .filter((v): v is ArtifactSlotView => v !== undefined)
+    .slice(-count)
+  const views: (ArtifactSlotView | undefined)[] = [...live]
   while (views.length < count) views.push(undefined)
   return views
 }
