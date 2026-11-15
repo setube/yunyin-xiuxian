@@ -476,6 +476,22 @@ export async function rerollVoidWorld(): Promise<boolean> {
       ui.toast('虚界未成形 · 道源已退还', 'warn')
       return false
     }
+    /*
+     * 回来之后复验道途还在。
+     *
+     * 扣费与 `voidRerolling` 置位都在 await **之前**,写结果在之后 ——
+     * 这段窗口里玩家可能已经转世(`endgame.onRebirth()` 会把道途归还)。
+     * 不复验的话,生成照样完成、照样写进去:转世后凭空多出一座上一世的虚界,
+     * 而道途已经没了、再也进不去。实测(把生成层 mock 成必成功):
+     * `窥探返回 true` / `voidWorld 有「假虚界」` / `daoPath 为 null`。
+     *
+     * 退款而不是静默丢弃:这 10 道源是玩家为「这一世的窥探」付的,
+     * 而结果随道途一起作废了。
+     */
+    if (!endgame.daoPath) {
+      endgame.addDaoSource(VOID_REROLL_COST)
+      return false
+    }
     endgame.voidWorld = generated.world
     ui.toast(`虚界「${generated.world.name}」成形`, 'rare')
     return true

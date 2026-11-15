@@ -101,10 +101,14 @@ const CORE_STORE_SITES = 192;
  *   即 compare.spec 自己就引入了 2 个,不是先后两个文件。
  *   measureOnWorld 经 currentDaoRules 读 endgame store,该模块绕不开 Pinia。
  *
- * 现状 121 已顶格(121/121),即新写一个要读 store 的 core 用例就会红。
+ * 121 → 122:补 voidRerollRebirth.spec 时加的。`rerollVoidWorld` 读 endgame/ui 两个 store、
+ *   `onRebirth` 也是 store 方法,这条时序判据绕不开 Pinia —— 与被测模块同层的
+ *   expedition.spec 比,它只多钉「await 窗口里转世」这一个次序,没有把纯模块拖下水。
+ *
+ * 现状 122 已顶格(122/122),即新写一个要读 store 的 core 用例就会红。
  * 那是有意的:真需要就上调并写明理由,不需要就别把纯模块的测试拖下水。
  */
-const CORE_PINIA_SPECS = 121;
+const CORE_PINIA_SPECS = 122;
 
 function sources(dir: string): { name: string; text: string }[] {
   return readdirSync(dir)
