@@ -14,7 +14,7 @@ import {
   expectedWinReward,
   randomDropArtifact,
   randomDropPill
-} from './loot'
+, onAcquire } from './loot'
 import { upgradeEquipment } from './forge'
 import { ARTIFACTS, artifactDef, artifactValue } from '@/data/artifacts'
 import type { ArtifactDef } from '@/types'
@@ -594,5 +594,52 @@ describe('掉落丹药 · 池子装的是哪些', () => {
       const id = randomDropPill(20)
       expect(recipeIds.has(id!), `抽到了配方丹 ${id}`).toBe(false)
     }
+  })
+})
+
+/*
+ * 装备入账订阅的摘除契约(修 offline.settleOffline 的监听器泄漏时加的)。
+ *
+ * `offline.ts` 那侧的修复(监听器自带 `ledgerDone`、结束后回 false)没有可从外部
+ * 观测的出口:结算抛错时不返回、监听器也拿不到句柄,所以本文件只钉得住
+ * `loot.ts` 这一半 —— 见到 `false` 就地摘掉。那一半靠人工审。
+ */
+describe('装备入账订阅 · 回报 false 即被摘掉', () => {
+  const mk = (uid: string): EquipmentInstance =>
+    ({ uid, templateId: 'w_zhuqing', quality: 'heaven', tier: 1, level: 0, affixes: [] }) as unknown as EquipmentInstance
+
+  it('监听器回 false 之后不再被调用', () => {
+    let calls = 0
+    let expired = false
+    const stop = onAcquire(() => {
+      calls += 1
+      return expired ? false : undefined
+    })
+    acquireEquipment(mk('a'), { quiet: true })
+    expect(calls, '第一次该被调用').toBe(1)
+    expired = true
+    acquireEquipment(mk('b'), { quiet: true })
+    expect(calls, '标记过期那一次仍会调一次 —— 它要靠这次回报 false').toBe(2)
+    acquireEquipment(mk('c'), { quiet: true })
+    expect(calls, '回报 false 之后仍被调用 —— 没摘掉,会一直堆积').toBe(2)
+    stop()
+  })
+
+  it('回报 false 的监听器不影响别的监听器', () => {
+    let aCalls = 0
+    let bCalls = 0
+    const stopA = onAcquire(() => {
+      aCalls += 1
+      return false
+    })
+    const stopB = onAcquire(() => {
+      bCalls += 1
+    })
+    acquireEquipment(mk('x'), { quiet: true })
+    acquireEquipment(mk('y'), { quiet: true })
+    expect(aCalls, '过期的只该被调一次').toBe(1)
+    expect(bCalls, '另一个监听器不该被误摘').toBe(2)
+    stopA()
+    stopB()
   })
 })

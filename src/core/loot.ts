@@ -62,8 +62,15 @@ export interface AcquireResult {
   stone: GNum
 }
 
-/** 装备入账监听者(离线结算用它把历练、镇压、际遇三条路记成一本账) */
-type AcquireListener = (inst: EquipmentInstance, res: AcquireResult) => void
+/**
+ * 装备入账监听者(离线结算用它把历练、镇压、际遇三条路记成一本账)。
+ *
+ * 返回 `false` 表示「我这个监听者已经不需要了」——`acquireEquipment` 会当场把它摘掉。
+ * 这条契约是给「所在逻辑中途抛错、来不及调退订函数」那种情形兜底的:
+ * 监听器自己在闭包里持一个 `finished` 标记,逻辑结束时置 true,
+ * 于是即便退订那一句没跑到,下一次入账也会顺手清掉它,不会永久堆积。
+ */
+type AcquireListener = (inst: EquipmentInstance, res: AcquireResult) => boolean | void
 const acquireListeners = new Set<AcquireListener>()
 
 /** 订阅每一次装备入账,返回退订函数 */
@@ -80,7 +87,10 @@ export function onAcquire(listener: AcquireListener): () => void {
  */
 export function acquireEquipment(inst: EquipmentInstance, opts: { quiet?: boolean; forceKeep?: boolean } = {}): AcquireResult {
   const res = acquireInto(inst, opts)
-  for (const listener of acquireListeners) listener(inst, res)
+  for (const listener of acquireListeners) {
+    // 返回 false = 这个监听器已经过期(见 AcquireListener 注释),就地摘掉
+    if (listener(inst, res) === false) acquireListeners.delete(listener)
+  }
   return res
 }
 
