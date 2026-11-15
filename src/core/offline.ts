@@ -551,6 +551,19 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
     track('offlineClaims')
     ui.offlineSummary = summary
   }
+  /*
+   * 结算完就盖掉 `lastActiveAt` —— 这一段已经被用掉了。
+   *
+   * 原先靠调用方(引擎)在结算之后补 `stampActive`,而引擎那条路径上,
+   * `stampActive` 只在 `now - lastStampAt >= ACTIVE_STAMP_MS`(60 秒)时才执行。
+   * 于是结算后 60 秒内若又判一次「长时间停摆」,同一段时间会被**再结算一遍**。
+   * 实测:先 `settleOffline(t0)` 结 10800 秒,再 `settleOffline(t0 + 1000)`,
+   * 第二次仍报 **10801 秒** 而不是 1 秒 —— 收益被按整个离线时长重复发放。
+   *
+   * 盖在这里是幂等的:引擎随后再调 `stampActive(now)` 也是同一个值。
+   * 用 `stampActive` 而不是直接赋值,是为了走它那道坏时钟守卫。
+   */
+  game.stampActive(nowMs)
   return summary
 }
 

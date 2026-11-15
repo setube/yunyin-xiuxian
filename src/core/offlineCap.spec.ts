@@ -477,3 +477,39 @@ describe('离线 · 历练仍在途的提示', () => {
 
 
 })
+
+/**
+ * 结算完必须盖掉 `lastActiveAt` —— 那一段时间已经被用掉了。
+ *
+ * 原先靠调用方(引擎)在结算之后补 `stampActive`,而引擎那条路径上它只在
+ * `now - lastStampAt >= ACTIVE_STAMP_MS`(60 秒)时才执行。于是结算后 60 秒内
+ * 若再判一次「长时间停摆」,**同一段时间会被再结算一遍**。
+ *
+ * 实测(修复前):先结 10800 秒,再结 `t0 + 1000`,第二次仍报 **10801 秒**
+ * 而不是 1 秒 —— 收益按整个离线时长重复发放。
+ *
+ * 故障注入:删掉 `offline.ts` 末尾那句 `game.stampActive(nowMs)` → 本条红。
+ */
+describe('离线结算 · 同一段时间不许结算第二遍', () => {
+  it('结算后立刻再调,只拿到那一小段而不是整段再来一次', () => {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    game.started = true
+    player.initCharacter('探针', { roots: [] } as never)
+
+    const t0 = 1_800_000_000_000
+    vi.spyOn(Date, 'now').mockReturnValue(t0)
+    game.lastActiveAt = t0 - 3 * 3600_000 // 离线 3 小时
+
+    const first = settleOffline(t0)
+    expect(first, '第一次该结出东西').not.toBeNull()
+    expect(Math.round(first!.seconds), '第一次应为 3 小时').toBe(10800)
+
+    // 若 lastActiveAt 没被盖,这一次会把同一段 3 小时再结一遍
+    const second = settleOffline(t0 + 1000)
+    if (second) {
+      expect(second.seconds, '第二次不该再报整段 3 小时 —— 那段时间已经用掉了').toBeLessThan(60)
+    }
+    vi.restoreAllMocks()
+  })
+})
