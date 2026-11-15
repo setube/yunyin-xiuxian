@@ -60,9 +60,16 @@ export const useDiagStore = defineStore(
       errors.value = asArray<DiagEntry>(errors.value, [], e => !!e && typeof (e as DiagEntry).message === 'string')
         .map(e => ({
           at: asTimestamp(e.at, 0),
-          info: typeof e.info === 'string' ? e.info : '',
+          /*
+           * 三处文案都要截 —— 它们**全部渲染** —— 诊断面板的 `{{ latestError.route }}`
+           * 是裸插值，复制用的那行还会把 `info` / `message` / `route` 拼成一句。
+           * 原先只有 `message` 截了，另两个只判「是不是字符串」 —— 坏档塞十万字符，
+           * 面板那一行会被撑到不能看，复制出来的整句也会长到没用。
+           * 用同一把尺(DIAG_MESSAGE_MAX):它们本来就是同一条诊断记录的三个字段。
+           */
+          info: typeof e.info === 'string' ? truncateCodePoints(e.info, DIAG_MESSAGE_MAX) : '',
           message: truncateCodePoints(String(e.message), DIAG_MESSAGE_MAX),
-          route: typeof e.route === 'string' ? e.route : '',
+          route: typeof e.route === 'string' ? truncateCodePoints(e.route, DIAG_MESSAGE_MAX) : '',
           /*
            * 上界:诊断面板会印「×N」,而那处是**裸插值**、没有格式化兜底 ——
            * 坏档写 1e300 会印出「×1e+300」。同一条错误在一局里重复几十上百次已极罕见,
