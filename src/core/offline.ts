@@ -132,7 +132,19 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
    * 离线期间每次装备入账(历练掉落、镇压产出、际遇奖励)都记这本账;入包件带 uid,化尘的不带。
    * 腾位不能只看 bagged:被挤掉的旧件化出的尘与件数也要记。
    */
+  /*
+   * `ledgerDone` 是这个监听器的存活性:`settleOffline` 正常跑完时置 true 并退订;
+   * **中途抛错时退订那一句跑不到**,于是监听器永久留在模块级 Set 里 ——
+   * 后续每次装备入账都往这个早已结束的 `equipmentGained` 数组里 push,
+   * 而且每抛一次就多留一个。实测:spy 掉 `player.addAge` 让它抛,
+   * 再 `acquireEquipment`,账本仍被写入。
+   *
+   * 所以监听器被调用时先看这个标记:结算已经结束就回 `false`,
+   * `acquireEquipment` 会当场把它摘掉(见 loot.ts 的 AcquireListener)。
+   */
+  let ledgerDone = false
   const stopLedger = onAcquire((inst, res) => {
+    if (ledgerDone) return false
     equipmentGained.push({
       name: equipmentTemplate(inst.templateId)?.name ?? '未知',
       quality: inst.quality,
@@ -494,6 +506,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
 
   cultivation.pruneBuffs(nowMs)
 
+  ledgerDone = true
   stopLedger()
   const summary: OfflineSummary = {
     seconds: dtSec,
