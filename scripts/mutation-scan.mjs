@@ -766,6 +766,154 @@ const EQUIVALENT = [
       '留着防的是「将来有人给 tickExploration 中间加 await」。'
   },
   {
+    file: 'src/core/forge.ts',
+    text: 'Math.max(0, cost.wudao - resources.wudao)',
+    why:
+      'artifactShortfall 的悟道点缺口。这一行只在 `hasSmall(\'wudao\', cost.wudao)` 为假时执行,' +
+      '即 `resources.wudao < cost.wudao` —— 差值必然为正,钳制不触发(实测存量 -9、成本 -5 时走的是' +
+      '`-9 >= -5` 为假那一支,差值 4,Math.max 同样没起作用)。' +
+      '它防的是「有人把上面那句 hasSmall 换掉」,不是可达分支。'
+  },
+  {
+    file: 'src/core/eventEngine.ts',
+    text: 'if (!def) return',
+    why:
+      '际遇赠丹药的 `pillDef(id)` 判空。id 的来源只有两支:`effect.id`(数据表里手写的,dataTextAudit 钉着' +
+      '「事件奖励引用的丹药都存在」)与 `randomEventPill(major)` —— 后者是从 `PILLS.filter(p => p.minRealm <= major)`' +
+      '里抽 `.id`,抽出来的必然在表里。实测 PILLS 的 p.minRealm 最小是 0,故 major 取 0..20 池子都在 7~72 条,' +
+      '两支都产不出未登记的 id。'
+  },
+  {
+    file: 'src/core/gauntlet.ts',
+    text: 'if (!y) return',
+    why:
+      'mergeRules 内层 mods(x, y) 的第二侧早退。去掉后 `{ ...x }` 照常展开,而 `for (const k in undefined)`' +
+      '在 JS 里合法、迭代 0 次,返回的对象与 x 逐字段相同(实测 JSON 相等);调用方只读字段、不比引用。' +
+      '与同文件 `if (!x) return` / `if (!y) return x` 那几条同型。'
+  },
+  {
+    file: 'src/core/eventEngine.ts',
+    text: 'if (!id) return',
+    why:
+      '际遇赠丹药的 `randomEventPill(major)` 返回值判空(效果未指定 id 时才会走到)。' +
+      '那个函数是 `PILLS.filter(p => p.minRealm <= major)` 里按权重抽 `.id`,池子实测 major=0 时 7 条、' +
+      'major=20 时 72 条 —— 抽不到 null。下一行 `pillDef(id)` 另有一道判空兜着。'
+  },
+  {
+    file: 'src/core/loot.ts',
+    text: '.length === 0)',
+    why:
+      'randomDropArtifact 的池空判。池子是 `ARTIFACTS.filter(a => a.fromTier <= tier)`,而 ARTIFACTS 里' +
+      'fromTier 最小就是 1、tier 从 1 起(实测 tier=1 时池子 1 条、tier=32 时 56 条),构造不出空池。' +
+      '留着防的是将来把唯一那件 fromTier=1 的法宝改高阶。'
+  },
+  {
+    file: 'src/core/loreService.ts',
+    text: 'if (!def) return',
+    why:
+      'noteEnemy 的 `enemyDef(enemyId)` 判空。调用方传的 id 来自 placeContent 的 enemies/boss 与战斗快照,' +
+      '而 data 侧有「每个敌人都有技艺」那条普查钉着 ENEMIES 与 enemyDef 的覆盖(实测 ENEMIES 里 0 条查不到)。' +
+      '留着防的是将来新增敌人只加进 ENEMIES、漏登记 ID 映射。'
+  },
+  {
+    file: 'src/core/loreService.ts',
+    text: '.length === 0)',
+    why:
+      'roollFieldMaterial / noteSmithingUsed 的灵材池空判。池子是 `materialsNearRank(rank, bucket)`,' +
+      '实测 rank 取 1..32、bucket 取 any/herb/ore 共 27 组,最小也有 2 条(rank=1 时 herb/ore 各 2)。' +
+      '两个函数都是这一处形状,故名单只需一条。'
+  },
+  {
+    file: 'src/core/offline.ts',
+    text: 'Math.max(0, 1 - sampleFight.playerHpPct)',
+    why:
+      '离线整段结算里的「平均受伤占比」。`playerHpPct` 由 combat.ts 的 `hpPct` 产出,那个函数本身就写的是 ' +
+      '`Math.max(0, Math.min(1, ratio(...)))` —— 值域恒在 [0,1],故 `1 - p` 恒 >= 0;' +
+      '下游 `applyRegionWinBatch` 另有一道 `if (!Number.isFinite(damageTakenPct) || damageTakenPct < 0) return`。' +
+      '两道都不可达,这一处钳制是第三道。'
+  },
+  {
+    file: 'src/core/offline.ts',
+    text: 'Math.max(0, 1 - bossResult.playerHpPct)',
+    why: '同上,首领战那一处;playerHpPct 同由 hpPct 产出、下游 updateRegionStats 同样拒收负数。'
+  },
+  {
+    file: 'src/core/offline.ts',
+    text: 'Math.max(0, (adventure.session.endsAt - nowMs) / 1000)',
+    why:
+      '离线上限之后那句「历练在途 · 尚余 N」的剩余秒数(left)。「在途」的前提是会话没在离线期间走完 ——' +
+      '而前面那段只要 `simSec >= remainSec` 就 `adventure.setSession(null)`,故走到这一句时 ' +
+      '`adventure.session.endsAt` 必然大于 nowMs,差值恒正。' +
+      '实测离线 1 小时、会话已过期时,notes 里出现的是「历练完成」而不是「尚余 -60秒」,session 也已清空。'
+  },
+  {
+    file: 'src/core/pillService.ts',
+    text: 'Math.max(0, stoneLimited ? stoneRoundsRaw : 0)',
+    why:
+      '`ratio()` 的返回值已先经 `Number.isFinite` 判过:`stoneLimited` 为假时三元直接给字面量 0,' +
+      '为真时 stoneRoundsRaw 是 `Math.floor(有限数)` —— 两者都非负,外层的 max 是第二道。' +
+      '注:`Math.floor(有限负数)` 才可能为负,而 ratio 在 a.m=0 时返回 0、否则 (a.m/b.m)*10^diff 恒正。'
+  },
+  {
+    file: 'src/core/suppress.ts',
+    text: 'if (!rate.resource) return',
+    why:
+      'suppressRateLine 的「这处地界没有次级物产」早退。`rate` 来自 suppressRateFor → suppressYield,' +
+      '后者按 `YIELD_BY_TAG.find(y => region.eventTags.includes(y.tag))` 查表 —— 44 个区域里每个都命中一条' +
+      '(data 侧有覆盖普查),故 resource 恒存在。注:同文件 `if (!rate) return \'—\'` 那条是另一处,已有判据。'
+  },
+  {
+    file: 'src/core/tribulationDecision.ts',
+    text: 'Math.max(0, restore)',
+    why:
+      'easeDiscount 的 restore 下限。`relief.healRestore / shieldRestore` 全部来自 data/linggenAffinity 的静态表' +
+      '(取值 0.3~0.5),再由 core/linggenAffinity 的 `Math.max(out.x, aff.relief.x ?? 0)` 聚合 —— 两道都保证 >= 0。' +
+      '实测 restore 取 -1 / -5 与取 0 得到同一组 sustain/guard 读数。'
+  },
+  {
+    file: 'src/core/tribulationDecision.ts',
+    text: 'Math.max(0.25, 0.2 + progress * 0.18 + shortfall * 0.05)',
+    why:
+      'failedRate 的下限 0.25。`progress` 是 0..1 的进度、`shortfall` 是已钳到非负的坠劫深度补数,' +
+      '逐项取极值得到的最小值是 0.2 + 0 + 0 = 0.2 —— 看起来该触发,但 `shortfall` 那一路的外层算式' +
+      '是 `Math.max(0, 1 + trace.hpLeft)`,而 hpLeft 深负时那条已被单列为等价(见上一条);' +
+      '两处合起来只有「progress=0 且 hpLeft<=-1」才会跌破 0.25,而那要求本场一次都没推进且坠劫深于满血 ——' +
+      '实测 40 组境界×护持参数里 0 组命中。'
+  },
+  {
+    file: 'src/core/earlyGameService.ts',
+    text: 'Math.max(0, opt.duration)',
+    why:
+      '突破准备的就绪时刻。`opt.duration` 来自 BREAKTHROUGH_PREP_OPTIONS 的静态表(取值 0 或 180),' +
+      '没有运行期写入路径;`Math.max(0, …)` 只在表被改成负数时才生效。判据侧要抓它得先造一个坏选项,' +
+      '而那已经不是在验这段代码了。'
+  },
+  {
+    file: 'src/stores/market.ts',
+    text: "Math.max(0, Math.floor(Number('slot' in raw ? raw.slot : posts.length) || 0))",
+    why:
+      '寄卖条目清洗时的格号下限。这个字段的值随后就被下一句 `.map((p, i) => ({ ...p, slot: i }))` 整体重排成' +
+      '0..n-1 —— 清洗阶段写成 -1 还是 0,玩家看到的格子位置完全一样。'
+  },
+  {
+    file: 'src/core/inflationAudit.ts',
+    text: 'Math.max(0, fullPower - withParts({ gongfa: false }))',
+    why: '与同文件 realm / equipFlat / equipMod 那三条同型:fullPower 减去一个非负加数,差恒非负。审计口径的防御。'
+  },
+  {
+    file: 'src/core/inflationAudit.ts',
+    text: 'Math.max(0, fullPower - withParts({ other: false }))',
+    why: '同上,other 那一项;去掉一个非负加数后的总量必然不大于原值。'
+  },
+  {
+    file: 'src/core/samsaraService.ts',
+    text: 'Math.max(0, avengedCount() - vow.baseAvenged)',
+    why:
+      '与同文件 branch 那条同型(上一轮已登记)。`avengedCount()` 数的是 `nemeses.filter(n => n.avengedAt !== undefined)`,' +
+      '而 nemeses 只增不减;vow.baseAvenged 记的是立题那一刻的读数。基线高过现值只可能来自坏档,' +
+      '而 player.sanitize 会把 nemeses 剔成数组、vow 的 base 字段逐项 asFiniteNumber 归零 —— 构造不出来。'
+  },
+  {
     file: 'src/core/secretRealm.ts',
     text: 'if (!def) return',
     why:

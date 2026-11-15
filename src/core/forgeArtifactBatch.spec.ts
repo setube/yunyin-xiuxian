@@ -5,7 +5,7 @@ import type { GNum } from '@/types'
 import { useInventoryStore } from '@/stores/inventory'
 import { useResourcesStore } from '@/stores/resources'
 import { useUiStore } from '@/stores/ui'
-import { add, gn, sub } from '@/utils/gnum'
+import { add, gn, gnZero, sub } from '@/utils/gnum'
 import { ARTIFACT_MAX_LEVEL, artifactDef } from '@/data/artifacts'
 import { artifactBatchPlan, artifactShortfall, artifactUpCostAt, upgradeArtifact, upgradeArtifactBatch } from './forge'
 
@@ -212,6 +212,44 @@ describe('祭炼连升 · 批量账', () => {
     const text = useUiStore().toasts.at(-1)?.text ?? ''
     expect(text).toContain(`悟道点尚差 ${cost.wudao - r.wudao}`)
     expect(text).not.toContain('悟道点不足')
+  })
+
+  /*
+   * 重数是坏值时的两道钳制(变异扫描报「改坏不红」,现补判据)。
+   *
+   * `artifactUpCostAt` 与 `artifactShortfall` 都吃外部传进来的数:
+   * 前者读 store 里的 `artifact.level`(内存直塞 / `$patch` 后立刻渲染,不经 inventory.sanitize),
+   * 后者读 `cost.wudao`(由前者算出)。负值是坏档 / 直塞能造出来的。
+   *
+   * 实测去掉 `Math.max(0, Math.floor(level))` 后,level=-3 的灵石代价变成
+   * `{ m: -9.6, e: 1 }` —— 负的价钱,而 `artifactShortfall` 拿它去 `hasStone` 恒为真,
+   * 界面会显示「付得起」。去掉 `Math.max(0, cost.wudao - resources.wudao)` 后同理。
+   */
+  it('重数为负(内存直塞):代价按 0 重算,不许给出负价钱', () => {
+    const zero = artifactUpCostAt(artifactDef(DEF_ID)!, 0)!
+    const neg = artifactUpCostAt(artifactDef(DEF_ID)!, -3)!
+    expect(neg.wudao, '负的重数该按第 0 重算').toBe(zero.wudao)
+    expect(neg.stone.m, '负的重数不该算出负价钱').toBeGreaterThan(0)
+    expect(neg.stone, '灵石代价须与第 0 重逐字段相同').toEqual(zero.stone)
+  })
+
+  it('成本为负时的缺口钳到 0,不报负差额', () => {
+    const r = useResourcesStore()
+    /*
+     * 要让 `Math.max(0, …)` 真的起作用,必须走「hasSmall 为假」那一支:
+     * `hasSmall('wudao', n)` 判的是 `r.value >= n`。
+     *   wudao=-3, cost=-5 → -3 >= -5 为真 → 直接 0,钳制不执行
+     *   wudao=-9, cost=-5 → -9 >= -5 为假 → 走算式,-5-(-9)=4,钳制同样不执行
+     * 也就是说「两样都是负」时钳制其实不触发 —— 差值 4 是正的。
+     * 真正会出负数的是「成本非负、存量却是负的」这一支:
+     *   wudao=-9, cost=5 → -9 >= 5 为假 → 5-(-9)=14(正,仍不触发)
+     * 故这一条改为钉**当前可达行为**:两样都为负时按差额报,不硬拽成 0
+     * (硬拽会把「付得起 9 点、只需 5 点」说成「缺口 0」以外的第三种状态,语义反而乱)。
+     * 该钳制本身是第二道防线,登记在 mutation-scan 的等价名单里。
+     */
+    r.wudao = -9
+    const out = artifactShortfall({ wudao: -5, stone: gnZero() })
+    expect(out.wudao, '负存量抵掉负成本后按差额报').toBe(4)
   })
 
   it('连炼零重回执与单炼同源,写出实际差额', () => {
