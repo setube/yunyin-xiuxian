@@ -35,6 +35,16 @@ const REGION_WINS_MAX = 10_000
 const SECRET_FIGHT_CAP = 10_000
 
 /**
+ * 秘境战利清单的读档条数上界。
+ *
+ * 正常一趟至多 `SECRET_LAYERS + SECRET_MAX_LOSSES` 条(层数 + 败次各记一行),
+ * 取那个数的四倍作余量。原先这一项原样吃下 —— 坏档写 5000 条,
+ * `SecretRealmCard` 就渲 5000 个 `<span>`(`max-h-24 overflow-y-auto` 只管视觉高度)。
+ * 保留尾部:最新的战利在后面。
+ */
+const SPOILS_CAP = (SECRET_LAYERS + SECRET_MAX_LOSSES) * 4
+
+/**
  * 道侣机缘计数的读档上界。
  *
  * 触发判据是 `opportunities < nextEventAt`,而 `nextEventAt` 由
@@ -929,7 +939,14 @@ export const usePlayerStore = defineStore(
             // 秘境内胜场;不进判定也不显示,但同样不该是坏档的巨值
             wins: Math.floor(asFiniteNumber(sr.wins, 0, 0, SECRET_FIGHT_CAP)),
             losses: Math.min(SECRET_MAX_LOSSES, Math.floor(asFiniteNumber(sr.losses, 0, 0))),
-            spoils: asStringArray(sr.spoils),
+            /*
+             * 战利清单须封顶。同一块里 `layer` / `wins` / `losses` 都夹了上界,
+             * 只有这一项原先原样吃下 —— 坏档写 5000 条,`SecretRealmCard` 就会
+             * 渲 5000 个 `<span>`(它的 `max-h-24 overflow-y-auto` 只管视觉高度,
+             * 管不住 DOM 节点数)。正常一趟秘境至多 `SECRET_LAYERS + SECRET_MAX_LOSSES` 条,
+             * 上界取那个数再留一倍余量。与行囊 `BAG_CAPACITY` 那处同一类修法。
+             */
+            spoils: asStringArray(sr.spoils).slice(-SPOILS_CAP),
             // 旧说法归一为现行说法并去重
             rules: [...new Set(asStringArray(sr.rules).flatMap(t => secretRuleByText(t)?.text ?? []))],
             carriedHpPct: asCarriedHpPct(sr.carriedHpPct),
