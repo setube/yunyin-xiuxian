@@ -57,15 +57,27 @@ describe('Service Worker · install 阶段预缓存', () => {
 
   it('从导航页里挑出脚本与样式一并存下 —— 否则断网时 HTML 有、JS 没有', () => {
     expect(SW, '没有从 HTML 里提取 src/href').toMatch(/matchAll\(\/\(\?:src\|href\)/)
-    expect(SW, '提取出来的引用没有被 fetch + put').toMatch(/refs\.map/)
+    expect(SW, '提取出来的引用没有被逐个缓存').toMatch(/\.\.\.refs\]\.map/)
+  })
+
+  it('路由懒加载 chunk 也要预缓存 —— 否则离线时应用挂上了、视图渲染不出来', () => {
+    /*
+     * 首屏主 chunk 里挂着 `__vite__mapDeps` 依赖表(全部路由 view 的 js/css)。
+     * 只缓存 HTML 引到的那几件不够:路由组件是动态 import,离线新开页面时
+     * `WelcomeView-*.css` 会 503,`#app` 有子节点但 innerText 为空。
+     *
+     * 实测:补上这步之前缓存 11 件、离线新开白屏;补上之后 45 件、欢迎页正常渲染。
+     */
+    expect(SW, '没有解析 __vite__mapDeps').toContain('m\\.f=')
+    expect(SW, '依赖表里的条目没有并进预缓存集合').toContain('refs.add(mainDir')
   })
 
   it('单件失败不许拖垮整批', () => {
     /*
      * `cache.addAll` 是原子的:一件 404 整批落空。故这里要求逐件 put 并各自 try。
-     * 判据是「refs.map 那段里有 try」—— 结构上保证粒度。
+     * 判据是「那个 map 段里有 try」—— 结构上保证粒度。
      */
-    const mapAt = SW.indexOf('refs.map(async')
+    const mapAt = SW.indexOf('[...refs].map(async')
     expect(mapAt, '找不到逐件缓存的循环').toBeGreaterThan(-1)
     const chunk = SW.slice(mapAt, mapAt + 400)
     expect(chunk, '逐件缓存没有各自的 try —— 一件失败会让整批落空').toContain('try {')
