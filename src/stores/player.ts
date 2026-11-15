@@ -1191,11 +1191,18 @@ export const usePlayerStore = defineStore(
        * 坏档写 1e300 时该区域永久「兴盛」;胜场数本身也会印在区域卡上。
        * 上界取一万:一局里在同一区域打几百场已是极值,到不了这个数。
        */
+      /*
+       * 只认真实地界 —— 写入侧(`recordRegionWin`)早有 `regionDef` 闸,
+       * 而读档侧原先漏了:坏档塞三千个野 id 会全留下来。
+       *
+       * 野 id 不渲染、也不影响兴衰判定(那边按 id 查),但它与 `regionWinsLife`
+       * 的**同键约束**会破:下面重建世号时按 `regionDef` 跳过野 id,
+       * 于是两张表键集不一致(注释写着「与 regionWins 同键、须同步」)。
+       */
       regionWins.value = Object.fromEntries(
-        Object.entries(asNumberRecord(regionWins.value, 0)).map(([id, n]) => [
-          id,
-          Math.floor(asFiniteNumber(n, 0, 0, REGION_WINS_MAX))
-        ])
+        Object.entries(asNumberRecord(regionWins.value, 0))
+          .filter(([id]) => !!regionDef(id))
+          .map(([id, n]) => [id, Math.floor(asFiniteNumber(n, 0, 0, REGION_WINS_MAX))])
       )
       // 老档无世号按当前世认,同 regionStats.life 口径
       const rawWinsLife = asNumberRecord(regionWinsLife.value, Number.NaN)
