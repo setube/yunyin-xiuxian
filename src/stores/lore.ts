@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { LORE_MAX, MATERIALS, materialDef } from '@/data/materials'
 import { SKILL_IDS, skillLevelFromExp, type SkillId } from '@/data/crafting'
 import { PILLS, pillDef } from '@/data/pills'
-import { enemyDef } from '@/data/enemies'
+import { ENEMIES, enemyDef } from '@/data/enemies'
 import { persistConfig } from '@/utils/storage'
 import { QUALITIES } from '@/data/qualities'
 
@@ -166,6 +166,8 @@ export const useLoreStore = defineStore(
     const MATERIAL_SEEN_CAP = MATERIALS.length * 8
     /** 图纸认知表条数上界:同上,按配方规模取八倍 */
     const BLUEPRINT_LORE_CAP = PILLS.length * 8
+    /** 敌人照面次数表条数上界:同上,按敌人目录取八倍 */
+    const ENEMY_SEEN_CAP = ENEMIES.length * 8
 
     /** 只留前 n 个键(对象键序 = 写入序,靠前的是早期真玩过的) */
     const capEntries = (src: Record<string, number>, cap: number): Record<string, number> => {
@@ -218,7 +220,8 @@ export const useLoreStore = defineStore(
       blueprintLore.value = capEntries(clampMap(blueprintLore.value, 0, 1), BLUEPRINT_LORE_CAP)
       // 旧存档没有这两张表
       enemyLore.value = clampMap(enemyLore.value ?? {}, 0, ENEMY_LORE_MAX, id => !!enemyDef(id))
-      enemySeen.value = clampMap(enemySeen.value ?? {}, 0, Number.MAX_SAFE_INTEGER)
+      // 照面次数同理:不认 id(改名不抹进度),但条数有界
+      enemySeen.value = capEntries(clampMap(enemySeen.value ?? {}, 0, Number.MAX_SAFE_INTEGER), ENEMY_SEEN_CAP)
       // 装备见闻:形状烂掉就整条丢掉
       const seenFixed: Record<string, { q: number; t: number; u: number }> = {}
       for (const [id, v] of Object.entries(equipLore.value ?? {})) {
