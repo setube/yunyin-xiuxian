@@ -8,6 +8,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import { ENDING_NAMES, STAGE_NAMES } from '@/data/daolu'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 /** 轮回录会渲染的字段(见 views/LegacyView.vue 的 lifeRows) */
 function renderLife(l: ReturnType<typeof usePlayerStore>['reincarnation']['lives'][number]): void {
@@ -219,5 +221,42 @@ describe('轮回履历 bad-shape · 读档逐条修形', () => {
       p.sanitize()
       expect(p.reincarnation.vow, `${JSON.stringify(bad)} 不是一份命题`).toBeNull()
     }
+  })
+})
+
+/**
+ * 轮回录只渲最近若干世 —— 数据不动,只在渲染层截。
+ *
+ * `reincarnation.lives` 只增不减(每次转世追加一条),而 `LegacyView` 的 `lifeRows`
+ * 是对全量 `v-for` 逐条渲。坏档塞 5000 条就渲 5000 行。
+ * **不能截数据**:`reincarnation.ts` 读全量历史判「哪些命格已用过」,截掉会改变玩法。
+ *
+ * 故障注入:删掉 LegacyView 里 `.slice(0, LIFE_ROWS_SHOWN)` → 本条红。
+ */
+describe('轮回录 · 渲染条数封顶', () => {
+  it('lifeRows 有截断,且数据本身不截', () => {
+    const src = readFileSync(resolve(process.cwd(), 'src/views/LegacyView.vue'), 'utf8')
+    expect(src, 'lifeRows 没截断 —— 坏档 5000 条就渲 5000 行').toMatch(
+      /\[\.\.\.player\.reincarnation\.lives\][\s\S]{0,200}\.slice\(0, LIFE_ROWS_SHOWN\)/
+    )
+
+    // 数据侧不该被截:`sanitize` 后条数应与输入一致
+    const player = usePlayerStore()
+    player.initCharacter('探针', { roots: [] } as never)
+    player.reincarnation = {
+      ...player.reincarnation,
+      lives: Array.from({ length: 500 }, (_, i) => ({
+        index: i,
+        major: 5,
+        realmLabel: '金丹',
+        age: 100,
+        themeId: null,
+        themeResult: null,
+        bond: null,
+        insight: 0
+      }))
+    } as never
+    player.sanitize()
+    expect(player.reincarnation.lives.length, '数据被截了 —— 会改变「命格用过没用过」的判定').toBe(500)
   })
 })

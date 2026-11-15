@@ -300,9 +300,21 @@
     broken: 'text-amber-ink'
   }
 
+  /*
+   * 履历只渲最近若干世。
+   *
+   * `reincarnation.lives` 是只增不减的历史(每次转世追加一条),而这一页是 `v-for`
+   * 逐条渲 —— 坏档塞 5000 条就渲 5000 行。**只在渲染层截,不动数据**:
+   * `reincarnation.ts` 读全量历史判「哪些命格已用过」,截掉会改变玩法。
+   *
+   * 界面注释里本来就按「999 世」量过行高,说明作者预期会有几百条 ——
+   * 三百条已是极端玩家的量级,再多也只是把滚动条拉长。
+   */
+  const LIFE_ROWS_SHOWN = 300
   const lifeRows = computed(() =>
     [...player.reincarnation.lives]
       .sort((a, b) => b.index - a.index)
+      .slice(0, LIFE_ROWS_SHOWN)
       .map(l => {
         const result = l.themeResult ?? 'unfinished'
         return {
