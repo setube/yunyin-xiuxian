@@ -123,6 +123,27 @@ export function dismissEnlightenment(): void {
 }
 
 /**
+ * 转世时丢掉本世的浮窗事件(悟道顿悟 / 洞府巡游)。
+ *
+ * 这两样存在**模块级变量**里,不在任何 Pinia store 中 —— 于是 `player.rebirth()`
+ * 里那一长串归零(见那里的注释:道侣、洞府、道途各修过一次)碰不到它们。
+ * 实测:先掷出一个洞府巡游、再调 rebirth,`getCurrentCaveEvent()` 返回的仍是那道旧事件;
+ * 悟道顿悟同样。
+ *
+ * 玩家看到的是:刚转世、道号都换了,上一世的「灵田异象」弹窗又浮上来,
+ * 选完还能拿到上一世的奖励 —— 而那一世的洞府建筑已经归零。
+ *
+ * 窗口不长(两者都有 expiresAt:巡游 2 分钟、顿悟 1 分钟),但转世恰好落在窗口内就会撞上,
+ * 而且弹窗自己不会消失(轮询每秒把它读回来),只能手动关。
+ *
+ * 只在转世这条路上调;读档不调 —— 读档本就该恢复「离开时正开着的那个弹窗」。
+ */
+export function resetEarlyGameEvents(): void {
+  enlightenmentEvent = null
+  caveEvent = null
+}
+
+/**
  * 开始闭关(5分钟,修炼+150%,禁止历练)。
  * 真相源是持久化的 retreat buff(时长由 buffs.ts 的 durationSec=300 承载);模块计时器刷新即失。
  * 与 startExploration 的闭关禁令互斥:历练途中不可闭关。
