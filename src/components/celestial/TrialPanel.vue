@@ -327,8 +327,19 @@
         return
       }
       const got = await todayChallengeAsync(day)
-      // 期间可能又换了一天,只认最新那次
-      if (wallDay.value === day) daily.value = got
+      /*
+       * 回来之后两样都要复验,不能只验日期。
+       *
+       * `todayChallengeAsync` 现算当日题(六个流派各跑 8 场,实测 30~257ms),
+       * 这段时间里可能已经转世 —— `endgame.onRebirth()` 会把 `daoPath` 清成 null。
+       * 只验 `wallDay` 的话那一拍仍在同一天,于是**旧世的题面被写回** `daily`:
+       * 界面重新长出「今日天道」与一颗「应 战」钮,而这时候道途已经归还、
+       * 点下去只会撞 `undertakeChallenge` 里的 `!endgame.daoPath` 拒因。
+       *
+       * 实测:把 daoPath 在 await 期间置 null,修复前回调返回后 daily 仍是那道旧题。
+       */
+      if (endgame.daoPath && wallDay.value === day) daily.value = got
+      else if (!endgame.daoPath) daily.value = null
     },
     { immediate: true }
   )

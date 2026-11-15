@@ -62,6 +62,28 @@ describe('今日天道 · 重入保护', () => {
     expect(pendingAt, '在途分支该排在完成态之前').toBeLessThan(doneAt)
   })
 
+  /**
+   * 题面回来后要**两样都复验**,不能只验日期。
+   *
+   * `todayChallengeAsync` 现算当日题(实测 30~257ms),这段时间里可能已经转世 ——
+   * `endgame.onRebirth()` 会把 `daoPath` 清成 null。只验 `wallDay` 的话那一拍仍在同一天,
+   * 于是旧世的题面被写回 `daily`:界面重新长出「今日天道」与一颗「应 战」钮,
+   * 而道途已经归还,点下去只会撞 `undertakeChallenge` 的 `!endgame.daoPath` 拒因。
+   *
+   * 实测:把 daoPath 在 await 期间置 null,修复前回调返回后 daily 仍是那道旧题。
+   */
+  it('watcher 回来后同时复验 daoPath 与日期', () => {
+    const watcherAt = SRC.indexOf('() => [endgame.daoPath, wallDay.value] as const')
+    expect(watcherAt, '找不到今日天道的 watcher —— 判据要跟着改名').toBeGreaterThan(-1)
+    const body = SRC.slice(watcherAt, watcherAt + 1400)
+    const awaitAt = body.indexOf('await todayChallengeAsync(day)')
+    expect(awaitAt, 'watcher 不再现算当日题了').toBeGreaterThan(-1)
+    const after = body.slice(awaitAt)
+    expect(after, 'await 之后没复验 daoPath —— 转世后旧题面会被写回').toContain('endgame.daoPath &&')
+    expect(after, 'await 之后仍要复验日期').toContain('wallDay.value === day')
+    expect(after, 'daoPath 期间被清空时应把题面清掉').toContain('daily.value = null')
+  })
+
   it('给定 CSS 预算,则状态词不超过 UI 文案上限', () => {
     // 「推演中」3 字,远在 ≤8 字的普通状态词上限内 —— 这条防的是有人把它扩写成一句话
     expect('推演中'.length).toBeLessThanOrEqual(8)

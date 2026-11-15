@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- 主修功法阶梯表给人复核 */
 /**
  * 主修功法的品阶阶梯。
  *
