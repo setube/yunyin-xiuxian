@@ -257,6 +257,19 @@ export async function confirmReincarnation(chosenTalentId: string | null, chosen
   useEndgameStore().onRebirth()
   // 本世的浮窗事件存在模块级变量里,不在任何 store 中 —— rebirth() 的归零碰不到它们
   resetEarlyGameEvents()
+  /*
+   * 三个详情弹窗的 ID 也要清。
+   *
+   * 它们都是 `:open="def !== undefined"`,判断依据是**数据表里有无该 id**,不看背包/状态。
+   * 于是:
+   * - `gongfaDetailId` / `buffDetailId` 指向功法表与 buff 表,转世后表还在、id 还有效 ——
+   *   弹窗会在新世第一屏**自动重新打开**,写的是上辈子的功法/状态;
+   * - `equipDetailUid` 指向背包,转世后背包清空故 `inst` 为 undefined、弹窗自动关;
+   *   但残留的 uid 是个悬空引用,若之后 `uid()` 恰好复用同一串,弹窗会意外弹开。
+   */
+  ui.equipDetailUid = null
+  ui.gongfaDetailId = null
+  ui.buffDetailId = null
   // 命题快照须在重置之后取
   beginLife(view.themeChoices.includes(chosenThemeId ?? '') ? chosenThemeId : null)
   recordMilestone('first_rebirth')

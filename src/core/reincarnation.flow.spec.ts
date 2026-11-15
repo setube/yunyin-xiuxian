@@ -461,3 +461,29 @@ describe('转世 · 悬赏单随世换新', () => {
     nowSpy.mockRestore()
   }, 60000)
 })
+
+/**
+ * 三个详情弹窗的 ID 随本世清空。
+ *
+ * 它们都是 `:open="def !== undefined"`,判断依据是**数据表里有无该 id**:
+ * - `gongfaDetailId` / `buffDetailId` 指向功法表与 buff 表,转世后表还在、id 还有效 ——
+ *   弹窗会在新世第一屏自动重开,写的是上辈子的功法/状态;
+ * - `equipDetailUid` 指向背包,转世后背包清空故自动关,但残留 uid 是悬空引用。
+ *
+ * 故障注入:删掉那三行 → 本条红。
+ */
+describe('转世 · 详情弹窗随本世清空', () => {
+  it('转世后三处详情 ID 都是 null', async () => {
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    player.initCharacter('探针', { roots: [] } as never)
+    ui.equipDetailUid = 'e1'
+    ui.gongfaDetailId = 'gf_probe'
+    ui.buffDetailId = 'buff_probe'
+    ui.reincarnation = prepareReincarnation()
+    await confirmReincarnation(null)
+    expect(ui.equipDetailUid, '装备详情 ID 没清 —— 悬空引用').toBeNull()
+    expect(ui.gongfaDetailId, '功法弹窗会在新世第一屏自动重开').toBeNull()
+    expect(ui.buffDetailId, '状态弹窗会在新世第一屏自动重开').toBeNull()
+  }, 60000)
+})
