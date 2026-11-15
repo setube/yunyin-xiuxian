@@ -356,3 +356,26 @@ describe('区域事件 · 到期上界与时钟回拨', () => {
     expect(p.regionEvent, '十天后的远期坏档没清 —— 该地界再也掷不出新事件').toBeNull()
   })
 })
+
+/**
+ * 区域胜场的读档侧只认真实地界。
+ *
+ * 写入侧（`recordRegionWin`）早有 `regionDef` 闸，读档侧原先漏了 —— 坏档塞三千个野 id 全留下。
+ * 野 id 不渲染也不影响兴衰判定（那边按 id 查），但它与 `regionWinsLife` 的**同键约束**会破：
+ * 重建世号时按 `regionDef` 跳过野 id，两张表键集就不一致了
+ * （`regionWinsLife` 的注释写着「与 regionWins 同键、须同步」）。
+ *
+ * 故障注入：去掉 `.filter(([id]) => !!regionDef(id))` → 本条红。
+ */
+describe('区域胜场 · 读档只认真实地界', () => {
+  it('野 id 清掉,真实胜场原样', () => {
+    const p = usePlayerStore()
+    const w: Record<string, number> = {}
+    for (let i = 0; i < 500; i += 1) w['wild_' + i] = 5
+    w.qingyun = 7
+    p.regionWins = w as never
+    p.sanitize()
+    expect(Object.keys(p.regionWins).length, '野 id 没清 —— 会撑大存档并破坏与 regionWinsLife 的同键约束').toBe(1)
+    expect(p.regionWins.qingyun, '真实胜场被误伤').toBe(7)
+  })
+})
