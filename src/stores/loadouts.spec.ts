@@ -277,3 +277,45 @@ describe('构筑 · 子数组条数上限', () => {
   })
 })
 })
+
+/**
+ * 构筑快照的印章是单字。
+ *
+ * 它直接落在构筑卡那个 24×24 的方印里（`<span class="grid h-6 w-6 ...">{{ lo.seal }}</span>`）——
+ * 同行的 `name` 有 `truncate` 兜着，`seal` 没有，坏档塞十万字符会把印章撑破。
+ *
+ * 截的是**码点**不是码元：印章里可能是汉字，也可能被改成 emoji，按码元切会切出孤立代理项
+ * （`codePointTruncateAudit` 那条全仓判据拦的就是这个）。
+ *
+ * 故障注入：去掉 `truncateCodePoints(l.seal, 1)` → 本条红。
+ */
+describe('构筑快照 · 印章只留单字', () => {
+  it('超长印章截到一个字,正常印章原样', () => {
+    const l = useLoadoutsStore()
+    l.list = [
+      {
+        id: 'x1',
+        name: 'A',
+        seal: '剑'.repeat(10_000),
+        mainGongfa: null,
+        subGongfa: [],
+        artifactIds: [],
+        equipment: {},
+        savedAt: 1
+      },
+      {
+        id: 'x2',
+        name: 'B',
+        seal: '丹',
+        mainGongfa: null,
+        subGongfa: [],
+        artifactIds: [],
+        equipment: {},
+        savedAt: 2
+      }
+    ] as never
+    l.sanitize()
+    expect(l.list[0]?.seal, '印章没截 —— 会把构筑卡那个 24×24 方印撑破').toBe('剑')
+    expect(l.list[1]?.seal, '正常印章被误伤').toBe('丹')
+  })
+})

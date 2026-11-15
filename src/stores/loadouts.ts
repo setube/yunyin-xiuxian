@@ -46,7 +46,14 @@ export const useLoadoutsStore = defineStore(
             id: l.id,
             // 与输入侧同界:构筑名在 loadoutService 里截到 NAME_MAX_LENGTH,读档侧也要截
             name: typeof l.name === 'string' ? truncateCodePoints(l.name.trim(), NAME_MAX_LENGTH) : '',
-            seal: typeof l.seal === 'string' ? l.seal : '',
+            /*
+             * 印章是**单字**(见 Loadout.seal 的类型注释),而它直接落在构筑卡上那个
+             * 24×24 的方印里(`<span class="grid h-6 w-6 ...">{{ lo.seal }}</span>`)——
+             * 同行的 `name` 有 `truncate` 兜着,`seal` 没有。坏档塞十万字符会把印章撑破。
+             * 截到 1 个**码点**(不是码元):印章里可能是「剑」「丹」这类汉字,
+             * 也可能被玩家改成 emoji;按码元切会切出孤立代理项。
+             */
+            seal: typeof l.seal === 'string' ? truncateCodePoints(l.seal, 1) : '',
             mainGongfa: typeof l.mainGongfa === 'string' ? l.mainGongfa : null,
             // 辅修/法宝是集合:重复项会被 applyLoadout 原样写回,算两次
             // 条数设界:应用侧 artifactIds/subGongfa 都会按动态槽位再截一次,
