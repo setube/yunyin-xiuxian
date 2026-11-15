@@ -178,3 +178,34 @@ describe('异常留档', () => {
     })
   })
 })
+
+/**
+ * 诊断记录的三处文案都要截。
+ *
+ * 它们全部渲染：诊断面板的 `{{ latestError.route }}` 是裸插值，
+ * 复制用的那行还会把 `info` / `message` / `route` 拼成一句
+ * （`${e.info || '异常'} · ${e.message}${e.route ? ` @${e.route}` : ''}`）。
+ *
+ * 原先只有 `message` 截了，另两个只判「是不是字符串」—— 坏档塞十万字符，
+ * 面板那一行会被撑到不能看，复制出来的整句也会长到没用。
+ *
+ * 故障注入：去掉 `info` 或 `route` 的 `truncateCodePoints` → 本条红。
+ */
+describe('诊断记录 · 三处文案的长度上界', () => {
+  it('info / message / route 一并截到 DIAG_MESSAGE_MAX,正常文案原样', () => {
+    const d = useDiagStore()
+    d.errors = [
+      { at: 1, info: 'x'.repeat(100_000), message: 'm'.repeat(100_000), route: 'y'.repeat(100_000), count: 1 }
+    ] as never
+    d.sanitize()
+    const e = d.errors[0]!
+    expect(e.info.length, 'info 没截 —— 面板那一行会被撑爆').toBeLessThanOrEqual(DIAG_MESSAGE_MAX)
+    expect(e.route.length, 'route 没截').toBeLessThanOrEqual(DIAG_MESSAGE_MAX)
+    expect(e.message.length, 'message 没截').toBeLessThanOrEqual(DIAG_MESSAGE_MAX)
+
+    d.errors = [{ at: 1, info: '结算', message: '异常', route: '/home', count: 1 }] as never
+    d.sanitize()
+    expect(d.errors[0]?.info, '正常 info 被误伤').toBe('结算')
+    expect(d.errors[0]?.route, '正常 route 被误伤').toBe('/home')
+  })
+})
