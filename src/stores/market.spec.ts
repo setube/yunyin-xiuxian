@@ -811,4 +811,21 @@ describe('坊市 · 坏档格号挤掉好货', () => {
     expect(inventory.items, '该入账一件').toHaveLength(1)
     expect(() => qualityDef(inventory.items[0]!.quality), '品质须是合法档').not.toThrow()
   })
+  /*
+   * 寄卖列表的坏档清洗:`qualityRank` 与 `slot` 都是界面直接读的数,
+   * 负值会让 `consignPrice(tier, qualityRank)` 算出差额、slot 排到列表外。
+   * 两处 `Math.max(0, ...)` 去掉任一,这里就会读到负数。
+   */
+  it('寄卖条目的负 qualityRank / slot 被钳到 0', () => {
+    const market = useMarketStore()
+    market.$patch({
+      consign: [{ finishAt: Date.now() + 1e6, tier: 3, qualityRank: -5, slot: -2, price: { m: 1, e: 3 } }] as never
+    })
+    market.sanitize()
+    const post = (market as unknown as { consign: { qualityRank: number; slot: number }[] }).consign[0]
+    expect(post, '夹具没留下条目').toBeDefined()
+    expect(post!.qualityRank, '品质档不得为负').toBeGreaterThanOrEqual(0)
+    expect(post!.slot, '槽位不得为负').toBeGreaterThanOrEqual(0)
+  })
+
 })
