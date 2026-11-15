@@ -642,6 +642,41 @@ const EQUIVALENT = [
       'realmScale 的返回值来自境界表查表乘常数,major 取 1e9 / MAX_VALUE / NaN 都仍得有限值' +
       '(实测三者均走不到这条分支,全部给出 { resist: 0, guard: 0 })。' +
       '这句防的是 realmScale 将来改用 toNum(gn) 之类可能溢出的实现。'
+  },
+  {
+    file: 'src/core/secretRealm.ts',
+    text: 'Math.max(0, cost.daoSource - endgame.daoSource)',
+    why:
+      '上一行 `if (endgame.daoSource >= cost.daoSource) return null` 已保证差值恒为正,Math.max 是第二道保险。'
+  },
+  {
+    file: 'src/core/pillValue.ts',
+    text: 'Math.max(0, major)',
+    why:
+      'layerSeconds / pillGainSecAt 的 major 钳制。调用方全在本文件内,传的是字面量或 `def.minRealm`' +
+      '(丹方定义,恒 >= 0),外部无调用 —— 实测传负数才有差异,构不出来。'
+  },
+  {
+    file: 'src/core/pillValue.ts',
+    text: 'Math.max(0, craft.rank - bearableRank(def.minRealm))',
+    why:
+      'auditCraftRate 的超规格档数。craft.rank 恒 >= 1,实测本仓 72 张丹方都不产出负数;' +
+      '该钳制防的是将来出现 rank < 准入阶的丹方。'
+  },
+  {
+    file: 'src/stores/settings.ts',
+    text: 'Math.max(0, Math.min(MAX_EQUIP_TIER, Math.floor(asFiniteNumber(sk.keepMinTier, 0, 0))',
+    why:
+      'asFiniteNumber 带 min=0 时内部已 `Math.max(0, n)`(实测 asFiniteNumber(-100,0,0)===0)。' +
+      '同文件 :76 的 Math.max(0, asTimestamp(...)) 不同 —— asTimestamp 放行负数(实测 -100 原样返回),' +
+      '那处是真守卫,已有判据。'
+  },
+  {
+    file: 'src/utils/storage.ts',
+    text: 'Math.max(0, (clean[1] ?? 0) + scalar)',
+    why:
+      'clean[g] 由上一行 `clean[g] = Math.max(0, n)` 赋值,恒 >= 0;scalar 是 v1 迁移旧字段,同样经钳制。' +
+      '两项都非负,和的钳制不可达。'
   }
 ]
 
@@ -913,6 +948,10 @@ function runOneSpec(spec) {
       try {
         report = JSON.parse(readFileSync(out, 'utf-8'))
       } catch {
+        if (isTransformFailure(stderr)) {
+          resolveOne({ verdict: 'caught' })
+          return
+        }
         // stderr 前几行常是 esbuild/oxc 的固定告警,取最后一行更像真错误
         const tail = stderr.trim().split('\n').filter(Boolean).slice(-1)[0]
         resolveOne({ verdict: 'infra', detail: (tail ?? `退出码 ${status}`).slice(0, 160) })
@@ -927,10 +966,32 @@ function runOneSpec(spec) {
 function verdictOf(report, status) {
   const failed = (report.testResults ?? []).filter(r => r.status === 'failed')
   if (failed.length > 0) return { verdict: 'caught' }
-  // 一条都没跑,等同于什么都没验证
-  if ((report.numTotalTests ?? 0) === 0) return { verdict: 'infra', detail: '没有用例被执行' }
+  /*
+   * 一条用例都没跑、退出码还非零 —— 这不是「设施故障」,而是变异把模块改到编译不过:
+   * bundler 建不起 import 图,spec 连用例发现阶段都进不去(报 numTotalTests: 0)。
+   * 判 caught 才对:变异确实改变了代码,只是改坏得太狠。
+   *
+   * 原先一律判 infra,于是 runSpec 接着试下一个 spec、全 infra,最后被兜底成「漏掉」——
+   * offline.ts:217 那条已有判据且能抓的真守卫就这样被冤枉过(当前 Math.max 正则在
+   * 两层以上嵌套括号处会截断,留下一个多余右括号)。
+   */
+  if ((report.numTotalTests ?? 0) === 0) {
+    return status !== 0 ? { verdict: 'caught' } : { verdict: 'infra', detail: '没有用例被执行' }
+  }
   if (status !== 0) return { verdict: 'infra', detail: `退出码 ${status} 但报告里没有失败用例` }
   return { verdict: 'survived' }
+}
+
+/**
+ * 变异把语法改坏了(当前 `Math.max` 正则遇到两层以上嵌套括号会截断,留下多余右括号)。
+ *
+ * 这类变异**必须直接判 caught**,不能记成 infra 再让 runSpec 去试下一个 spec ——
+ * 语法坏掉的模块,bundler 连它的 import 图都建不起来,**任何一个 spec 都只会 transform failed**。
+ * 于是 runSpec 跑完十个 spec 全 infra、一条 survived 都没,最后被兜底成「漏掉」,
+ * 报告里那条真守卫(offline.ts:217,已有判据且能抓)就被冤枉成缺口 —— 实测踩过。
+ */
+function isTransformFailure(stderr) {
+  return /Transform failed|Pre-transform error|Expected .* but found/.test(stderr)
 }
 
 const missed = []
