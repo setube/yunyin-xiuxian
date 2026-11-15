@@ -5,6 +5,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { MATERIALS } from '@/data/materials'
 import { PILLS } from '@/data/pills'
+import { ENEMIES } from '@/data/enemies'
 import { createPinia, setActivePinia } from 'pinia'
 import { useLoreStore, ENEMY_LORE_MAX } from '@/stores/lore'
 import { LORE_MAX } from '@/data/materials'
@@ -163,6 +164,16 @@ describe('图鉴见闻收录守卫(useLoreStore)', () => {
  * 故障注入：去掉 `capEntries(...)` 包一层 → 本条红。
  */
 describe('图鉴 · 照面次数与图纸表的条数上界', () => {
+  it('敌人照面次数表同样有上界', () => {
+    const l = useLoreStore()
+    const wild: Record<string, number> = {}
+    for (let i = 0; i < 3000; i += 1) wild['wild_' + i] = i
+    l.enemySeen = wild as never
+    l.sanitize()
+    expect(Object.keys(l.enemySeen).length, '敌人照面次数表没上界').toBeLessThanOrEqual(ENEMIES.length * 8)
+    expect(l.enemySeenOf('wild_0'), '靠前的键应保留').toBe(0)
+  })
+
   it('三千条野键被截到上界,靠前的保留', () => {
     const l = useLoreStore()
     const wild: Record<string, number> = {}
