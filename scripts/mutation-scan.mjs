@@ -52,9 +52,67 @@ const LIMIT = (() => {
 
 const PATTERNS = [
   { name: '守卫恒假', re: /if \((![A-Za-z_$][\w$.]*(?:\([^)]*\))?)\) return/g, rep: 'if (false) return' },
-  { name: '钳制下限', re: /Math\.max\(0(?:\.\d+)?,\s*([^;()]+(?:\([^)]*\))?[^;()]*)\)/g, rep: '$1' },
   { name: '空判取反', re: /\.length === 0\)/g, rep: '.length < 0)' }
 ]
+
+/**
+ * `Math.max(0, X)` → `X`,按**括号深度**配对,不用正则。
+ *
+ * 原先它也是一条 PATTERNS 正则:
+ *   /Math\.max\(0(?:\.\d+)?,\s*([^;()]+(?:\([^)]*\))?[^;()]*)\)/
+ * 那个 `(?:\([^)]*\))?` 只吃得下**一层**嵌套,而真实写法常有两层:
+ *   `Math.max(0, (session.endsAt - (nowMs - dtSec * 1000)) / 1000)`
+ * 于是正则在这里提前收尾,捕到 `Math.max(0, (… - (nowMs - dtSec * 1000))` ——
+ * 去掉外壳后留下 `(… - (nowMs - dtSec * 1000)`,**左括号比右括号多一个**,
+ * 整个文件语法错误,bundler 建不起 import 图,任何 spec 都只会 transform failed。
+ *
+ * 后果不是「多报一处」那么简单:offline.ts:217 那条**本来有判据且能抓**
+ * (offlineParity 的「events 不得为负」,故障注入实测变红),却因为变异把代码改成了
+ * 编译不过,被判成「漏」。假盲区比真盲区更贵 —— 它会让人去补一条已经存在的判据。
+ *
+ * 改为扫括号深度:从 `Math.max(` 的左括号起数到配对的右括号,里面第一层逗号后的
+ * 全部内容就是 X。任意层嵌套都对。
+ */
+function maxZeroSites(src) {
+  const out = []
+  const open = /Math\.max\(/g
+  let m
+  while ((m = open.exec(src))) {
+    const start = m.index
+    // 数到配对的右括号
+    let i = start + m[0].length
+    let depth = 1
+    while (i < src.length && depth > 0) {
+      const c = src[i]
+      if (c === '(') depth += 1
+      else if (c === ')') depth -= 1
+      i += 1
+    }
+    if (depth !== 0) continue
+    const argsText = src.slice(start + m[0].length, i - 1)
+    /*
+     * 第一个实参必须是字面量 0(或 0.x)—— 那才是「钳制下限」。
+     * 用括号深度切第一层逗号,不能 `indexOf(',')`:实参本身可能含逗号
+     * (`Math.max(0, fn(a, b))` 那种写法)。
+     */
+    let d = 0
+    let comma = -1
+    for (let k = 0; k < argsText.length; k += 1) {
+      const c = argsText[k]
+      if (c === '(') d += 1
+      else if (c === ')') d -= 1
+      else if (c === ',' && d === 0) { comma = k; break }
+    }
+    if (comma < 0) continue
+    const first = argsText.slice(0, comma).trim()
+    if (!/^0(?:\.\d+)?$/.test(first)) continue
+    const inner = argsText.slice(comma + 1).replace(/^\s+/, '')
+    if (!inner) continue
+    out.push({ index: start, text: src.slice(start, i), mutated: inner })
+  }
+  return out
+}
+
 
 /**
  * 等价变异名单:改了但改不出可见差别,任何判据都抓不到。
@@ -147,7 +205,7 @@ const EQUIVALENT = [
   },
   {
     file: 'src/core/battleAnalysis.ts',
-    text: 'Math.max(0, Math.min(1, ratio(part, whole))',
+    text: 'Math.max(0, Math.min(1, ratio(part, whole)))',
     why:
       'share 的上下钳。三处调用里只有 bigShare(biggestHitTaken / maxHpProxy)可能越 1,' +
       '而它的消费点是 `if (bigShare >= BIG_HIT_WARN)` —— 1.2 与 1.0 都过阈值,判定结果相同。' +
@@ -156,7 +214,7 @@ const EQUIVALENT = [
   },
   {
     file: 'src/core/battleAnalysis.ts',
-    text: 'Math.max(0, Math.round((enemySpeed - playerSpeed) * 100)',
+    text: 'Math.max(0, Math.round((enemySpeed - playerSpeed) * 100))',
     why:
       'gapPct 的唯一消费点(firstMoveFinding)写的是 `if (gap <= 0) return []` ——' +
       '负数与 0 走同一条路,都提前返回空。故「钳成 0」与「留着负数」在玩家侧完全等价。' +
@@ -208,7 +266,7 @@ const EQUIVALENT = [
   },
   {
     file: 'src/core/combat.ts',
-    text: 'Math.max(0, Math.min(1, ratio(f.hp, f.snap.maxHp))',
+    text: 'Math.max(0, Math.min(1, ratio(f.hp, f.snap.maxHp)))',
     why:
       'hpPct 的夹逼。两条边界在写入侧已经封死:' +
       'applyDamage 末行是 `target.hp = subClamp(target.hp, remain)`(不会为负);' +
@@ -443,7 +501,7 @@ const EQUIVALENT = [
   },
   {
     file: 'src/core/inflationAudit.ts',
-    text: 'Math.max(0, Math.min(10, Math.round(major * profile.levelPerMajor))',
+    text: 'Math.max(0, Math.min(10, Math.round(major * profile.levelPerMajor)))',
     why:
       'modelPlayer 的强化等级。major 是审计自己传的境界号(0..MAX_MAJOR 的遍历值),' +
       '不存在负数;`Math.round(major * levelPerMajor)` 因此恒非负,下限钳制不触发。' +
@@ -622,7 +680,7 @@ const EQUIVALENT = [
   },
   {
     file: 'src/core/battleAnalysis.ts',
-    text: 'Math.max(0, Math.round((enemySpeed - playerSpeed) * 100)',
+    text: 'Math.max(0, Math.round((enemySpeed - playerSpeed) * 100))',
     why:
       'firstMoveReadout 的先手差额。它唯一的消费点是 firstMoveFinding,而那个函数在' +
       '`!f || f.playerFirst` 时已提前返回 —— 走到用 gap 的地方必然是被抢先,即 enemySpeed > playerSpeed,' +
@@ -665,7 +723,7 @@ const EQUIVALENT = [
   },
   {
     file: 'src/stores/settings.ts',
-    text: 'Math.max(0, Math.min(MAX_EQUIP_TIER, Math.floor(asFiniteNumber(sk.keepMinTier, 0, 0))',
+    text: 'Math.max(0, Math.min(MAX_EQUIP_TIER, Math.floor(asFiniteNumber(sk.keepMinTier, 0, 0))))',
     why:
       'asFiniteNumber 带 min=0 时内部已 `Math.max(0, n)`(实测 asFiniteNumber(-100,0,0)===0)。' +
       '同文件 :76 的 Math.max(0, asTimestamp(...)) 不同 —— asTimestamp 放行负数(实测 -100 原样返回),' +
@@ -854,6 +912,11 @@ for (const file of files) {
       const line = code.slice(0, m.index).split('\n').length
       mine.push({ file, specs, name, index: m.index, line, text: m[0], mutated: m[0].replace(re, rep) })
     }
+  }
+  // 钳制下限走括号深度扫描(见 maxZeroSites 的注释:正则只吃得下一层嵌套)
+  for (const s of maxZeroSites(code)) {
+    const line = code.slice(0, s.index).split('\n').length
+    mine.push({ file, specs, name: '钳制下限', index: s.index, line, text: s.text, mutated: s.mutated })
   }
   if (mine.length > 0) perFile.push(mine)
 }
