@@ -1199,4 +1199,23 @@ describe('器魂 · 魂库条数封顶', () => {
     expect(e.souls.length, '魂库没封顶 —— SoulsView 三处 v-for 会渲 5000 行').toBeLessThanOrEqual(100)
     expect(e.souls[0]?.uid, '该保留先得的那批').toBe('s0')
   })
+
+  it('已装配的器魂不会被截断丢掉', () => {
+    const e = useEndgameStore()
+    // 装着靠后的第 70、80 枚 —— 单纯 slice(0, N) 会把它们连同装配引用一起丢掉
+    e.souls = Array.from({ length: 100 }, (_, i) => ({
+      uid: `s${i}`,
+      type: 'fengmang',
+      grade: 3,
+      fromName: '探针'
+    })) as never
+    e.equippedSouls = ['s70', 's80'] as never
+    e.sanitize()
+    expect(e.equippedSouls, '已装配的器魂被截掉 —— 玩家身上那几缕凭空消失').toEqual(['s70', 's80'])
+    expect(
+      e.souls.filter(s => ['s70', 's80'].includes(s.uid)).length,
+      '装配引用还在但魂库里没这条 —— 幽灵引用'
+    ).toBe(2)
+    expect(e.souls.length, '总条数仍须封顶').toBeLessThanOrEqual(100)
+  })
 })
