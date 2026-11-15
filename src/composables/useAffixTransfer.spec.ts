@@ -45,7 +45,9 @@ describe('词条转移面板 · 流程', () => {
       // 两条封一条:顶替未封那条后仍两条一封,封不了
       mk('capped', [['def1', 0.5], ['hp1', 0.5]], 'heaven', { sealedAffixIds: ['def1'] }),
       // 零条件:新增后只有一条,可封上限为 0
-      mk('bare', [])
+      mk('bare', []),
+      // 已有同一条且数值更高:转入之后比它低,`targetBlock` 直接判 dup
+      mk('samedup', [['atk3', 0.95]])
     ]
     const resources = useResourcesStore()
     resources.spiritStone = gn(1e300)
@@ -78,6 +80,38 @@ describe('词条转移面板 · 流程', () => {
     flow.pickTarget('full')
     expect(flow.replaceId).toBeUndefined()
     expect(flow.blockLabel).toBe('未选位置')
+  })
+
+  /*
+   * 目标「封死」时的拒因要报出来,而不是回落到「已不在行囊」。
+   *
+   * `blockLabel` 里那一支是 `if (!c.ok) return transferBlockText(c.block, state.affixId)`,
+   * 变异扫描报它改坏不红 —— 因为上面几条用例走的都是「能转」或「差几步」,
+   * 从没让 `check` 返回 `ok: false`。去掉那一行会落到末尾的 `return null`,
+   * 主按钮就成了「可转」,点下去才被拒。
+   *
+   * 夹具:目标 `samedup` 已带着同一条 `atk3` 且数值更高(0.95 对源的 0.9),
+   * `targetBlock` 直接给 `block: 'dup'` —— 主按钮该写「已有此条」。
+   * 这条拒因只在 `check` 返回 ok:false 时才出现,去掉那一行会落到末尾的
+   * `return null`,按钮写成「可转」,玩家点下去才被拒。
+   *
+   * 为什么不用「封存满」那条:`sealedPlan` 在封存口径被拒时返回 null,
+   * `check` 会回落到不封存的 `basePlan`(ok:true)—— 那个拒因走的是
+   * `canSeal` 的禁用态,不经过 `!c.ok` 这一支。
+   */
+  it('目标拒收时主按钮写拒因,不写成「可转」', () => {
+    const flow = useAffixTransfer('src')
+    flow.pickAffix('atk3')
+    flow.pickTarget('samedup')
+    /*
+     * 目标已有同一条、且数值更高 → 默认落位不给(不替玩家选),故这里要手选。
+     * `pickTarget` 之后 `replaceId` 是 undefined(待选),不是 null(新增)。
+     */
+    expect(flow.replaceId, '已有同条时不替玩家选落位').toBeUndefined()
+    flow.pickSlot('atk3')
+    expect(flow.check?.ok, '夹具没造出拒收态 —— 目标已有更高数值的同一条应被拒').toBe(false)
+    expect(flow.blockLabel, '拒收时不该报「可转」').not.toBeNull()
+    expect(flow.blockLabel, '拒收时该报「已有此条」').toBe('已有此条')
   })
 
   it('再点一下已选的词条或目标,不把手选的落位改回默认', () => {
