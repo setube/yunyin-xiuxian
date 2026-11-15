@@ -305,3 +305,26 @@ describe('日课基线坏档', () => {
     expect(q.dailyDelta('kills'), '正常档的基线被冲掉了').toBe(20)
   })
 })
+
+/**
+ * 日课记录里的 `date` 要截断。
+ *
+ * 它的合法形只有「YYYY-M-D」(最长 10 字符),而坏档能塞几十万字符 ——
+ * 存档逐字节爆量(与 `records.note` 那次「塞 10 万字 → $state 100343 字节」同一回事)。
+ * 这条记录不参与任何展示,只经 `dayStrToNum` 的正则解析;截短后正则不匹配,
+ * 按「没有记录」翻日 —— 与坏值同一条退路。
+ *
+ * 故障注入:去掉 `.slice(0, 16)` → 本条红。
+ */
+describe('日课 · 日期串长度', () => {
+  it('超长日期截断,正常日期原样保留', () => {
+    const q = useQuestsStore()
+    q.daily = { date: 'x'.repeat(100_000), base: {}, done: [] } as never
+    q.sanitize()
+    expect(q.daily.date.length, '日期串没截断 —— 存档会被撑爆').toBeLessThanOrEqual(16)
+
+    q.daily = { date: '2026-11-15', base: {}, done: [] } as never
+    q.sanitize()
+    expect(q.daily.date, '正常日期被误伤').toBe('2026-11-15')
+  })
+})
