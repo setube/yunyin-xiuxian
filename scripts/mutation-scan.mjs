@@ -685,6 +685,34 @@ const EQUIVALENT = [
       'failedRate 的坠劫深度补数。hpLeft 深负(如 -3)时 1+hpLeft 为负,看似需要钳制,' +
       '但返回值外层已有 `Math.max(0.25, ...)` 兜底 —— 负 shortfall 只会把 rate 拉低到 0.25 以下、再被抬回 0.25。' +
       '实测八档境界 × 五档护持共 40 组参数,去掉本处钳制后 expectedRate 逐位相同。'
+  },
+  {
+    file: 'src/core/reforge.ts',
+    text: 'Math.max(0, inst.affixes.length - 1)',
+    why:
+      'sealCapacity 的封存上限。零词条件的件是**真实存在**的(凡品 affixes 区间是 [0,1],' +
+      '实测固定种子 4000 件里 1216 件零词条),但变异成 `inst.affixes.length - 1` 之后仍然观察不到:' +
+      '它的两个消费点都是 `sealed.length >= sealCapacity(inst)`,sealed.length 恒 >= 0,' +
+      '0 与 −1 都让判据成立(实测 `0 >= -1` 与 `0 >= 0` 同为真);' +
+      '唯一显示它的是重铸页脚那行「已封存 n/上限」,而零词条件的 reforgeCost 与 sealCost 双双为 null,' +
+      '页脚走的是「无可重铸词条」那一支,分母印不出来。'
+  },
+  {
+    file: 'src/core/suppress.ts',
+    text: 'Math.max(0, Math.min(dt, remain))',
+    why:
+      'heldSecOf 的「本段内镇压仍生效的秒数」。去掉下限钳制后 remain 可以为负,' +
+      '但两处消费点都是 `if (heldSec <= 0) continue` —— 负数与 0 走同一条路,跳过该区。' +
+      '`Math.min(dt, remain)` 的上限钳制才是真正管住「不结越界那一段」的那一道(跨复聚线那条用例钉着它)。'
+  },
+  {
+    file: 'src/core/daoluService.ts',
+    text: '.length === 0)',
+    why:
+      'destinedCandidate 的「本世没有深交过的人」早退。去掉后 deep 为空时 `rng.chance(0)` 恒假' +
+      '(实测 RandomService.chance(0) 在 rand=0 与 rand=0.999999 下都为 false),同样返回 null;' +
+      '而 chance 之后那段 `deep[rng.int(0, -1)]` 根本走不到。' +
+      '留着的理由是少做一次随机数采样:宿缘的掷签不该被「本来就没有人」这种情形消耗掉。'
   }
 ]
 
