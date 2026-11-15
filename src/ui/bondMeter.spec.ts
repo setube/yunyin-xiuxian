@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { STAGE_GATES, STAGE_NAMES, stageIndex } from '@/data/daolu'
-import { BOND_METER_CAP, BOND_METERS, bondMeterRows, nextStageGate } from './bondMeter'
+import { BOND_METER_CAP, BOND_METERS, bondMeterRows, nextStageGate, nextStageSharedGate } from './bondMeter'
 
 const ROOT = resolve(__dirname, '../..')
 const DIALOG = readFileSync(resolve(ROOT, 'src/components/character/BondDialog.vue'), 'utf-8')
@@ -146,5 +146,37 @@ describe('关系值上限 · 两处常量同值', () => {
       BOND_METER_CAP,
       `bondMeter 的上限是 ${BOND_METER_CAP},而 daoluService 的 CAP 是 ${m![1]} —— 两处必须同值`
     ).toBe(Number(m![1]))
+  })
+})
+
+/**
+ * 共历门槛也必须露出来。
+ *
+ * 三根条只画缘分/信任/契合,而 `STAGE_GATES` 还有 `shared` 一栏。
+ * 三根都过线、共历却不够时,三条一起亮成「已过线」,玩家看不出还差什么 ——
+ * 实测 `together → confidant` 要 shared 2,缘分 50 / 信任 45 刚好压线时,
+ * 界面三根条全绿,而 `nextGateHint()` 在说「共历太少」,两边自相矛盾。
+ *
+ * 故障注入:把 `nextStageSharedGate` 删掉或让它恒返回 null → 本条红。
+ */
+describe('道侣 · 共历门槛', () => {
+  it('三根条全过线时,共历门槛仍须报出真值', () => {
+    const next = STAGE_GATES.find(g => stageIndex(g.stage) === stageIndex('together') + 1)!
+    const rows = bondMeterRows({ fate: next.fate, trust: next.trust, accord: next.accord }, 'together')
+    expect(rows.every(r => r.met), '夹具没让三根条全过线').toBe(true)
+    // 三根都过线,但共历门槛是 2 —— 界面必须能说出这个数
+    expect(nextStageSharedGate('together'), '共历门槛没露出来,三条全绿却推不进下一阶').toBe(next.shared)
+    expect(next.shared, '夹具前提变了:这一阶的共历门槛应为正数').toBeGreaterThan(0)
+  })
+
+  it('已至最高阶时不报门槛', () => {
+    expect(nextStageSharedGate('daolv'), '已是道侣还报共历门槛 —— 给了个不存在的目标').toBeNull()
+  })
+
+  it('弹窗真的把它画出来了', () => {
+    const src = readFileSync(resolve(process.cwd(), 'src/components/character/BondDialog.vue'), 'utf8')
+    expect(src, '弹窗没接 sharedGate').toContain('nextStageSharedGate')
+    // 须连「· 需 N」那半句一起查:只查「共历 N 次」的话,删掉门槛那半句照样匹配
+    expect(src, '弹窗没把门槛写进「共历」那一行').toMatch(/共历 \{\{ bond\.shared \}\} 次<template v-if="sharedGate/)
   })
 })

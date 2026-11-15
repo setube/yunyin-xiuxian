@@ -70,3 +70,19 @@ export function nextStageGate(stage: BondStage): Record<BondMeterKey, number> | 
   if (!g) return null
   return { fate: g.fate, trust: g.trust, accord: g.accord }
 }
+
+/**
+ * 下一阶要的**共历次数**;已是最高阶时为 null。
+ *
+ * 单独给一个函数而不并进 `nextStageGate`,是因为共历不是 0~100 的关系值,
+ * 画不成第四根条:它是计数,门槛写法也不同(`shared: 2` = 共历两次)。
+ *
+ * 为什么必须有它:三根条只覆盖缘分/信任/契合,而 STAGE_GATES 还有 `shared` 一栏。
+ * 三根都过线、共历却不够时,三条会一起亮成「已过线」,玩家看不出还差什么 ——
+ * 实测 `together → confidant` 需要 shared 2,缘分 50 / 信任 45 都刚好压线时,
+ * 界面三根条全绿,`nextGateHint()` 却在说「共历太少」。
+ */
+export function nextStageSharedGate(stage: BondStage): number | null {
+  const g = STAGE_GATES.find(x => stageIndex(x.stage) === stageIndex(stage) + 1)
+  return g ? g.shared : null
+}
