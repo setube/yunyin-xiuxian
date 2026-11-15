@@ -30,8 +30,65 @@ if (IN_LOCAL_SHELL) {
   })
 }
 
-self.addEventListener('install', () => {
-  self.skipWaiting()
+/**
+ * 装好就把导航页与它的首屏资产预缓存下来。
+ *
+ * 此前**只靠 fetch 事件被动填缓存**,而首次加载的那批请求发生在 SW 接管**之前** ——
+ * 一个都收不到。于是:玩家首次打开游戏 → 立刻断网 → 重载,看到的是 SW 的
+ * 「离线且无缓存副本」503 兜底页(实测复现)。缓存要等**下一次**受控请求才开始有东西。
+ *
+ * 这里在 install 阶段主动取一次导航页,再把它引用的同源脚本/样式一并存下 ——
+ * 这正是「装完立刻没网也能重开」需要的那几件。其余资产(字体、图标、音频)
+ * 仍走 cacheFirst 的被动填充:它们不影响「能不能起来」,少存几件只是慢一点。
+ *
+ * 任何一件取不到都不算失败:`cache.addAll` 是原子的,单件 404 会让整批落空,
+ * 故逐件 put 并吞掉单个错误。
+ */
+const PRECACHE_EXTRA = ['manifest.webmanifest', 'favicon.ico']
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_VERSION)
+        const base = new URL('./', self.location).href
+        // 导航页本身
+        const pageRes = await fetch(new URL('index.html', base), { cache: 'reload' })
+        if (pageRes.ok) {
+          await cache.put(new URL('index.html', base), pageRes.clone())
+          // 从 HTML 里挑出同源的脚本与样式(首屏必需的那几件)
+          const html = await pageRes.text()
+          const refs = [...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css|webmanifest))"/g)].map((m) => m[1])
+          await Promise.all(
+            refs.map(async (ref) => {
+              try {
+                const url = new URL(ref, base)
+                if (url.origin !== self.location.origin) return
+                const res = await fetch(url, { cache: 'reload' })
+                if (res.ok && res.type === 'basic') await cache.put(url, res)
+              } catch {
+                // 单件失败不影响其余
+              }
+            }),
+          )
+        }
+        await Promise.all(
+          PRECACHE_EXTRA.map(async (rel) => {
+            try {
+              const url = new URL(rel, base)
+              const res = await fetch(url, { cache: 'reload' })
+              if (res.ok && res.type === 'basic') await cache.put(url, res)
+            } catch {
+              // 缺哪个都不影响离线能不能起来
+            }
+          }),
+        )
+      } catch {
+        // 预缓存整体失败也照常激活:被动缓存那条路还在
+      }
+      await self.skipWaiting()
+    })(),
+  )
 })
 
 self.addEventListener('activate', (event) => {
@@ -53,8 +110,20 @@ async function networkFirst(request) {
     }
     return fresh
   } catch {
-    const cached = await cache.match(request)
-    return cached ?? new Response('离线且无缓存副本', { status: 503 })
+    /*
+     * 导航请求回退到「导航页」,不是回退到「同一个 URL」。
+     *
+     * hash 路由下玩家在任何页面刷新,请求的都是 `/` 或 `/#/xxx` 归一化后的 `/`,
+     * 而 install 预缓存的那一份 key 是 `index.html` —— `cache.match(request)` 拿 URL 精确比,
+     * 对不上就是 503。实测:缓存里已有 11 条(含 index.html),断网重载仍落 503 兜底页。
+     *
+     * 先按原 URL 试一次(普通页直取命中),再退到预缓存的导航页。
+     */
+    const exact = await cache.match(request)
+    if (exact) return exact
+    const shell = await cache.match(new URL('index.html', new URL('./', self.location).href))
+    if (shell) return shell
+    return new Response('离线且无缓存副本', { status: 503 })
   }
 }
 
@@ -62,11 +131,24 @@ async function cacheFirst(request) {
   const cache = await caches.open(CACHE_VERSION)
   const cached = await cache.match(request)
   if (cached) return cached
-  const res = await fetch(request)
-  if (res.ok && res.type === 'basic') {
-    await cache.put(request, res.clone())
+  /*
+   * 离线且未缓存时 `fetch` 会抛 —— 那会让这个请求以 `ERR_FAILED` 结束,
+   * 而不是拿到一个「明确的失败响应」。对 `<script type=module>` 来说两者一样都加载不了,
+   * 但抛出去的错误不带任何上下文,排查时看不出是缓存缺件。
+   *
+   * 更重要的是:`respondWith` 收到 rejected promise 时浏览器只报 net::ERR_FAILED,
+   * 与「SW 根本没接管」的表现完全相同 —— 实测就把它误判成了「SW 没接管」。
+   * 这里显式返回 503,把「离线且没有这一件」这件事说清楚。
+   */
+  try {
+    const res = await fetch(request)
+    if (res.ok && res.type === 'basic') {
+      await cache.put(request, res.clone())
+    }
+    return res
+  } catch {
+    return new Response('离线且无缓存副本', { status: 503 })
   }
-  return res
 }
 
 self.addEventListener('fetch', (event) => {
