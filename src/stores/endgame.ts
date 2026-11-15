@@ -144,6 +144,8 @@ const WORLD_RUN_ROUNDS_MAX = 10_000
 const WORLD_CLEARS_MAX = 10_000
 const TRIAL_CLEARS_MAX = 10_000
 const BATTLE_ROUNDS_CAP = 10_000
+/** 极限纪录值的读档上界:最宽的一项是道源赏格(上限 1e9),取 1e12 再宽三个数量级 */
+const RECORD_VALUE_MAX = 1e12
 
 
 /**
@@ -589,7 +591,16 @@ export const useEndgameStore = defineStore(
       )) {
         if (!recordDef(id)) continue
         const r = raw as Partial<{ value: number; life: number; note: string }>
-        const value = asFiniteNumber(r.value, 0)
+        /*
+         * 纪录值要有上界。它是**裸插值进界面**的(见 LegacyView 的 recordRows:
+         * `×${r.value}` / `${r.value} ${def.unit}`),而 `asFiniteNumber(r.value, 0)`
+         * 只挡非有限值 —— 坏档写 `1e300` 是有限数,原样通过,界面就印出「×1e+300」。
+         *
+         * 上界按各条目的真实量级取最宽的一档:道源赏格(上限 1e9)、
+         * 层级倍数(个位)、回合数(1e4)。取 `RECORD_VALUE_MAX`(1e12)——
+         * 比最宽的 1e9 再宽三个数量级,越过的必定是坏档。
+         */
+        const value = asFiniteNumber(r.value, 0, 0, RECORD_VALUE_MAX)
         // 纪录值以正数为语义:0 回合的破界、0 道源的赏格不算成绩
         if (value <= 0) continue
         fixedRecords[id] = {

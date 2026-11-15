@@ -1334,3 +1334,27 @@ describe('词条 · 读档数值上界', () => {
     expect((mods as unknown as Record<string, unknown>)?.evilKey, '野 key 没清').toBeUndefined()
   })
 })
+
+/**
+ * 极限纪录值要封顶。
+ *
+ * `LegacyView` 的 `recordRows` 是**裸插值**:`×${r.value}` / `${r.value} ${def.unit}`,
+ * 而 `asFiniteNumber(r.value, 0)` 只挡非有限值 —— 坏档写 `1e300` 是有限数,
+ * 原样通过,界面就印出「×1e+300」。
+ *
+ * 上界 1e12:最宽的一项是道源赏格(DAO_SOURCE_MAX = 1e9),再宽三个数量级。
+ *
+ * 故障注入:把 `RECORD_VALUE_MAX` 从 `asFiniteNumber` 里去掉 → 本条红。
+ */
+describe('极限纪录 · 数值上界', () => {
+  it('坏档写 1e300 夹到上界,真实纪录原样保留', () => {
+    const e = useEndgameStore()
+    e.records = {
+      fastest_world: { value: 1e300, life: 1, note: '探针' },
+      biggest_reward: { value: 5e8, life: 2, note: '探针' }
+    } as never
+    e.sanitize()
+    expect(String(e.records['fastest_world']?.value ?? 0), '界面会印出「×1e+300」').not.toMatch(/e\+\d/)
+    expect(e.records['biggest_reward']?.value, '真实道源赏格被误伤').toBe(5e8)
+  })
+})
