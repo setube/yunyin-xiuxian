@@ -640,7 +640,12 @@ export const useEndgameStore = defineStore(
           uid: s.uid,
           type: s.type,
           grade: Math.min(maxSoulGrade, Math.floor(asFiniteNumber(s.grade, 0, 0))),
-          fromName: typeof s.fromName === 'string' ? s.fromName : ''
+          /*
+           * 分魂来源名要截 —— 它裸插值进魂库那一行(`凝自「{{ row.soul.fromName }}」`)。
+           * 敌人名在数据表里最长四五个字,取 `NAME_MAX_LENGTH * 2`(16 码点)已极宽;
+           * 坏档塞十万字符会把那行撑爆(同 `nemeses.enemyName` 的处理)。
+           */
+          fromName: typeof s.fromName === 'string' ? truncateCodePoints(s.fromName, NAME_MAX_LENGTH * 2) : ''
         }))
       /*
        * 魂库条数封顶。

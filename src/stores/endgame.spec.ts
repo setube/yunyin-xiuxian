@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useEndgameStore, type WorldRunState } from './endgame'
 import { EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS, celestialWorldDef } from '@/data/endgame'
 import { ARTIFACT_MAX_SLOTS } from '@/data/artifacts'
-import { SOUL_SLOTS, soulGradeDef } from '@/data/souls'
+import { SOUL_SLOTS, SOUL_TYPES, soulGradeDef } from '@/data/souls'
 import { rerollVoidWorld, VOID_REROLL_COST } from '@/core/expedition'
 import { usePlayerStore } from '@/stores/player'
 import type { GeneratedWorld } from '@/core/worldGen'
@@ -1356,5 +1356,28 @@ describe('极限纪录 · 数值上界', () => {
     e.sanitize()
     expect(String(e.records['fastest_world']?.value ?? 0), '界面会印出「×1e+300」').not.toMatch(/e\+\d/)
     expect(e.records['biggest_reward']?.value, '真实道源赏格被误伤').toBe(5e8)
+  })
+})
+
+/**
+ * 分魂来源名要截。
+ *
+ * 它裸插值进魂库那一行（`凝自「{{ row.soul.fromName }}」`，见 SoulsView），
+ * 原先只判「是不是字符串」—— 坏档塞十万字符会把那行撑爆。
+ * 敌人名在数据表里最长四五个字，取 `NAME_MAX_LENGTH * 2`（16 码点）已极宽。
+ *
+ * 故障注入：去掉 `truncateCodePoints` → 本条红。
+ */
+describe('魂库 · 来源名长度上界', () => {
+  it('超长来源名截断,正常来源名原样', () => {
+    const e = useEndgameStore()
+    const t = SOUL_TYPES[0]!.id
+    e.souls = [
+      { uid: 'u1', type: t, grade: 1, fromName: 'x'.repeat(100_000) },
+      { uid: 'u2', type: t, grade: 2, fromName: '赤炎虎' }
+    ] as never
+    e.sanitize()
+    expect(e.souls[0]?.fromName.length, '来源名没截 —— 会把魂库那一行撑爆').toBeLessThanOrEqual(16)
+    expect(e.souls[1]?.fromName, '正常来源名被误伤').toBe('赤炎虎')
   })
 })
