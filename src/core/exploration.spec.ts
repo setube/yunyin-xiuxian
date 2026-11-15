@@ -31,7 +31,8 @@ import {
   exploreEventChance,
   exploreBattleGapSec
 } from './exploration'
-import { EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
+import { EXPLORE_BATTLE_INTERVAL, EXPLORE_MODES } from '@/data/constants'
+import { EVENTS } from '@/data/events'
 import { useUiStore } from '@/stores/ui'
 import { useEndgameStore } from '@/stores/endgame'
 import { startRetreat } from './earlyGameService'
@@ -996,5 +997,51 @@ describe('历练 · 遇敌间隔不接受非有限修速', () => {
       expect(adventure.session, '说出发了,却没有会话 —— nextBattleAt 被算成了 NaN').not.toBeNull()
     }
     expect(exploreBattleGapSec(NaN), 'NaN 修速应退回无加速档').toBe(EXPLORE_BATTLE_INTERVAL)
+  })
+})
+
+/**
+ * 会话到期后必须结束,**哪怕还挂着一个待处理事件**。
+ *
+ * 事件分支末尾是无条件 `return`(它阻塞战斗),而到期判定原先排在它后面 ——
+ * 于是「会话已到期 + 事件还挂着」时,tick 走事件分支就返回,会话既不结束也不推进。
+ *
+ * 实测:会话 1800 秒、事件挂 60 秒不点,推进到 1860 秒时 `adv.session` 仍在、
+ * 剩余 **-60 秒**,而 `startExploration` 因为「已有会话在途」拒绝开新的一程 ——
+ * 玩家看到「剩余 -60 秒」又开不了历练,要等事件 120 秒超时才解开。
+ *
+ * 故障注入:把到期判定挪回事件分支之后 → 本条红。
+ */
+describe('历练 · 到期优先于待处理事件', () => {
+  /*
+   * 这一组独立于上面那些 describe —— 它们各自的 beforeEach 里带桩开关复位与 pinia,
+   * 本组只要一个干净的 pinia。**漏了它就会抛「no active Pinia」**,
+   * 而 vitest 的报错只在 verbose reporter 下才看得到(默认 reporter 只印「Tests 1 failed」)。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('会话到期时,挂着事件也要收掉会话、放行下一程', () => {
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    player.initCharacter('探针', { roots: [] } as never)
+    const t0 = 1_800_000_000_000
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(t0)
+    expect(startExploration('qingyun', 'normal')).toBe(true)
+
+    // 挂一个真实的待处理事件,玩家一直不理它
+    adventure.setPendingEvent(EVENTS[0]!.id, t0)
+    expect(adventure.pendingEventId, '夹具没挂上事件').not.toBeNull()
+
+    // 推进到会话结束之后 60 秒(仍早于事件的 120 秒超时)
+    const after = t0 + (EXPLORE_MODES.normal.durationSec + 60) * 1000
+    nowSpy.mockReturnValue(after)
+    tickExploration(after)
+
+    expect(adventure.session, '会话到期了却还占着位置 —— 事件分支抢在到期判定之前 return 了').toBeNull()
+    const again = startExploration('qingyun', 'normal')
+    expect(again, `到期会话没放开,新一程开不了（dead=${player.dead}）`).toBe(true)
+    nowSpy.mockRestore()
   })
 })
