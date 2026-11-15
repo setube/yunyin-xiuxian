@@ -5,6 +5,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { persistConfig } from '@/utils/storage'
+import { truncateCodePoints } from '@/utils/saveShape'
+import { NAME_MAX_LENGTH } from '@/data/constants'
 import { rng } from '@/utils/random'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -190,7 +192,13 @@ export const useMarketStore = defineStore(
           // 寄卖价是交货时定下的契约;只有价格或层级/品质坏掉时才按同一公式重建
           price: price.m > 0 && !badTier && !badQualityRank ? price : consignPrice(tier, qualityRank),
           finishAt,
-          name: 'name' in raw && typeof raw.name === 'string' ? raw.name : ''
+          /*
+           * 寄卖品名要截 —— 它渲染在寄卖格那一行(`{{ consignBySlot[s]!.name }}`)。
+           * 写入路径取的是 `equipmentTemplate(...).name`(数据表里最长四五个字),
+           * 坏档塞十万字符时那一行虽有 `truncate` 兜住视觉,文本节点与存档仍照大不误。
+           * 取 `NAME_MAX_LENGTH * 2`(16 码点)已极宽,与其余「物名」字段同一把尺。
+           */
+          name: 'name' in raw && typeof raw.name === 'string' ? truncateCodePoints(raw.name, NAME_MAX_LENGTH * 2) : ''
         })
       }
       // 寄卖格号重排成唯一的 0..n-1,不丢任何一条:界面按格号铺格子,
