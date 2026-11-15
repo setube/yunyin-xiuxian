@@ -855,3 +855,29 @@ describe('坊市 · 货架条数封顶', () => {
     expect(m.stock.length, '货架没封顶 —— MarketShelfSection 会渲 500 张卡').toBeLessThanOrEqual(MARKET_SLOTS)
   })
 })
+
+/**
+ * 寄卖品名要截。
+ *
+ * 它渲染在寄卖格那一行（`{{ consignBySlot[s]!.name }}`，带 `truncate` 类）。
+ * `truncate` 只解决**视觉**溢出 —— 文本节点与存档里那十万字符照大不误。
+ *
+ * 写入路径取 `equipmentTemplate(...).name`（数据表里最长四五个字），
+ * 故超长只来自坏档。取 `NAME_MAX_LENGTH * 2`（16 码点）已极宽，
+ * 与 `nemeses.enemyName` / `souls.fromName` / `worldRun.rows[].foeName` 同一把尺。
+ *
+ * 故障注入：去掉 `truncateCodePoints` → 本条红。
+ */
+describe('寄卖 · 品名长度上界', () => {
+  it('超长品名截断,正常品名原样', () => {
+    const m = useMarketStore()
+    const now = Date.now()
+    m.consign = [
+      { slot: 0, tier: 5, qualityRank: 3, price: { m: 1, e: 2 }, finishAt: now + 1000, name: 'x'.repeat(100_000) },
+      { slot: 1, tier: 5, qualityRank: 3, price: { m: 1, e: 2 }, finishAt: now + 2000, name: '青锋剑' }
+    ] as never
+    m.sanitize()
+    expect(m.consign[0]?.name.length, '品名没截 —— 文本节点与存档照大不误').toBeLessThanOrEqual(16)
+    expect(m.consign[1]?.name, '正常品名被误伤').toBe('青锋剑')
+  })
+})
