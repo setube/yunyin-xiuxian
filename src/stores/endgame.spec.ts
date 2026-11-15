@@ -1148,3 +1148,32 @@ describe('远征规则修形 · 坏档里的 rules 字段', () => {
   })
 })
 })
+
+/**
+ * 虚界的规则文案须封顶。
+ *
+ * `sanitizeVoidWorld` 里同一块把 `anchorTier` / `entryCost` / `fights` / `rewardDaoSource`
+ * 都按生成器的真实产出夹了上界,只有 `ruleText` 原样吃下 —— 而 `ExpeditionPanel`
+ * 是 `v-for` 逐条渲它(两处:世界规则与虚界规则),坏档写 5000 条就渲 5000 个 `<span>`。
+ * 生成器实际只产 2–3 条(`worldGen` 的 `mutCount = rng.int(2, 3)`)。
+ *
+ * 故障注入:把 `asStringArray(w.ruleText).slice(0, RULE_TEXT_CAP)` 改回裸
+ * `asStringArray(w.ruleText)` → 本条红。
+ */
+describe('虚界 · 规则文案读档封顶', () => {
+  it('坏档塞 5000 条规则,读档后只留一小段', () => {
+    const endgame = useEndgameStore()
+    endgame.$patch({
+      voidWorld: {
+        ...celestialWorldDef('chiyan')!,
+        id: 'void',
+        name: '虚界·封顶',
+        ruleText: Array.from({ length: 5000 }, (_, i) => `规则 ${i}`)
+      }
+    })
+    endgame.sanitize()
+    const n = endgame.voidWorld?.ruleText.length ?? -1
+    expect(n, '世界被整条作废了 —— 夹具没通过校验').toBeGreaterThan(0)
+    expect(n, '规则文案没封顶 —— 界面会逐条渲出来').toBeLessThanOrEqual(50)
+  })
+})

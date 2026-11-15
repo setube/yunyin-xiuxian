@@ -90,6 +90,9 @@ function sanitizeMods(raw: unknown): StatMods | null {
  * 赏格被夹在 55–100、入场费恒 20、场数恒 6、锚点层级恒 32。
  */
 const VOID_ANCHOR_TIER_MAX = 64
+
+/** 世界规则文案的读档条数上界:生成器只产 2–3 条,取 16 作余量 */
+const RULE_TEXT_CAP = 16
 const VOID_REWARD_MAX = 200
 const VOID_ENTRY_COST_MAX = 500
 const VOID_FIGHTS_MAX = 20
@@ -205,7 +208,13 @@ function sanitizeVoidWorld(raw: unknown): CelestialWorldDef | null {
      */
     anchorTier: Math.floor(asFiniteNumber(w.anchorTier, 0, 0, VOID_ANCHOR_TIER_MAX)),
     desc: typeof w.desc === 'string' ? w.desc : '',
-    ruleText: asStringArray(w.ruleText),
+    /*
+     * 规则文案须封顶。同一块里 `anchorTier` / `entryCost` / `fights` / `rewardDaoSource`
+     * 都按生成器的真实产出夹了上界,只有这一项原样吃下 —— 而
+     * `ExpeditionPanel` 是 `v-for` 逐条渲它:坏档写 5000 条就渲 5000 个 `<span>`。
+     * 生成器实际只产 2–3 条(`worldGen` 的 `mutCount = rng.int(2, 3)`),取 16 作余量。
+     */
+    ruleText: asStringArray(w.ruleText).slice(0, RULE_TEXT_CAP),
     rules: asCombatRules(w.rules),
     entryCost: Math.floor(asFiniteNumber(w.entryCost, 0, 0, VOID_ENTRY_COST_MAX)),
     fights: Math.floor(asFiniteNumber(w.fights, 1, 1, VOID_FIGHTS_MAX)),
