@@ -206,4 +206,18 @@ describe('日号守卫 · 不依赖尚未修复的 game.totalPlaySec', () => {
       '坏 totalPlaySec 让守卫失效了 —— 每日兑换额度会被绕过'
     ).toBe(0)
   })
+  /*
+   * 无事件时调 `dismissCaveEvent()` 是空操作。
+   * 去掉 `if (!caveEvent) return`,后面会照样跑 `markCaveEventToday(today)` ——
+   * 玩家明明什么都没离开,今日巡游次数却被白扣一次。
+   */
+  it('没有在途洞府事件时离开:什么也不发生', () => {
+    const player = usePlayerStore()
+    dismissCaveEvent()            // 先清干净
+    // 放一个「很久以前」的标记:若守卫被删,下面会把它改写成今天,差异才可观测
+    player.markCaveEventToday(-1)
+    dismissCaveEvent()
+    expect(player.lastCaveEventDay, '无事件时不该写入今日巡游标记').toBe(-1)
+  })
+
 })
