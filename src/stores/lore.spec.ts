@@ -3,6 +3,8 @@
  * 藏经阁钻研引擎由 loreService.spec 钉。
  */
 import { beforeEach, describe, expect, it } from 'vitest'
+import { MATERIALS } from '@/data/materials'
+import { PILLS } from '@/data/pills'
 import { createPinia, setActivePinia } from 'pinia'
 import { useLoreStore, ENEMY_LORE_MAX } from '@/stores/lore'
 import { LORE_MAX } from '@/data/materials'
@@ -145,5 +147,33 @@ describe('图鉴见闻收录守卫(useLoreStore)', () => {
 
     expect(lore.studyFrac, '负钻研量会让 studyFrac < 0.001 长期短路').toBe(0)
     expect(lore.seeded, '只认真正的布尔 true,否则跳过入门播种').toBe(false)
+  })
+})
+
+/**
+ * 照面次数与图纸认知表的条数上界。
+ *
+ * 这两张表**故意不认 id**（改名 / 版本回退时不抹掉玩家进度），但条数仍要有界：
+ * 坏档能塞任意多键（实测三千条），它们不进任何界面（`codex` 用 `MATERIALS.map` 遍历
+ * 真实材料），只是把 `$state` 撑大 —— 每个键连同数字约 20 字节，三千条约 60KB。
+ *
+ * 上界取数据目录的八倍：宽到容得下改名/下线残留，窄到拦得住坏档。
+ * 超出时保留**靠前**的键（对象键序 = 写入序，靠前的才是早期真玩过的）。
+ *
+ * 故障注入：去掉 `capEntries(...)` 包一层 → 本条红。
+ */
+describe('图鉴 · 照面次数与图纸表的条数上界', () => {
+  it('三千条野键被截到上界,靠前的保留', () => {
+    const l = useLoreStore()
+    const wild: Record<string, number> = {}
+    for (let i = 0; i < 3000; i += 1) wild['wild_' + i] = i
+    l.materialSeen = wild as never
+    l.blueprintLore = wild as never
+    l.sanitize()
+    expect(Object.keys(l.materialSeen).length, '照面次数表没上界 —— 坏档会撑大存档').toBeLessThanOrEqual(
+      MATERIALS.length * 8
+    )
+    expect(Object.keys(l.blueprintLore).length, '图纸认知表没上界').toBeLessThanOrEqual(PILLS.length * 8)
+    expect(l.seenOf('wild_0'), '靠前的键应保留(早期真玩过的)').toBe(0)
   })
 })
