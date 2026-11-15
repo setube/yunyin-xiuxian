@@ -592,6 +592,20 @@ export const useEndgameStore = defineStore(
           grade: Math.min(maxSoulGrade, Math.floor(asFiniteNumber(s.grade, 0, 0))),
           fromName: typeof s.fromName === 'string' ? s.fromName : ''
         }))
+      /*
+       * 魂库条数封顶。
+       *
+       * `souls` 只增不减(每次凝魂追加一枚,散去才减),而 `SoulsView` 有三处
+       * `v-for` 逐条渲(`slotRows` / `idleSouls` / `refinable`)。坏档塞 5000 枚
+       * 合法器魂会被原样吃下,页面渲 5000 行。
+       *
+       * 上界取 `MAX_MARKS`(60):与道痕同为「只增不减的收藏」,而道痕那边已按 60 封过。
+       * 器魂的产出来自分解装备,比道痕更慢,60 对真实玩法绰绰有余。
+       * **无玩法读全量**:`soulService` 只用 `find` 查单个,`SoulsView` 只用它渲染 ——
+       * 故可在此截数据,不必像 `lives` / `bonds` 那样挪到渲染侧。
+       * 截断保留先得的(与 `equipSoul` 的「槽满即拒」同序,不至于把已装配的那枚截掉).
+       */
+      souls.value = souls.value.slice(0, MAX_MARKS)
       equippedSouls.value = [...new Set(asStringArray(equippedSouls.value))]
       // 清掉已不存在的 uid:否则幽灵占槽,再装配静默失败
       const soulUids = new Set(souls.value.map(s => s.uid))
