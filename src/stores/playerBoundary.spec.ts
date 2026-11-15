@@ -1,5 +1,5 @@
 /** 玩家区域统计、奇缘与暂停顺延的公共写入边界 */
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
 import type { RegionStats } from '@/core/suppress'
@@ -322,5 +322,37 @@ describe('秘境战利 · 读档条数封顶', () => {
     expect(spoils.length, '战利清单没封顶 —— 界面会逐条渲出来').toBeLessThanOrEqual(50)
     expect(spoils.length, '封顶后不该是空的').toBeGreaterThan(0)
     expect(spoils[spoils.length - 1], '该保留最新的那几条').toBe('战利 4999')
+  })
+})
+
+/**
+ * 区域事件的到期上界须给「时钟回拨」留余量。
+ *
+ * 只写 `now + 最长时长` 时,回拨会让 `now + MAX` 跟着缩小 ——
+ * 实测回拨 3 小时后,一个还剩 90 分钟的**合法事件被当场作废**。
+ * 与 155 轮 buff 的 `addEstimatedCap` 是同一类:参照点不能只用「现在」。
+ *
+ * 判据两半:回拨 3 小时合法事件保留;十天后的远期坏档照常作废。
+ *
+ * 故障注入:把 `slackMs` 改回 `REGION_EVENT_MAX_MINUTES * 60_000` → 第一条红。
+ */
+describe('区域事件 · 到期上界与时钟回拨', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('时钟回拨后合法事件不被作废,远期坏档仍清掉', () => {
+    const p = usePlayerStore()
+    p.initCharacter('探针', { roots: [] } as never)
+    const t0 = 1_800_000_000_000
+
+    p.regionEvent = { regionId: 'qingyun', eventId: 'yaochao', endsAt: t0 + 90 * 60_000 } as never
+    vi.spyOn(Date, 'now').mockReturnValue(t0 - 3 * 3600_000)
+    p.sanitize()
+    expect(p.regionEvent, '回拨 3 小时后合法事件被清 —— 玩家平白丢一个事件').not.toBeNull()
+
+    vi.restoreAllMocks()
+    vi.spyOn(Date, 'now').mockReturnValue(t0)
+    p.regionEvent = { regionId: 'qingyun', eventId: 'yaochao', endsAt: t0 + 10 * 86_400_000 } as never
+    p.sanitize()
+    expect(p.regionEvent, '十天后的远期坏档没清 —— 该地界再也掷不出新事件').toBeNull()
   })
 })
