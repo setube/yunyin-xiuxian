@@ -58,9 +58,47 @@ self.addEventListener('install', (event) => {
           await cache.put(new URL('index.html', base), pageRes.clone())
           // 从 HTML 里挑出同源的脚本与样式(首屏必需的那几件)
           const html = await pageRes.text()
-          const refs = [...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css|webmanifest))"/g)].map((m) => m[1])
+          const refs = new Set([...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css|webmanifest))"/g)].map((m) => m[1]))
+          /*
+           * 首屏主 chunk 里还挂着**全部路由懒加载 chunk** 的依赖表(`__vite__mapDeps`)。
+           * 只预缓存 HTML 引到的那几件不够:路由组件是动态 import,离线新开页面时
+           * `WelcomeView-*.js` / `.css` 请求发出去了但缓存里没有 —— 应用挂上了、视图渲染不出来。
+           *
+           * 实测(纯静态服务):主 chunk 与样式全部 `fromServiceWorker: true` 200,
+           * 只有 `WelcomeView-*.css` 是 503,结果 `#app` 有子节点但 innerText 为空。
+           *
+           * 这张表就在主 chunk 里,解析出来一并存下。它是构建产物里的字面量,
+           * 不是运行期才知道的东西,故可在 install 阶段静态取到。
+           */
+          for (const m of html.matchAll(/src="([^"]+\.js)"/g)) refs.add(m[1])
+          const mainJs = [...refs].find((r) => /assets\/index-.*\.js$/.test(r))
+          if (mainJs) {
+            try {
+              const mainRes = await fetch(new URL(mainJs, base), { cache: 'reload' })
+              if (mainRes.ok) {
+                const code = await mainRes.text()
+                const deps = code.match(/m\.f=\[([^\]]*)\]/)
+                if (deps) {
+                  /*
+                   * 依赖表里的条目是相对**主 chunk 所在目录**的(`./WelcomeView-xxx.js`),
+                   * 而主 chunk 在 `assets/` 下 —— 直接 `new URL('./X', base)` 会拼成根目录的
+                   * `/X`,取不到东西。这里显式补上 `assets/` 前缀。
+                   */
+                  const mainDir = mainJs.slice(0, mainJs.lastIndexOf('/') + 1)
+                  for (const dm of deps[1].matchAll(/"([^"]+)"/g)) {
+                    const rel = dm[1]
+                    if (!/\.(?:js|css)$/.test(rel)) continue
+                    // 条目写作 `./X.js`,相对主 chunk 所在目录;剥掉 `./` 再拼 `assets/`
+                    refs.add(mainDir + rel.replace(/^\.\//, ''))
+                  }
+                }
+              }
+            } catch {
+              // 解析失败不影响主链路的预缓存
+            }
+          }
           await Promise.all(
-            refs.map(async (ref) => {
+            [...refs].map(async (ref) => {
               try {
                 const url = new URL(ref, base)
                 if (url.origin !== self.location.origin) return
