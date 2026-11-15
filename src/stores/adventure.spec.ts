@@ -469,6 +469,29 @@ describe('历练会话 · 收益量级', () => {
     expect(formatGN(s!.stoneGain)).toBe('2万')
   })
 
+  /**
+   * 指数**在界内**但数值离谱的那一档。
+   *
+   * `asBoundedGNum` 只守卫 |e| ≤ 999,而 `9.99e900` 正好在界内 ——
+   * 原先它会原样留下,战报用 `formatGN` 裸插值印出「灵石 +9.99e900」。
+   * 上界按真实量级定:单场最高层级实测约 5.25e10,取 1e20。
+   *
+   * 故障注入:把 `clampGain` 换回 `asBoundedGNum` → 本条红。
+   */
+  it('指数在界内但量级离谱的收益也归零(不再印出 9.99e900)', () => {
+    const s = withGain({ m: 9.99, e: 900 })
+    expect(s, '坏收益不该让整个会话被丢掉').not.toBeNull()
+    expect(formatGN(s!.stoneGain), '战报会印出科学计数').toBe('0')
+    expect(formatGN(s!.expGain)).toBe('0')
+  })
+
+  it('真实量级的收益不被误伤', () => {
+    const s = withGain({ m: 5.25, e: 10 })
+    expect(s).not.toBeNull()
+    expect(s!.stoneGain.m).toBeCloseTo(5.25)
+    expect(s!.stoneGain.e).toBe(10)
+  })
+
   it('收益归零后会话本身仍在(玩家还在历练,只是这一世的累计读数被修形)', () => {
     const s = withGain({ m: 1, e: 1e9 })
     expect(s!.regionId).toBe('qingyun')

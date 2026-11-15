@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { AdventureSession, CombatResult, CombatSideStats, FoeOrigin, FoeOriginPart, GNum } from '@/types'
 import { persistConfig } from '@/utils/storage'
+import { cmp, gn, gnZero } from '@/utils/gnum'
 import { regionDef, unlockClosure } from '@/data/regions'
 
 /**
@@ -12,6 +13,12 @@ import { regionDef, unlockClosure } from '@/data/regions'
  * 一场历练的胜场不可能过亿 —— 上界宽到不误伤正常档,窄到拦得住 `1e300` 那种坏档。
  */
 const SESSION_COUNT_MAX = 1e8
+/** 战报累加器(灵石/修为)的读档上界:单场实测约 5.25e10,真实累计到不了 1e20 */
+const SESSION_GAIN_MAX = gn(1e20)
+const clampGain = (v: unknown): GNum => {
+  const g = asBoundedGNum(v)
+  return cmp(g, SESSION_GAIN_MAX) > 0 ? gnZero() : g
+}
 
 /**
  * 敌人加成来源的读档上界(三维倍率 / 增伤减伤)。
@@ -328,8 +335,16 @@ export const useAdventureStore = defineStore(
             itemGain: Math.min(SESSION_COUNT_MAX, Math.floor(asFiniteNumber(s.itemGain, 0, 0))),
             // 须经 asBoundedGNum 归一:坏 GNum 会让 exploration 的 add() 每场胜利都抛,历练永久卡死;
             // 它同时带指数上界,裸 gn() 不设界会让本世收益印出「1.00e1000000000」
-            stoneGain: asBoundedGNum(s.stoneGain),
-            expGain: asBoundedGNum(s.expGain)
+            /*
+             * 战报累加器也要有量级上界,不能只靠 `asBoundedGNum` 的指数守卫(999)。
+             * 它是**裸插值进 `formatGN` 再进战报文案**的(见 exploration 的 haul 行),
+             * 坏档写 `9.99e900` 会印出「灵石 +9.99e900」—— 实测 sanitize 不修。
+             * 上界取 `SESSION_GAIN_MAX`(1e20):单场最高层级实测约 5.25e10,
+             * 一场历练最多几十胜,1e20 比任何真实累计都宽。
+             * 这两个数只用于显示(真实入账在 afterWin),故越界归零不影响玩法。
+             */
+            stoneGain: clampGain(s.stoneGain),
+            expGain: clampGain(s.expGain)
           }
         }
       }
