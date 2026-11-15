@@ -41,6 +41,7 @@ import { daoFruitGain } from './formulas'
 import { archiveLifeTrial } from './lifeTrialService'
 import { rerollMortalWorld } from './mortalWorldService'
 import { archiveBond } from './daoluService'
+import { engine } from './engine'
 
 function drawTalents(count: number, exclude: Set<string>): string[] {
   const out: string[] = []
@@ -270,6 +271,15 @@ export async function confirmReincarnation(chosenTalentId: string | null, chosen
   ui.equipDetailUid = null
   ui.gongfaDetailId = null
   ui.buffDetailId = null
+  /*
+   * 死亡提示的「已播报」标记须复位。
+   *
+   * `engine.checkDeath` 用 `if (!this.deathAnnounced)` 挡住重复弹窗,而
+   * `resetDeathFlag()` 写好了却**从无人调用** —— 于是转世后标记仍是 true:
+   * 实测新世再次寿尽时 `player.dead` 变 true、而 `ui.deathDialog` 不弹,
+   * 轮回入口不出现。engine 的注释自己写着这条路的风险(「不重开则低境界软锁」)。
+   */
+  engine.resetDeathFlag()
   // 命题快照须在重置之后取
   beginLife(view.themeChoices.includes(chosenThemeId ?? '') ? chosenThemeId : null)
   recordMilestone('first_rebirth')

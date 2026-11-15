@@ -11,6 +11,7 @@ import { useCultivationStore } from '@/stores/cultivation'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
 import { useBountyStore } from '@/stores/bounty'
+import { engine } from './engine'
 import { useEndgameStore } from '@/stores/endgame'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useApprenticeStore } from '@/stores/apprentice'
@@ -485,5 +486,36 @@ describe('转世 · 详情弹窗随本世清空', () => {
     expect(ui.equipDetailUid, '装备详情 ID 没清 —— 悬空引用').toBeNull()
     expect(ui.gongfaDetailId, '功法弹窗会在新世第一屏自动重开').toBeNull()
     expect(ui.buffDetailId, '状态弹窗会在新世第一屏自动重开').toBeNull()
+  }, 60000)
+})
+
+/**
+ * 死亡提示的「已播报」标记须随本世复位。
+ *
+ * `engine.checkDeath` 用 `if (!this.deathAnnounced)` 挡住重复弹窗,而
+ * `resetDeathFlag()` 写好了却**从无人调用** —— 转世后标记仍是 true:
+ * 新世再次寿尽时 `player.dead` 变 true、`ui.deathDialog` 却不弹,
+ * 轮回入口不出现,低境界软锁。
+ *
+ * 故障注入:删掉 `engine.resetDeathFlag()` 那一行 → 本条红。
+ */
+describe('转世 · 死亡提示标记复位', () => {
+  it('新世再次寿尽时轮回入口仍会弹出', async () => {
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    player.initCharacter('探针', { roots: [] } as never)
+
+    // age 是可写 ref,lifespanMax 是 computed —— 把 age 顶到极大即可越过它
+    player.age = 99999
+    ;(engine as unknown as { checkDeath(): void }).checkDeath()
+    expect(ui.deathDialog, '夹具没把首次死亡弹出来').toBe(true)
+
+    ui.deathDialog = false
+    ui.reincarnation = prepareReincarnation()
+    await confirmReincarnation(null)
+
+    player.age = 99999
+    ;(engine as unknown as { checkDeath(): void }).checkDeath()
+    expect(ui.deathDialog, '新世死亡不弹窗 —— 轮回入口不出现,低境界软锁').toBe(true)
   }, 60000)
 })
