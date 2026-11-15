@@ -10,6 +10,7 @@ import { join, resolve } from 'node:path'
 import { MAX_MAJOR } from '@/data/realms'
 import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
 import { EQUIP_MAX_LEVEL_BASE, FORGE_LEVEL_PER_CAP } from '@/data/constants'
+import { REGION_EVENTS } from '@/data/regionEvents'
 import { REGIONS } from '@/data/regions'
 import { QUALITIES } from '@/data/qualities'
 import { LIFE_THEMES } from '@/data/lifeThemes'
@@ -197,5 +198,28 @@ describe('数据完整性 · 装备等级上限两处同式', () => {
     expect(forge, '炼器台建筑不存在').toBeTruthy()
     const execAtMax = EQUIP_MAX_LEVEL_BASE + Math.floor(forge!.maxLevel / FORGE_LEVEL_PER_CAP)
     expect(execAtMax, '两处公式已分叉:改了一处忘另一处').toBe(EQUIP_LEVEL_SANITIZE_CAP)
+  })
+})
+
+/**
+ * 区域动态事件的倍率自洽。
+ *
+ * 这张表是唯一没有任何 spec 覆盖的数据表 —— 它的文案是定性的(「掉落更丰,也更凶险」),
+ * `dataTextAudit` 那套「文案数字 ↔ 数值」的对账用不上。补一条区间判据:
+ *
+ * 三个倍率都是**乘法因子**,小于 1 会把事件变成惩罚(与文案说的「更丰 / 大盛」相反),
+ * 上限取 2/3 —— 超过就是能把结算推高一倍以上,那已经不是「事件」而是翻倍外挂。
+ */
+describe('数据完整性 · 区域事件倍率', () => {
+  it('三个倍率都是区间内的乘法因子,描述非空', () => {
+    for (const e of REGION_EVENTS) {
+      expect(e.rewardMult, `${e.id} 掉落倍率 < 1 会变成惩罚`).toBeGreaterThanOrEqual(1)
+      expect(e.rewardMult, `${e.id} 掉落倍率 > 2 等于翻倍外挂`).toBeLessThanOrEqual(2)
+      expect(e.dangerMult, `${e.id} 危险倍率 < 1 会变成奖励`).toBeGreaterThanOrEqual(1)
+      expect(e.dangerMult, `${e.id} 危险倍率 > 2 会劝退`).toBeLessThanOrEqual(2)
+      expect(e.eventMult, `${e.id} 事件倍率必须为正`).toBeGreaterThan(0)
+      expect(e.eventMult, `${e.id} 事件倍率 > 3 会让事件刷屏`).toBeLessThanOrEqual(3)
+      expect(e.desc.trim().length, `${e.id} 描述为空`).toBeGreaterThan(0)
+    }
   })
 })
