@@ -289,3 +289,38 @@ describe('player.sanitize · 履历缺失时不许抛', () => {
     }
   })
 })
+
+/**
+ * 秘境战利清单须封顶。
+ *
+ * `player.sanitize` 里同一块把 `layer` / `wins` / `losses` 都夹了上界,只有 `spoils`
+ * 原样吃下。而 `SecretRealmCard` 用 `v-for` 逐条渲染,`max-h-24 overflow-y-auto`
+ * 只管视觉高度、管不住 DOM 节点数 —— 坏档写 5000 条就渲 5000 个 `<span>`。
+ * 与行囊 `BAG_CAPACITY` 那处同一类(AGENTS.md 记着「几千件被原样吃下」那次)。
+ *
+ * 故障注入:把 `asStringArray(sr.spoils).slice(-SPOILS_CAP)` 改回裸 `asStringArray(sr.spoils)` → 本条红。
+ */
+describe('秘境战利 · 读档条数封顶', () => {
+  it('坏档塞 5000 条,读档后只留尾部一小段', () => {
+    const player = usePlayerStore()
+    player.initCharacter('探针', { roots: [] } as never)
+    player.secretRealm = {
+      realmId: 'sr_kurong',
+      enteredAt: Date.now(),
+      layer: 1,
+      wins: 0,
+      losses: 0,
+      spoils: Array.from({ length: 5000 }, (_, i) => `战利 ${i}`),
+      rules: [],
+      carriedHpPct: 1,
+      finished: false
+    } as never
+
+    player.sanitize()
+
+    const spoils = (player.secretRealm as { spoils: string[] } | null)?.spoils ?? []
+    expect(spoils.length, '战利清单没封顶 —— 界面会逐条渲出来').toBeLessThanOrEqual(50)
+    expect(spoils.length, '封顶后不该是空的').toBeGreaterThan(0)
+    expect(spoils[spoils.length - 1], '该保留最新的那几条').toBe('战利 4999')
+  })
+})
