@@ -1047,7 +1047,19 @@ export const usePlayerStore = defineStore(
          * 判据取「最长时长」:超出它即不可能是正常事件,直接作废。
          */
         const endsRaw = asTimestamp(ev.endsAt, 0)
-        const endsAt = endsRaw > Date.now() + REGION_EVENT_MAX_MINUTES * 60_000 ? 0 : endsRaw
+        /*
+         * 上界须给「时钟回拨」留出余量 —— 155 轮 buff 那条同源。
+         *
+         * 只写 `now + MAX` 时,时钟往回拨会让 `now + MAX` 跟着缩小:
+         * 实测回拨 3 小时后,一个还剩 90 分钟的**合法事件被当场作废**。
+         *
+         * 坏档与「回拨后的合法值」在数值上无法区分(两者都远在 now 之后),
+         * 只能放宽判据:`now + 一天`。这仍能拦住真正的坏档
+         * (`endsAt` 在十天后、或坏档写的远期值),而回拨几小时的合法事件
+         * 不会被误伤 —— 事件最长 120 分钟,回拨到 6 小时以内都安全。
+         */
+        const slackMs = REGION_EVENT_MAX_MINUTES * 60_000 + 24 * 3600_000
+        const endsAt = endsRaw > Date.now() + slackMs ? 0 : endsRaw
         if (!regionOk || endsAt <= 0) regionEvent.value = null
         else regionEvent.value = { ...ev, endsAt }
       }
