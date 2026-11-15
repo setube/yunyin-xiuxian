@@ -85,8 +85,29 @@ if (!(await openStoreBridge(page))) {
     })
   })
   await page.waitForSelector('.treasure-overlay', { timeout: 5000 }).catch(() => fail('仪典没有画出来(.treasure-overlay 不存在)'))
-  // 入场的升起动画是 0.6s,正文在动画首帧 opacity 为 0 —— 量之前等它走完
-  await page.waitForTimeout(800)
+  /*
+   * 入场的升起动画是 0.6s,正文在动画首帧 opacity 为 0 —— 量之前等它走完。
+   *
+   * **不能只靠固定睡眠**:无头 chromium 只在有绘制需求时才推进 `document.timeline`
+   * (实测页面 load 完之后 tl 一直停在 0,要等一次 rAF / 截图 / 鼠标事件才走),
+   * 而 CSS 动画的时间基准正是这条 timeline。于是「等 800ms」等到的还是第 0 帧,
+   * 正文 opacity 恒为 0 —— 判据报「正文在开场时不可见」,而那只是量具没走起来。
+   * 实测本脚本连跑三遍全红,而同一时刻界面上的动画是正常的。
+   *
+   * `polling: 'raf'` 自己排 rAF,既把 timeline 推起来,又只在正文真的可见后才继续。
+   * 同样的事「三秒后自己散」那一处也有:它等的 3.6s 里 timeline 若不走,
+   * 组件里 3000ms 的 setTimeout 照常到点(那是墙钟),故那边不必改。
+   */
+  await page
+    .waitForFunction(
+      () => {
+        const body = document.querySelector('.treasure-overlay .treasure-body')
+        return !!body && Number(getComputedStyle(body).opacity) > 0.9
+      },
+      null,
+      { polling: 'raf', timeout: 8000 }
+    )
+    .catch(() => fail('仪典正文一直没有显出来(.treasure-body 的 opacity 始终为 0)'))
 
   const info = await page.evaluate(() => {
     const el = document.querySelector('.treasure-overlay')
