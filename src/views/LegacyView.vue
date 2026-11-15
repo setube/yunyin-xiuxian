@@ -328,6 +328,14 @@
       })
   )
 
+  /*
+   * 征战录只渲最近若干位。
+   *
+   * `player.nemeses` 参与玩法(ghostOf / isNemesis / markAvenged / recordLoss 都读全量),
+   * 存档层不截 —— 只在渲染层截。坏档塞 5000 位宿敌就渲 5000 行。
+   * 排序是「未雪耻在前、已雪耻按时间」,截断后留下的正是玩家最该看的那些。
+   */
+  const NEMESIS_ROWS_SHOWN = 100
   const nemesisRows = computed(() =>
     player.nemeses
       .filter(n => n.lossCount >= 3)
@@ -338,6 +346,7 @@
         active: isNemesis(player.nemeses, n.enemyId)
       }))
       .sort((a, b) => (a.avengedAt ?? 0) - (b.avengedAt ?? 0))
+      .slice(0, NEMESIS_ROWS_SHOWN)
   )
 
   const lossRows = computed(() =>

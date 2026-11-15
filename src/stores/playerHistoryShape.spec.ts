@@ -315,3 +315,48 @@ describe('轮回履历 · 数值与境界名的上界', () => {
     expect(good!.insight, '正常宿慧被改').toBe(56)
   })
 })
+
+/**
+ * 征战录的宿敌名与渲染条数。
+ *
+ * `enemyName` 裸插值进那一行(`{{ n.enemyName }}`),原先只判「是不是字符串」——
+ * 坏档塞十万字符会把行撑爆。敌人名在数据表里最长四五个字,16 码点已极宽。
+ *
+ * 条数在**渲染层**截:`player.nemeses` 参与玩法(ghostOf / isNemesis / markAvenged /
+ * recordLoss 都读全量),存档层截掉会改变玩法。
+ *
+ * 故障注入:去掉 `truncateCodePoints` 包一层 → 第一条红;去掉 `.slice(0, NEMESIS_ROWS_SHOWN)` → 第二条红。
+ */
+describe('征战录 · 宿敌名与渲染条数', () => {
+  it('超长敌人名被截,正常名与败次原样', () => {
+    const p = usePlayerStore()
+    p.nemeses = [
+      { enemyId: 'e1', enemyName: 'x'.repeat(100_000), regionId: 'qingyun', lossCount: 5, lastLossAt: 1 },
+      { enemyId: 'e2', enemyName: '赤焰虎', regionId: 'qingyun', lossCount: 7, lastLossAt: 2 }
+    ] as never
+    p.sanitize()
+    const [bad, good] = p.nemeses
+    expect(bad!.enemyName.length, '敌人名没截 —— 会把征战录那一行撑爆').toBeLessThanOrEqual(16)
+    expect(good!.enemyName, '正常敌人名被误伤').toBe('赤焰虎')
+    expect(good!.lossCount, '正常败次被改').toBe(7)
+  })
+
+  it('nemesisRows 有截断,且存档里的宿敌不截', () => {
+    const src = readFileSync(resolve(process.cwd(), 'src/views/LegacyView.vue'), 'utf8')
+    expect(src, 'nemesisRows 没截断 —— 坏档 5000 位就渲 5000 行').toMatch(
+      /\.sort\(\(a, b\) => \(a\.avengedAt \?\? 0\) - \(b\.avengedAt \?\? 0\)\)[\s\S]{0,80}\.slice\(0, NEMESIS_ROWS_SHOWN\)/
+    )
+
+    const p = usePlayerStore()
+    p.initCharacter('探针', { roots: [] } as never)
+    p.nemeses = Array.from({ length: 500 }, (_, i) => ({
+      enemyId: 'e' + i,
+      enemyName: '宿敌' + i,
+      regionId: 'qingyun',
+      lossCount: 5,
+      lastLossAt: i
+    })) as never
+    p.sanitize()
+    expect(p.nemeses.length, '存档侧不该截 —— 玩法要读全量').toBe(500)
+  })
+})

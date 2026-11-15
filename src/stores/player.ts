@@ -1227,8 +1227,16 @@ export const usePlayerStore = defineStore(
         const lossCount = Math.floor(asFiniteNumber(n.lossCount, 0, 0, NEMESIS_LOSS_CAP))
         const lastLossAt = asFiniteNumber(n.lastLossAt, 0, 0)
         const avengedAt = typeof n.avengedAt === 'number' && Number.isFinite(n.avengedAt) ? n.avengedAt : undefined
-        const enemyName = typeof n.enemyName === 'string' && n.enemyName ? n.enemyName : n.enemyId
-        const regionId = typeof n.regionId === 'string' ? n.regionId : ''
+        /*
+         * `enemyName` 裸插值进「征战录」那一行(`{{ n.enemyName }}`),须封顶 ——
+         * 坏档塞十万字符会把那行撑到不能看。敌人名在数据表里最长四五个字,
+         * `NAME_MAX_LENGTH * 2`(16 码点)已极宽。空名退到 id(既有行为)。
+         */
+        const enemyName = truncateCodePoints(
+          typeof n.enemyName === 'string' && n.enemyName ? n.enemyName : n.enemyId,
+          NAME_MAX_LENGTH * 2
+        )
+        const regionId = truncateCodePoints(typeof n.regionId === 'string' ? n.regionId : '', NAME_MAX_LENGTH * 2)
         const prev = mergedNemeses.get(n.enemyId)
         if (!prev) {
           mergedNemeses.set(n.enemyId, {
