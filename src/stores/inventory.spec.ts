@@ -5,6 +5,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
+import { toNum } from '@/utils/gnum'
+import type { GNum } from '@/types'
 import { mergeMods } from '@/core/statsCalc'
 import { BAG_CAPACITY, EQUIP_AFFIX_HARD_CAP } from '@/data/constants'
 import { resolveEquipStats } from '@/core/equipGen'
@@ -708,5 +710,39 @@ describe('丹药存量 · 读档封顶', () => {
     expect(inv.pills['p_jvqisan'], '丹药存量没封顶 —— 界面会印出「×1e+300」').toBeLessThanOrEqual(1e9)
     expect(inv.pills['p_jvqisan'], '夹得太狠,正常存量会被误伤').toBeGreaterThan(1e6)
     expect(inv.pills['p_jvqidan'], '正常存量不该被动').toBe(5)
+  })
+})
+
+/**
+ * 累计投入灵石的读档上界。
+ *
+ * 它与 `invested.dust` 是同一个结构、同一个结局 —— 都会经 `enhanceInvested`
+ * **原样退还给玩家**。而 `dust` 早有 `INVESTED_DUST_MAX`(两万)挡着,
+ * `stone` 却只走 `asBoundedGNum`,上界是 `SAVE_GNUM_MAX_EXP`(999):
+ * 坏档写 `9.99e900` 照样通过,拆一件就白得比 `Number.MAX_VALUE` 还大的灵石。
+ *
+ * 上界按真实最大投入算:满强化累计 `5.32e11`,取约 2.3 倍余量(dust 同比例)。
+ * 越界归零 —— 夹到上界仍是白送。
+ *
+ * 故障注入:去掉 `cmp(st, INVESTED_STONE_MAX) > 0` 那一判 → 本条红。
+ */
+describe('装备投入 · 灵石上界', () => {
+  it('坏档写 9.99e900,读档后归零;真实投入原样保留', () => {
+    const inv = useInventoryStore()
+    const mk = (uid: string, stone: unknown) => ({
+      uid,
+      templateId: 'w_zhuqing',
+      quality: 'heaven',
+      tier: 5,
+      level: 0,
+      affixes: [],
+      invested: { dust: 100, stone }
+    })
+    inv.items = [mk('e1', { m: 9.99, e: 900 }), mk('e2', { m: 5, e: 11 })] as never
+    inv.sanitize()
+    const huge = inv.items[0] as unknown as { invested: { stone: GNum } }
+    const real = inv.items[1] as unknown as { invested: { stone: GNum } }
+    expect(toNum(huge.invested.stone), '巨额投入没归零 —— 拆一件白得一笔天量灵石').toBe(0)
+    expect(toNum(real.invested.stone), '真实投入被误伤').toBeCloseTo(5e11, -9)
   })
 })

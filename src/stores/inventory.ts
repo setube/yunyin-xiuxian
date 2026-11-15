@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { ArtifactOwned, EquipmentInstance, EquipSlot, GNum, StatMods } from '@/types'
-import { add, gnZero } from '@/utils/gnum'
+import { add, cmp, gn, gnZero } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
 import { resolveEquipStats } from '@/core/equipGen'
 import { mergeMods } from '@/core/statsCalc'
@@ -21,6 +21,8 @@ import { EQUIP_COUNTER_MAX } from '@/data/constants'
  * 取两万留余量 —— 正常到不了,越过的必定是坏档。
  */
 const INVESTED_DUST_MAX = 20_000
+/** 累计投入灵石的读档上界:满强化实测 5.32e11,取约 2.3 倍余量(同 dust 的比例) */
+const INVESTED_STONE_MAX = gn(1.2e12)
 import { EQUIP_SLOTS, MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { pillDef } from '@/data/pills'
 import { QUALITIES } from '@/data/qualities'
@@ -103,7 +105,20 @@ export const useInventoryStore = defineStore(
                     const v = Math.floor(asFiniteNumber((it.invested as { dust?: unknown }).dust, 0, 0))
                     return v > INVESTED_DUST_MAX ? 0 : v
                   })(),
-                  stone: asBoundedGNum((it.invested as { stone?: unknown }).stone)
+                  /*
+                   * 灵石同理:它也经 `enhanceInvested` 原样退还,而 `asBoundedGNum`
+                   * 的上界是 `SAVE_GNUM_MAX_EXP`(999)—— 坏档写 `9.99e900` 照样通过,
+                   * 等于白送一笔比 `Number.MAX_VALUE` 还大的灵石。实测塞 `9.99e900` 后
+                   * sanitize 不修,而同一个结构里的 `dust` 早被两万的上界挡住。
+                   *
+                   * 上界按真实最大投入算:满强化(15 级、最高层级、最高品质)累计
+                   * `5.32e11`,与 `dust` 同一条思路取约 2.3 倍余量。越界**归零**,
+                   * 理由与 `dust` 同:夹到上界仍是白送。
+                   */
+                  stone: (() => {
+                    const st = asBoundedGNum((it.invested as { stone?: unknown }).stone)
+                    return cmp(st, INVESTED_STONE_MAX) > 0 ? gnZero() : st
+                  })()
                 }
               }
             : {})
