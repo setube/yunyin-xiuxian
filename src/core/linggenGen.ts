@@ -100,7 +100,21 @@ export function sanitizeLinggen(raw: unknown): LinggenProfile | null {
       aptitude: Math.min(100, Math.max(1, Math.floor(Number.isFinite(aptitude) ? (aptitude as number) : 1)))
     })
   }
-  if (roots.length === 0) return null
+  /*
+   * 同一元素只留一条。
+   *
+   * `ELEMENTS` 只有 11 项,而循环不看重复 —— 坏档塞五千条 `{element:'huo'}` 会全部收下。
+   * 更麻烦的是两处渲染都拿 `:key="root.element"`(角色页常驻、转世弹窗各一处):
+   * 同 key 重复会让 Vue 把那几个节点认成同一份,渲染出来是错的。
+   * 灵根本来就是「一元素一根」,去重是修形而不是删数据。
+   */
+  const seenElement = new Set<string>()
+  const uniqueRoots = roots.filter(r => {
+    if (seenElement.has(r.element)) return false
+    seenElement.add(r.element)
+    return true
+  })
+  if (uniqueRoots.length === 0) return null
   /*
    * 上界不是「够大就行」:`toFixed(2)` 在 1e21 起改用科学计数法 ——
    * 坏档写 `growthMult: 1e300` 时角色页会印出「×1e+300」(实测)。
@@ -113,7 +127,7 @@ export function sanitizeLinggen(raw: unknown): LinggenProfile | null {
   const growthMult =
     Number.isFinite(rawMult) && (rawMult as number) > 0 ? Math.min(GROWTH_MULT_MAX, rawMult as number) : 1
   return {
-    roots,
+    roots: uniqueRoots,
     gradeName: typeof p.gradeName === 'string' && p.gradeName ? p.gradeName : '灵根',
     growthMult
   }

@@ -196,3 +196,33 @@ describe('灵根生成 · 极大资质下限也越不过上界', () => {
     }
   })
 })
+
+/**
+ * 灵根的 `roots` 按元素去重。
+ *
+ * `ELEMENTS` 只有 11 项,而修形循环不看重复 —— 坏档塞五千条 `{element:'fire'}`
+ * 会全部收下。更麻烦的是两处渲染都拿 `:key="root.element"`
+ * (角色页常驻一处、转世弹窗一处):同 key 重复会让 Vue 把那几个节点认成同一份。
+ *
+ * 故障注入:去掉 `seenElement` 那段过滤 → 本条红(得 5000)。
+ */
+describe('灵根读档 · 按元素去重', () => {
+  it('同元素重复五千条只留一条,双根不误伤', () => {
+    const dup = sanitizeLinggen({
+      roots: Array.from({ length: 5000 }, () => ({ element: 'fire', aptitude: 50 })),
+      gradeName: '探针',
+      growthMult: 1
+    })
+    expect(dup?.roots.length, '同元素重复没去重 —— v-for 的 key 会撞').toBe(1)
+
+    const normal = sanitizeLinggen({
+      roots: [
+        { element: 'fire', aptitude: 80 },
+        { element: 'water', aptitude: 60 }
+      ],
+      gradeName: '探针',
+      growthMult: 1
+    })
+    expect(normal?.roots.length, '正常双灵根被误伤').toBe(2)
+  })
+})
