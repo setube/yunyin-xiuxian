@@ -257,9 +257,19 @@ export interface LastBattleView {
   loot?: string[]
 }
 
-/** 战力栏修形:gn() 归一,归零视为缺失(卡片 v-if 只渲染有值的 GNum) */
+/**
+ * 战力栏修形:归一,归零视为缺失(卡片 `v-if` 只渲染有值的 GNum)。
+ *
+ * 战力也要有**量级**上界,不能只靠 `asBoundedGNum` 的指数守卫(999)。它是
+ * `powerScore(攻击, 防御, 气血)` 的线性组合,三维受境界与层级约束 ——
+ * 最高境界实测约 2.57e14,所以战力有明确的物理上限。坏档写 `{ m: 1, e: 900 }`
+ * 正在 999 之内,而 `CombatPanel` 是 `formatGN(battle.enemyPower)` 直接插值,
+ * 会印出「敌力 1.00e900」。上界取 `1e18`,比最高境界宽四个数量级。
+ */
+const POWER_SANITY_MAX = gn(1e18)
 function gnStrict(v: unknown): GNum | undefined {
   const g = asBoundedGNum(v)
+  if (cmp(g, POWER_SANITY_MAX) > 0 || cmp(g, gnZero()) < 0) return undefined
   return g.m === 0 && g.e === 0 ? undefined : g
 }
 
