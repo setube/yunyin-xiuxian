@@ -148,10 +148,19 @@ export const useInventoryStore = defineStore(
       }
       equipped.value = fixedEquipped
       // 丹匣只留认得且数量 > 0 的条目(同 spendPill 吃完即删):野 id 会被道童「寻药」缺口统计当成存量
+      /*
+       * 丹药存量须封顶。原先只滤「野 id 与 <=0」,没有上界 —— 而 `addPill` 也不设限,
+       * 坏档写 `1e300` 会原样留下,而 `InventoryView` 那两处是裸插值
+       * (`×{{ row.count }}`、`持有 ×{{ currentPill.count }}`),会印成「×1e+300」。
+       *
+       * 上界取 `EQUIP_COUNTER_MAX`(一亿):与「已重铸 / 已转移」同一把尺 ——
+       * 那里写着「取值不能凭够用定」,因为 `addPill` 同样没有天然上限。
+       * 一亿远低于 `1e21`(裸插值转科学计数法的门槛),又比任何真实存量都宽。
+       */
       pills.value = Object.fromEntries(
-        Object.entries(asNumberRecord(pills.value, 0)).filter(
-          ([id, n]) => !!pillDef(id) && Math.floor(n) > 0
-        )
+        Object.entries(asNumberRecord(pills.value, 0))
+          .map(([id, n]): [string, number] => [id, Math.min(EQUIP_COUNTER_MAX, Math.floor(n))])
+          .filter(([id, n]) => !!pillDef(id) && n > 0)
       )
       // 法宝库:同 defId 只留一条;野 defId 清掉(法宝页 `artifactDef(a.defId)!` 取品质会抛错)
       const seenDef = new Set<string>()
