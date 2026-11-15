@@ -374,3 +374,37 @@ describe('转世 · 天赋抽尽', () => {
     expect(v!.extraTalents, '池子空了,额外天赋应为空').toEqual([])
   })
 })
+
+/**
+ * 一次性弹窗随本世一起清掉。
+ *
+ * `ui.breakthrough`(突破结果)与 `ui.treasure`(得宝仪典)都是 `closable=false`,
+ * 看着像拦住了所有交互 —— 但死亡那条路从 `App.vue` 全局弹,压在上面并带自己的
+ * 「兵解转世」钮。实测两者同时打开时,玩家能在「寿元将尽」里点下去、转世照常完成,
+ * 而突破弹窗仍停在「金丹→元婴」—— 新世的第一屏在说自己刚破了上辈子的境。
+ *
+ * 故障注入:删掉 reincarnation.ts 里 `ui.breakthrough = null` 那一行 → 本条红。
+ */
+describe('转世 · 一次性弹窗随本世清空', () => {
+  it('突破结果与得宝仪典不跨世', async () => {
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    player.initCharacter('探针', { roots: [] } as never)
+    player.major = 20
+    ui.breakthrough = {
+      success: true,
+      fromLabel: '金丹',
+      toLabel: '元婴',
+      isMajor: true,
+      tribulationLog: [],
+      message: '破境'
+    }
+    ui.treasure = { templateId: 'w_zhuqing', name: '测试之器' } as never
+
+    ui.reincarnation = prepareReincarnation()
+    await confirmReincarnation(null)
+
+    expect(ui.breakthrough, '突破弹窗跨世了 —— 新世第一屏还写着上辈子的境界').toBeNull()
+    expect(ui.treasure, '得宝仪典跨世了').toBeNull()
+  }, 60000)
+})

@@ -263,6 +263,17 @@ export async function confirmReincarnation(chosenTalentId: string | null, chosen
   track('reincarnations')
   ui.reincarnation = null
   ui.deathDialog = false
+  /*
+   * 这两个是「那一瞬」的一次性弹窗,也须随本世一起清掉。
+   *
+   * 它们不可关(closable=false),看着像拦住了所有交互 —— 但死亡那条路是从
+   * `App.vue` 全局弹的:实测 `ui.deathDialog` 与 `ui.breakthrough` 同时打开时,
+   * 「寿元将尽」压在上面并带着自己的「兵解转世」钮。玩家在那里点下去,
+   * 转世照常完成(major 变 0、境界变炼气一层),而突破弹窗仍停在
+   * 「金丹→元婴」—— 新世的第一屏在说自己刚破了上辈子的境。
+   */
+  ui.breakthrough = null
+  ui.treasure = null
   ui.toast(`已转世 · 道号「${player.name}」`, 'rare')
   if (view.stageAdvanced) ui.toast(`境地已迁「${view.stageName}」`, 'rare')
   if (recognized > 0) ui.toast(`新认得 ${recognized} 味灵材`, 'info')
