@@ -415,3 +415,24 @@ describe('道侣 · 已完成事件去重', () => {
     expect(b?.doneEvents, '重复项没去重').toEqual(['ev_a', 'ev_b'])
   })
 })
+
+/**
+ * `reincarnation` 整块为 null 时,`sanitize` 不许抛。
+ *
+ * 道侣那段判据要读 `reincarnation.lives` 的末条(判旧世残留),而 `reincarnation`
+ * 的整体重建在这个函数**靠后**的位置。既有注释只兜住了 `lives` 是坏值
+ * (`asArray(...)`),没兜住整个对象是 null —— 实测 `reincarnation: null` 且身上有道侣时
+ * `Cannot read properties of null (reading 'lives')`,整条自愈路径中断,玩家启动即崩。
+ *
+ * 故障注入:把 `reincarnation.value?.lives` 改回 `reincarnation.value.lives` → 本条红。
+ */
+describe('轮回数据整块为 null · sanitize 不许抛', () => {
+  it('reincarnation=null 且有道侣时不抛,道侣与轮回数据都还在', () => {
+    const p = usePlayerStore() as unknown as Record<string, unknown>
+    p.bond = { daoluId: 'dl_qingli', metAt: 5 }
+    p.reincarnation = null
+    expect(() => (p.sanitize as () => void)(), 'sanitize 抛了 —— 玩家会启动即崩').not.toThrow()
+    expect(p.bond, '道侣被误删').toBeTruthy()
+    expect(p.reincarnation, 'reincarnation 没被重建').toBeTruthy()
+  })
+})
