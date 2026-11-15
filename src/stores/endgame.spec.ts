@@ -1261,3 +1261,33 @@ describe('道痕重演 · 三维量级上界', () => {
     expect(e.marks[1]?.replay, '真实三维被误伤').toBeTruthy()
   })
 })
+
+/**
+ * 道痕的构筑名要截到 `NAME_MAX_LENGTH`。
+ *
+ * `MarksPanel` 是 `{{ row.mark.buildName }}` 直接插值,而 sanitize 原先只判
+ * 「是不是非空字符串」—— 坏档塞 5 万字符会把道痕面板一行撑爆,存档跟着爆量。
+ * 与 `loadouts.name` / `records.note` 同一把尺。
+ *
+ * 故障注入:去掉 `truncateCodePoints(m.buildName.trim(), NAME_MAX_LENGTH)` → 本条红。
+ */
+describe('道痕 · 构筑名长度', () => {
+  it('超长构筑名截断,正常名保留', () => {
+    const e = useEndgameStore()
+    const mk = (life: number, buildName: string) => ({
+      targetId: 'chiyan',
+      targetName: '赤炎界',
+      life,
+      daoPathId: null,
+      at: life,
+      cleared: false,
+      rounds: 10,
+      buildName,
+      powerText: '1'
+    })
+    e.marks = [mk(1, 'x'.repeat(5000)), mk(2, '剑修')] as never
+    e.sanitize()
+    expect(e.marks[0]?.buildName.length, '构筑名没截断 —— 道痕面板一行被撑爆').toBeLessThanOrEqual(20)
+    expect(e.marks[1]?.buildName, '正常构筑名被误伤').toBe('剑修')
+  })
+})

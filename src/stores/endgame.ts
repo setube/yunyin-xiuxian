@@ -334,7 +334,15 @@ function sanitizeMarks(raw: unknown): DaoMark[] {
       cleared: m.cleared === true,
       // 道痕面板印「{{ mark.rounds }} 回合」,是裸插值;坏档巨值会印成科学计数
       rounds: Math.floor(asFiniteNumber(m.rounds, 0, 0, BATTLE_ROUNDS_CAP)),
-      buildName: typeof m.buildName === 'string' && m.buildName ? m.buildName : '杂学',
+      /*
+       * 构筑名要截到 `NAME_MAX_LENGTH`,与 `loadouts.name` / `records.note` 同一把尺。
+       * `MarksPanel` 是 `{{ row.mark.buildName }}` 直接插值,坏档能塞几十万字符 ——
+       * 道痕面板一行被撑爆,存档也跟着爆量。
+       */
+      buildName:
+        typeof m.buildName === 'string' && m.buildName
+          ? truncateCodePoints(m.buildName.trim(), NAME_MAX_LENGTH) || '杂学'
+          : '杂学',
       powerText: typeof m.powerText === 'string' ? m.powerText : '',
       at: Math.floor(asTimestamp(m.at, 0)),
       ...(typeof m.ruleset === 'string' ? { ruleset: m.ruleset } : {}),
