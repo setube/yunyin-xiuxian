@@ -477,6 +477,22 @@ export function tickExploration(now: number): void {
   const s = adventure.session
   if (!s || player.dead) return
 
+  /*
+   * 到期判定必须排在「待处理事件」之前。
+   *
+   * 事件分支末尾是无条件 `return`(它阻塞战斗),而到期判定原先在它后面 ——
+   * 于是「会话已到期 + 还挂着一个待处理事件」时,tick 走事件分支就返回了,
+   * 会话既不结束、也不再推进。
+   *
+   * 实测:会话 1800 秒,事件挂着不点,推进到 1860 秒时
+   * `adv.session` 仍在、剩余 **-60 秒**,而 `startExploration` 因为「已有会话在途」
+   * 拒绝开新的一程 —— 玩家看到「剩余 -60 秒」且开不了历练,直到事件 120 秒超时才解开。
+   */
+  if (now >= s.endsAt) {
+    stopExploration('complete')
+    return
+  }
+
   // 待处理事件:阻塞战斗;超时自动按默认选项处理
   if (adventure.pendingEventId) {
     /*
@@ -496,11 +512,6 @@ export function tickExploration(now: number): void {
       const cur = adventure.session
       if (cur) adventure.setSession({ ...cur, events: cur.events + 1, nextBattleAt: nextBattleTime(now) })
     }
-    return
-  }
-
-  if (now >= s.endsAt) {
-    stopExploration('complete')
     return
   }
 
