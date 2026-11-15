@@ -1219,3 +1219,45 @@ describe('器魂 · 魂库条数封顶', () => {
     expect(e.souls.length, '总条数仍须封顶').toBeLessThanOrEqual(100)
   })
 })
+
+/**
+ * 道痕重演的三维也要有上界。
+ *
+ * `sanitizeMarkReplay` 早给 `speed` 补了 `REPLAY_SPEED_MAX`,理由是
+ * 「坏档写 1e300 时忆战重演里玩家永远后手」—— 三维是同一条路径：
+ * 快照直接进 `compareSnaps`,`attack: 1e900` 会让「彼时之你」永远赢,
+ * 「往世 vs 今世」的对比失去意义。
+ *
+ * 上界 1e18:最高境界实测 atk 4.45e13 / def 2.37e13 / hp 5.08e14。
+ *
+ * 故障注入:去掉 `cmp(attack, REPLAY_STAT_MAX) > 0` 那一判 → 本条红。
+ */
+describe('道痕重演 · 三维量级上界', () => {
+  it('天量三维丢弃重演,真实三维保留', () => {
+    const e = useEndgameStore()
+    const mk = (atk: unknown) => ({
+      targetId: 'chiyan',
+      targetName: '赤炎界',
+      life: 1,
+      daoPathId: null,
+      at: 1,
+      cleared: true,
+      rounds: 10,
+      buildName: '探针',
+      powerText: '1',
+      replay: {
+        attack: atk,
+        defense: { m: 1, e: 3 },
+        maxHp: { m: 1, e: 4 },
+        speed: 1,
+        mods: {},
+        skills: [],
+        artifacts: []
+      }
+    })
+    e.marks = [mk({ m: 1, e: 900 }), mk({ m: 4.45, e: 13 })] as never
+    e.sanitize()
+    expect(e.marks[0]?.replay, '天量三维留在重演里 —— 「彼时」会永远赢').toBeUndefined()
+    expect(e.marks[1]?.replay, '真实三维被误伤').toBeTruthy()
+  })
+})
