@@ -56,7 +56,7 @@ describe('Service Worker · install 阶段预缓存', () => {
   })
 
   it('从导航页里挑出脚本与样式一并存下 —— 否则断网时 HTML 有、JS 没有', () => {
-    expect(SW, '没有从 HTML 里提取 src/href').toMatch(/matchAll\(\/\(\?:src\|href\)/)
+    expect(SW, '没有按 script 标签提取').toMatch(/html\.match\(\/<script/)
     expect(SW, '提取出来的引用没有被逐个缓存').toMatch(/\.\.\.refs\]\.map/)
   })
 
@@ -70,6 +70,30 @@ describe('Service Worker · install 阶段预缓存', () => {
      */
     expect(SW, '没有解析 __vite__mapDeps').toContain('m\\.f=')
     expect(SW, '依赖表里的条目没有并进预缓存集合').toContain('refs.add(mainDir')
+  })
+
+  it('legacy 入口不进预缓存 —— 现代浏览器根本不请求它们', () => {
+    /*
+     * legacy 插件在 HTML 里留了 `<script nomodule src="./assets/polyfills-legacy-*.js">`
+     * 与 `index-legacy`(data-src)。现代浏览器不会下载它们(实测
+     * `__vite_is_modern_browser` 为 true、无 legacy 网络请求),存下来纯属白占。
+     *
+     * 实测这两件 411KB,占修复前预缓存总量 1987KB 的 21%。
+     * 故障注入:删掉那个 `refs.delete` 兜底或按 src 一把抓的遗留行 → 本条红。
+     */
+    expect(SW, '没有排除 legacy 产物的兜底').toMatch(/refs\.delete\(r\)/)
+    expect(SW, '没有按 nomodule 跳过 script 标签').toContain('nomodule')
+    expect(SW, 'nomodule 判定后没有 continue 跳过').toMatch(/nomodule[^\n]*continue/)
+    // 不许再有「按 src 一把抓」的写法(它会把刚排除的 legacy 重新加回来)
+    expect(SW, '又出现了按 src 一把抓的写法').not.toMatch(/html\.matchAll\(\/src="/)
+  })
+
+  it('modulepreload 的 JS 也要预缓存 —— 里面有 biz 主业务包', () => {
+    /*
+     * `<link rel="modulepreload" href="./assets/biz-*.js">` 落在 `<script src>` 之外,
+     * 只抓 css/webmanifest 会漏掉首屏主业务包(实测 754KB),离线时应用加载不到。
+     */
+    expect(SW, 'link 的提取没覆盖 .js').toMatch(/href="\(\[\^"\]\+\\\.\(\?:js\|css\|webmanifest\)\)/)
   })
 
   it('单件失败不许拖垮整批', () => {
