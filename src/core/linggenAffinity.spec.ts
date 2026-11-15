@@ -332,4 +332,18 @@ describe('灵根职能重构 ④ 红线自检(结构性防回归)', () => {
       }
     }
   })
+  /*
+   * `relief.frontLoadEase` 是缓解系数,数学上限定在 [0,1]。
+   * 缺了 `Math.max(0, ...)`,负值会让 `cut` 变成负数 —— 重压波比不缓解还重
+   * (实测 ease=-1 时第一波从 1.70 涨到 2.40)。这里钉住「负值等同于不缓解」。
+   */
+  it('负的 frontLoadEase 不得把重压变得更重', () => {
+    const def = TRIBULATIONS.find(d => d.waveShape === 'frontLoaded')!
+    const waves = 6
+    const bare = waveMultiplier(def, 1, waves, NO_RELIEF)
+    const negative = waveMultiplier(def, 1, waves, { ...NO_RELIEF, frontLoadEase: -1 })
+    console.log(`    无缓解 ${bare.toFixed(4)} | 负缓解 ${negative.toFixed(4)}`)
+    expect(negative, '负缓解不得让第一波重于无缓解').toBeLessThanOrEqual(bare + 1e-9)
+  })
+
 })
