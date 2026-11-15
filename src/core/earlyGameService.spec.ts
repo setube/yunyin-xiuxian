@@ -28,6 +28,7 @@ import {
 } from './earlyGameService'
 import { expFromSecs } from './formulas'
 import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
+import { CAVE_EVENT_POOL } from '@/data/earlyGame'
 import { BREAKTHROUGH_PREP_OPTIONS } from '@/data/earlyGame'
 
 /*
@@ -134,6 +135,33 @@ describe('洞府巡游(Phase 28)', () => {
     expect(gained, '即时修为不得填满当前这一层').toBeLessThanOrEqual(
       toNum(req) * INSTANT_EXP_LAYER_CAP + 1e-9
     )
+  })
+
+  /**
+   * 落点池为空时的守卫(变异扫描报「改坏了不会红」,现补判据)。
+   *
+   * 现状每个落点都配了事件,故这条分支正常玩法走不到;它防的是
+   * 「某天有人按建筑裁剪事件池、把最后一个删掉」—— 那种改法不会让任何别的用例变红,
+   * 而少了这句守卫,下一行 `pool[floor(random * 0)]` 取到 undefined,
+   * `{ ...undefined, location }` 得到一个没有 title/options 的 caveEvent,
+   * 弹窗随即在 `event.options.map` 上抛。故这里把灵田池临时清空,验它返回 null 且不留残窗。
+   */
+  it('落点的事件池空了:返回 null,不留半个巡游窗', () => {
+    const player = usePlayerStore()
+    vi.spyOn(Math, 'random').mockReturnValue(0.01)
+    const pool = CAVE_EVENT_POOL.field as unknown as unknown[]
+    const saved = [...pool]
+    try {
+      pool.length = 0
+      expect(mayTriggerCaveEvent(), '空池该返回 null,不该拼出一个没有选项的窗').toBeNull()
+      expect(getCurrentCaveEvent(), '没生成事件,不该留下可读的巡游窗').toBeNull()
+    } finally {
+      // 池子直接 push 回去(不换数组引用):同一份数据被别的 spec 共享
+      pool.push(...saved)
+    }
+    // 复原之后再掷,仍能正常出事件 —— 证明上面那条 null 是守卫给的,不是随机数掷败
+    expect(mayTriggerCaveEvent(), '复原事件池后应照常出事件').not.toBeNull()
+    expect(player.lastCaveEventDay, '这一条不是在验今日占用').toBe(0)
   })
 })
 
