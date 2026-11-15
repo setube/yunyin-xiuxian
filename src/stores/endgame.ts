@@ -752,10 +752,27 @@ export const useEndgameStore = defineStore(
       return true
     }
 
-    /** 转世:道途与进行中的远征清空,道源与道痕保留 */
+    /**
+     * 转世:道途、进行中的远征、窥探出的虚界一并清空;道源与道痕保留。
+     *
+     * `voidWorld` 原先漏了。它是「上一世窥探出来的那座临时世界」——
+     * 道途一经归还就没有再进去的路由(《道途》页要 `daoPath` 才给入口),
+     * 留着它只在 `celestialWorldDef('void')` 那一支还有效:
+     * 实测转世后 `endgame.voidWorld` 仍是那一座,任何按 id 取「虚界」的世界解析
+     * 都会拿到上一世的它 —— 而那一世的 void 远征早已随 `worldRun` 清掉。
+     *
+     * 更要紧的是**窥探途中转世**那条时序:扣费与 `voidRerolling` 置位都在
+     * `await generateApprovedWorldAsync(...)` 之前,而写 `voidWorld` 在它之后。
+     * 于是转世发生在这段 await 里时,生成照样完成、照样写进去 ——
+     * 玩家转世后会凭空多出一座上一世的虚界。实测(把生成层 mock 成必成功):
+     * `窥探返回 true` / `转世后 voidWorld 有「假虚界」` / `daoPath 为 null`。
+     *
+     * 清在这里是第二道兜底:第一道是 `rerollVoidWorld` 自己回来时复验道途(见那里)。
+     */
     function onRebirth(): void {
       daoPath.value = null
       worldRun.value = null
+      voidWorld.value = null
     }
 
     return {
