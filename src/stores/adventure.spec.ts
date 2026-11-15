@@ -3,6 +3,7 @@ import { EVENTS, FORTUNE_EVENTS } from '@/data/events'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdventureStore } from '@/stores/adventure'
+import type { GNum } from '@/types'
 import { tickExploration } from '@/core/exploration'
 import type { AdventureSession } from '@/types'
 import { gnZero } from '@/utils/gnum'
@@ -490,6 +491,49 @@ describe('历练会话 · 收益量级', () => {
     expect(s).not.toBeNull()
     expect(s!.stoneGain.m).toBeCloseTo(5.25)
     expect(s!.stoneGain.e).toBe(10)
+  })
+
+  /**
+   * 战报遥测(`result.stats.player`)与收益累加器同一类问题:只走 `asBoundedGNum`,
+   * 而 `9.99e900` 正在它守卫的 |e| ≤ 999 之内 —— 它会经 `battleAnalysis` 的
+   * `formatGN(p.dealt)` 直接印出「总输出 9.99e900」。计数类同理(1e300 闪避)。
+   *
+   * 故障注入:把 `clampGain` 换回 `asBoundedGNum`、去掉计数的 `Math.min` → 本条红。
+   */
+  it('战报遥测的坏值也不印科学计数', () => {
+    const a = useAdventureStore()
+    const side = (dealt: unknown, dodges: number) => ({
+      dealt,
+      taken: { m: 0, e: 0 },
+      pierceTaken: { m: 0, e: 0 },
+      biggestHitTaken: { m: 0, e: 0 },
+      healed: { m: 0, e: 0 },
+      shieldAbsorbed: { m: 0, e: 0 },
+      dodges,
+      missedHits: 0,
+      hitsLanded: 0,
+      counters: 0,
+      combos: 0,
+      crits: 0,
+      skillCasts: 0,
+      artifactProcs: 0,
+      stunnedTurns: 0
+    })
+    a.lastBattle = {
+      enemyName: '探针狼',
+      enemyIcon: 'x',
+      result: {
+        win: true,
+        log: ['一行'],
+        rounds: 3,
+        stats: { player: side({ m: 9.99, e: 900 }, 1e300), enemy: side({ m: 0, e: 0 }, 0) }
+      }
+    } as never
+    a.sanitize()
+    const st = (a.lastBattle as unknown as { result: { stats: { player: { dealt: GNum; dodges: number } } } })
+      .result.stats.player
+    expect(formatGN(st.dealt), '战报会印出「总输出 9.99e900」').not.toMatch(/e\+?\d{3,}/)
+    expect(String(st.dodges), '闪避次数会印出 1e+300').not.toMatch(/e\+\d/)
   })
 
   it('收益归零后会话本身仍在(玩家还在历练,只是这一世的累计读数被修形)', () => {
