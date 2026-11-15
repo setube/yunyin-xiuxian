@@ -5,6 +5,7 @@ import { TALENT_DRAW_DIV } from '@/data/constants'
 import { lifeThemeDef } from '@/data/lifeThemes'
 import { nextStageAfter, stageAt } from '@/data/samsara'
 import { rollLinggen } from './linggenGen'
+import { resetEarlyGameEvents } from './earlyGameService'
 import { collect, track } from './progress'
 import { lifeForge } from './heritageForge'
 import { carriesAllLore, keepsAllGongfa, talentChoiceBonus } from './heritageEffects'
@@ -254,6 +255,8 @@ export async function confirmReincarnation(chosenTalentId: string | null, chosen
   useGameStore().resetCreateDraft()
   // 道途归还,道源与道痕保留
   useEndgameStore().onRebirth()
+  // 本世的浮窗事件存在模块级变量里,不在任何 store 中 —— rebirth() 的归零碰不到它们
+  resetEarlyGameEvents()
   // 命题快照须在重置之后取
   beginLife(view.themeChoices.includes(chosenThemeId ?? '') ? chosenThemeId : null)
   recordMilestone('first_rebirth')
