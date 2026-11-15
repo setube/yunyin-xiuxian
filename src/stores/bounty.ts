@@ -168,7 +168,21 @@ export const useBountyStore = defineStore(
       return 'ok'
     }
 
-    return { orders, bountyAt, bountyMajor, sanitize, sync, claim, claimEquip }
+    /**
+     * 转世:悬赏换新。
+     *
+     * 订单的赏格按**上货时的境界**冻结(`bountyMajor`),而它原先不随世清 ——
+     * 实测上一世 major 20 上货的募矿单值 7.09e10 灵石,转世后新世(major 0)
+     * 照样能交、照样按 major 20 付钱。新世从 0 起步,这一单等于白送。
+     *
+     * 只清起钟、不动 `orders`:`sync` 一进来就发现过期并重新生成,
+     * 于是新单按新世境界计价。`bountyMajor` 由 `sync` 一并改写。
+     */
+    function resetForRebirth(): void {
+      bountyAt.value = 0
+    }
+
+    return { orders, bountyAt, bountyMajor, sanitize, sync, claim, claimEquip, resetForRebirth }
   },
   { persist: persistConfig('bounty') }
 )
