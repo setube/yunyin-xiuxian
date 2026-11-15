@@ -1177,3 +1177,26 @@ describe('虚界 · 规则文案读档封顶', () => {
     expect(n, '规则文案没封顶 —— 界面会逐条渲出来').toBeLessThanOrEqual(50)
   })
 })
+
+/**
+ * 魂库条数封顶。
+ *
+ * `souls` 只增不减(每次凝魂追加一枚),而 `SoulsView` 有三处 `v-for` 逐条渲。
+ * 坏档塞 5000 枚合法器魂会被原样吃下 —— 上界与道痕同用 `MAX_MARKS`(60)。
+ *
+ * 故障注入:去掉 `souls.value.slice(0, MAX_MARKS)` → 本条红。
+ */
+describe('器魂 · 魂库条数封顶', () => {
+  it('坏档塞 5000 枚,读档后只留 60 枚且保留先得的', () => {
+    const e = useEndgameStore()
+    e.souls = Array.from({ length: 5000 }, (_, i) => ({
+      uid: `s${i}`,
+      type: 'fengmang',
+      grade: 3,
+      fromName: '探针'
+    })) as never
+    e.sanitize()
+    expect(e.souls.length, '魂库没封顶 —— SoulsView 三处 v-for 会渲 5000 行').toBeLessThanOrEqual(100)
+    expect(e.souls[0]?.uid, '该保留先得的那批').toBe('s0')
+  })
+})
