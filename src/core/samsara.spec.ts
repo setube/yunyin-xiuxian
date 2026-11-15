@@ -422,4 +422,20 @@ describe('命题判据 · 分发表与类型同步', () => {
     expect(cases.length, '没解析到 case,判据会空转').toBeGreaterThan(5)
     expect(cases, '有判据类型没有对应分支(该命题永远算不出进度)').toEqual(kinds)
   })
+  /*
+   * 宿愿基线记的是立题那一刻的累计值,`cur = 现值 - 基线`。
+   * 基线高过现值时(转世后计数重置、坏档写了大基线)差值为负 ——
+   * 去掉 `Math.max(0, ...)`,进度条会印出负数。
+   */
+  it('基线高过现值:进度钳到 0,不出负数', () => {
+    const p = usePlayerStore()
+    p.reincarnation = {
+      ...p.reincarnation,
+      vow: { themeId: 'lt_zedao', baseBranches: 999, baseAvenged: 0, baseEnemies: 0, baseRegions: 0, baseRealm: 0, at: 0 }
+    } as never
+    const out = vowProgress()
+    expect(out, '夹具没立上题').not.toBeNull()
+    expect(out!.cur, '进度不得为负').toBeGreaterThanOrEqual(0)
+  })
+
 })
