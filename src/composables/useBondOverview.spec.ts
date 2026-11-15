@@ -103,3 +103,38 @@ describe('道侣投影 · 在世守卫', () => {
     expect(typeof o.pronoun.value).toBe('string')
   })
 })
+
+/**
+ * 历世同行只给最近若干条 —— 数据不动,只在渲染侧截。
+ *
+ * `reincarnation.bonds` 每次转世归档一条、只增不减,而 `BondDialog` 是 `v-for` 逐条渲。
+ * 坏档塞 5000 条就渲 5000 行(`max-h-40 overflow-y-auto` 只管视觉高度)。
+ *
+ * **不能截数据**:`daoluService.destinedCandidate` 拿 `deep.length` 算宿缘概率
+ * (`0.08 × 条数`,封顶 0.35),截掉会让深层宿缘更难遇上。
+ *
+ * 故障注入:删掉 useBondOverview 里的 `.slice(-PAST_BONDS_SHOWN)` → 本条红。
+ */
+describe('历世同行 · 渲染条数封顶', () => {
+  it('坏档塞 5000 条,渲染只给最近一段,而数据一条不少', () => {
+    const player = usePlayerStore()
+    player.reincarnation = {
+      ...player.reincarnation,
+      bonds: Array.from({ length: 5000 }, (_, i) => ({
+        daoluId: 'dl_qingli',
+        name: `第${i}位`,
+        stage: 'pledged' as const,
+        ending: 'accompanied' as const,
+        shared: 3
+      }))
+    } as never
+
+    const shown = useBondOverview().pastBonds.value
+    expect(shown.length, '渲染没截断 —— 会渲 5000 行').toBeLessThanOrEqual(300)
+    expect(shown.length, '截成空的了').toBeGreaterThan(0)
+    expect(shown[shown.length - 1]?.name, '该保留最近归档的那几条').toBe('第4999位')
+
+    player.sanitize()
+    expect(player.reincarnation.bonds.length, '数据被截了 —— 会改变宿缘概率').toBe(5000)
+  })
+})
