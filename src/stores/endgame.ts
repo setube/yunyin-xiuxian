@@ -603,10 +603,17 @@ export const useEndgameStore = defineStore(
        * 器魂的产出来自分解装备,比道痕更慢,60 对真实玩法绰绰有余。
        * **无玩法读全量**:`soulService` 只用 `find` 查单个,`SoulsView` 只用它渲染 ——
        * 故可在此截数据,不必像 `lives` / `bonds` 那样挪到渲染侧。
-       * 截断保留先得的(与 `equipSoul` 的「槽满即拒」同序,不至于把已装配的那枚截掉).
+       * 截断时**已装配的那几枚必须留住** —— 单纯 `slice(0, MAX_MARKS)` 会把它们连同
+       * 后面的幽灵过滤一起丢掉:实测 100 枚魂、装着第 70 枚时,截完 `souls` 只剩前 60,
+       * 而 `equippedSouls` 随后被 `soulUids` 过滤成空 —— 玩家已装的三缕凭空消失。
+       * 故先装配后其余的,再各自截。
        */
-      souls.value = souls.value.slice(0, MAX_MARKS)
-      equippedSouls.value = [...new Set(asStringArray(equippedSouls.value))]
+      const equippedNow = [...new Set(asStringArray(equippedSouls.value))]
+      const kept = new Set(equippedNow)
+      const pinned = souls.value.filter(s => kept.has(s.uid))
+      const rest = souls.value.filter(s => !kept.has(s.uid)).slice(0, Math.max(0, MAX_MARKS - pinned.length))
+      souls.value = [...pinned, ...rest]
+      equippedSouls.value = equippedNow
       // 清掉已不存在的 uid:否则幽灵占槽,再装配静默失败
       const soulUids = new Set(souls.value.map(s => s.uid))
       // 截到 SOUL_SLOTS,与 equipSoul 的硬闸同尺;保留先装的,与「槽满即拒」同序
