@@ -176,6 +176,22 @@ describe('真仙终局服务', () => {
     expect(condenseFruitAffordable()).toBe(Math.floor(endgame.daoSource / DAO_SOURCE_PER_FRUIT))
   })
 
+  /*
+   * 道源为负时「可凝几枚」必须是 0,不是负数。
+   *
+   * 变异扫描报 `Math.max(0, Math.floor(endgame.daoSource))` 改坏不红 ——
+   * 查下来它只在**内存直塞**时可达(`$patch` 后立刻渲染不经 sanitize;sanitize 那道
+   * `asFiniteNumber(daoSource, 0, 0)` 会归零),但后果是可见的:
+   * 去掉钳制后 daoSource = -50 时 `Math.floor(-50 / 50)` 得到 **-1**,
+   * 而消费方拿它当「一次连凝可凝几枚」的上限 —— 负数会被当成「一枚都凝不了」之外的另一种状态。
+   */
+  it('道源为负(内存直塞、未经 sanitize):可凝枚数为 0,不是负数', () => {
+    ascend()
+    const endgame = useEndgameStore()
+    endgame.daoSource = -50
+    expect(condenseFruitAffordable(), '负的道源不该算出负的枚数').toBe(0)
+  })
+
   /** 故障注入:condenseDaoFruit 恢复置 daoFruitTutorialSeen,本用例红 */
   it('凝成道果不置道果说明已见 —— 已见归玩家关掉说明时置,凝果即置则说明显示中刷新就永久丢失', () => {
     ascend()
