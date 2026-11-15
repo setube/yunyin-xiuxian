@@ -48,7 +48,13 @@
           <span class="w-8 shrink-0 text-right tabular" :class="m.met ? 'text-ink-soft' : 'text-cinnabar'">{{ m.value }}</span>
         </p>
       </div>
-      <p class="mt-2 text-[11px] text-ink-faint">共历 {{ bond.shared }} 次</p>
+      <!--
+        共历也要给门槛:三根条只画缘分/信任/契合,而缘阶还卡 `shared` 一项。
+        三种都过线、共历不够时,三条全亮「已过线」、玩家看不出还差什么。
+      -->
+      <p class="mt-2 text-[11px] text-ink-faint">
+        共历 {{ bond.shared }} 次<template v-if="sharedGate !== null"> · 需 {{ sharedGate }}</template>
+      </p>
       <p v-if="responseLine" class="mt-1 text-[11px] text-ink-faint">历次回应:{{ responseLine }}</p>
 
       <p class="mt-3 text-[11px] leading-relaxed text-ink-soft">{{ pronoun }}所求:{{ bondDef.pursuit }}</p>
@@ -130,7 +136,7 @@
   import { computed, ref, watch } from 'vue'
   import { ENDING_NAMES, LEAN_NAMES, STAGE_NAMES, TEMPER_NAMES } from '@/data/daolu'
   import { bondMark } from '@/ui/bondMark'
-  import { bondMeterRows } from '@/ui/bondMeter'
+  import { bondMeterRows, nextStageSharedGate } from '@/ui/bondMeter'
   import { chooseBondEvent, herStance, nextGateHint, respondIntent } from '@/core/daoluService'
   import { RESPONSE_NAMES, SPARK_NAMES } from '@/data/bondIntent'
   import { TRIGGER_NAMES } from '@/data/bondEvents'
@@ -156,6 +162,8 @@
     return bondMeterRows({ fate: b.fate, trust: b.trust, accord: b.accord }, b.stage)
   })
   const gateHint = computed(() => nextGateHint())
+  /** 下一阶要的共历次数(已至道侣为 null,不画门槛) */
+  const sharedGate = computed(() => (bond.value ? nextStageSharedGate(bond.value.stage) : null))
   /** 事件因何而来:触发名取自 bondEvents,不手写 */
   const pendingEventTriggers = computed(() =>
     (pendingEvent.value?.triggers ?? []).map(t => TRIGGER_NAMES[t]).filter(Boolean).join('、')
