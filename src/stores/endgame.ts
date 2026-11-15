@@ -22,6 +22,7 @@ import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef } from '@/data/arti
 import { STAT_KEYS } from '@/data/statNames'
 import { MAX_MAJOR } from '@/data/realms'
 import { useAdventureStore } from '@/stores/adventure'
+import { useBountyStore } from '@/stores/bounty'
 import {
   asArray,
   asCarriedHpPct,
@@ -782,6 +783,8 @@ export const useEndgameStore = defineStore(
       daoPath.value = null
       worldRun.value = null
       voidWorld.value = null
+      // 悬赏单的赏格按上货时的境界冻结,须随世换新(见 bounty.resetForRebirth)
+      useBountyStore().resetForRebirth()
     }
 
     return {

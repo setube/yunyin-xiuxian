@@ -10,6 +10,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
+import { useBountyStore } from '@/stores/bounty'
 import { useEndgameStore } from '@/stores/endgame'
 import { useDongfuStore } from '@/stores/dongfu'
 import { useApprenticeStore } from '@/stores/apprentice'
@@ -427,5 +428,36 @@ describe('转世 · 一次性弹窗随本世清空', () => {
     expect(ui.breakthrough, '突破弹窗跨世了 —— 新世第一屏还写着上辈子的境界').toBeNull()
     expect(ui.treasure, '得宝仪典跨世了').toBeNull()
     expect(ui.offlineSummary, '离线归来卷轴跨世了 —— 那笔账已经入过了,新世再摊旧世那份对不上').toBeNull()
+  }, 60000)
+})
+
+/**
+ * 悬赏单的赏格按**上货时的境界**冻结(`bountyMajor`),须随世换新。
+ *
+ * 原先转世不碰 bounty:实测上一世 major 20 上货的募矿单值 7.09e10 灵石,
+ * 转世后新世(major 0)照样能交、照样按 major 20 付钱 —— 新世从 0 起步,
+ * 这一单等于白送。
+ *
+ * 故障注入:删掉 `useBountyStore().resetForRebirth()` 那一行 → 本条红。
+ */
+describe('转世 · 悬赏单随世换新', () => {
+  it('新世的悬赏按新世境界计价', async () => {
+    const player = usePlayerStore()
+    const bounty = useBountyStore()
+    const ui = useUiStore()
+    player.initCharacter('探针', { roots: [] } as never)
+    player.major = 20
+    const t0 = 1_800_000_000_000
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(t0)
+    bounty.sync(t0)
+    expect(bounty.bountyMajor, '夹具没把赏格冻结在大境界').toBe(20)
+
+    ui.reincarnation = prepareReincarnation()
+    await confirmReincarnation(null)
+
+    // 转世后再 sync 一次(引擎进 tick 时会做)
+    bounty.sync(nowSpy.getMockImplementation()?.() ?? t0)
+    expect(bounty.bountyMajor, '悬赏还按上世境界计价 —— 新世能白领上世的赏').toBe(0)
+    nowSpy.mockRestore()
   }, 60000)
 })
