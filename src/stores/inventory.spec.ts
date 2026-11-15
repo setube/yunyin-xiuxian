@@ -8,7 +8,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { mergeMods } from '@/core/statsCalc'
 import { BAG_CAPACITY, EQUIP_AFFIX_HARD_CAP } from '@/data/constants'
 import { resolveEquipStats } from '@/core/equipGen'
-import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactEvictedBy, artifactValue } from '@/data/artifacts'
+import { ARTIFACT_MAX_LEVEL, ARTIFACT_MAX_SLOTS, artifactDef, artifactEvictedBy, artifactSlotViews, artifactValue } from '@/data/artifacts'
 import { artifactUpCost, upgradeArtifact } from '@/core/forge'
 import { useResourcesStore } from '@/stores/resources'
 import type { EquipmentInstance } from '@/types'
@@ -449,17 +449,24 @@ describe('法宝公共写入边界 · 目录、拥有、满重与祭炼槽', () 
       ],
       equippedArtifacts: ['af_muyu', 'af_bishui', 'af_xianding']
     })
-    expect(inv.currentArtifacts, '生效的只该是前 ARTIFACT_MAX_SLOTS 件').toHaveLength(ARTIFACT_MAX_SLOTS)
-    // 真值独立复算:前两件的被动合并
+    /*
+     * 超编时生效的是**最晚祭炼的那几件**,不是最早的那几件。
+     *
+     * 依据:`toggleArtifact` 的注释写着「槽满时替换最早佩戴的一件」,
+     * 而 `artifactEvictedBy` 也按「最早祭炼的在前」报会让位的 —— 二者都指向
+     * 「留最新的」。原先这里验的是前两件,与那条意图相反(见下一条判据)。
+     */
+    expect(inv.currentArtifacts, '生效的只该是尾部 ARTIFACT_MAX_SLOTS 件').toHaveLength(ARTIFACT_MAX_SLOTS)
+    // 真值独立复算:后两件的被动合并
     const expected = mergeMods([
-      artifactValue(artifactDef('af_muyu')!, 0).passive,
-      artifactValue(artifactDef('af_bishui')!, 0).passive
+      artifactValue(artifactDef('af_bishui')!, 0).passive,
+      artifactValue(artifactDef('af_xianding')!, 0).passive
     ])
-    expect(inv.equipMods, '超编那件的被动不该混进汇总').toEqual(expected)
-    const withoutThird = expected.maxHpPct ?? 0
-    const withThird = withoutThird + artifactValue(artifactDef('af_xianding')!, 0).passive.maxHpPct!
-    expect(inv.equipMods.maxHpPct, '第三件的 maxHp 不该进来').toBeCloseTo(withoutThird, 9)
-    expect(inv.equipMods.maxHpPct, '判据得真能分辨:带上第三件会是另一个数').not.toBeCloseTo(withThird, 3)
+    expect(inv.equipMods, '超编那件(最早祭炼的 af_muyu)的被动不该混进汇总').toEqual(expected)
+    const withoutFirst = expected.maxHpPct ?? 0
+    const withFirst = withoutFirst + artifactValue(artifactDef('af_muyu')!, 0).passive.maxHpPct!
+    expect(inv.equipMods.maxHpPct, '最早那件的 maxHp 不该进来').toBeCloseTo(withoutFirst, 9)
+    expect(inv.equipMods.maxHpPct, '判据得真能分辨:带上第一件会是另一个数').not.toBeCloseTo(withFirst, 3)
   })
 
 /**
@@ -642,5 +649,41 @@ describe('背包 · 满了就拒收新装备', () => {
     const before = inv.items.length
     expect(inv.addEquipment(extra as never), '满了还返回 true,调用方不会折算成尘').toBe(false)
     expect(inv.items.length, '满了还往包里塞').toBe(before)
+  })
+})
+
+/**
+ * 超编时,界面画的格子必须与真正作数的那几件是同一批。
+ *
+ * 列表可能超编(境界跌落、未经 sanitize 的旧档)。此前 `currentArtifacts` 取前
+ * `ARTIFACT_MAX_SLOTS` 件,而 `toggleArtifact` 替下**最早佩戴**的那件、保留尾部,
+ * 于是超编时界面显示的是最早祭炼的两件、真正生效的却是最晚的两件 ——
+ * 实测佩 [muyu, lihuo, xuantian]、槽位 2 时,`artifactEvictedBy` 报的两件
+ * 与 `currentArtifacts` 完全重叠:同一件既在生效、又会在下次祭炼时让位。
+ *
+ * 故障注入:把 `currentArtifacts` 的 `.slice(-ARTIFACT_MAX_SLOTS)` 改回
+ * `.slice(0, ARTIFACT_MAX_SLOTS)` → 本条红。
+ */
+describe('法宝槽位 · 超编时界面与生效同批', () => {
+  it('槽位画出来的就是身上作数的', () => {
+    const inv = useInventoryStore()
+    inv.artifacts = [
+      { defId: 'af_muyu', level: 0 },
+      { defId: 'af_bishui', level: 0 },
+      { defId: 'af_xianding', level: 0 }
+    ]
+    inv.equippedArtifacts = ['af_muyu', 'af_bishui', 'af_xianding'] // 超编 3 件
+
+    const activeIds = inv.currentArtifacts.map(a => a.defId)
+    const shownIds = artifactSlotViews(inv.equippedArtifacts, inv.artifacts, ARTIFACT_MAX_SLOTS)
+      .filter((v): v is NonNullable<typeof v> => v !== undefined)
+      .map(v => v.def.id)
+
+    expect(shownIds, '界面画的与身上作数的不是同一批').toEqual(activeIds)
+    // 再祭一件:保住的必须是那批正在生效的
+    inv.toggleArtifact('af_muyu', ARTIFACT_MAX_SLOTS)
+    inv.toggleArtifact('af_muyu', ARTIFACT_MAX_SLOTS)
+    const kept = inv.currentArtifacts.map(a => a.defId)
+    expect(kept.filter(id => activeIds.includes(id)).length, '祭炼后一件正在生效的都没保住').toBeGreaterThan(0)
   })
 })

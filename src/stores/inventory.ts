@@ -241,12 +241,23 @@ export const useInventoryStore = defineStore(
      * 裁到 `ARTIFACT_MAX_SLOTS`(同 `sanitize`)而非境界槽位:境界那道由 `player.sanitize` 按 `artifactSlotsFor` 收紧,
      * store 之间不互相 import,免得 inventory 与 player 成环。
      */
-    const currentArtifacts = computed<ArtifactOwned[]>(() =>
-      equippedArtifacts.value
+    const currentArtifacts = computed<ArtifactOwned[]>(() => {
+      const live = equippedArtifacts.value
         .map(id => artifacts.value.find(a => a.defId === id))
         .filter((a): a is ArtifactOwned => a !== undefined)
-        .slice(0, ARTIFACT_MAX_SLOTS)
-    )
+      /*
+       * 超编时留**尾部**,与 `toggleArtifact` 的 `slice(-(slots - 1))` 同一侧。
+       *
+       * 列表可能超编(境界跌落、未经 sanitize),那时「哪几件生效」必须与
+       * 「再祭一件会替下谁」互补 —— 而 `artifactEvictedBy` 判的是**最早祭炼的先让位**
+       * (data/artifacts 头注释写明「最早祭炼的在前,替下判据与槽位排法同读这一份」)。
+       *
+       * 原先这里取 `slice(0, ARTIFACT_MAX_SLOTS)`,与让位一侧方向相反 ——
+       * 实测佩 [muyu, lihuo, xuantian]、槽位 2 时,`currentArtifacts` 与
+       * `artifactEvictedBy` **完全重叠**:同一件既在生效、又会在下次祭炼时让位。
+       */
+      return live.slice(-ARTIFACT_MAX_SLOTS)
+    })
 
     function findItem(uid: string): EquipmentInstance | undefined {
       return items.value.find(it => it.uid === uid)
