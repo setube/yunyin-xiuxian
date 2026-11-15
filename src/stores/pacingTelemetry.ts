@@ -134,7 +134,13 @@ export const usePacingTelemetry = defineStore(
 
     /** 读档修形(遥测分片也落盘):只留形状完整的事件 */
     function sanitize(): void {
-      events.value = asArray<InteractionEvent>(events.value, [], e => validEvent(e) !== null)
+      /*
+       * 与 `record` 同一把尺:事件序列是**最近 120 条的滚动窗口**(见上面 `events` 的注释
+       * 与 `record` 里的 `.slice(-119)`)。`sanitize` 原先只滤坏条目、不截长度 ——
+       * 把存档撑到几千条会原样留下,而每录一条仍要 `validEvents` 全量 map 一遍。
+       * 越界的只可能来自坏档(正常路径恒为 120 条以内)。
+       */
+      events.value = asArray<InteractionEvent>(events.value, [], e => validEvent(e) !== null).slice(-120)
       if (typeof enabled.value !== 'boolean') enabled.value = true
     }
 

@@ -82,3 +82,27 @@ describe('节奏遥测 · 公共写入与报告边界', () => {
     expect(t.buildReport()).toBeNull()
   })
 })
+
+/**
+ * 事件序列是「最近 120 条滚动窗口」—— `sanitize` 也要截。
+ *
+ * `record()` 里是 `.slice(-119)` 加新条目(恒 120 条),而 `sanitize()` 原先只滤
+ * 坏条目、不截长度:把存档撑到几千条会原样留下,而每录一条仍要 `validEvents`
+ * 全量 map 一遍。越界只可能来自坏档(正常路径恒在 120 条以内)。
+ *
+ * 故障注入:去掉 `.slice(-120)` → 本条红。
+ */
+describe('节奏遥测 · 事件序列封顶', () => {
+  it('坏档塞 5000 条,读档后只剩最近 120 条', () => {
+    const s = usePacingTelemetry()
+    s.events = Array.from({ length: 5000 }, (_, i) => ({
+      type: 'tap',
+      kind: 'modal' as const,
+      label: `l${i}`,
+      at: 1
+    })) as never
+    s.sanitize()
+    expect(s.events.length, '事件序列没截 —— 与 record 的 120 条窗口不一致').toBeLessThanOrEqual(120)
+    expect(s.events[s.events.length - 1]?.label, '该保留最新的那几条').toBe('l4999')
+  })
+})
