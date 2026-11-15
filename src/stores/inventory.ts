@@ -177,23 +177,39 @@ export const useInventoryStore = defineStore(
           .map(([id, n]): [string, number] => [id, Math.min(EQUIP_COUNTER_MAX, Math.floor(n))])
           .filter(([id, n]) => !!pillDef(id) && n > 0)
       )
-      // 法宝库:同 defId 只留一条;野 defId 清掉(法宝页 `artifactDef(a.defId)!` 取品质会抛错)
-      const seenDef = new Set<string>()
-      artifacts.value = asArray<ArtifactOwned>(
+      /*
+       * 法宝库:同 defId 只留一条;野 defId 清掉(法宝页 `artifactDef(a.defId)!` 取品质会抛错)。
+       *
+       * 去重与夹取重数的**先后**有讲究:先夹后并、并时取较大的重数。
+       * 反过来(先按出现顺序去重、再夹)会把坏档里的 `level: 1e300` 夹成满重 9 ——
+       * 同一件法宝若还另有一条真实记录(实测 level: 2),玩家白得七重。
+       * 先夹后取较大值,坏值那条仍然停在 9 但只影响它自己,好值那条不会被它顶掉。
+       *
+       * `addArtifact` 已保证正常路径不产生重复,这两条只对坏档生效。
+       */
+      const bestLevel = new Map<string, number>()
+      for (const a of asArray<ArtifactOwned>(
         artifacts.value,
         [],
-        a => !!a && typeof (a as ArtifactOwned).defId === 'string' && !!artifactDef((a as ArtifactOwned).defId)
-      )
-        .filter(a => {
-          if (seenDef.has(a.defId)) return false
-          seenDef.add(a.defId)
-          return true
-        })
-        // 坏重数会绕过满重判断,把祭炼价与悟道点算成 NaN
-        .map(a => ({
-          defId: a.defId,
-          level: Math.floor(asFiniteNumber(a.level, 0, 0, ARTIFACT_MAX_LEVEL))
-        }))
+        x => !!x && typeof (x as ArtifactOwned).defId === 'string' && !!artifactDef((x as ArtifactOwned).defId)
+      )) {
+        /*
+         * 重的三分法 —— 别把两类坏值混为一谈:
+         *   ① 不是有限数(`'x'` / NaN / Infinity):**归 0 并保留**该件法宝。
+         *      「拥有」与「重数」是两件事,重数读不出不该连法宝一起没收
+         *      (既有判据「法宝坏重数归一后,祭炼不会把悟道点写成 NaN」钉着这一条)。
+         *   ② 有限但越界(`1e300` / 负数):**整条丢掉**,不参与合并。
+         *      若先夹再比,`1e300` 会夹成满重 9 并顶掉同一件法宝的真实记录(例如 level: 2),
+         *      玩家白得七重。
+         */
+        const raw = a.level
+        const finite = typeof raw === 'number' && Number.isFinite(raw)
+        const level = finite ? Math.floor(raw as number) : 0
+        if (finite && (level < 0 || level > ARTIFACT_MAX_LEVEL)) continue
+        const prev = bestLevel.get(a.defId)
+        if (prev === undefined || level > prev) bestLevel.set(a.defId, level)
+      }
+      artifacts.value = [...bestLevel].map(([defId, level]) => ({ defId, level }))
       // 祭炼位:去重、只留在库的、裁到 ARTIFACT_MAX_SLOTS(与 toggleArtifact/applyLoadout 同尺)
       const ownedArtifactIds = new Set(artifacts.value.map(a => a.defId))
       equippedArtifacts.value = [...new Set(asStringArray(equippedArtifacts.value))]

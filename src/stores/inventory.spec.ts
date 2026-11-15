@@ -3,6 +3,7 @@
  * 真值取 mergeMods(已装备件的 resolveEquipStats.mods) 深等,抓幻影来源/叠加错/漏撤三类回归。
  */
 import { beforeEach, describe, expect, it } from 'vitest'
+import { ARTIFACTS } from '@/data/artifacts'
 import { createPinia, setActivePinia } from 'pinia'
 import { useInventoryStore } from '@/stores/inventory'
 import { toNum } from '@/utils/gnum'
@@ -744,5 +745,48 @@ describe('装备投入 · 灵石上界', () => {
     const real = inv.items[1] as unknown as { invested: { stone: GNum } }
     expect(toNum(huge.invested.stone), '巨额投入没归零 —— 拆一件白得一笔天量灵石').toBe(0)
     expect(toNum(real.invested.stone), '真实投入被误伤').toBeCloseTo(5e11, -9)
+  })
+})
+
+/**
+ * 法宝库的越界重数整条丢,不先夹再比。
+ *
+ * `addArtifact` 已保证正常路径不产生重复,故「同 defId 多条」只来自坏档。
+ * 若先夹后并(坏值 `1e300` 夹成满重 9),那条会顶掉同一件法宝的真实记录(实测 level: 2),
+ * 玩家白得七重。判据取「合法整数且 ≤ 满重」,越界一律不参与合并。
+ *
+ * 故障注入:改回「先夹到 ARTIFACT_MAX_LEVEL 再取较大值」→ 第一条红(得 9 而非 2)。
+ */
+describe('法宝库 · 越界重数整条丢', () => {
+  it('坏值不顶掉真实重数,只有坏值的整条丢', () => {
+    const inv = useInventoryStore()
+    const a = ARTIFACTS[0]!.id
+    const b = ARTIFACTS[1]!.id
+    inv.artifacts = [
+      { defId: a, level: 1e300 },
+      { defId: a, level: 2 },
+      { defId: b, level: 1e300 },
+      { defId: 'wild', level: 5 }
+    ] as never
+    inv.sanitize()
+    const byId = Object.fromEntries(inv.artifacts.map(x => [x.defId, x.level]))
+    expect(byId[a], '坏值把真实重数顶成满重 —— 玩家白得七重').toBe(2)
+    expect(byId[b], '只有坏值的那件应整条丢').toBeUndefined()
+    expect(byId['wild'], '野 defId 没清').toBeUndefined()
+  })
+
+  it('正常存档(0/5/9 重)不受影响', () => {
+    const inv = useInventoryStore()
+    const ids = ARTIFACTS.slice(0, 3).map(x => x.id)
+    inv.artifacts = [
+      { defId: ids[0], level: 0 },
+      { defId: ids[1], level: 5 },
+      { defId: ids[2], level: 9 }
+    ] as never
+    inv.sanitize()
+    const byId = Object.fromEntries(inv.artifacts.map(x => [x.defId, x.level]))
+    expect(byId[ids[0]!], '0 重被误丢').toBe(0)
+    expect(byId[ids[1]!], '5 重被改').toBe(5)
+    expect(byId[ids[2]!], '满重 9 被改').toBe(9)
   })
 })
