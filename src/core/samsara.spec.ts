@@ -438,4 +438,55 @@ describe('命题判据 · 分发表与类型同步', () => {
     expect(out!.cur, '进度不得为负').toBeGreaterThanOrEqual(0)
   })
 
+  /*
+   * 同一条钳制在 `counter` 那一支上是**另一处代码**(`countersDelta`),上一轮只钉了
+   * branch / avenge 两支。变异扫描把它报成漏:去掉 `Math.max(0, …)` 后,
+   * `base.explores = 999` 且本世一场没跑时,`vowProgress().cur` 实测是 **-999** ——
+   * 界面上的进度条会印出负数。两支各写一份钳制,就得各有一条判据。
+   */
+  it('计数型命题的基线高过现值:进度同样钳到 0', () => {
+    const p = usePlayerStore()
+    p.reincarnation = {
+      ...p.reincarnation,
+      // lt_lishi 的判据是「本世历练 60 场」(counter: explores)
+      vow: {
+        themeId: 'lt_lishi',
+        base: { explores: 999 },
+        baseBranches: 0,
+        baseAvenged: 0,
+        baseEnemies: 0,
+        baseRegions: 0,
+        baseRealm: 0,
+        at: 0
+      }
+    } as never
+    const out = vowProgress()
+    expect(out, '夹具没立上题').not.toBeNull()
+    expect(out!.cur, '计数型命题的进度也不得为负').toBe(0)
+    expect(out!.done, '差 999 场,不该判成达成').toBe(false)
+  })
+
+  it('计数型命题跨过基线后按差值报,不把基线本身算成进度', () => {
+    const p = usePlayerStore()
+    const q = useQuestsStore()
+    // 立题时已经历练过 200 场,基线记 200
+    q.counters = { ...q.counters, explores: 200 }
+    p.reincarnation = {
+      ...p.reincarnation,
+      vow: {
+        themeId: 'lt_lishi',
+        base: { explores: 200 },
+        baseBranches: 0,
+        baseAvenged: 0,
+        baseEnemies: 0,
+        baseRegions: 0,
+        baseRealm: 0,
+        at: 0
+      }
+    } as never
+    expect(vowProgress()!.cur, '刚立题时本世还是 0 场').toBe(0)
+    q.counters = { ...q.counters, explores: 215 }
+    expect(vowProgress()!.cur, '本世该报 15 场,不是累计 215').toBe(15)
+  })
+
 })
