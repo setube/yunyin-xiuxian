@@ -765,6 +765,110 @@ const EQUIVALENT = [
       '去掉本处 guard 后,`regionDef(s.regionId)` 在 s 为 null 时会抛 —— 但那条路径构造不出来。' +
       '留着防的是「将来有人给 tickExploration 中间加 await」。'
   },
+  /*
+   * ---- 以下八条来自「扫描范围扩到 composables / ui」后第一次跑出来的漏报 ----
+   * 它们全是 UI 归一化函数里的坏值钳制。逐条实测过:去掉后**读数不变**,
+   * 因为同一条链上还有另一道兜底,或该函数的消费点本来就只判非零。
+   */
+  {
+    file: 'src/ui/apprenticeMark.ts',
+    text: 'Math.max(0, Math.min(LEVEL_PIPS, Math.round(have)))',
+    why:
+      'levelPips 的层数刻度。去掉下限后 `i < n` 对负 n 仍全为 false(实测 levelPips(-3) 两种写法都给 0 格亮);' +
+      '去掉上限后 n 可以大于 LEVEL_PIPS,而输出数组长度写死是 LEVEL_PIPS、判据是 `i < n` —— 20 格的实测结果与 99 相同。' +
+      'NaN 两侧都落到 0。'
+  },
+  {
+    file: 'src/ui/orbForm.ts',
+    text: 'Math.max(0, Math.floor(form.particles))',
+    why:
+      'orbRingIndexes 的环序号表。`Array.from({ length: 负数 })` 与 `{ length: 0 }` 都产出空数组' +
+      '(实测 rings=-2 两种写法都给 `[]`);FORMS 里的 rings 是常量 1~4,运行期取不到负值。'
+  },
+  {
+    file: 'src/ui/setMark.ts',
+    text: 'Math.max(0, Math.floor(have))',
+    why:
+      '套装件数的已凑档。下游是 `Array.from({length: SET_PIPS}, (_, i) => i < n)` —— 负 n 与 0 都给全 false;' +
+      '而同文件另有一条上界钳制管住「凑过头」那一侧,那侧才有可见差别。'
+  },
+  {
+    file: 'src/ui/ratingGauge.ts',
+    text: 'Math.max(0, next - score)',
+    why:
+      'toNext(距下一星还差多少)。它只在 `next` 存在时被读,而 next 由星级档表推出、恒大于 score;' +
+      '更关键的是消费点写的是 `toNext > 0 ? 距下一星还差 N : 已至顶`——负数与 0 走同一支(实测 -2 与 0 都进「已至顶」)。'
+  },
+  {
+    file: 'src/ui/ratingGauge.ts',
+    text: 'Math.max(0, Math.min(1, g.progress))',
+    why:
+      'gaugeFill 的档内进度下限。外层的 `Math.max(0, Math.min(1, (stars - 1 + progress) / 5))` 已把结果夹回 [0,1],' +
+      '实测 progress 取 -2 / 5 / NaN 时,内外两道给的都是同一个填充分数(0.4 / 0.6 / 0.4)。'
+  },
+  {
+    file: 'src/ui/tribWave.ts',
+    text: 'Math.max(0, wave.hpPct)',
+    why:
+      'tribBarPct 的余血下限。下一行 `Math.max(0, Math.min(100, raw))` 同样把它夹回 0(实测 hpPct=-5 两种写法都给 0)。' +
+      '下界这一侧是重复的,上界那一侧才有可见差别。'
+  },
+  {
+    file: 'src/ui/tribWave.ts',
+    text: 'Math.max(0, Math.min(100, raw))',
+    why:
+      '同上那一行的 `Math.max(0, …)` 部分。`raw` 的分子已被上一行钳到 >= 0、`top` 恒正,故 raw 恒 >= 0,' +
+      '下限不触发;真正管住「柱子画到框外」的是 `Math.min(100, …)`。'
+  },
+  {
+    file: 'src/ui/codex.ts',
+    text: 'Math.max(0, Math.min(8, Math.floor(rank || 0)))',
+    why:
+      'qualityOfRank 的品质下标。`rank || 0` 已把 undefined / NaN 归 0,而 rank 的来源是品阶表本身;' +
+      '更关键的是下一行是 `QUALITIES.find(q => q.rank === r) ?? QUALITIES[0]` —— 找不到档位也回落到首档,' +
+      '与「先夹到 0」同值。实测 rank 取 -5 / 99 / NaN 三档,两种写法都给同一个品阶对象。'
+  },
+  {
+    file: 'src/ui/codex.ts',
+    text: 'Math.max(0, Math.min(ARTIFACT_MAX_LEVEL, Math.floor(level || 0)))',
+    why:
+      'artifactStage 的重数。`level || 0` 已归掉缺省与 NaN;它的消费是 `lv >= ARTIFACT_MAX_LEVEL → 3` / `lv >= 1 → 2` / ' +
+      '否则 `collected ? 1 : 0` —— 负值与 0 落在同一支,超上限与上限也落在同一支。' +
+      '注:同文件两处(artifactStage 与法宝条目)共用同一个归一化文本,故名单只需一条。'
+  },
+  {
+    file: 'src/ui/codex.ts',
+    text: 'Math.max(0, Math.min(1, mastery))',
+    why:
+      '丹方掌握度的 [0,1] 夹取。mastery 来自 `lore.recipeMastery` → `recipeLore[id]`,而 lore 的 sanitize 是 ' +
+      '`clampMap(recipeLore, 0, 1, …)`、写入端 `addRecipeMastery` 也先夹一道 —— 运行期取不到越界值。' +
+      '注:同文件 pillStage 与 describePill 两处共用同一个归一化文本,故名单只需一条。'
+  },
+  {
+    file: 'src/ui/codex.ts',
+    text: 'Math.max(0, Math.min(DAOLU_STAGE_MAX, rec.depth))',
+    why:
+      '人缘册的深度。`rec.depth` 由 `daoluDepthOf` 算出:它在一个 3 项的 DAOLU_DEPTH_AT 上循环、' +
+      '深度取 `i + 1`,值域天然是 [0, 3];而 `DAOLU_STAGE_MAX = 3` 正好是同一把尺。' +
+      '两侧都取不到界外,故钳不钳同值。'
+  },
+  {
+    file: 'src/ui/ratingGauge.ts',
+    text: 'Math.max(0, Math.min(1, (stars - 1 + progress) / 5))',
+    why:
+      'gaugeFill 的**外层**夹取。`stars` 已被上一行夹到 [1,5]、`progress` 已被夹到 [0,1],' +
+      '于是 `(stars - 1 + progress) / 5` 的值域正好是 [0, 1] —— 外层的上下钳都是第二道。' +
+      '要它触发的唯一办法是先去掉上一行那两道,而那是另一处变异(已单列为等价)。'
+  },
+  {
+    file: 'src/ui/worldMark.ts',
+    text: 'Math.max(0, Math.min(REALMS.length - 1, Math.floor(major)))',
+    why:
+      'worldLeap 的境界下标下限。`worldLeap` 只在 `Number.isFinite(major)` 之后才走到这一行,' +
+      '而它判完立刻 `worldOf(m)` + `if (world.start !== m || m === 0) return undefined` —— ' +
+      'm 为负时 worldOf 返回首界、start 是 0,`0 !== -1` 成立直接返回 undefined。' +
+      '实测 major 取 -1 / -5 时,钳与不钳都给 null。'
+  },
   {
     file: 'src/core/forge.ts',
     text: 'Math.max(0, cost.wudao - resources.wudao)',
@@ -986,7 +1090,24 @@ function targets(dir, out = []) {
   return out
 }
 
-const files = targets(join(ROOT, 'src/core')).concat(targets(join(ROOT, 'src/stores'))).concat(targets(join(ROOT, 'src/utils')))
+/*
+ * 扫描范围:core / stores / utils / composables / ui。
+ *
+ * 原先前三个目录,**composables 与 ui 整个没进过扫描**。实测这两处的守卫数量:
+ * composables 16 点、ui 51 点(共 8 + 37 个文件)—— 与已扫的三个目录同量级,
+ * 且它们同样承载「坏值 / 空池 / 归一化」那几类守卫(useBrewing 的钳制、
+ * useModalStack 的栈判空、ui/codex 的查表兜底、ui/orbForm 的进度环读数)。
+ *
+ * `components/*.vue` 与 `views/*.vue` 仍不收:它们改的是模板与事件,守卫基本都落在
+ * 被调用的 core/ui 函数里,对模板做文本替换容易产出「结构合法但语义不同」的变异,
+ * 那种变异既不好判读也不好写等价理由 —— 收益远低于噪声。真要覆盖,得走
+ * `@vue/compiler` 的 AST 而不是文本。
+ */
+const files = targets(join(ROOT, 'src/core'))
+  .concat(targets(join(ROOT, 'src/stores')))
+  .concat(targets(join(ROOT, 'src/utils')))
+  .concat(targets(join(ROOT, 'src/composables')))
+  .concat(targets(join(ROOT, 'src/ui')))
 const found = []
 
 /*
