@@ -1291,3 +1291,46 @@ describe('道痕 · 构筑名长度', () => {
     expect(e.marks[1]?.buildName, '正常构筑名被误伤').toBe('剑修')
   })
 })
+
+/**
+ * 词条数值的读档上界。
+ *
+ * `sanitizeMods` 原先只查 `Number.isFinite` —— `1e300` 是有限数,原样通过。
+ * 而 `mods` 有三条路:敌人快照、道痕重演、**远征封印**(`sealedMods`)。
+ * 最后一条经 `expedition.ts` 的 `stackedMods` 直接进 `resolveCombat`,
+ * `damageBonus: 1e300` 会让伤害倍率变成 1e300 倍 —— 不是显示问题,是改写战斗结果。
+ *
+ * 上界取一千:百分比词条硬顶在 1(`SOFT_CAPS` 已软限),加法词条满配到不了十倍。
+ *
+ * 故障注入:去掉 `Math.max(-MOD_VALUE_MAX, Math.min(MOD_VALUE_MAX, v))` → 本条红。
+ */
+describe('词条 · 读档数值上界', () => {
+  it('坏值夹到一千,正常值与野 key 各自处置', () => {
+    const e = useEndgameStore()
+    e.marks = [{
+      targetId: 'chiyan',
+      targetName: '赤炎界',
+      life: 1,
+      daoPathId: null,
+      at: 1,
+      cleared: true,
+      rounds: 10,
+      buildName: '探针',
+      powerText: '1',
+      replay: {
+        attack: { m: 1, e: 3 },
+        defense: { m: 1, e: 3 },
+        maxHp: { m: 1, e: 4 },
+        speed: 1,
+        mods: { damageBonus: 1e300, critRate: 0.2, evilKey: 5 },
+        skills: [],
+        artifacts: []
+      }
+    }] as never
+    e.sanitize()
+    const mods = e.marks[0]?.replay?.mods
+    expect(mods?.damageBonus, '词条坏值没夹住 —— 封印会把它叠进战斗').toBeLessThanOrEqual(1000)
+    expect(mods?.critRate, '正常词条被误伤').toBeCloseTo(0.2)
+    expect((mods as unknown as Record<string, unknown>)?.evilKey, '野 key 没清').toBeUndefined()
+  })
+})

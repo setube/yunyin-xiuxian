@@ -73,12 +73,26 @@ const MAX_MARKS = 60
  * 野键会被 `modDepth` 算进构筑厚度,坏值经 `stackedMods` 把攻防染成 NaN。
  */
 
+/*
+ * 词条数值的读档上界。
+ *
+ * 原先只查 `Number.isFinite` —— `1e300` 是有限数,原样通过。而 `mods` 有三条路:
+ * 敌人快照、道痕重演、**远征封印**(`sealedMods`,直接进 `resolveCombat`)。
+ * `damageBonus: 1e300` 会让伤害倍率变成 1e300 倍 —— 重演那边只是对比失真,
+ * 封印那边是真的改写战斗结果。
+ *
+ * 上界按真实满配算:百分比词条硬顶在 1(`critRate` 这类 `SOFT_CAPS` 已软限),
+ * 加法词条(伤害加成/减伤/属性点)满配到不了个位数的十倍,取一千已极宽。
+ */
+const MOD_VALUE_MAX = 1000
 function sanitizeMods(raw: unknown): StatMods | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const out: StatMods = {}
   for (const key of STAT_KEYS) {
     const v = (raw as StatMods)[key]
-    if (typeof v === 'number' && Number.isFinite(v) && v !== 0) out[key] = v
+    if (typeof v === 'number' && Number.isFinite(v) && v !== 0) {
+      out[key] = Math.max(-MOD_VALUE_MAX, Math.min(MOD_VALUE_MAX, v))
+    }
   }
   return Object.keys(out).length > 0 ? out : null
 }
