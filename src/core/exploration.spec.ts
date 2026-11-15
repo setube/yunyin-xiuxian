@@ -9,6 +9,8 @@ import { createPinia, setActivePinia, type Pinia } from 'pinia'
 import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { usePlayerStore } from '@/stores/player'
+import { useGameStore } from '@/stores/game'
+import { rng } from '@/utils/random'
 import { useAdventureStore, type LastBattleView } from '@/stores/adventure'
 import { generateMortalWorld } from './mortalWorldGen'
 import { useCultivationStore } from '@/stores/cultivation'
@@ -922,4 +924,42 @@ describe('际遇率 · 封顶', () => {
     expect(exploreEventChance('qingyun', { eventLuck: -100 })).toBeGreaterThanOrEqual(0)
   })
 })
+})
+
+/**
+ * 本世凡界还没凝出来(mortalWorld 为 null)时,历练途中相遇不该炸。
+ *
+ * 在线历练不依赖 mortalWorld —— 玩家可以在凝界之前就出门,
+ * 而 `maybeEncounter` 里 `w.chain` 直接读再往下走就会 TypeError(实测第 15 次 tick 抛)。
+ * MEET_CHANCE 是 0.06,循环 200 次足以覆盖到命中那一次。
+ */
+describe('历练途中相遇 · 本世未凝', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+  afterEach(() => vi.restoreAllMocks())
+
+  /*
+   * `if (!w) return` 是真守卫:mortalWorld 由 reroll 时才凝,玩家可以在凝出之前就出门历练,
+   * 而 `maybeEncounter` 往下要读 `w.chain` —— 去掉守卫直接 TypeError。
+   *
+   * 概率路径要强制命中才测得稳:MEET_CHANCE 是 0.06,靠循环碰运气在二十场里
+   * 期望命中仅 1.2 次,故障注入会假绿(实测连跑三次都没红)。
+   */
+  it('mortalWorld 为 null 时途中相遇:不抛', () => {
+    useGameStore().markStarted()
+    useAdventureStore().mortalWorld = null
+    usePlayerStore().bond = null as never
+    /*
+     * 不能整体 mock 成 true:tickExploration 会先走「遇事件」分支并 return,
+     * 战斗根本打不起来(实测 wins 恒 0)。只让相遇那一步(0.06)命中。
+     */
+    vi.spyOn(rng, 'chance').mockImplementation((p: number) => p < 0.1)
+    expect(() => {
+      for (let round = 0; round < 5; round += 1) {
+        startExploration('qingyun', 'normal')
+        const s = useAdventureStore().session!
+        tickExploration(s.nextBattleAt + 1)
+        stopExploration('manual')
+      }
+    }).not.toThrow()
+  })
 })
