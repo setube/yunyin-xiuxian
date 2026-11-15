@@ -622,3 +622,40 @@ describe('凡人界世界规则 · 坏档字段修形', () => {
   })
 })
 })
+
+/**
+ * 际遇记忆的读档守卫。
+ *
+ * ① `recordEvent` 的 key 一律是真实事件 id(见 worldMemory.ts),野 id 只可能来自坏档;
+ *    而 `lossRows`(LegacyView)会把它原样印成「际遇 N 次」。
+ * ② `times` 每次 +1,而 `fortuneEcho` 只按 `>= 2` / `>= 3` 分档 —— 上界取一千不影响分档,
+ *    却拦得住坏档的 `1e300`(界面会印成科学计数)。
+ *
+ * 故障注入:去掉 `if (!eventDef(id)) continue` → 第一条红;
+ * 去掉 `asFiniteNumber(..., EVENT_MEMORY_TIMES_MAX)` 的第四参 → 第二条红。
+ */
+describe('际遇记忆 · 读档守卫', () => {
+  it('认不出的 eventId 清掉', () => {
+    const a = useAdventureStore()
+    const mem: Record<string, unknown> = {}
+    for (let i = 0; i < 500; i++) {
+      mem['wild_' + i] = { eventId: 'wild_' + i, times: 5, lastAt: 1, lastChoiceIdx: 0 }
+    }
+    a.eventMemories = mem as never
+    a.sanitize()
+    expect(Object.keys(a.eventMemories).length, '野 eventId 没清 —— 会印成「际遇 N 次」').toBe(0)
+  })
+
+  it('times 夹到一千,正常事件记忆原样保留', () => {
+    const a = useAdventureStore()
+    const realId = EVENTS[0]!.id
+    a.eventMemories = {
+      [realId]: { eventId: realId, times: 1e300, lastAt: 1, lastChoiceIdx: 0 }
+    } as never
+    a.sanitize()
+    const m = a.eventMemories[realId]
+    expect(m, '正常事件记忆被误删').toBeTruthy()
+    expect(String(m!.times), '界面会印出科学计数').not.toMatch(/e\+\d/)
+    expect(m!.times, 'times 没夹到一千').toBeLessThanOrEqual(1000)
+  })
+})
