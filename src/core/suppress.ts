@@ -261,7 +261,18 @@ export function settleSuppressedRegions(
     revived: [],
     loosened: []
   }
- const now = Date.now()
+  /*
+   * `now` 认参数 `worldAt`,**不另读 `Date.now()`**。
+   *
+   * 这个函数已经有两个时刻在跑:收益段起点由 `worldAt - dt` 倒推、复聚按 `worldAt` 判。
+   * 再单独取一次真实时钟,会让 `deriveProsperity` 的 `heldHours` / `idleHours`
+   * 按另一个时刻算 —— 离线结算传进来的是 `nowMs`(可能是过去时刻),两个时钟一错开,
+   * 繁荣度就判错档,收益倍率随之偏。
+   *
+   * 实测:镇压起于 10 小时前,`worldAt` 取那一刻 → 繁荣度 stable;
+   * 同一份状态换成真实时钟(晚 100 小时)算 → flourish。倍率 1.05 → 1.1。
+   */
+  const now = worldAt
 
   // 本段起点(由终点倒推),复聚边界用
   const from = worldAt - dt * 1000

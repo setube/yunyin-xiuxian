@@ -892,3 +892,51 @@ describe('镇压复聚线 · 两处常量同值', () => {
     ).toBe(REVIVE_AFTER_HOURS)
   })
 })
+
+/**
+ * 镇压收益只认传进来的 `worldAt`,不另读真实时钟。
+ *
+ * 这个函数里本来就有两个时刻在跑:收益段起点由 `worldAt - dt` 倒推、复聚按 `worldAt` 判。
+ * 此前 `deriveProsperity` 那段用的是 `const now = Date.now()` —— 离线结算传的是 `nowMs`
+ * (可能在过去),两个时钟一错开,`heldHours` / `idleHours` 就按另一个时刻算,
+ * 繁荣度判错档、收益倍率跟着偏(1.05 → 1.1)。
+ *
+ * 判据比的是**同一个 worldAt、两种真实时钟**下的收益:修复后两者必须相等。
+ * 比「两个真实时钟时刻」是抓不到的 —— 那个差异在两边都是同样错档。
+ *
+ * 故障注入:把 `const now = worldAt` 改回 `Date.now()` → 本条红。
+ */
+describe('镇压收益 · 繁荣度只认 worldAt', () => {
+  it('真实时钟怎么拨,都不影响这一段的收益', () => {
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    const t0 = 1_800_000_000_000
+
+    const yieldAt = (realNowOffsetHours: number): number => {
+      /*
+       * 每轮重建状态:这个函数会写 `suppressedSince`,沿用上一轮的状态量不到同一件事。
+       */
+      setActivePinia(createPinia())
+      const p = usePlayerStore()
+      const r = useResourcesStore()
+      p.initCharacter('探针', { roots: [] } as never)
+      p.suppressedRegions = ['qingyun']
+      p.suppressedSince = { qingyun: t0 - 10 * 3600_000 }
+      p.regionStats = { qingyun: { lastUpdateAt: t0 - 10 * 3600_000 } as never }
+      r.spiritStone = gnZero()
+      const spy = vi.spyOn(Date, 'now').mockReturnValue(t0 + realNowOffsetHours * 3600_000)
+      const out = settleSuppressedRegions(3600, undefined, t0)
+      spy.mockRestore()
+      return toNum(out?.stone ?? gnZero())
+    }
+
+    // 真实时钟只比 worldAt 晚 1 小时 → 与 worldAt 同档(stable)
+    const aligned = yieldAt(1)
+    // 真实时钟比 worldAt 晚 100 小时 → 若读真实时钟则跳成 flourish
+    const drifted = yieldAt(100)
+    expect(aligned, '夹具没结出收益').toBeGreaterThan(0)
+    expect(drifted, '真实时钟往后拨,收益跟着变了 —— 繁荣度仍在读 Date.now()').toBeCloseTo(aligned, 6)
+    void player
+    void resources
+  })
+})
