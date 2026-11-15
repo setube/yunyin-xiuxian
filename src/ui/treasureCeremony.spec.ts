@@ -32,6 +32,8 @@ const CSS = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
 const COMPONENT = readFileSync(resolve(ROOT, 'src/components/common/TreasureCeremony.vue'), 'utf-8')
 const UI_STORE = readFileSync(resolve(ROOT, 'src/stores/ui.ts'), 'utf-8')
 const APP = readFileSync(resolve(ROOT, 'src/App.vue'), 'utf-8')
+/** 真浏览器实测脚本:它不进 CI,量法错了没人会看见 —— 故用源码钉住量法 */
+const CHECK = readFileSync(resolve(ROOT, 'scripts/treasure-check.mjs'), 'utf-8')
 
 /** 各档的代表物:凡→神九档逐档一件,道品单列 */
 const equipLike = (quality: TreasureSource extends { quality: infer Q } ? Q : never): TreasureSource => ({
@@ -238,5 +240,38 @@ describe('得宝仪典 · 四、两条全局纪律', () => {
   it('既有的 style.css 没被这一层改动(形制只在本组件 scoped 里)', () => {
     // 仪典是「一次性的那一刻」,不该往全局样式表里塞新 token
     expect(CSS).not.toContain('.treasure-overlay')
+  })
+})
+
+/**
+ * 真浏览器实测的量法。
+ *
+ * 实测踩过的坑:无头 chromium 只在有绘制需求时才推进 `document.timeline`
+ * (页面 load 完之后它一直停在 0,要等一次 rAF / 截图 / 鼠标事件才走),
+ * 而 CSS 动画的时间基准正是这条 timeline。脚本原先用 `waitForTimeout(800)`
+ * 等 0.6s 的升起动画走完 —— 那 800ms 里 timeline 一步不动,读到的仍是第 0 帧
+ * (opacity 0),判据报「正文在开场时不可见」。连跑三遍全红,而界面上的动画正常。
+ *
+ * 故钉住两条:等「正文真的可见」要走 rAF 轮询,不能用固定睡眠;
+ * 量的时候也不能只查 `!== '0'` 这种一碰就过的口径。
+ */
+describe('得宝仪典 · 五、实测脚本的量法', () => {
+  it('等入场动画走完走 rAF 轮询,不用固定睡眠', () => {
+    expect(CHECK, '缺 rAF 轮询 —— 固定睡眠在无头浏览器里等不到动画推进').toContain("polling: 'raf'")
+    /*
+     * 从「弹出仪典」到「等它显出来」这一段里不许有固定睡眠。
+     * 只查全文的话,后面「三秒后自己散」那一处本来就要等墙钟(组件的 3000ms 是 setTimeout,
+     * 不吃 timeline),会误报 —— 故按段落切。
+     */
+    const from = CHECK.indexOf("await page.waitForSelector('.treasure-overlay'")
+    const to = CHECK.indexOf('bodyVisible')
+    expect(from, '找不到弹出仪典那一段').toBeGreaterThan(-1)
+    expect(to, '找不到量正文那一段').toBeGreaterThan(from)
+    expect(CHECK.slice(from, to), '弹出之后不该再用固定睡眠等动画').not.toContain('waitForTimeout')
+  })
+
+  it('「正文可见」要有下限,不能只查不等于 0', () => {
+    // 0.12 也满足 `!== '0'`,那样判据在动画刚开始时就会通过 —— 等于没验
+    expect(CHECK, '正文可见应有 opacity 下限').toMatch(/opacity\)\s*>\s*0\.\d/)
   })
 })
