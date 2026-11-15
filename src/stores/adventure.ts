@@ -132,8 +132,17 @@ function sanitizeSideStats(raw: unknown): CombatSideStats | null {
   const r = raw as Record<string, unknown>
   const out = {} as Record<string, GNum | number>
   // 读档的 GNum 一律走 asBoundedGNum:gn 不限 e,坏档会让战报印出「1.00e1000000000」
-  for (const key of SIDE_GNUM_KEYS) out[key] = asBoundedGNum(r[key])
-  for (const key of SIDE_COUNT_KEYS) out[key] = Math.max(0, Math.floor(asFiniteNumber(r[key], 0)))
+  /*
+   * 战报遥测也要有量级上界,不能只靠 `asBoundedGNum` 的指数守卫(999)。
+   * 这些数经 `battleAnalysis` 的 `formatGN(p.dealt)` 直接进界面 ——
+   * 坏档写 `9.99e900` 正在界内,原样留下就印出「总输出 9.99e900」。
+   * 上界与 `SESSION_GAIN_MAX` 同一把尺(单场最高层级实测约 5.25e10);
+   * 计数类同理,用 `SESSION_COUNT_MAX`(1e8),与 `wins` / `losses` 那几栏一致。
+   */
+  for (const key of SIDE_GNUM_KEYS) out[key] = clampGain(r[key])
+  for (const key of SIDE_COUNT_KEYS) {
+    out[key] = Math.min(SESSION_COUNT_MAX, Math.max(0, Math.floor(asFiniteNumber(r[key], 0))))
+  }
   return out as unknown as CombatSideStats
 }
 
