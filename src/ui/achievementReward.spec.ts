@@ -62,6 +62,21 @@ describe('已达成成就展示实发奖励', () => {
  * 故障注入:把 rewardPreview 的 `alreadyOwned` 判断去掉,本条红。
  */
 describe('称号预览 · 已拥有时不再许诺', () => {
+  /*
+   * 必须自己建 pinia。
+   *
+   * 原先这条靠**上面那个 describe 的 beforeEach** 留下的 pinia 跑 —— 全量跑时一直是绿的,
+   * 但 `--sequence.shuffle` 把它排到前面时就炸 `getActivePinia() was called but there
+   * was no active Pinia`。实测四次乱序两次红(2026 年 11 月那轮 spa 修完另外两处之后
+   * 剩下的第三条,同一个形状)。
+   *
+   * 不调 `initCharacter`:这条只读 `quests.ownTitle` 与 `rewardPreview`,
+   * 两者都不要求角色已建。少建一个角色,判据就少一处无关的依赖。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('未拥有时列出,已拥有时省去,其余奖励照旧', () => {
     const quests = useQuestsStore()
     const title = TITLES[0]!
