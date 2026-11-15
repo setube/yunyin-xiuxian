@@ -9,7 +9,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useEndgameStore, type WorldRunState } from './endgame'
-import { EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS, celestialWorldDef } from '@/data/endgame'
+import { CELESTIAL_WORLDS, EXPEDITION_GUARDIAN_LAYER, EXPEDITION_ROUTE_LAYERS, celestialWorldDef } from '@/data/endgame'
 import { ARTIFACT_MAX_SLOTS } from '@/data/artifacts'
 import { SOUL_SLOTS, SOUL_TYPES, soulGradeDef } from '@/data/souls'
 import { rerollVoidWorld, VOID_REROLL_COST } from '@/core/expedition'
@@ -1379,5 +1379,41 @@ describe('魂库 · 来源名长度上界', () => {
     e.sanitize()
     expect(e.souls[0]?.fromName.length, '来源名没截 —— 会把魂库那一行撑爆').toBeLessThanOrEqual(16)
     expect(e.souls[1]?.fromName, '正常来源名被误伤').toBe('赤炎虎')
+  })
+})
+
+/**
+ * 远征战报的敌方名要截。
+ *
+ * 它裸插值进两处战报（`第{{ i + 1 }}战 {{ row.foeName }}`，见 ExpeditionPanel 与
+ * BattleReportDialog），原先只判「是不是字符串」—— 坏档塞十万字符会把那一行撑爆。
+ * 敌人名在数据表里最长四五个字，取 `NAME_MAX_LENGTH * 2`（16 码点）已极宽。
+ *
+ * 同段里 `rounds` 早被注释指出「也是裸插值」并夹了 `BATTLE_ROUNDS_CAP`，只有名字漏了。
+ *
+ * 故障注入：去掉 `truncateCodePoints` → 本条红。
+ */
+describe('远征战报 · 敌方名长度上界', () => {
+  it('超长敌方名截断,正常敌方名原样', () => {
+    const e = useEndgameStore()
+    const w = CELESTIAL_WORLDS[0]!
+    e.worldRun = {
+      worldId: w.id,
+      layer: 0,
+      bonus: 0,
+      carriedHpPct: 1,
+      totalRounds: 10,
+      winStacks: 0,
+      pactId: null,
+      gateId: null,
+      rows: [
+        { foeName: 'x'.repeat(100_000), win: true, rounds: 5, hpLeftPct: 0.5 },
+        { foeName: '赤炎虎', win: false, rounds: 3, hpLeftPct: 0 }
+      ]
+    } as never
+    e.sanitize()
+    const r = e.worldRun as unknown as { rows: { foeName: string }[] } | null
+    expect(r?.rows[0]?.foeName.length, '敌方名没截 —— 会把战报那一行撑爆').toBeLessThanOrEqual(16)
+    expect(r?.rows[1]?.foeName, '正常敌方名被误伤').toBe('赤炎虎')
   })
 })

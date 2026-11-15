@@ -500,7 +500,12 @@ export const useEndgameStore = defineStore(
             [],
             r => !!r && typeof (r as { foeName?: unknown }).foeName === 'string'
           ).map(r => ({
-            foeName: r.foeName,
+            /*
+             * 敌方名要截 —— 它裸插值进两处战报(`第{{ i + 1 }}战 {{ row.foeName }}`,
+             * 见 ExpeditionPanel 与 BattleReportDialog)。敌人名在数据表里最长四五个字,
+             * `NAME_MAX_LENGTH * 2`(16 码点)已极宽;坏档塞十万字符会把那一行撑爆。
+             */
+            foeName: truncateCodePoints(r.foeName, NAME_MAX_LENGTH * 2),
             win: r.win === true,
             // 战报行里的回合数也是裸插值
             rounds: Math.floor(asFiniteNumber(r.rounds, 0, 0, BATTLE_ROUNDS_CAP)),
