@@ -536,6 +536,29 @@ describe('历练会话 · 收益量级', () => {
     expect(String(st.dodges), '闪避次数会印出 1e+300').not.toMatch(/e\+\d/)
   })
 
+  /**
+   * 战力栏同理。它是 `powerScore(攻击, 防御, 气血)` 的线性组合,三维受境界与层级
+   * 约束 —— 最高境界实测约 2.57e14,战力有明确的物理上限。而它只走
+   * `asBoundedGNum`(守卫 |e| ≤ 999),坏档写 `{ m: 1, e: 900 }` 正在界内,
+   * `CombatPanel` 是 `formatGN(battle.enemyPower)` 直接插值,会印出「敌力 1.00e900」。
+   *
+   * 故障注入:去掉 `cmp(g, POWER_SANITY_MAX) > 0` 那一判 → 本条红。
+   */
+  it('战力栏的坏值视为缺失,不印科学计数', () => {
+    const a = useAdventureStore()
+    a.lastBattle = {
+      enemyName: '探针狼',
+      enemyIcon: 'x',
+      enemyPower: { m: 1, e: 900 },
+      playerPower: { m: 2.57, e: 14 },
+      result: { win: true, log: ['一行'], rounds: 3 }
+    } as never
+    a.sanitize()
+    const lb = a.lastBattle as unknown as { enemyPower?: GNum; playerPower?: GNum }
+    expect(lb.enemyPower, '坏战力该当作缺失,而不是原样留下').toBeUndefined()
+    expect(formatGN(lb.playerPower ?? { m: 0, e: 0 }), '真实战力被误伤').not.toBe('0')
+  })
+
   it('收益归零后会话本身仍在(玩家还在历练,只是这一世的累计读数被修形)', () => {
     const s = withGain({ m: 1, e: 1e9 })
     expect(s!.regionId).toBe('qingyun')
