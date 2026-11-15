@@ -260,3 +260,58 @@ describe('轮回录 · 渲染条数封顶', () => {
     expect(player.reincarnation.lives.length, '数据被截了 —— 会改变「命格用过没用过」的判定').toBe(500)
   })
 })
+
+/**
+ * 履历三个裸插值字段要封顶。
+ *
+ * `LegacyView` 的履历行逐条印 `寿 {{ l.age }} 载` / `宿慧 +{{ l.insight }}` /
+ * `{{ l.realmLabel }}` —— 全是裸插值。原先 `sanitizeLives` 只给了下限
+ * `Math.max(0, ...)`,上限一个都没有:坏档写 `age: 1e300` 会印成「寿 1e+300 载」,
+ * `realmLabel` 塞十万字符会把那一行撑到不能看。
+ *
+ * `major` 不直接渲染(渲染的是 `realmLabel`),但它进 `worldOf()` 判界域,同样夹到 `MAX_MAJOR`。
+ *
+ * 故障注入:把三个 `asFiniteNumber(..., LIFE_COUNTER_CAP)` 的第四参去掉 → 本条红。
+ */
+describe('轮回履历 · 数值与境界名的上界', () => {
+  it('坏值夹住,正常履历原样保留', () => {
+    const p = usePlayerStore()
+    p.reincarnation = {
+      ...p.reincarnation,
+      lives: [
+        {
+          index: 1,
+          major: 5,
+          realmLabel: 'x'.repeat(100_000),
+          age: 1e300,
+          themeId: null,
+          themeResult: null,
+          insight: 1e300,
+          trialId: null,
+          bond: null,
+          at: 1
+        },
+        {
+          index: 2,
+          major: 15,
+          realmLabel: '大乘',
+          age: 1234,
+          themeId: null,
+          themeResult: null,
+          insight: 56,
+          trialId: null,
+          bond: null,
+          at: 2
+        }
+      ]
+    } as never
+    p.sanitize()
+    const [bad, good] = p.reincarnation.lives
+    expect(String(bad!.age), '界面会印出「寿 1e+300 载」').not.toMatch(/e\+\d/)
+    expect(String(bad!.insight), '界面会印出「宿慧 +1e+300」').not.toMatch(/e\+\d/)
+    expect(bad!.realmLabel.length, '境界名没截 —— 会把履历行撑爆').toBeLessThanOrEqual(24)
+    expect(good!.realmLabel, '正常境界名被误伤').toBe('大乘')
+    expect(good!.age, '正常寿数被改').toBe(1234)
+    expect(good!.insight, '正常宿慧被改').toBe(56)
+  })
+})

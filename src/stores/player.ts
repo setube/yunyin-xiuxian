@@ -572,14 +572,23 @@ export const usePlayerStore = defineStore(
         const themeResult =
           l.themeResult === 'done' || l.themeResult === 'broken' || l.themeResult === 'unfinished' ? l.themeResult : null
         const bond = l.bond && typeof l.bond === 'object' ? l.bond : null
+        /*
+         * 履历这几项都要封顶 —— 它们**全部裸插值进「修行节点」下面那一页**
+         * (LegacyView 的 `寿 {{ l.age }} 载` / `宿慧 +{{ l.insight }}` / `{{ l.realmLabel }}`)。
+         *
+         * 原先只有下限 `Math.max(0, ...)`,而上限一个都没有:坏档写 `age: 1e300`
+         * 会印成「寿 1e+300 载」,`realmLabel` 塞十万字符会把那一行撑到不能看。
+         * `major` 不直接渲染(渲染的是 `realmLabel`),但它进 `worldOf()` 判界域,
+         * 同样夹到真实大境界。
+         */
         out.push({
-          index: Math.max(0, Math.floor(asFiniteNumber(l.index, 0, 0))),
-          major: Math.max(0, Math.floor(asFiniteNumber(l.major, 0, 0))),
-          realmLabel: typeof l.realmLabel === 'string' ? l.realmLabel : '',
-          age: Math.max(0, Math.floor(asFiniteNumber(l.age, 0, 0))),
+          index: Math.max(0, Math.floor(asFiniteNumber(l.index, 0, 0, LIFE_COUNTER_CAP))),
+          major: Math.max(0, Math.floor(asFiniteNumber(l.major, 0, 0, MAX_MAJOR))),
+          realmLabel: typeof l.realmLabel === 'string' ? truncateCodePoints(l.realmLabel, NAME_MAX_LENGTH * 3) : '',
+          age: Math.max(0, Math.floor(asFiniteNumber(l.age, 0, 0, LIFE_COUNTER_CAP))),
           themeId: typeof l.themeId === 'string' && lifeThemeDef(l.themeId) ? l.themeId : null,
           themeResult,
-          insight: Math.max(0, Math.floor(asFiniteNumber(l.insight, 0, 0))),
+          insight: Math.max(0, Math.floor(asFiniteNumber(l.insight, 0, 0, LIFE_COUNTER_CAP))),
           trialId: typeof l.trialId === 'string' && lifeTrialDef(l.trialId) ? l.trialId : null,
           bond: bond
             ? {
