@@ -435,7 +435,21 @@ export function exploreDurationSec(mode: ExploreMode, petId: string | null): num
 
 /** 两场遭遇的间隔(秒);explorationSpeed 只收紧这一截,不缩短整程 */
 export function exploreBattleGapSec(explorationSpeed: number): number {
-  const speed = 1 + Math.max(0, explorationSpeed)
+  /*
+   * `Math.max(0, NaN)` 还是 NaN —— 它挡不住非有限值(AGENTS.md 明文点过)。
+   *
+   * 这条链的下游是 `nextBattleAt: now + gap * 1000`:gap 为 NaN 时它也是 NaN,
+   * 而 `adventure.setSession` 有一道 `Number.isFinite(s.nextBattleAt)` 的守卫 ——
+   * 会话被**静默拒绝**,`startExploration` 却照旧返回 true 并弹「前往…」。
+   * 玩家看到的是「已出发」,实际一条会话都没有。
+   *
+   * 实测:把 `finalStats.mods.explorationSpeed` 注入 NaN,
+   * `startExploration` 返回 true 而 `adventure.session === null`。
+   *
+   * 拿不到数时按「没有加速」处理,与 `capChance` 同一条取舍。
+   */
+  const raw = Number.isFinite(explorationSpeed) ? explorationSpeed : 0
+  const speed = 1 + Math.max(0, raw)
   return (EXPLORE_BATTLE_INTERVAL * 1000) / speed / 1000
 }
 

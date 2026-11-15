@@ -28,8 +28,10 @@ import {
   stopExploration,
   winsUntilRegionBoss,
   regionBossCleared,
-  exploreEventChance
+  exploreEventChance,
+  exploreBattleGapSec
 } from './exploration'
+import { EXPLORE_BATTLE_INTERVAL } from '@/data/constants'
 import { useUiStore } from '@/stores/ui'
 import { useEndgameStore } from '@/stores/endgame'
 import { startRetreat } from './earlyGameService'
@@ -961,5 +963,38 @@ describe('历练途中相遇 · 本世未凝', () => {
         stopExploration('manual')
       }
     }).not.toThrow()
+  })
+})
+
+/**
+ * `explorationSpeed` 非有限时,不能把「已出发」的谎话报给玩家。
+ *
+ * 链路:`exploreBattleGapSec` 用 `Math.max(0, speed)` 夹下限,而那挡不住 NaN ——
+ * NaN 一路算成 `nextBattleAt = now + NaN`,而 `adventure.setSession` 有一道
+ * `Number.isFinite(s.nextBattleAt)` 的守卫:会话被**静默拒绝**。
+ * 与此同时 `startExploration` 照旧返回 true 并弹「前往…」——
+ * 玩家看到「已出发」,实际一条会话都没有。
+ *
+ * 故障注入:把 `Number.isFinite(explorationSpeed) ? explorationSpeed : 0`
+ * 改回裸 `Math.max(0, explorationSpeed)` → 本条红。
+ */
+describe('历练 · 遇敌间隔不接受非有限修速', () => {
+  it('explorationSpeed 为 NaN 时,返回 true 就必须真的建起会话', () => {
+    const player = usePlayerStore()
+    const adventure = useAdventureStore()
+    player.initCharacter('探针', { roots: [] } as never)
+    /*
+     * 用 getter 覆盖 `finalStats`,把 NaN 喂进 `modOf(mods, 'explorationSpeed')`。
+     * 这条路径的输入本应永远有限(词缀经 sanitize),这里验的是**万一不有限时的行为**。
+     */
+    Object.defineProperty(player, 'finalStats', {
+      configurable: true,
+      get: () => ({ mods: { explorationSpeed: NaN }, flats: {} })
+    })
+    const ok = startExploration('qingyun', 'normal')
+    if (ok) {
+      expect(adventure.session, '说出发了,却没有会话 —— nextBattleAt 被算成了 NaN').not.toBeNull()
+    }
+    expect(exploreBattleGapSec(NaN), 'NaN 修速应退回无加速档').toBe(EXPLORE_BATTLE_INTERVAL)
   })
 })
