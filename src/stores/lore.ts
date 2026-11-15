@@ -1,9 +1,9 @@
 /** 所知状态 —— 认知与技艺。认知度/熟练度为连续值,参与生产结算(见 core/craftability.ts) */
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { LORE_MAX, materialDef } from '@/data/materials'
+import { LORE_MAX, MATERIALS, materialDef } from '@/data/materials'
 import { SKILL_IDS, skillLevelFromExp, type SkillId } from '@/data/crafting'
-import { pillDef } from '@/data/pills'
+import { PILLS, pillDef } from '@/data/pills'
 import { enemyDef } from '@/data/enemies'
 import { persistConfig } from '@/utils/storage'
 import { QUALITIES } from '@/data/qualities'
@@ -162,6 +162,20 @@ export const useLoreStore = defineStore(
       return true
     }
 
+    /** 照面次数表条数上界:材料目录的八倍,够容纳改名/下线残留 */
+    const MATERIAL_SEEN_CAP = MATERIALS.length * 8
+    /** 图纸认知表条数上界:同上,按配方规模取八倍 */
+    const BLUEPRINT_LORE_CAP = PILLS.length * 8
+
+    /** 只留前 n 个键(对象键序 = 写入序,靠前的是早期真玩过的) */
+    const capEntries = (src: Record<string, number>, cap: number): Record<string, number> => {
+      const keys = Object.keys(src)
+      if (keys.length <= cap) return src
+      const out: Record<string, number> = {}
+      for (const k of keys.slice(0, cap)) out[k] = src[k]!
+      return out
+    }
+
     /** 存档修复:补齐新增技艺键、夹紧越界值 */
     function sanitize(): void {
       // 先补形再夹值:缺栏直接进 Object.entries,读档即白屏(storeResilience.spec 钉着)
@@ -191,10 +205,17 @@ export const useLoreStore = defineStore(
         return out
       }
       materialLore.value = clampMap(materialLore.value, 0, LORE_MAX, id => !!materialDef(id))
-      // 照面次数不参与计数/展示,只夹值不认 id:旧档改名或版本回退时不抹掉进度
-      materialSeen.value = clampMap(materialSeen.value, 0, Number.MAX_SAFE_INTEGER)
+      /*
+       * 照面次数不参与计数/展示,只夹值**不认 id**:旧档改名或版本回退时不抹掉进度。
+       * 但条数仍要有界 —— 坏档能塞任意多键(实测三千条),它们不进任何界面,
+       * 只是把 `$state` 撑大(每个键连同数字约 20 字节,三千条约 60KB)。
+       * 上界取材料目录的八倍:宽到容得下改名/下线旧档的残留,窄到拦得住坏档。
+       * 超出的保留**靠前**的(对象键序 = 写入序,靠前的才是早期真玩过的)。
+       */
+      materialSeen.value = capEntries(clampMap(materialSeen.value, 0, Number.MAX_SAFE_INTEGER), MATERIAL_SEEN_CAP)
       recipeLore.value = clampMap(recipeLore.value, 0, 1, id => !!pillDef(id)?.recipe)
-      blueprintLore.value = clampMap(blueprintLore.value, 0, 1)
+      // 图纸同理:不认 id(改名不抹进度),但条数有界
+      blueprintLore.value = capEntries(clampMap(blueprintLore.value, 0, 1), BLUEPRINT_LORE_CAP)
       // 旧存档没有这两张表
       enemyLore.value = clampMap(enemyLore.value ?? {}, 0, ENEMY_LORE_MAX, id => !!enemyDef(id))
       enemySeen.value = clampMap(enemySeen.value ?? {}, 0, Number.MAX_SAFE_INTEGER)
