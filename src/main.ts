@@ -4,7 +4,7 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { Capacitor } from '@capacitor/core'
 import App from './App.vue'
 import { router } from './router'
-import { migrateLocalSchema, preflightScan } from './utils/storage'
+import { migrateLocalSchema, preflightScan, STORE_NAMES } from './utils/storage'
 import { sanitizeAllStores } from './stores/sanitizeAll'
 import { useUiStore } from './stores/ui'
 import { summarizeError, useDiagStore } from './stores/diag'
@@ -65,7 +65,21 @@ performance.mark('boot:mounted')
 
 if (corrupted.length > 0) {
   useUiStore().corruptedNotice = corrupted
-  useUiStore().toast('存档损坏,已隔离修复', 'warn')
+  /*
+   * 点名坏了哪几片。
+   *
+   * 原先只报「存档损坏,已隔离修复」—— 2.6 秒后这条就散了,而**玩家真正需要的那条事实**
+   * (哪一片坏了)只留在设置页里,得自己翻进去才看得到。实测:坏 `player` 分片后,
+   * 首页与顶栏一个字都不提,玩家看到的是「神人境」悄悄变回「炼气一层」,
+   * 除了这条几秒的提示之外没有任何解释。
+   *
+   * 分片名走 STORE_NAMES(与设置页、欢迎页、导出回执同一张表),漏一条会印内部 id。
+   * 上限截 3 个再报个数:15 片全坏时全列出来会把一条提示挤成五行,
+   * 而「哪儿都坏了」与「坏了哪几片」在那时候是同一件事 —— 详情仍在设置页。
+   */
+  const NAMES = corrupted.slice(0, 3).map(id => STORE_NAMES[id] ?? id)
+  const more = corrupted.length > NAMES.length ? ` 等 ${corrupted.length} 处` : ''
+  useUiStore().toast(`存档损坏 · ${NAMES.join('、')}${more} · 已隔离`, 'warn')
 }
 
 // SW 只在生产构建的网页部署上注册。dev 下会缓存 HMR 产物;
