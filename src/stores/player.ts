@@ -1007,7 +1007,13 @@ export const usePlayerStore = defineStore(
             metAt: asFiniteNumber(b.metAt, Date.now(), 0),
             fallen: b.fallen === true,
             departed: b.departed === true,
-            doneEvents: asStringArray(b.doneEvents),
+            /*
+             * 已完成事件是集合:去重。消费方都按集合用(`new Set(...)` 判「是否已走过」、
+             * `includes` 挡重播),故重复项不影响玩法,只白白撑大存档 ——
+             * 坏档塞五千条同一 id 实测全留。写入侧 `daoluService` 有 `includes` 闸,
+             * 重复只可能来自坏档。
+             */
+            doneEvents: [...new Set(asStringArray(b.doneEvents))],
             /*
              * 道侣机缘的触发判据是 `b.opportunities < b.nextEventAt`,
              * 而 `nextEventAt` 由 `opportunities + EVENT_GAP` 推出来(每 6 次重排一次)。
