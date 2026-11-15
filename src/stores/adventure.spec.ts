@@ -659,3 +659,24 @@ describe('际遇记忆 · 读档守卫', () => {
     expect(m!.times, 'times 没夹到一千').toBeLessThanOrEqual(1000)
   })
 })
+
+/**
+ * 待再靖表去重。
+ *
+ * 同段的 `unlocked` / `cleared` / `mortalCleared` 都用 `[...new Set(...)]`，
+ * 只有 `revived` 漏了 —— 坏档塞三条重复会让它与 `cleared` 的**互斥关系**对不上
+ * （同一地界不能既已靖又待再靖），也白白撑大存档。
+ *
+ * 写入侧（`markRevived`）有 `includes` 闸，故重复只可能来自坏档。
+ *
+ * 故障注入：去掉 `[...new Set(...)]` → 本条红（得三条）。
+ */
+describe('妖气复聚 · 待再靖表去重', () => {
+  it('重复项只留一条,正常项原样', () => {
+    const a = useAdventureStore()
+    a.cleared = [] as never
+    a.revived = ['qingyun', 'qingyun', 'qingyun'] as never
+    a.sanitize()
+    expect(a.revived, '重复项没去重').toEqual(['qingyun'])
+  })
+})

@@ -315,7 +315,16 @@ export const useAdventureStore = defineStore(
       if (unlocked.value.length === 0) unlocked.value = ['qingyun']
       mortalCleared.value = [...new Set(asStringArray(mortalCleared.value))]
       cleared.value = [...new Set(asStringArray(cleared.value))].filter(id => !!regionDef(id))
-      revived.value = asStringArray(revived.value).filter(id => !!regionDef(id) && !cleared.value.includes(id))
+      /*
+       * 与同段其他三张表同一口径:先按目录过滤、再去重。
+       *
+       * 写入侧(`markRevived`)有 `includes` 闸,故重复只可能来自坏档;
+       * 而 `revived` 与 `cleared` 是**互斥**关系(同一地界不能既已靖又待再靖),
+       * 留着重复项会让两边条数对不上,也白白撑大存档。
+       */
+      revived.value = [...new Set(asStringArray(revived.value))].filter(
+        id => !!regionDef(id) && !cleared.value.includes(id)
+      )
       /*
        * 通关时刻要按**时间戳**修形,不能只保底。
        *
