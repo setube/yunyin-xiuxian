@@ -85,6 +85,8 @@ interface Yields {
   /** 溢出件数 = 期望件数 − 6,读自归来卷轴;吃模式倍率,不受 flat 尘污染 */
   overflowCount: number
   pills: number
+  /** 结算后历练会话是否仍在途:长档推进不足整程时该为 true */
+  sessionRunning: boolean
 }
 
 const invPills = (): number =>
@@ -104,7 +106,9 @@ function runOnce(mode: 'normal' | 'deep' | 'prolonged' | 'marathon' | 'deepExped
   return {
     page: Math.max(0, useResourcesStore().page - beforePage),
     overflowCount: overflowOf(summary.notes),
-    pills: invPills() - beforePills
+    pills: invPills() - beforePills,
+    /** 结算后会话是否仍在途(长档推进不足整程时该为 true) */
+    sessionRunning: useAdventureStore().session !== null
   }
 }
 
@@ -163,9 +167,16 @@ describe('离线长档(8h / 16h)吃同一把倍率,且不越过洞府封顶', ()
     // 同为 8h 结算,只差档位倍率 3.6 vs 3.0
     expect(capped.page).toBeLessThan(anchor.page * 1.5)
     expect(capped.pills).toBeLessThan(anchor.pills * 1.5)
-    // 会话剩余 16h,离线只推进 8h:不该被判「历练完成」
-    const summary = settleOffline(Date.now())
-    expect(summary).not.toBeNull()
+    /*
+     * 会话剩余 16h、离线只推进 8h:不该判「历练完成」。
+     *
+     * 原先这里是一句 `settleOffline(Date.now())` 加「非 null」—— 而 `runOnce`
+     * 内部刚结算过一次,那句话只是碰巧还能跑第二次(结算从前不盖 `lastActiveAt`);
+     * 修「同一段时间可被重复结算」之后它返回 null。
+     *
+     * 本意要验的是**会话推进 8h 之后是否仍在途**,故让 `runOnce` 直接带回来。
+     */
+    expect(capped.sessionRunning, '8h 推进不该把 16h 的行程判完').toBe(true)
   })
 
   it('16h 档配 8h 洞府:归来卷轴写明这一程还没走完,并给出剩余时长', () => {
