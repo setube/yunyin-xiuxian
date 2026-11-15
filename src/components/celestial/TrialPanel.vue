@@ -22,18 +22,20 @@
       </p>
       <button
         class="btn-seal mt-2 w-full !py-2 !text-[12px]"
-        :disabled="endgame.dailyDoneDay === daily.day || busy !== null || endgame.daoSource < CHALLENGE_ENTRY_COST"
+        :disabled="dailyPending || endgame.dailyDoneDay === daily.day || busy !== null || endgame.daoSource < CHALLENGE_ENTRY_COST"
         :title="busy?.reason ?? (endgame.dailyDoneDay !== daily.day && endgame.daoSource < CHALLENGE_ENTRY_COST ? `道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)}` : undefined)"
         @click="goDaily"
       >
         {{
-          endgame.dailyDoneDay === daily.day
-            ? '今日已完成'
-            : busy
-              ? `应 战(${busy.reason})`
-              : endgame.daoSource < CHALLENGE_ENTRY_COST
-                ? `应 战(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
-                : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+          dailyPending
+            ? '推演中'
+            : endgame.dailyDoneDay === daily.day
+              ? '今日已完成'
+              : busy
+                ? `应 战(${busy.reason})`
+                : endgame.daoSource < CHALLENGE_ENTRY_COST
+                  ? `应 战(道源尚差 ${daoSourceShortText(CHALLENGE_ENTRY_COST, endgame.daoSource)} · 需 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
+                  : `应 战(道源 ${CHALLENGE_ENTRY_COST} · 余 ${formatNum(endgame.daoSource)})`
         }}
       </button>
     </div>
@@ -365,19 +367,37 @@
     return CELESTIAL_WORLDS.find(w => w.id === id)
   }
 
+  /**
+   * 应战在途:挡住 await 期间的重入。
+   *
+   * `goDaily` 开头要 `await todayChallengeAsync()` —— 每次现算当日题(六个流派各跑 8 场),
+   * 实测 30~257ms;而扣道源发生在 await **之后**。这期间按钮仍是可点态
+   * (置灰靠的是 `busy`,那是「别的活动在途」,不含这一笔),于是连点两下就是两笔入界费。
+   * 实测同一帧点三下:1200 → 1155,扣了 45 而不是 15。
+   *
+   * 与「导出存档防连点」「转世交割单开头取走」同一类:异步动作必须在**进入时**就置位。
+   * 置位放在 await 之前、复位放在 finally —— 算不出题(返回 null)时也要能再点。
+   */
+  const dailyPending = ref(false)
   async function goDaily(): Promise<void> {
-    // 现取当日题,不用 daily.value 缓存:驻足跨午夜时它可能仍是昨天那题
-    const current = await todayChallengeAsync()
-    if (!current) return
-    const result = undertakeDaily(current)
-    if (result) {
-      emit('report', {
-        title: result.title,
-        cleared: result.report.cleared,
-        markText: result.markText,
-        rows: result.report.rows,
-        reward: result.rewardDaoSource
-      })
+    if (dailyPending.value) return
+    dailyPending.value = true
+    try {
+      // 现取当日题,不用 daily.value 缓存:驻足跨午夜时它可能仍是昨天那题
+      const current = await todayChallengeAsync()
+      if (!current) return
+      const result = undertakeDaily(current)
+      if (result) {
+        emit('report', {
+          title: result.title,
+          cleared: result.report.cleared,
+          markText: result.markText,
+          rows: result.report.rows,
+          reward: result.rewardDaoSource
+        })
+      }
+    } finally {
+      dailyPending.value = false
     }
   }
 
