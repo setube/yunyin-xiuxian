@@ -99,7 +99,21 @@ export const POWER_STAT_WEIGHTS: Partial<Record<AnyStatKey, number>> = {
 /** 五维评级:每维返回 terms,贡献之和恰等于该维得分;星级只是得分跨过阈值的结果。 */
 export function ratePower(stats: FinalStats): PowerRating {
   const m: StatMods = stats.mods
-  const v = (k: Parameters<typeof modOf>[1]): number => Math.max(0, modOf(m, k))
+  /*
+   * `Math.max(0, x)` 挡不住 NaN —— 它原样穿过(AGENTS.md 反复点过的那条)。
+   * 而 `mods` 是各大来源合并出来的公共汇合点,任一处混进坏值,这里会把 NaN 一路
+   * 送进 score:界面 `score.toFixed(2)` 印出「NaN」,而同一份数据经
+   * `ratingGauge` 又是 0.00 —— 面板同一个数字两种说法。
+   *
+   * 实测:`(mods as any).attackPct = NaN` 后,`ratePower` 的 attack.score 是 NaN,
+   * `ratePowers` 的 gauge.score 是 0。
+   * 正常路径造不出 NaN(各 modSource 都由数据表派生,装备词条的 roll 过
+   * `asFiniteNumber(a.roll, 0, 0, 1)`),故这是第二道防线,不是可达分支。
+   */
+  const v = (k: Parameters<typeof modOf>[1]): number => {
+    const raw = modOf(m, k)
+    return Number.isFinite(raw) ? Math.max(0, raw) : 0
+  }
   const term = (label: string, raw: number, weight = 1): PowerTerm => ({ label, raw, contribution: raw * weight })
 
   const critRaw = v('critRate')

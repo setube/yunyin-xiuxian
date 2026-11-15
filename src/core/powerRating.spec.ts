@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { ratePower, ratingStars } from './powerRating'
 import { starsText } from './buildAdvisor'
+import { ratingGauges } from '@/ui/ratingGauge'
 import { STAT_NAMES } from '@/data/statNames'
 import type { FinalStats, StatMods } from '@/types'
 
@@ -179,4 +180,53 @@ describe('五星文案 · 小数与跨模块一致', () => {
     }
   })
 })
+})
+
+/**
+ * 坏值不许穿到五维得分上。
+ *
+ * `v()` 原先写的是 `Math.max(0, modOf(m, k))` —— 而 `Math.max` **挡不住 NaN**,
+ * 它原样穿过(AGENTS.md 反复点过的那条)。`mods` 是各大来源合并出来的公共汇合点,
+ * 任一处混进坏值,NaN 就会一路进 score:界面 `score.toFixed(2)` 印出「NaN」。
+ *
+ * 实测(修复前):把 `mods.attackPct` 写成 NaN,
+ *   `ratePower` 的 attack.score = **NaN**
+ *   同一份数据经 `ratingGauges` 的 gauge.score = **0**
+ * 面板上同一个数字两种说法 —— 而 `ratingGauge` 那边其实已经用 `Number.isFinite`
+ * 兜过一道,只有 `ratePower` 漏了。
+ *
+ * 正常路径造不出 NaN(各 modSource 都由数据表派生,装备词条的 roll 过
+ * `asFiniteNumber(a.roll, 0, 0, 1)`),故这是第二道防线,不是可达分支;
+ * 但它便宜,而且让两个算出同一件事的地方口径一致。
+ */
+describe('五维评级 · 坏值不许穿到得分', () => {
+  it('mods 里某一项是 NaN 时,该维得分是有限数', () => {
+    const r = ratePower(statsWith({ attackPct: NaN } as StatMods))
+    const atk = r.labels.find(l => l.key === 'attack')!
+    expect(Number.isFinite(atk.score), 'NaN 穿过来了 —— 界面会印「NaN」').toBe(true)
+    expect(atk.score.toFixed(2), 'toFixed 不该印出 NaN').not.toContain('NaN')
+  })
+
+  it('所有维度的得分与明细贡献都是有限数', () => {
+    const bad = { attackPct: NaN, defensePct: NaN, speed: NaN, lifesteal: NaN } as StatMods
+    const r = ratePower(statsWith(bad))
+    for (const l of r.labels) {
+      expect(Number.isFinite(l.score), `${l.name} 得分不是有限数`).toBe(true)
+      for (const t of l.terms) {
+        expect(Number.isFinite(t.raw), `${l.name}/${t.label} 的 raw 不是有限数`).toBe(true)
+        expect(Number.isFinite(t.contribution), `${l.name}/${t.label} 的贡献不是有限数`).toBe(true)
+      }
+    }
+  })
+
+  it('与 ratingGauge 口径一致:同一份数据,两边说的得分相同', () => {
+    /*
+     * 这是本条的真正价值:两个模块各算一遍同一件事(`ratingGauge` 早就用
+     * `Number.isFinite` 兜过,`ratePower` 没有),分叉时光看各自的判据都发现不了。
+     */
+    const r = ratePower(statsWith({ attackPct: NaN } as StatMods))
+    const gauge = ratingGauges(r).find(g => g.key === 'attack')!
+    const label = r.labels.find(l => l.key === 'attack')!
+    expect(label.score, 'ratePower 与 ratingGauge 对同一份数据给了两个数').toBe(gauge.score)
+  })
 })
