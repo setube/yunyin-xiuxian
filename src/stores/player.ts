@@ -982,8 +982,12 @@ export const usePlayerStore = defineStore(
          * 玩家看到的是启动即崩,而不是被修好的档。
          * 实测:`lives: undefined` 或 `null` 且身上有道侣时必抛。
          * 用 asArray 兜一下:非数组一律当「无履历」,判据不成立、道侣照常保留(与旧档同义)。
+         *
+         * 还要容忍 `reincarnation` 本身为 null —— 上面那条只兜住了 `lives` 是坏值,
+         * 而整个对象是 null 时 `.lives` 这一句就先抛了(实测 `reincarnation: null` +
+         * 身上有道侣即崩)。用可选链:对象缺失同样按「无履历」处理。
          */
-        const lives = asArray<{ at?: unknown }>(reincarnation.value.lives)
+        const lives = asArray<{ at?: unknown }>(reincarnation.value?.lives)
         const lastLifeAt = lives[lives.length - 1]?.at
         if (typeof lastLifeAt === 'number' && Number.isFinite(lastLifeAt) && bond.value.metAt < lastLifeAt) {
           bond.value = null
