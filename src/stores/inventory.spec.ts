@@ -687,3 +687,26 @@ describe('法宝槽位 · 超编时界面与生效同批', () => {
     expect(kept.filter(id => activeIds.includes(id)).length, '祭炼后一件正在生效的都没保住').toBeGreaterThan(0)
   })
 })
+
+/**
+ * 丹药存量须封顶。
+ *
+ * `addPill` 不设数量上限,而 `sanitize` 原先只滤「野 id 与 <=0」——
+ * 坏档写 `1e300` 会被原样留下,而 `InventoryView` 那两处是裸插值
+ * (`×{{ row.count }}`、`持有 ×{{ currentPill.count }}`),会印成「×1e+300」。
+ *
+ * 上界与「已重铸 / 已转移」同用 `EQUIP_COUNTER_MAX`(一亿):那里的注释写着
+ * 「取值不能凭够用定」,因为 `addPill` 同样没有天然上限。
+ *
+ * 故障注入:去掉 `Math.min(EQUIP_COUNTER_MAX, ...)` → 本条红。
+ */
+describe('丹药存量 · 读档封顶', () => {
+  it('坏档写 1e300,读档后夹到一亿', () => {
+    const inv = useInventoryStore()
+    inv.pills = { p_jvqisan: 1e300, p_jvqidan: 5 } as never
+    inv.sanitize()
+    expect(inv.pills['p_jvqisan'], '丹药存量没封顶 —— 界面会印出「×1e+300」').toBeLessThanOrEqual(1e9)
+    expect(inv.pills['p_jvqisan'], '夹得太狠,正常存量会被误伤').toBeGreaterThan(1e6)
+    expect(inv.pills['p_jvqidan'], '正常存量不该被动').toBe(5)
+  })
+})
