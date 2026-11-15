@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { MAX_MAJOR } from '@/data/realms'
+import { EQUIP_LEVEL_SANITIZE_CAP } from '@/data/buildings'
+import { EQUIP_MAX_LEVEL_BASE, FORGE_LEVEL_PER_CAP } from '@/data/constants'
 import { REGIONS } from '@/data/regions'
 import { QUALITIES } from '@/data/qualities'
 import { LIFE_THEMES } from '@/data/lifeThemes'
@@ -173,5 +175,27 @@ describe('数据完整性 · 内容门槛必须可达', () => {
     expect(MAX_REGION_TIER).toBeGreaterThan(0)
     expect(MAX_QUALITY_RANK).toBe(8)
     expect(MAX_MAJOR).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * 装备等级有两个上限,公式必须一致。
+ *
+ * `data/buildings.ts` 的 `EQUIP_LEVEL_SANITIZE_CAP`(读档修形用,取满级)
+ * 与 `core/forge.ts` 的 `equipLevelCap()`(执行侧用,取当前级)是同一个算式
+ * —— 但 data 层不能 import core 层,只能各写一份。
+ *
+ * 两份靠人工同步,改一处忘另一处就会分叉:修形比执行宽 → 坏档里超上限的装备能留下来;
+ * 修形比执行窄 → 合法装备被误伤到上限。
+ *
+ * 判据用**纯数据**算一遍(不经 store):满级炼器台的 `maxLevel` 代入
+ * `forgeCapBonus` 的同一个公式,结果须等于 `EQUIP_LEVEL_SANITIZE_CAP`。
+ */
+describe('数据完整性 · 装备等级上限两处同式', () => {
+  it('满级炼器台下,修形上限与执行上限用同一算式', () => {
+    const forge = BUILDINGS.find(b => b.id === 'forge')
+    expect(forge, '炼器台建筑不存在').toBeTruthy()
+    const execAtMax = EQUIP_MAX_LEVEL_BASE + Math.floor(forge!.maxLevel / FORGE_LEVEL_PER_CAP)
+    expect(execAtMax, '两处公式已分叉:改了一处忘另一处').toBe(EQUIP_LEVEL_SANITIZE_CAP)
   })
 })
