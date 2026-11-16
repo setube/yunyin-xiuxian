@@ -189,8 +189,8 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 
 - **零发现不提交。** 没找到缺陷的那一轮，没有可交付物；把「查过且稳」并入已有的查稳表，
   单条一行，不另起一节。
-- **CHANGELOG 归用户价值**（玩家能感知的变化），**plans 归根因与取舍**（维护者才关心的）。
-  两边都写同一件事就是赘述。
+- **CHANGELOG 归用户价值**（玩家能感知的变化），**plans 归根因与取舍**（维护者才关心的）。两边都写同一件事就是赘述。
+- **CHANGELOG 详细，对外简短**：`CHANGELOG.md` 收全部版本，记根因与实测（给维护者）；`RELEASE_NOTES.md` **只放最新一版**，一行一条的玩家可感变化（给 Release 页）。历史版本的正文已固化在各自的 Release 页上，仓库里不重复存。
 - 文档里**不写命令输出**。要证明什么，写成一句结论，别贴终端记录。
 - 一次性文档（设计稿）在**实现落地后删除**：代码就是事实源。若某个 spec 需要读它做校验
   （如 `tribulationDoc.spec` 读界膜设计稿），那才保留，并在文档开头写明被谁读。
@@ -232,6 +232,6 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
   - `offlineCap.spec.ts` — 离线上限生效，混沌道祖 5 条离线台词有限。
 - **惯用模式**：TTL / 去重淘汰用 `vi.useFakeTimers`。
 - **QA 脚本**：`test-report.mjs`（按系统分桶，失败/整文件失败/未归类/文档例数/vitest 非零退出即退出 1）；`ui-smoke.mjs`（375x812 交互冒烟，pageerror + 坏值泄漏即失败，跳过破坏性按钮）。**坏值模式表与 edge-states 同口径，两处都要认**：`NaN/Infinity/undefined` 只覆盖「非有限」那一类，还须有 `Invalid Date`、`[object Object]`、以及**用正则**匹配的科学计数 `[0-9]e\+?[0-9]{2,}`（裸插值带 `+`、formatGN 兜底不带，字面量 includes 永远匹配不到任意指数）。两边各写各的表历史上就分叉过 —— `edgeStatesShape.spec` 拿同一批样本喂两张表比对结论；`layout-check.mjs`（38 项自检：无横向溢出、双栏 dvh 固定、触控目标 ≥28px、模态触控巡逻、tab-rail 粘性、无纵向挤压/孤行标点/数字单位断行、a11y 图标 aria；约 10 分钟，仅本地）；`focus-check.mjs`（**切页焦点落回 main** + **弹窗内 Tab/Shift+Tab 不逃逸** + **17 页可点元素都能 Tab 到** + **首启两页的键盘可达性**）。首启那两页必须用**没存档的新上下文**：17 页那份清单铺了 lateSlices，而路由守卫 `if (game.started) return { name: 'home' }` 会把带存档的访问弹回首页，故 `/welcome` 与 `/create` 从来不在清单里，它们的可点元素（同意勾选、随机道号、逆天改命、踏入仙途）也从未验过能不能 Tab 到；`edge-states` 能进这两页但只验状态解释与触控尺寸。走法是「点开始 → Tab 到同意勾选 → 空格勾上 → 同意并开始 → 等传送动画」，等待须 ≥3.5s（`enterTimer` 2500ms，等短了停在 /welcome 会让建号页那段整段不执行）。判据不止 tabIndex，还要回读 `checked` —— 只验能不能聚焦、不验勾选逻辑，勾选坏了照样绿。最后那一条是后加的：此前只验「焦点在哪」不验「能不能到」，真有 17 个可点元素 Tab 不到 —— 一查全是 `role="tab"` 的 roving tabindex（整个 tablist 只留一个 `tabindex=0`，靠左右键走），那是 WAI-ARIA 的正确做法。故判据须**排除规矩的 roving**（在 `role=tablist` 里 + 自己是 `role=tab` + 同组另有 `tabindex=0` 的兄弟，三条同时成立才豁免），否则报的全是假阳性；而豁免条件写松了又会把真缺陷一起漏掉 —— `focusShape.spec` 五个方向钉住它。`offline-check.mjs`（SW 接管 + 离线启动 + 发布接管）；`treasure-check.mjs` / `world-check.mjs` / `orb-check.mjs` / `detail-geometry.mjs`（形制实测：量的是真实 DOM 上的层级、几何、命中与读屏属性，单测只能证明「源码里写了那一句」）。CI 对 `test-report` 限 maxWorkers=4。
-- **Git 保护**:main 仅通过 PR merge,禁止 force-push;v* release tag 只由发布流水线打。PR 校验 CI = 类型检查 + lint + 单测 + 生产构建全部绿。**CHANGELOG.md 需更新**(新增 / 调整与优化 / 修复 三节,中文一行式,格式 `## [ver] — date · 副标题`)。
+- **Git 保护**:main 仅通过 PR merge,禁止 force-push;v* release tag 只由发布流水线打。PR 校验 CI = 类型检查 + lint + 单测 + 生产构建全部绿。**CHANGELOG.md 需更新**(新增 / 调整与优化 / 修复 三节,格式 `## [ver] — date · 副标题`);`RELEASE_NOTES.md` 换成当前版本那一节(只留最新)。
 - **历史线性**:main 历史必须线性,禁止 merge 提交。合入 PR 一律用 `gh pr merge --rebase`,逐提交保留分支历史——**默认不要用 `--squash`**:合入用 squash 会把分支上那几个「可独立评审」的提交并成一个,提交条目在 main 历史里就没了(除非用户明确要压成单个提交);严禁「Create a merge commit」/ `gh pr merge --merge`(会在 main 上引入双亲 merge 节点,破坏线性)。同步主干一律 `git rebase main`,禁止「Merge main into …」式提交(`.github/workflows/history-linear.yml` 会把这类提交判为失败,其权威合并期闸门是分支规则集「Require a linear history」)。
 - **PR 承载多 commit**：一个 PR 可承载多个 commit；PR 内每个 commit 都须能被独立评审，且 PR 作为整体说明改动主题。

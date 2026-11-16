@@ -218,14 +218,35 @@ jobs:
         continue-on-error: true
 
       # 小节标题形如 `## [1.41.0] …`
-      - name: 生成 Release 说明(取 CHANGELOG 该版本小节)
+      # 优先取 RELEASE_NOTES.md(对外简版),取不到再回退 CHANGELOG.md(内部详版)。
+      # 两者分开:CHANGELOG 给维护者看根因与实测,Release 页给玩家看变化。
+      # RELEASE_NOTES.md 只放最新一版,故这里必须按 tag 版本号精确匹配 —— 对不上就走回退,
+      # 历史 tag 重跑仍有正文。
+      - name: 生成 Release 说明(优先 RELEASE_NOTES,回退 CHANGELOG)
         run: |
           VER="${GITHUB_REF_NAME#v}"
-          awk -v v="[$VER]" 'BEGIN{in_sec=0} /^## \[/{ if(in_sec) exit; if(index($0,v)==4) in_sec=1; next } in_sec{print}' CHANGELOG.md > "$GITHUB_WORKSPACE/.release-body.md"
+          extract() {
+            awk -v v="[$VER]" 'BEGIN{in_sec=0}
+              /^## \[/{
+                if (in_sec) exit
+                # 版本号后必须是空格或 ],避免 1.47.0 命中 1.47.01
+                if (index($0, v) == 4 && (substr($0, 4 + length(v), 1) ~ /[ \]]/)) in_sec = 1
+                next
+              }
+              in_sec{print}' "$1"
+          }
+          if [ -f RELEASE_NOTES.md ]; then
+            extract RELEASE_NOTES.md > "$GITHUB_WORKSPACE/.release-body.md"
+            SRC=RELEASE_NOTES.md
+          fi
           if [ ! -s "$GITHUB_WORKSPACE/.release-body.md" ]; then
-            echo "::warning::CHANGELOG.md 里找不到 `## [$VER]` 小节,Release 备注将为空"
+            extract CHANGELOG.md > "$GITHUB_WORKSPACE/.release-body.md"
+            SRC=CHANGELOG.md
+          fi
+          if [ ! -s "$GITHUB_WORKSPACE/.release-body.md" ]; then
+            echo "::warning::RELEASE_NOTES.md 与 CHANGELOG.md 里都找不到 `## [$VER]` 小节,Release 备注将为空"
           else
-            echo "已从 CHANGELOG 提取 [$VER] 小节,共 $(wc -l < "$GITHUB_WORKSPACE/.release-body.md") 行"
+            echo "已从 $SRC 提取 [$VER] 小节,共 $(wc -l < "$GITHUB_WORKSPACE/.release-body.md") 行"
           fi
 
       - name: 创建 GitHub Release
