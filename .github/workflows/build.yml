@@ -235,15 +235,20 @@ jobs:
               }
               in_sec{print}' "$1"
           }
+          # 判「有没有实质内容」不能只看 -s:只有空行时文件非空但正文是空白,
+          # 那样会跳过回退,Release 页发出去是空的。数一遍非空白行。
+          has_content() {
+            [ -f "$1" ] && grep -q '[^[:space:]]' "$1"
+          }
           if [ -f RELEASE_NOTES.md ]; then
             extract RELEASE_NOTES.md > "$GITHUB_WORKSPACE/.release-body.md"
             SRC=RELEASE_NOTES.md
           fi
-          if [ ! -s "$GITHUB_WORKSPACE/.release-body.md" ]; then
+          if ! has_content "$GITHUB_WORKSPACE/.release-body.md"; then
             extract CHANGELOG.md > "$GITHUB_WORKSPACE/.release-body.md"
             SRC=CHANGELOG.md
           fi
-          if [ ! -s "$GITHUB_WORKSPACE/.release-body.md" ]; then
+          if ! has_content "$GITHUB_WORKSPACE/.release-body.md"; then
             echo "::warning::RELEASE_NOTES.md 与 CHANGELOG.md 里都找不到 `## [$VER]` 小节,Release 备注将为空"
           else
             echo "已从 $SRC 提取 [$VER] 小节,共 $(wc -l < "$GITHUB_WORKSPACE/.release-body.md") 行"
