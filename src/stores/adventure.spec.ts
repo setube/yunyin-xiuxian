@@ -680,3 +680,54 @@ describe('妖气复聚 · 待再靖表去重', () => {
     expect(a.revived, '重复项没去重').toEqual(['qingyun'])
   })
 })
+
+/**
+ * 先手读数的两个速度也要有上界。
+ *
+ * `sanitizeFirstMove` 原先只挡「非有限」,而 `asFiniteNumber` 放行任意有限值 ——
+ * 坏档写 `enemySpeed: 1e300` 原样进 `battleAnalysis.firstMoveReadout`,
+ * 界面上就是「被抢先 · 我 1.02 < 敌 1e+300」下一行「尚差 1e+302%」。
+ * 那是条玩家永远补不上的建议,比不显示更糟。
+ *
+ * 真实量级:玩家速度 = `1 + speed 词条`(满配两三倍),敌方取 data/enemies 那 132 条,
+ * 实测 0.65~1.45。上界 100 宽出四十倍。
+ *
+ * 越界**整项丢弃**而不是夹到 100:夹完仍会印「尚差 9900%」。
+ * 故障注入:把 `asBattleSpeed` 的 `v > BATTLE_SPEED_MAX` 那行删掉 → 前两条红。
+ */
+describe('先手读数 · 速度上界', () => {
+  const sanitized = (playerSpeed: unknown, enemySpeed: unknown) => {
+    const a = useAdventureStore()
+    a.lastBattle = {
+      enemyName: '试敌',
+      enemyIcon: 'sword',
+      result: {
+        win: false,
+        log: [],
+        rounds: 3,
+        playerHpPct: 0,
+        firstMove: { playerFirst: false, playerSpeed, enemySpeed }
+      }
+    } as never
+    a.sanitize()
+    return (a.lastBattle as { result?: { firstMove?: { playerSpeed: number; enemySpeed: number } } } | null)?.result
+      ?.firstMove
+  }
+
+  it('有限巨值不再进读数(否则印出「尚差 1e+302%」)', () => {
+    expect(sanitized(1.02, 1e300), '越界速度该整项丢弃').toBeUndefined()
+    expect(sanitized(1e300, 1.1), '玩家侧越界同样丢').toBeUndefined()
+  })
+
+  it('正常读数原样保留(修形非空转)', () => {
+    expect(sanitized(1.02, 1.1)).toEqual({ playerFirst: false, playerSpeed: 1.02, enemySpeed: 1.1 })
+    expect(sanitized(1.02, 100), '恰在上界上仍算正常').toEqual({ playerFirst: false, playerSpeed: 1.02, enemySpeed: 100 })
+  })
+
+  it('非正数与上界之外同退路', () => {
+    expect(sanitized(-3, 1.1), '负速只可能来自坏档').toBeUndefined()
+    expect(sanitized(0, 1.1)).toBeUndefined()
+    expect(sanitized(1.02, 101)).toBeUndefined()
+    expect(sanitized(Number.POSITIVE_INFINITY, 1.1)).toBeUndefined()
+  })
+})
