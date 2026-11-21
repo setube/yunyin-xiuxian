@@ -331,3 +331,74 @@ describe('炼丹连开计划 · 一次开炉数封顶', () => {
     expect(h0 - res.herbOf(g)).toBeGreaterThan(0)
   })
 })
+
+/**
+ * 整批只判一次成就,结果与逐枚判一致。
+ *
+ * 逐枚判的理由原本是「与连点 N 下等价」。等价在结果上成立 —— 成就与主线的判据读的是
+ * 计数器与境界,批量末尾判一次与逐次判同值(`grantReward` 不产丹药、不自动佩称号)。
+ * 差别只在代价:一次判定要扫 62 条成就、每条都建 store 引用,实测 1e4 次 4.1 秒。
+ *
+ * 判据钉两件事:**外部结果一致**(计数、解锁集合、丹药存量),以及**判定次数确实降下来了**
+ * (拿 spy 数 checkAchievements 被调的次数,而不是拿墙钟比 —— 机器快慢会整体平移)。
+ *
+ * 故障注入:把 usePill 的 `trackQuiet` 改回 `track`,第二条立刻红(判定次数变成 N 次)。
+ */
+describe('连服 · 成就判定整批只跑一次', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockRand = 0
+  })
+
+  /**
+   * 判定次数怎么数。
+   *
+   * 不能在模块命名空间上 spy `checkAchievements` —— 模块内部的直接调用走的是本地绑定,
+   * 绕开 spy(实测注掉整批收尾后仍是 0 次,判据成了空跑)。
+   * 改数 `quests.hasAchieved`:`checkAchievements` 对 62 条成就逐条调它,
+   * 而它挂在 **store 实例**上,每次调用都过属性查找 —— 数得到真次数。
+   */
+  const countChecks = (count: number) => {
+    const inv = useInventoryStore()
+    const quests = useQuestsStore()
+    inv.$patch({ pills: { [ID]: count } })
+    let seen = 0
+    const orig = quests.hasAchieved
+    const spy = vi.spyOn(quests, 'hasAchieved').mockImplementation(id => {
+      seen += 1
+      return orig.call(quests, id)
+    })
+    const eaten = usePillBatch(ID, count)
+    spy.mockRestore()
+    return { eaten, seen, perCheck: ACHIEVEMENTS.length }
+  }
+
+  it('不论连服几枚,成就扫描只跑一轮', () => {
+    const one = countChecks(2)
+    const many = countChecks(50)
+    // 一轮扫描 = 每条成就查一次;两枚与五十枚的轮数必须一样
+    const rounds = (r: { seen: number; perCheck: number }) => Math.round(r.seen / r.perCheck)
+    expect(one.eaten).toBe(2)
+    expect(many.eaten).toBe(50)
+    expect(
+      rounds(many),
+      `连服 50 枚扫了 ${rounds(many)} 轮成就(每轮 ${many.perCheck} 条)—— 又回到逐枚判定了`
+    ).toBeLessThanOrEqual(rounds(one) + 1)
+  })
+
+  it('外部结果与逐枚判一致:计数、存量、成就解锁都对得上', () => {
+    const inv = useInventoryStore()
+    const quests = useQuestsStore()
+    inv.$patch({ pills: { [ID]: 50 } })
+    expect(usePillBatch(ID, 50), '五十枚该一枚不剩地服下').toBe(50)
+    expect(quests.counter('pillsUsed'), '计数该按实服枚数入账').toBe(50)
+    expect(inv.pills[ID] ?? 0, '五十枚该服尽').toBe(0)
+    /*
+     * 成就本该在整批收尾那一刻就解锁 —— 数据表里 a_pill20 / a_pill100 读的是
+     * 「服用 N 枚丹药」这个计数器,50 枚已过 20 那档。
+     * 若收尾漏掉判定,成就要等引擎下一拍的 checkStateAchievements 才补上,
+     * 结果不丢但界面晚一拍;这里钉住「当场就在」。
+     */
+    expect(quests.achieved.length, '整批之后该有成就在当场解锁,不等引擎下一拍').toBeGreaterThan(0)
+  })
+})
