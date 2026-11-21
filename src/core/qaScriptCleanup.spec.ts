@@ -22,7 +22,8 @@ const SCRIPTS = [
   'edge-states',
   'modal-patrol',
   'detail-geometry',
-  'offline-check'
+  'offline-check',
+  'ui-smoke'
 ] as const
 const src = (name: string): string => readFileSync(resolve(__dirname, '../../scripts', `${name}.mjs`), 'utf-8')
 
@@ -38,7 +39,11 @@ describe('QA 脚本 · 崩溃时也要把已收集的失败报出来', () => {
     it(`${name}:主体包在 try 里,异常进 failures,浏览器在 finally 关`, () => {
       const s = code(name)
       expect(s, `${name} 没有 try —— 中途抛错会让已收集的失败全部丢失`).toContain('try {')
-      expect(s, `${name} 的 catch 没把异常记成失败`).toMatch(/catch \(err\)[\s\S]{0,300}failures\.push\(/)
+      /*
+       * 收集容器有两种:多数脚本用 `failures`(字符串数组),
+       * ui-smoke 用 `errors`(带 where 的对象数组)。两者都是「与其余失败并列报出」。
+       */
+      expect(s, `${name} 的 catch 没把异常记成一条失败`).toMatch(/catch \(err\)[\s\S]{0,400}(failures|errors)\.push\(/)
       expect(
         s,
         `${name} 的 browser.close() 不在 finally 里 —— 崩了就不关浏览器`
@@ -74,5 +79,31 @@ describe('QA 脚本 · 服务器与浏览器都要在 finally 里关', () => {
 
   it('没有裸在块外的 server.close', () => {
     expect(CODE, '还留着裸的 server.close()').not.toMatch(/^\s*server\.close\(\)\s*$/m)
+  })
+})
+
+/**
+ * 夹具自检是「基准的基准」,不许用固定睡眠去量它。
+ *
+ * 原先两页各固定等 1200ms。实测 `--late` 连跑两次:一次报「雾隐长枪没出现」、
+ * 一次全过 —— 而单独打开行囊页时三样都在,1200ms 就够。差别只在于这条脚本此前
+ * 已经跑过建号/夹具流程,页面忙闲不同。
+ *
+ * 固定睡眠量的是「加载中的一瞬」:它会报一个并不存在的夹具缺陷,
+ * 而真正的夹具坏了时又可能被同样的运气掩盖 —— 两头都错。
+ *
+ * 故障注入:把 waitForAny 换回 waitForTimeout(1200),这条红。
+ */
+describe('ui-smoke · 夹具自检等目标文本,不固定睡眠', () => {
+  const SRC = readFileSync(resolve(__dirname, '../../scripts/ui-smoke.mjs'), 'utf-8')
+
+  it('两页都用轮询等目标文本', () => {
+    expect(SRC, '找不到 waitForAny —— 又回到固定睡眠了').toContain('const waitForAny')
+    expect(SRC, '夹具自检里还留着 1200ms 固定等待').not.toMatch(/await page\.goto\(INDEX \+ '#' \+ '\/(inventory)?'[\s\S]{0,120}waitForTimeout\(1200\)/)
+  })
+
+  it('等不到时照实报,不静默跳过', () => {
+    // waitForAny 的 catch 只吞等超时,逐项判据仍会点出缺了哪几样
+    expect(SRC, '缺项仍该逐条报出来').toContain('没有出现在界面上')
   })
 })

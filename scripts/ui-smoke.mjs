@@ -216,6 +216,28 @@ async function settle() {
 }
 page.on('pageerror', e => errors.push({ where: 'boot', msg: String(e).slice(0, 300) }))
 
+/*
+ * 整段包 try/catch/finally —— 与其余实测脚本同一理由。
+ *
+ * 这份的汇总全部写在 `browser.close()` 之后(点击统计、死按钮清单、运行时异常、
+ * 点击量下限):任何一处 evaluate 超时都会让异常冒到顶层,那四类读数一条也出不来。
+ * 崩溃本身记进 errors,与其余失败并列报出。
+ */
+/*
+ * 计数放在 try 之前:汇总打印在块外,块内声明的 `let` 在块外看不见
+ * (实测包进 try 后立刻 `ReferenceError: clicked is not defined`)。
+ */
+let clicked = 0
+/**
+ * 每页各自点到了几次 —— 只打印进摘要,不设下限。
+ *
+ * 不设下限是有原因的:这条脚本会真的点各种按钮,前序页面的点击会改变后续页的状态。
+ * 实测 /souls 与 /celestial 跑到时已经显示「需真仙境」的锁定形态(main 里只剩 13 个字、
+ * 一个按钮都没有)——那是**脚本自己改出来的状态**,不是页面缺陷,给它们设下限只会误报。
+ * 留着这份读数是为了排查:某页长期 0 次时,人一眼能看出冒烟在那里是空跑的。
+ */
+const clickedPerRoute = new Map()
+try {
 await page.goto(INDEX, { waitUntil: 'load' })
 if (!LATE) {
   await page.getByRole('button', { name: /开\s*始\s*游\s*戏/ }).first().click()
@@ -246,11 +268,30 @@ if (LATE) {
     ['已装备的头冠', '桃木簪'],
     ['轮回世数', '2 世'],
   ]
+  /*
+   * 两页各自**等到该出现的那几项真的出现**,不固定睡 1200ms。
+   *
+   * 原先固定等:实测 `--late` 连跑两次,一次「雾隐长枪没出现」、一次全过 ——
+   * 而单独打开行囊页时三样都在(1200ms 就够)。差别只在于这条脚本此前已经跑过
+   * 一段建号/夹具流程,页面忙闲不同。固定睡眠量「加载中的一瞬」,结果就是看运气:
+   * 它会报一个并不存在的夹具缺陷,而真正的夹具坏了时又可能被同样的运气掩盖。
+   */
+  const waitForAny = async (needles, timeout = 8000) => {
+    try {
+      await page.waitForFunction(
+        ns => ns.some(n => (document.body?.innerText || '').includes(n)),
+        needles,
+        { timeout }
+      )
+    } catch {
+      // 等不到就照实报,由下面的逐项判据点出缺了哪几样
+    }
+  }
   await page.goto(INDEX + '#' + '/', { waitUntil: 'load' })
-  await page.waitForTimeout(1200)
+  await waitForAny(['9.038兆', '2 世'])
   const homeText = await page.evaluate(() => document.body.innerText)
   await page.goto(INDEX + '#' + '/inventory', { waitUntil: 'load' })
-  await page.waitForTimeout(1200)
+  await waitForAny(['雾隐长枪', '桃木簪', '器灵尘 500'])
   const invText = await page.evaluate(() => document.body.innerText)
   const all = homeText + '\n' + invText
   for (const [what, needle] of expectSeen) {
@@ -258,16 +299,6 @@ if (LATE) {
   }
 }
 
-let clicked = 0
-/**
- * 每页各自点到了几次 —— 只打印进摘要,不设下限。
- *
- * 不设下限是有原因的:这条脚本会真的点各种按钮,前序页面的点击会改变后续页的状态。
- * 实测 /souls 与 /celestial 跑到时已经显示「需真仙境」的锁定形态(main 里只剩 13 个字、
- * 一个按钮都没有)——那是**脚本自己改出来的状态**,不是页面缺陷,给它们设下限只会误报。
- * 留着这份读数是为了排查:某页长期 0 次时,人一眼能看出冒烟在那里是空跑的。
- */
-const clickedPerRoute = new Map()
 /**
  * 只点最上层弹窗:每轮重取 z 最高的可见弹窗,走完再 Esc 回下层;按钮打一次性标记,重排/替换不重复点。
  * 固定取第一扇会点到被详情盖住的底层按钮,误报死按钮。
@@ -581,7 +612,12 @@ for (const route of ROUTES) {
   }
 }
 
-await browser.close()
+} catch (err) {
+  // 中途崩了:记进 errors 与其余失败并列 —— 不吞掉它,也不让它盖掉已经点过的读数
+  errors.push({ where: 'smoke', msg: `冒烟中途中断:${err instanceof Error ? err.message.split('\n')[0] : String(err)}` })
+} finally {
+  await browser.close().catch(() => {})
+}
 console.log(`\n界面冒烟:${ROUTES.length} 页,点击 ${clicked} 次(导航 ${navClicked.size} 条边;按钮每页上限 ${DEPTH})`)
 /*
  * 逐页读数:某页 0 次时人一眼看得出来(不判失败,理由见 clickedPerRoute 的注释)。
