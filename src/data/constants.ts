@@ -345,6 +345,19 @@ export const EQUIP_DROP_CHANCE_CAP = 0.9
 export const PILL_DROP_CHANCE = 0.08
 /** 双丹(一炉得二)概率封顶;结算(pillService.craftPill)直接用展示路径 craftability.bonusChanceWithYield 的结果 */
 export const PILL_SECOND_CAP = 0.8
+/**
+ * 一次「炼满」最多开几炉。
+ *
+ * 炉数只受材料限制,而灵草没有真实上界 —— 读档自愈用的上界是 1e12(按低速产出定的)。
+ * 坏档正落在那个数上:25000 炉实测 5.7 秒、2.5e11 炉要跑几十分钟,
+ * 点一下「开炉 ×N」主线程就全被占住,心跳与写档一起停摆。
+ *
+ * 上界取 500:一炉出一到两枚丹,500 炉已经是几百枚丹药一笔到账,
+ * 比任何真实存量都宽(灵草每小时产几十株,500 炉要攒上几十小时)。
+ * 超出时界面照实报「可炼 N 炉」,按钮只开到上界 —— 多按几次就是,
+ * 不把「材料够多少」这件事说成「一次能炼多少」。
+ */
+export const CRAFT_BATCH_MAX = 500
 export const PAGE_DROP_CHANCE = 0.12
 export const ARTIFACT_DROP_CHANCE = 0.015
 /** 重复到手法宝折算的悟道点(loot.acquireArtifact);离线按期望件数入账(offline.ts) */
