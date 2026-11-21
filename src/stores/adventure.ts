@@ -36,6 +36,34 @@ const FOE_ORIGIN_EXTRA_MAX = 10
 
 /** 一场战斗的回合数上界:真实是两位到三位数,取一万已极宽 */
 const BATTLE_ROUNDS_MAX = 10_000
+
+/**
+ * 先手读数里两个速度的上界。
+ *
+ * 这两个数不是装饰:它们经 `battleAnalysis` 的 `firstMoveReadout` 直接进界面 ——
+ * 「被抢先 · 我 1.02 < 敌 1e+300」和紧随其后的「尚差 1e+302%」。
+ * 玩家速度的真实量级是 `1 + speed 词条`(满配也就两三倍),敌方取 `data/enemies`
+ * 那 132 条,实测 0.65~1.45,撑死不到 2。上界取 100 已比真实值宽四十倍,
+ * 越过的只可能来自坏档。
+ *
+ * 与 `stores/endgame` 的 `REPLAY_SPEED_MAX`(忆战快照,同样进界面读数)同一把尺 ——
+ * 那处的注释写着「真实量级在 1~3,取一百已极宽」。两处各写一份是因为分属两个分片、
+ * 各自的真实来源不同;数值一致是刻意的。
+ */
+const BATTLE_SPEED_MAX = 100
+
+/**
+ * 读档时的速度守卫:**越界整项丢弃,不夹**。
+ *
+ * 夹成 100 看起来更「宽容」,但那条读数会变成「尚差 9900%」——
+ * 一个玩家永远补不上的建议,比不显示更糟。丢掉整项后分析面板按「旧战报没有先手判定」
+ * 处理(与 `stats` 两侧缺一即整份丢弃同一退路),界面上少一行而不是多一行假话。
+ */
+const asBattleSpeed = (v: unknown): number | null => {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null
+  if (v <= 0 || v > BATTLE_SPEED_MAX) return null
+  return v
+}
 import {
   asBoundedGNum,
   asCombatRules,
@@ -190,14 +218,20 @@ function sanitizeFoeOrigin(raw: unknown): FoeOrigin | undefined {
   }
 }
 
-/** 先手判定修形:两个速度直接进读数,非有限值即丢这一项 */
+/**
+ * 先手判定修形:两个速度直接进读数,非有限值即丢这一项。
+ *
+ * 只挡「非有限」不够 —— 坏档写 1e300 是有限数,原样进 `firstMoveReadout`,
+ * 界面就印出「我 1.02 < 敌 1e+300 · 尚差 1e+302%」。故按 `BATTLE_SPEED_MAX` 一并夹上界。
+ * 负速同样收:先手判定读的是「至少 1」的量级,负数只可能来自坏档。
+ */
 function sanitizeFirstMove(raw: unknown): CombatResult['firstMove'] {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
   const f = raw as Record<string, unknown>
   if (typeof f.playerFirst !== 'boolean') return undefined
-  const playerSpeed = asFiniteNumber(f.playerSpeed, NaN)
-  const enemySpeed = asFiniteNumber(f.enemySpeed, NaN)
-  if (!Number.isFinite(playerSpeed) || !Number.isFinite(enemySpeed)) return undefined
+  const playerSpeed = asBattleSpeed(f.playerSpeed)
+  const enemySpeed = asBattleSpeed(f.enemySpeed)
+  if (playerSpeed === null || enemySpeed === null) return undefined
   return { playerFirst: f.playerFirst, playerSpeed, enemySpeed }
 }
 
