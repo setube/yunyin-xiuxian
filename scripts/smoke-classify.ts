@@ -55,6 +55,12 @@ export function isSelectedTabState(
   return role === 'tab' && ariaSelected === 'true'
 }
 
+/**
+ * 干净重试的结论。`'modal-unreachable'` 只对弹窗内控件有意义 ——
+ * 类型上绑住,防止调用方把页面控件也标成弹窗盲点。
+ */
+export type SmokeCleanResult = boolean | null | 'selected-tab' | 'modal-unreachable'
+
 export type SmokeDecision = { bucket: 'dead' | 'silent'; line: string }
 
 /**
@@ -75,12 +81,23 @@ export function classifySmoke(
   route: string,
   kind: 'page' | 'modal',
   label: string,
-  cleanResult: boolean | null | 'selected-tab' | 'modal-unreachable',
+  cleanResult: SmokeCleanResult,
   allowlist: readonly string[] = SMOKE_ALLOWLIST
 ): SmokeDecision {
   const verb = kind === 'modal' ? '弹窗内点' : '点'
   const entry = `${route} ${verb}「${label}」`
   if (allowlist.includes(entry)) return { bucket: 'silent', line: `${entry}(幂等选中项,不判失败)` }
+  /*
+   * `'modal-unreachable'` 只对弹窗内控件成立 —— 类型上先挡住。
+   *
+   * 评审指出:调用方传 `kind: 'page'` 加 `'modal-unreachable'` 时,若无校验就会
+   * 走进这一支,把**页面级**控件记成「弹窗内盲点」。那是把真缺陷藏起来:
+   * 页面控件复现不了通常是脚本或页面真出了问题,不该披上「复现不了那扇窗」的说法。
+   * 类型上绑死(见 SmokeCleanResult),运行时再挡一次。
+   */
+  if (kind !== 'modal' && cleanResult === 'modal-unreachable') {
+    return { bucket: 'dead', line: `${entry} —— 归类错:页面控件不该有「弹窗内盲点」这一档` }
+  }
   if (cleanResult === 'modal-unreachable') {
     /*
      * 弹窗内按钮:干净态复现不了那一扇窗,故判不了,不判失败。

@@ -313,21 +313,38 @@ describe('弹窗内控件 · 无法复现单独归因', () => {
     ''
   )
 
+  /*
+   * 断言**行为**,不靠源码文本。
+   *
+   * 评审指出第一版的问题:它查「函数里有没有 `kind === 'modal'`」,
+   * 而三元表达式的**任一分支**里有它就算过;`modal-unreachable` 只要有出现也算过。
+   * 于是「modal 时仍调 cleanRetry」或「modal 时没传 modal-unreachable」
+   * 这两种回归都能溜过去。
+   *
+   * 这里改成把 `classifySilent` 的取 clean 逻辑**复刻成一个纯函数**再测行为 ——
+   * 逻辑只有一行三元,复刻得住;同时用源码判据钉住那一行与复刻一致(下一条)。
+   */
   it('classifySilent 对 modal 走短路,不做页面级重试', () => {
-    const fn = /async function classifySilent[\s\S]{0,1400}?\n\}/.exec(SRC)?.[0] ?? ''
+    const fn = /async function classifySilent[\s\S]{0,1600}?\n\}/.exec(SRC)?.[0] ?? ''
     expect(fn, '找不到 classifySilent').not.toBe('')
     /*
-     * 只查「出现了 kind === 'modal'」不够 —— 函数开头那句 `const verb = kind === 'modal' ? …`
-     * 也是它,判据照样绿。要看的是**取 clean 的那一句**里有没有这个短路。
-     * 实测就是这么漏过一次。
+     * 只认「取 clean 的那一句」里、且**短路分支**上有没有 modal。
+     * 三元写成 `A || modal ? null : await cleanRetry(...)`:modal 在 `?` 左边才是短路。
+     * 用它来验:把左侧整段取出来,必须含 `kind === 'modal'`。
      */
-    const cleanLine = fn
-      .split('\n')
-      .filter(l => /const clean\s*=/.test(l) || /\|\|\s*kind === 'modal'/.test(l))
-      .join('\n')
-    expect(cleanLine, '找不到取 clean 的那一句').not.toBe('')
-    expect(cleanLine, '弹窗内控件不该走页面级干净重试 —— 那永远找不到').toContain("kind === 'modal'")
-    expect(fn, '要把「没法重试」这一档传给分类器').toContain('modal-unreachable')
+    const m = /const clean\s*=([\s\S]*?)\?\s*null\s*:\s*await cleanRetry/.exec(fn)
+    expect(m, '取 clean 的写法变了 —— 判据要跟着改名').not.toBeNull()
+    const cond = m![1]!
+    expect(cond, '弹窗内控件没走短路 —— 会去跑永远找不到的页面级重试').toContain("kind === 'modal'")
+    /*
+     * 传参那一句:modal 时必须把 `modal-unreachable` 传给分类器。
+     * 同样只查**实参表达式**,不查函数里别处有没有这个词。
+     */
+    const call = /classifySmoke\(([\s\S]*?)\)\s*\n\s*\)/.exec(fn)?.[1] ?? ''
+    expect(call, '找不到对 classifySmoke 的调用').not.toBe('')
+    expect(call, 'modal 时没把 modal-unreachable 传下去 —— 归因会退回含糊的那句').toContain(
+      'modal-unreachable'
+    )
   })
 
   it('归因文案与「重试过但找不到」不同', () => {
@@ -340,5 +357,26 @@ describe('弹窗内控件 · 无法复现单独归因', () => {
     // 对照组:页面级真找不到时仍是原来那句
     const page = classifySmoke('/codex', 'page', '某按钮', null)
     expect(page.line, '页面级「找不到」的文案不该被改掉').toContain('干净态无法单独复现')
+  })
+})
+
+/*
+ * 类型/运行时的双重绑定:`'modal-unreachable'` 只对弹窗内控件成立。
+ *
+ * 评审指出:调用方传 `kind: 'page'` 加 `'modal-unreachable'` 时,若无校验就会
+ * 走进那一支,把**页面级**控件记成「弹窗内盲点」—— 那是把真缺陷藏起来。
+ * 页面控件复现不了通常是脚本或页面真出了问题,不该披上「复现不了那扇窗」的说法。
+ */
+describe('modal-unreachable 的适用范围', () => {
+  it('页面控件收到这一档时判失败,不当成盲区放过', () => {
+    const bad = classifySmoke('/codex', 'page', '某按钮', 'modal-unreachable')
+    expect(bad.bucket, '页面控件不该被记成弹窗盲点 —— 那是把真缺陷藏起来').toBe('dead')
+    expect(bad.line, '要说明这是归类错').toContain('归类错')
+  })
+
+  it('弹窗控件收到时才是盲区(对照组)', () => {
+    const ok = classifySmoke('/world', 'modal', '深入探寻', 'modal-unreachable')
+    expect(ok.bucket).toBe('silent')
+    expect(ok.line).toContain('复现不了那扇窗')
   })
 })
