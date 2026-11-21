@@ -63,6 +63,7 @@ export type SmokeDecision = { bucket: 'dead' | 'silent'; line: string }
  *   false          单独点也无变化 → 真死控件(判失败)
  *   null           干净态找不到该按钮 → 无法复现(读数)
  *   'selected-tab' 点的是当前已选中的页签 → 幂等(读数)
+ *   'modal-unreachable' 弹窗内按钮,干净态复现不了那个弹窗 → 无法复现(读数)
  * 白名单优先,恒为读数。
  *
  * `'selected-tab'` 单列一档,不复用 `true`:
@@ -74,12 +75,24 @@ export function classifySmoke(
   route: string,
   kind: 'page' | 'modal',
   label: string,
-  cleanResult: boolean | null | 'selected-tab',
+  cleanResult: boolean | null | 'selected-tab' | 'modal-unreachable',
   allowlist: readonly string[] = SMOKE_ALLOWLIST
 ): SmokeDecision {
   const verb = kind === 'modal' ? '弹窗内点' : '点'
   const entry = `${route} ${verb}「${label}」`
   if (allowlist.includes(entry)) return { bucket: 'silent', line: `${entry}(幂等选中项,不判失败)` }
+  if (cleanResult === 'modal-unreachable') {
+    /*
+     * 弹窗内按钮:干净态复现不了那一扇窗,故判不了,不判失败。
+     *
+     * 这一档**单列**,不复用 `null`。干净重试只做「导航到路由 → 找按钮 → 点 → 比指纹」,
+     * 而弹窗内按钮要先点开某一扇触发的窗;重放那一步需要知道是哪扇、点哪个入口,
+     * 这份信息在 `clickInsideModal` 的循环里并没有留下。复用 `null` 会把
+     * 「重试过但找不到」与「根本没法重试」写成同一句话 —— 前者暗示还有救,
+     * 后者说明这一档天生覆盖不到,后续要么补重放、要么承认盲区。
+     */
+    return { bucket: 'silent', line: `${entry}(弹窗内控件,干净态复现不了那扇窗,未单独验证)` }
+  }
   if (cleanResult === 'selected-tab') {
     return { bucket: 'silent', line: `${entry}(已是选中态,点了本无变化)` }
   }

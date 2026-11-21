@@ -217,8 +217,21 @@ async function classifySilent(route, kind, label) {
   const verb = kind === 'modal' ? '弹窗内点' : '点'
   const entry = `${route} ${verb}「${label}」`
   // 白名单项不做干净重试(分类器另核)
-  const clean = SMOKE_ALLOWLIST.includes(entry) ? null : await cleanRetry(route, label)
-  pushSmokeDecision(classifySmoke(route, kind, label, clean, SMOKE_ALLOWLIST))
+  /*
+   * 弹窗内按钮不做页面级干净重试 —— 那不是「重试失败」,是「没法重试」。
+   *
+   * `cleanRetry` 只做「导航到路由 → 找按钮 → 点 → 比指纹」,而弹窗内控件要先点开
+   * 某一扇触发的窗。要重放那一步,得知道是哪扇窗、点哪个入口 —— 这份信息在
+   * `clickInsideModal` 的循环里并没有留下。
+   * 硬走过去的结果是:永远找不到、永远记成「干净态无法单独复现」,
+   * 读数看起来像「试过了但复现不了」,实际是**根本没试**。
+   * 分别归因为 `'modal-unreachable'`,让报表说清楚这是覆盖盲区。
+   */
+  const clean =
+    SMOKE_ALLOWLIST.includes(entry) || kind === 'modal' ? null : await cleanRetry(route, label)
+  pushSmokeDecision(
+    classifySmoke(route, kind, label, kind === 'modal' && clean === null ? 'modal-unreachable' : clean, SMOKE_ALLOWLIST)
+  )
 }
 /** 已成功导航的 href:全站只点一次;失败/被挡的不计入,留给后续路由重试 */
 const navClicked = new Set()
