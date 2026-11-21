@@ -577,14 +577,21 @@ describe('灵脉总量 · 坏档压回容量', () => {
 describe('洞府等级 · 表外建筑读档时清掉', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('十万个野键全清,state 不再被撑大', () => {
+  it('十万个野键全清,剩下的每一个都是建筑表的 id', () => {
     const dongfu = useDongfuStore()
     const ghost = Object.fromEntries(Array.from({ length: 100_000 }, (_, i) => [`ghost_${i}`, 99]))
     dongfu.$patch({ levels: ghost } as never)
     dongfu.sanitize()
-    expect(Object.keys(dongfu.levels).length, '表外键该整条丢掉,它们在界面上一个都不显示').toBe(
-      BUILDINGS.length
-    )
+    /*
+     * 只数「键数恰好等于 BUILDINGS.length」不够 ——
+     * 评审指出:清理逻辑若留下同样数量的**野键**、却把真建筑 id 删了,那条照样过。
+     * 故逐个核对剩下的键是不是建筑 id,并断言野键一个不剩。
+     */
+    const ids = new Set(BUILDINGS.map(b => b.id as string))
+    const left = Object.keys(dongfu.levels)
+    expect(left.filter(k => !ids.has(k)), '还剩表外键').toEqual([])
+    expect(left.filter(k => k.startsWith('ghost_')), '野键一个都不许留').toEqual([])
+    expect(new Set(left), '真实建筑一个都不许少').toEqual(ids)
     expect(JSON.stringify(dongfu.$state).length, '坏档把 state 撑爆了').toBeLessThan(1000)
   })
 
@@ -610,10 +617,21 @@ describe('洞府等级 · 表外建筑读档时清掉', () => {
 
   it('缺键补 0(旧档没有这一栏)', () => {
     const dongfu = useDongfuStore()
-    dongfu.$patch({ levels: {} } as never)
+    dongfu.$patch({ levels: { mansion: 2 } } as never)
+    /*
+     * `$patch` 是深合并 —— 传 `{ levels: {} }` 一个键都删不掉,新 store 的 levels
+     * 本来就带着全部 0,那样这条用例等于什么都没测(评审指出,实测确认:
+     * 传入空对象后 keys 仍是 7)。
+     * 故用 `$state` 直接替换成真的不完整对象,再 sanitize。
+     */
+    ;(dongfu as unknown as { levels: Record<string, number> }).levels = { mansion: 2 }
+    expect(Object.keys(dongfu.levels).length, '前置:这一步必须先真的只剩一个键').toBe(1)
     dongfu.sanitize()
+    const ids = new Set(BUILDINGS.map(b => b.id as string))
+    expect(Object.keys(dongfu.levels).sort(), '补齐后该恰好是建筑表那几座').toEqual([...ids].sort())
+    expect((dongfu.levels as Record<string, number>).mansion, '已有的键不许被抹成 0').toBe(2)
     for (const def of BUILDINGS) {
-      expect((dongfu.levels as Record<string, number>)[def.id], `缺 ${def.id} 该补 0`).toBe(0)
+      expect(Number.isFinite((dongfu.levels as Record<string, number>)[def.id]), `缺 ${def.id} 该补一个合法值`).toBe(true)
     }
   })
 })
