@@ -443,6 +443,66 @@ describe('坊市 · 买卖', () => {
     expect(market.sellPillAll('p_jvqisan').count).toBe(0)
   })
 
+  /*
+   * 售尽是一条整笔行情,不是「把逐枚那条跑 N 遍」。
+   *
+   * 逐枚那版对正常存档没区别,但存量没有真实上界:sanitize 只把它夹到
+   * EQUIP_COUNTER_MAX(一亿),而坏档正落在这个数上 —— 实测 1e5 枚 2.3 秒、
+   * 1e6 枚 19 秒,点一下「确认售尽」主线程就全被占了。
+   * 判据钉住「售二十万枚的耗时与售一枚同一量级」,而不是某个绝对毫秒数:
+   * 机器快慢会整体平移,两者之比不会。
+   */
+  it('售尽二十万枚也只花一次的功夫:耗时不随存量线性增长', () => {
+    const market = useMarketStore()
+    const inventory = useInventoryStore()
+    const resources = useResourcesStore()
+    inventory.$patch({ pills: { p_jvqisan: 1 } })
+    resources.spiritStone = gn(0)
+    const t0 = performance.now()
+    market.sellPillAll('p_jvqisan')
+    const oneMs = Math.max(0.05, performance.now() - t0)
+
+    // 二十万枚:逐枚那条要 4 秒上下(实测 1e5 枚 2.3 秒)、一亿枚要几分钟;
+    // 取这个量级既能抓住回归,又不至于让回归把 CI 挂半小时
+    inventory.$patch({ pills: { p_jvqisan: 200_000 } })
+    const t1 = performance.now()
+    const r = market.sellPillAll('p_jvqisan')
+    const hugeMs = performance.now() - t1
+    expect(r.count, '二十万枚该一枚不剩地卖出').toBe(200_000)
+    expect(inventory.pills['p_jvqisan']).toBeUndefined()
+    // 整笔这条路不该到「售一枚」的百倍;逐枚那条是它的上千倍
+    expect(hugeMs, `售二十万枚花了 ${hugeMs.toFixed(0)}ms,与售一枚不同量级 —— 又走回逐枚循环了`).toBeLessThan(oneMs * 100)
+  })
+
+  it('售尽无价丹药(事件丹)一枚也不动:与逐枚那条同判', () => {
+    const market = useMarketStore()
+    const inventory = useInventoryStore()
+    const resources = useResourcesStore()
+    inventory.$patch({ pills: { p_xianyao: 5 } })
+    resources.spiritStone = gn(0)
+    const r = market.sellPillAll('p_xianyao')
+    expect(r.count, '无丹方的事件丹没有售价,不该成交').toBe(0)
+    expect(inventory.pills['p_xianyao'], '不成交就该一枚不少').toBe(5)
+    expect(toNum(resources.spiritStone)).toBe(0)
+  })
+
+  it('售尽灵草 / 玄铁同样一次结清:入库与逐批卖同额', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    usePlayerStore().major = 10
+    resources.spiritStone = gn(0)
+    resources.herbByGrade[3] = MARKET_MAT_COUNT * 4
+    expect(market.sellHerbAll(3)).toBe(4)
+    expect(resources.herbOf(3)).toBe(0)
+    expect(toNum(resources.spiritStone)).toBeCloseTo(toNum(herbSellBatch(3, 10)) * 4, 6)
+
+    resources.spiritStone = gn(0)
+    resources.ore = MARKET_MAT_COUNT * 3
+    expect(market.sellOreAll(10)).toBe(3)
+    expect(resources.ore).toBe(0)
+    expect(toNum(resources.spiritStone)).toBeCloseTo(toNum(materialSellPrice(10)) * 3, 6)
+  })
+
   it('售尽玄铁:按整摞整除,不足一摞的零头留下', () => {
     const market = useMarketStore()
     const resources = useResourcesStore()
