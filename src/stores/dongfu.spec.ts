@@ -560,3 +560,60 @@ describe('灵脉总量 · 坏档压回容量', () => {
   })
 })
 })
+
+/**
+ * 洞府等级表里的表外建筑读档时清掉。
+ *
+ * 写入侧只有 `upgrade()` 一条路,它的 id 恒来自 `BUILDINGS` —— 表外键只可能来自坏档,
+ * 且在界面上一个都不会显示(`buildingLevel()` 按 def.id 查)。
+ *
+ * 原先 sanitize 是「展开后逐个修正」:修正只针对表内的键,表外的原样留着。
+ * 实测灌十万个野键:state 仍是 1.69MB,sanitize 本身要跑 166ms ——
+ * 而这一步在启动路径上(点开游戏到看见首页之间)。
+ *
+ * 与前几轮 quests 的图鉴、收藏时间戳表同一类:写入侧有上界,读档侧却没有。
+ * 故障注入:把 `const nextLevels = {} as Record<…>` 改回 `{ ...levels.value }`,第一条红。
+ */
+describe('洞府等级 · 表外建筑读档时清掉', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('十万个野键全清,state 不再被撑大', () => {
+    const dongfu = useDongfuStore()
+    const ghost = Object.fromEntries(Array.from({ length: 100_000 }, (_, i) => [`ghost_${i}`, 99]))
+    dongfu.$patch({ levels: ghost } as never)
+    dongfu.sanitize()
+    expect(Object.keys(dongfu.levels).length, '表外键该整条丢掉,它们在界面上一个都不显示').toBe(
+      BUILDINGS.length
+    )
+    expect(JSON.stringify(dongfu.$state).length, '坏档把 state 撑爆了').toBeLessThan(1000)
+  })
+
+  it('表内的真等级照留,越界的仍钳制', () => {
+    const dongfu = useDongfuStore()
+    // 取两座 maxLevel 够大的建筑来验「真等级照留」,不然写什么都可能被合法的上限钳掉
+    const mansionDef = BUILDINGS.find(b => b.id === 'mansion')!
+    const fieldDef = BUILDINGS.find(b => b.id === 'field')!
+    const keepMansion = Math.min(2, mansionDef.maxLevel)
+    const keepField = Math.min(3, fieldDef.maxLevel)
+    dongfu.$patch({
+      levels: { mansion: keepMansion, field: keepField, alchemy: 9999, ghost_b: 7 }
+    } as never)
+    dongfu.sanitize()
+    const lv = dongfu.levels as Record<string, number | undefined>
+    expect(lv.mansion, '真等级不许被清').toBe(keepMansion)
+    expect(lv.field).toBe(keepField)
+    expect(lv.ghost_b, '表外键该没了').toBeUndefined()
+    // 越界仍按 def.maxLevel 钳
+    const alchemyDef = BUILDINGS.find(b => b.id === 'alchemy')!
+    expect(lv.alchemy, '越界仍要钳到该建筑的上限').toBe(alchemyDef.maxLevel)
+  })
+
+  it('缺键补 0(旧档没有这一栏)', () => {
+    const dongfu = useDongfuStore()
+    dongfu.$patch({ levels: {} } as never)
+    dongfu.sanitize()
+    for (const def of BUILDINGS) {
+      expect((dongfu.levels as Record<string, number>)[def.id], `缺 ${def.id} 该补 0`).toBe(0)
+    }
+  })
+})
