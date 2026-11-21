@@ -99,7 +99,21 @@ describe('ui-smoke · 夹具自检等目标文本,不固定睡眠', () => {
 
   it('两页都用轮询等目标文本', () => {
     expect(SRC, '找不到 waitForAny —— 又回到固定睡眠了').toContain('const waitForAny')
-    expect(SRC, '夹具自检里还留着 1200ms 固定等待').not.toMatch(/await page\.goto\(INDEX \+ '#' \+ '\/(inventory)?'[\s\S]{0,120}waitForTimeout\(1200\)/)
+    /*
+     * 评审指出:只查「声明还在 + 某种固定等待不在」不够 ——
+     * 把 waitForAny 留着不用、换回别时长的固定等待,这条照样绿。
+     * 改为要求**两处都真的调用了 waitForAny**,且各自等到的是自己那几项。
+     */
+    const homeCall = /waitForAny\(\['9\.038兆'[^\]]*\]\)/.exec(SRC)
+    const invCall = /waitForAny\(\['雾隐长枪'[^\]]*\]\)/.exec(SRC)
+    expect(homeCall, '首页那次没走 waitForAny(又换成固定等待了?)').not.toBeNull()
+    expect(invCall, '行囊页那次没走 waitForAny(又换成固定等待了?)').not.toBeNull()
+    // 两次 goto 之后到下一次 goto 之间,不许出现 page.waitForTimeout
+    for (const [label, at] of [['首页', SRC.indexOf(homeCall![0])], ['行囊页', SRC.indexOf(invCall![0])]] as const) {
+      const before = SRC.lastIndexOf('await page.goto(', at)
+      const span = SRC.slice(before, at)
+      expect(span, `${label}那一页在等 waitForAny 之前还留了固定睡眠`).not.toMatch(/page\.waitForTimeout\(/)
+    }
   })
 
   it('等不到时照实报,不静默跳过', () => {

@@ -63,15 +63,16 @@
                   不是「材料够多少炉」(plan.rounds) —— 后者是上方那行「可炼 N 炉」的读数。
                   两者分开:坏档 1e12 株灵草时 rounds 是 2.5e11,照它开一次要跑几十分钟。
 
-                  料在封顶之内时才是「炼 满」;超了就不许这么写 —— 那一下并没有把料炼完,
-                  而上一行正写着「可炼 25000 炉」。动作词按实情换:一次能炼多少就说多少。
+                  动作词只在「确实炼完」时写「炼 满」;料超封顶时用规范里的复述动作
+                  「开 炉 ×N」(AGENTS.md 不可逆操作那条列出的一族)——
+                  不许自造「一 炉」「接连开炉」这类同义词,那会破坏全站的统一说法。
                 -->
                 <button
                   v-if="r.plan.rounds > 5"
                   class="btn-ghost !px-2.5 !py-2 !text-[11px]"
                   @click="pillFullId = r.def.id"
                 >
-                  {{ r.plan.batch < r.plan.rounds ? `一 炉 ×${r.plan.batch}` : `炼 满 ×${r.plan.batch}` }}
+                  {{ r.plan.batch < r.plan.rounds ? `开 炉 ×${r.plan.batch}` : `炼 满 ×${r.plan.batch}` }}
                 </button>
                 <button class="btn-seal !px-3 !py-2 !text-[12px]" @click="craftPill(r.def.id)">炼制</button>
               </template>
@@ -79,7 +80,7 @@
                 <!-- 二步确认与分解/散去同款 -->
                 <button class="btn-ghost !px-2.5 !py-2 !text-[11px]" @click="pillFullId = null">再想想</button>
                 <button class="btn-seal !px-2.5 !py-2 !text-[11px]" @click="runCraftFull(r.def.id, r.plan.batch)">
-                  {{ r.plan.batch < r.plan.rounds ? `接连开炉 ×${r.plan.batch}` : '确认炼满' }}
+                  {{ r.plan.batch < r.plan.rounds ? `开 炉 ×${r.plan.batch}` : '确认炼满' }}
                 </button>
               </template>
             </template>

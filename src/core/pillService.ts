@@ -102,6 +102,16 @@ export function usePillBatch(id: string, count: number): number {
   // 增益丹退化为单服:药力一顶后面全白费(buffOverflowOf),单服提示才报得出「只延续到顶 / 白费」
   if (def.buffId) return usePill(id) ? 1 : 0
   const inventory = useInventoryStore()
+  /*
+   * 入口先挡非有限数。
+   *
+   * `Math.floor(NaN)` 仍是 NaN,而 `NaN <= 0` 为 **false** —— 下面那道
+   * `eaten <= 0` 守卫根本拦不住它,NaN 会一路走到 `spendPill`。
+   * 现在 `spendPill` 自己也有守卫(返回 false),所以坏值不会真把库存写坏;
+   * 但那是**碰巧**,不是这条路径的性质:换个不做校验的扣减就会写成 NaN。
+   * AGENTS.md 记过这一类(`Math.max`/`Math.min` 挡不住 NaN),入口判更省事。
+   */
+  if (!Number.isFinite(count) || count < 1) return 0
   const eaten = Math.min(Math.floor(inventory.pills[id] ?? 0), Math.floor(count))
   if (eaten <= 0) {
     useUiStore().toast(pillGoneToast(), 'warn')
@@ -281,7 +291,13 @@ export interface CraftOutcome {
 
 /**
  * 开炉炼丹。失手料照赔(按技艺保下一部分),技艺照长,对灵材印象更深(见 noteMaterialUsed)。
- * quiet=true 供批量炼丹:逐炉结算照旧,提示与音效由批量层合并。
+ *
+ * `quiet=true` 供批量炼丹:逐炉结算照旧,提示与音效由批量层合并。
+ *
+ * **契约**:quiet 时不判成就/主线,调用方**必须在批量末尾调 `settleProgress()`**。
+ * 当前唯一的生产调用方是下面的 `craftPillBatch`,它在循环后调了。
+ * 若将来有人写「逐炉 quiet 循环却不收尾」,成就与主线会推迟到引擎下一拍才补上
+ * (结果不丢,但界面晚一拍);`pillBatch.spec` 里有一条钉住批量的收尾。
  */
 export function craftPill(id: string, quiet = false): CraftOutcome {
   const resources = useResourcesStore()
@@ -372,6 +388,14 @@ export function craftPillBatch(id: string, count: number): { rounds: number; mad
    * 一次调用跑几十分钟。上界落在函数自己身上,才有「无论谁传什么都跑得完」这个性质。
    * 界面走的仍是 plan.batch(两者同值),提示里报的炉数也就是实开的炉数。
    */
+  /*
+   * 入口先挡非有限数 —— 这里漏了会**真开一炉**。
+   *
+   * `Math.floor(NaN)` 得 NaN,`NaN < 1` 为 false,于是跳过这道守卫;
+   * 循环一次不执行、`rounds` 停在 0,随后 `rounds === 0` 的回退分支调 `craftPill(id)`
+   * 非静默开炉 —— 一个非法请求照样扣料出丹(实测草 400 → 396、丹 0 → 2)。
+   */
+  if (!Number.isFinite(count) || count < 1) return { rounds: 0, made: 0, failed: 0 }
   const roundsWanted = Math.min(Math.floor(count), CRAFT_BATCH_MAX)
   if (roundsWanted < 1) return { rounds: 0, made: 0, failed: 0 }
   if (roundsWanted === 1) {

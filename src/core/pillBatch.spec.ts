@@ -382,10 +382,17 @@ describe('连服 · 成就判定整批只跑一次', () => {
     const rounds = (r: { seen: number; perCheck: number }) => Math.round(r.seen / r.perCheck)
     expect(one.eaten).toBe(2)
     expect(many.eaten).toBe(50)
+    /*
+     * 判据要**与单批基线相等**,不许留 +1 的余量。
+     *
+     * 评审指出:原先写 `<= rounds(one) + 1`,于是「批量里多扫一轮」也能通过 ——
+     * 而那正是这条要防的东西(一笔批量干了两次成就扫描)。两枚与五十枚的扫描轮数
+     * 必须完全一样;两枚那次也走整批路径,故基线本身是 1 轮。
+     */
     expect(
       rounds(many),
-      `连服 50 枚扫了 ${rounds(many)} 轮成就(每轮 ${many.perCheck} 条)—— 又回到逐枚判定了`
-    ).toBeLessThanOrEqual(rounds(one) + 1)
+      `连服 50 枚扫了 ${rounds(many)} 轮成就(每轮 ${many.perCheck} 条),而连服 2 枚只扫 ${rounds(one)} 轮 —— 批量里多扫了`
+    ).toBe(rounds(one))
   })
 
   it('外部结果与逐枚判一致:计数、存量、成就解锁都对得上', () => {
@@ -538,5 +545,52 @@ describe('批量炼丹 · 函数自己也有上界', () => {
     res.addSmall('herb', c.herb * 7)
     res.addStone({ m: 1, e: 9 })
     expect(craftPillBatch(ID, 7).rounds).toBe(7)
+  })
+})
+
+/**
+ * 入口拒收非有限批次 —— 评审 Sourcery 指出的两处。
+ *
+ * `Math.floor(NaN)` 仍是 NaN,而 `NaN <= 0` / `NaN < 1` 都是 **false**:
+ * 下面那些「非正数就返回」的守卫根本拦不住它(AGENTS.md 记过这一类)。
+ *
+ * `craftPillBatch` 那侧是真的会出事:循环一次不跑、`rounds` 停在 0,
+ * 随后 `rounds === 0` 的回退分支**非静默开炉** —— 一个非法请求照样扣料出丹
+ * (修之前实测:草 400 → 396、丹 0 → 2)。
+ *
+ * 故障注入:去掉任一处的 `Number.isFinite` 判断,对应那条红。
+ */
+describe('批量入口 · 非有限批次不成交', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockRand = 0
+  })
+
+  it('连服:NaN / Infinity 不扣丹、不返回枚数', () => {
+    const inv = useInventoryStore()
+    inv.$patch({ pills: { [ID]: 10 } })
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(usePillBatch(ID, bad), `count=${bad} 不该服下任何一枚`).toBe(0)
+      expect(inv.pills[ID], `count=${bad} 不该动库存`).toBe(10)
+    }
+  })
+
+  it('连炼:NaN / Infinity 不扣料、不出丹、更不许回退开一炉', () => {
+    settleRewards()
+    knowRecipe()
+    const res = useResourcesStore()
+    const inv = useInventoryStore()
+    const cost = pillCraftCost(ID)!
+    res.addSmall('herb', cost.herb * 100)
+    res.addStone({ m: 1, e: 9 })
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      const herbsBefore = res.herbOf(cost.grade)
+      const pillsBefore = useQuestsStore().counter('pillsCrafted')
+      const out = craftPillBatch(ID, bad)
+      expect(out, `count=${bad} 该原样返回零`).toEqual({ rounds: 0, made: 0, failed: 0 })
+      expect(res.herbOf(cost.grade), `count=${bad} 不该扣草 —— 回退分支会非静默开一炉`).toBe(herbsBefore)
+      expect(useQuestsStore().counter('pillsCrafted'), `count=${bad} 不该产出丹药`).toBe(pillsBefore)
+    }
+    void inv
   })
 })

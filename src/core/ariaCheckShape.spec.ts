@@ -110,7 +110,19 @@ describe('aria-check · 导航落地判据', () => {
     expect(at, '找不到 gotoRoute —— 判据要跟着改名').toBeGreaterThan(-1)
     const block = CODE.slice(at, at + 1600)
     // 首屏刚挂上时 page-fade 与 stagger-in 一起走,3 秒预算会被它吃掉(实测 2465ms)
-    expect(block, '首跳没有单独的等待预算 —— 并发时会误报「导航未落地」').toMatch(/budget\s*=\s*first\s*\?/)
+    const m = /budget\s*=\s*first\s*\?\s*(\d+)\s*:\s*(\d+)/.exec(block)
+    expect(m, '首跳没有「first ? 首跳预算 : 后续预算」这样的显式分档').not.toBeNull()
+    /*
+     * 光看「有没有分档」不够 —— 评审指出:把两个数都改成极小值,分档照样存在、
+     * 源码照样含 `first ?`,而并发时又会误报。故**把两个数真的取出来比**。
+     *   首跳 8000:实测首屏过场 2465ms,留三倍余量
+     *   后续 3000:页面都已挂载,只剩懒加载 chunk + 180ms 过渡
+     */
+    const firstBudget = Number(m![1])
+    const laterBudget = Number(m![2])
+    expect(firstBudget, `首跳预算 ${firstBudget}ms 太小 —— 实测首屏过场就要 2465ms`).toBeGreaterThanOrEqual(5000)
+    expect(laterBudget, `后续跳转预算 ${laterBudget}ms 太小 —— 懒加载 chunk 还没到位就判失败`).toBeGreaterThanOrEqual(2000)
+    expect(firstBudget, '首跳预算该明显大于后续,否则分档没有意义').toBeGreaterThan(laterBudget)
   })
 
   it('失败分两段记名:hash 未对上 ≠ 过渡未消失', () => {
