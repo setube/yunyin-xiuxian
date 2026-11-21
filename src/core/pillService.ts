@@ -7,7 +7,7 @@ import { CRAFT_BATCH_MAX, INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { formatGN, formatGap } from '@/utils/format'
 import { recipeCraft, type SkillId } from '@/data/crafting'
 import { expFromSecs, pillStoneCost } from './formulas'
-import { collect, track } from './progress'
+import { collect, settleProgress, track, trackQuiet } from './progress'
 import { buffOverflowOf } from './buffCap'
 import { gameNow } from './enginePause'
 import { craftability, knownRecipes } from './craftability'
@@ -25,7 +25,13 @@ import { craftOkToast, craftShortToast, craftUnknownToast, pillGoneToast, pillTa
 import { treasureOf } from '@/ui/treasureCeremony'
 import type { GNum } from '@/types'
 
-/** 服用一枚丹药。quiet=true 供批量服丹:逐枚结算照旧,提示与音效由批量层合为一条。 */
+/**
+ * 服用一枚丹药。quiet=true 供批量服丹:逐枚结算照旧,提示与音效由批量层合为一条。
+ *
+ * quiet 时**不做成就判定**(`trackQuiet` 只记账),由批量层在整批末尾调一次
+ * `settleProgress()` —— 判据读的是计数器与境界,批量末尾判一次与逐次判同值,
+ * 而一次判定要扫 62 条成就(实测 1e4 次 4.1 秒)。
+ */
 export function usePill(id: string, quiet = false): boolean {
   const player = usePlayerStore()
   const resources = useResourcesStore()
@@ -73,7 +79,8 @@ export function usePill(id: string, quiet = false): boolean {
     cultivation.addBuff(def.buffId, now)
     lines.push(overflow === 'full' ? '药力已顶满,白费' : overflow === 'partial' ? '药力只延续到顶' : '药力化开')
   }
-  track('pillsUsed')
+  if (quiet) trackQuiet('pillsUsed')
+  else track('pillsUsed')
   // 「不假外物」之誓当场落空
   noteTaboo('pill')
   collect('pill', id)
@@ -100,6 +107,8 @@ export function usePillBatch(id: string, count: number): number {
     if (!usePill(id, true)) break
     eaten += 1
   }
+  // 整批只判一次成就(逐枚那条已在 usePill 的 quiet 分支里跳过)
+  if (eaten > 0) settleProgress()
   const name = def.name
   const ui = useUiStore()
   if (eaten > 0) {
@@ -287,7 +296,9 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
 
   if (!succeeded) {
     useLoreStore().addRecipeMastery(id, 0.02)
-    track('pillsFailed')
+    // 批量路径(quiet)只记账,成就由 craftPillBatch 末尾判一次
+    if (quiet) trackQuiet('pillsFailed')
+    else track('pillsFailed')
     if (!quiet) {
       playSfx('fail')
       ui.toast('炸炉', 'warn')
@@ -298,7 +309,8 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
   // 双丹概率读 craftability(含 alchemyYield、已按 PILL_SECOND_CAP 封顶),与展示同源,不自算
   const extra = rng.chance(able.bonusChanceWithYield) ? 1 : 0
   inventory.addPill(id, 1 + extra)
-  track('pillsCrafted', 1 + extra)
+  if (quiet) trackQuiet('pillsCrafted', 1 + extra)
+  else track('pillsCrafted', 1 + extra)
   collect('pill', id)
   useLoreStore().addRecipeMastery(id, 0.01)
   if (!quiet) {
@@ -333,6 +345,8 @@ export function craftPillBatch(id: string, count: number): { rounds: number; mad
     if (out.ok) made += out.count
     else failed += 1
   }
+  // 整批只判一次成就(逐炉那条已在 craftPill 的 quiet 分支里跳过)
+  if (rounds > 0) settleProgress()
   const name = pillDef(id)?.name ?? id
   const ui = useUiStore()
   if (rounds === 0) {

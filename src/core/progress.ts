@@ -307,13 +307,34 @@ function dayStrToNum(s: string): number | null {
   return y * 10000 + mo * 100 + d
 }
 
-/** 统一行为汇报入口 */
-export function track(key: CounterKey, n = 1): void {
-  const quests = useQuestsStore()
-  quests.inc(key, n)
+/**
+ * 只记账、不判定 —— 批量动作的循环体里用这个。
+ *
+ * 批量吃丹 / 连炼 / 离线结算都是「一次动作 N 次计数」。计数可加,而成就与主线的
+ * 判据读的正是计数器与境界,故**整批末尾判一次与每次判一次同值**:
+ * `grantReward` 不产丹药、不自动佩称号(称号要玩家自己去称号页穿戴),
+ * 不会反过来改变批量本身的结算。差别只在代价 —— 一次判定要扫 62 条成就,
+ * 每条都建一遍 store 引用,实测 1e4 次 4.1 秒。照逐次判,连服一万枚就白等 4 秒,
+ * 主线程被占住期间心跳与存档写入一起停摆(与坊市「售尽」、炼丹「炼满」同一类)。
+ *
+ * 配套:`settleProgress()` 收尾判一次。只调这个不调收尾,成就就会推迟到
+ * `engine` 每 tick 的 `checkStateAchievements()` 才补上 —— 结果不丢,但界面会晚一拍。
+ */
+export function trackQuiet(key: CounterKey, n = 1): void {
+  useQuestsStore().inc(key, n)
+}
+
+/** 批量收尾:成就 / 主线 / 日课各判一次(与逐次 `track()` 的判定集合同一份) */
+export function settleProgress(): void {
   checkAchievements()
   checkMainQuest()
   checkDaily()
+}
+
+/** 统一行为汇报入口:记一笔,并当场判一次 */
+export function track(key: CounterKey, n = 1): void {
+  trackQuiet(key, n)
+  settleProgress()
 }
 
 /** 境界成就(突破后调用) */
