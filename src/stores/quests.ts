@@ -6,6 +6,7 @@ import { persistConfig } from '@/utils/storage'
 import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { TITLES } from '@/data/titles'
+import { CODEX_IDS } from '@/data/codexIds'
 import { asFiniteNumber, asNumberRecord, asObjectOrNull, asRecord, asStringArray, truncateCodePoints } from '@/utils/saveShape'
 
 /**
@@ -106,17 +107,27 @@ export const useQuestsStore = defineStore(
       const titleIds = new Set(TITLES.map(t => t.id))
       titlesOwned.value = [...new Set(asStringArray(titlesOwned.value))].filter(id => titleIds.has(id))
       const cats = asRecord<string[]>(collections.value)
-      // 图鉴各类同为集合语义(collect 只在没有时追加):重复 id 让「已收 N」多报、灵兽册出重复 v-for key
+      /*
+       * 图鉴各类同为集合语义(collect 只在没有时追加):重复 id 让「已收 N」多报、
+       * 灵兽册出重复 v-for key。
+       *
+       * 还须**滤掉表外的 id**。写入侧 `collect` 的 id 全来自数据表,表外只可能来自坏档;
+       * 而收藏册每一处展示都是拿表逐条比对(`codexOwnedCount`、CollectionView 的 entries),
+       * 表外 id 既不显示也不计数 —— 唯一作用是把存档撑大:实测十万条野 id 让存档涨到 1.29MB,
+       * 那一页却一个字都不会多出来。
+       */
+      const dedupe = (cat: CollectionCategory): string[] =>
+        [...new Set(asStringArray(cats[cat]))].filter(id => CODEX_IDS[cat].has(id))
       collections.value = {
-        equip: [...new Set(asStringArray(cats.equip))],
-        gongfa: [...new Set(asStringArray(cats.gongfa))],
-        pill: [...new Set(asStringArray(cats.pill))],
-        artifact: [...new Set(asStringArray(cats.artifact))],
-        pet: [...new Set(asStringArray(cats.pet))],
-        event: [...new Set(asStringArray(cats.event))],
-        talent: [...new Set(asStringArray(cats.talent))],
+        equip: dedupe('equip'),
+        gongfa: dedupe('gongfa'),
+        pill: dedupe('pill'),
+        artifact: dedupe('artifact'),
+        pet: dedupe('pet'),
+        event: dedupe('event'),
+        talent: dedupe('talent'),
         // 旧档没有这一栏:asStringArray(undefined) 得空数组,自动补上
-        daolu: [...new Set(asStringArray(cats.daolu))]
+        daolu: dedupe('daolu')
       }
       collectedAt.value = asNumberRecord(collectedAt.value, 0)
       achievedAt.value = asNumberRecord(achievedAt.value, 0)
