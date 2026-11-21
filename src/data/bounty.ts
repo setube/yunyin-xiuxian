@@ -11,6 +11,18 @@ export type BountyKind = 'herb' | 'ore' | 'pill' | 'equip'
 
 /** 货架格数与刷新周期(单位:秒,真实时间;离线照走) */
 export const BOUNTY_SLOTS = 4
+/**
+ * 悬赏单的**读档上限**,与「一版几张」是两件事。
+ *
+ * 写入侧只有 `generateBounty` 一个来源,而它结尾就是
+ * `slots.slice(0, Math.min(BOUNTY_SLOTS, slots.length))` —— 正常存档永远 ≤4 张。
+ * 读档时多出来的只可能来自坏档,而每一张都能被 `claim(idx)` 逐张交付领赏:
+ * 实测灌 5000 张(赏格 9.9e12)能全部领完,净得 **4.95 京灵石**,存档同时被撑到 550KB。
+ *
+ * 上界取 `BOUNTY_SLOTS`:与写入侧同一把尺。越界整纸丢弃,不夹取 ——
+ * 夹出来的每一张都是能被真领走的赏。
+ */
+export const BOUNTY_MAX = BOUNTY_SLOTS
 export const BOUNTY_REFRESH_SECONDS = 14400
 
 /** 募材:每格收的量 */

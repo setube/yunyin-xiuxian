@@ -10,7 +10,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useInventoryStore } from '@/stores/inventory'
 import { qualityDef } from '@/data/qualities'
-import { BOUNTY_PILL_WUDAO, BOUNTY_REFRESH_SECONDS, type BountyKind, type BountySlot } from '@/data/bounty'
+import { BOUNTY_MAX, BOUNTY_PILL_WUDAO, BOUNTY_REFRESH_SECONDS, type BountyKind, type BountySlot } from '@/data/bounty'
 import { MAX_MAJOR } from '@/data/realms'
 import { pillDef } from '@/data/pills'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
@@ -94,7 +94,12 @@ export const useBountyStore = defineStore(
           claimed: 'claimed' in raw && raw.claimed === true
         })
       }
-      orders.value = clean
+      /*
+       * 条数封顶(见 `BOUNTY_MAX`):写入侧只生成 BOUNTY_SLOTS 张,多出来的只可能来自坏档,
+       * 而每一张都能被 claim 逐张领赏 —— 实测 5000 张净得 4.95 京灵石。
+       * 保留先出现的那几张(与「都留着」时的领赏顺序一致),越界整纸丢弃。
+       */
+      orders.value = clean.slice(0, BOUNTY_MAX)
       // 归零上货时刻:下次 sync 整版换新
       if (stalePill) bountyAt.value = 0
     }
