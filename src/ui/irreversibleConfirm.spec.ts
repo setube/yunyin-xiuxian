@@ -156,10 +156,33 @@ describe('不可逆确认的两次点击各写什么', () => {
     ['components/equipment/UpgradePanel.vue', '连 升'],
     ['components/dongfu/VeinInvestCard.vue', '连 投'],
     ['components/inventory/ArtifactPanel.vue', '连 炼'],
-    ['components/inventory/BrewingDialog.vue', '开 炉 ×'],
+    /*
+     * 开炉这一步现在分两种写法(见下面那条):料在封顶内是「确认炼满」,
+     * 超了是「接连开炉 ×N」—— 后者不写「炼满」,因为那一下并没有把料炼完。
+     * 这里只钉「复述动作」这一族的存在,具体分叉由下一条管。
+     */
+    ['components/inventory/BrewingDialog.vue', '接连开炉'],
     ['components/inventory/DismantleDialog.vue', '清理化尘'],
     ['views/SoulsView.vue', '清理散置']
   ]
+
+  /**
+   * 开炉那一步的动作词按实情分叉 —— 判据钉住这个分叉本身。
+   *
+   * 「炼 满」承诺的是「把料炼完」。加了 CRAFT_BATCH_MAX 之后,料超过 500 炉时那一下
+   * 只开 500 炉,而上一行正写着「可炼 25000 炉」—— 名不副实。故:
+   *   · 料在封顶内 → 「炼 满 ×N」/「确认炼满」(确实炼完)
+   *   · 料超封顶   → 「一 炉 ×N」/「接连开炉 ×N」(只复述这一下做多少)
+   * 故障注入:把两处三元去掉、恒写「炼 满」,本条红。
+   */
+  it('开炉的动作词按「这一下能否炼完」分叉,不写名不副实的「炼满」', () => {
+    const src = read('components/inventory/BrewingDialog.vue')
+    expect(src, '第一步的动作词该按 batch < rounds 分叉').toContain('r.plan.batch < r.plan.rounds')
+    expect(src, '料够炼完时仍要写「炼 满」').toContain('`炼 满 ×${r.plan.batch}`')
+    expect(src, '料炼不完时不许写「炼 满」').toContain('`一 炉 ×${r.plan.batch}`')
+    expect(src, '确认态同样按分叉写').toContain("'确认炼满'")
+    expect(src, '确认态同样按分叉写').toContain('`接连开炉 ×${r.plan.batch}`')
+  })
 
   it('复述动作族的六个落点都用复述写法,且与「再想想」成对', () => {
     for (const [rel, word] of BATCH_FAMILY) {
