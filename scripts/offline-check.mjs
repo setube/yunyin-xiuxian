@@ -91,6 +91,14 @@ async function booted() {
   })
 }
 
+/*
+ * 整段包 try/catch/finally —— 与其余实测脚本同一理由。
+ *
+ * 这份多一样要收:除了浏览器,还有一个监听在本机随机端口的静态服务器。
+ * 原先 `browser.close()` 与 `server.close()` 都是裸语句,任何一处 evaluate 超时
+ * 都会跳过它们,同时把 `pass` 里已验过的条目一起吞掉 —— 屏幕上只剩一行堆栈。
+ */
+try {
 // ---- 一 首次联网访问:SW 接管 + 缓存落盘 ----
 // 先种一份旧版本缓存,验 activate 会清掉它
 await page.goto(`${base}/privacy.html`, { waitUntil: 'load' })
@@ -153,9 +161,14 @@ if (!gotNew) failures.push('线上换了 index.html,再次访问仍是旧页面 
 else pass.push('发版接管:导航请求拿到了新的 index.html')
 
 if (pageErrors.length) failures.push(`离线自检页面异常:${[...new Set(pageErrors)].join(' | ')}`)
-
-await browser.close()
-server.close()
+} catch (err) {
+  // 中途崩了:记成一条失败与其余一起报 —— 不吞掉它,也不让它盖掉已经验过的
+  failures.push(`离线自检中途中断:${err instanceof Error ? err.message.split('\n')[0] : String(err)}`)
+} finally {
+  // 浏览器与服务器都要关:漏一个,进程会带着监听端口一起留着
+  await browser.close().catch(() => {})
+  await new Promise(ok => server.close(ok))
+}
 
 console.log('\n离线自检(Service Worker · localhost)')
 for (const p of pass) console.log(`✓ ${p}`)

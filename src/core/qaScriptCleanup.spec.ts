@@ -15,7 +15,15 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const SCRIPTS = ['orb-check', 'world-check', 'treasure-check', 'edge-states', 'modal-patrol', 'detail-geometry'] as const
+const SCRIPTS = [
+  'orb-check',
+  'world-check',
+  'treasure-check',
+  'edge-states',
+  'modal-patrol',
+  'detail-geometry',
+  'offline-check'
+] as const
 const src = (name: string): string => readFileSync(resolve(__dirname, '../../scripts', `${name}.mjs`), 'utf-8')
 
 /** 剥掉整行注释 —— 注释里写着「原先没有 try」这类说明,不剥会让判据假绿 */
@@ -41,4 +49,30 @@ describe('QA 脚本 · 崩溃时也要把已收集的失败报出来', () => {
       )
     })
   }
+})
+
+/**
+ * 带静态服务器的脚本(offline-check):两道收尾一个都不能漏。
+ *
+ * 它比其余几份多一样要关的 —— 一个监听在本机随机端口的服务器。
+ * 原先 `browser.close()` 与 `server.close()` 都是裸语句:崩了浏览器不关,
+ * 服务器也留着,而 `pass` 里已验过的条目跟着一起吞掉。
+ *
+ * 故障注入:把 `server.close` 从 finally 里挪回裸语句,本条红。
+ */
+describe('QA 脚本 · 服务器与浏览器都要在 finally 里关', () => {
+  const SRC = readFileSync(resolve(__dirname, '../../scripts/offline-check.mjs'), 'utf-8')
+  const CODE = SRC.split('\n').filter(line => !/^\s*(\*|\/\/)/.test(line)).join('\n')
+
+  it('browser.close 与 server.close 都在 finally 块里', () => {
+    const at = CODE.indexOf('} finally {')
+    expect(at, '找不到 finally 块').toBeGreaterThan(-1)
+    const block = CODE.slice(at, at + 400)
+    expect(block, '浏览器没在 finally 里关').toContain('browser.close()')
+    expect(block, '服务器没在 finally 里关 —— 崩一次就留一个监听端口').toContain('server.close')
+  })
+
+  it('没有裸在块外的 server.close', () => {
+    expect(CODE, '还留着裸的 server.close()').not.toMatch(/^\s*server\.close\(\)\s*$/m)
+  })
 })
