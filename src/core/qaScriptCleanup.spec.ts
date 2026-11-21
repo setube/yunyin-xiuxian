@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const SCRIPTS = ['orb-check', 'world-check', 'treasure-check', 'edge-states', 'modal-patrol'] as const
+const SCRIPTS = ['orb-check', 'world-check', 'treasure-check', 'edge-states', 'modal-patrol', 'detail-geometry'] as const
 const src = (name: string): string => readFileSync(resolve(__dirname, '../../scripts', `${name}.mjs`), 'utf-8')
 
 /** 剥掉整行注释 —— 注释里写着「原先没有 try」这类说明,不剥会让判据假绿 */
