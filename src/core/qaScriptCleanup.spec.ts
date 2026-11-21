@@ -24,7 +24,9 @@ const SCRIPTS = [
   'detail-geometry',
   'offline-check',
   'ui-smoke',
-  'layout-check'
+  'layout-check',
+  'focus-check',
+  'multitab-check'
 ] as const
 const src = (name: string): string => readFileSync(resolve(__dirname, '../../scripts', `${name}.mjs`), 'utf-8')
 
@@ -58,7 +60,7 @@ describe('QA 脚本 · 崩溃时也要把已收集的失败报出来', () => {
       expect(
         s,
         `${name} 的 browser.close() 不在 finally 里 —— 崩了就不关浏览器`
-      ).toMatch(/finally \{[\s\S]{0,120}browser\.close\(\)/)
+      ).toMatch(/finally \{[\s\S]{0,160}browser\??\.close\(/)
       /*
        * 光有 try 不够 —— 要它**真的罩住主体**。
        *
@@ -186,4 +188,29 @@ describe('ui-smoke · 夹具自检等目标文本,不固定睡眠', () => {
     // waitForAny 的 catch 只吞等超时,逐项判据仍会点出缺了哪几样
     expect(SRC, '缺项仍该逐条报出来').toContain('没有出现在界面上')
   })
+})
+
+/**
+ * 只有 try/finally、没有 catch 的脚本 —— 崩溃时读数照样丢。
+ *
+ * 这一形态在 `focus-check` 与 `multitab-check` 上实测过:finally 会照关浏览器,
+ * 但 `failures` 里已攒下的那些一条也打印不出来 —— 注入一条失败再抛错,
+ * 输出里只剩堆栈。它比「没有 try」更隐蔽:外观上有保护、资源也回收了,
+ * 唯独**结论丢了**。
+ *
+ * 判据只针对本仓这十份巡查脚本,不扫全目录:别的一次性脚本(打包、图标生成)
+ * 没有「先攒失败再汇总」的结构,catch 无意义。
+ *
+ * 故障注入:把 focus-check 的 catch 去掉,本条红。
+ */
+describe('QA 巡查脚本 · 不许只有 try/finally', () => {
+  for (const name of SCRIPTS) {
+    it(`${name}:try 之后必须同时有 catch 与 finally`, () => {
+      const s = code(name)
+      const hasTry = /^try \{$/m.test(s)
+      if (!hasTry) return
+      expect(s, `${name} 有 try 却没有 catch —— 崩了读数照样丢`).toMatch(/^\} catch \(err\) \{/m)
+      expect(s, `${name} 有 try 却没有 finally —— 崩了不关浏览器`).toMatch(/^\} finally \{/m)
+    })
+  }
 })
