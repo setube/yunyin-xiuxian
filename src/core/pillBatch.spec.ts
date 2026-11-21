@@ -12,7 +12,7 @@ vi.mock('@/utils/random', async importOriginal => {
   return { ...mod, rng: new mod.RandomService(() => mockRand) }
 })
 
-import { usePillBatch, craftPillBatch, pillCraftCost, salvageRatio, craftBatchPlan } from './pillService'
+import { usePill, usePillBatch, craftPillBatch, pillCraftCost, salvageRatio, craftBatchPlan } from './pillService'
 import { pillDef } from '@/data/pills'
 import { recipeCraft } from '@/data/crafting'
 import { craftability } from '@/core/craftability'
@@ -20,10 +20,12 @@ import { toNum, mulN } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
 import { CRAFT_BATCH_MAX } from '@/data/constants'
 import { useInventoryStore } from '@/stores/inventory'
+import { usePlayerStore } from '@/stores/player'
 import { useLoreStore } from '@/stores/lore'
 import { useQuestsStore } from '@/stores/quests'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { MAIN_QUESTS } from '@/data/quests'
+import { settleProgress } from './progress'
 
 /** 最低阶回春丹,与 pillService.spec 同一条路径 */
 const ID = 'p_huichun'
@@ -400,5 +402,106 @@ describe('连服 · 成就判定整批只跑一次', () => {
      * 结果不丢但界面晚一拍;这里钉住「当场就在」。
      */
     expect(quests.achieved.length, '整批之后该有成就在当场解锁,不等引擎下一拍').toBeGreaterThan(0)
+  })
+})
+
+/**
+ * 整批一次结算,与逐枚同值。
+ *
+ * 逐枚那条在正常存量(几十枚)没有区别,但存量没有真实上界 —— 读档自愈只夹到一亿,
+ * 坏档正落在那个数上;实测 20 万枚 8.3 秒、一亿枚要跑几十分钟,点一下「连服」
+ * 主线程全被占住(与坊市「售尽」、炼丹「炼满」同一类)。
+ *
+ * 等价性靠三条:即时丹每种只带一个效果键;药力的入参只随境界与属性变(吃丹不升级);
+ * 灵气按容量封顶,逐枚连加 N 次等于一次加 N 倍再夹。
+ *
+ * 判据拿**逐枚旧路径**当参照:同一份初始状态下,一次批量与「循环调 usePill」的
+ * 修为/灵气/寿元/悟道点必须逐项相同 —— 那正是「等价」的可执行定义。
+ *
+ * 故障注入:把灵气那行改回 `setQi(qi + cap*pct)`(漏掉 ×eaten),第二条红。
+ */
+describe('连服 · 整批一次结算与逐枚同值', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockRand = 0
+  })
+
+  /** 参照:逐枚调 usePill 得到的四项读数 */
+  const byEach = (id: string, count: number) => {
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    const res = useResourcesStore()
+    useInventoryStore().addPill(id, count)
+    player.$patch({ major: 3, sub: 2, exp: { m: 0, e: 0 }, age: 100, lifespanBonusYears: 0 })
+    // 参照是**上一版批量实现**:逐枚 usePill(quiet) 循环 + 收尾判一次
+    for (let i = 0; i < count; i += 1) usePill(id, true)
+    settleProgress()
+    return {
+      exp: toNum(player.exp),
+      qi: res.qi,
+      lifespan: player.lifespanBonusYears,
+      wudao: res.wudao,
+      left: useInventoryStore().pills[id] ?? 0
+    }
+  }
+
+  /** 批量路径:同一份初始状态,一次 usePillBatch */
+  const byBatch = (id: string, count: number) => {
+    setActivePinia(createPinia())
+    const player = usePlayerStore()
+    const res = useResourcesStore()
+    useInventoryStore().addPill(id, count)
+    player.$patch({ major: 3, sub: 2, exp: { m: 0, e: 0 }, age: 100, lifespanBonusYears: 0 })
+    const eaten = usePillBatch(id, count)
+    return {
+      eaten,
+      exp: toNum(player.exp),
+      qi: res.qi,
+      lifespan: player.lifespanBonusYears,
+      wudao: res.wudao,
+      left: useInventoryStore().pills[id] ?? 0
+    }
+  }
+
+  for (const [label, id] of [
+    ['修为丹(等效秒数)', 'p_xuanyuan'],
+    ['修为丹(固定点数)', 'p_jvqidan'],
+    ['灵气丹', 'p_huichun'],
+    ['寿元丹', 'p_yanshou']
+  ] as const) {
+    it(`${label}:四项读数逐一对拍`, () => {
+      const each = byEach(id, 8)
+      const batch = byBatch(id, 8)
+      expect(batch.eaten, '八枚都该服下').toBe(8)
+      expect(batch.exp, '修为与逐枚不一致').toBeCloseTo(each.exp, 6)
+      expect(batch.qi, '灵气与逐枚不一致').toBeCloseTo(each.qi, 6)
+      expect(batch.lifespan, '寿元与逐枚不一致').toBe(each.lifespan)
+      expect(batch.wudao, '悟道点与逐枚不一致').toBe(each.wudao)
+      expect(batch.left, '存量与逐枚不一致').toBe(each.left)
+    })
+  }
+
+  it('存量不够时按实有数服下,不动别人的丹', () => {
+    const inv = useInventoryStore()
+    const other = useInventoryStore()
+    inv.addPill('p_xuanyuan', 3)
+    other.addPill('p_huichun', 5)
+    expect(usePillBatch('p_xuanyuan', 10)).toBe(3)
+    expect(inv.pills['p_xuanyuan'] ?? 0).toBe(0)
+    expect(inv.pills['p_huichun'], '不该动别的丹').toBe(5)
+  })
+
+  it('九十万枚也不按枚数耗时间', () => {
+    const inv = useInventoryStore()
+    inv.addPill('p_xuanyuan', 1)
+    const t0 = performance.now()
+    usePillBatch('p_xuanyuan', 1)
+    const oneMs = Math.max(0.05, performance.now() - t0)
+    inv.addPill('p_xuanyuan', 900_000)
+    const t1 = performance.now()
+    const eaten = usePillBatch('p_xuanyuan', 900_000)
+    const hugeMs = performance.now() - t1
+    expect(eaten, '九十枚万该一枚不剩地服下').toBe(900_000)
+    expect(hugeMs, `九十万枚花了 ${hugeMs.toFixed(0)}ms,与服一枚不同量级 —— 又走回逐枚循环了`).toBeLessThan(oneMs * 100)
   })
 })

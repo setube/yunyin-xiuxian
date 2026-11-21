@@ -101,22 +101,57 @@ export function usePillBatch(id: string, count: number): number {
   if (!def) return 0
   // 增益丹退化为单服:药力一顶后面全白费(buffOverflowOf),单服提示才报得出「只延续到顶 / 白费」
   if (def.buffId) return usePill(id) ? 1 : 0
-  if (count === 1) return usePill(id) ? 1 : 0
-  let eaten = 0
-  for (let i = 0; i < count; i += 1) {
-    if (!usePill(id, true)) break
-    eaten += 1
+  const inventory = useInventoryStore()
+  const eaten = Math.min(Math.floor(inventory.pills[id] ?? 0), Math.floor(count))
+  if (eaten <= 0) {
+    useUiStore().toast(pillGoneToast(), 'warn')
+    return 0
   }
-  // 整批只判一次成就(逐枚那条已在 usePill 的 quiet 分支里跳过)
-  if (eaten > 0) settleProgress()
-  const name = def.name
-  const ui = useUiStore()
-  if (eaten > 0) {
-    playSfx('success')
-    ui.toast(`连服 ${eaten} 枚「${name}」`, 'success')
-  } else {
-    ui.toast(pillGoneToast(), 'warn')
+  /*
+   * 整批一次结算,不再逐枚调 usePill。
+   *
+   * 等价性有据可查:即时丹每一种只带**一个**效果键(expSecs / expFixed / qiPct /
+   * lifespanYears / wudao,data/pills 里实测没有多键组合),而药力的三个入参
+   * ——`expReq`、`cultPerSec`、`qiCapValue`——只随境界与属性变,吃丹不会改它们
+   * (修为可积余,不吃丹也不升级;突破要玩家自己点)。故 N 枚的药力都是同一个乘数,
+   * 总账 = 单枚 × N,与逐枚相加同值(GNum 加法在指数差 15 以内才累加尾数,N 枚同量级相加
+   * 与一次乘法在显示精度上一致)。
+   *
+   * 为什么必须换掉:存量没有真实上界 —— 读档自愈只夹到一亿,而坏档正落在那个数上。
+   * 逐枚那条实测 20 万枚 8.3 秒、一亿枚要跑几十分钟,点一下「连服」主线程全被占住,
+   * 心跳与存档写入一起停摆(与坊市「售尽」、炼丹「炼满」同一类)。
+   */
+  if (!inventory.spendPill(id, eaten)) return 0
+  const player = usePlayerStore()
+  const resources = useResourcesStore()
+  const instant = def.instant
+  if (instant) {
+    if (instant.expSecs) {
+      const gain = expFromSecs(player.expReq, instant.expSecs, player.cultPerSec, INSTANT_EXP_LAYER_CAP)
+      player.gainExp(mulN(gain, eaten))
+    }
+    if (instant.expFixed) {
+      const gain = expFromSecs(player.expReq, instant.expFixed, 1, INSTANT_EXP_LAYER_CAP)
+      player.gainExp(mulN(gain, eaten))
+    }
+    /*
+     * 灵气按**容量**封顶(QI_BANK_MULT 倍),故 N 枚一次加与逐枚加同值:
+     * 逐枚那版每枚都是 `setQi(当前 + cap × pct, cap)`,连加 N 次的结果就是
+     * `min(cap × 10, 当前 + cap × pct × N)` —— 一次算完。
+     */
+    if (instant.qiPct) {
+      resources.setQi(resources.qi + player.qiCapValue * instant.qiPct * eaten, player.qiCapValue)
+    }
+    if (instant.lifespanYears) player.addLifespan(instant.lifespanYears * eaten)
+    if (instant.wudao) resources.addSmall('wudao', instant.wudao * eaten)
   }
+  trackQuiet('pillsUsed', eaten)
+  // 「不假外物」之誓当场落空 —— 一次调用即够,它是幂等的
+  noteTaboo('pill')
+  collect('pill', id)
+  settleProgress()
+  playSfx('success')
+  useUiStore().toast(`连服 ${eaten} 枚「${def.name}」`, 'success')
   return eaten
 }
 
