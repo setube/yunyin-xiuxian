@@ -161,7 +161,7 @@ describe('不可逆确认的两次点击各写什么', () => {
      * 超了是「接连开炉 ×N」—— 后者不写「炼满」,因为那一下并没有把料炼完。
      * 这里只钉「复述动作」这一族的存在,具体分叉由下一条管。
      */
-    ['components/inventory/BrewingDialog.vue', '接连开炉'],
+    ['components/inventory/BrewingDialog.vue', '开 炉 ×'],
     ['components/inventory/DismantleDialog.vue', '清理化尘'],
     ['views/SoulsView.vue', '清理散置']
   ]
@@ -179,9 +179,16 @@ describe('不可逆确认的两次点击各写什么', () => {
     const src = read('components/inventory/BrewingDialog.vue')
     expect(src, '第一步的动作词该按 batch < rounds 分叉').toContain('r.plan.batch < r.plan.rounds')
     expect(src, '料够炼完时仍要写「炼 满」').toContain('`炼 满 ×${r.plan.batch}`')
-    expect(src, '料炼不完时不许写「炼 满」').toContain('`一 炉 ×${r.plan.batch}`')
+    /*
+     * 料炼不完时用规范里的复述动作「开 炉 ×N」(AGENTS.md 不可逆操作那族),
+     * 不自造同义词 —— 评审指出过,我先前写的「一 炉」「接连开炉」不在规范内。
+     */
+    expect(src, '料炼不完时该用规范动作「开 炉 ×N」').toContain('`开 炉 ×${r.plan.batch}`')
+    // 只查按钮正文:注释里提到旧写法是说明来历,不算违规
+    const buttons = [...src.matchAll(/>([^<>]*)<\/button>/g)].map(m => m[1]!).join('\n')
+    expect(buttons, '不许自造同义动作词').not.toContain('一 炉')
+    expect(buttons, '不许自造同义动作词').not.toContain('接连开炉')
     expect(src, '确认态同样按分叉写').toContain("'确认炼满'")
-    expect(src, '确认态同样按分叉写').toContain('`接连开炉 ×${r.plan.batch}`')
   })
 
   it('复述动作族的六个落点都用复述写法,且与「再想想」成对', () => {
