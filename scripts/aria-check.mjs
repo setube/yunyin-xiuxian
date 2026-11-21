@@ -78,9 +78,9 @@ try {
      * 这两页由 edge-check 的无存档场景覆盖。
      */
   ]
-  for (const r of ROUTES) {
-    if (!(await gotoRoute(page, r))) {
-      failures.push(`${r} 导航没落到目标页(hash 或过渡超时),本页标题判据未生效`)
+  for (const [i, r] of ROUTES.entries()) {
+    if (!(await gotoRoute(page, r, { first: i === 0 }))) {
+      failures.push(`${r} 导航没落到目标页(${navDetail()}),本页标题判据未生效`)
       console.log(`  ✗ ${r.padEnd(14)} 导航未落地`)
       continue
     }
@@ -108,9 +108,9 @@ try {
    * (layout-check 另有 190 个页面×视口的全量扫描,那条线更宽;此处是读屏脚本里的快速档。)
    */
   const TOUCH_ROUTES = ROUTES
-  for (const r of TOUCH_ROUTES) {
-    if (!(await gotoRoute(page, r))) {
-      failures.push(`${r} 导航没落到目标页(hash 或过渡超时),本页触控判据未生效`)
+  for (const [i, r] of TOUCH_ROUTES.entries()) {
+    if (!(await gotoRoute(page, r, { first: i === 0 }))) {
+      failures.push(`${r} 导航没落到目标页(${navDetail()}),本页触控判据未生效`)
       console.log(`  ✗ ${r.padEnd(14)} 导航未落地`)
       continue
     }
@@ -326,22 +326,58 @@ if (failures.length > 0) {
  * 或过渡还没走完时,量到的是上一页(常常是首页),而结果看起来完全正常:
  * 首页有标题、首页的控件也够大。它把「没量过」写成了「查过了」。
  * 这里等到 hash 对上、并且 FADING 过渡类消失,才认为落地;落不了直接算失败。
+ *
+ * 第一跳(trial 0)要另眼看待:此时首页**首屏刚挂上**,`page-fade` 与里面的
+ * `stagger-in` 一起在走。`waitForFunction` 的 3 秒预算被这两段共用,而机器一忙
+ * (并行跑别的 QA 脚本时)首屏那段能吃掉两秒多 —— 实测四次试验里第一次过渡耗 2465ms,
+ * 其余三次各 1~2ms。于是「同一页跳同一页」被报成「导航没落到目标页」。
+ * 那不是导航坏了,是等待预算不够。故首跳给足预算(过渡本身是 180ms 级,
+ * 慢只慢在首屏挂载),后续跳仍用 3 秒 —— 真导航坏了照样报得出来。
  */
-async function gotoRoute(page, r) {
+async function gotoRoute(page, r, { first = false } = {}) {
+  const budget = first ? 8000 : 3000
+  const t0 = Date.now()
   await page.evaluate(h => { location.hash = '#' + h }, r)
+  /*
+   * 两段等待各自记名。
+   *
+   * 原先两段共用一个 catch,失败时只报「hash 或过渡超时」—— 看不出是哪一段、
+   * 等了多久,而这两段的含义完全不同:hash 对不上是路由没走,过渡不消失是动画卡住。
+   * 实测那种含糊说法会把人引去查导航,而真凶是首屏过场还没走完。
+   */
+  const stage = { at: 'hash', ms: 0 }
   try {
-    await page.waitForFunction(h => location.hash === '#' + h, r, { timeout: 3000 })
+    await page.waitForFunction(h => location.hash === '#' + h, r, { timeout: budget })
+    stage.at = 'fade'
     // 视图是懒加载的:hash 变了之后还要等 chunk 到位、过渡走完
     await page.waitForTimeout(250)
     await page.waitForFunction(
       () => document.querySelector('.page-fade-enter-active, .page-fade-leave-active') === null,
       null,
-      { timeout: 3000 }
+      { timeout: budget }
     )
   } catch {
+    lastNavFailure = {
+      route: r,
+      stage: stage.at === 'hash' ? 'hash 未对上' : 'page-fade 过渡未消失',
+      budget,
+      ms: Date.now() - t0,
+      hash: await page.evaluate(() => location.hash),
+      fading: await page
+        .evaluate(() => [...document.querySelectorAll('.page-fade-enter-active, .page-fade-leave-active')].map(e => e.className))
+        .catch(() => [])
+    }
     return false
   }
   return (await page.evaluate(h => location.hash === '#' + h, r)) === true
+}
+/** 最近一次导航失败的分段读数,失败汇总时一并打印(见 gotoRoute) */
+let lastNavFailure = null
+/** 失败信息带上「卡在哪一段、等了多久、此刻 hash 与过渡类」 */
+function navDetail() {
+  if (!lastNavFailure) return 'hash 或过渡超时,无分段读数'
+  const f = lastNavFailure
+  return `${f.stage},${f.ms}ms(预算 ${f.budget}ms)后 hash=${f.hash},过渡类 ${f.fading.length} 个`
 }
 
 
