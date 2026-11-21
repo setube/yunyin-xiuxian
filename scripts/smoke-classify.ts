@@ -39,25 +39,50 @@ export function namePattern(label: string): RegExp {
   return new RegExp('^' + body + '$')
 }
 
+/**
+ * 「点的是当前已选中的页签」—— 与白名单同类(幂等),但按**状态**认,不写死路径。
+ *
+ * 页签点自己本来就没有变化:它已经是选中态,点它不切换任何东西。
+ * 白名单里那三条是同一种情况的特例(默认值本身就是选中值),但路径一改、
+ * 页签一换就得手写新条目 —— 实测 `/codex` 的「界域」与 `/collection` 的「成就」
+ * 都是各自页面的默认页签,一次都没进白名单,于是每次都被判成「死按钮」。
+ * 按 aria-selected 认,才覆盖得住。
+ */
+export function isSelectedTabState(
+  role: string | null,
+  ariaSelected: string | null
+): boolean {
+  return role === 'tab' && ariaSelected === 'true'
+}
+
 export type SmokeDecision = { bucket: 'dead' | 'silent'; line: string }
 
 /**
  * cleanResult 来自 ui-smoke 的干净重试:
- *   true   单独点有变化 → 功能正常(读数)
- *   false  单独点也无变化 → 真死控件(判失败)
- *   null   干净态找不到该按钮 → 无法复现(读数)
+ *   true           单独点有变化 → 功能正常(读数)
+ *   false          单独点也无变化 → 真死控件(判失败)
+ *   null           干净态找不到该按钮 → 无法复现(读数)
+ *   'selected-tab' 点的是当前已选中的页签 → 幂等(读数)
  * 白名单优先,恒为读数。
+ *
+ * `'selected-tab'` 单列一档,不复用 `true`:
+ * 两者结论相同(都不判失败),但**归因不同** —— 复用时报表写成「干净重试有变化,
+ * 功能正常」,而实际是「它本来就是选中态,点了不会有变化」。归因错了,
+ * 下次真出现一个点了没变化的页签时,人会照着这句话以为功能是好的。
  */
 export function classifySmoke(
   route: string,
   kind: 'page' | 'modal',
   label: string,
-  cleanResult: boolean | null,
+  cleanResult: boolean | null | 'selected-tab',
   allowlist: readonly string[] = SMOKE_ALLOWLIST
 ): SmokeDecision {
   const verb = kind === 'modal' ? '弹窗内点' : '点'
   const entry = `${route} ${verb}「${label}」`
   if (allowlist.includes(entry)) return { bucket: 'silent', line: `${entry}(幂等选中项,不判失败)` }
+  if (cleanResult === 'selected-tab') {
+    return { bucket: 'silent', line: `${entry}(已是选中态,点了本无变化)` }
+  }
   if (cleanResult === true) {
     return { bucket: 'silent', line: `${route} 干净重试有变化(功能正常,抑制误报):${verb}「${label}」` }
   }
