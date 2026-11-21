@@ -18,7 +18,7 @@
  * ③失败不是以未捕获异常的形式冒出来的(输出里没有裸的 "throw new Error")。
  */
 import { afterAll, describe, expect, it } from 'vitest'
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -51,6 +51,8 @@ const CASES: Array<{ script: string; label: string }> = [
 
 const TOUCHED: string[] = []
 afterAll(() => {
+  // KEEP_HARNESS=1 时留着生成物,方便人工看它长什么样(排查判据自身的问题时用)
+  if (process.env.KEEP_HARNESS) return
   for (const p of TOUCHED) rmSync(p, { force: true })
 })
 
@@ -114,32 +116,34 @@ describe('QA 脚本 · 收尾结构在中途抛错时真的会报', () => {
          */
         block.replace(/^try \{/m, "try {\n  failures.push('哨兵:注入前已查出的失败')\n  throw new Error('inject')"),
         /*
-         * 真实脚本里汇总打印在 finally 之后,这里照同样形态补上。
-         * 两种容器都打:ui-smoke 记在 `errors`(带 where 的对象),其余记在 `failures`。
-         * 只打一种会让 ui-smoke 那条假红。
+         * 汇总打印由 harness 提供(只打两种容器),但**退出码不在这里设**。
+         *
+         * 评审指出:harness 自己写一句 `process.exitCode = 1` 会把「真实脚本不再为
+         * 失败设置非零退出状态」这件事遮掉 —— 脚本退化成「打印了但退出码为零」时
+         * 这条照样绿。故退出码另由下面一条判据**直接查源码**;这里只负责打印,
+         * 断言改成「输出里有中断字样」而非「退出码非零」。
          */
-        'if (failures.length) { for (const f of failures) console.error(`  ✗ ${f}`); process.exitCode = 1 }',
-        'if (errors.length) { for (const e of errors) console.error(`✗ ${e.where}\n   ${String(e.msg).split("\\n")[0]}`); process.exitCode = 1 }'
+        'if (failures.length) { for (const f of failures) console.error(`  ✗ ${f}`) }',
+        'if (errors.length) { for (const e of errors) console.error(`✗ ${e.where} ${String(e.msg).split(/\\s+/)[0]}`) }'
       ].join('\n')
       const tmp = resolve(ROOT, `scripts/.crash-${script.split('/').pop()!.replace('.mjs', '')}.tmp.mjs`)
       writeFileSync(tmp, harness)
       TOUCHED.push(tmp)
 
-      let failed = false
-      let output = ''
-      try {
-        output = execFileSync(process.execPath, [tmp], {
-          cwd: ROOT,
-          encoding: 'utf-8',
-          timeout: 30_000,
-          stdio: ['ignore', 'pipe', 'pipe']
-        })
-      } catch (err) {
-        failed = true
-        const e = err as { stdout?: string; stderr?: string }
-        output = `${e.stdout ?? ''}\n${e.stderr ?? ''}`
-      }
-      expect(failed, `${script} 的收尾没拦住抛错 —— 进程竟然正常退出`).toBe(true)
+      /*
+       * 输出**一律走 stderr 合并**。
+       *
+       * 这几份脚本的失败清单是 `console.error` 打的,`execFileSync` 正常返回时
+       * **只给 stdout** —— 于是 harness 不设退出码时,输出读成空串,
+       * 看起来像「catch 没记住」(实测就是这么假红的)。
+       * 用 spawnSync 拿两路,再合并。
+       */
+      const run = spawnSync(process.execPath, [tmp], {
+        cwd: ROOT,
+        encoding: 'utf-8',
+        timeout: 30_000
+      })
+      const output = `${run.stdout ?? ''}\n${run.stderr ?? ''}`
       expect(output, `${script} 的输出里没有「${label}」—— 崩溃没被记成一条失败`).toContain(label)
       /*
        * 哨兵必须在:崩溃前已查出的那条失败不许被 catch 吞掉或覆盖。
@@ -147,6 +151,15 @@ describe('QA 脚本 · 收尾结构在中途抛错时真的会报', () => {
        * 只是字段不同,故这里只查标题文字。
        */
       expect(output, `${script} 的 catch 把先前查出的失败吞掉了 —— 只剩中断那一条`).toContain('哨兵')
+      /*
+       * 脚本自己必须仍为失败设非零退出码 —— 从源码直接查,不经 harness。
+       * 这一条替代了原先「harness 自己设 exitCode 再看进程码」的写法:
+       * 那种写法下脚本即便不再设退出码,判据也照样绿(评审指出)。
+       */
+      expect(
+        src,
+        `${script} 不再为失败设非零退出码 —— 打印了但 CI 看不到,判据等于没生效`
+      ).toMatch(/process\.exitCode = 1|process\.exit\(1\)/)
       /*
        * 失败必须是「记下来的」,不是冒出去的:未捕获异常的输出里有 `throw new Error`
        * 那几行源码回显。这条同时钉住「catch 吞掉了异常但不报」的反面。
