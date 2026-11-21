@@ -293,3 +293,52 @@ describe('页签幂等 · 按 aria-selected 认状态', () => {
     expect(sel.line, '复用 true 那句就是归因错了').not.toContain('功能正常')
   })
 })
+
+/**
+ * 弹窗内控件的「没法重试」与「重试了但复现不了」要分开写。
+ *
+ * `cleanRetry` 只做「导航到路由 → 找按钮 → 点 → 比指纹」。弹窗内控件要先点开
+ * 某一扇触发的窗,重放那一步得知道是哪扇、点哪个入口 —— 这份信息在
+ * `clickInsideModal` 的循环里并没有留下。
+ *
+ * 原先弹窗内控件也走页面级干净重试:永远找不到、永远记成
+ * 「干净态无法单独复现」,读数看起来像「试过了但复现不了」,实际是**根本没试**。
+ * 两者后续动作完全不同(前者要补重放,后者要承认盲区),不该写成同一句话。
+ *
+ * 故障注入:把 classifySilent 的 `kind === 'modal'` 短路去掉,第一条红。
+ */
+describe('弹窗内控件 · 无法复现单独归因', () => {
+  const SRC = readFileSync(resolve(__dirname, '../../scripts/ui-smoke.mjs'), 'utf-8').replace(
+    /^\s*(\*|\/\/).*$/gm,
+    ''
+  )
+
+  it('classifySilent 对 modal 走短路,不做页面级重试', () => {
+    const fn = /async function classifySilent[\s\S]{0,1400}?\n\}/.exec(SRC)?.[0] ?? ''
+    expect(fn, '找不到 classifySilent').not.toBe('')
+    /*
+     * 只查「出现了 kind === 'modal'」不够 —— 函数开头那句 `const verb = kind === 'modal' ? …`
+     * 也是它,判据照样绿。要看的是**取 clean 的那一句**里有没有这个短路。
+     * 实测就是这么漏过一次。
+     */
+    const cleanLine = fn
+      .split('\n')
+      .filter(l => /const clean\s*=/.test(l) || /\|\|\s*kind === 'modal'/.test(l))
+      .join('\n')
+    expect(cleanLine, '找不到取 clean 的那一句').not.toBe('')
+    expect(cleanLine, '弹窗内控件不该走页面级干净重试 —— 那永远找不到').toContain("kind === 'modal'")
+    expect(fn, '要把「没法重试」这一档传给分类器').toContain('modal-unreachable')
+  })
+
+  it('归因文案与「重试过但找不到」不同', () => {
+    const modal = classifySmoke('/world', 'modal', '深入探寻', 'modal-unreachable')
+    expect(modal.bucket, '这是覆盖盲区,不是死按钮').toBe('silent')
+    expect(modal.line, '要说清是「复现不了那扇窗」').toContain('复现不了那扇窗')
+    expect(modal.line, '不该写成「干净态无法单独复现」—— 那句暗示试过了').not.toContain(
+      '干净态无法单独复现'
+    )
+    // 对照组:页面级真找不到时仍是原来那句
+    const page = classifySmoke('/codex', 'page', '某按钮', null)
+    expect(page.line, '页面级「找不到」的文案不该被改掉').toContain('干净态无法单独复现')
+  })
+})
