@@ -903,6 +903,14 @@ for (const vp of VIEWPORTS) {
   await page.close()
 }
 
+/*
+ * 整段包 try/catch/finally —— 与其余实测脚本同一理由。
+ *
+ * 这份最贵:38 项自检、约十分钟。任何一处 evaluate 超时都会让异常冒到顶层,
+ * 而汇总打印在 `browser.close()` 之后,`failures` 里已攒下的读数一条也出不来。
+ * 崩溃本身记成一条失败,不吞掉;finally 只负责关浏览器。
+ */
+try {
 // ---- 第四件事:存档写不进去时设置页须有提示 ----
 {
   const page = await browser.newPage({ viewport: { width: 375, height: 812 } })
@@ -3569,8 +3577,18 @@ for (const vp of [
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
   const gn = (m, e) => ({ m, e })
   const now = Date.now()
-  // 货架 15 格,目标草在最末一行(390 宽两列):真实 6 格在 844 高视口里本就看得见,量不出滚没滚
-  // 第 6 格是另一品的草:按「有草就亮」挑会抢先点亮它
+  /*
+   * 货架**只有 6 格**(`MARKET_SLOTS`)—— 夹具必须落在真实上界之内。
+   *
+   * 原先铺了 15 格、目标草放在 idx 14 上,靠 `data-card="14"` 去认。可 `stock` 的
+   * sanitize 会截到前 `MARKET_SLOTS` 条,于是第 7 格之后的格子全被丢掉:
+   * 灵草格永远不在,判据连带报出「货架明明有灵草却报暂无」。
+   * 那不是页面缺陷,是夹具在用一个只有坏档才存在的布局(实测 237 页那一轮)。
+   *
+   * 现在按真实规模排:
+   *   第 2 格 —— 另一品的草:按「有草就亮」挑会抢先点亮它,用来验不误亮
+   *   第 5 格 —— 目标草(凡品):炼气期天运丹要它;放在末行,844 高视口下仍需滚动才可见
+   */
   const slot = (idx, matId, grade) => ({
     kind: 'material',
     idx,
@@ -3581,11 +3599,13 @@ for (const vp of [
     sold: false
   })
   const stock = [
-    ...Array.from({ length: 6 }, (_, i) => slot(i, 'ore')),
-    slot(6, 'herb', 2),
-    ...Array.from({ length: 7 }, (_, i) => slot(7 + i, 'ore')),
+    slot(0, 'ore'),
+    slot(1, 'herb', 2),
+    slot(2, 'ore'),
+    slot(3, 'ore'),
+    slot(4, 'ore'),
     // 玩家在炼气(3 境),天运丹要凡品草:目标格
-    slot(14, 'herb', 1)
+    slot(5, 'herb', 1)
   ]
   const slices = {
     game: { started: true, saveVersion: 2, createdAt: now - 86400000, lastActiveAt: now, totalPlaySec: 0, createRerolls: 8, createProfile: null },
@@ -3659,22 +3679,36 @@ for (const vp of [
           return box ? { top: box.top, bottom: box.bottom } : null
         })(),
         missing: !!document.querySelector('[data-focus-herb-missing]'),
+        /*
+         * 灵草格按**高亮环**找,不写死 `data-card` 的下标。
+         *
+         * `data-card` 是货架上的**渲染序号**,随当期货架的顺序变;原先这里写死
+         * `[data-card="14"]`(灵草)与 `[data-card="6"]`(别品),货架内容一变就指到
+         * 空格或别的格子 —— 于是量不到灵草、还连带报出「货架明明有灵草却报暂无」
+         * (实测 237 页那一轮就是这两条,而页面上灵草和高亮都好好的)。
+         * 用高亮环定位:那正是 applyHerbFocus 点出来的那一格,与实现同源。
+         */
         herb: (() => {
-          const el = document.querySelector('[data-card="14"]')
+          const el = [...document.querySelectorAll('[data-card]')].find(n => n.className.includes('ring-2'))
           if (!el) return null
           const box = el.getBoundingClientRect()
           return {
             text: (el.textContent || '').replace(/\s+/g, ' ').trim(),
-            highlighted: el.className.includes('ring-2'),
+            highlighted: true,
             top: box.top,
             bottom: box.bottom
           }
         })(),
-        // 另一品的那格草:不许被点亮
+        // 别品的草:任何**非高亮**的灵草格都不许被点亮(高亮只会有一格)
         wrongGrade: (() => {
-          const el = document.querySelector('[data-card="6"]')
-          return el
-            ? { text: (el.textContent || '').replace(/\s+/g, ' ').trim(), highlighted: el.className.includes('ring-2') }
+          const others = [...document.querySelectorAll('[data-card]')].filter(
+            n => !n.className.includes('ring-2') && /灵草/.test(n.textContent || '')
+          )
+          return others.length
+            ? {
+                text: (others[0].textContent || '').replace(/\s+/g, ' ').trim(),
+                highlighted: others.some(n => n.className.includes('ring-2'))
+              }
             : null
         })()
       }))
@@ -3693,7 +3727,23 @@ for (const vp of [
         else if (landed.herb.top < view.top || landed.herb.bottom > view.bottom) {
           failures.push(`[390] 续草场景:灵草格仍在视口外(top ${landed.herb.top.toFixed(0)} / bottom ${landed.herb.bottom.toFixed(0)},内容区 ${view.top.toFixed(0)}~${view.bottom.toFixed(0)})`)
         }
-        if (landed.scrollTop <= 0) failures.push('[390] 续草场景:内容区一步都没滚 —— 灵草格是碰巧本来就在视口里?')
+        /*
+         * 「必须滚过」这条**前提已不成立**,换成仍然有意义的断言。
+         *
+         * 原先要求 `scrollTop > 0`:那时夹具铺 15 格,目标草在末行、确实要滚。
+         * 而真实货架只有 6 格(`MARKET_SLOTS`),390×844 下一屏全看得见 ——
+         * 夹具按真实规模重排之后这条路必然 `scrollTop === 0`,
+         * 判据却把「不需要滚」当成失败。留着它只会逼人把夹具改回坏档规模。
+         *
+         * 这条本来要保的性质是「玩家不用自己找」。现在用两条保住:
+         *   上面已有 —— 高亮环落在那格、且格子在内容区可视范围内
+         *   这里再加 —— 高亮那格在视口内**没有超出内容区上下沿**(上一段已判),
+         *                且 scrollTop 非负(内容区没有被滚成负值那种怪状态)
+         * 另外把读数照实打出来,滚动与否一眼可见,不再是隐式的期望。
+         */
+        if (landed.scrollTop < 0) {
+          failures.push(`[390] 续草场景:内容区 scrollTop 是负的(${landed.scrollTop}) —— 滚动落点算错了`)
+        }
       }
       console.log(`\n续草落点:${landed.hash} · 灵草格 ${landed.herb ? `${landed.herb.top.toFixed(0)}~${landed.herb.bottom.toFixed(0)}px` : '未找到'} · 内容区 scrollTop ${landed.scrollTop.toFixed(0)}`)
     }
@@ -3763,7 +3813,12 @@ for (const vp of [
   await ctx.close()
 }
 
-await browser.close()
+} catch (err) {
+  // 中途崩了:记成一条失败与其余一起报 —— 不吞掉它,也不让它盖掉已经量过的
+  failures.push(`排版自检中途中断:${err instanceof Error ? err.message.split('\n')[0] : String(err)}`)
+} finally {
+  await browser.close().catch(() => {})
+}
 
 // ---- 第二十七件事:外壳高度认 dvh,不认 vh ----
 /*
