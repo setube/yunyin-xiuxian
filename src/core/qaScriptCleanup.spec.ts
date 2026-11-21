@@ -23,7 +23,8 @@ const SCRIPTS = [
   'modal-patrol',
   'detail-geometry',
   'offline-check',
-  'ui-smoke'
+  'ui-smoke',
+  'layout-check'
 ] as const
 const src = (name: string): string => readFileSync(resolve(__dirname, '../../scripts', `${name}.mjs`), 'utf-8')
 
@@ -43,7 +44,17 @@ describe('QA 脚本 · 崩溃时也要把已收集的失败报出来', () => {
        * 收集容器有两种:多数脚本用 `failures`(字符串数组),
        * ui-smoke 用 `errors`(带 where 的对象数组)。两者都是「与其余失败并列报出」。
        */
-      expect(s, `${name} 的 catch 没把异常记成一条失败`).toMatch(/catch \(err\)[\s\S]{0,400}(failures|errors)\.push\(/)
+      /*
+       * 只认**顶层**那个 catch(行首无缩进)。
+       *
+       * 原先写 `/catch \(err\)[\s\S]{0,400}(failures|errors)\.push\(/` —— 脚本内部
+       * 另有若干 `  } catch (err) {`,把它们任何一个的体也算进来,删掉顶层那个 catch 时
+       * 这条判据照样绿(故障注入实测:去掉 layout-check 的顶层 catch,13 条全过)。
+       * 顶层的写法是 `} catch (err) {` 起于行首,与内部的缩进两格不同。
+       */
+      expect(s, `${name} 的顶层 catch 没把异常记成一条失败`).toMatch(
+        /^\} catch \(err\) \{[\s\S]{0,400}?(?:failures|errors)\.push\(/m
+      )
       expect(
         s,
         `${name} 的 browser.close() 不在 finally 里 —— 崩了就不关浏览器`
