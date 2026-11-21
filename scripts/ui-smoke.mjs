@@ -342,7 +342,13 @@ async function modalRetry(route, opener, label) {
   const gateWords = ['出发', '历练', '远征', '秘境', '闭关', '探寻', '游历', '涉险', '云游', '问道', '星野']
   const flat = label.replace(/\s+/g, '')
   if (!gateWords.some(w => flat.includes(w))) return false
-  return 'state-dependent'
+  /*
+   * 返回**具体**是哪个状态,不只一个笼统的 'state-dependent'。
+   *
+   * 四种状态本来分得清(`readBusyState` 读的是四个不同字段),报表却说同一句
+   * 「已在途/闭关」—— 玩家身在秘境时,读的人会照着去查「在途」而查不到。
+   */
+  return `state-dependent-${busy.kind}`
 }
 
 /**
