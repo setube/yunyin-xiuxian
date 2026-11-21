@@ -248,12 +248,20 @@
           <!--
             增益丹每次只服 1 枚(药力顶格),不摆连服。
           -->
+          <!--
+            数字走 formatNum,且不换行。两个问题一处:
+              · 320 宽下这枚钮只分到 115px,「连服 ×2000」原会被折成两行
+                (按钮 44px → 68px,同行「服 用」跟着被撑高);存量几千枚在后期是常态
+              · 一亿这种读数按原样写是 9 位数,nowrap 之后会溢出按钮(实测 scrollW 135 > clientW 113)
+            formatNum 在万/亿档收成「2.5万」「1亿」,两档都装得下。
+            精确到个位的读数在下方的「一次服」输入框与「存 N」里,这里只是按钮。
+          -->
           <button
             v-if="(currentPill?.count ?? 0) >= 2 && currentPill?.def?.kind !== 'buff'"
-            class="btn-ghost"
+            class="btn-ghost !whitespace-nowrap"
             @click="onUsePillBatch()"
           >
-            连服 ×{{ pillBatchEffective }}
+            连服 ×{{ formatNum(pillBatchEffective) }}
           </button>
         </div>
         <!--
