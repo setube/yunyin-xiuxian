@@ -24,8 +24,12 @@ describe('背包连服 · 数量由玩家填', () => {
   })
 
   it('连服按钮文案跟随输入值,不再写死 5', () => {
-    // 文案读的是钳制后的 pillBatchEffective(见下方「界面与行为同源」)
-    expect(VIEW, '按钮文案该跟随数量').toMatch(/连服 ×\{\{ pillBatchEffective \}\}/)
+    /*
+     * 文案读的是钳制后的 pillBatchEffective(见下方「界面与行为同源」)。
+     * 它外面包了一层 formatNum(九位数会溢出按钮,见文件末那条),
+     * 故判据认「正文里出现了 pillBatchEffective」,不认外面是否裸插值。
+     */
+    expect(VIEW, '按钮文案该跟随数量').toContain('pillBatchEffective')
     expect(VIEW, '按钮文案里不该再出现写死的 min(5, ...)').not.toMatch(/连服 ×\{\{ Math\.min\(5/)
   })
 
@@ -68,8 +72,11 @@ describe('连服数量输入 · 触控下限', () => {
  */
 describe('连服 · 界面与行为同源', () => {
   it('按钮文案读钳制后的 pillBatchEffective,不直挂输入值', () => {
-    expect(VIEW, '按钮文案该读 pillBatchEffective').toContain('连服 ×{{ pillBatchEffective }}')
-    expect(VIEW, '按钮文案不许直挂未钳制的输入值').not.toContain('连服 ×{{ pillBatchCount }}')
+    expect(VIEW, '按钮文案该读 pillBatchEffective').toContain('pillBatchEffective')
+    // 只查按钮正文里的插值;pillBatchCount 是输入框的 v-model,它本来就该出现
+    const btn = /v-if="\(currentPill\?\.count[\s\S]{0,260}?<\/button>/.exec(VIEW)?.[0] ?? ''
+    expect(btn, '找不到连服钮').toBeTruthy()
+    expect(btn, '按钮正文不许直挂未钳制的输入值').not.toContain('pillBatchCount')
   })
 
   it('执行处复用同一份钳制结果,不各算一次', () => {
@@ -82,5 +89,32 @@ describe('连服 · 界面与行为同源', () => {
 
   it('存量变少时输入值被收回上限', () => {
     expect(VIEW, '缺少存量变化的 watch').toMatch(/watch\(\s*\n?\s*\(\) => inventory\.pills\[/)
+  })
+})
+
+/**
+ * 连服钮的正文:紧凑数字 + 不换行。
+ *
+ * 两个实测缺陷,同一处:
+ *   · 320 宽下这枚钮只分到 115px,「连服 ×2000」原会被折成两行 ——
+ *     按钮 44px → 68px,同行「服 用」跟着被撑高。存量几千枚在后期是常态。
+ *   · 一亿那种读数按原样写是 9 位数,加了 nowrap 之后会溢出按钮
+ *     (实测 scrollW 135 > clientW 113)。
+ *
+ * 故数字走 formatNum(万/亿档收成「2.5万」「1亿」),并显式 nowrap。
+ * 精确到个位的读数在下方的「一次服」输入框与「存 N」里,按钮只报这一下服多少。
+ *
+ * 故障注入:把 formatNum 去掉改回裸插值 → 第一条红;去掉 nowrap → 第二条红。
+ */
+describe('连服钮 · 正文紧凑且不换行', () => {
+  it('数字走 formatNum,不裸插值', () => {
+    expect(VIEW, '按钮数字该走 formatNum —— 九位数会溢出按钮').toContain('formatNum(pillBatchEffective)')
+    expect(VIEW, '按钮正文不许再裸插值').not.toContain('连服 ×{{ pillBatchEffective }}')
+  })
+
+  it('按钮显式 nowrap:320 宽下不许折成两行', () => {
+    const btn = /v-if="\(currentPill\?\.count[\s\S]{0,260}?<\/button>/.exec(VIEW)?.[0] ?? ''
+    expect(btn, '找不到连服钮').toBeTruthy()
+    expect(btn, '按钮缺 nowrap —— 「连服 ×2000」会在 115px 里折成两行').toContain('whitespace-nowrap')
   })
 })
