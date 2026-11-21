@@ -129,8 +129,33 @@ export const useQuestsStore = defineStore(
         // 旧档没有这一栏:asStringArray(undefined) 得空数组,自动补上
         daolu: dedupe('daolu')
       }
-      collectedAt.value = asNumberRecord(collectedAt.value, 0)
-      achievedAt.value = asNumberRecord(achievedAt.value, 0)
+      /*
+       * 两张时间戳表也要按**还留着的键**清 —— 它们是上面两张集合的配套索引。
+       *
+       * 上一轮把图鉴里的表外 id 与成就里的野 id 清掉了,却漏了这两张表:
+       * `asNumberRecord` 只挡非有限值与负数,不管键,两张表各自的键数也没有上界。
+       * 实测各灌十万个野键:sanitize 之后 state 仍是 6.38MB,而这两张表**只用来显示
+       * 「收录时间」「达成于」** —— 键不在集合里,那一行永远不会被画出来。
+       *
+       * 键必须由上一步的结果推出来,不能各自独立算:收录键的形是 `${category}:${id}`,
+       * 而 `achievedAt` 的键就是成就 id。这样「集合里有的才有时间戳」成为一条不变式,
+       * 也顺带挡掉了 `equip:xxx` 这种把类别写错的键。
+       */
+      const collectionKeys = new Set(
+        (Object.keys(collections.value) as CollectionCategory[]).flatMap(cat =>
+          collections.value[cat].map(id => `${cat}:${id}`)
+        )
+      )
+      const achievementKeys = new Set(achieved.value)
+      const keepOnly = (raw: unknown, allowed: Set<string>): Record<string, number> => {
+        const out: Record<string, number> = {}
+        for (const [k, v] of Object.entries(asNumberRecord(raw, 0))) {
+          if (allowed.has(k)) out[k] = v
+        }
+        return out
+      }
+      collectedAt.value = keepOnly(collectedAt.value, collectionKeys)
+      achievedAt.value = keepOnly(achievedAt.value, achievementKeys)
     }
 
     const currentMainQuest = computed(() => MAIN_QUESTS[mainIdx.value])

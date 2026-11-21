@@ -373,3 +373,57 @@ describe('收藏册 · 表外 id 读档时清掉', () => {
     expect(quests.collections.pill, '丹方同理').toEqual(['p_jvqisan'])
   })
 })
+
+/**
+ * 两张时间戳表按「还留着的键」清 —— 它们是图鉴与成就的配套索引。
+ *
+ * 上一轮把图鉴里的表外 id 与成就里的野 id 清掉了,却漏了 `collectedAt` / `achievedAt`:
+ * `asNumberRecord` 只挡非有限值与负数,不管键,键数也没有上界。
+ * 实测各灌十万个野键,sanitize 之后 state 仍是 6.38MB ——
+ * 而这两张表只用来显示「收录时间」「达成于」,键不在集合里就永远画不出来。
+ *
+ * 故障注入:把两行 keepOnly 换回 `asNumberRecord(...)`,第一条红。
+ */
+describe('收藏册 · 时间戳表按留下的键清', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('十万个野键全清,state 不再被撑大', () => {
+    const quests = useQuestsStore()
+    const collected = Object.fromEntries(Array.from({ length: 100_000 }, (_, i) => [`equip:wild_${i}`, Date.now()]))
+    const achieved = Object.fromEntries(Array.from({ length: 100_000 }, (_, i) => [`wild_ach_${i}`, Date.now()]))
+    quests.$patch({ collectedAt: collected, achievedAt: achieved } as never)
+    quests.sanitize()
+    expect(Object.keys(quests.collectedAt).length, '键不在图鉴里,这一行永远画不出来').toBe(0)
+    expect(Object.keys(quests.achievedAt).length, '键不是成就 id,永远画不出来').toBe(0)
+    expect(JSON.stringify(quests.$state).length, '坏档把 state 撑爆了').toBeLessThan(5000)
+  })
+
+  it('留得下的条目,时间戳照留;类别写错的键清掉', () => {
+    const quests = useQuestsStore()
+    const now = Date.now()
+    quests.$patch({
+      collections: { equip: ['w_zhuqing'], gongfa: [], pill: [], artifact: [], pet: [], event: [], talent: [], daolu: [] },
+      achieved: ['a_r0'],
+      collectedAt: {
+        'equip:w_zhuqing': now,
+        'pill:w_zhuqing': now, // 类别写错:装备 id 挂在丹方下
+        'equip:wild_x': now
+      },
+      achievedAt: { a_r0: now, wild_ach: now }
+    } as never)
+    quests.sanitize()
+    expect(Object.keys(quests.collectedAt), '只该留下「这一类 + 这个 id」都对得上的那条').toEqual(['equip:w_zhuqing'])
+    expect(Object.keys(quests.achievedAt)).toEqual(['a_r0'])
+  })
+
+  it('时间戳本身仍按数值钳:负数归零,不是删键', () => {
+    const quests = useQuestsStore()
+    quests.$patch({
+      collections: { equip: ['w_zhuqing'], gongfa: [], pill: [], artifact: [], pet: [], event: [], talent: [], daolu: [] },
+      collectedAt: { 'equip:w_zhuqing': -5 }
+    } as never)
+    quests.sanitize()
+    // asNumberRecord 的既有语义:非有限值与负数归零 —— 键留着,值可信
+    expect(quests.collectedAt['equip:w_zhuqing']).toBe(0)
+  })
+})
