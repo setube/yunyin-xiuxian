@@ -45,7 +45,8 @@ const CASES: Array<{ script: string; label: string }> = [
    * 输出里只剩堆栈。补 catch 后归入本判据。
    */
   { script: 'scripts/focus-check.mjs', label: '切页焦点自检中途中断' },
-  { script: 'scripts/multitab-check.mjs', label: '两页同开自检中途中断' }
+  { script: 'scripts/multitab-check.mjs', label: '两页同开自检中途中断' },
+  { script: 'scripts/aria-check.mjs', label: '读屏属性自检中途中断' }
 ]
 
 const TOUCHED: string[] = []
@@ -103,7 +104,15 @@ describe('QA 脚本 · 收尾结构在中途抛错时真的会报', () => {
          * 看起来像「catch 没记住」—— 实测这两份就是这么假红的。
          */
         'const server = { close: (cb) => (cb ? cb() : undefined), httpServer: { close: () => {} } }',
-        block.replace(/^try \{/m, "try {\n  throw new Error('inject')"),
+        /*
+         * 注入**之前先放一条已有失败** —— 这是评审指出的关键一步。
+         *
+         * 只注入 throw 再查「输出里有中断字样」是不够的:catch 完全可能
+         * 在记录中断前把 failures 清空/重建(比如误写成 `failures = [...]`),
+         * 那样中断照样打印,而之前查出来的全丢了 —— 正是要防的东西。
+         * 所以先塞一条哨兵,断言输出里**同时**有哨兵与中断字样。
+         */
+        block.replace(/^try \{/m, "try {\n  failures.push('哨兵:注入前已查出的失败')\n  throw new Error('inject')"),
         /*
          * 真实脚本里汇总打印在 finally 之后,这里照同样形态补上。
          * 两种容器都打:ui-smoke 记在 `errors`(带 where 的对象),其余记在 `failures`。
@@ -132,6 +141,12 @@ describe('QA 脚本 · 收尾结构在中途抛错时真的会报', () => {
       }
       expect(failed, `${script} 的收尾没拦住抛错 —— 进程竟然正常退出`).toBe(true)
       expect(output, `${script} 的输出里没有「${label}」—— 崩溃没被记成一条失败`).toContain(label)
+      /*
+       * 哨兵必须在:崩溃前已查出的那条失败不许被 catch 吞掉或覆盖。
+       * ui-smoke 用 errors 容器,故哨兵也要能在那边体现 —— 它走的是同一条 push,
+       * 只是字段不同,故这里只查标题文字。
+       */
+      expect(output, `${script} 的 catch 把先前查出的失败吞掉了 —— 只剩中断那一条`).toContain('哨兵')
       /*
        * 失败必须是「记下来的」,不是冒出去的:未捕获异常的输出里有 `throw new Error`
        * 那几行源码回显。这条同时钉住「catch 吞掉了异常但不报」的反面。

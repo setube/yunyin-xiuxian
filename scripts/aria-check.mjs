@@ -316,9 +316,20 @@ try {
   await zeroCtx.close()
   if (denyBad.length > 0) failures.push(`禁用钮没给拒因(资源归零档):${denyBad.join('; ')}`)
   console.log(`  ${denyBad.length === 0 ? '✓' : '✗'} 禁用钮有拒因(资源归零 · ${denyChecked} 页)`)
+} catch (err) {
+  // 中途崩了:记成一条失败与其余一起报 —— 不吞掉它,也不让它盖掉已经查出来的
+  failures.push(`读屏属性自检中途中断:${err instanceof Error ? err.message.split('\n')[0] : String(err)}`)
 } finally {
-  await browser?.close()
-  await server.httpServer.close()
+  /*
+   * 两道收尾**各自兜住自己的失败**,不许一个把另一个挡住。
+   *
+   * 评审指出:原先两句裸 await,浏览器关失败就直接跳出 finally,
+   * 服务器根本不关;而清理期的异常还会在汇总之前逸出,调用方看到的是一段堆栈、
+   * 已经查出来的失败一条也没有。
+   * 清理失败本身也记成一条失败 —— 那是真实的状态问题(端口/进程残留)。
+   */
+  await browser?.close().catch((e) => failures.push(`关闭浏览器失败:${e instanceof Error ? e.message : String(e)}`))
+  await server.httpServer.close((e) => e && failures.push(`关闭自检服务器失败:${e instanceof Error ? e.message : String(e)}`))
 }
 
 if (failures.length > 0) {
