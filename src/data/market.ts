@@ -32,9 +32,26 @@ export const MARKET_KIND_WEIGHTS: Record<MarketKind, number> = { pill: 4, materi
 export const MARKET_CONSIGN_SLOTS = 2
 /**
  * 寄卖格的渲染上限,不是能挂几件(MARKET_CONSIGN_SLOTS)。
- * 坏档/导入档可塞成千上万条,都是已交出的货,不能丢:存档全留(到点照样入账),界面只铺这么多格,其余并成一行「还有 N 件」。
+ * 坏档/导入档可塞成千上万条:界面只铺这么多格,其余并成一行「另有 N 件」。
  */
 export const MARKET_CONSIGN_RENDER_MAX = 6
+/**
+ * 寄卖条数的**读档上限**,与渲染上限是两件事。
+ *
+ * 写入侧只有 `consignEquip` 一个入口,而它先过
+ * `if (consign.value.length >= MARKET_CONSIGN_SLOTS) return 'full'` ——
+ * 正常存档里永远不可能超过 2 条。故读档时超过的那部分**只可能来自坏档**。
+ *
+ * 早先的处置是「存档全留,到点照样入账」,理由是「都是玩家已交出去的货,不能丢」。
+ * 那个理由在正常玩法下成立,在坏档下不成立:一条寄卖的最高价是
+ * `consignPrice(MAX_EQUIP_TIER, 神品)` ≈ 6.36e10,而条数没有上界 ——
+ * 实测灌 5 万条,一次收割凭空入账 **3179 兆灵石**,存档同时被撑到 5MB。
+ * 货是假的,钱也是假的;留全量既救不了玩家,又毁掉经济。
+ *
+ * 上界取 `MARKET_CONSIGN_SLOTS`:与写入侧同一把尺,「挂得下的才留」。
+ * 越界的整条丢弃,不夹取 —— 夹出来的每一条都会被当成真的到点入账。
+ */
+export const MARKET_CONSIGN_MAX = MARKET_CONSIGN_SLOTS
 export const MARKET_CONSIGN_SECONDS = 2400
 /** 寄卖装备灵石档位(stoneByTier 的 amount)与每品质档增量;恒低于坊市购入同档,防套利 */
 export const MARKET_CONSIGN_STONE_BASE = 25
