@@ -505,3 +505,38 @@ describe('连服 · 整批一次结算与逐枚同值', () => {
     expect(hugeMs, `九十万枚花了 ${hugeMs.toFixed(0)}ms,与服一枚不同量级 —— 又走回逐枚循环了`).toBeLessThan(oneMs * 100)
   })
 })
+
+/**
+ * 批量炼丹的上界落在函数自己身上。
+ *
+ * `CraftBatchPlan.batch` 是**界面**那条路的封顶;但 `craftPillBatch` 是导出函数,
+ * 任何调用点直接传材料数就绕开它 —— 坏档 1e12 株灵草 = 2.5e11 炉,一次调用跑几十分钟。
+ * 上界写进函数,「无论谁传什么都跑得完」才是这个函数自己的性质。
+ *
+ * 故障注入:删掉 `Math.min(..., CRAFT_BATCH_MAX)` 那道,第一条会跑到超时。
+ */
+describe('批量炼丹 · 函数自己也有上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockRand = 0
+    settleRewards()
+    knowRecipe()
+  })
+
+  it('直接传一个巨大的炉数也只开 CRAFT_BATCH_MAX 炉', () => {
+    const res = useResourcesStore()
+    const c = pillCraftCost(ID)!
+    res.addSmall('herb', c.herb * 5000)
+    res.addStone({ m: 9, e: 30 })
+    const out = craftPillBatch(ID, 5000)
+    expect(out.rounds, `直接传 5000 炉却开了 ${out.rounds} 炉 —— 上界没落在函数上`).toBe(CRAFT_BATCH_MAX)
+  })
+
+  it('上界之内原样执行(封顶不改变正常行为)', () => {
+    const res = useResourcesStore()
+    const c = pillCraftCost(ID)!
+    res.addSmall('herb', c.herb * 7)
+    res.addStone({ m: 1, e: 9 })
+    expect(craftPillBatch(ID, 7).rounds).toBe(7)
+  })
+})

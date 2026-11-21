@@ -364,7 +364,17 @@ export function craftPill(id: string, quiet = false): CraftOutcome {
  */
 export function craftPillBatch(id: string, count: number): { rounds: number; made: number; failed: number } {
   if (count < 1) return { rounds: 0, made: 0, failed: 0 }
-  if (count === 1) {
+  /*
+   * 上界在这里也挡一道,不只靠 `CraftBatchPlan.batch`。
+   *
+   * plan 那条是**界面**的路径,而这是个导出函数 —— 任何新调用点(或将来某个
+   * 「按材料全开」的入口)直接传 material 数就会绕开它:坏档 1e12 株灵草 = 2.5e11 炉,
+   * 一次调用跑几十分钟。上界落在函数自己身上,才有「无论谁传什么都跑得完」这个性质。
+   * 界面走的仍是 plan.batch(两者同值),提示里报的炉数也就是实开的炉数。
+   */
+  const roundsWanted = Math.min(Math.floor(count), CRAFT_BATCH_MAX)
+  if (roundsWanted < 1) return { rounds: 0, made: 0, failed: 0 }
+  if (roundsWanted === 1) {
     const first = craftPill(id)
     // 未开炉不计为炸炉,与 count≥2 的循环同口径
     if (first.aborted) return { rounds: 0, made: 0, failed: 0 }
@@ -373,7 +383,7 @@ export function craftPillBatch(id: string, count: number): { rounds: number; mad
   let made = 0
   let failed = 0
   let rounds = 0
-  for (let i = 0; i < count; i += 1) {
+  for (let i = 0; i < roundsWanted; i += 1) {
     const out = craftPill(id, true)
     if (out.aborted) break
     rounds += 1
