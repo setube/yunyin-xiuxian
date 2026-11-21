@@ -76,8 +76,44 @@ describe('QA 脚本 · 崩溃时也要把已收集的失败报出来', () => {
        * 起进程跑,断言 ①退出码非零 ②输出里有失败清单而不是只有堆栈。
        * 注入只写临时文件、跑完删掉,不碰仓库里的源码。
        */
+      /*
+       * 「主体是否真的在 try 里」由 `qaCrashReporting.spec` 用**真进程注入**验证,
+       * 这里不做静态位置断言 —— 试过三种写法,都数不准:
+       *
+       *   · 数 try 内的 `failures.push` 处数:判据多半写在辅助函数里
+       *     (judge / auditModal / SCENES 闭包),**定义在 try 外、执行在 try 内**,
+       *     实测 edge-states 数出 2、detail-geometry 数出 0,而这两份收尾都是对的
+       *   · 找「try 之前的顶层 await」:各脚本的 `async function open()` 定义里
+       *     就有 `await browser.newContext`,那是定义不是执行,恒被误判
+       *   · 找「try 之前的 await open(...) / page.goto」:同上,辅助函数体内就有
+       *
+       * 静态只能判断「形态在不在」,判断不了「执行时罩没罩住」。后者交给
+       * qaCrashReporting.spec:它把各脚本自己的收尾片段抽出来、喂一次必抛,看有没有报。
+       */
       const tryAt = s.search(/^try \{$/m)
       expect(tryAt, `${name} 没有行首无缩进的顶层 try`).toBeGreaterThan(-1)
+      /*
+       * 这里能判、且判得准的那一条:**try 之后紧跟的第一条语句必须是干活的**。
+       *
+       * 虚设 try 的形态是「空 try/catch/finally 在前,主体在后」—— 那样 try 后面
+       * 紧跟的会是一句 `const x = ...` 之类的声明、或者直接就是 `await browser.close()`。
+       * 八份脚本实测下来,try 后紧跟的第一条无注释语句全部是主体首句
+       * (裸块 `{`、`for (const … of …)`、`await page.goto`、`await runXxx`、`await newPage`)。
+       *
+       * 判据:不许是声明,也不许是 close。
+       */
+      const firstStmt =
+        s
+          .slice(tryAt + 'try {'.length)
+          .split('\n')
+          .map(l => l.trim())
+          .find(l => l.length > 0 && !/^(?:\/\/|\*|\/\*)/.test(l)) ?? ''
+      expect(firstStmt, `${name} 的 try 之后没有语句`).not.toBe('')
+      expect(firstStmt, `${name} 的 try 只罩了收尾(第一句是 close)`).not.toMatch(/^await browser\.close/)
+      expect(
+        firstStmt,
+        `${name} 的 try 之后紧跟的是一句声明(${firstStmt.slice(0, 40)})—— 主体可能在保护之外`
+      ).not.toMatch(/^(?:const|let|var)\s+(?!.*await )/)
       // 关闭之后再冒泡的写法是这次修的那一类:close 不许出现在 try 块之外的裸语句位置
       expect(s, `${name} 还留着裸的 \`await browser.close()\` —— 那条路径只有正常收尾才走到`).not.toMatch(
         /^\s*await browser\.close\(\)\s*$/
