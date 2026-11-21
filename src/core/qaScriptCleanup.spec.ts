@@ -26,7 +26,8 @@ const SCRIPTS = [
   'ui-smoke',
   'layout-check',
   'focus-check',
-  'multitab-check'
+  'multitab-check',
+  'aria-check'
 ] as const
 const src = (name: string): string => readFileSync(resolve(__dirname, '../../scripts', `${name}.mjs`), 'utf-8')
 
@@ -60,7 +61,21 @@ describe('QA 脚本 · 崩溃时也要把已收集的失败报出来', () => {
       expect(
         s,
         `${name} 的 browser.close() 不在 finally 里 —— 崩了就不关浏览器`
-      ).toMatch(/finally \{[\s\S]{0,160}browser\??\.close\(/)
+      ).toMatch(/^\} finally \{$/m)
+      /*
+       * close 必须落在**这个 finally 块内部**。
+       *
+       * 评审指出:原来的 `/finally \{[\s\S]{0,160}browser\.close\(/` 不认右花括号,
+       * 把 `await browser?.close()` 挪到 finally **之后**,只要距离在 160 字符内照样匹配 ——
+       * 而那种写法在清理期出错时浏览器仍然不会关。
+       * 这里先按 `^\}` 切出块,再在块内找 close。
+       */
+      const finAt = s.search(/^\} finally \{$/m)
+      expect(finAt, `${name} 找不到行首的 finally 块`).toBeGreaterThan(-1)
+      const finEnd = s.indexOf('\n}', finAt + 1)
+      expect(finEnd, `${name} 的 finally 块没有闭合`).toBeGreaterThan(finAt)
+      const finBlock = s.slice(finAt, finEnd)
+      expect(finBlock, `${name} 的 finally 块里没有关浏览器 —— 崩了就不关`).toMatch(/browser\??\.close\(/)
       /*
        * 光有 try 不够 —— 要它**真的罩住主体**。
        *
@@ -211,6 +226,48 @@ describe('QA 巡查脚本 · 不许只有 try/finally', () => {
       if (!hasTry) return
       expect(s, `${name} 有 try 却没有 catch —— 崩了读数照样丢`).toMatch(/^\} catch \(err\) \{/m)
       expect(s, `${name} 有 try 却没有 finally —— 崩了不关浏览器`).toMatch(/^\} finally \{/m)
+    })
+  }
+})
+
+/**
+ * 两道收尾各自兜住自己的失败 —— 一个不许把另一个挡住。
+ *
+ * 评审指出(PR #627):`finally` 里写两句裸 `await` 时,浏览器关失败就直接跳出 finally,
+ * 服务器根本不关;而清理期的异常还会在**汇总之前**逸出 ——
+ * 调用方看到的是一段堆栈,已经查出来的失败一条也没有。
+ *
+ * 这一形态在 focus-check / multitab-check / aria-check 三份上都存在。
+ * 判据:这两句都要带 catch(或等价的失败兜底),不许是裸 await。
+ *
+ * 故障注入:把 focus-check 的 `browser?.close().catch(...)` 改回裸 `await browser?.close()`,本条红。
+ */
+describe('QA 巡查脚本 · 收尾失败不许挡住汇总', () => {
+  const WITH_SERVER: readonly string[] = ['focus-check', 'multitab-check', 'aria-check', 'offline-check']
+
+  for (const name of WITH_SERVER) {
+    it(`${name}:关浏览器与关服务器都各自兜住失败`, () => {
+      const s = code(name)
+      const finAt = s.search(/^\} finally \{$/m)
+      expect(finAt, `${name} 找不到行首的 finally 块`).toBeGreaterThan(-1)
+      const finEnd = s.indexOf('\n}', finAt + 1)
+      const finBlock = s.slice(finAt, finEnd > finAt ? finEnd : finAt + 800)
+
+      // 关浏览器这一句:要么带 .catch(...),要么整体包在 try 里
+      const closeLine = finBlock.split('\n').find(l => /browser\??\.close\(/.test(l)) ?? ''
+      expect(closeLine, `${name} 的 finally 里找不到关浏览器那句`).not.toBe('')
+      expect(
+        /\.catch\(|await .*\.close\(\)\.then\(/.test(closeLine) || /\btry \{/.test(finBlock),
+        `${name} 关浏览器是裸 await —— 失败会跳出 finally,服务器跟着不关,汇总也轮不到`
+      ).toBe(true)
+
+      // 关服务器这一句:同上(offline-check 用的是 Promise 包装,单独认)
+      const srvLine = finBlock.split('\n').find(l => /server\.[\w.]*close\(/.test(l)) ?? ''
+      expect(srvLine, `${name} 的 finally 里找不到关服务器那句`).not.toBe('')
+      expect(
+        /\.catch\(|new Promise|=>\s*\(?e\b|\(ok\)|\(cb\)/.test(srvLine) || /\btry \{/.test(finBlock),
+        `${name} 关服务器是裸调用 —— 失败会在汇总之前逸出`
+      ).toBe(true)
     })
   }
 })
