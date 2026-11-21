@@ -9,7 +9,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { usePlayerStore } from '@/stores/player'
 import { herbBountyReward } from '@/core/bountyService'
 import { pillDef } from '@/data/pills'
-import { BOUNTY_PILL_WUDAO } from '@/data/bounty'
+import { BOUNTY_MAX, BOUNTY_PILL_WUDAO, BOUNTY_SLOTS } from '@/data/bounty'
 import { MAX_EQUIP_TIER } from '@/data/equipment'
 
 const FAR = 4_102_444_800_000 // 2099-12-31
@@ -359,5 +359,61 @@ describe('坊市悬赏板 · 募草工价上货时刻冻结', () => {
     expect(b.claim(0)).toBe('ok')
     // 按生成时的 major 5 折算;改用当前 major 则此断言红
     expect(toNum(res.spiritStone)).toBe(toNum(herbBountyReward(1, 5, 30)))
+  })
+})
+
+/**
+ * 悬赏单读档条数封顶。
+ *
+ * 写入侧只有 `generateBounty`,结尾就是 `slice(0, min(BOUNTY_SLOTS, len))` —— 正常存档 ≤4 张。
+ * 读档时多出来的只可能来自坏档,而每一张都能被 `claim(idx)` 逐张交付领赏:
+ * 实测 5000 张(赏格 9.9e12)能全部领完,净得 4.95 京灵石,存档同时被撑到 550KB。
+ *
+ * 故障注入:删掉 sanitize 里那道 slice,前两条都红。
+ */
+describe('坊市悬赏板 · 读档条数封顶', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  const paper = (n: number, reward: { m: number; e: number } = { m: 9.9, e: 12 }) =>
+    Array.from({ length: n }, (_, i) => ({
+      idx: i,
+      kind: 'ore',
+      kindId: 'ore',
+      target: 1,
+      tier: 0,
+      reward,
+      extra: 0,
+      claimed: false
+    }))
+
+  it('坏档灌五千张:读档后只剩上限那么多', () => {
+    const b = useBountyStore()
+    b.$patch({ orders: paper(5000), bountyAt: Date.now(), bountyMajor: 3 } as never)
+    b.sanitize()
+    expect(b.orders.length, '五千张全留下会把存档撑到 550KB').toBe(BOUNTY_MAX)
+    expect(JSON.stringify(b.orders).length, '存档不该被坏档撑大').toBeLessThan(1200)
+  })
+
+  it('领赏只按留下的张数,不按坏档里的张数', () => {
+    const b = useBountyStore()
+    const res = useResourcesStore()
+    b.$patch({ orders: paper(5000), bountyAt: Date.now(), bountyMajor: 3 } as never)
+    b.sanitize()
+    res.ore = 5000
+    res.spiritStone = { m: 0, e: 0 }
+    let claimed = 0
+    // 按 idx 逐张领:bountyAt 是此刻、窗口内,不会换版
+    for (let i = 0; i < BOUNTY_MAX + 10; i += 1) if (b.claim(i) === 'ok') claimed += 1
+    expect(claimed, '只有留下的那几张领得走').toBe(BOUNTY_MAX)
+    // 每张 9.9e12,四张 ≈ 3.96e13;坏档那版会入账 5000 张 ≈ 4.95e16
+    expect(toNum(res.spiritStone), '凭空多送了灵石 —— 坏档张数又被当成真的了').toBeLessThan(1e14)
+  })
+
+  it('正常一版(正好四张)一字不动:封顶不误伤', () => {
+    const b = useBountyStore()
+    b.$patch({ orders: paper(BOUNTY_SLOTS), bountyAt: Date.now(), bountyMajor: 3 } as never)
+    b.sanitize()
+    expect(b.orders.length, '正常四张不该被削').toBe(BOUNTY_SLOTS)
+    expect(b.orders.map(o => o.idx)).toEqual([0, 1, 2, 3])
   })
 })
