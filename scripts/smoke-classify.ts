@@ -88,6 +88,10 @@ export type SmokeCleanResult =
   | 'selected-tab'
   | 'modal-unreachable'
   | 'state-dependent'
+  | 'state-dependent-retreat'
+  | 'state-dependent-expedition'
+  | 'state-dependent-secretRealm'
+  | 'state-dependent-exploration'
 
 export type SmokeDecision = { bucket: 'dead' | 'silent'; line: string }
 
@@ -136,8 +140,37 @@ export function classifySmoke(
    * 这一档与 `'cleanResult === false'`(真死控件)必须分开 ——
    * 前者说明判据的语境界不到,后者说明控件有问题。
    */
-  if (cleanResult === 'state-dependent') {
-    return { bucket: 'silent', line: `${entry}(重放时已在途/闭关,按钮在可出发状态下才有效,未单独验证)` }
+  /*
+   * `'state-dependent'` 同样只对弹窗内控件成立。
+   *
+   * 评审指出:页面控件传入这一档时若无校验,会披上「重放时已在途」的说法 ——
+   * 而页面级重试根本没有重放语境,那是把缺陷藏起来。
+   * 与 `'modal-unreachable'` 同一处理:类型上绑 + 运行时挡。
+   */
+  const STATE_REASON: Record<string, string> = {
+    'state-dependent': '在途',
+    'state-dependent-retreat': '闭关',
+    'state-dependent-expedition': '远征',
+    'state-dependent-secretRealm': '秘境',
+    // readBusyState 读到的第四种:历练在途
+    'state-dependent-exploration': '历练在途'
+  }
+  const stateKey = cleanResult as string
+  if (stateKey in STATE_REASON) {
+    /*
+     * 归因要写出**具体**是哪个状态。
+     *
+     * 评审指出:四种互斥状态原先共用一句「已在途/闭关」,玩家身在秘境时
+     * 报表也这么说 —— 读的人据此去查「在途」会发现对不上。
+     * 状态本来就分得清(`readBusyState` 读的是四个不同字段),文案也该跟上。
+     */
+    if (kind !== 'modal') {
+      return { bucket: 'dead', line: `${entry} —— 归类错:页面控件不该有「重放时已在途」这一档` }
+    }
+    return {
+      bucket: 'silent',
+      line: `${entry}(重放时${STATE_REASON[stateKey]},按钮在可出发状态下才有效,未单独验证)`
+    }
   }
   if (kind !== 'modal' && cleanResult === 'modal-unreachable') {
     return { bucket: 'dead', line: `${entry} —— 归类错:页面控件不该有「弹窗内盲点」这一档` }

@@ -447,11 +447,31 @@ describe('namePattern · 空白容错是零或多', () => {
  * 故障注入:把 classifySilent 的 state-dependent 分支删掉 → 第一条红。
  */
 describe('重放状态相关 · 与死控件分开', () => {
-  it('归读数,文案说明是状态所致', () => {
-    const d = classifySmoke('/world', 'modal', '深入探寻', 'state-dependent')
-    expect(d.bucket, '状态相关不是死按钮').toBe('silent')
-    expect(d.line, '要说清是「重放时已在途」').toContain('已在途')
-    expect(d.line, '要说明按钮在可出发状态下才有效').toContain('可出发')
+  it('归读数,文案写出**具体**是哪个状态', () => {
+    const cases: Array<[string, string]> = [
+      ['state-dependent-retreat', '闭关'],
+      ['state-dependent-expedition', '远征'],
+      ['state-dependent-secretRealm', '秘境'],
+      ['state-dependent', '在途']
+    ]
+    for (const [key, word] of cases) {
+      const d = classifySmoke('/world', 'modal', '深入探寻', key as never)
+      expect(d.bucket, `${key} 不是死按钮`).toBe('silent')
+      expect(d.line, `${key} 的归因该写出「${word}」`).toContain(word)
+      expect(d.line, '要说明按钮在可出发状态下才有效').toContain('可出发')
+    }
+    /*
+     * 四种状态**共用一句**「已在途/闭关」的老写法要让位:身在秘境时报表这么说,
+     * 读的人会去查「在途」而查不到(评审指出)。
+     */
+    const secret = classifySmoke('/world', 'modal', '深入探寻', 'state-dependent-secretRealm')
+    expect(secret.line, '秘境不该被写成「在途」').not.toContain('在途')
+  })
+
+  it('页面控件不接受这一档 —— 那是把缺陷藏起来', () => {
+    const bad = classifySmoke('/codex', 'page', '某按钮', 'state-dependent-secretRealm')
+    expect(bad.bucket, '页面级没有重放语境,不该披上「在途」的说法').toBe('dead')
+    expect(bad.line).toContain('归类错')
   })
 
   it('modalRetry 判状态门控:点后读互斥状态 + 控件正文属于在途动作', () => {
