@@ -18,8 +18,9 @@ import { MAX_EQUIP_TIER, equipmentTemplate } from '@/data/equipment'
 import { qualityDef } from '@/data/qualities'
 import {
   MARKET_REFRESH_SECONDS,
-  MARKET_CONSIGN_SLOTS,
+  MARKET_CONSIGN_MAX,
   MARKET_CONSIGN_SECONDS,
+  MARKET_CONSIGN_SLOTS,
   MARKET_MAT_COUNT,
   MARKET_SLOTS,
   type ConsignPost,
@@ -201,10 +202,17 @@ export const useMarketStore = defineStore(
           name: 'name' in raw && typeof raw.name === 'string' ? truncateCodePoints(raw.name, NAME_MAX_LENGTH * 2) : ''
         })
       }
-      // 寄卖格号重排成唯一的 0..n-1,不丢任何一条:界面按格号铺格子,
-      // 同号时只看见一件,到点却两笔都入账
+      /*
+       * 寄卖格号重排成唯一的 0..n-1:界面按格号铺格子,同号时只看见一件、
+       * 到点却两笔都入账。
+       *
+       * 条数另有上界(见 `MARKET_CONSIGN_MAX`):写入侧最多挂 2 条,超出的只可能来自坏档,
+       * 而每一条到点都会按 `price` 真入账 —— 实测 5 万条一次收割凭空入账 3179 兆灵石。
+       * 按到期先后留最早的几条(先到期的先结算,与「都留着」时的入账顺序一致)。
+       */
       consign.value = posts
         .sort((a, b) => a.finishAt - b.finishAt || a.slot - b.slot)
+        .slice(0, MARKET_CONSIGN_MAX)
         .map((p, i) => ({ ...p, slot: i }))
     }
 

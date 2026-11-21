@@ -1,7 +1,7 @@
 /** 坊市 store —— 购买路径与坏档韧性 */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { MARKET_MAT_COUNT, MARKET_CONSIGN_SLOTS, MARKET_REFRESH_SECONDS, type MarketSlot } from '@/data/market'
+import { MARKET_MAT_COUNT, MARKET_CONSIGN_MAX, MARKET_CONSIGN_SLOTS, MARKET_REFRESH_SECONDS, type MarketSlot } from '@/data/market'
 import { pillSellPrice } from '@/core/marketService'
 import { gn, toNum } from '@/utils/gnum'
 import { BAG_CAPACITY } from '@/data/constants'
@@ -623,7 +623,18 @@ describe('坊市 · 买卖', () => {
     expect(market.consign.map(p => toNum(p.price)).sort(), '合法寄卖价原样保留,不串').toEqual([5, 6])
   })
 
-  it('sanitize:寄卖多于格子上限也不丢,照样入账', () => {
+  /*
+   * 寄卖条数读档封顶 —— 这条判据**推翻**了它从前的主张。
+   *
+   * 原先这里钉的是「多于格子上限也不丢,照样入账」,理由是「都是玩家已交出去的货」。
+   * 那个理由在正常玩法下成立(写入侧 `consignEquip` 先过 `>= SLOTS` 就返回 full,
+   * 正常存档永远只有 ≤2 条),在坏档下不成立 —— 而超出上限的**只可能**来自坏档。
+   * 一条寄卖的最高价约 6.36e10,而条数原先没有上界:实测灌 5 万条,
+   * 一次收割凭空入账 3179 兆灵石,存档同时被撑到 5MB。货是假的,钱也是假的。
+   *
+   * 现按到期先后留最早的几条(先到期的先结算,与「都留着」时的入账顺序一致)。
+   */
+  it('sanitize:寄卖条数超过写入上限时,只留最早到期的几条', () => {
     const market = useMarketStore()
     const now = Date.now()
     const many = Array.from({ length: MARKET_CONSIGN_SLOTS + 2 }, (_, i) => ({
@@ -636,7 +647,27 @@ describe('坊市 · 买卖', () => {
     }))
     market.$patch({ consign: many })
     market.sanitize()
-    expect(market.consign.length, '超出上限的也是玩家已交出去的货,不能悄悄吞掉').toBe(MARKET_CONSIGN_SLOTS + 2)
+    expect(market.consign.length, '超出写入上限的条目该被丢弃 —— 留全量会按条数白送灵石').toBe(MARKET_CONSIGN_MAX)
+    // 留下的必须是最早到期的那两条,格号重排成 0..n-1
+    expect(market.consign.map(p => p.name)).toEqual(['件0', '件1'])
+    expect(market.consign.map(p => p.slot)).toEqual([0, 1])
+  })
+
+  it('正常存档(正好挂满)一字不动:封顶不误伤', () => {
+    const market = useMarketStore()
+    const now = Date.now()
+    const full = Array.from({ length: MARKET_CONSIGN_SLOTS }, (_, i) => ({
+      slot: i,
+      tier: 3,
+      qualityRank: 1,
+      price: { m: 5, e: 0 },
+      finishAt: now + 1000 + i,
+      name: `件${i}`
+    }))
+    market.$patch({ consign: full })
+    market.sanitize()
+    expect(market.consign.length, '正常挂满两个格子不该被削').toBe(MARKET_CONSIGN_SLOTS)
+    expect(market.consign.map(p => p.name)).toEqual(['件0', '件1'])
   })
 })
 
@@ -939,5 +970,48 @@ describe('寄卖 · 品名长度上界', () => {
     m.sanitize()
     expect(m.consign[0]?.name.length, '品名没截 —— 文本节点与存档照大不误').toBeLessThanOrEqual(16)
     expect(m.consign[1]?.name, '正常品名被误伤').toBe('青锋剑')
+  })
+})
+
+/**
+ * 寄卖条数封顶的两道保险:存档不被撑大、灵石不被凭空送。
+ *
+ * 这两条是同一个缺陷的两面:条数没有上界时,坏档既能让存档涨到 5MB,
+ * 也能让一次收割按条数入账 —— 实测 5 万条 ≈ 3179 兆灵石。
+ *
+ * 故障注入:删掉 sanitize 里那道 `.slice(0, MARKET_CONSIGN_MAX)`,两条都红。
+ */
+describe('坊市 · 寄卖条数封顶', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  const bulk = (n: number, finishAt: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      slot: i,
+      tier: 24,
+      qualityRank: 6,
+      price: { m: 6.35, e: 10 },
+      finishAt,
+      name: `件${i}`
+    }))
+
+  it('坏档灌五万条:读档后只剩上限那么多', () => {
+    const market = useMarketStore()
+    market.$patch({ consign: bulk(50_000, Date.now() + 60_000) } as never)
+    market.sanitize()
+    expect(market.consign.length, '五万条全留下会把存档撑到 5MB').toBe(MARKET_CONSIGN_MAX)
+    expect(JSON.stringify(market.consign).length, '存档不该被坏档撑大').toBeLessThan(1200)
+  })
+
+  it('收割时按留下的条数入账,不按坏档里的条数', () => {
+    const market = useMarketStore()
+    const resources = useResourcesStore()
+    const now = Date.now()
+    market.$patch({ consign: bulk(50_000, now + 1000) } as never)
+    market.sanitize()
+    resources.spiritStone = gn(0)
+    const credits = market.collectConsign(now + 5000)
+    expect(credits.length, '入账条数该是留下的条数').toBe(MARKET_CONSIGN_MAX)
+    // 每条 6.35e10,两条 ≈ 1.27e11;坏档那版会入账 5e4 条 ≈ 3.18e15
+    expect(toNum(resources.spiritStone), '凭空多送了灵石 —— 坏档条数又被当成真的了').toBeLessThan(2e11)
   })
 })
