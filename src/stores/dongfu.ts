@@ -104,9 +104,30 @@ export const useDongfuStore = defineStore(
      * 坏 levels.mansion 会让 offlineCapHours 与离线收益全线 NaN。
      */
     function sanitize(): void {
-      const nextLevels = { ...levels.value }
+      /*
+       * 只留 BUILDINGS 里那几座,表外的键整条丢掉 —— 不再「先展开再补全」。
+       *
+       * 原先 `{ ...levels.value }` 展开后逐个修正已有键:修正只针对表内的,
+       * 表外的原样留着。而写入侧只有 `upgrade()` 一条路,它的 id 恒来自 BUILDINGS ——
+       * 表外键只可能来自坏档,且在界面上一个都不会显示。
+       * 实测灌十万个野键:`sanitize` 之后 state 仍是 1.69MB,而这一步在启动路径上
+       * (点开游戏到看见首页之间),光它就要跑 166ms。
+       *
+       * 与前几轮 quests 的图鉴、收藏时间戳表同一类:容器不是列表本身,
+       * 而是列表里装的内容 —— 写入侧有上界,读档侧却没有。
+       */
+      /*
+       * 先补形再读:`levels` 整块缺失时 `levels.value[def.id]` 会抛 TypeError。
+       * 原先 `{ ...levels.value }` 恰好对 null/undefined 安全(展开空对象),
+       * 改成显式构造之后这层安全没了 —— storeResilience 的「逐个字段灌 undefined」
+       * 与「灌恶意值」两条用例当场抓到。
+       */
+      if (!levels.value || typeof levels.value !== 'object') {
+        levels.value = {} as Record<BuildingId, number>
+      }
+      const nextLevels = {} as Record<BuildingId, number>
       for (const def of BUILDINGS) {
-        const cur = nextLevels[def.id]
+        const cur = levels.value[def.id]
         if (cur === undefined || !Number.isFinite(cur) || cur < 0) nextLevels[def.id] = 0
         else nextLevels[def.id] = Math.min(Math.floor(cur), def.maxLevel)
       }

@@ -495,6 +495,7 @@ expect(pillQualityColor(p), `${p.name} 的配色应记登峰金芒`).toBe(DAO_QU
 - 18 个 store 的 `sanitize()`（其中 17 个有 `persistConfig`；只有 `resources` 那处漏指数界，已修）
 - `stoneByTier` 全部 41 处调用（21 个文件，都骑 `maxTierForMajor` 或它的别名）
 - 启动顺序（`main.ts` 三条断言）、版本三件套（package.json / CHANGELOG / releaseNotes）
+- 页面级扫描与分片模糊测试：17 路由无横向溢出 / 无坏值 / 无 <28px 触控目标（唯一命中的「标题被 ellipsis 截断」是标题栏固定布局，非缺陷）；`lateSlices` 覆盖的 8 个分片逐字段灌 `NaN / ±Infinity / 1e300 / 'x' / null / {} / [] / true`，页面均无抛错、无坏值印出；全新档从欢迎页到首页的主路径耗时 3.0 秒（灵根鉴定动画 2200ms + 400ms 离场 + 路由），`SpiritRootReveal` 卸载时不回调是**刻意的**（防定时器把已离开建号页的玩家推回首页），勿改
 
 ## 七、标签与数值脱节（217~218 轮，2 条）
 
