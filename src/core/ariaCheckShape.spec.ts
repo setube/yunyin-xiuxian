@@ -96,3 +96,32 @@ describe('aria-check · 四档存档各司其职', () => {
     }
   })
 })
+
+/*
+ * 导航落地判据的两处形状(第 3 轮修「导航未落地」误报时加的)。
+ *
+ * 这两点都属于「工具误报」那一类 —— 仓库文档里记过:判据自己写歪时,
+ * 会把人引去查一个并不存在的缺陷。实测两次并发跑 `aria-check` 与
+ * `focus-check`,首条路由 `/` 各报过一次「导航未落地」,而单独跑全绿。
+ */
+describe('aria-check · 导航落地判据', () => {
+  it('首跳给足预算:首屏过场与后续跳转不是同一档等待', () => {
+    const at = CODE.indexOf('async function gotoRoute')
+    expect(at, '找不到 gotoRoute —— 判据要跟着改名').toBeGreaterThan(-1)
+    const block = CODE.slice(at, at + 1600)
+    // 首屏刚挂上时 page-fade 与 stagger-in 一起走,3 秒预算会被它吃掉(实测 2465ms)
+    expect(block, '首跳没有单独的等待预算 —— 并发时会误报「导航未落地」').toMatch(/budget\s*=\s*first\s*\?/)
+  })
+
+  it('失败分两段记名:hash 未对上 ≠ 过渡未消失', () => {
+    const at = CODE.indexOf('async function gotoRoute')
+    const block = CODE.slice(at, at + 2400)
+    expect(block, '两段等待没分开记名,失败时看不出卡在哪一段').toContain('hash 未对上')
+    expect(block, '两段等待没分开记名,失败时看不出卡在哪一段').toContain('page-fade 过渡未消失')
+  })
+
+  it('失败信息走 navDetail,带上等了多久与此刻的状态', () => {
+    expect(CODE, '导航失败仍写死「hash 或过渡超时」—— 看不出是哪一段').not.toContain('(hash 或过渡超时)')
+    expect(CODE, '导航失败没带分段读数').toContain('navDetail()')
+  })
+})
