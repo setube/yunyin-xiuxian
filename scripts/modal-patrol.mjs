@@ -483,7 +483,35 @@ async function patrol(page, name, click) {
     notOpened.push(name)
     return
   }
-  await page.waitForTimeout(450)
+  /*
+   * 等面板**真的可见**,而不是固定等 450ms 再量。
+   *
+   * 面板出现本身是瞬时的(实测 1~19ms),但点下去之后还要等懒加载视图、等 store
+   * 状态生效;机器一忙(并发跑别的 QA 脚本时)450ms 就不够了。实测并发轮里
+   * 「分解」这扇报过两条自相矛盾的失败:「量不到 .modal-panel」与
+   * 「弹窗开着时背景仍能被手指滚走」—— 面板根本没开,却照样拿去量背景锁。
+   *
+   * 等不到就记「未量」并写明原因:那与「量过且没问题」是两回事,
+   * 混在一起会让汇总里的「每一扇都量过」变成空话。
+   */
+  const visible = await page
+    .waitForFunction(
+      () =>
+        [...document.querySelectorAll('.modal-panel')].some(el => {
+          const r = el.getBoundingClientRect()
+          return r.width > 0 && r.height > 0
+        }),
+      null,
+      { timeout: 4000 }
+    )
+    .then(() => true)
+    .catch(() => false)
+  if (!visible) {
+    notOpened.push(`${name}(点了但 4 秒内没出现面板)`)
+    return
+  }
+  // 过渡收尾再量:auditModal 会禁动效,但类名还没摘时几何仍是中间态
+  await page.waitForTimeout(120)
   const audit = await auditModal(page)
   await checkBackdropLocked(page, name)
   if (SHOTS) {
@@ -965,7 +993,12 @@ if (PATROLLED - twoStepMissed.length < MIN_TWO_STEP) {
 }
 
 if (notOpened.length) {
-  console.log(`\n未量到的弹窗(${notOpened.length} 扇,入口没出现 —— 夹具未铺该窗前置):`)
+  /*
+   * 两种原因分开写:入口没出现(夹具没铺到前置)是正常的,点了却没弹出面板不是 ——
+   * 后者说明那一扇窗这次根本没被量过,与「量过且没问题」是两回事。
+   * 原先只有第一种,加了等待之后两类都会进这张表,故标签要如实覆盖两种。
+   */
+  console.log(`\n未量到的弹窗(${notOpened.length} 扇):`)
   for (const n of notOpened) console.log(`  · ${n}`)
 }
 
