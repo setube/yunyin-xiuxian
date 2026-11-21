@@ -324,27 +324,34 @@ describe('弹窗内控件 · 无法复现单独归因', () => {
    * 这里改成把 `classifySilent` 的取 clean 逻辑**复刻成一个纯函数**再测行为 ——
    * 逻辑只有一行三元,复刻得住;同时用源码判据钉住那一行与复刻一致(下一条)。
    */
-  it('classifySilent 对 modal 走短路,不做页面级重试', () => {
-    const fn = /async function classifySilent[\s\S]{0,1600}?\n\}/.exec(SRC)?.[0] ?? ''
+  it('classifySilent 对 modal 走 modalRetry,不走页面级的 cleanRetry', () => {
+    const fn = /async function classifySilent[\s\S]{0,2000}?\n\}/.exec(SRC)?.[0] ?? ''
     expect(fn, '找不到 classifySilent').not.toBe('')
     /*
-     * 只认「取 clean 的那一句」里、且**短路分支**上有没有 modal。
-     * 三元写成 `A || modal ? null : await cleanRetry(...)`:modal 在 `?` 左边才是短路。
-     * 用它来验:把左侧整段取出来,必须含 `kind === 'modal'`。
+     * 弹窗内控件现在**可以**重试了(重放「点开那扇窗」那一步,见 modalRetry),
+     * 所以判据不再是「走短路」,而是「走的是 modalRetry 而不是 cleanRetry」。
+     *
+     * 仍要防的回归:modal 分支退回 cleanRetry —— 那条永远找不到弹窗内按钮。
      */
-    const m = /const clean\s*=([\s\S]*?)\?\s*null\s*:\s*await cleanRetry/.exec(fn)
+    const m = /const clean\s*=([\s\S]*?)\n\s*pushSmokeDecision/.exec(fn)
     expect(m, '取 clean 的写法变了 —— 判据要跟着改名').not.toBeNull()
-    const cond = m![1]!
-    expect(cond, '弹窗内控件没走短路 —— 会去跑永远找不到的页面级重试').toContain("kind === 'modal'")
-    /*
-     * 传参那一句:modal 时必须把 `modal-unreachable` 传给分类器。
-     * 同样只查**实参表达式**,不查函数里别处有没有这个词。
-     */
-    const call = /classifySmoke\(([\s\S]*?)\)\s*\n\s*\)/.exec(fn)?.[1] ?? ''
-    expect(call, '找不到对 classifySmoke 的调用').not.toBe('')
-    expect(call, 'modal 时没把 modal-unreachable 传下去 —— 归因会退回含糊的那句').toContain(
-      'modal-unreachable'
+    const body = m![1]!
+    expect(body, 'modal 分支没走 modalRetry').toContain('modalRetry(')
+    // modal 那一支不许出现 cleanRetry
+    const modalBranch = /kind === 'modal'\s*\?([\s\S]*?):\s*await cleanRetry/.exec(body)?.[1] ?? ''
+    expect(modalBranch, '找不到 modal 分支').not.toBe('')
+    expect(modalBranch, 'modal 分支退回 cleanRetry —— 那条永远找不到弹窗内按钮').not.toContain(
+      'cleanRetry'
     )
+  })
+
+  it('modalRetry 具备重放能力:重开入口、等面板、窗内找目标', () => {
+    const fn = /async function modalRetry[\s\S]*?\n\}/.exec(SRC)?.[0] ?? ''
+    expect(fn, '找不到 modalRetry —— 判据要跟着改名').not.toBe('')
+    expect(fn, '没有重放入口那一步').toContain('namePattern(opener)')
+    expect(fn, '没等面板挂上就找按钮').toContain(".modal-panel")
+    expect(fn, '窗内找按钮没限定在面板里').toContain("locator('.modal-panel button')")
+    expect(fn, '没有 opener 时该如实标成没法重试').toContain("'modal-unreachable'")
   })
 
   it('归因文案与「重试过但找不到」不同', () => {
@@ -378,5 +385,78 @@ describe('modal-unreachable 的适用范围', () => {
     const ok = classifySmoke('/world', 'modal', '深入探寻', 'modal-unreachable')
     expect(ok.bucket).toBe('silent')
     expect(ok.line).toContain('复现不了那扇窗')
+  })
+})
+
+/**
+ * 名字里「元素拼接处」的空格不稳定 —— 空白容错必须是零或多。
+ *
+ * 「深入探寻」与「小险」在 `ExploreModeDialog` 里是**两个 span**:
+ *   `<span class="font-kai">{{ name }}</span>` 后跟难度标签
+ * `innerText` 有时给一个空格、有时因布局紧凑不给 —— 同一个按钮,
+ * 主循环读到的 label 是「深入探寻小险 行程」,重放后读到的却是「深入探寻小险行程」。
+ *
+ * 写成 `\s+` 时后者匹配不上,弹窗内控件的重试于是恒被判「找不到目标按钮」,
+ * 十一个弹窗内控件全部记成死按钮。实测就是这么红的。
+ *
+ * `\s*` 对两种都成立;文字骨架仍逐字相同,不会误配。
+ */
+describe('namePattern · 空白容错是零或多', () => {
+  it('元素拼接处少一个空格仍能定位', () => {
+    const label = '深入探寻小险 行程 1小时 · 收益 ×1.4 · 遇险 ×1.74'
+    const noSpace = '深入探寻小险行程 1小时 · 收益 ×1.4 · 遇险 ×1.6'
+    /*
+     * 只测**实际发生的那个方向**:主循环读到带空格的 label(innerText 给了空格),
+     * 重放后同一按钮的 innerText 没给空格 —— `namePattern(label)` 用它去匹配。
+     * 反向(label 里没空格、实际文本有空格)是另一回事:`小险行程` 会被当成
+     * 一个整体,中间插不进 `\s*`,那条路本就不该指望 —— 判据不写这个方向。
+     */
+    expect(namePattern(label).test(noSpace), '拼接处少空格就认不出 —— 弹窗内重试会全线判死').toBe(true)
+  })
+
+  it('文字骨架仍须逐字相同,不会因放宽空白而误配', () => {
+    /*
+     * 只挑**文字**差异,不挑数字差异 —— 数字段本来就该放宽(那是设计),
+     * 拿「1小时 vs 2小时」当反例会把放宽数字这件事的基础判据推翻。
+     */
+    const re = namePattern('深入探寻小险 行程 1小时')
+    expect(re.test('寻常游历安稳 行程 1小时'), '别的模式不该被认成「深入探寻」').toBe(false)
+    expect(re.test('深入探寻极险 行程 1小时'), '难度标签是骨架的一部分,不许放松').toBe(false)
+  })
+})
+
+/**
+ * 「重放时已在途/闭关」与「真死控件」必须分开。
+ *
+ * 实测:`/world` 的六档历练模式按钮,主循环点「深入探寻」时**真的出发了**,
+ * 存档里 `adventure.session` 从此为真;`modalRetry` 重放那一步时
+ * `startExploration` 走「历练在途」分支 return false(带 toast 拒因),
+ * 弹窗不关、界面不变 —— 十一处全被记成死按钮,冒烟退出码 1。
+ *
+ * 那不是缺陷:按钮在**可出发的状态下**是好的,重放时状态已经变了。
+ * 两者的后续动作完全不同:前者说明判据的语境界不到(要换语景重放),
+ * 后者说明控件真有问题(要修)。
+ *
+ * 故障注入:把 classifySilent 的 state-dependent 分支删掉 → 第一条红。
+ */
+describe('重放状态相关 · 与死控件分开', () => {
+  it('归读数,文案说明是状态所致', () => {
+    const d = classifySmoke('/world', 'modal', '深入探寻', 'state-dependent')
+    expect(d.bucket, '状态相关不是死按钮').toBe('silent')
+    expect(d.line, '要说清是「重放时已在途」').toContain('已在途')
+    expect(d.line, '要说明按钮在可出发状态下才有效').toContain('可出发')
+  })
+
+  it('modalRetry 会读三个互斥状态再决定', () => {
+    const SRC2 = readFileSync(resolve(__dirname, '../../scripts/ui-smoke.mjs'), 'utf-8').replace(
+      /^\s*(\*|\/\/).*$/gm,
+      ''
+    )
+    const fn = /async function modalRetry[\s\S]*?\n\}/.exec(SRC2)?.[0] ?? ''
+    expect(fn, '找不到 modalRetry').not.toBe('')
+    for (const key of ['session', 'retreat', 'secretRealm']) {
+      expect(fn, `modalRetry 没读 ${key} —— 状态相关会被误判成死按钮`).toContain(key)
+    }
+    expect(fn, '要在点击之前判状态,而不是点完看指纹').toContain("'state-dependent'")
   })
 })
