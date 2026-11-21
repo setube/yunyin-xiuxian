@@ -16,6 +16,15 @@ const BASE = `http://localhost:${PORT}/`
 if (!requireDist('读屏属性自检')) process.exit(1)
 
 const failures = []
+/**
+ * 最近一次导航失败的分段读数,失败汇总时一并打印(见 gotoRoute)。
+ *
+ * 声明必须在**顶层代码之前**:本脚本是 top-level await 的写法,
+ * `gotoRoute` 在顶层循环里就会被调用。原先它写在文件末尾的辅助函数区,
+ * 于是「正常跑不碰、一失败就 `Cannot access before initialization`」——
+ * 报错路径自己先炸了,真正的失败原因永远打印不出来(实测并发那一轮踩到)。
+ */
+let lastNavFailure = null
 let browser
 
 try {
@@ -371,8 +380,6 @@ async function gotoRoute(page, r, { first = false } = {}) {
   }
   return (await page.evaluate(h => location.hash === '#' + h, r)) === true
 }
-/** 最近一次导航失败的分段读数,失败汇总时一并打印(见 gotoRoute) */
-let lastNavFailure = null
 /** 失败信息带上「卡在哪一段、等了多久、此刻 hash 与过渡类」 */
 function navDetail() {
   if (!lastNavFailure) return 'hash 或过渡超时,无分段读数'

@@ -125,3 +125,23 @@ describe('aria-check · 导航落地判据', () => {
     expect(CODE, '导航失败没带分段读数').toContain('navDetail()')
   })
 })
+
+/*
+ * 失败路径自己的顺序问题(第 12 轮踩到)。
+ *
+ * `lastNavFailure` 原写在文件末尾的辅助函数区,而本脚本是 top-level await 写法,
+ * `gotoRoute` 在顶层循环里就被调用。正常跑不碰它,一旦导航真失败就进
+ * `Cannot access before initialization` —— 报错路径自己先炸,真正的失败原因
+ * 永远打印不出来。实测并发那一轮复现过一次。
+ *
+ * 这类缺陷只在「本来就要报错」时才现形,平时的绿跑永远看不见,故从源码钉顺序。
+ */
+describe('aria-check · 失败路径的变量先于使用声明', () => {
+  it('lastNavFailure 声明在第一次赋值之前', () => {
+    const decl = CODE.indexOf('let lastNavFailure')
+    const use = CODE.indexOf('lastNavFailure = {')
+    expect(decl, '找不到 lastNavFailure 的声明').toBeGreaterThan(-1)
+    expect(use, '找不到 lastNavFailure 的赋值点').toBeGreaterThan(-1)
+    expect(decl, '声明在使用之后 —— TDZ 会让失败路径自己先炸').toBeLessThan(use)
+  })
+})
