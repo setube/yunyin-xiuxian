@@ -329,36 +329,53 @@ export const useMarketStore = defineStore(
     }
 
     /**
-     * 售尽某一味的全部存货:逐枚走同一个 sellPill,判据与计价都不分叉。
-     * 后期丹匣常堆几十枚,一枚一枚点没有意义。
+     * 售尽某一味的全部存货。
+     *
+     * **一次扣完、一次入账**,不再逐枚循环。逐枚那版对正常存档(几十枚)没有区别,
+     * 但存量没有真实上界:`sanitize` 只把丹药数夹到 `EQUIP_COUNTER_MAX`(一亿),
+     * 而坏档正落在这个数上。实测 1e5 枚耗时 2.3 秒、1e6 枚 19 秒 ——
+     * 点一下「确认售尽」页面就卡死十几秒到几分钟,主线程全占,心跳与存档都停摆。
+     * 一枚与一亿枚的售价是同一个乘法,没有理由按枚数付时间。
+     *
+     * 判据仍是原先那两条:丹方里有价(`recipe.stoneBase`)才可售,存量不足一枚不成交。
      * @returns 实售枚数与总所得;一枚也没卖出时枚数为 0
      */
     function sellPillAll(pillId: string): { count: number; stone: GNum } {
       const inventory = useInventoryStore()
-      const before = inventory.pills[pillId] ?? 0
-      let n = 0
-      while (n < before && sellPill(pillId)) n += 1
-      return { count: n, stone: n > 0 ? mulN(pillSellPrice(pillId), n) : gnZero() }
+      const count = Math.floor(inventory.pills[pillId] ?? 0)
+      if (count <= 0) return { count: 0, stone: gnZero() }
+      const unit = pillSellPrice(pillId)
+      // 无价丹药(事件丹)与逐枚那条同判:单价为 0 即不可售
+      if (unit.m <= 0) return { count: 0, stone: gnZero() }
+      if (!inventory.spendPill(pillId, count)) return { count: 0, stone: gnZero() }
+      const stone = mulN(unit, count)
+      useResourcesStore().addStone(stone)
+      return { count, stone }
     }
 
     /**
      * 售尽某品灵草 / 玄铁:整摞计价,不足一摞即一枚也卖不出。
+     *
+     * 与丹药那条同因:原先逐摞调 sellHerb / sellMaterial,摞数来自没有真实上界的存量
+     * (实测 1e6 玄铁 = 83333 摞,1.1 秒)。现一次扣完、一次入账,计价取自与逐次同一个函数。
      * @returns 实售摞数
      */
     function sellHerbAll(grade: HerbGrade): number {
       const resources = useResourcesStore()
       const lots = Math.floor(resources.herbOf(grade) / MARKET_MAT_COUNT)
-      let n = 0
-      while (n < lots && sellHerb(grade)) n += 1
-      return n
+      if (lots <= 0) return 0
+      if (!resources.spendHerb(grade, lots * MARKET_MAT_COUNT)) return 0
+      resources.addStone(mulN(herbSellBatch(grade, usePlayerStore().major), lots))
+      return lots
     }
 
     function sellOreAll(major: number): number {
       const resources = useResourcesStore()
       const lots = Math.floor(resources.ore / MARKET_MAT_COUNT)
-      let n = 0
-      while (n < lots && sellMaterial(major)) n += 1
-      return n
+      if (lots <= 0) return 0
+      if (!resources.spendSmall('ore', lots * MARKET_MAT_COUNT)) return 0
+      resources.addStone(mulN(materialSellPrice(major), lots))
+      return lots
     }
 
     return {
