@@ -193,3 +193,30 @@ describe('edge-states · 收尾报数', () => {
     expect(SRC, '该列出档名').toContain('${SCENES.map(s => s.name).join')
   })
 })
+
+/*
+ * 中途崩掉时,已查出来的东西要亮出来(第 13 轮)。
+ *
+ * 原先汇总写在 `await browser.close()` 之后:任一路由里某次 `evaluate` 超时就整段跳过,
+ * `failures` 里已经攒下的那些一条也打印不出来 —— 跑了十分钟的巡查,最后只看到一行堆栈,
+ * 分不清是「只有这一处出问题」还是「前面全坏了」。用最小脚本复现过。
+ *
+ * 故障注入:把 for 循环从 try 里挪出去,第一条红;把 catch 里的 failures.push 删掉,第二条红。
+ */
+describe('edge-states · 中途崩掉也要报告', () => {
+  it('逐档循环包在 try 里', () => {
+    const tryAt = SRC.indexOf('try {')
+    const loopAt = SRC.indexOf('for (const scene of SCENES)')
+    expect(tryAt, '找不到 try 块').toBeGreaterThan(-1)
+    expect(loopAt, '找不到逐档循环').toBeGreaterThan(-1)
+    expect(tryAt, '循环没包在 try 里 —— 中途抛错会让已收集的失败全部丢失').toBeLessThan(loopAt)
+  })
+
+  it('异常记成一条失败,与其余一起报', () => {
+    const catchAt = SRC.indexOf('} catch (err)')
+    expect(catchAt, '找不到 catch 块').toBeGreaterThan(-1)
+    const block = SRC.slice(catchAt, catchAt + 400)
+    expect(block, '异常没进 failures —— 只留堆栈,已查出来的都看不到').toContain('failures.push(')
+    expect(block, '中断要说明是中断,别混成普通判据失败').toContain('巡查中途中断')
+  })
+})

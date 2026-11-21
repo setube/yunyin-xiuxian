@@ -604,7 +604,18 @@ const SCENES = [
   }
 ]
 
-for (const scene of SCENES) {
+/*
+ * 逐档跑,并在**异常时也把已收集的失败打出来**。
+ *
+ * 原先汇总写在 `await browser.close()` 之后:任一路由里某次 `evaluate` 超时,
+ * 异常直接冒到顶层,`failures` 里已经攒下的那些一条也打印不出来 ——
+ * 跑了十分钟的巡查,最后只看到一行堆栈,分不清是「只有这一处出问题」还是「前面全坏了」。
+ * 实测用一个中途抛错的最小脚本复现过:两条已收集的失败确实一条没印。
+ *
+ * 异常本身记成一条失败,不吞掉:退出码照旧非零,只是让「已查出来的」先亮出来。
+ */
+try {
+  for (const scene of SCENES) {
   const context = await browser.newContext({ viewport: { width: 375, height: 900 } })
   await context.route('**/*', r => {
     const url = r.request().url()
@@ -648,8 +659,12 @@ for (const scene of SCENES) {
   }
   await context.close()
 }
-
-await browser.close()
+} catch (err) {
+  // 中途崩了:记成一条失败与其余一起报 —— 不吞掉它,也不让它盖掉已经查出来的
+  failures.push(`巡查中途中断:${err instanceof Error ? err.message.split('\n')[0] : String(err)}`)
+} finally {
+  await browser.close().catch(() => {})
+}
 
 if (failures.length) {
   console.error('\n异常路径:以下地方不对')
