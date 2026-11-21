@@ -208,27 +208,140 @@ async function cleanRetry(route, label) {
   if (sawToast) return true
   return (await fingerprint()) !== before
 }
+/**
+ * 弹窗内控件的干净重试:重新导航 → 重放「点开那扇窗」那一步 → 在窗内找目标按钮。
+ *
+ * 原先弹窗内控件直接记成「干净态无法单独复现」——那是**没法重试**被写成了
+ * **重试失败**。其实重放是可行的:打开这扇窗的入口就是主循环刚点过的那颗按钮,
+ * 它的正文(labels 里那串)已经拿到了。把 opener 传下来即可。
+ *
+ * 仍需返回 `'modal-unreachable'` 的情形:
+ *   · 没有 opener(入口未知,比如弹窗是引擎自己弹的)
+ *   · 重放时那个入口按钮找不到了(前面点的按钮改过页面状态)
+ *   · 重放后没有弹窗出现
+ * 这三种是**真的没法重试**,如实标注,不冒充「找不到目标按钮」。
+ *
+ * @returns true 窗内点它有变化 / false 窗内点它也无变化 / 'modal-unreachable' 重放不成
+ */
+async function modalRetry(route, opener, label) {
+  if (!opener) return 'modal-unreachable'
+  await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
+  await page
+    .waitForFunction(() => !!document.querySelector('main h1, main h2'), null, { timeout: 4000 })
+    .catch(() => {})
+  await page.waitForTimeout(600)
+  const entryRe = new RegExp(namePattern(opener).source.replace(/^\^|\$$/g, ''))
+  const entries = page.locator('main button').filter({ hasText: entryRe })
+  let opened = false
+  for (let i = 0; i < (await entries.count()); i += 1) {
+    const cand = entries.nth(i)
+    const text = ((await cand.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
+    if (!namePattern(opener).test(text)) continue
+    if (!(await cand.isVisible().catch(() => false))) continue
+    const ok = await cand
+      .click({ timeout: 800 })
+      .then(() => true)
+      .catch(() => false)
+    if (!ok) continue
+    // 等面板真的挂上(与 modal-patrol 同一口径:不靠固定睡眠)
+    opened = await page
+      .waitForFunction(() => !!document.querySelector('.modal-panel'), null, { timeout: 4000 })
+      .then(() => true)
+      .catch(() => false)
+    if (opened) break
+  }
+  if (!opened) return 'modal-unreachable'
+
+  // 窗内找目标按钮:同样要求整串吻合 + 可见
+  const whole = namePattern(label)
+  const re = new RegExp(whole.source.replace(/^\^|\$$/g, ''))
+  const matches = page.locator('.modal-panel button').filter({ hasText: re })
+  const total = await matches.count()
+  let b = null
+  for (let i = 0; i < total; i += 1) {
+    const cand = matches.nth(i)
+    const text = ((await cand.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
+    if (!whole.test(text)) continue
+    if (!(await cand.isVisible().catch(() => false))) continue
+    b = cand
+    break
+  }
+  // 重放成了、窗内却没有这个按钮 —— 那是真问题,交给分类器判(返回 false → dead)
+  if (!b) return false
+  // 窗内的页签同理:点已选中的那个本无变化
+  const tabState = await b
+    .evaluate(el => ({ role: el.getAttribute('role'), selected: el.getAttribute('aria-selected') }))
+    .catch(() => null)
+  if (tabState && isSelectedTabState(tabState.role, tabState.selected)) return 'selected-tab'
+  if (await b.isDisabled().catch(() => false)) return false
+  /*
+   * 重放时页面可能已处在「点了也没用」的状态 —— 那不是死按钮。
+   *
+   * 实测:主循环点「深入探寻」真的出发了,存档里 `adventure.session` 从此为真;
+   * `modalRetry` 重放那一步时 `startExploration` 走「历练在途」分支(return false,
+   * 带 toast 拒因),弹窗不关、界面不变 —— 六档历练模式全被记成死按钮。
+   * 那不是缺陷:按钮在**可出发的状态下**是好的,重放时状态已经变了。
+   * 先把这三个互斥状态读出来,处在其中就如实归因为 `'state-dependent'`。
+   */
+  const busy = await page
+    .evaluate(() => {
+      const app = document.querySelector('#app')?.__vue_app__
+      const pinia = app?.config?.globalProperties?._p ? app.config.globalProperties._p : app?.config?.globalProperties?.$pinia
+      const get = n => pinia?._s?.get(n)
+      const adv = get('adventure')
+      const cult = get('cultivation')
+      const player = get('player')
+      return {
+        session: !!adv?.session,
+        // 闭关不是一个布尔字段,而是 buffs 里那条 'retreat'(见 earlyGameService.isRetreating)
+        retreat: (cult?.buffs ?? []).some(b => b?.defId === 'retreat' && (b?.endsAt ?? 0) > Date.now()),
+        secretRealm: !!player?.secretRealm
+      }
+    })
+    .catch(() => null)
+  if (busy && (busy.session || busy.retreat || busy.secretRealm)) return 'state-dependent'
+  const before = await fingerprint()
+  const ok = await b
+    .click({ timeout: 800 })
+    .then(() => true)
+    .catch(() => false)
+  if (!ok) return false
+  let sawToast = false
+  for (let i = 0; i < 12 && !sawToast; i += 1) {
+    sawToast = await page.evaluate(() => document.querySelectorAll('[class*=toast]').length > 0)
+    if (!sawToast) await page.waitForTimeout(60)
+  }
+  await settle()
+  if (sawToast) return true
+  return (await fingerprint()) !== before
+}
+
 /** 归桶与报告行由共享分类器 classifySmoke 给出,不在此另写 */
 function pushSmokeDecision(dec) {
   if (dec.bucket === 'dead') dead.push(dec.line)
   else silent.push(dec.line)
 }
-async function classifySilent(route, kind, label) {
+async function classifySilent(route, kind, label, opener) {
   const verb = kind === 'modal' ? '弹窗内点' : '点'
   const entry = `${route} ${verb}「${label}」`
   // 白名单项不做干净重试(分类器另核)
   /*
-   * 弹窗内按钮不做页面级干净重试 —— 那不是「重试失败」,是「没法重试」。
+   * 弹窗内控件走**自己的**重试:`modalRetry` 会重放「点开那扇窗」那一步。
    *
-   * `cleanRetry` 只做「导航到路由 → 找按钮 → 点 → 比指纹」,而弹窗内控件要先点开
-   * 某一扇触发的窗。要重放那一步,得知道是哪扇窗、点哪个入口 —— 这份信息在
-   * `clickInsideModal` 的循环里并没有留下。
-   * 硬走过去的结果是:永远找不到、永远记成「干净态无法单独复现」,
-   * 读数看起来像「试过了但复现不了」,实际是**根本没试**。
-   * 分别归因为 `'modal-unreachable'`,让报表说清楚这是覆盖盲区。
+   * 页面级的 `cleanRetry` 只做「导航到路由 → 找按钮 → 点 → 比指纹」,
+   * 而弹窗内控件要先点开某一扇触发的窗 —— 那条路永远找不到它,
+   * 于是每个弹窗内控件都被记成「干净态无法单独复现」:
+   * 看起来像「试过了但复现不了」,实际是**根本没试**。
+   *
+   * 重放需要知道是哪扇窗、点哪个入口 —— 那份信息由主循环传进来(`opener`)。
+   * 拿不到 opener(如引擎自己弹的窗)、或重放时入口已不可点,才如实退回
+   * `'modal-unreachable'`;那才是真的没法重试。
    */
-  const clean =
-    SMOKE_ALLOWLIST.includes(entry) || kind === 'modal' ? null : await cleanRetry(route, label)
+  const clean = SMOKE_ALLOWLIST.includes(entry)
+    ? null
+    : kind === 'modal'
+      ? await modalRetry(route, opener, label)
+      : await cleanRetry(route, label)
   pushSmokeDecision(
     classifySmoke(route, kind, label, kind === 'modal' && clean === null ? 'modal-unreachable' : clean, SMOKE_ALLOWLIST)
   )
@@ -390,7 +503,7 @@ if (LATE) {
  * 只点最上层弹窗:每轮重取 z 最高的可见弹窗,走完再 Esc 回下层;按钮打一次性标记,重排/替换不重复点。
  * 固定取第一扇会点到被详情盖住的底层按钮,误报死按钮。
  */
-async function clickInsideModal(route) {
+async function clickInsideModal(route, opener) {
   let steps = 0
   while (steps < 12) {
     const topIndex = await page.evaluate(() => {
@@ -474,7 +587,7 @@ async function clickInsideModal(route) {
     steps += 1
     await settle()
     if (errors.length > before) errors[errors.length - 1].where = `${route} 弹窗内点「${label}」`
-    else if ((await fingerprint()) === beforeFp) await classifySilent(route, 'modal', label)
+    else if ((await fingerprint()) === beforeFp) await classifySilent(route, 'modal', label, opener)
     await scanNumericLeaks(`${route} 弹窗内点「${label}」后泄漏`)
   }
 }
@@ -591,7 +704,7 @@ for (const route of ROUTES) {
     if (errors.length > before) errors[errors.length - 1].where = `${route} 点「${label}」`
     else if ((await fingerprint()) === beforeFp) await classifySilent(route, 'page', label)
     await scanNumericLeaks(`${route} 点「${label}」后泄漏`)
-    await clickInsideModal(route)
+    await clickInsideModal(route, label)
     // 逐层收起弹窗(弹窗内点开的详情会叠第二层),免挡后续按钮;每层等淡出走完:离场中的弹窗会让下一按钮的前后指纹必然不同,死按钮漏判
     for (let layer = 0; layer < 4 && (await page.locator('.modal-panel').count()) > 0; layer += 1) {
       await page.keyboard.press('Escape').catch(() => {})

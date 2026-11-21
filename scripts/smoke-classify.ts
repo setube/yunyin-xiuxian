@@ -35,7 +35,18 @@ export function namePattern(label: string): RegExp {
     .split(NUM)
     .map(escapeRe)
     .join('\\d+(?:[.,]\\d+)*[万亿]?')
-    .replace(/\s+/g, '\\s+')
+    /*
+     * 空白用 `\s*`,不是 `\s+`。
+     *
+     * 名字里的空格有两处来源,而且**不稳定**:
+     *   · 同一元素内的字间空隙(「连 炼」那种排版空格) —— innerText 里是一个空格
+     *   · 相邻两个元素拼接(「深入探寻」与「小险」是两个 span) —— innerText 有时有空格、
+     *     有时因布局紧凑而没有
+     * 写成 `\s+`(至少一个)时,后者会被判成「名字不一样」;实测「深入探寻小险行程」
+     * 与「深入探寻小险 行程」就是这种情况,弹窗内控件因此恒被判「找不到目标按钮」。
+     * `\s*` 对两种都成立,而文字骨架仍须逐字相同 —— 不会因此误配到别的按钮。
+     */
+    .replace(/\s+/g, '\\s*')
   return new RegExp('^' + body + '$')
 }
 
@@ -59,7 +70,12 @@ export function isSelectedTabState(
  * 干净重试的结论。`'modal-unreachable'` 只对弹窗内控件有意义 ——
  * 类型上绑住,防止调用方把页面控件也标成弹窗盲点。
  */
-export type SmokeCleanResult = boolean | null | 'selected-tab' | 'modal-unreachable'
+export type SmokeCleanResult =
+  | boolean
+  | null
+  | 'selected-tab'
+  | 'modal-unreachable'
+  | 'state-dependent'
 
 export type SmokeDecision = { bucket: 'dead' | 'silent'; line: string }
 
@@ -70,6 +86,7 @@ export type SmokeDecision = { bucket: 'dead' | 'silent'; line: string }
  *   null           干净态找不到该按钮 → 无法复现(读数)
  *   'selected-tab' 点的是当前已选中的页签 → 幂等(读数)
  *   'modal-unreachable' 弹窗内按钮,干净态复现不了那个弹窗 → 无法复现(读数)
+ *   'state-dependent'   重放时页面已处于「点了也没用」的状态(如历练在途)→ 读数
  * 白名单优先,恒为读数。
  *
  * `'selected-tab'` 单列一档,不复用 `true`:
@@ -95,6 +112,21 @@ export function classifySmoke(
    * 页面控件复现不了通常是脚本或页面真出了问题,不该披上「复现不了那扇窗」的说法。
    * 类型上绑死(见 SmokeCleanResult),运行时再挡一次。
    */
+  /*
+   * `'state-dependent'` —— 重放时页面已经处在「点了也没用」的状态。
+   *
+   * 实测 `/world` 的六档历练模式按钮:主循环点「深入探寻」→ 真的出发了,
+   * 存档里 `adventure.session` 从此为真;`modalRetry` 重放那一步时,
+   * `startExploration` 在「历练在途」分支直接 return false(带 toast 拒因),
+   * 弹窗不关、界面不变 —— 于是它被判成「死按钮」。
+   *
+   * 那不是缺陷:按钮在**可出发的状态下**是好的,重放时状态已经变了。
+   * 这一档与 `'cleanResult === false'`(真死控件)必须分开 ——
+   * 前者说明判据的语境界不到,后者说明控件有问题。
+   */
+  if (cleanResult === 'state-dependent') {
+    return { bucket: 'silent', line: `${entry}(重放时已在途/闭关,按钮在可出发状态下才有效,未单独验证)` }
+  }
   if (kind !== 'modal' && cleanResult === 'modal-unreachable') {
     return { bucket: 'dead', line: `${entry} —— 归类错:页面控件不该有「弹窗内盲点」这一档` }
   }
