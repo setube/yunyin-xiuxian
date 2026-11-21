@@ -412,6 +412,13 @@ describe('namePattern · 空白容错是零或多', () => {
      * 一个整体,中间插不进 `\s*`,那条路本就不该指望 —— 判据不写这个方向。
      */
     expect(namePattern(label).test(noSpace), '拼接处少空格就认不出 —— 弹窗内重试会全线判死').toBe(true)
+    /*
+     * 反向也成立:label 里**没有**空格、实际文本有空格。
+     * 评审指出原先只在原 label 已有空白的位置插 `\s*`,这个方向会漏 ——
+     * 而同一份 innerText 在不同时刻给不给空格并不稳定,两个方向都会真实发生。
+     * 做法:在中文字符边界补可选空白(ASCII 不动,免得 `x1` 与 `x 1` 混为一谈)。
+     */
+    expect(namePattern(noSpace).test(label), '反过来(label 无空格、实际有)也该成立').toBe(true)
   })
 
   it('文字骨架仍须逐字相同,不会因放宽空白而误配', () => {
@@ -447,16 +454,33 @@ describe('重放状态相关 · 与死控件分开', () => {
     expect(d.line, '要说明按钮在可出发状态下才有效').toContain('可出发')
   })
 
-  it('modalRetry 会读三个互斥状态再决定', () => {
+  it('modalRetry 判状态门控:点后读互斥状态 + 控件正文属于在途动作', () => {
     const SRC2 = readFileSync(resolve(__dirname, '../../scripts/ui-smoke.mjs'), 'utf-8').replace(
       /^\s*(\*|\/\/).*$/gm,
       ''
     )
     const fn = /async function modalRetry[\s\S]*?\n\}/.exec(SRC2)?.[0] ?? ''
     expect(fn, '找不到 modalRetry').not.toBe('')
-    for (const key of ['session', 'retreat', 'secretRealm']) {
-      expect(fn, `modalRetry 没读 ${key} —— 状态相关会被误判成死按钮`).toContain(key)
+    /*
+     * 判据从「点之前读快照」改成「点之后看有没有拒因 toast」——
+     * 快照读错字段就漏判(闭关在 buffs 里、远征在 endgame.worldRun 里),
+     * 且会把无关的死控件一并记成状态相关。拒因 toast 才是**这一下真的被拒**的证据。
+     */
+    // 四种拒因词(与 core/endgameActivity.BUSY_REASON 同源)
+    for (const w of ['闭关中', '远征在途', '身在秘境', '历练在途']) {
+      expect(SRC2, `拒因词表缺「${w}」—— 该状态下会被误判成死按钮`).toContain(w)
     }
-    expect(fn, '要在点击之前判状态,而不是点完看指纹').toContain("'state-dependent'")
+    // 互斥状态读取:远征 / 秘境 / 历练 三个 store 字段 + 闭关 buff,一个都不许漏
+    const reader = /async function readBusyState[\s\S]*?\n\}/.exec(SRC2)?.[0] ?? ''
+    expect(reader, '找不到 readBusyState').not.toBe('')
+    for (const key of ['worldRun', 'secretRealm', 'session', 'retreat']) {
+      expect(reader, `readBusyState 没读 ${key} —— 那个状态下控件会被误判成死按钮`).toContain(key)
+    }
+    /*
+     * 状态门控必须**同时**满足:页面确实在途 + 控件正文属于在途动作。
+     * 只看前者会把无关的死控件一并放过(评审指出);只看后者会误伤普通按钮。
+     */
+    expect(fn, '要在点击之后才读互斥状态,不在点前拍快照').toMatch(/!== before\) return true[\s\S]{0,300}readBusyState/)
+    expect(fn, '门控要看控件正文,不是只看到页面忙').toMatch(/gateWords[\s\S]{0,200}label/)
   })
 })

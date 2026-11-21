@@ -283,37 +283,110 @@ async function modalRetry(route, opener, label) {
    * 那不是缺陷:按钮在**可出发的状态下**是好的,重放时状态已经变了。
    * 先把这三个互斥状态读出来,处在其中就如实归因为 `'state-dependent'`。
    */
-  const busy = await page
-    .evaluate(() => {
-      const app = document.querySelector('#app')?.__vue_app__
-      const pinia = app?.config?.globalProperties?._p ? app.config.globalProperties._p : app?.config?.globalProperties?.$pinia
-      const get = n => pinia?._s?.get(n)
-      const adv = get('adventure')
-      const cult = get('cultivation')
-      const player = get('player')
-      return {
-        session: !!adv?.session,
-        // 闭关不是一个布尔字段,而是 buffs 里那条 'retreat'(见 earlyGameService.isRetreating)
-        retreat: (cult?.buffs ?? []).some(b => b?.defId === 'retreat' && (b?.endsAt ?? 0) > Date.now()),
-        secretRealm: !!player?.secretRealm
-      }
-    })
-    .catch(() => null)
-  if (busy && (busy.session || busy.retreat || busy.secretRealm)) return 'state-dependent'
   const before = await fingerprint()
   const ok = await b
     .click({ timeout: 800 })
     .then(() => true)
     .catch(() => false)
   if (!ok) return false
+  /*
+   * 轮询放宽到 2 秒(原 720ms)。
+   *
+   * `startExploration` 的拒因 toast 在「历练在途」分支同步弹,但重放后页面刚挂载、
+   * 引擎心跳还在跑,实测 720ms 有时采不到 —— 采不到就落到指纹比较,
+   * 而那时界面确实没变,于是又被记成死按钮。
+   * 拒因是这个分支唯一可靠的证据,值得多等一会儿。
+   */
   let sawToast = false
-  for (let i = 0; i < 12 && !sawToast; i += 1) {
+  const toastDeadline = Date.now() + 2000
+  while (Date.now() < toastDeadline && !sawToast) {
     sawToast = await page.evaluate(() => document.querySelectorAll('[class*=toast]').length > 0)
-    if (!sawToast) await page.waitForTimeout(60)
+    if (!sawToast) await page.waitForTimeout(80)
   }
   await settle()
-  if (sawToast) return true
-  return (await fingerprint()) !== before
+  if (sawToast) {
+    /*
+     * 有 toast 也要分清是哪一种回执:
+     *   · 拒因(闭关中/远征在途/身在秘境/历练在途)→ 状态门控,归读数
+     *   · 别的 toast(获得了什么、提示了什么)→ 控件确实有反应,也算通过
+     * 前者不是「功能正常」,而是「这一刻不允许」——归因要分开。
+     */
+    const toastText = await page
+      .evaluate(() => [...document.querySelectorAll('[class*=toast]')].map(t => t.textContent || '').join(' '))
+      .catch(() => '')
+    if (BUSY_WORDS.some(w => toastText.includes(w))) return 'state-dependent'
+    return true
+  }
+  if ((await fingerprint()) !== before) return true
+  const busy = await readBusyState()
+  /*
+   * 点了、没 toast、界面也没变 —— 分两种:
+   *
+   *   · 页面此刻正处在「互斥在途」状态,而控件**自己**就是那类入口
+   *     → `'state-dependent'`(按钮在可出发时是好的)
+   *   · 其余(页面不忙,或控件跟这些状态无关)
+   *     → `false`,真死控件
+   *
+   * 判「控件是否与在途状态有关」不能只看页面是否忙 —— 那会把**无关**的死控件
+   * 一并放过(评审指出)。故再加一条:控件所在的这扇窗里出现了「出发/远征/秘境」
+   * 这类动作词,才算与在途互斥相关。
+   */
+  /*
+   * 判「这一扇窗是不是在途类的动作窗」—— 用**控件自己的正文**判,不读面板全文。
+   *
+   * 实测面板的 innerText 在这一刻取不到(点击后可能已开始离场),
+   * 读面板会让门控恒失效。控件正文是现成的,也是更贴切的判据:
+   * 它在「出发/历练/远征/秘境/闭关」这类动作名下,才与在途互斥相关。
+   */
+  if (!busy || busy.kind === 'none') return false
+  const gateWords = ['出发', '历练', '远征', '秘境', '闭关', '探寻', '游历', '涉险', '云游', '问道', '星野']
+  const flat = label.replace(/\s+/g, '')
+  if (!gateWords.some(w => flat.includes(w))) return false
+  return 'state-dependent'
+}
+
+/**
+ * 四种「这一刻不允许」的拒因 —— 取自 `core/endgameActivity.BUSY_REASON`,与游戏同源。
+ *
+ * 弹窗内控件点了没变化,可能有两种原因,必须分开:
+ *   · 真没反应(死控件)→ 判失败
+ *   · 被互斥状态拒了,但**游戏自己也没静默**(它弹了这条 toast)→ 归读数
+ * 后者的证据就是这四种文案出现在 toast 里。读点前快照不可靠:
+ * 闭关存在 buffs 里、远征存在 endgame.worldRun 里,漏读一个就把该状态下的
+ * 控件全记成死按钮;而无关的死控件又会被那一网打尽、把真缺陷藏起来。
+ */
+const BUSY_WORDS = ['闭关中', '远征在途', '身在秘境', '历练在途']
+
+/**
+ * 读一次「此刻页面处于哪种互斥在途状态」。
+ *
+ * 与 `core/endgameActivity.endgameBusy` 同一组:远征 / 秘境 / 历练在途;
+ * 闭关不在那组里(它由 `earlyGameService.isRetreating` 看 buffs 里的 'retreat')。
+ * 四种全部取齐 —— 少取一个,那个状态下的控件就会被误判成死按钮。
+ *
+ * 读的是**点击之后**的状态:主循环先点了一次,状态可能已经变了
+ * (实测点「深入探寻」就真的出发了),点前拍快照会读到一个已经过时的值。
+ */
+async function readBusyState() {
+  return page
+    .evaluate(() => {
+      const get = n => {
+        const gp = document.querySelector('#app')?.__vue_app__?.config?.globalProperties
+        return (gp?._p ?? gp?.$pinia)?._s?.get(n)
+      }
+      const adv = get('adventure')
+      const cult = get('cultivation')
+      const player = get('player')
+      const endgame = get('endgame')
+      const retreatBuff = (cult?.buffs ?? []).find(b => b?.defId === 'retreat')
+      const kinds = []
+      if (endgame?.worldRun) kinds.push('expedition')
+      if (player?.secretRealm) kinds.push('secretRealm')
+      if (adv?.session) kinds.push('exploration')
+      if (retreatBuff && (retreatBuff.endsAt ?? 0) > Date.now()) kinds.push('retreat')
+      return { kinds, kind: kinds[0] ?? 'none' }
+    })
+    .catch(() => null)
 }
 
 /** 归桶与报告行由共享分类器 classifySmoke 给出,不在此另写 */
