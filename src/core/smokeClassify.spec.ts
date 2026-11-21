@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { classifySmoke, namePattern, SMOKE_ALLOWLIST } from '../../scripts/smoke-classify'
+import { classifySmoke, isSelectedTabState, namePattern, SMOKE_ALLOWLIST } from '../../scripts/smoke-classify'
 
 describe('冒烟死按钮分类器(纯决策)', () => {
   it('幂等选中项(白名单)归读数 —— 点当前已选中值,不判失败', () => {
@@ -189,5 +189,74 @@ describe('冒烟点击 · 视口、计数与三处点击点', () => {
     expect(block, '只判了纵向,横向在视口外没被拦').toContain('innerWidth')
     expect(block, '该判纵向').toContain('innerHeight')
     expect(block, '不认容器裁切 —— main 自己可滚时元素在 main 可视区外仍会被点').toMatch(/overflowY/)
+  })
+})
+
+/**
+ * 干净重试的定位口径 —— 两处实测缺陷。
+ *
+ * 一 `getByRole('button')` 认不到页签
+ *   页签在 DOM 上是 `<button role="tab">`,`getByRole('button')` 按 ARIA 角色匹配,
+ *   找不到它们。于是 `/codex` 的「界域」、`/titles` 的「名号」、`/collection` 的「成就」
+ *   每次都被判成「干净态无法单独复现」——读数照打、一条也不判失败,
+ *   而它们**从未被单独验证过**。那三条读数是假的。
+ *
+ * 二 `hasText` 不认整串锚定的正则
+ *   `namePattern` 返回 `^界域$`,那是给 `getByRole({ name })` 用的整串匹配。
+ *   而 `hasText` 是子串语义:实测 `^界\s*域$` 对「界域」页签 count 为 0,
+ *   去掉锚点后为 1。两处口径不同,直接套用会静默失效。
+ *
+ * 故障注入:把 cleanRetry 的定位改回 `getByRole('button', …)`,第一条红;
+ * 去掉 source.replace(/^\^|\$$/g, …),第二条红。
+ */
+describe('干净重试 · 定位口径', () => {
+  const SRC = readFileSync(resolve(__dirname, '../../scripts/ui-smoke.mjs'), 'utf-8').replace(
+    /^\s*(\*|\/\/).*$/gm,
+    ''
+  )
+  const CLEAN = /async function cleanRetry[\s\S]{0,2600}?\n\}/.exec(SRC)?.[0] ?? ''
+
+  it('cleanRetry 不用 getByRole("button") 定位 —— 认不到 role=tab', () => {
+    expect(CLEAN, '找不到 cleanRetry').not.toBe('')
+    expect(CLEAN, '又回到 getByRole("button") —— 三个页签会被判成「无法复现」').not.toContain(
+      "getByRole('button'"
+    )
+    expect(CLEAN, '该按 button 定位后按文本筛,与 ARIA 角色无关').toContain("locator('button')")
+  })
+
+  it('传给 hasText 的正则去掉了整串锚点', () => {
+    expect(CLEAN, '找不到取 namePattern 的那句').toContain('namePattern(label)')
+    expect(
+      CLEAN.replace(/\s+/g, ''),
+      '把 ^…$ 直接喂给 hasText —— 子串语义下恒不匹配'
+    ).toContain("source.replace(/^\\^|\\$$/g,'')")
+  })
+})
+
+/**
+ * 「点的是当前已选中的页签」按状态认,不写死路径。
+ *
+ * 白名单那三条是同一种情况的特例,但按「路径 + 标签」写死:
+ * `/codex` 的「界域」与 `/collection` 的「成就」都是各自页面的默认页签,
+ * 一次都没进白名单,于是每次都被判成真死按钮(实测两条)。
+ *
+ * 归因也要单列一档(`'selected-tab'`),不复用 `true`:
+ * 两者都不判失败,但报表文案不同 —— 复用会写成「干净重试有变化,功能正常」,
+ * 而实际是「它本来就是选中态」。归因错了,下次真出现一个点了没变化的页签时,
+ * 人会照着这句话以为功能是好的。
+ */
+describe('页签幂等 · 按 aria-selected 认状态', () => {
+  it('只认 role=tab 且 aria-selected=true', () => {
+    expect(isSelectedTabState('tab', 'true')).toBe(true)
+    expect(isSelectedTabState('tab', 'false')).toBe(false)
+    expect(isSelectedTabState('button', 'true'), '普通按钮带 aria-selected 不一定是幂等页签').toBe(false)
+    expect(isSelectedTabState(null, null)).toBe(false)
+  })
+
+  it('归因单列一档,不复用「有变化」', () => {
+    const sel = classifySmoke('/codex', 'page', '界域', 'selected-tab')
+    expect(sel.bucket, '已选中的页签不判失败').toBe('silent')
+    expect(sel.line, '归因要说「已是选中态」,不能说成「干净重试有变化」').toContain('已是选中态')
+    expect(sel.line, '复用 true 那句就是归因错了').not.toContain('功能正常')
   })
 })

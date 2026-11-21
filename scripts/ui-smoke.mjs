@@ -12,7 +12,7 @@
  *
  * --late 一轮约十分钟:终局按钮会真跑模拟(突破推演 / 远征预估 / 挑战书定价)。
  */
-import { classifySmoke, namePattern, SMOKE_ALLOWLIST } from './smoke-classify.ts'
+import { classifySmoke, isSelectedTabState, namePattern, SMOKE_ALLOWLIST } from './smoke-classify.ts'
 import { chromium } from 'playwright'
 import { lateSlices, seedSave } from './lib/saveFixture.mjs'
 import { dirname, join, resolve } from 'node:path'
@@ -106,8 +106,44 @@ const dead = []
 async function cleanRetry(route, label) {
   await page.goto(INDEX + '#' + route, { waitUntil: 'load' })
   await page.waitForTimeout(700)
-  const b = page.getByRole('button', { name: namePattern(label) }).first()
+  /*
+   * 定位按钮时**也要认 role="tab"**。
+   *
+   * 原先只 `getByRole('button', …)`,而页签在 DOM 上是 `<button role="tab">` ——
+   * `getByRole('button')` 按 ARIA 角色匹配,认不到它们。于是「界域」「名号」「成就」
+   * 这三个页签每次都被判成「干净态无法单独复现」,读数照打、一条也不判失败,
+   * 而它们其实从未被单独验证过 —— 那三条读数是假的。
+   *
+   * 这里改用「按名找所有 button,再按文本筛」,与 ARIA 角色无关:
+   * 页签、普通钮、图标钮一视同仁。
+   */
+  /*
+   * 正则要去掉首尾锚点。
+   *
+   * `namePattern` 返回的是 `^界域$` 这种**整串锚定**的式子 —— 那是给
+   * `getByRole({ name })` 用的(它按可访问名整串匹配)。而 `hasText` 是
+   * **子串**语义:内部拿元素的规范化文本去 `RegExp.test`,按钮文本常带空格
+   * 或内嵌图标,`^…$` 于是恒不匹配(实测 `^界\s*域$` 对「界域」页签 count 为 0,
+   * 去掉锚点后为 1)。
+   *
+   * 故这里只取 namePattern 的骨架(数字段松开、字间空格容错),锚点交给外围。
+   */
+  const re = new RegExp(namePattern(label).source.replace(/^\^|\$$/g, ''))
+  const b = page.locator('button').filter({ hasText: re }).first()
   if (!(await b.count())) return null
+  /*
+   * 点的是当前已选中的页签 —— 幂等,不判失败。
+   *
+   * 页签点自己不会有任何变化(它本来就是选中态)。原先这类只能进白名单,
+   * 而白名单是按「路径 + 标签」写死的:`/codex` 的「界域」与 `/collection` 的
+   * 「成就」都是各自页面的默认页签、一次都没进白名单,于是每次都被判死按钮。
+   * 按 aria-selected 认状态,路径一改也不会漏。
+   */
+  const tabState = await b
+    .evaluate(el => ({ role: el.getAttribute('role'), selected: el.getAttribute('aria-selected') }))
+    .catch(() => null)
+  // 判据本身在 smoke-classify.ts 里(可单测);这里只把两个属性取出来传进去
+  if (tabState && isSelectedTabState(tabState.role, tabState.selected)) return 'selected-tab'
   if (!(await b.isVisible().catch(() => false))) return null
   const before = await fingerprint()
   /**
