@@ -126,14 +126,17 @@ describe('sanitize:重复条目不再把计数撑破', () => {
       achieved: ['a_r0', 'a_r0'],
       daily: { date: '2026-10-20', base: {}, done: ['d_kill', 'd_kill'] },
       titlesOwned: ['ti_churu', 'ti_churu'],
-      collections: { equip: ['e1', 'e1'], gongfa: [], pill: [], artifact: [], pet: ['p1', 'p1'], event: [], talent: [] }
+      // 夹具 id 必须是数据表里真有的:`sanitize` 与 achieved / titlesOwned 同口径滤掉表外 id
+      // (见下面「图鉴的野 id」那条),写 e1 / p1 会被正确清掉
+      collections: { equip: ['w_zhuqing', 'w_zhuqing'], gongfa: ['m_taixuan', 'm_taixuan'], pill: [], artifact: [], pet: ['pet_qingyu', 'pet_qingyu'], event: [], talent: [] }
     } as never)
     quests.sanitize()
     expect(quests.achieved, '成就同一条只留一次').toEqual(['a_r0'])
     expect(quests.daily.done, '日课同一条只留一次').toEqual(['d_kill'])
     expect(quests.titlesOwned, '名号同一条只留一次').toEqual(['ti_churu'])
-    expect(quests.collections.equip, '装备图鉴去重').toEqual(['e1'])
-    expect(quests.collections.pet, '灵兽册去重后不会画两行同 key').toEqual(['p1'])
+    expect(quests.collections.equip, '装备图鉴去重').toEqual(['w_zhuqing'])
+    expect(quests.collections.gongfa, '功法图鉴去重').toEqual(['m_taixuan'])
+    expect(quests.collections.pet, '灵兽册去重后不会画两行同 key').toEqual(['pet_qingyu'])
   })
 
   /**
@@ -326,5 +329,47 @@ describe('日课 · 日期串长度', () => {
     q.daily = { date: '2026-11-15', base: {}, done: [] } as never
     q.sanitize()
     expect(q.daily.date, '正常日期被误伤').toBe('2026-11-15')
+  })
+})
+
+/**
+ * 图鉴的野 id 也按目录过滤 —— 与日课 done、名号、成就同口径。
+ *
+ * 写入侧 `collect(category, id)` 的 id 全来自数据表,表外只可能来自坏档;
+ * 而收藏册每一处展示都是「拿表逐条比对」(codexOwnedCount、CollectionView 的 entries),
+ * 表外 id 既不显示也不计入「已收 N」—— 唯一作用是把存档撑大:
+ * 实测十万条野 id 让存档涨到 1.29MB,而那一页一个字都不会多出来。
+ *
+ * 同函数里 achieved / titlesOwned / daily.done 早就按各自目录滤过(见上面那两条),
+ * 只有图鉴漏着 —— 这条补的就是那处遗漏。
+ *
+ * 故障注入:把 dedupe 的 `.filter(...)` 去掉,第一条红。
+ */
+describe('收藏册 · 表外 id 读档时清掉', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('十万条野 id 全清,存档不被撑大', () => {
+    const quests = useQuestsStore()
+    const wild = Array.from({ length: 100000 }, (_, i) => `wild_${i}`)
+    quests.$patch({ collections: { equip: wild, gongfa: [], pill: [], artifact: [], pet: [], event: [], talent: [], daolu: [] } } as never)
+    quests.sanitize()
+    expect(quests.collections.equip.length, '表外 id 既不显示也不计数,没有理由留在存档里').toBe(0)
+    expect(JSON.stringify(quests.$state).length, '坏档把 state 撑爆了').toBeLessThan(5000)
+  })
+
+  it('同一张表里的真 id 照留,不误伤', () => {
+    const quests = useQuestsStore()
+    quests.$patch({
+      collections: {
+        equip: ['w_zhuqing', 'wild_x', 'muzan_ghost'],
+        gongfa: ['m_taixuan'],
+        pill: ['p_jvqisan', 'no_such_pill'],
+        artifact: [], pet: [], event: [], talent: [], daolu: []
+      }
+    } as never)
+    quests.sanitize()
+    expect(quests.collections.equip, '只留装备表里真有的那一个').toEqual(['w_zhuqing'])
+    expect(quests.collections.gongfa).toEqual(['m_taixuan'])
+    expect(quests.collections.pill, '丹方同理').toEqual(['p_jvqisan'])
   })
 })

@@ -64,11 +64,17 @@ describe('图鉴 · 每类都有落处', () => {
   })
 
   it('sanitize 把每一类都回填 —— 旧档没有这一栏', () => {
+    /*
+     * 只钉「这一类出现在 sanitize 的回填里」,不再钉整行写法。
+     *
+     * 原先钉的是 `${cat}: [...new Set(asStringArray(cats.${cat}))]` —— 那行现在收进了
+     * `dedupe(cat)` 帮助函数(它同时滤掉表外 id),整行写法一变,这条就假红。
+     * 判据要的是「每一类都被回填」,不是「写法长这样」:认 `dedupe('cat')` 与旧整行两种。
+     */
     for (const cat of cats) {
-      // 用 includes 而不是正则:这段里满是 `...` 与括号,正则的转义层级容易写错
-      expect(STORE, `sanitize 漏了 ${cat},旧档读进来会是 undefined`).toContain(
-        `${cat}: [...new Set(asStringArray(cats.${cat}))]`
-      )
+      const byHelper = STORE.includes(`dedupe('${cat}')`)
+      const byInline = STORE.includes(`${cat}: [...new Set(asStringArray(cats.${cat}))]`)
+      expect(byHelper || byInline, `sanitize 漏了 ${cat},旧档读进来会是 undefined`).toBe(true)
     }
   })
 
