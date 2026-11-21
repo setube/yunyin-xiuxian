@@ -18,6 +18,7 @@ import { recipeCraft } from '@/data/crafting'
 import { craftability } from '@/core/craftability'
 import { toNum, mulN } from '@/utils/gnum'
 import { useResourcesStore } from '@/stores/resources'
+import { CRAFT_BATCH_MAX } from '@/data/constants'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLoreStore } from '@/stores/lore'
 import { useQuestsStore } from '@/stores/quests'
@@ -264,5 +265,69 @@ describe('丹药批量 · 未知丹药 id', () => {
     expect(() => usePillBatch('no_such_pill', 5)).not.toThrow()
     expect(usePillBatch('no_such_pill', 5)).toBe(0)
     expect(JSON.stringify(inv.pills), '未知丹药不该动行囊').toBe(pillsBefore)
+  })
+})
+
+/**
+ * 「炼满」的按钮读数与执行次数分开。
+ *
+ * 炉数只受材料限制,而灵草没有真实上界 —— 读档自愈用的上界是 1e12(按低速产出定的),
+ * 坏档正落在那个数上。实测 25000 炉在真浏览器里卡 5.7 秒,2.5e11 炉要几十分钟;
+ * 点一下「开炉 ×N」主线程全被占住,心跳与写档一起停摆。
+ *
+ * 修法与坊市「售尽」同一类:把「材料够多少」与「这一下做多少」分成两个字段。
+ * 界面那行「可炼 N 炉」仍说前者,按钮正文与执行读后者。
+ *
+ * 故障注入:把 `batch` 改回 `rounds`(即删掉 min 那道),第一条立刻红。
+ */
+describe('炼丹连开计划 · 一次开炉数封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockRand = 0
+    settleRewards()
+    knowRecipe()
+  })
+
+  it('材料够几万炉时,按钮读数是封顶值,不是材料上限', () => {
+    const res = useResourcesStore()
+    res.addSmall('herb', 1_000_000)
+    res.addStone({ m: 9, e: 30 })
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds, '材料够多少炉照实报(界面那行「可炼 N 炉」读它)').toBeGreaterThan(100_000)
+    expect(plan.batch, '这一下开的炉数必须封顶,否则一次点击要跑几十分钟').toBe(CRAFT_BATCH_MAX)
+  })
+
+  it('材料不多时两者相等(封顶不改变正常行为)', () => {
+    const res = useResourcesStore()
+    const c = pillCraftCost(ID)!
+    res.addSmall('herb', c.herb * 7)
+    res.addStone({ m: 1, e: 9 })
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds).toBe(7)
+    expect(plan.batch).toBe(7)
+  })
+
+  it('炼不动时两个字段都是 0', () => {
+    const plan = craftBatchPlan(ID)
+    expect(plan.rounds).toBe(0)
+    expect(plan.batch).toBe(0)
+  })
+
+  it('按 batch 开炉:实跑炉数与计划一致,材料按实跑扣', () => {
+    // 上限内的量级:这条钉的是「执行读的就是 batch」,不是耗时 ——
+    // 上限被删掉时它会跑上几十秒才红(实测 52 秒),那本身也是一个信号
+
+    const res = useResourcesStore()
+    const c = pillCraftCost(ID)!
+    const g = c.grade
+    res.addSmall('herb', 1_000_000)
+    res.addStone({ m: 9, e: 30 })
+    const plan = craftBatchPlan(ID)
+    const h0 = res.herbOf(g)
+    const out = craftPillBatch(ID, plan.batch)
+    expect(out.rounds, '实跑炉数该等于 batch').toBe(plan.batch)
+    // 每炉至多扣全额草(batch 里既有成也有炸)
+    expect(h0 - res.herbOf(g)).toBeLessThanOrEqual(plan.batch * c.herb)
+    expect(h0 - res.herbOf(g)).toBeGreaterThan(0)
   })
 })

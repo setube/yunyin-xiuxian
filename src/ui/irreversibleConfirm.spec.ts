@@ -70,7 +70,9 @@ describe('不可逆确认的两次点击各写什么', () => {
   it('开炉的「炼满」先摆总账,第二步才真开炉', () => {
     const src = read('components/inventory/BrewingDialog.vue')
     expect(src, '第一步只立起确认态').toContain('@click="pillFullId = r.def.id"')
-    expect(src, '第二步才走 runCraftFull').toContain('runCraftFull(r.def.id, r.plan.rounds)')
+    // 第二步开的是 plan.batch(封顶 CRAFT_BATCH_MAX),不是 plan.rounds ——
+    // rounds 是「材料够多少炉」,坏档能给到 2.5e11,照它开一次要跑几十分钟
+    expect(src, '第二步才走 runCraftFull').toContain('runCraftFull(r.def.id, r.plan.batch)')
     expect(src, '取消词与同族一致').toContain('再想想')
   })
 

@@ -3,7 +3,7 @@ import { gnZero, mulN, ratio, subClamp } from '@/utils/gnum'
 import { rng } from '@/utils/random'
 import { pillDef } from '@/data/pills'
 import { herbGradeOfMajor, type HerbGrade } from '@/data/herbGrades'
-import { INSTANT_EXP_LAYER_CAP } from '@/data/constants'
+import { CRAFT_BATCH_MAX, INSTANT_EXP_LAYER_CAP } from '@/data/constants'
 import { formatGN, formatGap } from '@/utils/format'
 import { recipeCraft, type SkillId } from '@/data/crafting'
 import { expFromSecs, pillStoneCost } from './formulas'
@@ -134,6 +134,14 @@ export type CraftBlockReason = 'unknown' | 'mastery' | 'herb' | 'stone' | 'both'
 export interface CraftBatchPlan {
   /** 按当前料保底可开的最大炉数(炉炉皆成也够);0 = 炼不动 */
   rounds: number
+  /**
+   * 这一次「炼满」实际会开的炉数:`min(rounds, CRAFT_BATCH_MAX)`。
+   *
+   * 与 `rounds` 分开是因为两者回答的问题不同 —— `rounds` 是「材料够开多少炉」,
+   * 界面上那句「可炼 N 炉」说的是它;`batch` 是「这一下能开多少炉」,
+   * 按钮正文与执行都读它。材料够 2.5e11 炉时把后者也写上去,点一下就要跑几十分钟。
+   */
+  batch: number
   /** 开 rounds 炉的灵草总量 */
   herb: number
   /** 开 rounds 炉的灵石总量 */
@@ -168,6 +176,7 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
   const able = craftability(id)
   const blocked = (msg: string, reason: CraftBlockReason, shortHerb?: number, shortStone?: GNum): CraftBatchPlan => ({
     rounds: 0,
+    batch: 0,
     herb: 0,
     stone: gnZero(),
     blocked: msg,
@@ -195,7 +204,13 @@ export function craftBatchPlan(id: string): CraftBatchPlan {
     if (stoneShort) return blocked(craftShortToast({ stone: formatGap(gap.stone) }), 'stone', undefined, gap.stone)
     return blocked(craftShortToast({ herb: gap.herb }), 'herb', gap.herb)
   }
-  return { rounds, herb: rounds * cost.herb, stone: mulN(cost.stone, rounds) }
+  /*
+   * rounds 是「材料够多少」,batch 是「这一下开多少」。
+   * 后者封顶 CRAFT_BATCH_MAX:材料没有真实上界(坏档能到 1e12 株),
+   * 而逐炉开炉是有代价的 —— 25000 炉实测 5.7 秒,点一下主线程就全被占住。
+   */
+  const batch = Math.min(rounds, CRAFT_BATCH_MAX)
+  return { rounds, batch, herb: rounds * cost.herb, stone: mulN(cost.stone, rounds) }
 }
 
 /** 失手时按技艺保下的残料比例;core/pillValue.ts 折算炼制代价共用此处,不另抄 */
