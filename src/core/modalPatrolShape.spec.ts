@@ -114,3 +114,29 @@ describe('modal-patrol · 覆盖率下限', () => {
     expect(twoStepBlock, '两步确认那条低于下限时没有 exit(1)').toContain('process.exit(1)')
   })
 })
+
+/*
+ * 开窗等待(第 3 轮修「分解:量不到 .modal-panel」误报时加的)。
+ *
+ * 原先 `patrol()` 点完固定等 450ms 就量。面板出现本身是瞬时的(实测 1~19ms),
+ * 机器一忙 450ms 就不够;而量不到面板时代码仍继续跑背景滚动检查,
+ * 于是并发那一轮「分解」报出两条自相矛盾的失败:
+ * 「量不到 .modal-panel」+「弹窗开着时背景仍能被手指滚走」。
+ *
+ * 工具误报比缺陷更贵 —— 它会把一次「这扇没量到」写成「这扇查过且坏了」。
+ */
+describe('弹窗巡逻 · 开窗等待', () => {
+  const AT = SRC.indexOf('async function patrol(')
+  const BLOCK = SRC.slice(AT, AT + 2200)
+
+  it('patrol 里是等面板可见,不是固定睡眠', () => {
+    expect(AT, '找不到 patrol() —— 判据要跟着改名').toBeGreaterThan(-1)
+    expect(BLOCK, 'patrol 没有等待面板可见的逻辑,又回到固定睡眠了').toContain('waitForFunction')
+    expect(BLOCK, 'patrol 里的固定 450ms 又回来了').not.toContain('waitForTimeout(450)')
+  })
+
+  it('等不到就记「未量」并说明原因,不继续拿空面板去量', () => {
+    expect(BLOCK, '等不到面板时没有提前返回').toMatch(/if \(!visible\)[\s\S]{0,200}return/)
+    expect(BLOCK, '未量原因里没写清是点了没弹出来').toContain('没出现面板')
+  })
+})
