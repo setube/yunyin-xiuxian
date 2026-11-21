@@ -242,6 +242,9 @@ try {
     }
     await freshCtx.close()
   }
+} catch (err) {
+  // 中途崩了:记成一条失败与其余一起报 —— 不吞掉它,也不让它盖掉已经查出来的
+  failures.push(`切页焦点自检中途中断:${err instanceof Error ? err.message.split('\n')[0] : String(err)}`)
 } finally {
   await browser?.close()
   await server.httpServer.close()

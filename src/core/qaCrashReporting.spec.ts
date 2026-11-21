@@ -38,7 +38,14 @@ const CASES: Array<{ script: string; label: string }> = [
   { script: 'scripts/offline-check.mjs', label: '离线自检中途中断' },
   { script: 'scripts/ui-smoke.mjs', label: '冒烟中途中断' },
   { script: 'scripts/modal-patrol.mjs', label: '弹窗巡逻中途中断' },
-  { script: 'scripts/layout-check.mjs', label: '排版自检中途中断' }
+  { script: 'scripts/layout-check.mjs', label: '排版自检中途中断' },
+  /*
+   * 这两份原先**只有 try/finally、没有 catch**:崩了浏览器照关,但
+   * `failures` 里已攒下的读数一条也打印不出来 —— 实测注入一条失败再抛错,
+   * 输出里只剩堆栈。补 catch 后归入本判据。
+   */
+  { script: 'scripts/focus-check.mjs', label: '切页焦点自检中途中断' },
+  { script: 'scripts/multitab-check.mjs', label: '两页同开自检中途中断' }
 ]
 
 const TOUCHED: string[] = []
@@ -89,7 +96,13 @@ describe('QA 脚本 · 收尾结构在中途抛错时真的会报', () => {
         'const failures = []',
         'const errors = []',
         'const browser = { close: async () => {} }',
-        'const server = { close: (cb) => (cb ? cb() : undefined) }',
+        /*
+         * server 桩要盖住两种形态:`server.close()`(offline-check)与
+         * `server.httpServer.close()`(focus-check / multitab-check)。
+         * 少了后者,finally 里那句会抛 TypeError,异常从 finally 冒出,
+         * 看起来像「catch 没记住」—— 实测这两份就是这么假红的。
+         */
+        'const server = { close: (cb) => (cb ? cb() : undefined), httpServer: { close: () => {} } }',
         block.replace(/^try \{/m, "try {\n  throw new Error('inject')"),
         /*
          * 真实脚本里汇总打印在 finally 之后,这里照同样形态补上。
