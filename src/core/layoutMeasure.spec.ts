@@ -77,22 +77,58 @@ describe('排版自检量法', () => {
 describe('layout-check · 货架夹具不超真实上界', () => {
   const SRC = readFileSync(resolve(__dirname, '../../scripts/layout-check.mjs'), 'utf-8')
 
-  it('每份 stock 的格数都不超过 MARKET_SLOTS', () => {
+  it('每份货架夹具的格数都不超过 MARKET_SLOTS', () => {
     /*
-     * stock 有两种写法:
-     *   字面量数组 —— 直接数 `slot(` 出现次数
-     *   Array.from({ length: N }) —— 加上 N
-     * 两者都要算,否则改回 `Array.from({length: 15})` 时这条会假绿。
+     * 判据要认**两种写法**,只认一种会漏。
+     *
+     * 评审指出:原先只匹配 `const stock = [...]`,而脚本里还有一份
+     * `market: { stock: Array.from({length: 6}, ...) }` 的内联写法 ——
+     * 把那份改成 15 格,这条判据照样绿(另一份命中的块满足了非空检查)。
+     *
+     * 现在按「凡是给货架铺格子的地方」找:
+     *   · `const stock = [...]` 及其中 `slot(...)` / `Array.from({length: N})`
+     *   · 任何 `stock: [...]` / `stock: Array.from({length: N})` 的内联属性
      */
-    const blocks = [...SRC.matchAll(/const stock = \[([\s\S]*?)\n {2}\]/g)]
-    expect(blocks.length, '找不到任何 stock 夹具 —— 判据要跟着改名').toBeGreaterThan(0)
-    for (const [, body] of blocks) {
-      let count = (body!.match(/\bslot\(/g) ?? []).length
-      for (const m of body!.matchAll(/Array\.from\(\{\s*length:\s*(\d+)/g)) count += Number(m[1])
+    const count = (body: string): number => {
+      let n = (body.match(/\bslot\(/g) ?? []).length
+      for (const m of body.matchAll(/Array\.from\(\{\s*length:\s*(\d+)/g)) n += Number(m[1])
+      // 内联字面量里直接写对象格子的情形也算
+      n += (body.match(/\{\s*kind:\s*'(?:material|pill|equipment)'/g) ?? []).length
+      return n
+    }
+    /** 从某处起点开始,取到括号配平为止的那段源码 */
+    const balanced = (from: number): string => {
+      let depth = 0
+      let started = false
+      for (let i = from; i < SRC.length; i += 1) {
+        const ch = SRC[i]
+        if (ch === '[' || ch === '{') {
+          depth += 1
+          started = true
+        } else if (ch === ']' || ch === '}') {
+          depth -= 1
+          if (started && depth === 0) return SRC.slice(from, i + 1)
+        }
+      }
+      return SRC.slice(from)
+    }
+
+    const spots: Array<{ label: string; body: string }> = []
+    for (const m of SRC.matchAll(/const stock = /g)) {
+      spots.push({ label: 'const stock', body: balanced(m.index! + m[0].length) })
+    }
+    for (const m of SRC.matchAll(/stock:\s*(?=\[|Array\.from)/g)) {
+      spots.push({ label: '内联 stock 属性', body: balanced(m.index! + m[0].length) })
+    }
+    expect(spots.length, '找不到任何货架夹具 —— 判据要跟着改名').toBeGreaterThanOrEqual(2)
+
+    for (const { label, body } of spots) {
+      const n = count(body)
       expect(
-        count,
-        `货架夹具铺了 ${count} 格,而真实货架只有 MARKET_SLOTS(${MARKET_SLOTS})格 —— 多出来的会被 sanitize 截掉,判据从此量不到东西`
+        n,
+        `${label} 铺了 ${n} 格,而真实货架只有 MARKET_SLOTS(${MARKET_SLOTS})格 —— 多出来的会被 sanitize 截掉,判据从此量不到东西`
       ).toBeLessThanOrEqual(MARKET_SLOTS)
+      expect(n, `${label} 一格都没数出来 —— 判据空转了`).toBeGreaterThan(0)
     }
   })
 })

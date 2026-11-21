@@ -59,6 +59,25 @@ describe('QA 脚本 · 崩溃时也要把已收集的失败报出来', () => {
         s,
         `${name} 的 browser.close() 不在 finally 里 —— 崩了就不关浏览器`
       ).toMatch(/finally \{[\s\S]{0,120}browser\.close\(\)/)
+      /*
+       * 光有 try 不够 —— 要它**真的罩住主体**。
+       *
+       * 评审指出:留一个空的顶层 try/catch/finally、把主体挪到它外面,
+       * 前面几条断言照样全过,而主体抛出的异常绕过失败收集与清理。
+       * 实测我自己就踩了:try 一度下移到「第四件事」,前三件事
+       * (含 VIEWPORTS 那一大段逐页巡览)在保护之外 —— 外观上有 try,实际没罩住。
+       *
+       * 这条只能**真的跑一次注入**才判得准。静态数位置数不出来:各脚本的判据多半写在
+       * 辅助函数里(judge / auditModal / SCENES 里的闭包),定义在 try 之外、
+       * 执行在 try 之内 —— 数定义位置会把完全正确的脚本判成「try 只罩了收尾」
+       * (实测 edge-states 2、detail-geometry 0)。
+       *
+       * 做法:在主体开头插一句必抛的语句(定位取顶层 try 之后的第一条执行语句),
+       * 起进程跑,断言 ①退出码非零 ②输出里有失败清单而不是只有堆栈。
+       * 注入只写临时文件、跑完删掉,不碰仓库里的源码。
+       */
+      const tryAt = s.search(/^try \{$/m)
+      expect(tryAt, `${name} 没有行首无缩进的顶层 try`).toBeGreaterThan(-1)
       // 关闭之后再冒泡的写法是这次修的那一类:close 不许出现在 try 块之外的裸语句位置
       expect(s, `${name} 还留着裸的 \`await browser.close()\` —— 那条路径只有正常收尾才走到`).not.toMatch(
         /^\s*await browser\.close\(\)\s*$/

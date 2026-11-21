@@ -808,6 +808,18 @@ async function measureSmallTargets(page) {
   })
 }
 
+/*
+ * 整段包 try/catch/finally —— 与其余实测脚本同一理由。
+ *
+ * 这份最贵:38 项自检、约十分钟。任何一处 evaluate 超时都会让异常冒到顶层,
+ * 而汇总打印在 `browser.close()` 之后,`failures` 里已攒下的读数一条也出不来。
+ * 崩溃本身记成一条失败,不吞掉;finally 只负责关浏览器。
+ *
+ * **try 必须从第一件事起就罩住** —— 此处正是主体开头。原先它下移到了「第四件事」,
+ * 前三件事(含 VIEWPORTS 那一大段逐页巡览)在保护之外:那里一抛就直接冒到顶层,
+ * 一样丢读数、一样不关浏览器,只是被「有 try」这个外观掩盖了(评审指出)。
+ */
+try {
 for (const vp of VIEWPORTS) {
   const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dpr })
   const pageErrors = []
@@ -903,14 +915,6 @@ for (const vp of VIEWPORTS) {
   await page.close()
 }
 
-/*
- * 整段包 try/catch/finally —— 与其余实测脚本同一理由。
- *
- * 这份最贵:38 项自检、约十分钟。任何一处 evaluate 超时都会让异常冒到顶层,
- * 而汇总打印在 `browser.close()` 之后,`failures` 里已攒下的读数一条也出不来。
- * 崩溃本身记成一条失败,不吞掉;finally 只负责关浏览器。
- */
-try {
 // ---- 第四件事:存档写不进去时设置页须有提示 ----
 {
   const page = await browser.newPage({ viewport: { width: 375, height: 812 } })
@@ -3688,34 +3692,64 @@ for (const vp of [
          * (实测 237 页那一轮就是这两条,而页面上灵草和高亮都好好的)。
          * 用高亮环定位:那正是 applyHerbFocus 点出来的那一格,与实现同源。
          */
+        /*
+         * 高亮那格:读数里带上品阶,好让判据能比「是不是要补的那一品」。
+         *
+         * 评审指出过两个洞,这里一并补:
+         *   一 只查 `text` 里有没有「灵草」两个字 —— 高亮到别品的草也算过
+         *   二 `wrongGrade` 先把高亮的格过滤掉再去查 highlighted,那个值**恒为 false**
+         * 故品阶直接从卡片文本里取(卡片正文写的就是品阶名,与界面同源)。
+         */
         herb: (() => {
           const el = [...document.querySelectorAll('[data-card]')].find(n => n.className.includes('ring-2'))
           if (!el) return null
           const box = el.getBoundingClientRect()
+          const text = (el.textContent || '').replace(/\s+/g, ' ').trim()
           return {
-            text: (el.textContent || '').replace(/\s+/g, ' ').trim(),
+            text,
             highlighted: true,
+            // 品阶名由调用方比对(见下面的 gradeWord)
             top: box.top,
             bottom: box.bottom
           }
         })(),
-        // 别品的草:任何**非高亮**的灵草格都不许被点亮(高亮只会有一格)
-        wrongGrade: (() => {
-          const others = [...document.querySelectorAll('[data-card]')].filter(
-            n => !n.className.includes('ring-2') && /灵草/.test(n.textContent || '')
-          )
-          return others.length
-            ? {
-                text: (others[0].textContent || '').replace(/\s+/g, ' ').trim(),
-                highlighted: others.some(n => n.className.includes('ring-2'))
-              }
-            : null
-        })()
+        /*
+         * 全部灵草格,逐个报出「亮没亮」—— 不在读数阶段过滤。
+         *
+         * 原先这里先滤掉高亮格再查 highlighted,于是 `wrongGrade.highlighted` 永远是 false:
+         * 「点亮了别品」那条判据空转。现在把每一格都摆出来,由判据自己数。
+         */
+        herbCards: [...document.querySelectorAll('[data-card]')]
+          .map(n => ({
+            text: (n.textContent || '').replace(/\s+/g, ' ').trim(),
+            lit: n.className.includes('ring-2')
+          }))
+          .filter(c => /灵草/.test(c.text))
       }))
       if (!/focus=herb/.test(landed.hash)) failures.push(`[390] 续草场景:跳转没带上 focus=herb(${landed.hash})`)
       if (!/grade=1/.test(landed.hash)) failures.push(`[390] 续草场景:跳转没带上要补的品阶(${landed.hash})`)
       if (landed.missing) failures.push('[390] 续草场景:货架明明有灵草,却报「暂无此品灵草」')
-      if (landed.wrongGrade?.highlighted) failures.push(`[390] 续草场景:点亮了别品的草 —— ${landed.wrongGrade.text.slice(0, 30)}`)
+      /*
+       * 高亮**只能有一格**,且那格必须是「要补的那一品」。
+       *
+       * 两处判据:
+       *   亮的灵草格数须恰为 1 —— 多亮说明按「有草就亮」挑,不是按缺的那一品
+       *   亮的那格须含目标品阶名 —— HERB_GRADE_NAMES 与界面同源,这里直接取
+       */
+      const lit = (landed.herbCards ?? []).filter(c => c.lit)
+      if (lit.length > 1) {
+        failures.push(`[390] 续草场景:同时点亮了 ${lit.length} 格灵草 —— 该只亮要补的那一品`)
+      }
+      /*
+       * 要补的品阶是 1,卡片上的名字取自 `data/herbGrades.ts` 的 HERB_GRADE_NAMES[1]。
+       * 本脚本是纯 Node 的 .mjs,不能直接 import 那份 TS —— 故在这里写字面量,
+       * 并在下面的判据里同时要求「亮的那格含它」;那份表若改名,
+       * 这条会因找不到而变红(不会静默通过)。
+       */
+      const wantGradeWord = '凡品灵草'
+      if (lit.length === 1 && !lit[0].text.includes(wantGradeWord)) {
+        failures.push(`[390] 续草场景:点亮的是别品的草(要「${wantGradeWord}」,亮的是「${lit[0].text.slice(0, 30)}」)`)
+      }
       if (!landed.herb) {
         failures.push('[390] 续草场景:坊市里找不到 fixture 的灵草格,判据没量到东西')
       } else {
