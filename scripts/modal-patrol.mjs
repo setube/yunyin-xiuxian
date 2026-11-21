@@ -703,6 +703,13 @@ async function clickTab(page, re) {
 }
 
 // ============ 各页的弹窗 ============
+/*
+ * 整段包 try/catch/finally —— 与 edge-states 同一理由:
+ * 逐扇巡逻要跑十几分钟,任何一扇里某次 evaluate 超时都会让异常冒到顶层,
+ * 而汇总打印在 `browser.close()` 之后,`failures` 里已攒下的那些一条也出不来。
+ * 崩溃本身记成一条失败,不吞掉;finally 只负责关浏览器。
+ */
+try {
 
 /*
  * 装备与行囊:分解 / 收纳 / 装备详情 / 词条信息 / 转移 / 炼丹 / 槽位候选。
@@ -966,8 +973,12 @@ async function clickTab(page, re) {
   const missed = want.filter(w => !got.has(w))
   if (missed.length) notOpened.push(...missed)
 }
-
-await browser.close()
+} catch (err) {
+  // 中途崩了:记成一条失败与其余一起报 —— 不吞掉它,也不让它盖掉已经查出来的
+  failures.push(`弹窗巡逻中途中断:${err instanceof Error ? err.message.split('\n')[0] : String(err)}`)
+} finally {
+  await browser.close().catch(() => {})
+}
 
 /*
  * 覆盖率下限。
@@ -983,13 +994,19 @@ await browser.close()
 const MIN_OPENED = 12
 const MIN_TWO_STEP = 3
 const openedCount = PATROLLED - notOpened.length
+/*
+ * 覆盖率下限也走 `failures`,不当场 `process.exit(1)`。
+ *
+ * 原先这两道是 exit:一旦覆盖率不足,后面那段「失败清单」根本轮不到打印 ——
+ * 实测注入一次中途崩掉,屏幕上只有「只开到 1 扇(应 ≥ 12)」,
+ * 而真正的原因(`弹窗巡逻中途中断:…`)一条都没露面。覆盖率不足与判据失败
+ * 是同一类事:都是「这一轮没验到该验的东西」,该并列在失败清单里。
+ */
 if (openedCount < MIN_OPENED) {
-  console.error(`\n弹窗巡逻:只开到 ${openedCount} 扇(应 ≥ ${MIN_OPENED})—— 巡逻没验到东西`)
-  process.exit(1)
+  failures.push(`只开到 ${openedCount} 扇(应 ≥ ${MIN_OPENED})—— 巡逻没验到东西`)
 }
 if (PATROLLED - twoStepMissed.length < MIN_TWO_STEP) {
-  console.error(`\n弹窗巡逻:只探到 ${PATROLLED - twoStepMissed.length} 扇两步确认(应 ≥ ${MIN_TWO_STEP})—— 确认态几何没验到`)
-  process.exit(1)
+  failures.push(`只探到 ${PATROLLED - twoStepMissed.length} 扇两步确认(应 ≥ ${MIN_TWO_STEP})—— 确认态几何没验到`)
 }
 
 if (notOpened.length) {
