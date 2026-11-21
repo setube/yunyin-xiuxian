@@ -288,12 +288,17 @@ describe('离线历练 · 战后语义与在线同源(图鉴/区域统计/镇压
     expect(session.wins + session.losses, '胜+负 = 这趟真打过的场次').toBe(summary.battles)
   })
 
-  /** 在线 `runBattle` 不论首领胜败都先 `track('battles')` 再按结果记账 */
+  /**
+   * 在线 `runBattle` 不论首领胜败都先记账再按结果结算。
+   *
+   * 记账入口现叫 `trackQuiet`(只记账、成就由整段收尾判一次),判据跟着改名 ——
+   * 它钉的是「首领分支两本账都推进」,不是函数名。
+   */
   it('离线首领战计入归来卷轴与进度计数,与在线同一本账', () => {
     const offline = readFileSync(src('./offline.ts'), 'utf8')
     // 首领分支须同时推进计数与两本账
-    expect(offline, '首领战要计入战斗总场次').toMatch(/track\('battles'\)\s*\n\s*battles \+= 1/)
-    expect(offline, '首领胜也要计入胜场').toMatch(/track\('bossKills'\)\s*\n\s*wins \+= 1/)
+    expect(offline, '首领战要计入战斗总场次').toMatch(/trackQuiet\('battles'\)\s*\n\s*battles \+= 1/)
+    expect(offline, '首领胜也要计入胜场').toMatch(/trackQuiet\('bossKills'\)\s*\n\s*wins \+= 1/)
     expect(offline, '首领败也要计入会话败场').toMatch(/sessionLosses \+= 1/)
   })
 })
@@ -314,7 +319,9 @@ describe('离线首领战 · battles 与 wins 相对 afterWin 的位置', () => 
     const src = readFileSync(resolve(__dirname, './offline.ts'), 'utf-8')
     const bossAt = src.indexOf('OFFLINE_BOSS_REWARD_MULT * regionEventReward, true, false)')
     expect(bossAt, 'offline.ts 里找不到首领战的 afterWin 调用').toBeGreaterThan(0)
-    const battlesAt = src.lastIndexOf("track('battles')", bossAt)
+    // 记账入口改名为 trackQuiet(只记账、不判定),判据跟着改 ——
+    // 它钉的是「这两句相对 afterWin 的位置」,不是函数名
+    const battlesAt = src.lastIndexOf("trackQuiet('battles')", bossAt)
     const winsAt = src.indexOf('wins += 1', bossAt)
     expect(battlesAt, 'battles 记账不在 afterWin 之前').toBeGreaterThan(0)
     expect(winsAt, 'wins += 1 不在 afterWin 之后').toBeGreaterThan(0)
@@ -351,5 +358,35 @@ describe('离线历练 · 剩余时长钳制', () => {
     expect(out, '夹具没进离线结算').not.toBeNull()
     expect(out!.battles, '场次不得为负').toBeGreaterThanOrEqual(0)
     expect(out!.events, '事件数不得为负').toBeGreaterThanOrEqual(0)
+  })
+})
+
+/**
+ * 离线结算整段只判一次成就。
+ *
+ * 这段里七处记账(kills / battles / bossKills / explores / offlineClaims)。
+ * 逐处调 `track()` 的话每处都要扫一遍 62 条成就(实测一次 0.52ms),七倍白工 ——
+ * 而这段跑在启动路径上(点开游戏到看见首页之间)。
+ *
+ * 判据:记账走 `trackQuiet`(只记账),收尾有且只有一处 `settleProgress()`。
+ * 故障注入:把任一处改回 `track(`,第一条红;删掉收尾那句,第二条红。
+ */
+describe('离线结算 · 整段只判一次成就', () => {
+  const OFFLINE = readFileSync(resolve(__dirname, './offline.ts'), 'utf-8')
+
+  it('记账入口全部走 trackQuiet,没有一处 track(', () => {
+    const eager = OFFLINE.match(/\btrack\('/g) ?? []
+    expect(eager.length, `离线结算里有 ${eager.length} 处 track( —— 每处都会重扫一遍成就`).toBe(0)
+    expect(OFFLINE, '记账入口不该消失').toMatch(/trackQuiet\('/)
+  })
+
+  it('收尾有且只有一处 settleProgress()', () => {
+    const settle = OFFLINE.match(/settleProgress\(\)/g) ?? []
+    expect(settle.length, `收尾判定了 ${settle.length} 次 —— 该只有一处`).toBe(1)
+    // 它必须在 stampActive 之后、return summary 之前:早于记账结束会漏判,晚于 return 就永不执行
+    const stampAt = OFFLINE.indexOf('game.stampActive(nowMs)')
+    const settleAt = OFFLINE.indexOf('settleProgress()')
+    expect(stampAt, '找不到 stampActive').toBeGreaterThan(0)
+    expect(settleAt, '收尾判定不在 stampActive 之后').toBeGreaterThan(stampAt)
   })
 })

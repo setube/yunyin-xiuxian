@@ -55,7 +55,7 @@ import { modOf, capChance } from './statsCalc'
 import { personalityEffects } from './petPersonality'
 import { recordWinStreakBatch } from './earlyGameService'
 import { streakRewardText } from '@/ui/streakText'
-import { collect, track } from './progress'
+import { collect, settleProgress, trackQuiet } from './progress'
 import { equipmentTemplate } from '@/data/equipment'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -348,8 +348,8 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
         // 道侣机会点与在线 offerBondEvent 同源:只记账,不抽事件、不碰缘分/信任/契合
         // 次数按情境封顶(首胜一次 + 败北一次),不随胜场放大
         gainBondOpportunities((wins > 0 ? 1 : 0) + (battles > wins ? 1 : 0))
-        track('kills', wins)
-        track('battles', battles)
+        trackQuiet('kills', wins)
+        trackQuiet('battles', battles)
         // 图鉴与区域战绩与在线同口径整段入账:净胜批量入账(见 applyRegionWinBatch),照面胜 +1 / 负 ×ENEMY_LORE_LOSS_WEIGHT
         if (mobId) noteEnemyMany(mobId, wins, battles - wins)
         // 宿敌账与在线 recordLoss 同源,败场整批入账
@@ -428,7 +428,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
            * 奖励按 `wins`(普通战期望值)折出,两者互不干扰。
            * 加 `wins` 的那一句在胜利分支**末尾**,所以才不会把首领自己再乘进奖励里。
            */
-          track('battles')
+          trackQuiet('battles')
           battles += 1
           if (bossResult.win) {
             // 与在线首领同乘 mode×regReward,另叠收益折损
@@ -437,8 +437,8 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
             trip.stone = add(trip.stone, drops.stone)
             trip.exp = add(trip.exp, drops.exp)
             trip.items += drops.items
-            track('kills')
-            track('bossKills')
+            trackQuiet('kills')
+            trackQuiet('bossKills')
             wins += 1
             sessionWins += 1
             // 首领胜计入连胜(与在线 runBattle 同一本账)
@@ -482,7 +482,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
       }
       if (simSec >= remainSec) {
         adventure.setSession(null)
-        track('explores')
+        trackQuiet('explores')
         notes.push(`${region.name}历练完成`)
       } else {
         adventure.setSession({
@@ -548,7 +548,7 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   }
 
   if (dtSec >= OFFLINE_MODAL_MIN_SECONDS) {
-    track('offlineClaims')
+    trackQuiet('offlineClaims')
     ui.offlineSummary = summary
   }
   /*
@@ -564,6 +564,14 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
    * 用 `stampActive` 而不是直接赋值,是为了走它那道坏时钟守卫。
    */
   game.stampActive(nowMs)
+  /*
+   * 成就 / 主线 / 日课在整段结算之后判**一次**。
+   *
+   * 上面七处 `trackQuiet` 只记账不判定 —— 判一遍要扫 62 条成就(实测 0.52ms),
+   * 七处各判一次就是七倍,而这整段跑在启动路径上(玩家点开游戏到看见首页之间)。
+   * 判定读的只有计数器与境界,与「每处判一次」同值;批次末判一次即可。
+   */
+  settleProgress()
   return summary
 }
 

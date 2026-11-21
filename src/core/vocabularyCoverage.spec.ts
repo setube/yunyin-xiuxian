@@ -75,8 +75,15 @@ describe('声明即承诺 · 计数与属性', () => {
 
   it('每个计数器都有写入方 —— 否则引用它的成就永远拿不到', () => {
     expect(counters.length).toBeGreaterThanOrEqual(10)
-    const unbacked = counters.filter(k => !implCorpus.includes(`track('${k}'`))
-    expect(unbacked, `这些计数器没有任何 track 写入点`).toEqual([])
+    /*
+     * 认两种记账入口:`track()`(记账 + 当场判定)与 `trackQuiet()`(只记账,
+     * 成就由批量末尾统一判)。后者是批量路径与离线结算用的那条 ——
+     * 绑死 `track(` 会把「改走批量入口」误报成「没有写入方」。
+     */
+    const wrote = (k: string): boolean =>
+      implCorpus.includes(`track('${k}'`) || implCorpus.includes(`trackQuiet('${k}'`)
+    const unbacked = counters.filter(k => !wrote(k))
+    expect(unbacked, `这些计数器没有任何写入点(track / trackQuiet)`).toEqual([])
   })
 
   it('每个属性键都有读取方 —— 否则给它的词条与天赋全是死加成', () => {
