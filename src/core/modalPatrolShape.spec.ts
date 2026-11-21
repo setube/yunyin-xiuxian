@@ -97,10 +97,15 @@ describe('modal-patrol · 覆盖率下限', () => {
     expect(Number(twoStep![1]), 'MIN_TWO_STEP 是 0 等于没有下限').toBeGreaterThan(1)
   })
 
-  it('两个下限各自都要 exit(1)', () => {
+  it('两个下限各自都要判,且并列报进 failures', () => {
     /*
-     * 必须**分段**判。两个 if 块里各有一个 `process.exit(1)`,
-     * 整段一起判时删掉任一个,另一个仍能让 toContain 成立 —— 实测漏过一次。
+     * 必须**分段**判:整段一起判时删掉任一个,另一个仍能让 toContain 成立(实测漏过一次)。
+     *
+     * 收口方式从 `process.exit(1)` 改成了 `failures.push(...)` —— 原先是 exit,
+     * 一旦覆盖率不足就把后面的失败清单整段跳过:实测注入一次中途崩掉,
+     * 屏幕上只有「只开到 1 扇(应 ≥ 12)」,而真正的根因
+     * (「弹窗巡逻中途中断:某扇窗里 evaluate 超时」)一条都没露面。
+     * 覆盖率不足与判据失败是同一类事,该并列在失败清单里,由末尾那个 exit 统一收口。
      */
     const at = SRC.indexOf('const MIN_OPENED')
     const twoStepAt = SRC.indexOf('MIN_TWO_STEP)', at)
@@ -110,8 +115,8 @@ describe('modal-patrol · 覆盖率下限', () => {
     const twoStepBlock = SRC.slice(twoStepAt, twoStepAt + 400)
 
     expect(openedBlock, '开了几扇没判据').toContain('openedCount < MIN_OPENED')
-    expect(openedBlock, '「开到几扇」那条低于下限时没有 exit(1) —— 只打印等于没判').toContain('process.exit(1)')
-    expect(twoStepBlock, '两步确认那条低于下限时没有 exit(1)').toContain('process.exit(1)')
+    expect(openedBlock, '「开到几扇」低于下限时没进 failures —— 只打印等于没判').toContain('failures.push(')
+    expect(twoStepBlock, '两步确认低于下限时没进 failures').toContain('failures.push(')
   })
 })
 
@@ -138,5 +143,43 @@ describe('弹窗巡逻 · 开窗等待', () => {
   it('等不到就记「未量」并说明原因,不继续拿空面板去量', () => {
     expect(BLOCK, '等不到面板时没有提前返回').toMatch(/if \(!visible\)[\s\S]{0,200}return/)
     expect(BLOCK, '未量原因里没写清是点了没弹出来').toContain('没出现面板')
+  })
+})
+
+/*
+ * 中途崩掉时,真正的根因要排在最前(第 13 轮)。
+ *
+ * 两处问题叠在一起,只有一个能修都不够:
+ *   一 逐扇巡逻没包 try —— 异常冒到顶层,汇总在 browser.close() 之后,一条也打印不出来
+ *   二 覆盖率下限用 `process.exit(1)`,一旦不足就把后面的失败清单整段跳过
+ * 实测注入一次中途崩掉,屏幕上只有「只开到 1 扇(应 ≥ 12)」——
+ * 那是**后果**,根因(某扇窗里 evaluate 超时)一条都没露面。
+ *
+ * 故障注入:去掉 try/catch,第一条红;把 failures.push 换回 process.exit,第二条红。
+ */
+describe('弹窗巡逻 · 崩溃时根因要露面', () => {
+  it('逐扇巡逻包在 try 里,崩溃记成一条失败', () => {
+    const tryAt = SRC.indexOf('// ============ 各页的弹窗')
+    const block = SRC.slice(tryAt, tryAt + 400)
+    expect(block, '巡逻段没包 try —— 中途抛错会让已量过的读数全部丢失').toContain('try {')
+    expect(SRC, '崩溃没进 failures').toContain('弹窗巡逻中途中断')
+  })
+
+  it('覆盖率下限走 failures,不当场 exit', () => {
+    /*
+     * 只量到「两步确认」那条 if 结束为止 —— 末尾那段统一收口的 `process.exit(1)`
+     * 本来就该在(它是整个脚本的收口),把它算进来会让这条判据永远假红。
+     */
+    const at = SRC.indexOf('const MIN_OPENED')
+    const end = SRC.indexOf('if (notOpened.length)', at)
+    expect(at, '找不到下限块').toBeGreaterThan(-1)
+    expect(end, '找不到下限块之后的未量清单').toBeGreaterThan(at)
+    // 注释里也写着 process.exit(1)(解释为什么不再用它),先剥掉整行注释再查
+    const block = SRC.slice(at, end)
+      .split('\n')
+      .filter(line => !/^\s*(\*|\/\/)/.test(line))
+      .join('\n')
+    expect(block, '覆盖率不足仍当场 exit —— 真正的根因排在它后面就永远看不到').not.toContain('process.exit')
+    expect(block, '覆盖率不足该作为一条失败并列报出').toContain('failures.push(')
   })
 })
