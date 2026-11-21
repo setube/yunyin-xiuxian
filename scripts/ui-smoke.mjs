@@ -128,9 +128,48 @@ async function cleanRetry(route, label) {
    *
    * 故这里只取 namePattern 的骨架(数字段松开、字间空格容错),锚点交给外围。
    */
-  const re = new RegExp(namePattern(label).source.replace(/^\^|\$$/g, ''))
-  const b = page.locator('button').filter({ hasText: re }).first()
-  if (!(await b.count())) return null
+  /*
+   * 用 `namePattern` 的**整串**式子,但去掉 `^`/`$` 之后交给一个自定义筛选:
+   * `hasText` 是子串语义,会命中「…界域名号…」这种更长的按钮;
+   * `label` 本身取自按钮的 innerText,是完整正文,故要求整串吻合才对得上号。
+   *
+   * 做法:`matches` 先按名称骨架粗筛(快),再逐个比对 innerText 是否整串吻合
+   * (准)。数字段与字间空格仍按 `namePattern` 的规则容错。
+   */
+  const whole = namePattern(label)
+  const re = new RegExp(whole.source.replace(/^\^|\$$/g, ''))
+  /*
+   * **先筛出可见项,再取第一个** —— 顺序不能反。
+   *
+   * 原先直接 `.filter({ hasText: re }).first()`:页面上常有同名但隐藏的按钮
+   * (折叠区、未激活的分页、aria-hidden 的装饰层),`.first()` 可能拿到隐藏那个,
+   * 于是要么在 `isVisible()` 处判成「无法复现」、要么更糟 ——
+   * 拿到一个隐藏的**已选中期签**,被当成幂等报出去,而真正该点的那个可见控件
+   * 一次都没验过(评审指出)。
+   *
+   * 可见性判据与后面那句 `isVisible()` 同源,不另立一套。
+   */
+  const matches = page.locator('button').filter({ hasText: re })
+  const total = await matches.count()
+  if (!total) return null
+  let b = null
+  for (let i = 0; i < total; i += 1) {
+    const cand = matches.nth(i)
+    /*
+     * 两个条件都要:可见、且正文**整串**吻合。
+     *
+     * 只按子串筛会命中更长的按钮(「界域」也会命中「界域名号」那类),
+     * `.first()` 于是可能点到另一个控件,把结论记到请求的那个标签名下 ——
+     * 报表看起来一切正常,而请求的那个控件其实没被点过。
+     */
+    const text = ((await cand.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim()
+    if (!whole.test(text)) continue
+    if (!(await cand.isVisible().catch(() => false))) continue
+    b = cand
+    break
+  }
+  // 一个可见的都没有 —— 判不了,不判失败
+  if (!b) return null
   /*
    * 点的是当前已选中的页签 —— 幂等,不判失败。
    *
@@ -144,7 +183,6 @@ async function cleanRetry(route, label) {
     .catch(() => null)
   // 判据本身在 smoke-classify.ts 里(可单测);这里只把两个属性取出来传进去
   if (tabState && isSelectedTabState(tabState.role, tabState.selected)) return 'selected-tab'
-  if (!(await b.isVisible().catch(() => false))) return null
   const before = await fingerprint()
   /**
    * 拒因型按钮(如「出发」在闭关中/远征在途时)点下去只会弹一条 toast、页面别处不动。

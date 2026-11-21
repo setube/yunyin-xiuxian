@@ -224,12 +224,45 @@ describe('干净重试 · 定位口径', () => {
     expect(CLEAN, '该按 button 定位后按文本筛,与 ARIA 角色无关').toContain("locator('button')")
   })
 
-  it('传给 hasText 的正则去掉了整串锚点', () => {
+  it('粗筛的正则去掉了整串锚点', () => {
     expect(CLEAN, '找不到取 namePattern 的那句').toContain('namePattern(label)')
     expect(
       CLEAN.replace(/\s+/g, ''),
       '把 ^…$ 直接喂给 hasText —— 子串语义下恒不匹配'
-    ).toContain("source.replace(/^\\^|\\$$/g,'')")
+    ).toMatch(/whole\.source\.replace\(\/\^\\\^\|\\\$\$\/g, ?''\)/)
+  })
+
+  /*
+   * 评审指出上一条不够:只查「那段替换表达式出现过」,它完全可能出现了却没被用上
+   * (`const re = ...` 之后直接 `filter({ hasText: namePattern(label) })`),测试照样绿。
+   * 故直接断言**筛选条件本身**:
+   *   · 粗筛用去锚点后的式子
+   *   · 逐个比对时用**整串**式子 `whole`
+   */
+  it('筛选条件是去锚点的式子,逐个比对用整串式子', () => {
+    const compact = CLEAN.replace(/\s+/g, '')
+    expect(compact, '粗筛没用去锚点的式子').toContain('filter({hasText:re})')
+    expect(compact, '没有取整串式子').toContain('constwhole=namePattern(label)')
+    expect(compact, '逐个比对没用整串式子 —— 子串会命中更长的按钮').toContain('whole.test(text)')
+  })
+
+  /*
+   * 顺序:先筛「整串吻合 + 可见」,再判选中态。
+   *
+   * 评审指出:把选中态判断放在可见性之前时,列表里若有一个**隐藏的已选中期签**
+   * 排在可见目标前面,它会被当成幂等报出去 —— 而真正该点的那个可见控件
+   * 一次都没验过。顺序反了,缺陷就漏了。
+   */
+  it('先筛可见与整串吻合,再判选中态', () => {
+    const compact = CLEAN.replace(/\s+/g, '')
+    const testAt = compact.indexOf('whole.test(text)')
+    const tabAt = compact.indexOf('isSelectedTabState')
+    const visAt = compact.indexOf('cand.isVisible()')
+    expect(testAt, '找不到整串比对').toBeGreaterThan(-1)
+    expect(tabAt, '找不到选中态判断').toBeGreaterThan(-1)
+    expect(visAt, '找不到可见性判断').toBeGreaterThan(-1)
+    expect(visAt, '可见性判断排在选中态之后 —— 隐藏的已选中期签会被当成幂等').toBeLessThan(tabAt)
+    expect(testAt, '整串比对排在选中态之后').toBeLessThan(tabAt)
   })
 })
 
