@@ -100,3 +100,46 @@ describe('实测脚本 · 守卫要早于用 dist', () => {
     })
   }
 })
+
+/**
+ * `package.json` 里「先 build 再跑实测脚本」的那些命令也要带上 `--strict-dist`。
+ *
+ * 它们已经 `bun run build &&` 了,产物本该是新的 —— 但构建完成到脚本启动之间
+ * 仍有空隙:源码在这期间被改,脚本照样会跑旧产物,而它一样不吭声。
+ * 带上 `--strict-dist` 就把「我刚构建过」从假设变成受校验的断言。
+ *
+ * 只查「命令里既有 build、又有实测脚本」的那些;单独的 build / dev / test 不在内。
+ */
+describe('package.json · 实测命令要带严格档', () => {
+  const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf-8')) as {
+    scripts: Record<string, string>
+  }
+  /** 实测脚本清单(与上面 READ_DIST 同源,这里取文件名判断) */
+  const QA_SCRIPTS = [
+    'ui-smoke.mjs',
+    'focus-check.mjs',
+    'aria-check.mjs',
+    'multitab-check.mjs',
+    'layout-check.mjs',
+    'offline-check.mjs',
+    'treasure-check.mjs',
+    'detail-geometry.mjs',
+    'modal-patrol.mjs',
+    'edge-states.mjs',
+    'world-check.mjs',
+    'orb-check.mjs'
+  ]
+
+  it('先 build 再跑实测脚本的命令都带 --strict-dist', () => {
+    const bad: string[] = []
+    for (const [name, body] of Object.entries(pkg.scripts)) {
+      if (!body.includes('bun run build')) continue
+      for (const s of QA_SCRIPTS) {
+        // 该命令里出现了这个脚本,但它后面没有 --strict-dist
+        const re = new RegExp(`${s.replace('.', '\\.')}(?!\\s+--strict-dist)`)
+        if (re.test(body)) bad.push(`${name} → ${s}`)
+      }
+    }
+    expect(bad, `这些命令跑了实测脚本却没带 --strict-dist:${bad.join('、')}`).toEqual([])
+  })
+})
