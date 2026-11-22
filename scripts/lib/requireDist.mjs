@@ -56,10 +56,23 @@ export function requireDist(label) {
   const srcAt = Math.max(newestMtime(join(ROOT, 'src')), statSync(join(ROOT, 'index.html')).mtimeMs)
   if (srcAt > distAt) {
     const mins = Math.round((srcAt - distAt) / 60000)
-    console.warn(
+    const msg =
       `\n⚠ ${label}:dist 比源码旧约 ${mins} 分钟 —— 量到的是上一次构建的代码。` +
-        `\n  要验当前源码请先 \`bun run build\`。\n`
-    )
+      `\n  要验当前源码请先 \`bun run build\`。\n`
+    /*
+     * 过期默认只警告,不拦 —— 有意验旧产物(复现历史问题)时仍要能跑。
+     *
+     * 但警告会被忽略。实测过:同一个 session 里,我改了源码没重建就去判定,
+     * 屏幕上确实印着这几行,我照样拿旧产物的读数下了结论,一整个小时的排查方向是错的。
+     *
+     * `--strict-dist` 把它升级成拦截:CI 外的人工验证常用这种口径 ——
+     * 想验当前源码,就不该让旧产物蒙混过关。
+     */
+    if (process.argv.includes('--strict-dist')) {
+      console.error(msg + '  (--strict-dist:按失败处理)')
+      return false
+    }
+    console.warn(msg)
   }
   return true
 }
