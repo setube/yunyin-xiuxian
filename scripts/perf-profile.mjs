@@ -18,6 +18,17 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { lateSlices, seedSave, stressSlices, withActiveRun } from "./lib/saveFixture.mjs";
+import { requireDist } from "./lib/requireDist.mjs";
+
+/**
+ * 产物过期就别往下跑。
+ *
+ * 这里量的是 dist 的构建产物;改了 src 却没重建时,量到的是旧代码,
+ * 而读数看起来完全正常 —— 那比报错更糟。
+ * 与其余实测脚本同一道闸。
+ */
+if (!requireDist("性能画像")) process.exit(1);
+
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");

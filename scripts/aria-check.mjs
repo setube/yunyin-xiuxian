@@ -11,9 +11,9 @@ import { seedSave, lateSlices, midSlices } from './lib/saveFixture.mjs'
 import { requireDist } from './lib/requireDist.mjs'
 
 const PORT = 4235
+if (!requireDist('读屏属性自检')) process.exit(1)
 const server = await preview({ preview: { port: PORT, strictPort: true } })
 const BASE = `http://localhost:${PORT}/`
-if (!requireDist('读屏属性自检')) process.exit(1)
 
 const failures = []
 /**
