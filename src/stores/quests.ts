@@ -1,10 +1,9 @@
 /** 任务 / 成就 / 称号 / 图鉴 / 计数器 */
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { CounterKey } from '@/types'
+import { COUNTER_KEYS, type CounterKey } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
-import { COUNTER_KEYS } from '@/data/counterKeys'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { TITLES } from '@/data/titles'
 import { CODEX_IDS } from '@/data/codexIds'
@@ -74,7 +73,7 @@ export const useQuestsStore = defineStore(
        */
       counters.value = Object.fromEntries(
         Object.entries(asNumberRecord(counters.value, 0))
-          .filter(([k]) => COUNTER_KEYS.has(k as CounterKey))
+          .filter(([k]) => (COUNTER_KEYS as readonly string[]).includes(k))
           .map(([k, v]) => [k, v > COUNTER_MAX ? 0 : v])
       )
       // 成就是集合语义:与 unlockAchievement 同口径去重;只留认得的 id(野 id 画不出来却照样计数)
@@ -83,7 +82,16 @@ export const useQuestsStore = defineStore(
       const maxIdx = Math.max(0, MAIN_QUESTS.length - 1)
       mainIdx.value = Math.min(Math.floor(asFiniteNumber(mainIdx.value, 0, 0)), maxIdx)
       const d = asObjectOrNull<{ date?: unknown; base?: unknown; done?: unknown }>(daily.value)
-      const base = asNumberRecord(d?.base, 0)
+      /*
+       * 日课基线也按计数键表过滤。
+       *
+       * 评审指出:`asNumberRecord` 收任意键,而 `hasBase` 只看「有没有键」——
+       * 坏档在同一天塞进一大批**值合法**的野键,`hasBase` 仍为真、那批键原样留下,
+       * 主计数器表过滤了、这里没过滤,存档照样被撑大。
+       */
+      const base = Object.fromEntries(
+        Object.entries(asNumberRecord(d?.base, 0)).filter(([k]) => (COUNTER_KEYS as readonly string[]).includes(k))
+      )
       /*
        * 日课基线缺失时的兜底:把当前累计当作基线。
        *

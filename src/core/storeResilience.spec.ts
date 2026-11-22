@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia, type Store } from 'pinia'
 import type { BondState } from '@/core/daoluService'
 import { usePlayerStore } from '@/stores/player'
@@ -1572,5 +1572,38 @@ describe('坏档韧性 · 忆战速度与回合数的上界', () => {
     } as never)
     e.sanitize()
     expect((e.worldRun as { totalRounds?: number } | null)?.totalRounds, '累加后越过了上界').toBeLessThanOrEqual(10_000)
+  })
+})
+
+/**
+ * 誓约基线野键 —— 与 quests 的 daily.base 同一处理(评审 PR #632)。
+ *
+ * 主计数器表按 `COUNTER_KEYS` 过滤了,`vow.base` 原先没收:
+ * 坏档带一份有效誓约 + 一大批值合法的野基线键,那些键会留在 state 与存档里。
+ */
+describe('坏档韧性 · 誓约基线野键也要清', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('vow.base 里的表外键清掉,真计数键照留', () => {
+    const player = usePlayerStore()
+    const ghost = Object.fromEntries(Array.from({ length: 3000 }, (_, i) => [`ghost_${i}`, 1]))
+    player.$patch({
+      reincarnation: {
+        ...(player.reincarnation as object),
+        vow: {
+          themeId: 'lt_jindan',
+          at: Date.now(),
+          base: { ...ghost, kills: 9 },
+          baseBranches: 0,
+          baseAvenged: 0,
+          broken: false
+        }
+      }
+    } as never)
+    player.sanitize()
+    const base = (player.reincarnation.vow as { base?: Record<string, number> } | null)?.base
+    expect(base, '誓约本身该保留(它是一条合法记录)').toBeTruthy()
+    expect(Object.keys(base!).filter(k => k.startsWith('ghost_')), '野键一个都不许留').toEqual([])
+    expect(base!.kills, '真计数键照留').toBe(9)
   })
 })
