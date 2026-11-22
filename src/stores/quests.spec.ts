@@ -427,3 +427,51 @@ describe('收藏册 · 时间戳表按留下的键清', () => {
     expect(quests.collectedAt['equip:w_zhuqing']).toBe(0)
   })
 })
+
+/**
+ * 计数器表里的野键读档时清掉。
+ *
+ * `inc()` 的 key 是编译期联合类型 `CounterKey`,而**运行时一个字都不剩** ——
+ * 读档时原本无从判断一个键认不认得,于是坏档能塞任意多键:
+ * 实测十万个野键 → `$state` 3.18MB、`sanitize` 自己跑 398ms,而这一步在启动路径上。
+ * 野键既不参与 `evalCond`(`counter(key)` 只按已知键查)也不显示,唯一作用是撑大存档。
+ *
+ * 认得哪些键由 `data/counterKeys` 给出(从数据表 + 源码里的 track 调用两路推导)。
+ * 故障注入:去掉 `.filter(([k]) => COUNTER_KEYS.has(...))`,第一条红。
+ */
+describe('计数器 · 野键读档时清掉', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('十万个野键全清,state 不再被撑大', () => {
+    const quests = useQuestsStore()
+    const ghost = Object.fromEntries(Array.from({ length: 100_000 }, (_, i) => [`ghost_${i}`, 1]))
+    quests.$patch({ counters: ghost } as never)
+    quests.sanitize()
+    const left = Object.keys((quests.$state as { counters: Record<string, number> }).counters)
+    expect(left.filter(k => k.startsWith('ghost_')), '野键一个都不许留').toEqual([])
+    expect(JSON.stringify(quests.$state).length, '坏档把 state 撑爆了').toBeLessThan(2000)
+  })
+
+  it('真计数器照留 —— 含那些只记账、没有成就读它的键', () => {
+    const quests = useQuestsStore()
+    /*
+     * `battles` 与 `pillsFailed` 被 `track()` 写着,却不在任何成就/主线/日课的条件里 ——
+     * 它们的键只能从源码的 track 调用扫出来。若表只读数据表,这两个会被当野键清掉。
+     */
+    quests.$patch({ counters: { kills: 42, battles: 7, pillsFailed: 3, ghost_x: 99 } } as never)
+    quests.sanitize()
+    const c = (quests.$state as { counters: Record<string, number> }).counters
+    expect(c.kills, '有成就读它的键照留').toBe(42)
+    expect(c.battles, '只记账、无成就读的键也要留 —— 它由源码 track 调用扫出').toBe(7)
+    expect(c.pillsFailed, '同上').toBe(3)
+    expect(c.ghost_x, '野键该没了').toBeUndefined()
+  })
+
+  it('越界仍归零(既有语义不变)', () => {
+    const quests = useQuestsStore()
+    quests.$patch({ counters: { kills: 1e300 } } as never)
+    quests.sanitize()
+    const c = (quests.$state as { counters: Record<string, number> }).counters
+    expect(c.kills, '越界仍归零,不是夹到上界').toBe(0)
+  })
+})

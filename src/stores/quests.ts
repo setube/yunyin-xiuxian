@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import type { CounterKey } from '@/types'
 import { persistConfig } from '@/utils/storage'
 import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
+import { COUNTER_KEYS } from '@/data/counterKeys'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { TITLES } from '@/data/titles'
 import { CODEX_IDS } from '@/data/codexIds'
@@ -60,8 +61,21 @@ export const useQuestsStore = defineStore(
        * (同理见 `inventory` 的 `investedDust`;与「夹到边界」那种修法区分开:
        * 夹的值本身可信、只是越界,归零的是值本身不可信。)
        */
+      /*
+       * 表外的键整条丢掉。
+       *
+       * 写入侧只有 `inc()`,它的 key 是编译期联合类型;而 `CounterKey` 运行时一个字都不剩,
+       * 读档时无从判断一个键认不认得。于是坏档能塞任意多键:实测十万个野键 →
+       * `$state` 3.18MB、`sanitize` 自己跑 398ms,而这一步在启动路径上。
+       * 野键既不参与 `evalCond`(`counter(key)` 只按已知键查)也不显示,唯一作用是撑大存档。
+       *
+       * 认得哪些键由 `data/counterKeys` 给出 —— 那份表从**数据表与源码里的 track 调用**
+       * 两路推导,不手写;覆盖是否完整有 `counterKeysCoverage.spec` 从源码核。
+       */
       counters.value = Object.fromEntries(
-        Object.entries(asNumberRecord(counters.value, 0)).map(([k, v]) => [k, v > COUNTER_MAX ? 0 : v])
+        Object.entries(asNumberRecord(counters.value, 0))
+          .filter(([k]) => COUNTER_KEYS.has(k as CounterKey))
+          .map(([k, v]) => [k, v > COUNTER_MAX ? 0 : v])
       )
       // 成就是集合语义:与 unlockAchievement 同口径去重;只留认得的 id(野 id 画不出来却照样计数)
       const achievementIds = new Set(ACHIEVEMENTS.map(a => a.id))
