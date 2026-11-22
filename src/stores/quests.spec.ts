@@ -475,3 +475,26 @@ describe('计数器 · 野键读档时清掉', () => {
     expect(c.kills, '越界仍归零,不是夹到上界').toBe(0)
   })
 })
+
+/**
+ * 日课基线与誓约基线也要按键表过滤 —— 评审指出(PR #632)。
+ *
+ * `asNumberRecord` 收任意键,而 `hasBase` 只看「有没有键」:坏档在同一天塞进
+ * 一大批**值合法**的野键,`hasBase` 仍为真、那批键原样留下 ——
+ * 主计数器表过滤了、这两处没过滤,存档照样被撑大。
+ *
+ * 故障注入:把 daily.base 那层 filter 去掉,第一条红。
+ */
+describe('基线表 · 野键同样要清', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('daily.base 的野键被清,真计数键照留', () => {
+    const quests = useQuestsStore()
+    const ghost = Object.fromEntries(Array.from({ length: 5000 }, (_, i) => [`ghost_${i}`, 1]))
+    quests.$patch({ daily: { date: '2026-11-22', base: { ...ghost, kills: 5 }, done: [] } } as never)
+    quests.sanitize()
+    const base = (quests.daily as { base: Record<string, number> }).base
+    expect(Object.keys(base).filter(k => k.startsWith('ghost_')), '野键一个都不许留').toEqual([])
+    expect(base.kills, '真计数键照留').toBe(5)
+  })
+})

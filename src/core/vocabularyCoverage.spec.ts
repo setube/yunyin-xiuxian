@@ -3,6 +3,7 @@
  * 故障注入:删掉任一 case、任一 track 写入、任一属性读取点,本文件立刻变红。
  */
 import { describe, expect, it } from 'vitest'
+import { COUNTER_KEYS } from '@/types'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { AFFIXES } from '@/data/affixes'
@@ -70,7 +71,11 @@ describe('声明即承诺 · 事件词汇', () => {
 })
 
 describe('声明即承诺 · 计数与属性', () => {
-  const counters = unionMembers('export type CounterKey =', 'export type AchvCond')
+  /*
+   * 计数器键改读运行时数组:`CounterKey` 现在由 `types` 里的 `COUNTER_KEYS` 推导
+   * (`typeof …[number]`),源码里不再有 `| 'key'` 那一串字面量可供抠取。
+   */
+  const counters: string[] = [...COUNTER_KEYS]
   const statKeys = unionMembers('export type PercentStatKey =', 'export type AnyStatKey')
 
   it('每个计数器都有写入方 —— 否则引用它的成就永远拿不到', () => {

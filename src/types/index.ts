@@ -634,26 +634,40 @@ export interface PetDef {
 }
 
 // ============ 成就 / 任务 ============
-export type CounterKey =
-  | 'kills'
-  | 'battles'
-  | 'breakthroughs'
-  | 'breakthroughFails'
-  | 'explores'
-  | 'events'
-  | 'equipsGained'
-  | 'upgrades'
-  | 'pillsUsed'
-  | 'pillsCrafted'
-  | 'pillsFailed'
-  | 'gongfaLearned'
-  | 'reincarnations'
-  | 'tribulations'
-  | 'decomposed'
-  | 'soulsRefined'
-  | 'offlineClaims'
-  | 'bossKills'
-  | 'buildingUpgrades'
+/**
+ * 计数器的键。**唯一事实源是运行时那个数组** —— 类型由它推导。
+ *
+ * 原先这里是一串手写的联合字面量,运行时一个字都不剩:读档自愈要判断
+ * 「这个键认不认得」时无从下手,于是坏档能塞任意多键(实测十万个野键 → 3.18MB)。
+ * 而另写一份运行时数组又会与这串字面量各走各的 —— 增删一个键忘了同步,
+ * 那个计数就会在读档时被当野键清掉,且没有任何报错。
+ *
+ * 改成「数组在前、类型由 typeof 推导」:加键只改数组一处,两边永远一致。
+ * 计数器的键不多(十九个)且都只在本仓出现,数组直白列出即可。
+ */
+export const COUNTER_KEYS = [
+  'kills',
+  'battles',
+  'breakthroughs',
+  'breakthroughFails',
+  'explores',
+  'events',
+  'equipsGained',
+  'upgrades',
+  'pillsUsed',
+  'pillsCrafted',
+  'pillsFailed',
+  'gongfaLearned',
+  'reincarnations',
+  'tribulations',
+  'decomposed',
+  'soulsRefined',
+  'offlineClaims',
+  'bossKills',
+  'buildingUpgrades'
+] as const
+
+export type CounterKey = (typeof COUNTER_KEYS)[number]
 
 export type AchvCond =
   | { type: 'counter'; key: CounterKey; value: number }

@@ -3,22 +3,21 @@
  * 故障注入:删掉方向表里任一条(如 events),或往 CounterKey 加一个新键,本文件红。
  */
 import { describe, expect, it } from 'vitest'
+import { COUNTER_KEYS } from '@/types'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { COUNTER_DIRECTIONS, achievementDirection, achievementGuide, COUNTER_GROUPS, ACHIEVEMENT_GROUP_LABEL, achievementGroup } from '@/ui/achievementHint'
 
 /**
- * 从 types/index.ts 源码扫出 CounterKey 联合成员(手写联合,不重抄)。
- * 结束点取后一个类型声明(同 vocabularyCoverage 的 unionMembers),不用空行切块:CRLF 行尾下没有 `\n\n`,会滑到文件尾。
+ * 计数器键的来源从「扫源码文本」改成「读运行时数组」。
+ *
+ * 原先类型是一串手写字面量,只能从文本里抠;现在 `CounterKey` 由
+ * `types` 里的 `COUNTER_KEYS` 数组推导(`typeof …[number]`),直接读数组即可 ——
+ * 比正则抠文本可靠,也不会因为注释里的引号误抓。
  */
 function counterKeysFromTypes(): string[] {
-  const src = readFileSync(resolve(__dirname, '../types/index.ts'), 'utf8')
-  const start = src.indexOf('export type CounterKey =')
-  expect(start, 'types/index.ts 里找不到 CounterKey').toBeGreaterThanOrEqual(0)
-  const end = src.indexOf('export type AchvCond', start)
-  const block = src.slice(start, end > 0 ? end : undefined)
-  return [...new Set([...block.matchAll(/'([A-Za-z]+)'/g)].map(m => m[1]!))]
+  return [...COUNTER_KEYS]
 }
 
 

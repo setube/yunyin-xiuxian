@@ -1,6 +1,7 @@
 /** 玩家状态 —— 境界 / 修为 / 寿元 / 灵根 / 最终属性汇总 */
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { COUNTER_KEYS } from '@/types'
 import type { FinalStats, GNum, LinggenProfile, StatMods, WorldId } from '@/types'
 import { gn, gnZero, add, gte, mulN, progress, subClamp } from '@/utils/gnum'
 import { persistConfig } from '@/utils/storage'
@@ -634,7 +635,13 @@ export const usePlayerStore = defineStore(
       return {
         themeId: v.themeId,
         at: Math.max(0, asTimestamp(v.at, 0)),
-        base: asNumberRecord(v.base, 0),
+        /*
+         * 誓约基线同样按计数键表过滤 —— 与 quests 的 daily.base 同一处理。
+         * 评审指出:主计数器表过滤了,vow.base 没收,坏档能把野键留在这里。
+         */
+        base: Object.fromEntries(
+          Object.entries(asNumberRecord(v.base, 0)).filter(([k]) => (COUNTER_KEYS as readonly string[]).includes(k))
+        ),
         baseBranches: Math.max(0, Math.floor(asFiniteNumber(v.baseBranches, 0, 0))),
         baseAvenged: Math.max(0, Math.floor(asFiniteNumber(v.baseAvenged, 0, 0))),
         broken: v.broken === true
