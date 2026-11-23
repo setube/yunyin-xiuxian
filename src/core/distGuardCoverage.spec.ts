@@ -127,7 +127,10 @@ describe('package.json · 实测命令要带严格档', () => {
     'modal-patrol.mjs',
     'edge-states.mjs',
     'world-check.mjs',
-    'orb-check.mjs'
+    'orb-check.mjs',
+    /* 性能类同样读 dist:评审指出漏了它们 */
+    'first-paint.mjs',
+    'perf-profile.mjs'
   ]
 
   it('先 build 再跑实测脚本的命令都带 --strict-dist', () => {
@@ -135,9 +138,21 @@ describe('package.json · 实测命令要带严格档', () => {
     for (const [name, body] of Object.entries(pkg.scripts)) {
       if (!body.includes('bun run build')) continue
       for (const s of QA_SCRIPTS) {
-        // 该命令里出现了这个脚本,但它后面没有 --strict-dist
-        const re = new RegExp(`${s.replace('.', '\\.')}(?!\\s+--strict-dist)`)
-        if (re.test(body)) bad.push(`${name} → ${s}`)
+        /*
+         * 按**参数**判,不按「紧跟其后」的前瞻。
+         *
+         * 评审指出:原先的 `(?!\s+--strict-dist)` 只认紧跟在脚本名后面的那一个 ——
+         * `--stress` / `--curve` 排在前面时有效调用会被判红;而
+         * `--strict-dist-typo` 这种前缀相似的又会蒙混过关。
+         * `requireDist` 本身就是 `process.argv.includes('--strict-dist')`,
+         * 这里照同一口径:该脚本名之后出现、且整词等于 `--strict-dist` 才算。
+         */
+        const at = body.indexOf(s)
+        if (at < 0) continue
+        const rest = body.slice(at + s.length)
+        // 切到下一个命令边界(&&)为止
+        const seg = rest.split('&&')[0] ?? ''
+        if (!/(?:^|\s)--strict-dist(?:\s|$)/.test(seg)) bad.push(`${name} → ${s}`)
       }
     }
     expect(bad, `这些命令跑了实测脚本却没带 --strict-dist:${bad.join('、')}`).toEqual([])
