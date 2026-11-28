@@ -45,7 +45,30 @@ const fail = (msg) => {
   failures.push(msg)
   console.log(`  ✗ ${msg}`)
 }
-const ok = (msg) => console.log(`  ✓ ${msg}`)
+/**
+ * 通过的判据数。
+ *
+ * 只判 `failures.length === 0` 有个静默的洞:流程若中途提前收尾(某一步拿不到读数就
+ * 走了 `continue` 或提前 `return`),跑过的判据可能只剩三两条,而脚本照样报「通过」。
+ * 记下通过数,收尾时对下限,让「验了几条」这件事自己也有判据。
+ */
+let passed = 0
+const ok = (msg) => {
+  passed += 1
+  console.log(`  ✓ ${msg}`)
+}
+
+/**
+ * 判据下限。
+ *
+ * 实测一趟走完通过 7 条。主链路是四条:欢迎页→建号页、建号页→主界面、
+ * 修为未倒退、重载仍在主界面;灵石与初始境界在个别轮次可能拿不到读数。
+ * 取 4 —— 只要主链路那四条在,就说明流程真的走完了。
+ *
+ * 为什么不取 6/7:判据本身会因脚本时序偶发跳过(战报与突破是条件项,
+ * 上一轮已说明为什么它们可能为空),下限贴着实测值就是在制造假红。
+ */
+const MIN_CHECKS = 4
 
 /** 坏值模式:与 edge-states / ui-smoke 同一批(两处口径必须一致,见 edgeStatesShape.spec) */
 const BAD_VALUE_PATTERNS = [
@@ -356,6 +379,10 @@ await browser.close()
 
 console.log('\n—— 经过 ——')
 for (const n of notes) console.log(`  · ${n}`)
+
+if (passed < MIN_CHECKS) {
+  failures.push(`只通过了 ${passed} 条判据(下限 ${MIN_CHECKS})—— 流程可能中途提前收尾,这趟没验到什么`)
+}
 
 if (failures.length > 0) {
   console.log(`\n✗ 完整玩一局:failures ${failures.length} 处`)
