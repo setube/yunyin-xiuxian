@@ -475,3 +475,35 @@ describe('引擎 · 连跑一小时数值不漂', () => {
     expect(resources.qi, '灵气不该变负').toBeGreaterThanOrEqual(0)
   })
 })
+
+/**
+ * `engine.start()` 里那三道活的**先后**是被依赖的,不是随手排的。
+ *
+ * 坏档进结算前必须先修平:`offlineCapHours` 由 `levels.mansion` 查表得来,
+ * 而查表用的是 `OFFLINE_CAP_HOURS[...]!` —— 负数或非有限值会查出 undefined,
+ * 再乘 3600 就是 NaN,整份离线收益跟着烂掉。`dongfu.sanitize` 会把它们归零,
+ * 但前提是它**先跑**。
+ *
+ * 同理,死亡判定要排在结算之后:离线结算只加寿元、不判生死,顺序反了会漏掉
+ * 这一程途中的老死。
+ *
+ * 走源码扫描而不是跑一遍 `start()`:`start` 会真的起 interval、写盘、发 toast,
+ * 为验三条语句的相对位置拉起整套运行时,得不偿失。
+ *
+ * 故障注入:把 `settleOffline(now)` 挪到 `sanitizeOfflineInputs()` 之前 → 本条红。
+ */
+describe('engine.start · 三道活的先后顺序', () => {
+  it('先修平存档,再结算离线,最后判生死', () => {
+    const src = readFileSync(resolve(__dirname, 'engine.ts'), 'utf-8')
+    const at = (needle: string): number => {
+      const i = src.indexOf(needle)
+      expect(i, `engine.ts 里找不到 ${needle} —— 判据要跟着改`).toBeGreaterThan(-1)
+      return i
+    }
+    const sanitize = at('sanitizeOfflineInputs()')
+    const settle = at('settleOffline(now)')
+    const death = at('this.checkDeath()')
+    expect(sanitize, 'sanitizeOfflineInputs 必须在 settleOffline 之前').toBeLessThan(settle)
+    expect(settle, 'settleOffline 必须在 checkDeath 之前').toBeLessThan(death)
+  })
+})
