@@ -75,7 +75,7 @@ export function importSaveText(text: string): string | null {
   try {
     applyImportPayload(migrate(parsed as ExportPayload))
   } catch (e) {
-    // 原子导入已回滚旧档,错误信息写明「原档已保留」
+    // 错误信息由 applyImportPayload 按**实际回滚结果**给出:保留 / 未能保留
     return e instanceof Error ? e.message : '存档写入失败'
   }
   return null

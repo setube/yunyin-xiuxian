@@ -740,12 +740,23 @@ export function applyImportPayload(payload: ExportPayload): void {
   flushSaveWrites()
 
   const backup = new Map<string, string | null>()
+  /*
+   * 快照读不出来时**不能再说「原档已保留」**。
+   *
+   * 读不出来意味着 `localStorage.getItem` 抛了(存储被禁用 / 隐私模式 / 底层异常),
+   * 而下面紧接着就 `clearAllSave()` 把旧档删掉 —— 备份是空 Map,回滚什么也做不了。
+   * 玩家看到的却是「原档已保留」,以为还能找回,实际已经没了。
+   *
+   * 两种情形分开报(`snapshotFailed`),文案归 `core/save` 的那条错误信息。
+   */
+  let snapshotFailed = false
   try {
     for (const id of PERSISTED_STORES) {
       backup.set(id, localStorage.getItem(storageKey(id)))
     }
   } catch {
-    // 快照读不出时不阻塞,回滚能力降级
+    // 读不出就不阻塞导入;但下面失败时必须如实说「没能回滚」
+    snapshotFailed = true
   }
   clearAllSave()
   const failed: string[] = []
@@ -758,17 +769,25 @@ export function applyImportPayload(payload: ExportPayload): void {
       failed.push(id)
     }
   }
-  // 任一失败:救回旧档再抛错,调用方据此说「原档已保留」
+  /*
+   * 任一失败:救回旧档再抛错。
+   *
+   * 回执按**真的做到了什么**说,不按「设计上应该做到什么」说:
+   *   · 有快照且写回成功 → 「原档已保留」
+   *   · 快照就读不出 / 写回也失败 → 「原档未能保留」
+   * 后者更糟,但那是实情;说成前者会让玩家以为还有退路,而退路已经没了。
+   */
   if (failed.length > 0) {
+    let restored = !snapshotFailed && backup.size > 0
     for (const [id, raw] of backup) {
       try {
         if (raw === null) localStorage.removeItem(storageKey(id))
         else localStorage.setItem(storageKey(id), raw)
       } catch {
-        // 回滚尽力而为
+        restored = false
       }
     }
-    throw new Error('存档写入失败,原档已保留')
+    throw new Error(restored ? '存档写入失败,原档已保留' : '存档写入失败,原档未能保留')
   }
 }
 

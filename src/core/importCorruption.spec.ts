@@ -281,3 +281,40 @@ describe('半损坏档 · 进得了游戏,或者被明确拒绝', () => {
     expect(after, '回滚到的是旧快照 —— 刚打的那一仗没了').not.toBe(stale)
   })
 })
+
+  /**
+   * 回执要按**真的做到了什么**说。
+   *
+   * `applyImportPayload` 先快照、再 `clearAllSave()`、再写新档。快照那一步若抛
+   * (存储被禁用 / 隐私模式 / 底层异常),backup 是空 Map —— 而旧档已经被删掉了。
+   * 此时若仍报「原档已保留」,玩家会以为还能找回,实际已经没了。
+   *
+   * 故障注入:把 `snapshotFailed` 的初值改成 true 之外的分支判断去掉(恒报「已保留」)→ 本条红。
+   */
+  it('快照读不出时不谎称「原档已保留」', () => {
+    bootStores()
+    dropPendingWrites()
+    localStorage.setItem(storageKey('player'), 'OLD_PLAYER')
+
+    // 读快照必失败 + 写 resources 必失败(两个不同的失败点)
+    const realGet = localStorage.getItem.bind(localStorage)
+    const realSet = localStorage.setItem.bind(localStorage)
+    const getSpy = vi.spyOn(localStorage, 'getItem').mockImplementation((k: string) => {
+      if (k.startsWith('yunyin.') && !k.startsWith('yunyin.__')) throw new DOMException('blocked', 'SecurityError')
+      return realGet(k)
+    })
+    const setSpy = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k === storageKey('resources')) throw new DOMException('quota', 'QuotaExceededError')
+      realSet(k, v)
+    })
+    let err: string | null = null
+    try {
+      err = importSaveText(envelope({ game: { started: true }, player: { major: 3 }, resources: { spiritStone: { m: 1, e: 4 } } }))
+    } finally {
+      getSpy.mockRestore()
+      setSpy.mockRestore()
+    }
+    expect(err, '写盘失败应当报错').not.toBeNull()
+    expect(err, '快照都没读出来,不该说旧档还在').toContain('原档未能保留')
+    expect(err, '这句话会让玩家以为还有退路').not.toContain('原档已保留')
+  })
