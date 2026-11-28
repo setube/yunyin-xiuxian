@@ -280,7 +280,6 @@ describe('半损坏档 · 进得了游戏,或者被明确拒绝', () => {
     const after = localStorage.getItem(storageKey('player'))
     expect(after, '回滚到的是旧快照 —— 刚打的那一仗没了').not.toBe(stale)
   })
-})
 
   /**
    * 回执要按**真的做到了什么**说。
@@ -318,3 +317,4 @@ describe('半损坏档 · 进得了游戏,或者被明确拒绝', () => {
     expect(err, '快照都没读出来,不该说旧档还在').toContain('原档未能保留')
     expect(err, '这句话会让玩家以为还有退路').not.toContain('原档已保留')
   })
+})
