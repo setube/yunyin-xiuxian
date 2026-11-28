@@ -774,6 +774,12 @@ describe('洞府巡游 · 死亡后不再触发', () => {
 describe('悟道顿悟 · 死亡后不再触发', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    /*
+     * 与上面巡游那条同一个理由:模块级 `enlightenment` 也跑在死亡判断之前。
+     * 第 200 轮修巡游时只补了那一处、漏了这一处 —— 同文件、同一类缺陷,
+     * 因为常规顺序下前一条用例恰好把它清掉了,`--sequence.shuffle` 打乱后才露馅。
+     */
+    resetEarlyGameEvents()
   })
 
   it('player.dead 为真时不出顿悟', () => {
