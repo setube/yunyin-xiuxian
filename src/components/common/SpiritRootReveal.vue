@@ -34,6 +34,7 @@
 <script setup lang="ts">
   import { ref, computed, onUnmounted, nextTick } from 'vue'
   import { useSettingsStore } from '@/stores/settings'
+  import { systemReducedMotion } from '@/composables/useReducedMotion'
   import { gameClock } from '@/composables/useGameClock'
 
   const settings = useSettingsStore()
@@ -46,7 +47,8 @@
   /** 设置「减少动效」或系统 prefers-reduced-motion 任一命中即跳过 2.2s 轮换 */
   function reducedMotionActive(): boolean {
     if (settings.reduceMotion) return true
-    return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
+    // 系统偏好那半交给 composables/useReducedMotion,别处不再手写 matchMedia(口径会走散)
+    return systemReducedMotion()
   }
 
   /** 定格收尾:停轮换 → 显示真实灵根 → 淡出后回调 onDone(只回调一次) */
