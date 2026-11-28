@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "lint": "eslint src",
     "test": "vitest run",
+    "test:shuffle": "vitest run --sequence.shuffle",
     "test:report": "bun scripts/test-report.mjs",
     "type-check": "vue-tsc -b",
     "check": "bun run type-check && bun run lint && bun run docs-check",
