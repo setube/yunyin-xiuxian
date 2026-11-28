@@ -17,6 +17,14 @@ const SEALS = ['虚', '幻', '玄', '冥', '溟', '荒']
 
 const SHAPE_POOL: WorldFoeShape[] = [...CELESTIAL_WORLDS.flatMap(w => w.foes), ...TRIAL_FOES]
 
+/**
+ * 一形敌手的「险在何处」,印在远征路线图上(`远征路线:险:…`)。
+ *
+ * 分支须覆盖 `COMBAT_SKILL_EFFECTS` 全部六种 —— 漏一种不会报错,
+ * 只会静默落进最后那句「攻守均衡」。实测 `shield` 就漏在这里:
+ * 带护盾的敌人在路线图上被写成「攻守均衡」,而护盾恰恰最该预警
+ * (风险图谱里三条 watch 档都与它有关)。由 `data/skillEffectParity.spec` 钉住。
+ */
 function shapeRisk(s: WorldFoeShape): string {
   if (s.mods?.dodgeRate) return '身影难捕'
   const sk = s.skills[0]
@@ -26,6 +34,7 @@ function shapeRisk(s: WorldFoeShape): string {
   if (sk.effect === 'bleed') return '流血消耗'
   if (sk.effect === 'drain') return '汲血难缠'
   if (sk.effect === 'stun') return '震慑打断'
+  if (sk.effect === 'shield') return '开局结盾'
   if (sk.mult >= 2) return '重击高爆'
   return '攻守均衡'
 }
