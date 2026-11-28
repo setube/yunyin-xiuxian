@@ -184,3 +184,25 @@ describe('构筑实验 · 相关系数算不出时不印 NaN', () => {
     expect(panel, '又退回裸算式了').not.toContain('Math.round(report.powerCorrelation * 100)')
   })
 })
+
+/**
+ * 两份模拟器各写了一份「中期成型构筑」的基准属性。
+ *
+ * `buildSearch` 查的是随机构筑的胜率相关性,`buildSim` 查的是六流派克制矩阵 ——
+ * 两份结论要能放在一起看,前提是它们从同一个起点出发。分开写本身没错
+ * (两个文件互不依赖更方便单测),但**谁也不知道它们还一不一致**:
+ * 改了一边忘了另一边,两份模拟就悄悄比着不同的东西,而两边 spec 照样全绿。
+ *
+ * 故障注入:把任一处的 `defense: 55` 改成 `56` → 本条红。
+ */
+describe('Build 模拟器 · 两份基准属性须一致', () => {
+  it('buildSearch 与 buildSim 的 BASE 三项逐项相等', () => {
+    const read = (file: string): { attack: number; defense: number; maxHp: number } => {
+      const src = readFileSync(resolve(__dirname, file), 'utf-8')
+      const m = /const BASE = \{ attack: (\d+), defense: (\d+), maxHp: (\d+) \}/.exec(src)
+      expect(m, `${file} 里找不到 BASE 的定义,判据要跟着改`).not.toBeNull()
+      return { attack: Number(m![1]), defense: Number(m![2]), maxHp: Number(m![3]) }
+    }
+    expect(read('buildSearch.ts'), '两份模拟器的基准属性分叉了').toEqual(read('buildSim.ts'))
+  })
+})
