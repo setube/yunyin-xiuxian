@@ -265,6 +265,36 @@ describe('player.rebirth 转世状态重置', () => {
     expect(p.suppressQualified, '资格表同一位只留一份').toEqual(['qingyun', 'luoxia'])
   })
 
+  /**
+   * 野 id 会**摊薄镇守道韵** —— 这条比「撑大存档」严重。
+   *
+   * 结算(`core/suppress` 的 `settleSuppressedRegions`)把 `suppressionExpRate(n)` 摊到 n 个区,
+   * 而野 id 在逐区结算里被 `regionDef` 挡掉、一份都不产。于是 1 处真地界 + 999 个野 id:
+   * 界面(`suppressDaoText`)照报「修为 +40%/时」,真正到手的只有每区 0.04%。
+   *
+   * 故障注入:去掉那两处 `.filter(id => !!regionDef(id))` → 本条红。
+   */
+  it('sanitize:镇压表/资格表按地界目录过滤(野 id 会摊薄道韵)', () => {
+    const p = usePlayerStore()
+    p.major = 20
+    const wild = Array.from({ length: 999 }, (_, i) => `ghost_${i}`)
+    /*
+     * 世号须写成**本世**(0),不能留 -1。
+     *
+     * 哨兵 -1 走的是「老档不知世号,按旧境界保守清一次」那条支路(下面 `suppressReachable`),
+     * 野 id 会被那条顺手清掉 —— 于是本条判据测不到它自己声称要测的那处。
+     * 真玩家的档里 `suppressLife` 早由 `suppressRegion` 写成本世号,野 id 正是在这种档里留下来的。
+     */
+    p.$patch({
+      suppressedRegions: ['qingyun', ...wild],
+      suppressQualified: ['qingyun', ...wild],
+      suppressLife: p.reincarnation.count
+    } as never)
+    p.sanitize()
+    expect(p.suppressedRegions, '野 id 没清 —— 界面报 +40%,实得每区 0.04%').toEqual(['qingyun'])
+    expect(p.suppressQualified, '资格表同一口径').toEqual(['qingyun'])
+  })
+
   /** 天赋重复会让 talentMods 把同一份词条算两次 */
   it('sanitize:天赋/传承同一条写两遍只留一份,不白送属性', () => {
     const p = usePlayerStore()

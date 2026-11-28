@@ -6,6 +6,7 @@ import { resolve } from 'node:path'
 import { createPinia, setActivePinia } from 'pinia'
 import { buildIdentity, IDENTITY_DEFAULT_EPITHET, IDENTITY_EMPTY } from './identityService'
 import { DAO_PATHS } from '@/data/endgame'
+import { FORTUNE_EVENTS } from '@/data/events'
 import { usePlayerStore } from '@/stores/player'
 import { useQuestsStore } from '@/stores/quests'
 import { useEndgameStore } from '@/stores/endgame'
@@ -30,6 +31,30 @@ describe('修行身份(identityService)', () => {
     player.setFortuneChoices({ ft_sword_remnant: 'take', ft_beast_pledge: 'take' })
     const id = buildIdentity()
     expect(id.roots.fortunes.map(f => f.title)).toContain('剑痕悟道')
+  })
+
+  /**
+   * 标题表须覆盖**全部**机缘,不只人间界那五条。
+   *
+   * 高界域六条(`immortal` / `god` / `chaos` 标签)原先没进表,兜底文案是「机缘」——
+   * 仙界以后拿到「仙门古琴」的玩家,画像里印的是「曾机缘」。
+   *
+   * 故障注入:从 `FORTUNE_TITLES` 删掉任一条 → 本条红。
+   */
+  it('每条机缘都有自己的标题,没有一条兜底成「机缘」', () => {
+    const player = usePlayerStore()
+    const all = Object.fromEntries(FORTUNE_EVENTS.map(e => [e.id, 'take' as const]))
+    player.setFortuneChoices(all)
+    const id = buildIdentity()
+    // 画像只取前三条,故按 id 逐个单独构建,确保每一条都被看见
+    for (const ev of FORTUNE_EVENTS) {
+      player.setFortuneChoices({ [ev.id]: 'take' })
+      const one = buildIdentity()
+      const title = one.roots.fortunes[0]?.title
+      expect(title, `${ev.id}(${ev.title})没有标题`).not.toBe('机缘')
+      expect(title, `${ev.id} 的标题不该为空`).toBeTruthy()
+    }
+    expect(id.roots.fortunes.every(f => f.title !== '机缘'), '画像里不该出现「机缘」兜底').toBe(true)
   })
 
   it('师承+道途 → 称谓由两者合成(剑道+剑修 → 问剑剑心)', () => {

@@ -43,12 +43,26 @@ export interface CultivatorIdentity {
   narrative: string
 }
 
+/**
+ * 机缘标题 —— 玩家画像里「曾 XX」那一段的取词。
+ *
+ * 键须覆盖 `data/events` 的 `FORTUNE_EVENTS` 全部条目:原先只有前五条(人间界那批),
+ * 高界域六条没写,而那些`take`过的机缘会兜底成「机缘」——
+ * 仙界以后拿到「仙门古琴」的玩家,画像里印的是「曾机缘」。
+ * 覆盖由 `identityService.spec` 的「每条机缘都有自己的标题」钉住,漏一条即红。
+ */
 const FORTUNE_TITLES: Record<string, string> = {
   ft_sword_remnant: '剑痕悟道',
   ft_ancient_elixir: '丹方得承',
   ft_beast_pledge: '妖兽认主',
   ft_reclusive_elder: '隐世点拨',
-  ft_blood_contract: '秘术染尘'
+  ft_blood_contract: '秘术染尘',
+  ft_xianmen_guqin: '抚琴得诀',
+  ft_yunduan_xianzun: '仙尊亲授',
+  ft_shenyu_wangzuo: '登临王座',
+  ft_faze_zhixin: '法则入体',
+  ft_hundun_zhong: '混沌生根',
+  ft_hongmeng_xiantai: '鸿蒙观碑'
 }
 
 const MENTOR_EPITHETS: Record<MentorId, string> = {

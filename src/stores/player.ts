@@ -112,6 +112,7 @@ import { DAOLU, ENDING_NAMES, STAGE_NAMES, STAGE_ORDER, type BondEnding, type Bo
 import { lifeThemeDef } from '@/data/lifeThemes'
 import { bondEventDef } from '@/data/bondEvents'
 import { regionDef } from '@/data/regions'
+import { eventDef } from '@/data/events'
 // 事件表从 data/ 引:core/regionEvent 依赖本 store,反向 import 会成环
 import { REGION_EVENT_MAX_MINUTES, regionEventDef } from '@/data/regionEvents'
 import { artifactSlotsFor } from '@/data/artifacts'
@@ -1106,8 +1107,22 @@ export const usePlayerStore = defineStore(
       if (!Array.isArray(suppressQualified.value)) suppressQualified.value = []
       if (typeof suppressedSince.value !== 'object' || suppressedSince.value === null) suppressedSince.value = {}
       // 结算逐条遍历镇压表:重复项使同一地界每拍双份产出
-      suppressedRegions.value = [...new Set(asStringArray(suppressedRegions.value))]
-      suppressQualified.value = [...new Set(asStringArray(suppressQualified.value))]
+      /*
+       * 两张表都要**按地界目录过滤**,不能只去重。
+       *
+       * 写入侧(`suppressRegion` / `markSuppressQualified`)第一行就是 `if (!regionDef(id)) return`,
+       * 表外的 id 只可能来自坏档。它们不渲染(`useRegionRows` 按目录逐条查)、
+       * 也不产收益(`settleSuppressedRegions` 里 `regionDef` 取不到就 continue)——
+       * 但**会毒害数值**:镇守道韵的倍率在结算时摊到 `suppressedRegions.length` 上
+       * (`suppressionExpRate(n) / n`),野 id 把每一份摊薄成 1/n。
+       *
+       * 实测 1 处真地界 + 999 个野 id:sanitize 一字不改,界面照报「修为 +40%/时」
+       * (服务端那一份 `suppressDaoText` 只看条数,顶格),而真正到手的只有每区 0.04%
+       * —— 玩家看到的与拿到的差一千倍。同一份存档还多出 11KB 纯野 id。
+       * 顺带修好「已镇压 N 处」那行读数(它在 AdventureView 里裸插值条数)。
+       */
+      suppressedRegions.value = [...new Set(asStringArray(suppressedRegions.value))].filter(id => !!regionDef(id))
+      suppressQualified.value = [...new Set(asStringArray(suppressQualified.value))].filter(id => !!regionDef(id))
       // 老档(−1)分不出旧世残留与本世所得:按旧境界保守清一次(高境镇压收益是数值爆炸源头)
       if (!Number.isFinite(suppressLife.value) || suppressLife.value < 0) {
         const suppressReachable = (id: string): boolean => (regionDef(id)?.minRealm ?? Infinity) <= major.value
@@ -1231,9 +1246,19 @@ export const usePlayerStore = defineStore(
       }
       regionWinsLife.value = fixedWinsLife
       // `identityService` 对它调 `Object.entries`、师承推荐与遗产回声按下标读:`null` 即抛错
+      /*
+       * 键也要认。写入侧(`recordFortuneChoice`)只在 `eventDef(id)` 命中、
+       * 且 id 以 `ft_` 开头时才写,表外的键只可能来自坏档。
+       *
+       * 它会**印进玩家画像**:`identityService.buildIdentity` 取前三个 `take` 的键
+       * 去查 `FORTUNE_TITLES`,查不到的兜底文案是「机缘」—— 实测塞三个野键后
+       * 画像那行印出「曾机缘、机缘、机缘」。
+       */
       const fixedFortunes: Record<string, FortuneChoice> = {}
       for (const [id, choice] of Object.entries(asRecord<unknown>(fortuneChoices.value))) {
-        if (choice === 'take' || choice === 'leave') fixedFortunes[id] = choice
+        if (choice !== 'take' && choice !== 'leave') continue
+        if (!id.startsWith('ft_') || !eventDef(id)) continue
+        fixedFortunes[id] = choice
       }
       fortuneChoices.value = fixedFortunes
       // 须按 enemyId 唯一:recordLoss / markAvenged / ghostOf 只 find 第一条
