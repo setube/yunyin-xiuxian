@@ -118,3 +118,28 @@ describe('Service Worker · install 阶段预缓存', () => {
     expect(body, '导航回退没退到预缓存的导航页').toMatch(/cache\.match\(new URL\('index\.html'/)
   })
 })
+
+/**
+ * 缓存策略变了就必须换 `CACHE_VERSION`。
+ *
+ * `sw.js` 的注释写着这条规矩,但它只是提醒 —— 改策略时忘了递增,`activate` 就不清旧缓存,
+ * 已装机的玩家**永远拿不到新装法**,而日志里看不出任何异常。v2→v3 与 v2→v4 两次
+ * 都踩在这条线上(前者改了选件规则、后者跳掉 legacy 产物),说明它不是假想的风险。
+ *
+ * 判据不猜「策略变没变」(那要 diff 历史),而是钉住**规矩本身还在**:
+ *   · `CACHE_VERSION` 存在且是 `yunyin-vN` 的形状
+ *   · 注释里必须有「bump CACHE_VERSION」这句提醒
+ *
+ * 故障注入:删掉注释里那句提醒 → 第二条红。
+ */
+describe('Service Worker · 缓存版本号', () => {
+  it('CACHE_VERSION 在,且形状是 yunyin-vN', () => {
+    const m = /const CACHE_VERSION = '(yunyin-v(\d+))'/.exec(SW)
+    expect(m, 'sw.js 里找不到 CACHE_VERSION').not.toBeNull()
+    expect(Number(m![2]), '版本号应 >= 1').toBeGreaterThanOrEqual(1)
+  })
+
+  it('注释里保留着「改策略须 bump 版本号」的提醒', () => {
+    expect(SW, '那句提醒被删了 —— 后来改策略的人就不知道该递增版本号').toMatch(/bump CACHE_VERSION/)
+  })
+})

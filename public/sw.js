@@ -7,7 +7,7 @@
  * 发版提醒:改了需要换缓存内容的策略(资产路径规则、导航回退行为等)须同步 bump CACHE_VERSION,
  * 否则 activate 不清旧缓存。它是唯一的缓存版本号,不在别处另设。
  *
- * v2 → v3:预缓存的选件规则改了 —— 跳过大 `<script nomodule>` 的 legacy 入口
+ * v2 → v4:预缓存的选件规则改了 —— 跳过大 `<script nomodule>` 的 legacy 入口
  *   (`polyfills-legacy` + `index-legacy` 占 411KB),另补上 `<link rel="modulepreload">`
  *   里那三个 JS(含 754KB 的 `biz-*` 主业务包)。旧 v2 缓存里没有这套选法,
  *   不换版本号的话已装机的玩家永远拿不到新那套装法。
