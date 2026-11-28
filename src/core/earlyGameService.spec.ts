@@ -711,3 +711,44 @@ describe('转世 · 本世的浮窗事件不许跨世', () => {
     expect(getCurrentEnlightenment(), '上一世的顿悟窗也跟着留下来了').toBeNull()
   })
 })
+
+/**
+ * 死亡后不再巡游。
+ *
+ * 调用方(engine 的 periodicAccum 段)在 `if (!player.dead)` **之外** —— 那段还负责
+ * 「今日已做」记账与成就补扫,故不能在那一层拦。而没有这道判断时,死亡存档会照常
+ * 弹出巡游窗,与轮回对话框叠在一起:玩家看到的是「你已身死」压着「洞府巡游」。
+ *
+ * 故障注入:去掉 `if (player.dead) return null` → 本条红。
+ */
+describe('洞府巡游 · 死亡后不再触发', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('player.dead 为真时不产出巡游,也不记账', () => {
+    const player = usePlayerStore()
+    player.dead = true
+    player.lastCaveEventDay = 0
+    // 让概率判定必然通过,排除「运气差没抽中」这条干扰
+    const rnd = vi.spyOn(Math, 'random').mockReturnValue(0)
+    try {
+      expect(mayTriggerCaveEvent(), '死亡后不该弹出巡游窗').toBeNull()
+      expect(player.lastCaveEventDay, '不该为死者记账').toBe(0)
+    } finally {
+      rnd.mockRestore()
+    }
+  })
+
+  it('活着时同一条件照常触发 —— 证明上面的空返回不是因为别的分支', () => {
+    const player = usePlayerStore()
+    player.dead = false
+    player.lastCaveEventDay = 0
+    const rnd = vi.spyOn(Math, 'random').mockReturnValue(0)
+    try {
+      expect(mayTriggerCaveEvent(), '活着时应当触发,否则上一条是假绿').not.toBeNull()
+    } finally {
+      rnd.mockRestore()
+    }
+  })
+})
