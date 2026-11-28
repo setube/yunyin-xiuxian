@@ -181,11 +181,19 @@ try {
     await freshPage.waitForTimeout(2200)
 
     /** 同上一条判据,抽成小函数以便两页复用 */
-    const unreachableOn = async () =>
-      freshPage.evaluate(() => {
+    /*
+     * 返回 { bad, scanned }。
+     *
+     * 只返回 `bad` 会有一个静默的漏洞:页面没渲染好、`<main>` 里一个可点元素都没有时,
+     * `bad` 也是空数组 —— 判据显示 ✓,而它其实什么都没验到。
+     * `/create` 那段有 `landed !== '#/create'` 挡着,`/welcome` 那段没有,故把样本数一并返回。
+     */
+    const unreachableOn = async () => {
+      const r = await freshPage.evaluate(() => {
         const main = document.querySelector('main')
-        if (!main) return ['<main> 不存在']
+        if (!main) return { bad: ['<main> 不存在'], scanned: 0 }
         const out = []
+        let scanned = 0
         /*
          * 三类 + 表单控件。
          *
@@ -197,6 +205,7 @@ try {
         for (const el of main.querySelectorAll(
           'button, a[href], [role=button], input:not([type=hidden]), select, textarea'
         )) {
+          scanned += 1
           if (el.tabIndex >= 0 || el.disabled || el.offsetParent === null) continue
           const inTablist = !!el.closest('[role=tablist]') && el.getAttribute('role') === 'tab'
           const group = el.parentElement
@@ -204,12 +213,17 @@ try {
           if (inTablist && hasRoving) continue
           out.push((el.textContent || '').trim().slice(0, 20) || el.tagName)
         }
-        return out
+        return { bad: out, scanned }
       })
+      return r
+    }
 
-    const welcomeBad = await unreachableOn()
-    if (welcomeBad.length) failures.push(`/welcome 这些可点元素 Tab 到不了:${welcomeBad.slice(0, 5).join(' | ')}`)
-    console.log(`  ${welcomeBad.length === 0 ? '✓' : '✗'} /welcome 可点元素都能 Tab 到`)
+    const welcome = await unreachableOn()
+    if (welcome.scanned === 0) failures.push('/welcome 一个可点元素都没扫到 —— 页面没渲染好,这条判据等于空转')
+    if (welcome.bad.length) failures.push(`/welcome 这些可点元素 Tab 到不了:${welcome.bad.slice(0, 5).join(' | ')}`)
+    console.log(
+      `  ${welcome.bad.length === 0 && welcome.scanned > 0 ? '✓' : '✗'} /welcome 可点元素都能 Tab 到(扫到 ${welcome.scanned} 个)`
+    )
 
     // 键盘走完首启:点开始(鼠标) → 空格勾同意 → 键盘触发「同意并开始」
     await freshPage.evaluate(() => {
@@ -236,9 +250,12 @@ try {
     if (landed !== '#/create') {
       failures.push(`首启没走到建号页(停在 ${landed})—— 传送动画 2500ms,等短了会误判`)
     } else {
-      const createBad = await unreachableOn()
-      if (createBad.length) failures.push(`/create 这些可点元素 Tab 到不了:${createBad.slice(0, 5).join(' | ')}`)
-      console.log(`  ${createBad.length === 0 ? '✓' : '✗'} /create 可点元素都能 Tab 到`)
+      const create = await unreachableOn()
+      if (create.scanned === 0) failures.push('/create 一个可点元素都没扫到 —— 页面没渲染好,这条判据等于空转')
+      if (create.bad.length) failures.push(`/create 这些可点元素 Tab 到不了:${create.bad.slice(0, 5).join(' | ')}`)
+      console.log(
+        `  ${create.bad.length === 0 && create.scanned > 0 ? '✓' : '✗'} /create 可点元素都能 Tab 到(扫到 ${create.scanned} 个)`
+      )
     }
     await freshCtx.close()
   }
