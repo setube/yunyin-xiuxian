@@ -36,9 +36,23 @@
         <span class="w-7 text-right text-[10px] tabular text-ink-faint">{{ settings.sfxVol }}</span>
       </div>
     </div>
-    <label class="flex items-center justify-between py-3">
-      <span class="text-[13px] text-ink-soft">减少动效</span>
-      <input v-model="settings.reduceMotion" type="checkbox" class="h-4 w-4 accent-cinnabar" />
+    <!--
+      系统开了「减少动效」时这颗开关点了没用:CSS 里 `@media (prefers-reduced-motion)`
+      与 `.reduce-motion` 是并集语义,类名去掉、媒体查询还在,动画照样被压成 0.01ms。
+      故置灰并写明原因(仓库规矩「禁用即给原因」),不留一颗骗人的开关。
+    -->
+    <label class="flex items-center justify-between py-3" :class="systemReduced ? 'opacity-60' : ''">
+      <span class="text-[13px] text-ink-soft">
+        减少动效
+        <span v-if="systemReduced" class="ml-1 text-[11px] text-ink-faint">(系统已开)</span>
+      </span>
+      <input
+        v-model="settings.reduceMotion"
+        type="checkbox"
+        class="h-4 w-4 accent-cinnabar"
+        :disabled="systemReduced"
+        :title="systemReduced ? '系统已开启减少动效' : undefined"
+      />
     </label>
     <div class="py-3">
       <label class="flex min-h-[28px] items-center justify-between">
@@ -90,8 +104,11 @@
 
 <script setup lang="ts">
   import { useSettingsStore } from '@/stores/settings'
+  import { useSystemReducedMotion } from '@/composables/useReducedMotion'
 
   const settings = useSettingsStore()
+  /** 系统层的减少动效偏好;为真时游戏内开关无效(见上方模板注释) */
+  const systemReduced = useSystemReducedMotion()
 
   const THEME_OPTIONS = [
     { id: 'auto', label: '跟随系统' },
