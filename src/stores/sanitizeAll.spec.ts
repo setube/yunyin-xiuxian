@@ -285,6 +285,26 @@ describe('sanitizeAllStores 修「按 id 认对象」的坏账', () => {
     expect(p.fortuneChoices, '整栏被抹成 null 时补回空表').toEqual({})
   })
 
+  /**
+   * 机缘选择记忆的**键**也要认。
+   *
+   * 写入侧 `recordFortuneChoice` 只在事件 id 以 `ft_` 开头时才写,表外的键只可能来自坏档。
+   * 而 `buildIdentity` 取前三个 `take` 的键去查 `FORTUNE_TITLES`,查不到的兜底是「机缘」——
+   * 实测塞三个野键后,玩家画像那行印出「曾机缘、机缘、机缘」。
+   *
+   * 故障注入:去掉 `!id.startsWith('ft_') || !eventDef(id)` 那道闸 → 本条红。
+   */
+  it('机缘选择记忆里认不出的 id 读档时清掉(画像不再印「曾机缘、机缘」)', () => {
+    const p = usePlayerStore()
+    useCultivationStore()
+    p.$patch({
+      fortuneChoices: { ghost_0: 'take', ghost_1: 'take', ghost_2: 'take', ft_sword_remnant: 'take' } as never
+    })
+    sanitizeAllStores()
+    expect(p.fortuneChoices, '野键没清').toEqual({ ft_sword_remnant: 'take' })
+    expect(buildIdentity().roots.fortunes, '画像只该留认得的那一条').toEqual([{ id: 'ft_sword_remnant', title: '剑痕悟道' }])
+  })
+
   it('宿敌的名字/地界被写坏时征战录读到的是可读文本', () => {
     const p = usePlayerStore()
     p.$patch({
