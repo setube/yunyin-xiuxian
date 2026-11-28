@@ -1,8 +1,15 @@
 <template>
   <BaseModal :open="open" title="退出游戏" @close="dismiss">
+    <!--
+      「进度已保存」是一句承诺,须按实况说。
+      存档写入是 5 秒节流,且可能因配额满 / 存储被禁用而**一直失败** ——
+      那种情形下 App.vue 已经弹过「存档写入失败」,而这里若仍写「进度已保存」,
+      玩家关掉游戏后才发现这一局白打。故读 `saveWriteFailure()` 的实况分叉。
+    -->
     <p class="text-[13px] leading-relaxed text-ink-soft">
-      <template v-if="game.started">进度已保存 · 离线收益照常</template>
-      <template v-else>暂无存档</template>
+      <template v-if="!game.started">暂无存档</template>
+      <template v-else-if="writeFailed">存档写入失败 · 进度未存下</template>
+      <template v-else>进度已保存 · 离线收益照常</template>
     </p>
     <template #footer>
       <div class="grid grid-cols-2 gap-2">
@@ -22,11 +29,19 @@
   import { useGameStore } from '@/stores/game'
   import { decideBackAction } from '@/composables/backButton'
   import { handleEscape } from '@/composables/useModalStack'
-  import { flushSaveWrites } from '@/utils/storage'
+  import { flushSaveWrites, saveWriteFailure } from '@/utils/storage'
   import BaseModal from './BaseModal.vue'
 
   const open = ref(false)
   const game = useGameStore()
+  /**
+   * 此刻是否处于写盘失败状态。
+   *
+   * 弹窗打开那一刻读一次即可:失败状态由 `flushSaveWrites` 置位,而这个弹窗
+   * 从打开到按下「退出」只有几秒,期间不会自己恢复(配额满要玩家自己清空间)。
+   * 真在同一秒内恢复也无害 —— 那时说的「未存下」只是保守,不会骗人。
+   */
+  const writeFailed = ref(false)
   const route = useRoute()
   const router = useRouter()
 
@@ -52,6 +67,7 @@
       void router.push({ name: rootName() })
       return
     }
+    writeFailed.value = saveWriteFailure() !== null
     open.value = true
   }
 
