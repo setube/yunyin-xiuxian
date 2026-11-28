@@ -177,6 +177,33 @@ describe('favicon · 引用不悬空', () => {
     }
   })
 
+  /**
+   * manifest 的 theme_color / background_color 必须与 CSS 的纸色一致。
+   *
+   * 这两项决定 PWA 安装时**启动画面的底色**。与 `--color-paper-rgb` 对不上时,
+   * 玩家点开图标会先看到一块异色,再跳进纸色界面 —— 而这道闪现在真机上往往只有
+   * 一两帧,开发期用浏览器打开根本看不到(浏览器不走启动画面那条路)。
+   *
+   * 此前没有判据:颜色写对了,但谁也不知道它和 style.css 是不是一直对得上。
+   *
+   * 故障注入:把 manifest 的 theme_color 改成 `#000000` → 本条红。
+   */
+  it('manifest 的两处底色与 CSS 纸色一致', () => {
+    const css = readFileSync(resolve(ROOT, 'src/style.css'), 'utf-8')
+    const m = /--color-paper-rgb:\s*(\d+)\s+(\d+)\s+(\d+)/.exec(css)
+    expect(m, 'style.css 里找不到 --color-paper-rgb').not.toBeNull()
+    const rgb = [Number(m![1]), Number(m![2]), Number(m![3])] as const
+    const toRgb = (hex: string): number[] => {
+      const v = hex.replace('#', '')
+      return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)]
+    }
+    for (const key of ['theme_color', 'background_color'] as const) {
+      const hex = (MANIFEST as Record<string, unknown>)[key] as string | undefined
+      expect(hex, `manifest 缺 ${key}`).toBeTruthy()
+      expect(toRgb(hex!), `${key}「${hex}」与 CSS 纸色 rgb(${rgb.join(',')}) 不一致`).toEqual([...rgb])
+    }
+  })
+
   it('manifest 的安装图标都在,且都够大', () => {
     expect(MANIFEST.icons.length).toBeGreaterThanOrEqual(3)
     for (const icon of MANIFEST.icons) {
