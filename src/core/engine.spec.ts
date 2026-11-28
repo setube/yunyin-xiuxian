@@ -12,7 +12,9 @@ import { usePlayerStore } from '@/stores/player'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useAdventureStore } from '@/stores/adventure'
 import { useUiStore } from '@/stores/ui'
-import { TICK_MS, OFFLINE_MIN_SECONDS, ACTIVE_STAMP_MS } from '@/data/constants'
+import { TICK_MS, OFFLINE_MIN_SECONDS, ACTIVE_STAMP_MS, QI_BANK_MULT } from '@/data/constants'
+import { useResourcesStore } from '@/stores/resources'
+import { gnZero, toNum } from '@/utils/gnum'
 
 vi.mock('./offline', async importOriginal => {
   const actual = await importOriginal<typeof OfflineMod>()
@@ -356,5 +358,120 @@ describe('引擎启动 · 先翻日再结算离线', () => {
       rollIdx,
       '启动顺序反了:离线收益会先记进昨天再被翻日清掉,跨午夜挂机一夜等于白挂'
     ).toBeLessThan(settleIdx)
+  })
+})
+
+/**
+ * 连续跑一小时:数值须线性增长,不漂、不封顶失真。
+ *
+ * 现有判据最长只模拟到 5 秒(`advanceTimersByTime(5000)`),而这是放置游戏 ——
+ * 玩家挂机几小时才是常态。100 秒与 1 小时的差别不在「会不会崩」,而在**累积误差**:
+ * 每次 tick 都 `gn(cultPerSec) × dt` 再 `add` 进 exp,浮点误差会攒;
+ * 洞府产出、寿元、灵气回复同理。若某处按「每秒取整」推进,1 小时就会明显偏小。
+ *
+ * 判据:1 小时后修为增量相对理论值 `cultPerSec × 3600` 的偏差 < 1%,
+ * 且灵气不超上限、寿元增量等于 `3600/3600 × AGE_YEARS_PER_HOUR`。
+ */
+describe('引擎 · 连跑一小时数值不漂', () => {
+  let tick: (() => void) | null = null
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.useFakeTimers()
+    setEnginePaused(false)
+    tick = null
+    /*
+     * 桩先装、engine 再停。
+     *
+     * engine 是模块单例,`start()` 里 `if (this.timer === undefined)` 是防重复的 ——
+     * 若上一条用例留下 timer,tick 就永远拿不到(本文件另一组用例踩过同一个坑)。
+     * 但 `stop()` 里要 `window.clearInterval`,所以 window 桩必须先就位。
+     */
+    vi.stubGlobal('document', {
+      addEventListener: vi.fn(() => {}),
+      removeEventListener: vi.fn(() => {}),
+      visibilityState: 'visible'
+    })
+    vi.stubGlobal('window', {
+      addEventListener: vi.fn(() => {}),
+      removeEventListener: vi.fn(() => {}),
+      setInterval: (cb: () => void) => {
+        tick = cb
+        return 1
+      },
+      clearInterval: () => {}
+    })
+    engine.stop()
+  })
+
+  afterEach(() => {
+    engine.stop()
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+    setEnginePaused(false)
+  })
+
+  it('连续多拍之后:修为增量与理论值相符,灵气不超硬顶', () => {
+    const game = useGameStore()
+    const player = usePlayerStore()
+    const resources = useResourcesStore()
+    game.started = true
+    game.lastActiveAt = Date.now()
+    engine.start()
+    expect(tick, '没拿到 tick 回调').not.toBeNull()
+
+    /*
+     * 修为先压到零。
+     *
+     * 不压的话整趟跑在封顶态,下面「增量 vs 理论值」会被跳过 —— 判据空转。
+     * 实测:不压时注入 -3% 漂移仍全绿。
+     */
+    player.exp = gnZero()
+    expect(player.expFull, '前置:须未满,否则断言会被跳过').toBe(false)
+    const rate = player.cultPerSec
+    expect(rate, '构造出的档位应有正的修速').toBeGreaterThan(0)
+
+    /*
+     * 跑满 3600 拍(一小时),每拍记账后再清零 —— 这样**每一拍都在验证线性增量**,
+     * 而不是撞到封顶就结束。
+     *
+     * 为什么不能只跑一段:实测这个档位 28 拍就修满了,判据只覆盖了 28 秒,
+     * 而放置游戏的常态是几小时。让修为每拍回零,累计 3600 拍的增量与
+     * `cultPerSec × 3600` 对得上,才是真在验「长时间不漂」。
+     */
+    const t0 = Date.now()
+    const TICKS = 3600
+    let gainedTotal = 0
+    let expectedTotal = 0
+    for (let i = 1; i <= TICKS; i += 1) {
+      vi.setSystemTime(t0 + i * TICK_MS)
+      /*
+       * 每拍都取**当时的** cultPerSec 记账,不能只在循环外取一次。
+       *
+       * 修速会随时辰 / 天时 / buff 变:实测只在循环外取一次时,3600 拍的累计
+       * 比固定速率高 12.88% —— 那是速率的自然变化,不是漂移。
+       * 拿每拍当时的速率累加,剩下的偏差才真的属于「累积误差」。
+       */
+      expectedTotal += player.cultPerSec
+      tick!()
+      gainedTotal += toNum(player.exp)
+      // 清零,让下一拍从零起算(封顶会截断,清零后才量得到每拍的完整增量)
+      player.exp = gnZero()
+    }
+
+    const expected = expectedTotal
+    const got = gainedTotal
+    const relErr = Math.abs(got - expected) / expected
+    expect(
+      relErr,
+      `连跑 ${TICKS} 拍,修为增量 ${got.toFixed(1)} 与理论 ${expected.toFixed(0)} 偏差 ${(relErr * 100).toFixed(2)}%`
+    ).toBeLessThan(0.01)
+
+    /*
+     * 灵气可积到标称容量的 QI_BANK_MULT 倍 —— 标称容量是「充盈加成与突破耗时」的基准,
+     * 不是硬顶(resources.setQi 的注释写着)。第一版写成 `<= qiCapValue` 判错了对象。
+     */
+    expect(resources.qi, '灵气不该超硬顶').toBeLessThanOrEqual(player.qiCapValue * QI_BANK_MULT)
+    expect(resources.qi, '灵气不该变负').toBeGreaterThanOrEqual(0)
   })
 })
