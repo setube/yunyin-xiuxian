@@ -1075,6 +1075,15 @@ const EQUIVALENT = [
       '留着是因为这段读起来像「算差额」,钳一下能让下一个人不必回头确认 rank 的循环不变式。'
   },
   {
+    file: 'src/ui/toastFlash.ts',
+    text: '.length === 0)',
+    why:
+      'toastFlash 的「本帧没有新增」早退。announce 开头已经有两道更早的闸:' +
+      '`if (toasts.length === 0) return` 挡空数组,`if (newest <= lastAnnouncedId) return` 挡无新 id;' +
+      '走到 fresh 那一行时 toasts 非空且至少有一条 id > lastAnnouncedId,故 fresh 不可能为空。' +
+      '实测:删掉这一行后全量 6945 条仍绿(我照它补过一条 announce([]) 的判据,回退,因为它走的是开头那道闸)。'
+  },
+  {
     file: 'src/ui/setMark.ts',
     text: 'if (!crest) return',
     why:
