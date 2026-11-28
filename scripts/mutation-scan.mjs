@@ -1064,6 +1064,23 @@ const EQUIVALENT = [
       '(实测 RandomService.chance(0) 在 rand=0 与 rand=0.999999 下都为 false),同样返回 null;' +
       '而 chance 之后那段 `deep[rng.int(0, -1)]` 根本走不到。' +
       '留着的理由是少做一次随机数采样:宿缘的掷签不该被「本来就没有人」这种情形消耗掉。'
+  },
+  {
+    file: 'src/ui/apprenticeMark.ts',
+    text: 'Math.max(0, next.min - b)',
+    why:
+      'toNextBond 的差额钳制。rank 的算法是「取最后一个 BOND_TITLES[i].min <= b 的 i」,' +
+      '而 next 就是 BOND_TITLES[rank + 1] —— 若 next.min <= b,循环会把 rank 推到那一阶,' +
+      'next 就不是它了。所以 next.min > b 恒成立,差额必为正,钳制不改结果。' +
+      '留着是因为这段读起来像「算差额」,钳一下能让下一个人不必回头确认 rank 的循环不变式。'
+  },
+  {
+    file: 'src/ui/setMark.ts',
+    text: 'if (!crest) return',
+    why:
+      'CRESTS 当前与 SET_DEFS 一模一样的六套(实测 6/6 全覆盖),所以这条早退走不到。' +
+      '它不是死代码,是给「新增套忘了登记线纹」留的闸:去掉后新套会拿到 crest: undefined,' +
+      '界面画出一个缺线纹的形制 —— 那比不画更糟。注释里写着同样的意图。'
   }
 ]
 
