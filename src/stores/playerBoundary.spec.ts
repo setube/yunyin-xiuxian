@@ -301,6 +301,8 @@ describe('player.sanitize · 履历缺失时不许抛', () => {
  * 故障注入:把 `asStringArray(sr.spoils).slice(-SPOILS_CAP)` 改回裸 `asStringArray(sr.spoils)` → 本条红。
  */
 describe('秘境战利 · 读档条数封顶', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
   it('坏档塞 5000 条,读档后只留尾部一小段', () => {
     const player = usePlayerStore()
     player.initCharacter('探针', { roots: [] } as never)
@@ -337,6 +339,8 @@ describe('秘境战利 · 读档条数封顶', () => {
  * 故障注入:把 `slackMs` 改回 `REGION_EVENT_MAX_MINUTES * 60_000` → 第一条红。
  */
 describe('区域事件 · 到期上界与时钟回拨', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
   afterEach(() => vi.restoreAllMocks())
 
   it('时钟回拨后合法事件不被作废,远期坏档仍清掉', () => {
@@ -368,6 +372,8 @@ describe('区域事件 · 到期上界与时钟回拨', () => {
  * 故障注入：去掉 `.filter(([id]) => !!regionDef(id))` → 本条红。
  */
 describe('区域胜场 · 读档只认真实地界', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
   it('野 id 清掉,真实胜场原样', () => {
     const p = usePlayerStore()
     const w: Record<string, number> = {}
@@ -392,6 +398,8 @@ describe('区域胜场 · 读档只认真实地界', () => {
  * 故障注入：去掉 `[...new Set(...)]` → 本条红。
  */
 describe('道侣 · 已完成事件去重', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
   it('重复项只留一条,顺序与唯一性保持', () => {
     const p = usePlayerStore()
     p.bond = {
@@ -427,6 +435,8 @@ describe('道侣 · 已完成事件去重', () => {
  * 故障注入:把 `reincarnation.value?.lives` 改回 `reincarnation.value.lives` → 本条红。
  */
 describe('轮回数据整块为 null · sanitize 不许抛', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
   it('reincarnation=null 且有道侣时不抛,道侣与轮回数据都还在', () => {
     const p = usePlayerStore() as unknown as Record<string, unknown>
     p.bond = { daoluId: 'dl_qingli', metAt: 5 }

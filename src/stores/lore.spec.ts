@@ -164,6 +164,10 @@ describe('图鉴见闻收录守卫(useLoreStore)', () => {
  * 故障注入：去掉 `capEntries(...)` 包一层 → 本条红。
  */
 describe('图鉴 · 照面次数与图纸表的条数上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('敌人照面次数表同样有上界', () => {
     const l = useLoreStore()
     const wild: Record<string, number> = {}
@@ -202,6 +206,10 @@ describe('图鉴 · 照面次数与图纸表的条数上界', () => {
  * 故障注入:去掉 `if (!equipmentTemplate(id)) continue` → 本条红。
  */
 describe('图鉴 · 装备见闻只认模板表里的 id', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('表外的键整条丢掉,表内的键照留', () => {
     const l = useLoreStore()
     const wild: Record<string, { q: number; t: number; u: number }> = {}
