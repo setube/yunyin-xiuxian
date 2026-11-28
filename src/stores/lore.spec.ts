@@ -188,3 +188,27 @@ describe('图鉴 · 照面次数与图纸表的条数上界', () => {
     expect(l.seenOf('wild_0'), '靠前的键应保留(早期真玩过的)').toBe(0)
   })
 })
+
+/**
+ * 装备见闻:认不出的模板 id 要清。
+ *
+ * 与上面两张表**不同**:那两张故意不认 id(改名不抹进度),而装备见闻的键是
+ * `equipmentTemplate(id).id`,图鉴是拿 `EQUIPMENT_TEMPLATES` 逐条比对着画的 ——
+ * 表外的键既不显示也不计数,唯一作用是撑大存档。
+ *
+ * 实测灌十万个野键时 sanitize 一字不改,state 仍是 3.39MB;
+ * 而图鉴那一册是拿模板表逐条画的,野键一个都画不出来。
+ *
+ * 故障注入:去掉 `if (!equipmentTemplate(id)) continue` → 本条红。
+ */
+describe('图鉴 · 装备见闻只认模板表里的 id', () => {
+  it('表外的键整条丢掉,表内的键照留', () => {
+    const l = useLoreStore()
+    const wild: Record<string, { q: number; t: number; u: number }> = {}
+    for (let i = 0; i < 100_000; i += 1) wild['ghost_' + i] = { q: 3, t: 5, u: 0 }
+    l.equipLore = { ...wild, w_zhuqing: { q: 3, t: 5, u: 1 } } as never
+    l.sanitize()
+    expect(Object.keys(l.equipLore), '野键没被清 —— 坏档会撑大存档').toEqual(['w_zhuqing'])
+    expect(l.equipSeen('w_zhuqing'), '表内的条目一字不动').toEqual({ q: 3, t: 5, u: 1 })
+  })
+})

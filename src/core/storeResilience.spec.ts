@@ -123,13 +123,24 @@ describe('坏档韧性 · 清单从源码倒推', () => {
   it('装备见闻:条目形状烂掉就整条丢掉,不冒充「见过一件凡品 · 0 阶」', () => {
     setActivePinia(createPinia())
     const lore = useLoreStore()
+    /*
+     * 键须用真实模板 id:同一支 sanitize 现在还认 id(表外的键整条丢,
+     * 见 `stores/lore.spec` 的「装备见闻只认模板表里的 id」)。
+     * 本条要验的是**形状**,故换掉键名,断言一条不动。
+     */
     lore.$patch({
-      equipLore: { good: { q: 3, t: 9, u: 1 }, nullq: { q: null, t: 2 }, text: 'nope', half: { q: 1 }, badu: { q: 1, t: 2, u: 9 } } as never
+      equipLore: {
+        w_zhuqing: { q: 3, t: 9, u: 1 },
+        h_muzan: { q: 1, t: 2, u: 9 },
+        nullq: { q: null, t: 2 },
+        text: 'nope',
+        half: { q: 1 }
+      } as never
     })
     lore.sanitize()
-    expect(Object.keys(lore.equipLore).sort(), '只该留下形状完整的条目').toEqual(['badu', 'good'])
-    expect(lore.equipSeen('good')).toEqual({ q: 3, t: 9, u: 1 })
-    expect(lore.equipSeen('badu')!.u, 'u 只认 1,别的值一律归零').toBe(0)
+    expect(Object.keys(lore.equipLore).sort(), '只该留下形状完整的条目').toEqual(['h_muzan', 'w_zhuqing'])
+    expect(lore.equipSeen('w_zhuqing')).toEqual({ q: 3, t: 9, u: 1 })
+    expect(lore.equipSeen('h_muzan')!.u, 'u 只认 1,别的值一律归零').toBe(0)
   })
 })
 
