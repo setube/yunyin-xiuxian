@@ -54,6 +54,7 @@ tsconfig paths `@/* → ./src/*`，开启 `strict` + `noUncheckedIndexedAccess` 
 - `bun run check` — `vue-tsc -b`（类型检查）+ `eslint src`（lint）。注意：**不含测试、不含构建**
 - `bun run test` — `vitest run` 全量测试
 - `bun run test:report` — `scripts/test-report.mjs`（vitest json + 按系统分桶 PASS/FAIL；用例失败、整文件失败、未归类文件、文档写回用例条数，或 vitest 非零退出（未处理错误）即退出 1；CI 限 maxWorkers=4）
+- `bun run test:shuffle` — `vitest run --sequence.shuffle`：**打乱用例顺序**跑一遍全量。这不是可有可无的额外保险:常规 `bun run test` 按文件内书写顺序跑,而一批 describe 曾靠**前一条用例留下的 activePinia** 才过得去 —— 单独跑那条(`-t` 过滤)必红,打乱顺序约一半概率红,整文件顺序跑却永远绿。那种失败看起来像「偶发的环境问题」,实际是判据在错误状态下验证。实测修前全量 shuffle 5 次有 4 次失败,修后连跑 7 次全绿。定位方法:**只能以实际失败的用例为准**,不要静态扫「describe 内有没有 beforeEach」——那样会扫出大量误报,因为很多 describe 是在 `it` 内部各自调 `setActivePinia`,那是合法写法。要复现某一轮的顺序,加 `--sequence.seed=N`。
 - `bun run build` — `vue-tsc -b && vite build`
 - `bun run smoke` / `smoke:late` — 构建 + playwright ui-smoke
 - `bun run layout-check` — 构建 + `node scripts/layout-check.mjs`（**仅本地**，已从 CI 移除；Windows 用 `node` 而非 bun，耗时约 10 分钟）
