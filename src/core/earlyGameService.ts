@@ -311,6 +311,14 @@ export function mayTriggerCaveEvent(): CaveEvent | null {
   if (caveEvent) return caveEvent
 
   const player = usePlayerStore()
+  /*
+   * 死亡后不再巡游。
+   *
+   * 调用方(engine 的 periodicAccum 段)在 `if (!player.dead)` 之外 —— 那段只管
+   * 「今日已做」的记账与成就补扫,而巡游是玩家在世时的洞府活动。不加这道判断,
+   * 死亡存档会照常弹出巡游窗,与轮回对话框叠在一起。
+   */
+  if (player.dead) return null
   const today = todayLocalNum()
   /*
    * 用 `>=` 而不是 `===` —— **时钟回拨也要挡住**。
