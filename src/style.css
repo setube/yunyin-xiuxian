@@ -126,18 +126,6 @@
   }
 }
 
-@keyframes spin-slow {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes spin-slower {
-  to {
-    transform: rotate(-360deg);
-  }
-}
-
 @keyframes bar-grow {
   from {
     transform: scaleY(0);

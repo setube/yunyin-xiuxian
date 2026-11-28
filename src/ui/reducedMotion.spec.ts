@@ -15,7 +15,8 @@
  * 只钉住「两处都在、都用 0.01ms、都没有被改成 none」。
  */
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const CSS = readFileSync('src/style.css', 'utf-8')
 
@@ -174,5 +175,54 @@ describe('减少动效 · 两个块都要在,且保留 animationend 的前提', 
   it('组件内自定义 keyframes 不构成可访问性问题(通配符与定义位置无关)', () => {
     // 钉住这个判断:只要上面两个块在,写在组件里的动画同样受管
     expect(CSS).toContain('animation-iteration-count: 1 !important')
+  })
+})
+
+/**
+ * 定义了却没人用的 keyframes 是死代码。
+ *
+ * 实测清出两个:`spin-slow` 与 `spin-slower` 成对定义(一顺一逆),全仓没有任何
+ * `animation` 引用它们 —— 看着像某处特效的备选,实则从未接上。
+ *
+ * 判据按**整词**数引用:第一版用 `includes`,于是 `spin-slow` 因为出现在
+ * `spin-slower` 里而被算作有引用,两个都漏掉了。
+ *
+ * 故障注入:随便加一条 `@keyframes zz-unused { to { opacity: 0 } }` → 本条红。
+ */
+describe('样式 · 没有白定义的 keyframes', () => {
+  it('每个 @keyframes 都至少被引用一次', () => {
+    /*
+     * 引用可能出现在任何地方:style.css 自己、组件的 `<style scoped>`、
+     * 甚至内联 style 里的 `animation-name`。第一版只扫 CSS,于是
+     * float-crit / breathe / float-dmg / ink-pop / glow-pulse 全被误报成死代码 ——
+     * 它们都在 .vue 的 scoped 样式里用着。
+     */
+    const dirs = ['src']
+    const files: string[] = []
+    const walk = (d: string): void => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        const f = join(d, e.name)
+        if (e.isDirectory()) walk(f)
+        // 跳过 spec 自身:判据的字符串里会出现被测名字,那是污染不是引用
+        else if (/\.(css|vue|ts|js)$/.test(e.name) && !e.name.endsWith('.spec.ts')) files.push(f)
+      }
+    }
+    for (const d of dirs) walk(d)
+    const all = files.map(f => readFileSync(f, 'utf-8')).join('\n')
+
+    const defined = [...CSS.matchAll(/@keyframes\s+([\w-]+)/g)].map(m => m[1]!)
+    expect(defined.length, '一个 keyframes 都没扫到 —— 扫描失效了').toBeGreaterThan(10)
+    const unused: string[] = []
+    for (const name of defined) {
+      /*
+       * 后界不许再接 \w 或 -(防止 float 命中 float-crit);
+       * 前界只不许接 \w —— **要允许 `animate-` 前缀**:Tailwind 的写法是
+       * `animate-breathe`,而 `-` 若也排除,那些真在用的就会被误报成死代码
+       * (实测 float-crit / breathe / float-dmg / ink-pop / glow-pulse 五个全中)。
+       */
+      const re = new RegExp(`(?<![\\w])${name}(?![\\w-])`, 'g')
+      if ([...all.matchAll(re)].length <= 1) unused.push(name)
+    }
+    expect(unused, `这些 keyframes 定义了却没人用:\n${unused.join(', ')}`).toEqual([])
   })
 })
