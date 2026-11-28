@@ -491,6 +491,10 @@ describe('离线 · 历练仍在途的提示', () => {
  * 故障注入:删掉 `offline.ts` 末尾那句 `game.stampActive(nowMs)` → 本条红。
  */
 describe('离线结算 · 同一段时间不许结算第二遍', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('结算后立刻再调,只拿到那一小段而不是整段再来一次', () => {
     const game = useGameStore()
     const player = usePlayerStore()

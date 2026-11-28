@@ -93,6 +93,10 @@ describe('节奏遥测 · 公共写入与报告边界', () => {
  * 故障注入:去掉 `.slice(-120)` → 本条红。
  */
 describe('节奏遥测 · 事件序列封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏档塞 5000 条,读档后只剩最近 120 条', () => {
     const s = usePacingTelemetry()
     s.events = Array.from({ length: 5000 }, (_, i) => ({

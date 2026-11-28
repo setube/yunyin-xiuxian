@@ -116,6 +116,10 @@ describe('道侣投影 · 在世守卫', () => {
  * 故障注入:删掉 useBondOverview 里的 `.slice(-PAST_BONDS_SHOWN)` → 本条红。
  */
 describe('历世同行 · 渲染条数封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏档塞 5000 条,渲染只给最近一段,而数据一条不少', () => {
     const player = usePlayerStore()
     player.reincarnation = {

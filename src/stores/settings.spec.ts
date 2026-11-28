@@ -180,6 +180,10 @@ describe('设置 · reduceMotion 系统偏好播种', () => {
  * 故障注入：去掉 `truncateCodePoints` → 第一条红。
  */
 describe('设置 · 版本号长度上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('超长版本号截断,正常语义化版本原样', () => {
     const s = useSettingsStore()
     s.lastSeenVersion = '1.'.repeat(100_000)
