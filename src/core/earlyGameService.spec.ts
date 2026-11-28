@@ -752,3 +752,31 @@ describe('洞府巡游 · 死亡后不再触发', () => {
     }
   })
 })
+
+/**
+ * 顿悟同样不该在死后来。
+ *
+ * 与 `mayTriggerCaveEvent` 对齐:两处都是「在世才发生的洞府活动」。当前唯一调用方
+ * (engine 的 advance)在 `if (!player.dead)` 块内,所以这道判断眼下拦不到东西 ——
+ * 判据守的是「以后有人把它挪出块外」这个可能。
+ *
+ * 故障注入:去掉 `if (player.dead) return` → 本条红。
+ */
+describe('悟道顿悟 · 死亡后不再触发', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('player.dead 为真时不出顿悟', () => {
+    const player = usePlayerStore()
+    player.dead = true
+    player.enlightenmentAt = 0
+    const rnd = vi.spyOn(Math, 'random').mockReturnValue(0)
+    try {
+      mayTriggerEnlightenment()
+      expect(getCurrentEnlightenment(), '死亡后不该弹出顿悟窗').toBeNull()
+    } finally {
+      rnd.mockRestore()
+    }
+  })
+})

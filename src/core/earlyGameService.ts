@@ -60,6 +60,14 @@ export function getCurrentEnlightenment(): EnlightenmentEvent | null {
  */
 export function mayTriggerEnlightenment(): void {
   const player = usePlayerStore()
+  /*
+   * 死亡后不再顿悟。
+   *
+   * 当前唯一的调用方(engine 的 advance)在 `if (!player.dead)` 块内,故这道判断
+   * 眼下不会拦到任何东西 —— 它是与 mayTriggerCaveEvent 对齐的:那一处的调用方在
+   * 块外,必须自己挡;两处都是「在世才发生的洞府活动」,挡住的条件该一样。
+   */
+  if (player.dead) return
   const now = gameNow()
   if (now - player.enlightenmentAt < 300000) return
   const presence = earlyEventDecay('enlightenment', player.major)
