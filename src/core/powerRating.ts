@@ -105,8 +105,8 @@ export function ratePower(stats: FinalStats): PowerRating {
    * 送进 score:界面 `score.toFixed(2)` 印出「NaN」,而同一份数据经
    * `ratingGauge` 又是 0.00 —— 面板同一个数字两种说法。
    *
-   * 实测:`(mods as any).attackPct = NaN` 后,`ratePower` 的 attack.score 是 NaN,
-   * `ratePowers` 的 gauge.score 是 0。
+   * 实测:`(mods as any).attackPct = NaN` 后,未收口时 attack.score 是 NaN,
+   * 叠了 gauge 的读数则是 0.00。
    * 正常路径造不出 NaN(各 modSource 都由数据表派生,装备词条的 roll 过
    * `asFiniteNumber(a.roll, 0, 0, 1)`),故这是第二道防线,不是可达分支。
    */
