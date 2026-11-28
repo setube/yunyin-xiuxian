@@ -605,6 +605,10 @@ describe('掉落丹药 · 池子装的是哪些', () => {
  * `loot.ts` 这一半 —— 见到 `false` 就地摘掉。那一半靠人工审。
  */
 describe('装备入账订阅 · 回报 false 即被摘掉', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   const mk = (uid: string): EquipmentInstance =>
     ({ uid, templateId: 'w_zhuqing', quality: 'heaven', tier: 1, level: 0, affixes: [] }) as unknown as EquipmentInstance
 
