@@ -70,8 +70,16 @@ import { useApprenticeStore } from '@/stores/apprentice'
 import { sanitizeAllStores } from '@/stores/sanitizeAll'
 import { apprenticeReturnText } from '@/ui/apprenticeText'
 
-/** 离线事件兜底池(世界标签不命中时用):只放无代价、可幂等自动结算的 general 事件 */
-const DEFAULT_OFFLINE_EVENT_IDS = ['ev_spring', 'ev_herb_garden', 'ev_night_talk', 'ev_falling_star', 'ev_old_man']
+/**
+ * 离线事件兜底池(事件池筛空时用):只放无代价、可幂等自动结算的 general 事件。
+ *
+ * 导出是给判据用的 —— 这条兜底在当前数据下**走不到**(每个区域筛完都还有事件),
+ * 于是 `mutation-scan` 把它判成「改坏了不会红」的盲区。但将来某个区域的事件
+ * 若全被标成不适合离线结算,池子就会空:`rng.pick([])` 返回 undefined,
+ * `autoResolveEvent(undefined)` 静默返回 null —— 不崩,但这段离线**一个事件都不结算**,
+ * 玩家少拿收益而界面看不出异常。故把池子本身钉住:非空,且每一条都过离线安全闸。
+ */
+export const DEFAULT_OFFLINE_EVENT_IDS = ['ev_spring', 'ev_herb_garden', 'ev_night_talk', 'ev_falling_star', 'ev_old_man']
 
 /** 离线自动结算放行的事件效果;身份/永久构筑类(pet、gongfa、artifact、lifespan)不替玩家拍板 */
 export const OFFLINE_SAFE_EFFECTS = new Set(['stone', 'exp', 'material', 'equipment', 'pill', 'buff', 'nothing'])

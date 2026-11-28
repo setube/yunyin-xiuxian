@@ -9,7 +9,8 @@
  */
 import { describe, expect, it, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { settleOffline } from './offline'
+import { DEFAULT_OFFLINE_EVENT_IDS, isOfflineSafeEvent, settleOffline } from './offline'
+import { eventDef } from '@/data/events'
 import { useGameStore } from '@/stores/game'
 import { usePlayerStore } from '@/stores/player'
 import { useEndgameStore } from '@/stores/endgame'
@@ -276,5 +277,36 @@ describe('离线结算 · 弹窗门槛', () => {
     expect(OFFLINE_MODAL_MIN_SECONDS, '门槛被改了 —— 要改请连同这条判据一起决定').toBe(300)
     expect(settleAfter(299), '299 秒不该弹').toBe(false)
     expect(settleAfter(300), '300 秒该弹').toBe(true)
+  })
+})
+
+/**
+ * 离线事件的兜底池:非空,且每一条都真的能离线结算。
+ *
+ * `settleOffline` 里那段是:
+ *   `if (offlineEventPool.length === 0) offlineEventPool = DEFAULT_OFFLINE_EVENT_IDS`
+ * 当前数据下走不到(每个区域筛完都还有事件),所以 `mutation-scan` 把它判成盲区 ——
+ * 改成 `.length < 0` 没有判据会红。
+ *
+ * 但它在数据变动时会变成活的:某个区域的事件若全被标成不适合离线结算,
+ * 池子就空,`rng.pick([])` 返回 undefined,`autoResolveEvent(undefined)` 静默返回 null ——
+ * **不崩,但这段离线一个事件都不结算**,玩家少拿收益而界面看不出异常。
+ *
+ * 故把池子本身钉住:非空 + 每条都过 `isOfflineSafeEvent`。这样「兜底被删」与
+ * 「兜底里混进不安全事件」两种改坏都会红。
+ */
+describe('离线事件兜底池', () => {
+  it('非空,且每一条都过离线安全闸', () => {
+    expect(DEFAULT_OFFLINE_EVENT_IDS.length, '兜底池空了 —— 池子筛空时没有可结算的事件').toBeGreaterThan(0)
+    const unsafe: string[] = []
+    for (const id of DEFAULT_OFFLINE_EVENT_IDS) {
+      const def = eventDef(id)
+      if (!def) {
+        unsafe.push(`${id}(事件不存在)`)
+        continue
+      }
+      if (!isOfflineSafeEvent(def)) unsafe.push(`${id}(含离线不该自动结算的效果)`)
+    }
+    expect(unsafe, '兜底池里这些条目会在离线时替玩家拍板,或根本不存在').toEqual([])
   })
 })
