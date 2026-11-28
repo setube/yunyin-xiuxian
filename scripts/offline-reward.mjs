@@ -14,7 +14,9 @@
  *
  * ## 判据
  *
- * 一 离开 1 小时:归来卷轴弹出,且「此去」的时长对得上
+ * 一 归来卷轴弹出,且「此去」的时长对得上
+ * 一b 离开超过封顶(洞府 0 级 8 小时)时,卷轴须交代「上限」——
+ *     否则玩家以为整段都发了,而实际只结到封顶
  * 二 卷轴里的数字不是坏值(NaN / Infinity / undefined / 科学计数)
  * 三 结算后**再重载两次都不得再弹** —— 同一段离开时长只能领一次
  * 四 修为确实涨了(不是只弹个空壳)
@@ -23,7 +25,8 @@
  * 而那条防线只在**真浏览器 + 真存档**下才被完整走到。
  *
  * 用法(需先 `bun run build`):
- *   node scripts/offline-reward.mjs
+ *   node scripts/offline-reward.mjs                    # 离开 1 小时
+ *   node scripts/offline-reward.mjs --away-hours=60    # 超过封顶
  *   bun run offline-reward        # 带 build 与 --strict-dist
  */
 import { chromium } from 'playwright'
@@ -38,8 +41,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const INDEX = `file://${join(ROOT, 'dist/index.html')}`
 /** 与 src/utils/crypto.ts 的 SAVE_SECRET 同一份;分片是 AES 密文,改 lastActiveAt 须先解再封 */
 const SAVE_SECRET = 'yunyin-xiuxian::dao-in-the-clouds::v1'
-/** 造出来的离开时长 */
-const AWAY_MS = 3600_000
+/** 离开时长(毫秒),可用 `--away-hours=N` 覆盖;默认 1 小时 */
+const awayArg = process.argv.find((a) => a.startsWith('--away-hours='))
+const AWAY_HOURS = awayArg ? Number(awayArg.split('=')[1]) : 1
+const AWAY_MS = AWAY_HOURS * 3600_000
 
 const failures = []
 const notes = []
@@ -154,7 +159,7 @@ if (!(await rewindLastActive(page, AWAY_MS))) {
   process.exit(1)
 }
 await page.close()
-console.log('\n—— 二 · 离开 1 小时后回来 ——')
+console.log(`\n—— 二 · 离开 ${AWAY_HOURS} 小时后回来 ——`)
 
 const p2 = await ctx.newPage()
 p2.on('pageerror', (e) => pageErrors.push(String(e)))
@@ -163,7 +168,7 @@ await p2.waitForTimeout(3500)
 
 const dialogCount = await p2.locator(DIALOG).count()
 if (dialogCount === 0) {
-  fail('离开 1 小时回来,没弹「归来」卷轴 —— 离线结算没跑')
+  fail(`离开 ${AWAY_HOURS} 小时回来,没弹「归来」卷轴 —— 离线结算没跑`)
   await browser.close()
   process.exit(1)
 }
@@ -174,6 +179,20 @@ const text = await p2.locator(DIALOG).innerText()
 for (const { re, what } of BAD_VALUE_PATTERNS) {
   if (re.test(text)) fail(`卷轴上印出坏值「${what}」`)
 }
+/*
+ * 超过封顶:卷轴必须交代「上限 X小时」。
+ *
+ * 洞府 0 级封顶 8 小时(OFFLINE_CAP_HOURS 第一档)。离开 60 小时而卷轴只写「此去 60小时」、
+ * 不提上限,玩家会以为那 60 小时全额发了 —— 而实际只结 8 小时。
+ * 判据:离开时长 > 8 时,卷轴须出现「上限」二字。这条只在 `--away-hours` 给大值时才判。
+ */
+const CAP_FIRST_TIER_HOURS = 8
+if (AWAY_HOURS > CAP_FIRST_TIER_HOURS) {
+  const flat = text.replace(/\s+/g, ' ')
+  if (!/上限/.test(flat)) fail(`离开 ${AWAY_HOURS} 小时已超过封顶 ${CAP_FIRST_TIER_HOURS} 小时,卷轴却没写「上限」:${flat.slice(0, 140)}`)
+  else ok(`卷轴交代了封顶:${(/上限[^·\n]*/.exec(flat) ?? [''])[0]}`)
+}
+
 // 时长须对上(文案形如「此去 1小时」)
 if (!/此去\s*\d/.test(text.replace(/\s+/g, ' '))) fail(`卷轴没写「此去」多久:${text.replace(/\s+/g, ' ').slice(0, 80)}`)
 else ok(`卷轴写明离开时长:${(/此去[^\n·]*/.exec(text.replace(/\s+/g, ' ')) ?? [''])[0]}`)
@@ -223,4 +242,4 @@ if (failures.length > 0) {
   for (const f of failures) console.log(`  ${f}`)
   process.exit(1)
 }
-console.log('\n✓ 离线收益:离开 1 小时照发、卷轴时长对得上、收益入账、且只结算一次')
+console.log(`\n✓ 离线收益:离开 ${AWAY_HOURS} 小时照发、卷轴时长对得上、收益入账、且只结算一次`)
