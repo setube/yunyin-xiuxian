@@ -959,6 +959,30 @@ describe('虚界坏档 · 形状不成立整座作废', () => {
     expect(e.voidWorld, '速度为 0 的界主永不先手').toBeNull()
   })
 
+  /**
+   * 敌方形态缺 `name` 时整座作废。
+   *
+   * `sanitizeFoeShape` 里那道 `if (typeof f.name !== 'string' || !f.name) return null`
+   * 原先没有判据 —— 手动改成恒假后全量 6925 条全绿(实测)。
+   * 它的下游是战斗里的敌人名(`gauntlet.ts` 取 `shape.name` 作 CombatSide 的 name),
+   * 缺了会一路带到战报那一行,而其它几道守卫(hpR/speed)都有判据。
+   *
+   * 故障注入:把该行改成 `if (false) return null` 即红。
+   */
+  it('敌方形态缺 name 时整座作废,不让无名敌人进战斗', () => {
+    const e = useEndgameStore()
+    const w = voidWorld()
+    const foes = (w.foes as Record<string, unknown>[]).map(f => ({ ...f, name: undefined }))
+    e.$patch({ voidWorld: { ...w, foes } } as never)
+    e.sanitize()
+    expect(e.voidWorld, '无名敌人不该被放行 —— 战报里那一行会空掉').toBeNull()
+
+    // 空串同样不算有名字
+    e.$patch({ voidWorld: { ...voidWorld(), guardian: { ...(voidWorld().guardian as object), name: '' } } } as never)
+    e.sanitize()
+    expect(e.voidWorld, '空串名字同样不成立').toBeNull()
+  })
+
   it('id 不是 void 的残块不会被当成虚界', () => {
     const e = useEndgameStore()
     e.$patch({ voidWorld: { ...voidWorld(), id: 'chiyan' } } as never)
