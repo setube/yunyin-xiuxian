@@ -7,6 +7,7 @@ import { PILLS, pillDef } from '@/data/pills'
 import { ENEMIES, enemyDef } from '@/data/enemies'
 import { persistConfig } from '@/utils/storage'
 import { QUALITIES } from '@/data/qualities'
+import { equipmentTemplate } from '@/data/equipment'
 
 /** 敌人认知层上限:0 未识 / 1 眼熟 / 2 知路数 / 3 洞悉 */
 export const ENEMY_LORE_MAX = 3
@@ -222,9 +223,18 @@ export const useLoreStore = defineStore(
       enemyLore.value = clampMap(enemyLore.value ?? {}, 0, ENEMY_LORE_MAX, id => !!enemyDef(id))
       // 照面次数同理:不认 id(改名不抹进度),但条数有界
       enemySeen.value = capEntries(clampMap(enemySeen.value ?? {}, 0, Number.MAX_SAFE_INTEGER), ENEMY_SEEN_CAP)
-      // 装备见闻:形状烂掉就整条丢掉
+      /*
+       * 装备见闻:形状烂掉就整条丢掉,认不出的模板 id 也整条丢。
+       *
+       * 写入侧只有两处(`acquireEquipment` 与 `market.noteEquipSeen`),模板 id 一律取自
+       * `equipmentTemplate(...).id`,表外的键只可能来自坏档。而图鉴
+       * (`ui/codex` 的装备册)是拿 `EQUIPMENT_TEMPLATES` 逐条比对着画的 ——
+       * 表外的键既不显示也不计数,唯一作用是撑大存档:实测灌十万个野键后
+       * sanitize 一字不改,state 仍是 3.39MB,而那一册一个字都不会多出来。
+       */
       const seenFixed: Record<string, { q: number; t: number; u: number }> = {}
       for (const [id, v] of Object.entries(equipLore.value ?? {})) {
+        if (!equipmentTemplate(id)) continue
         const q = (v as { q?: unknown })?.q
         const t = (v as { t?: unknown })?.t
         // 只认真正的数字:Number(null) 是 0、"9" 会转成 9,坏条目会冒充「见过一件凡品·0 阶」
