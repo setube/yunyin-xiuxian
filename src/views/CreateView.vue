@@ -210,7 +210,8 @@
     } catch (err) {
       starting.value = false
       console.error('[create] 建号失败', err)
-      ui.toast('建号失败', 'info')
+      // 失败须用 warn:建号失败时玩家进不了游戏,灰条与「悬赏已刷新」那种中性状态分不开
+      ui.toast('建号失败', 'warn')
     }
   }
 
