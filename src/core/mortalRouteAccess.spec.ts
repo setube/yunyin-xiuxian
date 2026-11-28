@@ -190,6 +190,28 @@ describe('路线可达性 · 旧存档与换界', () => {
     console.log('\nreroll 后进度清零,新的天地从第一段重新走')
   })
 
+  /**
+   * 并发两次凝界:第二次必须**等同一趟**,不能返回 null。
+   *
+   * 原先用 `let generating = false` + 第二次调用直接 `return null`。而 `null` 也是
+   * 「四门验收失败」的返回值 —— `MortalWorldView` 的 onMounted 分不出两者,
+   * 于是第二次挂载(切页来回)会把「凝界中」置回 false、落到「此世未成」空态,
+   * 而世界其实正在第一次调用里生成;生成完只是写进 store,页面已不在凝界态,不会重算。
+   *
+   * 故障注入:把 `if (generating) return generating` 改回 `return null`,本条红。
+   */
+  it('并发两次 ensureMortalWorld:第二次等同一趟,不谎报「没有世界」', async () => {
+    const adventure = useAdventureStore()
+    adventure.mortalWorld = null
+    const p1 = ensureMortalWorld()
+    const p2 = ensureMortalWorld()
+    const [w1, w2] = await Promise.all([p1, p2])
+    expect(w1, '第一次该凝出世界').toBeTruthy()
+    expect(w2, '第二次拿到的也是同一份世界,不是 null').toBeTruthy()
+    expect(w2, '两次该是同一趟的结果').toBe(w1)
+    expect(adventure.mortalWorld, '世界已写进 store').toBeTruthy()
+  })
+
   it('节点 id 随路线位置生成,同一区域换段不会串味', async () => {
     const a = generateMortalWorld(11111)
     const b = generateMortalWorld(22222)
