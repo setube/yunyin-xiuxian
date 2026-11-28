@@ -54,7 +54,7 @@ describe('数值曲线审计(Phase 14)', () => {
     }
   })
 
-  it('界外长尾有界:修满混沌道祖的耗时不到修满真仙的 200 倍', () => {
+  it('界外长尾有界:修满混沌道祖的耗时约为修满真仙的数百倍', () => {
     const toZhenxian = hoursToReach(WORLD_BREAK_MAJOR, 0)
     const toPeak = hoursToReach(MAX_MAJOR, 0)
     console.log(
