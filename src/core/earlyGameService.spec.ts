@@ -724,6 +724,15 @@ describe('转世 · 本世的浮窗事件不许跨世', () => {
 describe('洞府巡游 · 死亡后不再触发', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    /*
+     * 必须连模块级的 `caveEvent` 一起清。
+     *
+     * `mayTriggerCaveEvent()` 的第一行是 `if (caveEvent) return caveEvent` —— 它跑在
+     * 死亡判断**之前**。前一个用例若触发过巡游并留下这个缓存,本条就会直接拿到那份
+     * 缓存、绕过 `if (player.dead) return null`,于是「死亡后不弹窗」假红。
+     * 常规顺序跑时前一条恰好在它之后清掉了,`--sequence.shuffle` 打乱后才暴露。
+     */
+    resetEarlyGameEvents()
   })
 
   it('player.dead 为真时不产出巡游,也不记账', () => {

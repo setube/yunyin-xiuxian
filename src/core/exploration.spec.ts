@@ -980,6 +980,17 @@ describe('历练途中相遇 · 本世未凝', () => {
  * 改回裸 `Math.max(0, explorationSpeed)` → 本条红。
  */
 describe('历练 · 遇敌间隔不接受非有限修速', () => {
+  /*
+   * 每条都从干净的 pinia 起手。
+   *
+   * `player.initCharacter` 与 `startExploration` 都看 pinia 里的既有状态:前一条用完例
+   * 若留下在途历练,`startExploration` 会因「已在历练」直接返回 false,本条 `ok` 分支
+   * 便整段跳过 —— 常规顺序下前一条恰好清干净,`--sequence.shuffle` 打乱后才露馅。
+   */
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('explorationSpeed 为 NaN 时,返回 true 就必须真的建起会话', () => {
     const player = usePlayerStore()
     const adventure = useAdventureStore()
