@@ -152,6 +152,25 @@ describe('减少动效 · 两个块都要在,且保留 animationend 的前提', 
     expect(CSS).toContain('.reduce-motion *')
   })
 
+  /**
+   * 两处 `::after` 掠光各须在系统偏好与设置项**两个块里**都有静态高光。
+   *
+   * `.q-aura-sheen` / `.luster-sheen` 的 keyframes 终态不可见,压成 0.01ms 后
+   * 会停在起始帧或终态 —— 前者留一道僵直白光,后者整层消失。CSS 里两处都写了规则,
+   * 但此前没有判据守着:删掉任一处,两个块的画面就不一致,而测试照绿。
+   *
+   * 故障注入:删掉 `.reduce-motion .q-aura-sheen::after` 那段 → 本条红。
+   */
+  it('两道掠光在系统偏好与设置项里各有一条静态规则', () => {
+    for (const sel of ['luster-sheen::after', 'q-aura-sheen::after']) {
+      // 每条选择器都须出现两次:一次在 @media 块里(不带 .reduce-motion 前缀),
+      // 一次在 .reduce-motion 块里(带前缀)
+      const all = [...CSS.matchAll(new RegExp(`\\.${sel.replace(/::/g, '::')}[^{]*\\{`, 'g'))]
+      expect(all.length, `.${sel} 的规则数不足 —— 原始定义 + 两个块应当至少三处`).toBeGreaterThanOrEqual(3)
+      expect(CSS, `.${sel} 缺了 .reduce-motion 那一份`).toContain(`.reduce-motion .${sel.replace('::after', '')}::after`)
+    }
+  })
+
   it('组件内自定义 keyframes 不构成可访问性问题(通配符与定义位置无关)', () => {
     // 钉住这个判断:只要上面两个块在,写在组件里的动画同样受管
     expect(CSS).toContain('animation-iteration-count: 1 !important')
