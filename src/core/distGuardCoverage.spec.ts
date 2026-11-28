@@ -128,6 +128,7 @@ describe('package.json · 实测命令要带严格档', () => {
     'edge-states.mjs',
     'world-check.mjs',
     'orb-check.mjs',
+    'playthrough.mjs',
     /* 性能类同样读 dist:评审指出漏了它们 */
     'first-paint.mjs',
     'perf-profile.mjs'
