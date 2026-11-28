@@ -161,7 +161,17 @@ const createWindow = () => {
   createAppMenu()
   win.loadFile(path.join(distPath, 'index.html'))
 
-  // WebDAV CORS 绕过:注入 CORS 响应头
+  /*
+   * WebDAV CORS 绕过:注入 CORS 响应头。
+   *
+   * 渲染层目前没有任何 WebDAV 代码(grep PROPFIND / webdav 只命中这一处),
+   * 但这段拦截器**无条件对所有响应生效**,故它有两条沉默的副作用:
+   *   · 把任何响应的 access-control-allow-origin 改成 `*`
+   *   · 剥掉 WWW-Authenticate —— 将来若加需要认证的接口,浏览器不会弹原生认证框,
+   *     应用也收不到 401 质询,只会看到一个没有原因的失败
+   *
+   * 保留而不是删:它可能是给云存档预留的。真要接认证接口时,须先给它加 host 白名单。
+   */
   win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     const headers = { ...details.responseHeaders }
     headers['access-control-allow-origin'] = ['*']
