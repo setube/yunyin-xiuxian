@@ -15,6 +15,7 @@ import {
   SHICHEN_SEC,
   TEA_SEC,
   classicalDuration,
+  cnNum,
   parseClassicalDuration,
 } from './timeUnits'
 
@@ -172,5 +173,33 @@ describe('古语时制对账 · 增益文案与数据', () => {
       }
     }
     console.log(`  增益文案对账:${checked} 条含古语时制`)
+  })
+
+  /**
+   * `cnNum` 只管 1..99,越过就拼出乱码 —— 但按当前口径**走不到**。
+   *
+   * 实测:`cnNum(100)` 给「十十」、`cnNum(1000)` 给「undefined十」。
+   * 它只经 `countWord` 被 `classicalDuration` 用到,而后者收到的时序数
+   * 全部来自固定表:最长 buff 10800s = 1.5 时辰、坊市刷新 7200s = 1 时辰,
+   * 连「两个时辰」都是上限,离 99 差了五十倍。
+   *
+   * 钉住当下边界(UPPER = 99 仍正确、越界即为乱码)有两个用处:
+   *   ① 若将来把某个时长拉到几十时辰,这条会先红,而不是界面先印出「undefined十」;
+   *   ② 若有人给 cnNum 补了越界分支,这条也会红 —— 那时把上面两行断言换成新口径即可。
+   *
+   * 故障注入:把某个 buff 的 durationSec 改成 720000(100 时辰) → 本节红。
+   */
+  it('cnNum 的可用上界是 99:越界会拼出乱码,故时序数不得超过它', () => {
+    expect(cnNum(99)).toBe('九十九')
+    expect(cnNum(100)).toContain('十十')
+    expect(cnNum(1000)).toContain('undefined')
+    // 真实时序数(时辰/刻)离上界还有多远
+    let maxCount = 0
+    for (const def of BUFFS) {
+      const n = Math.ceil(def.durationSec / SHICHEN_SEC)
+      if (n > maxCount) maxCount = n
+    }
+    expect(maxCount, `最长 buff 折合 ${maxCount} 个时辰,已逼近 cnNum 的上界 99`).toBeLessThanOrEqual(99)
+    console.log(`  cnNum 上界 99 · 当前最大时序数 ${maxCount}`)
   })
 })
