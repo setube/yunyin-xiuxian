@@ -25,6 +25,25 @@ describe('减少动效 · 系统偏好开着时,设置开关要说实况', () =>
     expect(typeof systemReducedMotion()).toBe('boolean')
   })
 
+  /**
+   * 设置项的默认值由系统偏好播种。
+   *
+   * 播种只在「没有持久化档」的首次创建时生效,持久化水合随后盖回显式存下的值 ——
+   * 所以系统开着偏好时,新玩家一进来开关就是勾上的。这条契约不因探测搬到 composable 而改变;
+   * 真浏览器实测两档都对(reduce → 勾上且置灰,no-preference → 不勾且可点)。
+   *
+   * 故障注入:把 settings.ts 里的 `ref(systemReducedMotion())` 改回 `ref(false)` → 本条红。
+   */
+  it('settings 的 reduceMotion 由系统偏好播种(不是写死 false)', () => {
+    const store = readFileSync(resolve(__dirname, '../stores/settings.ts'), 'utf-8')
+    expect(store, 'reduceMotion 的初值没有取自系统偏好 —— 系统开着时新玩家一进来是「未勾选」').toContain(
+      'const reduceMotion = ref(systemReducedMotion())'
+    )
+    // 别处不许再手写这一份探测(口径会走散)
+    const handWritten = [...store.matchAll(/matchMedia\('(prefers-reduced-motion[^']*)'\)/g)]
+    expect(handWritten, 'settings.ts 里又出现了一处手写的 prefers-reduced-motion 探测').toHaveLength(0)
+  })
+
   it('设置页读了系统偏好,并在为真时禁用开关', () => {
     expect(CODE, '设置页没读系统偏好 —— 系统开着时开关照旧可点,而点了没用').toContain('useSystemReducedMotion')
     expect(CODE, '开关没接禁用态').toMatch(/:disabled="systemReduced"/)

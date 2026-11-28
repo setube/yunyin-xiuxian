@@ -6,6 +6,7 @@ import { MAX_EQUIP_TIER } from '@/data/equipment'
 import { QUALITIES } from '@/data/qualities'
 import { APP_VERSION, compareVersions } from '@/utils/appVersion'
 import { RELEASE_NOTES } from '@/ui/releaseNotes'
+import { systemReducedMotion } from '@/composables/useReducedMotion'
 
 export const useSettingsStore = defineStore(
   'settings',
@@ -22,11 +23,7 @@ export const useSettingsStore = defineStore(
      * (CombatPanel / GauntletPanel),只认这个应用内开关。
      * 播种只在无持久化档的首次创建生效,持久化水合随后盖回显式存下的 true/false。
      */
-    const reduceMotion = ref(
-      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-        ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        : false
-    )
+    const reduceMotion = ref(systemReducedMotion())
     /** 遇事勿扰:历练撞见际遇/机缘/奇缘时不弹窗,立刻按默认好愿了结(与超时自动处置同一条路) */
     const dndEvents = ref(false)
     const battleSpeed = ref<1 | 2 | 4>(1)
