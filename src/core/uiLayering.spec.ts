@@ -711,6 +711,35 @@ describe('存档 · 退出前须刷盘', () => {
     const src = readFileSync(resolve(SRC, 'core/engine.ts'), 'utf-8')
     expect(src, 'engine 停止路径没有刷盘').toMatch(/flushSaveWrites\(\)/)
   })
+
+  /**
+   * 「进度已保存」是一句**承诺**,须按实况说。
+   *
+   * 写盘会因配额满 / 存储被禁用而一直失败 —— 那种情形下 `App.vue` 已经弹过
+   * 「存档写入失败」,而退出确认若仍写「进度已保存」,玩家关掉游戏后才发现这一局白打。
+   * 这与导入失败那句「原档已保留」是同一类:**在最需要说真话的时刻说了句安慰话**。
+   *
+   * 故障注入:把退出确认的文案改回无条件的「进度已保存」,本条红。
+   */
+  it('退出确认的「进度已保存」须按写盘实况分叉,不在失败时照旧承诺', () => {
+    const src = readFileSync(resolve(SRC, 'components/common/ExitConfirmDialog.vue'), 'utf-8')
+    expect(src, '没读写盘失败状态 —— 失败时仍会承诺「进度已保存」').toContain('saveWriteFailure()')
+    expect(src, '须有一支专门说「未存下」的文案').toMatch(/writeFailed[\s\S]{0,80}进度未存下/)
+    /*
+     * 只查**模板正文**,先剥掉 HTML 注释 ——
+     * 那条注释里也写着「进度已保存」四个字(说明为什么改),按全文 indexOf 会取到注释里的,
+     * 于是断言比的是两个注释位置。这类「判据把自己的说明文字算进去」的坑,
+     * `edgeStatesShape` 与 `testTitleNumbers` 都踩过。
+     */
+    const tpl = src.slice(0, src.indexOf('<script')).replace(/<!--[\s\S]*?-->/g, '')
+    const savesAt = tpl.indexOf('进度已保存')
+    const failedAt = tpl.indexOf('进度未存下')
+    expect(failedAt, '找不到「进度未存下」那一支').toBeGreaterThan(-1)
+    expect(savesAt, '「进度已保存」须排在失败分支之后(即只在没失败时才说)').toBeGreaterThan(failedAt)
+    // 防空转:那三支要在同一个 <p> 里
+    const block = tpl.slice(tpl.lastIndexOf('<p', failedAt), tpl.indexOf('</p>', savesAt))
+    expect(block, '三支须在同一个段落里,否则判据取错了地方').toContain('v-else-if="writeFailed"')
+  })
 })
 
 /**
