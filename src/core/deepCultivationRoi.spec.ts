@@ -66,7 +66,7 @@ describe('深修补偿 · B 案:纯效率补偿的深坑', () => {
     }
   })
 
-  it('补偿需求随境界指数发散,真仙要 168 倍道果的额外价值', () => {
+  it('补偿需求随境界指数发散,真仙要数百倍道果的额外价值', () => {
     const rows = compensationTable(0.5)
     const zhenxian = rows[rows.length - 1]!
     expect(zhenxian.timesFruit).toBeGreaterThan(100)
