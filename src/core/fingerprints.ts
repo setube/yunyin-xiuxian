@@ -53,7 +53,20 @@ export const FINGERPRINT_NAMES: Record<string, string> = {
   'burst+counter': '锋芒反刺',
   'combo+desperate': '亡命连击',
   'counter+mitigation+shield': '荆棘壁垒',
-  'burst+combo+shield': '连锋带盾'
+  'burst+combo+shield': '连锋带盾',
+  /*
+   * 下面四条是风险图谱里已经有档、命名表却没有的名字 —— 两边各说各话:
+   * `buildSearch.spec` 按「不在命名表」把它们算成**未名结构**并计入上限,
+   * 而 `ruleUniverse.spec` 按「在图谱里有档」判它们**已登记**。
+   * 同一批构建,一条判据说「还没人管」,另一条说「早有人管」。
+   *
+   * 三张表(家族参考值 / 命名表 / 风险图谱)必须能互相推出来,判据见
+   * `core/fingerprintConsistency.spec`。
+   */
+  'combo+desperate+mitigation': '困兽连击',
+  'burst+desperate+shield': '破釜强攻',
+  'burst+mitigation+sustain': '血甲久战',
+  'combo+counter+shield': '连环棘壁'
 }
 
 export interface Fingerprint {
@@ -185,13 +198,12 @@ export const RISK_ATLAS: RiskProfile[] = [
     incidents: ['P25 生态采样(400 构筑)×1'],
     risk: 'low'
   },
-  {
-    signature: 'burst+combo+mitigation+sustain',
-    riskContexts: ['均衡压制'],
-    counters: ['厚血墙'],
-    incidents: ['P24 首扫(旧签名制)'],
-    risk: 'low'
-  },
+  /*
+   * 这里原有一条 `burst+combo+mitigation+sustain`(四族「均衡压制」),
+   * 而 `fingerprintOf` 的签名**最多三族**(取最强两族,第三族须 ≥0.85 才计入)。
+   * 四族签名永远产生不出来 —— 那条档自 P24 起就是死档,`riskProfileOf` 查不到它,
+   * 也没有任何构建会走到它。删掉,由 `fingerprintConsistency.spec` 挡住再写回来。
+   */
   /*
    * 下面三条是修掉「被反击打死后仍能追击吸血」之后新露出来的结构。
    * 那处修复让反震/护盾一系的收益变实(打死你之后不再被你的追击抵消),
@@ -225,6 +237,16 @@ export function riskProfileOf(signature: string): RiskProfile | undefined {
   return RISK_ATLAS.find(r => r.signature === signature)
 }
 
+/**
+ * 签名最多几族:取最强两族,第三族须显著(≥ SIGNATURE_THIRD_MIN)才计入。
+ *
+ * 抽成常量供判据读 —— 风险图谱与命名表里凡超过这个族数的签名,
+ * `fingerprintOf` 永远产生不出来,是一张死档(`fingerprintConsistency.spec` 钉着)。
+ */
+export const SIGNATURE_MAX_FAMILIES = 3
+/** 第三族要越过这条线才计入签名 */
+export const SIGNATURE_THIRD_MIN = 0.85
+
 /** 构筑的机制指纹:签名取主导家族(最强二者;第三家族须显著方计入) */
 export function fingerprintOf(mods: StatMods): Fingerprint {
   const strengths: Partial<Record<MechanicFamily, number>> = {}
@@ -235,8 +257,9 @@ export function fingerprintOf(mods: StatMods): Fingerprint {
     if (s >= 0.5) ranked.push({ fam, s })
   }
   ranked.sort((a, b) => b.s - a.s)
-  const hit = ranked.slice(0, 2).map(x => x.fam)
-  if (ranked[2] && ranked[2].s >= 0.85) hit.push(ranked[2].fam)
+  const hit = ranked.slice(0, SIGNATURE_MAX_FAMILIES - 1).map(x => x.fam)
+  const third = ranked[SIGNATURE_MAX_FAMILIES - 1]
+  if (third && third.s >= SIGNATURE_THIRD_MIN) hit.push(third.fam)
   hit.sort()
   const signature = hit.join('+') || 'plain'
   const name = signature === 'plain' ? '素身' : (FINGERPRINT_NAMES[signature] ?? '未名结构')
