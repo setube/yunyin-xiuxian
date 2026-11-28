@@ -68,8 +68,8 @@ export const useQuestsStore = defineStore(
        * `$state` 3.18MB、`sanitize` 自己跑 398ms,而这一步在启动路径上。
        * 野键既不参与 `evalCond`(`counter(key)` 只按已知键查)也不显示,唯一作用是撑大存档。
        *
-       * 认得哪些键由 `data/counterKeys` 给出 —— 那份表从**数据表与源码里的 track 调用**
-       * 两路推导,不手写;覆盖是否完整有 `counterKeysCoverage.spec` 从源码核。
+       * 认得哪些键由 `types` 里的 `COUNTER_KEYS` 数组给出(手写,`CounterKey` 由它 typeof 推出,
+       * 加键只改那一处);覆盖是否完整由 `counterKeysCoverage.spec` 从源码里的 track 调用核。
        */
       counters.value = Object.fromEntries(
         Object.entries(asNumberRecord(counters.value, 0))

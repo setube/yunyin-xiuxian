@@ -436,7 +436,8 @@ describe('收藏册 · 时间戳表按留下的键清', () => {
  * 实测十万个野键 → `$state` 3.18MB、`sanitize` 自己跑 398ms,而这一步在启动路径上。
  * 野键既不参与 `evalCond`(`counter(key)` 只按已知键查)也不显示,唯一作用是撑大存档。
  *
- * 认得哪些键由 `data/counterKeys` 给出(从数据表 + 源码里的 track 调用两路推导)。
+ * 认得哪些键由 `types` 里的 `COUNTER_KEYS` 数组给出(手写);
+ * 覆盖是否完整由 `counterKeysCoverage.spec` 从源码里的 track 调用核。
  * 故障注入:去掉 `.filter(([k]) => COUNTER_KEYS.has(...))`,第一条红。
  */
 describe('计数器 · 野键读档时清掉', () => {
