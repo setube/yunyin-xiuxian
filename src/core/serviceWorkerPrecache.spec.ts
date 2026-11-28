@@ -143,3 +143,56 @@ describe('Service Worker · 缓存版本号', () => {
     expect(SW, '那句提醒被删了 —— 后来改策略的人就不知道该递增版本号').toMatch(/bump CACHE_VERSION/)
   })
 })
+
+/**
+ * 清旧缓存只能清本应用的。
+ *
+ * `caches.keys()` 列的是**整个 origin 的全部 cache storage** —— cache 只按 origin
+ * 隔离,不按路径隔离。本应用部署在子路径下(GitHub Pages 的 `<user>.github.io/<repo>/`),
+ * 同 origin 上完全可能有别的 PWA。
+ *
+ * 原先 `filter((k) => k !== CACHE_VERSION)` 会把邻居的缓存一并删掉:本应用一升级,
+ * 隔壁应用的离线包就没了 —— 而对方无从知道是谁干的。
+ *
+ * 故障注入:把 filter 改回 `(k) => k !== CACHE_VERSION` → 第一条红。
+ */
+describe('Service Worker · 清旧缓存不越界', () => {
+  /**
+   * activate 里那次删除的整段代码。
+   *
+   * 不抽 `keys.filter(...)` 那一句:filter 里含 `startsWith(CACHE_PREFIX)`,
+   * 括号嵌套,用正则切容易切歪(第一版就切歪了,判据对着空串报红)。
+   * 取整段再查「这段里有没有前缀判断」更稳。
+   */
+  const activateBlock = (): string => {
+    /*
+     * 取**最后一个** activate:文件里有两个 —— 本地外壳分支那个(自我注销、清空全部缓存,
+     * 那里全删是对的:shell 独占 origin)与主逻辑那个。取第一个会对着外壳分支判,
+     * 判据就永远红(第一版正是如此)。
+     */
+    const i = SW.lastIndexOf("addEventListener('activate'")
+    expect(i, '找不到 activate 监听器').toBeGreaterThan(-1)
+    return SW.slice(i, i + 900)
+  }
+
+  it('activate 的 keys 过滤必须带上本应用的名称前缀', () => {
+    const block = activateBlock()
+    // 链式调用跨行写(`keys\n  .filter(...)`),所以中间允许换行与空白
+    expect(block, 'activate 里没有 keys.filter').toMatch(/keys\s*\.\s*filter/)
+    expect(
+      block,
+      `activate 的过滤没带前缀 —— 会删掉同 origin 下别的应用的缓存:\n${block}`
+    ).toMatch(/startsWith\(\s*CACHE_PREFIX\s*\)/)
+  })
+
+  it('健在性:前缀常量存在,且 CACHE_VERSION 以它开头', () => {
+    // 前缀若与版本号对不上,filter 会把自家缓存也漏掉、永远清不掉旧的
+    const prefix = /const CACHE_PREFIX = '([^']+)'/.exec(SW)
+    const version = /const CACHE_VERSION = '([^']+)'/.exec(SW)
+    expect(prefix, '找不到 CACHE_PREFIX').not.toBeNull()
+    expect(version, '找不到 CACHE_VERSION').not.toBeNull()
+    const p = prefix![1] ?? ''
+    const v = version![1] ?? ''
+    expect(v.startsWith(p), `CACHE_VERSION「${v}」不以 CACHE_PREFIX「${p}」开头`).toBe(true)
+  })
+})
