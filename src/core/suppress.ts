@@ -27,7 +27,7 @@ export interface RegionStats {
    * 连胜计数,**只写不读**。
    *
    * 写入点:`updateRegionStats`(胜 +1、败归零)、`applyRegionWinBatch`(批量加净胜数)、
-   * `resetRegionStats`/`unsuppressRegion`(归零)。读取点:全仓为零 ——
+   * `unsuppressRegion`(归零)。读取点:全仓为零 ——
    * 镇压判据只用 `totalFights` / `avgRounds` / `avgDamageTakenPct` 三条,
    * 兴衰用 `regionWins`(只记本世胜场),都不看这一栏。
    *
