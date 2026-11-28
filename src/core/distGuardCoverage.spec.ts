@@ -122,6 +122,7 @@ describe('package.json · 实测命令要带严格档', () => {
     'multitab-check.mjs',
     'layout-check.mjs',
     'offline-check.mjs',
+    'offline-reward.mjs',
     'treasure-check.mjs',
     'detail-geometry.mjs',
     'modal-patrol.mjs',

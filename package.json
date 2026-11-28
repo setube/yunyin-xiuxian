@@ -24,6 +24,7 @@
     "smoke:late": "bun run build && bun scripts/ui-smoke.mjs --strict-dist --late && bun scripts/focus-check.mjs --strict-dist && node scripts/aria-check.mjs --strict-dist && node scripts/multitab-check.mjs --strict-dist",
     "layout-check": "bun run build && node scripts/layout-check.mjs --strict-dist",
     "offline-check": "bun run build && bun scripts/offline-check.mjs --strict-dist",
+    "offline-reward": "bun run build && node scripts/offline-reward.mjs --strict-dist",
     "first-paint": "bun run build && bun scripts/first-paint.mjs --strict-dist",
     "perf-profile": "bun run build && bun scripts/perf-profile.mjs --strict-dist",
     "perf-stress": "bun run build && node scripts/perf-profile.mjs --strict-dist --stress",
