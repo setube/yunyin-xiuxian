@@ -320,6 +320,10 @@ describe('日课基线坏档', () => {
  * 故障注入:去掉 `.slice(0, 16)` → 本条红。
  */
 describe('日课 · 日期串长度', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('超长日期截断,正常日期原样保留', () => {
     const q = useQuestsStore()
     q.daily = { date: 'x'.repeat(100_000), base: {}, done: [] } as never

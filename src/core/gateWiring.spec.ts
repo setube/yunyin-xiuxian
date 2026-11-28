@@ -31,8 +31,17 @@ const ciText = readdirSync(WORKFLOWS)
 const citedScriptNames = [...new Set([...ciText.matchAll(RUN_NAME)].map((m) => m[1] as string))];
 /** CI 里直接点名的 `scripts/*.(mjs|ts)`(去重) */
 const citedScriptPaths = [...new Set([...ciText.matchAll(CI_SCRIPT)].map((m) => m[1] as string))];
-/** 仓库里的 `scripts/*.mjs` 入口(smoke-classify.ts 是被 import 的模块,不算) */
-const repoScripts = readdirSync(join(ROOT, "scripts")).filter((f) => f.endsWith(".mjs")).sort();
+/**
+ * 仓库里的 `scripts/*.mjs` 入口(smoke-classify.ts 是被 import 的模块,不算)。
+ *
+ * 跳过点开头的文件:`qaCrashReporting.spec` 会往 `scripts/` 写 `.crash-*.tmp.mjs`
+ * 探针并在 afterAll 里删掉,而 vitest 并发跑时那份临时文件可能**正好存在** ——
+ * 于是这条判据间歇报「.crash-aria-check.tmp.mjs 没登记」。
+ * 临时文件本来就不是入口,不认它。
+ */
+const repoScripts = readdirSync(join(ROOT, "scripts"))
+  .filter((f) => f.endsWith(".mjs") && !f.startsWith("."))
+  .sort();
 
 /** 递归收集 src 下的 spec;分类须覆盖每个测试文件 */
 function specFiles(dir: string): string[] {
