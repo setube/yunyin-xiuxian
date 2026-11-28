@@ -55,8 +55,18 @@ function historyOf(cur: MortalWorld | null): MortalWorld[] {
   return out
 }
 
-/** 正在凝界:防重入(切页来回会连开两次) */
-let generating = false
+/**
+ * 正在凝界的那一趟(防重入)。
+ *
+ * 原先用 `let generating = false` + 第二次调用直接 `return null` —— 注释也写着
+ * 「切页来回会连开两次」,说明知道这个场景,但用 `null` 实现是有代价的:
+ * 调用方(`MortalWorldView` 的 `onMounted`)拿到的 `null` 与「四门验收失败」长得一样,
+ * 于是第二次挂载会把「凝界中」这条置回 false、落到「此世未成」空态 ——
+ * 而世界其实正在第一次调用里生成,生成完只是写进 store,页面已不在凝界态,不会重算。
+ *
+ * 改成**共享同一个 promise**:并发的调用一起等那一趟,拿到同一份结果。
+ */
+let generating: Promise<MortalWorld | null> | null = null
 
 /**
  * 取本世之界,没有就现凝一个;四门验收失败返回 null,调用方须容忍「暂无世界」。
@@ -67,33 +77,46 @@ let generating = false
 export async function ensureMortalWorld(): Promise<MortalWorld | null> {
   const adventure = useAdventureStore()
   if (adventure.mortalWorld) return adventure.mortalWorld
-  if (generating) return null
-  generating = true
-  try {
-    const got = await generateGatedMortalAsync(nextSeed(), historyOf(adventure.mortalWorld), 200, 8)
-    if (!got) return null
-    ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
-    adventure.setMortalWorld(got.report.world)
-    return got.report.world
-  } finally {
-    generating = false
-  }
+  // 已有一趟在跑:等它,不另开一趟(也不谎报失败)
+  if (generating) return generating
+  generating = (async (): Promise<MortalWorld | null> => {
+    try {
+      const got = await generateGatedMortalAsync(nextSeed(), historyOf(adventure.mortalWorld), 200, 8)
+      if (!got) return null
+      ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
+      adventure.setMortalWorld(got.report.world)
+      return got.report.world
+    } finally {
+      generating = null
+    }
+  })()
+  return generating
 }
 
-/** 换一个本世之界(转世时调用) */
+/**
+ * 换一个本世之界(转世时调用)。
+ *
+ * 与 `ensureMortalWorld` 共用 `generating`:同一时刻只允许一趟凝界 ——
+ * 两趟并行会各自推进 `ledger.seeds` 并各自 `setMortalWorld`,后写的覆盖先写的。
+ * 换界期间若有人来取界,拿到的是**原来那份**(`prev`),不是 null:
+ * 「正在换」不该被读成「没有世界」。
+ */
 export async function rerollMortalWorld(): Promise<MortalWorld | null> {
   const adventure = useAdventureStore()
   const prev = adventure.mortalWorld
   if (generating) return prev
-  generating = true
-  try {
-    const got = await generateGatedMortalAsync(nextSeed(), historyOf(prev), 200, 8)
-    if (got) ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
-    adventure.setMortalWorld(got?.report.world ?? null)
-    return got?.report.world ?? null
-  } finally {
-    generating = false
-  }
+  const run = (async (): Promise<MortalWorld | null> => {
+    try {
+      const got = await generateGatedMortalAsync(nextSeed(), historyOf(prev), 200, 8)
+      if (got) ledger.seeds = [...ledger.seeds, got.report.world.seed].slice(-HISTORY_DEPTH)
+      adventure.setMortalWorld(got?.report.world ?? null)
+      return got?.report.world ?? null
+    } finally {
+      generating = null
+    }
+  })()
+  generating = run
+  return run
 }
 
 // ============ 本世路线的可达性 ============

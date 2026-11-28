@@ -170,7 +170,15 @@
     // 先让「凝界中」真的画出来:等一帧再开始那段同步计算
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
     try {
-      // 必须 await:ensureMortalWorld 是分块异步的,不等它返回就复位会让「凝界中」提前消失
+      /*
+       * 必须 await:ensureMortalWorld 是分块异步的,不等它返回就复位会让「凝界中」提前消失。
+       *
+       * 这行依赖 `ensureMortalWorld` 的**共享 promise** 语义:切页来回时第二趟
+       * 与第一趟一起等同一个 promise,而不是立刻返回 null。后者会让本页把
+       * 「凝界中」置回 false、落到「此世未成」空态 —— 而世界正在生成,生成完只是写进
+       * store,页面已不在凝界态、不会重算。那条语义由 `mortalRouteAccess.spec` 的
+       * 「并发两次 ensureMortalWorld」钉着。
+       */
       await ensureMortalWorld()
     } finally {
       generating.value = false
