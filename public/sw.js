@@ -177,11 +177,26 @@ self.addEventListener('install', (event) => {
   )
 })
 
+/*
+ * 本应用缓存的名称前缀。
+ *
+ * `caches.keys()` 列的是**整个 origin 的全部 cache storage**,不限于本 SW 建的:
+ * cache 只按 origin 隔离,不按路径隔离。而本应用部署在子路径下(GitHub Pages 的
+ * `<user>.github.io/<repo>/`),同一个 origin 上完全可能有别的 PWA。
+ * 原先的 `filter((k) => k !== CACHE_VERSION)` 会把它们的缓存一并删掉 ——
+ * 那等于本应用一升级就去清空邻居的离线包。
+ */
+const CACHE_PREFIX = 'yunyin-'
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys()
-      await Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
+      await Promise.all(
+        keys
+          .filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_VERSION)
+          .map((k) => caches.delete(k)),
+      )
       await self.clients.claim()
     })(),
   )
