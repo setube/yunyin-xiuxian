@@ -932,6 +932,10 @@ describe('坊市 · 坏档格号挤掉好货', () => {
  * 故障注入:去掉 `clean.slice(0, MARKET_SLOTS)` → 本条红。
  */
 describe('坊市 · 货架条数封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏档塞 500 条合法货品,读档后只留 6 格', () => {
     const m = useMarketStore()
     m.stock = Array.from({ length: 500 }, (_, i) => ({
@@ -960,6 +964,10 @@ describe('坊市 · 货架条数封顶', () => {
  * 故障注入：去掉 `truncateCodePoints` → 本条红。
  */
 describe('寄卖 · 品名长度上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('超长品名截断,正常品名原样', () => {
     const m = useMarketStore()
     const now = Date.now()

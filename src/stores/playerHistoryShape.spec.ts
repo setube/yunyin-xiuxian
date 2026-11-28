@@ -234,6 +234,10 @@ describe('轮回履历 bad-shape · 读档逐条修形', () => {
  * 故障注入:删掉 LegacyView 里 `.slice(0, LIFE_ROWS_SHOWN)` → 本条红。
  */
 describe('轮回录 · 渲染条数封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('lifeRows 有截断,且数据本身不截', () => {
     const src = readFileSync(resolve(process.cwd(), 'src/views/LegacyView.vue'), 'utf8')
     expect(src, 'lifeRows 没截断 —— 坏档 5000 条就渲 5000 行').toMatch(
@@ -274,6 +278,10 @@ describe('轮回录 · 渲染条数封顶', () => {
  * 故障注入:把三个 `asFiniteNumber(..., LIFE_COUNTER_CAP)` 的第四参去掉 → 本条红。
  */
 describe('轮回履历 · 数值与境界名的上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏值夹住,正常履历原样保留', () => {
     const p = usePlayerStore()
     p.reincarnation = {
@@ -328,6 +336,10 @@ describe('轮回履历 · 数值与境界名的上界', () => {
  * 故障注入:去掉 `truncateCodePoints` 包一层 → 第一条红;去掉 `.slice(0, NEMESIS_ROWS_SHOWN)` → 第二条红。
  */
 describe('征战录 · 宿敌名与渲染条数', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('超长敌人名被截,正常名与败次原样', () => {
     const p = usePlayerStore()
     p.nemeses = [

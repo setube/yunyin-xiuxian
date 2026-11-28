@@ -814,6 +814,10 @@ describe('镇压复苏 · settle 级(72h 复生当拍不产石)', () => {
  * 一处也走不到。故这里不补那条,改锁**有物产时**的真实文案。
  */
 describe('镇压产出行 · 玩家看到的那一行', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('给定有物产的区域,当读产出行,则灵石与物产两段都在', () => {
     const line = suppressRateLine('qingyun', 'stable')
     expect(line, '该报灵石/时').toMatch(/灵石\/时/)
@@ -844,6 +848,10 @@ describe('镇压产出行 · 玩家看到的那一行', () => {
  * 提醒到那时把 `RegionStats` 上的那段说明一起改掉。
  */
 describe('区域战绩 · consecutiveWins 只写不读', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('生产代码里没有读取 consecutiveWins 的地方', () => {
     const srcRoot = resolve(__dirname, '..')
     const reads: string[] = []
@@ -881,6 +889,10 @@ describe('区域战绩 · consecutiveWins 只写不读', () => {
  * 故障注入:把任一处改成不同的值,本条红。
  */
 describe('镇压复聚线 · 两处常量同值', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('player.ts 的 REVIVE_LINE_MS 与 REVIVE_AFTER_HOURS 相等', () => {
     const src = readFileSync(resolve(__dirname, '../stores/player.ts'), 'utf-8')
     const m = src.match(/const REVIVE_LINE_MS = (\d+) \* 3_600_000/)
@@ -907,6 +919,10 @@ describe('镇压复聚线 · 两处常量同值', () => {
  * 故障注入:把 `const now = worldAt` 改回 `Date.now()` → 本条红。
  */
 describe('镇压收益 · 繁荣度只认 worldAt', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('真实时钟怎么拨,都不影响这一段的收益', () => {
     const player = usePlayerStore()
     const resources = useResourcesStore()

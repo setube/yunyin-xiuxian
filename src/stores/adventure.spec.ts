@@ -635,6 +635,10 @@ describe('凡人界世界规则 · 坏档字段修形', () => {
  * 去掉 `asFiniteNumber(..., EVENT_MEMORY_TIMES_MAX)` 的第四参 → 第二条红。
  */
 describe('际遇记忆 · 读档守卫', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('认不出的 eventId 清掉', () => {
     const a = useAdventureStore()
     const mem: Record<string, unknown> = {}
@@ -672,6 +676,10 @@ describe('际遇记忆 · 读档守卫', () => {
  * 故障注入：去掉 `[...new Set(...)]` → 本条红（得三条）。
  */
 describe('妖气复聚 · 待再靖表去重', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('重复项只留一条,正常项原样', () => {
     const a = useAdventureStore()
     a.cleared = [] as never
@@ -696,6 +704,10 @@ describe('妖气复聚 · 待再靖表去重', () => {
  * 故障注入:把 `asBattleSpeed` 的 `v > BATTLE_SPEED_MAX` 那行删掉 → 前两条红。
  */
 describe('先手读数 · 速度上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   const sanitized = (playerSpeed: unknown, enemySpeed: unknown) => {
     const a = useAdventureStore()
     a.lastBattle = {

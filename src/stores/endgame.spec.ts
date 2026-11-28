@@ -1185,6 +1185,10 @@ describe('远征规则修形 · 坏档里的 rules 字段', () => {
  * `asStringArray(w.ruleText)` → 本条红。
  */
 describe('虚界 · 规则文案读档封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏档塞 5000 条规则,读档后只留一小段', () => {
     const endgame = useEndgameStore()
     endgame.$patch({
@@ -1211,6 +1215,10 @@ describe('虚界 · 规则文案读档封顶', () => {
  * 故障注入:去掉 `souls.value.slice(0, MAX_MARKS)` → 本条红。
  */
 describe('器魂 · 魂库条数封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏档塞 5000 枚,读档后只留 60 枚且保留先得的', () => {
     const e = useEndgameStore()
     e.souls = Array.from({ length: 5000 }, (_, i) => ({
@@ -1257,6 +1265,10 @@ describe('器魂 · 魂库条数封顶', () => {
  * 故障注入:去掉 `cmp(attack, REPLAY_STAT_MAX) > 0` 那一判 → 本条红。
  */
 describe('道痕重演 · 三维量级上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('天量三维丢弃重演,真实三维保留', () => {
     const e = useEndgameStore()
     const mk = (atk: unknown) => ({
@@ -1296,6 +1308,10 @@ describe('道痕重演 · 三维量级上界', () => {
  * 故障注入:去掉 `truncateCodePoints(m.buildName.trim(), NAME_MAX_LENGTH)` → 本条红。
  */
 describe('道痕 · 构筑名长度', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('超长构筑名截断,正常名保留', () => {
     const e = useEndgameStore()
     const mk = (life: number, buildName: string) => ({
@@ -1329,6 +1345,10 @@ describe('道痕 · 构筑名长度', () => {
  * 故障注入:去掉 `Math.max(-MOD_VALUE_MAX, Math.min(MOD_VALUE_MAX, v))` → 本条红。
  */
 describe('词条 · 读档数值上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏值夹到一千,正常值与野 key 各自处置', () => {
     const e = useEndgameStore()
     e.marks = [{
@@ -1371,6 +1391,10 @@ describe('词条 · 读档数值上界', () => {
  * 故障注入:把 `RECORD_VALUE_MAX` 从 `asFiniteNumber` 里去掉 → 本条红。
  */
 describe('极限纪录 · 数值上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏档写 1e300 夹到上界,真实纪录原样保留', () => {
     const e = useEndgameStore()
     e.records = {
@@ -1393,6 +1417,10 @@ describe('极限纪录 · 数值上界', () => {
  * 故障注入：去掉 `truncateCodePoints` → 本条红。
  */
 describe('魂库 · 来源名长度上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('超长来源名截断,正常来源名原样', () => {
     const e = useEndgameStore()
     const t = SOUL_TYPES[0]!.id
@@ -1418,6 +1446,10 @@ describe('魂库 · 来源名长度上界', () => {
  * 故障注入：去掉 `truncateCodePoints` → 本条红。
  */
 describe('远征战报 · 敌方名长度上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('超长敌方名截断,正常敌方名原样', () => {
     const e = useEndgameStore()
     const w = CELESTIAL_WORLDS[0]!

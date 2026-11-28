@@ -388,6 +388,10 @@ describe('转世 · 天赋抽尽', () => {
  * 故障注入:删掉 reincarnation.ts 里 `ui.breakthrough = null` 那一行 → 本条红。
  */
 describe('转世 · 一次性弹窗随本世清空', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('突破结果与得宝仪典不跨世', async () => {
     const player = usePlayerStore()
     const ui = useUiStore()
@@ -442,6 +446,10 @@ describe('转世 · 一次性弹窗随本世清空', () => {
  * 故障注入:删掉 `useBountyStore().resetForRebirth()` 那一行 → 本条红。
  */
 describe('转世 · 悬赏单随世换新', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('新世的悬赏按新世境界计价', async () => {
     const player = usePlayerStore()
     const bounty = useBountyStore()
@@ -474,6 +482,10 @@ describe('转世 · 悬赏单随世换新', () => {
  * 故障注入:删掉那三行 → 本条红。
  */
 describe('转世 · 详情弹窗随本世清空', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('转世后三处详情 ID 都是 null', async () => {
     const player = usePlayerStore()
     const ui = useUiStore()
@@ -500,6 +512,10 @@ describe('转世 · 详情弹窗随本世清空', () => {
  * 故障注入:删掉 `engine.resetDeathFlag()` 那一行 → 本条红。
  */
 describe('转世 · 死亡提示标记复位', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('新世再次寿尽时轮回入口仍会弹出', async () => {
     const player = usePlayerStore()
     const ui = useUiStore()

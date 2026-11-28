@@ -668,6 +668,10 @@ describe('背包 · 满了就拒收新装备', () => {
  * `.slice(0, ARTIFACT_MAX_SLOTS)` → 本条红。
  */
 describe('法宝槽位 · 超编时界面与生效同批', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('槽位画出来的就是身上作数的', () => {
     const inv = useInventoryStore()
     inv.artifacts = [
@@ -704,6 +708,10 @@ describe('法宝槽位 · 超编时界面与生效同批', () => {
  * 故障注入:去掉 `Math.min(EQUIP_COUNTER_MAX, ...)` → 本条红。
  */
 describe('丹药存量 · 读档封顶', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏档写 1e300,读档后夹到一亿', () => {
     const inv = useInventoryStore()
     inv.pills = { p_jvqisan: 1e300, p_jvqidan: 5 } as never
@@ -728,6 +736,10 @@ describe('丹药存量 · 读档封顶', () => {
  * 故障注入:去掉 `cmp(st, INVESTED_STONE_MAX) > 0` 那一判 → 本条红。
  */
 describe('装备投入 · 灵石上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏档写 9.99e900,读档后归零;真实投入原样保留', () => {
     const inv = useInventoryStore()
     const mk = (uid: string, stone: unknown) => ({
@@ -758,6 +770,10 @@ describe('装备投入 · 灵石上界', () => {
  * 故障注入:改回「先夹到 ARTIFACT_MAX_LEVEL 再取较大值」→ 第一条红(得 9 而非 2)。
  */
 describe('法宝库 · 越界重数整条丢', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('坏值不顶掉真实重数,只有坏值的整条丢', () => {
     const inv = useInventoryStore()
     const a = ARTIFACTS[0]!.id

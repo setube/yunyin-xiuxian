@@ -290,6 +290,10 @@ describe('构筑 · 子数组条数上限', () => {
  * 故障注入：去掉 `truncateCodePoints(l.seal, 1)` → 本条红。
  */
 describe('构筑快照 · 印章只留单字', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('超长印章截到一个字,正常印章原样', () => {
     const l = useLoadoutsStore()
     l.list = [
