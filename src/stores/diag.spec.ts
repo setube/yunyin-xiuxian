@@ -192,6 +192,10 @@ describe('异常留档', () => {
  * 故障注入：去掉 `info` 或 `route` 的 `truncateCodePoints` → 本条红。
  */
 describe('诊断记录 · 三处文案的长度上界', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('info / message / route 一并截到 DIAG_MESSAGE_MAX,正常文案原样', () => {
     const d = useDiagStore()
     d.errors = [
