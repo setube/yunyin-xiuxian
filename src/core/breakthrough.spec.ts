@@ -281,6 +281,28 @@ describe('巅峰(大道尽头)', () => {
     expect(info.targetLabel, '不再出现自己境界的「一层」残影').not.toContain('一层')
   })
 
+  /**
+   * `advanceRealm` 自己那道 `major < MAX_MAJOR` 守卫。
+   *
+   * `breakthroughInfo` 的 `atMaxRealm` 闸门挡住的是**界面**;而 `advanceRealm` 是 store 上的
+   * 公开方法,可以直接调(模拟器、脚本、将来别的入口)。少了它自己这道判断,满级时
+   * `advanceRealm()` 会走到 `exp.value = subClamp(exp.value, spent)` —— 境界不动、修为却按
+   * 「这一境的所需」被扣掉。实测:major=20/sub=9 时 expReq 是 3.06e21,一次调用即可白扣。
+   *
+   * 故障注入:把 `if (major.value < MAX_MAJOR)` 去掉(改成无条件 `major.value += 1`)→ 本条红。
+   */
+  it('满级时直接调 advanceRealm 不动境界,也不白扣修为', () => {
+    const player = usePlayerStore()
+    player.major = MAX_MAJOR
+    player.sub = SUB_LEVELS - 1
+    const expBefore = player.exp
+    player.advanceRealm()
+    expect(player.major, '满级后 major 不该再涨').toBe(MAX_MAJOR)
+    expect(player.sub, '满级后 sub 不该被重置为 0').toBe(SUB_LEVELS - 1)
+    // 修为在这一境本身就是满的,扣掉「这一境所需」等于平白蒸发一份
+    // GNum 是对象:toBe 比引用,这里要比值
+    expect(player.exp, '满级后不该白扣修为').toEqual(expBefore)
+  })
 
 /**
  * 突破闸门的状态机。
